@@ -1,0 +1,10 @@
+node_modules
+dist/
+coverage/
+.vite/
+*.log
+.DS_Store
+
+# Local Claude Code state
+.claude/*
+!.claude/settings.json
