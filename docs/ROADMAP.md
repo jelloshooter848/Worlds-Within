@@ -372,8 +372,8 @@ view?
 - Kits don't import the simulation. A small adapter turns a mission's snapshot into what a kit needs
   and the kit's report into a mission result.
 - **Frozen events:** while a mission is open, the event it belongs to (the battle) is held still, and
-  everything else (construction, caravans) moves forward. How far it moves is _proposed_ to be a fixed
-  world-time cost per mission, never real time spent (see DESIGN.md; not yet confirmed by the owner).
+  everything else (construction, caravans) moves forward. How far it moves is a fixed world-time cost per
+  mission, set when the mission starts, never real time spent (see DESIGN.md).
 - **Opportunities:** windows that open and close (a passing convoy, a prisoner transfer). Taking one
   mission can close another.
 - **Auto-resolve:** every mission can be delegated, with an outcome drawn from its declared outcome
@@ -398,9 +398,9 @@ can wait until after 1.0).
 - The **sabotage mission**, played in the top-down kit. It loads the real defenders (and their
   injuries) from the simulation, and its result is how many engines were destroyed and who was hurt or
   captured.
-- The same mission can be **auto-resolved**. It is _proposed_ that playing it yourself gives a choice of
-  _which_ outcome (which engine, whether to capture the officer), not a better number (not yet
-  confirmed by the owner).
+- The same mission can be **auto-resolved**, which gives a fair, average result. Playing it yourself
+  gives a choice of _which_ outcome (which engine, whether to capture the officer), not a better
+  number.
 - Battle phases advance, opportunities close, and the siege ends in victory, defeat or a partial result.
 - Placeholder art is acceptable; one original song for the siege.
 
@@ -497,16 +497,14 @@ failing replay from the CLI opens at its failing tick.
 
 ## Open questions, by the release that needs them
 
-| Question                                                                            | Needed by                                                        |
-| ----------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Canvas2D or PixiJS, and when?                                                       | 0.9 (proposal: keep Canvas2D until then and decide by benchmark) |
-| Which ECS: Koota, bitECS, miniplex, or our own?                                     | 0.8                                                              |
-| Is height part of the simulation (terrain height, line of sight)?                   | 0.8 (decide early, or rules leak into the views)                 |
-| What a simulation tick means in world time (minutes? hours?)                        | 0.8                                                              |
-| Is the player a civilization, a hero, or both?                                      | 0.9 (proposal: a commander plus a few named heroes)              |
-| How auto-resolve odds are weighted                                                  | 0.10                                                             |
-| Exact rules for flashback (retrospective) missions                                  | 0.10 (can be left out until after 1.0)                           |
-| Does each mission have a fixed world-time cost? (proposed)                          | 0.10                                                             |
-| Does playing yourself give choice over the outcome, not a better result? (proposed) | 0.11                                                             |
-| Art direction: chiptune and NES-style pixels like SMBC, or something else           | 0.11 (test games before it use simple placeholder art)           |
-| Which third mode                                                                    | 0.15                                                             |
+| Question                                                                  | Needed by                                                        |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Canvas2D or PixiJS, and when?                                             | 0.9 (proposal: keep Canvas2D until then and decide by benchmark) |
+| Which ECS: Koota, bitECS, miniplex, or our own?                           | 0.8                                                              |
+| Is height part of the simulation (terrain height, line of sight)?         | 0.8 (decide early, or rules leak into the views)                 |
+| What a simulation tick means in world time (minutes? hours?)              | 0.8                                                              |
+| Is the player a civilization, a hero, or both?                            | 0.9 (proposal: a commander plus a few named heroes)              |
+| How auto-resolve odds are weighted                                        | 0.10                                                             |
+| Exact rules for flashback (retrospective) missions                        | 0.10 (can be left out until after 1.0)                           |
+| Art direction: chiptune and NES-style pixels like SMBC, or something else | 0.11 (test games before it use simple placeholder art)           |
+| Which third mode                                                          | 0.15                                                             |

@@ -123,15 +123,15 @@ How a kit and a backend talk:
   (action, stealth, dungeon), detailed (point-and-click, text, puzzles).
 - **Delegate or play:** any mission can be auto-resolved or played, so players are never forced into
   genres they don't enjoy.
-  - **Proposed (not yet confirmed by the owner):** playing yourself gives _choice_ over which outcome
-    happens, not a better result.
+  - **Decided:** delegating gives a fair, average result. Playing yourself gives _choice_ over which
+    outcome happens, not a better result.
 - **Time:**
   - Ordinary processes (construction, production) speed up when nothing is happening.
   - A critical event (a battle) is nearly frozen while a mission that affects it is played.
   - Things outside the frozen event keep going. **The barracks inside the besieged city still gets
     built.**
-  - **Proposed (not yet confirmed by the owner):** each mission has a **fixed cost in world time**, set
-    when it starts, so stalling inside a mission gains nothing.
+  - **Decided:** each mission has a **fixed cost in world time**, set when it starts, so stalling
+    inside a mission gains nothing.
 - **Narrative time is flexible. Consequences are not.** Events can be played out of order (world time,
   experience time and commitment time are separate), but committed results never change.
 - **No do-overs.** Partial success and failure stay. Failure opens new opportunities (a rescue) rather
