@@ -4,7 +4,8 @@ A small TypeScript game engine built for LLM coding assistants, and Worlds Withi
 it is being built for: one persistent world where any mission can be delegated or played in its own
 genre, with consequences that stay.
 
-The engine comes first: Worlds Within itself starts at 0.8. See:
+The engine comes first and reaches its own 1.0, proved by small sample games. Worlds Within starts its
+own version line (Worlds Within 0.1) only after Engine 1.0. See:
 
 - [docs/DESIGN.md](docs/DESIGN.md): what the game is and the decisions so far
 - [docs/ROADMAP.md](docs/ROADMAP.md): the planned releases
@@ -29,7 +30,8 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 ## Layout
 
-The repo moves to its target layout in 0.2 (see [docs/ROADMAP.md](docs/ROADMAP.md)).
+The repo moves to its target layout in Engine 0.2 (see [docs/ROADMAP.md](docs/ROADMAP.md)). Release
+numbers in this table are engine releases.
 
 | Now                | Target (from 0.2)                                   | What it is                                                             |
 | ------------------ | --------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -39,7 +41,9 @@ The repo moves to its target layout in 0.2 (see [docs/ROADMAP.md](docs/ROADMAP.m
 | (none)             | `engine/sim`                                        | The optional world simulation (0.8)                                    |
 | `src/kits/topdown` | `kits/topdown`, later `kits/platformer`, `kits/rts` | Gameplay rules: rooms, doors, heroes, enemies. Kits never draw         |
 | `src/game/demo`    | `games/demo`                                        | The current demo: content, skins and a thin entry point                |
-| (none)             | `games/platformer-test`, `games/worlds-within`      | The stacking-test game (0.7) and Worlds Within itself (0.9+)           |
+| (none)             | `games/platformer-test`                             | The stacking-test game (0.7)                                           |
+| (none)             | `games/samples/<name>`                              | Engine sample games, one per kit plus a multi-genre one (0.9 to 1.0)   |
+| (none)             | `games/worlds-within`                               | Worlds Within itself (from Worlds Within 0.1, after Engine 1.0)        |
 
 Games depend on the engine; the engine never imports from games.
 

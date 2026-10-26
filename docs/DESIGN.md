@@ -6,7 +6,9 @@ engine. Background research is in [research/prior-art.md](research/prior-art.md)
 
 There are two things here: **the engine**, a reusable set of systems built to be used with an LLM coding
 assistant, and **Worlds Within**, the multi-genre game that will be built on it. The engine comes first
-(see [ROADMAP.md](ROADMAP.md)).
+and reaches its own 1.0, proved by small sample games, before Worlds Within begins. The two have
+separate version lines (Engine 0.x to 1.0, then Worlds Within 0.1 onwards; see
+[ROADMAP.md](ROADMAP.md#two-version-lines)).
 
 ## The idea
 
@@ -37,7 +39,7 @@ The engine is designed to be used mainly through an LLM (like Claude Code). That
   editor, or both.
 
 Our edge is determinism and text-first design all the way down. An MCP server is a thin extra, added
-after 1.0.
+after Engine 1.0.
 
 ### 2. Layers
 
@@ -83,7 +85,9 @@ result when it ends.
 - **Rule of thumb:** if two games could use it, it's engine. If it's content, it's the game.
   Game-specific rules should be data (scenario and mission files) wherever possible, not code.
 - The engine ships no game content, only tiny fixtures for its own tests.
-- Each test game is also a worked example for LLM users and an integration test.
+- Each test game and sample game is also a worked example for LLM users and an integration test.
+  Engine 1.0 ships a small sample game for every kit, plus a multi-genre sample (the mini siege), in
+  `games/samples/`. Samples are games like any other: the engine never imports from them.
 
 ### 5. The dependency rule
 
@@ -145,19 +149,22 @@ How a kit and a backend talk:
 
 ## Architecture
 
-The target layout. The move happens in 0.2; until then the code is under `src/` (see README).
+The target layout. The move happens in 0.2; until then the code is under `src/` (see README). Release
+numbers without a name are engine releases.
 
 ```
 engine/
   core/        loop, scenes, input, audio (MML synth), save, RNG, maths, presentation contract
   backends/    canvas2d (2D sprites), three (2.5D/3D, from 0.6), null (headless)
-  sim/         the world: entities, time, events, missions, auto-resolve, opportunities (0.8+)
+  sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8)
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
 kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12)
 games/
   demo/              the current top-down demo
   platformer-test/   the stacking test (0.7)
-  worlds-within/     the game itself (0.9+)
+  samples/           engine sample games: rts-skirmish (0.9), mini-siege (0.11), tower-defense (0.12),
+                     platformer and dungeon (0.15)
+  worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
 docs/
 ```
 
@@ -176,12 +183,16 @@ See the table at the end of `docs/ROADMAP.md`.
 
 ## Risks
 
-- **Scope.** Fifteen genres is too many for one game. 1.0 ships with 3–4 polished modes.
+- **Scope.** Fifteen genres is too many for one game. Worlds Within 1.0 ships with 3–4 polished modes.
 - **Each mode gets compared with games that only do that genre.** Depth matters more than breadth.
 - **Translating between scales** (a squad as one number in the RTS, individual people in the action
   mode) is the hard engineering problem. It is solved in the simulation (0.8), not inside each mode.
-- **Engine before game delays the game.** Nothing of Worlds Within is playable until 0.9. The stacking
-  test (0.7) is the check that the engine work is paying off.
+- **Engine before game delays the game.** Nothing of Worlds Within is playable until after Engine 1.0.
+  The stacking test (0.7) and the sample games, above all the mini siege (0.11), are the checks that
+  the engine work is paying off.
+- **Engine parts designed without a real game can miss what games need.** The mini siege is built at
+  0.11, right after the mission contract, so the multi-genre layer meets a real (small) game well
+  before its API is written down at 1.0.
 - **The AI-native engine space is crowded and moving fast.** What sets us apart is determinism and
   text-first design all the way down, not MCP.
 - **One RTS kit shared across views can pull rules back into the kit** (terrain height, line of sight).
