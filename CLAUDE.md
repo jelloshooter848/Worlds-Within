@@ -3,7 +3,8 @@
 - Design and plan: `docs/DESIGN.md`, `docs/ROADMAP.md`. Check them before adding features. The order is
   engine first, game second: the engine reaches its own 1.0 (with a sample game per kit in
   `games/samples/`) before Worlds Within starts. The two have separate version lines, tagged
-  `engine-vX.Y` and `ww-vX.Y`.
+  with full three-part versions: `engine-vX.Y.Z` and `ww-vX.Y.Z` (first tag of a release is `.0`; `.1`,
+  `.2` and on are bug-fix-only patches). Two-part and plain `v*` tags are never used.
 - **The repo is LLM-first.** Content is text, every run is repeatable from a seed, and tools let an
   agent check its own work. Every new module (engine part, kit or game) gets agent docs: its own
   `CLAUDE.md` and a page linked from `llms.txt` (from Engine 0.3).

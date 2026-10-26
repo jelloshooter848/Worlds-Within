@@ -20,14 +20,21 @@ Before 1.0, every release is a 0.x, and the numbers count up past 9 (0.10 comes 
 release number on its own, like "0.9", always means an engine release on this page. Worlds Within
 releases are always written with the game's name: "Worlds Within 0.1".
 
-**How releases are tagged.** Git tags carry a prefix so the two lines can never collide:
+**How releases are tagged.** Git tags always use a full three-part version, and carry a prefix so the
+two lines can never collide:
 
-- engine releases: `engine-v0.2`, `engine-v0.10`, `engine-v1.0` (and `engine-v1.0.1` for a fix);
-- Worlds Within releases: `ww-v0.1`, `ww-v1.0`.
+- engine releases: `engine-v0.5.0`, `engine-v0.5.1`, `engine-v0.10.0`, `engine-v1.0.0`;
+- Worlds Within releases: `ww-v0.1.0`, `ww-v1.0.0`.
 
-A plain `v0.2` tag is never used. On an `engine-v*` tag, CI publishes every engine sample game in
-`games/` to GitHub Pages. On a `ww-v*` tag, it publishes Worlds Within. The root `package.json` version
-follows the engine line; Worlds Within keeps its own version in its own folder.
+In prose a release keeps its short name ("Engine 0.5", "Worlds Within 0.1"). Its first tag is `.0`
+(`engine-v0.5.0`), and later fixes to it are `.1`, `.2` and so on (`engine-v0.5.1`). A patch release
+is bug fixes only, with no new features. A two-part tag like `engine-v0.5` is never used, and neither
+is a plain `v*` tag.
+
+Every tag publishes its games, patch releases included. On an `engine-v*` tag, CI publishes every
+engine sample game in `games/` to GitHub Pages. On a `ww-v*` tag, it publishes Worlds Within. The root
+`package.json` version follows the engine line with all three parts (`0.5.0` at Engine 0.5); Worlds
+Within keeps its own version in its own folder.
 
 ## The order
 
@@ -243,8 +250,8 @@ not by memory.
 
 ### PixiJS: now or later?
 
-**Recommendation: later.** Keep the Canvas2D renderer through the stacking test, and decide at the RTS
-release (0.9) by measuring.
+**Decided: later.** The Canvas2D renderer stays for now, and the RTS release (0.9) decides by
+measuring with a benchmark.
 
 - Canvas2D works, is tested, and draws everything we have at our picture sizes easily.
 - Switching renderer in the same releases as the restructure and the contract would mix up the cause
@@ -414,8 +421,11 @@ orders.
 
 **Out of scope:** missions, other genres.
 
-**Decisions needed first:** Canvas2D or PixiJS for this view. Whether the kit needs a "hero" unit type
-(a named unit the player controls directly) as well as squads.
+**Decided:** Canvas2D stays until this release; the benchmark above decides whether PixiJS comes in
+for this view.
+
+**Decisions needed first:** Whether the kit needs a "hero" unit type (a named unit the player controls
+directly) as well as squads.
 
 ---
 
@@ -499,10 +509,11 @@ Worlds Within (its places, characters, story or art).
 
 - `kits/towerdefense`: placing defences on a map, paying for them with a resource, and fighting waves.
 - `games/samples/tower-defense/`: a standalone tower-defense map with its own simple original art.
-- A preparation phase added to the mini siege: placing defences on the real walls with real resources,
-  and fighting a wave whose losses are written back to the world.
-- The tower-defense preparation phase of the real Siege is not engine work: it belongs to Worlds Within
-  0.1.
+- A small tower-defense preparation phase added to the mini siege: placing defences on the real walls
+  with real resources, and fighting a wave whose losses are written back to the world. Its purpose is
+  to test that a new mode can be added to an existing game without changing `engine/sim`.
+- This is separate from the tower-defense preparation phase of the real Siege, which is not engine
+  work: it belongs to Worlds Within 0.1.
 - **The test:** adding this mode needs _no changes_ to `engine/sim`. Every change it does need is
   recorded as a lesson for the mission API before that API is fixed at 1.0.
 
@@ -588,7 +599,7 @@ samples.
 - **Agent docs and skills complete:** `llms.txt`, a page and a `CLAUDE.md` for every module, kit and
   sample, the cheat sheet, and skills for the common jobs (scaffold a game, add a level, add a mission,
   debug a failing run).
-- **Every sample playable from a link,** published on the `engine-v1.0` tag.
+- **Every sample playable from a link,** published on the `engine-v1.0.0` tag.
 
 **Done when:**
 
@@ -603,8 +614,9 @@ samples.
 # Worlds Within track (after Engine 1.0)
 
 Worlds Within starts here, with its own version numbers. It is built on Engine 1.x and lives in
-`games/worlds-within/`. Its releases are tagged `ww-v0.1`, `ww-v0.2` and so on. These releases are
-planned more lightly than the engine's, and will be detailed once Engine 1.0 is close.
+`games/worlds-within/`. Its releases are tagged `ww-v0.1.0`, `ww-v0.2.0` and so on (see "Two version
+lines" for patch releases). These releases are planned more lightly than the engine's, and will be
+detailed once Engine 1.0 is close.
 
 If Worlds Within needs an engine change, the change is made in the engine (with an engine sample or
 test that proves it) and shipped as an engine release, never as game code.
@@ -711,8 +723,6 @@ whose only difference is that hero's fate.
 
 | Question                                                                                          | Needed by                                                                                        |
 | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Tag names for the two version lines (proposal: `engine-v0.2` and `ww-v0.1`)                       | 0.2 (the first tagged release)                                                                   |
-| Canvas2D or PixiJS, and when?                                                                     | 0.9 (proposal: keep Canvas2D until then and decide by benchmark)                                 |
 | Which ECS: Koota, bitECS, miniplex, or our own?                                                   | 0.8                                                                                              |
 | Is height part of the simulation (terrain height, line of sight)?                                 | 0.8 (decide early, or rules leak into the views)                                                 |
 | What a simulation tick means in world time (minutes? hours?)                                      | 0.8                                                                                              |
