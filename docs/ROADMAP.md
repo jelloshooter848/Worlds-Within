@@ -41,8 +41,10 @@ follows the engine line; Worlds Within keeps its own version in its own folder.
    down.
 5. **The multi-genre layer** (0.8 to 0.13): the world simulation, the RTS kit, time and the mission
    contract, a mini siege that puts them together, the tower-defense kit, and heroes and consequences.
-6. **Tools and samples** (0.14 to 0.15): creator tools, and a finished sample game for every kit.
-7. **Engine 1.0**: documented APIs, complete agent docs, and every sample playable from a link.
+6. **Tools and samples** (0.14 to 0.15): creator tools, and a finished sample game for every kit. At
+   0.15 the demo and the stacking-test game become samples, and their old folders go away.
+7. **Engine 1.0**: documented internal APIs (v1), complete agent docs, and every sample playable from
+   a link.
 
 **Worlds Within track (after Engine 1.0):** the full Siege, heroes and the campaign, a third mode,
 Chapter 1 content and art, then **Worlds Within 1.0: Chapter 1**.
@@ -51,7 +53,8 @@ Each release ends with something that can be played or tested. From 0.2 on, ever
 release publishes each game in `games/` to GitHub Pages, so it can be played from a link.
 
 **Every release must keep the old ones working.** The demo, every test game and every sample stay
-playable, and their run files stay green, from the release that adds them onwards.
+playable, and their run files stay green, from the release that adds them onwards. When the demo and
+the stacking-test game become samples at 0.15, their run files move with them and must stay green.
 
 ### Sample games
 
@@ -66,9 +69,10 @@ and never borrow its content. They have three jobs:
 - **Worked examples for LLMs.** Each sample has its own `CLAUDE.md` saying how it was built. An agent
   making a new game copies from the nearest sample.
 
-Engine 1.0 ships five samples: a platformer level, a top-down dungeon, an RTS skirmish, a
-tower-defense map, and a **mini siege** that joins several genres through the world simulation (see
-0.11).
+Engine 1.0 requires five samples, all of them: a platformer level, a top-down dungeon, an RTS
+skirmish, a tower-defense map, and a **mini siege** that joins several genres through the world
+simulation (see 0.11). The platformer sample grows out of the stacking-test game (0.7) and the dungeon
+sample out of the demo; both move into `games/samples/` at 0.15.
 
 Samples are games: they live under `games/`, and the dependency rule applies to them like any other
 game. The engine never imports from them.
@@ -320,7 +324,8 @@ isometric, polished art.
 **Scope:**
 
 - `games/platformer-test/`: a small original platformer (three or four short levels) built on the
-  platformer kit, as simple and modular as possible.
+  platformer kit, as simple and modular as possible. At 0.15 it grows into the platformer sample
+  (`games/samples/platformer/`) and this folder goes away.
 - It is presented through **both** backends: 2D sprites and 3D.
 - Simple assets for both (see "How test assets are made" below).
 - One level has a door that pushes a tiny mini game over the level (a one-room top-down challenge using
@@ -496,6 +501,8 @@ Worlds Within (its places, characters, story or art).
 - `games/samples/tower-defense/`: a standalone tower-defense map with its own simple original art.
 - A preparation phase added to the mini siege: placing defences on the real walls with real resources,
   and fighting a wave whose losses are written back to the world.
+- The tower-defense preparation phase of the real Siege is not engine work: it belongs to Worlds Within
+  0.1.
 - **The test:** adding this mode needs _no changes_ to `engine/sim`. Every change it does need is
   recorded as a lesson for the mission API before that API is fixed at 1.0.
 
@@ -544,16 +551,19 @@ debugger, and a failing replay from the CLI opens at its failing tick.
 
 **Scope:**
 
-- `games/samples/platformer/`: a platformer level. It may grow out of the 0.7 stacking-test game
+- `games/samples/platformer/`: a platformer level. It grows out of the 0.7 stacking-test game
   (`games/platformer-test/`), keeping its 2D and 3D skins.
-- `games/samples/dungeon/`: a top-down dungeon. It may grow out of the demo (`games/demo/`).
+- `games/samples/dungeon/`: a top-down dungeon. It grows out of the demo (`games/demo/`).
+- The old folders, `games/platformer-test/` and `games/demo/`, go away in this release. Their run files
+  move with them into the samples and stay green.
 - `games/samples/rts-skirmish/` and `games/samples/tower-defense/`: finished from their first versions.
 - Every sample gets its own original assets (pixel art, meshes and music as text) in place of
   placeholders, a `CLAUDE.md` that explains how it was built, and run files in CI.
 - A review of every kit and module API against what the samples needed, as the last chance to change
   them before they are written down as v1.
 
-**Done when:** every sample plays from a link and passes its run files in CI, and the API review is
+**Done when:** every sample plays from a link and passes its run files in CI, `games/platformer-test/`
+and `games/demo/` are gone, and the API review is
 written up with every change it calls for either made or listed for 1.0.
 
 **Out of scope:** new kits.
@@ -562,17 +572,19 @@ written up with every change it calls for either made or listed for 1.0.
 
 ## Engine 1.0
 
-**Goal:** an engine someone else (or an LLM) can make a game with, using only its docs and samples.
+**Goal:** an engine we (or an LLM working for us) can make a new game with, using only its docs and
+samples.
 
-**Ships with:**
+**Ships with (all required):**
 
 - **A sample game for every gameplay kit,** each with its own original assets: a platformer level, a
   top-down dungeon, an RTS skirmish, and a tower-defense map.
 - **The mini siege,** the multi-genre sample: an RTS map that launches a top-down mission, which can be
   delegated or played, and gets structured results back through the world simulation, time and the
   mission contract.
-- **Documented kit and module APIs (v1),** including the mission API. They are written down and kept
-  stable within 1.x; whether that is a public promise to third parties is an open question (see below).
+- **Documented kit and module APIs (v1),** including the mission API. The API is **internal**: it is
+  written down as v1 for our own games, with no stability promise to outside developers. A public API
+  and package come later (see "Later").
 - **Agent docs and skills complete:** `llms.txt`, a page and a `CLAUDE.md` for every module, kit and
   sample, the cheat sheet, and skills for the common jobs (scaffold a game, add a level, add a mission,
   debug a failing run).
@@ -621,7 +633,9 @@ pattern to follow, but none of its content is reused.
 both paths (playing the mission and delegating it) change the battle the way the design says, the Siege
 offers both the RTS and tower-defense modes, and a full Siege replay gives the same hashes every time.
 
-**Decisions needed first:** art direction; whether the player is a civilization, a hero, or both.
+**Decisions needed first:** art direction; whether the player is a civilization, a hero, or both. (The
+engine half of that question, whether the RTS kit supports a directly controlled hero unit, is answered
+at 0.9.)
 
 ---
 
@@ -679,8 +693,8 @@ whose only difference is that hero's fate.
 - More backends: PixiJS (if not adopted at 0.9), isometric.
 - More kits and modes: a true 3D kit (Mario 64-like), a shmup, a rail shooter, a racer. Each new kit
   comes with its own sample game.
-- A public kit API and package format for third-party genres, and the engine published as its own
-  package.
+- A public API with a stability promise to outside developers, a package format for third-party
+  genres, and the engine published as its own package. (The 1.0 API is internal only.)
 - Multiplayer: possible because the simulation is deterministic, but not designed for yet.
 
 **Worlds Within (after Worlds Within 1.0):**
@@ -695,21 +709,18 @@ whose only difference is that hero's fate.
 
 "0.x" and "1.0" mean engine releases. Worlds Within releases are written "WW 0.x".
 
-| Question                                                                       | Needed by                                                                                   |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| Tag names for the two version lines (proposal: `engine-v0.2` and `ww-v0.1`)    | 0.2 (the first tagged release)                                                              |
-| Canvas2D or PixiJS, and when?                                                  | 0.9 (proposal: keep Canvas2D until then and decide by benchmark)                            |
-| Which ECS: Koota, bitECS, miniplex, or our own?                                | 0.8                                                                                         |
-| Is height part of the simulation (terrain height, line of sight)?              | 0.8 (decide early, or rules leak into the views)                                            |
-| What a simulation tick means in world time (minutes? hours?)                   | 0.8                                                                                         |
-| Does the RTS kit need a directly controlled "hero" unit as well as squads?     | 0.9 (proposal: yes, so the kit doesn't rule out a commander plus heroes)                    |
-| How delegated outcomes are weighted                                            | 0.10                                                                                        |
-| Exact rules for flashback (retrospective) missions                             | 0.10 (can be left out until after Engine 1.0)                                               |
-| What the mini siege's top-down mission is                                      | 0.11 (proposal: a sabotage-style mission, with original content)                            |
-| Which kit samples are required for 1.0                                         | 0.15 (proposal: all four: platformer, dungeon, RTS skirmish, tower defense)                 |
-| Does the platformer sample grow out of the 0.7 game, and the dungeon the demo? | 0.15 (proposal: yes, and the old folders then go away)                                      |
-| Art style for the samples                                                      | 0.9 (proposal: simple original pixel art written as text, like the test games)              |
-| Is the v1 API a promise to third parties, or internal only?                    | 1.0 (proposal: stable within 1.x for our own games; a public promise only with the package) |
-| Is the player a civilization, a hero, or both?                                 | WW 0.1 (proposal: a commander plus a few named heroes)                                      |
-| Art direction: chiptune and NES-style pixels like SMBC, or something else      | WW 0.1 (engine samples use their own simple art)                                            |
-| Which third mode                                                               | WW 0.3                                                                                      |
+| Question                                                                                          | Needed by                                                                                        |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Tag names for the two version lines (proposal: `engine-v0.2` and `ww-v0.1`)                       | 0.2 (the first tagged release)                                                                   |
+| Canvas2D or PixiJS, and when?                                                                     | 0.9 (proposal: keep Canvas2D until then and decide by benchmark)                                 |
+| Which ECS: Koota, bitECS, miniplex, or our own?                                                   | 0.8                                                                                              |
+| Is height part of the simulation (terrain height, line of sight)?                                 | 0.8 (decide early, or rules leak into the views)                                                 |
+| What a simulation tick means in world time (minutes? hours?)                                      | 0.8                                                                                              |
+| Does the RTS kit need a directly controlled "hero" unit as well as squads?                        | 0.9 (proposal: yes, so the kit doesn't rule out a commander plus heroes)                         |
+| How delegated outcomes are weighted                                                               | 0.10                                                                                             |
+| Exact rules for flashback (retrospective) missions                                                | 0.10 (can be left out until after Engine 1.0)                                                    |
+| What the mini siege's top-down mission is                                                         | Decide later, by 0.11 (proposal: a sabotage-style mission, with original content)                |
+| Art style for the samples                                                                         | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games) |
+| Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                           |
+| Art direction: chiptune and NES-style pixels like SMBC, or something else                         | WW 0.1 (engine samples use their own simple art)                                                 |
+| Which third mode                                                                                  | WW 0.3                                                                                           |

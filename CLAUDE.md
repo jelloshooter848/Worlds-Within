@@ -17,4 +17,7 @@
 - Kits hold no world rules and never draw: they read what a mission gives them and report what happened,
   and backends draw them from a read-only snapshot.
 - **How work is done:** Claude acts as orchestrator and delegates building and reviewing to agents.
+- **Feedback items are numbered.** Whenever Claude needs the owner's feedback or a decision, each item
+  gets a unique number that continues across conversations and is never reused, so the owner can answer
+  by number. Record the last number used in `docs/FEEDBACK-LOG.md`.
 - Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.

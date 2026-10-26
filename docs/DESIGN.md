@@ -86,8 +86,9 @@ result when it ends.
   Game-specific rules should be data (scenario and mission files) wherever possible, not code.
 - The engine ships no game content, only tiny fixtures for its own tests.
 - Each test game and sample game is also a worked example for LLM users and an integration test.
-  Engine 1.0 ships a small sample game for every kit, plus a multi-genre sample (the mini siege), in
-  `games/samples/`. Samples are games like any other: the engine never imports from them.
+  Engine 1.0 requires a small sample game for every kit, plus a multi-genre sample (the mini siege),
+  in `games/samples/`. The 1.0 API is documented as v1 for our own games only; a public API with a
+  promise to outside developers comes later. Samples are games like any other: the engine never imports from them.
 
 ### 5. The dependency rule
 
@@ -160,8 +161,8 @@ engine/
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
 kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12)
 games/
-  demo/              the current top-down demo
-  platformer-test/   the stacking test (0.7)
+  demo/              the current top-down demo (becomes samples/dungeon at 0.15)
+  platformer-test/   the stacking test (0.7; becomes samples/platformer at 0.15)
   samples/           engine sample games: rts-skirmish (0.9), mini-siege (0.11), tower-defense (0.12),
                      platformer and dungeon (0.15)
   worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
