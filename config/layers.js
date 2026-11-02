@@ -161,6 +161,7 @@ export const PURE_CORE = [
   'engine/core/headless.ts',
   'engine/core/rules.ts',
   'engine/core/kit.ts',
+  'engine/core/orders.ts',
   'engine/core/minigame.ts',
   'engine/core/minigame-scene.ts',
   'engine/core/shell/backend-choice.ts',

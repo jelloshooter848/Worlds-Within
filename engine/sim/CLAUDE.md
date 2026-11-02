@@ -25,6 +25,9 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   group, 4-way or 8-way (see "Walking").
 - `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward` and the
   systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
+- `rts.ts`: RTS units (Engine 0.9): the components `Unit`, `Facing8`, `Task`, `Target` and
+  `Cooldown` (`RTS_COMPONENTS`), `applyOrder` and the systems `moveSystem`, `attackSystem` and
+  `deathSystem` (`RTS_SYSTEMS`, in that order; see "RTS units").
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`. Fixtures only:
@@ -259,6 +262,62 @@ components, entities visited in id order.
 - `patrolSystem` (`patrol`): an entity with `Patrol` walks to its current waypoint (standing on
   it) and on arriving turns to the next one, looping.
 
+## RTS units
+
+`rts.ts` (Engine 0.9 T7; docs/BUILD-LOG.md, Engine 0.9, items 121-127) runs units from orders. It
+is machinery like the other systems: every number is component data (copied from the game's unit
+type data when a unit is made), all integer, no randomness, entities in id order, all state in
+components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` and
+`systems: RTS_SYSTEMS` (`moveSystem`, `attackSystem`, `deathSystem`, in that order).
+
+- **Orders** are plain JSON, defined once in `engine/core/orders.ts` (`orderSchema`, `Order`,
+  `parseOrder`, re-exported here) so kits can make them without importing the sim (item 122):
+  `{ id, faction, type: "move" | "attack" | "stop", units: [ids], target? }`, a cell for `move`,
+  an entity id for `attack`. `build`, `train` and `gather` join with their systems (T8).
+- `applyOrder(world, order)`, between ticks: checks the shape, then the world (every unit exists,
+  is a living `Unit` with `Position` and belongs to `faction`; a move target is on the map and
+  enterable; an attack target is a living entity with `Health` and `Position`, not one of the
+  ordered units and not of the order's faction). Refused: returns `{ ok: false, error }` (lines
+  starting `order <id>:`, naming the field or the unit) and changes nothing; it never throws for
+  a bad order, so a stale order from the view (its unit just died) is simply dropped by the
+  caller. Accepted: `{ ok: true, order }`, and every change it makes is logged under the cause
+  `order:<id>`: each unit's `Task` (and `Target` for `attack`; `move` drops `Target`; `stop`
+  drops both).
+- `Unit` `{ speed, attack, range, cooldown, sight }`: `speed` is ticks per straight cell of cost 1;
+  entering a cell takes `speed * stepCost / STRAIGHT_COST` ticks rounded to nearest, at least 1
+  (8-way costs: a diagonal is 14, a cell of cost c is c times as much). `range` and `sight` are
+  whole cells of integer distance, `distFloor` (the floor of the straight-line distance;
+  `inRange(a, b, range)`), so range 1 reaches all eight neighbours. `cooldown` is ticks from one
+  hit to the next. `sight` is stored for the view and fog of war; no system reads it yet.
+- `Task` `{ order, kind: "move" | "attack", goal, target, path, flow }`: what a unit is doing.
+  `path` is the rest of an A* way (planned on the first step, kept while its next cell is a legal
+  step and it still ends at the goal, else planned again); `flow` is set when the order named
+  `FLOW_GROUP_SIZE` (4) or more units: they read one shared 8-way `flowField` instead.
+- `Target` `{ entity }`: what a unit fights. `Cooldown` `{ move, attack }`: ticks before the unit
+  may step or hit again, present only while one is above 0. `Facing8` `{ dir }`: `STEPS_8` index
+  (0 north, 1 north-east ... 7 north-west) of the last step or hit, for the view (`facingOf`).
+- `moveSystem` (`move`): a unit with a `Task` cooling down counts down; else a move task at its
+  goal is removed, an attack task whose target is gone or dead is removed (with `Target`), a unit
+  within range of its target stands, and otherwise it steps one 8-way cell toward the goal (the
+  target's cell), standing at its elevation, sets `Facing8` and starts its step cooldown. No way
+  there: the task is dropped. Units do not block each other (stacking is allowed in 0.9).
+- `attackSystem` (`attack`): every living `Unit` counts its attack cooldown down; else, unless on
+  a move task, it hits its `Target` when within range: `Health.hp - attack` (not below 0), faces
+  it, and starts its cooldown. A unit with no task keeps a target only while it is in range and
+  otherwise picks the nearest enemy within range (another faction's living entity with `Owner`;
+  nearest by squared distance, ties to the lowest id). Hits land at once, in id order.
+- `deathSystem` (`death`): every `Unit` at 0 hp is destroyed (each removal and the destroy are
+  logged under `death`); a named squad member first leaves its squad (strength - 1, off
+  `members`, not captain).
+- **Heroes** (item 121) are ordinary units with a `Member` role `hero`; an order can name one
+  alone. Nothing in the orders or systems tells them apart.
+- Tests: `rts.test.ts` (move around a wall, speed and cell cost, a flow-field group, stop, no way;
+  attack closes to range and kills, chasing, idle units fighting back, heroes ordered alone and
+  leaving their squad on death; every refusal changes nothing; a two-sided battle gives the same
+  hashes and log twice, causes only `order:<n>` or a system's name, and a save and load at seven
+  ticks mid-battle steps on to the uninterrupted hashes). `engine/core/orders.test.ts` checks the
+  order schema.
+
 ## The sample world
 
 `__fixtures__/village.world.json` is the Engine 0.8 proof: a 24x14 village with a river and two
@@ -318,4 +377,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
-  `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `sample-world.test.ts`).
+  `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `sample-world.test.ts`).

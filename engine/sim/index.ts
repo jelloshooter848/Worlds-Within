@@ -25,6 +25,24 @@ export {
   walkToward,
 } from './systems';
 export type { HaulerData, WalkData } from './systems';
+export {
+  Cooldown,
+  Facing8,
+  RTS_COMPONENTS,
+  RTS_SYSTEMS,
+  Target,
+  Task,
+  Unit,
+  applyOrder,
+  attackSystem,
+  deathSystem,
+  facingOf,
+  inRange,
+  moveSystem,
+} from './rts';
+export type { CooldownData, Facing8Data, OrderResult, TargetData, TaskData, UnitData } from './rts';
+export { ORDER_TYPES, orderSchema, parseOrder } from '../core/orders';
+export type { Order, OrderCell, OrderType } from '../core/orders';
 export { STEPS, UNREACHABLE, distanceField, nextStep } from './path';
 export type { Cell } from './path';
 export {

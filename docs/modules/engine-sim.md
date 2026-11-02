@@ -57,6 +57,18 @@ carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, and `ha
   (workers fetch from a source and carry it to the nearest unfinished building as work, resting at
   random through the world RNG), `buildSystem` (a building's health follows its progress) and
   `patrolSystem` (walk the waypoints in a loop).
+- RTS units (`rts.ts`, Engine 0.9): orders as plain JSON (`orderSchema`, `Order`, `parseOrder`,
+  defined in `engine/core/orders.ts` and re-exported: `move` to a cell, `attack` an entity, `stop`)
+  and `applyOrder(world, order)` -> `{ ok: true, order }` or `{ ok: false, error }` (checked
+  against the world: units exist, are living units of the order's faction, targets are valid;
+  a refused order changes nothing), writing under the cause `order:<id>`. Components `Unit`
+  `{ speed, attack, range, cooldown, sight }`, `Facing8` `{ dir }`, `Task`
+  `{ order, kind, goal, target, path, flow }`, `Target` `{ entity }` and `Cooldown`
+  `{ move, attack }` (`RTS_COMPONENTS`); systems `moveSystem` (8-way A*, or a shared flow field
+  for a group of 4 or more; speed in ticks per cell), `attackSystem` (range in integer distance,
+  `inRange`; cooldown; nearest enemy for idle units, ties to the lowest id) and `deathSystem`
+  (dead units destroyed, leaving their squad), run in that order as `RTS_SYSTEMS`. `facingOf`.
+  Heroes are ordinary units an order can name alone.
 - The sample world: `engine/sim/__fixtures__/village.world.json`, run by
   `pnpm test engine/sim/sample-world`: 10,000 ticks, the same hashes twice and as the golden file
   `village.hashes.json`, and a save and load at 83 ticks matching the uninterrupted run.
@@ -111,6 +123,7 @@ that malformed saves fail naming the field. `scenario.test.ts` checks world scen
 squads, errors naming the field), `path.test.ts` walking costs and tie order, `astar.test.ts` A*
 (cheapest paths, no rock or corner cutting, null with no way, same ties every run), a group on a
 flow field and the A* vs flow field measurement, `systems.test.ts` hauling, building and
-patrols, and `sample-world.test.ts` the Engine 0.8 proof: the village runs 10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
+patrols, `rts.test.ts` orders, movement, combat and deaths (refused orders change nothing, a battle
+repeats its hashes and survives a save and load mid-battle), and `sample-world.test.ts` the Engine 0.8 proof: the village runs 10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
 ticks (`WW_SAVE_EVERY_TICK=1` reloads at every tick, about two minutes).
 `engine/tools/world-run.test.ts` checks `run` and `dump` on a world run file.
