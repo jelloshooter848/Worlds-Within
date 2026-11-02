@@ -130,7 +130,7 @@ describe('SkinnedCanvasPresenter', () => {
     expect(calls.filter((c) => c.startsWith('sprite walls:wall'))).toHaveLength(2);
   });
 
-  it('draws entities by layer, then y, keeping list order on ties', () => {
+  it('draws entities by layer, keeping list order on ties (no y-sort)', () => {
     const s = setup();
     const ent = (id: string, y: number, layer?: number) => ({
       ...hero({ id, kind: 'ghost', x: id.length, y }),
@@ -144,10 +144,29 @@ describe('SkinnedCanvasPresenter', () => {
     );
     expect(s.screen.filter((c) => c.startsWith('rect')).map((c) => c.split(' ')[1])).toEqual([
       '5,0',
+      '2,20',
       '3,10',
       '4,10',
-      '2,20',
       '1,30',
+    ]);
+  });
+
+  it('draws a 16x16 pickup a boomerang carries over the boomerang, though its y is smaller', () => {
+    const s = setup();
+    // As the top-down kit emits it: the boomerang (8x8 at y 40), then the carried pickup centred
+    // on it at y 40 + 4 - 8 = 36, both at layer 20.
+    s.p.present(
+      frame({
+        noMap: true,
+        entities: [
+          hero({ id: 'boom', kind: 'ghost', x: 1, y: 40, w: 8, h: 8, layer: 20 }),
+          hero({ id: 'heart', kind: 'ghost', x: 2, y: 36, w: 16, h: 16, layer: 20, tags: ['carried'] }),
+        ],
+      }),
+    );
+    expect(s.screen.filter((c) => c.startsWith('rect')).map((c) => c.split(' ')[1])).toEqual([
+      '1,40',
+      '2,36',
     ]);
   });
 

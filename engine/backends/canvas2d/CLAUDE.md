@@ -29,7 +29,7 @@ canvas, none in Node). Each `present(frame)`, in order:
 - Map: a full map is drawn onto the surface once per id and version and copied each frame; a
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`.
-- Entities by `layer`, then `y`, then list order: `resolveSkinFrame` picks the frame and flip;
+- Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip;
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.

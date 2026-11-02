@@ -159,6 +159,9 @@ describe('presentWorld: every entity the kit has', () => {
       layer: TD_DEPTH.shots,
     });
     expect([heart.x, heart.y]).toEqual([0, 0]);
+    // Listed after the boomerang at the same layer, so it draws on top of it.
+    const kinds = es.map((e) => e.kind);
+    expect(kinds.indexOf('pickup:heart')).toBeGreaterThan(kinds.indexOf('boomerang'));
   });
 });
 

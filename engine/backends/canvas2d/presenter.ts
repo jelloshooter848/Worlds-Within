@@ -85,7 +85,7 @@ function defaultMapSurface(width: number, height: number): MapSurface | null {
 /**
  * The Canvas2D backend's `Presenter`: draws any `PresentFrame` through a skin. Each frame it fills
  * the background, frames the camera, copies the map (drawn once per map id and version), draws the
- * entities by `layer`, then `y`, then list order, starts and draws event effects, and draws the HUD
+ * entities by `layer`, then list order, starts and draws event effects, and draws the HUD
  * from `frame.status`. Sounds go to `onSound`; nothing here plays audio or knows a game or kit.
  * It never changes the frame or the skin.
  */
@@ -330,9 +330,9 @@ export class SkinnedCanvasPresenter implements Presenter {
   }
 }
 
-/** Entities by `layer` (0 when absent), then top edge `y`, keeping list order on ties. */
+/** Entities by `layer` (0 when absent), keeping list order on ties (a stable sort), as `PresentFrame` says. */
 function depthOrder(entities: readonly DeepReadonly<PresentEntity>[]): DeepReadonly<PresentEntity>[] {
-  return [...entities].sort((a, b) => (a.layer ?? 0) - (b.layer ?? 0) || a.y - b.y);
+  return [...entities].sort((a, b) => (a.layer ?? 0) - (b.layer ?? 0));
 }
 
 /** The top-left on one axis that keeps a `view`-wide picture inside a `world`-wide map. */

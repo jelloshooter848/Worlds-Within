@@ -19,7 +19,7 @@ for and holds no game rules.
 - `Viewport`, `ViewportOptions` (`viewport.ts`): owns the backbuffer and presents it.
 - `SkinnedCanvasPresenter`, `SkinnedPresenterOptions`, `MapSurface` (`presenter.ts`):
   `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
-  is a `Presenter`. It caches the map per id and version, draws entities by layer then `y` with
+  is a `Presenter`. It caches the map per id and version, draws entities by layer then list order with
   skin frames (flipped by facing, a fallback box when art is missing, squash through
   `transformed()`), frames the camera (hint or skin follow, clamped, small maps centred), draws
   event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
