@@ -121,7 +121,7 @@ game. The engine never imports from them.
 
 ---
 
-## 0.2 Restructure and the dependency rule
+## 0.2 Restructure and the dependency rule (done)
 
 **Goal:** the repo has the target layout, and the line between engine and game is enforced by tools,
 not by memory.
@@ -156,6 +156,8 @@ not by memory.
 - A deliberate `Math.random()` in `kits/` fails lint.
 - `git grep` finds no game content (rooms, songs, sprites) under `engine/` or `kits/` outside test
   fixtures.
+
+_(Done. What was built and the choices made are in [BUILD-LOG.md](BUILD-LOG.md#engine-02).)_
 
 **Out of scope:** new features, new kits, any change to how the demo plays.
 

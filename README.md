@@ -9,6 +9,7 @@ own version line (Worlds Within 0.1) only after Engine 1.0. See:
 
 - [docs/DESIGN.md](docs/DESIGN.md): what the game is and the decisions so far
 - [docs/ROADMAP.md](docs/ROADMAP.md): the planned releases
+- [docs/BUILD-LOG.md](docs/BUILD-LOG.md): what each release built and the choices made
 - [docs/design/conversation.md](docs/design/conversation.md): the original design conversation
 - [docs/research/prior-art.md](docs/research/prior-art.md): other LLM-first engines and tools, and what to borrow
 
