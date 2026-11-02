@@ -24,3 +24,46 @@ export {
   sinFixed,
   wrapAngle,
 } from './math';
+export {
+  Construction,
+  Health,
+  Inventory,
+  Member,
+  Owner,
+  Patrol,
+  Position,
+  ROLES,
+  STANDARD_COMPONENTS,
+  Squad,
+  Worker,
+  inventoryAdd,
+} from './components';
+export type {
+  ConstructionData,
+  HealthData,
+  InventoryData,
+  MemberData,
+  OwnerData,
+  PatrolData,
+  PositionData,
+  Role,
+  SquadData,
+  WorkerData,
+} from './components';
+export { applyLosses, joinSquad, lossOrder, pickMembers, squadMembers, squadStrength } from './squad';
+export type { SquadMember } from './squad';
+export {
+  GROUND,
+  Terrain,
+  cellAt,
+  cellIndex,
+  flatTerrain,
+  heightAt,
+  inBounds,
+  moveCost,
+  passable,
+  terrainEntity,
+  terrainOf,
+  typeAt,
+} from './terrain';
+export type { TerrainData, TerrainType } from './terrain';

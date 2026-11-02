@@ -10,6 +10,10 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   Zod schema its data must match.
 - `world.ts`: `createWorld(seed, { components?, systems? })` -> `World`.
 - `math.ts`: deterministic integer and fixed-point maths (see "Maths" below).
+- `components.ts`: the standard components (see "Standard components" below), `STANDARD_COMPONENTS`
+  and `inventoryAdd`.
+- `squad.ts`: squad helpers (see "Squads" below).
+- `terrain.ts`: the `Terrain` component and its helpers (see "Terrain" below).
 - `index.ts`: the public entry point; import from here outside this folder.
 
 ## The world
@@ -32,6 +36,55 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `rng`, `entities`, and per component kind a list of `[id, data]` in id order), copied from the
   live state. `canonical()` is that snapshot as canonical JSON (`canonicalJson` from
   `engine/core/headless.ts`). Hashing stays in the tools (`node:crypto`); the sim never hashes.
+
+## Standard components
+
+All in `components.ts`, each a `defineComponent` with a Zod schema; `STANDARD_COMPONENTS` lists
+them for `createWorld(seed, { components: STANDARD_COMPONENTS })`. Ids in data (factions, items,
+building kinds) are a letter then letters, digits, `_` or `-`; entity ids are positive integers.
+
+- `Position` `{ x, y, z }`: integer cell coordinates; `z` (the level stood on) defaults to 0.
+- `Health` `{ hp, max }`: integers, `0 <= hp <= max`, `max >= 1`.
+- `Owner` `{ faction }`: a faction id.
+- `Inventory` `{ [item]: count }`: integer counts `>= 0`, stored with keys sorted (the schema
+  re-sorts them). `inventoryAdd(world, id, item, delta)` changes a count, drops zeros, refuses to
+  go below 0.
+- `Construction` `{ kind, progress, work, done }`: `0 <= progress <= work`, `work >= 1`, `done`
+  true exactly when `progress === work`.
+- `Worker` `{ job, rate }`: the entity being worked on (or null) and work per tick (`>= 1`).
+- `Patrol` `{ waypoints, index }`: at least one `{ x, y, z }` waypoint; `index` points at one.
+- `Squad` `{ strength, captain, members }` and `Member` `{ name, squad, role }`: see "Squads".
+
+## Squads
+
+A squad is one number for the RTS view and still names its people. `Squad.strength` counts
+everyone; `Squad.members` are the named people (entities with `Member`), unique and ascending,
+never more than the strength; `captain` is one of them or null. The rest are unnamed rank and file.
+`Member.role` is `regular`, `hero` or `captain` (`ROLES`).
+
+- `squadStrength(world, squad)`: the one number.
+- `squadMembers(world, squad)`: `{ id, name, role }[]`, ascending by id.
+- `pickMembers(world, squad, n, rng)`: `n` named people drawn with `rng` (use `world.rng` in a
+  system) from the id-ordered list, returned ascending by id; same RNG state, same people.
+- `joinSquad(world, squad, person)`: adds a named person, strength + 1; a new captain demotes the
+  old one to hero.
+- `applyLosses(world, squad, n)`: strength - n (not below 0). **Loss order:** unnamed people go
+  first; named people leave only when strength drops below their number, regulars first, then
+  heroes, the captain last, and within a role the highest id (newest) first (`lossOrder`). No
+  randomness. People who leave stay in the world with `squad: null`; their fate is the caller's
+  rule. Returns their ids in leaving order.
+
+## Terrain
+
+`Terrain` (in `terrain.ts`) is a component held by exactly one entity of the world, so it is in
+every snapshot and save. `{ width, height, types, elevation, cells }`: `types` is a list of
+`{ name, cost, passable }` (integer cost `>= 1`); `elevation` (integers) and `cells` (indexes into
+`types`) list every cell row by row (`index = y * width + x`). `flatTerrain(w, h, type?)` builds
+flat ground. Helpers: `terrainOf(world)` / `terrainEntity(world)`, `heightAt(t, x, y)`,
+`typeAt`, `moveCost(t, x, y)` (the type's cost, or null when impassable or off the grid),
+`passable`, `inBounds`, `cellIndex`, `cellAt`. Height is data only in 0.8 (item 101): it changes
+no cost and there is no line of sight. Line-of-sight and height rules are for 0.9 onwards, in
+integer maths, here in `engine/sim`.
 
 ## Maths
 
@@ -68,4 +121,5 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   rounded by IEEE 754), `fround`, `imul`. Prefer integers for positions and amounts anyway.
 - Component data is plain JSON-safe data: no classes, `Map`, `Set`, functions, `undefined` or
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
-- Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `math.test.ts`).
+- Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `math.test.ts`,
+  `components.test.ts`, `squad.test.ts`, `terrain.test.ts`).
