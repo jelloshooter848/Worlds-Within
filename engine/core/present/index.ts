@@ -17,6 +17,14 @@ export type {
   Presenter,
 } from './types';
 export { isFullMap } from './types';
+export {
+  cameraShake,
+  cameraTarget,
+  CameraFollower,
+  type CameraFollowerOptions,
+  type CameraMap,
+  type CameraPoint,
+} from './camera';
 export { freezeFrame } from './freeze';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';

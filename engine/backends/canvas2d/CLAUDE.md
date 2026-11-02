@@ -23,7 +23,9 @@ canvas, none in Node). Each `present(frame)`, in order:
   `effect` (`flash` full-screen, `tint` translucent full-screen, `particles` from the event's
   `x`/`y` or its `entity`'s centre, `shake` a camera wobble), timed by `frame.frame` and lasting
   `ticks`. A frame with the same `frame` number as the last one does not replay its events.
-- Camera (state kept in the presenter only: never in a kit, a frame or a hash). Target: the
+- Camera: the framing maths is `CameraFollower` in `@engine/core/present` (`camera.ts`), shared
+  with the 3D backend; change it there, not here. The presenter keeps its own instance (state in
+  the presenter only: never in a kit, a frame or a hash) and adds `cameraShake` on top. Target: the
   hint's `follow` entity (by id, its box centre) when it is in the frame, else the hint's `x`/`y`,
   else the skin's `camera.follow` (entity id, then kind), else none (the map's top-left).
   `deadzone` and `lerp`: the hint's, else the skin's, else 0x0 and 1. The deadzone is a `w` x `h`

@@ -69,6 +69,19 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
     left-facing entity without a `left` frame uses `right` mirrored when `flipFacing`; else
     `down`, else the first given). An unknown kind or a mesh entry gives `frame: null`: draw a
     `fallbackColor` box (`DEFAULT_FALLBACK_COLOR` when the skin gives none).
+- `camera.ts`: camera framing shared by every backend, so 2D and 3D frame the same world point.
+  `CameraFollower` (`new CameraFollower({ clamp? })`, default clamp on) keeps one camera's state;
+  `update(frame, skin.camera, size, map)` returns its top-left in whole world pixels (`map` is the
+  shown map's `{ id, cols, rows, tileSize }`, or null). Target: the hint's `follow` entity (by id,
+  its box centre) when in the frame, else the hint's `x`/`y`, else the skin's `camera.follow`
+  (entity id, then kind), else none (top-left 0, 0). `deadzone` and `lerp`: the hint's, else the
+  skin's, else 0x0 and 1. Past the deadzone the camera moves just enough to put the target back on
+  its edge. Lerp is 1/256 fixed point (`Math.trunc`, at least 1 px, so it always arrives); 1
+  snaps, 0 holds. The first frame, a new map id, a frame with no target and a `reset()` snap; a
+  repeated `frame` number does not move it. Clamp: the hint's `bounds`, else the map; an area
+  smaller than the picture is centred. `cameraShake(frame, extra)` is the whole-pixel shake (the
+  hint's `shake` plus `extra`, flipping side each frame), added by the backend and never stored.
+  The follower lives in a presenter only: never in a kit, a frame or a hash.
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
@@ -92,4 +105,7 @@ palettes, sounds and frames are cross-file errors, and `resolveSkinFrame` picks 
 frames by `t`, handles facings and flips, and falls back for unknown kinds. Its 3D part covers a
 `three` skin with primitives and compound meshes, unknown mesh ids (`missing_ref`), 2D/3D fields
 on the wrong backend, the demo and platformer-lab canvas2d skins still validating,
-`resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. Run with `pnpm test`.
+`resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `camera.test.ts` covers
+`CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
+small-area centring, snap on a new map id, repeated frames, `reset`) and `cameraShake`. Run with
+`pnpm test`.

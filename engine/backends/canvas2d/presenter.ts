@@ -3,6 +3,8 @@ import { transformed, translucent, type Renderer } from '@engine/core/gfx/render
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import {
+  cameraShake,
+  CameraFollower,
   isFullMap,
   resolveSkinFrame,
   type DeepReadonly,
@@ -99,11 +101,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   private effects: ActiveEffect[] = [];
   /** The last frame whose events were handled, so a frame shown twice plays its sounds once. */
   private lastEvents: number | null = null;
-  /** Camera state (presentation only): the top-left in whole world pixels, without shake. */
-  private cam: { x: number; y: number } | null = null;
-  /** The frame number and map id the camera was last framed for. */
-  private camFrame: number | null = null;
-  private camMap: string | null = null;
+  /** Camera state (presentation only): never in a kit, a frame or a hash. */
+  private readonly camera: CameraFollower;
 
   constructor(
     target: Renderer | Ctx,
@@ -114,6 +113,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.r = isRenderer(target) ? target : new CanvasRenderer(target);
     this.opts = opts;
     this.size = opts.size;
+    this.camera = new CameraFollower({ clamp: opts.clamp !== false });
   }
 
   resize(size: ScreenSize): void {
@@ -158,10 +158,8 @@ export class SkinnedCanvasPresenter implements Presenter {
 
   /** Shake from the frame's camera hint and from shake effects, as a whole-pixel offset. */
   private shake(frame: Frame): number {
-    let strength = frame.camera?.shake ?? 0;
-    for (const a of this.effects) if (a.effect.kind === 'shake') strength += a.effect.size ?? 2;
-    if (strength <= 0) return 0;
-    return Math.round(strength) * (frame.frame % 2 === 0 ? 1 : -1);
+    const sizes = this.effects.filter((a) => a.effect.kind === 'shake').map((a) => a.effect.size ?? 2);
+    return cameraShake(frame, sizes);
   }
 
   private drawEffects(tick: number, camX: number, camY: number, size: ScreenSize): void {
@@ -191,95 +189,13 @@ export class SkinnedCanvasPresenter implements Presenter {
   // ---- Camera ----
 
   /**
-   * The world pixel at the picture's top-left, with shake added. See `frameCamera` for the
-   * framing; a frame shown twice (the same `frame` number) does not move the camera again.
+   * The world pixel at the picture's top-left, with shake added. The framing (follow, deadzone,
+   * lerp, clamp) is `CameraFollower` in `@engine/core/present`, shared with the 3D backend.
    */
   private cameraOffset(frame: Frame, size: ScreenSize): { x: number; y: number } {
-    if (this.cam === null || this.camFrame !== frame.frame) {
-      this.cam = this.frameCamera(frame, size);
-      this.camFrame = frame.frame;
-    }
-    return { x: this.cam.x + this.shake(frame), y: this.cam.y };
-  }
-
-  /**
-   * One frame of camera framing, in whole pixels (top-left of the picture).
-   *
-   * - Target: the hint's `follow` entity (by id) when it is in the frame, else the hint's `x`/`y`,
-   *   else the skin's `camera.follow` (an entity id, else a kind), else none (the map's top-left).
-   *   An entity's target point is its box centre.
-   * - `deadzone` and `lerp`: the hint's own, else the skin's, else none (0x0) and 1.
-   * - Deadzone: a `w` x `h` box round the picture's centre the target moves in without
-   *   scrolling; past its edge the camera moves just enough to put the target back on the edge.
-   * - Lerp: the camera closes `lerp` of the gap to that position each frame, in whole pixels and
-   *   1/256 fixed point (at least 1 px while there is a gap, so it always arrives); 1 snaps, 0
-   *   holds still. The first frame, a new map id and a frame with no target always snap.
-   * - Clamp (unless `clamp` is false): the view stays inside the hint's `bounds`, else the map;
-   *   an area smaller than the picture is centred on that axis.
-   */
-  private frameCamera(frame: Frame, size: ScreenSize): { x: number; y: number } {
-    const hint = frame.camera;
-    const skinCam = this.skin.camera;
-    const center = this.cameraTarget(frame);
-    const mapId = this.mapVisible ? (this.shown?.map.id ?? null) : null;
-    const prev = this.cam;
-    const snap = prev === null || center === null || mapId !== this.camMap;
-    this.camMap = mapId;
-
-    const deadzone = hint?.deadzone ?? skinCam?.deadzone ?? { w: 0, h: 0 };
-    const lerp = lerpStep(hint?.lerp ?? skinCam?.lerp ?? 1);
-    const area = this.clampArea(frame);
-    const axis = (
-      target: number | undefined,
-      from: number | undefined,
-      view: number,
-      dz: number,
-      start: number,
-      extent: number,
-    ) => {
-      // The camera that would centre the target, then the deadzone's pull on it.
-      let want = target === undefined ? 0 : Math.round(target - view / 2);
-      if (!snap && from !== undefined && target !== undefined) {
-        const offset = target - view / 2 - from;
-        const half = dz / 2;
-        if (offset > half) want = Math.round(target - view / 2 - half);
-        else if (offset < -half) want = Math.round(target - view / 2 + half);
-        else want = from;
-      }
-      if (area) want = clampAxis(want, start, extent, view);
-      let at = snap || from === undefined ? want : approach(from, want, lerp);
-      if (area) at = clampAxis(at, start, extent, view);
-      return at;
-    };
-    return {
-      x: axis(center?.x, prev?.x, size.width, deadzone.w, area?.x ?? 0, area?.w ?? 0),
-      y: axis(center?.y, prev?.y, size.height, deadzone.h, area?.y ?? 0, area?.h ?? 0),
-    };
-  }
-
-  /** The world point to keep in view (see `frameCamera`), or null when there is none. */
-  private cameraTarget(frame: Frame): { x: number; y: number } | null {
-    const centre = (e: DeepReadonly<PresentEntity>) => ({ x: e.x + e.w / 2, y: e.y + e.h / 2 });
-    const hint = frame.camera;
-    if (hint) {
-      const followed =
-        hint.follow === undefined ? undefined : frame.entities.find((e) => e.id === hint.follow);
-      return followed ? centre(followed) : { x: hint.x, y: hint.y };
-    }
-    const follow = this.skin.camera?.follow;
-    if (follow === undefined) return null;
-    const target =
-      frame.entities.find((e) => e.id === follow) ?? frame.entities.find((e) => e.kind === follow);
-    return target ? centre(target) : null;
-  }
-
-  /** The world box the view is kept inside, or null when nothing clamps it. */
-  private clampArea(frame: Frame): { x: number; y: number; w: number; h: number } | null {
-    if (this.opts.clamp === false) return null;
-    const bounds = frame.camera?.bounds;
-    if (bounds) return { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h };
-    const map = this.mapVisible ? this.shown?.map : undefined;
-    return map ? { x: 0, y: 0, w: map.cols * map.tileSize, h: map.rows * map.tileSize } : null;
+    const map = this.mapVisible ? (this.shown?.map ?? null) : null;
+    const cam = this.camera.update(frame, this.skin.camera, size, map);
+    return { x: cam.x + this.shake(frame), y: cam.y };
   }
 
   // ---- Map ----
@@ -404,29 +320,4 @@ export class SkinnedCanvasPresenter implements Presenter {
 /** Entities by `layer` (0 when absent), keeping list order on ties (a stable sort), as `PresentFrame` says. */
 function depthOrder(entities: readonly DeepReadonly<PresentEntity>[]): DeepReadonly<PresentEntity>[] {
   return [...entities].sort((a, b) => (a.layer ?? 0) - (b.layer ?? 0));
-}
-
-/**
- * The whole-pixel top-left on one axis that keeps a `view`-wide picture inside the area from
- * `start`, `extent` wide; an area narrower than the picture is centred.
- */
-function clampAxis(at: number, start: number, extent: number, view: number): number {
-  if (extent <= view) return Math.round(start + (extent - view) / 2);
-  return Math.min(Math.max(at, Math.ceil(start)), Math.floor(start + extent - view));
-}
-
-/** Lerp as a fraction of 256 (fixed point): 256 snaps, 0 holds; any positive lerp moves. */
-function lerpStep(lerp: number): number {
-  if (lerp >= 1) return 256;
-  if (lerp <= 0) return 0;
-  return Math.max(1, Math.round(lerp * 256));
-}
-
-/** One frame of lerp from `from` to `to` (whole pixels): `step`/256 of the gap, at least 1 px. */
-function approach(from: number, to: number, step: number): number {
-  const gap = to - from;
-  if (gap === 0 || step >= 256) return to;
-  if (step === 0) return from;
-  const move = Math.trunc((gap * step) / 256);
-  return from + (move === 0 ? Math.sign(gap) : move);
 }

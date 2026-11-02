@@ -42,6 +42,12 @@ Import from `@engine/core/present` (`index.ts`).
   `tilt`, `layerDepth` (z px per entity `layer`) and minimal `lights` (`DEFAULT_CAMERA3D`,
   `resolveCamera3d(skin)`). `resolveMeshParts(skin, entry, box)` turns an entry into the
   `MeshPart` list a 3D backend builds, so the backend and tests read the text the same way.
+- Camera framing (`camera.ts`): `CameraFollower` (`new CameraFollower({ clamp? })`,
+  `update(frame, skin.camera, size, map)` gives the camera's whole-pixel world top-left;
+  `reset()`) is the one copy of the follow, deadzone, 1/256 fixed-point lerp and clamp maths, so
+  the 2D and 3D backends frame the same point. `cameraShake(frame, extra)` is the shake offset,
+  added on top and never stored; `cameraTarget(frame, skin.camera)` the point to keep in view.
+  Each presenter owns its follower: camera state is never in a kit, a frame or a hash.
 
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs
@@ -57,4 +63,5 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `engine/core/present/present.test.ts`, run with `pnpm test`: a fixture frame passes the schema,
 `freezeFrame` makes mutation throw, and `MapTracker` sends the map only when it must;
 `engine/core/present/skin.test.ts` covers the skin schema (2D and 3D), its cross-file checks,
-`resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`.
+`resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`; `engine/core/present/camera.test.ts`
+covers `CameraFollower` and `cameraShake`.
