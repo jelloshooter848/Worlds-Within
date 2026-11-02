@@ -1,0 +1,6 @@
+{
+  "id": "level-3",
+  "profile": "hopper",
+  "scroll": "right",
+  "spawns": { "w": { "actor": "walker" }, "l": { "actor": "ledge-walker" } }
+}

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 78.** (Last used: 77.)
+**Next unused number: 80.** (Last used: 79.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -211,3 +211,11 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **77.** Gap G8: tuning a run file needed a throwaway script to print a trace of a few paths over
   a tick range; `dump` shows one tick per call. Add a CLI `trace` command (or `dump --ticks`)
   now, or leave it for the 0.14 creator tools?
+- **78.** Gap G9: a run file always starts at the game's first level, so `level-3.run.json` replays
+  levels 1 and 2 first (level-3 starts at tick 1161) and any change to an early level moves the
+  ticks of every later run file. Add a start level to run files (say `"start": { "stage": 2 }`,
+  passed to `createGame` and the kit's `LevelSequence`) in 0.7, or leave it for the 0.14 creator
+  tools?
+- **79.** Gap G10: placing things by column in a 56-60 character map row is easy to get wrong
+  (the map files have no ruler), and `set <map> rows.R.C` fixes one cell per call. Is that enough
+  until the 0.14 creator tools (a region `set`, or a ruler in `get`), or should it come sooner?

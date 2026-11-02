@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { canonicalJson } from '@engine/core/headless';
-import { ScriptedInput } from '@engine/core/input/scripted-input';
+import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { loadTest, mustLoad, testStages } from './content';
 import { LEVEL_PAUSE } from '@kits/platformer';
@@ -33,17 +34,23 @@ describe('platformer test content', () => {
 
   it('plays its levels in id order, numbers compared as numbers, each with its own profile', () => {
     const stages = testStages(content);
-    expect(stages.map((s) => s.level.id)).toEqual(['level-1']);
+    expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3']);
     expect(stages.every((s) => s.profile.id === 'hopper')).toBe(true);
   });
 
-  it('orders level-10 after level-2', () => {
+  it('orders level-10 after level-9', () => {
     const extra = (id: string) => ({
       [`content/levels/${id}.json`]: FILES['content/levels/level-1.json']!.replace('"level-1"', `"${id}"`),
       [`content/levels/${id}.map.txt`]: FILES['content/levels/level-1.map.txt']!,
     });
-    const more = mustLoad(loadTest({ ...FILES, ...extra('level-10'), ...extra('level-2') }));
-    expect(testStages(more).map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-10']);
+    const more = mustLoad(loadTest({ ...FILES, ...extra('level-10'), ...extra('level-9') }));
+    expect(testStages(more).map((s) => s.level.id)).toEqual([
+      'level-1',
+      'level-2',
+      'level-3',
+      'level-9',
+      'level-10',
+    ]);
   });
 
   it('reports a broken level field with the file and the field', () => {
@@ -67,6 +74,22 @@ describe('platformer test headless game', () => {
 
   it('gives equal snapshots on two runs from the same seed', () => {
     expect(play(300)).toEqual(play(300));
+  });
+
+  it("plays its three levels start to goal, in order, with the level-3 run file's input", () => {
+    const runFile = JSON.parse(readFileSync(new URL('./runs/level-3.run.json', import.meta.url), 'utf8')) as {
+      ticks: number;
+      input: InputScript;
+    };
+    const game = createGame(content, 1);
+    const input = new ScriptedInput(runFile.input);
+    const cleared: string[] = [];
+    for (let t = 0; t < runFile.ticks; t++) {
+      input.next();
+      game.step(input);
+      if (game.events.some((e) => e.type === 'cleared')) cleared.push(game.world.level.id);
+    }
+    expect(cleared).toEqual(['level-1', 'level-2', 'level-3']);
   });
 
   it('starts the failed level afresh after LEVEL_PAUSE ticks', () => {

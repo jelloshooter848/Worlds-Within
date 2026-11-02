@@ -29,6 +29,31 @@
   "actorGravity": 1024,
   "actorMaxFall": 16384,
   "actors": {
-    "walker": { "speed": 1792, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true }
+    "walker": { "speed": 1792, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true },
+    "ledge-walker": {
+      "speed": 1792,
+      "turnAt": "ledges",
+      "stompable": true,
+      "kickable": false,
+      "harms": true
+    },
+    "shell": {
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": true,
+      "stompInto": "shell",
+      "kickable": true,
+      "kickSpeed": 12288,
+      "harms": true
+    },
+    "shell-walker": {
+      "box": { "w": 16, "h": 24 },
+      "speed": 1792,
+      "turnAt": "walls",
+      "stompable": true,
+      "stompInto": "shell",
+      "kickable": false,
+      "harms": true
+    }
   }
 }
