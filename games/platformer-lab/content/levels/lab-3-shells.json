@@ -1,0 +1,6 @@
+{
+  "id": "lab-3-shells",
+  "profile": "lab-runner",
+  "scroll": "right",
+  "spawns": { "s": { "actor": "shell" }, "w": { "actor": "walker" }, "k": { "actor": "shell-walker" } }
+}

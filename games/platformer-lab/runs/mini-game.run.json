@@ -1,0 +1,312 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 3015,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 72,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 90,
+        "hold": ["right"]
+      },
+      {
+        "frame": 96,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 125,
+        "hold": ["right"]
+      },
+      {
+        "frame": 160,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 175,
+        "hold": ["right"]
+      },
+      {
+        "frame": 226,
+        "hold": []
+      },
+      {
+        "frame": 286,
+        "hold": ["left"]
+      },
+      {
+        "frame": 302,
+        "hold": ["right"]
+      },
+      {
+        "frame": 361,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 401,
+        "hold": ["right"]
+      },
+      {
+        "frame": 421,
+        "hold": []
+      },
+      {
+        "frame": 446,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 476,
+        "hold": ["left"]
+      },
+      {
+        "frame": 491,
+        "hold": ["right"]
+      },
+      {
+        "frame": 604,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 616,
+        "hold": ["right"]
+      },
+      {
+        "frame": 672,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 696,
+        "hold": ["right"]
+      },
+      {
+        "frame": 756,
+        "hold": ["left"]
+      },
+      {
+        "frame": 786,
+        "hold": ["right"]
+      },
+      {
+        "frame": 964,
+        "hold": []
+      },
+      {
+        "frame": 1026,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 1054,
+        "hold": ["left"]
+      },
+      {
+        "frame": 1099,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1260,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1275,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1481,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1496,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 1575,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 1595,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 1647,
+        "hold": []
+      },
+      {
+        "frame": 1707,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1907,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1922,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1982,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1998,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2097,
+        "hold": []
+      },
+      {
+        "frame": 2257,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2325,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 2340,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2678,
+        "hold": []
+      },
+      {
+        "frame": 2738,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2798,
+        "hold": ["right", "attack"]
+      },
+      {
+        "frame": 2799,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2838,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2898,
+        "hold": ["left", "attack"]
+      },
+      {
+        "frame": 2899,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3005,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 2738,
+      "path": "level",
+      "op": "eq",
+      "value": "lab-5-trigger"
+    },
+    {
+      "tick": 2790,
+      "path": "miniGame.game",
+      "op": "eq",
+      "value": "stop-bar"
+    },
+    {
+      "tick": 2790,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "stop-bar",
+        "attempt": 1
+      }
+    },
+    {
+      "tick": 2799,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "stop-bar",
+        "result": "fail"
+      }
+    },
+    {
+      "tick": 2799,
+      "path": "miniGame",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 2799,
+      "path": "triggers.0.attempts",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 2883,
+      "path": "miniGame.state.attempt",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 2899,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "stop-bar",
+        "result": "pass"
+      }
+    },
+    {
+      "tick": 2899,
+      "path": "coins",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 2899,
+      "path": "tiles",
+      "op": "eq",
+      "value": [
+        {
+          "col": 5,
+          "row": 8,
+          "cell": "empty"
+        },
+        {
+          "col": 9,
+          "row": 8,
+          "cell": "empty"
+        }
+      ]
+    },
+    {
+      "tick": 3005,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 3005,
+      "path": "coins",
+      "op": "eq",
+      "value": 5
+    }
+  ],
+  "invariants": [],
+  "hashEvery": 60,
+  "guards": ["mini-games"]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "lab-5-trigger",
+  "profile": "lab-runner",
+  "scroll": "none",
+  "triggers": [
+    {
+      "game": "stop-bar",
+      "params": { "cells": 16, "zone": 3, "every": 4, "ticks": 240 },
+      "pass": ["coins:5", "open:9:8"],
+      "fail": ["respawn"]
+    }
+  ]
+}

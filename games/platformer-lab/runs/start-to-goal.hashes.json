@@ -1,0 +1,25 @@
+{
+  "run": "games/platformer-lab/runs/start-to-goal.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "9ed173e616121d27"
+    },
+    {
+      "tick": 60,
+      "hash": "522eeb1256650932"
+    },
+    {
+      "tick": 120,
+      "hash": "50397aac3f28ba17"
+    },
+    {
+      "tick": 180,
+      "hash": "9c9848d8d2b9a2b2"
+    },
+    {
+      "tick": 240,
+      "hash": "7137cbde89f0fd44"
+    }
+  ]
+}

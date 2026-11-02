@@ -214,8 +214,9 @@ guardedBy }], unguarded }`. Exit 0 when every run passes as it is and, for a str
   `tests/runs/run-files.test.ts` plays every `games/**/runs/*.run.json` twice, requires it to pass
   and both hash lists to equal the golden file, so CI checks them. After a change meant to change
   the state, regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit the files.
-- `tests/runs/backend-parity.test.ts` plays every demo run file presenting every tick through the
-  null and the Canvas2D backends and requires both hash lists to equal the golden file.
+- `tests/runs/backend-parity.test.ts` plays every demo and platformer-lab run file presenting
+  every tick through the null and the Canvas2D backends and requires both hash lists to equal the
+  golden file.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`

@@ -20,6 +20,7 @@
 - [kits/topdown](docs/modules/kits-topdown.md): gameplay rules for a room-based top-down action game, with named rules a run can switch off; `presentWorld` describes each frame (map, entities, HUD status, events, camera hint) and the kit never draws
 - [kits/platformer](docs/modules/kits-platformer.md): gameplay rules for a side-scrolling platformer (Engine 0.5, in progress): `level` files (a JSON header plus a `.map.txt` text grid) and physics `profile` files in whole sub-pixel units with data-set actor types; strict mutant checks; presentation frames (`presentWorld`); the kit never draws
 - [games/demo](docs/modules/games-demo.md): the proof-of-life demo game built on the top-down kit, drawn by the Canvas2D backend through its skin (`content/skins/canvas2d.json`)
+- [games/platformer-lab](docs/modules/games-platformer-lab.md): the platformer kit's test lab: the kit's fixture level and five rule levels played in turn, run files that guard every kit rule, a placeholder Canvas2D skin and a tiny test mini game
 
 ## Reference
 

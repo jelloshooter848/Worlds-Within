@@ -1,0 +1,317 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 975,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 72,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 90,
+        "hold": ["right"]
+      },
+      {
+        "frame": 96,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 125,
+        "hold": ["right"]
+      },
+      {
+        "frame": 160,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 175,
+        "hold": ["right"]
+      },
+      {
+        "frame": 226,
+        "hold": []
+      },
+      {
+        "frame": 286,
+        "hold": ["left"]
+      },
+      {
+        "frame": 302,
+        "hold": ["right"]
+      },
+      {
+        "frame": 361,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 401,
+        "hold": ["right"]
+      },
+      {
+        "frame": 421,
+        "hold": []
+      },
+      {
+        "frame": 446,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 476,
+        "hold": ["left"]
+      },
+      {
+        "frame": 491,
+        "hold": ["right"]
+      },
+      {
+        "frame": 604,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 616,
+        "hold": ["right"]
+      },
+      {
+        "frame": 672,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 696,
+        "hold": ["right"]
+      },
+      {
+        "frame": 756,
+        "hold": ["left"]
+      },
+      {
+        "frame": 786,
+        "hold": ["right"]
+      },
+      {
+        "frame": 964,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 286,
+      "path": "level",
+      "op": "eq",
+      "value": "lab-1-moves"
+    },
+    {
+      "tick": 295,
+      "path": "player.x",
+      "op": "eq",
+      "value": 1536
+    },
+    {
+      "tick": 302,
+      "path": "player.x",
+      "op": "eq",
+      "value": 1536
+    },
+    {
+      "tick": 302,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 386,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 17920
+    },
+    {
+      "tick": 391,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 16384
+    },
+    {
+      "tick": 394,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 17920
+    },
+    {
+      "tick": 398,
+      "path": "player.x",
+      "op": "eq",
+      "value": 36752
+    },
+    {
+      "tick": 403,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 10276
+    },
+    {
+      "tick": 403,
+      "path": "player.runTimer",
+      "op": "eq",
+      "value": 8
+    },
+    {
+      "tick": 409,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 10496
+    },
+    {
+      "tick": 412,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 10080
+    },
+    {
+      "tick": 436,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 5088
+    },
+    {
+      "tick": 445,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 3216
+    },
+    {
+      "tick": 478,
+      "path": "player.skidding",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 481,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 7768
+    },
+    {
+      "tick": 490,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 4024
+    },
+    {
+      "tick": 605,
+      "path": "player.tier",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 605,
+      "path": "player.vy",
+      "op": "eq",
+      "value": -15904
+    },
+    {
+      "tick": 609,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "bump",
+        "col": 30,
+        "row": 6
+      }
+    },
+    {
+      "tick": 609,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 480
+    },
+    {
+      "tick": 616,
+      "path": "player.y",
+      "op": "eq",
+      "value": 34994
+    },
+    {
+      "tick": 686,
+      "path": "player.y",
+      "op": "eq",
+      "value": 25258
+    },
+    {
+      "tick": 710,
+      "path": "player.y",
+      "op": "eq",
+      "value": 24576
+    },
+    {
+      "tick": 710,
+      "path": "player.onGround",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 726,
+      "path": "player.y",
+      "op": "eq",
+      "value": 24673
+    },
+    {
+      "tick": 766,
+      "path": "player.skidding",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 786,
+      "path": "scrollX",
+      "op": "eq",
+      "value": 151870
+    },
+    {
+      "tick": 786,
+      "path": "player.x",
+      "op": "eq",
+      "value": 182239
+    },
+    {
+      "tick": 806,
+      "path": "scrollX",
+      "op": "eq",
+      "value": 151870
+    },
+    {
+      "tick": 964,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 964,
+      "path": "player.x",
+      "op": "eq",
+      "value": 244458
+    }
+  ],
+  "invariants": [
+    {
+      "path": "player.hp",
+      "op": "eq",
+      "value": 2
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "fall-cap",
+    "run-speed",
+    "run-hold",
+    "friction",
+    "skid",
+    "one-way-platforms",
+    "ceiling-bump",
+    "scroll-lock"
+  ]
+}

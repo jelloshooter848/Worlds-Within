@@ -1,0 +1,129 @@
+; The lab's HUD font: one 8x8 frame per character (digits and x), named by the character.
+palette lab-placeholders
+legend . clear
+legend s 0
+legend g 1
+legend k 2
+legend l 3
+legend q 4
+legend u 5
+legend w 6
+legend y 7
+legend G 8
+legend D 9
+legend r 10
+legend b 11
+legend m 12
+legend h 13
+legend p 14
+legend o 15
+
+frame 0
+.wwwww..
+ww...ww.
+ww..www.
+ww.w.ww.
+www..ww.
+ww...ww.
+.wwwww..
+........
+
+frame 1
+...ww...
+..www...
+...ww...
+...ww...
+...ww...
+...ww...
+.wwwwww.
+........
+
+frame 2
+.wwwww..
+ww...ww.
+.....ww.
+...www..
+.www....
+ww......
+wwwwwww.
+........
+
+frame 3
+.wwwww..
+ww...ww.
+.....ww.
+..wwww..
+.....ww.
+ww...ww.
+.wwwww..
+........
+
+frame 4
+....www.
+...wwww.
+..ww.ww.
+.ww..ww.
+wwwwwww.
+.....ww.
+.....ww.
+........
+
+frame 5
+wwwwwww.
+ww......
+wwwwww..
+.....ww.
+.....ww.
+ww...ww.
+.wwwww..
+........
+
+frame 6
+..wwww..
+.ww.....
+ww......
+wwwwww..
+ww...ww.
+ww...ww.
+.wwwww..
+........
+
+frame 7
+wwwwwww.
+ww...ww.
+....ww..
+...ww...
+..ww....
+..ww....
+..ww....
+........
+
+frame 8
+.wwwww..
+ww...ww.
+ww...ww.
+.wwwww..
+ww...ww.
+ww...ww.
+.wwwww..
+........
+
+frame 9
+.wwwww..
+ww...ww.
+ww...ww.
+.wwwwww.
+.....ww.
+....ww..
+.wwww...
+........
+
+frame x
+........
+ww...ww.
+.ww.ww..
+..www...
+.ww.ww..
+ww...ww.
+........
+........

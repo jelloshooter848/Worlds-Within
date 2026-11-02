@@ -1,6 +1,6 @@
 ---
 name: scaffold-game
-description: Make a new game in games/<name>/ on the top-down kit (game.json, one room, a skin, headless and view entries, a browser page, a run file with golden hashes, agent docs) that passes `pnpm cli validate` and `pnpm cli run`. Use when asked to start a new game, sample game or test game.
+description: Make a new game in games/<name>/ on the top-down kit, or on the platformer kit (its own section) (game.json, one room, a skin, headless and view entries, a browser page, a run file with golden hashes, agent docs) that passes `pnpm cli validate` and `pnpm cli run`. Use when asked to start a new game, sample game or test game.
 ---
 
 # Scaffold a game
@@ -509,6 +509,66 @@ Read each command's exit code (`echo $?`, or `exitCode` in a CLI result); piping
 `tail` or `head` hides it. If `pnpm lint` fails only on formatting, run `pnpm format` and lint again.
 Delete `dist/` after `pnpm build`. `.ww-out/` is the CLI's output folder (capped results, replays,
 screenshots); it is git-ignored and safe to leave or delete.
+
+## Platformer games (the `platformer` kit)
+
+The steps above are for the top-down kit. A game on the platformer kit has the same files with
+these differences; `games/platformer-lab/` is a complete working example of every one.
+
+- `game.json`: `"kit": "platformer"` and the kinds `"level": ["content/levels/*.json"]` and
+  `"profile": ["content/profiles/*.profile.json"]` (keep profiles out of `content/levels/`, or the
+  level glob claims them too), plus `palette`, `sprite` and `skin` as above.
+- A profile, `content/profiles/<id>.profile.json`: the player's movement numbers and the actor
+  types, in whole sub-pixel units. Start from a copy of `kits/platformer/__fixtures__/runner.profile.json`
+  (SMBC's default runner) and change its `id`; every field is in `docs/reference/schemas.md`
+  (`profile`).
+- A level, `content/levels/<id>.json` (`{ "id": "<id>", "profile": "<profile id>", "scroll": "right" }`,
+  plus `spawns`, `blocks` and `triggers` when the map uses them) and `content/levels/<id>.map.txt`:
+  one character per 16x16 tile, all rows the same length, exactly one `@` and at least one `G`.
+  Characters: `.` empty, `#` solid, `B` brick, `?` bump block, `=` one-way platform, `^` hazard,
+  `o` coin, `@` start, `G` goal, `!` mini-game trigger; enemy spawns are characters of your own
+  named in `spawns` (`"w": { "actor": "walker" }`).
+
+  ```text
+  ........................
+  ...............o........
+  .@..........w......##.G.
+  ########....############
+  ```
+
+- The skin maps the kit's kinds (`runner`, `coin`, `goal`, `trigger`, `bump-block` and each actor
+  type of your profiles), their animation states (`RUNNER_ANIMS`, `ACTOR_ANIMS`), the map
+  characters (`PRESENT_TILES`: `. # B ? u = ^`), the events and the HUD values (`coins`, `hp`,
+  `lives`, ...); the full table is in `kits/platformer/CLAUDE.md` (Presentation frames). Give it
+  `"camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 }` so the view
+  follows the runner smoothly (the kit's camera hint adds the scroll lock).
+- `headless.ts`: build the world from the level and its profile and wrap it with the kit's
+  `platformerGame`:
+
+  ```ts
+  import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
+  import type { HeadlessGame, HeadlessOptions } from '@engine/core/headless';
+  import { levelKind, platformerGame, PlatformerWorld, profileKind } from '@kits/platformer';
+
+  export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): HeadlessGame {
+    const level = contentOf(content, levelKind())[0]!.value;
+    const profile = contentOf(content, profileKind()).find((e) => e.value.id === level.profile)!.value;
+    return platformerGame(new PlatformerWorld(level, profile, { seed, disabledRules: opts.disabledRules }));
+  }
+  ```
+
+  Pass `miniGames: [...]` (`MiniGameDef`s, `engine/core/minigame.ts`) when a level has triggers.
+- `view.ts` and the picture: as above, with the kit's `presentWorld(world, events, { state, size })`
+  and a `PlatformerPresentState` per stream of frames (`games/platformer-lab/picture.ts`). No
+  `clamp: false`: the kit's camera hint and the map keep the view inside the level.
+- `main.ts`: as above; with triggers, push `miniGameScene` (`@engine/core/minigame-scene`) over the
+  level scene when `world.miniGame` is set (`games/platformer-lab/scene.ts`).
+- Run files: the snapshot paths are in `kits/platformer/CLAUDE.md` (`player.x`, `coins`,
+  `outcome`, `events`, ...). The platformer kit is **strict**: `pnpm -s cli mutants games/<name> --json`
+  exits 4 until the game's run files together guard every kit rule, so give each run `guards` and
+  assertions on what those rules decide (a position at a tick, a count, an event). `pnpm -s cli run`, `validate` and
+  the four checks do not need `mutants` to pass, so a first one-level game can add the guarding
+  runs later; `games/platformer-lab/CLAUDE.md` (Run files) shows a set that guards every rule.
 
 ## Common mistakes
 

@@ -1,0 +1,6 @@
+{
+  "id": "lab-4-walkers",
+  "profile": "lab-runner",
+  "scroll": "right",
+  "spawns": { "w": { "actor": "walker" }, "l": { "actor": "ledge-walker" } }
+}

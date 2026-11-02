@@ -1,0 +1,16 @@
+{
+  "id": "platformer-lab",
+  "title": "The platformer kit's test lab: the fixture level, then one level per group of rules",
+  "kit": "platformer",
+  "content": {
+    "level": ["content/levels/*.json"],
+    "profile": ["content/profiles/*.profile.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"]
+  },
+  "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
+  "headless": "headless.ts",
+  "view": "view.ts"
+}

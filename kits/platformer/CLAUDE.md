@@ -232,9 +232,9 @@ Rule id (`MINI_GAME_RULES`): `mini-games` (off: a trigger is an empty tile). `mi
 plays a test-only mini game (passes after N ticks of holding attack, fails on left, quits on
 select): a pass (coins, a gate opened, the level goes on to the goal), a fail (`respawn` onto the
 trigger, which waits to be left), a quit with no outcome and a second attempt, equal snapshots on
-two runs, the rule switched off, and the `triggers` schema codes. The `mini-games` rule is not yet
-guarded by a run file (no game uses the kit before `games/platformer-lab`); that game's run files
-must guard it for `pnpm cli mutants` to pass.
+two runs, the rule switched off, and the `triggers` schema codes. `games/platformer-lab`'s
+run files guard it (`runs/mini-game.run.json`) with every other rule, so
+`pnpm cli mutants games/platformer-lab` passes.
 
 ## Presentation frames (`present.ts`)
 

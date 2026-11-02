@@ -1,0 +1,51 @@
+{
+  "id": "runner",
+  "player": {
+    "box": { "w": 12, "h": 16 },
+    "minWalk": 304,
+    "walkAccel": 152,
+    "runAccel": 228,
+    "friction": 208,
+    "skid": 416,
+    "skidTurn": 2304,
+    "maxWalk": 6400,
+    "maxRun": 10496,
+    "runHold": 10,
+    "jumps": [
+      { "below": 4096, "speed": 16384, "holdGravity": 512, "gravity": 1792 },
+      { "below": 9472, "speed": 16384, "holdGravity": 480, "gravity": 1536 },
+      { "speed": 20480, "holdGravity": 640, "gravity": 2304 }
+    ],
+    "jumpBuffer": 4,
+    "maxFall": 18432,
+    "fallReset": 16384,
+    "stompBounce": 16384,
+    "hp": 2,
+    "maxHp": 2,
+    "invulnTicks": 150,
+    "breakBricksAt": 2
+  },
+  "actorGravity": 1024,
+  "actorMaxFall": 16384,
+  "actors": {
+    "walker": { "speed": 2048, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true },
+    "shell-walker": {
+      "box": { "w": 16, "h": 24 },
+      "speed": 2048,
+      "turnAt": "walls",
+      "stompable": true,
+      "stompInto": "shell",
+      "kickable": false,
+      "harms": true
+    },
+    "shell": {
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": true,
+      "stompInto": "shell",
+      "kickable": true,
+      "kickSpeed": 12288,
+      "harms": true
+    }
+  }
+}

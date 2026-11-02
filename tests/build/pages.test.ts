@@ -8,15 +8,17 @@ import { discoverGames, gameListHtml, pageInputs } from '../../build/pages.ts';
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 describe('game page discovery', () => {
-  it('finds games/demo in the repo', () => {
+  it('finds games/demo and games/platformer-lab in the repo', () => {
     const dirs = discoverGames(repoRoot).map((page) => page.dir);
     expect(dirs).toContain('games/demo');
+    expect(dirs).toContain('games/platformer-lab');
   });
 
   it('passes the launcher and every game to the build', () => {
     const inputs = pageInputs(repoRoot);
     expect(inputs.index).toBe(join(repoRoot, 'index.html'));
     expect(inputs['games-demo']).toBe(join(repoRoot, 'games/demo/index.html'));
+    expect(inputs['games-platformer-lab']).toBe(join(repoRoot, 'games/platformer-lab/index.html'));
   });
 
   it('finds games and samples with an index.html, and skips folders without one', () => {
