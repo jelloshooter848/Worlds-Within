@@ -11,7 +11,8 @@
   "invariants": [
     { "path": "sides.red.units", "op": "eq", "value": 4 },
     { "path": "sides.blue.units", "op": "eq", "value": 4 },
-    { "path": "sides.red.stock.gold", "op": "eq", "value": 250 }
+    { "path": "sides.red.stock.gold", "op": "eq", "value": 250 },
+    { "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 }
   ],
   "hashEvery": 20,
   "guards": ["enemy-follows-plan", "enemy-waits-for-trigger"],

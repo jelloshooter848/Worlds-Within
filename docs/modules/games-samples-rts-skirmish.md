@@ -31,7 +31,9 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes.
   `skirmishCanvasPicture`), `view.ts` (`createView`).
 - `runs/battle.run.json` (barracks, soldiers, the raid beaten), `commands.run.json` (the same
   battle through interface actions), `hold.run.json`, `economy.run.json`, each with sync
-  `hashes` and golden `<name>.hashes.json`; together they guard all five kit rules.
+  `hashes` and golden `<name>.hashes.json`; together they guard all five kit rules, with no run weak
+  (`tests/runs/rts-skirmish-mutants.test.ts`; the kit is not strict, so `mutants` alone would not
+  fail).
 
 ## Imports allowed
 

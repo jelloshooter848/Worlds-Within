@@ -21,6 +21,7 @@
   ],
   "assertions": [
     { "tick": 1, "path": "kit.enemy.camp.fired", "op": "eq", "value": 1 },
+    { "tick": 1, "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 },
     { "tick": 10, "path": "sides.red.sites", "op": "eq", "value": 1 },
     { "tick": 10, "path": "sides.red.stock.gold", "op": "eq", "value": 150 },
     { "tick": 30, "path": "sides.red.buildings.barracks", "op": "eq", "value": 1 },

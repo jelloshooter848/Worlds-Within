@@ -21,11 +21,16 @@
   "assertions": [
     { "tick": 1, "path": "ui.selection", "op": "eq", "value": [9] },
     { "tick": 1, "path": "sides.red.sites", "op": "eq", "value": 1 },
+    { "tick": 1, "path": "world.components.Gatherer.2.1.node", "op": "eq", "value": 5 },
+    { "tick": 1, "path": "kit.enemy.camp.fired", "op": "eq", "value": 1 },
+    { "tick": 1, "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 },
     { "tick": 21, "path": "ui.selection", "op": "eq", "value": [] },
     { "tick": 31, "path": "ui.selection", "op": "eq", "value": [7, 8] },
     { "tick": 31, "path": "world.components.Producer.1.1.queue.length", "op": "eq", "value": 3 },
+    { "tick": 31, "path": "world.components.Gatherer.0.1.node", "op": "eq", "value": 4 },
     { "tick": 96, "path": "ui.selection", "op": "eq", "value": [15, 17, 18, 19] },
     { "tick": 101, "path": "kit.nextOrder", "op": "eq", "value": 10 },
+    { "tick": 101, "path": "world.components.Target.4", "op": "eq", "value": [15, { "entity": 10 }] },
     { "tick": 240, "path": "sides.blue.units", "op": "eq", "value": 0 },
     { "tick": 240, "path": "sides.red.unitTypes.soldier", "op": "eq", "value": 2 },
     { "tick": 240, "path": "sides.red.stock.gold", "op": "eq", "value": 215 }

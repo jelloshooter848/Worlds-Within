@@ -136,4 +136,5 @@ kinds through `loadContent`), on the tiny fixture `__fixtures__/world.ts`.
 as a game's glue would, and checks a replay of the recorded player orders gives the same hashes.
 The first game on the kit is `games/samples/rts-skirmish` (Engine 0.9 T11): its run files guard
 all five rules (`mutants games/samples/rts-skirmish`; the interface rules through its interface
-actions).
+actions), with no run weak; the kit is not strict, so `tests/runs/rts-skirmish-mutants.test.ts`
+holds the sample to that.

@@ -18,7 +18,8 @@
   ],
   "invariants": [
     { "path": "sides.blue.units", "op": "eq", "value": 4 },
-    { "path": "sides.red.unitTypes.hero", "op": "eq", "value": 1 }
+    { "path": "sides.red.unitTypes.hero", "op": "eq", "value": 1 },
+    { "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 }
   ],
   "hashEvery": 20,
   "guards": ["enemy-follows-plan", "enemy-waits-for-trigger"],

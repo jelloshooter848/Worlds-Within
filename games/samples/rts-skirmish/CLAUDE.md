@@ -131,7 +131,15 @@ changes the ids of everything after it: re-record the run files (below).
   `sides.red.buildings.barracks`), `kit.enemy.<step>.fired` / `.last` (the plan's progress),
   `kit.nextOrder` and `ui.selection`; `dump` shows the rest (`world.components.<Kind>.<i>.1`).
 - `pnpm -s cli mutants games/samples/rts-skirmish --json` exits 0 with every kit rule guarded
-  (the kit is not strict, but nothing is weak here).
+  and no run weak (`unguarded` and every `runs[].weak` empty). The kit is not strict, so
+  `tests/runs/rts-skirmish-mutants.test.ts` holds the sample to that. A switched-off rule usually
+  changes a sync hash first, and a hash mismatch stops the run without counting as a failed
+  check, so every guard needs an assertion or invariant that fails before the first changed hash
+  (tick 20): `kit.enemy.raid.fired` 0 at tick 1 or as an invariant (`enemy-waits-for-trigger`),
+  `kit.enemy.camp.fired` 1 at tick 1 (`enemy-follows-plan`), and in `commands` worker 9 gathering
+  node 5 at tick 1 and workers 7 and 8 node 4 at tick 31 (`world.components.Gatherer.<i>.1.node`,
+  `command-gathers-resources`) and the hero's `Target` on raider 10 at tick 101
+  (`world.components.Target.4`, `command-attacks-enemies`).
 - Recording a battle: play it with the kit's commands in a throwaway script (`createGame`, then
   `game.rts.issue(draft)` or `game.order({ ui: ... })` at the ticks wanted, `game.step`), print
   `game.rts.recorded()` into the run file's `orders`, read the assertions off `dump`, copy the
