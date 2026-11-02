@@ -172,6 +172,7 @@ export {
   startExperience,
   timeOf,
   unfreezeEvent,
+  worldTimeEntity,
 } from './time';
 export type {
   Commitment,
@@ -210,7 +211,32 @@ export type {
   ResolveResult,
 } from './mission';
 export {
+  OPPORTUNITY_COMPONENTS,
+  OPPORTUNITY_STATUSES,
+  Opportunities,
+  TIME_CAUSE,
+  addOpportunities,
+  applyOpportunityEffect,
+  knowsOpportunity,
+  opportunitiesOf,
+  opportunityGate,
+  opportunityStateSchema,
+  settleOpportunities,
+  takeOpportunity,
+} from './opportunity';
+export type {
+  OpportunitiesData,
+  OpportunitiesView,
+  OpportunityChange,
+  OpportunityRefusal,
+  OpportunityRefused,
+  OpportunityState,
+  OpportunityStatus,
+} from './opportunity';
+export {
   MISSION_EFFECT_TYPES,
+  opportunitySchema,
+  parseOpportunity,
   missionEffectSchema,
   missionOutcomeSchema,
   missionSchema,
@@ -226,4 +252,5 @@ export type {
   MissionReport,
   MissionResolution,
   MissionResult,
+  OpportunityDef,
 } from '../core/missions';

@@ -40,7 +40,7 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   (`village`: `[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]` with `haulSystem`,
   `buildSystem`, `patrolSystem`; `rts`: `[...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` with
   `RTS_SYSTEMS`), `SYSTEM_SET_NAMES` and `DEFAULT_SYSTEM_SET` (`village`). A scenario names one in
-  `systems` (Scenarios, below). Both sets also register `TIME_COMPONENTS` and `MISSION_COMPONENTS` (Engine 0.10), which
+  `systems` (Scenarios, below). Both sets also register `TIME_COMPONENTS`, `MISSION_COMPONENTS` and `OPPORTUNITY_COMPONENTS` (Engine 0.10), which
   stay out of snapshots until used.
 - `time.ts`: the time service and frozen events (Engine 0.10 T3): `EventMember`, `WorldTime`
   (`TIME_COMPONENTS`), `timeOf`, `freezeEvent`/`unfreezeEvent`, `joinEvent`/`leaveEvent`,
@@ -49,6 +49,9 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `mission.ts`: the mission lifecycle (Engine 0.10 T4): `Missions` (`MISSION_COMPONENTS`),
   `openMission`, `delegateMission`, `playMission`, `quitMission`, `commitMission`,
   `settleMissions`, `missionsOf`, `missionSnapshot` (see "Missions" below).
+- `opportunity.ts`: opportunities (Engine 0.10 T5): `Opportunities` (`OPPORTUNITY_COMPONENTS`),
+  `addOpportunities`, `settleOpportunities`, `opportunityGate`, `takeOpportunity`,
+  `applyOpportunityEffect`, `opportunitiesOf` (see "Opportunities" below).
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`; and
@@ -227,8 +230,12 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   later), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
   `values` into the component. An effect whose entity is gone, a `damage` on an entity without
   `Health`, or a `set` that would break the component's schema is skipped and listed in
-  `skipped`, never an error. `opportunity` effects are carried on the record; T5's opportunities
-  act on them (here they change nothing).
+  `skipped`, never an error. `opportunity` effects open or close opportunities
+  ("Opportunities" below); one on an opportunity already taken or closed is skipped. Every
+  opportunity an effect names must be known to the world when the mission opens
+  (`unknown_opportunity`).
+- **Opportunities gate opening.** A mission named by an opportunity opens only while one of them
+  is offered (`opportunity_closed`); opening it takes that opportunity.
 - **Fixed world-time cost.** The world moves exactly `worldTimeCost` ticks between open and
   commit, however it is resolved and whether it was resolved at once or ticks later. Experience
   ticks (the kit's own round ticks, or ones recorded with `addExperience(world, id, n,
@@ -240,7 +247,8 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
 - **Refusals** are `{ ok: false, code, error }` with a one-line `error` (`MissionRefusal`:
   `bad_mission`, `bad_id`, `unknown_ref`, `unknown_component`, `mission_open`,
   `mission_not_open`, `mission_committed`, `mission_resolved`, `mission_overdue`, `event_frozen`,
-  `unknown_outcome`, `result_mismatch`, `stepping`) and change nothing. Everything runs between
+  `unknown_outcome`, `result_mismatch`, `opportunity_closed`, `unknown_opportunity`, `stepping`)
+  and change nothing. Everything runs between
   ticks (`stepping` during a step).
 - **World data.** `Missions` `{ open, committed }` lives on the `WorldTime` entity and is
   `omitWhenEmpty`, so a world that never opens a mission snapshots, saves and hashes as before.
@@ -254,6 +262,52 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   weights over 4,000 seeds; timeout and overdue; skipped effects; a second mission committed on
   the way; the same hash after commit for 0, 1 or 10,000 experience ticks; played at once or
   ticked through giving the same hash; records unchanged across later ticks and save and load).
+
+## Opportunities
+
+Windows that open and close in world time (`opportunity.ts`, Engine 0.10 T5; docs/BUILD-LOG.md,
+Engine 0.10, decision 6, item 155). The data is `OpportunityDef` (`opportunitySchema` and
+`parseOpportunity` in `engine/core/missions.ts`): `{ id, mission, opens, closes, exclusive?,
+closesOthers?, relative? }`, `opens < closes`, world ticks, offered while `opens <= tick < closes`.
+
+- **Adding.** `addOpportunities(world, defs, cause)` checks each def, refuses (changing nothing) a
+  bad one (`bad_opportunity`), an id already known or repeated (`opportunity_exists`) or a
+  `closesOthers` id that names no opportunity (`unknown_opportunity`), then settles them at once.
+  A scenario's `opportunities` list is added this way after the squads (cause `scenario`; the
+  `WorldTime` entity is spawned then, so it takes the next id).
+- **Status**: `dormant` (a `relative` one waiting for an effect; no window yet), `waiting`,
+  `offered`, `taken` or `closed`. Each state keeps its window (`opens`, `closes`, absolute ticks,
+  null while dormant) and the cause (`by`) and tick (`at`) of its last change.
+- **Time.** `settleOpportunities(world)` is the time-service hook: between ticks it offers each
+  waiting one whose `opens` has come and closes each waiting or offered one whose `closes` has come,
+  in id order, one write each under the cause `time`, with `at` the window's own tick (so a late
+  settle still records when it happened). `settleMissions` calls it first and `commitMission` after
+  every step it takes, so windows open and close during a mission's world-time cost; a caller that
+  steps the world itself calls `settleMissions` (or this) after each step.
+- **Taking.** `openMission` asks `opportunityGate(world, mission)`: a mission no opportunity names is
+  not gated; otherwise the lowest-id one offered at the current tick is taken, and none offered is
+  refused (`opportunity_closed`, naming why each is not open). Taking (`takeOpportunity`, under
+  `mission:<id>`) marks it `taken`, then closes every other opportunity of the same mission, of its
+  `exclusive` group and in its `closesOthers` that is dormant, waiting or offered, one logged write
+  each. `closesOthers` is one way: the named ones do not close it back.
+- **Effects** (`applyOpportunityEffect`, at the commit under `mission:<id>`): `{ open }` on a
+  dormant `relative` one gives it the window `commit tick + opens` to `commit tick + closes`
+  (offered at once when `opens` is 0); on a waiting one it is offered now, early; on an offered one
+  nothing changes. `{ close }` closes a dormant, waiting or offered one. On one already taken or
+  closed (or unknown) the effect is skipped (the record's `skipped`). A failure outcome opening a
+  rescue is the intended use.
+- **World data.** `Opportunities { list }` (sorted by id) lives on the `WorldTime` entity and is
+  `omitWhenEmpty`, so a world without opportunities snapshots, saves and hashes as before (the 0.8
+  and 0.9 golden hashes do not move). Both system sets register `OPPORTUNITY_COMPONENTS`; load a
+  world with them in `components`. Integers only, no randomness. Read with
+  `opportunitiesOf(world)`: `all()`, `get(id)`, `status(id)`, `offered()`.
+- Tests: `opportunity.test.ts` (windows opening and closing by time with the cause `time`, a late
+  settle keeping the window's ticks, a take closing its exclusive rival and `closesOthers` under
+  `mission:<id>`, refusals for a closed, unopened or dormant opportunity changing nothing, a
+  mission's world-time cost carrying the world past another window's close, a failure opening a
+  follow-up rescue and a success leaving it dormant, a close effect and a skipped one, the same
+  hashes on every run and after save and load at five ticks, and scenario opportunities and their
+  errors).
 
 ## Standard components
 
@@ -323,7 +377,8 @@ version 1 (every version 1 file reads as before).
              elevation: ["110011", ...] },                    // one digit (0-9) per cell
   entities: [{ key?, components: { Position: {...}, ... } }],
   squads: [{ key?, strength?, components: {...},              // not Squad: it is built
-             members: [{ key?, name, role, components? }] }] }  // not Member: it is built
+             members: [{ key?, name, role, components? }] }],   // not Member: it is built
+  opportunities?: [{ id, mission, opens, closes, ... }] }      // Engine 0.10: see Opportunities
 ```
 
 - **Terrain**: types are numbered in sorted legend character order (`#` before `.` before `a`);
@@ -591,4 +646,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `opportunity.test.ts`, `sample-world.test.ts`).

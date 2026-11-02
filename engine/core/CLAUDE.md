@@ -90,7 +90,9 @@ reports through its adapter), `MissionResult` (`{ mission, outcome, effects, rep
 `MissionReport`). Helpers: `totalWeight`, `pickOutcome(mission, n)` (the outcome a delegation draw
 `n < totalWeight` falls in, walking file order), `missionResult(mission, id, report?)` (refuses an
 undeclared, or for a played one unplayable, id as `unknown_outcome`), `playedResult(adapter,
-mission, kitReport)` and `parseMission(json)`. Pure (on `PURE_CORE`); tested in
+mission, kitReport)` and `parseMission(json)`. From T5, `opportunitySchema` (`OpportunityDef`, a
+window `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }` with `opens <
+closes`; `engine/sim/opportunity.ts` runs it) and `parseOpportunity(json)`. Pure (on `PURE_CORE`); tested in
 `missions.test.ts`; in `docs/reference/schemas.md`.
 
 `rts-types.ts` (Engine 0.9 T8, item 131) is the RTS unit and building type table as plain JSON

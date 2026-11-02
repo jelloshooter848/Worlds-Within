@@ -44,7 +44,8 @@ From `engine/sim/index.ts`:
   with named members; `{ "$ref": "<key>" }` in component data is another entity's id).
   `scenarioSchema`, `ScenarioError` (`issues` name each bad field). A scenario may name an engine
   system set in `systems` (`village` or `rts`), which it runs with when the caller passes no
-  components or systems of its own.
+  components or systems of its own. An optional `opportunities` list (Engine 0.10) adds
+  opportunity windows to the world it builds (see Opportunities below).
 - System sets (`system-sets.ts`, Engine 0.9): `SYSTEM_SETS` (`village`: standard components,
   `Terrain`, `SYSTEM_COMPONENTS` with haul, build, patrol; `rts`: standard components, `Terrain`,
   `RTS_COMPONENTS` with `RTS_SYSTEMS`), `SYSTEM_SET_NAMES`, `DEFAULT_SYSTEM_SET` (`village`, what
@@ -77,6 +78,20 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   changes nothing. Read with `missionsOf(world)` (`open`, `committed`, `record`, `status`). The
   state is the `Missions` component (`MISSION_COMPONENTS`, on the `WorldTime` entity,
   `omitWhenEmpty`), so a world without missions hashes as before.
+- Opportunities (`opportunity.ts`, Engine 0.10 T5): windows of world ticks in which a mission can
+  be taken (`OpportunityDef` `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }`
+  and `opportunitySchema` from `engine/core/missions.ts`; offered while `opens <= tick < closes`).
+  `addOpportunities(world, defs, cause)` adds them (also from a scenario's `opportunities`);
+  `settleOpportunities(world)` is the time-service hook that opens and closes windows as world time
+  passes, logged under `time` (`settleMissions` and `commitMission` call it after every step, so
+  windows pass during a mission's world-time cost too). A mission named by an opportunity opens
+  only while one is offered (else `opportunity_closed`); opening it takes the opportunity
+  (`taken`) and closes, under `mission:<id>`, the others of the same mission, its `exclusive` group
+  and its `closesOthers`. An `opportunity` effect `{ open }` starts a `relative` (dormant) window
+  counted from the commit tick, or offers a waiting one early; `{ close }` closes one; an effect on
+  one already taken or closed is skipped. Read with `opportunitiesOf(world)` (`all`, `get`,
+  `status`, `offered`). The state is the `Opportunities` component (`OPPORTUNITY_COMPONENTS`, on
+  the `WorldTime` entity, `omitWhenEmpty`), in snapshots and saves.
 - Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
   cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
   west.
@@ -195,4 +210,8 @@ their cause, the battle resumes after, and a save and load mid-freeze gives equa
 with every retry refused, delegation repeatable from the seed and matching its weights over 4,000
 seeds, any declared outcome playable and undeclared ones refused, the same hash after commit
 however many experience ticks pass inside, and committed records unchanged across later ticks and
-a save and load.
+a save and load. `opportunity.test.ts` checks opportunities: a window opening and closing by time
+(logged under `time`), a take closing its rival (logged under `mission:<id>`), a closed or unopened
+opportunity refused, a mission's world-time cost carrying the world past another window's close, a
+failure opening a follow-up rescue, the same hashes on every run and through save and load at five
+ticks, and scenario opportunities.

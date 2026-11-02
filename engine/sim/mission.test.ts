@@ -13,6 +13,7 @@ import {
   quitMission,
   settleMissions,
 } from './mission';
+import { OPPORTUNITY_COMPONENTS, addOpportunities } from './opportunity';
 import { loadWorld, saveWorld } from './save';
 import { SYSTEM_COMPONENTS, patrolSystem } from './systems';
 import { Terrain, flatTerrain } from './terrain';
@@ -25,6 +26,7 @@ const COMPONENTS = [
   ...SYSTEM_COMPONENTS,
   ...TIME_COMPONENTS,
   ...MISSION_COMPONENTS,
+  ...OPPORTUNITY_COMPONENTS,
 ];
 const SYSTEMS = [patrolSystem];
 
@@ -63,6 +65,12 @@ function siegeWorld(seed = 7): { world: World; refs: Record<string, Entity> } {
     index: 1,
   });
   refs['scout'] = scout;
+  // The rescue a repelled raid opens (opportunity.test.ts covers opportunities themselves).
+  addOpportunities(
+    world,
+    [{ id: 'rescue', mission: 'rescue', opens: 0, closes: 60, relative: true }],
+    'scenario',
+  );
   return { world, refs };
 }
 

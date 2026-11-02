@@ -146,6 +146,17 @@ function write(world: World, cause: Cause, next: WorldTimeData): void {
   });
 }
 
+/**
+ * The world-level entity holding `WorldTime`, spawned (with empty time state, logged under
+ * `cause`) when nothing has used time yet. Missions and opportunities keep their state on it.
+ */
+export function worldTimeEntity(world: World, cause: Cause): Entity {
+  const id = holder(world);
+  if (id !== null) return id;
+  write(world, cause, EMPTY);
+  return holder(world) as Entity;
+}
+
 const refuse = (code: TimeRefusal, error: string): TimeResult => ({ ok: false, code, error });
 
 /** A refusal when `id` is not a valid event or mission id, else null. */

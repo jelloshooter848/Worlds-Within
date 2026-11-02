@@ -18,6 +18,13 @@ import {
 } from '../core/missions';
 import { defineComponent } from './component';
 import { Health } from './components';
+import {
+  applyOpportunityEffect,
+  knowsOpportunity,
+  opportunityGate,
+  settleOpportunities,
+  takeOpportunity,
+} from './opportunity';
 import { freezeEvent, startExperience, stampCommitment, timeOf, unfreezeEvent, WorldTime } from './time';
 import type { Entity, World } from './world';
 import { worldInternals } from './world';
@@ -108,6 +115,8 @@ export type MissionRefusal =
   | 'event_frozen'
   | 'unknown_outcome'
   | 'result_mismatch'
+  | 'opportunity_closed'
+  | 'unknown_opportunity'
   | 'stepping';
 
 export type MissionRefused = { ok: false; code: MissionRefusal; error: string };
@@ -197,7 +206,10 @@ export type OpenResult =
  * Open mission `def` (checked with `missionSchema`) at the current tick: record it with its
  * outcomes and fixed cost, start its experience clock and freeze its event. Refused (nothing
  * changes) when the def is bad, the mission is open or committed, its event is already frozen, an
- * effect names a key not in `refs`, or a `set` effect names a component the world lacks.
+ * effect names a key not in `refs`, a `set` effect names a component the world lacks, an
+ * `opportunity` effect names an opportunity the world does not know (`unknown_opportunity`), or
+ * opportunities name the mission and none is offered now (`opportunity_closed`). When one is
+ * offered, opening takes it (`takeOpportunity`), closing the opportunities it excludes.
  */
 export function openMission(world: World, def: unknown, options: OpenOptions = {}): OpenResult {
   const stepping = notStepping(world, 'open a mission');
@@ -223,7 +235,15 @@ export function openMission(world: World, def: unknown, options: OpenOptions = {
   const refs: Record<string, Entity> = {};
   for (const outcome of mission.outcomes) {
     for (const effect of outcome.effects) {
-      if (effect.type === 'opportunity') continue;
+      if (effect.type === 'opportunity') {
+        const named = effect.open ?? (effect.close as string);
+        if (!knowsOpportunity(world, named))
+          return refuse(
+            'unknown_opportunity',
+            `outcome "${outcome.id}" names opportunity "${named}", which the world does not know`,
+          );
+        continue;
+      }
       if (typeof effect.entity === 'string') {
         const ref = options.refs?.[effect.entity];
         if (ref === undefined)
@@ -241,10 +261,14 @@ export function openMission(world: World, def: unknown, options: OpenOptions = {
     }
   }
 
+  const gate = opportunityGate(world, id);
+  if (!gate.ok) return refuse('opportunity_closed', gate.error);
+
   const openTick = world.tick;
   const commitTick = openTick + mission.worldTimeCost;
   const cause = missionCause(id);
   world.withCause(cause, () => {
+    if (gate.take !== null) takeOpportunity(world, gate.take, cause);
     startExperience(world, id, cause);
     if (mission.event !== undefined) freezeEvent(world, mission.event, cause);
     const entry: OpenMission = { def: mission, openTick, commitTick, refs, resolved: null };
@@ -365,6 +389,7 @@ export function commitMission(world: World, id: string, result?: MissionResult):
 export function settleMissions(world: World, except?: string): MissionRecord[] {
   if (worldInternals(world).stepping())
     throw new Error('settleMissions runs between ticks, not during a step');
+  settleOpportunities(world);
   const records: MissionRecord[] = [];
   for (const open of stateOf(world).open) {
     if (open.def.id === except || open.commitTick !== world.tick) continue;
@@ -377,6 +402,7 @@ export function settleMissions(world: World, except?: string): MissionRecord[] {
 function commitNow(world: World, open: OpenMission): { ok: true; record: MissionRecord } {
   const id = open.def.id;
   const cause = missionCause(id);
+  settleOpportunities(world);
   return world.withCause(cause, () => {
     let resolved = open.resolved;
     let resolution: MissionResolution;
@@ -410,11 +436,11 @@ function commitNow(world: World, open: OpenMission): { ok: true; record: Mission
 
 /**
  * Apply one effect; false when it is skipped: its entity is gone, `damage` finds no `Health`, or a
- * `set` would break the component's schema. `opportunity` effects are carried on the record and
- * acted on by the opportunities (T5); here they change nothing.
+ * `set` would break the component's schema, or an `opportunity` effect finds its opportunity
+ * already taken or closed (`applyOpportunityEffect`).
  */
 function applyEffect(world: World, open: OpenMission, effect: MissionEffect): boolean {
-  if (effect.type === 'opportunity') return true;
+  if (effect.type === 'opportunity') return applyOpportunityEffect(world, effect);
   const id = typeof effect.entity === 'number' ? effect.entity : open.refs[effect.entity];
   if (id === undefined || !world.alive(id)) return false;
   switch (effect.type) {

@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { dottedPath, type FieldPath } from '../core/content/validate';
 import type { JsonValue } from '../core/headless';
+import { opportunitySchema } from '../core/missions';
 import { Member, STANDARD_COMPONENTS, Squad, type Role } from './components';
 import type { LogOptions } from './events';
+import { addOpportunities } from './opportunity';
 import { SYSTEM_SETS, SYSTEM_SET_NAMES } from './system-sets';
 import { Terrain, type TerrainData, type TerrainType } from './terrain';
 import { createWorld, type AnyComponent, type Entity, type System, type World } from './world';
@@ -18,7 +20,8 @@ import { createWorld, type AnyComponent, type Entity, type System, type World } 
  * `{ "$ref": "<key>" }`, which becomes that entity's id.
  *
  * Ids are handed out in file order: the terrain entity first, then `entities`, then each squad
- * followed by its members. Every change is logged with the cause `scenario`.
+ * followed by its members. Every change is logged with the cause `scenario`, except opportunity
+ * windows already open at tick 0, which `addOpportunities` opens under `time`.
  */
 
 /** The `format` every scenario carries. */
@@ -97,6 +100,12 @@ export const scenarioSchema = z.strictObject({
     )
     .default([])
     .describe('squads, each spawned after the entities'),
+  opportunities: z
+    .array(opportunitySchema)
+    .optional()
+    .describe(
+      'windows of world ticks in which a mission can be taken (Engine 0.10): `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }`; kept on a world-level entity spawned after the squads',
+    ),
 });
 
 export type Scenario = z.infer<typeof scenarioSchema>;
@@ -231,6 +240,18 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
     });
   });
 
+  const opportunityIds = new Set<string>();
+  (sc.opportunities ?? []).forEach((o, i) => {
+    if (opportunityIds.has(o.id)) at(['opportunities', i, 'id'], `"${o.id}" is given twice`);
+    opportunityIds.add(o.id);
+  });
+  (sc.opportunities ?? []).forEach((o, i) =>
+    (o.closesOthers ?? []).forEach((other, j) => {
+      if (!opportunityIds.has(other))
+        at(['opportunities', i, 'closesOthers', j], `"${other}" is not an opportunity of the scenario`);
+    }),
+  );
+
   if (issues.length > 0) throw new ScenarioError(issues);
 
   const world = createWorld(sc.seed, {
@@ -244,6 +265,10 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
     pending.sort((a, b) => a.id - b.id);
     for (const p of pending) w.add(p.id, p.def, p.value);
   });
+  if (sc.opportunities !== undefined && sc.opportunities.length > 0) {
+    const added = addOpportunities(world, sc.opportunities, 'scenario');
+    if (!added.ok) throw new ScenarioError([{ path: 'opportunities', message: added.error }]);
+  }
   return world;
 }
 

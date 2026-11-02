@@ -181,6 +181,78 @@ export const missionSchema = z
     if (m.playable) idIssues(ctx, m.playable, 'playable', known, 'duplicate_outcome');
   });
 
+/**
+ * An opportunity (decision 6, item 155): a window of world ticks in which a mission can be taken,
+ * `opens <= tick < closes`. Taking it (opening its mission while it is offered) closes every other
+ * opportunity in its `exclusive` group and every id in `closesOthers`. A `relative` one waits until
+ * an `opportunity` effect opens it, and its `opens` and `closes` then count from that commit tick
+ * (a failure opening a rescue). The window itself is `engine/sim`'s (`opportunity.ts`).
+ */
+export const opportunitySchema = z
+  .strictObject({
+    id: Id.describe('the opportunity id, unique in the world; an `opportunity` effect names it'),
+    mission: Id.describe('the mission taking it opens; that mission opens only through an opportunity'),
+    opens: z
+      .int()
+      .min(0)
+      .describe('the first world tick it is offered (from the opening effect when `relative`)'),
+    closes: z
+      .int()
+      .min(1)
+      .describe(
+        'the world tick it closes at, untaken (from the opening effect when `relative`); after `opens`',
+      ),
+    exclusive: Id.exactOptional().describe('a group: taking any one closes the others in it'),
+    closesOthers: z
+      .array(Id)
+      .min(1)
+      .exactOptional()
+      .describe('opportunities that close when this one is taken'),
+    relative: z
+      .boolean()
+      .exactOptional()
+      .describe('true: it waits for an `opportunity` effect to open it, and its ticks count from then'),
+  })
+  .superRefine((o, ctx) => {
+    if (o.closes <= o.opens)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['closes'],
+        message: `must be after opens (${o.opens})`,
+        params: { code: 'bad_window' },
+      });
+    if (o.closesOthers) {
+      const seen = new Set<string>();
+      o.closesOthers.forEach((id, i) => {
+        if (id === o.id || seen.has(id))
+          ctx.addIssue({
+            code: 'custom',
+            path: ['closesOthers', i],
+            message: id === o.id ? 'must not name the opportunity itself' : `"${id}" is given twice`,
+            params: { code: 'bad_closes' },
+          });
+        seen.add(id);
+      });
+    }
+  });
+
+export type OpportunityDef = z.infer<typeof opportunitySchema>;
+
+/**
+ * Check `json` against `opportunitySchema`; on failure `error` is one line per bad field.
+ */
+export function parseOpportunity(
+  json: unknown,
+): { ok: true; opportunity: OpportunityDef } | { ok: false; error: string } {
+  const result = opportunitySchema.safeParse(json);
+  if (result.success) return { ok: true, opportunity: result.data };
+  const lines = result.error.issues.map((issue) => {
+    const path = dottedPath(issue.path);
+    return path === '' ? issue.message : `${path}: ${issue.message}`;
+  });
+  return { ok: false, error: lines.join('\n') };
+}
+
 export type MissionDef = z.infer<typeof missionSchema>;
 export type MissionOutcome = z.infer<typeof missionOutcomeSchema>;
 export type MissionEffect = z.infer<typeof missionEffectSchema>;
