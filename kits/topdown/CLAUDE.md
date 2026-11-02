@@ -13,8 +13,12 @@ such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`wal
   game: a game supplies the rooms, any extra spawn kinds (a boss), its sheets and its own scene.
 - It reads what it is given (rooms, a seed, input frames) and reports what happened through
   `world.events`. Rooms, songs and sprites belong in `games/`; tests may hold tiny fixtures.
-- Randomness goes through the seeded `Rng` from `@engine/core/rng`, never `Math.random`; no
-  `Date.now`, `performance.now` or DOM.
+- **Purity rule (lint-enforced):** randomness goes through the seeded `Rng` from
+  `@engine/core/rng`, never `Math.random`; no `Date.now`, `performance.now` or DOM globals
+  (`document`, `window`, `localStorage`, `requestAnimationFrame`, ...). ESLint fails on them in every
+  file under `kits/` (the `purity` block in `eslint.config.js`). Pass an `Rng` or a frame count in
+  instead. Any `engine/core` file the kit imports at run time must be on `PURE_CORE` in
+  `config/layers.js`; `tests/architecture/purity.test.ts` checks that.
 - **Known debt:** drawing still lives here. `render.ts` and `hud.ts` (and the `draw` methods on
   entities, enemies, items and the hero) call the core `Renderer`. Kits should never draw; moving
   this to a backend that draws from a read-only snapshot is planned for a later release. Do not add

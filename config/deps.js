@@ -6,7 +6,7 @@
  * All paths are repo paths: relative to the repo root, with forward slashes (`kits/topdown/hero.ts`).
  */
 import { posix } from 'node:path';
-import { ALIASES, EXCEPTIONS, LAYERS } from './layers.js';
+import { ALIASES, EXCEPTIONS, LAYERS, PURE_CORE, PURE_DIRS } from './layers.js';
 
 /** @typedef {import('./layers.js').Layer} Layer */
 
@@ -104,4 +104,17 @@ export function checkImport(fromFile, target) {
  */
 export function checkSpecifier(fromFile, specifier) {
   return checkImport(fromFile, resolveSpecifier(fromFile, specifier));
+}
+
+/**
+ * Whether the purity rule covers a repo path: inside a folder in PURE_DIRS, or on the PURE_CORE list
+ * (an exact file, or under a `dir/**` entry).
+ * @param {string} path
+ * @returns {boolean}
+ */
+export function isPure(path) {
+  if (PURE_DIRS.some((dir) => isInside(path, dir))) return true;
+  return PURE_CORE.some((entry) =>
+    entry.endsWith('/**') ? isInside(path, entry.slice(0, -3)) : path === entry,
+  );
 }
