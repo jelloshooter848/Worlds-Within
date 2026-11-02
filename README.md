@@ -68,8 +68,16 @@ Actions tab (**Run workflow**). Each page lands at:
 | Any other game   | `https://<owner>.github.io/<repo>/games/<name>/`         |
 | An engine sample | `https://<owner>.github.io/<repo>/games/samples/<name>/` |
 
-One-time setup: in the repo's **Settings → Pages**, set **Source** to **GitHub Actions**. Without it the
-deploy step fails.
+One-time setup, two steps (without both, the deploy step fails):
+
+1. In the repo's **Settings → Pages**, set **Source** to **GitHub Actions**. This creates the
+   `github-pages` environment.
+2. In **Settings → Environments → github-pages → Deployment branches and tags**, add the tag rules
+   `engine-v*` and `ww-v*` (or choose **No restriction**). By default the environment only lets the
+   default branch deploy, so a release tag is refused with "not allowed to deploy to github-pages due to
+   environment protection rules".
+
+A hand-started **Run workflow** also deploys only from a branch or tag those rules allow.
 
 To check a Pages build locally:
 
