@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 45.** (Last used: 44.)
+**Next unused number: 48.** (Last used: 47.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -83,3 +83,16 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **44.** The tools learn each kit's content kinds and rules from a table in `engine/tools/kits.ts`
   that knows only the top-down kit's default room legend. Replace it with a hook each kit provides
   when the next kit arrives (0.5)?
+
+**Engine 0.4**
+
+- **45.** The demo's look changed slightly while its rules did not: the skin adds HUD hearts and
+  event sounds, and a hurt hero or monster no longer blinks, stun stars no longer turn and the exit
+  no longer glows (a skin cannot express those yet). State hashes are unchanged. Accept, or should a
+  skin gain a way to hide or cycle an entity's frames before 0.5?
+- **46.** Kits are kept off the core's drawing and output side (`FORBIDDEN_CORE`: the `Renderer`,
+  sprite sheets, assets, audio output, scenes, the loop) and a scan rejects drawing calls in kit
+  code, which is stricter than the roadmap's "kits can't import a backend". Keep?
+- **47.** Skins hold HUD entries and a camera default as well as kinds, tiles and events, and the
+  skin schema already has the 3D mesh shape for 0.6. The demo's title and status lines stay as
+  debug text drawn by the game. OK?

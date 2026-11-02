@@ -219,7 +219,7 @@ _(Done. What was built, the choices made and the hand check are in
 
 ---
 
-## 0.4 Renderer and presentation contract
+## 0.4 Renderer and presentation contract (done)
 
 **Goal:** kits stop drawing. They describe what is there, and a backend decides how it looks.
 
@@ -250,6 +250,9 @@ _(Done. What was built, the choices made and the hand check are in
 - The demo can be built at two different resolutions by changing one config value, and a screenshot of
   each is taken by the CLI.
 - The same demo run gives the same state hashes with the Canvas2D backend and with the null backend.
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-04).)_
 
 **Out of scope:** PixiJS, any 3D, new kits.
 

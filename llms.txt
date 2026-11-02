@@ -1,6 +1,6 @@
 # Worlds Within
 
-> Worlds Within is one persistent world played through many genres, and the engine that makes it. The repo is LLM-first: content is text, every run is repeatable from a seed, and tools let an agent check its own work. The engine (`engine/`) holds the loop, input, audio, graphics data and backends; kits (`kits/`) hold one genre's gameplay rules; games (`games/`) hold content and depend on the engine and kits, never the other way round. Start with `CLAUDE.md` at the root, then the page for the module you are changing.
+> Worlds Within is one persistent world played through many genres, and the engine that makes it. The repo is LLM-first: content is text, every run is repeatable from a seed, and tools let an agent check its own work. The engine (`engine/`) holds the loop, input, audio, graphics data, the presentation contract and backends; kits (`kits/`) hold one genre's gameplay rules and never draw (they describe each frame and a backend draws it through the game's skin); games (`games/`) hold content and depend on the engine and kits, never the other way round. Start with `CLAUDE.md` at the root, then the page for the module you are changing.
 
 ## Project
 
@@ -11,14 +11,14 @@
 ## Modules
 
 - [engine/core](docs/modules/engine-core.md): loop, scenes, input, audio and MML, save, seeded RNG, maths and the renderer contract
-- [engine/core/content](docs/modules/engine-core-content.md): content files read and checked with Zod schemas: text grids, song, sprite and palette schemas, game manifests and the content loader, errors naming the file and field
+- [engine/core/content](docs/modules/engine-core-content.md): content files read and checked with Zod schemas: text grids, song, sfx, sprite and palette schemas, game manifests (with the picture size, `screen`) and the content loader, errors naming the file and field
 - [engine/core/present](docs/modules/engine-core-present.md): the presentation contract: the read-only per-frame snapshot (`PresentFrame`: entities, map, events, HUD status, camera and other extension points) a kit hands a backend, the `Presenter` interface, `freezeFrame`, `MapTracker`, the `presentFrameSchema` Zod schema, and skin files (the `skin` content kind and `resolveSkinFrame`)
 - [engine/backends/canvas2d](docs/modules/engine-backends-canvas2d.md): the browser 2D backend, viewport and `SkinnedCanvasPresenter` (draws presentation frames through a skin)
 - [engine/backends/null](docs/modules/engine-backends-null.md): the headless backend that draws nothing (`NullRenderer`, `NullPresenter`)
 - [engine/sim](docs/modules/engine-sim.md): the headless, deterministic world simulation (placeholder until Engine 0.8)
 - [engine/tools](docs/modules/engine-tools.md): the CLI for agents and people (`pnpm cli help`): validate content, play run files headless with tick assertions, invariants and state hashes, write replay files for failing runs (with hash-mismatch checks), dump the state at a tick, edit content with get/set/add/remove (every write schema-checked and verified), mutant checks that switch kit rules off to find weak run files, deterministic PNG screenshots of a run at a tick (headless Chromium), with one JSON result per command and grouped exit codes
-- [kits/topdown](docs/modules/kits-topdown.md): gameplay rules for a room-based top-down action game, with named rules a run can switch off
-- [games/demo](docs/modules/games-demo.md): the proof-of-life demo game built on the top-down kit
+- [kits/topdown](docs/modules/kits-topdown.md): gameplay rules for a room-based top-down action game, with named rules a run can switch off; `presentWorld` describes each frame (map, entities, HUD status, events, camera hint) and the kit never draws
+- [games/demo](docs/modules/games-demo.md): the proof-of-life demo game built on the top-down kit, drawn by the Canvas2D backend through its skin (`content/skins/canvas2d.json`)
 
 ## Reference
 

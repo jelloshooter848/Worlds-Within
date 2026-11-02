@@ -7,6 +7,158 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.4
+
+Renderer and presentation contract. Built on branch `engine/build-0.15`; not tagged (tagging is the
+owner's call).
+
+### What was built
+
+- **Configurable picture size.** `game.json` has an optional `screen` `{ width, height }` (whole
+  numbers 64..1920, default 256x240). `fitGame`, the canvas2d `Viewport`, the touch layout, the view
+  contract and `pnpm cli screenshot` all take the size from it; nothing else hard-codes 256x240. The
+  demo states its size explicitly.
+- **The presentation contract** (`engine/core/present`, pure). `PresentFrame`
+  `{ frame, size, entities, map?, events, status, camera? }`: each entity's id, kind, box, facing,
+  animation state and tags; the map (full on load or change, else an `{ id, version }` reference,
+  via `MapTracker`); this frame's events; HUD status values; and the extension points `camera`,
+  `layer` (depth) and `fx` (squash, stretch, rotate, alpha, tint), all of which a backend may
+  ignore. `freezeFrame` deep-freezes a frame so a backend that writes to it throws;
+  `presentFrameSchema` checks one in tests and tools; backends implement `Presenter`.
+- **Skins.** The engine's `skin` content kind: one JSON file per backend mapping each kind to sprite
+  frames (2D: sheet, palette, per-state and per-facing frames or cycles) or to a mesh (3D, for a
+  later `three` backend), each tile to a frame, each event to a sound and an effect (`flash`,
+  `particles`, `shake`, `tint`), plus HUD entries and a camera default. Cross-file checks report a
+  missing sheet, palette, sound or frame at the skin file and field. `resolveSkinFrame` is the pure
+  lookup backends share.
+- **Presenters.** `SkinnedCanvasPresenter` (Canvas2D) draws any frame through a skin: the map cached
+  per id and version, entities by layer then y, facing flips, fallback boxes for anything the skin
+  lacks, `fx` through `transformed()`/`translucent()`, camera framing, the HUD from status values,
+  event effects and skin sounds through `onSound`. `NullPresenter` (null backend) takes frames and
+  draws nothing, with `freeze` and `validate` options for tests.
+- **The top-down kit is split.** `kits/topdown/present.ts`: `presentWorld(world, events, opts)`
+  describes the room map, the hero and every other entity in the old draw order (with `TD_DEPTH`
+  depths and tags such as `invuln`, `stunned`, `dark`, `flashing`), HUD status and events with
+  positions, plus a camera hint, without changing any state (`TdPresentState` keeps the map tracker
+  and stable ids outside the world, so state hashes are untouched). `render.ts`, `hud.ts`, the
+  kit's `view.ts` and every `render` method are gone; the kit's `CLAUDE.md` maps each old frame name
+  to its presented kind and animation.
+- **The demo draws through its skin.** `games/demo/content/skins/canvas2d.json` maps every kind,
+  tile, event and HUD value the kit presents to the hero sheet and a new placeholder sheet
+  (`demo-placeholders.txt`, which reproduces the kit's old flat colours). `picture.ts`
+  (`DemoPicture`) runs `presentWorld` -> `freezeFrame` -> `SkinnedCanvasPresenter`; three new sfx
+  (`door`, `spit`, `hurt`) play on events.
+- **Kits can't draw, enforced twice.** `FORBIDDEN_CORE` in `config/layers.js` keeps kits off the
+  core's drawing and output side (`Renderer`, sprite sheets, pixel art, animation, `assets/`, audio
+  output, `view.ts`, `scene.ts`, `loop.ts`), checked by ESLint and
+  `tests/architecture/dependency-rule.test.ts`; backends were already forbidden by the layer table.
+  `tests/architecture/no-drawing.test.ts` also scans every non-test kit file for drawing calls
+  (`.sprite(`, `.rect(`, `.text(`, `fillRect`, `drawImage`, `getContext`, ...).
+- **Parity and two-resolution tests.** `tests/runs/backend-parity.test.ts` plays every demo run file
+  presenting every tick through the null and the Canvas2D presenters and requires both hash lists to
+  equal the golden file. `tests/build/two-resolutions.test.ts` copies the demo with only `screen`
+  changed to 320x240, then validates, runs (same hashes), screenshots (320x240, same bytes twice)
+  and builds the copy. The screenshot page now draws every tick and reports the hashes it saw.
+
+### Choices made
+
+- **Kits are kept off the core's output side, not just off backends.** The roadmap's check is "kits
+  can't import a backend"; that alone would still let a kit draw through the core `Renderer`, so the
+  layer table gained `FORBIDDEN_CORE` and a scan for drawing calls.
+- **Map versions are hashed from the tiles and tags**, so a backend redraws its cached map only when
+  something changed; during a room slide both rooms are sent as one map.
+- **Presentation state lives outside the world** (`TdPresentState`), so presenting cannot change a
+  state hash; a test checks the hashes per tick with and without presenting.
+- **The camera hint** keeps the 64 px HUD band at the top and centres the room in the rest of the
+  picture at any size; a smaller picture cuts the room's edges.
+- **The skin schema already has the 3D shape** (`mesh`, `color`, `scale`), chosen by the skin's
+  `backend`, so 0.6 adds a backend, not a new file format.
+- **Skins are content**, registered as an engine content kind, so `validate`, the editing verbs and
+  the schema reference cover them like any other file.
+- **The demo's placeholder art is a sprite sheet** that reproduces the old flat colours exactly, so
+  the change of who draws is visible only where the skin adds something new (the HUD hearts).
+
+### How to try it
+
+```sh
+pnpm -s cli validate games/demo --json
+pnpm -s cli run games/demo/runs/walk-east.run.json --json
+pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 120 --json
+# another picture size: change only "screen" in games/demo/game.json, e.g. to 320x240, then
+pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 120 --json
+pnpm test tests/runs tests/build/two-resolutions.test.ts tests/architecture/no-drawing.test.ts
+pnpm dev   # then open /games/demo/
+```
+
+### Done when
+
+Each item was checked by running the commands on 2026-11-02 at commit `a3183f9` (the last 0.4 build
+commit; this close-out changes only docs).
+
+- **Met: `kits/` contains no drawing calls.** `tests/architecture/no-drawing.test.ts` and
+  `tests/architecture/dependency-rule.test.ts` pass. A planted `kits/topdown/planted.ts` that imports
+  `@engine/core/gfx/renderer` and calls `r.rect(0, 0, 16, 16, '#000000')` failed both (2 failed,
+  93 passed): the dependency test with "kits may not import engine/core/gfx/renderer.ts: kits never
+  draw or play sound", the drawing scan with `kits/topdown/planted.ts:3: r.rect(...)`; `eslint` on
+  the file reported the same `layers/dependency-rule` error. A planted import of
+  `@engine/backends/canvas2d` failed the dependency test ("kits may not import engine/backends").
+  The planted files were deleted.
+- **Met: the demo plays as before with the same state hashes as at the end of 0.3.**
+  `pnpm -s cli run games/demo/runs/walk-east.run.json --json` twice: exit 0, `passed: true`,
+  byte-identical output, hashes tick 0 `d29e6b40530102ce`, 40 `307b25d5cf0508b9`,
+  80 `6f0c9999c28588f2`, 120 `ba89383037a8499e`, 160 `ebbbdd0bbe2fe046`, 200 `08a5abeb7379f953`,
+  240 `257c816edd617516`, the values recorded at the end of 0.3. `walk-east.hashes.json` is
+  unchanged since `c72d1d7` (the 0.3 close-out; `git diff` is empty). In a browser (`pnpm build`,
+  `vite preview`, Playwright with Chromium) the demo page drew the courtyard (canvas 800x600,
+  285002 non-black pixels), the hero moved when ArrowRight was held for a second (the canvas
+  changed), and there were no console errors or page errors. The tick-120 screenshot differs from
+  0.3's only by the new HUD hearts (see `games/demo/CLAUDE.md`, "Screenshot against Engine 0.3").
+- **Met: two resolutions by changing one value, a CLI screenshot of each.** With
+  `games/demo/game.json` as committed (256x240),
+  `pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 120` wrote a 256x240 PNG,
+  sha256 `385b61d4a1ff684c27a8d497775c05949d935fd387e19be34a3fbbd632ba7cdd`,
+  `matchesHeadless: true`. With only `"screen"` changed to `{ "width": 320, "height": 240 }` the same
+  command wrote a 320x240 PNG, sha256
+  `5ccb69e10a269f7dedb0c94d4513d54553a450f6cf672bb926b1bb0d0ced004f`, `matchesHeadless: true`, the
+  room centred and the HUD at the top; `run` at that size gave the same seven hashes. The value was
+  restored. `tests/build/two-resolutions.test.ts` does the same in a copy, takes each screenshot
+  twice (same bytes) and builds the copy with Vite (6 tests pass).
+- **Met: the same hashes with the Canvas2D and the null backend.**
+  `tests/runs/backend-parity.test.ts` passes: walk-east presented every tick through `NullPresenter`
+  and through `SkinnedCanvasPresenter` gives the golden hashes both times. The screenshot command,
+  which draws every tick with the Canvas2D backend in Chromium, reported the headless hashes for
+  ticks 0..120 at both sizes.
+- The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (64 test files,
+  707 tests), and `pnpm docs:check` passes.
+
+### Deviations from the roadmap
+
+- **A stricter check than the roadmap names.** Besides "kits can't import a backend", kits may not
+  import the core's drawing and output side (`FORBIDDEN_CORE`), and a scan rejects drawing calls in
+  kit code.
+- **The demo looks slightly different** although its rules did not change: the skin adds HUD
+  hearts, and events now play sounds (new `door`, `spit` and `hurt` sfx). A few visual details a
+  skin cannot express yet were dropped (listed below). The state hashes are unchanged.
+- **Skins also hold HUD entries and a camera default**, beyond the roadmap's kinds, sprites, meshes,
+  sounds and effects; the HUD had to move out of the kit somewhere.
+- **The status lines** at the top of the demo (title, room, hearts, controls) stay as debug text in
+  `DemoPicture`, drawn by the game, not the skin.
+
+### Outstanding issues
+
+- Visual-only differences from 0.3 that skins cannot express yet: a hurt hero or monster no longer
+  blinks; stun stars do not turn; within one depth layer entities are drawn by `y`, not list order;
+  the exit's glow and dark-room palettes are one flat frame each.
+- `SkinnedCanvasPresenter` ignores the camera's `zoom`, `deadzone` and `lerp` and the `tint` fx for
+  now (`shake` is honoured).
+- Screenshot PNGs still include the demo's debug text in a system font, so they are byte-stable on
+  one machine but may differ between machines; no golden PNG hash is committed.
+- The scaffold skill still covers only the top-down kit (now through `presentWorld`, a skin and
+  `SkinnedCanvasPresenter`).
+- The tools' kit table (`engine/tools/kits.ts`) is unchanged; the kit-level hook is still planned
+  for 0.5.
+- Feedback items 45-47 (`docs/FEEDBACK-LOG.md`) ask the owner about these choices.
+
 ## Engine 0.3
 
 LLM tooling. Built on branch `engine/build-0.15`; not tagged (tagging is the owner's call).
