@@ -3,6 +3,8 @@ export { defineComponent } from './component';
 export type { ComponentDef } from './component';
 export { createWorld } from './world';
 export type { AnyComponent, Entity, System, World, WorldOptions, WorldSnapshot } from './world';
+export { EXTERNAL_CAUSE } from './events';
+export type { Cause, Change, ChangeOp, LogOptions } from './events';
 export {
   ANGLE_STEPS,
   FIXED_ONE,

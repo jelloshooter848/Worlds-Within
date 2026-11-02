@@ -2,6 +2,8 @@ import type { JsonObject, JsonValue } from '../core/headless';
 import { canonicalJson } from '../core/headless';
 import { Rng } from '../core/rng';
 import type { ComponentDef } from './component';
+import type { Cause, Change, ChangeOp, LogOptions } from './events';
+import { EXTERNAL_CAUSE, checkCause, deepFreeze } from './events';
 
 /** Any component kind, whatever its data type. */
 export type AnyComponent = ComponentDef<JsonValue>;
@@ -16,6 +18,11 @@ export type AnyComponent = ComponentDef<JsonValue>;
  *   world.add(id, Position, { x: 0, y: 0 });
  *   world.step();                        // runs `move`, then tick 0 -> 1
  *   for (const e of world.query(Position)) ...   // ascending entity id, always
+ *   world.withCause('order:3', (w) => w.add(id, Position, { x: 2, y: 0 }));
+ *   world.events(1);                     // every change at tick 1 or later, with its cause
+ *
+ * Stored component data is frozen: change it with `add` (or `update`), never in place, so every
+ * change goes through the World API and into the event log.
  */
 
 /** An entity: a positive integer id, handed out in order and never reused. */
@@ -32,6 +39,8 @@ export interface WorldOptions {
   readonly components?: readonly AnyComponent[];
   /** Systems in run order (more can be appended with `addSystem`). */
   readonly systems?: readonly System[];
+  /** Event log retention (default: keep every change). See `LogOptions`. */
+  readonly log?: LogOptions;
 }
 
 /** The whole world as JSON-safe data. Components are listed per kind in ascending entity id. */
@@ -72,11 +81,14 @@ export interface World {
 
   /**
    * Set component `c` on `id` (adding or replacing it). The data is checked against the
-   * component's schema and the parsed copy is stored, so later changes to `data` do not leak in.
+   * component's schema and a frozen, parsed copy is stored, so later changes to `data` do not
+   * leak in. Logged as `add` (new) or `set` (replaced).
    */
   add<T extends JsonValue>(id: Entity, c: ComponentDef<T>, data: T): T;
   add(id: Entity, c: string, data: JsonValue): JsonValue;
-  /** The stored data (mutable in place by systems), or undefined when the entity lacks it. */
+  /** `add(id, c, fn(current))`: replace the component with a new value made from the current one. */
+  update<T extends JsonValue>(id: Entity, c: ComponentDef<T>, fn: (current: Readonly<T>) => T): Readonly<T>;
+  /** The stored data, frozen (read it; change it with `add`), or undefined when the entity lacks it. */
   get<T extends JsonValue>(id: Entity, c: ComponentDef<T>): T | undefined;
   get(id: Entity, c: string): JsonValue | undefined;
   has(id: Entity, c: AnyComponent | string): boolean;
@@ -86,8 +98,28 @@ export interface World {
   /** Entities that have every listed component, ascending by id. Returns a fresh array. */
   query(...cs: (AnyComponent | string)[]): Entity[];
 
-  /** Run every system in order, then commit the tick (tick + 1). */
+  /**
+   * Run every system in order, then commit the tick (tick + 1). Changes the systems make are
+   * attributed to the system making them and staged; they join the event log only at the commit.
+   * If a system throws, the tick is not committed and its staged changes are dropped from the log
+   * (the world itself is not rolled back: treat it as broken).
+   */
   step(): void;
+
+  /**
+   * Run `fn` with `cause` as the cause of every change it makes (between ticks only; inside a step
+   * the cause is always the running system). Without it, a change between ticks is logged with the
+   * cause `'external'`. Returns what `fn` returns.
+   */
+  withCause<R>(cause: Cause, fn: (world: World) => R): R;
+  /** The cause a change made now would be logged with. */
+  readonly cause: Cause;
+  /**
+   * Committed changes with `tick >= sinceTick` (all kept changes when omitted), oldest first, in
+   * the order they were made. Staged changes of a running step are not included. Entries are
+   * frozen JSON-safe data; the array is fresh.
+   */
+  events(sinceTick?: number): Change[];
 
   /** The whole world as JSON-safe data (copied: changing it does not change the world). */
   snapshot(): WorldSnapshot;
@@ -109,6 +141,30 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
   let nextId = 1;
   const rng = new Rng(seed >>> 0);
   let stepping = false;
+  // The cause of changes made now: the running system during a step, else the withCause cause.
+  let cause: Cause = EXTERNAL_CAUSE;
+  const logOn = options.log?.enabled ?? true;
+  const keepTicks = options.log?.ticks;
+  if (keepTicks !== undefined && !(Number.isInteger(keepTicks) && keepTicks >= 0)) {
+    throw new Error(`log.ticks must be an integer >= 0, got ${keepTicks}`);
+  }
+  // Committed changes, oldest first, and the changes staged by the step now running.
+  const log: Change[] = [];
+  const staged: Change[] = [];
+
+  const record = (op: ChangeOp, entity: Entity, extra: { [key: string]: JsonValue } = {}): void => {
+    if (!logOn) return;
+    const change = Object.freeze({ tick, cause, op, entity, ...extra }) as Change;
+    (stepping ? staged : log).push(change);
+  };
+
+  const trim = (): void => {
+    if (keepTicks === undefined) return;
+    const oldest = tick - keepTicks;
+    let drop = 0;
+    while (drop < log.length && (log[drop] as Change).tick < oldest) drop++;
+    if (drop > 0) log.splice(0, drop);
+  };
 
   const nameOf = (c: AnyComponent | string): string => (typeof c === 'string' ? c : c.name);
 
@@ -139,6 +195,9 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
     get rng() {
       return rng;
     },
+    get cause() {
+      return cause;
+    },
 
     registerComponent(def) {
       if (defs.has(def.name)) throw new Error(`component "${def.name}" is already registered`);
@@ -150,6 +209,7 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
       if (systemList.some((s) => s.name === system.name)) {
         throw new Error(`system "${system.name}" is already added`);
       }
+      checkCause(system.name);
       if (stepping) throw new Error(`cannot add system "${system.name}" during a step`);
       systemList.push(system);
     },
@@ -162,13 +222,20 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
       const id = nextId++;
       live.push(id);
       liveSet.add(id);
+      record('spawn', id);
       return id;
     },
 
     destroy(id) {
       mustLive(id);
-      for (const store of stores.values()) store.delete(id);
+      for (const name of [...stores.keys()].sort()) {
+        const store = stores.get(name) as Store;
+        if (!store.has(id)) continue;
+        record('remove', id, { component: name, before: store.get(id) as JsonValue });
+        store.delete(id);
+      }
       liveSet.delete(id);
+      record('destroy', id);
       live.splice(live.indexOf(id), 1);
     },
 
@@ -190,9 +257,22 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
       }
       // Throws, naming the path, on anything that would not survive a save (NaN, Map, undefined...).
       canonicalJson(parsed.data, `${def.name}`);
-      const stored = structuredClone(parsed.data);
+      const stored = deepFreeze(structuredClone(parsed.data));
+      const before = store.get(id);
       store.set(id, stored);
+      if (before === undefined) record('add', id, { component: def.name, value: stored });
+      else record('set', id, { component: def.name, before, value: stored });
       return stored;
+    },
+
+    update<T extends JsonValue>(
+      id: Entity,
+      c: ComponentDef<T>,
+      fn: (current: Readonly<T>) => T,
+    ): Readonly<T> {
+      const current = world.get(id, c);
+      if (current === undefined) throw new Error(`entity ${id} has no component "${c.name}" to update`);
+      return world.add(id, c, fn(current));
     },
 
     get(id: Entity, c: AnyComponent | string): JsonValue | undefined {
@@ -204,7 +284,12 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
     },
 
     remove(id, c) {
-      return storeOf(c).delete(id);
+      const store = storeOf(c);
+      const before = store.get(id);
+      if (before === undefined) return false;
+      store.delete(id);
+      record('remove', id, { component: nameOf(c), before });
+      return true;
     },
 
     query(...cs) {
@@ -214,13 +299,51 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
 
     step() {
       if (stepping) throw new Error('step() called from inside a system');
+      const outer = cause;
       stepping = true;
       try {
-        for (const system of systemList) system.run(world);
+        for (const system of systemList) {
+          cause = system.name;
+          system.run(world);
+        }
+      } catch (err) {
+        staged.length = 0;
+        throw err;
       } finally {
         stepping = false;
+        cause = outer;
       }
       tick += 1;
+      for (const change of staged) log.push(change);
+      staged.length = 0;
+      trim();
+    },
+
+    withCause<R>(next: Cause, fn: (w: World) => R): R {
+      if (stepping) throw new Error(`withCause("${next}") inside a step: a system's changes are its own`);
+      checkCause(next);
+      const outer = cause;
+      cause = next;
+      try {
+        return fn(world);
+      } finally {
+        cause = outer;
+      }
+    },
+
+    events(sinceTick) {
+      if (sinceTick === undefined) return log.slice();
+      if (!Number.isInteger(sinceTick))
+        throw new Error(`events(sinceTick) needs an integer, got ${sinceTick}`);
+      // The log is in tick order, so the first kept index is a binary search away.
+      let lo = 0;
+      let hi = log.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >>> 1;
+        if ((log[mid] as Change).tick < sinceTick) lo = mid + 1;
+        else hi = mid;
+      }
+      return log.slice(lo);
     },
 
     snapshot() {

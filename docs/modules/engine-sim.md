@@ -15,14 +15,21 @@ From `engine/sim/index.ts`:
 
 - `defineComponent(name, schema)`: a component kind (`ComponentDef<T>`) whose data matches a Zod
   schema and is plain JSON-safe data.
-- `createWorld(seed, { components?, systems? })` -> `World`:
+- `createWorld(seed, { components?, systems?, log? })` -> `World`:
   - `spawn()`, `destroy(id)`, `alive(id)`, `entities()`, `nextId`;
-  - `registerComponent(def)`, `add(id, def | name, data)`, `get`, `has`, `remove`;
+  - `registerComponent(def)`, `add(id, def | name, data)`, `update(id, def, fn)`, `get`, `has`,
+    `remove`; stored data is frozen, so every change goes through these;
   - `query(...components)`: entities with all of them, always ascending by id;
   - `addSystem({ name, run })`, `systems()`, `step()` (systems in order, then `tick` + 1), `tick`;
   - `rng` (an `engine/core/rng.ts` `Rng`), `seed`;
   - `snapshot()` (the whole world as JSON-safe data) and `canonical()` (it as canonical JSON, for
-    the tools to hash).
+    the tools to hash);
+  - the event log: `events(sinceTick?)` lists every committed change as JSON-safe
+    `{ tick, cause, op, entity, component?, before?, value? }` (`Change`; ops `spawn`, `destroy`,
+    `add`, `set`, `remove`). A step's changes carry the running system's name and join the log when
+    the tick commits; changes between ticks join at once with the cause from
+    `withCause(cause, fn)` (`order:<id>`, `scenario`, `load`, ...) or `'external'`. Retention: all
+    by default, `log: { ticks: n }` keeps the last `n` ticks, `log: { enabled: false }` none.
 - Deterministic maths (`math.ts`): `idiv`, `imod`, `clamp`, `ipow`, `isqrt`; `distSq`, `distFloor`,
   `manhattan`, `chebyshev`; binary angles (`ANGLE_STEPS` = 256 per turn) with fixed-point
   `sinFixed`/`cosFixed` (`FIXED_ONE` = 65536), `directionAngle`, `directionVector`, `scaleFixed`
@@ -58,7 +65,9 @@ n)` and `lossOrder(world, squad)`. Loss order: unnamed first, then regulars, her
 ## How to test
 
 `pnpm test` runs `engine/sim/world.test.ts` in Node, with no browser: same seed gives identical
-snapshots, iteration is ascending by id after destroy and spawn, and RNG draws differ by seed. `engine/sim/math.test.ts` checks the maths helpers give exact
+snapshots, iteration is ascending by id after destroy and spawn, and RNG draws differ by seed.
+`engine/sim/events.test.ts` checks the event log: attribution to systems, external causes between
+ticks, nothing visible before commit, retention, and an identical log across two same-seed runs. `engine/sim/math.test.ts` checks the maths helpers give exact
 integer results and that the sine table is symmetric; `tests/architecture/purity.test.ts` checks
 the lint rule fires on sim files. `components.test.ts` checks each standard schema,
 `squad.test.ts` squad strength against named members, seeded picking and the loss order, and

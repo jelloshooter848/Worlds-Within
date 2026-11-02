@@ -13,10 +13,7 @@ const wander: System = {
   name: 'wander',
   run(world) {
     for (const id of world.query(Position)) {
-      const p = world.get(id, Position);
-      if (!p) continue;
-      p.x += world.rng.int(3) - 1;
-      p.y += world.rng.int(3) - 1;
+      world.update(id, Position, (p) => ({ x: p.x + world.rng.int(3) - 1, y: p.y + world.rng.int(3) - 1 }));
     }
   },
 };

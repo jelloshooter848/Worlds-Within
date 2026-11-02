@@ -8,7 +8,9 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 
 - `component.ts`: `defineComponent(name, schema)` -> `ComponentDef<T>`, a component kind with the
   Zod schema its data must match.
-- `world.ts`: `createWorld(seed, { components?, systems? })` -> `World`.
+- `world.ts`: `createWorld(seed, { components?, systems?, log? })` -> `World`.
+- `events.ts`: the event log's types (`Change`, `ChangeOp`, `Cause`, `LogOptions`) and
+  `EXTERNAL_CAUSE` (see "Event log" below).
 - `math.ts`: deterministic integer and fixed-point maths (see "Maths" below).
 - `components.ts`: the standard components (see "Standard components" below), `STANDARD_COMPONENTS`
   and `inventoryAdd`.
@@ -21,9 +23,10 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - **Entities** are positive integer ids from `spawn()`, handed out in order (`nextId`) and never
   reused. `destroy(id)` removes the entity and all its components.
 - **Components** are registered by kind (`registerComponent` or the `components` option) and set
-  with `add(id, def | name, data)`, read with `get` (the stored object; systems may change it in
-  place), checked with `has` and dropped with `remove`. `add` checks the data against the schema
-  and that it is JSON-safe, and stores a copy.
+  with `add(id, def | name, data)` (or `update(id, def, fn)`, which adds `fn(current)`), read with
+  `get`, checked with `has` and dropped with `remove`. `add` checks the data against the schema
+  and that it is JSON-safe, and stores a deep-frozen copy. **Never change stored data in place**
+  (it throws): every change goes through `add`/`update`/`remove` so it reaches the event log.
 - **Queries** (`query(...components)`, `entities()`, and the component lists in a snapshot) always
   run in ascending entity id order, never in Map/Set insertion order. Code that iterates the world
   must go through them.
@@ -36,6 +39,35 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `rng`, `entities`, and per component kind a list of `[id, data]` in id order), copied from the
   live state. `canonical()` is that snapshot as canonical JSON (`canonicalJson` from
   `engine/core/headless.ts`). Hashing stays in the tools (`node:crypto`); the sim never hashes.
+
+## Event log
+
+Every change made through the World API is one `Change` (`events.ts`), JSON-safe and frozen:
+`{ tick, cause, op, entity, component?, before?, value? }`. Ops: `spawn`, `destroy`, `add` (a
+component the entity lacked: `value`), `set` (replaced: `before` and `value`) and `remove`
+(`before`; a `remove` of a missing component logs nothing). `destroy` first logs a `remove` for
+each component the entity had, by component name, then the `destroy`. Terrain changes are `set`s
+of the `Terrain` component. RNG draws are not logged themselves; what they decide is, as the
+changes they lead to (the RNG state is in every snapshot).
+
+- **Cause.** During `step()` the cause is always the running system's name (system names must be
+  valid causes). Between ticks it is the one given by `world.withCause(cause, fn)`, such as
+  `order:<id>`, `scenario` or `load`, or `'external'` (`EXTERNAL_CAUSE`) when none is given.
+  `withCause` inside a system throws. `world.cause` is the cause a change made now would get.
+- **Tick.** A change carries the tick the world was at when it was made: a system's change during
+  the step from tick t carries t, and a change between ticks carries the current tick (the tick it
+  applies to), so within one tick the external changes come first, then the systems' in run order.
+- **Commit.** A step's changes are staged and join the log only when the tick commits; a system
+  reading `events()` never sees the running step's changes. A change between ticks joins at once.
+  If a system throws, the tick is not committed and its staged changes are dropped (the world
+  state is not rolled back: a world whose step threw is broken).
+- **Reading.** `events(sinceTick?)`: the kept changes with `tick >= sinceTick`, oldest first, in
+  the order they were made. The order is deterministic: the same seed, setup and systems give the
+  same log (`canonicalJson(world.events())` is equal across runs).
+- **Retention.** Default: keep every change (fine for tests and the sample world). For long runs
+  pass `log: { ticks: n }` to keep only the changes of the last `n` committed ticks (trimmed at
+  each commit: after reaching tick T, changes with `tick < T - n` go), or `log: { enabled: false }`
+  to record nothing. The log is not part of `snapshot()`, so it never changes a state hash.
 
 ## Standard components
 
@@ -121,5 +153,5 @@ integer maths, here in `engine/sim`.
   rounded by IEEE 754), `fround`, `imul`. Prefer integers for positions and amounts anyway.
 - Component data is plain JSON-safe data: no classes, `Map`, `Set`, functions, `undefined` or
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
-- Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `math.test.ts`,
+- Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`).
