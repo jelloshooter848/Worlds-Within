@@ -1,0 +1,303 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 1808,
+  "terrain": {
+    "legend": {
+      ".": {
+        "name": "grass",
+        "cost": 1,
+        "passable": true
+      },
+      "f": {
+        "name": "forest",
+        "cost": 3,
+        "passable": true
+      },
+      "^": {
+        "name": "hills",
+        "cost": 2,
+        "passable": true
+      },
+      "~": {
+        "name": "river",
+        "cost": 1,
+        "passable": false
+      },
+      "=": {
+        "name": "bridge",
+        "cost": 1,
+        "passable": true
+      },
+      "#": {
+        "name": "rock",
+        "cost": 1,
+        "passable": false
+      }
+    },
+    "rows": [
+      "fffff......~~....^^^^^..",
+      "ffff.......~~....^^^^^..",
+      "fff........~~....^^^^^..",
+      "ff.....##..~~.....^^^...",
+      ".......#...~~...........",
+      "...........~~...........",
+      "...........==...........",
+      "...........~~...........",
+      "...........~~..##.......",
+      "....##.....~~.......#...",
+      "...........~~...........",
+      "...........==...........",
+      "...........~~...........",
+      "...........~~..........."
+    ],
+    "elevation": [
+      "222221111110011113444311",
+      "222211111110011113444311",
+      "222111111110011113333311",
+      "221111122110011111333111",
+      "111111121110011111111111",
+      "111111111110011111111111",
+      "111111111111111111111111",
+      "111111111110011111111111",
+      "111111111110011221111111",
+      "111122111110011111122222",
+      "111111111110011111122222",
+      "111111111111111111122222",
+      "111111111110011111122222",
+      "111111111110011111122222"
+    ]
+  },
+  "entities": [
+    {
+      "key": "woodpile",
+      "components": {
+        "Position": {
+          "x": 3,
+          "y": 5,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Inventory": {
+          "wood": 2000
+        }
+      }
+    },
+    {
+      "key": "hall",
+      "components": {
+        "Position": {
+          "x": 16,
+          "y": 6,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 1,
+          "max": 400
+        },
+        "Construction": {
+          "kind": "hall",
+          "progress": 0,
+          "work": 240,
+          "done": false
+        }
+      }
+    },
+    {
+      "key": "granary",
+      "components": {
+        "Position": {
+          "x": 17,
+          "y": 11,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 1,
+          "max": 600
+        },
+        "Construction": {
+          "kind": "granary",
+          "progress": 0,
+          "work": 2400,
+          "done": false
+        }
+      }
+    },
+    {
+      "components": {
+        "Position": {
+          "x": 4,
+          "y": 6,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 10,
+          "max": 10
+        },
+        "Worker": {
+          "job": {
+            "$ref": "hall"
+          },
+          "rate": 2
+        },
+        "Walk": {
+          "wait": 0
+        },
+        "Hauler": {
+          "item": "wood",
+          "source": {
+            "$ref": "woodpile"
+          },
+          "capacity": 3,
+          "carry": 0,
+          "rest": 0,
+          "restOdds": 40,
+          "restTicks": 12
+        }
+      }
+    },
+    {
+      "components": {
+        "Position": {
+          "x": 5,
+          "y": 5,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 10,
+          "max": 10
+        },
+        "Worker": {
+          "job": {
+            "$ref": "hall"
+          },
+          "rate": 2
+        },
+        "Walk": {
+          "wait": 0
+        },
+        "Hauler": {
+          "item": "wood",
+          "source": {
+            "$ref": "woodpile"
+          },
+          "capacity": 3,
+          "carry": 0,
+          "rest": 0,
+          "restOdds": 40,
+          "restTicks": 12
+        }
+      }
+    },
+    {
+      "components": {
+        "Position": {
+          "x": 2,
+          "y": 7,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 10,
+          "max": 10
+        },
+        "Worker": {
+          "job": null,
+          "rate": 2
+        },
+        "Walk": {
+          "wait": 0
+        },
+        "Hauler": {
+          "item": "wood",
+          "source": {
+            "$ref": "woodpile"
+          },
+          "capacity": 3,
+          "carry": 0,
+          "rest": 0,
+          "restOdds": 40,
+          "restTicks": 12
+        }
+      }
+    }
+  ],
+  "squads": [
+    {
+      "key": "watch",
+      "strength": 12,
+      "components": {
+        "Position": {
+          "x": 5,
+          "y": 12,
+          "z": 1
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Walk": {
+          "wait": 0
+        },
+        "Patrol": {
+          "waypoints": [
+            {
+              "x": 5,
+              "y": 12,
+              "z": 1
+            },
+            {
+              "x": 21,
+              "y": 12,
+              "z": 2
+            },
+            {
+              "x": 19,
+              "y": 1,
+              "z": 4
+            },
+            {
+              "x": 6,
+              "y": 7,
+              "z": 1
+            }
+          ],
+          "index": 1
+        }
+      },
+      "members": [
+        {
+          "name": "Aldric",
+          "role": "captain"
+        },
+        {
+          "name": "Brenna",
+          "role": "hero"
+        },
+        {
+          "name": "Cole",
+          "role": "regular"
+        },
+        {
+          "name": "Dara",
+          "role": "regular"
+        }
+      ]
+    }
+  ]
+}

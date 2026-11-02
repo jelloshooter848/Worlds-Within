@@ -18,6 +18,13 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   and `inventoryAdd`.
 - `squad.ts`: squad helpers (see "Squads" below).
 - `terrain.ts`: the `Terrain` component and its helpers (see "Terrain" below).
+- `scenario.ts`: `worldFromScenario(json, { components?, systems?, log? })`, the world-start file
+  schema `scenarioSchema` and `ScenarioError` (see "Scenarios" below).
+- `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
+- `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward` and the
+  systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
+- `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
+  hashes `village.hashes.json`. Fixtures only: no game content anywhere else in the folder.
 - `index.ts`: the public entry point; import from here outside this folder.
 
 ## The world
@@ -154,6 +161,93 @@ flat ground. Helpers: `terrainOf(world)` / `terrainEntity(world)`, `heightAt(t, 
 no cost and there is no line of sight. Line-of-sight and height rules are for 0.9 onwards, in
 integer maths, here in `engine/sim`.
 
+## Scenarios
+
+A scenario is a world written as data (`scenario.ts`). `worldFromScenario(json, options)` checks it
+and returns the world at tick 0; every change it makes is logged with the cause `scenario`.
+`options.components` defaults to `STANDARD_COMPONENTS` plus `Terrain` and must include `Terrain`
+(and `Squad` and `Member` when there are squads); pass the systems and log retention the world
+should run with.
+
+```text
+{ format: "worlds-within/scenario", version: 1, seed,
+  terrain: { legend: { ".": { name, cost, passable }, ... },  // one ground type per character
+             rows: ["..~~..", ...],                           // the grid, north first
+             elevation: ["110011", ...] },                    // one digit (0-9) per cell
+  entities: [{ key?, components: { Position: {...}, ... } }],
+  squads: [{ key?, strength?, components: {...},              // not Squad: it is built
+             members: [{ key?, name, role, components? }] }] }  // not Member: it is built
+```
+
+- **Terrain**: types are numbered in sorted legend character order (`#` before `.` before `a`);
+  `rows` and `elevation` must be the same size, every character in the legend.
+- **Ids** are handed out in file order: the terrain entity is 1, then `entities`, then each squad
+  followed by its members. `key` names an entity so component data can point at it:
+  `{ "$ref": "<key>" }` anywhere in component data becomes that entity's id
+  (`"job": { "$ref": "hall" }`). Keys are unique across the file.
+- **Squads**: `Squad` is built from the entry (`strength` defaults to the number of named members,
+  `captain` is the member whose role is `captain`, at most one) and each member gets
+  `Member { name, squad, role }`.
+- **Errors**: a bad file throws `ScenarioError` (`issues: { path, message }[]`), one line per bad
+  field: `terrain.rows.1: character "x" at x 1 is not in the legend`,
+  `entities.0.components.Position.x: ...`,
+  `entities.1.components.Worker.job: $ref "zed" names no entity of the scenario`.
+- The format is in `docs/reference/schemas.md` ("World scenario", from `scenarioSchema`, with the
+  example `docs/reference/examples/world-scenario.json`). A change to the format bumps
+  `SCENARIO_VERSION`.
+
+## Walking
+
+`path.ts`: 4-way movement on the terrain grid. Entering a cell costs its type's `cost`; impassable
+cells and cells off the grid are never entered. `distanceField(t, goal, near)` is the cheapest
+total cost from every cell to the goal (`UNREACHABLE` = -1 where there is no way); with `near` the
+goal is the cell or any cell next to it (for reaching something on a cell no one can enter).
+`nextStep(t, field, from)` is the neighbour to step into, ties going north, east, south, west
+(`STEPS`), or null at the goal or with no way. Fields are cached per terrain object and goal (a
+`WeakMap`; the terrain is replaced, never changed, so the cache never changes a result). Height
+changes no cost (item 101); a walker stands at the elevation of the cell it enters (`z`).
+
+## Systems
+
+`systems.ts` holds the world's first systems. They are machinery, not game rules: every number
+they use is component data. All integer, all randomness through `world.rng`, all state in
+components, entities visited in id order.
+
+- `Walk` `{ wait }`: a walker. Entering a cell of cost c takes c ticks (the step, then c - 1
+  waits). `walkToward(world, id, t, field)` takes one tick of that (an entity without `Walk` steps
+  every tick); it returns true when already at the goal.
+- `Hauler` `{ item, source, capacity, carry, rest, restOdds, restTicks }`: a worker that fetches
+  `item` from `source` (an entity with `Inventory`) and carries it to its `Worker.job`.
+- `haulSystem` (`haul`): a worker (`Worker`, `Hauler`, `Position`) whose job is missing or done
+  takes the nearest unfinished `Construction` (Manhattan, ties to the lowest id; none: it idles).
+  If resting it counts `rest` down; else with odds one in `restOdds` (an RNG draw) it rests 1 to
+  `restTicks` ticks; else it walks next to its source and takes up to `capacity`, or, carrying,
+  walks next to its job and adds `carry * rate` work (capped; `done` when complete).
+- `buildSystem` (`build`): a building's `Health.hp` follows its `Construction`:
+  `max * progress / work` rounded down (at least 1), `max` once done.
+- `patrolSystem` (`patrol`): an entity with `Patrol` walks to its current waypoint (standing on
+  it) and on arriving turns to the next one, looping.
+
+## The sample world
+
+`__fixtures__/village.world.json` is the Engine 0.8 proof: a 24x14 village with a river and two
+bridges, hills, forest and rock; a woodpile, a hall and a granary going up, three workers (one
+starts with no job) and a patrolling squad of 12 with four named members. It runs with
+`[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]`, systems `[haulSystem, buildSystem,
+patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and the granary near
+6,500; the squad walks its four waypoints the whole run.
+
+- Run it: `pnpm test engine/sim/sample-world` (about 7 s). `sample-world.test.ts` runs 10,000
+  ticks twice and compares state hashes (first 16 hex digits of the SHA-256 of `canonical()`)
+  every 10 ticks; compares every 100th with the golden file `__fixtures__/village.hashes.json`;
+  saves and loads (as text) at 83 ticks (0, 1, every 250th, 40 seeded random ones, 9,999 and
+  10,000), checking save -> load -> save gives the same text and the hashes for 250 ticks after;
+  runs to 10,000 from a few loads; and reloads at every one of those ticks in a single run. It
+  also asserts the buildings complete, the woodpile is drawn down, the squad reaches every
+  waypoint without entering river or rock, and workers rest at random.
+- After a change meant to change the sample's state, regenerate the golden file with
+  `WW_UPDATE_GOLDEN=1 pnpm test engine/sim/sample-world` and commit it.
+
 ## Maths
 
 `math.ts` (exported from `index.ts`) holds the replacements, all exact on every machine:
@@ -190,4 +284,5 @@ integer maths, here in `engine/sim`.
 - Component data is plain JSON-safe data: no classes, `Map`, `Set`, functions, `undefined` or
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
-  `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`).
+  `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
+  `path.test.ts`, `systems.test.ts`, `sample-world.test.ts`).

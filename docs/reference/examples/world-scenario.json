@@ -1,0 +1,62 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 7,
+  "terrain": {
+    "legend": {
+      ".": { "name": "grass", "cost": 1, "passable": true },
+      "^": { "name": "hills", "cost": 2, "passable": true },
+      "~": { "name": "river", "cost": 1, "passable": false }
+    },
+    "rows": ["..~..", "..~^^", "....^"],
+    "elevation": ["11011", "11023", "11112"]
+  },
+  "entities": [
+    { "key": "pile", "components": { "Position": { "x": 0, "y": 0, "z": 1 }, "Inventory": { "wood": 20 } } },
+    {
+      "key": "hut",
+      "components": {
+        "Position": { "x": 4, "y": 2, "z": 2 },
+        "Construction": { "kind": "hut", "progress": 0, "work": 12, "done": false },
+        "Health": { "hp": 1, "max": 50 }
+      }
+    },
+    {
+      "components": {
+        "Position": { "x": 1, "y": 0, "z": 1 },
+        "Worker": { "job": { "$ref": "hut" }, "rate": 2 },
+        "Walk": { "wait": 0 },
+        "Hauler": {
+          "item": "wood",
+          "source": { "$ref": "pile" },
+          "capacity": 2,
+          "carry": 0,
+          "rest": 0,
+          "restOdds": 30,
+          "restTicks": 5
+        }
+      }
+    }
+  ],
+  "squads": [
+    {
+      "key": "watch",
+      "strength": 6,
+      "components": {
+        "Position": { "x": 0, "y": 2, "z": 1 },
+        "Walk": { "wait": 0 },
+        "Patrol": {
+          "waypoints": [
+            { "x": 0, "y": 2, "z": 1 },
+            { "x": 4, "y": 0, "z": 1 }
+          ],
+          "index": 1
+        }
+      },
+      "members": [
+        { "name": "Aldric", "role": "captain" },
+        { "name": "Brenna", "role": "hero" }
+      ]
+    }
+  ]
+}

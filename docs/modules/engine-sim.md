@@ -37,6 +37,22 @@ From `engine/sim/index.ts`:
   identically. Systems are code: pass the same list (checked by name). A bad save throws
   `SaveError` whose `issues` (and message) name each bad field (`entities.1.components.Health.hp`).
   `worldSaveSchema` is the file's Zod schema (documented in `docs/reference/schemas.md`).
+- Scenarios (`scenario.ts`): `worldFromScenario(json, { components?, systems?, log? })` -> the
+  `World` a world-start file describes (format `worlds-within/scenario`, version 1: seed, terrain
+  as a text grid with a legend and a grid of elevation digits, entities with components, squads
+  with named members; `{ "$ref": "<key>" }` in component data is another entity's id).
+  `scenarioSchema`, `ScenarioError` (`issues` name each bad field).
+- Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
+  cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
+  west.
+- Systems (`systems.ts`): components `Walk` `{ wait }` and `Hauler` `{ item, source, capacity,
+carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, and `haulSystem`
+  (workers fetch from a source and carry it to the nearest unfinished building as work, resting at
+  random through the world RNG), `buildSystem` (a building's health follows its progress) and
+  `patrolSystem` (walk the waypoints in a loop).
+- The sample world: `engine/sim/__fixtures__/village.world.json`, run by
+  `pnpm test engine/sim/sample-world`: 10,000 ticks, the same hashes twice and as the golden file
+  `village.hashes.json`, and a save and load at 83 ticks matching the uninterrupted run.
 - Deterministic maths (`math.ts`): `idiv`, `imod`, `clamp`, `ipow`, `isqrt`; `distSq`, `distFloor`,
   `manhattan`, `chebyshev`; binary angles (`ANGLE_STEPS` = 256 per turn) with fixed-point
   `sinFixed`/`cosFixed` (`FIXED_ONE` = 65536), `directionAngle`, `directionVector`, `scaleFixed`

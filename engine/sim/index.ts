@@ -8,6 +8,26 @@ export { SAVE_FORMAT, SAVE_VERSION, SaveError, loadWorld, saveWorld, worldSaveSc
 export type { LoadOptions, SaveIssue, WorldSave } from './save';
 export type { Cause, Change, ChangeOp, LogOptions } from './events';
 export {
+  SCENARIO_FORMAT,
+  SCENARIO_VERSION,
+  ScenarioError,
+  scenarioSchema,
+  worldFromScenario,
+} from './scenario';
+export type { Scenario, ScenarioIssue, ScenarioOptions } from './scenario';
+export {
+  Hauler,
+  SYSTEM_COMPONENTS,
+  Walk,
+  buildSystem,
+  haulSystem,
+  patrolSystem,
+  walkToward,
+} from './systems';
+export type { HaulerData, WalkData } from './systems';
+export { STEPS, UNREACHABLE, distanceField, nextStep } from './path';
+export type { Cell } from './path';
+export {
   ANGLE_STEPS,
   FIXED_ONE,
   QUARTER_TURN,
