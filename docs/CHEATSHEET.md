@@ -44,13 +44,22 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
 
 - Headless (`headless.ts`): build the world from the bundle and a seed, and return a `HeadlessGame`
   (`engine/core/headless.ts`). The top-down kit's `topdownGame(world)` does the wrapping:
-  `new TopDownWorld(buildDungeon(rooms), { seed, disabledRules: opts.disabledRules })`.
+  `new TopDownWorld(buildDungeon(rooms), { seed, disabledRules: opts.disabledRules })`. The
+  platformer kit's is `new PlatformerWorld(level, profile, { seed, disabledRules, miniGames })`
+  (`level` and `profile` kinds; see `games/platformer-lab/headless.ts`).
+- Mini games (`engine/core/minigame.ts`, pure): a `MiniGameDef { id, title, create(ctx, seed) }`
+  makes a `MiniGame { step, snapshot, result, present? }` that ends `pass`, `fail` or `quit`. The
+  game supplies the defs (a kit defines none); a platformer level's `!` triggers start rounds
+  headless. In the browser, `miniGameScene` (`engine/core/minigame-scene.ts`) pushes the round as
+  a scene over the level and reports the result.
 - View (`view.ts`, `engine/core/view.ts`): the same game plus `screen` (the manifest's picture
   size) and `render(r: Renderer)`, drawing the whole picture. Its `step` and `snapshot` must match
   the headless module's. Kits never draw: `render` asks the kit for a frame
   (`presentWorld(world, events, { state, size })`, a `PresentFrame`) and hands it, frozen
   (`freezeFrame`), to the backend's `SkinnedCanvasPresenter(r, skin, sheetLookup(assets), { size })`
-  with the game's skin (`content/skins/canvas2d.json`, the `skin` kind).
+  with the game's skin (`content/skins/canvas2d.json`, the `skin` kind). The presenter keeps the
+  camera: it follows the frame's camera hint (else the skin's `camera`), with `deadzone`, `lerp`
+  and clamping to the hint's `bounds` or the map; a hint's own values win over the skin's.
 - Browser (`main.ts`): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
   songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).

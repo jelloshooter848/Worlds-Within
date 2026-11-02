@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 52.** (Last used: 51.)
+**Next unused number: 61.** (Last used: 60.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -107,3 +107,46 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **51.** The Canvas2D presenter ignores the camera's `zoom`, `deadzone` and `lerp` and the `tint`
   fx for now (the contract lets a backend ignore them), and the demo runs it with `clamp: false`.
   Implement them in 0.5 with the platformer, or later?
+
+**Orchestrator defaults taken in Engine 0.5** (items still open; the owner can overrule them)
+
+- **41:** weak rules fail `mutants` (exit 4) only for a kit that opts in with `strictMutants: true`.
+  The platformer kit opts in; the top-down kit stays report-only. See item 56.
+- **44:** done. Each kit exports a `KitDef` hook from `kits/<name>/kit.ts`, and `pnpm docs:gen`
+  generates the tools' kit list (`engine/tools/kit-list.ts`).
+- **51:** deadzone, lerp and clamping (to the map or a hint's `bounds`) were implemented in 0.5.
+  `zoom` is still ignored, and the demo keeps `clamp: false`. See item 55.
+
+**Engine 0.5**
+
+- **52.** The roadmap puts the fixture level in `kits/platformer`. It is there, and browser play
+  lives in a test game, `games/platformer-lab`, which plays a byte-identical copy (checked by a
+  test) plus five rule levels, a placeholder skin and a test mini game. OK, or should the lab
+  become the platformer sample in `games/samples/` later?
+- **53.** Physics numbers are a content kind of their own (`profile`), separate from levels, and
+  enemy behaviour is set per actor type in the profile, not in code. OK?
+- **54.** SMBC behaviour left out of the kit: character-specific moves (crouch, slides, wall moves,
+  flutter, air jumps, cut jumps), swimming, power states, running over one-tile gaps, coyote time,
+  other start modes, moving power-ups, score and timer (the full list is in
+  `kits/platformer/CLAUDE.md`). Add any of them before Worlds Within's platformer (0.7)?
+- **55.** Camera precedence: the world keeps its own view, which decides the scroll lock and when
+  actors wake. The picture's camera is the presenter's: it follows the runner with a deadzone and
+  lerp inside the hint's `bounds`, so the picture can lag the world's view by a few pixels. A
+  frame hint's values win over the skin's camera defaults. OK?
+- **56.** The strict-mutants design: a kit opts in through its hook, each run file names the rules
+  it guards (`guards`), and `mutants games/<game>` needs every rule guarded by some run file, not
+  every run guarding every rule. Should the top-down kit become strict too? Its demo would need
+  run files that guard every rule.
+- **57.** Golden traces were recorded once from SMBC's headless runner, through a Vite module
+  runner. The generator is kept as text in the fixtures' README and the JSON is committed, so CI
+  never needs SMBC and nothing re-checks SMBC automatically. OK?
+- **58.** The mini game contract is in `engine/core` (pure), with `miniGameScene` for browser glue,
+  rather than in the platformer kit, so other kits can host mini games. Trigger outcomes are a
+  closed list in level data (`coins:<n>`, `life`, `clear`, `respawn`, `open:<col>:<row>`). OK?
+- **59.** The lab plays its levels in a fixed order, so a run file for a later level replays the
+  earlier ones first (runs of up to 3015 ticks, and a change to an early level moves every later
+  tick). Should run files be able to start at a chosen level?
+- **60.** The browser play check for 0.5 (as in 0.4) was a manual Playwright script recorded in
+  the build log, not a committed test. The CLI screenshot and the backend-parity test cover
+  Canvas2D drawing. Add a committed browser test that loads each game's page and presses a key
+  (skipped where no browser is installed)?

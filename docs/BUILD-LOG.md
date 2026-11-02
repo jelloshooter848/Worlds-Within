@@ -7,24 +7,204 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
-## Engine 0.5 (in progress)
+## Engine 0.5
 
-Notes recorded while the release is built; the close-out (T11) turns them into the usual sections.
+Platformer kit. Built on branch `engine/build-0.15`; not tagged (tagging is the owner's call).
 
-- **Golden traces against SMBC (T6).** `kits/platformer/golden.test.ts` replays six scripted inputs
-  (walk, run then skid and let go, tap jump, held jump, a running jump over a gap into a wall, a jump
-  into a ceiling) and matches SMBC REMIX v0.4.73 (commit `e0eeee7`) tick by tick in body x, y, vx and
-  vy. The traces were recorded with SMBC's headless `runSim` and its default runner on a
-  purpose-built 48x15 test map, through a small Vite module runner using this repo's Vite with SMBC
-  as the root (SMBC's level index needs `import.meta.glob`, so plain `tsx` could not load it), with
-  nothing installed in the SMBC checkout. The generator, the command and the provenance are in
-  `kits/platformer/__fixtures__/golden/README.md`; SMBC is not a dependency and the test reads only
-  the committed JSON. The one change the traces asked for: the player now starts as SMBC's does,
-  not yet on the ground, so tick 0 is an air tick and tick 1 lands it (the profile numbers already
-  matched). Left out on purpose, and kept out of the scripts: character-specific moves (crouch,
-  slides, wall moves, flutter, air jumps, cut jumps, swimming, power states), running over
-  one-tile gaps, coyote time, the camera's left edge (scroll lock, T7) and start modes other than
-  standing; the list is in `kits/platformer/CLAUDE.md`.
+### What was built
+
+- **A kit hook replaces the tools' kit table (item 44).** Each kit exports `kit` from
+  `kits/<name>/kit.ts`, a `KitDef` (`engine/core/kit.ts`, checked by `defineKit`): its name, content
+  kinds, named rules and `strictMutants?`. `engine/tools/kits.ts` finds a game's kit by its
+  `game.json` kit name through `engine/tools/kit-list.ts`, which `pnpm docs:gen` generates from the
+  kit folders and `pnpm docs:check` checks. `KIT_KINDS` and `KIT_RULES` are gone.
+- **Strict mutants (item 41).** A run file may list the rules it is meant to guard (`guards`,
+  checked against the kit's rules). For a kit that opts in (`strictMutants: true`), `mutants` exits
+  4 when a run does not guard a rule it lists. `mutants games/<game>` checks every run file of a game
+  and reports which runs guard each rule; for a strict kit an unguarded rule is exit 4 as well. The
+  top-down kit does not opt in and still only reports.
+- **The Canvas2D camera (item 51).** `SkinnedCanvasPresenter` keeps camera state (never in a kit,
+  a frame or a hash) and frames each picture from the frame's camera hint, else the skin's camera:
+  follow an entity, a deadzone box round the centre, an integer fixed-point lerp (1 snaps), and a
+  clamp to the hint's new optional `bounds` or the map (a smaller area is centred). `CameraHint`
+  gained `deadzone`, `lerp` and `bounds`. `zoom` is still ignored. The demo's pictures and hashes
+  did not change.
+- **`kits/platformer`.** Two content kinds: `level` (a JSON header plus a `.map.txt` grid of a
+  generic legend: solid, brick, bump blocks, one-way platforms, coins, hazards, the start, the goal,
+  actor spawns and mini-game triggers, with a `scroll` mode of `right`, `free` or `none`) and
+  `profile` (the player's movement numbers in whole sub-pixels, 1/256 px, and speeds in 1/4096 px
+  per tick, plus actor types such as `walker` and `shell` whose behaviour is set by data). Cross-file
+  checks require one start, one goal, a known profile and known actor types. A tiny fixture level
+  and the default-runner profile live in `kits/platformer/__fixtures__/`.
+- **The platformer world.** `PlatformerWorld` plays a level with SMBC-style whole-number physics:
+  walk and run caps, friction, skid, jump tiers by take-off speed, variable jump through hold
+  gravity, a fall cap, solid and one-way tiles, ceiling bumps and level bounds. Level objects: coins,
+  bump blocks (coin, coins, power-up, life or an actor), breakable bricks, hazards and pits, hit
+  points with invulnerability ticks, lives, a goal and the scroll-right lock. Actors wake near the
+  view, turn at walls (and at ledges for `turnAt: ledges` types), are stomped into their `stompInto`
+  type with a bounce, are kicked as shells, and a moving shell defeats other actors. The level ends
+  `cleared` or `failed`. **32 named rules** (`MOVEMENT_RULES` and `OBJECT_RULES` in `rules.ts`),
+  each fails a kit test when it is off. `snapshotWorld` gives the JSON-safe, hashed snapshot and
+  `platformerGame` the headless contract.
+- **Golden traces against SMBC.** `kits/platformer/golden.test.ts` replays six scripted inputs
+  (walk, run then skid and let go, a tap jump, a held jump, a running jump over a gap into a wall,
+  a jump into a ceiling) and matches SMBC REMIX v0.4.73 (commit `e0eeee7`) tick by tick in the
+  body's x, y, vx and vy. The traces were recorded with SMBC's headless `runSim` and its default
+  runner on our own 48x15 test map. The generator, the command and the provenance are in
+  `kits/platformer/__fixtures__/golden/README.md`. SMBC is not a dependency: the test reads only the
+  committed JSON.
+- **The mini game hook.** `engine/core/minigame.ts` is a pure contract in the style of SMBC's
+  `MiniGameDef` (`MiniGameDef`, `MiniGame`, `MiniGameResult` `pass` | `fail` | `quit`,
+  `miniGameTable`). `engine/core/minigame-scene.ts` (`miniGameScene`) is the browser side a game's
+  glue pushes over a level. A platformer level's `!` cells are triggers: the world pauses for the
+  round (headless too), keeps the round's snapshot in its own, and applies the outcomes listed for
+  the result in the level data (`coins:<n>`, `life`, `clear`, `respawn`, `open:<col>:<row>`). The
+  kit defines no mini games; the game supplies them. This adds the named rule `mini-games`.
+- **Presentation.** `kits/platformer/present.ts` (`presentWorld`) describes each tick as a
+  read-only `PresentFrame`: the terrain map through a `MapTracker` (sent again when a block is
+  used, a brick breaks or a gate opens), the runner, actors, coins, goals, triggers, block bounces
+  and remains with animation states and tags, placed events, HUD status, and a camera hint that
+  follows the runner inside the scroll lock. While a mini game runs, its own frame is shown.
+  Presentation state lives in `PlatformerPresentState`, outside the world, so hashes do not change.
+- **`games/platformer-lab`.** A test game on the kit. It plays a byte-identical copy of the kit's
+  fixture level first (`lab.test.ts` fails if the copy drifts), then five small levels that each
+  put one group of rules to work. Six run files (`start-to-goal`, `moves`, `objects`, `shells`,
+  `walkers`, `mini-game`) together guard all 32 rules, with golden hashes, and backend parity
+  covers them. In the browser it plays through `SkinnedCanvasPresenter` and an original
+  placeholder skin (flat NES-style frames as text, the camera following with a 32x48 deadzone and
+  lerp 0.25), with keyboard, gamepad and touch. It pushes `miniGameScene` for its own tiny "stop the
+  bar" mini game. It has agent docs, a module page, an `llms.txt` link and a platformer section in
+  the scaffold-game skill.
+
+### Choices made
+
+- **Orchestrator defaults for open feedback items.** The owner had not answered items 41, 44 and
+  51 when 0.5 started, so the build took these defaults (the owner can still overrule them):
+  - **41 (make weak rules fail):** yes, but per kit. A kit opts in with `strictMutants: true`, the
+    platformer kit does, and the top-down kit stays report-only, so the demo's single run file
+    still passes.
+  - **44 (replace the kit table with a hook):** yes. Each kit exports a `KitDef`, and the tools'
+    list of kits is generated by `pnpm docs:gen` (`engine/tools/kit-list.ts`), so adding a kit
+    needs no hand edit in `engine/tools`.
+  - **51 (camera zoom, deadzone, lerp, tint):** deadzone, lerp and clamping were done in 0.5 for
+    the platformer. `zoom` stays ignored (honouring it means scaling the map cache and every
+    sprite), and the demo keeps `clamp: false`.
+- **The trace approach.** Golden traces were recorded once from SMBC's own headless runner, not
+  from a port of its code. A small Vite module runner, using this repo's Vite with SMBC as the
+  root, was needed because SMBC's level index uses `import.meta.glob`. Nothing was installed in or
+  written to the SMBC checkout. The generator is kept as text in the fixtures' README and the test
+  reads only the committed JSON, so CI never needs SMBC. One fix came from the traces: the player
+  now starts as SMBC's does, not yet on the ground, so tick 0 is an air tick.
+- **SMBC behaviour left out of the kit**, and kept out of the trace scripts: character-specific
+  moves (crouch, slides, wall moves, flutter, air jumps, cut jumps), swimming, power states,
+  running over one-tile gaps, coyote time and start modes other than standing. Also simplified: a
+  power-up is given at once, a bump does not hit actors on the block, actors do not turn at each
+  other, a respawn is immediate, and there is no score or timer. The list is in
+  `kits/platformer/CLAUDE.md`.
+- **The physics profile is data**, a content kind of its own, not constants in the kit. Enemy
+  behaviour (speed, stompable, `stompInto`, kickable, harms, `turnAt`) is set per actor type in
+  the profile.
+- **The browser fixture lives in a lab game.** The roadmap puts the fixture level in
+  `kits/platformer`. Browser play needs a skin, an entry page and glue, which are game content, so
+  they live in `games/platformer-lab`, which plays a checked copy of the kit's fixture.
+- **Two cameras with a set precedence.** The world keeps its own view (`scrollX`), which decides
+  the scroll lock and when actors wake. The picture's camera is the presenter's: it follows the
+  runner with a deadzone and lerp, inside the hint's `bounds` (the scroll lock). A frame hint's
+  values win over the skin's camera defaults.
+- **Mini games are a core contract, not a kit part**, so another kit can host them. The trigger
+  outcomes are a closed list in level data.
+
+### How to try it
+
+```sh
+pnpm -s cli validate games/platformer-lab --json
+pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json
+pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --disable-rule variable-jump --json
+pnpm -s cli mutants games/platformer-lab --json
+pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --json
+pnpm test kits/platformer games/platformer-lab tests/runs tests/architecture
+pnpm dev   # then open /games/platformer-lab/ (arrows move, Z jumps, X runs)
+```
+
+### Done when
+
+Each item was checked by running the commands on 2026-11-02 at commit `5e8282a`, the last 0.5
+code commit.
+
+- **Met: a headless run file plays a fixture level from start to goal, with the same state hashes
+  every time.** `pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json` was run
+  twice: exit 0, `passed: true`, 17 assertions and 3 invariants each time, and the two outputs were
+  byte-identical. The hashes were tick 0 `9ed173e616121d27`, 60 `522eeb1256650932`,
+  120 `50397aac3f28ba17`, 180 `9c9848d8d2b9a2b2` and 240 `7137cbde89f0fd44`, the same as
+  `start-to-goal.hashes.json`. The run plays `tiny`, the copy of the kit's fixture level, and its
+  assertions check the coins, the used block, the position at the goal and the outcome `cleared`
+  (at tick 226). `tests/runs/run-files.test.ts` compares every run with its golden hashes.
+- **Met: golden traces match SMBC tick by tick.** `pnpm vitest run kits/platformer/golden.test.ts`
+  passed (8 tests: one per script, one that every trace has the recorded map, fields and length, and one that a changed profile number is reported at its first differing tick). As a fresh check, the
+  traces were regenerated from SMBC at `e0eeee7` (`git -C /home/user/jelloshooter848/smbc rev-parse
+--short HEAD`) with the README's `run.mjs` and `generate.ts` in a scratch folder
+  (`GOLDEN_OUT=$PWD/out node run.mjs $PWD/generate.ts`, then Prettier). All six outputs were
+  byte-for-byte the committed `*.trace.json` files, and the SMBC checkout was left clean
+  (`git status --short` empty).
+- **Met: for every named rule, at least one run file fails when that rule is off.**
+  `pnpm -s cli mutants games/platformer-lab --json`: exit 0, `strict: true`, all 32 rules guarded
+  (`unguarded: []`), and no weak rule in any of the six runs. Each rule is guarded by 1 to 6 runs;
+  for example, `variable-jump` off fails `start-to-goal` at tick 80 (`player.y is 23168, expected
+21320`, exit 4). A planted `games/platformer-lab/runs/planted-weak.run.json` (30 ticks of walking
+  right, one assertion on the level id, `"guards": ["skid"]`) made the same command exit 4:
+  `planted-weak.run.json: weak: does not guard skid (listed in guards)`. Run alone,
+  `pnpm -s cli mutants games/platformer-lab/runs/planted-weak.run.json` also exited 4
+  (`weak: does not guard skid`). After the planted file was deleted, the game check exited 0 again.
+- **Met: the kit has no imports from any backend and no drawing calls.**
+  `tests/architecture/dependency-rule.test.ts` and `tests/architecture/no-drawing.test.ts` pass
+  (95 tests). A planted `kits/platformer/planted.ts` that imports `@engine/backends/canvas2d` and
+  calls `ctx.fillRect(0, 0, 16, 16)` failed both (2 failed, 93 passed). The dependency test said
+  "kits/platformer/planted.ts imports '@engine/backends/canvas2d': kits may not import
+  engine/backends (allowed: kits, engine/core)", and the drawing scan said
+  `kits/platformer/planted.ts:4: ctx.fillRect(0, 0, 16, 16);`. `eslint` on the file reported the
+  same `layers/dependency-rule` error. A second planted file importing `@engine/core/gfx/renderer`
+  and calling `r.rect(0, 0, 16, 16, '#000000')` also failed both ("kits never draw or play
+  sound"). Both planted files were deleted, and the two tests passed again.
+- **Met: a fixture level plays in the browser through Canvas2D and a placeholder skin.** After
+  `pnpm build`, `vite preview` served the page and a Playwright script opened it in Chromium at
+  `/games/platformer-lab/` (800x600). It drew the fixture level through the placeholder skin
+  (canvas 800 wide, 381205 non-black pixels, 10 colours). Holding ArrowRight for a second, then Z
+  for a jump, changed the picture. There were no console errors or page errors. Running
+  `pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --json`
+  twice wrote the same 256x240 PNG both times (sha256
+  `2c6cc55462fd9c74d0392e6d2471d2020743b8c1b0abd719a8e094a4b54e9c2d`), with
+  `matchesHeadless: true` (hash `50397aac3f28ba17`). `tests/runs/backend-parity.test.ts` plays
+  every lab run presenting each tick through the null backend and through `LabPicture` (Canvas2D),
+  and both give the golden hashes.
+- The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (76 test files,
+  870 tests), and `pnpm docs:check` passes. Every run file of both games passes
+  `pnpm -s cli run` (exit 0), and `pnpm -s cli mutants games/demo` exits 0.
+
+### Deviations from the roadmap
+
+- **The browser fixture is a lab game.** The fixture level stays in `kits/platformer` as the
+  roadmap says. Playing it in the browser is done by `games/platformer-lab`, which holds a checked
+  byte-identical copy of the fixture, five more rule levels, a skin and a test mini game.
+- **The camera's deadzone, lerp and clamp were added to the Canvas2D presenter** (item 51). The
+  roadmap's 0.5 scope only mentions the camera as part of SMBC's code to extract.
+- **Additions not in the roadmap:** the kit hook (item 44), strict mutants with `guards` and a
+  game-wide `mutants` check (item 41), and a pure mini game contract in `engine/core` with a
+  browser scene helper.
+- **SMBC's behaviour is not all there.** The kit keeps the rules the traces cover and the level
+  objects a test level needs. Character-specific moves, swimming, power states and the other items
+  under "Choices made" were left out.
+
+### Outstanding issues
+
+- `zoom` in camera hints and skins is still ignored by the Canvas2D presenter.
+- The browser play check is a manual Playwright script, as in 0.4, not a committed test. The CLI
+  screenshot and the backend-parity test cover drawing in Chromium and the Canvas2D path.
+- The lab plays its levels in a fixed order, so a run that checks a later level replays every
+  earlier level first. Its runs are long (up to 3015 ticks), and a change to an early level moves
+  every later tick.
+- The lab has no sounds. Its skin maps every event to an effect only.
+- The demo's top-down kit is not strict, and its one run file guards only `doors-change-room`.
+- Feedback items 52-60 (`docs/FEEDBACK-LOG.md`) ask the owner about these choices.
 
 ## Engine 0.4
 

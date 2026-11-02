@@ -271,7 +271,7 @@ measuring with a benchmark.
 
 ---
 
-## 0.5 Platformer kit
+## 0.5 Platformer kit (done)
 
 **Goal:** SMBC's platformer becomes a kit: its rules, with no drawing and no SMBC content.
 
@@ -298,6 +298,9 @@ measuring with a benchmark.
 - For every named rule, at least one run file fails when that rule is switched off.
 - The kit has no imports from any backend, and no drawing calls.
 - A fixture level can be played in the browser through the Canvas2D backend and a placeholder skin.
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-05).)_
 
 **Out of scope:** 3D, an original game (that is 0.7), SMBC's campaign, characters and mini games.
 
