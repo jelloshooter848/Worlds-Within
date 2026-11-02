@@ -28,6 +28,27 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
 - `schema.ts`: `presentFrameSchema`, a Zod schema for tests and tools (not run per frame). It
   checks finite numbers, that a full map's tiles (and layers) are `rows` x `cols`, and that event
   fields are JSON-safe. Unknown fields are errors everywhere except on events.
+- `skin.ts`: skin files, the engine's `skin` content kind (`SKIN_KIND`, registered in
+  `content/engine-kinds.ts`). One JSON file per backend: `{ backend, sheets?, kinds, tiles?,
+events?, hud?, camera? }`. `sheets` gives defaults (`sheet`, `palette`, `fallbackColor`) for
+  entries that leave them out. A kind entry is 2D (`sheet`, `palette?`, `frames`, `flipFacing?`,
+  `size?`, `fallbackColor`, `offset?`) or 3D (`mesh`, `color`, `scale?`, `offset?`); the backend
+  picks which (`MESH_BACKENDS`, today `three`), and a field of the other shape is a
+  `wrong_backend_field` error, a needed one left out `missing_field`. `frames` maps an animation
+  state to a frame name, a cycle `{ frames, ticks? (default 8), loop? }` or a per-facing map
+  `{ up?, down?, left?, right? }` of names or cycles. `tiles` maps a tile character or id to
+  `{ sheet?, frame, fallbackColor }`; `events` maps an event type to `{ sound?, effect? }`
+  (`effect.kind`: `flash`, `particles`, `shake`, `tint`); `hud` lists `{ status, as: hearts |
+number | text | icon, x, y, sheet?, frame?, font? }`.
+  - Cross-file (`SKIN_KIND.checkAll`, `checkSkinRefs`): every sheet, palette and sound must be a
+    sprite, palette, song or sfx of the game (`missing_ref`), and every frame a frame of its
+    sheet (`missing_frame`), each at the skin file and field.
+  - `resolveSkinFrame(skin, entity)` (pure, for backends): the `SkinFrame` `{ sheet, frame, flipX,
+palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (else `idle`,
+    else the first state), `anim.t` (cycle frame; `loop: false` holds the last) and `facing` (a
+    left-facing entity without a `left` frame uses `right` mirrored when `flipFacing`; else
+    `down`, else the first given). An unknown kind or a mesh entry gives `frame: null`: draw a
+    `fallbackColor` box (`DEFAULT_FALLBACK_COLOR` when the skin gives none).
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
@@ -45,4 +66,7 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
 
 `present.test.ts`: a fixture frame using every field passes the schema, wrong fields are reported
 at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the map on the first
-frame and on a version (or id) change only. Run with `pnpm test`.
+frame and on a version (or id) change only. `skin.test.ts`: a fixture skin passes, bad fields
+are reported at their path (inside unions too), 2D and 3D fields are kept apart, missing sheets,
+palettes, sounds and frames are cross-file errors, and `resolveSkinFrame` picks states, cycles
+frames by `t`, handles facings and flips, and falls back for unknown kinds. Run with `pnpm test`.

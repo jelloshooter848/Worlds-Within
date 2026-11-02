@@ -90,6 +90,25 @@ function unionMessage(issue: z.core.$ZodIssueInvalidUnion): string {
   return `Invalid input: ${parts.join(', or ')}`;
 }
 
+/** True when an option failed only because the value is not of its type (a string for an object). */
+function wrongType(option: readonly z.core.$ZodIssue[]): boolean {
+  const only = option.length === 1 ? option[0]! : undefined;
+  return (
+    only !== undefined &&
+    only.path.length === 0 &&
+    (only.code === 'invalid_type' || only.code === 'invalid_value')
+  );
+}
+
+/**
+ * When every option of a union but one failed only on the value's type (a string where the one
+ * object option is given an object), that option's issues: they name the exact field. Else none.
+ */
+function onlyFittingOption(issue: z.core.$ZodIssueInvalidUnion): readonly z.core.$ZodIssue[] | undefined {
+  const fitting = issue.errors.filter((o) => !wrongType(o));
+  return issue.errors.length > 1 && fitting.length === 1 ? fitting[0] : undefined;
+}
+
 /** Turns Zod issues into content errors, in Zod's (deterministic) order. */
 export function issuesToErrors(file: string, issues: readonly z.core.$ZodIssue[]): ContentError[] {
   const out: ContentError[] = [];
@@ -108,6 +127,12 @@ export function issuesToErrors(file: string, issues: readonly z.core.$ZodIssue[]
       continue;
     }
     if (issue.code === 'invalid_union') {
+      const chosen = onlyFittingOption(issue);
+      if (chosen) {
+        const inner = chosen.map((i) => ({ ...i, path: [...issue.path, ...i.path] }));
+        out.push(...issuesToErrors(file, inner as z.core.$ZodIssue[]));
+        continue;
+      }
       out.push(contentError(file, issue.path, issue.code, unionMessage(issue)));
       continue;
     }

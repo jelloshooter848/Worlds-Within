@@ -235,12 +235,13 @@ function checkAcross(
   at: (path: string) => string,
 ): ContentError[] {
   const errors: ContentError[] = [];
+  const others = (kind: string) => entries.filter((e) => e.kind === kind);
   for (const kindName of Object.keys(manifest.content)) {
     const kind = kinds.get(kindName);
     if (!kind?.checkAll) continue;
     const mine = entries.filter((e) => e.kind === kindName);
     if (mine.length === 0) continue;
-    for (const issue of kind.checkAll(mine)) {
+    for (const issue of kind.checkAll(mine, others)) {
       const entry = mine.find((e) => e.name === issue.name) ?? mine[0]!;
       const extra: Pick<ContentError, 'row' | 'col'> = {};
       if (issue.row !== undefined) extra.row = issue.row;

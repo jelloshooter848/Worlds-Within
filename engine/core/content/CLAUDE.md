@@ -9,7 +9,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `{ file, path, pointer, message, code }`, plus `row`/`col` for text grids (and `col` for the
   position in an MML string) and `line` for `.txt` files. `path` is dotted (`frames.idle.2`,
   `legend["#"]`); `pointer` is the same field as a JSON pointer (`/frames/idle/2`). Unknown keys
-  are reported one per key at the key itself. `formatErrors` prints one line per error.
+  are reported one per key at the key itself. A union where every option but one failed only on
+  the value's type (a string option given an object) reports that option's errors, at their field. `formatErrors` prints one line per error.
 - `text-grid.ts`: `parseTextGrid(rows | text, legend)` for content drawn as rows of characters.
   It rejects ragged rows (`ragged_row`), characters missing from the legend (`unknown_char`) and
   empty grids (`empty_grid`), each with a 0-based `row` and `col`. `addGridIssues` does the same
@@ -25,7 +26,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `{ map: '.map.txt' }`) keeps a field of a `.json` file in a sibling text grid; `parseContent`
   takes those parts' texts, and an error in the field names the part file and its line.
   `checkAll(entries)` checks across every file of the kind (the top-down rooms' doors and player
-  start): it returns `KindIssue`s (`{ name, path, code, message, row?, col? }`, `name` being the
+  start, a skin's sheets and sounds): its second argument, `others(kind)`, gives the game's
+  checked entries of any other kind, for references across kinds. It returns `KindIssue`s (`{ name, path, code, message, row?, col? }`, `name` being the
   entry's file name), and `loadContent` runs it only when the game has no other error, turning
   each into a `ContentError` at that entry's file, or its part file and line (`checkAll: false`
   in `loadContent`'s options leaves it out; the editing verbs report those problems apart).
@@ -39,8 +41,9 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   (`{ manifest, entries }`); `contentOf(bundle, kind)` and `contentNamed` give typed entries. An
   entry's name is its file name up to the first dot; an `id` field must match it.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
-  `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`) and `sprite`
-  (`gfx/sprite-schema.ts`, JSON or `.txt`), each also exported (`SONG_KIND`, ...) for `contentOf`.
+  `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
+  (`gfx/sprite-schema.ts`, JSON or `.txt`) and `skin` (`present/skin.ts`), each also exported
+  (`SONG_KIND`, ..., `SKIN_KIND`) for `contentOf`.
 
 The schemas for engine data live next to the code that uses the data, not here:
 `audio/song-schema.ts` (the `Song` and `Sfx` shapes, and every channel must compile as MML) and
@@ -64,7 +67,8 @@ file formats are described at the top of that file).
   `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; the CLI loader's
   `unknown_kit` (`engine/tools/game-loader.ts`); the editing verbs' `not_writable` and
   `multiline_row` (`engine/tools/content-file.ts`); and the top-down kit's room codes `wrong_size`
-  and `invalid_room` (`kits/topdown/schema.ts`).
+  and `invalid_room` (`kits/topdown/schema.ts`); the skin's `wrong_backend_field`, `missing_field`,
+  `missing_ref` and `missing_frame` (`present/skin.ts`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.
 - Use `z.strictObject` for file shapes, so a misspelled field is an error, and `exactOptional()`

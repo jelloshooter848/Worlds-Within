@@ -12,7 +12,7 @@
 
 - [engine/core](docs/modules/engine-core.md): loop, scenes, input, audio and MML, save, seeded RNG, maths and the renderer contract
 - [engine/core/content](docs/modules/engine-core-content.md): content files read and checked with Zod schemas: text grids, song, sprite and palette schemas, game manifests and the content loader, errors naming the file and field
-- [engine/core/present](docs/modules/engine-core-present.md): the presentation contract: the read-only per-frame snapshot (`PresentFrame`: entities, map, events, HUD status, camera and other extension points) a kit hands a backend, the `Presenter` interface, `freezeFrame`, `MapTracker` and the `presentFrameSchema` Zod schema
+- [engine/core/present](docs/modules/engine-core-present.md): the presentation contract: the read-only per-frame snapshot (`PresentFrame`: entities, map, events, HUD status, camera and other extension points) a kit hands a backend, the `Presenter` interface, `freezeFrame`, `MapTracker`, the `presentFrameSchema` Zod schema, and skin files (the `skin` content kind and `resolveSkinFrame`)
 - [engine/backends/canvas2d](docs/modules/engine-backends-canvas2d.md): the browser 2D backend and viewport
 - [engine/backends/null](docs/modules/engine-backends-null.md): the headless backend that draws nothing
 - [engine/sim](docs/modules/engine-sim.md): the headless, deterministic world simulation (placeholder until Engine 0.8)

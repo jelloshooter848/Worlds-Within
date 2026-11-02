@@ -65,8 +65,15 @@ export interface ContentKind<S extends z.ZodType = z.ZodType> {
    * when the game has no other errors): rooms whose doors must line up, one player start. Each
    * problem names the entry (`name`, the file name) and the field it is about.
    */
-  checkAll?(entries: readonly { name: string; value: z.output<S> }[]): KindIssue[];
+  checkAll?(entries: readonly { name: string; value: z.output<S> }[], others: ContentLookup): KindIssue[];
 }
+
+/**
+ * The game's other checked content, for a kind's `checkAll` that checks references across kinds
+ * (a skin naming sprites and sounds): `others('sprite')` is every sprite entry, by file name. A
+ * kind the game does not claim gives none.
+ */
+export type ContentLookup = (kind: string) => readonly { name: string; value: unknown }[];
 
 /** A sibling file holding one field of a content file (see {@link ContentKind.gridParts}). */
 export interface ContentPart {

@@ -175,6 +175,103 @@ Example (`docs/reference/examples/sfx.json`):
 { "id": "chime", "bpm": 240, "pulse": "v12 @1 l16 o5 c e g > c" }
 ```
 
+### `skin`
+
+How a backend shows a game: each kind as a sprite or mesh, tiles, event sounds and effects, the HUD.
+
+- Defined by: engine
+- Where: `content/`, claimed in `game.json` under `content.skin`
+- Read from: `.json`
+
+| Field                       | Type                                          | Required | Default | Limits                                          | Description                                                                                                                                                                        |
+| --------------------------- | --------------------------------------------- | -------- | ------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend`                   | `string`                                      | yes      |         | not empty                                       | the backend it is for: `canvas2d`, `three` (meshes) or another backend name                                                                                                        |
+| `sheets`                    | `object`                                      | no       |         |                                                 | defaults for entries that leave a field out                                                                                                                                        |
+| `sheets.sheet`              | `string`                                      | no       |         | not empty                                       | the sprite file for entries that name none                                                                                                                                         |
+| `sheets.palette`            | `string`                                      | no       |         | not empty                                       | the palette for entries that name none                                                                                                                                             |
+| `sheets.fallbackColor`      | `string`                                      | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | the box colour for entries that give none                                                                                                                                          |
+| `kinds`                     | `{ <key>: object }`                           | yes      |         | keys: not empty                                 | entity kind -> how it looks                                                                                                                                                        |
+| `kinds.<key>.sheet`         | `string`                                      | no       |         | not empty                                       | 2D: the sprite file the frames are in (default `sheets.sheet`)                                                                                                                     |
+| `kinds.<key>.palette`       | `string`                                      | no       |         | not empty                                       | 2D: a palette to draw with instead of the sprite's own                                                                                                                             |
+| `kinds.<key>.frames`        | `{ <key>: string \| object }`                 | no       |         | keys: not empty                                 | 2D: animation state -> a frame name, `{ frames, ticks?, loop? }` (a cycle) or `{ up?, down?, left?, right? }` (a frame or cycle per facing); `idle` is used for a state not listed |
+| `kinds.<key>.flipFacing`    | `boolean`                                     | no       |         |                                                 | 2D: draw the right-facing frames mirrored when the entity faces left                                                                                                               |
+| `kinds.<key>.size`          | `object`                                      | no       |         |                                                 | 2D: the drawn size, when it is not the frame size                                                                                                                                  |
+| `kinds.<key>.size.w`        | `integer`                                     | yes      |         | >= 1                                            | width in pixels                                                                                                                                                                    |
+| `kinds.<key>.size.h`        | `integer`                                     | yes      |         | >= 1                                            | height in pixels                                                                                                                                                                   |
+| `kinds.<key>.fallbackColor` | `string`                                      | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | 2D: the box colour when a frame is missing (default `sheets.fallbackColor`)                                                                                                        |
+| `kinds.<key>.mesh`          | `string`                                      | no       |         | not empty                                       | 3D: a mesh id or a primitive (`box`, `sphere`...)                                                                                                                                  |
+| `kinds.<key>.color`         | `string`                                      | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | 3D: the mesh's colour                                                                                                                                                              |
+| `kinds.<key>.scale`         | `number`                                      | no       |         | > 0                                             | 3D: size factor (default 1)                                                                                                                                                        |
+| `kinds.<key>.offset`        | `object`                                      | no       |         |                                                 | where the sprite or mesh sits from the entity box's top-left corner                                                                                                                |
+| `kinds.<key>.offset.x`      | `integer`                                     | yes      |         |                                                 | pixels right                                                                                                                                                                       |
+| `kinds.<key>.offset.y`      | `integer`                                     | yes      |         |                                                 | pixels down                                                                                                                                                                        |
+| `tiles`                     | `{ <key>: object }`                           | no       |         | keys: not empty                                 | map tile character or id -> how it looks                                                                                                                                           |
+| `tiles.<key>.sheet`         | `string`                                      | no       |         | not empty                                       | 2D: the sprite file (default `sheets.sheet`)                                                                                                                                       |
+| `tiles.<key>.frame`         | `string`                                      | no       |         | not empty                                       | 2D: the frame name in the sheet                                                                                                                                                    |
+| `tiles.<key>.fallbackColor` | `string`                                      | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | 2D: the colour when the frame is missing (default `sheets.fallbackColor`)                                                                                                          |
+| `tiles.<key>.mesh`          | `string`                                      | no       |         | not empty                                       | 3D: a mesh id or primitive                                                                                                                                                         |
+| `tiles.<key>.color`         | `string`                                      | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | 3D: the mesh's colour                                                                                                                                                              |
+| `events`                    | `{ <key>: object }`                           | no       |         | keys: not empty                                 | event type -> its sound and effect                                                                                                                                                 |
+| `events.<key>.sound`        | `string`                                      | no       |         | not empty                                       | a song or sfx id to play                                                                                                                                                           |
+| `events.<key>.effect`       | `object`                                      | no       |         |                                                 | a presentation-only effect at the event                                                                                                                                            |
+| `events.<key>.effect.kind`  | `"flash" \| "particles" \| "shake" \| "tint"` | yes      |         |                                                 | what the backend shows                                                                                                                                                             |
+| `events.<key>.effect.color` | `string`                                      | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | its colour                                                                                                                                                                         |
+| `events.<key>.effect.ticks` | `integer`                                     | no       |         | >= 1                                            | how long it lasts                                                                                                                                                                  |
+| `events.<key>.effect.count` | `integer`                                     | no       |         | >= 1                                            | particles: how many                                                                                                                                                                |
+| `events.<key>.effect.size`  | `number`                                      | no       |         | > 0                                             | particles: size in pixels; shake: strength                                                                                                                                         |
+| `hud`                       | `object[]`                                    | no       |         |                                                 | status values drawn on screen, in order                                                                                                                                            |
+| `hud[].status`              | `string`                                      | yes      |         | not empty                                       | the status key it shows (`health`, `score`)                                                                                                                                        |
+| `hud[].as`                  | `"hearts" \| "number" \| "text" \| "icon"`    | yes      |         |                                                 | how it shows                                                                                                                                                                       |
+| `hud[].x`                   | `integer`                                     | yes      |         |                                                 | left edge, screen pixels                                                                                                                                                           |
+| `hud[].y`                   | `integer`                                     | yes      |         |                                                 | top edge, screen pixels                                                                                                                                                            |
+| `hud[].sheet`               | `string`                                      | no       |         | not empty                                       | the sprite file for hearts and icons (default `sheets.sheet`)                                                                                                                      |
+| `hud[].frame`               | `string`                                      | no       |         | not empty                                       | the frame for hearts and icons                                                                                                                                                     |
+| `hud[].font`                | `string`                                      | no       |         | not empty                                       | the font for numbers and text                                                                                                                                                      |
+| `camera`                    | `object`                                      | no       |         |                                                 | framing defaults; a frame's own camera hint wins                                                                                                                                   |
+| `camera.zoom`               | `number`                                      | no       |         | > 0                                             | scale factor (default 1)                                                                                                                                                           |
+| `camera.follow`             | `string`                                      | no       |         | not empty                                       | the entity kind or id to keep in view                                                                                                                                              |
+| `camera.deadzone`           | `object`                                      | no       |         |                                                 | a box round the screen centre the followed entity moves in freely                                                                                                                  |
+| `camera.deadzone.w`         | `integer`                                     | yes      |         | >= 0                                            | width in pixels                                                                                                                                                                    |
+| `camera.deadzone.h`         | `integer`                                     | yes      |         | >= 0                                            | height in pixels                                                                                                                                                                   |
+| `camera.lerp`               | `number`                                      | no       |         | 0 to 1                                          | how far the camera closes the gap each frame (1 snaps)                                                                                                                             |
+
+Example (`docs/reference/examples/skin.json`):
+
+```json
+{
+  "backend": "canvas2d",
+  "sheets": { "sheet": "hero", "palette": "hero", "fallbackColor": "#00a800" },
+  "kinds": {
+    "hero": {
+      "frames": {
+        "idle": { "down": "down-0", "up": "up-0", "right": "side-0" },
+        "walk": {
+          "down": { "frames": ["down-0", "down-1"], "ticks": 8 },
+          "right": { "frames": ["side-0", "side-1"], "ticks": 8 }
+        },
+        "hurt": "hurt"
+      },
+      "flipFacing": true
+    },
+    "bat": {
+      "sheet": "bat",
+      "frames": { "fly": { "frames": ["a", "b"], "ticks": 6 } },
+      "fallbackColor": "#a800a8"
+    }
+  },
+  "tiles": { "#": { "sheet": "walls", "frame": "wall", "fallbackColor": "#7c7c7c" } },
+  "events": {
+    "hit": { "sound": "hurt", "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 4 } },
+    "coin": { "sound": "coin" }
+  },
+  "hud": [
+    { "status": "health", "as": "hearts", "x": 8, "y": 8, "sheet": "hud", "frame": "heart" },
+    { "status": "score", "as": "number", "x": 200, "y": 8 }
+  ],
+  "camera": { "follow": "hero", "lerp": 0.25 }
+}
+```
+
 ### `song`
 
 An MML song: id, bpm, loop and up to four channels.

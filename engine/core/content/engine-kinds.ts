@@ -1,6 +1,7 @@
 import { sfxSchema, songSchema } from '../audio/song-schema';
 import { paletteSchema } from '../gfx/palette-schema';
 import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-schema';
+import { SKIN_KIND } from '../present/skin';
 import { ContentKinds, type ContentKind } from './kinds';
 
 /** An MML song (`audio/song-schema.ts`). */
@@ -33,14 +34,17 @@ export const SPRITE_KIND = {
   writeText: writeSpriteText,
 } satisfies ContentKind;
 
+export { SKIN_KIND };
+
 /**
- * A registry holding the content kinds the engine itself defines: `song`, `sfx`, `palette` (JSON)
- * and `sprite` (JSON or text-grid `.txt`). Games register their own kinds (rooms, missions) on top.
+ * A registry holding the content kinds the engine itself defines: `song`, `sfx`, `palette` (JSON),
+ * `sprite` (JSON or text-grid `.txt`) and `skin` (JSON, `present/skin.ts`). Games register their own kinds (rooms, missions) on top.
  */
 export function engineContentKinds(): ContentKinds {
   return new ContentKinds()
     .register(SONG_KIND)
     .register(SFX_KIND)
     .register(PALETTE_KIND)
-    .register(SPRITE_KIND);
+    .register(SPRITE_KIND)
+    .register(SKIN_KIND as unknown as ContentKind);
 }

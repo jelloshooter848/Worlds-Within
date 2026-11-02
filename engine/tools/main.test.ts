@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -98,6 +98,55 @@ describe('validate', () => {
       expect.objectContaining({ file: 'games/demo/content/rooms/courtyard.json', path: 'music' }),
     ]);
     expect(result.files).toContainEqual({ file: 'games/demo/content/rooms/courtyard.json', errors: 1 });
+  });
+
+  it('checks a skin: a bad field and a missing sheet or sound, at the skin file and field', async () => {
+    const root = demoCopy();
+    const game = join(root, 'games/demo/game.json');
+    const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
+    manifest.content['skin'] = ['content/skins/*.json'];
+    writeFileSync(game, JSON.stringify(manifest));
+    mkdirSync(join(root, 'games/demo/content/skins'));
+    const skinFile = join(root, 'games/demo/content/skins/canvas2d.json');
+    const skin = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'demo-hero', fallbackColor: '#00a800' },
+      kinds: { hero: { frames: { idle: { down: 'down-0', right: 'side-0' } }, flipFacing: true } },
+      events: { title: { sound: 'demo' } },
+    };
+    writeFileSync(skinFile, JSON.stringify(skin));
+    expect((await cli(['validate', 'games/demo', '--json'], { cwd: root })).code).toBe(EXIT.ok);
+
+    writeFileSync(skinFile, JSON.stringify({ ...skin, kinds: { hero: { frames: {}, flipFacing: 'yes' } } }));
+    const bad = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    expect(bad.code).toBe(EXIT.invalidContent);
+    expect(bad.json().errors).toEqual([
+      expect.objectContaining({
+        file: 'games/demo/content/skins/canvas2d.json',
+        path: 'kinds.hero.flipFacing',
+      }),
+    ]);
+
+    const cross = {
+      ...skin,
+      kinds: { hero: { sheet: 'nobody', frames: { idle: 'down-0' } } },
+      events: { hit: { sound: 'boom' } },
+    };
+    writeFileSync(skinFile, JSON.stringify(cross));
+    const run = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    expect(run.code).toBe(EXIT.invalidContent);
+    expect(run.json().errors).toEqual([
+      expect.objectContaining({
+        file: 'games/demo/content/skins/canvas2d.json',
+        path: 'kinds.hero.sheet',
+        code: 'missing_ref',
+      }),
+      expect.objectContaining({
+        file: 'games/demo/content/skins/canvas2d.json',
+        path: 'events.hit.sound',
+        code: 'missing_ref',
+      }),
+    ]);
   });
 
   it('reports an unknown kit at the manifest field', async () => {

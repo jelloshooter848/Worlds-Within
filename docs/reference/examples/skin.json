@@ -1,0 +1,32 @@
+{
+  "backend": "canvas2d",
+  "sheets": { "sheet": "hero", "palette": "hero", "fallbackColor": "#00a800" },
+  "kinds": {
+    "hero": {
+      "frames": {
+        "idle": { "down": "down-0", "up": "up-0", "right": "side-0" },
+        "walk": {
+          "down": { "frames": ["down-0", "down-1"], "ticks": 8 },
+          "right": { "frames": ["side-0", "side-1"], "ticks": 8 }
+        },
+        "hurt": "hurt"
+      },
+      "flipFacing": true
+    },
+    "bat": {
+      "sheet": "bat",
+      "frames": { "fly": { "frames": ["a", "b"], "ticks": 6 } },
+      "fallbackColor": "#a800a8"
+    }
+  },
+  "tiles": { "#": { "sheet": "walls", "frame": "wall", "fallbackColor": "#7c7c7c" } },
+  "events": {
+    "hit": { "sound": "hurt", "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 4 } },
+    "coin": { "sound": "coin" }
+  },
+  "hud": [
+    { "status": "health", "as": "hearts", "x": 8, "y": 8, "sheet": "hud", "frame": "heart" },
+    { "status": "score", "as": "number", "x": 200, "y": 8 }
+  ],
+  "camera": { "follow": "hero", "lerp": 0.25 }
+}
