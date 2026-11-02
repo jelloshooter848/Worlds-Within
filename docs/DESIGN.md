@@ -100,6 +100,8 @@ Inside the engine:
   output side (the renderer, sprite sheets, asset loading, audio output, scenes, the loop);
 - the simulation imports only core (never a backend or a kit);
 - tools (the CLI) may use any engine part, and load a game by its folder path at run time.
+- some npm packages belong to one unit: `three` may be imported only by the 3D backend
+  (`engine/backends/three`); the table lists each such package and its owners (`PACKAGES`).
 
 This is enforced by an ESLint import-restriction rule **and** a test, both reading one table
 (`config/layers.js`), so an LLM can't blur the boundary by accident. A third test scans kit code for

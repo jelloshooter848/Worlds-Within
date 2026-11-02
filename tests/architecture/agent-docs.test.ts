@@ -95,6 +95,7 @@ describe('agent docs: the repo', () => {
         'engine/core',
         'engine/backends/canvas2d',
         'engine/backends/null',
+        'engine/backends/three',
         'engine/sim',
         'engine/tools',
         'kits/topdown',

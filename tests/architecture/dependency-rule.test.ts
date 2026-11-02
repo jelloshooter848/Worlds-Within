@@ -3,8 +3,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
-import { checkImport, checkSpecifier, placeOf, resolveSpecifier } from '../../config/deps.js';
-import { EXCEPTIONS, FORBIDDEN_CORE, LAYERS } from '../../config/layers.js';
+import { checkImport, checkSpecifier, packageName, placeOf, resolveSpecifier } from '../../config/deps.js';
+import { EXCEPTIONS, FORBIDDEN_CORE, LAYERS, PACKAGES } from '../../config/layers.js';
 
 // The dependency rule (docs/DESIGN.md, "The dependency rule"): every import arrow must be one the
 // layer table in config/layers.js allows.
@@ -114,6 +114,25 @@ describe('dependency rule: the layer table', () => {
     }
   });
 
+  it('names an owner for each external package it restricts, and the owners exist', () => {
+    const three = PACKAGES.find((p) => p.name === 'three');
+    expect(three?.owners).toEqual(['engine/backends/three']);
+    for (const pkg of PACKAGES) {
+      expect(pkg.owners.length, pkg.name).toBeGreaterThan(0);
+      for (const dir of pkg.owners) expect(existsSync(join(ROOT, dir)), dir).toBe(true);
+    }
+  });
+
+  it.each([
+    ['three', 'three'],
+    ['three/addons/controls/OrbitControls.js', 'three'],
+    ['@types/three', '@types/three'],
+    ['@scope/pkg/sub/path', '@scope/pkg'],
+    ['node:fs', 'node:fs'],
+  ])('reads the package name of %s as %s', (spec, name) => {
+    expect(packageName(spec)).toBe(name);
+  });
+
   it('places files in their layer and unit', () => {
     expect(placeOf('games/demo/main.ts')?.unit).toBe('games/demo');
     expect(placeOf('games/samples/siege/main.ts')?.unit).toBe('games/samples/siege');
@@ -180,6 +199,15 @@ describe('dependency rule: the checker', () => {
     ['games/demo/main.ts', '../../tests/helpers', 'game -> unlayered folder'],
     ['kits/topdown/world.ts', '../../build/pages.ts', 'kit -> unlayered folder'],
     ['games/demo/main.ts', '../../../elsewhere', 'outside the repo'],
+    ['kits/platformer/world.ts', 'three', 'kit -> three'],
+    ['kits/platformer/world.test.ts', 'three', 'kit test -> three'],
+    ['engine/core/present/camera.ts', 'three', 'core -> three'],
+    ['engine/core/gfx/renderer.ts', 'three/src/math/Vector3.js', 'core -> a three subpath'],
+    ['games/platformer-lab/view.ts', 'three', 'game -> three'],
+    ['games/samples/siege/main.ts', 'three', 'sample game -> three'],
+    ['engine/backends/canvas2d/renderer.ts', 'three', 'another backend -> three'],
+    ['engine/sim/world.ts', 'three', 'sim -> three'],
+    ['engine/tools/cli.ts', 'three', 'tools -> three'],
   ];
 
   it.each(bad)('rejects %s importing %s (%s)', (from, spec) => {
@@ -217,6 +245,11 @@ describe('dependency rule: the checker', () => {
     ['kits/topdown/world.ts', 'vitest', 'external package'],
     ['tests/build/pages.test.ts', '../../build/pages.ts', 'unlayered tooling'],
     ['tests/architecture/x.test.ts', '../../games/demo/rooms', 'unlayered tooling -> game'],
+    ['engine/backends/three/scene.ts', 'three', 'the 3D backend -> three'],
+    ['engine/backends/three/scene.test.ts', 'three', 'the 3D backend test -> three'],
+    ['engine/backends/three/geometry.ts', 'three/src/math/Vector3.js', 'the 3D backend -> a three subpath'],
+    ['engine/core/loop.ts', 'zod', 'an unrestricted package'],
+    ['tests/architecture/x.test.ts', 'three', 'unlayered tooling -> three'],
   ];
 
   it.each(good)('accepts %s importing %s (%s)', (from, spec) => {
@@ -229,6 +262,12 @@ describe('dependency rule: the checker', () => {
     );
     expect(spec).toBeDefined();
     expect(checkSpecifier('kits/topdown/loader.ts', spec ?? '').ok).toBe(false);
+  });
+
+  it('names the owner when a package is imported from outside it', () => {
+    const result = checkSpecifier('kits/platformer/world.ts', 'three');
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toContain('three may only be imported from engine/backends/three');
   });
 
   it('gives each rejection a reason that names the arrow', () => {

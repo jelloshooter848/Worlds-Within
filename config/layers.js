@@ -107,6 +107,31 @@ export const FORBIDDEN_CORE = [
 ];
 
 /**
+ * @typedef {object} OwnedPackage
+ * @property {string} name The npm package (its bare name; `name/sub/path` imports count too).
+ * @property {readonly string[]} owners Folders (repo paths) whose files may import it.
+ * @property {string} reason
+ */
+
+/**
+ * External packages only some folders may import: a package not listed here may be imported by any
+ * layer, a listed one only from inside one of its `owners` (by every file there, tests included).
+ * Files outside every layer (tests/, build/, config/) are tooling and may import anything. The
+ * checker (config/deps.js `checkSpecifier`) reads this list, so ESLint and
+ * tests/architecture/dependency-rule.test.ts enforce it; to change who may import a package, change
+ * this table.
+ * @type {readonly OwnedPackage[]}
+ */
+export const PACKAGES = [
+  {
+    name: 'three',
+    owners: ['engine/backends/three'],
+    reason:
+      "Three.js is the 3D backend's own renderer: everything else reaches 3D through a skin and a Presenter",
+  },
+];
+
+/**
  * Path aliases (tsconfig `paths`, Vite `resolve.alias`) mapped to repo folders. No alias points into
  * `games/`.
  * @type {Readonly<Record<string, string>>}

@@ -21,6 +21,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
+    "@types/three": "0.187.0",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "playwright": "1.63.0",
@@ -32,6 +33,7 @@
     "vitest": "^5.0.3"
   },
   "dependencies": {
+    "three": "0.187.0",
     "zod": "4.6.7"
   }
 }

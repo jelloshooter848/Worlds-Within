@@ -38,6 +38,9 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['kits/topdown/bad.ts', '@engine/backends/null', 'non-test kit file -> null backend'],
     ['kits/topdown/bad.ts', '@engine/core/gfx/renderer', 'kit -> the core Renderer'],
     ['kits/topdown/bad.ts', '../../engine/core/gfx/spritesheet', 'kit -> sprite sheets (relative)'],
+    ['kits/platformer/bad.ts', 'three', 'kit -> three (owned by the 3D backend)'],
+    ['engine/core/bad.ts', 'three', 'core -> three'],
+    ['games/demo/bad.ts', 'three', 'game -> three'],
   ];
 
   it.each(bad)('%s importing %s fails both (%s)', async (file, specifier) => {
@@ -62,6 +65,7 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['games/demo/good.ts', '@kits/topdown', 'game -> kit'],
     ['engine/sim/good.ts', '../core/rng', 'sim -> core (relative)'],
     ['kits/topdown/good.test.ts', '@engine/backends/null', 'kit test -> null backend (test exception)'],
+    ['engine/backends/three/good.ts', 'three', 'the 3D backend -> three'],
   ];
 
   it.each(good)('%s importing %s passes both (%s)', async (file, specifier) => {

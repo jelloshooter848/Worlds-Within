@@ -6,7 +6,7 @@
  * All paths are repo paths: relative to the repo root, with forward slashes (`kits/topdown/hero.ts`).
  */
 import { posix } from 'node:path';
-import { ALIASES, EXCEPTIONS, FORBIDDEN_CORE, LAYERS, PURE_CORE, PURE_DIRS } from './layers.js';
+import { ALIASES, EXCEPTIONS, FORBIDDEN_CORE, LAYERS, PACKAGES, PURE_CORE, PURE_DIRS } from './layers.js';
 
 /**
  * Top-level repo folders. A bare specifier starting with one of these (`games/demo/rooms`) is read as
@@ -124,13 +124,44 @@ function matchesEntry(path, entry) {
 }
 
 /**
- * {@link resolveSpecifier} then {@link checkImport}.
+ * The npm package a bare specifier names: `three` for `three` and `three/addons/x.js`,
+ * `@scope/pkg` for `@scope/pkg/sub`; a `node:` builtin is its own name.
+ * @param {string} specifier
+ * @returns {string}
+ */
+export function packageName(specifier) {
+  const parts = specifier.replace(/[?#].*$/, '').split('/');
+  return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : (parts[0] ?? '');
+}
+
+/**
+ * Checks an external package import against {@link PACKAGES}: a listed package may be imported
+ * only from inside one of its owners (or from unlayered tooling); an unlisted one from anywhere.
+ * @param {string} fromFile Repo path of the importing file.
+ * @param {string} specifier A bare specifier ({@link resolveSpecifier} gave null).
+ * @returns {CheckResult}
+ */
+export function checkPackage(fromFile, specifier) {
+  const name = packageName(specifier);
+  const owned = PACKAGES.find((p) => p.name === name);
+  if (!owned || !placeOf(fromFile)) return { ok: true };
+  if (owned.owners.some((dir) => isInside(fromFile, dir))) return { ok: true };
+  return {
+    ok: false,
+    reason: `${name} may only be imported from ${owned.owners.join(', ')}: ${owned.reason}`,
+  };
+}
+
+/**
+ * {@link resolveSpecifier} then {@link checkImport}, or {@link checkPackage} for an external package.
  * @param {string} fromFile
  * @param {string} specifier
  * @returns {CheckResult}
  */
 export function checkSpecifier(fromFile, specifier) {
-  return checkImport(fromFile, resolveSpecifier(fromFile, specifier));
+  const target = resolveSpecifier(fromFile, specifier);
+  if (target === null) return checkPackage(fromFile, specifier);
+  return checkImport(fromFile, target);
 }
 
 /**
