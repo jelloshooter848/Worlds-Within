@@ -108,8 +108,8 @@ export interface PlayOptions {
 /**
  * Plays the run file at `runPath` (relative to `cwd`). With `untilTick` it plays only that far and
  * makes no checks (for `dump`); otherwise it plays every tick and stops at the first failing tick.
- * A rule in the run file's `disableRules` that the game's kit does not name is a content error
- * (`unknown_rule`, at that entry).
+ * A rule in the run file's `disableRules` or `guards` that the game's kit does not name is a
+ * content error (`unknown_rule`, at that entry).
  */
 export async function playRun(cwd: string, runPath: string, opts: PlayOptions = {}): Promise<PlayOutcome> {
   const runFile = readRunFile(cwd, runPath);
@@ -124,17 +124,23 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
 
   const rules = kitRules(content.manifest.kit);
   const known = rules.map((r) => r.id).join(', ') || 'none';
-  const badInFile = run.disableRules.flatMap((id, i) =>
-    unknownRules(rules, [id]).length > 0
-      ? [
-          contentError(
-            loaded.file,
-            ['disableRules', i],
-            'unknown_rule',
-            `kit "${content.manifest.kit}" has no rule "${id}" (known: ${known})`,
-          ),
-        ]
-      : [],
+  const lists = [
+    ['disableRules', run.disableRules],
+    ['guards', run.guards ?? []],
+  ] as const;
+  const badInFile = lists.flatMap(([field, ids]) =>
+    ids.flatMap((id, i) =>
+      unknownRules(rules, [id]).length > 0
+        ? [
+            contentError(
+              loaded.file,
+              [field, i],
+              'unknown_rule',
+              `kit "${content.manifest.kit}" has no rule "${id}" in "${field}" (known: ${known})`,
+            ),
+          ]
+        : [],
+    ),
   );
   if (badInFile.length > 0) return { ok: false, errors: badInFile };
   const asked = opts.disableRules ?? [];

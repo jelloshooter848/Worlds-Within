@@ -40,7 +40,8 @@ the CLI starts.
   (`CHECK_OPS`, `CHECK_OP_MEANINGS`), `valueAt(state, path)` and `failsCheck(state, check)`.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
-  plays the ticks and makes the checks; `stateHash(snapshot)`.
+  checks the run file's `disableRules` and `guards` against the kit's rules, plays the ticks and
+  makes the checks; `stateHash(snapshot)`.
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
@@ -112,10 +113,14 @@ hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage 
 hashes, matchesHeadless }`. Exit 0, 4 when a state hash the page saw is not the headless one, 3 for a bad
   run file or content or a game without `view`, 2 for a bad `--tick` or `--out`, 5 when Chromium
   is not installed.
-- `mutants <runFile>`: mutant checks (below). Result: `{ run, game, kit, baseline: { passed,
-failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guarded, weak }`.
-  Exit 0 when the run passes as it is (weak rules are reported, not failed), 4 when it fails as it
-  is (no rule is tried then), 3 for a bad run file or content.
+- `mutants <target>`: mutant checks (below) on a run file or a game folder. Run file result:
+  `{ run, game, kit, strict, baseline: { passed, failure }, guards, rules: [{ id, description,
+skipped, expected, passed, guarded, failure }], guarded, weak }`. Game folder result: `{ game,
+kit, strict, runs: [{ run, baseline, guards, guarded, weak }], rules: [{ id, description,
+guardedBy }], unguarded }`. Exit 0 when every run passes as it is and, for a strict kit, nothing
+  is weak or unguarded; 4 when a run fails as it is (its rules are not tried) or a strict kit has a
+  weak or unguarded rule (a kit that is not strict only reports them); 3 for a bad run file or
+  content.
 - `get <file> <path>`: `{ file, kind, path, pointer, value }`. `set <file> <path> <value>`,
   `add <file> <path> <value>`, `remove <file> <path>`: the editing verbs (below). Result
   `{ file, kind, path, pointer, written, verified, changed, before, after, crossErrors }`; exit 0
@@ -176,7 +181,8 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
   "assertions": [{ "tick": 240, "path": "hero.room", "op": "eq", "value": "guard-room" }],
   "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
   "hashEvery": 40,
-  "disableRules": []
+  "disableRules": [],
+  "guards": ["doors-change-room"]
 }
 ```
 
@@ -194,6 +200,9 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
 - `disableRules` (default none): kit rules switched off for the whole run (ids from the kit's
   rule list, see Mutant checks). An id the kit does not name is an `unknown_rule` content error at
   that entry; an id twice is a schema error. Replay files keep the rules that were off.
+- `guards` (optional): the kit rules this run is meant to guard (Mutant checks). An id the kit
+  does not name is an `unknown_rule` content error at that entry (exit 3, naming the run file and
+  `guards`); an id twice, or one the run's `disableRules` switches off, is a schema error.
 - `path`: dotted, into the game's snapshot (`hero.hp`, `entities.0.kind`, `entities.length`). A path
   that is not in the snapshot always fails. The top-down kit's paths are listed in
   `kits/topdown/CLAUDE.md` (Snapshots); `dump` shows them all.
@@ -217,14 +226,29 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
 
 A kit names its rules (`engine/core/rules.ts`: `defineRules`, `RuleSwitch`; the top-down kit's
 are `TOPDOWN_RULES` in `kits/topdown/rules.ts`) and guards the code of each with
-`rules.isOn(id)`. `kits.ts` maps each kit to its list. `pnpm -s cli mutants <run-file> --json`
+`rules.isOn(id)`. Each kit's hook (`kits.ts`) gives its list. `pnpm -s cli mutants <run-file> --json`
 plays the run as it is, then once per rule with that rule off. A rule the run fails without is
-`guarded`; one it still passes without is `weak` (text: `weak: does not guard <id>`): the run's
-checks would not notice that rule breaking. Strengthen a weak run with an assertion or invariant
-that the rule decides (walk-east guards `doors-change-room` because it asserts the room it ends
-in). Rules the run file switches off itself are `skipped`. Only a few top-down rules are named in
-Engine 0.3; kits adopt this fully from Engine 0.5. To see one mutant fail:
-`pnpm -s cli run <run-file> --disable-rule <id>`.
+`guarded`. The rules the run is `expected` to guard are its `guards` when the run file gives them,
+else every rule it does not skip; an expected rule it still passes without is `weak` (text:
+`weak: does not guard <id>`): the run's checks would not notice that rule breaking. A rule that is
+neither guarded nor expected is listed as `not guarded` in text, and is not weak. Strengthen a
+weak run with an assertion or invariant that the rule decides (walk-east guards
+`doors-change-room` because it asserts the room it ends in). Rules the run file switches off
+itself are `skipped`. To see one mutant fail: `pnpm -s cli run <run-file> --disable-rule <id>`.
+
+- **Strict kits.** A kit opts in with `strictMutants: true` in its hook (`engine/core/kit.ts`).
+  Then a weak rule fails `mutants` (exit 4, `strict: true`); for other kits (topdown) weak rules
+  are only reported (exit 0).
+- **A whole game.** `pnpm -s cli mutants games/<game> --json` plays every run file of the game
+  (`*.run.json` in a `runs/` folder under it) the same way. `rules[].guardedBy` lists the run
+  files that guard each rule and `unguarded` the rules no run file guards (text:
+  `weak: no run file guards <id>`). Here a run is held only to its own `guards`: `runs[].weak` is
+  the rules in its `guards` it does not guard (empty for a run without `guards`), since the game
+  as a whole must guard every rule, not each run. For a strict kit an unguarded rule or a run with
+  a weak rule is exit 4; any run that fails as it is is exit 4 for every kit; a bad run file is
+  exit 3 with every run file's errors.
+- Tests: `mutants.test.ts` adds a test-only strict kit to the kit list (`vi.mock('./kit-list')`)
+  and writes its game, a plain-JS headless module, to a temp folder.
 
 ## Replay files
 

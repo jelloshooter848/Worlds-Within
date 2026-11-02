@@ -39,10 +39,14 @@ failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` 
   (comma-separated; a run file can also list them in `disableRules`); the result's
   `disabledRules` names them.
 - `pnpm cli mutants <run-file>`: plays the run as it is, then once per named kit rule with that
-  rule off. `--json` result: `{ run, game, kit, baseline: { passed, failure }, rules: [{ id,
-description, skipped, passed, guarded, failure }], guarded, weak }`; `weak` lists the rules the
-  run still passes without (text: `weak: does not guard <id>`). Exit 0 when the run passes as it
-  is, 4 when it does not. Details: `engine/tools/CLAUDE.md` (Mutant checks).
+  rule off. `--json` result: `{ run, game, kit, strict, baseline: { passed, failure }, guards,
+rules: [{ id, description, skipped, expected, passed, guarded, failure }], guarded, weak }`;
+  `weak` lists the rules the run is expected to guard (its `guards`, else every rule) and still
+  passes without (text: `weak: does not guard <id>`). Exit 0 when the run passes as it is, 4 when
+  it does not, or when the kit is strict (`strictMutants: true`) and a rule is weak.
+  `pnpm cli mutants games/<game>` does this for every run file of the game and reports which run
+  files guard each rule (`rules[].guardedBy`, `unguarded`); exit 4 for a strict kit with an
+  unguarded rule. Details: `engine/tools/CLAUDE.md` (Mutant checks).
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, seed, tick, hash, state }`, the whole
   snapshot at tick N.
 - `pnpm cli screenshot <run-file> --tick N [--out path]`: plays the run in headless Chromium

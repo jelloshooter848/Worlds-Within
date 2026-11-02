@@ -88,9 +88,23 @@ pnpm -s cli mutants games/<game>/runs/<run>.run.json --json
 ```
 
 Plays the run once per kit rule switched off. `guarded` lists the rules whose loss makes the run
-fail; `weak` lists the rules it does not notice. If your fix was to a rule (say
-`doors-change-room`), it should be in `guarded`; if it is in `weak`, add an assertion that would
-catch it. To reproduce one mutant: `pnpm -s cli run <run-file> --disable-rule <id> --json`.
+fail; `weak` lists the rules it is expected to guard and does not notice: the run file's `guards`
+when it gives them, else every rule. If your fix was to a rule (say `doors-change-room`), it
+should be in `guarded`; if it is in `weak`, add an assertion that would catch it. To reproduce one
+mutant: `pnpm -s cli run <run-file> --disable-rule <id> --json`.
+
+A kit whose hook says `strictMutants: true` makes a weak rule fail the command (exit 4, `strict:
+true` in the result); other kits (topdown) only report it (exit 0). For a strict kit, give each run
+file the `guards` it is meant for, and check the game as a whole:
+
+```sh
+pnpm -s cli mutants games/<game> --json
+```
+
+That plays every run file of the game; `rules[].guardedBy` lists the run files that guard each
+rule and `unguarded` the rules none does (exit 4 for a strict kit), and a run whose own `guards`
+are not all guarded has them in its `runs[].weak` (also exit 4). Fix an unguarded rule by
+strengthening a run file or adding one that the rule decides.
 
 ## 7. Fix, rerun, and keep the golden hashes honest
 

@@ -18,7 +18,8 @@ import { UsageError } from './exit-codes';
  *     "assertions": [{ "tick": 200, "path": "room", "op": "eq", "value": "guard-room" }],
  *     "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
  *     "hashEvery": 50,
- *     "disableRules": [] }
+ *     "disableRules": [],
+ *     "guards": ["doors-change-room"] }
  *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
@@ -134,6 +135,12 @@ export const runFileSchema = z
       .array(z.string().min(1))
       .default([])
       .describe("kit rules switched off for this run (ids from the kit's rule list; see `mutants`)"),
+    guards: z
+      .array(z.string().min(1))
+      .exactOptional()
+      .describe(
+        "the kit rules this run is meant to guard (ids from the kit's rule list); `mutants` checks these, or every rule when left out",
+      ),
     replay: replaySchema
       .exactOptional()
       .describe('only in replay files: the source run, its failing check and its hashes'),
@@ -145,6 +152,16 @@ export const runFileSchema = z
           code: 'custom',
           path: ['disableRules', i],
           message: `rule "${id}" is listed twice`,
+        });
+    });
+    run.guards?.forEach((id, i, guards) => {
+      if (guards.indexOf(id) !== i)
+        ctx.addIssue({ code: 'custom', path: ['guards', i], message: `rule "${id}" is listed twice` });
+      else if (run.disableRules.includes(id))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['guards', i],
+          message: `rule "${id}" is in disableRules: a run cannot guard a rule it switches off`,
         });
     });
     run.assertions.forEach((a, i) => {

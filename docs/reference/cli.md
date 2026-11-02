@@ -17,7 +17,7 @@ Commands:
   run         play a run file headless from its seed and check its assertions and invariants
   dump        the whole game state at one tick of a run file, as JSON
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
-  mutants     play a run file once per kit rule switched off and report the rules it doesn't guard
+  mutants     play run files once per kit rule switched off and report the rules they don't guard
   get         read one value of a content file (path dotted or a JSON pointer)
   set         replace one value of a content file; checked, written, read back and verified
   add         append to an array, insert at an index (- is the end) or add a new key; verified like set
@@ -132,12 +132,12 @@ Global flags:
 ## `mutants`
 
 ```text
-pnpm cli mutants <runFile>
+pnpm cli mutants <target>
 
-  play a run file once per kit rule switched off and report the rules it doesn't guard
+  play run files once per kit rule switched off and report the rules they don't guard
 
 Arguments:
-  <runFile>  the run file, such as games/demo/runs/walk-east.run.json
+  <target>  a run file (games/demo/runs/walk-east.run.json), or a game folder (games/demo) for every run file of the game
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

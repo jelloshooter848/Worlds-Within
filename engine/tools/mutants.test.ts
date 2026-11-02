@@ -1,8 +1,10 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { defineKit, type KitDef } from '@engine/core/kit';
+import { defineRules } from '@engine/core/rules';
 import { EXIT } from './exit-codes';
 import { main } from './main';
 
@@ -141,5 +143,210 @@ describe('mutants', () => {
     await main(['mutants', WALK], { stdout: (t) => void (stdout += t), stderr: () => {}, cwd: ROOT });
     expect(stdout).toContain('weak: does not guard walls-block-movement');
     expect(stdout).toContain('guards: doors-change-room');
+  });
+});
+
+// Strict mutants (Engine 0.5, item 41) with a test-only kit: the generated kit list gets a stub
+// kit that opts in with `strictMutants: true`, and its game lives in a temp folder. Nothing here
+// depends on a real strict kit.
+
+vi.mock('./kit-list', async (importOriginal) => {
+  const real = await importOriginal<{ KIT_HOOKS: readonly KitDef[] }>();
+  const rules = defineRules([
+    { id: 'moves', description: 'the dot moves one step per tick' },
+    { id: 'counts', description: 'the counter goes up one per tick' },
+  ]);
+  const strict = defineKit({ name: 'stub-strict', kinds: () => [], rules, strictMutants: true });
+  const loose = defineKit({ name: 'stub-loose', kinds: () => [], rules });
+  return { KIT_HOOKS: [...real.KIT_HOOKS, strict, loose] };
+});
+
+/** The stub game's headless module: plain JS, so it imports from a temp folder as it is. */
+const HEADLESS = `
+export function createGame(content, seed, opts = {}) {
+  const off = new Set(opts.disabledRules ?? []);
+  const state = { x: 0, count: 0 };
+  return {
+    step() {
+      if (!off.has('moves')) state.x += 1;
+      if (!off.has('counts')) state.count += 1;
+    },
+    snapshot: () => ({ ...state }),
+  };
+}
+`;
+
+/** A temp working folder with `games/stub` on kit `kit` and the given run files in its `runs/`. */
+function stubGame(kit: string, runs: Record<string, Record<string, unknown>>): string {
+  const cwd = tempDir();
+  const game = join(cwd, 'games/stub');
+  mkdirSync(join(game, 'runs'), { recursive: true });
+  const manifest = { id: 'stub', kit, content: {}, start: { seed: 1 }, headless: 'headless.mjs' };
+  writeFileSync(join(game, 'game.json'), JSON.stringify(manifest));
+  writeFileSync(join(game, 'headless.mjs'), HEADLESS);
+  for (const [name, run] of Object.entries(runs))
+    writeFileSync(join(game, 'runs', `${name}.run.json`), JSON.stringify({ game: '..', ticks: 5, ...run }));
+  return cwd;
+}
+
+const checkX = { assertions: [{ tick: 5, path: 'x', op: 'eq', value: 5 }] };
+const checkCount = { assertions: [{ tick: 5, path: 'count', op: 'eq', value: 5 }] };
+const checkBoth = { assertions: [...checkX.assertions, ...checkCount.assertions] };
+
+async function cliIn(cwd: string, argv: string[], json = true) {
+  let stdout = '';
+  const code = await main(json ? [...argv, '--json'] : argv, {
+    stdout: (t) => void (stdout += t),
+    stderr: () => {},
+    cwd,
+    outDir: join(cwd, 'out'),
+  });
+  return { code, stdout, result: json ? (JSON.parse(stdout) as Record<string, unknown>) : {} };
+}
+
+describe('mutants on a strict kit, one run file', () => {
+  it('exits 4 and lists the rule a run leaves unguarded under weak', async () => {
+    const cwd = stubGame('stub-strict', { x: checkX });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub/runs/x.run.json']);
+    expect(code).toBe(EXIT.failedCheck);
+    expect(result).toMatchObject({
+      kit: 'stub-strict',
+      strict: true,
+      baseline: { passed: true },
+      guards: null,
+      guarded: ['moves'],
+      weak: ['counts'],
+    });
+  });
+
+  it('exits 0 when the run guards every rule', async () => {
+    const cwd = stubGame('stub-strict', { both: checkBoth });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub/runs/both.run.json']);
+    expect(code).toBe(EXIT.ok);
+    expect(result).toMatchObject({ guarded: ['moves', 'counts'], weak: [] });
+  });
+
+  it('holds a run with guards only to those rules', async () => {
+    const cwd = stubGame('stub-strict', {
+      ok: { ...checkX, guards: ['moves'] },
+      bad: { ...checkX, guards: ['counts'] },
+    });
+    const ok = await cliIn(cwd, ['mutants', 'games/stub/runs/ok.run.json']);
+    expect(ok.code).toBe(EXIT.ok);
+    expect(ok.result).toMatchObject({ guards: ['moves'], weak: [] });
+    const rows = ok.result.rules as { id: string; expected: boolean; guarded: boolean }[];
+    expect(rows.map((r) => [r.id, r.expected, r.guarded])).toEqual([
+      ['moves', true, true],
+      ['counts', false, false],
+    ]);
+    const bad = await cliIn(cwd, ['mutants', 'games/stub/runs/bad.run.json']);
+    expect(bad.code).toBe(EXIT.failedCheck);
+    expect(bad.result.weak).toEqual(['counts']);
+  });
+
+  it('says which rules are weak in text', async () => {
+    const cwd = stubGame('stub-strict', { x: { ...checkX, guards: ['moves'] }, y: checkX });
+    const x = await cliIn(cwd, ['mutants', 'games/stub/runs/x.run.json'], false);
+    expect(x.stdout).toContain('(strict)');
+    expect(x.stdout).toContain("not guarded: counts (not in the run's guards)");
+    const y = await cliIn(cwd, ['mutants', 'games/stub/runs/y.run.json'], false);
+    expect(y.stdout).toContain('weak: does not guard counts');
+  });
+
+  it('only reports weak rules for a kit that is not strict', async () => {
+    const cwd = stubGame('stub-loose', { x: checkX });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub/runs/x.run.json']);
+    expect(code).toBe(EXIT.ok);
+    expect(result).toMatchObject({ strict: false, weak: ['counts'] });
+  });
+});
+
+describe('guards in a run file', () => {
+  it('is invalid content for an unknown rule id, naming the run file and the field', async () => {
+    const cwd = stubGame('stub-strict', { x: { ...checkX, guards: ['moves', 'flies'] } });
+    for (const command of ['mutants', 'run']) {
+      const { code, result } = await cliIn(cwd, [command, 'games/stub/runs/x.run.json']);
+      expect(code).toBe(EXIT.invalidContent);
+      expect(result.errors).toEqual([
+        expect.objectContaining({
+          file: 'games/stub/runs/x.run.json',
+          pointer: '/guards/1',
+          code: 'unknown_rule',
+          message: expect.stringContaining('no rule "flies" in "guards"') as unknown,
+        }),
+      ]);
+    }
+  });
+
+  it('is invalid content for a rule listed twice or switched off by the run', async () => {
+    const cwd = stubGame('stub-strict', {
+      twice: { ...checkX, guards: ['moves', 'moves'] },
+      off: { ...checkX, guards: ['counts'], disableRules: ['counts'] },
+    });
+    const twice = await cliIn(cwd, ['mutants', 'games/stub/runs/twice.run.json']);
+    expect(twice.code).toBe(EXIT.invalidContent);
+    expect(twice.result.errors).toEqual([expect.objectContaining({ pointer: '/guards/1' })]);
+    const off = await cliIn(cwd, ['mutants', 'games/stub/runs/off.run.json']);
+    expect(off.code).toBe(EXIT.invalidContent);
+    expect(off.result.errors).toEqual([expect.objectContaining({ pointer: '/guards/0' })]);
+  });
+});
+
+describe('mutants on a game folder', () => {
+  it('lists the run files guarding each rule and exits 4 when a strict rule has none', async () => {
+    const cwd = stubGame('stub-strict', { a: checkX, b: checkX });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub']);
+    expect(code).toBe(EXIT.failedCheck);
+    expect(result).toMatchObject({
+      game: 'games/stub',
+      kit: 'stub-strict',
+      strict: true,
+      rules: [
+        { id: 'moves', guardedBy: ['games/stub/runs/a.run.json', 'games/stub/runs/b.run.json'] },
+        { id: 'counts', guardedBy: [] },
+      ],
+      unguarded: ['counts'],
+    });
+    // Without `guards`, each run is held only to the game as a whole.
+    expect((result.runs as { weak: string[] }[]).map((r) => r.weak)).toEqual([[], []]);
+    const text = await cliIn(cwd, ['mutants', 'games/stub'], false);
+    expect(text.stdout).toContain('weak: no run file guards counts');
+    expect(text.stdout).toContain('moves: guarded by games/stub/runs/a.run.json, games/stub/runs/b.run.json');
+  });
+
+  it('exits 0 when the run files between them guard every rule', async () => {
+    const cwd = stubGame('stub-strict', { a: checkX, b: checkCount });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub']);
+    expect(code).toBe(EXIT.ok);
+    expect(result.unguarded).toEqual([]);
+  });
+
+  it('exits 4 for a run that does not guard a rule in its guards', async () => {
+    const cwd = stubGame('stub-strict', { a: checkX, b: { ...checkCount, guards: ['moves', 'counts'] } });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub']);
+    expect(code).toBe(EXIT.failedCheck);
+    expect(result.unguarded).toEqual([]);
+    expect(result.runs).toEqual([
+      expect.objectContaining({ run: 'games/stub/runs/a.run.json', weak: [] }),
+      expect.objectContaining({ run: 'games/stub/runs/b.run.json', weak: ['moves'] }),
+    ]);
+  });
+
+  it('exits 4 when a run fails as it is, and 3 for a bad run file', async () => {
+    const failing = stubGame('stub-loose', {
+      a: { assertions: [{ tick: 5, path: 'x', op: 'eq', value: 9 }] },
+    });
+    expect((await cliIn(failing, ['mutants', 'games/stub'])).code).toBe(EXIT.failedCheck);
+    const bad = stubGame('stub-loose', { a: { ...checkX, guards: ['nope'] } });
+    const { code, result } = await cliIn(bad, ['mutants', 'games/stub']);
+    expect(code).toBe(EXIT.invalidContent);
+    expect(result.errors).toEqual([expect.objectContaining({ file: 'games/stub/runs/a.run.json' })]);
+  });
+
+  it('only reports unguarded rules for a kit that is not strict', async () => {
+    const cwd = stubGame('stub-loose', { a: checkX });
+    const { code, result } = await cliIn(cwd, ['mutants', 'games/stub']);
+    expect(code).toBe(EXIT.ok);
+    expect(result).toMatchObject({ strict: false, unguarded: ['counts'] });
   });
 });

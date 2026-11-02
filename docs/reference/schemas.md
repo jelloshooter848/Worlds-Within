@@ -59,38 +59,39 @@ A seeded, scripted headless run and the checks it must pass (`pnpm cli run`).
 - Where: `games/<game>/runs/<name>.run.json`; replay files in `.ww-out/replays/`
 - Read from: `.json`
 
-| Field                     | Type                                                                                                         | Required | Default        | Limits                   | Description                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------- | -------------- | ------------------------ | --------------------------------------------------------------------------------- |
-| `game`                    | `string`                                                                                                     | yes      |                | not empty                | the game folder, relative to the run file (".." for games/&lt;g>/runs/)           |
-| `seed`                    | `integer`                                                                                                    | no       |                | >= 0                     | the world's seed; the manifest's start.seed if left out                           |
-| `ticks`                   | `integer`                                                                                                    | yes      |                | 1 to 1000000             | how many steps the run plays                                                      |
-| `input`                   | `object`                                                                                                     | no       | `{"steps":[]}` |                          | the scripted input (ScriptedInput steps)                                          |
-| `input.steps`             | `object[]`                                                                                                   | yes      |                |                          | each step holds its actions from its frame until the next step                    |
-| `input.steps[].frame`     | `integer`                                                                                                    | yes      |                | >= 0                     | the input frame the hold starts at                                                |
-| `input.steps[].hold`      | `("left" \| "right" \| "up" \| "down" \| "jump" \| "attack" \| "special" \| "start" \| "select" \| "run")[]` | yes      |                |                          | the actions held from that frame on                                               |
-| `assertions`              | `object[]`                                                                                                   | no       | `[]`           |                          | checks made at one tick each                                                      |
-| `assertions[].tick`       | `integer`                                                                                                    | yes      |                | >= 0                     | the tick the check is made at                                                     |
-| `assertions[].path`       | `string`                                                                                                     | yes      |                | not empty                | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length        |
-| `assertions[].op`         | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | yes      |                |                          | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                       |
-| `assertions[].value`      | `JSON`                                                                                                       | yes      |                |                          | what the value at the path is compared with                                       |
-| `invariants`              | `object[]`                                                                                                   | no       | `[]`           |                          | checks made at every tick, 0 included                                             |
-| `invariants[].path`       | `string`                                                                                                     | yes      |                | not empty                | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length        |
-| `invariants[].op`         | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | yes      |                |                          | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                       |
-| `invariants[].value`      | `JSON`                                                                                                       | yes      |                |                          | what the value at the path is compared with                                       |
-| `hashEvery`               | `integer`                                                                                                    | no       | `60`           | >= 1                     | a state hash every this many ticks (tick 0 and the last tick always get one)      |
-| `disableRules`            | `string[]`                                                                                                   | no       | `[]`           | items: not empty         | kit rules switched off for this run (ids from the kit's rule list; see `mutants`) |
-| `replay`                  | `object`                                                                                                     | no       |                |                          | only in replay files: the source run, its failing check and its hashes            |
-| `replay.source`           | `string`                                                                                                     | yes      |                | not empty                | the run file that failed, relative to the replay file                             |
-| `replay.failure`          | `object`                                                                                                     | yes      |                |                          | the first check that failed in the source run                                     |
-| `replay.failure.tick`     | `integer`                                                                                                    | yes      |                | >= 0                     | the first failing tick                                                            |
-| `replay.failure.kind`     | `"assertion" \| "invariant"`                                                                                 | yes      |                |                          | which list the failed check is in                                                 |
-| `replay.failure.path`     | `string`                                                                                                     | yes      |                | not empty                | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length        |
-| `replay.failure.op`       | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | yes      |                |                          | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                       |
-| `replay.failure.expected` | `JSON`                                                                                                       | yes      |                |                          | the check's value                                                                 |
-| `replay.failure.message`  | `string`                                                                                                     | yes      |                |                          | why it failed, as the source run reported it                                      |
-| `replay.hashes`           | `object[]`                                                                                                   | yes      |                |                          | the state hashes of the source run, up to the failing tick                        |
-| `replay.hashes[].tick`    | `integer`                                                                                                    | yes      |                | >= 0                     | the tick the hash was taken at                                                    |
-| `replay.hashes[].hash`    | `string`                                                                                                     | yes      |                | matches `^[0-9a-f]{16}$` | the state hash at that tick                                                       |
+| Field                     | Type                                                                                                         | Required | Default        | Limits                   | Description                                                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | -------- | -------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `game`                    | `string`                                                                                                     | yes      |                | not empty                | the game folder, relative to the run file (".." for games/&lt;g>/runs/)                                                      |
+| `seed`                    | `integer`                                                                                                    | no       |                | >= 0                     | the world's seed; the manifest's start.seed if left out                                                                      |
+| `ticks`                   | `integer`                                                                                                    | yes      |                | 1 to 1000000             | how many steps the run plays                                                                                                 |
+| `input`                   | `object`                                                                                                     | no       | `{"steps":[]}` |                          | the scripted input (ScriptedInput steps)                                                                                     |
+| `input.steps`             | `object[]`                                                                                                   | yes      |                |                          | each step holds its actions from its frame until the next step                                                               |
+| `input.steps[].frame`     | `integer`                                                                                                    | yes      |                | >= 0                     | the input frame the hold starts at                                                                                           |
+| `input.steps[].hold`      | `("left" \| "right" \| "up" \| "down" \| "jump" \| "attack" \| "special" \| "start" \| "select" \| "run")[]` | yes      |                |                          | the actions held from that frame on                                                                                          |
+| `assertions`              | `object[]`                                                                                                   | no       | `[]`           |                          | checks made at one tick each                                                                                                 |
+| `assertions[].tick`       | `integer`                                                                                                    | yes      |                | >= 0                     | the tick the check is made at                                                                                                |
+| `assertions[].path`       | `string`                                                                                                     | yes      |                | not empty                | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length                                                   |
+| `assertions[].op`         | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | yes      |                |                          | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                                                                  |
+| `assertions[].value`      | `JSON`                                                                                                       | yes      |                |                          | what the value at the path is compared with                                                                                  |
+| `invariants`              | `object[]`                                                                                                   | no       | `[]`           |                          | checks made at every tick, 0 included                                                                                        |
+| `invariants[].path`       | `string`                                                                                                     | yes      |                | not empty                | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length                                                   |
+| `invariants[].op`         | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | yes      |                |                          | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                                                                  |
+| `invariants[].value`      | `JSON`                                                                                                       | yes      |                |                          | what the value at the path is compared with                                                                                  |
+| `hashEvery`               | `integer`                                                                                                    | no       | `60`           | >= 1                     | a state hash every this many ticks (tick 0 and the last tick always get one)                                                 |
+| `disableRules`            | `string[]`                                                                                                   | no       | `[]`           | items: not empty         | kit rules switched off for this run (ids from the kit's rule list; see `mutants`)                                            |
+| `guards`                  | `string[]`                                                                                                   | no       |                | items: not empty         | the kit rules this run is meant to guard (ids from the kit's rule list); `mutants` checks these, or every rule when left out |
+| `replay`                  | `object`                                                                                                     | no       |                |                          | only in replay files: the source run, its failing check and its hashes                                                       |
+| `replay.source`           | `string`                                                                                                     | yes      |                | not empty                | the run file that failed, relative to the replay file                                                                        |
+| `replay.failure`          | `object`                                                                                                     | yes      |                |                          | the first check that failed in the source run                                                                                |
+| `replay.failure.tick`     | `integer`                                                                                                    | yes      |                | >= 0                     | the first failing tick                                                                                                       |
+| `replay.failure.kind`     | `"assertion" \| "invariant"`                                                                                 | yes      |                |                          | which list the failed check is in                                                                                            |
+| `replay.failure.path`     | `string`                                                                                                     | yes      |                | not empty                | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length                                                   |
+| `replay.failure.op`       | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | yes      |                |                          | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                                                                  |
+| `replay.failure.expected` | `JSON`                                                                                                       | yes      |                |                          | the check's value                                                                                                            |
+| `replay.failure.message`  | `string`                                                                                                     | yes      |                |                          | why it failed, as the source run reported it                                                                                 |
+| `replay.hashes`           | `object[]`                                                                                                   | yes      |                |                          | the state hashes of the source run, up to the failing tick                                                                   |
+| `replay.hashes[].tick`    | `integer`                                                                                                    | yes      |                | >= 0                     | the tick the hash was taken at                                                                                               |
+| `replay.hashes[].hash`    | `string`                                                                                                     | yes      |                | matches `^[0-9a-f]{16}$` | the state hash at that tick                                                                                                  |
 
 Example (`docs/reference/examples/run.json`):
 
@@ -101,16 +102,39 @@ Example (`docs/reference/examples/run.json`):
   "ticks": 120,
   "input": {
     "steps": [
-      { "frame": 0, "hold": ["right"] },
-      { "frame": 60, "hold": [] }
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 60,
+        "hold": []
+      }
     ]
   },
   "assertions": [
-    { "tick": 0, "path": "room", "op": "eq", "value": "hall" },
-    { "tick": 120, "path": "hero.room", "op": "in", "value": ["hall", "cellar"] }
+    {
+      "tick": 0,
+      "path": "room",
+      "op": "eq",
+      "value": "hall"
+    },
+    {
+      "tick": 120,
+      "path": "hero.room",
+      "op": "in",
+      "value": ["hall", "cellar"]
+    }
   ],
-  "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
-  "hashEvery": 60
+  "invariants": [
+    {
+      "path": "hero.hp",
+      "op": "gte",
+      "value": 0
+    }
+  ],
+  "hashEvery": 60,
+  "guards": ["doors-change-room"]
 }
 ```
 

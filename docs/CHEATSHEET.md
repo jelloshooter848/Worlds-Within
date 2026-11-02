@@ -97,7 +97,10 @@ export function createGame(content: ContentBundle, seed: number, opts?: Headless
 - A state hash is the first 16 hex digits of the SHA-256 of `canonicalJson(snapshot)` (sorted
   keys); `canonicalJson` throws on anything not JSON-safe, naming the path.
 - Kits name rules a run can switch off (`defineRules`, `RuleSwitch` in `engine/core/rules.ts`);
-  `opts.disabledRules` goes to the kit. `mutants` uses this to find weak run files.
+  `opts.disabledRules` goes to the kit. `mutants` uses this to find weak run files; a run file's
+  `guards` says which rules it is meant to guard, and a kit with `strictMutants: true` fails
+  `mutants` (exit 4) on a weak rule. `mutants games/<game>` checks that every rule is guarded by
+  some run file of the game.
 
 ## Run files
 
@@ -118,27 +121,28 @@ next step. Paths are dotted, into the snapshot (`hero.hp`, `entities.0.kind`, `e
 
 <!-- generated:run-file -->
 
-| Field                 | Type                                                                                                         | Default        | Description                                                                       |
-| --------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | --------------------------------------------------------------------------------- |
-| `game`                | `string`                                                                                                     | required       | the game folder, relative to the run file (".." for games/&lt;g>/runs/)           |
-| `seed`                | `integer`                                                                                                    |                | the world's seed; the manifest's start.seed if left out                           |
-| `ticks`               | `integer`                                                                                                    | required       | how many steps the run plays                                                      |
-| `input`               | `object`                                                                                                     | `{"steps":[]}` | the scripted input (ScriptedInput steps)                                          |
-| `input.steps`         | `object[]`                                                                                                   | required       | each step holds its actions from its frame until the next step                    |
-| `input.steps[].frame` | `integer`                                                                                                    | required       | the input frame the hold starts at                                                |
-| `input.steps[].hold`  | `("left" \| "right" \| "up" \| "down" \| "jump" \| "attack" \| "special" \| "start" \| "select" \| "run")[]` | required       | the actions held from that frame on                                               |
-| `assertions`          | `object[]`                                                                                                   | `[]`           | checks made at one tick each                                                      |
-| `assertions[].tick`   | `integer`                                                                                                    | required       | the tick the check is made at                                                     |
-| `assertions[].path`   | `string`                                                                                                     | required       | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length        |
-| `assertions[].op`     | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | required       | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                       |
-| `assertions[].value`  | `JSON`                                                                                                       | required       | what the value at the path is compared with                                       |
-| `invariants`          | `object[]`                                                                                                   | `[]`           | checks made at every tick, 0 included                                             |
-| `invariants[].path`   | `string`                                                                                                     | required       | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length        |
-| `invariants[].op`     | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | required       | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                       |
-| `invariants[].value`  | `JSON`                                                                                                       | required       | what the value at the path is compared with                                       |
-| `hashEvery`           | `integer`                                                                                                    | `60`           | a state hash every this many ticks (tick 0 and the last tick always get one)      |
-| `disableRules`        | `string[]`                                                                                                   | `[]`           | kit rules switched off for this run (ids from the kit's rule list; see `mutants`) |
-| `replay`              | `object`                                                                                                     |                | only in replay files: the source run, its failing check and its hashes            |
+| Field                 | Type                                                                                                         | Default        | Description                                                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `game`                | `string`                                                                                                     | required       | the game folder, relative to the run file (".." for games/&lt;g>/runs/)                                                      |
+| `seed`                | `integer`                                                                                                    |                | the world's seed; the manifest's start.seed if left out                                                                      |
+| `ticks`               | `integer`                                                                                                    | required       | how many steps the run plays                                                                                                 |
+| `input`               | `object`                                                                                                     | `{"steps":[]}` | the scripted input (ScriptedInput steps)                                                                                     |
+| `input.steps`         | `object[]`                                                                                                   | required       | each step holds its actions from its frame until the next step                                                               |
+| `input.steps[].frame` | `integer`                                                                                                    | required       | the input frame the hold starts at                                                                                           |
+| `input.steps[].hold`  | `("left" \| "right" \| "up" \| "down" \| "jump" \| "attack" \| "special" \| "start" \| "select" \| "run")[]` | required       | the actions held from that frame on                                                                                          |
+| `assertions`          | `object[]`                                                                                                   | `[]`           | checks made at one tick each                                                                                                 |
+| `assertions[].tick`   | `integer`                                                                                                    | required       | the tick the check is made at                                                                                                |
+| `assertions[].path`   | `string`                                                                                                     | required       | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length                                                   |
+| `assertions[].op`     | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | required       | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                                                                  |
+| `assertions[].value`  | `JSON`                                                                                                       | required       | what the value at the path is compared with                                                                                  |
+| `invariants`          | `object[]`                                                                                                   | `[]`           | checks made at every tick, 0 included                                                                                        |
+| `invariants[].path`   | `string`                                                                                                     | required       | a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length                                                   |
+| `invariants[].op`     | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | required       | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                                                                  |
+| `invariants[].value`  | `JSON`                                                                                                       | required       | what the value at the path is compared with                                                                                  |
+| `hashEvery`           | `integer`                                                                                                    | `60`           | a state hash every this many ticks (tick 0 and the last tick always get one)                                                 |
+| `disableRules`        | `string[]`                                                                                                   | `[]`           | kit rules switched off for this run (ids from the kit's rule list; see `mutants`)                                            |
+| `guards`              | `string[]`                                                                                                   |                | the kit rules this run is meant to guard (ids from the kit's rule list); `mutants` checks these, or every rule when left out |
+| `replay`              | `object`                                                                                                     |                | only in replay files: the source run, its failing check and its hashes                                                       |
 
 <!-- /generated:run-file -->
 
@@ -177,7 +181,8 @@ Use `pnpm -s cli <command> ... --json`: stdout is then exactly one JSON object
 3. `dump <run-file or replay> --tick N`: look at the whole state at the failing tick.
 4. `get` / `set` / `add` / `remove <file> <path> [value]`: change content; every write is
    schema-checked and read back (`verified: true`).
-5. `run` again, then `mutants <run-file>` to see which kit rules the run does not guard, and
+5. `run` again, then `mutants <run-file>` (or `mutants games/<game>` for every run file) to see
+   which kit rules the run does not guard, and
    `screenshot <run-file> --tick N` to look at a frame.
 6. Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
@@ -193,7 +198,7 @@ these steps in order.
 | `run`        | `pnpm cli run <runFile> [flags]`        | play a run file headless from its seed and check its assertions and invariants            |
 | `dump`       | `pnpm cli dump <runFile> [flags]`       | the whole game state at one tick of a run file, as JSON                                   |
 | `screenshot` | `pnpm cli screenshot <runFile> [flags]` | a PNG of one paused, seeded frame of a run file (headless Chromium)                       |
-| `mutants`    | `pnpm cli mutants <runFile>`            | play a run file once per kit rule switched off and report the rules it doesn't guard      |
+| `mutants`    | `pnpm cli mutants <target>`             | play run files once per kit rule switched off and report the rules they don't guard       |
 | `get`        | `pnpm cli get <file> <path>`            | read one value of a content file (path dotted or a JSON pointer)                          |
 | `set`        | `pnpm cli set <file> <path> <value>`    | replace one value of a content file; checked, written, read back and verified             |
 | `add`        | `pnpm cli add <file> <path> <value>`    | append to an array, insert at an index (- is the end) or add a new key; verified like set |
