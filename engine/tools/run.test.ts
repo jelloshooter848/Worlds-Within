@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT } from './exit-codes';
 import { main } from './main';
@@ -174,6 +174,100 @@ describe('run', () => {
     const { stdout } = await cli(['run', WALK]);
     expect(stdout).toContain(`${WALK}: passed (seed 1, 240/240 ticks)`);
     expect(stdout).toMatch(/hash @240: [0-9a-f]{16}/);
+  });
+});
+
+describe('replay files', () => {
+  type Hash = { tick: number; hash: string };
+  type Failure = { tick: number; kind: string; path: string; op: string; expected: unknown };
+  const sameCheck = (f: Failure) => ({
+    tick: f.tick,
+    kind: f.kind,
+    path: f.path,
+    op: f.op,
+    expected: f.expected,
+  });
+
+  /** The walk-east run with a wrong assertion at tick 100, played once. */
+  async function failing() {
+    const file = runFile((r) => {
+      (r.assertions as unknown[]).push({ tick: 100, path: 'hero.room', op: 'eq', value: 'nowhere' });
+    });
+    const first = await cli(['run', file, '--json']);
+    const replayFile = resolve(ROOT, first.result.replayFile as string);
+    return { file, first: first.result, replayFile };
+  }
+
+  it('a failing run writes a replay file whose path is in the result', async () => {
+    const { file, first, replayFile } = await failing();
+    expect(first).toMatchObject({ exitCode: 4, lastTick: 100, replay: null });
+    expect(first.replayFile).toMatch(/replays\/edited-t100-[0-9a-f]{12}\.run\.json$/);
+    const replay = JSON.parse(readFileSync(replayFile, 'utf8')) as Record<string, unknown>;
+    expect(replay).toMatchObject({ seed: 1, ticks: 100, hashEvery: 40 });
+    expect((replay.assertions as { tick: number }[]).every((a) => a.tick <= 100)).toBe(true);
+    const stored = replay.replay as { source: string; failure: Failure; hashes: Hash[] };
+    expect(resolve(replayFile, '..', stored.source)).toBe(resolve(file));
+    expect(sameCheck(stored.failure)).toEqual(sameCheck(first.failure as Failure));
+    expect(stored.hashes).toEqual(first.hashes);
+  });
+
+  it('a passing run writes no replay file', async () => {
+    const { result } = await cli(['run', WALK, '--json']);
+    expect(result).toMatchObject({ replayFile: null, replay: null });
+  });
+
+  it('running the replay fails at the same tick, with the same check and the same hashes', async () => {
+    const { file, first, replayFile } = await failing();
+    const { code, result } = await cli(['run', replayFile, '--json']);
+    expect(code).toBe(EXIT.failedCheck);
+    expect(result).toMatchObject({ passed: false, lastTick: 100, replayFile: null });
+    expect(sameCheck(result.failure as Failure)).toEqual(sameCheck(first.failure as Failure));
+    expect(result.hashes).toEqual(first.hashes);
+    expect(result.replay).toEqual({
+      source: expect.any(String),
+      expectedTick: 100,
+      reproduced: true,
+      hashesChecked: (first.hashes as Hash[]).length,
+      hashMismatch: null,
+    });
+    expect(resolve(ROOT, (result.replay as { source: string }).source)).toBe(resolve(file));
+  });
+
+  it('reports the first tick whose hash differs from the stored one', async () => {
+    const { replayFile } = await failing();
+    const replay = JSON.parse(readFileSync(replayFile, 'utf8')) as { replay: { hashes: Hash[] } };
+    const at80 = replay.replay.hashes.find((h) => h.tick === 80)!;
+    const real = at80.hash;
+    at80.hash = '0000000000000000';
+    replay.replay.hashes.find((h) => h.tick === 100)!.hash = 'ffffffffffffffff';
+    writeFileSync(replayFile, JSON.stringify(replay));
+    const { code, result } = await cli(['run', replayFile, '--json']);
+    expect(code).toBe(EXIT.failedCheck);
+    expect(result.passed).toBe(false);
+    expect(result.replay).toMatchObject({
+      reproduced: true,
+      hashMismatch: { tick: 80, expected: '0000000000000000', actual: real },
+    });
+    const text = await cli(['run', replayFile]);
+    expect(text.stdout).toContain('hash MISMATCH at tick 80');
+  });
+
+  it('checks the replay block like the rest of the run file', async () => {
+    const { replayFile } = await failing();
+    const replay = JSON.parse(readFileSync(replayFile, 'utf8')) as { replay: { hashes: Hash[] } };
+    replay.replay.hashes[0]!.hash = 'not-a-hash';
+    writeFileSync(replayFile, JSON.stringify(replay));
+    const { code, result } = await cli(['run', replayFile, '--json']);
+    expect(code).toBe(EXIT.invalidContent);
+    expect(JSON.stringify(result.errors)).toContain('replay.hashes.0.hash');
+  });
+
+  it('writes a replay that stops at tick 0 for a failure at the start', async () => {
+    const file = runFile((r) => (r.invariants = [{ path: 'room', op: 'eq', value: 'guard-room' }]));
+    const first = await cli(['run', file, '--json']);
+    expect(first.result.lastTick).toBe(0);
+    const again = await cli(['run', resolve(ROOT, first.result.replayFile as string), '--json']);
+    expect(again.result).toMatchObject({ lastTick: 0, replay: { reproduced: true, hashMismatch: null } });
   });
 });
 

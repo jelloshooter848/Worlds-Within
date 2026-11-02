@@ -22,7 +22,7 @@ export interface CliIO {
   stderr(text: string): void;
   /** The working folder: paths on the command line, and the output folder, are relative to it. */
   cwd: string;
-  /** Where capped output goes, relative to `cwd`. Defaults to {@link OUTPUT_DIR}. */
+  /** Where capped output and replay files go, relative to `cwd`. Defaults to {@link OUTPUT_DIR}. */
   outDir?: string;
 }
 
@@ -81,7 +81,7 @@ async function execute(
       const target = name === 'help' ? (line.args.command as string | undefined) : name;
       input = { args: target === undefined ? {} : { command: target }, flags: {} };
     }
-    const outcome = await command.run(input, { cwd: io.cwd });
+    const outcome = await command.run(input, { cwd: io.cwd, outDir: io.outDir ?? OUTPUT_DIR });
     return { ...outcome, command: name, from: command, max };
   } catch (error) {
     const exit = error instanceof UsageError ? EXIT.usage : EXIT.crash;

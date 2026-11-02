@@ -70,6 +70,34 @@ export const assertionSchema = z
 
 export const invariantSchema = z.strictObject(checkFields).superRefine(checkValue);
 
+/** A state hash: 16 hex digits (`stateHash` in `headless-run.ts`). */
+const tickHashSchema = z.strictObject({
+  tick: z.number().int().min(0).describe('the tick the hash was taken at'),
+  hash: z
+    .string()
+    .regex(/^[0-9a-f]{16}$/, 'a state hash is 16 lower-case hex digits')
+    .describe('the state hash at that tick'),
+});
+
+/**
+ * What a replay file adds to a run file (`replay.ts`): where it came from, the check that failed,
+ * and the state hashes the source run gave up to the failing tick. `run` checks those hashes.
+ */
+export const replaySchema = z.strictObject({
+  source: z.string().min(1).describe('the run file that failed, relative to the replay file'),
+  failure: z
+    .strictObject({
+      tick: z.number().int().min(0).describe('the first failing tick'),
+      kind: z.enum(['assertion', 'invariant']).describe('which list the failed check is in'),
+      path: checkFields.path,
+      op: checkFields.op,
+      expected: z.json().describe("the check's value"),
+      message: z.string().describe('why it failed, as the source run reported it'),
+    })
+    .describe('the first check that failed in the source run'),
+  hashes: z.array(tickHashSchema).describe('the state hashes of the source run, up to the failing tick'),
+});
+
 export const runFileSchema = z
   .strictObject({
     game: z.string().min(1).describe('the game folder, relative to the run file (".." for games/<g>/runs/)'),
@@ -99,6 +127,9 @@ export const runFileSchema = z
       .min(1)
       .default(60)
       .describe('a state hash every this many ticks (tick 0 and the last tick always get one)'),
+    replay: replaySchema
+      .exactOptional()
+      .describe('only in replay files: the source run, its failing check and its hashes'),
   })
   .superRefine((run, ctx) => {
     run.assertions.forEach((a, i) => {
@@ -109,9 +140,18 @@ export const runFileSchema = z
           message: `tick ${a.tick} is after the run's last tick (${run.ticks})`,
         });
     });
+    run.replay?.hashes.forEach((h, i) => {
+      if (h.tick > run.ticks)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['replay', 'hashes', i, 'tick'],
+          message: `tick ${h.tick} is after the run's last tick (${run.ticks})`,
+        });
+    });
   });
 
 export type RunFile = z.output<typeof runFileSchema>;
+export type Replay = z.output<typeof replaySchema>;
 export type Assertion = z.output<typeof assertionSchema>;
 export type Invariant = z.output<typeof invariantSchema>;
 

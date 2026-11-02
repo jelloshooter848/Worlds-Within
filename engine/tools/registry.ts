@@ -19,6 +19,8 @@ export type Fields = z.ZodObject<z.ZodRawShape, z.core.$strict>;
 export interface CommandContext {
   /** The working folder: command-line paths are relative to it. */
   cwd: string;
+  /** The tools output folder (capped output, replay files), relative to `cwd`. */
+  outDir: string;
 }
 
 /**

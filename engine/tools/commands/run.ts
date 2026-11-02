@@ -3,6 +3,7 @@ import { formatErrors, type ContentError } from '@engine/core/content/validate';
 import { EXIT } from '../exit-codes';
 import { playRun, type FailedCheck, type TickHash } from '../headless-run';
 import { defineCommand } from '../registry';
+import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
 
 /**
  * `run <run-file>`: plays a run file headless (seeded, scripted input) and checks its invariants
@@ -11,8 +12,12 @@ import { defineCommand } from '../registry';
  * Result: `{ run, game, seed, ticks, lastTick, passed, checks: { assertions, invariants },
  * failure, failures, hashes: [{ tick, hash }], finalHash }`. `failure` is the first failed check
  * (`{ tick, kind, index, path, op, expected, actual, message }`) or null, and `failures` every
- * check that failed at that tick. Exit 0 when every check passed, 4 (`failedCheck`) otherwise, 3
- * (`invalidContent`, with `errors`) when the run file or the game's content breaks its schema.
+ * check that failed at that tick. A failing run writes a replay file (`replay.ts`) and gives its
+ * path in `replayFile` (null otherwise, and for replays themselves). On a replay file `replay` is
+ * `{ source, expectedTick, reproduced, hashesChecked, hashMismatch }` (null for other run files),
+ * and a hash that differs from the stored one fails the run. Exit 0 when every check passed, 4
+ * (`failedCheck`) otherwise, 3 (`invalidContent`, with `errors`) when the run file or the game's
+ * content breaks its schema.
  */
 export const runCommand = defineCommand({
   name: 'run',
@@ -26,7 +31,10 @@ export const runCommand = defineCommand({
     if (!played.ok)
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
     const { loaded, seed, lastTick, hashes, failures } = played.value;
-    const passed = failures.length === 0;
+    const stored = loaded.run.replay;
+    const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
+    const passed = failures.length === 0 && !replay?.hashMismatch;
+    const replayFile = failures.length > 0 && !stored ? writeReplay(played.value, ctx.cwd, ctx.outDir) : null;
     return {
       exit: passed ? EXIT.ok : EXIT.failedCheck,
       result: {
@@ -41,6 +49,8 @@ export const runCommand = defineCommand({
         failures,
         hashes,
         finalHash: hashes[hashes.length - 1]?.hash ?? null,
+        replayFile,
+        replay,
       },
     };
   },
@@ -52,6 +62,19 @@ export const runCommand = defineCommand({
     ];
     for (const f of result.failures as FailedCheck[])
       lines.push(`  tick ${f.tick}: ${f.kind} ${f.index}: ${f.message}`);
+    const replay = result.replay as ReplayCheck | null;
+    if (replay) {
+      lines.push(
+        `  replay of ${replay.source}: ${replay.reproduced ? 'reproduced' : 'NOT reproduced'} the failure at tick ${replay.expectedTick}`,
+      );
+      const m = replay.hashMismatch;
+      lines.push(
+        m
+          ? `  hash MISMATCH at tick ${m.tick}: stored ${m.expected}, now ${m.actual} (the state differs from the source run by then)`
+          : `  ${replay.hashesChecked} stored hash(es) match`,
+      );
+    }
+    if (result.replayFile) lines.push(`  replay file: ${String(result.replayFile)}`);
     for (const h of hashes) lines.push(`  hash @${h.tick}: ${h.hash}`);
     return lines.join('\n');
   },

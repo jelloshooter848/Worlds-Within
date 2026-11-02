@@ -21,7 +21,7 @@ the CLI starts.
   `UsageError`.
 - `exit-codes.ts`: `EXIT`, the one place the exit codes are defined (see below), and `UsageError`.
 - `output.ts`: the output cap (`DEFAULT_MAX_OUTPUT`, 32 KiB) and the output folder (`OUTPUT_DIR`,
-  `.ww-out/`, git-ignored).
+  `.ww-out/`, git-ignored). Replay files go to `.ww-out/replays/`.
 - `game-loader.ts`: `loadGame(cwd, dir)` reads `<dir>/game.json` and its content files with the
   file system (`readGameFiles`) and checks them with the engine's kinds plus the kit's. It never
   imports a game's code.
@@ -32,6 +32,9 @@ the CLI starts.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
   plays the ticks and makes the checks; `stateHash(snapshot)`.
+- `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
+  `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
+  hashes.
 - `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`).
 
 ## The contract
@@ -61,9 +64,11 @@ the CLI starts.
   is a usage error. Its own content code: `unknown_kit` (at `kit` in `game.json`).
 - `run <runFile>`: plays a run file headless and checks it (below). Result: `{ run, game, seed,
 ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
-hash }], finalHash }`. `failure` is the first failed check, `{ tick, kind: 'assertion' |
+hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
-  that failed at that tick. The run stops at the first failing tick. Exit 0 passed, 4 a failed
+  that failed at that tick. The run stops at the first failing tick and then writes a replay file
+  (below) whose path is `replayFile` (null when the run passed, and for replays). `replay` is the
+  replay check on a replay file (null otherwise). Exit 0 passed, 4 a failed
   check, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
@@ -113,6 +118,57 @@ hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage 
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed)`
   returning a `HeadlessGame` (`engine/core/headless.ts`).
+
+## Replay files
+
+When `run` fails a check it writes a replay file to
+`.ww-out/replays/<run name>-t<tick>-<hash>.run.json` (the output folder; `io.outDir` in tests) and
+puts its path, relative to the working folder, in `replayFile`. The name comes from a hash of the
+content, so the same failure writes the same file. A replay is an ordinary run file: `run` and
+`dump` take it.
+
+```json
+{
+  "game": "../../games/demo",
+  "seed": 1,
+  "ticks": 100,
+  "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
+  "assertions": [{ "tick": 100, "path": "hero.room", "op": "eq", "value": "nowhere" }],
+  "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
+  "hashEvery": 40,
+  "replay": {
+    "source": "../../games/demo/runs/walk-east.run.json",
+    "failure": {
+      "tick": 100,
+      "kind": "assertion",
+      "path": "hero.room",
+      "op": "eq",
+      "expected": "nowhere",
+      "message": "hero.room is \"guard-room\", expected \"nowhere\""
+    },
+    "hashes": [
+      { "tick": 0, "hash": "d29e6b40530102ce" },
+      { "tick": 100, "hash": "b1d5fbcc23948889" }
+    ]
+  }
+}
+```
+
+- `game` and `replay.source` are relative to the replay file's folder, like `game` in any run file.
+- `seed` is always written out (the seed the source run used). `ticks` is the first failing tick
+  (1 when that is tick 0). `input.steps` keeps the steps with `frame` up to the failing tick,
+  `assertions` those at or before it, `invariants` and `hashEvery` all as they were.
+- `replay.failure` is the source run's first failed check (`index` is left out: the assertion list
+  is shorter). `replay.hashes` are the hashes the source run printed, up to and including the
+  failing tick (`hashes` in its result).
+- Playing a replay, `run` gives `replay: { source, expectedTick, reproduced, hashesChecked,
+hashMismatch }`: `reproduced` is true when the first failure is at the same tick with the same
+  check (kind, path, op, expected); `hashMismatch` is the first stored hash that differs,
+  `{ tick, expected, actual }`, or null. A mismatch means the game's state is different by that
+  tick (the game or its content changed since the source run); it fails the run (exit 4) even
+  if every check passes. A replay that fails writes no further replay.
+- Debugging: `run` the replay, then `dump <replay> --tick N` at the failing tick, or at the
+  mismatch tick and the stored hash tick before it, to see what changed.
 
 ## Adding a command
 
