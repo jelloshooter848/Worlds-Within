@@ -44,6 +44,10 @@ export class Player {
   tier: JumpTier;
   /** The speed cap in the air, set at take-off. */
   airCap: number;
+  /** Hit points (the power level): a harm takes one, at 0 the player dies. */
+  hp: number;
+  /** Ticks left in which the player cannot be harmed (after a hit). */
+  invuln = 0;
 
   constructor(
     x: number,
@@ -54,6 +58,14 @@ export class Player {
     this.body = makeBody(x, y, profile.box.w, profile.box.h);
     this.tier = this.pickTier(0);
     this.airCap = profile.maxWalk;
+    this.hp = profile.hp;
+  }
+
+  /** Bounces the player up at `speed` (a stomp), with the normal gravity: not a held jump. */
+  bounce(speed: number): void {
+    this.body.vy = -speed;
+    this.body.onGround = false;
+    this.jumping = false;
   }
 
   /**

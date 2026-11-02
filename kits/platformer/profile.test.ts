@@ -57,6 +57,12 @@ describe('profileSchema', () => {
     ]);
   });
 
+  it('checks that maxHp is not under the starting hp, and fills in the hit point defaults', () => {
+    expect(errorsOf(broken({ 'player.maxHp': 1 }))).toEqual([['player.maxHp', 'bad_hp']]);
+    const plain = broken({ 'player.hp': undefined, 'player.maxHp': undefined, 'player.lives': undefined });
+    expect(profileSchema.parse(plain).player).toMatchObject({ hp: 1, lives: 1 });
+  });
+
   it('checks the speed caps, what a stomp turns an actor into, and a kick speed', () => {
     const data = broken({
       'player.maxWalk': PROFILE.player.maxRun + 1,

@@ -4,6 +4,7 @@ export * from './level';
 export * from './profile';
 export * from './rules';
 export * from './schema';
+export * from './actor';
 export * from './body';
 export * from './player';
 export * from './snapshot';

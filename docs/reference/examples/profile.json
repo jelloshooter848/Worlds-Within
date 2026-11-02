@@ -19,7 +19,12 @@
     "jumpBuffer": 4,
     "maxFall": 18432,
     "fallReset": 16384,
-    "stompBounce": 16384
+    "stompBounce": 16384,
+    "hp": 2,
+    "maxHp": 2,
+    "invulnTicks": 150,
+    "breakBricksAt": 2,
+    "lives": 3
   },
   "actorGravity": 1024,
   "actorMaxFall": 16384,

@@ -6,7 +6,7 @@ import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { px, tileToSub } from '@engine/core/math/units';
 import { levelSchema } from './level';
 import { profileSchema } from './profile';
-import { PLATFORMER_RULES } from './rules';
+import { MOVEMENT_RULES } from './rules';
 import { platformerGame, type PlatformerSnapshot } from './snapshot';
 import { PlatformerWorld } from './world';
 
@@ -221,7 +221,7 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
   {
     name: "the level's right edge holds the player in",
     holds: (off) => {
-      const s = play(['.@..G.', '######'], RUN_RIGHT, 60, off);
+      const s = play(['....G.', '.@....', '######'], RUN_RIGHT, 60, off);
       return last(s).player.x === tileToSub(6) - HALF_W && last(s).player.vx === 0;
     },
   },
@@ -230,16 +230,16 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
 describe('the platformer world', () => {
   for (const c of CASES) it(c.name, () => expect(c.holds([])).toBe(true));
 
-  it('fails at least one kit test with each named rule switched off', () => {
-    const weak = PLATFORMER_RULES.map((r) => r.id).filter((id) => CASES.every((c) => c.holds([id])));
+  it('fails at least one kit test with each movement rule switched off', () => {
+    const weak = MOVEMENT_RULES.map((r) => r.id).filter((id) => CASES.every((c) => c.holds([id])));
     expect(weak).toEqual([]);
   });
 
-  it('reports a fall into a pit and stops there', () => {
+  it('reports a fall into a pit as a death, and the level as failed with no lives left', () => {
     const s = play(['.@..G', '#...#'], RIGHT, 80);
-    expect(events(s, 'fell')).toHaveLength(1);
-    expect(last(s).fell).toBe(true);
-    expect(last(s).player).toEqual(s[s.findIndex((x) => x.fell)]!.player);
+    expect(events(s, 'died')).toEqual([{ type: 'died', cause: 'pit', lives: 0 }]);
+    expect(last(s).outcome).toBe('failed');
+    expect(last(s).player).toEqual(s[s.findIndex((x) => x.outcome === 'failed')]!.player);
   });
 
   it('refuses a level that does not check, or a profile it is not played with', () => {
@@ -304,7 +304,7 @@ describe('platformerGame', () => {
 
   it("lists each step's own events and starts with none", () => {
     const game = platformerGame(new PlatformerWorld(tiny(), PROFILE));
-    expect(game.snapshot()).toMatchObject({ frame: 0, level: 'tiny', fell: false, events: [] });
+    expect(game.snapshot()).toMatchObject({ frame: 0, level: 'tiny', outcome: 'playing', events: [] });
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['jump'] }] });
     // Tick 0 is in the air, tick 1 lands, tick 2 takes the buffered jump.
     const steps = [[], [{ type: 'land' }], [{ type: 'jump', tier: 0 }], []];

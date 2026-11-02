@@ -70,6 +70,39 @@ const playerSchema = z.strictObject({
   maxFall: vel('the fall speed cap'),
   fallReset: vel('the fall speed set when a fall goes over `maxFall`'),
   stompBounce: vel('the upward speed a stomp bounces the player with'),
+  hp: z
+    .number()
+    .int()
+    .min(1)
+    .max(99)
+    .default(1)
+    .describe('the hit points (power level) the player starts with; a harm takes one, at 0 it dies'),
+  maxHp: z
+    .number()
+    .int()
+    .min(1)
+    .max(99)
+    .exactOptional()
+    .describe('the most hit points a power-up can raise it to (`hp` when left out)'),
+  invulnTicks: z
+    .number()
+    .int()
+    .min(0)
+    .default(0)
+    .describe('ticks after a harm in which the player cannot be harmed again'),
+  breakBricksAt: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe('from this many hit points up a head bump breaks a brick; left out, bricks never break'),
+  lives: z
+    .number()
+    .int()
+    .min(1)
+    .max(99)
+    .default(1)
+    .describe('tries at the level: a death with a life left respawns the player at the start'),
 });
 
 /** One actor type's data-set behaviour. */
@@ -88,6 +121,15 @@ const actorSchema = z.strictObject({
   kickable: z.boolean().describe('touching it while it stands still kicks it away'),
   kickSpeed: optVel('the speed a kick sends it at; required when kickable'),
   harms: z.boolean().describe('touching it (other than a stomp or a kick) harms the player'),
+  kickGrace: z
+    .number()
+    .int()
+    .min(0)
+    .max(120)
+    .exactOptional()
+    .describe(
+      'ticks after a kick (or a stomp that makes it) in which it does not touch the player (15 when left out)',
+    ),
 });
 
 export const profileSchema = z
@@ -124,6 +166,8 @@ export const profileSchema = z
     });
     if (p.player.maxWalk > p.player.maxRun)
       issue(['player', 'maxWalk'], 'bad_speed_caps', 'the walking cap is over the running cap');
+    if (p.player.maxHp !== undefined && p.player.maxHp < p.player.hp)
+      issue(['player', 'maxHp'], 'bad_hp', `maxHp ${p.player.maxHp} is under the starting hp ${p.player.hp}`);
     for (const [name, a] of Object.entries(p.actors)) {
       if (a.stompInto !== undefined && !Object.hasOwn(p.actors, a.stompInto)) {
         const known = Object.keys(p.actors).join(', ');

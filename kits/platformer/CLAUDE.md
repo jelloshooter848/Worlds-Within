@@ -1,9 +1,11 @@
 # kits/platformer
 
 The platformer kit: gameplay rules for a side-scrolling platformer, extracted from SMBC as rules
-only, with generic names and none of its content. Today (Engine 0.5, T5) it holds the content
-kinds and a headless world: integer physics, tile collision and named movement rules for the
-player. Level objects and enemies, the mini game hook and presentation frames follow in later
+only, with generic names and none of its content. Today (Engine 0.5, T7) it holds the content
+kinds and a headless world that plays a whole level: integer physics, tile collision and named
+movement rules for the player, level objects (coins, bump blocks, bricks, hazards, pits, goals),
+data-set enemies (walkers and shells: stomps, kicks, harm), hit points with invulnerability,
+lives and the camera's scroll lock. The mini game hook and presentation frames follow in later
 tasks of the release.
 
 - `legend.ts`: `LEGEND`, the level text format: one character per 16x16 tile (`.` empty, `#`
@@ -16,17 +18,25 @@ tasks of the release.
   movement numbers and the actor types (`walker`, `shell`, ...) with data-set behaviour.
 - `schema.ts`: `levelKind()`, the `level` content kind (header JSON + `.map.txt` grid) whose
   `checkAll` runs `checkLevel` against the profile each level names.
-- `rules.ts`: `PLATFORMER_RULES`, the kit's named rules (listed under Movement rules below).
-- `tiles.ts`: `TileGrid`, a level's tiles as the world collides with them (cell kind and collision
-  per tile; empty outside the grid, so the left and right edges are the `level-bounds` rule's).
+- `rules.ts`: `PLATFORMER_RULES`, the kit's named rules: `MOVEMENT_RULES` (under Movement rules
+  below) then `OBJECT_RULES` (under Level objects and enemies).
+- `tiles.ts`: `TileGrid`, a level's tiles as the world collides with them (a cell kind per tile,
+  collision from `CELL_COLLISION` in `legend.ts`; empty outside the grid, so the left and right
+  edges are the `level-bounds` rule's). The world changes cells as it plays (`setCell`: a coin
+  taken, a block `used`, a brick broken) and `changed()` lists them for the snapshot.
 - `body.ts`: `Body` (a box in sub-pixels, `x`/`y` its top-left corner, velocity, `onGround`,
   `hitWall`, `bumped`), `makeBody`, `moveX` and `moveY`: SMBC-style tile collision, x then y.
 - `player.ts`: `Player`, moved by the profile's `player` numbers once per tick
   (`Player.atStart(col, row, ...)` centres it in the start tile, feet on its bottom edge).
-- `world.ts`: `PlatformerWorld(level, profile, { seed, disabledRules })`: checks the level
-  (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the seeded `rng`,
-  the `rules` switch, the tiles and the player; `update(input)` steps one tick and pushes
-  `PlatformerEvent`s (`jump` with its tier, `land`, `bump` with col/row, `fell`).
+- `actor.ts`: `Actor`, one enemy of an actor type from the profile: a body that waits until woken,
+  walks `dir * speed`, turns at walls and (for `turnAt: ledges`) at drops, and falls with
+  `actorGravity`; `id` is its number in the level, kept when a stomp changes its type.
+- `world.ts`: `PlatformerWorld(level, profile, { seed, disabledRules, viewWidth })`: checks the
+  level (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the
+  seeded `rng`, the `rules` switch, the tiles, the player, the actors, `coins`, `lives`,
+  `scrollX` (the view's left edge; the view is `viewWidth` px wide, 256 by default) and `outcome`
+  (`playing`, `cleared`, `failed`); `update(input)` steps one tick and pushes `PlatformerEvent`s
+  (below).
 - `snapshot.ts`: `snapshotWorld(world, events?)`, a JSON-safe, whole-number snapshot with no
   presentation state, and `platformerGame(world)`, the headless contract (`engine/core/headless.ts`)
   as `topdownGame` does it: each step takes that step's events.
@@ -89,8 +99,8 @@ One tick of the player (`player.ts`), every number from the profile's `player`:
    while jump is held and the player rises, else its `gravity`; past `maxFall` vy drops to
    `fallReset`.
 
-Then the world holds the player inside the level's left and right edges and stops it, once its top
-is below the last row, as fallen (`fell`). There is no corner slip and no coyote time yet.
+Then the world holds the player inside the level's left and right edges (and the view's left edge,
+under Level objects and enemies). There is no corner slip and no coyote time yet.
 
 The player starts as SMBC's does: placed on the start tile but not yet on the ground, so tick 0 is
 an air tick (air control from rest gives `minWalk`, and the first tier's `gravity` is added) and
@@ -115,15 +125,66 @@ SMBC behaviour deliberately left out of the kit (and kept out of the traces' scr
   water rule, and power states (only the small 12x16 body).
 - Running over one-tile gaps at speed (SMBC's `crossGapMinVx`); the traces avoid one-tile gaps.
 - Coyote time (an assist, 0 for the default runner) and SMBC's Classic-mode rule variants.
-- The camera's left edge stopping a player who walks back (scroll lock comes with T7's `scroll`
-  work); the scripts stay clear of it.
+- The camera's left edge stopping a player who walks back (the `scroll-lock` rule); the traces'
+  level has `"scroll": "none"`, so it never applies to them.
 - Start modes other than standing (pipe exit, fall-in, auto-walk, ...).
 
-Rule ids (`rules.ts`), each guarded by `rules.isOn(id)` and each made to fail a test in
-`world.test.ts` when off: `gravity`, `fall-cap`, `walk`, `run-speed`, `run-hold`, `friction`,
+Movement rule ids (`MOVEMENT_RULES` in `rules.ts`), each guarded by `rules.isOn(id)` and each made
+to fail a test in `world.test.ts` when off: `gravity`, `fall-cap`, `walk`, `run-speed`, `run-hold`, `friction`,
 `skid`, `air-control`, `jump`, `jump-by-speed`, `variable-jump`, `solid-tiles`,
 `one-way-platforms`, `ceiling-bump` (off: the head stays under the tile but the rise goes on),
 `level-bounds`.
+
+## Level objects and enemies
+
+One tick of the world (`world.ts`; nothing happens once the outcome is `cleared` or `failed`):
+
+1. the player's invulnerability counts down; the player moves (above);
+2. a head bump (`bump` event) on a bump block gives what it holds and leaves it `used`
+   (`bump-blocks`; a `block` event with the content): `coin` a coin, `coins` a coin a bump for
+   `MULTI_COIN_HITS` (10) bumps, `powerup` one hit point up to `maxHp`, `life` a life,
+   `actor:<type>` that actor, awake, on top of the block (`spawn`). On a brick it breaks it when the
+   player has `breakBricksAt` hit points or more (`brick-break`; `break` event); else it is only a
+   bump;
+3. the level's edges hold the player in (`level-bounds`); with `"scroll": "right"` the view's left
+   edge does too (`scroll-lock`). Then the view follows the player's centre, held at its middle,
+   inside the level: `right` never scrolls back (with `scroll-lock` off it scrolls back like
+   `free`), `free` scrolls both ways, `none` never scrolls;
+4. an actor wakes once it is within `WAKE_MARGIN` (2 tiles) of the view (`actors-wake`; off, every
+   actor is awake from the start); awake actors move (`actor.ts`): a wall turns one round
+   (`walkers-turn`; off, it stands against the wall), a `turnAt: ledges` type turns before a drop
+   (`ledge-turn`); actors below the last row are gone. A moving kickable actor (a kicked shell)
+   defeats every other awake actor it touches (`shell-hits-enemies`; `defeat` event);
+5. the player against each awake actor it overlaps (one in its `kickGrace` ticks after a kick or
+   a stomp is skipped): a still kickable actor is kicked away from the player at its `kickSpeed`
+   (`shell-kick`; `kick`); a player who moved down this tick with its feet, before the move, in the
+   actor's top 3/5 (SMBC's test) stomps a `stompable` actor (`stomping`; `stomp` with `into`): it
+   becomes its `stompInto` type (same id, place and way, still if that type's `speed` is 0) or is
+   gone, and the player bounces at `stompBounce` with the normal gravity (`stomp-bounce`);
+   otherwise a `harms` actor takes a hit point (`enemy-touch-hurts`; `hurt` with the hp left),
+   unless the player is invulnerable; a hit starts `invulnTicks` of invulnerability
+   (`invulnerability`);
+6. the tiles the player's box covers: a coin is taken (`coins-collect`; `coin` with the count), a
+   hazard kills (`hazards-kill`), a goal ends the level as `cleared` (`goal-clears-level`;
+   `cleared`);
+7. a player whose top is below the last row dies (`pits-kill`; off, it falls on for ever).
+
+A death (`died` with `cause` `pit`, `hazard` or `hurt` at 0 hit points, and the lives left) takes
+a life; with lives left the player starts again at the start with full hit points (`respawn`; the
+view goes back to the start, the actors and tiles stay as they are), else the outcome is `failed`.
+
+Events (`PlatformerEvent`, the last step's in the snapshot): `jump` (tier), `land`, `bump`,
+`block`, `break`, `coin`, `spawn`, `stomp`, `kick`, `defeat`, `hurt`, `died`, `respawn`,
+`cleared`. They are deterministic, so they are part of the hashed snapshot.
+
+Left out for now (simplifications, not SMBC's full behaviour): a power-up is given at once (no
+moving item), a bump does not hit actors standing on the block, actors do not turn at each other,
+a respawn is immediate (a presentation can add the pause), and there is no score or timer.
+
+Object rule ids (`OBJECT_RULES` in `rules.ts`), each made to fail a test in `objects.test.ts` when
+off: `coins-collect`, `bump-blocks`, `brick-break`, `hazards-kill`, `pits-kill`,
+`goal-clears-level`, `scroll-lock`, `actors-wake`, `walkers-turn`, `ledge-turn`, `stomping`,
+`stomp-bounce`, `shell-kick`, `shell-hits-enemies`, `enemy-touch-hurts`, `invulnerability`.
 
 ## Content kinds
 
@@ -142,18 +203,24 @@ Rule ids (`rules.ts`), each guarded by `rules.isOn(id)` and each made to fail a 
   `friction`, `skid`, `skidTurn`, `maxWalk`, `maxRun`, `runHold` ticks, `jumps` tiers of
   `{ below?, speed, holdGravity, gravity }` with no `below` on the last, `jumpBuffer?` ticks
   (0 when left out), `maxFall`, `fallReset`,
-  `stompBounce`), `actorGravity`, `actorMaxFall` and `actors` by name (`box?`, `speed`, `turnAt`
-  `walls`/`ledges`, `stompable`, `stompInto?`, `kickable`, `kickSpeed?`, `harms`). Codes:
-  `bad_jump_tiers`, `bad_speed_caps`, `unknown_actor` (a `stompInto` that is not an actor type)
-  and `missing_field` (a kickable actor with no `kickSpeed`).
+  `stompBounce`, `hp` (1 when left out), `maxHp?` (`hp` when left out), `invulnTicks` (0),
+  `breakBricksAt?` (left out: bricks never break), `lives` (1)), `actorGravity`, `actorMaxFall`
+  and `actors` by name (`box?`, `speed`, `turnAt` `walls`/`ledges`, `stompable`, `stompInto?`,
+  `kickable`, `kickSpeed?`, `harms`, `kickGrace?` ticks, 15 when left out). Codes:
+  `bad_jump_tiers`, `bad_speed_caps`, `bad_hp` (`maxHp` under `hp`), `unknown_actor` (a
+  `stompInto` that is not an actor type) and `missing_field` (a kickable actor with no
+  `kickSpeed`).
 
 ## Testing
 
 `pnpm test kits/platformer`: `level.test.ts` and `profile.test.ts` check good and broken inputs
 (file, path, code, row and col); `kit.test.ts` loads the fixtures as a game would (with
 `loadContent` and the kit's hook) and checks the cross-file problems. `world.test.ts` holds the
-movement tests as a list of cases, plays each with every rule on, then with each named rule off in
-turn and fails if a rule leaves every case passing; `golden.test.ts` checks the movement against
+movement tests as a list of cases, plays each with every rule on, then with each movement rule off
+in turn and fails if a rule leaves every case passing; `objects.test.ts` does the same for the
+object rules (coins, blocks, bricks, hazards, pits, goal, scroll lock, waking, turning, stomp,
+bounce, kick, shell hits, touch damage, invulnerability), and plays the fixture level from start to
+goal with a scripted input (`cleared`, both coins, the same snapshot hashes on two runs); `golden.test.ts` checks the movement against
 SMBC (above); `world.test.ts` also checks that two runs of the same input
 and seed give equal `canonicalJson` snapshots tick by tick, and that snapshots hold whole numbers. After changing a schema or a
 description, run `pnpm docs:gen` (the schema reference lists both kinds; their examples are

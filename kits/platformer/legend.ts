@@ -10,9 +10,37 @@
 /** How a tile collides: open air, solid on every side, or solid from above only. */
 export type Collision = 'empty' | 'solid' | 'one-way';
 
-/** What a cell holds, beyond its collision. */
+/**
+ * What a cell holds, beyond its collision. `used` is a bump block that has given what it held: it
+ * has no legend character, a level never starts with one, and the world turns a `bump` cell into it.
+ */
 export type CellKind =
-  'empty' | 'solid' | 'brick' | 'bump' | 'one-way' | 'hazard' | 'coin' | 'start' | 'goal' | 'trigger';
+  | 'empty'
+  | 'solid'
+  | 'brick'
+  | 'bump'
+  | 'used'
+  | 'one-way'
+  | 'hazard'
+  | 'coin'
+  | 'start'
+  | 'goal'
+  | 'trigger';
+
+/** How each cell kind collides (the legend's entries agree with it). */
+export const CELL_COLLISION: Readonly<Record<CellKind, Collision>> = {
+  empty: 'empty',
+  solid: 'solid',
+  brick: 'solid',
+  bump: 'solid',
+  used: 'solid',
+  'one-way': 'one-way',
+  hazard: 'empty',
+  coin: 'empty',
+  start: 'empty',
+  goal: 'empty',
+  trigger: 'empty',
+};
 
 export interface LegendEntry {
   readonly cell: CellKind;
