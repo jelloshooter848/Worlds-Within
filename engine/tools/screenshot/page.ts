@@ -8,10 +8,22 @@ import type { ShotJob, ShotResult } from './job';
 /**
  * The screenshot page (browser only, tools only). `pnpm cli screenshot` opens it in headless
  * Chromium and calls `window.wwShoot(job)`: the page checks the game's files, imports the game's
- * view module by its URL, steps it exactly `job.ticks` times with the run's scripted input (no
- * real-time loop, no audio), draws one frame with the canvas2d backend onto a canvas of the game's
- * picture size (`job.screen`, from `game.json`) and returns the canvas as a PNG data URL, plus the snapshot at that tick.
+ * view module by its URL, and steps it exactly `job.ticks` times with the run's scripted input (no
+ * real-time loop, no audio), drawing every tick (tick 0 included) with the canvas2d backend onto
+ * a canvas of the game's picture size (`job.screen`, from `game.json`), as a player's screen
+ * would. It returns the last picture as a PNG data URL, the snapshot at that tick, and the state
+ * hashes it saw on the way (tick 0, every `job.hashEvery` ticks and the last), so the CLI can
+ * check that drawing every tick changed nothing.
  */
+
+/** The state hash as `run` computes it: the first 16 hex digits of the SHA-256 of the JSON. */
+async function stateHash(json: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(json));
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
 
 async function shoot(job: ShotJob): Promise<ShotResult> {
   const content = checkGameTexts(job.files, job.root);
@@ -25,23 +37,28 @@ async function shoot(job: ShotJob): Promise<ShotResult> {
     throw new Error(
       `${job.viewUrl} draws a ${String(game.screen?.width)}x${String(game.screen?.height)} picture, but game.json says ${width}x${height}`,
     );
-  const input = new ScriptedInput(job.input);
-  for (let tick = 0; tick < job.ticks; tick++) {
-    input.next();
-    game.step(input);
-  }
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D canvas not supported');
-  game.render(new CanvasRenderer(ctx));
-  return {
-    png: canvas.toDataURL('image/png'),
-    width: canvas.width,
-    height: canvas.height,
-    snapshot: canonicalJson(game.snapshot()),
-  };
+  const renderer = new CanvasRenderer(ctx);
+  const input = new ScriptedInput(job.input);
+  const hashes: ShotResult['hashes'] = [];
+  let snapshot = '';
+  for (let tick = 0; ; tick++) {
+    if (tick > 0) {
+      input.next();
+      game.step(input);
+    }
+    game.render(renderer);
+    if (tick % job.hashEvery === 0 || tick === job.ticks) {
+      snapshot = canonicalJson(game.snapshot());
+      hashes.push({ tick, hash: await stateHash(snapshot) });
+    }
+    if (tick === job.ticks) break;
+  }
+  return { png: canvas.toDataURL('image/png'), width: canvas.width, height: canvas.height, snapshot, hashes };
 }
 
 declare global {

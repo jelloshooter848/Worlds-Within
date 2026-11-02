@@ -10,8 +10,10 @@ export interface ShotJob {
   /** The URL the page imports the game's view module from (served by Vite). */
   viewUrl: string;
   seed: number;
-  /** How many steps to play before drawing. */
+  /** How many steps to play; the page draws every tick on the way and returns the last picture. */
   ticks: number;
+  /** Report the state hash every this many ticks (the run file's `hashEvery`), and at the last tick. */
+  hashEvery: number;
   input: InputScript;
   disabledRules: string[];
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
@@ -26,4 +28,9 @@ export interface ShotResult {
   height: number;
   /** The snapshot at the drawn tick, as canonical JSON (the CLI hashes it). */
   snapshot: string;
+  /**
+   * The state hashes the page saw while drawing every tick (as `run` reports them: tick 0, every
+   * `hashEvery` ticks and the last tick), so the CLI can check drawing changed nothing.
+   */
+  hashes: { tick: number; hash: string }[];
 }

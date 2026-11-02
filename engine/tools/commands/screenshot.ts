@@ -14,15 +14,17 @@ import { pngSize, takeScreenshot } from '../screenshot';
 /**
  * `screenshot <run-file> --tick N [--out path]`: plays the run file to tick N in headless Chromium
  * through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
- * backend, and writes that frame as a PNG of the game's picture size (`screen` in `game.json`,
+ * backend, drawing every tick on the way (as a player's screen would), and writes the last frame as a PNG of the game's picture size (`screen` in `game.json`,
  * 256x240 by default; devicePixelRatio 1). No real-time loop and no
  * audio: the same run file and tick give a byte-identical PNG on two runs in a row.
  *
  * Result: `{ run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash,
- * matchesHeadless }`. `path` is the PNG, relative to the working folder (default
+ * hashes, matchesHeadless }`. `path` is the PNG, relative to the working folder (default
  * `.ww-out/screenshots/<run name>-t<tick>.png`); `sha256` is the whole PNG's SHA-256 in hex;
  * `hash` is the state hash of the snapshot the page drew, `headlessHash` the one `dump` gives at
- * that tick. Exit 0, 4 (`failedCheck`) when the two state hashes differ (the PNG is still written),
+ * that tick; `hashes` the state hashes the page saw while drawing (tick 0, every `hashEvery` ticks
+ * and the last, as `run` lists them). `matchesHeadless` is true when every one of them is the
+ * headless run's. Exit 0, 4 (`failedCheck`) when they differ (the PNG is still written),
  * 3 (`invalidContent`) for a bad run file or content or a game with no view module, 2 for a bad
  * tick or `--out`, 5 when Chromium is not installed (`pnpm exec playwright install chromium`).
  */
@@ -48,7 +50,7 @@ export const screenshotCommand = defineCommand({
       throw new UsageError(`--tick ${flags.tick} is after the run's last tick (${runFile.value.run.ticks})`);
     const played = await playRun(ctx.cwd, args.runFile, { untilTick: flags.tick });
     if (!played.ok) return invalid(args.runFile, played.errors);
-    const { loaded, seed, lastTick, snapshot, disabledRules } = played.value;
+    const { loaded, seed, lastTick, snapshot, disabledRules, hashes: headlessHashes } = played.value;
 
     const game = loadGame(ctx.cwd, loaded.gameDir);
     if (!game.content.ok) return invalid(loaded.file, game.content.errors);
@@ -72,6 +74,7 @@ export const screenshotCommand = defineCommand({
         root,
         seed,
         ticks: lastTick,
+        hashEvery: loaded.run.hashEvery,
         input: loaded.run.input,
         disabledRules,
         screen,
@@ -89,7 +92,8 @@ export const screenshotCommand = defineCommand({
 
     const hash = createHash('sha256').update(shot.snapshot).digest('hex').slice(0, 16);
     const headlessHash = stateHash(snapshot);
-    const matchesHeadless = hash === headlessHash;
+    const differs = hash === headlessHash ? firstDifference(shot.hashes, headlessHashes) : lastTick;
+    const matchesHeadless = differs === null;
     return {
       exit: matchesHeadless ? EXIT.ok : EXIT.failedCheck,
       result: {
@@ -104,11 +108,12 @@ export const screenshotCommand = defineCommand({
         sha256: createHash('sha256').update(shot.png).digest('hex'),
         hash,
         headlessHash,
+        hashes: shot.hashes,
         matchesHeadless,
-        ...(matchesHeadless
+        ...(differs === null
           ? {}
           : {
-              message: `the page's state at tick ${lastTick} (hash ${hash}) is not the headless run's (${headlessHash}): the view module plays differently from the headless one`,
+              message: `the page's state at tick ${differs} is not the headless run's (page ${shot.hashes.find((h) => h.tick === differs)?.hash ?? 'none'}, headless ${headlessHashes.find((h) => h.tick === differs)?.hash ?? 'none'}): the view module plays or draws differently from the headless one`,
             }),
       },
     };
@@ -123,4 +128,16 @@ export const screenshotCommand = defineCommand({
 
 function invalid(run: string, errors: ContentError[]) {
   return { exit: EXIT.invalidContent, result: { run, errors } };
+}
+
+type TickHashes = readonly { tick: number; hash: string }[];
+
+/** The first tick where two hash lists differ (a tick one list lacks counts), or null. */
+export function firstDifference(page: TickHashes, headless: TickHashes): number | null {
+  for (let i = 0; i < Math.max(page.length, headless.length); i++) {
+    const a = page[i];
+    const b = headless[i];
+    if (a?.tick !== b?.tick || a?.hash !== b?.hash) return Math.min(a?.tick ?? Infinity, b?.tick ?? Infinity);
+  }
+  return null;
 }

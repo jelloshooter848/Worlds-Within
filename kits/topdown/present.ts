@@ -658,9 +658,23 @@ function presentEvents(
 }
 
 /**
+ * The camera hint (the world point at the picture's centre) that frames the room on a picture of
+ * any size: the HUD band stays at the top, the room is centred across the picture and, below the
+ * band, centred in the height left over. A picture too short for the room under the band cuts its
+ * bottom (the HUD stays readable); one too narrow cuts both sides evenly. At 256x240 with the
+ * 64-px band the room fills the play area exactly. Whole pixels, so the picture never blurs.
+ */
+export function cameraHint(view: { x: number; y: number }, size: ScreenSize, top: number): CameraHint {
+  const left = Math.floor((size.width - ROOM_W) / 2);
+  const below = top + Math.max(0, Math.floor((size.height - top - ROOM_H) / 2));
+  return { x: view.x - left + size.width / 2, y: view.y - below + size.height / 2 };
+}
+
+/**
  * The world as a presentation frame: the map (or only its id and version when `opts.state`'s
  * tracker sent it already), the hero, HUD status values, this frame's `events` and a camera hint
- * that puts the play area `opts.top` (HUD_H) pixels down the picture. Pure: it only reads the
+ * that keeps the HUD band (`opts.top`, HUD_H) at the top and centres the room under it
+ * (`cameraHint`). Pure: it only reads the
  * world (the same world gives the same frame) and keeps its memory in `opts.state`. Entities
  * come in draw order with their depths (presentEntities); without `opts.state`, ids of things the
  * room text did not place count from 1 in each frame.
@@ -674,7 +688,7 @@ export function presentWorld(
   const top = opts.top ?? HUD_H;
   const { map, origin, view } = presentMap(world);
   const sent: PresentMap | PresentMapRef = opts.state ? opts.state.maps.next(map) : map;
-  const camera: CameraHint = { x: view.x + size.width / 2, y: view.y + size.height / 2 - top };
+  const camera = cameraHint(view, size, top);
   return {
     frame: world.frame,
     size: { width: size.width, height: size.height },

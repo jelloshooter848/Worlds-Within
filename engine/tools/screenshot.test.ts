@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT } from './exit-codes';
 import { main } from './main';
+import { firstDifference } from './commands/screenshot';
 import { launchChromium, NoBrowserError, pngSize, servedPath } from './screenshot';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -127,6 +128,17 @@ describe('screenshot (no browser needed)', () => {
   it('serves files in the repo by their path and others through /@fs/', () => {
     expect(servedPath(join(ROOT, 'games/demo/view.ts'))).toBe('/games/demo/view.ts');
     expect(servedPath('/tmp/x/view.ts')).toBe('/@fs/tmp/x/view.ts');
+  });
+
+  it('finds the first tick where the page and the headless hashes differ', () => {
+    const a = [
+      { tick: 0, hash: 'a' },
+      { tick: 40, hash: 'b' },
+    ];
+    expect(firstDifference(a, a)).toBeNull();
+    expect(firstDifference(a, [a[0]!, { tick: 40, hash: 'x' }])).toBe(40);
+    expect(firstDifference(a.slice(0, 1), a)).toBe(40);
+    expect(firstDifference([], a)).toBe(0);
   });
 
   it('reads a PNG size and rejects other bytes', () => {

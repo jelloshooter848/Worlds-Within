@@ -103,7 +103,7 @@ hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage 
   everything else: a big state gives the envelope plus `fullOutput`.
 - `screenshot <runFile> --tick N [--out path]`: a PNG of the frame at tick N (Screenshots, below).
   Result: `{ run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash,
-matchesHeadless }`. Exit 0, 4 when the page's state hash is not the headless one, 3 for a bad
+hashes, matchesHeadless }`. Exit 0, 4 when a state hash the page saw is not the headless one, 3 for a bad
   run file or content or a game without `view`, 2 for a bad `--tick` or `--out`, 5 when Chromium
   is not installed.
 - `mutants <runFile>`: mutant checks (below). Result: `{ run, game, kit, baseline: { passed,
@@ -199,6 +199,8 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
   `tests/runs/run-files.test.ts` plays every `games/**/runs/*.run.json` twice, requires it to pass
   and both hash lists to equal the golden file, so CI checks them. After a change meant to change
   the state, regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit the files.
+- `tests/runs/backend-parity.test.ts` plays every demo run file presenting every tick through the
+  null and the Canvas2D backends and requires both hash lists to equal the golden file.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
@@ -286,12 +288,15 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   `screen` size (`ShotJob.screen`), devicePixelRatio 1. The page gets the game's file texts, seed,
   input, switched-off rules and picture size, checks the content, imports the view module by URL
   (the game is still loaded by folder path), steps it exactly N times with `ScriptedInput` (no
-  real-time loop, no audio), draws once with the canvas2d `CanvasRenderer` onto a canvas of that
-  size (it fails if the view's `screen` differs) and returns `canvas.toDataURL('image/png')`: the
-  canvas, not a page screenshot, so page scaling and font smoothing stay out.
-- `hash` is the state hash of the snapshot the page drew; `headlessHash` is `dump`'s at that tick.
-  They must match (`matchesHeadless`); if not, the view plays differently from the headless
-  module and the command exits 4 (the PNG is still written).
+  real-time loop, no audio), drawing every tick (tick 0 included, as a player's screen would) with
+  the canvas2d `CanvasRenderer` onto a canvas of that size (it fails if the view's `screen`
+  differs), and returns the last picture as `canvas.toDataURL('image/png')`: the canvas, not a page
+  screenshot, so page scaling and font smoothing stay out.
+- `hash` is the state hash of the snapshot the page drew; `headlessHash` is `dump`'s at that tick;
+  `hashes` are the state hashes the page saw while drawing every tick (tick 0, every `hashEvery`
+  ticks and the last, as `run` lists them). All must match the headless run (`matchesHeadless`);
+  if not, the view plays (or its drawing changes the state) differently from the headless module
+  and the command exits 4 (the PNG is still written), with `message` naming the first tick.
 - Same run file and tick, same machine: byte-identical PNG (`screenshot.test.ts` checks it, and
   that different ticks give different PNGs). Text drawn with `debugText` uses a system font, so a
   PNG's hash can differ between machines; compare hashes on one machine.

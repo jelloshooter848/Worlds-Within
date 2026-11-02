@@ -63,8 +63,22 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   runs every run file twice and compares both to it, so CI checks them.
 - Run one: `pnpm -s cli run games/demo/runs/walk-east.run.json --json` (exit 0 passed, 4 a failed
   check). See the state at a tick: `pnpm -s cli dump games/demo/runs/walk-east.run.json --tick 100 --json`.
+- `tests/runs/backend-parity.test.ts` plays every run here twice, presenting every tick through
+  the null backend's `NullPresenter` and through `DemoPicture` (the Canvas2D backend's
+  `SkinnedCanvasPresenter`) onto a recording renderer: both must give the golden hashes.
 - After a change meant to change the game's state, regenerate the golden files with
   `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit them with the change.
+
+## Picture size
+
+`screen` in `game.json` is the only value to change for another picture size: the canvas, the
+integer scaling, the touch layout, the kit's frames and screenshots follow it. The kit's camera
+hint (`cameraHint`, `kits/topdown/present.ts`) keeps the HUD band (64 px) at the top and centres
+the room across the picture and in the height under the band; a shorter picture cuts the room's
+bottom, a narrower one both sides. The skin's HUD and the status lines stay at the top-left.
+`tests/build/two-resolutions.test.ts` copies this folder with `screen` set to 320x240 and checks
+`validate`, `run` (the same hashes), `screenshot` (a 320x240 PNG, the same bytes twice) and a
+Vite build of the copy.
 
 ## How to run
 

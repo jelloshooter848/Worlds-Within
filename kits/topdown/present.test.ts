@@ -10,9 +10,9 @@ import {
   type PresentFrame,
   type PresentMap,
 } from '@engine/core/present';
-import { ROOM_COLS, ROOM_ROWS, ROOM_W, TILE } from './geometry';
+import { HUD_H, ROOM_COLS, ROOM_ROWS, ROOM_W, TILE } from './geometry';
 import { HERO_INVULN } from './hero';
-import { presentMap, presentWorld, TdPresentIds, TdPresentState, PRESENT_TILES } from './present';
+import { cameraHint, presentMap, presentWorld, TdPresentIds, TdPresentState, PRESENT_TILES } from './present';
 import { buildDungeon, type RoomDef } from './room';
 import { snapshotWorld } from './snapshot';
 import { TopDownWorld, type TdEvent } from './world';
@@ -143,8 +143,25 @@ describe('presentWorld', () => {
     const frame = presentWorld(world, [], { size: { width: 320, height: 200 }, top: 24 });
     valid(frame);
     expect(frame.size).toEqual({ width: 320, height: 200 });
-    expect(frame.camera).toEqual({ x: 160, y: 76 });
+    // The room (256 wide) centred across 320 px: the picture's centre is still the room's x 128.
+    expect(frame.camera).toEqual({ x: 128, y: 76 });
     expect(frame.status['top']).toBe(24);
+  });
+
+  it('frames the room on a bigger or smaller picture: HUD band on top, room centred', () => {
+    const view = { x: 0, y: 0 };
+    // Where the room's top-left lands on the picture: centre minus the camera hint.
+    const at = (width: number, height: number) => {
+      const c = cameraHint(view, { width, height }, HUD_H);
+      return { x: width / 2 - c.x, y: height / 2 - c.y };
+    };
+    expect(at(256, 240)).toEqual({ x: 0, y: HUD_H });
+    expect(at(320, 240)).toEqual({ x: 32, y: HUD_H }); // 32 px either side
+    expect(at(320, 280)).toEqual({ x: 32, y: HUD_H + 20 }); // 40 px spare height, half above
+    expect(at(240, 224)).toEqual({ x: -8, y: HUD_H }); // 8 px cut each side, the bottom cut
+    expect(at(320, 180)).toEqual({ x: 32, y: HUD_H });
+    // During a slide the hint moves with the view and nothing else.
+    expect(cameraHint({ x: 256, y: 0 }, { width: 320, height: 240 }, HUD_H)).toEqual({ x: 384, y: 56 });
   });
 
   it('does not change the world: a run presenting every tick gives the same snapshots', () => {

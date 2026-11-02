@@ -27,7 +27,11 @@ at Engine 0.15.
   named in `game.json`, for `pnpm cli screenshot games/demo/runs/walk-east.run.json --tick 60`.
 - `runs/walk-east.run.json`: a run file (`pnpm -s cli run games/demo/runs/walk-east.run.json --json`)
   and `runs/walk-east.hashes.json`, its committed golden state hashes (checked by
-  `tests/runs/run-files.test.ts`).
+  `tests/runs/run-files.test.ts`, and by `tests/runs/backend-parity.test.ts` with every tick
+  presented through the null and the Canvas2D backends).
+- Any picture size: change only `screen` in `game.json` (such as 320x240); the kit's camera hint
+  keeps the HUD band on top and centres the room. `tests/build/two-resolutions.test.ts` validates,
+  runs, screenshots and builds such a copy.
 - `index.html` and `main.ts` (browser boot, files from `files.ts`); `scene.ts` (`DemoScene`).
 
 ## Imports allowed

@@ -47,10 +47,11 @@ description, skipped, passed, guarded, failure }], guarded, weak }`; `weak` list
   snapshot at tick N.
 - `pnpm cli screenshot <run-file> --tick N [--out path]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
-  backend, and writes the frame at tick N as a PNG of the game's picture size (`screen` in
+  backend, drawing every tick on the way, and writes the frame at tick N as a PNG of the game's picture size (`screen` in
   `game.json`, 256x240 by default; default
   `.ww-out/screenshots/<name>-t<N>.png`). `--json` result: `{ ok, command: 'screenshot', exitCode,
-run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash, matchesHeadless }`.
+run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash, hashes,
+matchesHeadless }` (`hashes`: the state hashes the page saw; all must be the headless run's).
   Two runs in a row give byte-identical PNGs. Needs `pnpm exec playwright install --with-deps
 chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
 - `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,

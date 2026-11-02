@@ -91,7 +91,7 @@ export async function takeScreenshot(
   job: Omit<ShotJob, 'viewUrl'>,
   gameAbs: string,
   viewAbs: string,
-): Promise<{ png: Buffer; width: number; height: number; snapshot: string }> {
+): Promise<{ png: Buffer; width: number; height: number; snapshot: string; hashes: ShotResult['hashes'] }> {
   const browser = await launchChromium();
   let server: Awaited<ReturnType<typeof serve>> | undefined;
   try {
@@ -118,6 +118,7 @@ export async function takeScreenshot(
       width: shot.width,
       height: shot.height,
       snapshot: shot.snapshot,
+      hashes: shot.hashes,
     };
   } finally {
     await browser.close();

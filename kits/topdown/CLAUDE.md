@@ -65,8 +65,10 @@ by default), `reduceFlashing` and `state` (a `TdPresentState`, one per stream of
   the new room sits at its offset in it and the `camera` hint scrolls across. With `state`, the
   `MapTracker` sends the full map only when the id or version changes, else `{ id, version }`.
 - **Positions** are world pixels (the room's top-left tile at 0,0). The HUD band is not baked in:
-  `camera` `{ x, y }` is the world point at the picture's centre, set so the play area starts
-  `top` pixels down.
+  `camera` `{ x, y }` is the world point at the picture's centre (`cameraHint(view, size, top)`):
+  the HUD band (`top` px) stays at the top of any picture size, the room is centred across the
+  picture and centred in the height left under the band; a picture too short cuts the room's
+  bottom, one too narrow cuts both sides evenly. At 256x240 the room fills the play area exactly.
 - **Hero**: id `hero`, kind `hero`, 16x16, `facing`, `anim.state` `walk` (`t` = the walk counter),
   `attack`, `throw`, `hold`, `hurt` (knockback), `dying` (the spin) or `poof`, `t` ticks into the
   state; tags `invuln`, then `flashing` or (reduce flashing) `calm`, and `holding:<frame>`. While
