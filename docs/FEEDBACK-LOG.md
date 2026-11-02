@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 48.** (Last used: 47.)
+**Next unused number: 52.** (Last used: 51.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -96,3 +96,14 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **47.** Skins hold HUD entries and a camera default as well as kinds, tiles and events, and the
   skin schema already has the 3D mesh shape for 0.6. The demo's title and status lines stay as
   debug text drawn by the game. OK?
+- **48.** An entity's `facing` is a closed set (`up`, `down`, `left`, `right`), which fits the
+  top-down kit. The RTS (0.9) may need more directions or an angle. Widen it then, or now?
+- **49.** A room slide is sent as one combined map of both rooms, because a frame holds only one
+  map. On a picture wider than 256 the neighbouring room shows in the side strips during a slide.
+  OK?
+- **50.** The old art-contract constants (`DEFAULT_SHEETS`, `PERSON_SHEET`, `BEAM_PALETTES`) were
+  deleted, not moved into the demo skin as the roadmap said, because the skin uses its own
+  placeholder sheets. The old names remain only as reference in `kits/topdown/CLAUDE.md`. OK?
+- **51.** The Canvas2D presenter ignores the camera's `zoom`, `deadzone` and `lerp` and the `tint`
+  fx for now (the contract lets a backend ignore them), and the demo runs it with `clamp: false`.
+  Implement them in 0.5 with the platformer, or later?

@@ -32,7 +32,7 @@ owner's call).
   missing sheet, palette, sound or frame at the skin file and field. `resolveSkinFrame` is the pure
   lookup backends share.
 - **Presenters.** `SkinnedCanvasPresenter` (Canvas2D) draws any frame through a skin: the map cached
-  per id and version, entities by layer then y, facing flips, fallback boxes for anything the skin
+  per id and version, entities by layer then list order (a stable sort), facing flips, fallback boxes for anything the skin
   lacks, `fx` through `transformed()`/`translucent()`, camera framing, the HUD from status values,
   event effects and skin sounds through `onSound`. `NullPresenter` (null backend) takes frames and
   draws nothing, with `freeze` and `validate` options for tests.
@@ -92,8 +92,9 @@ pnpm dev   # then open /games/demo/
 
 ### Done when
 
-Each item was checked by running the commands on 2026-11-02 at commit `a3183f9` (the last 0.4 build
-commit; this close-out changes only docs).
+Each item was checked by running the commands on 2026-11-02 at commit `a3183f9`, and re-checked at
+`6cb4e75` (the draw-order fix, the last 0.4 code commit): the four checks, the run file, the
+screenshot (same sha256 and hashes) and the focused tests all passed again.
 
 - **Met: `kits/` contains no drawing calls.** `tests/architecture/no-drawing.test.ts` and
   `tests/architecture/dependency-rule.test.ts` pass. A planted `kits/topdown/planted.ts` that imports
@@ -129,7 +130,7 @@ commit; this close-out changes only docs).
   which draws every tick with the Canvas2D backend in Chromium, reported the headless hashes for
   ticks 0..120 at both sizes.
 - The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (64 test files,
-  707 tests), and `pnpm docs:check` passes.
+  708 tests at `6cb4e75`), and `pnpm docs:check` passes.
 
 ### Deviations from the roadmap
 
@@ -147,8 +148,7 @@ commit; this close-out changes only docs).
 ### Outstanding issues
 
 - Visual-only differences from 0.3 that skins cannot express yet: a hurt hero or monster no longer
-  blinks; stun stars do not turn; within one depth layer entities are drawn by `y`, not list order;
-  the exit's glow and dark-room palettes are one flat frame each.
+  blinks; stun stars do not turn; the exit's glow and dark-room palettes are one flat frame each.
 - `SkinnedCanvasPresenter` ignores the camera's `zoom`, `deadzone` and `lerp` and the `tint` fx for
   now (`shake` is honoured).
 - Screenshot PNGs still include the demo's debug text in a system font, so they are byte-stable on
@@ -157,7 +157,7 @@ commit; this close-out changes only docs).
   `SkinnedCanvasPresenter`).
 - The tools' kit table (`engine/tools/kits.ts`) is unchanged; the kit-level hook is still planned
   for 0.5.
-- Feedback items 45-47 (`docs/FEEDBACK-LOG.md`) ask the owner about these choices.
+- Feedback items 45-51 (`docs/FEEDBACK-LOG.md`) ask the owner about these choices.
 
 ## Engine 0.3
 
