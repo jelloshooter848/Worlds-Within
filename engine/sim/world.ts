@@ -154,11 +154,13 @@ export interface RestoredState {
 export interface WorldInternals {
   readonly stepping: () => boolean;
   readonly log: { readonly enabled: boolean; readonly ticks: number | undefined };
+  /** The registered component kind named `name` (for checking data before a write). */
+  readonly component: (name: string) => AnyComponent | undefined;
 }
 
 const internals = new WeakMap<World, WorldInternals>();
 
-/** The internals of a world made by `createWorld` or `loadWorld` (for `save.ts` only). */
+/** The internals of a world made by `createWorld` or `loadWorld` (for `save.ts`, `time.ts` and `mission.ts`). */
 export function worldInternals(world: World): WorldInternals {
   const found = internals.get(world);
   if (!found) throw new Error('not a world made by createWorld or loadWorld');
@@ -424,6 +426,10 @@ export function makeWorld(seed: number, options: WorldOptions, restored?: Restor
     }
     for (const change of restored.log) log.push(deepFreeze(structuredClone(change)));
   }
-  internals.set(world, { stepping: () => stepping, log: { enabled: logOn, ticks: keepTicks } });
+  internals.set(world, {
+    stepping: () => stepping,
+    log: { enabled: logOn, ticks: keepTicks },
+    component: (name) => defs.get(name),
+  });
   return world;
 }

@@ -61,6 +61,22 @@ From `engine/sim/index.ts`:
   `construct` wait, while `build`, `train` and everyone outside the event run on. The state is
   world data (`EventMember`, and `WorldTime` on one world-level entity), in snapshots and saves
   only once used, so existing golden hashes do not move.
+- Missions (`mission.ts`, Engine 0.10 T4): the lifecycle of a mission (`MissionDef` from
+  `engine/core/missions.ts`). `openMission(world, def, { refs? })` checks the def, records it with
+  its outcome space, fixed `worldTimeCost`, open tick and commit tick (open + cost), starts its
+  experience clock, freezes its `event` and returns `{ ok, mission, openTick, commitTick,
+snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(world, id)` draws
+  one declared outcome with `world.rng` (`int(totalWeight)`, walked in file order);
+  `playMission(world, id, outcomeId | report)` takes only a declared (and playable) outcome;
+  `quitMission` takes `onQuit`. `commitMission(world, id, result?)` steps the world to the commit
+  tick (committing any other mission due on the way), delegates an unresolved mission then
+  (`timeout`), and under `mission:<id>` applies the outcome's effects, unfreezes the event, stamps
+  the commitment and appends a frozen `MissionRecord`. `settleMissions(world)` commits whatever is
+  due now, for callers that step the world themselves. Retrying, replaying, reopening or
+  recommitting is refused (`mission_committed`, `mission_resolved`) with a one-line reason and
+  changes nothing. Read with `missionsOf(world)` (`open`, `committed`, `record`, `status`). The
+  state is the `Missions` component (`MISSION_COMPONENTS`, on the `WorldTime` entity,
+  `omitWhenEmpty`), so a world without missions hashes as before.
 - Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
   cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
   west.
@@ -175,3 +191,8 @@ ticks (`WW_SAVE_EVERY_TICK=1` reloads at every tick, about two minutes).
 the time service and the battle fixture with its battle frozen: a barracks finishes while the
 battle's units keep their `Position`, `Health` and `Cooldown`, freeze and unfreeze are logged with
 their cause, the battle resumes after, and a save and load mid-freeze gives equal hashes.
+`mission.test.ts` checks the mission lifecycle: partial success applying only its effects, failure
+with every retry refused, delegation repeatable from the seed and matching its weights over 4,000
+seeds, any declared outcome playable and undeclared ones refused, the same hash after commit
+however many experience ticks pass inside, and committed records unchanged across later ticks and
+a save and load.

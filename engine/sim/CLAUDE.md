@@ -40,12 +40,15 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   (`village`: `[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]` with `haulSystem`,
   `buildSystem`, `patrolSystem`; `rts`: `[...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` with
   `RTS_SYSTEMS`), `SYSTEM_SET_NAMES` and `DEFAULT_SYSTEM_SET` (`village`). A scenario names one in
-  `systems` (Scenarios, below). Both sets also register `TIME_COMPONENTS` (Engine 0.10), which
+  `systems` (Scenarios, below). Both sets also register `TIME_COMPONENTS` and `MISSION_COMPONENTS` (Engine 0.10), which
   stay out of snapshots until used.
 - `time.ts`: the time service and frozen events (Engine 0.10 T3): `EventMember`, `WorldTime`
   (`TIME_COMPONENTS`), `timeOf`, `freezeEvent`/`unfreezeEvent`, `joinEvent`/`leaveEvent`,
   `eventMembers`, `frozenCheck`, `startExperience`, `addExperience`, `stampCommitment` (see
   "Time" below).
+- `mission.ts`: the mission lifecycle (Engine 0.10 T4): `Missions` (`MISSION_COMPONENTS`),
+  `openMission`, `delegateMission`, `playMission`, `quitMission`, `commitMission`,
+  `settleMissions`, `missionsOf`, `missionSnapshot` (see "Missions" below).
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`; and
@@ -144,7 +147,7 @@ would. `canonicalJson(saveWorld(loadWorld(save)))` is the same text as the save 
 ## Time
 
 The time service and frozen events (`time.ts`, Engine 0.10 T3; docs/BUILD-LOG.md, Engine 0.10,
-items 150-152). The mission lifecycle (T4) is built on it.
+items 150-152). The mission lifecycle ("Missions" below) is built on it.
 
 - **World time** is the world's `tick` (`timeOf(world).world`). Only `step()` moves it.
 - **Experience time** is the ticks spent inside an open mission: `startExperience(world, mission,
@@ -186,6 +189,71 @@ mission, ticks, cause)` adds to it. It never moves the world: ten ticks or ten t
   barracks finishes while the battle's units keep their `Position`, `Health` and `Cooldown`, the
   freeze and unfreeze are logged with their cause, the battle resumes after, and a save and load
   mid-freeze steps on with equal hashes).
+
+## Missions
+
+The mission lifecycle (`mission.ts`, Engine 0.10 T4; docs/BUILD-LOG.md, Engine 0.10, items
+150-154). The mission definition, its outcomes and effects, and the record types are the plain
+JSON contract in `engine/core/missions.ts`; this file runs it on a world.
+
+- **Open.** `openMission(world, def, { refs? })` checks `def` with `missionSchema` and records it
+  as world data: the whole def as it was (outcomes, weights, effects, `worldTimeCost`), the open
+  tick T and the commit tick T + `worldTimeCost`, fixed now. It starts the mission's experience
+  clock (`startExperience`), freezes its `event` (if any) and returns `{ ok, mission, openTick,
+commitTick, snapshot }`, `snapshot` being the plain world snapshot a kit's adapter reads
+  (`missionSnapshot(world)` takes it again, e.g. after a load). Effects name entities by id or by
+  a scenario key; every key must be in `refs` (copied onto the open mission), and every `set`
+  component must be registered.
+- **Resolve.** `delegateMission(world, id)` draws `world.rng.int(totalWeight)` once and takes the
+  outcome it falls in, walking the outcomes in file order (`pickOutcome`): the fair, average
+  result (item 154). `playMission(world, id, outcomeId | { outcome, stats? })` takes only a
+  declared outcome, and with `playable` only one of those; anything else is refused
+  (`unknown_outcome`) and the mission stays open and unresolved. `quitMission(world, id)` takes
+  `onQuit`. A mission resolves once: a second play, delegate or quit is refused
+  (`mission_resolved`). Resolving records the choice (and the kit's report) on the open mission;
+  nothing else changes until the commit.
+- **Commit.** `commitMission(world, id, result?)` steps the world up to the commit tick (no steps
+  when it is there already; any other mission due on the way is committed then), delegates the
+  mission if it is still unresolved (resolution `timeout`), then, under the cause `mission:<id>`:
+  applies the outcome's effects in order, unfreezes the event, stamps the commitment
+  (`stampCommitment` at the commit tick) and appends a `MissionRecord` `{ mission, outcome,
+effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`. `result`, when
+  given, must name the outcome it was resolved to (`result_mismatch`), or is played when it is
+  unresolved. A world stepped past the commit tick without committing is refused
+  (`mission_overdue`): a caller that steps the world itself calls `settleMissions(world)` after
+  each step, which commits every open mission due at that tick (in id order) and returns the
+  records.
+- **Effects** (data only): `damage` lowers `Health.hp` (not below 0; the death system removes it
+  later), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
+  `values` into the component. An effect whose entity is gone, a `damage` on an entity without
+  `Health`, or a `set` that would break the component's schema is skipped and listed in
+  `skipped`, never an error. `opportunity` effects are carried on the record; T5's opportunities
+  act on them (here they change nothing).
+- **Fixed world-time cost.** The world moves exactly `worldTimeCost` ticks between open and
+  commit, however it is resolved and whether it was resolved at once or ticks later. Experience
+  ticks (the kit's own round ticks, or ones recorded with `addExperience(world, id, n,
+'mission:<id>')`) never step the world; recorded ones are kept on the commitment and on the
+  record's `experienceTicks`, and nothing else differs.
+- **No do-overs.** Recommitting, reopening, replaying or delegating a committed mission is refused
+  (`mission_committed`), failure included: a failure is an ordinary outcome. Committed records are
+  append-only and stored frozen, and never change after later ticks or a save and load.
+- **Refusals** are `{ ok: false, code, error }` with a one-line `error` (`MissionRefusal`:
+  `bad_mission`, `bad_id`, `unknown_ref`, `unknown_component`, `mission_open`,
+  `mission_not_open`, `mission_committed`, `mission_resolved`, `mission_overdue`, `event_frozen`,
+  `unknown_outcome`, `result_mismatch`, `stepping`) and change nothing. Everything runs between
+  ticks (`stepping` during a step).
+- **World data.** `Missions` `{ open, committed }` lives on the `WorldTime` entity and is
+  `omitWhenEmpty`, so a world that never opens a mission snapshots, saves and hashes as before.
+  Both system sets register `MISSION_COMPONENTS`; load a world with them in `components`. The
+  only randomness is the one delegation draw from `world.rng`.
+- Read with `missionsOf(world)`: `open()`, `committed()` (commit order), `record(id)`,
+  `status(id)` (`open`, `committed` or null).
+- Tests: `mission.test.ts` (open and its refusals; partial success applying only its effects;
+  failure committed with every retry refused; results outside the declared or playable space
+  refused; any declared outcome playable; delegation repeatable from the seed and matching the
+  weights over 4,000 seeds; timeout and overdue; skipped effects; a second mission committed on
+  the way; the same hash after commit for 0, 1 or 10,000 experience ticks; played at once or
+  ticked through giving the same hash; records unchanged across later ticks and save and load).
 
 ## Standard components
 
@@ -523,4 +591,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `sample-world.test.ts`).

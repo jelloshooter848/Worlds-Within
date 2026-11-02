@@ -183,3 +183,47 @@ export type {
   TimeService,
   WorldTimeData,
 } from './time';
+export {
+  MISSION_COMPONENTS,
+  Missions,
+  commitMission,
+  delegateMission,
+  missionCause,
+  missionRecordSchema,
+  missionSnapshot,
+  missionsOf,
+  openMission,
+  openMissionSchema,
+  playMission,
+  quitMission,
+  settleMissions,
+} from './mission';
+export type {
+  CommitResult,
+  MissionRefusal,
+  MissionRefused,
+  MissionsData,
+  MissionsView,
+  OpenMission,
+  OpenOptions,
+  OpenResult,
+  ResolveResult,
+} from './mission';
+export {
+  MISSION_EFFECT_TYPES,
+  missionEffectSchema,
+  missionOutcomeSchema,
+  missionSchema,
+  parseMission,
+  pickOutcome,
+  totalWeight,
+} from '../core/missions';
+export type {
+  MissionDef,
+  MissionEffect,
+  MissionOutcome,
+  MissionRecord,
+  MissionReport,
+  MissionResolution,
+  MissionResult,
+} from '../core/missions';
