@@ -31,26 +31,27 @@ const relativePath = z
   });
 
 export const gameManifestSchema = z.strictObject({
-  /** The game's id: its folder name. */
-  id: name('a game id'),
-  /** One line saying what the game is. */
-  title: z.string().min(1).exactOptional(),
-  /** The kit the game is built on (a folder under `kits/`). */
-  kit: name('a kit name'),
-  /** Content kind -> file paths or globs. Every file under `content/` must be claimed by one kind. */
-  content: z.record(name('a content kind'), z.array(relativePath).min(1)),
-  /** How a run starts. */
-  start: z.strictObject({
-    /** The seed for the world's RNG when nothing else gives one. */
-    seed: z.number().int().min(0),
-  }),
-  /** The module (relative to the game folder) that boots the game headless, for `run`. */
-  headless: relativePath,
-  /**
-   * The module (relative to the game folder) that boots the game for drawing (`engine/core/view.ts`),
-   * for `screenshot`. Optional: a game without one can still `run`.
-   */
-  view: relativePath.exactOptional(),
+  id: name('a game id').describe("the game's id: its folder name"),
+  title: z.string().min(1).exactOptional().describe('one line saying what the game is'),
+  kit: name('a kit name').describe('the kit the game is built on (a folder under `kits/`)'),
+  content: z
+    .record(
+      name('a content kind'),
+      z
+        .array(relativePath)
+        .min(1)
+        .describe('file paths or globs (`*`, `?`, `**`), relative to the game folder'),
+    )
+    .describe('content kind -> its files; every file under `content/` must be claimed by one kind'),
+  start: z
+    .strictObject({
+      seed: z.number().int().min(0).describe("the seed for the world's RNG when nothing else gives one"),
+    })
+    .describe('how a run starts'),
+  headless: relativePath.describe('the module that boots the game headless (`createGame`), for `run`'),
+  view: relativePath
+    .exactOptional()
+    .describe('the module that boots the game for drawing (`createView`), for `screenshot`; optional'),
 });
 
 export type GameManifest = z.output<typeof gameManifestSchema>;

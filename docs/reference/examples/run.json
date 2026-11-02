@@ -1,0 +1,17 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 120,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["right"] },
+      { "frame": 60, "hold": [] }
+    ]
+  },
+  "assertions": [
+    { "tick": 0, "path": "room", "op": "eq", "value": "hall" },
+    { "tick": 120, "path": "hero.room", "op": "in", "value": ["hall", "cellar"] }
+  ],
+  "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
+  "hashEvery": 60
+}

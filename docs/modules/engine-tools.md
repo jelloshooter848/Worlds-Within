@@ -13,6 +13,10 @@ deterministic screenshots of a run at a tick in headless Chromium (`screenshot`)
 
 ## Public API entry points
 
+- Generated reference: [CLI reference](../reference/cli.md) (every command's help) and
+  [schema reference](../reference/schemas.md) (every file format), plus the tables in the
+  [cheat sheet](../CHEATSHEET.md). `pnpm docs:gen` writes them; `pnpm docs:check` (and `pnpm test`)
+  fails when they are out of date.
 - `pnpm cli help [command]`: the commands, global flags and exit codes, generated from the command
   schemas. `<command> --help` shows one command.
 - `pnpm cli validate <game>`: checks `game.json` and every content file against its schema

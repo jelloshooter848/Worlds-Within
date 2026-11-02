@@ -21,5 +21,7 @@
 
 ## Reference
 
-- [API cheat sheet](docs/modules/cheat-sheet.md): one page of the public API (placeholder, filled in during Engine 0.3)
+- [API cheat sheet](docs/CHEATSHEET.md): one page of the public API: a game's folder, booting a game, content kinds, the headless contract, run files and the CLI loop (its tables are generated)
+- [CLI reference](docs/reference/cli.md): every command's help, exactly as `pnpm cli help` prints it (generated)
+- [Schema reference](docs/reference/schemas.md): every file format (game manifest, run files, each content kind) with fields, types, defaults, limits and an example (generated)
 - [Skills](docs/modules/skills.md): agent skills for common jobs (placeholder, filled in during Engine 0.3)

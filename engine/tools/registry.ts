@@ -4,7 +4,7 @@ import type { ExitCode } from './exit-codes';
 /**
  * The command registry. Each command declares its name, a one-line summary, and its positional
  * arguments and flags as Zod objects: the parser (`args.ts`) checks the command line against them,
- * and `help` (and, from T10, the generated docs) read the same schemas, so they cannot drift.
+ * and `help` and the generated docs (`docs-gen.ts`) read the same schemas, so they cannot drift.
  *
  * Describe every field with `.describe('...')`: that text is the help line. Positional arguments
  * are taken in the order of the object's keys; an `.optional()` one may be left out. Flag keys are

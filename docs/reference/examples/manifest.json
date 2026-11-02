@@ -1,0 +1,14 @@
+{
+  "id": "one-room",
+  "title": "A one-room game on the top-down kit",
+  "kit": "topdown",
+  "content": {
+    "room": ["content/rooms/*.json"],
+    "song": ["content/songs/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"]
+  },
+  "start": { "seed": 1 },
+  "headless": "headless.ts",
+  "view": "view.ts"
+}

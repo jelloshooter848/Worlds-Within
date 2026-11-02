@@ -1,0 +1,18 @@
+; A 4x4 gem in two frames. Comments start with ";".
+palette hero
+legend . clear
+legend k 0
+legend g 1
+legend w 3
+
+frame idle
+.kk.
+kgwk
+kggk
+.kk.
+
+frame shine
+.kk.
+kwgk
+kggk
+.kk.

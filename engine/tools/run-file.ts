@@ -111,12 +111,14 @@ export const runFileSchema = z
     ticks: z.number().int().min(1).max(1_000_000).describe('how many steps the run plays'),
     input: z
       .strictObject({
-        steps: z.array(
-          z.strictObject({
-            frame: z.number().int().min(0).describe('the input frame the hold starts at'),
-            hold: z.array(z.enum(Actions)).describe('the actions held from that frame on'),
-          }),
-        ),
+        steps: z
+          .array(
+            z.strictObject({
+              frame: z.number().int().min(0).describe('the input frame the hold starts at'),
+              hold: z.array(z.enum(Actions)).describe('the actions held from that frame on'),
+            }),
+          )
+          .describe('each step holds its actions from its frame until the next step'),
       })
       .default({ steps: [] })
       .describe('the scripted input (ScriptedInput steps)'),

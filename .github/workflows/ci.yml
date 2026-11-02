@@ -22,6 +22,7 @@ jobs:
       # Chromium for the screenshot tests (engine/tools/screenshot.test.ts), which CI requires.
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm lint
+      - run: pnpm docs:check
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

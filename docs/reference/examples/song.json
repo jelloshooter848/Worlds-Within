@@ -1,0 +1,7 @@
+{
+  "id": "theme",
+  "bpm": 120,
+  "loop": true,
+  "pulse1": "v10 @2 l8 o4 L [c e g > c < g e]2 d f a f",
+  "triangle": "l4 o3 L [c g]2 d a"
+}

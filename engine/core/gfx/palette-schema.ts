@@ -19,9 +19,10 @@ const color = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
 });
 
 export const paletteSchema: z.ZodType<PaletteFile> = z.strictObject({
-  id: z.string().min(1),
+  id: z.string().min(1).describe('the palette name sprites give in `palette`'),
   colors: z
     .array(color)
     .min(1)
-    .max(MAX_PALETTE_INDEX + 1),
+    .max(MAX_PALETTE_INDEX + 1)
+    .describe('the colours, "#rgb" or "#rrggbb"; a sprite index picks one (0 is the first)'),
 });

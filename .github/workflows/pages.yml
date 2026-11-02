@@ -35,6 +35,7 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       # The same checks as CI, so nothing is published that CI would reject.
       - run: pnpm lint
+      - run: pnpm docs:check
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build

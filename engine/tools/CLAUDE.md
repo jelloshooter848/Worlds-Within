@@ -13,7 +13,7 @@ the CLI starts.
   `defaultRegistry()` lists every command.
 - `registry.ts`: `Command` (`name`, `summary`, `args` and `flags` as `z.strictObject`s, `run`,
   optional `text`), `defineCommand`, `Registry`, `globalFlags` (`--json`, `--help`,
-  `--max-output`) and `fieldDocs` (a schema as help lines; T10 builds the generated docs on it).
+  `--max-output`) and `fieldDocs` (a schema as help lines).
 - `args.ts`: `parseCommandLine(argv, registry)`. Positional arguments are taken in the order of the
   `args` object's keys; flag keys are camelCase and typed kebab-case (`maxOutput` ->
   `--max-output`); a boolean flag takes no value, others take `--flag value` or `--flag=value`;
@@ -52,6 +52,10 @@ the CLI starts.
   how its text becomes a tree and back, and the check a new text must pass before it is written.
 - `json-format.ts`: reads JSON remembering which objects are spread over lines, and writes it back
   through Prettier with the repo's settings, so edits are lint-clean and change little.
+- `schema-doc.ts`: `fieldRows(schema)`, a Zod schema as rows of a field table (path, type,
+  required, default, limits, description), walked from Zod's `toJSONSchema` of the input shape.
+- `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
+  `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`.
 - `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add` and `remove`).
 
@@ -284,6 +288,26 @@ prints its `path`, `width`, `height` (256x240), `bytes` and `sha256` (the whole 
   command crashes (exit 5) with that line, and the browser tests skip with a message locally; in
   CI (`CI` set) they are required.
 
+## Generated docs
+
+`pnpm docs:gen` writes three pages from the code's own schemas; `pnpm docs:check` regenerates them
+in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for each stale one.
+`docs.test.ts` makes the same check, so `pnpm test` fails on stale docs (CI also runs
+`pnpm docs:check`).
+
+- `docs/reference/cli.md`: `help` and `help <command>` for every command, the text `helpText`
+  (`commands/help.ts`) prints, so the page and `pnpm cli help` are the same text.
+- `docs/reference/schemas.md`: one section per format, from `defaultDocSources().subjects`: the
+  manifest, run files, the engine's content kinds and each kit's (`KIT_KINDS`). Each has a field
+  table (`fieldRows`) and an example from `docs/reference/examples/<name>.json|.txt` (plus a
+  kind's part files, `room.map.txt`), which must pass the schema or generation fails.
+- `docs/CHEATSHEET.md`: hand-written, except the blocks between `<!-- generated:<name> -->` and
+  `<!-- /generated:<name> -->` (`CHEATSHEET_BLOCKS`: `files`, `run-file`, `check-ops`, `commands`,
+  `exit-codes`). Every block must be there, and every marker must have a generator.
+- Every field of a command, the manifest, the run file and every content kind needs a
+  `.describe('...')`: the test fails on a field without one. A new content kind needs an example
+  file. After changing a schema, a description or a command: `pnpm docs:gen` and commit the pages.
+
 ## Adding a command
 
 1. Add `commands/<name>.ts` with `defineCommand({ name, summary, args, flags, run, text? })`.
@@ -293,6 +317,7 @@ prints its `path`, `width`, `height` (256x240), `bytes` and `sha256` (the whole 
    exception is a crash.
 4. Test it through `main` with captured IO (see `main.test.ts`), and list it here and in
    `docs/modules/engine-tools.md`.
+5. Run `pnpm docs:gen` so the CLI reference and the cheat sheet list it.
 
 ## Rules
 

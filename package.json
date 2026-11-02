@@ -14,7 +14,9 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
-    "cli": "tsx engine/tools/cli.ts"
+    "cli": "tsx engine/tools/cli.ts",
+    "docs:gen": "tsx engine/tools/docs.ts gen",
+    "docs:check": "tsx engine/tools/docs.ts check"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

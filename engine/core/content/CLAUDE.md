@@ -15,7 +15,10 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   empty grids (`empty_grid`), each with a 0-based `row` and `col`. `addGridIssues` does the same
   check inside a Zod `superRefine`, so a schema reports grid problems at `<field>.<row>`.
 - `kinds.ts`: a content-file kind is `{ name, description, schema, readText?, writeText?, gridParts? }`
-  (`writeText` writes checked data back in the `.txt` form, for the CLI's editing verbs). `parseContent`
+  (`writeText` writes checked data back in the `.txt` form, for the CLI's editing verbs). Give every
+  schema field a `.describe('...')`: it is the field's line in the generated schema reference
+  (`docs/reference/schemas.md`, `pnpm docs:gen`), and a new kind needs an example in
+  `docs/reference/examples/`. `parseContent`
   reads `.json` with `JSON.parse`, or `.txt` with the kind's `readText`, then validates. A
   `.txt` reader returns a map of JSON pointers to lines, so errors also carry the line.
   `ContentKinds` is a registry by name. `gridParts` (field -> suffix, such as

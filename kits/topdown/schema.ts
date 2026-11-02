@@ -23,13 +23,13 @@ import { LEGEND, parseRoom, type LegendEntry, type RoomDef } from './room';
 const cond = z.enum(['clear', 'plates', 'switches', 'torches']);
 
 const entrance = z.strictObject({
-  id: z.string().min(1),
-  col: z.number().int(),
-  row: z.number().int(),
-  enter: z.enum(DIRS as [Dir, ...Dir[]]),
-  to: z.string().min(1),
-  needs: z.string().min(1).exactOptional(),
-  shut: z.boolean().exactOptional(),
+  id: z.string().min(1).describe('the door id, unique in the dungeon'),
+  col: z.number().int().describe("the door cell's column"),
+  row: z.number().int().describe("the door cell's row"),
+  enter: z.enum(DIRS as [Dir, ...Dir[]]).describe('the way the hero walks to go in'),
+  to: z.string().min(1).describe('the paired door\'s id, or "@<action>" for the game to handle'),
+  needs: z.string().min(1).exactOptional().describe('a secret that must be found before it opens'),
+  shut: z.boolean().exactOptional().describe('starts closed until its secret is found'),
 });
 
 /** The room schema for a game's legend (the kit's `LEGEND` plus `extraLegend`). */
@@ -40,19 +40,39 @@ export function roomSchema(
   const legend = new Set([...Object.keys(LEGEND), ...Object.keys(extraLegend)]);
   return z
     .strictObject({
-      id: z.string().min(1),
-      at: z.tuple([z.number().int().min(0), z.number().int().min(0)]),
-      map: z.array(z.string()),
-      shutters: cond.exactOptional(),
-      reveal: cond.exactOptional(),
-      music: z.string().min(1).exactOptional(),
-      hint: z.string().min(1).exactOptional(),
-      dark: z.boolean().exactOptional(),
-      goal: z.boolean().exactOptional(),
-      chests: z.array(z.string().min(1)).exactOptional(),
-      wall: z.number().int().min(0).max(3).exactOptional(),
-      art: z.array(z.array(z.string().min(1)).nullable()).exactOptional(),
-      entrances: z.array(entrance).exactOptional(),
+      id: z.string().min(1).describe('the room id: its file name'),
+      at: z
+        .tuple([z.number().int().min(0), z.number().int().min(0)])
+        .describe("the room's cell on the dungeon map, [column, row]; neighbours share an edge"),
+      map: z
+        .array(z.string())
+        .describe('11 rows of 16 kit legend characters; usually in the sibling `.map.txt` file'),
+      shutters: cond.exactOptional().describe("what opens the room's shutter doors (X)"),
+      reveal: cond.exactOptional().describe("what makes the room's hidden pickups appear"),
+      music: z.string().min(1).exactOptional().describe("the song id played in the room (else the game's)"),
+      hint: z
+        .string()
+        .min(1)
+        .exactOptional()
+        .describe('read to screen readers when the room is first entered'),
+      dark: z.boolean().exactOptional().describe('a free flag a game may use (a darker palette)'),
+      goal: z.boolean().exactOptional().describe('the room the compass points to'),
+      chests: z
+        .array(z.string().min(1))
+        .exactOptional()
+        .describe('what each chest (c) holds, in reading order: an item id or a pickup kind'),
+      wall: z
+        .number()
+        .int()
+        .min(0)
+        .max(3)
+        .exactOptional()
+        .describe("the outer wall's thickness in tiles, over the dungeon's; 0 is an outdoor screen"),
+      art: z
+        .array(z.array(z.string().min(1)).nullable())
+        .exactOptional()
+        .describe("each cell's tile-sheet frames, bottom to top, in reading order; null draws its tile"),
+      entrances: z.array(entrance).exactOptional().describe('building doors inside the room'),
     })
     .superRefine((def, ctx) => {
       let problems = 0;

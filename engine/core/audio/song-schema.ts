@@ -39,8 +39,8 @@ function checkChannels(
   }
 }
 
-const mml = z.string().exactOptional();
-const bpm = z.number().positive().max(1000);
+const mml = (what: string) => z.string().exactOptional().describe(`the ${what} channel's MML`);
+const bpm = z.number().positive().max(1000).describe('tempo in beats per minute');
 
 // Channel name -> the kind it compiles as. Written as pairs, not an object literal, so the content
 // check (tests/architecture/no-content.test.ts) does not mistake the table for a song.
@@ -61,24 +61,24 @@ const SFX_CHANNELS: readonly (readonly [string, ChannelKind])[] = [
 /** A song file: id, tempo, loop flag and up to four MML channels, each of which must compile. */
 export const songSchema: z.ZodType<Song> = z
   .strictObject({
-    id: z.string().min(1),
+    id: z.string().min(1).describe('the song id rooms and scenes name it by'),
     bpm,
-    loop: z.boolean(),
-    pulse1: mml,
-    pulse2: mml,
-    triangle: mml,
-    noise: mml,
+    loop: z.boolean().describe('start again at the `L` mark (or the start) when it ends'),
+    pulse1: mml('first pulse'),
+    pulse2: mml('second pulse'),
+    triangle: mml('triangle'),
+    noise: mml('noise'),
   })
   .superRefine((v, ctx) => checkChannels(v, SONG_CHANNELS, ctx));
 
 /** A sound-effect file: id, optional tempo and up to four MML voices, each of which must compile. */
 export const sfxSchema: z.ZodType<Sfx> = z
   .strictObject({
-    id: z.string().min(1),
+    id: z.string().min(1).describe('the sound id the game plays it by'),
     bpm: bpm.exactOptional(),
-    pulse: mml,
-    pulse2: mml,
-    triangle: mml,
-    noise: mml,
+    pulse: mml('pulse'),
+    pulse2: mml('second pulse'),
+    triangle: mml('triangle'),
+    noise: mml('noise'),
   })
   .superRefine((v, ctx) => checkChannels(v, SFX_CHANNELS, ctx));

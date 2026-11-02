@@ -60,10 +60,16 @@ const legendKey = z.string().refine((key) => [...key].length === 1 && !/\s/.test
   params: { code: 'bad_legend_key' },
 });
 
-const legendSchema = z.record(legendKey, legendValue);
+const legendSchema = z
+  .record(legendKey, legendValue.describe('"clear" (transparent) or a palette index 0-35'))
+  .describe('character -> "clear" or a palette index; without it rows use `.` and `0`-`9`, `a`-`z`');
 
 const framesSchema = z
-  .record(z.string().min(1), z.array(z.string()))
+  .record(
+    z.string().min(1),
+    z.array(z.string()).describe('the rows: equal-width strings of legend characters'),
+  )
+  .describe('frame name -> its rows (a text grid)')
   .refine((frames) => Object.keys(frames).length > 0, {
     message: 'needs at least one frame',
     params: { code: 'no_frames' },
@@ -72,7 +78,7 @@ const framesSchema = z
 /** Sprite file -> SpriteDef. Fails with the exact field (`frames.idle.2`) and, for grids, row and column. */
 export const spriteSchema = z
   .strictObject({
-    palette: z.string().min(1),
+    palette: z.string().min(1).describe('the id of the palette the indices pick from'),
     legend: legendSchema.exactOptional(),
     frames: framesSchema,
   })
