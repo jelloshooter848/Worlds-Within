@@ -255,6 +255,20 @@ be an RTS battle. The fixture `engine/sim/__fixtures__/battle.run.json` (seven o
 every 20 ticks) passes with `pnpm -s cli run`; moving blue's order 4 target one cell south makes it
 fail at tick 40 (`hashMismatch`, last match tick 20). Choices for the owner: items 134-136.
 
+### T10: the RTS kit
+
+`kits/rts` (unit `kits/rts`, imports only `engine/core`): `readWorld` reads `World.snapshot()`
+into a typed view; `Selection` (click, box of own units, heroes alone) and the command mapper
+(`commandAt`: move, attack, gather; `buildCommand`, `trainCommand`, `stopCommand`) make order
+drafts; `ScriptedEnemy` plays an `rts-enemy` plan (orders at ticks, on triggers, repeated, with
+the seeded `Rng`); `presentWorld` describes the map, units (eight-way facing, `walk` / `attack` /
+`build` / `gather` / `idle`), buildings with construction progress, selection rings and box, the
+placing ghost, HUD values and the `RtsCamera` hint; `RtsControls` joins pointer gestures, the
+camera and the selection; `rtsGame` is the headless adapter over an `RtsWorldPort` the game's
+glue fills with a sim world. Content kinds `rts-map`, `rts-types`, `rts-enemy`; rules
+`RTS_RULES`. `tests/kits/rts-sim.test.ts` drives it over the sim's battle fixture and replays the
+recorded player orders to the same hashes. Choices for the owner: items 137-140.
+
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,

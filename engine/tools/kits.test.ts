@@ -25,10 +25,17 @@ describe('kits by name', () => {
     expect(allKits()).toContain(kit);
   });
 
+  it('finds the rts kit by its hook: map, types and enemy plan kinds, its named rules', () => {
+    const kit = loadKit('rts');
+    expect(kitKinds('rts').map((k) => k.name)).toEqual(['rts-map', 'rts-types', 'rts-enemy']);
+    expect(kitRules('rts').map((r) => r.id)).toContain('enemy-follows-plan');
+    expect(allKits()).toContain(kit);
+  });
+
   it('names the kit and the field for a kit name no kit has', () => {
     expect(findKit('nokit')).toBeUndefined();
     expect(() => loadKit('nokit')).toThrow('unknown kit "nokit" in "kit": there is no kits/nokit/kit.ts');
-    expect(() => kitRules('nokit')).toThrow('known: platformer, topdown');
+    expect(() => kitRules('nokit')).toThrow('known: platformer, rts, topdown');
   });
 
   it('has one hook per kits/<name>/kit.ts, each named after its folder', () => {

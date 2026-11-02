@@ -2,7 +2,8 @@
 // Do not edit: add a kit by giving it a `kit.ts` hook and running `pnpm docs:gen`.
 import type { KitDef } from '@engine/core/kit';
 import { kit as platformer } from '@kits/platformer/kit';
+import { kit as rts } from '@kits/rts/kit';
 import { kit as topdown } from '@kits/topdown/kit';
 
 /** Every kit hook in the repo, by kit name. */
-export const KIT_HOOKS: readonly KitDef[] = [platformer, topdown];
+export const KIT_HOOKS: readonly KitDef[] = [platformer, rts, topdown];

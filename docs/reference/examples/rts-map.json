@@ -1,0 +1,83 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 9,
+  "systems": "rts",
+  "terrain": {
+    "legend": {
+      ".": { "name": "ground", "cost": 1, "passable": true },
+      "#": { "name": "rock", "cost": 1, "passable": false }
+    },
+    "rows": ["........", "...##...", "........"],
+    "elevation": ["00000000", "00000000", "00000000"]
+  },
+  "entities": [
+    {
+      "key": "types",
+      "components": {
+        "RtsTypes": {
+          "units": {
+            "worker": {
+              "health": 20,
+              "speed": 2,
+              "attack": 1,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 4,
+              "cost": { "gold": 50 },
+              "trainTicks": 12,
+              "work": 2,
+              "gather": { "capacity": 3, "ticks": 2 }
+            }
+          },
+          "buildings": {
+            "hall": {
+              "health": 400,
+              "size": { "w": 2, "h": 2 },
+              "work": 100,
+              "dropoff": true,
+              "trains": ["worker"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "hall",
+      "components": {
+        "Position": { "x": 0, "y": 0, "z": 0 },
+        "Owner": { "faction": "red" },
+        "Building": { "kind": "hall", "w": 2, "h": 2, "dropoff": true },
+        "Health": { "hp": 400, "max": 400 },
+        "Producer": { "trains": ["worker"], "queue": [], "progress": 0 },
+        "Stockpile": { "faction": "red" },
+        "Inventory": { "gold": 100 }
+      }
+    },
+    {
+      "components": {
+        "Position": { "x": 7, "y": 0, "z": 0 },
+        "Resource": { "item": "gold" },
+        "Inventory": { "gold": 40 }
+      }
+    },
+    {
+      "components": {
+        "Position": { "x": 2, "y": 2, "z": 0 },
+        "Owner": { "faction": "red" },
+        "Health": { "hp": 20, "max": 20 },
+        "Unit": { "type": "worker", "speed": 2, "attack": 1, "range": 1, "cooldown": 3, "sight": 4 },
+        "Worker": { "job": null, "rate": 2 },
+        "Gatherer": { "capacity": 3, "ticks": 2, "node": null, "item": null, "carry": 0, "progress": 0 }
+      }
+    },
+    {
+      "components": {
+        "Position": { "x": 6, "y": 2, "z": 0 },
+        "Owner": { "faction": "blue" },
+        "Health": { "hp": 20, "max": 20 },
+        "Unit": { "type": "worker", "speed": 2, "attack": 1, "range": 1, "cooldown": 3, "sight": 4 }
+      }
+    }
+  ]
+}

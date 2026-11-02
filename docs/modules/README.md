@@ -14,6 +14,6 @@ module, add all three and a link in `llms.txt`.
 
 Pages today: `engine-core.md`, `engine-core-content.md`, `engine-core-present.md` (the presentation
 contract and skins, from Engine 0.4), `engine-core-shell.md` (the browser shell games share, from Engine 0.7), `engine-backends-canvas2d.md`, `engine-backends-null.md`,
-`engine-sim.md`, `engine-tools.md`, `kits-topdown.md`, `kits-platformer.md`, `games-demo.md`, `games-platformer-lab.md`, `games-platformer-test.md`, and `skills.md` for the agent
+`engine-sim.md`, `engine-tools.md`, `kits-topdown.md`, `kits-platformer.md`, `kits-rts.md`, `games-demo.md`, `games-platformer-lab.md`, `games-platformer-test.md`, and `skills.md` for the agent
 skills. A kit's page says what it presents, never how it is drawn: drawing belongs to a backend's
 page and the game's skin.

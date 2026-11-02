@@ -1,0 +1,20 @@
+{
+  "faction": "blue",
+  "steps": [
+    {
+      "id": "rally",
+      "order": { "type": "move", "units": { "idle": true }, "area": { "x": 4, "y": 0, "w": 3, "h": 3 } }
+    },
+    {
+      "id": "train",
+      "at": 20,
+      "repeat": { "every": 60, "times": 4 },
+      "order": { "type": "train", "building": "hall", "unit": "worker" }
+    },
+    {
+      "id": "attack",
+      "when": { "count": "units", "side": "self", "type": "worker", "op": "gte", "value": 3 },
+      "order": { "type": "attack", "units": { "type": "worker" }, "target": "nearest-enemy" }
+    }
+  ]
+}

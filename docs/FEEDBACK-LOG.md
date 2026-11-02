@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 137.** (Last used: 136.)
+**Next unused number: 141.** (Last used: 140.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -445,3 +445,25 @@ orders)
   `refusedOrders` and the run goes on (not a failure, as decision 2 says for live play); `orders` on
   a world whose system set is not `rts` is a content error (`no_orders`). Mutant checks still judge
   a run only by its checks, not by its sync hashes. OK?
+
+**Engine 0.9 T10, the RTS kit** (details in `kits/rts/CLAUDE.md`)
+
+- **137.** The kit adds three content kinds: `rts-map` (the map as a world scenario with
+  `"systems": "rts"`; the kit checks its shape and grids, and the sim checks the components when
+  the glue builds the world, since a kit may not import the sim), `rts-types` (the engine's
+  `rtsTypesSchema`, for a game that keeps its types in their own file) and `rts-enemy` (the
+  scripted enemy's plan; a type it names that no types table has is `unknown_type`). OK?
+- **138.** The scripted enemy runs inside the kit's headless adapter (`rtsGame`): before each step
+  it reads the snapshot and its orders are applied, after any player orders of that tick. Order
+  ids count up across both sides in the order applied, so a run file records only the player's
+  orders and the enemy's are replayed by its plan with the same ids. The game's snapshot is
+  `{ world, kit: { nextOrder, rng, enemy } }`. OK?
+- **139.** Selection: a click selects the player's own unit on the cell, else any unit (to look at
+  an enemy), else a building; a box takes only own units, never buildings; a command on an own
+  unit or building is a move there; a resource command sends only the selected gatherers (the
+  rest are left out of the order). OK?
+- **140.** The enemy plan is a list of steps tried in file order each tick, each with `at`, an
+  optional `when` condition (unit or building counts per side, or a stockpile) and `repeat`
+  (`every`, `times`). A step whose order cannot be made yet (no units, no target) waits and is
+  tried again, rather than being skipped. Random choices (`area` cells, `random-enemy`) use the
+  adapter's RNG seeded from the game seed. OK?
