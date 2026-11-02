@@ -1,6 +1,6 @@
 ---
 name: scaffold-game
-description: Make a new game in games/<name>/ on the top-down kit (game.json, one room, headless and view entries, a browser page, a run file with golden hashes, agent docs) that passes `pnpm cli validate` and `pnpm cli run`. Use when asked to start a new game, sample game or test game.
+description: Make a new game in games/<name>/ on the top-down kit (game.json, one room, a skin, headless and view entries, a browser page, a run file with golden hashes, agent docs) that passes `pnpm cli validate` and `pnpm cli run`. Use when asked to start a new game, sample game or test game.
 ---
 
 # Scaffold a game
@@ -28,8 +28,14 @@ Rules that apply throughout:
   "id": "<name>",
   "title": "One line saying what the game is",
   "kit": "topdown",
-  "content": { "room": ["content/rooms/*.json"] },
+  "content": {
+    "room": ["content/rooms/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"]
+  },
   "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
   "headless": "headless.ts",
   "view": "view.ts"
 }
@@ -37,7 +43,9 @@ Rules that apply throughout:
 
 Every file under `content/` must be claimed by one kind in `content` (else `unclaimed_file`). Add a
 kind's line only when you add its files, for example `"song": ["content/songs/*.json"]`; a glob that
-matches no file is an error. Field details: `docs/reference/schemas.md` (Game manifest).
+matches no file is an error. `screen` is the picture size in pixels (256x240 when left out; the
+top-down kit's HUD band plus one room is 256x240). Field details: `docs/reference/schemas.md` (Game
+manifest).
 
 ## 2. One room: `content/rooms/<room>.json` + `content/rooms/<room>.map.txt`
 
@@ -71,6 +79,204 @@ Map characters (the kit's `LEGEND`, `kits/topdown/room.ts`): `#` wall, `.` floor
 `k` key, `c` chest (contents in the JSON's `chests`), `b` bat, `n` knight, `r` spitter; the full
 list is in `kits/topdown/room.ts`. Every room field (`music`, `chests`, `hint`, `dark`...) is in
 `docs/reference/schemas.md` (`room`).
+
+## 2b. Art and the skin: `content/palettes/flat.json`, `content/sprites/flat.txt`, `content/skins/canvas2d.json`
+
+Kits never draw: the kit describes each frame (`presentWorld`) and the Canvas2D backend draws it
+through a skin, which maps each presented kind (`hero`, `knight`, `pickup:heart`, ...) and each map
+tile character to a frame of a sprite file. Start with flat placeholder art and replace the pixels
+later (`games/demo/content/` has a full skin; `kits/topdown/CLAUDE.md` lists every kind, animation
+state and tile character the kit presents).
+
+`content/palettes/flat.json` (`id` must equal the file name):
+
+```json
+{
+  "id": "flat",
+  "colors": ["#0c2440", "#183c5c", "#00a800", "#bcbcbc", "#f83800", "#ac7c00", "#000000", "#fcfcfc"]
+}
+```
+
+`content/sprites/flat.txt` (text pixel art: `legend` maps each character to a palette index,
+`.` is clear; each frame is its rows under `frame <name>`, frames apart by a blank line):
+
+```text
+palette flat
+legend . clear
+legend w 0
+legend f 1
+legend g 2
+legend s 3
+legend r 4
+legend l 5
+legend k 6
+legend y 7
+
+frame wall
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+wwwwwwwwwwwwwwww
+
+frame floor
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+ffffffffffffffff
+
+frame door-open
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+kkkkkkkkkkkkkkkk
+
+frame door-locked
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+llllllllllllllll
+
+frame hero
+................
+.....gggggg.....
+....gggggggg....
+....ggyggygg....
+....gggggggg....
+.....gggggg.....
+...gggggggggg...
+..gggggggggggg..
+..gggggggggggg..
+..gg.gggggg.gg..
+....gggggggg....
+....gggggggg....
+....ggg..ggg....
+....ggg..ggg....
+...gggg..gggg...
+................
+
+frame knight
+................
+.....ssssss.....
+....ssssssss....
+....ssksskss....
+....ssssssss....
+.....ssssss.....
+...ssssssssss...
+..ssssssssssss..
+..ssssssssssss..
+..ss.ssssss.ss..
+....ssssssss....
+....ssssssss....
+....sss..sss....
+....sss..sss....
+...ssss..ssss...
+................
+
+frame sword-v
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+yyy
+
+frame sword-h
+yyyyyyyyyyyyyyyy
+yyyyyyyyyyyyyyyy
+yyyyyyyyyyyyyyyy
+
+frame heart
+.rr.rr..
+rrrrrrr.
+rrrrrrr.
+rrrrrrr.
+.rrrrr..
+..rrr...
+...r....
+........
+```
+
+`content/skins/canvas2d.json` (a state the kit presents but the skin leaves out falls back to
+`idle`; a kind or tile the skin leaves out is drawn as a magenta box, so a gap is easy to spot):
+
+```json
+{
+  "backend": "canvas2d",
+  "sheets": { "sheet": "flat", "fallbackColor": "#fcfcfc" },
+  "kinds": {
+    "hero": { "frames": { "idle": "hero" } },
+    "sword": {
+      "frames": { "stab": { "up": "sword-v", "down": "sword-v", "left": "sword-h", "right": "sword-h" } }
+    },
+    "knight": { "frames": { "idle": "knight" } },
+    "pickup:heart": { "frames": { "idle": "heart" } }
+  },
+  "tiles": {
+    "#": { "frame": "wall" },
+    ".": { "frame": "floor" },
+    "O": { "frame": "door-open" },
+    "L": { "frame": "door-locked" }
+  }
+}
+```
 
 Check the content now, before writing any code:
 
@@ -114,32 +320,55 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
 ## 4. The view entry: `view.ts`
 
 What `screenshot` imports, and what the browser page draws. Its `step` and `snapshot` must be the
-headless game's. With no sprite files the kit draws flat placeholder colours.
+headless game's. It never draws by itself: each `render` asks the kit for a frame (`presentWorld`)
+and hands it to the backend's `SkinnedCanvasPresenter` with the skin.
 
 ```ts
 import { AssetRegistry } from '@engine/core/assets/registry';
-import type { ContentBundle } from '@engine/core/content/bundle';
-import type { HeadlessOptions } from '@engine/core/headless';
-import type { ViewGame } from '@engine/core/view';
 import { sheetLookup } from '@engine/core/assets/sheet-lookup';
-import { DEFAULT_SHEETS, renderWorld, topdownGame } from '@kits/topdown';
+import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
+import { PALETTE_KIND, SKIN_KIND, SPRITE_KIND } from '@engine/core/content/engine-kinds';
+import type { PaletteTable } from '@engine/core/gfx/palette';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import type { HeadlessOptions } from '@engine/core/headless';
+import { freezeFrame } from '@engine/core/present';
+import type { ViewGame } from '@engine/core/view';
+import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
+import { presentWorld, snapshotWorld, TdPresentState } from '@kits/topdown';
 import { createWorld } from './headless';
 
 /** The headless game plus drawing (`engine/core/view.ts`), for `pnpm cli screenshot` and `main.ts`. */
 export function createView(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): ViewGame {
   const world = createWorld(content, seed, opts.disabledRules);
-  const game = topdownGame(world);
-  const sheet = sheetLookup(new AssetRegistry({ default: {} }));
-  let frame = 0;
+  const skin = contentOf(content, SKIN_KIND).find((e) => e.value.backend === 'canvas2d')?.value;
+  if (!skin) throw new Error('no canvas2d skin (content/skins/canvas2d.json)');
+  // The sprite sheets by id (the file name), drawn with their palettes.
+  const palettes: PaletteTable = {};
+  for (const e of contentOf(content, PALETTE_KIND)) palettes[e.value.id] = e.value.colors;
+  const assets = new AssetRegistry({ default: palettes });
+  for (const e of contentOf(content, SPRITE_KIND)) assets.define(e.name, e.value);
+  const sheets = sheetLookup(assets);
+  const screen = content.manifest.screen;
+  const state = new TdPresentState();
+  // As `topdownGame` (the headless contract): each step takes the events it emitted.
+  let events: object[] = world.events.splice(0);
+  let drawing: { r: Renderer; presenter: SkinnedCanvasPresenter } | null = null;
   return {
     step(input) {
-      frame++;
-      game.step(input);
+      world.update(input);
+      events = world.events.splice(0);
     },
-    snapshot: () => game.snapshot(),
+    snapshot: () => snapshotWorld(world, events),
+    screen,
     render(r) {
-      r.clear('#000');
-      renderWorld(r, { frame, reduceFlashing: false, sheets: DEFAULT_SHEETS, sheet }, world);
+      // The kit's camera puts the room under its HUD band, so the map is not re-centred (clamp off).
+      if (drawing?.r !== r) {
+        drawing = {
+          r,
+          presenter: new SkinnedCanvasPresenter(r, skin, sheets, { size: screen, clamp: false }),
+        };
+      }
+      drawing.presenter.present(freezeFrame(presentWorld(world, events, { state, size: screen })));
     },
   };
 }
@@ -151,7 +380,8 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
 `<script type="module" src="./main.ts">`), changing only the `<title>`. `pnpm build` finds every
 `games/*/index.html` by itself and the launcher links to it.
 
-`main.ts` (the demo's `main.ts` adds audio, sprites and a scene stack):
+`main.ts` (the demo's `main.ts` adds audio, sprites and a scene stack). The canvas is the
+manifest's `screen` size, and the view draws through the skin:
 
 ```ts
 import { loadContent } from '@engine/core/content/bundle';
@@ -175,11 +405,13 @@ const files = import.meta.glob(['./game.json', './content/**/*'], {
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
   if (!canvas) throw new Error('#screen canvas missing');
-  const loaded = loadContent(files, engineContentKinds().register(roomKind()), { root: 'games/<name>/' });
+  const loaded = loadContent(files, engineContentKinds().register(roomKind()), {
+    root: 'games/<name>/',
+  });
   if (!loaded.ok) throw new Error(`content errors:\n${formatErrors(loaded.errors)}`);
   const game = createView(loaded.value, loaded.value.manifest.start.seed);
 
-  const viewport = new Viewport(canvas);
+  const viewport = new Viewport(canvas, { integerScale: false }, loaded.value.manifest.screen);
   const renderer = new CanvasRenderer(viewport.ctx);
   const input = new InputManager(1);
   input.addSource('keyboard', new KeyboardSource());
@@ -283,7 +515,10 @@ screenshots); it is git-ignored and safe to leave or delete.
 - Map rows not exactly 16 characters, or not 11 rows: `validate` names the file, row and column.
 - No `@` anywhere, or more than one: `run` crashes with `no room has a player start (@)`.
 - A room's `id` not matching its file name, or a `.json` room without its `.map.txt`.
-- A file in `content/` that no kind in `game.json` claims (`unclaimed_file`).
+- A file in `content/` that no kind in `game.json` claims (`unclaimed_file`), such as a skin
+  without the `"skin"` line.
+- Drawing from the kit: there is no kit drawing function. Present the world (`presentWorld`) and
+  let the backend draw it through the skin.
 - A `run` file whose `game` is not `".."` when it sits in `games/<name>/runs/`.
 - Forgetting the golden `.hashes.json`, or the docs page and `llms.txt` line: `pnpm test` fails
   and its message says which.

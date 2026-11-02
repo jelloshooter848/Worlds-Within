@@ -71,6 +71,41 @@ export const EXCEPTIONS = [
 ];
 
 /**
+ * @typedef {object} ForbiddenCore
+ * @property {LayerName} layer The layer whose files may not import these (tests included).
+ * @property {string} reason
+ * @property {readonly string[]} targets Core modules, each one file or a folder written `dir/**`.
+ */
+
+/**
+ * Core modules a layer may not import even though it may import `engine/core`: the drawing and
+ * output side of the core. Kits never draw (docs/DESIGN.md): they describe a frame
+ * (`engine/core/present`) and a backend draws it through a skin. ESLint and
+ * tests/architecture/dependency-rule.test.ts both read this list through config/deps.js.
+ * @type {readonly ForbiddenCore[]}
+ */
+export const FORBIDDEN_CORE = [
+  {
+    layer: 'kits',
+    reason:
+      'kits never draw or play sound: they present a frame (engine/core/present) and a backend draws it',
+    targets: [
+      'engine/core/gfx/renderer.ts',
+      'engine/core/gfx/spritesheet.ts',
+      'engine/core/gfx/pixelart.ts',
+      'engine/core/gfx/animation.ts',
+      'engine/core/assets/**',
+      'engine/core/audio/apu.ts',
+      'engine/core/audio/audio-manager.ts',
+      'engine/core/audio/sequencer.ts',
+      'engine/core/view.ts',
+      'engine/core/scene.ts',
+      'engine/core/loop.ts',
+    ],
+  },
+];
+
+/**
  * Path aliases (tsconfig `paths`, Vite `resolve.alias`) mapped to repo folders. No alias points into
  * `games/`.
  * @type {Readonly<Record<string, string>>}

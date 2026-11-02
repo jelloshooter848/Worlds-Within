@@ -96,12 +96,14 @@ Dependencies point one way only: **games depend on the engine; the engine never 
 Inside the engine:
 
 - core imports nothing else;
-- backends and kits import only core;
+- backends and kits import only core, and kits not even all of it: never the core's drawing or
+  output side (the renderer, sprite sheets, asset loading, audio output, scenes, the loop);
 - the simulation imports only core (never a backend or a kit);
 - tools (the CLI) may use any engine part, and load a game by its folder path at run time.
 
-This is enforced by an ESLint import-restriction rule **and** a test, so an LLM can't blur the
-boundary by accident. A second lint rule keeps the simulation and kits pure: no unseeded randomness, no
+This is enforced by an ESLint import-restriction rule **and** a test, both reading one table
+(`config/layers.js`), so an LLM can't blur the boundary by accident. A third test scans kit code for
+drawing calls, so a kit can't draw through a renderer handed to it either. A second lint rule keeps the simulation and kits pure: no unseeded randomness, no
 clock, no DOM.
 
 ### 6. The presentation contract

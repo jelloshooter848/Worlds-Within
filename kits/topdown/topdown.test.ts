@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/core/input/actions';
-import type { Renderer } from '@engine/core/gfx/renderer';
-import { NullRenderer } from '@engine/backends/null';
-import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { buildDungeon, checkDungeon, parseRoom, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
@@ -21,9 +18,7 @@ import {
 } from './hero';
 import { ROOM_H, ROOM_W, TILE, boxesOverlap } from './geometry';
 import { SIDE_FRAMES, THICK_SIDE_FRAMES, rotateCcw, withSideFrames } from './frames';
-import { drawTdHud, hudData } from './hud';
-import { DEFAULT_SHEETS, type TdView } from './view';
-import { drawRoomTiles } from './render';
+import { presentWorld } from './present';
 
 /** A room def from rows (16×11), at a map cell. */
 function room(id: string, at: [number, number], map: string[], extra: Partial<RoomDef> = {}): RoomDef {
@@ -841,36 +836,11 @@ describe('top-down kit: drawing helpers', () => {
     expect(split.frames['exit-0-r']).toEqual(['cd11', 'gh22']);
   });
 
-  it('the HUD shows the title, the item by its ability name, whole, half and empty hearts, and keys', () => {
-    const frames: string[] = [];
-    const texts: string[] = [];
-    const sheet: SpriteSheet = {
-      id: 's',
-      image: null,
-      frames: new Map(
-        ['heart', 'heart-half', 'heart-empty', 'key', 'sword-icon'].map((f) => [
-          f,
-          { x: 0, y: 0, w: 8, h: 8 },
-        ]),
-      ),
-    };
-    const none = new NullRenderer();
-    const r: Renderer = {
-      ...none,
-      clear: none.clear,
-      rect: none.rect,
-      line: none.line,
-      debugText: none.debugText,
-      sprite: (_s, f) => void frames.push(f),
-      text: (_f, t) => void texts.push(t),
-    };
-    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => sheet };
+  it('the HUD status gives the hearts (in halves) and the keys', () => {
     const { world } = setup();
     world.hero.hp = 3;
     world.keys = 2;
-    drawTdHud(r, view, hudData(world, 'TEST KEEP', [{ label: 'SWORD', frame: 'sword-icon' }]));
-    expect(texts).toEqual(expect.arrayContaining(['TEST KEEP', 'SWORD', '-LIFE-', '×2']));
-    expect(frames.filter((f) => f.startsWith('heart'))).toEqual(['heart', 'heart-half', 'heart-empty']);
+    expect(presentWorld(world).status).toMatchObject({ hp: 3, maxHp: world.hero.maxHp, keys: 2 });
   });
 });
 
@@ -1021,45 +991,13 @@ describe("top-down kit: Zelda's rooms (2-tile walls, a 12×7 floor)", () => {
     expect(events).toContainEqual({ type: 'shutters', open: false });
   });
 
-  it('draws the wall band as brick with a ledge row facing the floor, mitred corners and 32-px doors', () => {
-    const calls: [string, number, number][] = [];
-    const frames = new Map<string, { x: number; y: number; w: number; h: number }>();
-    for (const f of [
-      'wall',
-      'wall-side',
-      'wall-top',
-      'wall-top-side',
-      'wall-corner',
-      'floor',
-      'door-open-thick',
-      'door-locked-thick-side',
-    ])
-      frames.set(f, { x: 0, y: 0, w: 16, h: 16 });
-    const sheet: SpriteSheet = { id: 's', image: null, frames };
-    const none = new NullRenderer();
-    const r: Renderer = {
-      ...none,
-      clear: none.clear,
-      rect: none.rect,
-      line: none.line,
-      debugText: none.debugText,
-      text: none.text,
-      sprite: (_s, f, x, y) => void calls.push([f, x, y]),
-    };
-    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => sheet };
-    const rm = parseRoom(room('r', [0, 0], thick([...door('n', 'O'), ...door('w', 'L')])), {}, 2);
-    drawRoomTiles(r, view, rm, (s) => (s === 'w' ? 'locked' : 'open'), 0, 64);
-    const at = (x: number, y: number) => calls.filter((c) => c[1] === x && c[2] === y).map((c) => c[0]);
-    expect(at(48, 64)).toEqual(['wall']); // outer row
-    expect(at(48, 80)).toEqual(['wall-top']); // the row facing the floor
-    expect(at(16, 80)).toEqual(['wall-corner']);
-    expect(at(0, 64)).toEqual(['wall']);
-    expect(at(16, 96)).toEqual(['wall-top-side']);
-    expect(at(0, 96)).toEqual(['wall-side']); // the side band's bricks run the same way throughout
-    expect(at(240, 96)).toEqual(['wall-side']);
-    expect(at(112, 64)).toContain('door-open-thick'); // one 32×32 door over the doorway
-    expect(at(0, 64 + 72)).toContain('door-locked-thick-side'); // centred on row 5
-    expect(calls.filter((c) => c[0] === 'door-open-thick').length).toBe(1);
+  it('presents the wall band thickness and the doorways through it on the map', () => {
+    const { world } = setup(thickRooms('O', 'O'));
+    const map = presentWorld(world).map;
+    expect(map && 'tags' in map ? map.tags : []).toContain('wall:2');
+    const rows = map && 'tiles' in map ? (map.tiles as string[]) : [];
+    expect(rows).toHaveLength(11);
+    expect(rows.join('')).toContain('O');
   });
 });
 
@@ -1097,11 +1035,11 @@ describe("top-down kit: the dungeon's map and compass", () => {
       ),
     ]);
 
-  it('without the map the minimap shows the rooms seen; the map shows them all; the compass marks the goal', () => {
+  it('without the map the status lists the rooms seen; the map shows them all; the compass marks the goal', () => {
     const { world, pad } = setup(threeRooms());
-    let hud = hudData(world, 'L', []);
-    expect(hud.map.visited).toEqual([[0, 1]]);
-    expect(hud.map.goal).toBeNull();
+    let status = presentWorld(world).status;
+    expect(status).toMatchObject({ visited: '0,1', hasMap: false, hasCompass: false });
+    expect(status['goalX']).toBeUndefined();
     const at = (kind: string) => world.entities.find((e) => e instanceof Pickup && e.kind === kind) as Pickup;
     world.hero.x = at('map').x - 4;
     world.hero.y = at('map').y;
@@ -1109,39 +1047,11 @@ describe("top-down kit: the dungeon's map and compass", () => {
     expect(events).toContainEqual({ type: 'pickup', kind: 'map' });
     expect(world.found.has('map')).toBe(true);
     expect(world.inv.owned).toEqual([]); // not an item for the slot
-    hud = hudData(world, 'L', []);
-    expect(hud.map.visited.length).toBe(1);
-    expect([...hud.map.known].sort()).toEqual([
-      [0, 1],
-      [1, 0],
-      [1, 1],
-    ]);
+    status = presentWorld(world).status;
+    expect(status).toMatchObject({ visited: '0,1', hasMap: true, mapCols: 2, mapRows: 2 });
     world.hero.x = at('compass').x;
     world.hero.y = at('compass').y;
     pad.step();
-    expect(hudData(world, 'L', []).map.goal).toEqual([1, 0]);
-  });
-
-  it('draws the map as Zelda does: small rooms on an 8×8 grid, the hero a green dot, the goal a red one', () => {
-    const rects: [number, number, number, number, string][] = [];
-    const none = new NullRenderer();
-    const r: Renderer = {
-      ...none,
-      clear: none.clear,
-      line: none.line,
-      debugText: none.debugText,
-      text: none.text,
-      sprite: none.sprite,
-      rect: (x, y, w, h, c) => void rects.push([x, y, w, h, c]),
-    };
-    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => null };
-    const { world } = setup(threeRooms());
-    world.found.add('map');
-    world.found.add('compass');
-    drawTdHud(r, view, hudData(world, 'L', []));
-    const blue = rects.filter((c) => c[4] === '#2038ec' && c[2] === 7 && c[3] === 3);
-    expect(blue.length).toBe(3); // every room, 7×3 in an 8×4 cell
-    expect(rects.some((c) => c[4] === '#00e800' && c[2] === 3)).toBe(true);
-    expect(rects.some((c) => c[4] === '#f83800' && c[2] === 3)).toBe(true);
+    expect(presentWorld(world).status).toMatchObject({ hasCompass: true, goalX: 1, goalY: 0 });
   });
 });

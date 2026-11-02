@@ -41,6 +41,10 @@ never knows which one is drawing.
 - Never: `engine/backends`, `engine/sim`, `engine/tools`, kits or games.
 - No game rules or game content here (see Fixtures below).
 - Randomness goes through `Rng` (`rng.ts`), never `Math.random`, in anything a kit or the sim uses.
+- Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
+  `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
+  `assets/**`, audio output, `view.ts`, `scene.ts`, `loop.ts`). A kit describes frames through
+  `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
 

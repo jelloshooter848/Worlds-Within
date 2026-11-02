@@ -47,7 +47,10 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
   `new TopDownWorld(buildDungeon(rooms), { seed, disabledRules: opts.disabledRules })`.
 - View (`view.ts`, `engine/core/view.ts`): the same game plus `screen` (the manifest's picture
   size) and `render(r: Renderer)`, drawing the whole picture. Its `step` and `snapshot` must match
-  the headless module's.
+  the headless module's. Kits never draw: `render` asks the kit for a frame
+  (`presentWorld(world, events, { state, size })`, a `PresentFrame`) and hands it, frozen
+  (`freezeFrame`), to the backend's `SkinnedCanvasPresenter(r, skin, sheetLookup(assets), { size })`
+  with the game's skin (`content/skins/canvas2d.json`, the `skin` kind).
 - Browser (`main.ts`): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
   songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).

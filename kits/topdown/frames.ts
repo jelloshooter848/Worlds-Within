@@ -1,4 +1,10 @@
-import type { SpriteDef } from '@engine/core/gfx/pixelart';
+/**
+ * The part of a sprite definition (`SpriteDef` in `engine/core/gfx/pixelart`) these helpers read:
+ * frames as text rows. Kept structural so the kit never imports the core's drawing side.
+ */
+export interface TdFrameRows {
+  readonly frames: Readonly<Record<string, readonly string[]>>;
+}
 
 /**
  * Turns a frame a quarter turn counter-clockwise: its top edge becomes its left edge. A wall or
@@ -59,7 +65,9 @@ export const SPLIT_FRAMES = [
  * SIDE_FRAMES and THICK_SIDE_FRAMES the sheet draws (rotated from the north frame) and the `-l` / `-r` halves of SPLIT_FRAMES, unless
  * the sheet already draws its own.
  */
-export function withSideFrames(def: SpriteDef): SpriteDef {
+export function withSideFrames<T extends TdFrameRows>(
+  def: T,
+): Omit<T, 'frames'> & { frames: Record<string, readonly string[]> } {
   const frames: Record<string, readonly string[]> = { ...def.frames };
   for (const name of [...SIDE_FRAMES, ...THICK_SIDE_FRAMES]) {
     const north = def.frames[name];

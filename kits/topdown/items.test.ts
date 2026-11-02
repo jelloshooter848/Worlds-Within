@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/core/input/actions';
-import type { Renderer } from '@engine/core/gfx/renderer';
-import { NullRenderer } from '@engine/backends/null';
-import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { buildDungeon, parseRoom, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
@@ -21,8 +18,7 @@ import {
 } from './items';
 import { HOLD_FRAMES, TdHero } from './hero';
 import { TILE } from './geometry';
-import { drawTdHud, hudData } from './hud';
-import { DEFAULT_SHEETS, type TdView } from './view';
+import { presentWorld } from './present';
 
 const EMPTY = [
   '################',
@@ -168,7 +164,7 @@ describe('top-down kit: the boomerang', () => {
 });
 
 describe('top-down kit: the boomerang carries what it takes (0.4.43)', () => {
-  it("a heart it touches rides back on it, drawn there, and is the hero's only on the catch", () => {
+  it("a heart it touches rides back on it, shown there, and is the hero's only on the catch", () => {
     const { w, hero, step, tap } = one([]);
     w.grant('boomerang');
     hero.hp = 3;
@@ -183,19 +179,13 @@ describe('top-down kit: the boomerang carries what it takes (0.4.43)', () => {
         carried = true;
         expect(hero.hp).toBe(3);
         expect(w.entities.some((e) => e instanceof Pickup && !e.dead)).toBe(false);
-        // Drawn: the boomerang, then the heart on it (as rects without art).
-        const drawn: { x: number; y: number }[] = [];
-        const r: Renderer = Object.assign(new NullRenderer(), {
-          rect(x: number, y: number): void {
-            drawn.push({ x, y });
-          },
-        });
-        const view = { sheet: () => null, sheets: DEFAULT_SHEETS } as unknown as TdView;
-        b.render(r, view, 0, 0);
-        expect(drawn.length).toBeGreaterThan(1);
-        const heart = drawn.at(-1) as { x: number; y: number };
-        expect(Math.abs(heart.x - b.x)).toBeLessThanOrEqual(8);
-        expect(Math.abs(heart.y - b.y)).toBeLessThanOrEqual(8);
+        // Presented: the boomerang, then the heart riding on it.
+        const es = presentWorld(w).entities;
+        const at = es.findIndex((e) => e.kind === 'boomerang');
+        const heart = es[at + 1];
+        expect(heart).toMatchObject({ kind: 'pickup:heart', tags: ['carried'] });
+        expect(Math.abs((heart?.x ?? -99) - b.x)).toBeLessThanOrEqual(8);
+        expect(Math.abs((heart?.y ?? -99) - b.y)).toBeLessThanOrEqual(8);
       }
     }
     expect(carried).toBe(true);
@@ -430,41 +420,14 @@ describe('top-down kit: a game of its own hero and harmless blasts', () => {
   });
 });
 
-describe('top-down kit: the HUD with items', () => {
-  it('shows the item boxes by name with their icons, and the bomb count beside the keys', () => {
-    const frames: string[] = [];
-    const texts: string[] = [];
-    const sheet: SpriteSheet = {
-      id: 's',
-      image: null,
-      frames: new Map(
-        ['heart', 'key', 'sword-icon', 'bomb-icon', 'boomerang-icon'].map((f) => [
-          f,
-          { x: 0, y: 0, w: 8, h: 16 },
-        ]),
-      ),
-    };
-    const none = new NullRenderer();
-    const r: Renderer = {
-      ...none,
-      clear: none.clear,
-      rect: none.rect,
-      line: none.line,
-      debugText: none.debugText,
-      sprite: (_s, f) => void frames.push(f),
-      text: (_f, t) => void texts.push(t),
-    };
-    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => sheet };
+describe('top-down kit: the HUD status with items', () => {
+  it('names the item in the slot and gives the bomb count beside the keys', () => {
     const { w } = one([]);
     w.grant('boomerang');
     w.grant('bomb');
     w.inv.addAmmo('bomb', 1);
-    const boxes = [
-      { label: 'ITEM', frame: w.inv.current?.icon ?? null },
-      { label: 'SWORD', frame: 'sword-icon' },
-    ];
-    drawTdHud(r, view, hudData(w, 'KEEP', boxes));
-    expect(texts).toEqual(expect.arrayContaining(['ITEM', 'SWORD', '×0', '×5']));
-    expect(frames).toEqual(expect.arrayContaining(['boomerang-icon', 'sword-icon', 'bomb-icon', 'key']));
+    const status = presentWorld(w).status;
+    expect(status).toMatchObject({ item: w.inv.current?.id ?? '', keys: 0, 'ammo.bomb': 5 });
+    expect(w.inv.current?.id).toBe('boomerang');
   });
 });

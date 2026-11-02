@@ -445,7 +445,7 @@ function lookOf(e: TdEntity, ctx: EntityCtx): { state: string; t: number; facing
   if (e instanceof Explosion) return look('blast', e.t);
   if (e instanceof SwordBeam) return look('fly', flickerT(ctx), [flicker(ctx)], e.dir);
   if (e instanceof TdPerson) {
-    const tags = [`sheet:${e.sheet}`];
+    const tags = e.sheet ? [`sheet:${e.sheet}`] : [];
     if (e.palette) tags.push(`palette:${e.palette}`);
     return look('idle', e.t, tags, e.facing);
   }

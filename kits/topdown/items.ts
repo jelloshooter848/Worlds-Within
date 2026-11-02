@@ -1,7 +1,5 @@
-import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIR_VEC, TILE, boxesOverlap, centre, type Box, type Dir } from './geometry';
 import { Pickup, TdEnemy, TdEntity } from './entity';
-import { drawFrame, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
 /**
@@ -175,20 +173,6 @@ export class Boomerang extends TdEntity {
       world.collect(p);
     }
   }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.hero);
-    drawFrame(r, sheet, `boomerang-${(this.t >> 2) & 3}`, ox + this.x, oy + this.y, '#ac7c00', {
-      w: 8,
-      h: 8,
-    });
-    // What it carries rides on it, centred.
-    for (const p of this.carried) {
-      p.x = this.x + 4 - (p.w >> 1);
-      p.y = this.y + 4 - (p.h >> 1);
-      p.render(r, view, ox, oy);
-    }
-  }
 }
 
 export const BOOMERANG: TdItem = {
@@ -244,11 +228,6 @@ export class Explosion extends TdEntity {
     if (this.t++ === 0) world.blast(this.cx, this.cy, this.radius, this.damage, this.selfDamage);
     if (this.t >= BLAST_FRAMES) this.dead = true;
   }
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.hero);
-    const f = `blast-${Math.min(2, Math.floor((this.t * 3) / BLAST_FRAMES))}`;
-    drawFrame(r, sheet, f, ox + this.x, oy + this.y, '#fca044', { w: 32, h: 32 });
-  }
 }
 
 /** A lit bomb: it sits where it was set down and blows up when the fuse runs out. */
@@ -263,13 +242,6 @@ export class Bomb extends TdEntity {
     world.add(blast);
     world.emit({ type: 'blast' });
     blast.update(world); // it goes off this frame
-  }
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.hero);
-    // The fuse flickers faster near the end (steady with reduce flashing).
-    const rate = this.fuse < BOMB_FUSE / 3 ? 2 : 3;
-    const f = view.reduceFlashing ? 'bomb-0' : `bomb-${(view.frame >> rate) & 1}`;
-    drawFrame(r, sheet, f, ox + this.x, oy + this.y, '#2038ec');
   }
 }
 

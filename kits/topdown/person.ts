@@ -1,12 +1,8 @@
-import type { Renderer } from '@engine/core/gfx/renderer';
 import { boxesOverlap, type Box, type Dir } from './geometry';
 import { TdEntity } from './entity';
 import { dirFrom } from './walker';
-import type { TdView } from './view';
 import type { TopDownWorld } from './world';
 
-/** The sheet townsfolk are drawn from unless they name their own. */
-export const PERSON_SHEET = 'town-folk';
 /** How far in front of the hero's feet he can talk to someone (px). */
 export const TALK_REACH = 10;
 /** Frames each of a townsperson's two idle frames shows. */
@@ -23,6 +19,7 @@ export interface PersonOptions {
    * picture at all (a sign, a well: the tiles draw it).
    */
   frames: string | null;
+  /** The sheet their frames are on, when not the skin's default for townsfolk. */
   sheet?: string;
   palette?: string;
   /** What the prompt says ('TALK'; 'READ' for a sign, 'LOOK' for a well). */
@@ -45,7 +42,7 @@ export class TdPerson extends TdEntity {
   readonly name: string;
   readonly verb: string;
   readonly frames: string | null;
-  readonly sheet: string;
+  readonly sheet: string | undefined;
   readonly palette: string | undefined;
   facing: Dir = 'down';
   /** Drawn sorted with the hero by its feet (who is in front). */
@@ -62,7 +59,7 @@ export class TdPerson extends TdEntity {
     this.name = opts.name;
     this.verb = opts.verb ?? 'TALK';
     this.frames = opts.frames;
-    this.sheet = opts.sheet ?? PERSON_SHEET;
+    this.sheet = opts.sheet;
     this.palette = opts.palette;
     this.solid = opts.solid ?? opts.frames !== null;
     this.across = opts.across ?? false;
@@ -95,34 +92,6 @@ export class TdPerson extends TdEntity {
 
   update(_world: TopDownWorld): void {
     this.t++;
-  }
-
-  /** The frame to draw now and whether it is mirrored. */
-  frame(view: TdView): { frame: string; flip: boolean } | null {
-    const base = this.frames;
-    if (base === null || this.hidden) return null;
-    if (this.facing === 'left' || this.facing === 'right')
-      return { frame: `${base}-side`, flip: this.facing === 'left' };
-    if (this.facing === 'up') {
-      const sheet = view.sheet(this.sheet, this.palette);
-      if (sheet?.frames.has(`${base}-up`)) return { frame: `${base}-up`, flip: false };
-    }
-    return { frame: `${base}-${Math.floor(this.t / IDLE_FRAMES) & 1}`, flip: false };
-  }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const f = this.frame(view);
-    if (!f) return;
-    const sheet = view.sheet(this.sheet, this.palette);
-    const x = ox + Math.round(this.x);
-    const y = oy + Math.round(this.y);
-    if (sheet?.frames.has(f.frame)) {
-      const h = sheet.frames.get(f.frame)?.h ?? 16;
-      r.sprite(sheet, f.frame, x, y + 16 - h, f.flip);
-    } else {
-      r.rect(x + 3, y + 2, 10, 13, '#c84c0c');
-      r.rect(x + 5, y + 1, 6, 5, '#fca044');
-    }
   }
 }
 

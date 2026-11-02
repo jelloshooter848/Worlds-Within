@@ -1,7 +1,5 @@
-import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIR_VEC, boxesOverlap, type Box, type Dir } from './geometry';
 import { TdEnemy, TdEntity } from './entity';
-import { drawFrame, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
 /**
@@ -13,23 +11,6 @@ export const BEAM_SPEED = 3;
 export const BURST_FRAMES = 18;
 /** Pixels per frame each burst piece travels on each axis. */
 const BURST_SPEED = 1.5;
-/** Frames each colour of the beam's flicker lasts (steady with reduce flashing). */
-const FLICKER = 2;
-/** The beam's tints (link-td palettes), cycled while it flies. */
-export const BEAM_PALETTES = [
-  'link-td-beam-0',
-  'link-td-beam-1',
-  'link-td-beam-2',
-  'link-td-beam-3',
-] as const;
-export const BEAM_PALETTE_CALM = 'link-td-beam-calm';
-
-/** The tint of the beam (and its burst) this frame: flickering, or one steady tint. */
-function beamPalette(view: TdView): string {
-  if (view.reduceFlashing) return BEAM_PALETTE_CALM;
-  return BEAM_PALETTES[Math.floor(view.frame / FLICKER) % BEAM_PALETTES.length] as string;
-}
-
 /**
  * Zelda's sword beam: with every heart full, a stab also throws the blade's image straight ahead
  * (one on screen at a time). It flies until it meets a monster, which it hurts like the sword
@@ -81,22 +62,6 @@ export class SwordBeam extends TdEntity {
     this.dead = true;
     world.add(new BeamBurst(this.x + this.w / 2, this.y + this.h / 2));
   }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.hero, beamPalette(view)) ?? view.sheet(view.sheets.hero);
-    const v = this.dir === 'up' || this.dir === 'down';
-    drawFrame(
-      r,
-      sheet,
-      v ? 'sword-v' : 'sword-h',
-      ox + this.x,
-      oy + this.y,
-      '#fcfcfc',
-      { w: this.w, h: this.h },
-      this.dir === 'left',
-      this.dir === 'down',
-    );
-  }
 }
 
 /** The four pieces of a spent beam flying apart diagonally from where it burst; harmless. */
@@ -130,15 +95,5 @@ export class BeamBurst extends TdEntity {
 
   update(): void {
     if (++this.t >= BURST_FRAMES) this.dead = true;
-  }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.hero, beamPalette(view)) ?? view.sheet(view.sheets.hero);
-    for (const p of this.pieces()) {
-      // The shard art points up-left; each piece is flipped to point the way it flies.
-      const x = Math.round(ox + this.cx + p.dx - 4);
-      const y = Math.round(oy + this.cy + p.dy - 4);
-      drawFrame(r, sheet, 'beam-shard', x, y, '#fcfcfc', { w: 4, h: 4 }, p.dx > 0, p.dy > 0);
-    }
   }
 }

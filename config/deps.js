@@ -6,7 +6,7 @@
  * All paths are repo paths: relative to the repo root, with forward slashes (`kits/topdown/hero.ts`).
  */
 import { posix } from 'node:path';
-import { ALIASES, EXCEPTIONS, LAYERS, PURE_CORE, PURE_DIRS } from './layers.js';
+import { ALIASES, EXCEPTIONS, FORBIDDEN_CORE, LAYERS, PURE_CORE, PURE_DIRS } from './layers.js';
 
 /**
  * Top-level repo folders. A bare specifier starting with one of these (`games/demo/rooms`) is read as
@@ -102,7 +102,25 @@ export function checkImport(fromFile, target) {
   if (from.layer === to.layer && from.unit !== to.unit) {
     return { ok: false, reason: `${from.unit} may not import its sibling ${to.unit}` };
   }
+  for (const rule of FORBIDDEN_CORE) {
+    if (rule.layer !== from.layer.name) continue;
+    const hit = rule.targets.find((entry) => matchesEntry(target, entry));
+    if (hit) return { ok: false, reason: `${from.layer.name} may not import ${hit}: ${rule.reason}` };
+  }
   return { ok: true };
+}
+
+const SOURCE_EXT = /\.(ts|tsx|js|mjs)$/;
+
+/**
+ * Whether a repo path is a list entry: one file (with or without its extension, as specifiers
+ * name it) or anything under a `dir/**` entry.
+ * @param {string} path
+ * @param {string} entry
+ */
+function matchesEntry(path, entry) {
+  if (entry.endsWith('/**')) return isInside(path, entry.slice(0, -3));
+  return path.replace(SOURCE_EXT, '') === entry.replace(SOURCE_EXT, '');
 }
 
 /**

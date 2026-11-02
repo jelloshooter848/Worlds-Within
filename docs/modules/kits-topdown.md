@@ -7,13 +7,13 @@ Folder: `kits/topdown`. Detailed rules: [`kits/topdown/CLAUDE.md`](../../kits/to
 Gameplay rules for a room-based action game seen from above: rooms from text grids, a world with
 tile collision, doors, room slides and conditions, a sword hero with an item slot, enemies, objects,
 items, walking townsfolk and a scripted test bot. It never knows about a particular game: the game
-supplies rooms, extra spawn kinds, sheets and its own scene. It reports what happened through
-`world.events`.
+supplies rooms, extra spawn kinds and its own scene, and a backend draws the kit's presentation
+frames through the game's skin. It reports what happened through `world.events`.
 
 ## Public API entry points
 
 `index.ts`, imported as `@kits/topdown`, re-exports `geometry`, `room` (rooms and the `LEGEND` text
-format), `entity`, `enemies`, `items`, `hero`, `world`, `view`, `render`, `hud`, `frames`, `walker`,
+format), `entity`, `enemies`, `items`, `hero`, `world`, `frames` (tile-sheet text transforms), `walker`,
 `person`, `snapshot` (`snapshotWorld`, `topdownGame`: the world as the engine's `HeadlessGame`,
 for `pnpm cli run` and `dump`), `present` (`presentWorld(world, events, opts)`: the world as an
 engine `PresentFrame` (room map with a version that changes with its tiles, the hero and every
@@ -26,7 +26,10 @@ and `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
 
 ## Imports allowed
 
-- `@engine/core/*` and relative paths inside the kit.
+- `@engine/core/*` except its drawing and output side (`FORBIDDEN_CORE` in `config/layers.js`:
+  the `Renderer`, sprite sheets, `assets/`, audio output, scenes, the loop), and relative paths
+  inside the kit.
+- The kit never draws: no drawing call in any non-test file (`tests/architecture/no-drawing.test.ts`).
 - Tests may also use `@engine/backends/null`.
 - Never other backends, `engine/sim`, `engine/tools`, other kits or games.
 - No `Math.random`, wall-clock time or DOM globals (lint-enforced). No content outside tiny test

@@ -1,6 +1,5 @@
 import { readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { NullRenderer } from '@engine/backends/null';
 import { validate } from '@engine/core/content/validate';
 import { presentFrameSchema, type PresentEntity } from '@engine/core/present';
 import { BeamBurst, SwordBeam } from './beam';
@@ -9,9 +8,7 @@ import { Chest, FloorSwitch, Pickup, Poof, PushBlock, TdEntity, Torch } from './
 import { Bomb, Boomerang, Explosion } from './items';
 import { TdPerson } from './person';
 import { presentWorld, TD_DEPTH, TdPresentState } from './present';
-import { renderWorld } from './render';
 import { buildDungeon } from './room';
-import { DEFAULT_SHEETS, type TdView } from './view';
 import { TdWalker } from './walker';
 import { TopDownWorld } from './world';
 
@@ -58,25 +55,26 @@ const FACTORIES: Record<string, { make: () => TdEntity; kind: string }> = {
   },
 };
 
-/** Every concrete TdEntity class with a render method in the kit's modules (tests left out). */
-async function drawnClasses(): Promise<string[]> {
+/** The kit's abstract entity bases: never placed themselves, so never presented. */
+const ABSTRACT = new Set(['TdEnemy', 'Walker']);
+
+/** Every concrete TdEntity class the kit's modules export (tests left out). */
+async function entityClasses(): Promise<string[]> {
   const dir = new URL('./', import.meta.url);
   const names = new Set<string>();
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))) {
     const mod = (await import(new URL(file, dir).href)) as Record<string, unknown>;
     for (const value of Object.values(mod)) {
       if (typeof value !== 'function' || !(value.prototype instanceof TdEntity)) continue;
-      if (typeof (value.prototype as { render?: unknown }).render === 'function') names.add(value.name);
+      if (!ABSTRACT.has(value.name)) names.add(value.name);
     }
   }
   return [...names].sort();
 }
 
-const VIEW: TdView = { frame: 0, reduceFlashing: false, sheets: DEFAULT_SHEETS, sheet: () => null };
-
-describe('presentWorld: every entity the kit draws', () => {
-  it('has a presented kind for every TdEntity class with a render method', async () => {
-    expect(await drawnClasses()).toEqual(Object.keys(FACTORIES).sort());
+describe('presentWorld: every entity the kit has', () => {
+  it('has a presented kind for every concrete TdEntity class', async () => {
+    expect(await entityClasses()).toEqual(Object.keys(FACTORIES).sort());
     for (const [name, { make, kind }] of Object.entries(FACTORIES)) {
       const w = world();
       w.add(make());
@@ -226,36 +224,5 @@ describe('presentWorld: depth matches the old render order', () => {
       TD_DEPTH.folkBehind,
       TD_DEPTH.folkFront,
     ]);
-  });
-
-  it('matches the order the old renderWorld drew in', () => {
-    const w = busy();
-    const state = new TdPresentState();
-    const es = presentWorld(w, [], { state }).entities;
-    // Drop the extras the old code drew inside an entity's render (sword, held prize, stun
-    // stars) and fold a burst's shards into the burst.
-    const presented: string[] = [];
-    for (const e of es) {
-      if (['held', 'sword', 'stun'].includes(e.kind)) continue;
-      const id = e.kind === 'beam-shard' ? e.id.replace(/\/\d+$/, '') : e.id;
-      if (presented[presented.length - 1] !== id) presented.push(id);
-    }
-    const drawn: string[] = [];
-    const spy = (e: TdEntity) => {
-      const render = e.render.bind(e);
-      e.render = (...args) => {
-        drawn.push(state.ids.of(e, w.room.id));
-        render(...args);
-      };
-    };
-    for (const e of w.entities) spy(e);
-    for (const e of w.entities) if (e instanceof Boomerang) e.carried.forEach(spy);
-    const heroRender = w.hero.render.bind(w.hero);
-    w.hero.render = (...args) => {
-      drawn.push('hero');
-      heroRender(...args);
-    };
-    renderWorld(new NullRenderer(), VIEW, w);
-    expect(presented).toEqual(drawn);
   });
 });

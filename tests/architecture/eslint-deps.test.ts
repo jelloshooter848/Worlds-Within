@@ -34,6 +34,10 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['kits/other/bad.ts', '@kits/topdown', 'kit -> sibling kit'],
     ['kits/topdown/bad.ts', 'games/demo/rooms', 'kit -> game (bare repo path)'],
     ['engine/sim/bad.ts', 'engine/backends/canvas2d', 'sim -> backend (bare repo path)'],
+    ['kits/topdown/bad.ts', '@engine/backends/canvas2d', 'kit -> backend'],
+    ['kits/topdown/bad.ts', '@engine/backends/null', 'non-test kit file -> null backend'],
+    ['kits/topdown/bad.ts', '@engine/core/gfx/renderer', 'kit -> the core Renderer'],
+    ['kits/topdown/bad.ts', '../../engine/core/gfx/spritesheet', 'kit -> sprite sheets (relative)'],
   ];
 
   it.each(bad)('%s importing %s fails both (%s)', async (file, specifier) => {
@@ -54,6 +58,7 @@ describe('dependency rule: ESLint and the checker agree', () => {
 
   const good: [file: string, specifier: string, what: string][] = [
     ['kits/topdown/good.ts', '@engine/core/rng', 'kit -> core'],
+    ['kits/topdown/good.ts', '@engine/core/present', 'kit -> the presentation contract'],
     ['games/demo/good.ts', '@kits/topdown', 'game -> kit'],
     ['engine/sim/good.ts', '../core/rng', 'sim -> core (relative)'],
     ['kits/topdown/good.test.ts', '@engine/backends/null', 'kit test -> null backend (test exception)'],

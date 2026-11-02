@@ -1,9 +1,7 @@
-import type { Renderer } from '@engine/core/gfx/renderer';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { DIRS, DIR_VEC, TILE, isHorizontal, mod, type Box, type Dir } from './geometry';
 import { Chest, PUSH_DELAY, PushBlock } from './entity';
 import { SwordBeam } from './beam';
-import { drawFrame, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
 /** Frames of one sword stab (the hero stands still for all of them). */
@@ -147,13 +145,6 @@ export class TdHero {
     this.attackT = 0;
     this.useT = 0;
     this.facing = 'down';
-  }
-
-  /** Where the blade is drawn (and hits), by facing. */
-  private swordSprite(): Box & { frame: string; fx: boolean; fy: boolean } {
-    const b = swordAt(this.x, this.y, this.facing);
-    const v = this.facing === 'up' || this.facing === 'down';
-    return { ...b, frame: v ? 'sword-v' : 'sword-h', fx: this.facing === 'left', fy: this.facing === 'down' };
   }
 
   /**
@@ -364,67 +355,6 @@ export class TdHero {
     if (++this.pushT >= PUSH_DELAY) {
       block.tryPush(world, this.facing);
       this.pushT = 0;
-    }
-  }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const x = ox + this.x;
-    const y = oy + this.y;
-    if (this.dying >= SPIN_FRAMES) {
-      if (this.dead) return;
-      const enemies = view.sheet(view.sheets.enemies);
-      const f = `poof-${Math.min(2, Math.floor((this.dying - SPIN_FRAMES) / 8))}`;
-      if (enemies?.frames.has(f)) r.sprite(enemies, f, x, y);
-      else r.rect(x + 4, y + 4, 8, 8, '#fcfcfc');
-      return;
-    }
-    let palette: string | undefined;
-    if (this.invuln > 0 || this.dying) {
-      palette = view.reduceFlashing
-        ? `${view.sheets.hero}-hurt-calm`
-        : `${view.sheets.hero}-hurt-${(view.frame >> 2) & 1}`;
-    }
-    let sheet = palette ? view.sheet(view.sheets.hero, palette) : null;
-    if (palette && !sheet) {
-      // No hurt palettes: blink instead (steady with reduce flashing).
-      if (!view.reduceFlashing && (view.frame & 2) === 0) return;
-    }
-    sheet ??= view.sheet(view.sheets.hero);
-    const side = isHorizontal(this.facing);
-    const dirName = side ? 'side' : this.facing;
-    const sword = this.attacking ? this.swordSprite() : null;
-    const pose = this.attacking
-      ? `attack-${dirName}`
-      : this.useT > 0
-        ? `throw-${dirName}`
-        : this.holdT > 0
-          ? sheet?.frames.has('hold')
-            ? 'hold'
-            : 'down-0'
-          : `${dirName}-${(this.walkT >> 3) & 1}`;
-    const frame = pose;
-    if (this.holding) {
-      const tiles = view.sheet(view.sheets.tiles, view.tilePalette);
-      const w = tiles?.frames.get(this.holding)?.w ?? 8;
-      drawFrame(r, tiles, this.holding, x + 8 - (w >> 1), y - 16, '#fcfcfc', { w, h: 16 });
-    }
-    if (sword) {
-      if (sheet?.frames.has(sword.frame))
-        r.sprite(sheet, sword.frame, ox + sword.x, oy + sword.y, sword.fx, sword.fy);
-      else
-        r.rect(
-          ox + sword.x + (sword.w > 8 ? 0 : 3),
-          oy + sword.y + (sword.w > 8 ? 3 : 0),
-          sword.w > 8 ? 16 : 2,
-          sword.w > 8 ? 2 : 16,
-          '#fcfcfc',
-        );
-    }
-    if (sheet?.frames.has(frame)) r.sprite(sheet, frame, x, y, this.facing === 'left');
-    else {
-      r.rect(x + 2, y + 1, 12, 14, palette ? '#fcfcfc' : '#00a800');
-      const v = DIR_VEC[this.facing];
-      r.rect(x + 6 + v.dx * 5, y + 6 + v.dy * 5, 4, 4, '#fca044');
     }
   }
 }

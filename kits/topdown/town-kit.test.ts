@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/core/input/actions';
-import type { Renderer } from '@engine/core/gfx/renderer';
-import { NullRenderer } from '@engine/backends/null';
-import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { buildDungeon, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
 import { TdWalker, WALK_STEPS, RUN_STEPS } from './walker';
 import { TdPerson, talkTarget } from './person';
 import { ROOM_H, ROOM_W, TILE } from './geometry';
-import { DEFAULT_SHEETS, type TdView } from './view';
-import { renderWorld } from './render';
+import { presentWorld } from './present';
 
 // 0.4.41 (Kakariko Village): what the top-down kit gained for a town. Outdoor screens with open
 // edges (`wall: 0`), an art layer (each cell's pictures), building doors inside a room
@@ -247,34 +243,14 @@ describe('entrances: building doors inside a room', () => {
 });
 
 describe('the art layer', () => {
-  it('each cell draws its own pictures, bottom to top, from the tile sheet; a cell without art draws its tile', () => {
+  it("keeps each cell's pictures, bottom to top, with no change to the tiles", () => {
     const art = Array.from({ length: 176 }, (_, i) =>
       i === 0 ? ['grass', 'flower'] : i === 1 ? null : ['grass'],
     );
     const d = buildDungeon([{ ...outdoor('a', [0, 0], { 5: '.......@........' }), art }]);
-    const w = new TopDownWorld(d, { hero: walker });
-    const drawn: { frame: string; x: number; y: number }[] = [];
-    const sheet: SpriteSheet = {
-      id: 'town',
-      image: null,
-      frames: new Map(['grass', 'flower', 'floor'].map((f) => [f, { x: 0, y: 0, w: 16, h: 16 }])),
-    };
-    const r: Renderer = Object.assign(new NullRenderer(), {
-      sprite(_s: SpriteSheet, frame: string, x: number, y: number) {
-        drawn.push({ frame, x, y });
-      },
-    });
-    const view: TdView = {
-      frame: 0,
-      reduceFlashing: true,
-      sheets: { ...DEFAULT_SHEETS, tiles: 'town' },
-      sheet: () => sheet,
-    };
-    renderWorld(r, view, w);
-    const at = (x: number, y: number) => drawn.filter((s) => s.x === x && s.y === y).map((s) => s.frame);
-    expect(at(0, 64)).toEqual(['grass', 'flower']);
-    expect(at(16, 64)).toEqual(['floor']);
-    expect(at(32, 64)).toEqual(['grass']);
+    const room = d.rooms.get('a');
+    expect(room?.def.art?.[0]).toEqual(['grass', 'flower']);
+    expect(room?.def.art?.[1]).toBeNull();
   });
 });
 
@@ -296,7 +272,7 @@ describe('TdPerson: someone to talk to', () => {
     expect(talkTarget(w)).toBeNull();
   });
 
-  it('faces the hero while talking, then turns back; draws its idle frames, side frames mirrored', () => {
+  it('faces the hero while talking, then turns back; presented facing the hero, with its idle counter', () => {
     const w = new TopDownWorld(square(), { hero: walker });
     const p = new TdPerson(4 * TILE, 5 * TILE, { id: 'woman', name: 'WOMAN', frames: 'woman' });
     w.add(p);
@@ -304,28 +280,15 @@ describe('TdPerson: someone to talk to', () => {
     w.hero.y = 5 * TILE;
     p.faceToward(w.hero.feet());
     expect(p.facing).toBe('right');
-    const drawn: { frame: string; flip: boolean }[] = [];
-    const sheet: SpriteSheet = {
-      id: 'folk',
-      image: null,
-      frames: new Map(['woman-0', 'woman-1', 'woman-side'].map((f) => [f, { x: 0, y: 0, w: 16, h: 16 }])),
-    };
-    const r: Renderer = Object.assign(new NullRenderer(), {
-      sprite(_s: SpriteSheet, frame: string, _x: number, _y: number, flip = false) {
-        drawn.push({ frame, flip });
-      },
-    });
-    const view: TdView = { frame: 0, reduceFlashing: true, sheets: DEFAULT_SHEETS, sheet: () => sheet };
-    p.render(r, view, 0, 0);
-    expect(drawn.at(-1)).toEqual({ frame: 'woman-side', flip: false });
+    const look = () => presentWorld(w).entities.find((e) => e.kind === 'person:woman');
+    expect(look()).toMatchObject({ facing: 'right', anim: { state: 'idle', t: 0 } });
     p.facing = 'left';
-    p.render(r, view, 0, 0);
-    expect(drawn.at(-1)).toEqual({ frame: 'woman-side', flip: true });
+    expect(look()?.facing).toBe('left');
     p.rest();
     expect(p.facing).toBe('down');
     for (let i = 0; i < 40; i++) p.update(w);
-    p.render(r, view, 0, 0);
-    expect(drawn.at(-1)?.frame).toBe('woman-1');
+    // A skin shows `<base>-1` once t passes IDLE_FRAMES.
+    expect(look()).toMatchObject({ facing: 'down', anim: { state: 'idle', t: 40 } });
   });
 
   it('a sign is a person with no picture and no body (the tile under it is solid)', () => {

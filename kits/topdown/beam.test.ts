@@ -1,38 +1,48 @@
 import { describe, expect, it } from 'vitest';
-import { NullRenderer } from '@engine/backends/null';
-import { BEAM_PALETTES, BEAM_PALETTE_CALM, BeamBurst, SwordBeam } from './beam';
-import { DEFAULT_SHEETS, type TdView } from './view';
+import { BeamBurst, SwordBeam } from './beam';
+import { presentWorld } from './present';
+import { buildDungeon } from './room';
+import { TopDownWorld } from './world';
 
-/** A view on frame `frame` that records the palettes asked for. */
-function viewAt(frame: number, reduceFlashing: boolean, asked: (string | undefined)[]): TdView {
-  return {
-    frame,
-    reduceFlashing,
-    sheets: DEFAULT_SHEETS,
-    sheet: (_id, palette) => {
-      asked.push(palette);
-      return null;
-    },
-  };
+const ROOM = [
+  '################',
+  '#..............#',
+  '#..............#',
+  '#..............#',
+  '#..............#',
+  '#......@.......#',
+  '#..............#',
+  '#..............#',
+  '#..............#',
+  '#..............#',
+  '################',
+];
+
+/** The beam and its burst as presented on frames 0..31 (the skin picks the tint from t and tags). */
+function looks(reduceFlashing: boolean): { t: number; tags: readonly string[] }[] {
+  const w = new TopDownWorld(buildDungeon([{ id: 'r', at: [0, 0], map: ROOM }]), { seed: 1 });
+  w.add(new SwordBeam(32, 32, 'up'));
+  w.add(new BeamBurst(80, 80));
+  const out: { t: number; tags: readonly string[] }[] = [];
+  for (let f = 0; f < 32; f++) {
+    w.frame = f;
+    for (const e of presentWorld(w, [], { reduceFlashing }).entities) {
+      if (e.kind === 'sword-beam') out.push({ t: e.anim?.t ?? -1, tags: e.tags ?? [] });
+    }
+  }
+  return out;
 }
 
 describe('the sword beam: its flicker', () => {
-  it('with reduce flashing the beam and its burst hold the steady tint on every frame', () => {
-    const asked: (string | undefined)[] = [];
-    const r = new NullRenderer();
-    for (let f = 0; f < 32; f++) {
-      new SwordBeam(0, 0, 'up').render(r, viewAt(f, true, asked), 0, 0);
-      new BeamBurst(8, 8).render(r, viewAt(f, true, asked), 0, 0);
-    }
-    const tints = asked.filter((p) => p !== undefined);
-    expect(tints.length).toBeGreaterThanOrEqual(64);
-    expect(new Set(tints)).toEqual(new Set([BEAM_PALETTE_CALM]));
+  it('with reduce flashing the beam is calm and holds t at 0 on every frame', () => {
+    const all = looks(true);
+    expect(all).toHaveLength(32);
+    for (const l of all) expect(l).toEqual({ t: 0, tags: ['calm'] });
   });
 
-  it('without it, the beam cycles through all four tints', () => {
-    const asked: (string | undefined)[] = [];
-    for (let f = 0; f < 32; f++)
-      new SwordBeam(0, 0, 'up').render(new NullRenderer(), viewAt(f, false, asked), 0, 0);
-    expect(new Set(asked.filter((p) => p !== undefined))).toEqual(new Set(BEAM_PALETTES));
+  it('without it, the beam flickers: t follows the frame so a skin can cycle its tints', () => {
+    const all = looks(false);
+    expect(all.map((l) => l.t)).toEqual([...Array(32).keys()]);
+    for (const l of all) expect(l.tags).toEqual(['flashing']);
   });
 });

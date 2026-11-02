@@ -4,7 +4,7 @@ The top-down kit: gameplay rules for a room-based action game seen from above. R
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
-`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), sheet helpers (`view.ts`, `frames.ts`; `sheetLookup` now lives in `@engine/core/assets/sheet-lookup`) and the room
+`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), tile-sheet frame helpers (`frames.ts`) and the room
 file schema (`schema.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
@@ -16,21 +16,24 @@ file schema (`schema.ts`).
   `world.events`. Rooms, songs and sprites belong in `games/`; tests may hold tiny fixtures
   (inline or in a `__fixtures__/` folder, see `engine/core/CLAUDE.md`).
   `tests/architecture/no-content.test.ts` fails on any content in the kit's other files.
-- **Kit code, not content:** the frame helpers in `frames.ts` (`rotateCcw`, `withSideFrames` and
-  the `SIDE_FRAMES` / `THICK_SIDE_FRAMES` / `SPLIT_FRAMES` name lists), the sheet ids in
-  `DEFAULT_SHEETS` (`view.ts`), `PERSON_SHEET` and `BEAM_PALETTES` are the kit's art contract: the
-  names of sheets, frames and palettes it asks for. The pixels behind those names come from the game.
-  `LEGEND` (`room.ts`) is the room text format, not a room.
+- **Kit code, not content:** the frame helpers in `frames.ts` (`rotateCcw`, `withSideFrames` on any
+  `{ frames }` text rows, and the `SIDE_FRAMES` / `THICK_SIDE_FRAMES` / `SPLIT_FRAMES` name lists)
+  are text transforms a game may use when it builds a tile sheet. Which sheets, frames and palettes
+  show each presented kind is the skin's business (`games/demo/content/skins/canvas2d.json`), not
+  the kit's. `LEGEND` (`room.ts`) is the room text format, not a room.
 - **Purity rule (lint-enforced):** randomness goes through the seeded `Rng` from
   `@engine/core/rng`, never `Math.random`; no `Date.now`, `performance.now` or DOM globals
   (`document`, `window`, `localStorage`, `requestAnimationFrame`, ...). ESLint fails on them in every
   file under `kits/` (the `purity` block in `eslint.config.js`). Pass an `Rng` or a frame count in
   instead. Any `engine/core` file the kit imports at run time must be on `PURE_CORE` in
   `config/layers.js`; `tests/architecture/purity.test.ts` checks that.
-- **Known debt:** drawing still lives here. `render.ts` and `hud.ts` (and the `draw` methods on
-  entities, enemies, items and the hero) call the core `Renderer`. Kits should never draw; moving
-  this to a backend that draws from a read-only snapshot is planned for a later release. Do not add
-  more drawing code.
+- **Never draws (enforced).** The kit describes each frame (`presentWorld`, below) and a backend
+  draws it through a skin. No kit file may import the core's drawing or output side (the
+  `Renderer`, sprite sheets, `assets/`, audio output, scenes, the loop: `FORBIDDEN_CORE` in
+  `config/layers.js`, checked by ESLint and `tests/architecture/dependency-rule.test.ts`) or any
+  backend, and `tests/architecture/no-drawing.test.ts` fails on a drawing call (`.sprite(`,
+  `.rect(`, `.text(`, `.line(`, `getContext`, ...) in any kit file that is not a test. Entities
+  carry state (`t`, `anim`, `facing`, `invuln`), never frame names or colours.
 
 ## Snapshots (`snapshot.ts`)
 
@@ -78,50 +81,52 @@ by default), `reduceFlashing` and `state` (a `TdPresentState`, one per stream of
   `<room>/<kind>@<col,row>` and anything else `<kind>#<n>` in the order first seen, kept in a
   `WeakMap`, never in the world. Parts of one thing are `<id>/<part>` (`hero/sword`, `hero/held`,
   `<enemy>/stun`, `<burst>/0..3`).
-- **Entities** (0.4-6): every living entity the old `renderWorld` drew, in its draw order, with
+- **Entities** (0.4-6): every living entity the old `renderWorld` (removed in 0.4-8) drew, in its draw order, with
   depths (`layer`) from `TD_DEPTH` that say the same: kit layer 0 floor things `0`, layer-1 actors
   `10`, stun stars `11`, townsfolk (`ySort`) whose y is not below the hero's `12` (sorted by y),
   the held prize `13`, the sword `14`, the hero `15`, townsfolk in front `16`, layer 2 shots `20`,
   layer 3 effects `30`. Layers other than 0..3 were never drawn and are not listed. Kinds come from
   `presentKind`. Not listed (the old code drew nothing): a hidden pickup, a hidden townsperson or
-  one with `frames: null` (a sign). `present-entities.test.ts` finds every `TdEntity` class with
-  a `render` method in the kit's files and fails if one has no presented kind, and checks the
-  frame's order against the order `renderWorld` draws in.
+  one with `frames: null` (a sign). `present-entities.test.ts` finds every concrete `TdEntity`
+  class the kit exports and fails if one has no presented kind, and pins the draw order.
 - **Tags**: enemies `invuln` + `flashing`/`calm` (the hurt blink), `knockback`, `stunned`;
   things drawn from the tile sheet (pickups, chests, push blocks, switches, torches, the held
   prize) `dark` in a dark room (the old `tilePalette`); flickering things (bombs, beams, shards,
   stun stars) `flashing`, or `calm` with reduce flashing, when their `t` is held at 0. Shut
   building doors (the old `drawShutEntrances`) and the dark room are the map's `D`/`d` tiles and
   `dark` tag.
-- `liveDoorLook` / `pastDoorLook` (how a doorway looks) are shared with the old `render.ts`.
+- `liveDoorLook` / `pastDoorLook`: how a doorway looks now, and how the room being left looked.
+- **Not presented yet:** a room's art layer (`RoomDef.art`, each cell's pictures). No game uses it
+  yet; when one does, add it to the map as `layers` (the contract's extension point).
 
 ### Old frame names -> presented kind and animation
 
-What each old `render` method drew, so a skin can reproduce it (`games/demo/content/skins/canvas2d.json` does, with flat placeholder frames). `t` is
-`anim.t`; "cycle N" means the old code changed frame every N ticks of `t`. Sheets are the
-`DEFAULT_SHEETS` roles (`tiles`, `hero`, `enemies`) unless named.
+What each old `render` method (removed in 0.4-8) drew, so a skin can reproduce it
+(`games/demo/content/skins/canvas2d.json` does, with flat placeholder frames). `t` is `anim.t`;
+"cycle N" means the old code changed frame every N ticks of `t`. Sheets are the old sheet roles
+(`tiles` = `dungeon`, `hero` = `link-td`, `enemies` = `dungeon-enemies`) unless named.
 
-| Old frame (sheet)                                                                                            | Kind                               | `anim.state` / `t`                                            | Notes                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `<dir>-<0/1>`, `attack-<dir>`, `throw-<dir>`, `hold` (hero)                                                  | `hero`                             | as before (0.4-5)                                             | `<dir>` is `up`/`down`/`side`, side mirrored for left                                                           |
-| `poof-0..2` (enemies), dying hero                                                                            | `poof` / `hero` `poof`             | `poof`, `t` = ticks; cycle 6 (hero: 8), holds `poof-2`        |                                                                                                                 |
-| prize over the head (tiles)                                                                                  | `held`                             | state = the frame name (`heart`, `key`, `map`, `<item>-icon`) | 16 px above the hero, centred                                                                                   |
-| `heart-pickup`, `key`, `bomb-pickup`, `heart-container`, `map`, `compass`, `triforce`, `<item>-icon` (tiles) | `pickup:<kind>`                    | `idle`, 0                                                     | `refill` drew four 7x7 `heart`s in a square; size = the box                                                     |
-| `chest` / `chest-open` (tiles)                                                                               | `chest`                            | `closed` / `open`                                             |                                                                                                                 |
-| `block` (tiles)                                                                                              | `push-block`                       | `idle`, `slide` while moving                                  | tag `fixed` once its puzzle is solved                                                                           |
-| `switch-up` / `switch-down` (tiles)                                                                          | `switch`                           | `up` / `down`                                                 | tag `plate` or `latch`                                                                                          |
-| `torch-off`, `torch-<0/1>` (tiles)                                                                           | `torch`                            | `off`; `lit`, `t` = frame, cycle 8                            | `t` 0 with reduce flashing (`torch-0`)                                                                          |
-| `bat-0`, `bat-<0/1>` (enemies)                                                                               | `bat`                              | `rest` (0); `fly`, `t` = frame, cycle 4                       |                                                                                                                 |
-| `knight-<down/up/side>-<0/1>` (enemies)                                                                      | `knight`                           | `walk`, `t` = steps walked, cycle 8                           | side mirrored for left                                                                                          |
-| `spitter-<side/down>-<0/1>` (enemies)                                                                        | `spitter`                          | `walk`, cycle 8; `spit` (frame 0)                             | left mirrored, up = down flipped vertically                                                                     |
-| two yellow stars (drawn, `drawStunned`)                                                                      | `stun`                             | `spin`, `t` = frame (0 calm)                                  | 16x6 box over the head; angle was `t / 8` radians                                                               |
-| `rock` (enemies), `Projectile.frames`                                                                        | `rock`, or a subclass's class name | `fly`, `t` = frame, cycle 4 through its frames                | tag `hostile`                                                                                                   |
-| `boomerang-0..3` (hero)                                                                                      | `boomerang`                        | `spin`, `t` = its own ticks, cycle 4                          | tag `returning`; carried pickups follow it, tag `carried`                                                       |
-| `bomb-<0/1>` (hero)                                                                                          | `bomb`                             | `fuse` (cycle 8), `fuse-short` (last third, cycle 4)          | `t` = frame, 0 calm (`bomb-0`)                                                                                  |
-| `blast-0..2` (hero)                                                                                          | `explosion`                        | `blast`, `t` = its ticks, cycle 8, holds `blast-2`            | 32x32                                                                                                           |
-| `sword-v` / `sword-h` (hero, `BEAM_PALETTES`)                                                                | `sword-beam`                       | `fly`, `t` = frame (0 calm)                                   | palette cycles every 2 ticks (`link-td-beam-calm` calm); `sword-h` mirrored left, `sword-v` flipped down        |
-| `beam-shard` (hero, beam palettes)                                                                           | `beam-shard`                       | `fly`, `t` = the burst's ticks                                | four per burst; tags `flip-x`/`flip-y`                                                                          |
-| `<base>-<0/1>`, `<base>-side`, `<base>-up` (`PERSON_SHEET` or its own)                                       | `person:<base>`                    | `idle`, `t` = its ticks, cycle `IDLE_FRAMES` (32)             | facing: `side` mirrored for left, `-up` if drawn; tags `sheet:<id>`, `palette:<id>`; bottom-aligned to its cell |
+| Old frame (sheet)                                                                                            | Kind                               | `anim.state` / `t`                                            | Notes                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `<dir>-<0/1>`, `attack-<dir>`, `throw-<dir>`, `hold` (hero)                                                  | `hero`                             | as before (0.4-5)                                             | `<dir>` is `up`/`down`/`side`, side mirrored for left                                                                   |
+| `poof-0..2` (enemies), dying hero                                                                            | `poof` / `hero` `poof`             | `poof`, `t` = ticks; cycle 6 (hero: 8), holds `poof-2`        |                                                                                                                         |
+| prize over the head (tiles)                                                                                  | `held`                             | state = the frame name (`heart`, `key`, `map`, `<item>-icon`) | 16 px above the hero, centred                                                                                           |
+| `heart-pickup`, `key`, `bomb-pickup`, `heart-container`, `map`, `compass`, `triforce`, `<item>-icon` (tiles) | `pickup:<kind>`                    | `idle`, 0                                                     | `refill` drew four 7x7 `heart`s in a square; size = the box                                                             |
+| `chest` / `chest-open` (tiles)                                                                               | `chest`                            | `closed` / `open`                                             |                                                                                                                         |
+| `block` (tiles)                                                                                              | `push-block`                       | `idle`, `slide` while moving                                  | tag `fixed` once its puzzle is solved                                                                                   |
+| `switch-up` / `switch-down` (tiles)                                                                          | `switch`                           | `up` / `down`                                                 | tag `plate` or `latch`                                                                                                  |
+| `torch-off`, `torch-<0/1>` (tiles)                                                                           | `torch`                            | `off`; `lit`, `t` = frame, cycle 8                            | `t` 0 with reduce flashing (`torch-0`)                                                                                  |
+| `bat-0`, `bat-<0/1>` (enemies)                                                                               | `bat`                              | `rest` (0); `fly`, `t` = frame, cycle 4                       |                                                                                                                         |
+| `knight-<down/up/side>-<0/1>` (enemies)                                                                      | `knight`                           | `walk`, `t` = steps walked, cycle 8                           | side mirrored for left                                                                                                  |
+| `spitter-<side/down>-<0/1>` (enemies)                                                                        | `spitter`                          | `walk`, cycle 8; `spit` (frame 0)                             | left mirrored, up = down flipped vertically                                                                             |
+| two yellow stars (drawn, `drawStunned`)                                                                      | `stun`                             | `spin`, `t` = frame (0 calm)                                  | 16x6 box over the head; angle was `t / 8` radians                                                                       |
+| `rock` (enemies), `Projectile.frames`                                                                        | `rock`, or a subclass's class name | `fly`, `t` = frame, cycle 4 through its frames                | tag `hostile`                                                                                                           |
+| `boomerang-0..3` (hero)                                                                                      | `boomerang`                        | `spin`, `t` = its own ticks, cycle 4                          | tag `returning`; carried pickups follow it, tag `carried`                                                               |
+| `bomb-<0/1>` (hero)                                                                                          | `bomb`                             | `fuse` (cycle 8), `fuse-short` (last third, cycle 4)          | `t` = frame, 0 calm (`bomb-0`)                                                                                          |
+| `blast-0..2` (hero)                                                                                          | `explosion`                        | `blast`, `t` = its ticks, cycle 8, holds `blast-2`            | 32x32                                                                                                                   |
+| `sword-v` / `sword-h` (hero, palettes `link-td-beam-0..3`)                                                   | `sword-beam`                       | `fly`, `t` = frame (0 calm)                                   | palette cycles every 2 ticks (`link-td-beam-calm` calm); `sword-h` mirrored left, `sword-v` flipped down                |
+| `beam-shard` (hero, beam palettes)                                                                           | `beam-shard`                       | `fly`, `t` = the burst's ticks                                | four per burst; tags `flip-x`/`flip-y`                                                                                  |
+| `<base>-<0/1>`, `<base>-side`, `<base>-up` (`town-folk` or its own)                                          | `person:<base>`                    | `idle`, `t` = its ticks, cycle `IDLE_FRAMES` (32)             | facing: `side` mirrored for left, `-up` if drawn; tags `sheet:<id>` (when it names one), `palette:<id>`; bottom-aligned |
 
 ## Named rules (`rules.ts`)
 
@@ -155,8 +160,11 @@ make several dungeons.
 
 ## Imports
 
-- Allowed: `@engine/core/*`, `zod` (for `schema.ts`) and relative paths inside the kit.
-- Tests (`*.test.ts`) may also use `@engine/backends/null` (the headless `NullRenderer`).
+- Allowed: `@engine/core/*` except the drawing and output side (`FORBIDDEN_CORE` in
+  `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
+  `assets/**`, audio output, `view.ts`, `scene.ts`, `loop.ts`), `zod` (for `schema.ts`) and
+  relative paths inside the kit.
+- Tests (`*.test.ts`) may also use `@engine/backends/null`; the kit's own tests no longer need it.
 - Never: other backends, `engine/sim`, `engine/tools`, other kits, or anything in `games/`.
 
 ## Testing

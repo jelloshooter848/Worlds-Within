@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { checkImport, checkSpecifier, placeOf, resolveSpecifier } from '../../config/deps.js';
-import { EXCEPTIONS, LAYERS } from '../../config/layers.js';
+import { EXCEPTIONS, FORBIDDEN_CORE, LAYERS } from '../../config/layers.js';
 
 // The dependency rule (docs/DESIGN.md, "The dependency rule"): every import arrow must be one the
 // layer table in config/layers.js allows.
@@ -97,6 +97,23 @@ describe('dependency rule: the layer table', () => {
     );
   });
 
+  it('keeps kits off the drawing side of the core, naming only core files that exist', () => {
+    const kits = FORBIDDEN_CORE.filter((f) => f.layer === 'kits').flatMap((f) => f.targets);
+    for (const t of [
+      'engine/core/gfx/renderer.ts',
+      'engine/core/gfx/spritesheet.ts',
+      'engine/core/assets/**',
+    ])
+      expect(kits).toContain(t);
+    for (const rule of FORBIDDEN_CORE) {
+      expect(LAYERS.map((l) => l.name)).toContain(rule.layer);
+      for (const t of rule.targets) {
+        expect(t.startsWith('engine/core/'), t).toBe(true);
+        expect(existsSync(join(ROOT, t.replace(/\/\*\*$/, ''))), t).toBe(true);
+      }
+    }
+  });
+
   it('places files in their layer and unit', () => {
     expect(placeOf('games/demo/main.ts')?.unit).toBe('games/demo');
     expect(placeOf('games/samples/siege/main.ts')?.unit).toBe('games/samples/siege');
@@ -149,6 +166,13 @@ describe('dependency rule: the checker', () => {
     ['kits/topdown/world.ts', '@engine/backends/canvas2d', 'kit -> backend'],
     ['kits/topdown/world.test.ts', '@engine/backends/canvas2d', 'test file -> a backend other than null'],
     ['kits/topdown/world.ts', '@kits/platformer', 'kit -> another kit'],
+    ['kits/topdown/world.ts', '@engine/core/gfx/renderer', 'kit -> the core Renderer'],
+    ['kits/topdown/world.ts', '../../engine/core/gfx/renderer.ts', 'kit -> the core Renderer (relative)'],
+    ['kits/topdown/world.ts', '@engine/core/gfx/spritesheet', 'kit -> sprite sheets'],
+    ['kits/topdown/world.ts', '@engine/core/assets/sheet-lookup', 'kit -> asset loading'],
+    ['kits/topdown/world.ts', '@engine/core/assets', 'kit -> the assets folder'],
+    ['kits/topdown/world.ts', '@engine/core/audio/audio-manager', 'kit -> audio output'],
+    ['kits/topdown/world.test.ts', '@engine/core/gfx/renderer', 'kit test -> the core Renderer'],
     ['kits/topdown/world.ts', '@engine/sim/world', 'kit -> sim'],
     ['engine/tools/cli.ts', '../../games/demo/main.ts', 'tools -> game by a static path'],
     ['games/demo/main.ts', '../samples/siege/main', 'game -> another game'],
@@ -174,6 +198,10 @@ describe('dependency rule: the checker', () => {
     ['games/samples/siege/main.ts', './rooms', 'inside one sample game'],
     ['kits/topdown/world.ts', '@engine/core/rng', 'kit -> core'],
     ['kits/topdown/world.ts', './room', 'inside one kit'],
+    ['kits/topdown/world.ts', '@engine/core/present', 'kit -> the presentation contract'],
+    ['kits/topdown/world.ts', '@engine/core/gfx/screen', 'kit -> screen sizes'],
+    ['kits/topdown/world.ts', '@engine/core/audio/mml', 'kit -> MML (text, not output)'],
+    ['games/demo/main.ts', '@engine/core/gfx/renderer', 'game -> the core Renderer'],
     ['kits/topdown/world.test.ts', '@engine/backends/null', 'test file -> null backend'],
     ['engine/core/gfx/screen.test.ts', '@engine/backends/null', 'core test -> null backend'],
     ['engine/backends/null/index.ts', '@engine/core/gfx/renderer', 'backend -> core'],

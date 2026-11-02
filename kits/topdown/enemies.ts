@@ -1,7 +1,5 @@
-import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIRS, DIR_VEC, OPPOSITE, TILE, mod, type Box, type Dir } from './geometry';
 import { TdEnemy, TdEntity } from './entity';
-import type { TdView } from './view';
 import type { Mover, TopDownWorld } from './world';
 
 /**
@@ -43,13 +41,6 @@ export class Projectile extends TdEntity {
     this.x = Math.round(this.fx);
     this.y = Math.round(this.fy);
     if (world.blocked(this.body(), this.mover, this)) this.dead = true;
-  }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.enemies);
-    const f = this.frames[(view.frame >> 2) % this.frames.length] as string;
-    if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
-    else r.rect(ox + this.x + 1, oy + this.y + 1, 6, 6, this.color);
   }
 }
 
@@ -117,14 +108,6 @@ export class Bat extends TdEnemy {
       this.vy = rng.int(3) - 1;
     } while (this.vx === 0 && this.vy === 0);
   }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.blinkHidden(view)) return;
-    const sheet = view.sheet(view.sheets.enemies);
-    const f = this.resting ? 'bat-0' : `bat-${(view.frame >> 2) & 1}`;
-    if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
-    else r.rect(ox + this.x + 2, oy + this.y + 5, 12, 6, '#9878f8');
-  }
 }
 
 /**
@@ -183,19 +166,6 @@ export class Knight extends Walker {
   protected think(world: TopDownWorld): void {
     this.walk(world);
   }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.blinkHidden(view)) return;
-    const sheet = view.sheet(view.sheets.enemies);
-    const side = this.facing === 'left' || this.facing === 'right';
-    const name = side ? 'side' : this.facing;
-    const f = `knight-${name}-${(this.anim >> 3) & 1}`;
-    if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y, this.facing === 'left');
-    else {
-      r.rect(ox + this.x + 2, oy + this.y + 1, 12, 14, '#bcbcbc');
-      r.rect(ox + this.x + 4, oy + this.y + 3, 8, 3, '#404040');
-    }
-  }
 }
 
 /** Frames a spitter stands still before it spits, and after. */
@@ -243,19 +213,5 @@ export class Spitter extends Walker {
     const v = DIR_VEC[this.facing];
     world.add(new Rock(this.x + 4 + v.dx * 8, this.y + 4 + v.dy * 8, this.facing));
     world.emit({ type: 'spit' });
-  }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.blinkHidden(view)) return;
-    const sheet = view.sheet(view.sheets.enemies);
-    const side = this.facing === 'left' || this.facing === 'right';
-    const f = `spitter-${side ? 'side' : 'down'}-${this.stopT > 0 ? 0 : (this.anim >> 3) & 1}`;
-    if (sheet?.frames.has(f))
-      r.sprite(sheet, f, ox + this.x, oy + this.y, this.facing === 'left', this.facing === 'up');
-    else {
-      r.rect(ox + this.x + 2, oy + this.y + 2, 12, 12, '#e45c10');
-      const v = DIR_VEC[this.facing];
-      r.rect(ox + this.x + 6 + v.dx * 6, oy + this.y + 6 + v.dy * 6, 4, 4, '#000000');
-    }
   }
 }

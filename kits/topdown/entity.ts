@@ -1,6 +1,4 @@
-import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIR_VEC, TILE, boxesOverlap, mod, type Box, type Dir } from './geometry';
-import { drawFrame, type TdView } from './view';
 import type { Mover, TopDownWorld } from './world';
 
 /**
@@ -38,7 +36,6 @@ export abstract class TdEntity {
   }
 
   abstract update(world: TopDownWorld): void;
-  abstract render(r: Renderer, view: TdView, ox: number, oy: number): void;
 
   /** The sword touched it; return true if that counted as a hit (for the hit sound). */
   onSword(_world: TopDownWorld, _dir: Dir): boolean {
@@ -151,11 +148,6 @@ export abstract class TdEnemy extends TdEntity {
   protected aligned(): boolean {
     return mod(this.x, TILE) === 0 && mod(this.y, TILE) === 0;
   }
-
-  /** Hurt blink: hidden every other 2 frames while invulnerable (never with reduce flashing). */
-  protected blinkHidden(view: TdView): boolean {
-    return this.invuln > 0 && !view.reduceFlashing && (view.frame & 2) === 0;
-  }
 }
 
 /** The puff an enemy leaves (three frames). */
@@ -164,12 +156,6 @@ export class Poof extends TdEntity {
   t = 0;
   update(): void {
     if (++this.t >= 18) this.dead = true;
-  }
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.enemies);
-    const f = `poof-${Math.min(2, Math.floor(this.t / 6))}`;
-    if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
-    else r.rect(ox + this.x + 4, oy + this.y + 4, 8, 8, '#fcfcfc');
   }
 }
 
@@ -226,23 +212,6 @@ export class Pickup extends TdEntity {
     return { x: this.x, y: this.y, w: this.w, h: this.h };
   }
   update(): void {}
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    if (this.hidden) return;
-    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
-    if (this.kind === 'refill') {
-      // A refill: four little hearts in a square.
-      for (const [dx, dy] of [
-        [0, 0],
-        [8, 0],
-        [0, 8],
-        [8, 8],
-      ] as const)
-        drawFrame(r, sheet, 'heart', ox + this.x + dx, oy + this.y + dy, '#f83800', { w: 7, h: 7 });
-      return;
-    }
-    const color = this.kind === 'key' ? '#f8b800' : this.kind === 'heart' ? '#f83800' : '#fcfcfc';
-    drawFrame(r, sheet, pickupFrame(this.kind), ox + this.x, oy + this.y, color, { w: this.w, h: this.h });
-  }
 }
 
 /**
@@ -273,10 +242,6 @@ export class Chest extends TdEntity {
     world.grant(this.contents);
     world.hero.holdUp(pickupFrame(this.contents));
     return true;
-  }
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
-    drawFrame(r, sheet, this.open ? 'chest-open' : 'chest', ox + this.x, oy + this.y, '#ac7c00');
   }
 }
 
@@ -314,15 +279,6 @@ export class PushBlock extends TdEntity {
     this.y += this.move.dy;
     if (--this.move.left <= 0) this.move = null;
   }
-
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
-    if (sheet?.frames.has('block')) r.sprite(sheet, 'block', ox + this.x, oy + this.y);
-    else {
-      r.rect(ox + this.x, oy + this.y, 16, 16, '#503000');
-      r.rect(ox + this.x + 2, oy + this.y + 2, 12, 12, '#ac7c00');
-    }
-  }
 }
 
 /**
@@ -355,12 +311,6 @@ export class FloorSwitch extends TdEntity {
       world.emit({ type: 'switch' });
     }
   }
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
-    const f = this.pressed ? 'switch-down' : 'switch-up';
-    if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
-    else r.rect(ox + this.x + 3, oy + this.y + 3, 10, 10, this.pressed ? '#404040' : '#bcbcbc');
-  }
 }
 
 /** A brazier: solid; lit ones flicker (steady with reduce flashing). The sword lights an unlit one. */
@@ -383,14 +333,5 @@ export class Torch extends TdEntity {
     this.lit = true;
     world.emit({ type: 'torch' });
     return true;
-  }
-  render(r: Renderer, view: TdView, ox: number, oy: number): void {
-    const sheet = view.sheet(view.sheets.tiles, view.tilePalette);
-    const f = !this.lit ? 'torch-off' : view.reduceFlashing ? 'torch-0' : `torch-${(view.frame >> 3) & 1}`;
-    if (sheet?.frames.has(f)) r.sprite(sheet, f, ox + this.x, oy + this.y);
-    else {
-      r.rect(ox + this.x + 4, oy + this.y + 8, 8, 8, '#7c7c7c');
-      if (this.lit) r.rect(ox + this.x + 5, oy + this.y + 2, 6, 6, '#f8b800');
-    }
   }
 }
