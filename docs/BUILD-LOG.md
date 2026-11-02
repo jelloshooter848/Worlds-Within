@@ -7,6 +7,171 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.3
+
+LLM tooling. Built on branch `engine/build-0.15`; not tagged (tagging is the owner's call).
+
+### What was built
+
+- **Agent docs.** `llms.txt` at the root links the root `CLAUDE.md`, the design and roadmap, one
+  page per module in `docs/modules/`, the cheat sheet, the generated references and the skills.
+  Every module folder has a `CLAUDE.md` and an `AGENTS.md` pointer;
+  `tests/architecture/agent-docs.test.ts` fails if a module has no page, `llms.txt` does not link it,
+  or any link is broken.
+- **Content core.** `engine/core/content`: Zod schemas (Zod 4.6.7, pinned), text grids that reject
+  ragged rows and unknown characters with row and column, a registry of content kinds (song, sfx,
+  sprite, palette from the engine; room from the top-down kit), and errors that always name the file
+  and the field (`{ file, path, pointer, code, message, row?, col?, line? }`). All of it is pure.
+- **Demo content as data.** `games/demo/game.json` (the manifest) names the rooms (`.json` plus
+  `.map.txt` grids), the song, a palette and a hero sprite sheet under `games/demo/content/`. The
+  TypeScript left in the demo is glue. The browser gets the files through `import.meta.glob` with
+  `?raw`, Node through `readGameFiles`.
+- **The CLI** (`pnpm cli`, `engine/tools`). A command registry with Zod schemas for arguments and
+  flags, `--json` with exactly one result object on stdout, grouped exit codes (0 ok, 2 usage,
+  3 invalid content, 4 failed check, 5 crash), and an output cap (32 KiB) that writes the full
+  result to `.ww-out/` and returns `truncated`, `fullOutput` and `omitted`. Commands: `help`,
+  `validate`, `run`, `dump`, `screenshot`, `mutants`, `get`, `set`, `add`, `remove`.
+- **Headless runs.** The headless contract (`engine/core/headless.ts`: `createGame`, `step`,
+  `snapshot`, `canonicalJson`), the kit's world snapshot, and run files with a seed, scripted input,
+  tick assertions, invariants and state hashes every N ticks. `tests/runs/run-files.test.ts` plays
+  every run file in `games/` twice and compares with its committed golden `.hashes.json`.
+- **Replay files.** A failing run writes `.ww-out/replays/<run>-t<tick>-<hash>.run.json`; running it
+  fails at the same tick and checks the stored hashes, naming the first mismatching tick.
+- **Editing verbs.** `get`, `set`, `add` and `remove` on game manifests, content files, text-grid
+  parts and run files, by dotted path or JSON pointer. Every write is schema-checked (refused with
+  exit 3, file untouched), written Prettier-clean, read back and reported as `verified`.
+- **Mutant checks.** `engine/core/rules.ts` names rules; the top-down kit names four
+  (`walls-block-movement`, `doors-change-room`, `damage-reduces-hp`, `keys-open-locked-doors`).
+  `mutants` plays a run once per rule switched off and lists the rules the run does not guard.
+- **Screenshots.** `screenshot <run> --tick N` plays the run in headless Chromium (Playwright 1.63.0,
+  pinned) through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and writes a
+  256x240 PNG with its sha256; the page's state hash is checked against the headless run.
+- **Generated docs.** `pnpm docs:gen` writes `docs/reference/cli.md`, `docs/reference/schemas.md`
+  and the generated tables of `docs/CHEATSHEET.md` from the same schemas as the CLI help;
+  `pnpm docs:check` (in `pnpm test` and in CI) fails when they are out of date.
+- **Skills.** `.claude/skills/scaffold-game/SKILL.md` (a one-room top-down game: manifest, room,
+  headless and view entries, browser page, run file with golden hashes, agent docs, then validate,
+  run and the four checks) and `.claude/skills/debug-failing-run/SKILL.md` (run, first failing tick,
+  dump at that tick and the one before, screenshot, replay, mutants, fix and rerun). Both are linked
+  from `llms.txt`, `docs/modules/skills.md` and the cheat sheet.
+
+### Choices made
+
+- **The CLI name** stays `pnpm cli` (run through `tsx`). Agents should use `pnpm -s cli`, since
+  without `-s` pnpm prints a banner on stdout before the JSON.
+- **The CLI never imports a game.** It reads `game.json` and content with the file system and
+  imports the `headless` and `view` modules by path at run time; a test keeps tools free of game
+  imports.
+- **Exit code 1 is never used**, so a 1 means Node died before the CLI could report.
+- **Run-file ticks.** Tick 0 is the starting state and tick `t` the state after `t` steps; a failing
+  run stops at the first failing tick and reports every check failing at that tick (`failures`).
+- **State hash** is the first 16 hex digits of SHA-256 over canonical JSON (sorted keys);
+  `canonicalJson` throws on anything not JSON-safe, naming the path.
+- **Screenshots** are served by Vite in middleware mode on a free local port from a tools-only page
+  that is not part of the Pages build. Where no browser is installed the command and its tests skip
+  cleanly; CI installs Chromium.
+- **`.claude/skills/` is committed**, while the rest of `.claude/` stays git-ignored (`.gitignore`
+  gained `!.claude/skills/`).
+- **The scaffold skill targets the top-down kit** (the only kit so far); its `main.ts` draws through
+  the view module, so the browser page, the screenshot and the headless run share one game.
+
+### How to try it
+
+```sh
+pnpm -s cli help
+pnpm -s cli validate games/demo --json
+pnpm -s cli run games/demo/runs/walk-east.run.json --json
+pnpm -s cli dump games/demo/runs/walk-east.run.json --tick 100 --json
+pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 60 --json
+pnpm -s cli mutants games/demo/runs/walk-east.run.json --json
+pnpm -s cli get games/demo/content/rooms/courtyard.json music --json
+```
+
+### Done when
+
+Each item was checked by running the commands on 2026-11-02 at the commit that closes 0.3.
+
+- **Met.** `pnpm -s cli validate games/demo --json` printed one line (one JSON object, 10 files,
+  0 errors) and exited 0. In a copy of the demo with `"at": "x"` in `content/rooms/courtyard.json`
+  it exited 3 with one error: `file` `.../content/rooms/courtyard.json`, `path` `at`, `code`
+  `invalid_type`.
+- **Met.** `pnpm -s cli run games/demo/runs/walk-east.run.json --json` twice in a row: exit 0,
+  `passed: true`, the same seven hashes both times (tick 0 `d29e6b40530102ce` ... tick 240
+  `257c816edd617516`), equal to the committed `walk-east.hashes.json`, which
+  `tests/runs/run-files.test.ts` checks on CI (`pnpm test` in `.github/workflows/ci.yml`).
+- **Met.** A copy of the demo run with a wrong assertion (`hero.x` `lt` 150 at tick 60) exited 4
+  with `failure.tick` 60 (`hero.x is 202, expected lt 150`) and wrote
+  `.ww-out/replays/wrong-t60-7ee52033ce06.run.json`. Running that replay exited 4 at tick 60, with
+  `replay.reproduced: true`, `hashesChecked: 3`, `hashMismatch: null`.
+- **Met.** `pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 120` twice: both exit 0,
+  sha256 `303b20d7559004e80f01d68e53a54efdb060985419c1825070cfa617ee2a0579`, `cmp` found the two PNGs
+  byte-identical, and `matchesHeadless: true`.
+- **Met.** `set .../content/rooms/courtyard.json music quiet` (in the copy) returned
+  `verified: true`, `before` `demo`, `after` `quiet`; the `get` that followed returned `quiet`.
+- **Met.** `pnpm -s cli dump games/demo/runs/walk-east.run.json --tick 10 --max-output 300 --json`
+  printed `{"truncated":true,"fullOutput":".ww-out/dump-0b2801361285.json",...}`.
+- **Met.** Changing one cell of a generated table in `docs/CHEATSHEET.md` made `pnpm docs:check`
+  exit 4 naming the file and line; restoring it made it pass. CI runs `pnpm docs:check` and
+  `pnpm test` (whose `engine/tools/docs.test.ts` does the same check).
+- **Met.** The hand check (below): a fresh agent given only `llms.txt`, the cheat sheet and the
+  scaffold skill made a one-room game in `games/` that passed `validate` and `run`.
+- The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (55 test files,
+  595 tests).
+
+### Hand check (scaffold skill)
+
+- **Who:** a fresh Claude Code agent (`claude -p`, Opus 5.5, no earlier context), told to use only
+  `llms.txt`, `docs/CHEATSHEET.md` and `.claude/skills/scaffold-game/SKILL.md`, plus files those
+  name, and to report every gap.
+- **Game made:** `games/hand-check/`: `game.json` (kit `topdown`, `room` only, seed 1, `headless.ts`,
+  `view.ts`), `content/rooms/hall.json` (`{ "id": "hall", "at": [0, 0] }`) with an 11x16
+  `hall.map.txt` walled room and the player start, `headless.ts`, `view.ts`, `main.ts`, `index.html`,
+  `runs/walk-east.run.json` (60 ticks holding right; `hero.room` is `hall` at tick 0, `hero.x` > 112
+  at tick 60; `hero.hp` >= 0 and not dead on every tick) with its golden `walk-east.hashes.json`,
+  `CLAUDE.md`, `AGENTS.md`, `docs/modules/games-hand-check.md` and its `llms.txt` line.
+- **Commands it ran:** `pnpm -s cli validate games/hand-check --json` (exit 0, 3 files, 0 errors);
+  `pnpm -s cli run games/hand-check/runs/walk-east.run.json --json` twice (exit 0, `passed: true`,
+  the same hashes: tick 0 `a4bfc190c431cd03`, 20 `78ec03124b24edb4`, 40 `67f5db8238a5a094`,
+  60 `c13939f08b904962`); `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`; then `pnpm lint`,
+  `pnpm typecheck`, `pnpm test` (55 files, 596 tests) and `pnpm build`, all passing. It did not need
+  to open any engine or kit source; every snippet worked as written. The orchestrator re-ran
+  `validate` (exit 0) and `run` (exit 0, final hash `c13939f08b904962`) on its game.
+- **Gaps it reported, and the fixes:** (1) the golden-hash command rewrites every game's hashes, not
+  just the new one: the skill now says so and says to check `git status`; (2) `validate` passes
+  before the entry modules exist: the skill now says `validate` never opens them and `run` proves
+  them; (3) piping through `tail` hides exit codes: the skill now says to read `echo $?` or
+  `exitCode`; (4) `.ww-out/` was not explained: the skill now says it is the git-ignored output
+  folder. Before the hand check the orchestrator also corrected the hero's walking speed in the
+  skill (about 1.5 pixels a tick, found while checking the Done-when items).
+- **Afterwards:** the scratch game, its docs page and its `llms.txt` line were deleted; it is not
+  kept as a fixture (the demo already covers every file it had).
+
+### Deviations from the roadmap
+
+- **An original demo sprite.** The roadmap moves the demo's rooms, sprites and song into data files;
+  the demo had no sprite of its own, so 0.3 added an original hero sprite sheet
+  (`games/demo/content/sprites/demo-hero.txt`) and a palette, drawn by the demo, so the sprite kind
+  is used by real content.
+- **A `palette` content kind and a `view` module.** Neither is named in the roadmap: palettes are
+  needed for the sprite, and the view module (`view` in `game.json`) is how `screenshot` draws a game
+  without the CLI importing it.
+- **A `mutants` command and a `help` command** beyond the commands the roadmap lists; the roadmap
+  asks for the mutant mechanism, and `help` is where the generated help is printed.
+- **Playwright is a dev dependency** (1.63.0, pinned), and CI installs Chromium for the screenshot
+  test.
+
+### Outstanding issues
+
+- The scaffold skill covers only the top-down kit; each new kit (0.5 on) needs its own variant or a
+  kit-specific section.
+- The kit still draws (`kits/topdown/render.ts`, `hud.ts`), recorded as debt since 0.2; the view
+  modules lean on it.
+- Mutant checks show the demo's run guards only `doors-change-room`; full adoption is planned for
+  Engine 0.5.
+- The screenshot test needs Chromium. Locally, a machine without one skips it with a message (CI
+  sets `CI` and so requires it), so such a machine does not check screenshot determinism.
+- The hand check was run once, by one agent, as the roadmap asks; it is not automated.
+
 ## Engine 0.2
 
 Restructure and the dependency rule. Built on branch `engine/build-0.15`; not tagged (tagging is the

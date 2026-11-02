@@ -24,4 +24,9 @@
 - [API cheat sheet](docs/CHEATSHEET.md): one page of the public API: a game's folder, booting a game, content kinds, the headless contract, run files and the CLI loop (its tables are generated)
 - [CLI reference](docs/reference/cli.md): every command's help, exactly as `pnpm cli help` prints it (generated)
 - [Schema reference](docs/reference/schemas.md): every file format (game manifest, run files, each content kind) with fields, types, defaults, limits and an example (generated)
-- [Skills](docs/modules/skills.md): agent skills for common jobs (placeholder, filled in during Engine 0.3)
+- [Skills](docs/modules/skills.md): agent skills for common jobs, and how to add one
+
+## Skills
+
+- [Scaffold a game](.claude/skills/scaffold-game/SKILL.md): make a new one-room game in `games/<name>/` that passes `validate`, `run` and the four checks
+- [Debug a failing run](.claude/skills/debug-failing-run/SKILL.md): from a failing `run` to its first failing tick, dumps, screenshot, replay and mutant checks, then fix and rerun

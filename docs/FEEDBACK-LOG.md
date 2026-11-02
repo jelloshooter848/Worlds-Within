@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 32.**
+**Next unused number: 39.** (Last used: 38.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -51,3 +51,21 @@ Choices the autonomous build made that the owner should check. Answer by number.
   `kits/topdown/CLAUDE.md`. Which release should remove it?
 - **31.** The NES colour-name table stays in `engine/core/gfx/palette.ts` as engine data, though some
   names are themed (`mushroomRed`, `greenPipe`). Rename them later, or keep?
+
+**Engine 0.3**
+
+- **32.** The demo gained an original hero sprite sheet and a palette (with a new `palette` content
+  kind), so the sprite kind is used by real content; the roadmap only said to move existing sprites.
+  Keep?
+- **33.** The CLI keeps the name `pnpm cli` (the roadmap said the name could change). Agents use
+  `pnpm -s cli ... --json` so pnpm's banner stays off stdout. Keep the name?
+- **34.** Beyond the roadmap's command list, the CLI has `help` and `mutants`, and `game.json` gained
+  an optional `view` entry (the module `screenshot` draws with). OK?
+- **35.** `.claude/skills/` is committed while the rest of `.claude/` stays git-ignored. OK?
+- **36.** The scaffold skill covers only the top-down kit, the only kit so far. Should each new kit
+  add its own section to the one skill, or get its own scaffold skill?
+- **37.** The hand-check game (`games/hand-check`) was deleted after the check rather than kept as
+  a fixture, since the demo covers every file it had. OK, or keep a minimal game as a scaffold
+  fixture with its own test?
+- **38.** CI installs Chromium (`playwright install --with-deps chromium` in the workflow) and the
+  screenshot test is required there; locally it skips without a browser. OK?

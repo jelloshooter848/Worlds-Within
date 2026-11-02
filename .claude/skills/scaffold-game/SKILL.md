@@ -1,0 +1,288 @@
+---
+name: scaffold-game
+description: Make a new game in games/<name>/ on the top-down kit (game.json, one room, headless and view entries, a browser page, a run file with golden hashes, agent docs) that passes `pnpm cli validate` and `pnpm cli run`. Use when asked to start a new game, sample game or test game.
+---
+
+# Scaffold a game
+
+Makes `games/<name>/`: a one-room game on the `topdown` kit that passes `validate`, `run` and the
+repo's four checks. Grow it from there (more rooms, songs, sprites) by adding data files, not code.
+Read [`llms.txt`](../../../llms.txt) and the [cheat sheet](../../../docs/CHEATSHEET.md) first;
+`games/demo/` is a complete working example of every file below.
+
+Rules that apply throughout:
+
+- `<name>` is lower-case letters, digits and `-` (`a-z0-9-`, starting with a letter or digit), and is
+  both the folder name and `id` in `game.json`. It must not be `samples` (that folder groups the
+  sample games: put a sample in `games/samples/<name>/` instead, and adjust the paths below).
+- The game imports only `@engine/...`, `@kits/...` and its own files. Never another game.
+- Content (rooms, songs, sprites, palettes) lives in `content/` as data files, never in `.ts` files.
+- Run every CLI command as `pnpm -s cli <command> ... --json` from the repo root (`-s` keeps pnpm's
+  banner off stdout, so stdout is exactly one JSON object). Exit codes: 0 ok, 2 usage, 3 invalid
+  content (the result's `errors` name the file and field), 4 failed check, 5 crash.
+
+## 1. The manifest: `games/<name>/game.json`
+
+```json
+{
+  "id": "<name>",
+  "title": "One line saying what the game is",
+  "kit": "topdown",
+  "content": { "room": ["content/rooms/*.json"] },
+  "start": { "seed": 1 },
+  "headless": "headless.ts",
+  "view": "view.ts"
+}
+```
+
+Every file under `content/` must be claimed by one kind in `content` (else `unclaimed_file`). Add a
+kind's line only when you add its files, for example `"song": ["content/songs/*.json"]`; a glob that
+matches no file is an error. Field details: `docs/reference/schemas.md` (Game manifest).
+
+## 2. One room: `content/rooms/<room>.json` + `content/rooms/<room>.map.txt`
+
+`content/rooms/hall.json` (`id` must equal the file name, `at` is the room's `[x, y]` cell on the
+map grid):
+
+```json
+{ "id": "hall", "at": [0, 0] }
+```
+
+`content/rooms/hall.map.txt`: exactly 11 rows of exactly 16 characters, no trailing spaces. One room
+in the whole game must hold the player start `@`. With one room, close the border with walls `#`
+(a doorway `O` on the border would lead to a room that does not exist).
+
+```text
+################
+#..............#
+#..............#
+#..............#
+#..............#
+#......@.......#
+#..............#
+#..............#
+#..............#
+#..............#
+################
+```
+
+Map characters (the kit's `LEGEND`, `kits/topdown/room.ts`): `#` wall, `.` floor, `:` other floor,
+`B` block, `S` statue, `~` water, `O` open door, `L` locked door, `@` player start, `h` heart,
+`k` key, `c` chest (contents in the JSON's `chests`), `b` bat, `n` knight, `r` spitter; the full
+list is in `kits/topdown/room.ts`. Every room field (`music`, `chests`, `hint`, `dark`...) is in
+`docs/reference/schemas.md` (`room`).
+
+Check the content now, before writing any code:
+
+```sh
+pnpm -s cli validate games/<name> --json
+```
+
+Exit 0 means every file passes. On exit 3, fix each entry of `errors` (it names `file` and the field
+`path`, with `row`/`col` for a map grid) and validate again. `validate` checks content only: it never
+opens the `headless` and `view` modules `game.json` names, so it passes before they exist. `run`
+(step 6) is what proves the entry works.
+
+## 3. The headless entry: `headless.ts`
+
+What `run`, `dump` and `mutants` import (the `headless` path in `game.json`). It gets the content
+already loaded and checked.
+
+```ts
+import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
+import type { HeadlessGame, HeadlessOptions } from '@engine/core/headless';
+import { buildDungeon, roomKind, TopDownWorld, topdownGame } from '@kits/topdown';
+
+const ROOM = roomKind();
+
+/** The world from the loaded content and a seed (the manifest's `start.seed` when none is given). */
+export function createWorld(
+  content: ContentBundle,
+  seed = content.manifest.start.seed,
+  disabledRules: readonly string[] = [],
+): TopDownWorld {
+  const rooms = contentOf(content, ROOM).map((e) => e.value);
+  return new TopDownWorld(buildDungeon(rooms), { seed, disabledRules });
+}
+
+/** The engine's headless contract (`engine/core/headless.ts`), for `pnpm cli run`, `dump` and `mutants`. */
+export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): HeadlessGame {
+  return topdownGame(createWorld(content, seed, opts.disabledRules));
+}
+```
+
+## 4. The view entry: `view.ts`
+
+What `screenshot` imports, and what the browser page draws. Its `step` and `snapshot` must be the
+headless game's. With no sprite files the kit draws flat placeholder colours.
+
+```ts
+import { AssetRegistry } from '@engine/core/assets/registry';
+import type { ContentBundle } from '@engine/core/content/bundle';
+import type { HeadlessOptions } from '@engine/core/headless';
+import type { ViewGame } from '@engine/core/view';
+import { DEFAULT_SHEETS, renderWorld, sheetLookup, topdownGame } from '@kits/topdown';
+import { createWorld } from './headless';
+
+/** The headless game plus drawing (`engine/core/view.ts`), for `pnpm cli screenshot` and `main.ts`. */
+export function createView(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): ViewGame {
+  const world = createWorld(content, seed, opts.disabledRules);
+  const game = topdownGame(world);
+  const sheet = sheetLookup(new AssetRegistry({ default: {} }));
+  let frame = 0;
+  return {
+    step(input) {
+      frame++;
+      game.step(input);
+    },
+    snapshot: () => game.snapshot(),
+    render(r) {
+      r.clear('#000');
+      renderWorld(r, { frame, reduceFlashing: false, sheets: DEFAULT_SHEETS, sheet }, world);
+    },
+  };
+}
+```
+
+## 5. The browser page: `index.html` and `main.ts`
+
+`index.html`: copy `games/demo/index.html` as is (a full-window `<canvas id="screen">` and
+`<script type="module" src="./main.ts">`), changing only the `<title>`. `pnpm build` finds every
+`games/*/index.html` by itself and the launcher links to it.
+
+`main.ts` (the demo's `main.ts` adds audio, sprites and a scene stack):
+
+```ts
+import { loadContent } from '@engine/core/content/bundle';
+import { engineContentKinds } from '@engine/core/content/engine-kinds';
+import { formatErrors } from '@engine/core/content/validate';
+import { GamepadSource } from '@engine/core/input/gamepad';
+import { InputManager } from '@engine/core/input/input-manager';
+import { KeyboardSource } from '@engine/core/input/keyboard';
+import { FixedLoop } from '@engine/core/loop';
+import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
+import { roomKind } from '@kits/topdown';
+import { createView } from './view';
+
+// The game's data files as { path: text } pairs, bundled by Vite (Node tools use readGameFiles).
+const files = import.meta.glob(['./game.json', './content/**/*'], {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+
+function boot(): void {
+  const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
+  if (!canvas) throw new Error('#screen canvas missing');
+  const loaded = loadContent(files, engineContentKinds().register(roomKind()), { root: 'games/<name>/' });
+  if (!loaded.ok) throw new Error(`content errors:\n${formatErrors(loaded.errors)}`);
+  const game = createView(loaded.value, loaded.value.manifest.start.seed);
+
+  const viewport = new Viewport(canvas);
+  const renderer = new CanvasRenderer(viewport.ctx);
+  const input = new InputManager(1);
+  input.addSource('keyboard', new KeyboardSource());
+  if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
+
+  new FixedLoop({
+    step() {
+      input.beginFrame();
+      game.step(input.player(0));
+    },
+    render() {
+      game.render(renderer);
+      viewport.present();
+    },
+  }).start();
+}
+
+boot();
+```
+
+## 6. A run file: `runs/<run>.run.json`
+
+A seeded, scripted headless run with checks. `game` is the game folder relative to the run file.
+Tick 0 is the start; tick `t` is the state after `t` steps. Paths are dotted into the snapshot;
+`pnpm -s cli dump games/<name>/runs/<run>.run.json --tick 0 --json` shows them all (`room`,
+`hero.x`, `hero.y`, `hero.hp`, `hero.room`, `entities`...). A tile is 16 pixels; the hero starts at
+the `@` cell's pixel corner (column 7, row 5 is `x` 112, `y` 80) and walks about 1.5 pixels a tick.
+
+`runs/walk-east.run.json`:
+
+```json
+{
+  "game": "..",
+  "ticks": 60,
+  "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
+  "assertions": [
+    { "tick": 0, "path": "hero.room", "op": "eq", "value": "hall" },
+    { "tick": 60, "path": "hero.x", "op": "gt", "value": 112 }
+  ],
+  "invariants": [
+    { "path": "hero.hp", "op": "gte", "value": 0 },
+    { "path": "hero.dead", "op": "eq", "value": false }
+  ],
+  "hashEvery": 20
+}
+```
+
+Run it:
+
+```sh
+pnpm -s cli run games/<name>/runs/walk-east.run.json --json
+```
+
+Exit 0 with `"passed": true` is a pass. On exit 4, read `failure` (`tick`, `path`, `expected`,
+`actual`) and follow the `debug-failing-run` skill; check values with `dump` at that tick rather than
+guessing. On exit 5 read `error.message` and `error.stack` (usually a mistake in `headless.ts`).
+
+Then write the golden state hashes (`runs/walk-east.hashes.json`), which `pnpm test` compares with
+every run of every run file:
+
+```sh
+WW_UPDATE_GOLDEN=1 pnpm test tests/runs
+```
+
+It plays every run file of every game and rewrites each one's `.hashes.json`, so afterwards
+`git status` should show only your new file changed; if another game's hashes changed, something
+else is wrong (undo that file and investigate). Commit the `.hashes.json` with the run file. Rerun
+that command only after a change meant to change the game's state.
+
+## 7. Agent docs
+
+Every game folder needs these, or `pnpm test` fails (`tests/architecture/agent-docs.test.ts`):
+
+- `games/<name>/CLAUDE.md`: what the game is, its files, how to run and test it, and its imports
+  (model: `games/demo/CLAUDE.md`).
+- `games/<name>/AGENTS.md`: one line pointing at `CLAUDE.md` (copy `games/demo/AGENTS.md`, renaming).
+- `docs/modules/games-<name>.md` (for a sample, `docs/modules/games-samples-<name>.md`): purpose,
+  public entry points, imports allowed, how to test (model: `docs/modules/games-demo.md`).
+- A line in `llms.txt` under `## Modules` linking that page:
+  `- [games/<name>](docs/modules/games-<name>.md): one line saying what it is`.
+
+## 8. Check it
+
+From the repo root, in order:
+
+```sh
+pnpm -s cli validate games/<name> --json                     # exit 0
+pnpm -s cli run games/<name>/runs/walk-east.run.json --json  # exit 0, "passed": true
+pnpm -s cli run games/<name>/runs/walk-east.run.json --json  # same "hashes" as the first run
+pnpm -s cli screenshot games/<name>/runs/walk-east.run.json --tick 30 --json  # optional, needs Chromium
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
+```
+
+Read each command's exit code (`echo $?`, or `exitCode` in a CLI result); piping a command through
+`tail` or `head` hides it. If `pnpm lint` fails only on formatting, run `pnpm format` and lint again.
+Delete `dist/` after `pnpm build`. `.ww-out/` is the CLI's output folder (capped results, replays,
+screenshots); it is git-ignored and safe to leave or delete.
+
+## Common mistakes
+
+- Map rows not exactly 16 characters, or not 11 rows: `validate` names the file, row and column.
+- No `@` anywhere, or more than one: `run` crashes with `no room has a player start (@)`.
+- A room's `id` not matching its file name, or a `.json` room without its `.map.txt`.
+- A file in `content/` that no kind in `game.json` claims (`unclaimed_file`).
+- A `run` file whose `game` is not `".."` when it sits in `games/<name>/runs/`.
+- Forgetting the golden `.hashes.json`, or the docs page and `llms.txt` line: `pnpm test` fails
+  and its message says which.

@@ -163,7 +163,7 @@ _(Done. What was built and the choices made are in [BUILD-LOG.md](BUILD-LOG.md#e
 
 ---
 
-## 0.3 LLM tooling
+## 0.3 LLM tooling (done)
 
 **Goal:** an LLM can build, run and check a game from the command line, and trust what it reads.
 
@@ -211,6 +211,9 @@ _(Done. What was built and the choices made are in [BUILD-LOG.md](BUILD-LOG.md#e
 - Following only `llms.txt`, the cheat sheet and the scaffold skill, an agent can make a new one-room
   game in `games/` that passes `validate` and `run`. (Checked once by hand and recorded in the release
   notes.)
+
+_(Done. What was built, the choices made and the hand check are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-03).)_
 
 **Out of scope:** an MCP server and a visual editor (both after Engine 1.0), new genres.
 

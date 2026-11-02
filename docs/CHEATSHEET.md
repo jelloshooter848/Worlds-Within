@@ -22,6 +22,9 @@ games/<game>/
 Games import from `@engine/...` and `@kits/...`; the engine and kits never import from games. Game
 rules belong in data files, not code.
 
+To make a new one step by step, follow the
+[scaffold-game skill](../.claude/skills/scaffold-game/SKILL.md).
+
 ## Booting a game
 
 Content is loaded the same way everywhere: `{ path: text }` pairs, checked against the kinds.
@@ -170,6 +173,9 @@ Use `pnpm -s cli <command> ... --json`: stdout is then exactly one JSON object
 5. `run` again, then `mutants <run-file>` to see which kit rules the run does not guard, and
    `screenshot <run-file> --tick N` to look at a frame.
 6. Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
+
+When a run fails, the [debug-failing-run skill](../.claude/skills/debug-failing-run/SKILL.md) walks
+these steps in order.
 
 <!-- generated:commands -->
 
