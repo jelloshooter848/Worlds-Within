@@ -1,4 +1,4 @@
-import { loadContent, type ContentBundle } from '@engine/core/content/bundle';
+import { loadContent, type ContentBundle, type LoadOptions } from '@engine/core/content/bundle';
 import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import type { ContentKinds } from '@engine/core/content/kinds';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
@@ -57,10 +57,17 @@ export function gameKinds(
   return { kinds, errors };
 }
 
-/** Checks a game's files (`{ path: text }`, as `readGameFiles` gives them); errors name `root + path`. */
-export function checkGameTexts(texts: Readonly<Record<string, string>>, root = ''): CheckedContent {
+/**
+ * Checks a game's files (`{ path: text }`, as `readGameFiles` gives them); errors name `root + path`.
+ * `opts.checkAll: false` leaves out the kinds' cross-file checks (see `loadContent`).
+ */
+export function checkGameTexts(
+  texts: Readonly<Record<string, string>>,
+  root = '',
+  opts: Pick<LoadOptions, 'checkAll'> = {},
+): CheckedContent {
   const { kinds, errors } = gameKinds(texts[MANIFEST_FILE], root);
-  const result = loadContent(texts, kinds, { root });
+  const result = loadContent(texts, kinds, { ...opts, root });
   if (!result.ok) errors.push(...result.errors);
   return errors.length === 0 && result.ok ? { ok: true, value: result.value } : { ok: false, errors };
 }

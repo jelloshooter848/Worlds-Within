@@ -25,10 +25,13 @@ import { defineCommand, type Outcome } from '../registry';
  * and only then written: an edit that would break the content is refused with exit 3
  * (`invalidContent`, with `errors`) and the file is not touched. After writing, the file is read
  * back from disk and parsed again; `verified: true` says it holds exactly the edited content.
+ * Problems across files (a kind's `checkAll`, such as a door whose partner room has not been
+ * edited yet) never refuse a write: they come back in `crossErrors`, for the next edit to fix.
  *
- * Write result: `{ file, kind, path, pointer, verified, changed, before, after }`, where `path` and
- * `pointer` name the edited place (for an `add` to an array, the new item) and `before` / `after`
- * are the value there (null when absent: `before` of an `add`, `after` of a `remove`).
+ * Write result: `{ file, kind, path, pointer, written, verified, changed, before, after,
+ * crossErrors }`, where `path` and `pointer` name the edited place (for an `add` to an array, the
+ * new item) and `before` / `after` are the value there (null when absent: `before` of an `add`,
+ * `after` of a `remove`).
  */
 
 const fileArg = z
@@ -71,6 +74,7 @@ async function writeAt(
   if (!rendered.ok) return refuse(rendered.errors);
   const errors = file.check(rendered.text, holder.root);
   if (errors.length > 0) return refuse(errors);
+  const crossErrors = file.crossErrors(rendered.text);
 
   writeContentFile(file, rendered.text);
   const reread = rereadContentFile(file);
@@ -79,7 +83,15 @@ async function writeAt(
   const after: JsonValue | null = verb === 'remove' ? null : getAt(onDisk, edit.at);
   return {
     exit: verified ? EXIT.ok : EXIT.failedCheck,
-    result: { ...base, written: true, verified, changed: reread !== file.text, before: edit.before, after },
+    result: {
+      ...base,
+      written: true,
+      verified,
+      changed: reread !== file.text,
+      before: edit.before,
+      after,
+      crossErrors,
+    },
   };
 }
 
@@ -89,7 +101,10 @@ function writeText(result: Record<string, unknown>): string {
   if (errors) return `${where}: refused, the file is unchanged\n${formatErrors(errors)}`;
   const show = (v: unknown) => JSON.stringify(v);
   const state = result.verified === true ? 'verified' : 'NOT verified: the file on disk differs';
-  return `${where}: ${show(result.before)} -> ${show(result.after)} (${state})`;
+  const line = `${where}: ${show(result.before)} -> ${show(result.after)} (${state})`;
+  const cross = (result.crossErrors as ContentError[] | undefined) ?? [];
+  if (cross.length === 0) return line;
+  return `${line}\nthe game is not valid yet (validate fails until another file is edited to match):\n${formatErrors(cross)}`;
 }
 
 export const getCommand = defineCommand({

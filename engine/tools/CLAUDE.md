@@ -112,9 +112,9 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
   is (no rule is tried then), 3 for a bad run file or content.
 - `get <file> <path>`: `{ file, kind, path, pointer, value }`. `set <file> <path> <value>`,
   `add <file> <path> <value>`, `remove <file> <path>`: the editing verbs (below). Result
-  `{ file, kind, path, pointer, written, verified, changed, before, after }`; exit 0 written and
-  verified, 3 refused (with `errors`, file untouched), 4 written but the read-back differs, 2 a
-  bad path or a file that cannot be edited.
+  `{ file, kind, path, pointer, written, verified, changed, before, after, crossErrors }`; exit 0
+  written and verified, 3 refused (with `errors`, file untouched), 4 written but the read-back
+  differs, 2 a bad path or a file that cannot be edited.
 
 ## Editing content
 
@@ -140,9 +140,16 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
   that is there is a usage error: use `set`). `remove` deletes a key or an array item.
 - Before writing, the whole edited file is checked against its kind's schema, and the game is
   checked for errors it did not have before (an `id` that no longer matches the file name, a
-  pattern in `game.json` that now matches nothing, a room whose doors no longer lead anywhere).
-  Any error refuses the write: exit 3 with `errors`, and the file is not touched. Its own content code: `not_writable` (a sprite `.txt` with
+  pattern in `game.json` that now matches nothing). Any such error refuses the write: exit 3 with
+  `errors`, and the file is not touched. Its own content code: `not_writable` (a sprite `.txt` with
   comments below its header, which would be lost, or a name with a space).
+- Problems across files (each kind's `checkAll`, such as the rooms' `invalid_dungeon`: a door that
+  leads nowhere, doors that do not line up) never refuse a write, because changing how rooms
+  connect takes one edit per room and the dungeon is broken in between. The write goes through
+  (exit 0, `verified: true`) and every such problem the game now has is listed in `crossErrors`
+  (empty when there is none). `validate` and `run` still exit 3 on them, so finish the matching
+  edit: to remove the demo's courtyard/guard-room door, `set .../courtyard.map.txt rows.5.15 '#'`
+  then `set .../guard-room.map.txt rows.5.0 '#'`.
 - JSON is written with the repo's Prettier settings (2 spaces, final newline), keeping each
   object's one-line or spread-out look; a grid one row per line with a final newline; a sprite
   `.txt` with its header comments kept. Writing a file back unchanged gives the same text.

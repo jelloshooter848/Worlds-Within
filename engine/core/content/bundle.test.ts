@@ -146,6 +146,9 @@ describe('loadContent', () => {
     const bad = loadContent(files({ 'content/songs/a.json': '{' }), checked);
     expect(bad.errors.map((e) => e.code)).toEqual(['invalid_json']);
     expect(seen).toEqual([]);
+    // checkAll: false leaves it out (the editing verbs report cross-file problems apart).
+    expect(loadContent(files(), checked, { checkAll: false }).ok).toBe(true);
+    expect(seen).toEqual([]);
   });
 });
 

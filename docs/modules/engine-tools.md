@@ -58,7 +58,10 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   pointers (`/frames/down-0/3`); values are JSON, else a string. A write is checked against the
   file's schema (and the game for new errors) first and refused with exit 3 and `errors`, file
   untouched, if it breaks anything; then written Prettier-clean, read back and reported as
-  `{ file, kind, path, pointer, written, verified, changed, before, after }`. Details:
+  `{ file, kind, path, pointer, written, verified, changed, before, after, crossErrors }`.
+  Cross-file problems (`invalid_dungeon`: doors that do not match yet) never refuse a write, so a
+  door pair can be changed one room at a time; they are listed in `crossErrors` and `validate`
+  fails on them until the matching edit is made. Details:
   `engine/tools/CLAUDE.md` (Editing content).
 - Every game's run files are checked by `tests/runs/run-files.test.ts` against committed golden
   hashes (`<name>.hashes.json`; regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).

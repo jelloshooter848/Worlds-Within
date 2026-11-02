@@ -37,6 +37,11 @@ export interface ContentBundle {
 export interface LoadOptions {
   /** Put in front of every path in errors, such as `games/demo/`. */
   root?: string;
+  /**
+   * Run each kind's `checkAll` across its files (default true). The editing verbs turn it off to
+   * tell one file's errors from cross-file ones, which an edit to one file may leave for a moment.
+   */
+  checkAll?: boolean;
 }
 
 /** The entries of one kind, typed by that kind's schema. */
@@ -94,7 +99,8 @@ function normalize(path: string): string {
  * matches nothing (`no_match`), a file two kinds claim (`claimed_twice`) or none does
  * (`unclaimed_file`), two files of one kind with the same name (`duplicate_name`), an `id` that is
  * not the file name (`id_mismatch`), every schema error in every file and, when there is no other
- * error, every problem a kind's `checkAll` finds across its files (code as the kind gives it).
+ * error, every problem a kind's `checkAll` finds across its files (code as the kind gives it;
+ * skipped with `checkAll: false`).
  */
 export function loadContent(
   files: Readonly<Record<string, string>>,
@@ -214,7 +220,8 @@ export function loadContent(
       errors.push(contentError(at(path), [], 'claimed_twice', msg));
     }
   }
-  if (errors.length === 0) errors.push(...checkAcross(manifest, kinds, entries, partsByPath, at));
+  if (errors.length === 0 && opts.checkAll !== false)
+    errors.push(...checkAcross(manifest, kinds, entries, partsByPath, at));
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, value: { manifest, entries }, errors: [] };
 }

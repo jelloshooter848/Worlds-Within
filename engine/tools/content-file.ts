@@ -50,6 +50,12 @@ export interface ContentFile {
   expanded: WeakSet<object>;
   /** Checks a new text: the errors that would make it invalid, empty when it may be written. */
   check(text: string, doc: JsonValue): ContentError[];
+  /**
+   * The cross-file problems (each kind's `checkAll`, such as the top-down rooms' `invalid_dungeon`)
+   * the game has with the new text. They never stop a write: a change to how rooms connect needs
+   * edits to two files, and the game is broken between them. `validate` and `run` still fail on them.
+   */
+  crossErrors(text: string): ContentError[];
   /** The text for an edited tree, or the errors that stop it being written. */
   render(doc: JsonValue): Promise<{ ok: true; text: string } | { ok: false; errors: ContentError[] }>;
   /** Parses a text in this file's form (to read a written file back). */
@@ -106,10 +112,17 @@ export function openContentFile(cwd: string, path: string): ContentFile {
 
   if (abs.endsWith('.run.json')) {
     parseJsonText(file, text);
-    return jsonFile(abs, file, 'run', text, (newText) => {
-      const result = validate(file, JSON.parse(newText), runFileSchema);
-      return result.ok ? [] : result.errors;
-    });
+    return jsonFile(
+      abs,
+      file,
+      'run',
+      text,
+      (newText) => {
+        const result = validate(file, JSON.parse(newText), runFileSchema);
+        return result.ok ? [] : result.errors;
+      },
+      () => [],
+    );
   }
 
   const gameAbs = gameFolderOf(dirname(abs));
@@ -124,20 +137,35 @@ export function openContentFile(cwd: string, path: string): ContentFile {
       `${path} is not a content file: only ${MANIFEST_FILE}, files under content/ and run files can be edited`,
     );
   }
-  const before = checkGameTexts(texts, root);
+  // Cross-file checks are left out here: they are reported by `crossErrors`, never refused.
+  const before = checkGameTexts(texts, root, { checkAll: false });
   const beforeKeys = new Set(before.ok ? [] : before.errors.map(errorKey));
-  /** Errors the edited game would have that it does not have now. */
+  /** Errors the edited game would have that it does not have now (cross-file checks aside). */
   const newGameErrors = (newText: string): ContentError[] => {
-    const after = checkGameTexts({ ...texts, [rel]: newText }, root);
+    const after = checkGameTexts({ ...texts, [rel]: newText }, root, { checkAll: false });
     return after.ok ? [] : after.errors.filter((e) => !beforeKeys.has(errorKey(e)));
+  };
+  /** The cross-file problems of the edited game, once it has no other error. */
+  const crossErrors = (newText: string): ContentError[] => {
+    const edited = { ...texts, [rel]: newText };
+    if (!checkGameTexts(edited, root, { checkAll: false }).ok) return [];
+    const after = checkGameTexts(edited, root);
+    return after.ok ? [] : after.errors;
   };
 
   if (rel === MANIFEST_FILE) {
     parseJsonText(file, text);
-    return jsonFile(abs, file, 'manifest', text, (newText) => {
-      const own = validate(file, JSON.parse(newText), gameManifestSchema);
-      return uniqueErrors([...(own.ok ? [] : own.errors), ...newGameErrors(newText)]);
-    });
+    return jsonFile(
+      abs,
+      file,
+      'manifest',
+      text,
+      (newText) => {
+        const own = validate(file, JSON.parse(newText), gameManifestSchema);
+        return uniqueErrors([...(own.ok ? [] : own.errors), ...newGameErrors(newText)]);
+      },
+      crossErrors,
+    );
   }
 
   const manifest = validate(`${root}${MANIFEST_FILE}`, JSON.parse(texts[MANIFEST_FILE]!), gameManifestSchema);
@@ -174,9 +202,9 @@ export function openContentFile(cwd: string, path: string): ContentFile {
     const check = (newText: string) => uniqueErrors([...own(newText), ...newGameErrors(newText)]);
     if (extensionOf(rel) === '.json') {
       parseJsonText(file, text);
-      return jsonFile(abs, file, kind.name, text, check);
+      return jsonFile(abs, file, kind.name, text, check, crossErrors);
     }
-    return textFile(abs, file, kind, text, check);
+    return textFile(abs, file, kind, text, check, crossErrors);
   }
 
   // A text-grid part of a claimed `.json` file.
@@ -184,7 +212,7 @@ export function openContentFile(cwd: string, path: string): ContentFile {
     const owner = kindOf(p);
     for (const [field, suffix] of Object.entries(owner?.gridParts ?? {})) {
       if (!owner || !/\.json$/i.test(p) || partFileName(p, suffix) !== rel) continue;
-      return gridFile(abs, file, owner.name, text, (newText, doc) => {
+      const check = (newText: string, doc: JsonValue) => {
         const shape = validate(file, doc, gridDocSchema);
         if (!shape.ok) return shape.errors;
         const result = parseContent(
@@ -194,7 +222,8 @@ export function openContentFile(cwd: string, path: string): ContentFile {
           partsOf(owner, p, { field, text: newText }),
         );
         return uniqueErrors([...(result.ok ? [] : result.errors), ...newGameErrors(newText)]);
-      });
+      };
+      return gridFile(abs, file, owner.name, text, check, crossErrors);
     }
   }
   throw new UsageError(
@@ -208,6 +237,7 @@ function jsonFile(
   kind: string,
   text: string,
   check: (text: string) => ContentError[],
+  crossErrors: (text: string) => ContentError[],
 ): ContentFile {
   const { value, expanded } = readJson(text);
   return {
@@ -219,6 +249,7 @@ function jsonFile(
     doc: value,
     expanded,
     check,
+    crossErrors,
     async render(doc) {
       return { ok: true, text: await writeJson(doc, expanded, abs) };
     },
@@ -232,6 +263,7 @@ function gridFile(
   kind: string,
   text: string,
   check: (text: string, doc: JsonValue) => ContentError[],
+  crossErrors: (text: string) => ContentError[],
 ): ContentFile {
   const parse = (t: string): JsonValue => ({ rows: gridRows(t) });
   return {
@@ -243,6 +275,7 @@ function gridFile(
     doc: parse(text),
     expanded: new WeakSet(),
     check,
+    crossErrors,
     render(doc) {
       const shape = validate(file, doc, gridDocSchema);
       if (!shape.ok) return Promise.resolve({ ok: false, errors: shape.errors });
@@ -258,6 +291,7 @@ function textFile(
   kind: ContentKind,
   text: string,
   check: (text: string) => ContentError[],
+  crossErrors: (text: string) => ContentError[],
 ): ContentFile {
   const parse = (t: string): JsonValue => {
     const read = kind.readText!(t);
@@ -273,6 +307,7 @@ function textFile(
     doc: parse(text),
     expanded: new WeakSet(),
     check,
+    crossErrors,
     render(doc) {
       if (!kind.writeText) {
         throw new UsageError(`${kind.name} .txt files cannot be written by the CLI; edit ${file} by hand`);

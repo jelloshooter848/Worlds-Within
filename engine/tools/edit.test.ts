@@ -203,13 +203,13 @@ describe('get, set, add, remove', () => {
     expect((missing.out.error as { message: string }).message).toContain('its keys: id, bpm');
   });
 
-  it('refuses a set that breaks the dungeon across rooms, naming the room files', async () => {
+  it('writes a set that breaks the dungeon across rooms, reporting it in crossErrors', async () => {
     const cwd = demoCopy();
     const before = read(cwd, ROOM);
     const set = await cli(cwd, 'set', ROOM, 'at.0', '2');
-    expect(set.code).toBe(EXIT.invalidContent);
-    expect(set.out).toMatchObject({ written: false, verified: false });
-    expect(set.out.errors).toEqual([
+    expect(set.code).toBe(EXIT.ok);
+    expect(set.out).toMatchObject({ written: true, verified: true, before: 1, after: 2 });
+    expect(set.out.crossErrors).toEqual([
       expect.objectContaining({
         file: 'games/demo/content/rooms/courtyard.map.txt',
         path: 'map.5',
@@ -222,7 +222,36 @@ describe('get, set, add, remove', () => {
         code: 'invalid_dungeon',
       }),
     ]);
+    // validate still fails until the matching edit is made.
+    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.invalidContent);
+    const back = await cli(cwd, 'set', ROOM, 'at.0', '1');
+    expect(back.code).toBe(EXIT.ok);
+    expect(back.out.crossErrors).toEqual([]);
     expect(read(cwd, ROOM)).toBe(before);
+    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+  });
+
+  it('removes a door pair with one set per room, and the game validates after the second', async () => {
+    const cwd = demoCopy();
+    const COURTYARD_MAP = 'games/demo/content/rooms/courtyard.map.txt';
+    const first = await cli(cwd, 'set', COURTYARD_MAP, 'rows.5.15', '#');
+    expect(first.code).toBe(EXIT.ok);
+    expect(first.out).toMatchObject({ written: true, verified: true, before: 'O', after: '#' });
+    expect(first.out.crossErrors).toEqual([expect.objectContaining({ file: MAP, code: 'invalid_dungeon' })]);
+    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.invalidContent);
+    const second = await cli(cwd, 'set', MAP, 'rows.5.0', '#');
+    expect(second.code).toBe(EXIT.ok);
+    expect(second.out).toMatchObject({ written: true, verified: true, crossErrors: [] });
+    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+  });
+
+  it('still refuses a set that breaks a room file itself', async () => {
+    const cwd = demoCopy();
+    const before = read(cwd, MAP);
+    const set = await cli(cwd, 'set', MAP, 'rows.5.0', 'Z');
+    expect(set.code).toBe(EXIT.invalidContent);
+    expect(set.out).toMatchObject({ written: false, verified: false });
+    expect(read(cwd, MAP)).toBe(before);
   });
 
   it('validate and run report a second player start as invalid content, not a crash', async () => {
