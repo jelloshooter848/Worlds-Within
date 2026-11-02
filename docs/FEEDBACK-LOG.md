@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 21.**
+**Next unused number: 32.**
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -12,16 +12,42 @@ its outcome is recorded here (see `CLAUDE.md`).
 | 9   | 0.15 sample set release                               | Accepted                                                                        |
 | 10  | Tower defense split                                   | Accepted                                                                        |
 | 11  | Civilization/hero split; RTS hero unit decided at 0.9 | Accepted                                                                        |
-| 12  | Mini siege mission                                    | Decide later (by 0.11)                                                          |
+| 12  | Mini siege mission                                    | Answered by 23                                                                  |
 | 13  | All four kit samples required for 1.0                 | Yes                                                                             |
 | 14  | Stacking-test game and demo grow into samples         | Yes                                                                             |
-| 15  | Samples' art style                                    | Decide later (by 0.15)                                                          |
+| 15  | Samples' art style                                    | Answered by 22                                                                  |
 | 16  | Engine 1.0 API public or internal                     | Internal                                                                        |
 | 17  | Approve roadmap and merge to master                   | Owner still revising                                                            |
 | 18  | Add numbering rule to CLAUDE.md                       | Yes (done)                                                                      |
 | 19  | Tower-defense prep phase in the mini siege at 0.12    | Accepted                                                                        |
 | 20  | Tag names and PixiJS timing                           | Accepted; tags are always three-part, e.g. engine-v0.5.0, so patch releases fit |
+| 21  | Branch for the autonomous build                       | One build branch, engine/build-0.15; nothing merged to master                   |
+| 22  | Art, music and 3D style                               | NES-style pixel art as text, MML chiptune, procedural low-poly meshes           |
+| 23  | Mini siege mission (answers 12)                       | Sabotaging siege engines                                                        |
+| 24  | Publishing during the build                           | No publishing and no tags during the build                                      |
 
 Items 1–7 came from an earlier review list (decisions such as the stacking-test scope, the split base
 layer, the PixiJS timing and the sim location). All were accepted except item 4, which was a question
 about the world simulation that has since been answered.
+
+## Build decisions to review
+
+Choices the autonomous build made that the owner should check. Answer by number.
+
+**Engine 0.2**
+
+- **25.** The root `CLAUDE.md` was changed by the build: the "code is in `src/`" line now describes
+  `engine/`, `kits/` and `games/`, and a new line describes the dependency table. Keep this wording?
+- **26.** Stricter than the roadmap: a game, kit or backend may not import a sibling in the same layer
+  (DESIGN.md already said "never other games/kits"). Keep?
+- **27.** One exception to the layer table: any `*.test.ts` may import `engine/backends/null`, so kit
+  and game tests run headless. Keep, or should those tests use a local no-op renderer?
+- **28.** Only part of `engine/core` is pure (the list `PURE_CORE` in `config/layers.js`); audio output,
+  saving, browser input, `touch-logic.ts` and `save/settings.ts` are not. `new Date()` is not banned,
+  only `Date.now`. OK?
+- **29.** New top-level tooling folders `build/` (page discovery, launcher) and `config/` (layer table,
+  checker, ESLint plugin, plain JS with `@ts-check`; `tsconfig.json` gained `allowJs`). OK?
+- **30.** The kit still draws (`render.ts`, `hud.ts`, `draw` methods), recorded as debt in
+  `kits/topdown/CLAUDE.md`. Which release should remove it?
+- **31.** The NES colour-name table stays in `engine/core/gfx/palette.ts` as engine data, though some
+  names are themed (`mushroomRed`, `greenPipe`). Rename them later, or keep?

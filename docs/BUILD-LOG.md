@@ -1,5 +1,8 @@
 # Build log
 
+This is the log of the autonomous build of Engine 0.2–0.15 on branch `engine/build-0.15`, for the
+owner's review. Nothing in it is merged to `master`, tagged or published.
+
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
@@ -56,7 +59,59 @@ owner's call).
 - **Fixtures.** Engine and kit test content lives in `*.test.ts` files or `__fixtures__/` folders;
   anything else under `engine/` or `kits/` that looks like content fails the no-content test.
 
-### Verified (Done when)
+### How to try it
+
+```sh
+pnpm install
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm dev                 # opens the launcher at /, which links to games/demo/
+pnpm build && pnpm preview   # the production build: / is the launcher, /games/demo/ the demo
+```
+
+The architecture tests on their own: `pnpm vitest run tests/architecture`.
+
+### Done when
+
+- **Met.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass (31 test files, 354
+  tests). `games/demo` plays as before: the headless demo test passes, and in a browser (`vite
+preview` with Playwright) the launcher lists `games/demo/`, the demo draws its room with no console
+  errors, and the picture changes when the hero is moved with the arrow keys.
+- **Met.** A deliberate bad import fails both ESLint and the dependency test.
+  `tests/architecture/eslint-deps.test.ts` feeds `kits/topdown` importing `games/demo` (relative,
+  through an alias, and as a bare repo path; as import, re-export and `import()`) and `engine/sim`
+  importing a backend to both the shared checker and ESLint, and both reject every one.
+- **Met.** A deliberate `Math.random()` in `kits/` fails lint (`tests/architecture/purity.test.ts`,
+  which also covers `Date.now`, `performance.now` and DOM globals in `engine/sim`).
+- **Met.** `git grep` finds no game content under `engine/` or `kits/` outside test fixtures; the
+  only hits for song or MML words are the audio engine's own type names and doc comments.
+  `tests/architecture/no-content.test.ts` keeps it that way.
+
+### Deviations from the roadmap
+
+- **Stricter sibling rule.** The roadmap lists arrows between layers only. The build also forbids a
+  game, kit or backend from importing a sibling in the same layer (for example one backend importing
+  another), because `docs/DESIGN.md` and the folder `CLAUDE.md` files already say "never other games"
+  and "never other kits".
+- **One exception to the table.** `*.test.ts` files in any layer may import `engine/backends/null`,
+  so kit and game tests can run headless. The roadmap's "kits → core" does not mention it.
+- **Pure core is a list, not all of core.** Only the parts of `engine/core` that kits and the sim use
+  are pure (see Choices made); audio output, saving and browser input stay DOM-based.
+- **Extra folders.** `build/` (page discovery and the launcher script) and `config/` (the layer
+  table, checker and ESLint plugin) are new top-level tooling folders the roadmap does not name.
+
+### Outstanding issues
+
+- The Pages workflow has never run: no tag was pushed and nothing was published, as the owner asked.
+  It will first run on the first release tag.
+- The kit still draws (`kits/topdown` `render.ts`, `hud.ts` and the `draw` methods on entities),
+  against the "kits never draw" rule. This is known debt, recorded in `kits/topdown/CLAUDE.md`, for a
+  later release.
+- Some NES colour names in `engine/core/gfx/palette.ts` are themed (`mushroomRed`, `greenPipe`); kept
+  as engine data for now.
+- The root `CLAUDE.md` was edited by the build (new layout and dependency-table lines); the owner
+  should approve that wording.
+
+### Verified (Done when), as first recorded
 
 - `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass (31 test files, 347 tests).
 - `games/demo` plays as before: the headless demo test passes, and in a browser (`vite preview` with
