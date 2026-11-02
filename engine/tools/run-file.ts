@@ -17,7 +17,8 @@ import { UsageError } from './exit-codes';
  *     "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
  *     "assertions": [{ "tick": 200, "path": "room", "op": "eq", "value": "guard-room" }],
  *     "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
- *     "hashEvery": 50 }
+ *     "hashEvery": 50,
+ *     "disableRules": [] }
  *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
@@ -127,11 +128,23 @@ export const runFileSchema = z
       .min(1)
       .default(60)
       .describe('a state hash every this many ticks (tick 0 and the last tick always get one)'),
+    disableRules: z
+      .array(z.string().min(1))
+      .default([])
+      .describe("kit rules switched off for this run (ids from the kit's rule list; see `mutants`)"),
     replay: replaySchema
       .exactOptional()
       .describe('only in replay files: the source run, its failing check and its hashes'),
   })
   .superRefine((run, ctx) => {
+    run.disableRules.forEach((id, i) => {
+      if (run.disableRules.indexOf(id) !== i)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['disableRules', i],
+          message: `rule "${id}" is listed twice`,
+        });
+    });
     run.assertions.forEach((a, i) => {
       if (a.tick > run.ticks)
         ctx.addIssue({

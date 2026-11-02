@@ -15,7 +15,9 @@ supplies rooms, extra spawn kinds, sheets and its own scene. It reports what hap
 `index.ts`, imported as `@kits/topdown`, re-exports `geometry`, `room` (rooms and the `LEGEND` text
 format), `entity`, `enemies`, `items`, `hero`, `world`, `view`, `render`, `hud`, `frames`, `walker`,
 `person`, `snapshot` (`snapshotWorld`, `topdownGame`: the world as the engine's `HeadlessGame`,
-for `pnpm cli run` and `dump`) and `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
+for `pnpm cli run` and `dump`), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
+with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full adoption in 0.5)
+and `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
 `.map.txt` text grid). `bot.ts` (the scripted test bot) is imported directly by tests.
 
 ## Imports allowed
@@ -29,5 +31,5 @@ for `pnpm cli run` and `dump`) and `schema` (`roomSchema`, `roomKind`: the room 
 ## How to test
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed.

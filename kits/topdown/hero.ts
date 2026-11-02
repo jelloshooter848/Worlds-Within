@@ -158,11 +158,12 @@ export class TdHero {
 
   /**
    * Takes `damage` half hearts, knocked back toward `push`. False when invulnerable or already
-   * down. With the world's no-damage assist on he is still knocked back but keeps his hearts.
+   * down. With the world's no-damage assist on (or the `damage-reduces-hp` rule off) he is still
+   * knocked back but keeps his hearts.
    */
   hurt(world: TopDownWorld, damage: number, push: Dir): boolean {
     if (this.invuln > 0 || this.dying || this.holdT > 0) return false;
-    if (!world.noDamage()) this.hp = Math.max(0, this.hp - damage);
+    if (!world.noDamage() && world.rules.isOn('damage-reduces-hp')) this.hp = Math.max(0, this.hp - damage);
     this.attackT = 0;
     this.useT = 0;
     this.pushT = 0;

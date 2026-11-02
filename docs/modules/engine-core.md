@@ -17,8 +17,10 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `scene.ts`: `Scene`, `SceneStack`.
 - `rng.ts`: `Rng`, the seeded RNG. All randomness in kits and the sim goes through it.
 - `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`;
-  `HeadlessEntry`: `createGame(content, seed)`), `JsonValue` and `canonicalJson` (sorted keys, the
-  text state hashes are made from).
+  `HeadlessEntry`: `createGame(content, seed, opts?)`, `HeadlessOptions` with `disabledRules`),
+  `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
+- `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
+  `unknownRules`). Pure.
 - `gfx/renderer.ts`: the presentation contract (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,

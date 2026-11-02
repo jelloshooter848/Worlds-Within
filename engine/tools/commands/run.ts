@@ -9,7 +9,10 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  * `run <run-file>`: plays a run file headless (seeded, scripted input) and checks its invariants
  * (every tick) and assertions (at their tick). Stops at the first failing tick.
  *
- * Result: `{ run, game, seed, ticks, lastTick, passed, checks: { assertions, invariants },
+ * `--disable-rule <ids>` switches kit rules off (comma-separated ids, on top of the run file's
+ * `disableRules`); an id the kit does not name is a usage error.
+ *
+ * Result: `{ run, game, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
  * failure, failures, hashes: [{ tick, hash }], finalHash }`. `failure` is the first failed check
  * (`{ tick, kind, index, path, op, expected, actual, message }`) or null, and `failures` every
  * check that failed at that tick. A failing run writes a replay file (`replay.ts`) and gives its
@@ -19,18 +22,32 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  * (`failedCheck`) otherwise, 3 (`invalidContent`, with `errors`) when the run file or the game's
  * content breaks its schema.
  */
+/** `--disable-rule a,b` as ids (empty when not given). */
+export function ruleIds(flag: string | undefined): string[] {
+  return (flag ?? '')
+    .split(',')
+    .map((id) => id.trim())
+    .filter((id) => id !== '');
+}
+
 export const runCommand = defineCommand({
   name: 'run',
   summary: 'play a run file headless from its seed and check its assertions and invariants',
   args: z.strictObject({
     runFile: z.string().min(1).describe('the run file, such as games/demo/runs/walk-east.run.json'),
   }),
-  flags: z.strictObject({}),
-  async run({ args }, ctx) {
-    const played = await playRun(ctx.cwd, args.runFile);
+  flags: z.strictObject({
+    disableRule: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("kit rules to switch off, comma-separated ids (see `mutants`), on top of the run file's"),
+  }),
+  async run({ args, flags }, ctx) {
+    const played = await playRun(ctx.cwd, args.runFile, { disableRules: ruleIds(flags.disableRule) });
     if (!played.ok)
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
-    const { loaded, seed, lastTick, hashes, failures } = played.value;
+    const { loaded, seed, disabledRules, lastTick, hashes, failures } = played.value;
     const stored = loaded.run.replay;
     const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
     const passed = failures.length === 0 && !replay?.hashMismatch;
@@ -41,6 +58,7 @@ export const runCommand = defineCommand({
         run: loaded.file,
         game: loaded.gameDir,
         seed,
+        disabledRules,
         ticks: loaded.run.ticks,
         lastTick,
         passed,
@@ -60,6 +78,8 @@ export const runCommand = defineCommand({
     const lines = [
       `${String(result.run)}: ${result.passed ? 'passed' : 'FAILED'} (seed ${String(result.seed)}, ${String(result.lastTick)}/${String(result.ticks)} ticks)`,
     ];
+    const off = result.disabledRules as string[];
+    if (off.length > 0) lines.push(`  rules off: ${off.join(', ')}`);
     for (const f of result.failures as FailedCheck[])
       lines.push(`  tick ${f.tick}: ${f.kind} ${f.index}: ${f.message}`);
     const replay = result.replay as ReplayCheck | null;

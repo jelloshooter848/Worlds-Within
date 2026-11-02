@@ -13,7 +13,10 @@ import {
   type JsonValue,
 } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
+import { unknownRules } from '@engine/core/rules';
+import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
+import { kitRules } from './kits';
 import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile } from './run-file';
 
 /**
@@ -54,6 +57,10 @@ export interface TickHash {
 export interface PlayedRun {
   loaded: LoadedRunFile;
   seed: number;
+  /** The game's kit (`kit` in `game.json`). */
+  kit: string;
+  /** The kit rules switched off (the run file's `disableRules` plus any asked for), in kit order. */
+  disabledRules: string[];
   /** The last tick played: the run's `ticks`, the first failing tick, or the tick asked for. */
   lastTick: number;
   hashes: TickHash[];
@@ -88,15 +95,23 @@ async function importEntry(
   return { ok: true, entry: mod as HeadlessEntry };
 }
 
+export interface PlayOptions {
+  /** Play only this far and make no checks (for `dump`). */
+  untilTick?: number;
+  /**
+   * Kit rules to switch off on top of the run file's `disableRules` (`--disable-rule`, `mutants`).
+   * An id that is not one of the kit's rules is a usage error.
+   */
+  disableRules?: readonly string[];
+}
+
 /**
  * Plays the run file at `runPath` (relative to `cwd`). With `untilTick` it plays only that far and
  * makes no checks (for `dump`); otherwise it plays every tick and stops at the first failing tick.
+ * A rule in the run file's `disableRules` that the game's kit does not name is a content error
+ * (`unknown_rule`, at that entry).
  */
-export async function playRun(
-  cwd: string,
-  runPath: string,
-  opts: { untilTick?: number } = {},
-): Promise<PlayOutcome> {
+export async function playRun(cwd: string, runPath: string, opts: PlayOptions = {}): Promise<PlayOutcome> {
   const runFile = readRunFile(cwd, runPath);
   if (!runFile.ok) return runFile;
   const loaded = runFile.value;
@@ -107,8 +122,32 @@ export async function playRun(
   const imported = await importEntry(cwd, game.dir, content);
   if (!imported.ok) return imported;
 
+  const rules = kitRules(content.manifest.kit);
+  const known = rules.map((r) => r.id).join(', ') || 'none';
+  const badInFile = run.disableRules.flatMap((id, i) =>
+    unknownRules(rules, [id]).length > 0
+      ? [
+          contentError(
+            loaded.file,
+            ['disableRules', i],
+            'unknown_rule',
+            `kit "${content.manifest.kit}" has no rule "${id}" (known: ${known})`,
+          ),
+        ]
+      : [],
+  );
+  if (badInFile.length > 0) return { ok: false, errors: badInFile };
+  const asked = opts.disableRules ?? [];
+  const badAsked = unknownRules(rules, asked);
+  if (badAsked.length > 0)
+    throw new UsageError(
+      `kit "${content.manifest.kit}" has no rule ${badAsked.map((id) => `"${id}"`).join(', ')} (known: ${known})`,
+    );
+  const off = new Set([...run.disableRules, ...asked]);
+  const disabledRules = rules.filter((r) => off.has(r.id)).map((r) => r.id);
+
   const seed = run.seed ?? content.manifest.start.seed;
-  const instance: HeadlessGame = imported.entry.createGame(content, seed);
+  const instance: HeadlessGame = imported.entry.createGame(content, seed, { disabledRules });
   const input = new ScriptedInput(run.input);
   const checking = opts.untilTick === undefined;
   const last = opts.untilTick ?? run.ticks;
@@ -153,6 +192,19 @@ export async function playRun(
     }
     const end = tick === last || failures.length > 0;
     if (tick % run.hashEvery === 0 || end) hashes.push({ tick, hash: stateHash(snapshot) });
-    if (end) return { ok: true, value: { loaded, seed, lastTick: tick, hashes, failures, snapshot } };
+    if (end)
+      return {
+        ok: true,
+        value: {
+          loaded,
+          seed,
+          kit: content.manifest.kit,
+          disabledRules,
+          lastTick: tick,
+          hashes,
+          failures,
+          snapshot,
+        },
+      };
   }
 }

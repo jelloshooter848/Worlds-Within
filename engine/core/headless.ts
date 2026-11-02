@@ -6,7 +6,7 @@ import type { InputFrame } from './input/input-manager';
  * it without a browser, a backend or a clock. A game names the module that exports it in
  * `game.json` (`headless`); the tools load that module by its path at run time.
  *
- *   export function createGame(content: ContentBundle, seed: number): HeadlessGame
+ *   export function createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame
  *
  * The tools step the game once per tick with one input frame and read a snapshot after each step.
  * A snapshot is plain JSON-safe data (objects, arrays, strings, finite numbers, booleans, null):
@@ -28,9 +28,18 @@ export interface HeadlessGame {
   snapshot(): JsonObject;
 }
 
+/** How the tools ask for a game to be set up, beyond its content and seed. */
+export interface HeadlessOptions {
+  /**
+   * Kit rules to switch off (ids from the kit's rule list, `rules.ts`), for mutant checks. A game
+   * passes them to its kit; the tools have already checked the ids against the kit's list.
+   */
+  disabledRules?: readonly string[];
+}
+
 /** What a game's headless module (named by `headless` in `game.json`) exports. */
 export interface HeadlessEntry {
-  createGame(content: ContentBundle, seed: number): HeadlessGame;
+  createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame;
 }
 
 /**

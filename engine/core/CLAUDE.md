@@ -14,6 +14,11 @@ JSON-safe data) and `HeadlessEntry` (`createGame(content, seed)`), which a game'
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 
+`rules.ts` is the named-rule mechanism behind mutant checks: a kit declares its rules with
+`defineRules([{ id, description }])` and builds a `RuleSwitch(rules, disabled)` from the ids a run
+switches off (`HeadlessOptions.disabledRules`, passed by `createGame(content, seed, opts)`); its
+code guards each rule with `isOn(id)`. Unknown ids throw. It is pure (on `PURE_CORE`).
+
 `gfx/renderer.ts` is the presentation contract: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`. Backends implement it; core
 never knows which one is drawing.
@@ -30,7 +35,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas and `content/**`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

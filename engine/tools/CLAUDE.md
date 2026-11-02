@@ -25,11 +25,12 @@ the CLI starts.
 - `game-loader.ts`: `loadGame(cwd, dir)` reads `<dir>/game.json` and its content files with the
   file system (`readGameFiles`) and checks them with the engine's kinds plus the kit's. It never
   imports a game's code.
-- `kits.ts`: `KIT_KINDS`, the content kinds each kit adds, by the `kit` name in `game.json`. Add a
-  line when a kit gets content kinds.
+- `kits.ts`: `KIT_KINDS`, the content kinds each kit adds, and `KIT_RULES` / `kitRules(kit)`, the
+  named rules each kit lets a run switch off (`engine/core/rules.ts`), by the `kit` name in
+  `game.json`. Add a line when a kit gets content kinds or names rules.
 - `run-file.ts`: the run-file schema (`runFileSchema`), `readRunFile(cwd, path)`, the check ops
   (`CHECK_OPS`, `CHECK_OP_MEANINGS`), `valueAt(state, path)` and `failsCheck(state, check)`.
-- `headless-run.ts`: `playRun(cwd, runFile, { untilTick? })` loads the game, imports its headless
+- `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
   plays the ticks and makes the checks; `stateHash(snapshot)`.
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
@@ -42,7 +43,7 @@ the CLI starts.
   how its text becomes a tree and back, and the check a new text must pass before it is written.
 - `json-format.ts`: reads JSON remembering which objects are spread over lines, and writes it back
   through Prettier with the repo's settings, so edits are lint-clean and change little.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add` and `remove`).
 
 ## The contract
@@ -70,8 +71,10 @@ the CLI starts.
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
   is a usage error. Its own content code: `unknown_kit` (at `kit` in `game.json`).
-- `run <runFile>`: plays a run file headless and checks it (below). Result: `{ run, game, seed,
-ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
+- `run <runFile> [--disable-rule <ids>]`: plays a run file headless and checks it (below).
+  `--disable-rule` switches kit rules off (comma-separated ids, on top of the run file's
+  `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, seed,
+disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
 hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
   that failed at that tick. The run stops at the first failing tick and then writes a replay file
@@ -83,6 +86,10 @@ hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, 
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, seed, tick,
 hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
+- `mutants <runFile>`: mutant checks (below). Result: `{ run, game, kit, baseline: { passed,
+failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guarded, weak }`.
+  Exit 0 when the run passes as it is (weak rules are reported, not failed), 4 when it fails as it
+  is (no rule is tried then), 3 for a bad run file or content.
 - `get <file> <path>`: `{ file, kind, path, pointer, value }`. `set <file> <path> <value>`,
   `add <file> <path> <value>`, `remove <file> <path>`: the editing verbs (below). Result
   `{ file, kind, path, pointer, written, verified, changed, before, after }`; exit 0 written and
@@ -135,7 +142,8 @@ hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage 
   "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
   "assertions": [{ "tick": 240, "path": "hero.room", "op": "eq", "value": "guard-room" }],
   "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
-  "hashEvery": 40
+  "hashEvery": 40,
+  "disableRules": []
 }
 ```
 
@@ -150,6 +158,9 @@ hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage 
 - `invariants` (default none): `{ path, op, value }`, checked at every tick, tick 0 included.
 - `hashEvery` (default 60): a state hash at every multiple of it, and always at the last tick
   played.
+- `disableRules` (default none): kit rules switched off for the whole run (ids from the kit's
+  rule list, see Mutant checks). An id the kit does not name is an `unknown_rule` content error at
+  that entry; an id twice is a schema error. Replay files keep the rules that were off.
 - `path`: dotted, into the game's snapshot (`hero.hp`, `entities.0.kind`, `entities.length`). A path
   that is not in the snapshot always fails. The top-down kit's paths are listed in
   `kits/topdown/CLAUDE.md` (Snapshots); `dump` shows them all.
@@ -163,8 +174,22 @@ hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage 
   the state, regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit the files.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
-- A game's headless module (`headless` in `game.json`) exports `createGame(content, seed)`
-  returning a `HeadlessGame` (`engine/core/headless.ts`).
+- A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
+  returning a `HeadlessGame` (`engine/core/headless.ts`); it passes `opts.disabledRules` to its
+  kit.
+
+## Mutant checks
+
+A kit names its rules (`engine/core/rules.ts`: `defineRules`, `RuleSwitch`; the top-down kit's
+are `TOPDOWN_RULES` in `kits/topdown/rules.ts`) and guards the code of each with
+`rules.isOn(id)`. `kits.ts` maps each kit to its list. `pnpm -s cli mutants <run-file> --json`
+plays the run as it is, then once per rule with that rule off. A rule the run fails without is
+`guarded`; one it still passes without is `weak` (text: `weak: does not guard <id>`): the run's
+checks would not notice that rule breaking. Strengthen a weak run with an assertion or invariant
+that the rule decides (walk-east guards `doors-change-room` because it asserts the room it ends
+in). Rules the run file switches off itself are `skipped`. Only a few top-down rules are named in
+Engine 0.3; kits adopt this fully from Engine 0.5. To see one mutant fail:
+`pnpm -s cli run <run-file> --disable-rule <id>`.
 
 ## Replay files
 

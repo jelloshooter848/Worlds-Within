@@ -2,6 +2,7 @@ import { parseCommandLine, wantsJson } from './args';
 import { dumpCommand } from './commands/dump';
 import { addCommand, getCommand, removeCommand, setCommand } from './commands/edit';
 import { helpCommand } from './commands/help';
+import { mutantsCommand } from './commands/mutants';
 import { runCommand } from './commands/run';
 import { validateCommand } from './commands/validate';
 import { EXIT, exitName, UsageError, type ExitCode } from './exit-codes';
@@ -34,6 +35,7 @@ export function defaultRegistry(): Registry {
   registry.add(validateCommand);
   registry.add(runCommand);
   registry.add(dumpCommand);
+  registry.add(mutantsCommand);
   registry.add(getCommand);
   registry.add(setCommand);
   registry.add(addCommand);

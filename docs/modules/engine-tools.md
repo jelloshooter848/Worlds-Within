@@ -7,7 +7,8 @@ Folder: `engine/tools`. Detailed rules: [`engine/tools/CLAUDE.md`](../../engine/
 The command-line tools for agents and people: `pnpm cli <command> [arguments] [flags]`. Today it
 validates a game's content, plays run files headless (seeded scripted input, tick assertions,
 invariants, state hashes), writes replay files for failing runs, dumps the state at a tick and
-edits content files (`get`, `set`, `add`, `remove`, every write checked and verified); screenshots
+edits content files (`get`, `set`, `add`, `remove`, every write checked and verified) and runs
+mutant checks (`mutants`: does a run fail when a kit rule is switched off?); screenshots
 arrive during the rest of Engine 0.3.
 
 ## Public API entry points
@@ -30,6 +31,14 @@ failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` 
   `replay` block (`source`, `failure`, `hashes`). Running it fails at the same tick; `run` also
   compares the stored hashes and reports `replay.hashMismatch: { tick, expected, actual }` for the
   first one that differs. Format: `engine/tools/CLAUDE.md` (Replay files).
+- `pnpm cli run <run-file> --disable-rule <ids>` plays it with kit rules switched off
+  (comma-separated; a run file can also list them in `disableRules`); the result's
+  `disabledRules` names them.
+- `pnpm cli mutants <run-file>`: plays the run as it is, then once per named kit rule with that
+  rule off. `--json` result: `{ run, game, kit, baseline: { passed, failure }, rules: [{ id,
+description, skipped, passed, guarded, failure }], guarded, weak }`; `weak` lists the rules the
+  run still passes without (text: `weak: does not guard <id>`). Exit 0 when the run passes as it
+  is, 4 when it does not. Details: `engine/tools/CLAUDE.md` (Mutant checks).
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, seed, tick, hash, state }`, the whole
   snapshot at tick N.
 - `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,
@@ -52,7 +61,7 @@ failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` 
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
   (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
-  `writeReplay` and `checkReplay` (`replay.ts`).
+  `writeReplay` and `checkReplay` (`replay.ts`), `KIT_RULES` and `kitRules` (`kits.ts`).
 
 Example: `pnpm -s cli validate games/demo --json` prints
 `{"ok":true,"command":"validate","exitCode":0,"game":"games/demo","fileCount":10,"errorCount":0,...}`
@@ -69,6 +78,6 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 Tests sit next to the code and run with `pnpm test`: they call `main` with captured IO and check
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
-invariants, broken run files, replay files and hash mismatches), `edit.test.ts` the editing
+invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes.

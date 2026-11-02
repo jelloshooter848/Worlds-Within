@@ -1,5 +1,6 @@
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { Rng } from '@engine/core/rng';
+import { RuleSwitch } from '@engine/core/rules';
 import {
   DIR_VEC,
   OPPOSITE,
@@ -19,6 +20,7 @@ import { Chest, FloorSwitch, Pickup, PushBlock, TdEnemy, Torch, type TdEntity } 
 import { DEFAULT_ITEMS, Inventory, circleHits, type TdItem } from './items';
 import { Bat, Knight, Projectile, Spitter } from './enemies';
 import { TdHero } from './hero';
+import { TOPDOWN_RULES } from './rules';
 import {
   neighbourCell,
   sideOf,
@@ -162,6 +164,11 @@ export interface TdWorldOptions {
    * (TdEntrance.needs); left out, nothing is found, so every locked door stays shut.
    */
   has?: (secret: string) => boolean;
+  /**
+   * Kit rules switched off (ids from TOPDOWN_RULES, `rules.ts`), for mutant checks. An unknown id
+   * throws. Left out, every rule is on.
+   */
+  disabledRules?: readonly string[];
 }
 
 /**
@@ -217,6 +224,8 @@ export class TopDownWorld {
   readonly has: (secret: string) => boolean;
   /** Pixels a frame of a room slide. */
   readonly slideSpeed: number;
+  /** Which kit rules are on (TOPDOWN_RULES); code guards each with `rules.isOn(id)`. */
+  readonly rules: RuleSwitch;
   /** The shut door the hero is leaning on (one `door-shut` a push). */
   private bumped: string | null = null;
   private readonly states = new Map<string, RoomState>();
@@ -238,6 +247,7 @@ export class TopDownWorld {
     this.swordBeam = opts.swordBeam ?? false;
     this.has = opts.has ?? (() => false);
     this.slideSpeed = opts.slideSpeed ?? SLIDE_SPEED;
+    this.rules = new RuleSwitch(TOPDOWN_RULES, opts.disabledRules);
     const start = dungeon.rooms.get(dungeon.startRoom) as Room;
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
@@ -381,7 +391,7 @@ export class TopDownWorld {
       case 'stairs':
         return false;
       case 'wall':
-        return true;
+        return this.rules.isOn('walls-block-movement');
       case 'cracked':
         return !this.state().blasted.has(`${col},${row}`);
       case 'block':
@@ -475,7 +485,7 @@ export class TopDownWorld {
 
   /** The hero bumped `box`: a locked doorway in it opens if a key is held (both sides of it). */
   tryUnlock(box: Box): boolean {
-    if (this.keys <= 0) return false;
+    if (this.keys <= 0 || !this.rules.isOn('keys-open-locked-doors')) return false;
     const c0 = Math.floor(box.x / TILE);
     const c1 = Math.floor((box.x + box.w - 1) / TILE);
     const r0 = Math.floor(box.y / TILE);
@@ -811,7 +821,7 @@ export class TopDownWorld {
     else if (hero.y > ROOM_H - 12) side = 's';
     // Off an outdoor screen only walking that way (not while sliding along its edge).
     if (side && this.room.wall === 0 && hero.facing !== SIDE_DIR[side]) side = null;
-    if (side) this.slide(side);
+    if (side && this.rules.isOn('doors-change-room')) this.slide(side);
   }
 
   /**

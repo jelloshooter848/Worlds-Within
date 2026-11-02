@@ -4,7 +4,7 @@ The top-down kit: gameplay rules for a room-based action game seen from above. R
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
-`person.ts`), a scripted test bot (`bot.ts`), the world's snapshot for the tools (`snapshot.ts`), sheet helpers (`view.ts`, `frames.ts`) and the room
+`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), sheet helpers (`view.ts`, `frames.ts`) and the room
 file schema (`schema.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
@@ -44,6 +44,20 @@ enemy or pickup kind or else the class name), `enemies` (living count) and `even
 only read the world and stay pure. Adding a field to the snapshot changes every state hash: update
 the golden files (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`) in the same commit.
 
+## Named rules (`rules.ts`)
+
+`TOPDOWN_RULES` names a few of the kit's rules for mutant checks (`engine/core/rules.ts`):
+`walls-block-movement` (`tileSolid`), `doors-change-room` (`leaving`), `damage-reduces-hp`
+(`TdHero.hurt`) and `keys-open-locked-doors` (`tryUnlock`). `TdWorldOptions.disabledRules`
+switches rules off (an unknown id throws) and the code guards each with
+`world.rules.isOn(id)`. A game's headless `createGame(content, seed, opts)` passes
+`opts.disabledRules` on; `pnpm cli mutants <run-file>` then reports the rules a run file does not
+guard. This is only the mechanism and a first few rules: **full adoption (naming every rule the kit
+has) is Engine 0.5.** When you guard a new rule, add it to `TOPDOWN_RULES` with a one-line
+description, keep the guard a single `isOn` check at the place the rule is decided, and test the
+world with it on and off (`rules.test.ts`). Switching rules off never changes a normal run: every
+rule is on by default.
+
 ## Room files (`schema.ts`)
 
 `roomSchema(extraLegend?, wall?)` checks a room file (a `RoomDef` as JSON) and `roomKind(...)` is
@@ -62,5 +76,5 @@ are `wrong_size`. Checks across rooms stay in `buildDungeon`.
 ## Testing
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

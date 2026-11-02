@@ -50,6 +50,8 @@ export function replayOf(played: PlayedRun, cwd: string, replayDir: string): Rec
     assertions: run.assertions.filter((a) => a.tick <= tick),
     invariants: run.invariants,
     hashEvery: run.hashEvery,
+    // The rules that were off (the run file's and any `--disable-rule`), so the replay fails alike.
+    ...(played.disabledRules.length > 0 ? { disableRules: played.disabledRules } : {}),
     replay,
   };
 }
