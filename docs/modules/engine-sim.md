@@ -76,7 +76,9 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   tick (committing any other mission due on the way), delegates an unresolved mission then
   (`timeout`), and under `mission:<id>` applies the outcome's effects, unfreezes the event, stamps
   the commitment and appends a frozen `MissionRecord`. `settleMissions(world)` commits whatever is
-  due now, for callers that step the world themselves. Retrying, replaying, reopening or
+  due by now (commit tick, then id order, the same order `commitMission` uses), for callers that
+  step the world themselves; an overdue mission commits on the next settle and can no longer be
+  resolved (`mission_overdue`). Retrying, replaying, reopening or
   recommitting is refused (`mission_committed`, `mission_resolved`) with a one-line reason and
   changes nothing. Read with `missionsOf(world)` (`open`, `committed`, `record`, `status`). The
   state is the `Missions` component (`MISSION_COMPONENTS`, on the `WorldTime` entity,

@@ -299,6 +299,11 @@ function resolve(
       'mission_resolved',
       `mission "${id}" was already ${open.resolved.resolution} ("${open.resolved.outcome}"); there are no do-overs`,
     );
+  if (world.tick > open.commitTick)
+    return refuse(
+      'mission_overdue',
+      `mission "${id}" was due at tick ${open.commitTick}, the world is at ${world.tick}; it can only commit now`,
+    );
   const picked = pick(open);
   if (isRefused(picked)) return picked;
   const checked = missionResult(open.def, picked.outcome, picked.report);
@@ -349,23 +354,20 @@ export function quitMission(world: World, id: string): ResolveResult {
 export type CommitResult = { ok: true; record: MissionRecord } | MissionRefused;
 
 /**
- * Commit open mission `id`: step the world to its commit tick (committing any other mission that
- * comes due on the way), delegate it then if still unresolved (`timeout`), and at the commit tick,
- * under cause `mission:<id>`, apply its outcome's effects, unfreeze its event, stamp the commitment
- * and append the record. `result`, when given, must be the outcome it was resolved to (or, when it
- * is unresolved, is played). Refused when it is not open, already committed, or overdue (the world
- * stepped past its commit tick without `settleMissions`).
+ * Commit open mission `id`: step the world to its commit tick, settling after every step and once
+ * there ({@link settleMissions}), so `id` and every other mission due by then commit in the same
+ * order a tick-by-tick run gives (commit tick, then id). An unresolved mission is delegated then
+ * (`timeout`); under cause `mission:<id>` its outcome's effects apply, its event unfreezes, the
+ * commitment is stamped and the record appended. `result`, when given, must be the outcome it was
+ * resolved to (or, when it is unresolved, is played). Refused when it is not open or already
+ * committed. An overdue mission (the world stepped past its commit tick unsettled) commits now with
+ * no step; a `result` that would resolve it is refused then (`mission_overdue`).
  */
 export function commitMission(world: World, id: string, result?: MissionResult): CommitResult {
   const stepping = notStepping(world, 'commit a mission');
   if (stepping) return stepping;
-  let open = findOpen(world, id);
+  const open = findOpen(world, id);
   if (isRefused(open)) return open;
-  if (world.tick > open.commitTick)
-    return refuse(
-      'mission_overdue',
-      `mission "${id}" was due at tick ${open.commitTick}, the world is at ${world.tick}`,
-    );
   if (result !== undefined) {
     if (result.mission !== id)
       return refuse('result_mismatch', `the result is for mission "${result.mission}", not "${id}"`);
@@ -381,24 +383,27 @@ export function commitMission(world: World, id: string, result?: MissionResult):
   }
   while (world.tick < open.commitTick) {
     world.step();
-    settleMissions(world, id);
+    settleMissions(world);
   }
-  open = findOpen(world, id) as OpenMission;
-  return commitNow(world, open);
+  settleMissions(world);
+  return { ok: true, record: missionsOf(world).record(id) as MissionRecord };
 }
 
 /**
- * Commit every open mission whose commit tick is now (in id order), delegating unresolved ones
- * (`timeout`). Call it after each `world.step()` when missions may be open and the caller does not
- * commit them itself. Returns the records made.
+ * Commit every open mission whose commit tick has come (`commitTick <= world.tick`), in commit
+ * tick then id order, delegating unresolved ones (`timeout`); one that is overdue (stepped past
+ * unsettled) commits now, still recorded at its commit tick. Call it after each `world.step()`
+ * when missions may be open and the caller does not commit them itself. Returns the records made.
  */
-export function settleMissions(world: World, except?: string): MissionRecord[] {
+export function settleMissions(world: World): MissionRecord[] {
   if (worldInternals(world).stepping())
     throw new Error('settleMissions runs between ticks, not during a step');
   settleOpportunities(world);
+  const due = stateOf(world)
+    .open.filter((m) => m.commitTick <= world.tick)
+    .sort((a, b) => a.commitTick - b.commitTick || (a.def.id < b.def.id ? -1 : 1));
   const records: MissionRecord[] = [];
-  for (const open of stateOf(world).open) {
-    if (open.def.id === except || open.commitTick !== world.tick) continue;
+  for (const open of due) {
     const current = findOpen(world, open.def.id) as OpenMission;
     records.push(commitNow(world, current).record);
   }

@@ -299,10 +299,61 @@ describe('committing a mission', () => {
     expect(records.map((r) => [r.mission, r.resolution, r.commitTick])).toEqual([['raid', 'timeout', 30]]);
   });
 
-  it('refuses a commit once the world has stepped past it unsettled', () => {
+  it('commits an overdue mission late, at its recorded tick, and refuses resolving it then', () => {
     const { world } = opened();
     for (let i = 0; i < 31; i++) world.step();
-    expect(commitMission(world, 'raid')).toMatchObject({ ok: false, code: 'mission_overdue' });
+    expect(delegateMission(world, 'raid')).toMatchObject({ ok: false, code: 'mission_overdue' });
+    expect(playMission(world, 'raid', 'clean')).toMatchObject({ ok: false, code: 'mission_overdue' });
+    expect(commitMission(world, 'raid', { mission: 'raid', outcome: 'clean', effects: [] })).toMatchObject({
+      ok: false,
+      code: 'mission_overdue',
+    });
+    expect(commitMission(world, 'raid')).toMatchObject({
+      ok: true,
+      record: { resolution: 'timeout', commitTick: 30 },
+    });
+    expect(world.tick).toBe(31);
+    expect(timeOf(world).frozen()).toEqual([]);
+  });
+
+  it('settles every overdue mission on the next settle', () => {
+    const { world } = opened();
+    for (let i = 0; i < 40; i++) world.step();
+    expect(settleMissions(world).map((r) => [r.mission, r.commitTick])).toEqual([['raid', 30]]);
+    expect(missionsOf(world).status('raid')).toBe('committed');
+  });
+
+  it('commits missions due on the same tick in id order, live or ticked through', () => {
+    const run = (how: 'alpha' | 'beta' | 'tick'): [string[], string] => {
+      const { world, refs } = siegeWorld(3);
+      for (const id of ['beta', 'alpha']) {
+        const def = {
+          id,
+          title: id,
+          worldTimeCost: 5,
+          play: 'run',
+          onQuit: 'done',
+          outcomes: [{ id: 'done', title: 'Done', effects: [{ type: 'damage', entity: 'ram', amount: 1 }] }],
+        };
+        expect(openMission(world, def, { refs }).ok).toBe(true);
+      }
+      if (how === 'tick')
+        for (let i = 0; i < 5; i++) {
+          world.step();
+          settleMissions(world);
+        }
+      else expect(commitMission(world, how).ok).toBe(true);
+      return [
+        missionsOf(world)
+          .committed()
+          .map((r) => r.mission),
+        hash(world),
+      ];
+    };
+    const ticked = run('tick');
+    expect(ticked[0]).toEqual(['alpha', 'beta']);
+    expect(run('alpha')).toEqual(ticked);
+    expect(run('beta')).toEqual(ticked);
   });
 
   it('lists effects whose entity is gone as skipped', () => {

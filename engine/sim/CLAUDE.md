@@ -228,16 +228,19 @@ commitTick, snapshot }`, `snapshot` being the plain world snapshot a kit's adapt
   (`mission_resolved`). Resolving records the choice (and the kit's report) on the open mission;
   nothing else changes until the commit.
 - **Commit.** `commitMission(world, id, result?)` steps the world up to the commit tick (no steps
-  when it is there already; any other mission due on the way is committed then), delegates the
+  when it is there already), settling after each step and once there, so it and every other mission
+  due by then commit in the same order a tick-by-tick run gives (commit tick, then id); it delegates the
   mission if it is still unresolved (resolution `timeout`), then, under the cause `mission:<id>`:
   applies the outcome's effects in order, unfreezes the event, stamps the commitment
   (`stampCommitment` at the commit tick) and appends a `MissionRecord` `{ mission, outcome,
 effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`. `result`, when
   given, must name the outcome it was resolved to (`result_mismatch`), or is played when it is
-  unresolved. A world stepped past the commit tick without committing is refused
-  (`mission_overdue`): a caller that steps the world itself calls `settleMissions(world)` after
-  each step, which commits every open mission due at that tick (in id order) and returns the
-  records.
+  unresolved. A caller that steps the world itself calls `settleMissions(world)` after each step,
+  which commits every open mission whose commit tick has come (`commitTick <= world.tick`, in
+  commit tick then id order) and returns the records. A mission the world stepped past unsettled
+  is overdue: resolving it (delegate, play, quit, or a `result` handed to `commitMission`) is
+  refused (`mission_overdue`), and the next `settleMissions` or `commitMission` commits it then,
+  without stepping, recorded at its commit tick.
 - **Effects** (data only): `damage` lowers `Health.hp` (not below 0; the death system removes it
   later), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
   `values` into the component. An effect whose entity is gone, a `damage` on an entity without
