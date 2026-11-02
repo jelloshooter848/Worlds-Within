@@ -202,6 +202,50 @@ describe('get, set, add, remove', () => {
     const missing = await cli(cwd, 'get', SONG, 'nope');
     expect((missing.out.error as { message: string }).message).toContain('its keys: id, bpm');
   });
+
+  it('refuses a set that breaks the dungeon across rooms, naming the room files', async () => {
+    const cwd = demoCopy();
+    const before = read(cwd, ROOM);
+    const set = await cli(cwd, 'set', ROOM, 'at.0', '2');
+    expect(set.code).toBe(EXIT.invalidContent);
+    expect(set.out).toMatchObject({ written: false, verified: false });
+    expect(set.out.errors).toEqual([
+      expect.objectContaining({
+        file: 'games/demo/content/rooms/courtyard.map.txt',
+        path: 'map.5',
+        code: 'invalid_dungeon',
+        message: 'room "courtyard": the e door leads nowhere',
+      }),
+      expect.objectContaining({
+        file: 'games/demo/content/rooms/guard-room.map.txt',
+        path: 'map.5',
+        code: 'invalid_dungeon',
+      }),
+    ]);
+    expect(read(cwd, ROOM)).toBe(before);
+  });
+
+  it('validate and run report a second player start as invalid content, not a crash', async () => {
+    const cwd = demoCopy();
+    const rows = read(cwd, MAP).split('\n');
+    rows[3] = '#......@.......#';
+    writeFileSync(join(cwd, MAP), rows.join('\n'));
+    const error = {
+      file: MAP,
+      path: 'map.3',
+      code: 'invalid_dungeon',
+      row: 3,
+      col: 7,
+      line: 4,
+      message: 'rooms "courtyard" and "guard-room" both have a player start',
+    };
+    const validate = await cli(cwd, 'validate', 'games/demo');
+    expect(validate.code).toBe(EXIT.invalidContent);
+    expect(validate.out.errors).toEqual([expect.objectContaining(error)]);
+    const run = await cli(cwd, 'run', RUN);
+    expect(run.code).toBe(EXIT.invalidContent);
+    expect(run.out.errors).toEqual([expect.objectContaining(error)]);
+  });
 });
 
 describe('parsePath', () => {

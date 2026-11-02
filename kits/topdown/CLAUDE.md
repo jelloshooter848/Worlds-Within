@@ -65,7 +65,14 @@ the `room` content kind a game registers on top of `engineContentKinds()`. The m
 sibling text grid (`rooms/hall.json` + `rooms/hall.map.txt`, the kind's `gridParts`): 11 rows of 16
 characters from `LEGEND` plus the game's `extraLegend`. Beyond the shape, the room must pass
 `parseRoom`; its complaints become `invalid_room` errors at the map row they name. Size mistakes
-are `wrong_size`. Checks across rooms stay in `buildDungeon`.
+are `wrong_size`. Checks across rooms (one player start, a map cell each, edge doors that lead to
+a facing door and line up, building doors that pair up) are `checkDungeon(defs, extraLegend?,
+{ wall? })` in `room.ts`, which returns every problem with the room and field it is about;
+`buildDungeon` throws the first. The kind's `checkAll` runs `checkDungeon` over every room file,
+so `validate`, the editing verbs, `run` and `screenshot` report them as `invalid_dungeon` errors
+at the room file (a map row at the `.map.txt` file and line) instead of the game throwing.
+`roomKind(extraLegend, wall, { oneDungeon: false })` leaves that out, for a game whose room files
+make several dungeons.
 
 ## Imports
 

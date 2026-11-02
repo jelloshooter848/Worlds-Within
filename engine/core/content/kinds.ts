@@ -1,6 +1,13 @@
 import type { z } from 'zod';
 import { gridRows } from './text-grid';
-import { contentError, jsonPointer, validate, type ContentError, type ContentResult } from './validate';
+import {
+  contentError,
+  jsonPointer,
+  validate,
+  type ContentError,
+  type ContentResult,
+  type FieldPath,
+} from './validate';
 
 /**
  * Content-file kinds: each kind of content file (a song, a sprite, a room...) names its schema and
@@ -14,6 +21,20 @@ export type LineMap = Readonly<Record<string, number>>;
 
 export type TextReadResult =
   { ok: true; data: unknown; lines?: LineMap } | { ok: false; errors: Omit<ContentError, 'file'>[] };
+
+/**
+ * A problem a kind's {@link ContentKind.checkAll} finds across its files: in the file of the entry
+ * called `name`, at the field `path` (a field kept in a grid part, such as `['map', 3]`, names the
+ * part file and its line).
+ */
+export interface KindIssue {
+  name: string;
+  path: FieldPath;
+  code: string;
+  message: string;
+  row?: number;
+  col?: number;
+}
 
 /** What a kind's `.txt` writer gives: the new text, or why the data has no text form. */
 export type TextWriteResult = { ok: true; text: string } | { ok: false; message: string };
@@ -39,6 +60,12 @@ export interface ContentKind<S extends z.ZodType = z.ZodType> {
    * field of `rooms/hall.json`, and errors in that field name the `.map.txt` file and its line.
    */
   gridParts?: Readonly<Record<string, string>>;
+  /**
+   * Checks across every file of the kind, once each has passed its schema (the loader runs it only
+   * when the game has no other errors): rooms whose doors must line up, one player start. Each
+   * problem names the entry (`name`, the file name) and the field it is about.
+   */
+  checkAll?(entries: readonly { name: string; value: z.output<S> }[]): KindIssue[];
 }
 
 /** A sibling file holding one field of a content file (see {@link ContentKind.gridParts}). */
@@ -156,7 +183,7 @@ function mergeParts(
 }
 
 /** Re-points an error in a part's field at the part file, with the line of the row it names. */
-function inPart(e: ContentError, parts: Readonly<Record<string, ContentPart>>): ContentError {
+export function inPart(e: ContentError, parts: Readonly<Record<string, ContentPart>>): ContentError {
   for (const [field, part] of Object.entries(parts)) {
     const top = jsonPointer([field]);
     if (e.pointer !== top && !e.pointer.startsWith(`${top}/`)) continue;

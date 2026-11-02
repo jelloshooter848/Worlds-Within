@@ -326,57 +326,138 @@ export interface DungeonOptions {
   wall?: number;
 }
 
-export function buildDungeon(
+/**
+ * One problem across rooms (what `buildDungeon` checks beyond each room), at a room and a field of
+ * its file, so the content tools can name the file: `['at']`, `['map', row]` (with `row` and
+ * `col`), `['entrances', i, 'to']`. `room` is left out only when there are no rooms at all.
+ */
+export interface DungeonProblem {
+  room?: string;
+  path: (string | number)[];
+  message: string;
+  row?: number;
+  col?: number;
+}
+
+/** The map cell of a room's first door cell on `side` (doors sit on the border). */
+function doorCell(room: Room, side: Side): { row: number; col: number } {
+  const along = room.doorCells[side]?.[0] ?? 0;
+  if (side === 'n') return { row: 0, col: along };
+  if (side === 's') return { row: ROOM_ROWS - 1, col: along };
+  return { row: along, col: side === 'w' ? 0 : ROOM_COLS - 1 };
+}
+
+/**
+ * Builds the dungeon and collects every problem across rooms instead of stopping at the first:
+ * a room that does not parse, an id or a map cell used twice, no player start or two, building
+ * doors that do not pair up, and edge doors that lead nowhere, meet a wall or do not line up.
+ * Once a room is left out (it does not parse, or repeats an id or a cell), the door checks are
+ * skipped, since they would only report that room's absence. `dungeon` is null on any problem.
+ */
+export function checkDungeon(
   defs: readonly RoomDef[],
   extraLegend: Readonly<Record<string, LegendEntry>> = {},
   opts: DungeonOptions = {},
-): Dungeon {
+): { dungeon: Dungeon | null; problems: DungeonProblem[] } {
+  const problems: DungeonProblem[] = [];
   const rooms = new Map<string, Room>();
   const byCell = new Map<string, Room>();
   let startRoom: string | null = null;
+  let leftOut = false;
   let cols = 0;
   let rows = 0;
   for (const d of defs) {
-    const room = parseRoom(d, extraLegend, opts.wall ?? 1);
-    if (rooms.has(room.id)) throw new Error(`room "${room.id}" is defined twice`);
+    let room: Room;
+    try {
+      room = parseRoom(d, extraLegend, opts.wall ?? 1);
+    } catch (e) {
+      problems.push({ room: d.id, path: [], message: e instanceof Error ? e.message : String(e) });
+      leftOut = true;
+      continue;
+    }
+    if (rooms.has(room.id)) {
+      problems.push({ room: room.id, path: ['id'], message: `room "${room.id}" is defined twice` });
+      leftOut = true;
+      continue;
+    }
     const cell = `${room.gx},${room.gy}`;
-    if (byCell.has(cell))
-      throw new Error(`rooms "${byCell.get(cell)?.id}" and "${room.id}" share cell ${cell}`);
+    const other = byCell.get(cell);
+    if (other) {
+      const message = `rooms "${other.id}" and "${room.id}" share cell ${cell}`;
+      problems.push({ room: room.id, path: ['at'], message });
+      leftOut = true;
+      continue;
+    }
     rooms.set(room.id, room);
     byCell.set(cell, room);
     if (room.start) {
-      if (startRoom) throw new Error(`rooms "${startRoom}" and "${room.id}" both have a player start`);
-      startRoom = room.id;
+      if (startRoom) {
+        const row = room.start.y / TILE;
+        const col = room.start.x / TILE;
+        const message = `rooms "${startRoom}" and "${room.id}" both have a player start`;
+        problems.push({ room: room.id, path: ['map', row], message, row, col });
+      } else startRoom = room.id;
     }
     cols = Math.max(cols, room.gx + 1);
     rows = Math.max(rows, room.gy + 1);
   }
-  if (!startRoom) throw new Error('no room has a player start (@)');
+  if (leftOut) return { dungeon: null, problems };
+  if (!startRoom) {
+    const first = defs[0];
+    const message = 'no room has a player start (@)';
+    problems.push(first ? { room: first.id, path: ['map'], message } : { path: [], message });
+  }
   const entrances = new Map<string, { room: Room; door: TdEntrance }>();
+  const entranceAt = new Map<string, number>();
   for (const room of rooms.values())
-    for (const door of room.entrances) {
-      if (entrances.has(door.id)) throw new Error(`door "${door.id}" is defined twice`);
+    room.entrances.forEach((door, i) => {
+      if (entrances.has(door.id)) {
+        const message = `door "${door.id}" is defined twice`;
+        problems.push({ room: room.id, path: ['entrances', i, 'id'], message });
+        return;
+      }
       entrances.set(door.id, { room, door });
-    }
+      entranceAt.set(door.id, i);
+    });
   for (const { room, door } of entrances.values()) {
     if (door.to.startsWith('@')) continue;
     const other = entrances.get(door.to);
-    if (!other)
-      throw new Error(`room "${room.id}": door "${door.id}" leads to "${door.to}", which is no door`);
-    if (other.door.to !== door.id)
-      throw new Error(`room "${room.id}": door "${door.id}" leads to "${door.to}", which leads elsewhere`);
+    const path = ['entrances', entranceAt.get(door.id) ?? 0, 'to'];
+    if (!other) {
+      const message = `room "${room.id}": door "${door.id}" leads to "${door.to}", which is no door`;
+      problems.push({ room: room.id, path, message });
+    } else if (other.door.to !== door.id) {
+      const message = `room "${room.id}": door "${door.id}" leads to "${door.to}", which leads elsewhere`;
+      problems.push({ room: room.id, path, message });
+    }
   }
   const roomAt = (gx: number, gy: number) => byCell.get(`${gx},${gy}`) ?? null;
   for (const room of rooms.values()) {
     for (const side of Object.keys(room.doors) as Side[]) {
       const [gx, gy] = neighbourCell(room, side);
       const next = roomAt(gx, gy);
-      if (!next) throw new Error(`room "${room.id}": the ${side} door leads nowhere`);
-      if (!next.doors[FACING[side]])
-        throw new Error(`room "${room.id}": the ${side} door meets a wall in room "${next.id}"`);
-      if (String(room.doorCells[side]) !== String(next.doorCells[FACING[side]]))
-        throw new Error(`room "${room.id}": the ${side} door does not line up with room "${next.id}"'s`);
+      let message: string | null = null;
+      if (!next) message = `room "${room.id}": the ${side} door leads nowhere`;
+      else if (!next.doors[FACING[side]])
+        message = `room "${room.id}": the ${side} door meets a wall in room "${next.id}"`;
+      else if (String(room.doorCells[side]) !== String(next.doorCells[FACING[side]]))
+        message = `room "${room.id}": the ${side} door does not line up with room "${next.id}"'s`;
+      if (message === null) continue;
+      const { row, col } = doorCell(room, side);
+      problems.push({ room: room.id, path: ['map', row], message, row, col });
     }
   }
-  return { rooms, startRoom, cols, rows, roomAt, entrances };
+  if (problems.length > 0 || !startRoom) return { dungeon: null, problems };
+  return { dungeon: { rooms, startRoom, cols, rows, roomAt, entrances }, problems };
+}
+
+/** Builds the dungeon; throws with the first problem `checkDungeon` finds. */
+export function buildDungeon(
+  defs: readonly RoomDef[],
+  extraLegend: Readonly<Record<string, LegendEntry>> = {},
+  opts: DungeonOptions = {},
+): Dungeon {
+  const { dungeon, problems } = checkDungeon(defs, extraLegend, opts);
+  if (!dungeon) throw new Error(problems[0]?.message ?? 'the dungeon has problems');
+  return dungeon;
 }

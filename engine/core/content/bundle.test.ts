@@ -117,6 +117,36 @@ describe('loadContent', () => {
     const r = loadContent(files({ 'content/songs/a.json': '{"id":"a"}' }), kinds);
     expect(r.errors.map((e) => e.path)).toEqual(['bpm', 'loop']);
   });
+
+  it("runs a kind's checkAll once every file passes, at the entry's part file and line", () => {
+    const seen: string[][] = [];
+    const checked = engineContentKinds().register({
+      ...NOTE,
+      checkAll(entries) {
+        seen.push(entries.map((e) => e.name));
+        return [{ name: 'n', path: ['grid', 1], code: 'clash', message: 'n clashes', row: 1, col: 0 }];
+      },
+    } satisfies ContentKind);
+    const r = loadContent(files(), checked, { root: 'g/' });
+    expect(seen).toEqual([['n']]);
+    expect(r.errors).toEqual([
+      {
+        file: 'g/content/notes/deep/n.grid.txt',
+        path: 'grid.1',
+        pointer: '/grid/1',
+        message: 'n clashes',
+        code: 'clash',
+        row: 1,
+        col: 0,
+        line: 3,
+      },
+    ]);
+    // With another error in the game, checkAll is not run (it would only see part of the files).
+    seen.length = 0;
+    const bad = loadContent(files({ 'content/songs/a.json': '{' }), checked);
+    expect(bad.errors.map((e) => e.code)).toEqual(['invalid_json']);
+    expect(seen).toEqual([]);
+  });
 });
 
 describe('globs and names', () => {

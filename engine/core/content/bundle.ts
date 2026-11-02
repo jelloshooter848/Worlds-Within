@@ -1,5 +1,12 @@
 import type { z } from 'zod';
-import { partFileName, parseContent, type ContentKind, type ContentKinds, type ContentPart } from './kinds';
+import {
+  inPart,
+  partFileName,
+  parseContent,
+  type ContentKind,
+  type ContentKinds,
+  type ContentPart,
+} from './kinds';
 import { gameManifestSchema, MANIFEST_FILE, type GameManifest } from './manifest';
 import { contentError, validate, type ContentError, type ContentResult } from './validate';
 
@@ -86,7 +93,8 @@ function normalize(path: string): string {
  * missing or broken `game.json`, a kind the registry does not know (`unknown_kind`), a pattern that
  * matches nothing (`no_match`), a file two kinds claim (`claimed_twice`) or none does
  * (`unclaimed_file`), two files of one kind with the same name (`duplicate_name`), an `id` that is
- * not the file name (`id_mismatch`), and every schema error in every file.
+ * not the file name (`id_mismatch`), every schema error in every file and, when there is no other
+ * error, every problem a kind's `checkAll` finds across its files (code as the kind gives it).
  */
 export function loadContent(
   files: Readonly<Record<string, string>>,
@@ -124,6 +132,8 @@ export function loadContent(
   /** Part files (such as `.map.txt`) belonging to a claimed file. */
   const partOf = new Set<string>();
   const entries: ContentEntry[] = [];
+  /** The grid parts read with each claimed file, by path. */
+  const partsByPath = new Map<string, Readonly<Record<string, ContentPart>>>();
 
   for (const [kindName, patterns] of Object.entries(manifest.content)) {
     const kind = kinds.get(kindName);
@@ -167,6 +177,7 @@ export function loadContent(
         partOf.add(partPath);
         parts[field] = { file: at(partPath), text };
       }
+      partsByPath.set(path, parts);
       const result = parseContent(kind, at(path), texts.get(path)!, parts);
       if (!result.ok) {
         errors.push(...result.errors);
@@ -203,6 +214,33 @@ export function loadContent(
       errors.push(contentError(at(path), [], 'claimed_twice', msg));
     }
   }
+  if (errors.length === 0) errors.push(...checkAcross(manifest, kinds, entries, partsByPath, at));
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, value: { manifest, entries }, errors: [] };
+}
+
+/** Every kind's `checkAll` over its entries, as errors at the entry's file (or grid part) and field. */
+function checkAcross(
+  manifest: GameManifest,
+  kinds: ContentKinds,
+  entries: readonly ContentEntry[],
+  partsByPath: ReadonlyMap<string, Readonly<Record<string, ContentPart>>>,
+  at: (path: string) => string,
+): ContentError[] {
+  const errors: ContentError[] = [];
+  for (const kindName of Object.keys(manifest.content)) {
+    const kind = kinds.get(kindName);
+    if (!kind?.checkAll) continue;
+    const mine = entries.filter((e) => e.kind === kindName);
+    if (mine.length === 0) continue;
+    for (const issue of kind.checkAll(mine)) {
+      const entry = mine.find((e) => e.name === issue.name) ?? mine[0]!;
+      const extra: Pick<ContentError, 'row' | 'col'> = {};
+      if (issue.row !== undefined) extra.row = issue.row;
+      if (issue.col !== undefined) extra.col = issue.col;
+      const error = contentError(at(entry.file), issue.path, issue.code, issue.message, extra);
+      errors.push(inPart(error, partsByPath.get(entry.file) ?? {}));
+    }
+  }
+  return errors;
 }

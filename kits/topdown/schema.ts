@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ContentKind } from '@engine/core/content/kinds';
+import type { ContentKind, KindIssue } from '@engine/core/content/kinds';
 import { addGridIssues, gridProblems } from '@engine/core/content/text-grid';
 import { DIRS, ROOM_COLS, type Dir, ROOM_ROWS } from './geometry';
-import { LEGEND, parseRoom, type LegendEntry, type RoomDef } from './room';
+import { checkDungeon, LEGEND, parseRoom, type LegendEntry, type RoomDef } from './room';
 
 /**
  * Room files: a {@link RoomDef} as JSON, with its map either inline (`"map": [...]`) or, as games
@@ -16,8 +16,10 @@ import { LEGEND, parseRoom, type LegendEntry, type RoomDef } from './room';
  *
  * Beyond the shape, the room must parse as the kit reads it (`parseRoom`): doors on edges, a solid
  * border, one chest item per chest and so on. Those problems are `invalid_room` errors, at the map
- * row they name when there is one. Checks across rooms (doors that line up, one player start)
- * belong to `buildDungeon`.
+ * row they name when there is one. Checks across rooms (doors that line up, one player start) are
+ * `buildDungeon`'s (`checkDungeon`): the kind's `checkAll` runs them over every room file once
+ * each passes, as `invalid_dungeon` errors at the room file and field they are about (a map row
+ * names the `.map.txt` file and its line).
  */
 
 const cond = z.enum(['clear', 'plates', 'switches', 'torches']);
@@ -100,15 +102,42 @@ export function roomSchema(
     });
 }
 
+export interface RoomKindOptions {
+  /**
+   * The room files make one dungeon (the default): `checkAll` runs `buildDungeon`'s checks over
+   * them. Set false for a game whose room files make several dungeons and that checks each itself.
+   */
+  oneDungeon?: boolean;
+}
+
 /** The `room` content kind: JSON with its `map` in a sibling `.map.txt` text grid (or inline). */
 export function roomKind(
   extraLegend: Readonly<Record<string, LegendEntry>> = {},
   wall = 1,
+  opts: RoomKindOptions = {},
 ): ContentKind<z.ZodType<RoomDef>> {
-  return {
+  const kind: ContentKind<z.ZodType<RoomDef>> = {
     name: 'room',
     description: 'A top-down room: id, map cell, music, chests and an 11x16 map grid of the kit legend',
     schema: roomSchema(extraLegend, wall),
     gridParts: { map: '.map.txt' },
   };
+  if (opts.oneDungeon === false) return kind;
+  kind.checkAll = (entries) =>
+    checkDungeon(
+      entries.map((e) => e.value),
+      extraLegend,
+      { wall },
+    ).problems.map((p) => {
+      const issue: KindIssue = {
+        name: p.room ?? '',
+        path: p.path,
+        code: 'invalid_dungeon',
+        message: p.message,
+      };
+      if (p.row !== undefined) issue.row = p.row;
+      if (p.col !== undefined) issue.col = p.col;
+      return issue;
+    });
+  return kind;
 }

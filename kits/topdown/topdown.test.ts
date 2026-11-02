@@ -4,7 +4,7 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import { NullRenderer } from '@engine/backends/null';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { buildDungeon, parseRoom, type RoomDef } from './room';
+import { buildDungeon, checkDungeon, parseRoom, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
 import { Pickup, PushBlock, ENEMY_INVULN, FloorSwitch, Torch } from './entity';
 import { Rock, SPIT_WINDUP, ROCK_SPEED, type Bat, type Knight, type Spitter } from './enemies';
@@ -167,6 +167,42 @@ describe('top-down kit: rooms from text', () => {
     const ok = buildDungeon([a, room('b', [1, 0], map([[0, 5, 'O']]))]);
     expect(ok.roomAt(1, 0)?.id).toBe('b');
     expect([ok.cols, ok.rows]).toEqual([2, 1]);
+  });
+
+  it('collects every problem across rooms with the room and field each is about', () => {
+    const a = room(
+      'a',
+      [0, 0],
+      map([
+        [7, 5, '@'],
+        [15, 5, 'O'],
+      ]),
+    );
+    const twoStarts = checkDungeon([
+      a,
+      room(
+        'b',
+        [1, 0],
+        map([
+          [3, 2, '@'],
+          [0, 5, 'O'],
+        ]),
+      ),
+    ]);
+    expect(twoStarts.dungeon).toBeNull();
+    expect(twoStarts.problems).toEqual([
+      { room: 'b', path: ['map', 2], row: 2, col: 3, message: 'rooms "a" and "b" both have a player start' },
+    ]);
+    const nowhere = checkDungeon([a, room('b', [2, 0], map([[0, 5, 'O']]))]);
+    expect(nowhere.problems.map((p) => [p.room, p.path, p.row, p.col])).toEqual([
+      ['a', ['map', 5], 5, 15],
+      ['b', ['map', 5], 5, 0],
+    ]);
+    const shared = checkDungeon([a, room('b', [0, 0], EMPTY)]);
+    expect(shared.problems).toEqual([
+      { room: 'b', path: ['at'], message: 'rooms "a" and "b" share cell 0,0' },
+    ]);
+    expect(checkDungeon([a, room('b', [1, 0], map([[0, 5, 'O']]))]).problems).toEqual([]);
   });
 });
 

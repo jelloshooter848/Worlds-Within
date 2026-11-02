@@ -83,7 +83,9 @@ the CLI starts.
 - `validate <game>`: checks `game.json` and every content file. Cheap: starts nothing. Result:
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
-  is a usage error. Its own content code: `unknown_kit` (at `kit` in `game.json`).
+  is a usage error. Its own content code: `unknown_kit` (at `kit` in `game.json`). It also runs
+  each kind's checks across files (`checkAll`), such as the top-down rooms' `invalid_dungeon`, so
+  content it passes is content the game can build.
 - `run <runFile> [--disable-rule <ids>]`: plays a run file headless and checks it (below).
   `--disable-rule` switches kit rules off (comma-separated ids, on top of the run file's
   `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, seed,
@@ -138,8 +140,8 @@ failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guar
   that is there is a usage error: use `set`). `remove` deletes a key or an array item.
 - Before writing, the whole edited file is checked against its kind's schema, and the game is
   checked for errors it did not have before (an `id` that no longer matches the file name, a
-  pattern in `game.json` that now matches nothing). Any error refuses the write: exit 3 with
-  `errors`, and the file is not touched. Its own content code: `not_writable` (a sprite `.txt` with
+  pattern in `game.json` that now matches nothing, a room whose doors no longer lead anywhere).
+  Any error refuses the write: exit 3 with `errors`, and the file is not touched. Its own content code: `not_writable` (a sprite `.txt` with
   comments below its header, which would be lost, or a name with a space).
 - JSON is written with the repo's Prettier settings (2 spaces, final newline), keeping each
   object's one-line or spread-out look; a grid one row per line with a final newline; a sprite

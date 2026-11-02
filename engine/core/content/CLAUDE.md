@@ -14,7 +14,7 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   It rejects ragged rows (`ragged_row`), characters missing from the legend (`unknown_char`) and
   empty grids (`empty_grid`), each with a 0-based `row` and `col`. `addGridIssues` does the same
   check inside a Zod `superRefine`, so a schema reports grid problems at `<field>.<row>`.
-- `kinds.ts`: a content-file kind is `{ name, description, schema, readText?, writeText?, gridParts? }`
+- `kinds.ts`: a content-file kind is `{ name, description, schema, readText?, writeText?, gridParts?, checkAll? }`
   (`writeText` writes checked data back in the `.txt` form, for the CLI's editing verbs). Give every
   schema field a `.describe('...')`: it is the field's line in the generated schema reference
   (`docs/reference/schemas.md`, `pnpm docs:gen`), and a new kind needs an example in
@@ -24,6 +24,10 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `ContentKinds` is a registry by name. `gridParts` (field -> suffix, such as
   `{ map: '.map.txt' }`) keeps a field of a `.json` file in a sibling text grid; `parseContent`
   takes those parts' texts, and an error in the field names the part file and its line.
+  `checkAll(entries)` checks across every file of the kind (the top-down rooms' doors and player
+  start): it returns `KindIssue`s (`{ name, path, code, message, row?, col? }`, `name` being the
+  entry's file name), and `loadContent` runs it only when the game has no other error, turning
+  each into a `ContentError` at that entry's file, or its part file and line.
 - `manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json`: `id`, `title?`, `kit`,
   `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`) and
   `headless` (the module that boots the game headless) and `view?` (the module that draws it, for
