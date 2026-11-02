@@ -444,7 +444,9 @@ orders.
 **Out of scope:** missions, other genres.
 
 **Decided:** Canvas2D stays until this release; the benchmark above decides whether PixiJS comes in
-for this view.
+for this view. _(Measured in T3, item 133: Canvas2D holds 60 fps at the 500-unit target at zoom 0.5, 1
+and 2, so PixiJS does not come in and stays in "Later". Numbers in
+[BUILD-LOG.md](BUILD-LOG.md#t3-the-rendering-benchmark).)_
 
 **Decisions needed first:** Whether the kit needs a "hero" unit type (a named unit the player controls
 directly) as well as squads. _(Decided: item 121, yes: a hero is an ordinary unit entity with a
@@ -759,7 +761,7 @@ whose only difference is that hero's fate.
   the editor, or both on the same game. It builds on the 0.14 debugger.
 - **An MCP server.** A thin wrapper over the CLI, generated from the same schema. The CLI stays the
   real interface.
-- More backends: PixiJS (if not adopted at 0.9), isometric.
+- More backends: PixiJS (not adopted at 0.9: the T3 benchmark found Canvas2D fast enough), isometric.
 - More kits and modes: a true 3D kit (Mario 64-like), a shmup, a rail shooter, a racer. Each new kit
   comes with its own sample game.
 - A public API with a stability promise to outside developers, a package format for third-party

@@ -145,6 +145,96 @@ needs the RTS systems, not the village's haul, build and patrol. A scenario may 
 system set (for example `"systems": "rts"`), defaulting to today's set, so the village and its
 hashes do not change.
 
+### T3: the rendering benchmark
+
+**Decision (item 133): Canvas2D holds 60 fps at the 500-unit target, so PixiJS is not added.** It
+stays in the roadmap's "Later", T4 (the PixiJS backend) is skipped, and `package.json` and
+`pnpm-lock.yaml` do not change. Against decision 6 (items 129-130): every 500-unit case at zoom
+0.5, 1 and 2 has a 95th-percentile frame time of at most 14.3 ms (budget 16.7 ms), including the
+worst layout with all 500 units in view. The 1000-unit stretch is missed in one case, all 1000
+units in view at zoom 0.5 (p95 about 33 ms, 52-58 fps), and is borderline when the 1000 units are
+spread over the map at zoom 0.5 (p95 17.1 and 14.8 ms in the two runs); PixiJS held the stretch
+everywhere (p95 at most 15.3 ms). The RTS sample's picture size, left to T3 by decision 6, is
+**320 x 240**.
+
+**What was built.** `tests/bench/rts-render/`, outside the CI test run (only its `scene.test.ts`,
+a quick Node check of the synthetic scene, runs in `pnpm test`):
+
+- `scene.ts`: a seeded synthetic scene. A 128 x 128 map of 16 px tiles (2048 x 2048 px, larger than
+  the screen), N units walking in eight directions (a new direction every 30-89 ticks), each drawn
+  as three entities (selection ring, animated unit with a two-frame walk cycle per facing and
+  `flipFacing` for the left-hand ones, health bar), from one text-pixel-art sheet and one
+  `canvas2d` skin. The camera pans round the map (one lap in 600 frames) at a fixed zoom. Two
+  layouts: `spread` scatters the units over the whole map (a few dozen in view), `crowd` keeps them
+  all in a 640 x 480 box that travels with the camera (all of them in view at zoom 0.5: a battle on
+  screen).
+- `page.ts` and `index.html`: the page. Canvas2D is the engine's own `SkinnedCanvasPresenter` on a
+  `Viewport` (whole-number scale to the page), as a game's page uses them. The PixiJS column draws
+  the same frames with the same skin (`resolveSkinFrame`), sheet and camera (`CameraFollower`), one
+  `Sprite` per entity and the map cached as one texture, scaled up by the page (CSS, pixelated). It
+  runs only when the runner loads a PixiJS v8 global build (`pixi.min.js`) into the page; nothing
+  in the repo imports `pixi.js`.
+- `run.ts`: builds the page with Vite into a temp folder, serves it, opens it in headless Chromium
+  through Playwright (window 1280 x 960, the picture scaled 4x) with vsync and the frame-rate limit
+  off, and per case draws 60 warm-up frames and then 600 measured ones. **Frame time** is the time
+  between animation frames, so it covers the whole frame (making the scene's frame, drawing, and
+  Chromium's raster and compositing); fps is 1000 over its mean. It also prints the time inside the
+  draw call alone. PASS is p95 at most 16.7 ms. `--shots <folder>` saves each case's last picture
+  (Canvas2D and PixiJS were checked to draw the same picture). Without a browser it says why and
+  exits 0.
+
+**How to rerun.**
+
+```sh
+pnpm exec tsx tests/bench/rts-render/run.ts                # Canvas2D, 2 layouts x 500/1000 units x zoom 0.5/1/2
+npm install --prefix /tmp/pixi --no-save pixi.js@8.22.0    # PixiJS column: scratch install, outside the repo
+pnpm exec tsx tests/bench/rts-render/run.ts --pixi /tmp/pixi/node_modules/pixi.js/dist/pixi.min.js
+```
+
+Options: `--frames`, `--warmup`, `--units 500,1000`, `--zooms 0.5,1,2`, `--layouts spread,crowd`,
+`--json`, `--shots <folder>`; `WW_BENCH_PIXI` may name the PixiJS file instead of `--pixi`.
+
+**Environment.** The build container: 4 vCPU Intel Xeon @ 2.10 GHz, 15 GB RAM, Linux, no GPU.
+Headless Chromium 153.0.8010.12 (Playwright 1.63.0), launched with `--enable-unsafe-swiftshader`,
+`--disable-gpu-vsync` and `--disable-frame-rate-limit`. WebGL reports "ANGLE (Google, Vulkan 1.3.0
+(SwiftShader Device (Subzero)), SwiftShader driver)": **everything is software rendering**,
+Canvas2D rasterised by Skia on the CPU and PixiJS's WebGL by SwiftShader on the CPU. A real GPU
+should make both faster, PixiJS more so; the decision only needs Canvas2D to pass, which it does
+here without one. PixiJS 8.22.0 (released 2026-10-01), from a scratch install outside the repo.
+Timer resolution in the page is 0.1 ms.
+
+**Numbers** (p95 frame time and fps, two full runs, "run 1 / run 2"):
+
+| Layout | Units | Zoom | Canvas2D p95 (ms) | Canvas2D fps | PixiJS p95 (ms) | PixiJS fps |
+| ------ | ----- | ---- | ----------------- | ------------ | --------------- | ---------- |
+| spread | 500   | 0.5  | 9.8 / 10.3        | 169 / 169    | 7.7 / 7.7       | 169 / 178  |
+| spread | 500   | 1    | 5.7 / 7.1         | 213 / 228    | 8.1 / 6.6       | 160 / 197  |
+| spread | 500   | 2    | 9.5 / 9.2         | 171 / 175    | 7.7 / 7.1       | 164 / 186  |
+| spread | 1000  | 0.5  | 17.1 / 14.8       | 99 / 110     | 10.2 / 9.2      | 126 / 141  |
+| spread | 1000  | 1    | 10.0 / 8.8        | 152 / 159    | 9.9 / 9.0       | 128 / 144  |
+| spread | 1000  | 2    | 15.2 / 14.5       | 98 / 107     | 9.3 / 8.6       | 139 / 148  |
+| crowd  | 500   | 0.5  | 13.0 / 14.3       | 116 / 114    | 10.3 / 10.3     | 124 / 123  |
+| crowd  | 500   | 1    | 7.4 / 7.9         | 181 / 191    | 10.0 / 9.4      | 133 / 140  |
+| crowd  | 500   | 2    | 11.1 / 9.7        | 149 / 175    | 9.6 / 9.3       | 138 / 143  |
+| crowd  | 1000  | 0.5  | 33.6 / 33.3       | 52 / 58      | 15.3 / 15.3     | 81 / 84    |
+| crowd  | 1000  | 1    | 14.4 / 15.2       | 110 / 111    | 13.6 / 12.5     | 93 / 101   |
+| crowd  | 1000  | 2    | 15.9 / 15.7       | 97 / 103     | 12.4 / 11.9     | 106 / 109  |
+
+What the numbers say:
+
+- Canvas2D's draw call alone is 2-5 ms at 500 units (p50), 12-14 ms with 1000 units in view at
+  zoom 0.5; PixiJS's is 1-2 ms throughout, but its software WebGL adds about 4-5 ms a frame after
+  the call, so at 500 units the two are close, and at zoom 1 Canvas2D gives more fps.
+- Zoom 1 is Canvas2D's cheapest: at 0.5 and 2 every sprite and the map copy are scaled
+  (`drawImage` with a scale), and at 0.5 the most is in view.
+- The presenter draws every entity, in view or not (no culling); at zoom 2 most of the 1000 units
+  are off screen and still cost about 10 ms p95. Skipping entities outside the view is the first
+  thing to try if a later RTS view needs more headroom (not done here: the target is met, and the
+  presenter's behaviour is out of T3's scope).
+- The margin at the target is about 15% in the worst case (p95 14.3 ms, 500 units in view at zoom
+  0.5). `kits/rts` (T10) will draw a few more things (buildings, the selection box, a HUD); if the
+  sample's own numbers come close to the budget, culling (above) comes before a new backend.
+
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,

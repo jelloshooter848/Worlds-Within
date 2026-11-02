@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 133.** (Last used: 132.)
+**Next unused number: 134.** (Last used: 133.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -414,3 +414,12 @@ units, target }`), typed and validated in `engine/core` (the layer both sim and 
 - **132.** Following 118: a scenario may name an engine system set (such as `"systems": "rts"`),
   defaulting to the 0.8 set (haul, build, patrol), so world runs can play RTS battles and the
   village's hashes do not change. OK?
+
+**Engine 0.9 T3, the rendering benchmark** (numbers in `docs/BUILD-LOG.md`, Engine 0.9, T3)
+
+- **133.** Under 129 and 130, Canvas2D holds the 500-unit target at every zoom (worst p95 14.3 ms,
+  with all 500 units in view at zoom 0.5), so PixiJS is not added and stays in the roadmap's
+  "Later", and T4 (the PixiJS backend) is skipped. The 1000 stretch misses only with all 1000 in
+  view at zoom 0.5 (p95 about 33 ms). The RTS sample's picture size is 320 x 240. The measured
+  machine renders in software (no GPU in the container), so a real GPU should only do better.
+  OK?

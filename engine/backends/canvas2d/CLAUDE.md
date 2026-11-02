@@ -81,6 +81,21 @@ game, as `threeDisplay` takes them) on that same renderer (the display's `presen
 resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `games/platformer-lab/main.ts`).
 
+## Performance: the RTS benchmark (Engine 0.9 T3)
+
+`tests/bench/rts-render/` measures this presenter in headless Chromium (Playwright): a synthetic
+RTS scene (128 x 128 map, 500 and 1000 eight-way units with rings and health bars, 320 x 240
+picture, zoom 0.5, 1 and 2, panning). It is not part of `pnpm test`. Rerun it with
+
+    pnpm exec tsx tests/bench/rts-render/run.ts
+
+(`--pixi <pixi.min.js>` adds a PixiJS v8 column from a scratch install outside the repo; the
+options, numbers and the decision are in `docs/BUILD-LOG.md`, Engine 0.9, T3). Canvas2D held the
+500-unit target (p95 frame time at most 16.7 ms), so PixiJS was not added. The presenter draws
+every entity, in view or not; if a view needs more headroom, cull entities outside the view
+before reaching for another backend. Rerun the benchmark after changing how entities, the map or
+zoom are drawn.
+
 ## Imports
 
 - Allowed: `@engine/core/*`, files in this folder, browser APIs (canvas, `window`).
