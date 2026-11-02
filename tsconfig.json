@@ -13,6 +13,7 @@
     "noUnusedParameters": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
+    "allowJs": true,
     "skipLibCheck": true,
     "noEmit": true,
     "types": ["vite/client", "node"],
@@ -22,5 +23,5 @@
     },
     "baseUrl": "."
   },
-  "include": ["engine", "kits", "games", "tests", "build", "vite.config.ts"]
+  "include": ["config", "engine", "kits", "games", "tests", "build", "vite.config.ts"]
 }

@@ -13,6 +13,11 @@
 - **Dependencies point one way.** Games depend on the engine; the engine and kits never import from
   games. Code lives in `engine/` (core, backends, sim, tools), `kits/` and `games/`; each folder's
   `CLAUDE.md` lists what it may import.
+- **The dependency rule is a table.** `config/layers.js` lists the layers (games, kits, `engine/sim`,
+  `engine/backends`, `engine/core`, `engine/tools`), the arrows each may import, and the one exception
+  (`*.test.ts` files may also use `engine/backends/null`). Each game, kit and backend is its own unit
+  and may not import a sibling. `config/deps.js` checks one arrow; `tests/architecture/dependency-rule.test.ts`
+  checks every import in the repo against it. To change an arrow, change the table, never the test.
 - The world simulation (`engine/sim`, from Engine 0.8) must stay headless and deterministic: no imports
   from backends, kits or games, and all randomness through the world's seeded RNG.
 - Kits hold no world rules and never draw: they read what a mission gives them and report what happened,
