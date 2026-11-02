@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJson, type HeadlessGame, type JsonObject } from '@engine/core/headless';
 import type { Order } from '@engine/core/orders';
-import { battleSnapshot } from './__fixtures__/world';
+import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
 import { enemyPlanSchema } from './enemy';
 import { rtsGame, type RtsWorldPort } from './game';
 
@@ -118,5 +118,21 @@ describe('rtsGame', () => {
     });
     quiet.step();
     expect(quiet.log()).toEqual([]);
+  });
+});
+
+describe('RtsGame.refresh (Engine 0.11)', () => {
+  it('reads the snapshot again after the world changed outside the port', () => {
+    let offered = false;
+    const world = fakeWorld();
+    const game = rtsGame({
+      world: { ...world, snapshot: () => (offered ? siegeSnapshot({ tick: 0 }) : battleSnapshot()) },
+      seed: 1,
+    });
+    expect(game.view().missions.offered).toEqual([]);
+    offered = true; // a host opened a window between steps
+    expect(game.view().missions.offered).toEqual([]);
+    game.refresh();
+    expect(game.view().missions.offered.map((o) => o.mission)).toEqual(['raid']);
   });
 });

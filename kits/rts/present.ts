@@ -21,7 +21,13 @@ import { facingOfDir, isFinished, type RtsUnitView, type RtsView } from './snaps
  * Positions are world pixels: cell (x, y) is the box `x * tileSize, y * tileSize` of
  * `tileSize` x `tileSize`. Ids are `unit-<id>`, `building-<id>` and `resource-<id>` (world entity
  * ids), with parts `<id>/ring`, `<id>/hp` and `<id>/progress`. Depths (`RTS_DEPTH`): resource
- * nodes, buildings, selection rings, units, bars, the placing ghost, the selection box.
+ * nodes, buildings, selection rings, units, bars, offered-mission markers, the placing ghost, the
+ * selection box.
+ *
+ * Missions (Engine 0.11, decision 4, item 175): members of a frozen event get the tag `frozen`; an
+ * offered mission gets a `mission-offer` marker over its target; the HUD shows the offer and the
+ * open mission (`offer`, `offers`, `mission`, `missionCommit`, `missionLeft`), each key only while
+ * there is one, so a world without missions gives the same frames as before.
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
@@ -31,6 +37,7 @@ export const RTS_DEPTH = Object.freeze({
   ring: 9,
   unit: 10,
   bar: 20,
+  offer: 25,
   ghost: 30,
   box: 40,
 });
@@ -65,6 +72,18 @@ export interface RtsPlacing {
   h: number;
 }
 
+/**
+ * What the presentation needs of a mission (a `MissionDef` from the game's content fits): its
+ * title for the HUD, its event to find the offer marker's target, and an optional `marker`
+ * entity id that overrides it.
+ */
+export interface RtsMissionInfo {
+  readonly id: string;
+  readonly title: string;
+  readonly event?: string;
+  readonly marker?: number;
+}
+
 export interface RtsPresentOptions {
   /** The player's faction: whose units are `own`, whose stockpile the HUD shows. */
   faction: string;
@@ -80,6 +99,8 @@ export interface RtsPresentOptions {
   placing?: RtsPlacing | null;
   /** The camera hint (`RtsCamera.hint()`); the map's centre when left out. */
   camera?: CameraHint;
+  /** The game's missions (titles, events, marker targets) for the offer markers and the HUD. */
+  missions?: readonly RtsMissionInfo[];
   /** This frame's events, passed through. */
   events?: PresentEvent[];
   /** The stream's state (map tracker, animation starts); without it the map is always sent and `t` is the tick. */
@@ -218,6 +239,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     }
     if (queue[0] !== undefined) tags.push(`training:${queue[0].unit}`);
     if (selected.has(b.id)) tags.push('selected');
+    if (b.frozen) tags.push('frozen');
     const where = box(b.x, b.y, b.w, b.h);
     if (selected.has(b.id)) ring(`${id}/ring`, [s, 'building'], where);
     entities.push({
@@ -244,6 +266,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (u.role !== null && u.role !== 'regular') tags.push(u.role);
     if (u.carry > 0) tags.push('carrying');
     if (selected.has(u.id)) tags.push('selected');
+    if (u.frozen) tags.push('frozen');
     const where = box(u.x, u.y, 1, 1);
     if (selected.has(u.id)) ring(`${id}/ring`, [s, ...(u.role === 'hero' ? ['hero'] : [])], where);
     entities.push({
@@ -256,6 +279,22 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
       layer: RTS_DEPTH.unit,
     });
     if (selected.has(u.id) || u.hp < u.maxHp) bar(`${id}/hp`, 'health-bar', 'hp', u.hp, u.maxHp, u.x, u.y, 1);
+  }
+
+  for (const offer of view.missions.offered) {
+    const info = opts.missions?.find((m) => m.id === offer.mission);
+    const target = info === undefined ? null : offerTarget(view, info, player);
+    if (target === null) continue;
+    const id = `offer-${offer.opportunity}`;
+    entities.push({
+      id,
+      kind: 'mission-offer',
+      ...box(target.x, target.y, target.w, target.h),
+      facing: 'down',
+      anim: { state: 'idle', t: t(id, 'idle') },
+      tags: [`mission:${offer.mission}`, `opportunity:${offer.opportunity}`, `target:${target.id}`],
+      layer: RTS_DEPTH.offer,
+    });
   }
 
   if (opts.placing) {
@@ -292,13 +331,66 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     size: { width: opts.size.width, height: opts.size.height },
     entities,
     events: opts.events ? [...opts.events] : [],
-    status: presentStatus(view, player, [...selected], opts.placing ?? null),
+    status: {
+      ...presentStatus(view, player, [...selected], opts.placing ?? null),
+      ...missionStatus(view, opts.missions ?? []),
+    },
   };
   if (map !== null) frame.map = state ? state.maps.next(map) : map;
   if (opts.camera) frame.camera = { ...opts.camera };
   else if (view.terrain !== null)
     frame.camera = { x: (view.terrain.width * ts) / 2, y: (view.terrain.height * ts) / 2 };
   return frame;
+}
+
+/**
+ * Where an offered mission's marker goes: the `marker` entity when it is in the view, else the
+ * lowest-id enemy unit in the mission's event, else its lowest-id member (unit, then building);
+ * null when there is none (a mission without an event or marker gets no marker).
+ */
+export function offerTarget(
+  view: RtsView,
+  info: RtsMissionInfo,
+  player: string,
+): { id: number; x: number; y: number; w: number; h: number } | null {
+  const unit = (u: RtsUnitView) => ({ id: u.id, x: u.x, y: u.y, w: 1, h: 1 });
+  if (info.marker !== undefined) {
+    const u = view.units.find((x) => x.id === info.marker);
+    if (u) return unit(u);
+    const b = view.buildings.find((x) => x.id === info.marker);
+    if (b) return { id: b.id, x: b.x, y: b.y, w: b.w, h: b.h };
+  }
+  if (info.event === undefined) return null;
+  const members = view.units.filter((u) => u.event === info.event);
+  const pick = members.find((u) => u.faction !== null && u.faction !== player) ?? members[0];
+  if (pick !== undefined) return unit(pick);
+  const b = view.buildings.find((x) => x.event === info.event);
+  return b ? { id: b.id, x: b.x, y: b.y, w: b.w, h: b.h } : null;
+}
+
+/**
+ * The mission HUD values, each only while it applies: `offers` (how many opportunities are offered)
+ * and `offer` (the first one's mission title, else its id); while a mission is open (the first by
+ * id), `mission` (its title), `missionCommit` (the world tick its result commits at) and
+ * `missionLeft` (world ticks to it, at least 0).
+ */
+export function missionStatus(
+  view: RtsView,
+  missions: readonly RtsMissionInfo[],
+): Record<string, PresentStatusValue> {
+  const status: Record<string, PresentStatusValue> = {};
+  const first = view.missions.offered[0];
+  if (first !== undefined) {
+    status['offers'] = view.missions.offered.length;
+    status['offer'] = missions.find((m) => m.id === first.mission)?.title ?? first.mission;
+  }
+  const open = view.missions.open[0];
+  if (open !== undefined) {
+    status['mission'] = open.title;
+    status['missionCommit'] = open.commitTick;
+    status['missionLeft'] = Math.max(0, open.commitTick - view.tick);
+  }
+  return status;
 }
 
 /**

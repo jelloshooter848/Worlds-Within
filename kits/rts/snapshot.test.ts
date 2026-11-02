@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { battleSnapshot } from './__fixtures__/world';
+import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
 import { facingOfDir, isFinished, readWorld, thingAt } from './snapshot';
 
 describe('readWorld', () => {
@@ -55,5 +55,42 @@ describe('readWorld', () => {
     expect(thingAt(v, 1, 1)).toMatchObject({ what: 'building', building: { id: 3 } });
     expect(thingAt(v, 4, 0)).toMatchObject({ what: 'resource' });
     expect(thingAt(v, 5, 5)).toBeNull();
+  });
+});
+
+describe('readWorld: missions (Engine 0.11)', () => {
+  it('reads offered opportunities, open missions and frozen events', () => {
+    const offered = readWorld(siegeSnapshot());
+    expect(offered.missions).toEqual({
+      offered: [{ opportunity: 'raid-window', mission: 'raid', closes: 20 }],
+      open: [],
+      committed: [],
+      gated: ['raid'],
+      frozen: [],
+    });
+    expect(offered.units.find((u) => u.id === 9)).toMatchObject({ event: 'siege', frozen: false });
+
+    const open = readWorld(siegeSnapshot({ open: true, tick: 10 }));
+    expect(open.missions.offered).toEqual([]);
+    expect(open.missions.open).toEqual([
+      {
+        id: 'raid',
+        title: 'Burn the siege engines',
+        event: 'siege',
+        openTick: 3,
+        commitTick: 33,
+        resolved: false,
+      },
+    ]);
+    expect(open.missions.frozen).toEqual(['siege']);
+    expect(open.units.filter((u) => u.frozen).map((u) => u.id)).toEqual([6, 9, 10]);
+    expect(open.buildings.filter((b) => b.frozen).map((b) => b.id)).toEqual([8]);
+    expect(open.units.find((u) => u.id === 5)).toMatchObject({ event: null, frozen: false });
+  });
+
+  it('a snapshot without mission state reads with none and nothing frozen', () => {
+    const v = readWorld(battleSnapshot());
+    expect(v.missions).toEqual({ offered: [], open: [], committed: [], gated: [], frozen: [] });
+    expect(v.units.every((u) => u.event === null && !u.frozen)).toBe(true);
   });
 });

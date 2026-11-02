@@ -1,3 +1,4 @@
+import type { MissionStepRefusal } from '@engine/core/headless';
 import type { Order } from '@engine/core/orders';
 import type { RuleSwitch } from '@engine/core/rules';
 import { cellOf, type Selection, type WorldPoint } from './selection';
@@ -18,6 +19,11 @@ import { isFinished, thingAt, type RtsView } from './snapshot';
  * - **Train buttons**: `trainCommand` queues one unit at each selected finished building that
  *   trains it.
  * - `stopCommand` stops the selected units.
+ *
+ * - **The launch command** (Engine 0.11, decision 4, item 175): `missionRequest` turns the
+ *   player's click on an offered mission into a {@link MissionRequest}, and `launchMission` hands
+ *   it to the game's mission host. A request is not an order and the kit opens nothing: the host
+ *   (and the sim behind it) decides, and its refusal is reported, never thrown.
  *
  * Each returns null when nothing in the selection can take the command. Whether the order can be
  * carried out (a way there, the money for it) is the simulation's answer, never the kit's: it
@@ -110,4 +116,53 @@ export function trainButtons(view: RtsView, selection: Selection): string[] {
     for (const unit of b.producer.trains) if (!out.includes(unit)) out.push(unit);
   }
   return out;
+}
+
+/** The player's request to launch a mission, through the opportunity offered now (null when none names it). */
+export interface MissionRequest {
+  mission: string;
+  opportunity: string | null;
+}
+
+/**
+ * The request to launch mission `id`, or null when the world gates it behind opportunities and
+ * none of them is offered now (not yet open, run out, taken or closed). A mission no opportunity
+ * names asks without one. Whether it can open (already open, committed, its event frozen by
+ * another) is the sim's answer, given when the request is carried out.
+ */
+export function missionRequest(view: RtsView, id: string): MissionRequest | null {
+  const offer = view.missions.offered.find((o) => o.mission === id);
+  if (offer) return { mission: id, opportunity: offer.opportunity };
+  return view.missions.gated.includes(id) ? null : { mission: id, opportunity: null };
+}
+
+/** The mission buttons: each mission offered now, in opportunity order, each once. */
+export function missionButtons(view: RtsView): string[] {
+  return [...new Set(view.missions.offered.map((o) => o.mission))];
+}
+
+/** What carries a launch out: a game's mission host (`MissionHost.launch` from `engine/core`). */
+export interface MissionLauncher {
+  launch(id: string): MissionStepRefusal | null;
+}
+
+/** A launch carried out, or refused with a code and a one-line reason. */
+export type LaunchResult =
+  | { ok: true; request: MissionRequest }
+  | { ok: false; request: MissionRequest | null; code: string; error: string };
+
+/**
+ * The launch command: the request for mission `id` (`missionRequest`) carried out by `launcher`.
+ * Not offered now: refused `not_offered` without asking the launcher. Otherwise the launcher's
+ * answer: its refusal (the host's or the sim's code, e.g. `mission_open`, `opportunity_closed`,
+ * `round_hosted`) comes back as the result, not as an error.
+ */
+export function launchMission(view: RtsView, id: string, launcher: MissionLauncher): LaunchResult {
+  const request = missionRequest(view, id);
+  if (request === null)
+    return { ok: false, request, code: 'not_offered', error: `mission "${id}" is not offered now` };
+  const refused = launcher.launch(request.mission);
+  return refused === null
+    ? { ok: true, request }
+    : { ok: false, request, code: refused.code, error: refused.error };
 }

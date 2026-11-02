@@ -91,6 +91,15 @@ export class RtsGame implements HeadlessGame {
     return this.cached;
   }
 
+  /**
+   * Drops the cached view, for a world changed outside the port between steps (a mission opened
+   * through the game's `MissionHost` takes its opportunity and freezes its event): the next
+   * `view()` reads the snapshot again. Orders and steps already do this.
+   */
+  refresh(): void {
+    this.cached = null;
+  }
+
   /** The tick the world is at. */
   get tick(): number {
     return this.view().tick;

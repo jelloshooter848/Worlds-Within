@@ -12,6 +12,12 @@ import { rtsTypesSchema, type RtsTypes } from '@engine/core/rts-types';
  *   const view = readWorld(world.snapshot());   // in a game's glue, which may import the sim
  *   view.units.filter((u) => u.faction === 'red');
  *
+ * Since Engine 0.11 (decision 4, item 175) it also reads the world's mission state, loosely and
+ * only when present: offered opportunities (`Opportunities`), open and committed missions
+ * (`Missions`), frozen events (`WorldTime.frozen`) and each entity's `EventMember`, into
+ * `view.missions` and each unit's and building's `event` / `frozen`. A snapshot without them (a
+ * 0.9 world) reads as before, with no missions and nothing frozen.
+ *
  * Bad data (a component of the wrong shape, a snapshot that is not one) throws, naming the field:
  * a snapshot comes from the sim, so a bad one is a bug, not a player mistake.
  */
@@ -59,6 +65,10 @@ export interface RtsUnitView {
   carry: number;
   /** Its squad role (`Member.role`), or null when it is not a named member. */
   role: 'regular' | 'hero' | 'captain' | null;
+  /** The event it takes part in (`EventMember.event`), or null. */
+  event: string | null;
+  /** True while its event is frozen (an open mission holds it). */
+  frozen: boolean;
 }
 
 /** A building as the view sees it. */
@@ -78,6 +88,10 @@ export interface RtsBuildingView {
   construction: { progress: number; work: number; done: boolean } | null;
   /** What it trains and its queue, or null when it trains nothing. */
   producer: { trains: string[]; queue: { unit: string; ticks: number }[]; progress: number } | null;
+  /** The event it takes part in (`EventMember.event`), or null. */
+  event: string | null;
+  /** True while its event is frozen. */
+  frozen: boolean;
 }
 
 /** A resource node. */
@@ -88,6 +102,42 @@ export interface RtsResourceView {
   y: number;
   /** What is left (`Inventory[item]`). */
   amount: number;
+}
+
+/** An opportunity offered now: taking it opens `mission`; it closes at world tick `closes`. */
+export interface RtsOffer {
+  opportunity: string;
+  mission: string;
+  closes: number | null;
+}
+
+/** An open mission: opened at `openTick`, its result commits at `commitTick` (world ticks). */
+export interface RtsOpenMission {
+  id: string;
+  title: string;
+  /** The event it holds frozen, or null. */
+  event: string | null;
+  openTick: number;
+  commitTick: number;
+  /** True once it was played, quit or delegated (it still waits for its commit tick). */
+  resolved: boolean;
+}
+
+/**
+ * The world's missions as the kit reads them (Engine 0.11, decision 4, item 175): all empty when
+ * the world has none (a 0.9 snapshot). The kit only reads them; opening one is the sim's answer.
+ */
+export interface RtsMissionsView {
+  /** The opportunities offered now, by opportunity id. */
+  offered: RtsOffer[];
+  /** The open missions, by mission id. */
+  open: RtsOpenMission[];
+  /** The committed missions' ids, in commit order. */
+  committed: string[];
+  /** Every mission some opportunity names (it opens only through one), sorted. */
+  gated: string[];
+  /** The frozen events' ids, sorted. */
+  frozen: string[];
 }
 
 /** The world as the RTS kit reads it. Lists are in ascending id order. */
@@ -101,6 +151,8 @@ export interface RtsView {
   stock: Record<string, Record<string, number>>;
   /** The world's unit and building types (`RtsTypes`, the lowest id), or null when it has none. */
   types: RtsTypes | null;
+  /** Offered opportunities, open missions and frozen events. */
+  missions: RtsMissionsView;
 }
 
 const Id = z.int().min(1);
@@ -142,6 +194,37 @@ const snapshotSchema = z.looseObject({
     Inventory: rows(z.record(z.string(), z.int())),
     Stockpile: rows(z.looseObject({ faction: z.string() })),
     RtsTypes: rows(rtsTypesSchema),
+    // Time and missions (Engine 0.10-0.11): all left out of a snapshot until used.
+    EventMember: rows(z.looseObject({ event: z.string() })),
+    WorldTime: rows(z.looseObject({ frozen: z.array(z.looseObject({ event: z.string() })).default([]) })),
+    Missions: rows(
+      z.looseObject({
+        open: z
+          .array(
+            z.looseObject({
+              def: z.looseObject({ id: z.string(), title: z.string(), event: z.string().optional() }),
+              openTick: z.int().min(0),
+              commitTick: z.int().min(0),
+              resolved: z.unknown().optional(),
+            }),
+          )
+          .default([]),
+        committed: z.array(z.looseObject({ mission: z.string() })).default([]),
+      }),
+    ),
+    Opportunities: rows(
+      z.looseObject({
+        list: z
+          .array(
+            z.looseObject({
+              def: z.looseObject({ id: z.string(), mission: z.string() }),
+              status: z.string(),
+              closes: z.int().nullable().default(null),
+            }),
+          )
+          .default([]),
+      }),
+    ),
   }),
 });
 
@@ -167,6 +250,13 @@ export function readWorld(json: unknown): RtsView {
   const construction = byId(c.Construction);
   const producer = byId(c.Producer);
   const inventory = byId(c.Inventory);
+  const eventOf = byId(c.EventMember);
+  const missions = readMissions(c.WorldTime, c.Missions, c.Opportunities);
+  const frozenEvents = new Set(missions.frozen);
+  const membership = (id: number) => {
+    const event = eventOf.get(id)?.event ?? null;
+    return { event, frozen: event !== null && frozenEvents.has(event) };
+  };
 
   const t = c.Terrain[0]?.[1];
   const terrain: RtsTerrain | null = t
@@ -201,6 +291,7 @@ export function readWorld(json: unknown): RtsView {
       gatherer: gatherer.has(id),
       carry: gatherer.get(id)?.carry ?? 0,
       role: member.get(id)?.role ?? null,
+      ...membership(id),
     });
   }
 
@@ -230,6 +321,7 @@ export function readWorld(json: unknown): RtsView {
             progress: pr.progress,
           }
         : null,
+      ...membership(id),
     });
   }
 
@@ -254,6 +346,39 @@ export function readWorld(json: unknown): RtsView {
     resources,
     stock,
     types: c.RtsTypes[0]?.[1] ?? null,
+    missions,
+  };
+}
+
+type Components = z.output<typeof snapshotSchema>['components'];
+
+/** The missions view from the world-level time, missions and opportunities state (the lowest id). */
+function readMissions(
+  time: Components['WorldTime'],
+  missions: Components['Missions'],
+  opportunities: Components['Opportunities'],
+): RtsMissionsView {
+  const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+  const list = opportunities[0]?.[1].list ?? [];
+  const m = missions[0]?.[1];
+  return {
+    offered: list
+      .filter((o) => o.status === 'offered')
+      .map((o) => ({ opportunity: o.def.id, mission: o.def.mission, closes: o.closes }))
+      .sort((a, b) => cmp(a.opportunity, b.opportunity)),
+    open: (m?.open ?? [])
+      .map((o) => ({
+        id: o.def.id,
+        title: o.def.title,
+        event: o.def.event ?? null,
+        openTick: o.openTick,
+        commitTick: o.commitTick,
+        resolved: o.resolved !== undefined && o.resolved !== null,
+      }))
+      .sort((a, b) => cmp(a.id, b.id)),
+    committed: (m?.committed ?? []).map((r) => r.mission),
+    gated: [...new Set(list.map((o) => o.def.mission))].sort(cmp),
+    frozen: [...new Set((time[0]?.[1].frozen ?? []).map((f) => f.event))].sort(cmp),
   };
 }
 

@@ -143,3 +143,71 @@ export function battleSnapshot(opts: FixtureOptions = {}) {
     components,
   };
 }
+
+export interface SiegeFixtureOptions {
+  tick?: number;
+  /** The opportunity `raid-window`'s status (`offered` by default). */
+  offer?: 'waiting' | 'offered' | 'taken' | 'closed';
+  /** Open the mission `raid` (opened at tick 3, commits at 33) and freeze its event `siege`. */
+  open?: boolean;
+}
+
+/**
+ * The battle with mission state (Engine 0.11), as the sim snapshots it: blue's barracks site and
+ * soldiers 9 and 10 and red's soldier 6 are members of the event `siege`; the world-level entity
+ * 11 holds `WorldTime` (with `siege` frozen while `raid` is open), `Opportunities` (`raid-window`
+ * for mission `raid`, ticks 2-20) and `Missions`.
+ */
+export function siegeSnapshot(opts: SiegeFixtureOptions = {}) {
+  const open = opts.open ?? false;
+  const status = opts.offer ?? (open ? 'taken' : 'offered');
+  const def = { id: 'raid', title: 'Burn the siege engines', event: 'siege', worldTimeCost: 30 };
+  const snap = battleSnapshot({
+    tick: opts.tick ?? 5,
+    extra: {
+      EventMember: [
+        [6, { event: 'siege' }],
+        [8, { event: 'siege' }],
+        [9, { event: 'siege' }],
+        [10, { event: 'siege' }],
+      ],
+      WorldTime: [
+        [
+          11,
+          {
+            frozen: open ? [{ event: 'siege', by: 'mission:raid', since: 3 }] : [],
+            experience: [],
+            committed: [],
+          },
+        ],
+      ],
+      Opportunities: [
+        [
+          11,
+          {
+            list: [
+              {
+                def: { id: 'raid-window', mission: 'raid', opens: 2, closes: 20 },
+                status,
+                opens: 2,
+                closes: 20,
+                by: 'time',
+                at: 2,
+              },
+            ],
+          },
+        ],
+      ],
+      Missions: [
+        [
+          11,
+          {
+            open: open ? [{ def, openTick: 3, commitTick: 33, refs: {}, resolved: null }] : [],
+            committed: [],
+          },
+        ],
+      ],
+    },
+  });
+  return { ...snap, nextId: 12, entities: [...snap.entities, 11] };
+}

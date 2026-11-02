@@ -1,8 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { parseOrder } from '@engine/core/orders';
 import { RuleSwitch } from '@engine/core/rules';
-import { battleSnapshot } from './__fixtures__/world';
-import { buildCommand, commandAt, stampOrder, stopCommand, trainButtons, trainCommand } from './commands';
+import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
+import {
+  buildCommand,
+  commandAt,
+  launchMission,
+  missionButtons,
+  missionRequest,
+  stampOrder,
+  stopCommand,
+  trainButtons,
+  trainCommand,
+} from './commands';
 import { RTS_RULES } from './rules';
 import { Selection } from './selection';
 import { readWorld } from './snapshot';
@@ -108,5 +118,53 @@ describe('command mapper', () => {
       units: [5, 7],
     });
     expect(Object.keys(stampOrder({ faction: 'red', type: 'stop', units: [5] }, 3))[0]).toBe('id');
+  });
+});
+
+describe('the launch command (Engine 0.11)', () => {
+  const offered = readWorld(siegeSnapshot());
+  const launcher = (refusal: { code: string; error: string } | null = null) => {
+    const calls: string[] = [];
+    return { calls, launch: (id: string) => (calls.push(id), refusal) };
+  };
+
+  it('an offered mission gives a request through its opportunity, and the launcher opens it', () => {
+    expect(missionButtons(offered)).toEqual(['raid']);
+    expect(missionRequest(offered, 'raid')).toEqual({ mission: 'raid', opportunity: 'raid-window' });
+    const l = launcher();
+    expect(launchMission(offered, 'raid', l)).toEqual({
+      ok: true,
+      request: { mission: 'raid', opportunity: 'raid-window' },
+    });
+    expect(l.calls).toEqual(['raid']);
+  });
+
+  it('a gated mission not offered now gives no request and is refused without asking', () => {
+    for (const offer of ['waiting', 'taken', 'closed'] as const) {
+      const view = readWorld(siegeSnapshot({ offer }));
+      expect(missionButtons(view)).toEqual([]);
+      expect(missionRequest(view, 'raid')).toBeNull();
+      const l = launcher();
+      expect(launchMission(view, 'raid', l)).toMatchObject({ ok: false, request: null, code: 'not_offered' });
+      expect(l.calls).toEqual([]);
+    }
+  });
+
+  it('a mission no opportunity names asks without one; the launcher decides', () => {
+    expect(missionRequest(offered, 'scout')).toEqual({ mission: 'scout', opportunity: null });
+    expect(missionRequest(readWorld(battleSnapshot()), 'raid')).toEqual({
+      mission: 'raid',
+      opportunity: null,
+    });
+  });
+
+  it("the launcher's refusal is reported, not thrown", () => {
+    const l = launcher({ code: 'mission_open', error: 'mission "raid" is already open' });
+    expect(launchMission(offered, 'raid', l)).toEqual({
+      ok: false,
+      request: { mission: 'raid', opportunity: 'raid-window' },
+      code: 'mission_open',
+      error: 'mission "raid" is already open',
+    });
   });
 });

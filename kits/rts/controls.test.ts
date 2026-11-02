@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RtsCamera } from '@engine/core/present';
-import { battleSnapshot } from './__fixtures__/world';
+import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
 import { RtsControls } from './controls';
 import { readWorld } from './snapshot';
 
@@ -76,5 +76,22 @@ describe('RtsControls', () => {
     expect(controls.selectHeroes(view)).toEqual([7]);
     expect(controls.stop(view)).toEqual({ faction: 'red', type: 'stop', units: [7] });
     expect(controls.presentOptions(view).camera).toEqual(controls.camera.hint());
+  });
+});
+
+describe('RtsControls: the mission button (Engine 0.11)', () => {
+  it('launches an offered mission through the launcher and reports a refusal', () => {
+    const { controls } = setup();
+    const view = readWorld(siegeSnapshot());
+    const opened: string[] = [];
+    expect(controls.launchMission(view, 'raid', { launch: (id) => (opened.push(id), null) }).ok).toBe(true);
+    expect(opened).toEqual(['raid']);
+    const refused = controls.launchMission(view, 'raid', {
+      launch: () => ({ code: 'round_hosted', error: 'a mission round is being played' }),
+    });
+    expect(refused).toMatchObject({ ok: false, code: 'round_hosted' });
+    expect(
+      controls.launchMission(readWorld(siegeSnapshot({ offer: 'closed' })), 'raid', { launch: () => null }),
+    ).toMatchObject({ ok: false, code: 'not_offered' });
   });
 });

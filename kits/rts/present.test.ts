@@ -7,7 +7,7 @@ import {
   RtsCamera,
   type PresentFrame,
 } from '@engine/core/present';
-import { battleSnapshot } from './__fixtures__/world';
+import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
 import { presentWorld, RTS_DEPTH, RtsPresentState, unitAnim } from './present';
 import { readWorld } from './snapshot';
 
@@ -154,5 +154,79 @@ describe('presentWorld', () => {
     const before = JSON.stringify(v);
     presentWorld(v, { faction: 'red', size: SIZE, selection: [3, 5], state: new RtsPresentState() });
     expect(JSON.stringify(v)).toBe(before);
+  });
+});
+
+describe('presentWorld: missions (Engine 0.11)', () => {
+  const RAID = { id: 'raid', title: 'Burn the siege engines', event: 'siege' };
+  const MISSION_KEYS = ['offer', 'offers', 'mission', 'missionCommit', 'missionLeft'];
+
+  it('marks the offered mission on its target and shows the offer in the HUD', () => {
+    const frame = presentWorld(readWorld(siegeSnapshot()), {
+      faction: 'red',
+      size: SIZE,
+      missions: [RAID],
+      state: new RtsPresentState(),
+    });
+    valid(frame);
+    // the lowest-id enemy member of the event: blue soldier 9 at (6, 4)
+    expect(frame.entities.find((e) => e.id === 'offer-raid-window')).toMatchObject({
+      kind: 'mission-offer',
+      x: 96,
+      y: 64,
+      w: 16,
+      h: 16,
+      tags: ['mission:raid', 'opportunity:raid-window', 'target:9'],
+      layer: RTS_DEPTH.offer,
+    });
+    expect(frame.status).toMatchObject({ offers: 1, offer: 'Burn the siege engines' });
+    expect(frame.status['mission']).toBeUndefined();
+    // nothing is frozen while the mission is only offered
+    expect(frame.entities.some((e) => e.tags.includes('frozen'))).toBe(false);
+  });
+
+  it('puts the marker on the given entity, a building too; none without the def', () => {
+    const view = readWorld(siegeSnapshot());
+    const on = (marker: number) =>
+      presentWorld(view, { faction: 'red', size: SIZE, missions: [{ ...RAID, marker }] }).entities.find(
+        (e) => e.kind === 'mission-offer',
+      );
+    expect(on(8)).toMatchObject({ x: 96, y: 0, w: 32, h: 32, tags: expect.arrayContaining(['target:8']) });
+    expect(on(99)?.tags).toContain('target:9'); // not in the view: the event's enemy member
+    const bare = presentWorld(view, { faction: 'red', size: SIZE });
+    expect(bare.entities.some((e) => e.kind === 'mission-offer')).toBe(false);
+    expect(bare.status['offer']).toBe('raid'); // the id without a title
+  });
+
+  it("tags the frozen event's units and buildings and shows the open mission's commit tick", () => {
+    const frame = presentWorld(readWorld(siegeSnapshot({ open: true, tick: 10 })), {
+      faction: 'red',
+      size: SIZE,
+      missions: [RAID],
+    });
+    valid(frame);
+    const frozen = frame.entities.filter((e) => e.tags.includes('frozen')).map((e) => e.id);
+    expect(frozen).toEqual(['building-8', 'unit-6', 'unit-9', 'unit-10']);
+    expect(frame.entities.some((e) => e.kind === 'mission-offer')).toBe(false);
+    expect(frame.status).toMatchObject({
+      mission: 'Burn the siege engines',
+      missionCommit: 33,
+      missionLeft: 23,
+    });
+    expect(frame.status['offers']).toBeUndefined();
+    // the site keeps its progress while frozen (the sim builds it; the kit only shows it)
+    expect(frame.entities.find((e) => e.id === 'building-8')?.tags).toEqual(
+      expect.arrayContaining(['site', 'progress:50', 'frozen']),
+    );
+  });
+
+  it('a world without missions gives the frame it gave before: no marker, tag or HUD key', () => {
+    const frame = presentWorld(readWorld(battleSnapshot({ tick: 5 })), {
+      faction: 'red',
+      size: SIZE,
+      missions: [RAID],
+    });
+    expect(frame.entities.some((e) => e.kind === 'mission-offer' || e.tags.includes('frozen'))).toBe(false);
+    for (const key of MISSION_KEYS) expect(Object.hasOwn(frame.status, key), key).toBe(false);
   });
 });

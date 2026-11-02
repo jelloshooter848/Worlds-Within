@@ -1,7 +1,16 @@
 import type { PointerGesture } from '@engine/core/input/pointer-logic';
 import type { RtsCamera } from '@engine/core/present';
 import type { RuleSwitch } from '@engine/core/rules';
-import { buildCommand, commandAt, stopCommand, trainCommand, type OrderDraft } from './commands';
+import {
+  buildCommand,
+  commandAt,
+  launchMission,
+  stopCommand,
+  trainCommand,
+  type LaunchResult,
+  type MissionLauncher,
+  type OrderDraft,
+} from './commands';
 import type { RtsPlacing, RtsPresentOptions } from './present';
 import { cellOf, Selection, type WorldBox } from './selection';
 import type { RtsView } from './snapshot';
@@ -86,6 +95,14 @@ export class RtsControls {
   /** The stop button. */
   stop(view: RtsView): OrderDraft | null {
     return stopCommand(view, this.selection);
+  }
+
+  /**
+   * The bar's mission button: launches offered mission `id` through `launcher` (the game's
+   * `MissionHost`); the result says whether it opened or why not (`launchMission`).
+   */
+  launchMission(view: RtsView, id: string, launcher: MissionLauncher): LaunchResult {
+    return launchMission(view, id, launcher);
   }
 
   /** Selects the player's heroes alone. */
