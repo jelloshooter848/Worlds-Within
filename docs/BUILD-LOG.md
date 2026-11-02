@@ -159,6 +159,12 @@ The three decisions above are items 99-101. The builders' further choices are it
 - **The sample world is an engine test fixture** in `engine/sim/__fixtures__/`, with golden hashes
   every 100 ticks (item 111).
 - The root `package.json` version was left as it was, as in earlier releases of this build.
+- **Close-out review, items 112-120:** terrain is a component on one entity (112); a change made
+  between ticks with no cause is logged as `external` (113); a system that throws leaves the world
+  broken, not rolled back (114); ids in data are short strings (115); squad roles and captain
+  changes (116); a finished building keeps `Construction` with `done: true` (117); world runs use
+  one fixed system set (118), start only from a scenario, and a run file's `seed` wins (119);
+  `loadWorld` takes the component definitions and keeps the saved log settings (120).
 
 ### How to try it
 
@@ -172,7 +178,9 @@ pnpm vitest run engine/tools/world-run tests/runs tests/architecture/purity
 
 ### Done when
 
-Checked on 2026-11-02 at `a8dbb9b` (the last 0.8 code commit) and again for this close-out.
+Checked on 2026-11-02 at `a8dbb9b` (the last 0.8 code commit), again for the close-out, and once
+more at `28d5e25` for the final review: all checks green, every run file exits 0 with the same
+final hash, and the village run gives `8e728f67a3bb77e6` on two separate runs.
 
 - **Met: the sample world runs for 10,000 ticks with the same state hashes on every run.**
   `pnpm vitest run engine/sim/sample-world --reporter=verbose`: "runs 10,000 ticks with the same
@@ -218,7 +226,8 @@ engine/sim/sample-world`, saves and reloads at every one of the 10,001 ticks in 
   be code, so they are shared machinery in `engine/sim/systems.ts` (item 107).
 - **"At any tick" is sampled on CI** (83 ticks, 40 of them seeded random), with every tick checked
   by an opt-in test (item 110).
-- **Feedback numbering:** the close-out items continue at 102 (102-111).
+- **Feedback numbering:** the builder choices continue at 102 (102-111), and the close-out
+  review adds 112-120.
 
 ### Outstanding issues
 
@@ -228,7 +237,7 @@ engine/sim/sample-world`, saves and reloads at every one of the 10,001 ticks in 
   and missions come with 0.9 and 0.10.
 - A save and load costs about 10-15 ms on the sample (it re-checks every schema and rebuilds the
   path caches); fine for saves, too slow to reload every tick on CI.
-- Open owner decisions: items 99-111 in `FEEDBACK-LOG.md`.
+- Open owner decisions: items 99-120 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.7
 

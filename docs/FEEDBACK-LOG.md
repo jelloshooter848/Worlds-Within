@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 112.** (Last used: 111.)
+**Next unused number: 121.** (Last used: 120.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -339,3 +339,28 @@ them; summary in `docs/BUILD-LOG.md`, Engine 0.8, Choices made)
 - **111.** The sample world (`village.world.json`) is an engine test fixture in
   `engine/sim/__fixtures__/`, with golden hashes every 100 ticks (`village.hashes.json`) and a CLI
   run file on it. OK?
+
+**Engine 0.8, close-out review** (further builder choices found while closing out 0.8; details in
+`engine/sim/CLAUDE.md`)
+
+- **112.** Terrain is a `Terrain` component on exactly one entity, not a field on the world, so it
+  is in every snapshot and save with no special case; `terrainOf(world)` throws unless exactly one
+  entity has it. OK?
+- **113.** A change made between ticks without `withCause()` is logged with the cause `external`
+  instead of being refused. Scenario, order and load code should name a cause. OK, or should a
+  missing cause be an error?
+- **114.** If a system throws during `step()`, that tick's changes are dropped and the tick is not
+  committed, but the world is not rolled back: it must be treated as broken. OK?
+- **115.** Ids in data (`Owner.faction`, item ids, building kinds) are short strings such as
+  `"village"`, not integers, so scenarios stay readable. OK?
+- **116.** Squad members have one of three roles (`regular`, `hero`, `captain`); when a new
+  captain joins, the old captain becomes a hero. OK?
+- **117.** A finished building keeps its `Construction` component with `done: true`, and its health
+  rises with the work done until it is full. There is no separate `Building` component yet. OK?
+- **118.** World runs in the CLI always use one fixed set of engine systems (haul, build, patrol, in
+  that order); a run file or scenario cannot choose its systems yet. Choosing them can come with the
+  RTS kit (0.9). OK?
+- **119.** A world run starts only from a scenario, not from a save file, and a `seed` in the run
+  file replaces the scenario's seed. OK?
+- **120.** `loadWorld(json, { components, systems })` also takes the component definitions, so it
+  can check the saved data; the save keeps its log settings and loading cannot change them. OK?
