@@ -97,6 +97,9 @@ const camera = z.strictObject({
   zoom: finite.positive().exactOptional(),
   follow: z.string().exactOptional(),
   shake: finite.min(0).exactOptional(),
+  deadzone: z.strictObject({ w: whole, h: whole }).exactOptional(),
+  lerp: z.number().min(0).max(1).exactOptional(),
+  bounds: z.strictObject({ x: finite, y: finite, w: finite.min(0), h: finite.min(0) }).exactOptional(),
 });
 
 const side = z.number().int().min(SCREEN_MIN).max(SCREEN_MAX);

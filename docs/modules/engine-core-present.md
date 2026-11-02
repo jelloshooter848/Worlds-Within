@@ -16,7 +16,12 @@ Import from `@engine/core/present` (`index.ts`).
 
 - Types: `PresentFrame`, `PresentEntity`, `PresentAnim`, `PresentFx`, `Facing`, `PresentMap`,
   `PresentMapRef`, `PresentMapLayer`, `PresentEvent`, `PresentStatusValue`, `CameraHint`,
-  `DeepReadonly`.
+  `PresentBox`, `DeepReadonly`.
+- `CameraHint` (all optional past `x`/`y`, a backend may ignore them): `zoom`, `follow` (an
+  entity id; beats `x`/`y`), `shake`, and overrides of the skin's camera defaults for this frame:
+  `deadzone` (`{ w, h }` whole pixels), `lerp` (0 to 1, 1 snaps) and `bounds` (a world box the
+  view stays inside instead of the map, for a kit-side scroll lock). The hint wins over the skin
+  field by field; the skin's `camera` gives the defaults.
 - `Presenter`: what a backend implements, `present(frame: DeepReadonly<PresentFrame>)` and
   optional `resize(size)`.
 - `freezeFrame(frame)`: deep-freezes a frame so writes throw (tests and dev).

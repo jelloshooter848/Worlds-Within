@@ -84,6 +84,19 @@ describe('presentFrameSchema', () => {
     expect(r.errors).toEqual([]);
   });
 
+  it("checks the camera hint's deadzone, lerp and bounds", () => {
+    const f = fixture();
+    f.camera = { x: 0, y: 0, deadzone: { w: 16, h: 8 }, lerp: 0.25, bounds: { x: 0, y: 0, w: 320, h: 240 } };
+    expect(validate('frame.json', f, presentFrameSchema).errors).toEqual([]);
+    const g = fixture() as unknown as { camera: Record<string, unknown> };
+    g.camera['lerp'] = 2;
+    g.camera['deadzone'] = { w: 1.5, h: 0 };
+    expect(validate('frame.json', g, presentFrameSchema).errors.map((e) => e.path)).toEqual([
+      'camera.deadzone.w',
+      'camera.lerp',
+    ]);
+  });
+
   it('names the field when an entity is wrong', () => {
     const f = fixture() as unknown as { entities: Record<string, unknown>[] };
     f.entities[1]!['facing'] = 'north';

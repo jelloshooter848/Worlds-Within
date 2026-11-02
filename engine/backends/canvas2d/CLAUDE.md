@@ -23,9 +23,19 @@ canvas, none in Node). Each `present(frame)`, in order:
   `effect` (`flash` full-screen, `tint` translucent full-screen, `particles` from the event's
   `x`/`y` or its `entity`'s centre, `shake` a camera wobble), timed by `frame.frame` and lasting
   `ticks`. A frame with the same `frame` number as the last one does not replay its events.
-- Camera: the frame's `camera` hint, else the skin's `camera.follow` (entity id, then kind), else
-  the top-left; clamped into the map (a smaller map is centred). `zoom`, `deadzone` and `lerp`
-  are ignored for now; `shake` is honoured.
+- Camera (state kept in the presenter only: never in a kit, a frame or a hash). Target: the
+  hint's `follow` entity (by id, its box centre) when it is in the frame, else the hint's `x`/`y`,
+  else the skin's `camera.follow` (entity id, then kind), else none (the map's top-left).
+  `deadzone` and `lerp`: the hint's, else the skin's, else 0x0 and 1. The deadzone is a `w` x `h`
+  box round the picture's centre the target moves in without scrolling; past its edge the camera
+  moves just enough to put it back on the edge. Lerp closes that fraction of the gap per frame in
+  whole pixels with 1/256 fixed point (`Math.trunc`, at least 1 px, so it always arrives); 1
+  snaps, 0 holds. The first frame, a new map id and a frame with no target snap; a frame shown
+  twice (same `frame` number) does not move it again. Clamp (unless `clamp: false`): inside the
+  hint's `bounds` (a kit-side scroll lock or room), else the map; an area smaller than the
+  picture is centred on that axis. Offsets are whole pixels; `shake` is added after, never
+  stored. `zoom` (hint and skin) is still ignored: honouring it would mean scaling the map cache
+  and every sprite through `transformed()`.
 - Map: a full map is drawn onto the surface once per id and version and copied each frame; a
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`.
@@ -48,5 +58,6 @@ It never changes the frame or the skin (tested with frozen ones) and knows no ga
 
 `*.test.ts` here run in Node against a fake 2D context that records calls and maps points through
 the transform (see `renderer.test.ts`). `presenter.test.ts` uses a recording `Renderer`, fixture
-frames and a fixture skin written inline (never import a kit or a game's skin). `Viewport` needs a
+frames and a fixture skin written inline (never import a kit or a game's skin); its `camera`
+block reads the camera's top-left off the recorded map copy. `Viewport` needs a
 real DOM and is checked by running a game.

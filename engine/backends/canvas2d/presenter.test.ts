@@ -231,6 +231,136 @@ describe('SkinnedCanvasPresenter', () => {
     expect(calls).toContain('sprite hero:down-0 16,8');
   });
 
+  describe('camera', () => {
+    /** 20x10 tiles of 16 px: 320x160, in a 48x32 picture. */
+    const BIG: PresentMap = { ...MAP, id: 'big', cols: 20, rows: 10, tiles: Array(10).fill('.'.repeat(20)) };
+
+    /** A presenter on `skin`'s camera; `show` presents one frame and gives the camera's top-left. */
+    function cam(camera: SkinFile['camera'], opts: { clamp?: boolean } = {}) {
+      const { r, calls } = recorder();
+      const skin: SkinFile = { ...SKIN, ...(camera ? { camera } : {}) };
+      const p = new SkinnedCanvasPresenter(r, skin, lookup, {
+        mapSurface: () => ({ renderer: recorder().r, image: null }),
+        ...opts,
+      });
+      let n = 0;
+      const show = (over: Partial<PresentFrame> = {}): [number, number] => {
+        calls.length = 0;
+        p.present(frame({ frame: n++, map: BIG, ...over }));
+        const copy = calls.find((c) => c.startsWith('sprite map:'))!;
+        const [x, y] = copy.split(' ')[2]!.split(',').map(Number);
+        return [0 - x!, 0 - y!];
+      };
+      return { show, calls };
+    }
+    /** The hero with its centre at (cx, cy). */
+    const at = (cx: number, cy: number) => [hero({ x: cx - 8, y: cy - 8 })];
+
+    it('follows with a deadzone: no scroll inside the box, scrolling past its edge', () => {
+      const c = cam({ follow: 'hero', deadzone: { w: 16, h: 8 } });
+      // Centred at first: (100 - 24, 80 - 16).
+      expect(c.show({ entities: at(100, 80) })).toEqual([76, 64]);
+      // Inside the box (8 px each side across, 4 up and down): still.
+      expect(c.show({ entities: at(108, 76) })).toEqual([76, 64]);
+      expect(c.show({ entities: at(92, 84) })).toEqual([76, 64]);
+      // One pixel past its edge: the camera moves one pixel.
+      expect(c.show({ entities: at(109, 85) })).toEqual([77, 65]);
+      // Back inside the moved box: still.
+      expect(c.show({ entities: at(101, 81) })).toEqual([77, 65]);
+      expect(c.show({ entities: at(80, 81) })).toEqual([64, 65]);
+    });
+
+    it('lerps toward the target deterministically, arriving exactly', () => {
+      const c = cam({ follow: 'hero', lerp: 0.25 });
+      expect(c.show({ entities: at(24, 16) })).toEqual([0, 0]);
+      const xs: number[] = [];
+      for (let i = 0; i < 40; i++) xs.push(c.show({ entities: at(124, 16) })[0]);
+      // A quarter of the gap each frame, in whole pixels, then at least 1 px.
+      expect(xs.slice(0, 6)).toEqual([25, 43, 57, 67, 75, 81]);
+      expect(xs.every((x, i) => i === 0 || x >= xs[i - 1]!)).toBe(true);
+      expect(xs.at(-1)).toBe(100);
+      const again = cam({ follow: 'hero', lerp: 0.25 });
+      again.show({ entities: at(24, 16) });
+      const ys: number[] = [];
+      for (let i = 0; i < 40; i++) ys.push(again.show({ entities: at(124, 16) })[0]);
+      expect(ys).toEqual(xs);
+    });
+
+    it('snaps with lerp 1, and on the first frame of any lerp', () => {
+      const c = cam({ follow: 'hero', lerp: 1 });
+      expect(c.show({ entities: at(24, 16) })).toEqual([0, 0]);
+      expect(c.show({ entities: at(224, 116) })).toEqual([200, 100]);
+      expect(cam({ follow: 'hero', lerp: 0.1 }).show({ entities: at(224, 116) })).toEqual([200, 100]);
+    });
+
+    it("lets the hint's follow, deadzone and lerp override the skin's", () => {
+      const c = cam({ follow: 'hero', lerp: 1 });
+      const other = hero({ id: 'other', x: 192, y: 92 });
+      const hint = { x: 0, y: 0, follow: 'other', lerp: 0.5 };
+      expect(c.show({ entities: [...at(24, 16), other], camera: hint })).toEqual([176, 84]);
+      const moved = hero({ id: 'other', x: 92, y: 92 });
+      expect(c.show({ entities: [...at(24, 16), moved], camera: hint })).toEqual([126, 84]);
+      // A follow id not in the frame falls back to the hint's point.
+      expect(c.show({ entities: [], camera: { x: 124, y: 16, lerp: 1 } })).toEqual([100, 0]);
+    });
+
+    it('does not move again when the same frame is shown twice', () => {
+      const { r } = recorder();
+      const calls: string[] = [];
+      const rec = { ...r, sprite: (...a: Parameters<Renderer['sprite']>) => calls.push(`${a[2]},${a[3]}`) };
+      const skin: SkinFile = { ...SKIN, kinds: {}, camera: { follow: 'hero', lerp: 0.5 } };
+      const p = new SkinnedCanvasPresenter(rec, skin, lookup, {
+        mapSurface: () => ({ renderer: r, image: null }),
+      });
+      p.present(frame({ frame: 0, map: BIG, entities: at(24, 16) }));
+      p.present(frame({ frame: 1, map: BIG, entities: at(124, 16) }));
+      p.present(frame({ frame: 1, map: BIG, entities: at(124, 16) }));
+      expect(calls).toEqual(['0,0', '-50,0', '-50,0']);
+    });
+
+    it('clamps at the map edges and centres a map smaller than the picture', () => {
+      const c = cam({ follow: 'hero' });
+      expect(c.show({ entities: at(2, 3) })).toEqual([0, 0]);
+      expect(c.show({ entities: at(319, 159) })).toEqual([272, 128]);
+      // Lerping toward a clamped spot stops at the edge.
+      const l = cam({ follow: 'hero', lerp: 0.5 });
+      l.show({ entities: at(200, 80) });
+      for (let i = 0; i < 20; i++) l.show({ entities: at(400, 80) });
+      expect(l.show({ entities: at(400, 80) })).toEqual([272, 64]);
+      // 32x16 in 48x32: centred, whatever the target.
+      const small: PresentMap = { ...MAP, id: 'small', cols: 2, rows: 1, tiles: ['..'] };
+      expect(c.show({ map: small, entities: at(300, 300) })).toEqual([-8, -8]);
+    });
+
+    it("keeps the view inside the hint's bounds, and clamp:false turns clamping off", () => {
+      const c = cam({ follow: 'hero' });
+      const bounds = { x: 32, y: 0, w: 96, h: 160 };
+      expect(c.show({ entities: at(10, 16), camera: { x: 10, y: 16, follow: 'hero', bounds } })).toEqual([
+        32, 0,
+      ]);
+      expect(c.show({ entities: at(300, 16), camera: { x: 0, y: 0, follow: 'hero', bounds } })).toEqual([
+        80, 0,
+      ]);
+      const free = cam({ follow: 'hero' }, { clamp: false });
+      expect(free.show({ entities: at(2, 3) })).toEqual([-22, -13]);
+    });
+
+    it('records the same draw calls for the same frame sequence on two runs', () => {
+      const run = () => {
+        const c = cam({ follow: 'hero', deadzone: { w: 12, h: 6 }, lerp: 0.3 });
+        const out: string[] = [];
+        for (let i = 0; i < 60; i++) {
+          c.show({ entities: at(20 + ((i * 37) % 290), 10 + ((i * 13) % 150)) });
+          out.push(...c.calls);
+        }
+        return out;
+      };
+      const first = run();
+      expect(first.length).toBeGreaterThan(60);
+      expect(run()).toEqual(first);
+    });
+  });
+
   it('squashes and stretches through the renderer transform, about the bottom centre', () => {
     const s = setup();
     s.p.present(

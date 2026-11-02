@@ -102,17 +102,39 @@ export interface PresentEvent {
   [field: string]: JsonValue | undefined;
 }
 
-/** Extension point: where the camera should look. A backend may frame the picture its own way. */
+/** A world-pixel box (top-left and size). */
+export interface PresentBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * Extension point: where the camera should look. A backend may frame the picture its own way.
+ * The optional fields override the skin's `camera` defaults for this frame (the Canvas2D
+ * presenter: `follow` beats `x`/`y`, which beat the skin's `follow`; the hint's `deadzone` and
+ * `lerp` beat the skin's).
+ */
 export interface CameraHint {
-  /** The world point at the centre of the picture. */
+  /** The world point at the centre of the picture (used when `follow` is absent or not found). */
   x: number;
   y: number;
   /** 1 is one world pixel per picture pixel. */
   zoom?: number;
-  /** The entity to follow, by id. */
+  /** The entity to follow, by id: its box centre is the target. */
   follow?: string;
   /** Screen shake strength in pixels. */
   shake?: number;
+  /** A box round the picture's centre (w x h pixels) the target moves in without scrolling. */
+  deadzone?: { w: number; h: number };
+  /** The fraction of the gap the camera closes each frame, 0 to 1 (1 snaps). */
+  lerp?: number;
+  /**
+   * The world box the view must stay inside instead of the whole map (a kit-side scroll lock or
+   * a room); one smaller than the picture is centred.
+   */
+  bounds?: PresentBox;
 }
 
 /** A HUD value: health, score, a room's name. */

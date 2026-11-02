@@ -15,7 +15,9 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     a skin's sounds and effects.
   - `status`: HUD values, `Record<string, number | string | boolean>`.
   - Extension points, all optional and all ignorable by a backend: `camera` (`CameraHint`
-    `{ x, y, zoom?, follow?, shake? }`), `layer` (depth, drawn low to high), `fx` (`PresentFx`
+    `{ x, y, zoom?, follow?, shake?, deadzone?, lerp?, bounds? }`: `deadzone`, `lerp` and `bounds`
+    override the skin's camera defaults for one frame; `bounds` is a world box the view stays
+    inside, for a kit-side scroll lock), `layer` (depth, drawn low to high), `fx` (`PresentFx`
     `{ squashX?, squashY?, rotate?, alpha?, tint? }`) and the map's `layers`.
   - `DeepReadonly<T>` and the `Presenter` interface: `present(frame: DeepReadonly<PresentFrame>)`
     and optional `resize(size)`. Backends implement `Presenter`.

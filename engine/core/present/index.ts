@@ -3,6 +3,7 @@ export type {
   DeepReadonly,
   Facing,
   PresentAnim,
+  PresentBox,
   PresentEntity,
   PresentEvent,
   PresentFrame,

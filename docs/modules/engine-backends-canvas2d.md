@@ -21,7 +21,9 @@ for and holds no game rules.
   `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
   is a `Presenter`. It caches the map per id and version, draws entities by layer then list order with
   skin frames (flipped by facing, a fallback box when art is missing, squash through
-  `transformed()`), frames the camera (hint or skin follow, clamped, small maps centred), draws
+  `transformed()`), frames the camera (hint or skin follow with a deadzone and integer
+  lerp, clamped to the map or the hint's `bounds`, small maps centred; camera state lives in the
+  presenter only, and `zoom` is still ignored), draws
   event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
   event. Details in the folder's CLAUDE.md.
 
