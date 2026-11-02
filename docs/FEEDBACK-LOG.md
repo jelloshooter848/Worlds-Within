@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 88.** (Last used: 87.)
+**Next unused number: 99.** (Last used: 98.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -253,3 +253,37 @@ Choices the autonomous build made that the owner should check. Answer by number.
 topdown])`, because the kits' `index.ts` files do not re-export the hook (so pages do not pull
   in rule lists by accident). Keep that, or re-export the hooks from each kit's index (say
   `platformerKit`)?
+
+**Engine 0.7, builder choices** (taken while building the stacking test; the owner can overrule them)
+
+- **88.** The game's physics profile `hopper` starts from the kit's fixture numbers with its own
+  changes: slower walk and run caps, a slower walker enemy, 2 hp, 3 lives, a 6-tick jump buffer
+  and a softer middle jump tier. OK, or should the test game use the fixture numbers as they are?
+- **89.** Levels play in id order with numbers compared as numbers (`level-10` after `level-2`),
+  and the test game has no fixture level first (the lab does). A level order written in data is
+  moved to 0.10 (G2). OK?
+- **90.** `game.json` names a second kit with an optional `uses` list beside `kit`; `kit` stays
+  the main kit, and rules and strict mutants are the main kit's only (the used kit's rules are
+  G12, item 80). OK, or should all kits be one list?
+- **91.** Two kits' content kinds are never merged or overridden: any name clash (also with an
+  engine kind) is a `kind_clash` error, and listing a kit twice is `duplicate_kit`. OK?
+- **92.** Room challenge rules: `reach` passes when the hero reaches an exit tile `E` (no target
+  cell param); a death fails the round only after the death spin, so the spin is shown; a pass
+  and a fail on the same tick count as a pass; Select quits the round (result `quit`) before
+  the room's world sees it. OK?
+- **93.** A new engine module, `engine/core/shell`, holds the host scene, the backend choice, the
+  display type and the browser boot (kits may not import it). The lab's `main3d.ts` was removed
+  (Three.js is loaded with a dynamic import, still in its own chunk) and the lab's picture API was
+  renamed (`labPicture`, `labCanvasPicture`, `labScene`). OK?
+- **94.** Skin sounds can key only on the event type, so the test game plays `door` when a round
+  starts and ends, `pass` when a level is cleared and `fail` on a death; a passed and a failed
+  round sound the same (G28, moved to 0.11). OK for now?
+- **95.** The runner was drawn with a green cap and purple overalls and the ground as grass on
+  dirt, so the art does not look like well-known NES sprites. OK?
+- **96.** In the 3D skins particle effects are left out (the 3D backend does not draw them), and
+  the skin parity check lets one tile have no 3D block: the platformer kit's `.` (open sky). OK?
+- **97.** The level-3 run file loses two lives on purpose (a spike and a pit) on its way to the
+  goal, because that is the only way a run can guard the `hazards-kill` and `pits-kill` rules. OK?
+- **98.** The committed browser test plays `level-4.run.json` in the built page in both backends
+  by replacing the page's frame timer and clock, which a test hook in the engine does not offer
+  yet (G31, moved to 0.14). This answers item 60 for this game. OK?

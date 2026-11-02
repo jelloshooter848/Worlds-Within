@@ -127,6 +127,11 @@ code commit.
   against the rule of thumb in DESIGN.md).** The glue review is in the report ("Glue review
   (0.7 T9)"): file by file, what is left and the verdict; what could not move yet is logged with a
   named release (G5, G27, G36, G37).
+- Re-checked at `00bdbf4` (the page-test fix) for the release close-out on 2026-11-02: the four
+  checks pass (95 test files, 1087 tests, the two browser tests among them, not skipped), every
+  run file of the three games exits 0 with the same final hashes as above, `mutants` exits 0 for
+  all three games, `pnpm docs:check` is up to date, and the gap report has 37 gaps, each `fixed in
+0.7 Tn (<commit>)` or `moved to <release>`.
 - `pnpm -s cli mutants games/platformer-test --json`, `... games/platformer-lab` and
   `... games/demo` exit 0; every run file of the three games passes `pnpm -s cli run` (exit 0).
 - The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (95 test files,
@@ -152,7 +157,8 @@ code commit.
   at the first level (G9), a trigger's params are checked only when a round starts (G16), the
   3D picture has no HUD (G33), and the top-down rules inside a round are not mutant-checked
   (G12).
-- Open owner decisions: items 76-87 in `FEEDBACK-LOG.md`.
+- Open owner decisions: items 76-98 in `FEEDBACK-LOG.md` (88-98 are the builders' choices to
+  review, listed under "Engine 0.7, builder choices").
 - The 3D checks ran on SwiftShader (no GPU in the build container), as in 0.6.
 - `files.ts` (12 lines) is still per game until a Vite plugin (G5, 0.14).
 - Fixed after review: the platformer-test page test was not deterministic (the T9 notes called
