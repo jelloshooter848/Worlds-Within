@@ -89,6 +89,11 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
   starts afresh); `PendingEvents(world, initial?)` keeps the events of several steps between two
   frames (`add(world, events)` drops those of an older world; `take()` empties it);
   `FramePicture(frames, presenter).draw(world, events)` presents a stream's frame and returns it.
+- `switch.ts` (Engine 0.7, gap G14): `presenterByStatus(status, presenters, otherwise)`, a
+  `Presenter` that hands each frame to `presenters[frame.status[status]]` when that value is one
+  of its own keys (a string), else to `otherwise`; `resize` goes to all. A game that stacks kits
+  gives each frame source its own presenter (own skin, camera and map cache): the platformer
+  kit's `status.miniGame` is the running round's id, '' on the level.
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
@@ -114,7 +119,8 @@ frames by `t`, handles facings and flips, and falls back for unknown kinds. Its 
 on the wrong backend, the demo and platformer-lab canvas2d skins still validating,
 `resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `stream.test.ts` covers `FrameStream`
 (state per world, frozen frames), `PendingEvents` (kept across steps, dropped on a new world) and
-`FramePicture`. `camera.test.ts` covers
+`FramePicture`. `switch.test.ts` covers `presenterByStatus` (picking by value, inherited keys
+ignored, resize to all). `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
 small-area centring, snap on a new map id, repeated frames, `reset`) and `cameraShake`. Run with
 `pnpm test`.

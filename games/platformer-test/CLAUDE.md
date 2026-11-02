@@ -18,8 +18,9 @@ release that will).
 ## Files
 
 - `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the door level's room),
-  256x240, seed 1, `headless.ts`, content kinds `level`, `profile` and `room`. No `view` yet
-  (2D and 3D views come with 0.7 T7 and T8), so there is no `index.html` and no screenshot.
+  256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `profile`, `room`,
+  `palette`, `sprite`, `skin` and `sfx`. `index.html` is the 2D page, so the root launcher lists
+  `games/platformer-test/` (the 3D page comes with 0.7 T8).
 - `content/levels/<id>.json` + `<id>.map.txt`: levels (format: `kits/platformer/CLAUDE.md`,
   Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in id order. Four, all `"scroll": "right"`, each about a few kit rules:
   - `level-1`: a short, easy first level, 48x10 tiles: a bump block with a
@@ -52,11 +53,55 @@ release that will).
   types: `walker`, `ledge-walker` (`turnAt: ledges`), `shell-walker` (a stomp turns it into a
   `shell`) and `shell` (still, kickable at 12288). Profiles live in
   their own folder because the `level` glob `content/levels/*.json` would claim them too.
+- Assets, all text (0.7 T7; `platformer-test.test.ts` fails on any other kind of file):
+  - `content/sprites/hopper.txt` (palette `content/palettes/hopper.json`): original NES-style pixel
+    art, one string per row, one character per pixel: the level tiles (`sky`, `ground`, `brick`,
+    `bump`, `used`, `one-way`, `hazard`), the runner (12x16: idle, two walk frames, skid, jump,
+    fall, hurt, dead), the actors (`walker`, `ledge-walker` in purple, `shell-walker` 16x24,
+    `shell`, each with its flat or upside-down remains), `coin` (and its turn), `goal` (a flag),
+    `door` (the trigger) and the HUD's `heart`, `hud-coin`, `hud-life` (8x8).
+    `content/sprites/hopper-font.txt`: the HUD's 8x8 digits.
+  - `content/sprites/vault.txt` (palette `content/palettes/vault.json`): the vault round: room
+    tiles (`wall`, `floor`, `statue`, `water`), the hero (`down`/`up`/`side`, two frames each, three
+    `attack` frames), his sword (`sword-up`, `sword-down`, `sword-right`), `poof-0..2`, the knight
+    (two frames each way) and the HUD's `hp` heart and `hourglass`.
+  - `content/sfx/*.json`: MML sound effects: `jump`, `coin`, `stomp` (also a brick, a kick and a
+    knight beaten), `door` (the round starts and ends), `pass` (a level cleared), `fail` (a death,
+    the hero's spin), `hurt`, `sword`. No song (optional in the task; none needed yet).
+  - `content/skins/canvas2d.json`: the levels' skin (format: `engine/core/present/skin.ts`):
+    every `PRESENT_TILES` character, `runner` (every `RUNNER_ANIMS` state, mirrored for left),
+    every actor type of the profile (every `ACTOR_ANIMS` state), `coin` (`idle`, `pop`), `goal`,
+    `trigger` (drawn as the door: the game's one trigger; gap G13), `bump-block`; every
+    `PlatformerEvent` with effects and the sounds above; HUD `hp` (hearts), `coins` and `lives`
+    (icon and number in `hopper-font`); camera follow `runner`, deadzone 32x48, lerp 0.25.
+  - `content/skins/canvas2d-vault.json`: the vault round's skin: the top-down kit's tiles the room
+    shows (`#`, `.`, `S`, `~`), `hero` (`walk`, `attack`, `hurt`, `dying`, `poof`), `sword`
+    (`stab`), `poof`, `knight` (`walk`); the round's events (`mini-game`, `room`, `sword`, `hit`,
+    `kill`, `hurt`, `dying`, `dead`); HUD `hp` (one heart per half heart) and `timeLeft` (an
+    hourglass and the ticks left). The two kits' tiles (`#`, `.`, `B`, `=`) and their camera and HUD
+    clash, so a round's frames get their own skin: a skin named `<backend>-<mini game id>` is
+    that round's (`testSkins`), and the page and the view hand each frame to the presenter its
+    `status.miniGame` names (the engine's `presenterByStatus`; gap G14).
 - TypeScript is glue only:
   - `content.ts`: `testKinds()` (the engine's kinds, the platformer kit's `level` and `profile`,
     the top-down kit's `room`), `testRooms(content)`, `loadTest(files)`, `testStages(content)` (the levels in play
     order: by id, numbers compared as numbers, `level-2` before `level-10`; each paired with the
-    profile it names by the kit's `levelStages`), `mustLoad`;
+    profile it names by the kit's `levelStages`), `testSkins(content, backend)` (`{ level,
+rounds }`), `testArt(content)` (sprites and palettes by id), `testSfx(content)`, `mustLoad`;
+  - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets, size and `SKY`),
+    `testFrames(screen)` (the engine's `FrameStream` over the kit's `platformerFrames`; while the
+    round runs, its own frame), `testPicture(presenter, screen)`, `testCanvasPresenter(r, look, {
+level?, onSound? })` (a `SkinnedCanvasPresenter` per skin on `r`, the round's with `clamp:
+false` so the room sits under its HUD band; `presenterByStatus('miniGame', ...)` picks one per
+    frame) and `testCanvasPicture(r, look)`;
+  - `view.ts`: `createView` for `pnpm cli screenshot`: the engine's `frameView` with
+    `testCanvasPicture` for `render` and `testFrames` for `frame()`;
+  - `scene.ts`: `testScene(content, stack, picture)`: the engine's `HostScene` over `createGame`
+    (it pushes the core `miniGameScene` while the door's round runs and pops it on the result);
+  - `main.ts` + `index.html`: the 2D page: `bootBrowserGame` with `canvasDisplay` (the level
+    skin) and a scene drawing `testPicture(testCanvasPresenter(...))` onto the display's renderer;
+    an `AudioManager` with the sfx gets the skins' sounds (`onSound`) and is unlocked on the first
+    key, tap or click (the shell has no audio yet: gap G27);
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
     kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
     `testMiniGames(content)`
@@ -71,7 +116,13 @@ release that will).
     level data, not code.
   - `files.ts`: `TEST_FILES`, the data files through Vite's `import.meta.glob` (for the browser
     pages to come; Node reads them with `readGameFiles`).
-- `platformer-test.test.ts`: content loads, a broken field is named by file and field, the level
+- `platformer-test.test.ts` (0.7 T7 part): every run file played through the view's `frame()`,
+  each frame sorted by source (`status.miniGame`: the level or the vault round), and the right
+  skin must map every kind and state, tile, event and HUD value shown; the level skin maps every
+  tile, runner and actor state and event the kit has; the vault skin the hero's `hurt` and
+  `dying`; every sound is an sfx file; the folder holds only text assets; the view draws a level
+  with `hopper` and the round with `vault`; `testScene` pushes the round and pops it.
+- `platformer-test.test.ts` (earlier parts): content loads, a broken field is named by file and field, the level
   order (with `level-10` after `level-9`), the start state, the first three levels cleared in
   order with `level-3.run.json`'s input, the door's round failed then passed and all four levels
   cleared with `level-4.run.json`'s, equal snapshots on two runs, a failed level starting afresh
@@ -174,15 +225,37 @@ at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
     each tick's held actions and writing them as steps; the assertions read off `dump`, then
     `mutants` on the run file and on the folder (exit 0), then golden hashes.
 
+14. (0.7 T7) Pixel art written as text (a throwaway script checked each frame's width and
+    height while drawing), two palettes, MML sfx, then the two skins, checked with `validate`
+    (every sheet, frame and sound a skin names must exist).
+15. `picture.ts`, `view.ts`, `scene.ts`, `main.ts` from the engine's helpers; `view.ts` would
+    have been a copy of the lab's, so `frameView` went into the engine first (gap G26) and the
+    lab uses it too. One skin per frame source needed `presenterByStatus` (gap G14).
+16. Checked with `pnpm -s cli screenshot <run> --tick N --json` (`matchesHeadless` true, ticks
+    in a level and inside the round) and by replaying `level-4.run.json` through the built page
+    in headless Chromium (`tests/browser/platformer-test-2d.test.ts`).
+
 ## How to test
 
 `pnpm test games/platformer-test`, `pnpm -s cli validate games/platformer-test --json`,
 `pnpm -s cli run games/platformer-test/runs/level-<n>.run.json --json`,
-`pnpm -s cli mutants games/platformer-test --json`, `pnpm test tests/runs`.
+`pnpm -s cli mutants games/platformer-test --json`, `pnpm test tests/runs` (golden hashes; backend
+parity plays every run through the view into the null backend and into Canvas2D, all giving the
+golden hashes), `pnpm -s cli screenshot games/platformer-test/runs/level-4.run.json --tick 3050
+--json` (a tick inside the round; `matchesHeadless` true), `pnpm test tests/browser` (the built
+page plays `level-4.run.json`: the launcher lists the game, both rounds show the vault and the
+level comes back, no page errors; skipped without Chromium).
+
+## How to play
+
+`pnpm dev` and open `/games/platformer-test/` (or `pnpm build && pnpm preview` and the root
+launcher's `games/platformer-test/` link): arrows (or the touch pad) move, Z jumps, X runs; in
+the vault round arrows walk the hero and X stabs. The levels come in order; the door is in
+`level-4`.
 
 ## Imports
 
-- Allowed: relative paths inside `games/platformer-test`, `@engine/*` (core; backends once it has
-  views) `@kits/platformer` and `@kits/topdown` (the door level's room challenge).
+- Allowed: relative paths inside `games/platformer-test`, `@engine/*` (core and backends),
+  `@kits/platformer` and `@kits/topdown` (the door level's room challenge).
 - Never: other games (not even `games/platformer-lab`: copy and log a gap instead) or kits it does
   not use. Nothing in `engine/` or `kits/` imports from here.

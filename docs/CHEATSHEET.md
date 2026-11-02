@@ -59,7 +59,9 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
   (`freezeFrame`), to the backend's `SkinnedCanvasPresenter(r, skin, sheetLookup(assets), { size })`
   with the game's skin (`content/skins/canvas2d.json`, the `skin` kind). The presenter keeps the
   camera: it follows the frame's camera hint (else the skin's `camera`), with `deadzone`, `lerp`
-  and clamping to the hint's `bounds` or the map; a hint's own values win over the skin's.
+  and clamping to the hint's `bounds` or the map; a hint's own values win over the skin's. A game
+  on a kit's frame stream builds its view with `frameView` (Engine 0.7); a stacked mini game's
+  frames go to their own skin through `presenterByStatus('miniGame', ...)`.
 - 3D (from 0.6): a view may also give `frame()`, the frozen `PresentFrame` for the state now, so a
   tool can show it through any `Presenter`. `ThreeScene` / `ThreePresenter`
   (`@engine/backends/three`) draw those frames with the game's `three` skin

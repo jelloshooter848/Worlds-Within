@@ -25,6 +25,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   instead of `render` and never both in one run, and optional `background`, the colour a
   presenter of `frame()` clears to;
   `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
+  `frameView({ game, screen, frames, picture, background? })` (Engine 0.7) builds a `ViewGame`
+  from a headless game with `world` and `events`, a frame stream and a drawer per renderer.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
 - `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`; `defineKit`

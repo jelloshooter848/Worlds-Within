@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NullPresenter } from '@engine/backends/null';
@@ -7,6 +7,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { freezeFrame, isFullMap } from '@engine/core/present';
+import type { ViewEntry, ViewGame } from '@engine/core/view';
 import {
   PlatformerPresentState,
   PRESENT_TILES,
@@ -26,7 +27,9 @@ import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-la
 import { labLook3d } from '../../games/platformer-lab/picture3d';
 
 // Backend parity (docs/ROADMAP.md, 0.4 "Done when"): the same demo run gives the same state hashes
-// whichever backend presents it. From Engine 0.5 the platformer lab's runs are checked the same way
+// whichever backend presents it. From Engine 0.7 every other game with a view is found by itself and
+// checked through its view (`frame()` to the null backend, `render` to Canvas2D; the last block).
+// From Engine 0.5 the platformer lab's runs are checked the same way
 // (its `LabGame` through the kit's `presentWorld` and the lab's `labCanvasPicture`). Every run file is played twice, presenting every tick: once
 // through the null backend's NullPresenter (frames checked against the schema and frozen), once
 // through the Canvas2D backend's SkinnedCanvasPresenter (the demo's `DemoPicture` with its skin) onto
@@ -45,6 +48,25 @@ const runsIn = (dir: string) =>
     .map((f) => `${dir}/${f}`);
 const files = runsIn(DEMO_RUNS);
 const labFiles = runsIn(LAB_RUNS);
+
+/**
+ * Every other game with a view (`view` in `game.json`) and run files: checked through the view
+ * contract alone (gap G6, fixed in Engine 0.7 T7), so a new game is picked up with no edit here.
+ * The demo and the lab keep their own blocks below (the lab's also checks the 3D skin).
+ */
+const OWN_BLOCKS = new Set(['games/demo', 'games/platformer-lab']);
+const viewGames = readdirSync(join(ROOT, 'games'), { withFileTypes: true })
+  .filter((e) => e.isDirectory())
+  .map((e) => `games/${e.name}`)
+  .filter((dir) => !OWN_BLOCKS.has(dir) && existsSync(join(ROOT, dir, 'game.json')))
+  .filter(
+    (dir) =>
+      typeof (JSON.parse(readFileSync(join(ROOT, dir, 'game.json'), 'utf8')) as { view?: unknown }).view ===
+      'string',
+  )
+  .filter((dir) => existsSync(join(ROOT, dir, 'runs')))
+  .sort();
+const viewRuns = viewGames.flatMap((dir) => runsIn(`${dir}/runs`));
 
 /** A renderer that draws nothing and counts the calls made to it, by method. */
 function recordingRenderer(): { r: Renderer; calls: Map<string, number> } {
@@ -224,5 +246,53 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
     const noBlock = solid.filter((t) => skin.tiles?.[t]?.mesh === undefined).sort();
     expect(noBlock, 'tiles without a three skin entry').toEqual([]);
     expect(solid.length).toBeGreaterThan(3);
+  });
+});
+
+/** Plays `run` through a game's view as `pnpm cli run` plays its headless game, calling `show` each tick. */
+function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void): TickHash[] {
+  const input = new ScriptedInput(run.input);
+  const hashes: TickHash[] = [];
+  for (let tick = 0; tick <= run.ticks; tick++) {
+    if (tick > 0) {
+      input.next();
+      view.step(input);
+    }
+    show(view);
+    if (tick % run.hashEvery === 0 || tick === run.ticks)
+      hashes.push({ tick, hash: stateHash(view.snapshot()) });
+  }
+  return hashes;
+}
+
+describe('backend parity: every other game with a view, through null and canvas2d', () => {
+  it('finds the platformer test runs', () => {
+    expect(viewRuns).toContain('games/platformer-test/runs/level-4.run.json');
+  });
+
+  it.each(viewRuns)('%s', async (file) => {
+    const { content, run, golden } = load(file);
+    const dir = file.slice(0, file.indexOf('/runs/'));
+    const manifest = JSON.parse(readFileSync(join(ROOT, dir, 'game.json'), 'utf8')) as { view: string };
+    const entry = (await import(join(ROOT, dir, manifest.view))) as ViewEntry;
+    const make = () =>
+      entry.createView(content, run.seed ?? content.manifest.start.seed, { disabledRules: run.disableRules });
+
+    const nullPresenter = new NullPresenter({ validate: true, freeze: true });
+    const viaNull = playView(make(), run, (view) => nullPresenter.present(view.frame!()));
+
+    const { r, calls } = recordingRenderer();
+    const drawnPerTick: number[] = [];
+    const viaCanvas = playView(make(), run, (view) => {
+      const before = calls.get('clear') ?? 0;
+      view.render(r);
+      drawnPerTick.push((calls.get('clear') ?? 0) - before);
+    });
+
+    expect(nullPresenter.frames).toBe(run.ticks + 1);
+    expect(drawnPerTick).toEqual(Array.from({ length: run.ticks + 1 }, () => 1));
+    expect(calls.get('sprite') ?? 0).toBeGreaterThan(run.ticks);
+    expect(viaNull).toEqual(golden);
+    expect(viaCanvas).toEqual(golden);
   });
 });

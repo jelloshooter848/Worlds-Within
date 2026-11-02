@@ -6,7 +6,11 @@
   "content": {
     "level": ["content/levels/*.json"],
     "profile": ["content/profiles/*.profile.json"],
-    "room": ["content/rooms/*.json"]
+    "room": ["content/rooms/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"],
+    "sfx": ["content/sfx/*.json"]
   },
   "start": {
     "seed": 1
@@ -15,5 +19,6 @@
     "width": 256,
     "height": 240
   },
-  "headless": "headless.ts"
+  "headless": "headless.ts",
+  "view": "view.ts"
 }

@@ -1,18 +1,46 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { loadTest, mustLoad, testRooms, testStages } from './content';
+import { NullRenderer } from '@engine/backends/null';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
+import { isFullMap, type SkinFile } from '@engine/core/present';
+import { SceneStack } from '@engine/core/scene';
+import { loadTest, mustLoad, testRooms, testSfx, testStages } from './content';
+import { testLook } from './picture';
+import { testScene } from './scene';
+import { createView } from './view';
 import { testMiniGames } from './minigames';
-import { LEVEL_PAUSE } from '@kits/platformer';
+import { ACTOR_ANIMS, LEVEL_PAUSE, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
 import { createGame, type TestSnapshot } from './headless';
 import type { RoomChallenge } from '@kits/topdown';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
 const content = mustLoad(loadTest(FILES));
+
+/** Every `PlatformerEvent` type (`kits/platformer/world.ts`). */
+const PLATFORMER_EVENTS = [
+  'jump',
+  'land',
+  'bump',
+  'block',
+  'break',
+  'coin',
+  'spawn',
+  'stomp',
+  'kick',
+  'defeat',
+  'hurt',
+  'died',
+  'respawn',
+  'cleared',
+  'mini-game',
+  'mini-game-end',
+];
 
 /** Snapshots of `ticks` steps holding right from seed 1, tick 0 included. */
 function play(ticks: number): string[] {
@@ -153,5 +181,153 @@ describe("platformer test's mini games", () => {
       round: { limit: 600 },
     });
     expect(round.present().size).toEqual({ width: 256, height: 240 });
+  });
+});
+
+/** What the frames of every run file show, per frame source (`level`, or the mini game's id). */
+interface Shown {
+  states: Map<string, Set<string>>;
+  tiles: Set<string>;
+  events: Set<string>;
+  status: Set<string>;
+}
+
+function shownByRuns(): Map<string, Shown> {
+  const out = new Map<string, Shown>();
+  const runs = readdirSync(new URL('./runs/', import.meta.url)).filter((f) => f.endsWith('.run.json'));
+  expect(runs.length).toBeGreaterThanOrEqual(4);
+  for (const name of runs) {
+    const run = JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as {
+      ticks: number;
+      input: InputScript;
+    };
+    const view = createView(content, 1);
+    const input = new ScriptedInput(run.input);
+    for (let t = 0; t <= run.ticks; t++) {
+      if (t > 0) {
+        input.next();
+        view.step(input);
+      }
+      const frame = view.frame!();
+      const source = String(frame.status['miniGame'] || 'level');
+      let s = out.get(source);
+      if (!s)
+        out.set(source, (s = { states: new Map(), tiles: new Set(), events: new Set(), status: new Set() }));
+      for (const e of frame.entities) {
+        if (!s.states.has(e.kind)) s.states.set(e.kind, new Set());
+        s.states.get(e.kind)!.add(e.anim.state);
+      }
+      if (frame.map && isFullMap(frame.map))
+        for (const row of frame.map.tiles) for (const c of row) s.tiles.add(String(c));
+      for (const e of frame.events) s.events.add(e.type);
+      for (const key of Object.keys(frame.status)) s.status.add(key);
+    }
+  }
+  return out;
+}
+
+describe('platformer test 2D skins', () => {
+  const look = testLook(content);
+  const shown = shownByRuns();
+  const skinFor = (source: string): SkinFile => (source === 'level' ? look.skin : look.rounds[source]!);
+
+  it('has a level skin and one round skin, for the vault', () => {
+    expect(Object.keys(look.rounds)).toEqual(['vault']);
+    expect([...shown.keys()].sort()).toEqual(['level', 'vault']);
+  });
+
+  it('the level skin maps every tile, kind, state and event the platformer kit presents', () => {
+    const skin = look.skin;
+    const states = (kind: string) => Object.keys(skin.kinds[kind]?.frames ?? {}).sort();
+    expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(Object.values(PRESENT_TILES).sort());
+    expect(states('runner')).toEqual([...RUNNER_ANIMS].sort());
+    for (const type of Object.keys(testStages(content)[0]!.profile.actors))
+      expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
+    expect(Object.keys(skin.events ?? {}).sort()).toEqual([...PLATFORMER_EVENTS].sort());
+  });
+
+  it.each(['level', 'vault'])(
+    'the %s skin covers every kind, state, tile, event and HUD value its frames show in every run',
+    (source) => {
+      const skin = skinFor(source);
+      const s = shown.get(source)!;
+      const missing: string[] = [];
+      for (const [kind, states] of s.states)
+        for (const state of states)
+          if (skin.kinds[kind]?.frames?.[state] === undefined) missing.push(`${kind} ${state}`);
+      for (const t of s.tiles) if (skin.tiles?.[t] === undefined) missing.push(`tile ${t}`);
+      for (const e of s.events) if (skin.events?.[e] === undefined) missing.push(`event ${e}`);
+      for (const item of skin.hud ?? []) if (!s.status.has(item.status)) missing.push(`hud ${item.status}`);
+      expect(missing).toEqual([]);
+    },
+  );
+
+  it('the vault skin also covers what a round can show beyond the runs: the hero hurt and dying', () => {
+    const states = Object.keys(look.rounds['vault']!.kinds['hero']?.frames ?? {}).sort();
+    expect(states).toEqual(['attack', 'dying', 'hurt', 'poof', 'walk']);
+    for (const e of ['hurt', 'dying', 'dead']) expect(look.rounds['vault']!.events).toHaveProperty(e);
+  });
+
+  it('names only sounds the game has (MML sfx files)', () => {
+    const sfx = new Set(testSfx(content).map((s) => s.id));
+    for (const skin of [look.skin, ...Object.values(look.rounds)])
+      for (const entry of Object.values(skin.events ?? {}))
+        if (entry.sound !== undefined) expect(sfx, entry.sound).toContain(entry.sound);
+    expect([...sfx].sort()).toEqual(['coin', 'door', 'fail', 'hurt', 'jump', 'pass', 'stomp', 'sword']);
+  });
+
+  it('keeps its assets as text: pixel art, palettes, skins and MML only', () => {
+    const allowed =
+      /^(game\.json|content\/[a-z]+\/[a-z0-9-]+(\.profile)?\.(json|txt)|content\/levels\/[a-z0-9-]+\.map\.txt|content\/rooms\/[a-z0-9-]+\.map\.txt)$/;
+    expect(Object.keys(FILES).filter((f) => !allowed.test(f))).toEqual([]);
+  });
+
+  it('draws a level with the level sheet and font, and the round with the vault sheet', () => {
+    const sheets = new Map<string, number>();
+    const count = (sheet: SpriteSheet) => sheets.set(sheet.id, (sheets.get(sheet.id) ?? 0) + 1);
+    const r: Renderer = Object.assign(new NullRenderer(), { sprite: count, text: count });
+    const run = JSON.parse(readFileSync(new URL('./runs/level-4.run.json', import.meta.url), 'utf8')) as {
+      input: InputScript;
+    };
+    const view = createView(content, 1);
+    const input = new ScriptedInput(run.input);
+    const vaultAt = new Map<number, number>();
+    for (let t = 1; t <= 2400; t++) {
+      input.next();
+      view.step(input);
+      if (t === 2200 || t === 2400) {
+        view.render(r);
+        vaultAt.set(t, sheets.get('vault') ?? 0);
+      }
+    }
+    expect(sheets.get('hopper') ?? 0).toBeGreaterThan(10);
+    expect(sheets.get('hopper-font') ?? 0).toBeGreaterThan(0);
+    expect(vaultAt.get(2200)).toBe(0);
+    expect(vaultAt.get(2400) ?? 0).toBeGreaterThan(100);
+  });
+});
+
+describe('platformer test page scene', () => {
+  it('pushes the vault round over the level and pops it on the result', () => {
+    const stack = new SceneStack();
+    const drawn: string[] = [];
+    const scene = testScene(content, stack, () => ({
+      draw: (world) => drawn.push(world.level.id),
+    }));
+    stack.push(scene);
+    const run = JSON.parse(readFileSync(new URL('./runs/level-4.run.json', import.meta.url), 'utf8')) as {
+      input: InputScript;
+    };
+    const input = new ScriptedInput(run.input);
+    const depths = new Set<number>();
+    for (let t = 1; t <= 2900; t++) {
+      input.next();
+      stack.update([input]);
+      depths.add(stack.depth);
+    }
+    stack.render(new NullRenderer());
+    expect([...depths].sort()).toEqual([1, 2]);
+    expect(stack.depth).toBe(1);
+    expect(drawn).toEqual(['level-4']);
   });
 });

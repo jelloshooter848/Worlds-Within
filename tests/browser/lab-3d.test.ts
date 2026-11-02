@@ -1,11 +1,9 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
-import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type { Browser } from 'playwright';
+import { join } from 'node:path';
+import { browserMissing, launch, listen, ROOT, serveBuilt } from './serve';
 
 // Browser smoke test of the platformer lab in 3D (docs/ROADMAP.md, 0.6 "Done when": the fixture
 // level plays in the browser in 3D). Headless Chromium opens /games/platformer-lab/?backend=three,
@@ -16,41 +14,14 @@ import type { Browser } from 'playwright';
 // changes the picture, and that the page logged no errors. Skipped where Chromium is not installed
 // (never in CI), like the screenshot tests.
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const LAB = 'games/platformer-lab/';
 const SUB_BASE = '/ww-sub/';
 
-/** SwiftShader is Chromium's WebGL when there is no GPU (newer Chromium wants it asked for). */
-const CHROMIUM_ARGS = ['--enable-unsafe-swiftshader'];
-
-async function launch(): Promise<Browser> {
-  const { chromium } = await import('playwright');
-  return chromium.launch({ args: CHROMIUM_ARGS });
-}
-
-/** Why Chromium does not start here, or null (in CI a missing browser fails the test instead). */
-async function browserMissing(): Promise<string | null> {
-  try {
-    await (await launch()).close();
-    return null;
-  } catch (error) {
-    if (process.env.CI) return null;
-    return error instanceof Error ? (error.message.split('\n')[0] ?? 'no Chromium') : String(error);
-  }
-}
 const missing = await browserMissing();
 if (missing) console.warn(`skipping the 3D lab smoke test: ${missing}`);
 
 const temp = mkdtempSync(join(tmpdir(), 'ww-lab-3d-'));
 afterAll(() => rmSync(temp, { recursive: true, force: true }));
-
-async function listen(server: Server): Promise<string> {
-  await new Promise<void>((done, fail) => {
-    server.once('error', fail);
-    server.listen(0, '127.0.0.1', () => done());
-  });
-  return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-}
 
 /** Vite's dev server (middleware mode) over the repo, as `pnpm dev` serves it. */
 async function serveDev(): Promise<{ url: string; close(): Promise<void> }> {
@@ -96,42 +67,6 @@ async function occupyDefaultWsPort(): Promise<() => Promise<void>> {
     return async () => {};
   }
   return () => new Promise<void>((done) => squatter.close(() => done()));
-}
-
-const TYPES: Record<string, string> = {
-  '.html': 'text/html',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.map': 'application/json',
-};
-
-/** The repo built with `base` into `outDir`, served as static files under that base. */
-async function serveBuilt(base: string, outDir: string): Promise<{ url: string; close(): Promise<void> }> {
-  const vite = await import('vite');
-  await vite.build({
-    configFile: join(ROOT, 'vite.config.ts'),
-    root: ROOT,
-    base,
-    logLevel: 'silent',
-    build: { outDir, emptyOutDir: true },
-  });
-  const http = createServer((req, res) => {
-    const path = new URL(req.url ?? '/', 'http://x').pathname;
-    let file = path.startsWith(base) ? normalize(join(outDir, path.slice(base.length))) : '';
-    if (file && existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
-    if (!file.startsWith(outDir) || !existsSync(file)) {
-      res.writeHead(404).end();
-      return;
-    }
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
-    res.end(readFileSync(file));
-  });
-  const origin = await listen(http);
-  return {
-    url: `${origin}${base}${LAB}`,
-    close: () => new Promise<void>((done) => http.close(() => done())),
-  };
 }
 
 interface Played {
@@ -251,7 +186,7 @@ describe.skipIf(missing !== null)('the platformer lab in 3D (headless Chromium, 
   it('plays from the build under a sub-path base', async () => {
     const server = await serveBuilt(SUB_BASE, join(temp, 'dist'));
     try {
-      expectPlayed(await play(server.url));
+      expectPlayed(await play(`${server.url}${LAB}`));
     } finally {
       await server.close();
     }

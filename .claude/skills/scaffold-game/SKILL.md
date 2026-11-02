@@ -558,9 +558,17 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   ```
 
   Pass `miniGames: [...]` (`MiniGameDef`s, `engine/core/minigame.ts`) when a level has triggers.
-- `view.ts` and the picture: as above, with the kit's `presentWorld(world, events, { state, size })`
-  and a `PlatformerPresentState` per stream of frames (`games/platformer-lab/picture.ts`). No
-  `clamp: false`: the kit's camera hint and the map keep the view inside the level.
+- `view.ts` and the picture: one call to the engine's `frameView` (`@engine/core/view`, Engine
+  0.7): `frameView({ game: createGame(...), screen, frames: new FrameStream(platformerFrames(screen)),
+  picture: (r) => new FramePicture(new FrameStream(platformerFrames(screen)), new
+  SkinnedCanvasPresenter(r, skin, sheet, { size: screen, background })), background })` (see
+  `games/platformer-lab/view.ts` and `picture.ts`). No `clamp: false`: the kit's camera hint and
+  the map keep the view inside the level.
+- Mini games from another kit (Engine 0.7): give each round its own skin
+  (`content/skins/canvas2d-<mini game id>.json`) and hand frames to the right presenter with
+  `presenterByStatus('miniGame', { <id>: roundPresenter }, levelPresenter)`
+  (`@engine/core/present`); a top-down round's presenter takes `clamp: false` (see
+  `games/platformer-test/picture.ts`).
 - `main.ts` and the scene (Engine 0.7): the engine's browser shell does the boot. `scene.ts`
   makes a `HostScene` (`@engine/core/shell`) over the game: `step`, `world`, `events` and
   `miniGame: () => game.world.miniGame?.game ?? null` (it pushes `miniGameScene` while a trigger

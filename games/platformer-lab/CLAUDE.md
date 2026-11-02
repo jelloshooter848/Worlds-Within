@@ -81,9 +81,10 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   - `picture3d.ts`: `labLook3d(content)` (the `three` skin, picture size and `SKY`, as the 3D
     backend's `threeDisplay` and `threeScenePresenter` take them). No Three.js import: the 2D page
     bundles none;
-  - `view.ts`: `createView` for `pnpm cli screenshot`: `render(r)` draws through
-    `labCanvasPicture`, `frame()` (the view contract's frame hook) returns the `labFrames` frame
-    with the events since the last call (the engine's `PendingEvents`: dropped when the level
+  - `view.ts`: `createView` for `pnpm cli screenshot`, the engine's `frameView`
+    (`@engine/core/view`, Engine 0.7 T7, gap G26): `render(r)` draws through
+    `labCanvasPicture`, `frame()` (the view contract's frame hook) returns the `labFrames` frame,
+    both with the events since the last draw (the engine's `PendingEvents`: dropped when the level
     changes, as the scene does), and `background` is the sky (`SKY`) for `pnpm cli screenshot
 --backend three`;
   - `scene.ts`: `labScene(content, stack, picture)`, the engine's `HostScene`

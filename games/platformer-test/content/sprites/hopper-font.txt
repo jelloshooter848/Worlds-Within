@@ -1,0 +1,104 @@
+; The stacking test's HUD font: one 8x8 frame per digit, named by the digit (white on clear).
+palette hopper
+legend . clear
+legend w 2
+
+frame 0
+.wwwww..
+ww...ww.
+ww..www.
+ww.w.ww.
+www..ww.
+ww...ww.
+.wwwww..
+........
+
+frame 1
+..ww....
+.www....
+..ww....
+..ww....
+..ww....
+..ww....
+wwwwww..
+........
+
+frame 2
+.wwwww..
+ww...ww.
+.....ww.
+..wwww..
+.ww.....
+ww......
+wwwwwww.
+........
+
+frame 3
+wwwwwww.
+....ww..
+...ww...
+..wwww..
+.....ww.
+ww...ww.
+.wwwww..
+........
+
+frame 4
+...www..
+..wwww..
+.ww.ww..
+ww..ww..
+wwwwwww.
+....ww..
+....ww..
+........
+
+frame 5
+wwwwww..
+ww......
+wwwwww..
+.....ww.
+.....ww.
+ww...ww.
+.wwwww..
+........
+
+frame 6
+..wwww..
+.ww.....
+ww......
+wwwwww..
+ww...ww.
+ww...ww.
+.wwwww..
+........
+
+frame 7
+wwwwwww.
+ww...ww.
+....ww..
+...ww...
+..ww....
+..ww....
+..ww....
+........
+
+frame 8
+.wwww...
+ww...w..
+www..w..
+.wwww...
+w..wwww.
+w....ww.
+.wwwww..
+........
+
+frame 9
+.wwwww..
+ww...ww.
+ww...ww.
+.wwwwww.
+.....ww.
+....ww..
+.wwww...
+........

@@ -29,6 +29,7 @@ export { freezeFrame } from './freeze';
 export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';
+export { presenterByStatus } from './switch';
 export {
   checkSkinRefs,
   DEFAULT_CAMERA3D,

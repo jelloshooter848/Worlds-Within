@@ -54,6 +54,9 @@ Import from `@engine/core/present` (`index.ts`).
   state per world), `PendingEvents` (events between frames, dropped on a new world) and
   `FramePicture` (`draw(world, events)` onto a `Presenter`). Games and tools use them instead of
   their own per-frame glue.
+- `presenterByStatus(status, presenters, otherwise)` (`switch.ts`, Engine 0.7): one presenter
+  per frame source, picked per frame by a status value (`miniGame`), so a stacked mini game's
+  frames get their own skin, camera and map cache.
 
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs
