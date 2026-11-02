@@ -56,13 +56,15 @@ export class Player {
     this.airCap = profile.maxWalk;
   }
 
-  /** The player placed in the start tile at col/row: centred in it, feet on its bottom edge. */
+  /**
+   * The player placed in the start tile at col/row: centred in it, feet on its bottom edge. As in
+   * SMBC it starts not yet on the ground: the first tick is an air tick (air control, the first
+   * tier's gravity), and the second one's fall lands it (the golden traces check this).
+   */
   static atStart(col: number, row: number, profile: PlayerProfile, rules: RuleSwitch): Player {
     const x = tileToSub(col) + ((tileToSub(1) - px(profile.box.w)) >> 1);
     const y = tileToSub(row + 1) - px(profile.box.h);
-    const p = new Player(x, y, profile, rules);
-    p.body.onGround = true;
-    return p;
+    return new Player(x, y, profile, rules);
   }
 
   /** The jump tier for a take-off at `vx`: the first whose `below` is over |vx| (the last else). */

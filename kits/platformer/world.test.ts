@@ -59,8 +59,11 @@ const WALL = ['......#.', '......#.', '......#G', '.@....#.', '########'];
 
 const RIGHT: Script = [{ frame: 0, hold: ['right'] }];
 const RUN_RIGHT: Script = [{ frame: 0, hold: ['right', 'run'] }];
-/** A jump pressed on tick `at` and held for `hold` ticks. */
-const jump = (hold: number, at = 1, also: Action[] = []): Script => [
+/**
+ * A jump pressed on tick `at` and held for `hold` ticks. The player starts in the air for one tick
+ * and lands on tick 1 (as in SMBC), so tick 2 is the first a jump can start on.
+ */
+const jump = (hold: number, at = 2, also: Action[] = []): Script => [
   { frame: 0, hold: also },
   { frame: at, hold: [...also, 'jump'] },
   { frame: at + hold, hold: also },
@@ -74,9 +77,12 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
   {
     name: 'standing still on the floor stays put',
     holds: (off) =>
-      play(FLAT, [], 60, off).every(
-        (s) => s.player.x === tileToSub(1) + tileToSub(1) / 2 && s.player.y === FLOOR && s.player.onGround,
-      ),
+      // Tick 0 is the start's air tick (it settles on the floor on tick 1).
+      play(FLAT, [], 60, off)
+        .slice(1)
+        .every(
+          (s) => s.player.x === tileToSub(1) + tileToSub(1) / 2 && s.player.y === FLOOR && s.player.onGround,
+        ),
   },
   {
     name: 'holding right accelerates from minWalk to the walk cap and stays there',
@@ -128,9 +134,9 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
       const s = play(FLAT, jump(1), 80, off);
       return (
         events(s, 'jump').length === 1 &&
-        s[1]!.player.vy < 0 &&
+        s[2]!.player.vy < 0 &&
         minY(s) < FLOOR - tileToSub(1) &&
-        events(s, 'land').length === 1 &&
+        events(s.slice(2), 'land').length === 1 &&
         last(s).player.y === FLOOR
       );
     },
@@ -300,11 +306,12 @@ describe('platformerGame', () => {
     const game = platformerGame(new PlatformerWorld(tiny(), PROFILE));
     expect(game.snapshot()).toMatchObject({ frame: 0, level: 'tiny', fell: false, events: [] });
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['jump'] }] });
-    input.next();
-    game.step(input);
-    expect(game.snapshot().events).toEqual([{ type: 'jump', tier: 0 }]);
-    input.next();
-    game.step(input);
-    expect(game.snapshot().events).toEqual([]);
+    // Tick 0 is in the air, tick 1 lands, tick 2 takes the buffered jump.
+    const steps = [[], [{ type: 'land' }], [{ type: 'jump', tier: 0 }], []];
+    for (const want of steps) {
+      input.next();
+      game.step(input);
+      expect(game.snapshot().events).toEqual(want);
+    }
   });
 });

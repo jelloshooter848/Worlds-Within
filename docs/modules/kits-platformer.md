@@ -36,6 +36,8 @@ it by the `kit` name in `game.json`.
 
 `pnpm test kits/platformer` runs the schema tests and loads the fixture level and profile
 (`kits/platformer/__fixtures__/`) through the kit's hook; `world.test.ts` covers the movement rules (each switched off must fail a
-case), determinism and whole-number snapshots. `pnpm docs:gen` keeps the kinds in
+case), determinism and whole-number snapshots; `golden.test.ts` replays six scripted inputs and
+must match SMBC's recorded player positions and velocities at every tick (the traces and their
+provenance are in `kits/platformer/__fixtures__/golden/`; SMBC is not needed to run it). `pnpm docs:gen` keeps the kinds in
 `docs/reference/schemas.md`; the architecture tests (`tests/architecture/`) check its imports,
 drawing calls, content and agent docs.

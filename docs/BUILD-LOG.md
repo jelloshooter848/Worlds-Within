@@ -7,6 +7,25 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.5 (in progress)
+
+Notes recorded while the release is built; the close-out (T11) turns them into the usual sections.
+
+- **Golden traces against SMBC (T6).** `kits/platformer/golden.test.ts` replays six scripted inputs
+  (walk, run then skid and let go, tap jump, held jump, a running jump over a gap into a wall, a jump
+  into a ceiling) and matches SMBC REMIX v0.4.73 (commit `e0eeee7`) tick by tick in body x, y, vx and
+  vy. The traces were recorded with SMBC's headless `runSim` and its default runner on a
+  purpose-built 48x15 test map, through a small Vite module runner using this repo's Vite with SMBC
+  as the root (SMBC's level index needs `import.meta.glob`, so plain `tsx` could not load it), with
+  nothing installed in the SMBC checkout. The generator, the command and the provenance are in
+  `kits/platformer/__fixtures__/golden/README.md`; SMBC is not a dependency and the test reads only
+  the committed JSON. The one change the traces asked for: the player now starts as SMBC's does,
+  not yet on the ground, so tick 0 is an air tick and tick 1 lands it (the profile numbers already
+  matched). Left out on purpose, and kept out of the scripts: character-specific moves (crouch,
+  slides, wall moves, flutter, air jumps, cut jumps, swimming, power states), running over
+  one-tile gaps, coyote time, the camera's left edge (scroll lock, T7) and start modes other than
+  standing; the list is in `kits/platformer/CLAUDE.md`.
+
 ## Engine 0.4
 
 Renderer and presentation contract. Built on branch `engine/build-0.15`; not tagged (tagging is the

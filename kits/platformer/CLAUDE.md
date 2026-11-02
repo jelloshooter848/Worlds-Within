@@ -92,6 +92,33 @@ One tick of the player (`player.ts`), every number from the profile's `player`:
 Then the world holds the player inside the level's left and right edges and stops it, once its top
 is below the last row, as fallen (`fell`). There is no corner slip and no coyote time yet.
 
+The player starts as SMBC's does: placed on the start tile but not yet on the ground, so tick 0 is
+an air tick (air control from rest gives `minWalk`, and the first tier's `gravity` is added) and
+tick 1's fall lands it (a `land` event). The first tick a jump can start on is tick 2.
+
+## Golden traces (SMBC)
+
+`golden.test.ts` replays six scripts (walk, run then skid and let go, tap jump, held jump, a
+running jump over a gap into a wall, a jump into a ceiling) on `__fixtures__/golden/flat.map.txt`
+with `runner.profile.json`, and compares the body's `x`, `y`, `vx`, `vy` with SMBC v0.4.73
+(`e0eeee7`) tick by tick; a failure names the script, the first differing tick and field, and
+both rows. The traces, the command and the generator source are in `__fixtures__/golden/README.md`;
+the test reads only the committed JSON. **If you change the movement code or the fixture profile,
+this test must stay green**; never edit a trace by hand: regenerate it from SMBC as the README
+says.
+
+SMBC behaviour deliberately left out of the kit (and kept out of the traces' scripts):
+
+- Character-specific moves: crouching and crouch-slides, slides and dash jumps, wall cling, wall
+  jumps and wall climbs, flutter, air (double) jumps, the "cut" jump on release, instant
+  acceleration, inertia-style movement, rise/launch profiles, stairs and vines, swimming and every
+  water rule, and power states (only the small 12x16 body).
+- Running over one-tile gaps at speed (SMBC's `crossGapMinVx`); the traces avoid one-tile gaps.
+- Coyote time (an assist, 0 for the default runner) and SMBC's Classic-mode rule variants.
+- The camera's left edge stopping a player who walks back (scroll lock comes with T7's `scroll`
+  work); the scripts stay clear of it.
+- Start modes other than standing (pipe exit, fall-in, auto-walk, ...).
+
 Rule ids (`rules.ts`), each guarded by `rules.isOn(id)` and each made to fail a test in
 `world.test.ts` when off: `gravity`, `fall-cap`, `walk`, `run-speed`, `run-hold`, `friction`,
 `skid`, `air-control`, `jump`, `jump-by-speed`, `variable-jump`, `solid-tiles`,
@@ -126,7 +153,8 @@ Rule ids (`rules.ts`), each guarded by `rules.isOn(id)` and each made to fail a 
 (file, path, code, row and col); `kit.test.ts` loads the fixtures as a game would (with
 `loadContent` and the kit's hook) and checks the cross-file problems. `world.test.ts` holds the
 movement tests as a list of cases, plays each with every rule on, then with each named rule off in
-turn and fails if a rule leaves every case passing; it also checks that two runs of the same input
+turn and fails if a rule leaves every case passing; `golden.test.ts` checks the movement against
+SMBC (above); `world.test.ts` also checks that two runs of the same input
 and seed give equal `canonicalJson` snapshots tick by tick, and that snapshots hold whole numbers. After changing a schema or a
 description, run `pnpm docs:gen` (the schema reference lists both kinds; their examples are
 `docs/reference/examples/level.json`, `level.map.txt` and `profile.json`).

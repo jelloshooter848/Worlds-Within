@@ -7,3 +7,5 @@ Test-only content (`engine/core/CLAUDE.md`, Fixtures): only `*.test.ts` files re
 - `runner.profile.json`: a physics profile whose player numbers match SMBC's default runner
   (its movement profile and stomp bounce, in the same integer units), with a walker, a
   shell-walker and a shell.
+- `golden/`: the golden traces recorded from SMBC (`golden.test.ts`), their test map in the kit's
+  level format, and their provenance and generator (`golden/README.md`).
