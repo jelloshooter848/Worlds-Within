@@ -55,6 +55,10 @@ async function listen(server: Server): Promise<string> {
 /** Vite's dev server (middleware mode) over the repo, as `pnpm dev` serves it. */
 async function serveDev(): Promise<{ url: string; close(): Promise<void> }> {
   const vite = await import('vite');
+  // Vite's client always opens a websocket. Left alone in middleware mode it dials the fixed port
+  // 24678, which another dev server (a parallel test, a `pnpm cli screenshot`) may hold, and fails
+  // there with a page error. Attaching the websocket to this server's own port keeps runs apart.
+  const http = createServer();
   const dev = await vite.createServer({
     configFile: join(ROOT, 'vite.config.ts'),
     root: ROOT,
@@ -63,9 +67,9 @@ async function serveDev(): Promise<{ url: string; close(): Promise<void> }> {
     clearScreen: false,
     // Pre-bundling would reload the page halfway through; the page's imports load as they are.
     optimizeDeps: { noDiscovery: true, include: [] },
-    server: { middlewareMode: true, hmr: false, watch: null },
+    server: { middlewareMode: true, hmr: false, ws: { server: http }, watch: null },
   });
-  const http = createServer(dev.middlewares);
+  http.on('request', dev.middlewares);
   const base = await listen(http);
   return {
     url: `${base}/${LAB}`,
@@ -74,6 +78,24 @@ async function serveDev(): Promise<{ url: string; close(): Promise<void> }> {
       await dev.close();
     },
   };
+}
+
+/**
+ * Holds Vite's default middleware-mode websocket port (24678) the way another dev server would,
+ * refusing every upgrade with 400. If something already holds the port, that does the same job.
+ */
+async function occupyDefaultWsPort(): Promise<() => Promise<void>> {
+  const squatter = createServer((_, res) => res.writeHead(426).end());
+  squatter.on('upgrade', (_, socket) => socket.end('HTTP/1.1 400 Bad Request\r\n\r\n'));
+  try {
+    await new Promise<void>((done, fail) => {
+      squatter.once('error', fail);
+      squatter.listen(24678, '127.0.0.1', () => done());
+    });
+  } catch {
+    return async () => {};
+  }
+  return () => new Promise<void>((done) => squatter.close(() => done()));
 }
 
 const TYPES: Record<string, string> = {
@@ -215,11 +237,14 @@ function expectPlayed(played: Played): void {
 
 describe.skipIf(missing !== null)('the platformer lab in 3D (headless Chromium, WebGL)', () => {
   it('plays from the Vite dev server: WebGL renderer, input moves the picture, no page errors', async () => {
+    // Another dev server on Vite's default websocket port (a parallel screenshot run) must not matter.
+    const release = await occupyDefaultWsPort();
     const server = await serveDev();
     try {
       expectPlayed(await play(server.url));
     } finally {
       await server.close();
+      await release();
     }
   }, 120_000);
 

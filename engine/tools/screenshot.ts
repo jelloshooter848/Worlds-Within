@@ -73,6 +73,10 @@ export async function launchChromium(opts: LaunchOptions = {}): Promise<Browser>
 /** Starts Vite in middleware mode behind a local HTTP server; returns its base URL and a close. */
 async function serve(gameAbs: string): Promise<{ base: string; close(): Promise<void> }> {
   const vite = await import('vite');
+  // Vite's client always opens a websocket. Left alone in middleware mode it dials the fixed port
+  // 24678, which another dev server (a second screenshot run, a test) may hold, and fails there with
+  // a page error. Attaching the websocket to this server's own port keeps concurrent runs apart.
+  const http: Server = createHttpServer();
   const server = await vite.createServer({
     configFile: join(REPO_ROOT, 'vite.config.ts'),
     root: REPO_ROOT,
@@ -81,9 +85,15 @@ async function serve(gameAbs: string): Promise<{ base: string; close(): Promise<
     clearScreen: false,
     // Pre-bundling would reload the page halfway through; the page's few imports load as they are.
     optimizeDeps: { noDiscovery: true, include: [] },
-    server: { middlewareMode: true, hmr: false, watch: null, fs: { allow: [REPO_ROOT, gameAbs] } },
+    server: {
+      middlewareMode: true,
+      hmr: false,
+      ws: { server: http },
+      watch: null,
+      fs: { allow: [REPO_ROOT, gameAbs] },
+    },
   });
-  const http: Server = createHttpServer(server.middlewares);
+  http.on('request', server.middlewares);
   await new Promise<void>((done, fail) => {
     http.once('error', fail);
     http.listen(0, '127.0.0.1', () => done());
