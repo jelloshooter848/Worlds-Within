@@ -60,6 +60,13 @@ const playerSchema = z.strictObject({
     .array(jumpTier)
     .min(1)
     .describe('jump tiers by take-off speed, slowest first: the first whose `below` |vx| is under'),
+  jumpBuffer: z
+    .number()
+    .int()
+    .min(0)
+    .max(30)
+    .exactOptional()
+    .describe('ticks a jump press is remembered until the player can jump (0 when left out)'),
   maxFall: vel('the fall speed cap'),
   fallReset: vel('the fall speed set when a fall goes over `maxFall`'),
   stompBounce: vel('the upward speed a stomp bounces the player with'),

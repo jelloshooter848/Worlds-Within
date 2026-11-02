@@ -440,6 +440,7 @@ A platformer physics profile: player movement numbers and actor types in whole s
 | `player.jumps[].speed`       | `integer`             | yes      |         | >= 0                              | the take-off speed upwards, in 1/4096 px per tick                                                    |
 | `player.jumps[].holdGravity` | `integer`             | yes      |         | >= 0                              | gravity while jump is held and the player still rises, in 1/4096 px per tick, each tick              |
 | `player.jumps[].gravity`     | `integer`             | yes      |         | >= 0                              | gravity otherwise, in 1/4096 px per tick, each tick                                                  |
+| `player.jumpBuffer`          | `integer`             | no       |         | 0 to 30                           | ticks a jump press is remembered until the player can jump (0 when left out)                         |
 | `player.maxFall`             | `integer`             | yes      |         | >= 0                              | the fall speed cap, in 1/4096 px per tick                                                            |
 | `player.fallReset`           | `integer`             | yes      |         | >= 0                              | the fall speed set when a fall goes over `maxFall`, in 1/4096 px per tick                            |
 | `player.stompBounce`         | `integer`             | yes      |         | >= 0                              | the upward speed a stomp bounces the player with, in 1/4096 px per tick                              |
@@ -478,6 +479,7 @@ Example (`docs/reference/examples/profile.json`):
       { "below": 9472, "speed": 16384, "holdGravity": 480, "gravity": 1536 },
       { "speed": 20480, "holdGravity": 640, "gravity": 2304 }
     ],
+    "jumpBuffer": 4,
     "maxFall": 18432,
     "fallReset": 16384,
     "stompBounce": 16384

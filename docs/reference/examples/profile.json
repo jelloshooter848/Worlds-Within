@@ -16,6 +16,7 @@
       { "below": 9472, "speed": 16384, "holdGravity": 480, "gravity": 1536 },
       { "speed": 20480, "holdGravity": 640, "gravity": 2304 }
     ],
+    "jumpBuffer": 4,
     "maxFall": 18432,
     "fallReset": 16384,
     "stompBounce": 16384

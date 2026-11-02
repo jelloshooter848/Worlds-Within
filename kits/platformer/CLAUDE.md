@@ -1,9 +1,10 @@
 # kits/platformer
 
 The platformer kit: gameplay rules for a side-scrolling platformer, extracted from SMBC as rules
-only, with generic names and none of its content. Today (Engine 0.5, T4) it holds the content
-kinds; the world (integer physics, tile collision, named movement rules), level objects and
-enemies, the mini game hook and presentation frames follow in later tasks of the release.
+only, with generic names and none of its content. Today (Engine 0.5, T5) it holds the content
+kinds and a headless world: integer physics, tile collision and named movement rules for the
+player. Level objects and enemies, the mini game hook and presentation frames follow in later
+tasks of the release.
 
 - `legend.ts`: `LEGEND`, the level text format: one character per 16x16 tile (`.` empty, `#`
   solid, `B` breakable brick, `?` bump block, `=` one-way platform, `^` hazard, `o` coin, `@`
@@ -15,7 +16,20 @@ enemies, the mini game hook and presentation frames follow in later tasks of the
   movement numbers and the actor types (`walker`, `shell`, ...) with data-set behaviour.
 - `schema.ts`: `levelKind()`, the `level` content kind (header JSON + `.map.txt` grid) whose
   `checkAll` runs `checkLevel` against the profile each level names.
-- `rules.ts`: `PLATFORMER_RULES`, the kit's named rules (empty until the world arrives in T5).
+- `rules.ts`: `PLATFORMER_RULES`, the kit's named rules (listed under Movement rules below).
+- `tiles.ts`: `TileGrid`, a level's tiles as the world collides with them (cell kind and collision
+  per tile; empty outside the grid, so the left and right edges are the `level-bounds` rule's).
+- `body.ts`: `Body` (a box in sub-pixels, `x`/`y` its top-left corner, velocity, `onGround`,
+  `hitWall`, `bumped`), `makeBody`, `moveX` and `moveY`: SMBC-style tile collision, x then y.
+- `player.ts`: `Player`, moved by the profile's `player` numbers once per tick
+  (`Player.atStart(col, row, ...)` centres it in the start tile, feet on its bottom edge).
+- `world.ts`: `PlatformerWorld(level, profile, { seed, disabledRules })`: checks the level
+  (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the seeded `rng`,
+  the `rules` switch, the tiles and the player; `update(input)` steps one tick and pushes
+  `PlatformerEvent`s (`jump` with its tier, `land`, `bump` with col/row, `fell`).
+- `snapshot.ts`: `snapshotWorld(world, events?)`, a JSON-safe, whole-number snapshot with no
+  presentation state, and `platformerGame(world)`, the headless contract (`engine/core/headless.ts`)
+  as `topdownGame` does it: each step takes that step's events.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
   `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES` and `strictMutants: true`.
   `index.ts` re-exports the rest (not the hook); games import it as `@kits/platformer`.
@@ -47,6 +61,43 @@ enemies, the mini game hook and presentation frames follow in later tasks of the
   `strictMutants: true`, so `pnpm cli mutants` fails when a rule is not guarded by a run file.
 - **Purity (lint-enforced):** no `Math.random`, `Date.now`, `performance.now` or DOM globals.
 
+## Units
+
+`engine/core/math/units.ts`, as SMBC: positions in sub-pixels (`SUB` = 256 per px; a tile is
+`TILE_SUB` = 4096), velocities and accelerations in 1/4096 px per tick (`VEL`); a body moves
+`velToSub(v)` = `v >> 4` sub-pixels a tick (floored), x first, then y. Down is positive. The
+snapshot's `player.x`/`player.y` are the body position: the bottom centre of its box. No floats in
+state: `world.test.ts` checks `Number.isInteger` on every snapshot number.
+
+## Movement rules
+
+One tick of the player (`player.ts`), every number from the profile's `player`:
+
+1. run (or attack) held sets the run timer to `runHold`, else it counts down; running = held or
+   timer > 0;
+2. on the ground: no direction means friction down to 0 (under `minWalk` it stops); from rest a
+   direction starts at `minWalk`; the other way skids (`skid` off |vx|, turning round at `minWalk`
+   once |vx| <= `skidTurn`); the same way accelerates by `walkAccel`/`runAccel` up to
+   `maxWalk`/`maxRun`, and over the cap slows by `friction` to it. In the air the direction steers
+   towards `airCap` (`maxRun` only if the take-off |vx| was over `maxWalk`), no friction;
+3. a jump press (remembered `jumpBuffer` ticks, `bufferedJump`) on the ground takes off at the tier
+   picked by |vx| (the first tier whose `below` is over |vx|, else the last);
+4. move x (solid tiles stop it), then y (a standing body probes 1 sub-pixel down; falling, it lands
+   on solid tiles and on one-way tiles its feet were above; rising, a solid tile puts the head back
+   under it);
+5. on the ground the jump ends and vy is 0; in the air gravity adds the tier's `holdGravity`
+   while jump is held and the player rises, else its `gravity`; past `maxFall` vy drops to
+   `fallReset`.
+
+Then the world holds the player inside the level's left and right edges and stops it, once its top
+is below the last row, as fallen (`fell`). There is no corner slip and no coyote time yet.
+
+Rule ids (`rules.ts`), each guarded by `rules.isOn(id)` and each made to fail a test in
+`world.test.ts` when off: `gravity`, `fall-cap`, `walk`, `run-speed`, `run-hold`, `friction`,
+`skid`, `air-control`, `jump`, `jump-by-speed`, `variable-jump`, `solid-tiles`,
+`one-way-platforms`, `ceiling-bump` (off: the head stays under the tile but the rise goes on),
+`level-bounds`.
+
 ## Content kinds
 
 - `level` (`levels/<id>.json` + `levels/<id>.map.txt`): `id`, `profile` (a `profile` id), `scroll`
@@ -62,7 +113,8 @@ enemies, the mini game hook and presentation frames follow in later tasks of the
   cell uses it; at `blocks.<n>` for a block's `actor:<type>`).
 - `profile` (`<id>.profile.json`): `player` (`box`, `minWalk`, `walkAccel`, `runAccel`,
   `friction`, `skid`, `skidTurn`, `maxWalk`, `maxRun`, `runHold` ticks, `jumps` tiers of
-  `{ below?, speed, holdGravity, gravity }` with no `below` on the last, `maxFall`, `fallReset`,
+  `{ below?, speed, holdGravity, gravity }` with no `below` on the last, `jumpBuffer?` ticks
+  (0 when left out), `maxFall`, `fallReset`,
   `stompBounce`), `actorGravity`, `actorMaxFall` and `actors` by name (`box?`, `speed`, `turnAt`
   `walls`/`ledges`, `stompable`, `stompInto?`, `kickable`, `kickSpeed?`, `harms`). Codes:
   `bad_jump_tiers`, `bad_speed_caps`, `unknown_actor` (a `stompInto` that is not an actor type)
@@ -72,6 +124,9 @@ enemies, the mini game hook and presentation frames follow in later tasks of the
 
 `pnpm test kits/platformer`: `level.test.ts` and `profile.test.ts` check good and broken inputs
 (file, path, code, row and col); `kit.test.ts` loads the fixtures as a game would (with
-`loadContent` and the kit's hook) and checks the cross-file problems. After changing a schema or a
+`loadContent` and the kit's hook) and checks the cross-file problems. `world.test.ts` holds the
+movement tests as a list of cases, plays each with every rule on, then with each named rule off in
+turn and fails if a rule leaves every case passing; it also checks that two runs of the same input
+and seed give equal `canonicalJson` snapshots tick by tick, and that snapshots hold whole numbers. After changing a schema or a
 description, run `pnpm docs:gen` (the schema reference lists both kinds; their examples are
 `docs/reference/examples/level.json`, `level.map.txt` and `profile.json`).

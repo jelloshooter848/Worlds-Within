@@ -6,6 +6,7 @@ import type { ContentError } from '@engine/core/content/validate';
 import { kit } from './kit';
 import type { LevelDef } from './level';
 import type { ProfileDef } from './profile';
+import { PLATFORMER_RULES } from './rules';
 
 const fixture = (name: string) => readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8');
 
@@ -49,7 +50,7 @@ describe('the platformer kit hook', () => {
     expect(kit.name).toBe('platformer');
     expect(kit.kinds().map((k) => k.name)).toEqual(['level', 'profile']);
     expect(kit.strictMutants).toBe(true);
-    expect(kit.rules).toEqual([]);
+    expect(kit.rules).toBe(PLATFORMER_RULES);
   });
 });
 
