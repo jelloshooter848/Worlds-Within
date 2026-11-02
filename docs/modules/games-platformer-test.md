@@ -15,7 +15,8 @@ skin per frame source (the levels' and the vault round's), and since 0.7 T8 in 3
 `?backend=three`, the launcher's `3D` link) with low-poly `three` skins written as text (the
 vault room laid flat facing the camera). 0.7 T9 reviewed its glue against DESIGN.md's rule of
 thumb and moved what another game would write too into the engine and kits (gaps G2, G4, G15,
-G29, G34, G35). At 0.15 it becomes `games/samples/platformer/`.
+G29, G34, G35). Since 0.10 T8 its headless entry also exports `miniGames(content)`, so `validate`
+checks the door's params with the content (gap G16). At 0.15 it becomes `games/samples/platformer/`.
 
 ## Public API entry points
 

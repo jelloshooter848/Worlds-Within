@@ -1,4 +1,6 @@
+import type { ContentBundle } from './content/bundle';
 import type { ContentKind } from './content/kinds';
+import type { MiniGameUse } from './minigame-params';
 import { defineRules, type RuleList } from './rules';
 
 /**
@@ -17,6 +19,12 @@ export interface KitDef {
   readonly rules: RuleList;
   /** Whether the kit opts in to strict mutant checks (Engine 0.5, item 41). Off when left out. */
   readonly strictMutants?: boolean;
+  /**
+   * Optional (Engine 0.10, gap G16): every place in a game's checked content where the kit's kinds
+   * name a mini game and its `params` (a platformer level's triggers), for `validate` to check
+   * against the game's mini games (`minigame-params.ts`). Kits whose content names none leave it out.
+   */
+  miniGameUses?(content: ContentBundle): readonly MiniGameUse[];
 }
 
 /** A kit name: lower-case letters, digits and "-", as in `game.json`. */

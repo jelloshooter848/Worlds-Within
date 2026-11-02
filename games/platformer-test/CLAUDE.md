@@ -141,7 +141,9 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
     kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
     `testMiniGames(content)` (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and
-    `SequenceSnapshot`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
+    `SequenceSnapshot`); it also exports `testMiniGames` as `miniGames`, so `validate` checks the
+    door's `game` and `params` with the content (Engine 0.10, gap G16: `"goal": "defeat-al"`
+    fails `validate` at `triggers.0.params.goal`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
     sequences): `LEVEL_PAUSE` (60) ticks after a level ends, then the next level or the failed
     one afresh; the snapshot is the kit's plus `stage` and `pause`;
   - `minigames.ts`: `testMiniGames(content)`: one `roomChallenge` (`kits/topdown/challenge.ts`)

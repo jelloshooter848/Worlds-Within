@@ -61,13 +61,16 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
     game: a marker sweeps along a bar of `cells` cells, one cell every `every` ticks; attack on
     the `zone` cells (placed by the round's seed) passes, anywhere else fails, select quits, and
-    `ticks` ticks without a press fail. Its numbers come from the trigger's `params`. Its
+    `ticks` ticks without a press fail. Its numbers come from the trigger's `params`, whose shape
+    is `stopBarParamsSchema` (its `paramsSchema`: each a whole number of at least 1, all
+    optional, nothing else), checked by `validate`. Its
     `present()` lays the bar out as `bar-cell` entities (`idle`/`zone`) and a `bar-marker`
     (`idle`, then its result). `LAB_MINI_GAMES` is what the worlds are given;
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
     kit's `LevelSequence` over `labStages(content)` with the run's seed, switched-off rules and
     `LAB_MINI_GAMES` (`LabGame` and `LabSnapshot` are the kit's `LevelSequence` and
-    `SequenceSnapshot`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
+    `SequenceSnapshot`), and `miniGames(content)` (`LAB_MINI_GAMES`, for `validate`, Engine 0.10
+    gap G16). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
     sequences): once a level is `cleared` or `failed` it waits `LEVEL_PAUSE` (60) ticks, ignoring
     input, then starts the next level (after the last, `tiny` again) or the failed one afresh,
     each a new `PlatformerWorld`. The snapshot is the kit's (`snapshotWorld`) plus `stage` (the

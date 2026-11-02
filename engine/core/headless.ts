@@ -1,5 +1,6 @@
 import type { ContentBundle } from './content/bundle';
 import type { InputFrame } from './input/input-manager';
+import type { MiniGameDef } from './minigame';
 
 /**
  * The headless game contract: what a game exposes so the tools (`pnpm cli run`, `dump`) can play
@@ -51,6 +52,13 @@ export interface HeadlessOptions {
 /** What a game's headless module (named by `headless` in `game.json`) exports. */
 export interface HeadlessEntry {
   createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame;
+  /**
+   * Optional (Engine 0.10, gap G16, item 157): the mini games the game's content may name (a
+   * level trigger's `game`, a mission's `play`), the same defs `createGame` hands its kit. When
+   * exported, `validate` checks every use's id and `params` against them (`minigame-params.ts`);
+   * a game without it is validated as before. Builds defs only: it starts no round.
+   */
+  miniGames?(content: ContentBundle): readonly MiniGameDef[];
 }
 
 /**

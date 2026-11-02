@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { DEFAULT_SCREEN, type ScreenSize } from '@engine/core/gfx/screen';
 import type { JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
@@ -47,26 +48,39 @@ export interface ChallengeParams {
 }
 
 /**
- * The params from a trigger's JSON: `goal` (required, one of `CHALLENGE_GOALS`), `ticks` (a whole
- * number of at least 1, `CHALLENGE_TICKS` when left out) and `hp` (a whole number of at least 1).
- * Throws naming the field on anything else, so a level's mistake shows at its first round.
+ * The shape of a round's params (gap G16, Engine 0.10): `goal` (required, one of
+ * `CHALLENGE_GOALS`), `ticks` (a whole number of at least 1, `CHALLENGE_TICKS` when left out) and
+ * `hp` (a whole number of at least 1), nothing else. It is the def's `paramsSchema`, so
+ * `pnpm cli validate` checks a level's trigger params with the content; `challengeParams` runs it
+ * again when a round starts.
+ */
+export const challengeParamsSchema = z.strictObject({
+  goal: z
+    .enum(['defeat-all', 'reach'])
+    .describe('what the round asks: every enemy beaten, or an exit tile reached'),
+  ticks: z.int().min(1).exactOptional().describe('the time limit in ticks (1800 when left out)'),
+  hp: z
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe("the hero's hit points in half hearts (the kit's default when left out)"),
+});
+
+/**
+ * The params from a trigger's JSON, checked by `challengeParamsSchema`. Throws naming the field on
+ * anything else (`room challenge: unknown param "lives" (known: goal, ticks, hp)`, `room
+ * challenge: param "ticks": ...`), so content `validate` did not see still fails at its round.
  */
 export function challengeParams(raw: JsonObject): ChallengeParams {
-  const known = new Set(['goal', 'ticks', 'hp']);
-  for (const key of Object.keys(raw))
-    if (!known.has(key)) throw new Error(`room challenge: unknown param "${key}" (known: goal, ticks, hp)`);
-  const goal = raw['goal'];
-  if (typeof goal !== 'string' || !(CHALLENGE_GOALS as readonly string[]).includes(goal))
-    throw new Error(`room challenge: param "goal" must be one of ${CHALLENGE_GOALS.join(', ')}`);
-  const whole = (key: string): number | undefined => {
-    const v = raw[key];
-    if (v === undefined) return undefined;
-    if (typeof v !== 'number' || !Number.isInteger(v) || v < 1)
-      throw new Error(`room challenge: param "${key}" must be a whole number of at least 1`);
-    return v;
-  };
-  const params: ChallengeParams = { goal: goal as ChallengeGoal, ticks: whole('ticks') ?? CHALLENGE_TICKS };
-  const hp = whole('hp');
+  const parsed = challengeParamsSchema.safeParse(raw);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]!;
+    if (issue.code === 'unrecognized_keys')
+      throw new Error(`room challenge: unknown param "${issue.keys[0]!}" (known: goal, ticks, hp)`);
+    throw new Error(`room challenge: param "${issue.path.map(String).join('.')}": ${issue.message}`);
+  }
+  const { goal, ticks = CHALLENGE_TICKS, hp } = parsed.data;
+  const params: ChallengeParams = { goal, ticks };
   if (hp !== undefined) params.hp = hp;
   return params;
 }
@@ -257,13 +271,15 @@ export class RoomChallenge implements MiniGame {
 /**
  * A room challenge as a `MiniGameDef`. The room is checked once, here (it throws like
  * `buildDungeon`); each round (`create`) builds a fresh world on it from the round's seed and
- * reads the trigger's params (`challengeParams`, which throws on bad ones).
+ * reads the trigger's params (`challengeParams`, which throws on bad ones). Its `paramsSchema` is
+ * `challengeParamsSchema`, so `validate` checks those params with the content (gap G16).
  */
 export function roomChallenge(opts: RoomChallengeOptions): MiniGameDef {
   const dungeon = buildDungeon([opts.room], opts.extraLegend ?? {}, { wall: opts.wall ?? 1 });
   return {
     id: opts.id,
     title: opts.title ?? opts.room.title ?? opts.id.toUpperCase().replace(/-/g, ' '),
+    paramsSchema: challengeParamsSchema,
     create: (ctx, seed) => new RoomChallenge(dungeon, opts, ctx, seed),
   };
 }

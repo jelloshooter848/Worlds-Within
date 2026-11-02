@@ -12,9 +12,10 @@ games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`
 files from disk for Node tools and tests.
 
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
-JSON-safe data, and the optional `order(order)`) and `HeadlessEntry` (`createGame(content, seed)`),
-which a game's headless module (named by `headless` in `game.json`) exports for `pnpm cli run` and
-`dump`. `order(order)` (Engine 0.9, items 124-125) takes one recorded order between steps: a run
+JSON-safe data, and the optional `order(order)`) and `HeadlessEntry` (`createGame(content, seed)`, and from Engine
+0.10 the optional `miniGames(content)`, the `MiniGameDef`s the game's content may name, which
+`validate` checks trigger and mission params against: gap G16), which a game's headless module
+(named by `headless` in `game.json`) exports for `pnpm cli run`, `dump` and `validate`. `order(order)` (Engine 0.9, items 124-125) takes one recorded order between steps: a run
 file's `orders` entry `{ tick, ...order }` goes in, without `tick`, after the snapshot of its tick
 and before the step from it, and the game returns null (applied) or a one-line reason (dropped, not
 an error). Games without orders leave it out and are unchanged; a run file with `orders` for a game
@@ -42,8 +43,9 @@ sequence), keeping the events between draws in a `PendingEvents` (dropped on a n
 switches off (`HeadlessOptions.disabledRules`, passed by `createGame(content, seed, opts)`); its
 code guards each rule with `isOn(id)`. Unknown ids throw. It is pure (on `PURE_CORE`).
 
-`kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants? }`, what a kit tells the
-tools about itself, and `defineKit(def)`, which checks the name (lower-case letters, digits and
+`kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants?, miniGameUses? }`, what a
+kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where the kit's content
+names a mini game and its params, such as a platformer level's triggers, for `validate`), and `defineKit(def)`, which checks the name (lower-case letters, digits and
 "-") and the rule list (`defineRules`) and throws on a bad one. Each kit exports one as `kit` from
 `kits/<name>/kit.ts`. Pure (on `PURE_CORE`).
 
@@ -56,7 +58,16 @@ JSON-safe report read once the round has ended, which a mission's adapter turns 
 round's `params`, for `validate`, gap G16), `create(ctx, seed)`: everything random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
 twice). A host (a kit's world) steps the round headless while it pauses itself and puts the
 round's snapshot in its own, so hashes cover it. It imports no scene, so kits may use it; pure (on
-`PURE_CORE`). `minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
+`PURE_CORE`). `minigame-params.ts` (Engine 0.10 T8, gap G16, item 157) checks mini game params with the content:
+a `MiniGameUse` `{ file, game, gameAt, params, paramsAt }` is one place in a game's content that
+names a mini game (a level trigger, a mission's `play`) and hands it params;
+`missionMiniGameUses(content)` lists the missions' (`play`, `params`, `{}` when none), a kit's hook
+gives its own (`KitDef.miniGameUses`); `miniGameParamErrors(uses, defs, root?)` returns a
+`ContentError` per problem, in the uses' order: `unknown_mini_game` at the id (naming the ids
+there are) when no def has it, else each issue of the def's `paramsSchema` (when it has one) at its
+field under the params (`triggers.0.params.goal`), with Zod's codes. It builds no round. Pure (on
+`PURE_CORE`); tested in `minigame-params.test.ts`; `engine/tools/mini-game-check.ts` runs it.
+`minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
 step?, render, done, translucent? })`, a `Scene` to push over the level that steps the same
 `MiniGame` (or the host's `step`, so the host still applies the outcome) and calls `done(result)`
 once, for the glue to pop it; it is on `FORBIDDEN_CORE`, so kits never import it, and pure (on
@@ -78,7 +89,7 @@ events) and kits play missions, and neither imports the other. `missionSchema` i
 definition and the `mission` content kind (`*.mission.json`, `content/engine-kinds.ts`): `id`,
 `title`, `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
 fixed when it opens), `play` (the mini game or kit round a player plays it with), `params?` (JSON,
-checked by that mini game's `paramsSchema` from T8), `outcomes` (at least one, unique ids, each
+checked by that mini game's `paramsSchema` when `validate` runs: `minigame-params.ts`), `outcomes` (at least one, unique ids, each
 `{ id, title, weight (whole, >= 1, default 1), effects }`), `onQuit` (a declared outcome) and
 `playable?` (a subset). Effects are data only, told apart by `type`: `damage`, `destroy`,
 `inventory`, `set`, `opportunity` (`MISSION_EFFECT_TYPES`). There is no retry: no `attempt`, a
@@ -168,7 +179,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `rts-types.ts`, `minigame.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

@@ -16,6 +16,8 @@ snapshot and `platformerGame(world)` for the headless contract. Its mini game ho
 trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), the level pauses
 while it runs, its snapshot sits in the level's, and the trigger's data-set outcome for its
 `pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile).
+The kit's hook lists each trigger's `game` and `params` (`miniGameUses`, Engine 0.10), so
+`pnpm cli validate` checks them against the mini games a game's headless entry exports.
 Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
 sent through a `MapTracker`, runner, actors, coins, goals, triggers, block bounces and remains,
 placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw.

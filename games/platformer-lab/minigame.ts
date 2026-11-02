@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { JsonObject } from '@engine/core/headless';
 import type { MiniGameDef, MiniGameResult } from '@engine/core/minigame';
 import type { PresentEntity, PresentFrame } from '@engine/core/present';
@@ -37,9 +38,22 @@ function readParams(raw: JsonObject): Params {
   return out;
 }
 
+/**
+ * The shape of the round's params (gap G16, Engine 0.10), for `pnpm cli validate`: each a whole
+ * number of at least 1, all optional, nothing else. A round still reads them leniently
+ * (`readParams`), so what the schema passes plays as before.
+ */
+export const stopBarParamsSchema = z.strictObject({
+  cells: z.int().min(1).exactOptional().describe('cells in the bar (16 when left out; at least 2 are used)'),
+  zone: z.int().min(1).exactOptional().describe('cells in the zone (3; kept shorter than the bar)'),
+  every: z.int().min(1).exactOptional().describe('ticks per marker move (4)'),
+  ticks: z.int().min(1).exactOptional().describe('the time limit in ticks (240)'),
+});
+
 export const STOP_BAR: MiniGameDef = {
   id: 'stop-bar',
   title: 'STOP THE BAR',
+  paramsSchema: stopBarParamsSchema,
   create(ctx, seed) {
     const p = readParams(ctx.params);
     const rng = new Rng(seed >>> 0 || 1);

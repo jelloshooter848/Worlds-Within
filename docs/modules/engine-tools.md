@@ -20,7 +20,10 @@ deterministic screenshots of a run at a tick in headless Chromium (`screenshot`)
 - `pnpm cli help [command]`: the commands, global flags and exit codes, generated from the command
   schemas. `<command> --help` shows one command.
 - `pnpm cli validate <game>`: checks `game.json` and every content file against its schema
-  (starts nothing). `--json` result:
+  (starts nothing). From Engine 0.10 (gap G16) it also checks every level trigger's and mission's
+  mini game id and `params` against the defs the game's headless module exports as
+  `miniGames(content)` (`unknown_mini_game`, or the def's `paramsSchema` errors at
+  `triggers.0.params.goal`; `mini-game-check.ts`). `--json` result:
   `{ ok, command: 'validate', exitCode, game, fileCount, errorCount, files: [{ file, errors }], errors }`,
   each error `{ file, path, pointer, message, code, row?, col?, line? }`.
 - `pnpm cli run <run-file>`: plays a run file (`games/<game>/runs/<name>.run.json`; schema and

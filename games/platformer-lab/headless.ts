@@ -1,5 +1,6 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessOptions } from '@engine/core/headless';
+import type { MiniGameDef } from '@engine/core/minigame';
 import { LevelSequence, type SequenceSnapshot } from '@kits/platformer';
 import { labStages } from './content';
 import { LAB_MINI_GAMES } from './minigame';
@@ -27,4 +28,12 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
     disabledRules: opts.disabledRules ?? [],
     miniGames: LAB_MINI_GAMES,
   });
+}
+
+/**
+ * The lab's mini games (`HeadlessEntry.miniGames`, Engine 0.10 gap G16), the same `createGame`
+ * hands its levels, so `pnpm cli validate` checks each trigger's `game` and `params` against them.
+ */
+export function miniGames(_content: ContentBundle): readonly MiniGameDef[] {
+  return LAB_MINI_GAMES;
 }

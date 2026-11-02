@@ -37,6 +37,11 @@ the CLI starts.
 - `kit-list.ts`: **generated** by `pnpm docs:gen` (`kit-list-gen.ts`) with one import per
   `kits/<name>/kit.ts` on disk; never edit it by hand. A new kit needs its `kit.ts` and
   `pnpm docs:gen`; `pnpm docs:check` and `kits.test.ts` fail while the list is stale.
+- `mini-game-check.ts` (Engine 0.10, gap G16): `miniGameUses(content)` (each kit's
+  `miniGameUses`, `kit` then `uses`, then the missions') and `miniGameErrors(cwd, gameDir,
+content)`, which imports the game's headless module by path for its optional
+  `miniGames(content)` and checks every use with `miniGameParamErrors`
+  (`engine/core/minigame-params.ts`). No `miniGames` export (or no headless file): no errors.
 - `run-file.ts`: the run-file schema (`runFileSchema`, with `orderEntrySchema` for recorded
   orders and `missionEntrySchema`/`MISSION_ACTIONS` for mission steps), `readRunFile(cwd, path)`, the check ops (`CHECK_OPS`, `CHECK_OP_MEANINGS`),
   `valueAt(state, path)` and `failsCheck(state, check)`.
@@ -98,7 +103,14 @@ the CLI starts.
 
 - `help [command]`: the commands, the global flags and the exit codes; one command with its
   arguments and flags. `<command> --help` is the same as `help <command>`.
-- `validate <game>`: checks `game.json` and every content file. Cheap: starts nothing. Result:
+- `validate <game>`: checks `game.json` and every content file. Cheap: starts nothing (no world,
+  no round). Once the content is valid, a game whose headless module exports `miniGames(content)`
+  (`engine/core/headless.ts`, Engine 0.10, gap G16) has that module imported for its mini game
+  defs, and every level trigger's `game` and `params` and every mission's `play` and `params` are
+  checked against them: an id no def has is `unknown_mini_game` at that field
+  (`triggers.0.game`, `play`), a param the def's `paramsSchema` rejects is an error at its field
+  (`triggers.0.params.goal`, `params.goal`) with Zod's code. A game without the export is checked
+  as before. Result:
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
   is a usage error. Its own content codes: `unknown_kit` (at `kit` or `uses.<i>` in `game.json`),

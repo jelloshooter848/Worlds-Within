@@ -246,6 +246,9 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **84.** Gap G16 (a trigger's `params` are checked only when the round starts, so `validate`
   passes a door with a bad goal) is moved to 0.10, where missions get their data schemas. OK, or
   should `MiniGameDef` get an optional params schema sooner?
+  _Answered by 157 (Engine 0.10): yes, in 0.10; done in Engine 0.10 T8 (gap G16 fixed): `validate`
+  checks every level trigger's and mission's mini game id and `params` against the defs a game's
+  headless entry exports as `miniGames(content)`, so `"goal": "defeat-al"` fails `validate`._
 - **85.** Gap G18 (a round steps with the host's input as it is: actions mean different things
   across the stack, and a button held into the door acts on the round's first tick) is moved to
   0.11, the first stacked game whose round wants its own controls. OK?
@@ -564,6 +567,9 @@ it starts (151), delegating gives a fair, average result and playing gives choic
 - **157.** Answering 84 (G16): yes, in 0.10. `MiniGameDef` and mission definitions get an optional
   `params` Zod schema, run by `validate` over level trigger and mission params; the tools learn a
   game's mini games from an optional `miniGames` list on its headless entry. OK?
+  _Done in Engine 0.10 T8: `miniGames(content)` on the headless entry (a function of the content,
+  since the stacking test's defs are built from its room files), `MiniGameDef.paramsSchema`,
+  `KitDef.miniGameUses` and the `unknown_mini_game` code; see 84._
 - **158.** Answering 81 (G20): keep the ended round (final state and result) in the host snapshot
   for its last tick, dropped the next tick. `games/platformer-lab/runs/mini-game.hashes.json` is
   re-recorded once (and `games/platformer-test/runs/level-4.hashes.json` if its recorded ticks

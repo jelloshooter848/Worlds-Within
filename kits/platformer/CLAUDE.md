@@ -55,7 +55,9 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   profile it names), `levelsInPlayOrder(levels, first?)`, `contentStages(content, { first?, who? })`,
   `LEVEL_PAUSE` and `SequenceSnapshot`.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
-  `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES` and `strictMutants: true`.
+  `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES`, `strictMutants: true` and
+  `miniGameUses: levelMiniGameUses` (Engine 0.10, gap G16: every level's `triggers.<i>.game` and
+  `.params`, so `validate` checks them against the game's mini games).
   `index.ts` re-exports the rest (not the hook); games import it as `@kits/platformer`.
 
 ## Imports
@@ -210,7 +212,9 @@ The hook is SMBC's `MiniGameDef` made generic: the contract is `engine/core/mini
 `MiniGameResult` `pass` | `fail` | `quit`), which is pure and has no scenes, so the kit hosts mini
 games headless. The kit defines no mini games: **the game supplies the defs** as the world's
 `miniGames` option (checked by `miniGameTable`: well-formed ids, none twice), and the world throws
-when a level's trigger names an id that is not there.
+when a level's trigger names an id that is not there. A game that also exports them from its
+headless module (`miniGames(content)`, `engine/core/headless.ts`) gets that, and each trigger's
+params against the def's `paramsSchema`, checked by `pnpm cli validate` (Engine 0.10, gap G16).
 
 - A level's `!` cells are triggers; the header's `triggers` gives one entry per `!` in reading
   order: `{ game, params?, pass?, fail?, quit? }`. `params` (JSON) is handed to the round as

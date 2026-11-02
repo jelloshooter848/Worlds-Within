@@ -165,6 +165,7 @@ export const PURE_CORE = [
   'engine/core/missions.ts',
   'engine/core/rts-types.ts',
   'engine/core/minigame.ts',
+  'engine/core/minigame-params.ts',
   'engine/core/minigame-scene.ts',
   'engine/core/shell/backend-choice.ts',
   'engine/core/shell/host-scene.ts',

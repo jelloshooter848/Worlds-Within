@@ -186,7 +186,10 @@ top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usual
   from the round's seed (and nothing else random), with the trigger's params read by
   `challengeParams(ctx.params)`: `goal` (`defeat-all`: every enemy beaten, `world.enemies()`
   empty; `reach`: an exit tile `E` reached, `world.exited`), `ticks` (the time limit,
-  `CHALLENGE_TICKS` = 1800 when left out) and `hp` (the hero's hit points in half hearts). An
+  `CHALLENGE_TICKS` = 1800 when left out) and `hp` (the hero's hit points in half hearts). The
+  shape is `challengeParamsSchema` (Zod), the def's `paramsSchema`, so `pnpm cli validate` checks
+  a trigger's or mission's params with the content (Engine 0.10, gap G16) when the game exports
+  its mini games; `challengeParams` runs the same schema when a round starts. An
   unknown param, a goal not in `CHALLENGE_GOALS` or a bad number throws naming it, and so does
   `defeat-all` in a room with no enemies.
 - `step(input)` steps the world with the host's `InputFrame`, as it is. **Select is the round's**:

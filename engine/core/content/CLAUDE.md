@@ -84,7 +84,9 @@ file formats are described at the top of that file).
   `missing_ref` and `missing_frame` (`present/skin.ts`); the mission's `duplicate_outcome` (an
   outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
   is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
-  `open` and `close`) (`missions.ts`).
+  `open` and `close`) (`missions.ts`); and `unknown_mini_game` (a level trigger's `game` or a
+  mission's `play` that names no mini game the game's headless entry exports;
+  `engine/core/minigame-params.ts`, run by `validate`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.
 - Use `z.strictObject` for file shapes, so a misspelled field is an error, and `exactOptional()`

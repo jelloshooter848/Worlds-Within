@@ -5,6 +5,13 @@ import { testStages } from './content';
 import { testMiniGames } from './minigames';
 
 /**
+ * The game's mini games (`HeadlessEntry.miniGames`, Engine 0.10 gap G16): the room challenges
+ * `createGame` hands its levels, so `pnpm cli validate` checks the door's `game` and `params`
+ * (`challengeParamsSchema`) with the content.
+ */
+export { testMiniGames as miniGames };
+
+/**
  * The stacking test's headless entry (named by `headless` in `game.json`): the platformer kit's
  * `LevelSequence` on the game's levels, played in order (`testStages`), with its mini games (the
  * door level's top-down room challenge, `testMiniGames`). The level flow (the pause

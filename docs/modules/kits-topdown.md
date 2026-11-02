@@ -24,7 +24,7 @@ with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full ad
 `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
 `.map.txt` text grid) and `challenge` (`roomChallenge(opts)`: a one-room challenge as the engine's
 `MiniGameDef`, for a host from another kit such as a platformer level's door; the game gives the
-room (its title from the room file's `title`, Engine 0.7 T9), the trigger's params give `goal` (`defeat-all` or `reach`), `ticks` and `hp`; a round passes
+room (its title from the room file's `title`, Engine 0.7 T9), the trigger's params give `goal` (`defeat-all` or `reach`), `ticks` and `hp` (shape: `challengeParamsSchema`, the def's `paramsSchema`, so `validate` checks them with the content, Engine 0.10); a round passes
 on its goal, fails on the hero's death or time-out and quits on select; `snapshot()` is
 `snapshotWorld` plus `round`, `present()` the kit's `presentWorld` frame, and from Engine 0.10
 `report()` the round's structured report as plain JSON, `ChallengeReport`: result, ticks, the

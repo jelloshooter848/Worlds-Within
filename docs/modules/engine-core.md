@@ -19,7 +19,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`, and the
   optional `order(order)` that takes a run file's recorded orders between steps, returning null
   or why it dropped one;
-  `HeadlessEntry`: `createGame(content, seed, opts?)`, `HeadlessOptions` with `disabledRules`),
+  `HeadlessEntry`: `createGame(content, seed, opts?)` and the optional `miniGames(content)` (Engine
+  0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
 - `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `screen`, the
   picture size from the manifest, `render(r)`, and optional `frame()`: the frozen
@@ -59,6 +60,10 @@ maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round 
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
   0.10), `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
+- `minigame-params.ts` (Engine 0.10, gap G16): `MiniGameUse` (a place in the content naming a mini
+  game and its params), `missionMiniGameUses(content)` and `miniGameParamErrors(uses, defs, root?)`:
+  `unknown_mini_game` at the id, or the def's `paramsSchema` issues at their field
+  (`triggers.0.params.goal`). A kit lists its own uses with `KitDef.miniGameUses`. Pure.
 - `minigame-scene.ts`: `miniGameScene(opts)`, the `Scene` a game's glue pushes over a level to
   drive the same `MiniGame` and pop it on its result. Games only (kits may not import it); `HostScene`
   (`shell/`) pushes it for a game. Pure.

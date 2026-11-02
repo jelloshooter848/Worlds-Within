@@ -285,9 +285,10 @@ pnpm -s cli validate games/<name> --json
 ```
 
 Exit 0 means every file passes. On exit 3, fix each entry of `errors` (it names `file` and the field
-`path`, with `row`/`col` for a map grid) and validate again. `validate` checks content only: it never
-opens the `headless` and `view` modules `game.json` names, so it passes before they exist. `run`
-(step 6) is what proves the entry works.
+`path`, with `row`/`col` for a map grid) and validate again. `validate` checks content only, so it
+passes before the `headless` and `view` modules `game.json` names exist; the one thing it reads from
+the headless module, once there, is the optional `miniGames(content)` export (platformer games with
+triggers, below). `run` (step 6) is what proves the entry works.
 
 ## 3. The headless entry: `headless.ts`
 
@@ -557,7 +558,11 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   }
   ```
 
-  Pass `miniGames: [...]` (`MiniGameDef`s, `engine/core/minigame.ts`) when a level has triggers.
+  Pass `miniGames: [...]` (`MiniGameDef`s, `engine/core/minigame.ts`) when a level has triggers,
+  and export the same list from `headless.ts` as `miniGames(content)` (`HeadlessEntry.miniGames`,
+  Engine 0.10): `validate` then checks every trigger's `game` id and its `params` against the def's
+  `paramsSchema` (give your own mini games one; `roomChallenge` has `challengeParamsSchema`), so a
+  misspelt goal fails `validate` at `triggers.<i>.params.goal`, not the run.
 - `view.ts` and the picture: one call to the engine's `frameView` (`@engine/core/view`, Engine
   0.7): `frameView({ game: createGame(...), screen, frames: new FrameStream(platformerFrames(screen)),
   picture: (r) => new FramePicture(new FrameStream(platformerFrames(screen)), new

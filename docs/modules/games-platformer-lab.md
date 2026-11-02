@@ -11,6 +11,8 @@ played in turn by the headless game. Its run files guard every kit rule, so
 the Canvas2D backend and an original placeholder skin (or, with `?backend=three`, through the
 Three.js backend and a low-poly `three` skin), with keyboard, gamepad and touch, and has
 one original test mini game (`stop-bar`) pushed over the level as a scene when a trigger starts it.
+Its headless entry exports `miniGames(content)`, so `validate` checks the trigger's params against
+`stop-bar`'s `paramsSchema` (Engine 0.10).
 It is a test game: content and glue, not engine.
 
 ## Public API entry points
