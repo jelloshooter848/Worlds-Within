@@ -179,6 +179,11 @@ code commit.
 - The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (76 test files,
   870 tests), and `pnpm docs:check` passes. Every run file of both games passes
   `pnpm -s cli run` (exit 0), and `pnpm -s cli mutants games/demo` exits 0.
+- **Re-checked when 0.5 was finalized** (at `4e97131`): the four checks pass again (76 files, 870
+  tests), every run file of both games exits 0, `mutants games/platformer-lab` exits 0 with
+  `strict: true`, `start-to-goal` gives byte-identical output twice and exits 4 with
+  `variable-jump` off, `golden.test.ts` passes (8 tests), and a fresh Playwright check of the built
+  page drew an 800-wide canvas that changed after ArrowRight and Z, with no console errors.
 
 ### Deviations from the roadmap
 
@@ -204,7 +209,7 @@ code commit.
   every later tick.
 - The lab has no sounds. Its skin maps every event to an effect only.
 - The demo's top-down kit is not strict, and its one run file guards only `doors-change-room`.
-- Feedback items 52-60 (`docs/FEEDBACK-LOG.md`) ask the owner about these choices.
+- Feedback items 52-64 (`docs/FEEDBACK-LOG.md`) ask the owner about these choices.
 
 ## Engine 0.4
 

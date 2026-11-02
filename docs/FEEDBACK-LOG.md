@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 61.** (Last used: 60.)
+**Next unused number: 65.** (Last used: 64.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -150,3 +150,15 @@ Choices the autonomous build made that the owner should check. Answer by number.
   the build log, not a committed test. The CLI screenshot and the backend-parity test cover
   Canvas2D drawing. Add a committed browser test that loads each game's page and presses a key
   (skipped where no browser is installed)?
+- **61.** Level format: enemy spawns, bump-block contents and mini-game triggers are lists in each
+  level's header (`spawns` maps characters the level picks to actor types; `blocks` and `triggers`
+  give one entry per `?` and `!` in reading order), not fixed legend characters. OK?
+- **62.** The snapshot gives the player's position as the bottom centre of its box, while the world
+  (like SMBC) moves a top-left box, and the golden traces compare the top-left. OK, or should the
+  snapshot use the top-left too?
+- **63.** Mutants defaults: a run file without `guards` is expected to guard every rule it does not
+  switch off itself; in `mutants games/<game>` a run is held only to its own `guards`. Listing a
+  rule twice, or both guarding and switching it off, is a schema error. OK?
+- **64.** To match SMBC's traces the kit was changed, not the profile numbers: the player starts
+  in the air (tick 0 is an air tick, the first jump is possible on tick 2), and the profile gained
+  an optional `jumpBuffer` (4 ticks, as SMBC remembers a jump press). OK?
