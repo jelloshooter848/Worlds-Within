@@ -1,6 +1,7 @@
 import { sfxSchema, songSchema } from '../audio/song-schema';
 import { paletteSchema } from '../gfx/palette-schema';
 import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-schema';
+import { campaignSchema, checkCampaigns } from '../campaign';
 import { missionSchema } from '../missions';
 import { SKIN_KIND } from '../present/skin';
 import { ContentKinds, type ContentKind } from './kinds';
@@ -43,12 +44,24 @@ export const MISSION_KIND = {
   schema: missionSchema,
 } satisfies ContentKind;
 
+/**
+ * A campaign (`campaign.ts`), `*.campaign.json`: the order a game's levels or missions are played
+ * in (Engine 0.10, item 160, gap G2). Its `checkAll` checks every named level and mission exists.
+ */
+export const CAMPAIGN_KIND = {
+  name: 'campaign',
+  description:
+    'A campaign: the order a game plays its levels or missions in, as a list of level and mission ids, with an optional entry to start at',
+  schema: campaignSchema,
+  checkAll: checkCampaigns,
+} satisfies ContentKind<typeof campaignSchema>;
+
 export { SKIN_KIND };
 
 /**
  * A registry holding the content kinds the engine itself defines: `song`, `sfx`, `palette` (JSON),
- * `sprite` (JSON or text-grid `.txt`), `skin` (JSON, `present/skin.ts`) and `mission` (JSON,
- * `missions.ts`). Games and kits register their own kinds (rooms, levels) on top.
+ * `sprite` (JSON or text-grid `.txt`), `skin` (JSON, `present/skin.ts`), `mission` (JSON,
+ * `missions.ts`) and `campaign` (JSON, `campaign.ts`). Games and kits register their own kinds (rooms, levels) on top.
  */
 export function engineContentKinds(): ContentKinds {
   return new ContentKinds()
@@ -57,5 +70,6 @@ export function engineContentKinds(): ContentKinds {
     .register(PALETTE_KIND)
     .register(SPRITE_KIND)
     .register(SKIN_KIND as unknown as ContentKind)
-    .register(MISSION_KIND);
+    .register(MISSION_KIND)
+    .register(CAMPAIGN_KIND as unknown as ContentKind);
 }

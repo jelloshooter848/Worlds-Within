@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "id": "main",
+  "title": "The first chapter",
+  "entries": [{ "level": "level-1" }, { "level": "level-2" }, { "mission": "raid" }, { "level": "level-3" }],
+  "start": "level-1"
+}

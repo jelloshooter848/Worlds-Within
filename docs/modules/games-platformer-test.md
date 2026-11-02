@@ -23,13 +23,14 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 - `game.json`: the manifest (kit `platformer`, `uses: ["topdown"]`, 256x240, seed 1, `headless.ts`,
   `view.ts`).
 - `content/`: `levels/level-<n>.json` + `level-<n>.map.txt` (`level-1` to `level-4`, the door level),
+  `campaigns/main.campaign.json` (the play order, `level-1` to `level-4`, Engine 0.10),
   `profiles/hopper.profile.json`, `rooms/vault.json` + `vault.map.txt` (the door's top-down room),
   `sprites/hopper.txt`, `hopper-font.txt`, `vault.txt` (pixel art) with `palettes/hopper.json` and
   `vault.json`, `sfx/*.json` (MML), `skins/canvas2d.json` (the levels),
   `skins/canvas2d-vault.json` (the vault round), `skins/three.json` and `skins/three-vault.json`
   (the same in 3D).
 - `content.ts`: `loadTest(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
-  `testStages(content)` (the kit's `contentStages`: the levels in play order),
+  `testStages(content)` (the kit's `contentStages`: the levels in the campaign file's order),
   `testRooms(content)`, `testSkins(content, backend)` (`{ level, rounds }`: the engine's
   `skinSet`, the skin named after the backend and one per mini game from `<backend>-<id>`). Art,
   sounds and `mustLoad` are the engine's (`@engine/core/content/game-content`).

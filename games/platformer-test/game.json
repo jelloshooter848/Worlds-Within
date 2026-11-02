@@ -5,6 +5,7 @@
   "uses": ["topdown"],
   "content": {
     "level": ["content/levels/*.json"],
+    "campaign": ["content/campaigns/*.campaign.json"],
     "profile": ["content/profiles/*.profile.json"],
     "room": ["content/rooms/*.json"],
     "palette": ["content/palettes/*.json"],

@@ -70,7 +70,22 @@ describe('platformer lab content', () => {
     expect(FILES['content/profiles/runner.profile.json']).toBe(kitFixture('runner.profile.json'));
   });
 
-  it('plays the fixture level first, then its own levels in id order', () => {
+  it('plays the levels in a new order when the campaign file changes (Engine 0.10, gap G2)', () => {
+    const file = 'content/campaigns/main.campaign.json';
+    const campaign = JSON.parse(FILES[file]!) as Record<string, unknown>;
+    const reordered = { ...campaign, start: 'lab-4-walkers' };
+    const stages = labStages(mustLoad(loadLab({ ...FILES, [file]: JSON.stringify(reordered) })));
+    expect(stages.map((s) => s.level.id)).toEqual([
+      'lab-4-walkers',
+      'lab-5-trigger',
+      FIRST_LEVEL,
+      'lab-1-moves',
+      'lab-2-objects',
+      'lab-3-shells',
+    ]);
+  });
+
+  it("plays its campaign file's order: the fixture level first, then its own levels", () => {
     expect(labStages(content).map((s) => s.level.id)).toEqual([
       FIRST_LEVEL,
       'lab-1-moves',

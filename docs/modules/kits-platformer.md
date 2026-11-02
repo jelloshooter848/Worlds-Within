@@ -40,7 +40,8 @@ G37), so the shell's `HostScene` takes it as it is. It never draws and holds no 
 the engine's `FrameStream`), `presentMap`,
 `presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`) and `sequence` (`LevelSequence`,
 `LevelSequenceOptions`, `LevelStage`, `levelStages`, `levelsInPlayOrder`, `contentStages`
-(a bundle's levels in play order with their profiles, Engine 0.7 T9), `LEVEL_PAUSE`, `SequenceSnapshot`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
+(a bundle's levels in play order with their profiles, Engine 0.7 T9: the order of the game's
+`campaign` file when it has one, Engine 0.10, else by id), `LEVEL_PAUSE`, `SequenceSnapshot`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
 kinds `level` and `profile`, its named rules, `strictMutants: true`); `engine/tools/kits.ts` finds
 it by the `kit` name in `game.json`.
 

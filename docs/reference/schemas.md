@@ -497,6 +497,36 @@ Example (`docs/reference/examples/rts-types.json`):
 }
 ```
 
+### `campaign`
+
+A campaign: the order a game plays its levels or missions in, as a list of level and mission ids, with an optional entry to start at.
+
+- Defined by: engine
+- Where: `content/`, claimed in `game.json` under `content.campaign`
+- Read from: `.json`
+
+| Field               | Type       | Required | Default | Limits                         | Description                                                                                              |
+| ------------------- | ---------- | -------- | ------- | ------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `version`           | `1`        | yes      |         |                                | the campaign format version: 1                                                                           |
+| `id`                | `string`   | yes      |         | matches `^[a-z0-9][a-z0-9-]*$` | the campaign id; the same as the file name                                                               |
+| `title`             | `string`   | no       |         | not empty                      | one line naming the campaign                                                                             |
+| `entries`           | `object[]` | yes      |         | at least 1 item                | the play order: `{ "level": id }` or `{ "mission": id }` each, every named level and mission in the game |
+| `entries[].level`   | `string`   | no       |         | not empty                      | a level id (the level file name)                                                                         |
+| `entries[].mission` | `string`   | no       |         | matches `^[a-z0-9][a-z0-9-]*$` | a mission id (the `*.mission.json` file name)                                                            |
+| `start`             | `string`   | no       |         | not empty                      | the id of the entry played first; the first entry when left out                                          |
+
+Example (`docs/reference/examples/campaign.json`):
+
+```json
+{
+  "version": 1,
+  "id": "main",
+  "title": "The first chapter",
+  "entries": [{ "level": "level-1" }, { "level": "level-2" }, { "mission": "raid" }, { "level": "level-3" }],
+  "start": "level-1"
+}
+```
+
 ### `mission`
 
 A mission: its event, fixed world-time cost, the mini game it is played with, its params and its declared outcomes with delegation weights and effects.

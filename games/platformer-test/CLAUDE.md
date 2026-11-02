@@ -21,12 +21,13 @@ release that will).
 ## Files
 
 - `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the door level's room),
-  256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `profile`, `room`,
-  `palette`, `sprite`, `skin` and `sfx`. `index.html` is the page, so the root launcher lists
+  256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `campaign`, `profile`,
+  `room`, `palette`, `sprite`, `skin` and `sfx`. `index.html` is the page, so the root launcher lists
   `games/platformer-test/`, and its `ww-alternate` meta tag adds the launcher's `3D` link
   (`?backend=three`, 0.7 T8).
 - `content/levels/<id>.json` + `<id>.map.txt`: levels (format: `kits/platformer/CLAUDE.md`,
-  Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in id order. Four, all `"scroll": "right"`, each about a few kit rules:
+  Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in the campaign file's
+  order. Four, all `"scroll": "right"`, each about a few kit rules:
   - `level-1`: a short, easy first level, 48x10 tiles: a bump block with a
     coin over the runway, two floor coins, a 2-tile gap, a 2-high step, a 3-tile gap with an arc
     of three coins over it, one `walker` (woken as the view nears it, stompable), a 2-high wall,
@@ -47,6 +48,12 @@ release that will).
     `hp: 4`; a `pass` gives 5 coins and opens the wall's three lowest tiles (`open:22:6` to
     `open:22:8`; the trigger itself is emptied), a `fail` puts the player back on the door
     (`respawn`; step off and on again for another round). Past the wall, the goal.
+- `content/campaigns/main.campaign.json` (Engine 0.10, gap G2): the play order as data, the
+  engine's `campaign` kind (`engine/core/campaign.ts`): `level-1`, `level-2`, `level-3`,
+  `level-4`, the order the levels were played in by id before, so no run file or golden hash
+  moved. Reorder its `entries` (or set `start`) and the levels play in that order; a level not
+  listed is not played, and an entry naming a missing level fails `validate` at
+  `entries.<i>.level`.
 - `content/rooms/vault.json` + `vault.map.txt`: the door's top-down room (`kits/topdown` room
   format, `kits/topdown/CLAUDE.md`, Room files): 16x11, four statues, a 2x2 pool, two knights
   (`n`), the hero's start at (2,5), `"title": "VAULT"` (the mini game's title, gap G15). It is a
@@ -113,8 +120,8 @@ release that will).
   `docs/reports/stacking-test.md` lists what each holds):
   - `content.ts`: `loadTest(files)` (the content kinds of the game's two kits,
     `kitContentKinds([platformer, topdown])` from `@engine/core/content/game-content`, over the
-    kits' hooks), `testStages(content)` (the kit's `contentStages`: the levels by id, numbers
-    compared as numbers, each with its profile), `testRooms(content)`, `testSkins(content,
+    kits' hooks), `testStages(content)` (the kit's `contentStages`: the levels in the campaign
+    file's order, each with its profile), `testRooms(content)`, `testSkins(content,
 backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backend has no
     skin). Art (`contentArt`), sounds (`contentSfx`) and `mustLoad` are the engine's (gap G4);
   - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets from the engine's
@@ -162,7 +169,8 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
   with a mesh for every kind and tile its 2D skin maps (but the level's `.`), the 2D skin's
   events, sounds and camera, and a mesh for every kind and tile the runs show in its frames.
 - `platformer-test.test.ts` (earlier parts): content loads, a broken field is named by file and field, the level
-  order (with `level-10` after `level-9`), the start state, the first three levels cleared in
+  order (the campaign's; a reversed campaign file plays `level-4` first; a campaign entry naming a
+  missing level names the file and field; without a campaign, `level-10` after `level-9`), the start state, the first three levels cleared in
   order with `level-3.run.json`'s input, the door's round failed then passed and all four levels
   cleared with `level-4.run.json`'s, equal snapshots on two runs, a failed level starting afresh
   after `LEVEL_PAUSE`, and the mini games built from the room files (a vault round from the
@@ -317,8 +325,9 @@ same through the null backend, Canvas2D and the Three.js scene builder (`tests/r
 
 1. Draw `content/levels/level-5.map.txt` in the kit's `LEGEND` (`kits/platformer/legend.ts`) and
    write `content/levels/level-5.json` (`id` = the file name, `profile: "hopper"`, `scroll`,
-   any `triggers`). The id decides the order: `level-5` comes after `level-4`, `level-10` after
-   `level-9` (the kit's `contentStages`). No code changes.
+   any `triggers`), and add `{ "level": "level-5" }` to `content/campaigns/main.campaign.json`
+   where it should be played (the campaign decides the order: the kit's `contentStages`; a level
+   the campaign does not list is not played). No code changes.
 2. `pnpm -s cli validate games/platformer-test --json` (exit 0; every error names the file and
    the field or map row). Fix single cells with `pnpm -s cli set <map> rows.<row>.<col> '#'`.
 3. New actor types go in the profile with `pnpm -s cli add

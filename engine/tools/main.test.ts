@@ -149,6 +149,39 @@ describe('validate', () => {
     ]);
   });
 
+  it('checks a campaign file in any game, naming the file and field of a missing level or mission', async () => {
+    const root = demoCopy();
+    const game = join(root, 'games/demo/game.json');
+    const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
+    manifest.content['mission'] = ['content/missions/*.mission.json'];
+    manifest.content['campaign'] = ['content/missions/*.campaign.json'];
+    writeFileSync(game, JSON.stringify(manifest));
+    mkdirSync(join(root, 'games/demo/content/missions'), { recursive: true });
+    const raid = {
+      id: 'raid',
+      title: 'Raid',
+      worldTimeCost: 20,
+      play: 'sabotage',
+      onQuit: 'lost',
+      outcomes: [{ id: 'lost', title: 'Lost' }],
+    };
+    writeFileSync(join(root, 'games/demo/content/missions/raid.mission.json'), JSON.stringify(raid));
+    const file = join(root, 'games/demo/content/missions/main.campaign.json');
+    writeFileSync(file, JSON.stringify({ version: 1, id: 'main', entries: [{ mission: 'raid' }] }));
+    expect((await cli(['validate', 'games/demo', '--json'], { cwd: root })).code).toBe(EXIT.ok);
+
+    const entries = [{ mission: 'raid' }, { mission: 'rescue' }, { level: 'level-1' }];
+    writeFileSync(file, JSON.stringify({ version: 1, id: 'main', entries }));
+    const bad = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    expect(bad.code).toBe(EXIT.invalidContent);
+    const errors = bad.json().errors as { file: string; path: string; code: string }[];
+    const at = 'games/demo/content/missions/main.campaign.json';
+    expect(errors.map(({ file, path, code }) => ({ file, path, code }))).toEqual([
+      { file: at, path: 'entries.1.mission', code: 'missing_mission' },
+      { file: at, path: 'entries.2.level', code: 'missing_level' },
+    ]);
+  });
+
   it('checks a mission file in any game, naming the file and field', async () => {
     const root = demoCopy();
     const game = join(root, 'games/demo/game.json');

@@ -45,8 +45,10 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
   (`gfx/sprite-schema.ts`, JSON or `.txt`), `skin` (`present/skin.ts`) and `mission`
-  (`missions.ts`, `*.mission.json`, Engine 0.10: a game claims them under `content.mission`), each
-  also exported (`SONG_KIND`, ..., `SKIN_KIND`, `MISSION_KIND`) for `contentOf`.
+  (`missions.ts`, `*.mission.json`, Engine 0.10: a game claims them under `content.mission`) and
+  `campaign` (`campaign.ts`, `*.campaign.json`, Engine 0.10 T10, gap G2: the order a game plays its
+  levels or missions in; claimed under `content.campaign`), each also exported (`SONG_KIND`, ...,
+  `SKIN_KIND`, `MISSION_KIND`, `CAMPAIGN_KIND`) for `contentOf`.
 - `game-content.ts` (Engine 0.7 T9, gap G4 in `docs/reports/stacking-test.md`): the content glue
   every game wrote for itself. `kitContentKinds(kits)`: the engine's kinds plus each kit hook's
   `kinds()` (`import { kit } from '@kits/<name>/kit'`, `game.json`'s `kit` then `uses`; throws on a
@@ -84,7 +86,10 @@ file formats are described at the top of that file).
   `missing_ref` and `missing_frame` (`present/skin.ts`); the mission's `duplicate_outcome` (an
   outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
   is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
-  `open` and `close`) (`missions.ts`); and `unknown_mini_game` (a level trigger's `game` or a
+  `open` and `close`) (`missions.ts`); the campaign's `bad_entry` (an entry without exactly one of
+  `level` and `mission`), `duplicate_entry`, `unknown_entry` and `ambiguous_start` (a `start` that
+  names no entry, or both a level and a mission), and from its `checkAll` `missing_level` and
+  `missing_mission` (`campaign.ts`); and `unknown_mini_game` (a level trigger's `game` or a
   mission's `play` that names no mini game the game's headless entry exports;
   `engine/core/minigame-params.ts`, run by `validate`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
@@ -96,5 +101,5 @@ file formats are described at the top of that file).
 
 Each schema has tests next to it with good and broken inputs that check the file name, the exact
 `path` and the `code`: `validate.test.ts`, `text-grid.test.ts`, `kinds.test.ts`, `bundle.test.ts`,
-`gfx/palette-schema.test.ts`, `missions.test.ts`,
+`gfx/palette-schema.test.ts`, `missions.test.ts`, `campaign.test.ts`,
 `audio/song-schema.test.ts`, `gfx/sprite-schema.test.ts`. Run them with `pnpm test`.

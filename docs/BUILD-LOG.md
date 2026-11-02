@@ -211,7 +211,11 @@ writes. Games without hosted rounds leave it out.
 (`*.campaign.json`): `{ "version": 1, "entries": [{ "level": "level-1" }, { "mission": "raid" }] }`,
 an ordered list of level or mission ids that `validate` checks against the content. A platformer
 game with a campaign plays its levels in that order; without one, the 0.7 order (by id, numbers as
-numbers) stays, so existing games and hashes do not change.
+numbers) stays, so existing games and hashes do not change. _Built in T10 with two additions the
+task asked for: a required `id` (the file name, as every kind with an `id`) and an optional `start`
+(the entry played first; a looping sequence goes round from it). Only the levels a campaign lists
+are played; its missions are checked only (playing them in order is 0.13). Both platformer games
+got a campaign file with their old order, so no run file or golden hash moved._
 
 **12. Missions in run files (item 161).** A world run file gets an optional `missions` list beside
 `orders`: `{ "tick": 40, "mission": "raid", "action": "open" | "play" | "delegate", "outcome"?,

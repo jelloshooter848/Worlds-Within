@@ -4,6 +4,7 @@
   "kit": "platformer",
   "content": {
     "level": ["content/levels/*.json"],
+    "campaign": ["content/campaigns/*.campaign.json"],
     "profile": ["content/profiles/*.profile.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "id": "main",
+  "title": "The lab: the fixture level, then one level per group of rules",
+  "entries": [
+    { "level": "tiny" },
+    { "level": "lab-1-moves" },
+    { "level": "lab-2-objects" },
+    { "level": "lab-3-shells" },
+    { "level": "lab-4-walkers" },
+    { "level": "lab-5-trigger" }
+  ]
+}

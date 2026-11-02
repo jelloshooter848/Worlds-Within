@@ -12,7 +12,8 @@ import { kit as topdown } from '@kits/topdown/kit';
  * kits' content it reads, and the loaded bundle as the levels in play order, the rooms and the
  * skins. No content lives here, and nothing another game would write the same way: the kinds,
  * art, sounds and `mustLoad` are the engine's (`@engine/core/content/game-content`), the level
- * order the platformer kit's (`contentStages`; gaps G2 and G4, fixed in 0.7 T9).
+ * order the campaign file's, played by the platformer kit's `contentStages` (gaps G2 and G4, fixed
+ * in 0.7 T9 and 0.10).
  */
 
 const ROOM = roomKind();
@@ -24,8 +25,9 @@ export function loadTest(files: Readonly<Record<string, string>>): ContentResult
 }
 
 /**
- * The levels in the order they are played (by id, numbers compared as numbers: `level-2` before
- * `level-10`), each with the profile it names: the kit's `contentStages`.
+ * The levels in the order they are played: the order of the campaign file
+ * (`content/campaigns/main.campaign.json`; without one, by id with numbers compared as numbers),
+ * each with the profile it names: the kit's `contentStages`.
  */
 export function testStages(content: ContentBundle): LevelStage[] {
   return contentStages(content, { who: 'the stacking test' });

@@ -55,8 +55,10 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   kind's other states (a known gap of the 0.6 skin format).
 - TypeScript is glue only:
   - `content.ts`: `labKinds`, `loadLab(files)`, `labStages(content)` (the levels in play order:
-    `FIRST_LEVEL` (`tiny`) first, then the others by id, each paired with its profile by the kit's
-    `contentStages` with `first`), `labSkin`,
+    the order of `content/campaigns/main.campaign.json` (Engine 0.10, gap G2): `FIRST_LEVEL`
+    (`tiny`) first, then `lab-1-moves` to `lab-5-trigger`, the order the lab played before, so no
+    run file or golden hash moved; each paired with its profile by the kit's `contentStages`),
+    `labSkin`,
     `labSkin3d` (the `three` skin), `mustLoad` (the engine's, naming the lab);
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
     game: a marker sweeps along a bar of `cells` cells, one cell every `every` ticks; attack on

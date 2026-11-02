@@ -23,6 +23,7 @@ import type { RoomChallenge } from '@kits/topdown';
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
 const content = mustLoad(loadTest(FILES));
+const CAMPAIGN = 'content/campaigns/main.campaign.json';
 
 /** Every `PlatformerEvent` type (`kits/platformer/world.ts`). */
 const PLATFORMER_EVENTS = [
@@ -64,18 +65,41 @@ describe('platformer test content', () => {
     expect(Object.keys(FILES)).toContain('content/levels/level-1.map.txt');
   });
 
-  it('plays its levels in id order, numbers compared as numbers, each with its own profile', () => {
+  it("plays its levels in its campaign file's order, each with its own profile", () => {
     const stages = testStages(content);
     expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3', 'level-4']);
     expect(stages.every((s) => s.profile.id === 'hopper')).toBe(true);
   });
 
-  it('orders level-10 after level-9', () => {
+  it('plays the levels in a new order when the campaign file changes (Engine 0.10, gap G2)', () => {
+    const campaign = JSON.parse(FILES[CAMPAIGN]!) as { entries: object[] };
+    const reordered = { ...campaign, entries: [...campaign.entries].reverse() };
+    const files = { ...FILES, [CAMPAIGN]: JSON.stringify(reordered) };
+    const order = ['level-4', 'level-3', 'level-2', 'level-1'];
+    expect(testStages(mustLoad(loadTest(files))).map((s) => s.level.id)).toEqual(order);
+    const game = createGame(mustLoad(loadTest(files)), 1);
+    expect(game.snapshot().level).toBe('level-4');
+  });
+
+  it('names the file and field of a campaign entry naming a missing level', () => {
+    const campaign = JSON.parse(FILES[CAMPAIGN]!) as { entries: object[] };
+    const broken = { ...campaign, entries: [...campaign.entries, { level: 'level-9' }] };
+    const result = loadTest({ ...FILES, [CAMPAIGN]: JSON.stringify(broken) });
+    expect(result.errors.map((e) => [e.file, e.path, e.code])).toEqual([
+      ['games/platformer-test/content/campaigns/main.campaign.json', 'entries.4.level', 'missing_level'],
+    ]);
+  });
+
+  it('orders level-10 after level-9 without a campaign file', () => {
     const extra = (id: string) => ({
       [`content/levels/${id}.json`]: FILES['content/levels/level-1.json']!.replace('"level-1"', `"${id}"`),
       [`content/levels/${id}.map.txt`]: FILES['content/levels/level-1.map.txt']!,
     });
-    const more = mustLoad(loadTest({ ...FILES, ...extra('level-10'), ...extra('level-9') }));
+    const { [CAMPAIGN]: _campaign, ...withoutCampaign } = FILES;
+    const manifest = JSON.parse(FILES['game.json']!) as { content: Record<string, string[]> };
+    delete manifest.content['campaign'];
+    const files = { ...withoutCampaign, 'game.json': JSON.stringify(manifest) };
+    const more = mustLoad(loadTest({ ...files, ...extra('level-10'), ...extra('level-9') }));
     expect(testStages(more).map((s) => s.level.id)).toEqual([
       'level-1',
       'level-2',
@@ -282,7 +306,7 @@ describe('platformer test 2D skins', () => {
 
   it('keeps its assets as text: pixel art, palettes, skins and MML only', () => {
     const allowed =
-      /^(game\.json|content\/[a-z]+\/[a-z0-9-]+(\.profile)?\.(json|txt)|content\/levels\/[a-z0-9-]+\.map\.txt|content\/rooms\/[a-z0-9-]+\.map\.txt)$/;
+      /^(game\.json|content\/[a-z]+\/[a-z0-9-]+(\.profile|\.campaign)?\.(json|txt)|content\/levels\/[a-z0-9-]+\.map\.txt|content\/rooms\/[a-z0-9-]+\.map\.txt)$/;
     expect(Object.keys(FILES).filter((f) => !allowed.test(f))).toEqual([]);
   });
 

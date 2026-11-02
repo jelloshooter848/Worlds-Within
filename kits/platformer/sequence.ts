@@ -1,4 +1,6 @@
+import { campaignLevels, type CampaignDef } from '@engine/core/campaign';
 import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
+import { CAMPAIGN_KIND } from '@engine/core/content/engine-kinds';
 import type { HostedGame } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
@@ -114,10 +116,32 @@ export class LevelSequence implements HostedGame<PlatformerWorld, PlatformerEven
 }
 
 /**
- * Levels in play order: by id, numbers in ids compared as numbers (`level-2` before `level-10`),
- * with the level `first` (when given) ahead of the rest. Throws when `first` is not among them.
+ * Levels in play order. Without a campaign: by id, numbers in ids compared as numbers (`level-2`
+ * before `level-10`). With one (Engine 0.10, gap G2): its `level` entries in its order, from its
+ * `start` ({@link campaignLevels}); levels it does not name are not played, and its missions are
+ * skipped (a platformer sequence plays levels only). Either way the level `first` (when given)
+ * leads, and with a campaign the rest follow round from it. Throws when `first`, or a level the
+ * campaign names, is not among `levels`, or the campaign names no level.
  */
-export function levelsInPlayOrder(levels: readonly LevelDef[], first?: string): LevelDef[] {
+export function levelsInPlayOrder(
+  levels: readonly LevelDef[],
+  first?: string,
+  campaign?: CampaignDef,
+): LevelDef[] {
+  if (campaign) {
+    const byId = new Map(levels.map((l) => [l.id, l]));
+    const ids = campaignLevels(campaign);
+    if (ids.length === 0) throw new Error(`campaign "${campaign.id}" names no level`);
+    const ordered = ids.map((id) => {
+      const level = byId.get(id);
+      if (!level) throw new Error(`campaign "${campaign.id}" names level "${id}", which is not there`);
+      return level;
+    });
+    if (first === undefined) return ordered;
+    const at = ordered.findIndex((l) => l.id === first);
+    if (at < 0) throw new Error(`there is no level "${first}" in campaign "${campaign.id}"`);
+    return [...ordered.slice(at), ...ordered.slice(0, at)];
+  }
   const sorted = [...levels].sort((a, b) =>
     a.id === first ? -1 : b.id === first ? 1 : a.id.localeCompare(b.id, 'en', { numeric: true }),
   );
@@ -127,33 +151,61 @@ export function levelsInPlayOrder(levels: readonly LevelDef[], first?: string): 
 
 /** Options for {@link contentStages}. */
 export interface ContentStagesOptions {
-  /** The level played first, ahead of the id order (the lab's fixture level). */
+  /** The level played first, ahead of the rest (the lab's fixture level). */
   first?: string;
+  /**
+   * The campaign (by id) whose order is played, when the game has more than one `campaign` file;
+   * with exactly one, that one is used, and with none, the id order.
+   */
+  campaign?: string;
   /** Names the game in error messages (default 'the game'). */
   who?: string;
 }
 
 /**
- * A game's levels from its loaded content (`level` and `profile` files), in play order
- * ({@link levelsInPlayOrder}), each with its profile ({@link levelStages}): the content glue every
- * platformer game wrote for itself (Engine 0.7 T9, gap G2 in docs/reports/stacking-test.md).
- * Throws when there is no level, or `first` is missing, or a level's profile is.
+ * A game's levels from its loaded content (`level`, `profile` and `campaign` files), in play order
+ * ({@link levelsInPlayOrder}: the campaign's order when the game has one, else by id), each with
+ * its profile ({@link levelStages}): the content glue every platformer game wrote for itself
+ * (Engine 0.7 T9 and 0.10, gap G2 in docs/reports/stacking-test.md). Throws when there is no level,
+ * or `first` is missing, or a level's profile is, or the campaign cannot be chosen or played.
  */
 export function contentStages(content: ContentBundle, opts: ContentStagesOptions = {}): LevelStage[] {
   const who = opts.who ?? 'the game';
   const levels = contentOf(content, levelKind()).map((e) => e.value);
   if (levels.length === 0) throw new Error(`${who} has no levels`);
+  const campaign = chooseCampaign(content, opts.campaign, who);
   let ordered: LevelDef[];
   try {
-    ordered = levelsInPlayOrder(levels, opts.first);
-  } catch {
-    throw new Error(`${who} has no level "${opts.first}"`);
+    ordered = levelsInPlayOrder(levels, opts.first, campaign);
+  } catch (e) {
+    if (opts.first !== undefined && !levels.some((l) => l.id === opts.first))
+      throw new Error(`${who} has no level "${opts.first}"`, { cause: e });
+    throw new Error(`${who}: ${e instanceof Error ? e.message : String(e)}`, { cause: e });
   }
   return levelStages(
     ordered,
     contentOf(content, profileKind()).map((e) => e.value),
     who,
   );
+}
+
+/** The campaign `id` names, the only campaign when `id` is not given, or none. */
+function chooseCampaign(
+  content: ContentBundle,
+  id: string | undefined,
+  who: string,
+): CampaignDef | undefined {
+  const campaigns = contentOf(content, CAMPAIGN_KIND).map((e) => e.value);
+  if (id !== undefined) {
+    const named = campaigns.find((c) => c.id === id);
+    if (!named) throw new Error(`${who} has no campaign "${id}"`);
+    return named;
+  }
+  if (campaigns.length > 1) {
+    const ids = campaigns.map((c) => `"${c.id}"`).join(', ');
+    throw new Error(`${who} has ${campaigns.length} campaigns (${ids}); name the one to play`);
+  }
+  return campaigns[0];
 }
 
 /**

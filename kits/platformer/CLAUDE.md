@@ -54,7 +54,8 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
 - `sequence.ts`: `LevelSequence(stages, { seed, disabledRules, miniGames, pause })`, levels
   played one after another as the headless contract (under Level sequences), `LevelStage`
   (`{ level, profile }`), `levelStages(levels, profiles, who?)` (each level paired with the
-  profile it names), `levelsInPlayOrder(levels, first?)`, `contentStages(content, { first?, who? })`,
+  profile it names), `levelsInPlayOrder(levels, first?, campaign?)`,
+  `contentStages(content, { first?, campaign?, who? })`,
   `LEVEL_PAUSE` and `SequenceSnapshot`. `LevelSequence` is a `HostedGame`
   (`engine/core/headless.ts`, Engine 0.10 gap G37): `world`, `events` and `miniGame()`.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
@@ -267,10 +268,22 @@ The level-after-level flow every platformer game needs, as a gameplay flow rule 
 drawing): `new LevelSequence(stages, opts)` implements the headless contract over an ordered list
 of `LevelStage`s (`{ level, profile }`; `levelStages(levels, profiles)` pairs levels with the
 profiles they name and throws on a missing one). The order is the game's; most games want
-`contentStages(content, { first?, who? })` (Engine 0.7 T9, gap G2): the bundle's `level` and
-`profile` files, the levels by id with numbers compared as numbers (`level-2` before `level-10`,
-`levelsInPlayOrder`), `first` ahead of the rest, each with its profile. An order written in data
-(a mission or campaign file) comes with the mission contract at Engine 0.10.
+`contentStages(content, { first?, campaign?, who? })` (Engine 0.7 T9 and 0.10 T10, gap G2): the
+bundle's `level`, `profile` and `campaign` files, the levels in play order (`levelsInPlayOrder`),
+each with its profile.
+
+- **With a campaign file** (the engine's `campaign` kind, `engine/core/campaign.ts`; Engine 0.10):
+  the campaign's `level` entries in its order, from its `start` (the first entry when left out)
+  and round to the ones before it. Levels it does not name are not played; its `mission` entries
+  are skipped (a level sequence plays levels only). With one campaign file that one is used; with
+  several, `campaign` names the one (it throws without). `validate` already fails a campaign naming
+  a missing level; `contentStages` throws too (`<who>: campaign "main" names level "x", which is
+not there`), and on a campaign with no level.
+- **Without one**, the levels by id with numbers compared as numbers (`level-2` before
+  `level-10`), so a game with no campaign plays as it did in 0.7.
+- `first` puts that level ahead of the rest either way (with a campaign, the rest follow round
+  from it). Both platformer games have a campaign file giving the order they played in before
+  (`content/campaigns/main.campaign.json`), so their run files and golden hashes did not move.
 
 - While a level's outcome is `playing`, `step(input)` steps its world and keeps that step's
   events (`events`; the world's own list is emptied every step).
@@ -289,7 +302,8 @@ profiles they name and throws on a missing one). The order is the game's; most g
 
 `minigame.test.ts` also covers `endedRound` (on the end tick only, with the report when the
 round has one, and in a `LevelSequence` whose round clears the level: that tick, not the pause,
-and `miniGame()` while the round runs). `sequence.test.ts` covers cleared -> next, failed -> the same level afresh, wrap-around, the pause
+and `miniGame()` while the round runs). `sequence.test.ts` covers the play order (by id, `first`, a campaign's order and `start`, its
+missions skipped, a missing level, the bundle's one campaign or the one named), cleared -> next, failed -> the same level afresh, wrap-around, the pause
 ignoring input, the pause from the options, the seed, rules and mini games given to every world,
 and equal snapshots on two runs.
 

@@ -50,6 +50,15 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `MissionAdapter<KitInput, KitReport>` (`input(snapshot, mission)`, `outcome(report, mission)`),
   `totalWeight`, `pickOutcome(mission, n)` (a delegation draw), `missionResult`, `playedResult`,
   `parseMission`. Pure.
+- `campaign.ts` (Engine 0.10 T10, gap G2, item 160): the order a game plays its levels or
+  missions in, as data. `campaignSchema` is the `campaign` content kind (`*.campaign.json`:
+  `version: 1`, `id`, `title?`, `entries` (each exactly one of `{ level }` and `{ mission }`, none
+  twice), `start?` (an entry's id; the first entry when left out)); `campaignOrder(campaign)` (the
+  entries from `start`, then round to the ones before it), `campaignLevels(campaign)` (the level
+  ids in that order), `entryKind`, `entryId`, and `checkCampaigns`, the kind's `checkAll`: every
+  named level and mission must be a `level` or `mission` file of the game (`missing_level`,
+  `missing_mission`, at `entries.<i>.level` / `.mission`). Kits read the entries they can play (the
+  platformer's `contentStages`); missions in a campaign are checked only until 0.13. Pure.
 - `mission-adapter.ts` (Engine 0.10 T7): playing a mission through a kit's mini game with plain
   data only. `snapshotEntities(snapshot, ...components)` reads a plain world snapshot's entities
   (ascending id, every component); `playMissionRound({ mission, snapshot, adapter, start, input,
@@ -104,7 +113,9 @@ Tests sit next to the code as `*.test.ts` and run in Node with `pnpm test`, usin
 audio and DOM. `missions.test.ts` covers mission definitions (valid, no outcomes, duplicate outcome ids, a bad
 `worldTimeCost`), delegation draws and the adapter; `mission-adapter.test.ts` the snapshot reader and every
 `playMissionRound` path. `tests/kits/mission-adapter.test.ts` plays the siege fixture's `raid`
-mission through the topdown kit (and delegates it), outside every layer. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
+mission through the topdown kit (and delegates it), outside every layer. `campaign.test.ts` covers
+campaign files (good, and each broken field's code), the play order from `start`, and the
+loader naming the file and field of a missing level or mission. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
 box, pan, wheel, pinch, long-press, edge scroll); `input/pointer.test.ts` drives `PointerSource`
 with fake events. `tests/architecture/purity.test.ts` and `no-content.test.ts` guard purity and the
 no-content rule.

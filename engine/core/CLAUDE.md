@@ -111,6 +111,20 @@ window `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }` wi
 closes`; `engine/sim/opportunity.ts` runs it) and `parseOpportunity(json)`. Pure (on `PURE_CORE`); tested in
 `missions.test.ts`; in `docs/reference/schemas.md`.
 
+`campaign.ts` (Engine 0.10 T10, gap G2, item 160) is the order a game plays its levels or
+missions in, written in data: `campaignSchema` is the `campaign` content kind
+(`*.campaign.json`, `content/engine-kinds.ts`): `version` (1), `id`, `title?`, `entries` (at least
+one; each exactly one of `{ "level": id }` and `{ "mission": id }`, `bad_entry`; none twice,
+`duplicate_entry`) and `start?` (the id of the entry played first, `unknown_entry` when there is
+none, `ambiguous_start` when a level and a mission share it). Its `checkAll`, `checkCampaigns`,
+fails each entry naming a level or mission the game's content lacks (`missing_level`,
+`missing_mission`, at `entries.<i>.level` or `.mission`), so `pnpm cli validate` names the file and
+field. `campaignOrder(campaign)` is the entries from `start` and then round to the ones before it
+(a looping sequence's order); `campaignLevels(campaign)` the level ids in that order; `entryKind`,
+`entryId`. A kit reads the entries it can play: the platformer kit's `contentStages` plays the
+level entries. Missions listed in a campaign are checked by `validate` only; playing them in order
+comes at 0.13. Pure (on `PURE_CORE`); tested in `campaign.test.ts`; in `docs/reference/schemas.md`.
+
 `mission-adapter.ts` (Engine 0.10 T7) is the reusable half of a `MissionAdapter`: playing a
 mission through a kit's mini game with plain data only, so the kit never imports `engine/sim`.
 `snapshotEntities(snapshot, ...components)` lists a plain world snapshot's entities (`{ id,
@@ -184,7 +198,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

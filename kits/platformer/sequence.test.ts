@@ -6,6 +6,7 @@ import { ScriptedInput } from '@engine/core/input/scripted-input';
 import type { MiniGameDef } from '@engine/core/minigame';
 import { levelSchema, type LevelDef } from './level';
 import { profileSchema } from './profile';
+import { campaignSchema } from '@engine/core/campaign';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import {
   contentStages,
@@ -194,5 +195,70 @@ describe('levels in play order (gap G2)', () => {
     );
     const empty = { manifest: {}, entries: [] } as unknown as ContentBundle;
     expect(() => contentStages(empty)).toThrow(/has no levels/);
+  });
+
+  const campaign = (id: string, entries: object[], start?: string) =>
+    campaignSchema.parse({ version: 1, id, entries, ...(start ? { start } : {}) });
+
+  it("plays a campaign's levels in its order, from its start, skipping its missions (Engine 0.10)", () => {
+    const main = campaign('main', [
+      { level: 'tiny' },
+      { mission: 'raid' },
+      { level: 'level-10' },
+      { level: 'level-1' },
+    ]);
+    expect(ids(levelsInPlayOrder(levels, undefined, main))).toEqual(['tiny', 'level-10', 'level-1']);
+    expect(ids(levelsInPlayOrder(levels, 'level-10', main))).toEqual(['level-10', 'level-1', 'tiny']);
+    const started = campaign('main', [{ level: 'tiny' }, { level: 'level-2' }], 'level-2');
+    expect(ids(levelsInPlayOrder(levels, undefined, started))).toEqual(['level-2', 'tiny']);
+    expect(() => levelsInPlayOrder(levels, undefined, campaign('m', [{ level: 'gone' }]))).toThrow(
+      'campaign "m" names level "gone", which is not there',
+    );
+    expect(() => levelsInPlayOrder(levels, undefined, campaign('m', [{ mission: 'raid' }]))).toThrow(
+      'campaign "m" names no level',
+    );
+  });
+
+  it("uses the bundle's campaign when it has one, else the id order", () => {
+    const entry = (kind: string, value: { id: string }) => ({
+      kind,
+      name: value.id,
+      file: `${value.id}.json`,
+      value,
+    });
+    const bundle = (...campaigns: object[]) =>
+      ({
+        manifest: {},
+        entries: [
+          ...levels.map((l) => entry('level', l)),
+          entry('profile', PROFILE),
+          ...campaigns.map((c) => entry('campaign', c as { id: string })),
+        ],
+      }) as unknown as ContentBundle;
+    const forward = campaign('forward', [{ level: 'level-1' }, { level: 'level-2' }, { level: 'level-10' }]);
+    const backward = campaign('backward', [
+      { level: 'level-10' },
+      { level: 'level-2' },
+      { level: 'level-1' },
+    ]);
+    const order = (content: ContentBundle, opts = {}) =>
+      ids(contentStages(content, opts).map((s) => s.level));
+    expect(order(bundle())).toEqual(['level-1', 'level-2', 'level-10', 'tiny']);
+    expect(order(bundle(forward))).toEqual(['level-1', 'level-2', 'level-10']);
+    expect(order(bundle(backward))).toEqual(['level-10', 'level-2', 'level-1']);
+    expect(order(bundle(forward, backward), { campaign: 'backward' })).toEqual([
+      'level-10',
+      'level-2',
+      'level-1',
+    ]);
+    expect(() => contentStages(bundle(forward, backward), { who: 'the lab' })).toThrow(
+      'the lab has 2 campaigns ("forward", "backward"); name the one to play',
+    );
+    expect(() => contentStages(bundle(forward), { campaign: 'nope', who: 'the lab' })).toThrow(
+      'the lab has no campaign "nope"',
+    );
+    expect(() => contentStages(bundle(forward), { first: 'tiny', who: 'the lab' })).toThrow(
+      'the lab: there is no level "tiny" in campaign "forward"',
+    );
   });
 });

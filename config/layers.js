@@ -163,6 +163,7 @@ export const PURE_CORE = [
   'engine/core/kit.ts',
   'engine/core/orders.ts',
   'engine/core/missions.ts',
+  'engine/core/campaign.ts',
   'engine/core/rts-types.ts',
   'engine/core/minigame.ts',
   'engine/core/minigame-params.ts',

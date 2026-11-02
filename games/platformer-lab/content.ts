@@ -31,12 +31,13 @@ export function loadLab(files: Readonly<Record<string, string>>): ContentResult<
 export type LabStage = LevelStage;
 
 /**
- * The lab's levels in the order they are played: the fixture level (`FIRST_LEVEL`) first, then
- * the lab's own levels by id (`lab-1-...`, `lab-2-...`), each with its profile (the kit's
- * `contentStages`, gap G2).
+ * The lab's levels in the order they are played: the order of its campaign file
+ * (`content/campaigns/main.campaign.json`: the fixture level, `FIRST_LEVEL`, first, then the lab's
+ * own levels, `lab-1-...`, `lab-2-...`), each with its profile (the kit's `contentStages`, gap G2,
+ * fixed in 0.10).
  */
 export function labStages(content: ContentBundle): LabStage[] {
-  return contentStages(content, { first: FIRST_LEVEL, who: 'the lab' });
+  return contentStages(content, { who: 'the lab' });
 }
 
 /**

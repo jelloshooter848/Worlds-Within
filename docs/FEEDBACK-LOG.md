@@ -273,6 +273,9 @@ topdown])`, because the kits' `index.ts` files do not re-export the hook (so pag
 - **89.** Levels play in id order with numbers compared as numbers (`level-10` after `level-2`),
   and the test game has no fixture level first (the lab does). A level order written in data is
   moved to 0.10 (G2). OK?
+  _Engine 0.10 T10 (item 160): the order can now be written in a `campaign` file; both platformer
+  games have one reproducing the id order (the lab: `tiny` first), and a game without one keeps
+  this id order._
 - **90.** `game.json` names a second kit with an optional `uses` list beside `kit`; `kit` stays
   the main kit, and rules and strict mutants are the main kit's only (the used kit's rules are
   G12, item 80). OK, or should all kits be one list?
@@ -588,6 +591,11 @@ it starts (151), delegating gives a fair, average result and playing gives choic
 - **160.** G2, the rest: a `campaign` engine content kind (`*.campaign.json`, `{ version: 1,
 entries: [{ level } | { mission }] }`), checked by `validate`; a platformer game with a campaign
   plays its levels in that order, and without one keeps the 0.7 id order. OK?
+  _Done in Engine 0.10 T10: `engine/core/campaign.ts`, with an `id` and an optional `start` (the
+  entry played first) beside `version` and `entries`; `missing_level` / `missing_mission` at the
+  entry's field. Only the levels a campaign lists are played; its missions are checked only (0.13
+  plays them). Both platformer games got `content/campaigns/main.campaign.json` with their old
+  order, so no golden hash moved; the lab's order now comes from its file, not `first`. See 89._
 - **161.** Missions in run files: an optional `missions` list beside `orders` on world runs,
   `{ tick, mission, action: open | play | delegate, outcome?, experienceTicks? }`, applied between
   ticks after that tick's orders; `play` names the outcome reached; refused entries are listed in

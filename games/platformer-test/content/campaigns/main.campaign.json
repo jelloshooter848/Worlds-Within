@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "id": "main",
+  "title": "The stacking test: its four levels in order",
+  "entries": [{ "level": "level-1" }, { "level": "level-2" }, { "level": "level-3" }, { "level": "level-4" }]
+}
