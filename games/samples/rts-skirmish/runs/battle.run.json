@@ -1,0 +1,58 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 240,
+  "orders": [
+    {
+      "tick": 0,
+      "id": 1,
+      "faction": "red",
+      "type": "build",
+      "units": [7, 8],
+      "target": { "x": 10, "y": 9 },
+      "building": "barracks"
+    },
+    { "tick": 0, "id": 2, "faction": "red", "type": "gather", "units": [9], "target": 5 },
+    { "tick": 30, "id": 4, "faction": "red", "type": "train", "units": [16], "target": "soldier" },
+    { "tick": 30, "id": 5, "faction": "red", "type": "train", "units": [16], "target": "soldier" },
+    { "tick": 30, "id": 6, "faction": "red", "type": "train", "units": [16], "target": "soldier" },
+    { "tick": 30, "id": 7, "faction": "red", "type": "gather", "units": [7, 8], "target": 4 },
+    { "tick": 100, "id": 9, "faction": "red", "type": "attack", "units": [15, 17, 18, 19], "target": 10 }
+  ],
+  "assertions": [
+    { "tick": 1, "path": "kit.enemy.camp.fired", "op": "eq", "value": 1 },
+    { "tick": 10, "path": "sides.red.sites", "op": "eq", "value": 1 },
+    { "tick": 10, "path": "sides.red.stock.gold", "op": "eq", "value": 150 },
+    { "tick": 30, "path": "sides.red.buildings.barracks", "op": "eq", "value": 1 },
+    { "tick": 80, "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 },
+    { "tick": 100, "path": "sides.red.unitTypes.soldier", "op": "eq", "value": 3 },
+    { "tick": 100, "path": "kit.enemy.raid.last", "op": "eq", "value": 90 },
+    { "tick": 100, "path": "sides.blue.units", "op": "eq", "value": 4 },
+    { "tick": 240, "path": "sides.blue.units", "op": "eq", "value": 0 },
+    { "tick": 240, "path": "sides.red.unitTypes.hero", "op": "eq", "value": 1 },
+    { "tick": 240, "path": "sides.red.unitTypes.soldier", "op": "eq", "value": 2 },
+    { "tick": 240, "path": "sides.red.unitTypes.worker", "op": "eq", "value": 3 }
+  ],
+  "invariants": [
+    { "path": "sides.red.buildings.town-centre", "op": "eq", "value": 1 },
+    { "path": "sides.red.units", "op": "gte", "value": 4 },
+    { "path": "sides.red.stock.gold", "op": "gte", "value": 0 }
+  ],
+  "hashEvery": 20,
+  "guards": ["enemy-follows-plan", "enemy-waits-for-trigger"],
+  "hashes": [
+    { "tick": 0, "hash": "d63065c87e8ab781" },
+    { "tick": 20, "hash": "170a7e4cc0357435" },
+    { "tick": 40, "hash": "201ad7df0359cce9" },
+    { "tick": 60, "hash": "73a750d11e73d0e7" },
+    { "tick": 80, "hash": "3a5573bafb240dbe" },
+    { "tick": 100, "hash": "40f4a93936e0d050" },
+    { "tick": 120, "hash": "02fdb440434ed174" },
+    { "tick": 140, "hash": "1ff9857931463c95" },
+    { "tick": 160, "hash": "42adcc210ee2a5ff" },
+    { "tick": 180, "hash": "1837608fdb4f0317" },
+    { "tick": 200, "hash": "190f0e9c61e6734c" },
+    { "tick": 220, "hash": "7c5be3e3eda849fd" },
+    { "tick": 240, "hash": "588fe33bb3ecfcfd" }
+  ]
+}

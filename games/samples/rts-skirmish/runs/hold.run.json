@@ -1,0 +1,31 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 200,
+  "assertions": [
+    { "tick": 1, "path": "kit.enemy.camp.fired", "op": "eq", "value": 1 },
+    { "tick": 200, "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 },
+    { "tick": 200, "path": "sides.blue.units", "op": "eq", "value": 4 },
+    { "tick": 200, "path": "sides.red.units", "op": "eq", "value": 4 }
+  ],
+  "invariants": [
+    { "path": "sides.red.units", "op": "eq", "value": 4 },
+    { "path": "sides.blue.units", "op": "eq", "value": 4 },
+    { "path": "sides.red.stock.gold", "op": "eq", "value": 250 }
+  ],
+  "hashEvery": 20,
+  "guards": ["enemy-follows-plan", "enemy-waits-for-trigger"],
+  "hashes": [
+    { "tick": 0, "hash": "d63065c87e8ab781" },
+    { "tick": 20, "hash": "0f9ef4004884f18b" },
+    { "tick": 40, "hash": "97daa704c3fd0db6" },
+    { "tick": 60, "hash": "a793dded9072feb5" },
+    { "tick": 80, "hash": "7666f1469eb40647" },
+    { "tick": 100, "hash": "e80ce05ec920120f" },
+    { "tick": 120, "hash": "5b0de62ada1b32a1" },
+    { "tick": 140, "hash": "94466bd9012a34d3" },
+    { "tick": 160, "hash": "a10bd7cc2feeb253" },
+    { "tick": 180, "hash": "75610e7dcaa43073" },
+    { "tick": 200, "hash": "dcf2c02f2cb6d266" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "rts-skirmish",
+  "title": "RTS skirmish: one side against a scripted raiding party",
+  "kit": "rts",
+  "content": {
+    "rts-map": ["content/maps/*.world.json"],
+    "rts-types": ["content/types/*.json"],
+    "rts-enemy": ["content/enemy/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"]
+  },
+  "start": { "seed": 9 },
+  "screen": { "width": 320, "height": 240 },
+  "headless": "headless.ts",
+  "view": "view.ts"
+}

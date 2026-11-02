@@ -1,0 +1,566 @@
+{
+  "backend": "canvas2d",
+  "sheets": {
+    "sheet": "skirmish",
+    "fallbackColor": "#ff00ff"
+  },
+  "kinds": {
+    "unit:worker": {
+      "frames": {
+        "idle": {
+          "down": "worker-down-0",
+          "up": "worker-up-0",
+          "right": "worker-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#d82800"
+    },
+    "unit:worker:enemy": {
+      "frames": {
+        "idle": {
+          "down": "worker-down-0",
+          "up": "worker-up-0",
+          "right": "worker-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#0078f8",
+      "palette": "skirmish-blue"
+    },
+    "unit:soldier": {
+      "frames": {
+        "idle": {
+          "down": "soldier-down-0",
+          "up": "soldier-up-0",
+          "right": "soldier-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#d82800"
+    },
+    "unit:soldier:enemy": {
+      "frames": {
+        "idle": {
+          "down": "soldier-down-0",
+          "up": "soldier-up-0",
+          "right": "soldier-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#0078f8",
+      "palette": "skirmish-blue"
+    },
+    "unit:hero": {
+      "frames": {
+        "idle": {
+          "down": "hero-down-0",
+          "up": "hero-up-0",
+          "right": "hero-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#d82800"
+    },
+    "unit:hero:enemy": {
+      "frames": {
+        "idle": {
+          "down": "hero-down-0",
+          "up": "hero-up-0",
+          "right": "hero-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["hero-right-0", "hero-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#0078f8",
+      "palette": "skirmish-blue"
+    },
+    "building:town-centre": {
+      "frames": {
+        "idle": "town-centre",
+        "train": "town-centre",
+        "site": "site-3x3"
+      },
+      "fallbackColor": "#883c00"
+    },
+    "building:town-centre:enemy": {
+      "frames": {
+        "idle": "town-centre",
+        "train": "town-centre",
+        "site": "site-3x3"
+      },
+      "fallbackColor": "#883c00",
+      "palette": "skirmish-blue"
+    },
+    "building:barracks": {
+      "frames": {
+        "idle": "barracks",
+        "train": "barracks",
+        "site": "site-2x2"
+      },
+      "fallbackColor": "#883c00"
+    },
+    "building:barracks:enemy": {
+      "frames": {
+        "idle": "barracks",
+        "train": "barracks",
+        "site": "site-2x2"
+      },
+      "fallbackColor": "#883c00",
+      "palette": "skirmish-blue"
+    },
+    "resource:gold": {
+      "frames": {
+        "idle": "gold",
+        "empty": "gold-empty"
+      },
+      "fallbackColor": "#f8b800"
+    },
+    "selection-ring": {
+      "frames": {
+        "idle": "ring"
+      },
+      "fallbackColor": "#00e800"
+    },
+    "health-bar": {
+      "frames": {
+        "hp-0": "hp-0",
+        "hp-1": "hp-1",
+        "hp-2": "hp-2",
+        "hp-3": "hp-3",
+        "hp-4": "hp-4",
+        "hp-5": "hp-5",
+        "hp-6": "hp-6",
+        "hp-7": "hp-7",
+        "hp-8": "hp-8"
+      },
+      "fallbackColor": "#00e800"
+    },
+    "progress-bar": {
+      "frames": {
+        "p-0": "p-0",
+        "p-1": "p-1",
+        "p-2": "p-2",
+        "p-3": "p-3",
+        "p-4": "p-4",
+        "p-5": "p-5",
+        "p-6": "p-6",
+        "p-7": "p-7",
+        "p-8": "p-8"
+      },
+      "fallbackColor": "#f8b800"
+    },
+    "ghost:barracks": {
+      "frames": {
+        "idle": "ghost-2x2"
+      },
+      "fallbackColor": "#00e800"
+    },
+    "selection-box": {
+      "frames": {
+        "idle": "box"
+      },
+      "fallbackColor": "#fcfcfc"
+    }
+  },
+  "tiles": {
+    "0": {
+      "frame": "rock",
+      "fallbackColor": "#7c7c7c"
+    },
+    "1": {
+      "frame": "dirt",
+      "fallbackColor": "#ac7c00"
+    },
+    "2": {
+      "frame": "grass",
+      "fallbackColor": "#00a800"
+    },
+    "3": {
+      "frame": "water",
+      "fallbackColor": "#0058f8"
+    }
+  },
+  "hud": [
+    {
+      "status": "stock.gold",
+      "as": "icon",
+      "x": 4,
+      "y": 4,
+      "frame": "icon-gold"
+    },
+    {
+      "status": "stock.gold",
+      "as": "number",
+      "x": 14,
+      "y": 4,
+      "font": "skirmish-font"
+    },
+    {
+      "status": "units",
+      "as": "icon",
+      "x": 52,
+      "y": 4,
+      "frame": "icon-units"
+    },
+    {
+      "status": "units",
+      "as": "number",
+      "x": 62,
+      "y": 4,
+      "font": "skirmish-font"
+    },
+    {
+      "status": "enemyUnits",
+      "as": "icon",
+      "x": 88,
+      "y": 4,
+      "frame": "icon-enemy"
+    },
+    {
+      "status": "enemyUnits",
+      "as": "number",
+      "x": 98,
+      "y": 4,
+      "font": "skirmish-font"
+    }
+  ],
+  "camera": {
+    "zoom": 1
+  }
+}

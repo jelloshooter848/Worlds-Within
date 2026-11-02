@@ -1,0 +1,106 @@
+; The RTS skirmish sample's HUD font: one 8x8 frame per digit, named by the digit, a 3x5 glyph
+; drawn double width, white with a black drop shadow.
+palette skirmish
+legend . clear
+legend k 0
+legend w 1
+
+frame 0
+........
+wwwwww..
+wwkkwwk.
+wwk.wwk.
+wwk.wwk.
+wwwwwwk.
+.kkkkkk.
+........
+
+frame 1
+........
+..ww....
+wwwwk...
+.kwwk...
+..wwk...
+wwwwww..
+.kkkkkk.
+........
+
+frame 2
+........
+wwwwww..
+.kkkwwk.
+wwwwwwk.
+wwkkkkk.
+wwwwww..
+.kkkkkk.
+........
+
+frame 3
+........
+wwwwww..
+.kkkwwk.
+..wwwwk.
+...kwwk.
+wwwwwwk.
+.kkkkkk.
+........
+
+frame 4
+........
+ww..ww..
+wwk.wwk.
+wwwwwwk.
+.kkkwwk.
+....wwk.
+.....kk.
+........
+
+frame 5
+........
+wwwwww..
+wwkkkkk.
+wwwwww..
+.kkkwwk.
+wwwwwwk.
+.kkkkkk.
+........
+
+frame 6
+........
+wwwwww..
+wwkkkkk.
+wwwwww..
+wwkkwwk.
+wwwwwwk.
+.kkkkkk.
+........
+
+frame 7
+........
+wwwwww..
+.kkkwwk.
+..ww.kk.
+..wwk...
+..wwk...
+...kk...
+........
+
+frame 8
+........
+wwwwww..
+wwkkwwk.
+wwwwwwk.
+wwkkwwk.
+wwwwwwk.
+.kkkkkk.
+........
+
+frame 9
+........
+wwwwww..
+wwkkwwk.
+wwwwwwk.
+.kkkwwk.
+wwwwwwk.
+.kkkkkk.
+........

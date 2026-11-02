@@ -134,3 +134,6 @@ across sides, a replay of the recorded orders gives the same snapshots) and `kit
 kinds through `loadContent`), on the tiny fixture `__fixtures__/world.ts`.
 `tests/kits/rts-sim.test.ts` drives the kit over a real `engine/sim` world (the battle fixture),
 as a game's glue would, and checks a replay of the recorded player orders gives the same hashes.
+The first game on the kit is `games/samples/rts-skirmish` (Engine 0.9 T11): its run files guard
+all five rules (`mutants games/samples/rts-skirmish`; the interface rules through its interface
+actions).

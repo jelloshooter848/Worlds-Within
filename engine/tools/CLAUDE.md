@@ -258,7 +258,8 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 - `tests/runs/backend-parity.test.ts` plays every demo and platformer-lab run file presenting
   every tick through the null and the Canvas2D backends (and, for the lab, through the Three.js
   backend's Node-side `ThreeScene` with its `three` skin), and every other game's with a `view`
-  through `frame()` into null, `render` into Canvas2D and, when the game has a `three` skin,
+  (`games/<g>/` and `games/samples/<g>/`; recorded `orders` go to the view's `order` at their
+  ticks, as `run` hands them over) through `frame()` into null, `render` into Canvas2D and, when the game has a `three` skin,
   `frame()` into `threeScenePresenter` with its `skinSet` (Engine 0.7 T8: no fallback boxes, a
   block for every tile shown), and requires every hash list to equal the golden file.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with

@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NullPresenter } from '@engine/backends/null';
 import type { ContentBundle } from '@engine/core/content/bundle';
+import type { JsonObject } from '@engine/core/headless';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { freezeFrame, isFullMap, MINI_GAME_STATUS, skinSet } from '@engine/core/present';
@@ -17,7 +18,7 @@ import {
 } from '@kits/platformer';
 import { presentWorld, snapshotWorld, TdPresentState, type TopDownWorld } from '@kits/topdown';
 import { loadGame } from '../../engine/tools/game-loader';
-import { stateHash, type TickHash } from '../../engine/tools/headless-run';
+import { orderOf, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { readRunFile, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/demo/headless';
 import { DemoPicture, demoLook } from '../../games/demo/picture';
@@ -55,9 +56,14 @@ const labFiles = runsIn(LAB_RUNS);
  * The demo and the lab keep their own blocks below (the lab's also checks the 3D skin).
  */
 const OWN_BLOCKS = new Set(['games/demo', 'games/platformer-lab']);
-const viewGames = readdirSync(join(ROOT, 'games'), { withFileTypes: true })
-  .filter((e) => e.isDirectory())
-  .map((e) => `games/${e.name}`)
+/** Game folders: `games/<name>/` and, inside the samples group, `games/samples/<name>/`. */
+const gameDirs = (dir: string): string[] =>
+  existsSync(join(ROOT, dir))
+    ? readdirSync(join(ROOT, dir), { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => `${dir}/${e.name}`)
+    : [];
+const viewGames = [...gameDirs('games'), ...gameDirs('games/samples')]
   .filter((dir) => !OWN_BLOCKS.has(dir) && existsSync(join(ROOT, dir, 'game.json')))
   .filter(
     (dir) =>
@@ -250,10 +256,15 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
   });
 });
 
-/** Plays `run` through a game's view as `pnpm cli run` plays its headless game, calling `show` each tick. */
+/**
+ * Plays `run` through a game's view as `pnpm cli run` plays its headless game, calling `show` each
+ * tick. Recorded orders (Engine 0.9) go to the view's `order` after the tick's state is shown and
+ * hashed, before the step from it, as `run` hands them to the headless game.
+ */
 function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void): TickHash[] {
   const input = new ScriptedInput(run.input);
   const hashes: TickHash[] = [];
+  const takesOrders = view as ViewGame & { order?(order: JsonObject): string | null };
   for (let tick = 0; tick <= run.ticks; tick++) {
     if (tick > 0) {
       input.next();
@@ -262,13 +273,20 @@ function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void):
     show(view);
     if (tick % run.hashEvery === 0 || tick === run.ticks)
       hashes.push({ tick, hash: stateHash(view.snapshot()) });
+    for (const entry of run.orders) {
+      if (entry.tick !== tick) continue;
+      if (takesOrders.order === undefined)
+        throw new Error(`the view takes no orders, ${run.orders.length} given`);
+      takesOrders.order(orderOf(entry));
+    }
   }
   return hashes;
 }
 
 describe('backend parity: every other game with a view, through null, canvas2d and three', () => {
-  it('finds the platformer test runs', () => {
+  it('finds the platformer test runs and the RTS skirmish sample runs', () => {
     expect(viewRuns).toContain('games/platformer-test/runs/level-4.run.json');
+    expect(viewRuns).toContain('games/samples/rts-skirmish/runs/battle.run.json');
   });
 
   it.each(viewRuns)('%s', async (file) => {
