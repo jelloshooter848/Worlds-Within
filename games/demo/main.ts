@@ -1,3 +1,4 @@
+import { AssetRegistry } from '@engine/core/assets/registry';
 import { AudioManager } from '@engine/core/audio/audio-manager';
 import { GamepadSource } from '@engine/core/input/gamepad';
 import { InputManager } from '@engine/core/input/input-manager';
@@ -5,12 +6,19 @@ import { KeyboardSource } from '@engine/core/input/keyboard';
 import { FixedLoop } from '@engine/core/loop';
 import { SceneStack } from '@engine/core/scene';
 import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
-import { DEMO_SONG } from './music';
+import { sheetLookup } from '@kits/topdown';
+import { demoArt, demoSongs, loadDemo, mustLoad } from './content';
+import { DEMO_FILES } from './files';
 import { DemoScene } from './scene';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
   if (!canvas) throw new Error('#screen canvas missing');
+
+  const content = mustLoad(loadDemo(DEMO_FILES));
+  const art = demoArt(content);
+  const assets = new AssetRegistry({ default: art.palettes });
+  assets.defineAll(art.sprites);
 
   const viewport = new Viewport(canvas);
   const renderer = new CanvasRenderer(viewport.ctx);
@@ -19,7 +27,7 @@ function boot(): void {
   if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
 
   const audio = new AudioManager();
-  audio.registerSongs([DEMO_SONG]);
+  audio.registerSongs(demoSongs(content));
   // Browsers only start audio inside a user gesture; keep listening so an interrupted context recovers.
   const unlock = () => audio.unlock();
   for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click']) {
@@ -27,7 +35,7 @@ function boot(): void {
   }
 
   const scenes = new SceneStack();
-  scenes.push(new DemoScene(audio));
+  scenes.push(new DemoScene(content, audio, sheetLookup(assets)));
 
   new FixedLoop({
     step() {

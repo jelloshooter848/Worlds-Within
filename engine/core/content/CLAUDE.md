@@ -14,12 +14,22 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   It rejects ragged rows (`ragged_row`), characters missing from the legend (`unknown_char`) and
   empty grids (`empty_grid`), each with a 0-based `row` and `col`. `addGridIssues` does the same
   check inside a Zod `superRefine`, so a schema reports grid problems at `<field>.<row>`.
-- `kinds.ts`: a content-file kind is `{ name, description, schema, readText? }`. `parseContent`
+- `kinds.ts`: a content-file kind is `{ name, description, schema, readText?, gridParts? }`. `parseContent`
   reads `.json` with `JSON.parse`, or `.txt` with the kind's `readText`, then validates. A
   `.txt` reader returns a map of JSON pointers to lines, so errors also carry the line.
-  `ContentKinds` is a registry by name.
+  `ContentKinds` is a registry by name. `gridParts` (field -> suffix, such as
+  `{ map: '.map.txt' }`) keeps a field of a `.json` file in a sibling text grid; `parseContent`
+  takes those parts' texts, and an error in the field names the part file and its line.
+- `manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json`: `id`, `title?`, `kit`,
+  `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`) and
+  `headless` (the module that boots the game headless).
+- `bundle.ts`: `loadContent(files, kinds, { root })` turns `{ path: text }` pairs (from Vite's
+  `import.meta.glob` in the browser, `../node/game-files.ts` in Node) into a `ContentBundle`
+  (`{ manifest, entries }`); `contentOf(bundle, kind)` and `contentNamed` give typed entries. An
+  entry's name is its file name up to the first dot; an `id` field must match it.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
-  `sfx` (`audio/song-schema.ts`) and `sprite` (`gfx/sprite-schema.ts`, JSON or `.txt`).
+  `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`) and `sprite`
+  (`gfx/sprite-schema.ts`, JSON or `.txt`), each also exported (`SONG_KIND`, ...) for `contentOf`.
 
 The schemas for engine data live next to the code that uses the data, not here:
 `audio/song-schema.ts` (the `Song` and `Sfx` shapes, and every channel must compile as MML) and
@@ -29,8 +39,9 @@ file formats are described at the top of that file).
 ## Rules
 
 - Pure: this folder is `engine/core/content/**` in `PURE_CORE` (`config/layers.js`), as are the
-  two schema files. No file IO, no DOM, no clock, no `Math.random`. Import only `zod` and other
-  pure core files (`tests/architecture/purity.test.ts` checks the closure).
+  three schema files. No file IO, no DOM, no clock, no `Math.random`. Import only `zod` and other
+  pure core files (`tests/architecture/purity.test.ts` checks the closure). Reading a game folder
+  from disk is `engine/core/node/game-files.ts` (`readGameFiles`), which is Node only and not pure.
 - Bad content never throws: every problem is a `ContentError`. Throw only for programming errors
   (a legend key longer than one character passed by code, a kind registered twice).
 - Error codes are part of the contract: tools and tests match on them. Keep Zod's codes as they
@@ -38,7 +49,9 @@ file formats are described at the top of that file).
   Content codes so far: `ragged_row`, `unknown_char`, `empty_grid`, `invalid_mml`, `no_channels`,
   `no_frames`, `bad_legend_key`, `invalid_json`, `unsupported_extension`, `unknown_kind`, and the
   sprite `.txt` reader's `row_outside_frame`, `unknown_directive`, `duplicate_frame`,
-  `duplicate_legend`.
+  `duplicate_legend`; the parts' `duplicate_field`; the loader's `missing_file`, `no_match`,
+  `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; and the top-down
+  kit's room codes `wrong_size` and `invalid_room` (`kits/topdown/schema.ts`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.
 - Use `z.strictObject` for file shapes, so a misspelled field is an error, and `exactOptional()`
@@ -47,5 +60,6 @@ file formats are described at the top of that file).
 ## Testing
 
 Each schema has tests next to it with good and broken inputs that check the file name, the exact
-`path` and the `code`: `validate.test.ts`, `text-grid.test.ts`, `kinds.test.ts`,
+`path` and the `code`: `validate.test.ts`, `text-grid.test.ts`, `kinds.test.ts`, `bundle.test.ts`,
+`gfx/palette-schema.test.ts`,
 `audio/song-schema.test.ts`, `gfx/sprite-schema.test.ts`. Run them with `pnpm test`.

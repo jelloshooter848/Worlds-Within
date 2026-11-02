@@ -132,12 +132,29 @@ describe('content rule: engine and kits hold no game content', () => {
   });
 
   it('still recognises the demo game content (the detector works on real content)', () => {
-    const music = contentMarkers(readFileSync(join(ROOT, 'games/demo/music.ts'), 'utf8'));
+    // The demo keeps its content in data files; written back as TypeScript, it must be flagged.
+    const song = readFileSync(join(ROOT, 'games/demo/content/songs/demo.json'), 'utf8');
+    const music = contentMarkers(`export const SONG = ${song};`);
     expect(music.some((m) => m.endsWith('Song or Sfx object'))).toBe(true);
     expect(music.some((m) => m.endsWith('MML source string'))).toBe(true);
-    const rooms = contentMarkers(readFileSync(join(ROOT, 'games/demo/rooms.ts'), 'utf8'));
+    const room = JSON.parse(readFileSync(join(ROOT, 'games/demo/content/rooms/courtyard.json'), 'utf8'));
+    room.map = readFileSync(join(ROOT, 'games/demo/content/rooms/courtyard.map.txt'), 'utf8')
+      .trim()
+      .split('\n');
+    const rooms = contentMarkers(`export const ROOM = ${JSON.stringify(room)};`);
     expect(rooms.some((m) => m.endsWith('RoomDef literal'))).toBe(true);
     expect(rooms.some((m) => m.includes('text grid'))).toBe(true);
+  });
+});
+
+describe('content rule: the demo keeps its content in data files', () => {
+  it('has no rooms, songs or sprites in its TypeScript', () => {
+    const files = readdirSync(join(ROOT, 'games/demo')).filter((f) => f.endsWith('.ts'));
+    expect(files).toContain('content.ts');
+    const found = files.flatMap((f) =>
+      contentMarkers(readFileSync(join(ROOT, 'games/demo', f), 'utf8'), f).map((m) => `${f}:${m}`),
+    );
+    expect(found).toEqual([]);
   });
 });
 

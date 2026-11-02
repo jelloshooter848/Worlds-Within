@@ -4,7 +4,8 @@ The top-down kit: gameplay rules for a room-based action game seen from above. R
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
-`person.ts`), a scripted test bot (`bot.ts`), and sheet helpers (`view.ts`, `frames.ts`).
+`person.ts`), a scripted test bot (`bot.ts`), sheet helpers (`view.ts`, `frames.ts`) and the room
+file schema (`schema.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
 ## Rules only
@@ -31,14 +32,23 @@ such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`wal
   this to a backend that draws from a read-only snapshot is planned for a later release. Do not add
   more drawing code.
 
+## Room files (`schema.ts`)
+
+`roomSchema(extraLegend?, wall?)` checks a room file (a `RoomDef` as JSON) and `roomKind(...)` is
+the `room` content kind a game registers on top of `engineContentKinds()`. The map is usually a
+sibling text grid (`rooms/hall.json` + `rooms/hall.map.txt`, the kind's `gridParts`): 11 rows of 16
+characters from `LEGEND` plus the game's `extraLegend`. Beyond the shape, the room must pass
+`parseRoom`; its complaints become `invalid_room` errors at the map row they name. Size mistakes
+are `wrong_size`. Checks across rooms stay in `buildDungeon`.
+
 ## Imports
 
-- Allowed: `@engine/core/*` and relative paths inside the kit.
+- Allowed: `@engine/core/*`, `zod` (for `schema.ts`) and relative paths inside the kit.
 - Tests (`*.test.ts`) may also use `@engine/backends/null` (the headless `NullRenderer`).
 - Never: other backends, `engine/sim`, `engine/tools`, other kits, or anything in `games/`.
 
 ## Testing
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`beam.test.ts`, `schema.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

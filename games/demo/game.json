@@ -1,0 +1,13 @@
+{
+  "id": "demo",
+  "title": "The engine demo: three rooms on the top-down kit",
+  "kit": "topdown",
+  "content": {
+    "room": ["content/rooms/*.json"],
+    "song": ["content/songs/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"]
+  },
+  "start": { "seed": 1 },
+  "headless": "headless.ts"
+}

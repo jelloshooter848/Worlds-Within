@@ -13,8 +13,9 @@ supplies rooms, extra spawn kinds, sheets and its own scene. It reports what hap
 ## Public API entry points
 
 `index.ts`, imported as `@kits/topdown`, re-exports `geometry`, `room` (rooms and the `LEGEND` text
-format), `entity`, `enemies`, `items`, `hero`, `world`, `view`, `render`, `hud`, `frames`, `walker`
-and `person`. `bot.ts` (the scripted test bot) is imported directly by tests.
+format), `entity`, `enemies`, `items`, `hero`, `world`, `view`, `render`, `hud`, `frames`, `walker`,
+`person` and `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
+`.map.txt` text grid). `bot.ts` (the scripted test bot) is imported directly by tests.
 
 ## Imports allowed
 
@@ -27,5 +28,5 @@ and `person`. `bot.ts` (the scripted test bot) is imported directly by tests.
 ## How to test
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
+`beam.test.ts`, `schema.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed.

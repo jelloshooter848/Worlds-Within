@@ -1,5 +1,6 @@
 import type { z } from 'zod';
-import { contentError, validate, type ContentError, type ContentResult } from './validate';
+import { gridRows } from './text-grid';
+import { contentError, jsonPointer, validate, type ContentError, type ContentResult } from './validate';
 
 /**
  * Content-file kinds: each kind of content file (a song, a sprite, a room...) names its schema and
@@ -22,6 +23,31 @@ export interface ContentKind<S extends z.ZodType = z.ZodType> {
   schema: S;
   /** Reads the kind's `.txt` format. Kinds without one accept only `.json`. */
   readText?: (text: string) => TextReadResult;
+  /**
+   * Fields kept in a sibling text-grid file next to a `.json` file: field -> file suffix. With
+   * `{ map: '.map.txt' }`, `rooms/hall.map.txt` is read (as rows, see `gridRows`) into the `map`
+   * field of `rooms/hall.json`, and errors in that field name the `.map.txt` file and its line.
+   */
+  gridParts?: Readonly<Record<string, string>>;
+}
+
+/** A sibling file holding one field of a content file (see {@link ContentKind.gridParts}). */
+export interface ContentPart {
+  file: string;
+  text: string;
+}
+
+/** The sibling file of `fileName` (a `.json` file) for a part suffix: `a/hall.json` -> `a/hall.map.txt`. */
+export function partFileName(fileName: string, suffix: string): string {
+  return fileName.replace(/\.json$/i, '') + suffix;
+}
+
+/** How many blank lines `gridRows` drops from the start of `text` (so row N sits on line N + this + 1). */
+function leadingBlankLines(text: string): number {
+  const lines = text.split('\n');
+  let i = 0;
+  while (i < lines.length && lines[i]!.trim() === '') i++;
+  return i;
 }
 
 export type Extension = '.json' | '.txt';
@@ -47,11 +73,14 @@ function lineFor(pointer: string, lines: LineMap): number | undefined {
 /**
  * Reads and checks one content file of a known kind. Bad JSON, a bad `.txt` file, an extension the
  * kind cannot read, and schema failures all come back as errors naming the file and the field.
+ * `parts` holds the text of sibling files for the kind's `gridParts`, by field; an error in such a
+ * field names the sibling file (and, for a row, its line).
  */
 export function parseContent<S extends z.ZodType>(
   kind: ContentKind<S>,
   fileName: string,
   text: string,
+  parts: Readonly<Record<string, ContentPart>> = {},
 ): ContentResult<z.output<S>> {
   const ext = extensionOf(fileName);
   let data: unknown;
@@ -63,6 +92,9 @@ export function parseContent<S extends z.ZodType>(
       const why = e instanceof Error ? e.message : String(e);
       return { ok: false, errors: [contentError(fileName, [], 'invalid_json', `not valid JSON: ${why}`)] };
     }
+    const merged = mergeParts(fileName, data, parts);
+    if (!merged.ok) return { ok: false, errors: merged.errors };
+    data = merged.data;
   } else if (ext === '.txt' && kind.readText) {
     const read = kind.readText(text);
     if (!read.ok) return { ok: false, errors: read.errors.map((e) => ({ file: fileName, ...e })) };
@@ -74,7 +106,9 @@ export function parseContent<S extends z.ZodType>(
     return { ok: false, errors: [contentError(fileName, [], 'unsupported_extension', msg)] };
   }
   const result = validate(fileName, data, kind.schema);
-  if (result.ok || lines === undefined) return result;
+  if (result.ok) return result;
+  if (Object.keys(parts).length > 0) return { ok: false, errors: result.errors.map((e) => inPart(e, parts)) };
+  if (lines === undefined) return result;
   const map = lines;
   return {
     ok: false,
@@ -83,6 +117,45 @@ export function parseContent<S extends z.ZodType>(
       return line === undefined ? e : { ...e, line };
     }),
   };
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v);
+}
+
+/** Puts each part's rows into its field; a field given in both places is a `duplicate_field` error. */
+function mergeParts(
+  fileName: string,
+  data: unknown,
+  parts: Readonly<Record<string, ContentPart>>,
+): { ok: true; data: unknown } | { ok: false; errors: ContentError[] } {
+  const fields = Object.keys(parts);
+  if (fields.length === 0 || !isRecord(data)) return { ok: true, data };
+  const errors: ContentError[] = [];
+  const out: Record<string, unknown> = { ...data };
+  for (const field of fields) {
+    const part = parts[field]!;
+    if (Object.hasOwn(data, field)) {
+      const msg = `"${field}" is given both here and in ${part.file}; keep one`;
+      errors.push(contentError(fileName, [field], 'duplicate_field', msg));
+      continue;
+    }
+    out[field] = gridRows(part.text);
+  }
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, data: out };
+}
+
+/** Re-points an error in a part's field at the part file, with the line of the row it names. */
+function inPart(e: ContentError, parts: Readonly<Record<string, ContentPart>>): ContentError {
+  for (const [field, part] of Object.entries(parts)) {
+    const top = jsonPointer([field]);
+    if (e.pointer !== top && !e.pointer.startsWith(`${top}/`)) continue;
+    const row = /^\/(\d+)/.exec(e.pointer.slice(top.length));
+    const out: ContentError = { ...e, file: part.file };
+    if (row) out.line = leadingBlankLines(part.text) + Number(row[1]) + 1;
+    return out;
+  }
+  return e;
 }
 
 /** A registry of kinds by name. Engine kinds come from `engineContentKinds()`; games add their own. */
