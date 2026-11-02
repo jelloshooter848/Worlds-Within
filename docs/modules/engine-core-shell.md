@@ -20,8 +20,9 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   `toScreen(clientX, clientY)` for pointer input) and
   `DisplayResult` (a display or why it cannot start). Built by `canvasDisplay`
   (`@engine/backends/canvas2d`) and `threeDisplay` (`@engine/backends/three`).
-- `host-scene.ts`: `HostScene<W, E>` (`{ stack, step, world, events, miniGame, picture }`):
-  steps the game, keeps events between draws (dropped on a new world), pushes `miniGameScene`
+- `host-scene.ts`: `HostScene<W, E>` (`{ stack, game, picture }` with the game itself, a
+  `HostedGame` such as the platformer kit's `LevelSequence` (Engine 0.10, gap G37), or
+  `{ stack, step, world, events, miniGame, picture }` with accessors): steps the game, keeps events between draws (dropped on a new world), pushes `miniGameScene`
   while the host runs a mini game and pops it on the result. Pure.
 - `boot.ts`: `bootBrowserGame({ screen, displays: { canvas2d, three? }, scene })` (browser
   only; display factories may be `async`, so Three.js loads only in 3D), `showBackendToggle`,
@@ -38,7 +39,12 @@ Example (`games/platformer-lab/main.ts`):
         canvas2d: (canvas) => canvasDisplay(canvas, labLook(content)),
         three: async (canvas) => (await import('@engine/backends/three')).threeDisplay(canvas, labLook3d(content)),
       },
-      scene: (stack, display) => labScene(content, stack, () => labPicture(display.presenter, screen)),
+      scene: (stack, display) =>
+        new HostScene({
+          stack,
+          game: createGame(content, content.manifest.start.seed),
+          picture: () => labPicture(display.presenter, screen),
+        }),
     });
 
 ## Imports allowed

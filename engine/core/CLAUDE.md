@@ -12,14 +12,19 @@ games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`
 files from disk for Node tools and tests.
 
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
-JSON-safe data, and the optional `order(order)`) and `HeadlessEntry` (`createGame(content, seed)`, and from Engine
+JSON-safe data, the optional `order(order)`, and from Engine 0.10 the optional `miniGame()`, the
+round the game is hosting now or null: gap G37, item 159) and `HeadlessEntry` (`createGame(content, seed)`, and from Engine
 0.10 the optional `miniGames(content)`, the `MiniGameDef`s the game's content may name, which
 `validate` checks trigger and mission params against: gap G16), which a game's headless module
 (named by `headless` in `game.json`) exports for `pnpm cli run`, `dump` and `validate`. `order(order)` (Engine 0.9, items 124-125) takes one recorded order between steps: a run
 file's `orders` entry `{ tick, ...order }` goes in, without `tick`, after the snapshot of its tick
 and before the step from it, and the game returns null (applied) or a one-line reason (dropped, not
 an error). Games without orders leave it out and are unchanged; a run file with `orders` for a game
-without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). `canonicalJson(value)`
+without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). `HostedGame<W, E>`
+(Engine 0.10, gap G37) is a `HeadlessGame` the browser shell's `HostScene` can play by itself:
+`world` (the world now; a new object on a new level), `events` (the last step's) and a required
+`miniGame()`; the platformer kit's `LevelSequence` is one, so a game's page passes the game to
+`new HostScene({ stack, game, picture })` instead of writing accessors. `canonicalJson(value)`
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 

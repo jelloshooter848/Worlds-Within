@@ -128,10 +128,10 @@ backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backen
   - `view.ts`: `createView` for `pnpm cli screenshot`: the engine's `frameView` with
     `testCanvasPicture` for `render` and `testFrames` for `frame()` (`--backend three` shows
     `frame()` through the `three` skins: the screenshot page reads them with `skinSet` too);
-  - `scene.ts`: `testScene(content, stack, picture)`: the engine's `HostScene` over `createGame`
-    (it pushes the core `miniGameScene` while the door's round runs and pops it on the result;
-    the five accessors are gap G37);
-  - `main.ts` + `index.html`: the page: `bootBrowserGame` with `canvasDisplay(canvas, { ...look,
+  - `main.ts` + `index.html`: the page: `bootBrowserGame` with a scene that is
+    `new HostScene({ stack, game: createGame(content, seed), picture })`, the engine's scene over
+    the game itself (it pushes the core `miniGameScene` while the door's round runs and pops it on
+    the result; `scene.ts` and its five accessors went away in Engine 0.10, gap G37), with `canvasDisplay(canvas, { ...look,
 onSound })` and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content),
 onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk with Three.js).
     Both displays take the round skins (`rounds`) and pick one per frame, so the scene draws
@@ -156,7 +156,8 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
   skin must map every kind and state, tile, event and HUD value shown; the level skin maps every
   tile, runner and actor state and event the kit has; the vault skin the hero's `hurt` and
   `dying`; every sound is an sfx file; the folder holds only text assets; the view draws a level
-  with `hopper` and the round with `vault`; `testScene` pushes the round and pops it.
+  with `hopper` and the round with `vault`; the page's `HostScene` over `createGame` pushes the
+  round and pops it.
 - `platformer-test.test.ts` (0.7 T8 part): the `three` skins: a level skin and a vault one, each
   with a mesh for every kind and tile its 2D skin maps (but the level's `.`), the 2D skin's
   events, sounds and camera, and a mesh for every kind and tile the runs show in its frames.
@@ -212,7 +213,10 @@ at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
   `TopDownBot` (`fight`) and written into the run file as plain steps: the hero stabs both knights
   and the round passes (3144: 7 coins, the wall's tiles and the door empty), then the player
   walks through the gap to the goal (3283). Assertions read the round inside the snapshot
-  (`miniGame.state.round.ticks`, `miniGame.state.enemies`, `miniGame.state.hero.maxHp`).
+  (`miniGame.state.round.ticks`, `miniGame.state.enemies`, `miniGame.state.hero.maxHp`), and
+  each round's last tick from `endedRound` (Engine 0.10, gap G20): round 1's `result` `fail` and
+  report `ticks` 600 at 2881, round 2's `pass`, the last knight's `kill` in
+  `endedRound.state.events`, no enemies left and the report's `defeated` keys at 3144.
   Invariants: at least 1 life, stage 0 to 3.
 - Run one: `pnpm -s cli run games/platformer-test/runs/level-2.run.json --json`. Its rules:
   `pnpm -s cli mutants games/platformer-test/runs/level-2.run.json --json` (exit 0 for each run
@@ -266,7 +270,8 @@ at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
 14. (0.7 T7) Pixel art written as text (a throwaway script checked each frame's width and
     height while drawing), two palettes, MML sfx, then the two skins, checked with `validate`
     (every sheet, frame and sound a skin names must exist).
-15. `picture.ts`, `view.ts`, `scene.ts`, `main.ts` from the engine's helpers; `view.ts` would
+15. `picture.ts`, `view.ts`, `scene.ts` (gone since Engine 0.10: `main.ts` hands the game to
+    `HostScene`, gap G37), `main.ts` from the engine's helpers; `view.ts` would
     have been a copy of the lab's, so `frameView` went into the engine first (gap G26) and the
     lab uses it too. One skin per frame source needed `presenterByStatus` (gap G14).
 16. Checked with `pnpm -s cli screenshot <run> --tick N --json` (`matchesHeadless` true, ticks

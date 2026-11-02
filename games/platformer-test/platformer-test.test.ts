@@ -13,7 +13,7 @@ import { contentSfx, mustLoad } from '@engine/core/content/game-content';
 import { loadTest, testRooms, testStages } from './content';
 import { testLook } from './picture';
 import { testLook3d } from './picture3d';
-import { testScene } from './scene';
+import { HostScene } from '@engine/core/shell/host-scene';
 import { createView } from './view';
 import { testMiniGames } from './minigames';
 import { ACTOR_ANIMS, LEVEL_PAUSE, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
@@ -365,9 +365,11 @@ describe('platformer test page scene', () => {
   it('pushes the vault round over the level and pops it on the result', () => {
     const stack = new SceneStack();
     const drawn: string[] = [];
-    const scene = testScene(content, stack, () => ({
-      draw: (world) => drawn.push(world.level.id),
-    }));
+    const scene = new HostScene({
+      stack,
+      game: createGame(content, content.manifest.start.seed),
+      picture: () => ({ draw: (world) => drawn.push(world.level.id) }),
+    });
     stack.push(scene);
     const run = JSON.parse(readFileSync(new URL('./runs/level-4.run.json', import.meta.url), 'utf8')) as {
       input: InputScript;

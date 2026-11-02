@@ -436,6 +436,18 @@
       "value": false
     },
     {
+      "tick": 2881,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "fail"
+    },
+    {
+      "tick": 2881,
+      "path": "endedRound.report.ticks",
+      "op": "eq",
+      "value": 600
+    },
+    {
       "tick": 2900,
       "path": "triggers.0.armed",
       "op": "eq",
@@ -506,6 +518,33 @@
         "row": 8,
         "cell": "empty"
       }
+    },
+    {
+      "tick": 3144,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "pass"
+    },
+    {
+      "tick": 3144,
+      "path": "endedRound.state.events",
+      "op": "contains",
+      "value": {
+        "type": "kill",
+        "kind": "knight"
+      }
+    },
+    {
+      "tick": 3144,
+      "path": "endedRound.state.enemies",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 3144,
+      "path": "endedRound.report.defeated",
+      "op": "eq",
+      "value": ["11,3", "5,7"]
     },
     {
       "tick": 3283,

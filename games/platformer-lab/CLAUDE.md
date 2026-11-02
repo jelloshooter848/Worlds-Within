@@ -90,17 +90,17 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     both with the events since the last draw (the engine's `PendingEvents`: dropped when the level
     changes, as the scene does), and `background` is the sky (`SKY`) for `pnpm cli screenshot
 --backend three`;
-  - `scene.ts`: `labScene(content, stack, picture)`, the engine's `HostScene`
-    (`@engine/core/shell`) over the lab's `createGame` with the level sequence's accessors; it
-    pushes the engine's `miniGameScene` when a trigger starts a round (stepping the lab, so the
-    world applies the outcome as headless), pops it on the result, and draws through the drawer
-    `picture(r)` makes;
   - `main.ts`: the page, a dozen lines: the engine's `bootBrowserGame` (keyboard, gamepad, the
     touch pad, the scene stack, the fixed loop, the `?backend=` choice and the 2D/3D toggle) with
     `canvasDisplay(canvas, labLook(content))` (`@engine/backends/canvas2d`) and, only for
     `?backend=three`, `threeDisplay(canvas, labLook3d(content))` from a dynamic
     `import('@engine/backends/three')` (its own chunk with Three.js; without WebGL 2 the page says
-    so and links to 2D); the scene draws `labPicture(display.presenter, screen)` either way.
+    so and links to 2D); the scene is `new HostScene({ stack, game: createGame(content, seed),
+picture })` (`@engine/core/shell`) over the game itself (the kit's `LevelSequence` is a
+    `HostedGame`; `scene.ts` went away in Engine 0.10, gap G37): it pushes the engine's
+    `miniGameScene` when a trigger starts a round (stepping the lab, so the world applies the
+    outcome as headless), pops it on the result, and draws `labPicture(display.presenter, screen)`
+    either way.
     (Engine 0.7 T6 moved `backend.ts`, `main3d.ts` and the hand-written boot, scene and frame
     stream into the engine: gaps G21-G25 in `docs/reports/stacking-test.md`);
   - `files.ts`: the files through Vite's `import.meta.glob`.
@@ -118,7 +118,7 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
 | `objects`       | 1657  | `lab-2-objects` cleared (1647) | level-bounds, brick-break, hazards-kill, pits-kill, coins-collect                                                                        |
 | `shells`        | 2107  | `lab-3-shells` cleared (2097)  | actors-wake, stomping, stomp-bounce, shell-kick, shell-hits-enemies                                                                      |
 | `walkers`       | 2688  | `lab-4-walkers` cleared (2678) | actors-wake, walkers-turn, ledge-turn, enemy-touch-hurts, invulnerability                                                                |
-| `mini-game`     | 3015  | `lab-5-trigger` cleared (3005) | mini-games (a failed round, then a passed one)                                                                                           |
+| `mini-game`     | 3015  | `lab-5-trigger` cleared (3005) | mini-games (a failed round, then a passed one; each round's last tick read from `endedRound`)                                            |
 
 - `start-to-goal.run.json` checks the coins (1 from the bump block at tick 82, 2 at 193), the
   changed tiles, the position at the goal and `outcome` `cleared`; its invariants hold one life,
@@ -160,7 +160,7 @@ three` is the one that refuses software rendering), holds right and jumps and ch
   with the events since the last call and changes nothing, the view draws with the placeholder sheet and font, the level change after
   `LEVEL_PAUSE` (cleared: next level; failed: the same again), equal snapshots on two runs, the
   mini game's pass, fail, quit and time-out, its frame against the schema, and the picture showing
-  it while a trigger runs it, and `labScene` drawing through the drawer it is given (the
+  it while a trigger runs it, and a `HostScene` over `createGame` drawing through the drawer it is given (the
   `?backend=` choice and toggle link are tested in `engine/core/shell/shell.test.ts`).
 
 ## Imports

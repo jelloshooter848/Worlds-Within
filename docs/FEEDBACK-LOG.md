@@ -232,6 +232,10 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **81.** Gap G20: on the tick a mini-game round ends, the platformer snapshot drops the round, so
   its last events (the final `kill`, `dead`, `exit`) are in no snapshot. Keep the ended round in
   the snapshot for that tick (changes the lab's `mini-game` golden hashes), or leave it?
+  _Answered by 158 (Engine 0.10): keep it; done in Engine 0.10 T9 (gap G20 fixed): the snapshot of
+  the tick a round ends holds `endedRound` (`trigger`, `game`, `result`, `state` with the round's
+  last events, `report` when it has one), left out on every other tick, so no golden hash moved
+  (no hashed tick is a round's last); `level-4.run.json` asserts the final knight's `kill`._
 - **82.** Engine 0.7 T8, the top-down round in 3D: the vault room is laid flat facing the camera
   (the top-down picture seen from the front: walls and statues stand forward as blocks, the floor
   is sunk behind them, the hero and knights stand out of it), with skin data only, and centred in
@@ -574,8 +578,13 @@ it starts (151), delegating gives a fair, average result and playing gives choic
   for its last tick, dropped the next tick. `games/platformer-lab/runs/mini-game.hashes.json` is
   re-recorded once (and `games/platformer-test/runs/level-4.hashes.json` if its recorded ticks
   include a round's last tick), listed in the commit; no other golden hash moves. OK?
+  _Done in Engine 0.10 T9: the ended round is an `endedRound` key present only on that tick, and no
+  recorded hash tick (every 60th, and the last) is a round's last, so neither hashes file moved._
 - **159.** G37: an optional `miniGame()` on `HeadlessGame` (the hosted round now, or null), so the
   shell's `HostScene` takes the game itself instead of five accessors per game. OK?
+  _Done in Engine 0.10 T9: `HeadlessGame.miniGame?()` and `HostedGame` (`world`, `events`,
+  `miniGame()`); `new HostScene({ stack, game, picture })`; `LevelSequence` implements it, and
+  both platformer games' `scene.ts` went away._
 - **160.** G2, the rest: a `campaign` engine content kind (`*.campaign.json`, `{ version: 1,
 entries: [{ level } | { mission }] }`), checked by `validate`; a platformer game with a campaign
   plays its levels in that order, and without one keeps the 0.7 id order. OK?

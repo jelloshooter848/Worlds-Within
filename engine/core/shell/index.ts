@@ -7,7 +7,13 @@ export {
   type PageBackend,
 } from './backend-choice';
 export type { BrowserDisplay, DisplayResult } from './display';
-export { HostScene, type HostDrawer, type HostSceneOptions } from './host-scene';
+export {
+  HostScene,
+  type HostDrawer,
+  type HostSceneAccessorOptions,
+  type HostSceneGameOptions,
+  type HostSceneOptions,
+} from './host-scene';
 export {
   bootBrowserGame,
   showBackendToggle,

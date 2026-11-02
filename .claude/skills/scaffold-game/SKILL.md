@@ -574,14 +574,15 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   `presenterByStatus('miniGame', { <id>: roundPresenter }, levelPresenter)`
   (`@engine/core/present`); a top-down round's presenter takes `clamp: false` (see
   `games/platformer-test/picture.ts`).
-- `main.ts` and the scene (Engine 0.7): the engine's browser shell does the boot. `scene.ts`
-  makes a `HostScene` (`@engine/core/shell`) over the game: `step`, `world`, `events` and
-  `miniGame: () => game.world.miniGame?.game ?? null` (it pushes `miniGameScene` while a trigger
-  runs a round), drawing `new FramePicture(new FrameStream(platformerFrames(screen)), presenter)`
+- `main.ts` and the scene (Engine 0.7; Engine 0.10 gap G37): the engine's browser shell does the
+  boot. The scene is `new HostScene({ stack, game: createGame(content, seed), picture })`
+  (`@engine/core/shell`): the kit's `LevelSequence` is a `HostedGame` (`world`, `events`,
+  `miniGame()`), so there is no `scene.ts` (it pushes `miniGameScene` while a trigger runs a
+  round), drawing `new FramePicture(new FrameStream(platformerFrames(screen)), presenter)`
   (`@engine/core/present`, the kit's `platformerFrames`); `main.ts` is `bootBrowserGame({ screen,
   displays: { canvas2d: (canvas) => canvasDisplay(canvas, { screen, skin, sheet, background }) },
-  scene: (stack, display) => ... display.presenter ... })` (see `games/platformer-lab/main.ts`
-  and `scene.ts`).
+  scene: (stack, display) => new HostScene({ stack, game, picture: () => ...display.presenter... }) })`
+  (see `games/platformer-lab/main.ts`).
 - Showing the game in 3D (optional, Engine 0.6; the lab does all of this):
   1. Add `content/skins/three.json`, a 3D skin (format: `engine/core/present/skin.ts`, `three`
      section): low-poly `meshes` as text, a mesh for every kind the 2D skin maps, a block for

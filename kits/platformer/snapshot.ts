@@ -1,6 +1,6 @@
 import type { HeadlessGame, JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import type { PlatformerEvent, PlatformerWorld } from './world';
+import type { EndedRound, PlatformerEvent, PlatformerWorld } from './world';
 
 /**
  * A read-only snapshot of a platformer world: plain JSON-safe data for the tools (`pnpm cli run`
@@ -22,6 +22,10 @@ import type { PlatformerEvent, PlatformerWorld } from './world';
  *   `attempts`;
  * - `miniGame`: the round being played over the level (`trigger`, `game`, and `state`, the mini
  *   game's own snapshot), or null;
+ * - `endedRound`: only on the tick a round ends (gap G20, Engine 0.10; left out on every other
+ *   tick, so snapshots without one hash as before): `trigger`, `game`, `result`, `state` (the
+ *   round's final `snapshot()`, with its last step's events when the mini game keeps them, as a
+ *   room challenge's `state.events`) and `report` (its structured `report()`, when it has one);
  * - `events`: what happened on the last step (`PlatformerEvent`s), when the snapshot comes from
  *   {@link platformerGame}.
  */
@@ -63,13 +67,40 @@ export interface PlatformerSnapshot extends JsonObject {
   tiles: { col: number; row: number; cell: string }[];
   triggers: { col: number; row: number; game: string; armed: boolean; attempts: number }[];
   miniGame: { trigger: number; game: string; state: JsonObject } | null;
+  endedRound?: EndedRoundSnapshot;
   events: JsonObject[];
 }
 
-/** The world's state now, as JSON-safe data. `events` are the ones given (default: none). */
+/** A round on the tick it ended (`PlatformerSnapshot.endedRound`). */
+export interface EndedRoundSnapshot extends JsonObject {
+  trigger: number;
+  game: string;
+  result: string;
+  state: JsonObject;
+  report?: JsonObject;
+}
+
+/** The ended round as snapshot data: its final state, result and report (when it has one). */
+export function snapshotEndedRound(ended: EndedRound): EndedRoundSnapshot {
+  const report = ended.game.report?.();
+  return {
+    trigger: ended.trigger.index,
+    game: ended.def.id,
+    result: ended.result,
+    state: ended.game.snapshot(),
+    ...(report ? { report } : {}),
+  };
+}
+
+/**
+ * The world's state now, as JSON-safe data. `events` are the ones given (default: none);
+ * `ended` is the round that ended on the last step (default: the world's `endedRound`; a host that
+ * did not step the world on its last step, as a level sequence between levels, passes null).
+ */
 export function snapshotWorld(
   world: PlatformerWorld,
   events: readonly PlatformerEvent[] = [],
+  ended: EndedRound | null = world.endedRound,
 ): PlatformerSnapshot {
   const p = world.player;
   const b = p.body;
@@ -118,6 +149,7 @@ export function snapshotWorld(
       attempts: t.attempts,
     })),
     miniGame: run && { trigger: run.trigger.index, game: run.def.id, state: run.game.snapshot() },
+    ...(ended ? { endedRound: snapshotEndedRound(ended) } : {}),
     events: events.map((e) => ({ ...e })),
   };
 }

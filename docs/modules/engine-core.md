@@ -18,7 +18,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `rng.ts`: `Rng`, the seeded RNG. All randomness in kits and the sim goes through it.
 - `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`, and the
   optional `order(order)` that takes a run file's recorded orders between steps, returning null
-  or why it dropped one;
+  or why it dropped one, and the optional `miniGame()`, the round the game is hosting now or null,
+  Engine 0.10 gap G37; `HostedGame<W, E>`: a `HeadlessGame` with `world`, `events` and
+  `miniGame()`, what the shell's `HostScene` takes as `game`;
   `HeadlessEntry`: `createGame(content, seed, opts?)` and the optional `miniGames(content)` (Engine
   0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).

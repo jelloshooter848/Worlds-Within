@@ -9,6 +9,7 @@ import { levelSchema } from './level';
 import { profileSchema } from './profile';
 import { MINI_GAME_RULES } from './rules';
 import { platformerGame, type PlatformerSnapshot } from './snapshot';
+import { LevelSequence, type SequenceSnapshot } from './sequence';
 import { PlatformerWorld } from './world';
 
 const fixture = (name: string) => readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8');
@@ -167,6 +168,65 @@ describe('the mini game hook', () => {
     // Another seed gives the round another seed (drawn from the world's RNG).
     const c = play(RUN, 120, [], 4);
     expect(c[startTick(c)]!.miniGame!.state['seed']).not.toBe(during.miniGame!.state['seed']);
+  });
+
+  it('keeps the ended round in the snapshot of the tick it ends, and drops it the next (gap G20)', () => {
+    const s = play(RUN, 120);
+    const end = endTick(s);
+    expect(s.slice(0, end).every((x) => !('endedRound' in x))).toBe(true);
+    expect(s[end]!.miniGame).toBeNull();
+    expect(s[end]!.endedRound).toEqual({
+      trigger: 0,
+      game: 'hold',
+      result: 'pass',
+      state: { held: 5, need: 5, seed: s[end - 1]!.miniGame!.state['seed']!, attempt: 1 },
+    });
+    expect(s.slice(end + 1).every((x) => !('endedRound' in x))).toBe(true);
+  });
+
+  it("puts the round's report in the ended round when it has one", () => {
+    const reported: MiniGameDef = {
+      ...HOLD,
+      create: (ctx, seed) => {
+        const round = HOLD.create(ctx, seed);
+        return { ...round, report: () => ({ result: round.result() }) };
+      },
+    };
+    const level = levelSchema.parse({ id: 'test', profile: 'runner', triggers: [TRIGGER], map: MAP });
+    const game = platformerGame(new PlatformerWorld(level, PROFILE, { seed: 3, miniGames: [reported] }));
+    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right', 'attack'] }] });
+    let ended: PlatformerSnapshot['endedRound'];
+    for (let i = 0; i < 120 && !ended; i++) {
+      input.next();
+      game.step(input);
+      ended = (game.snapshot() as PlatformerSnapshot).endedRound;
+    }
+    expect(ended?.report).toEqual({ result: 'pass' });
+  });
+
+  it('a level sequence keeps the round that cleared the level only for that tick, and hosts the round', () => {
+    const level = levelSchema.parse({
+      id: 'test',
+      profile: 'runner',
+      triggers: [{ ...TRIGGER, pass: ['clear'] }],
+      map: MAP,
+    });
+    const seq = new LevelSequence([{ level, profile: PROFILE }], { seed: 3, miniGames: [HOLD], pause: 5 });
+    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right', 'attack'] }] });
+    const snaps: SequenceSnapshot[] = [];
+    const hosted: boolean[] = [];
+    for (let i = 0; i < 60; i++) {
+      input.next();
+      seq.step(input);
+      snaps.push(seq.snapshot());
+      hosted.push(seq.miniGame() !== null);
+    }
+    const end = snaps.findIndex((x) => x.endedRound !== undefined);
+    expect(snaps[end]).toMatchObject({ outcome: 'cleared', pause: 0, endedRound: { result: 'pass' } });
+    expect(snaps.filter((x) => x.endedRound !== undefined)).toHaveLength(1);
+    expect(snaps[end + 1]!.pause).toBe(1);
+    expect(hosted.slice(0, end).some(Boolean)).toBe(true);
+    expect(hosted[end]).toBe(false);
   });
 
   it('with mini-games off the trigger does nothing', () => {

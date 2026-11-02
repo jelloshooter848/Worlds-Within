@@ -20,9 +20,12 @@ clientY)`, a client point in picture pixels for pointer input (`canvasDisplay` g
   the 3D canvas, which is sized to the picture). `DisplayResult` is a display or a sentence saying
   why it cannot start (no WebGL 2).
 - `host-scene.ts` (pure): `HostScene<W, E>`, the scene that plays a headless game: `new
-HostScene({ stack, step, world, events, miniGame, picture, translucentMiniGame? })`. The game
-  passes accessors (one tick; the world now; the last step's events; the mini game the world
-  runs, or null). After a step that starts a round it pushes the core `miniGameScene` over itself
+HostScene({ stack, game, picture, translucentMiniGame? })` with the game itself, a `HostedGame`
+  (`engine/core/headless.ts`: `step`, `world`, `events`, `miniGame()`; the platformer kit's
+  `LevelSequence` is one; Engine 0.10, gap G37), or `new HostScene({ stack, step, world, events,
+miniGame, picture, translucentMiniGame? })` with accessors (one tick; the world now; the last
+  step's events; the mini game the world runs, or null) for a game that is not one
+  (`HostSceneGameOptions` | `HostSceneAccessorOptions`). After a step that starts a round it pushes the core `miniGameScene` over itself
   with `step` as the round's step (the host steps the round and applies its outcome, as headless)
   and pops it on the result. Events are kept between draws in a `PendingEvents` (dropped when the
   world object changes). `picture(r)` makes the drawer (`draw(world, events)`) on the first
@@ -50,8 +53,8 @@ canvasId?, toggleId?, search?, pointer?, touchPad? })`: reads the backend from t
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `canvasDisplay(canvas,
 { screen, skin, sheet, background })` for 2D, the lazy `threeDisplay` for 3D, and a `scene` that
-makes a `HostScene` drawing a `FramePicture` onto `display.presenter` (see
-`games/platformer-lab/main.ts` and `scene.ts`).
+is `new HostScene({ stack, game: createGame(content, seed), picture })` drawing a `FramePicture`
+onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` since Engine 0.10).
 
 ## Rules
 
@@ -66,7 +69,8 @@ makes a `HostScene` drawing a `FramePicture` onto `display.presenter` (see
 
 `shell.test.ts` (Node, `pnpm test`): the query choice and toggle links; `HostScene` making its
 drawer once with the renderer it is handed, passing the events of several steps in one draw,
-dropping events of a world that is gone, and pushing, stepping and popping a mini game;
+dropping events of a world that is gone, pushing, stepping and popping a mini game, and the same
+when given the game itself (a `HostedGame`);
 (`PointerSource` itself is tested with fake events in `../input/pointer.test.ts`) the page
 helpers and `bootBrowserGame`'s display choice and no-WebGL message on a fake page. The full boot
 (input sources, loop) is browser-only: `tests/browser/lab-3d.test.ts` plays the lab through it in

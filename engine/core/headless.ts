@@ -1,6 +1,6 @@
 import type { ContentBundle } from './content/bundle';
 import type { InputFrame } from './input/input-manager';
-import type { MiniGameDef } from './minigame';
+import type { MiniGame, MiniGameDef } from './minigame';
 
 /**
  * The headless game contract: what a game exposes so the tools (`pnpm cli run`, `dump`) can play
@@ -38,6 +38,25 @@ export interface HeadlessGame {
    * a run file with `orders` (a usage error). Games without orders leave it out.
    */
   order?(order: JsonObject): string | null;
+  /**
+   * Optional (Engine 0.10, gap G37, item 159): the round the game is hosting now (a mini game
+   * started by a level trigger), or null. The game still steps the round in `step` and applies
+   * its result; the browser shell's `HostScene` reads this to push the round's scene. Games that
+   * host no rounds leave it out.
+   */
+  miniGame?(): MiniGame | null;
+}
+
+/**
+ * A game the browser shell's `HostScene` can play by itself (Engine 0.10, gap G37): the headless
+ * game plus what the scene draws, `world` (the world now; a new object when the game moves to
+ * another level) and `events` (the last step's), and `miniGame()` (required here). A platformer
+ * `LevelSequence` is one.
+ */
+export interface HostedGame<W extends object = object, E = unknown> extends HeadlessGame {
+  readonly world: W;
+  readonly events: readonly E[];
+  miniGame(): MiniGame | null;
 }
 
 /** How the tools ask for a game to be set up, beyond its content and seed. */

@@ -15,7 +15,9 @@ with invulnerability, lives, the scroll lock and a `cleared` or `failed` outcome
 snapshot and `platformerGame(world)` for the headless contract. Its mini game hook: a level's `!`
 trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), the level pauses
 while it runs, its snapshot sits in the level's, and the trigger's data-set outcome for its
-`pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile).
+`pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile). On
+the tick a round ends the snapshot keeps it as `endedRound` (its result, final state with its last
+events, and report; Engine 0.10, gap G20), so a run file can check a round's last tick.
 The kit's hook lists each trigger's `game` and `params` (`miniGameUses`, Engine 0.10), so
 `pnpm cli validate` checks them against the mini games a game's headless entry exports.
 Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
@@ -24,7 +26,8 @@ placed events, HUD status and a camera hint carrying the scroll lock) for a back
 Its level sequence (`LevelSequence`, Engine 0.7) plays a game's levels one after another as the
 headless contract: a pause after `cleared` or `failed`, then the next level or the same one
 afresh, each a new world with the run's seed, switched-off rules and mini games; its snapshot is
-the world's plus `stage` and `pause`. It never draws and holds no content beyond tiny test fixtures.
+the world's plus `stage` and `pause`, and it is a `HostedGame` (`miniGame()`, Engine 0.10 gap
+G37), so the shell's `HostScene` takes it as it is. It never draws and holds no content beyond tiny test fixtures.
 
 ## Public API entry points
 
@@ -32,8 +35,8 @@ the world's plus `stage` and `pause`. It never draws and holds no content beyond
 `level` (`levelSchema`, `LevelDef`, `LevelTrigger`, `TRIGGER_OUTCOMES`, `levelCells`, `levelSize`, `checkLevel`), `profile`
 (`profileSchema`, `ProfileDef`, `profileKind`, `SUB`, `VEL`), `schema` (`levelKind`), `rules`
 (`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
-(`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`) and `snapshot` (`snapshotWorld`,
-`platformerGame`) and `present` (`presentWorld`, `PlatformerPresentState`, `platformerFrames` (the `FrameSource` for
+(`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`, `EndedRound`) and `snapshot` (`snapshotWorld`,
+`platformerGame`, `snapshotEndedRound`, `EndedRoundSnapshot`) and `present` (`presentWorld`, `PlatformerPresentState`, `platformerFrames` (the `FrameSource` for
 the engine's `FrameStream`), `presentMap`,
 `presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`) and `sequence` (`LevelSequence`,
 `LevelSequenceOptions`, `LevelStage`, `levelStages`, `levelsInPlayOrder`, `contentStages`

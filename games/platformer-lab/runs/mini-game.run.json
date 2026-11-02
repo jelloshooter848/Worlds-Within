@@ -254,6 +254,18 @@
       "value": 1
     },
     {
+      "tick": 2799,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "fail"
+    },
+    {
+      "tick": 2799,
+      "path": "endedRound.state.ticks",
+      "op": "eq",
+      "value": 9
+    },
+    {
       "tick": 2883,
       "path": "miniGame.state.attempt",
       "op": "eq",
@@ -292,6 +304,18 @@
           "cell": "empty"
         }
       ]
+    },
+    {
+      "tick": 2899,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "pass"
+    },
+    {
+      "tick": 2899,
+      "path": "endedRound.state.attempt",
+      "op": "eq",
+      "value": 2
     },
     {
       "tick": 3005,

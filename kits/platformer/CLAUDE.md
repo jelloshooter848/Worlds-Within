@@ -39,10 +39,12 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   seeded `rng`, the `rules` switch, the tiles, the player, the actors, `coins`, `lives`,
   `scrollX` (the view's left edge; the view is `viewWidth` px wide, 256 by default) and `outcome`
   (`playing`, `cleared`, `failed`), the mini-game `triggers` (`TriggerState`) and `miniGame`
-  (the `MiniGameRun` being played, or null); `update(input)` steps one tick and pushes
+  (the `MiniGameRun` being played, or null) and `endedRound` (the `EndedRound`, a run with its
+  `result`, on the tick it ended, else null; gap G20); `update(input)` steps one tick and pushes
   `PlatformerEvent`s (below).
-- `snapshot.ts`: `snapshotWorld(world, events?)`, a JSON-safe, whole-number snapshot with no
-  presentation state, and `platformerGame(world)`, the headless contract (`engine/core/headless.ts`)
+- `snapshot.ts`: `snapshotWorld(world, events?, ended?)`, a JSON-safe, whole-number snapshot with no
+  presentation state (`ended` defaults to the world's `endedRound`; `snapshotEndedRound` and
+  `EndedRoundSnapshot` are its `endedRound` key), and `platformerGame(world)`, the headless contract (`engine/core/headless.ts`)
   as `topdownGame` does it: each step takes that step's events.
 - `present.ts`: `presentWorld(world, events?, { size, state, miniGameFrames })`, the world as a
   read-only `PresentFrame` (under Presentation frames), and `PlatformerPresentState`, what a
@@ -53,7 +55,8 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   played one after another as the headless contract (under Level sequences), `LevelStage`
   (`{ level, profile }`), `levelStages(levels, profiles, who?)` (each level paired with the
   profile it names), `levelsInPlayOrder(levels, first?)`, `contentStages(content, { first?, who? })`,
-  `LEVEL_PAUSE` and `SequenceSnapshot`.
+  `LEVEL_PAUSE` and `SequenceSnapshot`. `LevelSequence` is a `HostedGame`
+  (`engine/core/headless.ts`, Engine 0.10 gap G37): `world`, `events` and `miniGame()`.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
   `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES`, `strictMutants: true` and
   `miniGameUses: levelMiniGameUses` (Engine 0.10, gap G16: every level's `triggers.<i>.game` and
@@ -234,10 +237,20 @@ attempt }, seed)`, the seed drawn from the world's `rng`. A trigger is disarmed 
 - The snapshot holds `triggers` (`col`, `row`, `game`, `armed`, `attempts`) and `miniGame`
   (`trigger`, `game` and `state`, the round's own `snapshot()`, or null), so state hashes cover
   the round.
-- **Browser glue (games, not the kit):** a game's level scene, after `world.update(input)`, pushes
-  `miniGameScene` (`engine/core/minigame-scene.ts`) over itself when `world.miniGame` is set,
-  with `step: (input) => world.update(input)` so the world still steps the round and applies its
-  outcome, and pops it in `done`. A `SceneStack` updates only its top, so the level stays paused
+- **The round's last tick (Engine 0.10, gap G20, items 81 and 158).** On the tick a round ends,
+  `miniGame` is already null, so the world keeps the ended round (`endedRound`, an `EndedRound`)
+  for that tick and the snapshot adds `endedRound`: `trigger`, `game`, `result`, `state` (the
+  round's final `snapshot()`, with its last step's events when the mini game keeps them, as a
+  room challenge's `state.events`) and `report` (its `report()`, when it has one). The key is left
+  out on every other tick (the next `update` drops it; a `LevelSequence` drops it between levels),
+  so snapshots without a round's end hash as before. A run file checks a round's last events
+  there: `games/platformer-test/runs/level-4.run.json` asserts the last knight's `kill` at the
+  tick the round passes.
+- **Browser glue (games, not the kit):** a game's page passes its `LevelSequence` to the
+  shell's `new HostScene({ stack, game, picture })`, which, after each step, pushes
+  `miniGameScene` (`engine/core/minigame-scene.ts`) over itself when `game.miniGame()` is set,
+  with the sequence's `step` so the world still steps the round and applies its outcome, and
+  pops it in `done`. A `SceneStack` updates only its top, so the level stays paused
   exactly as headless. The kit never imports the scene helper (it is on `FORBIDDEN_CORE`).
 
 Rule id (`MINI_GAME_RULES`): `mini-games` (off: a trigger is an empty tile). `minigame.test.ts`
@@ -274,7 +287,9 @@ profiles they name and throws on a missing one). The order is the game's; most g
   (ticks waited since the level ended, 0 while it is played). These paths are the same in every
   game that uses it, so run files check "between levels" the same way.
 
-`sequence.test.ts` covers cleared -> next, failed -> the same level afresh, wrap-around, the pause
+`minigame.test.ts` also covers `endedRound` (on the end tick only, with the report when the
+round has one, and in a `LevelSequence` whose round clears the level: that tick, not the pause,
+and `miniGame()` while the round runs). `sequence.test.ts` covers cleared -> next, failed -> the same level afresh, wrap-around, the pause
 ignoring input, the pause from the options, the seed, rules and mini games given to every world,
 and equal snapshots on two runs.
 

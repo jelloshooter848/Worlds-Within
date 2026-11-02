@@ -1,12 +1,12 @@
 import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
-import type { HeadlessGame } from '@engine/core/headless';
+import type { HostedGame } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import type { MiniGameDef } from '@engine/core/minigame';
+import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
 import type { LevelDef } from './level';
 import { profileKind, type ProfileDef } from './profile';
 import { levelKind } from './schema';
 import { snapshotWorld, type PlatformerSnapshot } from './snapshot';
-import { PlatformerWorld, type PlatformerEvent } from './world';
+import { PlatformerWorld, type EndedRound, type PlatformerEvent } from './world';
 
 /** One level of a sequence and the physics profile it is played with. */
 export interface LevelStage {
@@ -41,8 +41,11 @@ export type SequenceSnapshot = PlatformerSnapshot & { stage: number; pause: numb
  * waits `pause` ticks (the input is ignored and there are no events), then starts the next level
  * (cleared; after the last, the first again) or the same level afresh (failed). Each level is a
  * new world with the options' seed, switched-off rules and mini games.
+ *
+ * It is a {@link HostedGame} (Engine 0.10, gap G37): `world`, `events` and `miniGame()` (the round
+ * the level is running, or null), so the shell's `HostScene` takes the sequence itself.
  */
-export class LevelSequence implements HeadlessGame {
+export class LevelSequence implements HostedGame<PlatformerWorld, PlatformerEvent> {
   private readonly stages: readonly LevelStage[];
   private readonly pauseTicks: number;
   world: PlatformerWorld;
@@ -50,6 +53,8 @@ export class LevelSequence implements HeadlessGame {
   pause = 0;
   /** The last step's events (the world's own list is emptied every step). */
   events: PlatformerEvent[];
+  /** The round that ended on the last step, or null (gap G20; none between levels). */
+  private ended: EndedRound | null = null;
 
   constructor(
     stages: readonly LevelStage[],
@@ -74,10 +79,12 @@ export class LevelSequence implements HeadlessGame {
     if (this.world.outcome === 'playing') {
       this.world.update(input);
       this.events = this.world.events.splice(0);
+      this.ended = this.world.endedRound;
       return;
     }
     this.pause++;
     this.events = [];
+    this.ended = null;
     if (this.pause < this.pauseTicks) return;
     const next = this.world.outcome === 'cleared' ? (this.stage + 1) % this.stages.length : this.stage;
     this.world = this.build(next);
@@ -85,7 +92,12 @@ export class LevelSequence implements HeadlessGame {
   }
 
   snapshot(): SequenceSnapshot {
-    return { ...snapshotWorld(this.world, this.events), stage: this.stage, pause: this.pause };
+    return { ...snapshotWorld(this.world, this.events, this.ended), stage: this.stage, pause: this.pause };
+  }
+
+  /** The round the level is running now, or null (the hosted round, `HostedGame`). */
+  miniGame(): MiniGame | null {
+    return this.world.miniGame?.game ?? null;
   }
 
   private build(stage: number): PlatformerWorld {

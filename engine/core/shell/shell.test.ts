@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NullRenderer } from '@engine/backends/null';
 import type { Renderer } from '../gfx/renderer';
+import type { HostedGame } from '../headless';
 import type { InputFrame } from '../input/input-manager';
 import { ScriptedInput } from '../input/scripted-input';
 import type { MiniGame, MiniGameResult } from '../minigame';
@@ -133,6 +134,40 @@ describe('HostScene', () => {
     expect(host.results).toEqual(['pass']);
     expect(stack.top).toBe(scene);
     expect(host.world().tick).toBe(5);
+  });
+
+  it('takes the game itself (a HostedGame, gap G37) and plays it as the accessors do', () => {
+    const host = testHost(2);
+    const game: HostedGame<{ level: number; tick: number }, string> = {
+      step: host.step,
+      snapshot: () => ({ ...host.world() }),
+      get world() {
+        return host.world();
+      },
+      get events() {
+        return host.events();
+      },
+      miniGame: host.miniGame,
+    };
+    const stack = new SceneStack();
+    const drawn: string[][] = [];
+    const scene = new HostScene({
+      stack,
+      game,
+      picture: () => ({ draw: (_w, events) => void drawn.push([...events]) }),
+    });
+    stack.push(scene);
+    const input = new ScriptedInput({ steps: [{ frame: 3, hold: ['attack'] }] });
+    const depths: number[] = [];
+    for (let i = 0; i < 8; i++) {
+      input.next();
+      stack.update([input]);
+      depths.push(stack.depth);
+    }
+    stack.render(new NullRenderer());
+    expect(depths.slice(0, 5)).toEqual([1, 2, 2, 2, 1]);
+    expect(host.results).toEqual(['pass']);
+    expect(drawn).toEqual([['t1', 't2', 'round', 'round', 'round', 't3', 't4', 't5']]);
   });
 });
 

@@ -40,8 +40,8 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
   backend's `skinSetCanvasPresenter`: the level skin, or the round's, per frame; each skin's
   `camera.clamp` frames its map).
 - `view.ts`: `createView` (the engine's `frameView`), for `pnpm cli screenshot`.
-- `scene.ts`: `testScene(content, stack, picture)` (the engine's `HostScene`); `main.ts` and
-  `index.html`: the page (`bootBrowserGame` with `canvasDisplay`, and `threeDisplay` from a lazily
+- `main.ts` and `index.html`: the page (`bootBrowserGame` with the engine's `HostScene` over
+  `createGame` itself (no `scene.ts` since Engine 0.10, gap G37), `canvasDisplay`, and `threeDisplay` from a lazily
   imported chunk for `?backend=three`; an `AudioManager` for the sounds).
 - `minigames.ts`: `testMiniGames(content)`, one `roomChallenge` per room file (id = room id,
   title = the room's `title`).

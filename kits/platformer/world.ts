@@ -81,6 +81,15 @@ export interface MiniGameRun {
 }
 
 /**
+ * A round that ended on the last tick (gap G20, Engine 0.10): the run as it was, with its result.
+ * The world keeps it for that one tick, so the host's snapshot can show the round's last events
+ * and final state; the next `update` drops it.
+ */
+export interface EndedRound extends MiniGameRun {
+  readonly result: MiniGameResult;
+}
+
+/**
  * A headless platformer world: one level, its physics profile, the player and the level's actors,
  * stepped once per tick from an input frame (left/right, run or attack, jump). Whole numbers only:
  * positions in sub-pixels, velocities in 1/4096 px per tick (`engine/core/math/units.ts`).
@@ -100,7 +109,8 @@ export interface MiniGameRun {
  *   8. a mini-game trigger the player enters starts a round of the mini game it names
  *      (`mini-games`, seeded from `rng`). While it runs, `update` steps the round instead of
  *      the level; once it reports a result, the trigger's outcomes for that result apply and the
- *      level goes on from the next tick.
+ *      level goes on from the next tick. The ended round stays readable (`endedRound`) until the
+ *      next `update`, so the snapshot of that tick holds its last events and final state.
  *
  * A death takes a life; with lives left the player starts again at the start, else the outcome is
  * `failed`. Everything random comes from `rng` (seeded), so the same level, seed and input give the
@@ -129,6 +139,7 @@ export class PlatformerWorld {
   /** The level's mini-game triggers, in reading order, and the round being played, if any. */
   readonly triggers: TriggerState[] = [];
   private run: MiniGameRun | null = null;
+  private ended: EndedRound | null = null;
 
   constructor(
     readonly level: LevelDef,
@@ -188,6 +199,7 @@ export class PlatformerWorld {
 
   /** One tick. */
   update(input: InputFrame): void {
+    this.ended = null;
     this.frame++;
     if (this.outcome !== 'playing') return;
     if (this.run) return this.stepMiniGame(input);
@@ -219,6 +231,14 @@ export class PlatformerWorld {
     return this.run;
   }
 
+  /**
+   * The round that ended on the last tick (its final state and result), or null: kept for that
+   * one tick only (gap G20), so a snapshot taken after the step still shows the round.
+   */
+  get endedRound(): EndedRound | null {
+    return this.ended;
+  }
+
   /** Re-arms the triggers the player has left; an armed one it touches starts its mini game. */
   private touchTriggers(): void {
     const b = this.player.body;
@@ -247,6 +267,7 @@ export class PlatformerWorld {
     const result = run.game.result();
     if (result === null) return;
     this.run = null;
+    this.ended = { ...run, result };
     const t = run.trigger;
     this.emit({ type: 'mini-game-end', trigger: t.index, game: run.def.id, result });
     if (result === 'pass') this.tiles.setCell(t.col, t.row, 'empty');

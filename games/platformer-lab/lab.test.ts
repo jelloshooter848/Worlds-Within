@@ -26,7 +26,7 @@ import { threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from './picture';
 import { labLook3d } from './picture3d';
 import { createView } from './view';
-import { labScene } from './scene';
+import { HostScene } from '@engine/core/shell/host-scene';
 import { SceneStack } from '@engine/core/scene';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
@@ -295,13 +295,17 @@ describe('the stop-bar mini game', () => {
 });
 
 describe('the page scene (main.ts)', () => {
-  it('labScene draws through the drawer it is given, made once, with the renderer it is handed', () => {
+  it('HostScene over the game itself draws through the drawer it is given, made once', () => {
     const scenes = new SceneStack();
     const drawn: number[] = [];
     const handed: Renderer[] = [];
-    const scene = labScene(content, scenes, (r) => {
-      handed.push(r);
-      return { draw: (world) => void drawn.push(world.frame) };
+    const scene = new HostScene({
+      stack: scenes,
+      game: createGame(content, content.manifest.start.seed),
+      picture: (r) => {
+        handed.push(r);
+        return { draw: (world) => void drawn.push(world.frame) };
+      },
     });
     scenes.push(scene);
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right'] }] });

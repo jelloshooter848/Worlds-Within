@@ -36,10 +36,10 @@ screen)` (a `FramePicture`: those frames onto any presenter) and `labCanvasPictu
   a `SkinnedCanvasPresenter`). `picture3d.ts`: `labLook3d` (the `three` skin, size and sky, as
   `threeDisplay` and `threeScenePresenter` take them). `view.ts`: `createView` (the `ViewGame`
   contract, for `screenshot`, with `render(r)` and the `frame()` hook; the engine's `frameView`).
-- `scene.ts` (`labScene(content, stack, picture)`: the engine's `HostScene` over the lab's level
-  sequence, which pushes the mini game's scene), `main.ts` (a dozen lines: the engine's
-  `bootBrowserGame` with `canvasDisplay` and, only for `?backend=three`, a lazily imported
-  `threeDisplay`), `index.html` (with the 2D/3D toggle and the launcher's `ww-alternate` 3D link),
+- `main.ts` (a dozen lines: the engine's `bootBrowserGame` with `canvasDisplay` and, only for
+  `?backend=three`, a lazily imported `threeDisplay`; its scene is the engine's `HostScene` over
+  `createGame` itself, which pushes the mini game's scene: no `scene.ts` since Engine 0.10, gap
+  G37), `index.html` (with the 2D/3D toggle and the launcher's `ww-alternate` 3D link),
   `files.ts`.
 - `runs/*.run.json` with golden `*.hashes.json`: `start-to-goal`, `moves`, `objects`, `shells`,
   `walkers`, `mini-game`, each with `guards`.
