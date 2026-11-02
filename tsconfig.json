@@ -17,12 +17,10 @@
     "noEmit": true,
     "types": ["vite/client", "node"],
     "paths": {
-      "@engine/*": ["./src/engine/*"],
-      "@kits/*": ["./src/kits/*"],
-      "@sim/*": ["./src/sim/*"],
-      "@game/*": ["./src/game/*"]
+      "@engine/*": ["./engine/*"],
+      "@kits/*": ["./src/kits/*"]
     },
     "baseUrl": "."
   },
-  "include": ["src", "tests", "vite.config.ts"]
+  "include": ["engine", "src", "tests", "vite.config.ts"]
 }

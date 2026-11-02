@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { Action } from '@engine/input/actions';
-import { NullRenderer, type Renderer } from '@engine/gfx/renderer';
-import type { SpriteSheet } from '@engine/gfx/spritesheet';
-import { ScriptedInput } from '@engine/input/scripted-input';
+import type { Action } from '@engine/core/input/actions';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import { NullRenderer } from '@engine/backends/null';
+import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
+import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { buildDungeon, parseRoom, type RoomDef } from './room';
 import { TopDownWorld, type TdEvent } from './world';
 import { Pickup, PushBlock, ENEMY_INVULN, FloorSwitch, Torch } from './entity';

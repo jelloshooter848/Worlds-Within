@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { CanvasRenderer, OffsetRenderer, type Renderer } from './renderer';
-import type { SpriteSheet } from './spritesheet';
+import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
+import { CanvasRenderer } from './renderer';
 
 /** A 2D context that records the calls a sprite makes and maps points through its transform. */
 function fakeCtx() {
@@ -64,12 +64,5 @@ describe('CanvasRenderer quarter turns (Sophia III on walls and ceilings)', () =
     new CanvasRenderer(ctx).sprite(sheet, 'f', 10, 20, true, false, 90);
     // Flipped, texel (0,0) is the right end; turned a quarter it lands bottom right.
     expect(corners[0]).toEqual([13.5, 27.5]);
-  });
-
-  it('the offset renderer passes the turn through', () => {
-    const seen: unknown[] = [];
-    const inner = { sprite: (...a: unknown[]) => seen.push(a) } as unknown as Renderer;
-    new OffsetRenderer(inner, 1, 2).sprite(sheet, 'f', 3, 4, false, true, 270);
-    expect(seen[0]).toEqual([sheet, 'f', 4, 6, false, true, 270]);
   });
 });

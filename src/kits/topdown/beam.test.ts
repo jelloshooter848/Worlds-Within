@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NullRenderer } from '@engine/gfx/renderer';
+import { NullRenderer } from '@engine/backends/null';
 import { BEAM_PALETTES, BEAM_PALETTE_CALM, BeamBurst, SwordBeam } from './beam';
 import { DEFAULT_SHEETS, type TdView } from './view';
 

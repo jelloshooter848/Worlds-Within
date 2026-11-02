@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIRS, DIR_VEC, OPPOSITE, TILE, mod, type Box, type Dir } from './geometry';
 import { TdEnemy, TdEntity } from './entity';
 import type { TdView } from './view';

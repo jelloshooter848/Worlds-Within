@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CanvasRenderer, NullRenderer, OffsetRenderer, transformed, type Renderer } from './renderer';
-import type { SpriteSheet } from './spritesheet';
+import { OffsetRenderer, transformed } from '@engine/core/gfx/renderer';
+import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
+import { CanvasRenderer } from './renderer';
 
 // 0.4.73: Renderer.transform (the title's way back turns and scales the logo words about their
-// centres). The canvas turns and scales; renderers without it only move the origin.
+// centres). The canvas turns and scales; renderers without it only move the origin (see
+// engine/core/gfx/renderer-transform.test.ts).
 
 function fakeCtx() {
   const calls: string[] = [];
@@ -21,14 +23,6 @@ function fakeCtx() {
 }
 
 const sheet = { frames: new Map([['f', { x: 0, y: 0, w: 8, h: 4 }]]), image: {} } as unknown as SpriteSheet;
-
-function recorder() {
-  const at: string[] = [];
-  const r: Renderer = Object.assign(new NullRenderer(), {
-    sprite: (_s: SpriteSheet, f: string, x: number, y: number) => void at.push(`${f}@${x},${y}`),
-  });
-  return { r, at };
-}
 
 describe('Renderer.transform', () => {
   it('the canvas moves, turns and scales about the point, draws, then restores', () => {
@@ -61,16 +55,7 @@ describe('Renderer.transform', () => {
     expect(calls.at(-1)).toBe('restore');
   });
 
-  it('a renderer without it (the recording ones) only moves the origin', () => {
-    const { r, at } = recorder();
-    transformed(r, 100, 50, 1.2, 0.1, 3, (l) => l.sprite(sheet, 'f', -4, -2));
-    expect(at).toEqual(['f@96,48']);
-  });
-
-  it('through an offset renderer: the offset is added to the point', () => {
-    const { r, at } = recorder();
-    transformed(new OffsetRenderer(r, 5, 7), 100, 50, 0, 1, 1, (l) => l.sprite(sheet, 'f', 0, 0));
-    expect(at).toEqual(['f@105,57']);
+  it('through an offset renderer: the offset is added to the point it turns about', () => {
     const { ctx, calls } = fakeCtx();
     transformed(new OffsetRenderer(new CanvasRenderer(ctx), 5, 7), 100, 50, 0, 1, 1, (l) =>
       l.sprite(sheet, 'f', 0, 0),

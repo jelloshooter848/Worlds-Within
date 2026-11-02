@@ -292,7 +292,7 @@ export class TouchSource implements InputSource {
 
   /**
    * A button went down or came up, called inside that pointer event (main.ts: a confirm button's
-   * release is the user gesture iOS needs for sharing and the clipboard, engine/input/gesture.ts).
+   * release is the user gesture iOS needs for sharing and the clipboard, engine/core/input/gesture.ts).
    */
   onButton: ((action: Action, down: boolean) => void) | null = null;
 

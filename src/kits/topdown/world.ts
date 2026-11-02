@@ -1,5 +1,5 @@
-import type { InputFrame } from '@engine/input/input-manager';
-import { Rng } from '@engine/rng';
+import type { InputFrame } from '@engine/core/input/input-manager';
+import { Rng } from '@engine/core/rng';
 import {
   DIR_VEC,
   OPPOSITE,

@@ -1,6 +1,6 @@
-import type { Song } from '@engine/audio/mml';
+import type { Song } from '@engine/core/audio/mml';
 
-/** A short original loop for the demo room (MML: src/engine/audio/mml.ts). */
+/** A short original loop for the demo room (MML: engine/core/audio/mml.ts). */
 export const DEMO_SONG: Song = {
   id: 'demo',
   bpm: 132,

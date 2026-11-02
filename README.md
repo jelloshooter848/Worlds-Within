@@ -35,10 +35,10 @@ numbers in this table are engine releases.
 
 | Now                | Target (from 0.2)                                                      | What it is                                                                                     |
 | ------------------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `src/engine`       | `engine/core`                                                          | Loop, scenes, input, chiptune audio, save, RNG (no game rules)                                 |
-| `src/engine/gfx`   | `engine/backends/canvas2d`, `engine/backends/null`                     | Drawing (2D now; Three.js 2.5D/3D from 0.6), and the headless renderer                         |
-| (none)             | `engine/tools`                                                         | The CLI for LLMs and people: validate, run, dump, screenshot (0.3)                             |
-| (none)             | `engine/sim`                                                           | The optional world simulation (0.8)                                                            |
+| `engine/core`      | `engine/core`                                                          | Loop, scenes, input, chiptune audio, save, RNG (no game rules)                                 |
+| `engine/backends`  | `engine/backends/canvas2d`, `engine/backends/null`                     | Drawing (2D now; Three.js 2.5D/3D from 0.6), and the headless renderer                         |
+| `engine/tools`     | `engine/tools`                                                         | The CLI for LLMs and people: validate, run, dump, screenshot (0.3)                             |
+| `engine/sim`       | `engine/sim`                                                           | The optional world simulation (0.8)                                                            |
 | `src/kits/topdown` | `kits/topdown`, later `kits/platformer`, `kits/rts`                    | Gameplay rules: rooms, doors, heroes, enemies. Kits never draw                                 |
 | `src/game/demo`    | `games/demo` (until 0.15), then `games/samples/dungeon`                | The current demo: content, skins and a thin entry point. Grows into the dungeon sample at 0.15 |
 | (none)             | `games/platformer-test` (0.7 to 0.15), then `games/samples/platformer` | The stacking-test game. Grows into the platformer sample at 0.15                               |
@@ -49,7 +49,7 @@ Games depend on the engine; the engine never imports from games.
 
 ## Origin
 
-`src/engine` and `src/kits/topdown` started as copies of the engine and top-down kit from
+`engine/` (then `src/engine`) and `src/kits/topdown` started as copies of the engine and top-down kit from
 [SMBC REMIX](https://github.com/jelloshooter848/SMBC) v0.4.73, by the same author, under the MIT
 license. Nothing else from SMBC (its levels, characters, art or music) is part of this project.
 

@@ -1,4 +1,4 @@
-import type { Action } from '@engine/input/actions';
+import type { Action } from '@engine/core/input/actions';
 import { ALIGN, swordReach } from './hero';
 import {
   DIRS,
@@ -12,7 +12,7 @@ import {
   type Dir,
   type Side,
 } from './geometry';
-import { Rng } from '@engine/rng';
+import { Rng } from '@engine/core/rng';
 import { Chest, Pickup, PushBlock, type TdEntity } from './entity';
 import { BOOMERANG_RANGE, Bomb, Explosion } from './items';
 import { Projectile } from './enemies';

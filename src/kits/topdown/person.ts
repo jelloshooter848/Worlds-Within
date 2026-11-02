@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import type { Renderer } from '@engine/core/gfx/renderer';
 import { boxesOverlap, type Box, type Dir } from './geometry';
 import { TdEntity } from './entity';
 import { dirFrom } from './walker';

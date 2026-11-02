@@ -1,6 +1,6 @@
-import type { AssetRegistry } from '@engine/assets/registry';
-import type { Renderer } from '@engine/gfx/renderer';
-import type { SpriteSheet } from '@engine/gfx/spritesheet';
+import type { AssetRegistry } from '@engine/core/assets/registry';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
 /** Sheet ids the kit draws with (the art contract); a game may point them elsewhere. */
 export interface TdSheets {

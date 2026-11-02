@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, type Side } from './geometry';
 import { isBorder, sideOf, tileAt, wallDepth, type Room, type TileKind } from './room';
 import type { TdView } from './view';

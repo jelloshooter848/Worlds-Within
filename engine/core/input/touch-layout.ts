@@ -1,4 +1,4 @@
-import { fitGame, type GameFit } from '../viewport';
+import { fitGame, type GameFit } from '../gfx/screen';
 import { BUTTON_PLACES, FACE_BUTTON, SMALL_BUTTON } from './touch-logic';
 
 /*

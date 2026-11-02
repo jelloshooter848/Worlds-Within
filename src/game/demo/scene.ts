@@ -1,7 +1,7 @@
-import type { AudioManager } from '@engine/audio/audio-manager';
-import type { Renderer } from '@engine/gfx/renderer';
-import type { InputFrame } from '@engine/input/input-manager';
-import type { Scene } from '@engine/scene';
+import type { AudioManager } from '@engine/core/audio/audio-manager';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import type { InputFrame } from '@engine/core/input/input-manager';
+import type { Scene } from '@engine/core/scene';
 import { DEFAULT_SHEETS, renderWorld, TopDownWorld, type TdView } from '@kits/topdown';
 import { demoDungeon } from './rooms';
 

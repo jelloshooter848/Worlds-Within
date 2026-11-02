@@ -8,16 +8,14 @@ export default defineConfig({
   base,
   resolve: {
     alias: {
-      '@engine': alias('./src/engine'),
+      '@engine': alias('./engine'),
       '@kits': alias('./src/kits'),
-      '@sim': alias('./src/sim'),
-      '@game': alias('./src/game'),
     },
   },
   build: { target: 'es2022', sourcemap: true },
   server: { port: 5173 },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: ['engine/**/*.test.ts', 'src/**/*.test.ts', 'tests/**/*.test.ts'],
   },
 });

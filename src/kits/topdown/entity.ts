@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import type { Renderer } from '@engine/core/gfx/renderer';
 import { DIR_VEC, TILE, boxesOverlap, mod, type Box, type Dir } from './geometry';
 import { drawFrame, type TdView } from './view';
 import type { Mover, TopDownWorld } from './world';

@@ -1,11 +1,10 @@
-import { AudioManager } from '@engine/audio/audio-manager';
-import { CanvasRenderer } from '@engine/gfx/renderer';
-import { GamepadSource } from '@engine/input/gamepad';
-import { InputManager } from '@engine/input/input-manager';
-import { KeyboardSource } from '@engine/input/keyboard';
-import { FixedLoop } from '@engine/loop';
-import { SceneStack } from '@engine/scene';
-import { Viewport } from '@engine/viewport';
+import { AudioManager } from '@engine/core/audio/audio-manager';
+import { GamepadSource } from '@engine/core/input/gamepad';
+import { InputManager } from '@engine/core/input/input-manager';
+import { KeyboardSource } from '@engine/core/input/keyboard';
+import { FixedLoop } from '@engine/core/loop';
+import { SceneStack } from '@engine/core/scene';
+import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
 import { DEMO_SONG } from './game/demo/music';
 import { DemoScene } from './game/demo/scene';
 

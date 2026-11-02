@@ -1,4 +1,4 @@
-import type { InputFrame } from '@engine/input/input-manager';
+import type { InputFrame } from '@engine/core/input/input-manager';
 import { DIRS, type Box, type Dir } from './geometry';
 import { TdHero } from './hero';
 import type { TopDownWorld } from './world';

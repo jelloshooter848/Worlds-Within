@@ -1,5 +1,5 @@
-import type { Renderer } from '@engine/gfx/renderer';
-import type { InputFrame } from '@engine/input/input-manager';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import type { InputFrame } from '@engine/core/input/input-manager';
 import { DIRS, DIR_VEC, TILE, isHorizontal, mod, type Box, type Dir } from './geometry';
 import { Chest, PUSH_DELAY, PushBlock } from './entity';
 import { SwordBeam } from './beam';

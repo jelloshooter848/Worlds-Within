@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { compileSong } from '@engine/audio/mml';
-import { NullRenderer } from '@engine/gfx/renderer';
-import { ScriptedInput } from '@engine/input/scripted-input';
+import { compileSong } from '@engine/core/audio/mml';
+import { NullRenderer } from '@engine/backends/null';
+import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { DEFAULT_SHEETS, renderWorld, TopDownWorld } from '@kits/topdown';
 import { DEMO_SONG } from './music';
 import { demoDungeon } from './rooms';

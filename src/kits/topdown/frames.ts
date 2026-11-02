@@ -1,4 +1,4 @@
-import type { SpriteDef } from '@engine/gfx/pixelart';
+import type { SpriteDef } from '@engine/core/gfx/pixelart';
 
 /**
  * Turns a frame a quarter turn counter-clockwise: its top edge becomes its left edge. A wall or

@@ -15,7 +15,7 @@ import {
   type ScreenInput,
 } from './touch-layout';
 import { BUTTON_PLACES, FACE_BUTTON } from './touch-logic';
-import { fitGame } from '../viewport';
+import { fitGame } from '../gfx/screen';
 
 const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 

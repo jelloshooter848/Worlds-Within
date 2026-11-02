@@ -1,4 +1,4 @@
-import type { Renderer } from '@engine/gfx/renderer';
+import type { Renderer } from '@engine/core/gfx/renderer';
 import { HUD_H } from './geometry';
 import { drawFrame, fontOf, type TdView } from './view';
 import type { TopDownWorld } from './world';
