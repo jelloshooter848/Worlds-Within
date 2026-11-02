@@ -1,0 +1,12 @@
+{
+  "id": "platformer-test",
+  "title": "The stacking test: a small original platformer on the platformer kit",
+  "kit": "platformer",
+  "content": {
+    "level": ["content/levels/*.json"],
+    "profile": ["content/profiles/*.profile.json"]
+  },
+  "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
+  "headless": "headless.ts"
+}

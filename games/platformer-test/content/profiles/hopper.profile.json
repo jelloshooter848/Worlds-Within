@@ -1,0 +1,34 @@
+{
+  "id": "hopper",
+  "player": {
+    "box": { "w": 12, "h": 16 },
+    "minWalk": 320,
+    "walkAccel": 160,
+    "runAccel": 224,
+    "friction": 224,
+    "skid": 400,
+    "skidTurn": 2304,
+    "maxWalk": 6144,
+    "maxRun": 9984,
+    "runHold": 10,
+    "jumps": [
+      { "below": 4096, "speed": 16384, "holdGravity": 512, "gravity": 1792 },
+      { "below": 9216, "speed": 16896, "holdGravity": 496, "gravity": 1600 },
+      { "speed": 20480, "holdGravity": 640, "gravity": 2304 }
+    ],
+    "jumpBuffer": 6,
+    "maxFall": 17920,
+    "fallReset": 16384,
+    "stompBounce": 16384,
+    "hp": 2,
+    "maxHp": 2,
+    "invulnTicks": 120,
+    "breakBricksAt": 2,
+    "lives": 3
+  },
+  "actorGravity": 1024,
+  "actorMaxFall": 16384,
+  "actors": {
+    "walker": { "speed": 1792, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true }
+  }
+}

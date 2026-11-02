@@ -1,0 +1,43 @@
+# The stacking test: gap report
+
+The stacking test ([ROADMAP, 0.7 The stacking test](../ROADMAP.md#07-the-stacking-test)) builds a
+small original platformer, `games/platformer-test/`, on the engine as it is, and shows it through
+both backends (2D sprites and 3D), with one level whose door pushes a top-down mini game over the
+level. Its point is to find out what is missing: **every gap is written down here as it is found**,
+whether it is fixed in Engine 0.7 or moved to a named later release.
+
+A gap is anything that needed engine code changes, anything awkward, or anything the game had to do
+that should have been the engine's (or a kit's) job. The rule of thumb is DESIGN.md's: if two games
+could use it, it is engine; the game folder holds only content, skins and thin glue.
+
+## Format
+
+Each gap has one entry, in the order found; ids are never reused or renumbered.
+
+- **Id:** `G1`, `G2`, ...
+- **Found:** what was found, in a sentence or two.
+- **Where:** the file or module it was found in (and the one that should own it).
+- **Status:** `open (0.7 Tn)` while planned for a task of this release; `fixed in 0.7 Tn (<commit>)`
+  once done; or `moved to <release>` (0.8, 0.10, 0.14, 0.15, ...) with the reason.
+- **Feedback:** when the owner must decide, the feedback item number (`docs/FEEDBACK-LOG.md`).
+
+## Gaps
+
+| Id  | Found                                                                                                                                                                                                                                                                                                                                                                                         | Where                                                                                                                 | Status                                                                                                 | Feedback |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------- |
+| G1  | Level sequencing is game glue that two games now duplicate: playing levels in order, the pause after a level ends, the next level on `cleared`, the same level afresh on `failed`, wrapping after the last. `games/platformer-test/headless.ts` is a minimal copy of `games/platformer-lab/headless.ts`.                                                                                      | `games/platformer-test/headless.ts`, `games/platformer-lab/headless.ts`; belongs in `kits/platformer`                 | open (0.7 T2)                                                                                          |          |
+| G2  | The level order is code, not data: each game sorts its levels in `content.ts` by its own rule (the lab: the fixture `tiny` first, then by id; the test: by id with numbers compared as numbers). A game cannot say its order in a data file.                                                                                                                                                  | `games/*/content.ts` (`labStages`, `testStages`); belongs in a kit content file or the manifest                       | open (0.7 T2)                                                                                          |          |
+| G3  | The sequencing snapshot fields (`stage`, `pause`) and the `LEVEL_PAUSE` length are each game's own, so run-file paths and timings for "between levels" differ per game, and the kit's `CLAUDE.md` does not list them.                                                                                                                                                                         | `games/*/headless.ts` (`LabSnapshot`, `TestSnapshot`)                                                                 | open (0.7 T2)                                                                                          |          |
+| G4  | The content glue is copied too: `content.ts` registers `engineContentKinds()` plus the kit's `levelKind()` and `profileKind()` by hand, though the kit's hook (`kits/platformer/kit.ts`) already lists its kinds and the tools build the same set from `game.json` (`gameKinds`). `loadX`, `mustLoad` and the profile lookup per level are the lab's code with names changed.                 | `games/platformer-test/content.ts`; belongs in `engine/core` (kinds from the manifest) and `kits/platformer` (stages) | open (0.7 T2 for the stages, 0.7 T6 for the kinds and loading)                                         |          |
+| G5  | `files.ts` is the lab's file word for word (the `import.meta.glob` of `game.json` and `content/**/*`, as raw text): every browser game needs the same few lines.                                                                                                                                                                                                                              | `games/*/files.ts`; browser glue                                                                                      | open (0.7 T6)                                                                                          |          |
+| G6  | `tests/runs/backend-parity.test.ts` names each game and imports its picture modules (`DemoPicture`, `LabPicture`, `LabPicture3d`), so a new game's run files are not checked for backend parity until someone edits the test. (`tests/runs/run-files.test.ts`, by contrast, finds every game's run files itself: `level-1.run.json` was picked up with no change.)                            | `tests/runs/backend-parity.test.ts`                                                                                   | open (0.7 T7/T8: parity for this game once it has a view; a generic test through the view's `frame()`) |          |
+| G7  | The platformer kit is strict (`strictMutants: true`), so `pnpm cli mutants games/platformer-test` exits 4 until the game's run files guard **every** kit rule, including rules its levels never use (shells, hazards, bricks, one-way platforms, mini games...). A game cannot say which kit rules it uses. Today the game's run files are checked one by one (`mutants <run file>` exits 0). | `engine/tools` (`mutants`), `kits/platformer/kit.ts`                                                                  | open: owner decision                                                                                   | 76       |
+| G8  | Tuning a run file needs a trace of a few paths (player x/y, coins, events) over a range of ticks; `pnpm cli dump` gives one whole snapshot per call, so the first level's script was found with a throwaway script printing a trace. A `trace <run> --paths a,b --from N --to M` command (or `dump --ticks`) would let an agent do it with the CLI alone.                                     | `engine/tools` (CLI)                                                                                                  | moved to 0.14 (creator tools), unless the owner wants it sooner                                        | 77       |
+
+## Not gaps (checked while scaffolding)
+
+- `pnpm cli validate` and `run` took the new game folder with no change: the manifest, the kit's
+  kinds and the headless entry are all found from `game.json`.
+- `tests/runs/run-files.test.ts` finds the new run file and its golden hashes by itself.
+- The game has no `view` and no `index.html` yet (0.7 T7/T8), so the build and the launcher skip it,
+  as `build/pages.ts` intends.

@@ -7,6 +7,7 @@
 - [Root agent instructions](CLAUDE.md): rules every change must follow, and the checks to run before pushing
 - [Design](docs/DESIGN.md): what the engine and the game are, and the dependency rule
 - [Roadmap](docs/ROADMAP.md): the release plan; check it before adding features
+- [Stacking-test gap report](docs/reports/stacking-test.md): what Engine 0.7's test game found missing, each gap fixed or moved to a named release
 
 ## Modules
 
@@ -22,6 +23,7 @@
 - [kits/platformer](docs/modules/kits-platformer.md): gameplay rules for a side-scrolling platformer: `level` files (a JSON header plus a `.map.txt` text grid) and physics `profile` files in whole sub-pixel units with data-set actor types; integer physics and level objects as named rules (strict mutant checks), golden traces against SMBC, mini-game triggers; presentation frames (`presentWorld`); the kit never draws
 - [games/demo](docs/modules/games-demo.md): the proof-of-life demo game built on the top-down kit, drawn by the Canvas2D backend through its skin (`content/skins/canvas2d.json`)
 - [games/platformer-lab](docs/modules/games-platformer-lab.md): the platformer kit's test lab: the kit's fixture level and five rule levels played in turn, run files that guard every kit rule, a placeholder Canvas2D skin and a low-poly 3D skin (`?backend=three` plays it through the Three.js backend), and a tiny test mini game
+- [games/platformer-test](docs/modules/games-platformer-test.md): the stacking test's game (Engine 0.7): a small original platformer on the platformer kit that finds what the engine is missing. Today one short level played headless, with a run file
 
 ## Reference
 

@@ -1,0 +1,230 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 520,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 44,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 60,
+        "hold": ["right"]
+      },
+      {
+        "frame": 104,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 124,
+        "hold": ["right"]
+      },
+      {
+        "frame": 168,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 184,
+        "hold": ["right"]
+      },
+      {
+        "frame": 250,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 268,
+        "hold": ["right"]
+      },
+      {
+        "frame": 336,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 346,
+        "hold": ["right"]
+      },
+      {
+        "frame": 404,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 420,
+        "hold": ["right"]
+      },
+      {
+        "frame": 464,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 472,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-1"
+    },
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 40,
+      "path": "player.y",
+      "op": "eq",
+      "value": 36864
+    },
+    {
+      "tick": 59,
+      "path": "coins",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 59,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "block",
+        "col": 5,
+        "row": 4,
+        "content": "coin"
+      }
+    },
+    {
+      "tick": 105,
+      "path": "coins",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 150,
+      "path": "player.x",
+      "op": "eq",
+      "value": 56936
+    },
+    {
+      "tick": 210,
+      "path": "player.y",
+      "op": "eq",
+      "value": 28672
+    },
+    {
+      "tick": 255,
+      "path": "actors.0.active",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 282,
+      "path": "actors.0.active",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 282,
+      "path": "coins",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 368,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 1,
+        "actorType": "walker",
+        "into": null
+      }
+    },
+    {
+      "tick": 368,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 368,
+      "path": "player.vy",
+      "op": "eq",
+      "value": -16384
+    },
+    {
+      "tick": 441,
+      "path": "player.y",
+      "op": "eq",
+      "value": 28672
+    },
+    {
+      "tick": 493,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 493,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 493,
+      "path": "player.x",
+      "op": "eq",
+      "value": 188648
+    },
+    {
+      "tick": 520,
+      "path": "pause",
+      "op": "eq",
+      "value": 27
+    }
+  ],
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "path": "player.hp",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "gravity",
+    "walk",
+    "air-control",
+    "jump",
+    "jump-by-speed",
+    "variable-jump",
+    "solid-tiles",
+    "coins-collect",
+    "bump-blocks",
+    "goal-clears-level",
+    "actors-wake",
+    "stomping",
+    "stomp-bounce"
+  ]
+}

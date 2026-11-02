@@ -1,0 +1,7 @@
+{
+  "id": "level-1",
+  "profile": "hopper",
+  "scroll": "right",
+  "spawns": { "w": { "actor": "walker" } },
+  "blocks": ["coin"]
+}

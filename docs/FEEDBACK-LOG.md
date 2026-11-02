@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 76.** (Last used: 75.)
+**Next unused number: 78.** (Last used: 77.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -200,3 +200,14 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **75.** Done-when item 3 (screenshot `--backend three`) was marked met using SwiftShader with
   `--allow-software-gl`; the no-flag path on a real GPU was never run (no GPU in the container).
   Accept, or keep 0.6 open until it is checked on a GPU?
+
+**Engine 0.7** (gaps in `docs/reports/stacking-test.md`)
+
+- **76.** Gap G7: the platformer kit is strict, so `pnpm cli mutants games/platformer-test` fails
+  until the game's run files guard every kit rule, even rules its levels never use (shells,
+  hazards, mini games...). Should a game list the kit rules it uses (say `rules` in `game.json`)
+  so strict mutants check only those, should each game guard every rule anyway, or should strict
+  mode apply only to the kit's own lab?
+- **77.** Gap G8: tuning a run file needed a throwaway script to print a trace of a few paths over
+  a tick range; `dump` shows one tick per call. Add a CLI `trace` command (or `dump --ticks`)
+  now, or leave it for the 0.14 creator tools?
