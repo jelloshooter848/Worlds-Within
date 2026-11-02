@@ -8,6 +8,11 @@
 - **The repo is LLM-first.** Content is text, every run is repeatable from a seed, and tools let an
   agent check its own work. Every new module (engine part, kit or game) gets agent docs: its own
   `CLAUDE.md` and a page linked from `llms.txt` (from Engine 0.3).
+- **Agent docs layout.** `llms.txt` at the root links one page per module in `docs/modules/`
+  (`engine/backends/null` -> `docs/modules/engine-backends-null.md`; see `docs/modules/README.md`).
+  Each module folder has a `CLAUDE.md` with its rules and an `AGENTS.md` that is a one-line pointer
+  to that `CLAUDE.md` (keep the content in `CLAUDE.md` only). `tests/architecture/agent-docs.test.ts`
+  fails if any of these is missing or an `llms.txt` link is broken.
 - **Engine vs. game.** If two games could use it, it's engine. If it's content, it's the game. Game rules
   go in data files (scenarios, missions) wherever possible, not code.
 - **Dependencies point one way.** Games depend on the engine; the engine and kits never import from
