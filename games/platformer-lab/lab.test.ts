@@ -22,11 +22,11 @@ import {
 import { FIRST_LEVEL, labSkin, labSkin3d, labStages, loadLab, mustLoad } from './content';
 import { createGame, type LabSnapshot } from './headless';
 import { STOP_BAR } from './minigame';
-import { LabPicture, labLook } from './picture';
-import { LabPicture3d, labLook3d, labScenePresenter } from './picture3d';
+import { threeScenePresenter } from '@engine/backends/three';
+import { labCanvasPicture, labLook, labPicture } from './picture';
+import { labLook3d } from './picture3d';
 import { createView } from './view';
-import { labBackend, otherBackendLink } from './backend';
-import { LabScene } from './scene';
+import { labScene } from './scene';
 import { SceneStack } from '@engine/core/scene';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
@@ -162,8 +162,8 @@ describe('the view frame hook', () => {
     const view = createView(content, 1);
     const shadow = createGame(content, 1);
     const look3d = labLook3d(content);
-    const presenter = labScenePresenter(look3d);
-    const picture3d = new LabPicture3d(presenter, look3d);
+    const presenter = threeScenePresenter(look3d.skin, look3d);
+    const picture3d = labPicture(presenter, look3d.screen);
     const script = { steps: [{ frame: 0, hold: ['right', 'jump'] as Action[] }] };
     const input = new ScriptedInput(script);
     const shadowInput = new ScriptedInput(script);
@@ -181,7 +181,7 @@ describe('the view frame hook', () => {
       expect(Object.isFrozen(frame)).toBe(true);
       expect(view.snapshot()).toEqual(shadow.snapshot());
       if (tick === 2) expect(frame.events.map((e) => e.type)).toEqual(['land']);
-      // The same stream of frames as the pictures' (LabFrames), shown here through the 3D one.
+      // The same stream of frames as the pictures' (labFrames), shown here through the 3D one.
       const shown = picture3d.draw(shadow.world, []);
       expect(frame.entities).toEqual(shown.entities);
       expect(frame.map).toEqual(shown.map);
@@ -275,7 +275,7 @@ describe('the stop-bar mini game', () => {
 
   it('is drawn by the picture while a trigger runs it', () => {
     const { r } = countingRenderer();
-    const picture = new LabPicture(r, labLook(content));
+    const picture = labCanvasPicture(r, labLook(content));
     const game = createGame(content, 1);
     // Skip to the trigger level with a fresh world on it.
     while (game.world.level.id !== 'lab-5-trigger') {
@@ -294,31 +294,15 @@ describe('the stop-bar mini game', () => {
   });
 });
 
-describe('the page backend (main.ts)', () => {
-  it('opens in 3D only with ?backend=three, Canvas2D otherwise', () => {
-    expect(labBackend('?backend=three')).toBe('three');
-    expect(labBackend('?x=1&backend=three')).toBe('three');
-    for (const search of ['', '?backend=canvas2d', '?backend=Three', '?backend=3d'])
-      expect(labBackend(search)).toBe('canvas2d');
-  });
-
-  it('links to the other backend with relative links', () => {
-    expect(otherBackendLink('canvas2d')).toMatchObject({ label: '3D', href: './?backend=three' });
-    expect(otherBackendLink('three')).toMatchObject({ label: '2D', href: './' });
-  });
-
-  it('LabScene draws through the drawer it is given, made once, with the renderer it is handed', () => {
+describe('the page scene (main.ts)', () => {
+  it('labScene draws through the drawer it is given, made once, with the renderer it is handed', () => {
     const scenes = new SceneStack();
     const drawn: number[] = [];
     const handed: Renderer[] = [];
-    const scene = new LabScene(
-      content,
-      (r) => {
-        handed.push(r);
-        return { draw: (world) => void drawn.push(world.frame) };
-      },
-      scenes,
-    );
+    const scene = labScene(content, scenes, (r) => {
+      handed.push(r);
+      return { draw: (world) => void drawn.push(world.frame) };
+    });
     scenes.push(scene);
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right'] }] });
     const r = new NullRenderer();

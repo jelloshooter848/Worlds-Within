@@ -6,7 +6,9 @@ asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
 [content/CLAUDE.md](content/CLAUDE.md)), the presentation contract (`present/`: the read-only
-per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), with `node/game-files.ts` reading a game's content
+per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), the browser shell
+games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`; see
+[shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content
 files from disk for Node tools and tests.
 
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
@@ -45,7 +47,9 @@ round's snapshot in its own, so hashes cover it. It imports no scene, so kits ma
 `PURE_CORE`). `minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
 step?, render, done, translucent? })`, a `Scene` to push over the level that steps the same
 `MiniGame` (or the host's `step`, so the host still applies the outcome) and calls `done(result)`
-once, for the glue to pop it; it is on `FORBIDDEN_CORE`, so kits never import it.
+once, for the glue to pop it; it is on `FORBIDDEN_CORE`, so kits never import it, and pure (on
+`PURE_CORE`: `shell/host-scene.ts` imports it). Games rarely push it themselves: `shell/host-scene.ts`
+(`HostScene`) does it for any host that reports a running mini game.
 
 `gfx/screen.ts` is the picture size and its fit: `ScreenSize`, `DEFAULT_SCREEN` (256x240, the size of
 a game whose `game.json` has no `screen`), `SCREEN_MIN` / `SCREEN_MAX` (64..1920, the manifest's
@@ -65,7 +69,7 @@ never knows which one is drawing.
 - Randomness goes through `Rng` (`rng.ts`), never `Math.random`, in anything a kit or the sim uses.
 - Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
   `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
-  `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`). A kit describes frames through
+  `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`, `shell/**`). A kit describes frames through
   `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
@@ -73,12 +77,12 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `minigame.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `minigame.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
-that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, the
+that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, `shell/boot.ts`, the
 browser input sources, `save/`, `assets/` (except `sheet-lookup.ts`, `sheetLookup(assets)`: a sheet getter that
 returns null, never throws, for a missing sheet or palette) and the backends.
 

@@ -9,3 +9,4 @@ export {
 } from './renderer-info';
 export { applyCanvasBox, canvasToScreen, fitCanvas, type CanvasBox } from './fit';
 export { GeometryCache, primitiveGeometry, type PartSize } from './geometry';
+export { threeDisplay, threeScenePresenter, webgl2Available, type ThreeDisplayOptions } from './display';

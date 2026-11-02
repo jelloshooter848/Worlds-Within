@@ -21,12 +21,13 @@ import { readRunFile, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/demo/headless';
 import { DemoPicture, demoLook } from '../../games/demo/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
-import { LabPicture, labLook } from '../../games/platformer-lab/picture';
-import { LabPicture3d, labLook3d, labScenePresenter } from '../../games/platformer-lab/picture3d';
+import { threeScenePresenter } from '@engine/backends/three';
+import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
+import { labLook3d } from '../../games/platformer-lab/picture3d';
 
 // Backend parity (docs/ROADMAP.md, 0.4 "Done when"): the same demo run gives the same state hashes
 // whichever backend presents it. From Engine 0.5 the platformer lab's runs are checked the same way
-// (its `LabGame` through the kit's `presentWorld` and the lab's `LabPicture`). Every run file is played twice, presenting every tick: once
+// (its `LabGame` through the kit's `presentWorld` and the lab's `labCanvasPicture`). Every run file is played twice, presenting every tick: once
 // through the null backend's NullPresenter (frames checked against the schema and frozen), once
 // through the Canvas2D backend's SkinnedCanvasPresenter (the demo's `DemoPicture` with its skin) onto
 // a recording renderer. Both hash sequences must equal the run's committed golden file, which
@@ -165,7 +166,7 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
     const size = content.manifest.screen;
 
     const nullPresenter = new NullPresenter({ validate: true, freeze: true });
-    // One stream of frames per world, as LabPicture keeps it (a new level starts afresh).
+    // One stream of frames per world, as the lab's `labFrames` keeps it (a new level starts afresh).
     let shown: { world: PlatformerWorld; state: PlatformerPresentState } | null = null;
     const viaNull = playLab(content, run, (world, events) => {
       if (shown?.world !== world) shown = { world, state: new PlatformerPresentState() };
@@ -174,7 +175,7 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
     });
 
     const { r, calls } = recordingRenderer();
-    const picture = new LabPicture(r, labLook(content));
+    const picture = labCanvasPicture(r, labLook(content));
     const drawnPerTick: number[] = [];
     const viaCanvas = playLab(content, run, (world, events) => {
       const before = calls.get('clear') ?? 0;
@@ -183,8 +184,8 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
     });
 
     const look3d = labLook3d(content);
-    const presenter3d = labScenePresenter(look3d);
-    const picture3d = new LabPicture3d(presenter3d, look3d);
+    const presenter3d = threeScenePresenter(look3d.skin, look3d);
+    const picture3d = labPicture(presenter3d, look3d.screen);
     const fallbacks: string[] = [];
     let synced = 0;
     const viaThree = playLab(content, run, (world, events, tick) => {

@@ -49,6 +49,12 @@ Import from `@engine/core/present` (`index.ts`).
   added on top and never stored; `cameraTarget(frame, skin.camera)` the point to keep in view.
   Each presenter owns its follower: camera state is never in a kit, a frame or a hash.
 
+- Frame streams (`stream.ts`, Engine 0.7): `FrameSource` (a kit's `start(world)` and
+  `present(world, events, state)`), `FrameStream` (`next(world, events)`: frozen frames, fresh
+  state per world), `PendingEvents` (events between frames, dropped on a new world) and
+  `FramePicture` (`draw(world, events)` onto a `Presenter`). Games and tools use them instead of
+  their own per-frame glue.
+
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs
 `validate('frame', frame, presentFrameSchema)` and hands `freezeFrame(frame)` to a presenter.
@@ -64,4 +70,4 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `freezeFrame` makes mutation throw, and `MapTracker` sends the map only when it must;
 `engine/core/present/skin.test.ts` covers the skin schema (2D and 3D), its cross-file checks,
 `resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`; `engine/core/present/camera.test.ts`
-covers `CameraFollower` and `cameraShake`.
+covers `CameraFollower` and `cameraShake`; `engine/core/present/stream.test.ts` the frame streams.

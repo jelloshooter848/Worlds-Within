@@ -561,24 +561,27 @@ these differences; `games/platformer-lab/` is a complete working example of ever
 - `view.ts` and the picture: as above, with the kit's `presentWorld(world, events, { state, size })`
   and a `PlatformerPresentState` per stream of frames (`games/platformer-lab/picture.ts`). No
   `clamp: false`: the kit's camera hint and the map keep the view inside the level.
-- `main.ts`: as above; with triggers, push `miniGameScene` (`@engine/core/minigame-scene`) over the
-  level scene when `world.miniGame` is set (`games/platformer-lab/scene.ts`).
+- `main.ts` and the scene (Engine 0.7): the engine's browser shell does the boot. `scene.ts`
+  makes a `HostScene` (`@engine/core/shell`) over the game: `step`, `world`, `events` and
+  `miniGame: () => game.world.miniGame?.game ?? null` (it pushes `miniGameScene` while a trigger
+  runs a round), drawing `new FramePicture(new FrameStream(platformerFrames(screen)), presenter)`
+  (`@engine/core/present`, the kit's `platformerFrames`); `main.ts` is `bootBrowserGame({ screen,
+  displays: { canvas2d: (canvas) => canvasDisplay(canvas, { screen, skin, sheet, background }) },
+  scene: (stack, display) => ... display.presenter ... })` (see `games/platformer-lab/main.ts`
+  and `scene.ts`).
 - Showing the game in 3D (optional, Engine 0.6; the lab does all of this):
   1. Add `content/skins/three.json`, a 3D skin (format: `engine/core/present/skin.ts`, `three`
      section): low-poly `meshes` as text, a mesh for every kind the 2D skin maps, a block for
      every solid tile (`.` is open air: no entry), the 2D skin's `camera`, and `camera3d`
      (`fov`, `tilt`, `layerDepth`). Copy `games/platformer-lab/content/skins/three.json`.
-  2. `picture3d.ts`: like `games/platformer-lab/picture3d.ts`, the same `LabFrames`-style stream
-     of `presentWorld` frames handed to a 3D `Presenter` (`ThreePresenter` in the browser, a
-     `ThreeScene` in Node tests). Keep it out of `picture.ts`, so the 2D page loads no Three.js.
-  3. `main.ts`: read `?backend=three` from `location.search` (`backend.ts`) and, only then,
-     `await import('./main3d')`, which builds a `ThreePresenter` on the page's canvas, places it
-     with `fitCanvas` + `applyCanvasBox` from the screen layout's `fit`, and hands the scene a
-     drawer that ignores the 2D renderer (the scene stack renders through a `NullRenderer`).
-     Everything else (input, touch layout, `FixedLoop`, `SceneStack`, the mini game scene) stays
-     the same. Check for WebGL 2 first and show a message with a link back to 2D when it is
-     missing, never a blank page.
-  4. In `index.html`, add a toggle link (`<a id="backend">`, set by `main.ts`) and
+  2. The frames are the same stream as in 2D; only the presenter differs. In Node tests use
+     `threeScenePresenter(skin, { screen, background })` from `@engine/backends/three` (a
+     `ThreeScene`, no WebGL). Keep `three` imports out of the 2D page's static imports.
+  3. `main.ts`: add `three: async (canvas) => (await import('@engine/backends/three')).threeDisplay(canvas,
+     { screen, skin: skin3d, background })` to `displays`. `bootBrowserGame` reads `?backend=three`,
+     loads it only then (its own chunk), places the WebGL canvas from the screen layout, and
+     shows a message with a link back to 2D when WebGL 2 is missing, never a blank page.
+  4. In `index.html`, add a toggle link (`<a id="backend">`, set by `bootBrowserGame`) and
      `<meta name="ww-alternate" content="3D ?backend=three" />`, which gives the root launcher a
      3D link (`build/pages.ts`). Links stay relative so the page works under `VITE_BASE`.
   5. Test it: a backend-parity pass through the `ThreeScene` (`tests/runs/backend-parity.test.ts`)

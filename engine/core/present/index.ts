@@ -26,6 +26,7 @@ export {
   type CameraPoint,
 } from './camera';
 export { freezeFrame } from './freeze';
+export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';
 export {

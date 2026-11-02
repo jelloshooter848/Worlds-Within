@@ -3,7 +3,8 @@
 The browser backend for 2D: `CanvasRenderer` (`renderer.ts`) draws the core `Renderer` contract
 onto a 2D canvas context, `Viewport` (`viewport.ts`) owns the backbuffer and presents it
 on the display canvas, scaled and letterboxed, and `SkinnedCanvasPresenter` (`presenter.ts`)
-draws any presentation frame (`@engine/core/present`) through a skin. `index.ts` exports all three.
+draws any presentation frame (`@engine/core/present`) through a skin. `index.ts` exports all three, and
+`canvasDisplay` (`display.ts`), the page's 2D display for `@engine/core/shell`.
 The backbuffer is the game's
 picture size: `new Viewport(canvas, { integerScale }, content.manifest.screen)` (`screen` in
 `game.json`; `DEFAULT_SCREEN`, 256x240, when left out). The fit maths it uses (`ScreenSize`,
@@ -50,6 +51,16 @@ canvas, none in Node). Each `present(frame)`, in order:
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 
+## The page's display (`display.ts`, Engine 0.7)
+
+`canvasDisplay(canvas, { screen, skin, sheet, background?, integerScale?, onSound? })` is the
+Canvas2D `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`: a `Viewport` on
+the page's canvas at the picture size, a `CanvasRenderer` on its backbuffer (the scene stack's
+`renderer`), and a `SkinnedCanvasPresenter` with the game's skin on that same renderer (the
+display's `presenter`). `fit(layout)` sets the viewport's `fit` from the screen layout and
+resizes; `present()` copies the backbuffer to the page. Browser only (moved from
+`games/platformer-lab/main.ts`).
+
 ## Imports
 
 - Allowed: `@engine/core/*`, files in this folder, browser APIs (canvas, `window`).
@@ -62,4 +73,6 @@ It never changes the frame or the skin (tested with frozen ones) and knows no ga
 the transform (see `renderer.test.ts`). `presenter.test.ts` uses a recording `Renderer`, fixture
 frames and a fixture skin written inline (never import a kit or a game's skin); its `camera`
 block reads the camera's top-left off the recorded map copy. `Viewport` needs a
-real DOM and is checked by running a game.
+real DOM and is checked by running a game. `display.test.ts` builds a `canvasDisplay` on fake
+canvases: its presenter clears the backbuffer to the background, and `fit` + `present` copy it
+fitted to the page.

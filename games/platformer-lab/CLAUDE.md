@@ -72,32 +72,34 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     input, then starts the next level (after the last, `tiny` again) or the failed one afresh,
     each a new `PlatformerWorld`. The snapshot is the kit's (`snapshotWorld`) plus `stage` (the
     level's place in the order) and `pause`;
-  - `picture.ts`: `labLook(content)`, `LabFrames` (`next(world, events)`: `presentWorld` ->
-    frozen frame, a fresh `PlatformerPresentState` per world: the one stream of frames every
-    backend gets) and `LabPicture` (`draw(world, events)`: a `LabFrames` frame ->
-    `SkinnedCanvasPresenter`);
-  - `picture3d.ts`: `labLook3d(content)` (the `three` skin and picture size), `labOptions3d(look)`
-    (size and the `SKY` background, for `ThreePresenter` or `ThreeScene`), `labScenePresenter(look)`
-    (a `Presenter` over the backend's Node-side `ThreeScene`, no WebGL; `.scene` for read-outs) and
-    `LabPicture3d` (`new LabPicture3d(presenter, look)`, `draw(world, events)`: the same `LabFrames`
-    frames onto any 3D presenter). `picture.ts` does not import it, so the 2D page bundles no
-    Three.js;
-  - `view.ts`: `createView` for `pnpm cli screenshot`: `render(r)` draws through `LabPicture`, and
-    `frame()` (the view contract's frame hook) returns the `LabFrames` frame with the events
-    since the last call (dropped when the level changes, as the scene does), and `background` is
-    the sky (`SKY`) for `pnpm cli screenshot --backend three`; `scene.ts`: `LabScene`, which pushes the
-    engine's `miniGameScene` over itself when a trigger starts a round (its `step` steps the lab,
-    so the world applies the outcome as headless) and pops it on the result; it draws through the
-    drawer `main.ts` gives it (`MakeLabDrawer`: `r => new LabPicture(r, look)` in 2D, a
-    `LabPicture3d` in 3D); `main.ts`: the browser boot (keyboard, gamepad, the touch pad laid
-    out with `layoutScreen`, the scene stack and the fixed loop) over a `LabDisplay`
-    (`backend.ts`): Canvas2D by default, Three.js with `?backend=three`; `backend.ts`:
-    `labBackend(search)`, `otherBackendLink(backend)` (the page's 2D/3D toggle) and the
-    `LabDisplay` interface; `main3d.ts` (imported by `main.ts` only in 3D, its own chunk with
-    Three.js): `threeDisplay(canvas, content)`, a `ThreePresenter` with the `three` skin on the
-    page's canvas, placed with `fitCanvas` + `applyCanvasBox`, or a sentence saying why not (no
-    WebGL 2), which `main.ts` shows with a link back to 2D; `files.ts`: the files through Vite's
-    `import.meta.glob`.
+  - `picture.ts`: `labLook(content)` (the skin, its sheets, the picture size and the `SKY`
+    background: what `canvasDisplay` takes), `labFrames(screen)` (the engine's `FrameStream` over
+    the kit's `platformerFrames`: frozen frames, a fresh present state per world: the one stream
+    of frames every backend gets), `labPicture(presenter, screen)` (a `FramePicture`:
+    `draw(world, events)` presents a `labFrames` frame on any presenter and returns it) and
+    `labCanvasPicture(r, look)` (the same onto a `SkinnedCanvasPresenter` on `r`);
+  - `picture3d.ts`: `labLook3d(content)` (the `three` skin, picture size and `SKY`, as the 3D
+    backend's `threeDisplay` and `threeScenePresenter` take them). No Three.js import: the 2D page
+    bundles none;
+  - `view.ts`: `createView` for `pnpm cli screenshot`: `render(r)` draws through
+    `labCanvasPicture`, `frame()` (the view contract's frame hook) returns the `labFrames` frame
+    with the events since the last call (the engine's `PendingEvents`: dropped when the level
+    changes, as the scene does), and `background` is the sky (`SKY`) for `pnpm cli screenshot
+--backend three`;
+  - `scene.ts`: `labScene(content, stack, picture)`, the engine's `HostScene`
+    (`@engine/core/shell`) over the lab's `createGame` with the level sequence's accessors; it
+    pushes the engine's `miniGameScene` when a trigger starts a round (stepping the lab, so the
+    world applies the outcome as headless), pops it on the result, and draws through the drawer
+    `picture(r)` makes;
+  - `main.ts`: the page, a dozen lines: the engine's `bootBrowserGame` (keyboard, gamepad, the
+    touch pad, the scene stack, the fixed loop, the `?backend=` choice and the 2D/3D toggle) with
+    `canvasDisplay(canvas, labLook(content))` (`@engine/backends/canvas2d`) and, only for
+    `?backend=three`, `threeDisplay(canvas, labLook3d(content))` from a dynamic
+    `import('@engine/backends/three')` (its own chunk with Three.js; without WebGL 2 the page says
+    so and links to 2D); the scene draws `labPicture(display.presenter, screen)` either way.
+    (Engine 0.7 T6 moved `backend.ts`, `main3d.ts` and the hand-written boot, scene and frame
+    stream into the engine: gaps G21-G25 in `docs/reports/stacking-test.md`);
+  - `files.ts`: the files through Vite's `import.meta.glob`.
 
 ## Run files
 
@@ -122,8 +124,8 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
   rule). See one rule fail: `pnpm -s cli run <run> --disable-rule <id> --json`.
 - `runs/<name>.hashes.json` are the golden state hashes (`tests/runs/run-files.test.ts`), and
   `tests/runs/backend-parity.test.ts` plays every lab run presenting each tick through the null
-  backend, through `LabPicture` (Canvas2D) onto a recording renderer and through `LabPicture3d`
-  onto `labScenePresenter` (the Three.js scene builder, no WebGL): all three give the golden
+  backend, through `labCanvasPicture` (Canvas2D) onto a recording renderer and through
+  `labPicture` onto `threeScenePresenter` (the Three.js scene builder, no WebGL): all three give the golden
   hashes. The 3D pass also collects every kind and tile shown, and a test fails if the `three`
   skin lacks one (or any entity is drawn as a fallback box): add the entry when a level or the
   kit shows something new. After a change meant to change the state: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, and
@@ -154,8 +156,8 @@ three` is the one that refuses software rendering), holds right and jumps and ch
   with the events since the last call and changes nothing, the view draws with the placeholder sheet and font, the level change after
   `LEVEL_PAUSE` (cleared: next level; failed: the same again), equal snapshots on two runs, the
   mini game's pass, fail, quit and time-out, its frame against the schema, and the picture showing
-  it while a trigger runs it, the `?backend=` choice and toggle link, and `LabScene` drawing
-  through the drawer it is given.
+  it while a trigger runs it, and `labScene` drawing through the drawer it is given (the
+  `?backend=` choice and toggle link are tested in `engine/core/shell/shell.test.ts`).
 
 ## Imports
 

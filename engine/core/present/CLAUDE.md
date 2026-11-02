@@ -82,6 +82,13 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
   smaller than the picture is centred. `cameraShake(frame, extra)` is the whole-pixel shake (the
   hint's `shake` plus `extra`, flipping side each frame), added by the backend and never stored.
   The follower lives in a presenter only: never in a kit, a frame or a hash.
+- `stream.ts` (Engine 0.7): the per-frame stream games had written by hand. `FrameSource<W, E, S>`
+  `{ start(world), present(world, events, state) }` is how a kit presents its world (the
+  platformer kit's `platformerFrames(size)`); `FrameStream(source).next(world, events)` gives the
+  frozen frame with one stream state per world object (a new world, such as the next level,
+  starts afresh); `PendingEvents(world, initial?)` keeps the events of several steps between two
+  frames (`add(world, events)` drops those of an older world; `take()` empties it);
+  `FramePicture(frames, presenter).draw(world, events)` presents a stream's frame and returns it.
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
@@ -105,7 +112,9 @@ palettes, sounds and frames are cross-file errors, and `resolveSkinFrame` picks 
 frames by `t`, handles facings and flips, and falls back for unknown kinds. Its 3D part covers a
 `three` skin with primitives and compound meshes, unknown mesh ids (`missing_ref`), 2D/3D fields
 on the wrong backend, the demo and platformer-lab canvas2d skins still validating,
-`resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `camera.test.ts` covers
+`resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `stream.test.ts` covers `FrameStream`
+(state per world, frozen frames), `PendingEvents` (kept across steps, dropped on a new world) and
+`FramePicture`. `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
 small-area centring, snap on a new map id, repeated frames, `reset`) and `cameraShake`. Run with
 `pnpm test`.

@@ -46,7 +46,9 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   as `topdownGame` does it: each step takes that step's events.
 - `present.ts`: `presentWorld(world, events?, { size, state, miniGameFrames })`, the world as a
   read-only `PresentFrame` (under Presentation frames), and `PlatformerPresentState`, what a
-  stream of frames remembers outside the world.
+  stream of frames remembers outside the world; `platformerFrames(size?)`, the kit's
+  `FrameSource` for the engine's `FrameStream` (`@engine/core/present`): a fresh state per world
+  and `presentWorld` at `size`, so a game's stream is `new FrameStream(platformerFrames(screen))`.
 - `sequence.ts`: `LevelSequence(stages, { seed, disabledRules, miniGames, pause })`, levels
   played one after another as the headless contract (under Level sequences), `LevelStage`
   (`{ level, profile }`), `levelStages(levels, profiles, who?)` (each level paired with the
@@ -279,6 +281,8 @@ the `MapTracker`, animation clocks, the last frame's boxes and short effects; wi
 runner or actor `anim.t` is 0, there are no effects, and the map is sent in full each time) and
 `miniGameFrames` (true by default; under Mini game). Positions are world pixels (the level's
 top-left tile at 0,0); boxes are whole pixels (the body's sub-pixel box floored).
+`platformerFrames(size?)` (Engine 0.7) wraps it as a `FrameSource` for the engine's `FrameStream`:
+one `PlatformerPresentState` per world, so a new level starts a new stream.
 
 - **Map** (`presentMap`): the terrain only, as rows of `PRESENT_TILES` characters: `.` open air,
   `#` solid, `B` brick, `?` bump block, `u` used bump block, `=` one-way platform, `^` hazard.

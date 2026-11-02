@@ -64,11 +64,14 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
   tool can show it through any `Presenter`. `ThreeScene` / `ThreePresenter`
   (`@engine/backends/three`) draw those frames with the game's `three` skin
   (`content/skins/three.json`: a low-poly mesh per kind, a block per tile, `camera3d`). The lab
-  picks 3D in the browser with `?backend=three` (see `games/platformer-lab/main3d.ts`), and
+  picks 3D in the browser with `?backend=three` (the engine's `bootBrowserGame` with a lazily
+  imported `threeDisplay`; see `games/platformer-lab/main.ts`), and
   `screenshot --backend three` uses `frame()`; it refuses software WebGL (exit 4) unless
   `--allow-software-gl`. Only `engine/backends/three` may import `three` (`PACKAGES` in
   `config/layers.js`).
-- Browser (`main.ts`): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
+- Browser (`main.ts`), from 0.7 for a game on a kit world: `bootBrowserGame` (`@engine/core/shell`)
+  with `canvasDisplay` / `threeDisplay` and a `HostScene` drawing a `FramePicture` (see
+  `games/platformer-lab/main.ts`). By hand (the demo): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
   songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).
 

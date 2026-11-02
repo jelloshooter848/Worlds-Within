@@ -39,6 +39,11 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
 - `primitiveGeometry`, `GeometryCache`, `PartSize` (`geometry.ts`): the Three geometry of each skin
   primitive (`box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`), low-poly.
 
+- `threeDisplay`, `ThreeDisplayOptions`, `webgl2Available`, `threeScenePresenter`
+  (`display.ts`, Engine 0.7): the page's 3D `BrowserDisplay` for `bootBrowserGame`
+  (`@engine/core/shell`), or why it cannot start (no WebGL 2), and a Node-side `Presenter` over
+  `ThreeScene` for tests.
+
 ## Imports allowed
 
 - `@engine/core/*`, files in this folder, the `three` package (pinned exactly; only this folder
@@ -50,7 +55,8 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
 `pnpm test` runs in Node: `scene.test.ts` (inline fixture frames and an inline `three` skin; it
 reads the built scene graph and projects points through the camera), `renderer-info.test.ts`
 (software and hardware renderer strings, a fake WebGL context with and without the debug
-extension) and `fit.test.ts` (`fitCanvas` against `fitGame`). `ThreePresenter` and
+extension), `fit.test.ts` (`fitCanvas` against `fitGame`) and `display.test.ts`
+(`threeScenePresenter`, the no-WebGL 2 message). `ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
 browser is installed.

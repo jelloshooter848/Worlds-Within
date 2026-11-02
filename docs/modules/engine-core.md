@@ -33,7 +33,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`; `MiniGameDef`: `id`,
   `title`, `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
 - `minigame-scene.ts`: `miniGameScene(opts)`, the `Scene` a game's glue pushes over a level to
-  drive the same `MiniGame` and pop it on its result. Games only (kits may not import it).
+  drive the same `MiniGame` and pop it on its result. Games only (kits may not import it); `HostScene`
+  (`shell/`) pushes it for a game. Pure.
 - `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
@@ -45,6 +46,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `content/`: reading and checking content files; see [engine/core/content](engine-core-content.md).
 - `present/`: the presentation contract, the read-only frame a backend draws from; see
   [engine/core/present](engine-core-present.md).
+- `shell/`: the browser shell games share (`backendFromQuery`, `otherBackendLink`, `HostScene`,
+  `bootBrowserGame`); see [engine/core/shell](engine-core-shell.md).
 - `assets/`: the sprite sheet registry (`registry.ts`), asset packs, and `sheet-lookup.ts`
   (`sheetLookup(assets)`, a `SheetLookup` that returns null instead of throwing for a missing sheet
   or palette; backends and games use it).

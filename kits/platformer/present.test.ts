@@ -8,6 +8,7 @@ import type { MiniGameDef, MiniGameResult } from '@engine/core/minigame';
 import { validate } from '@engine/core/content/validate';
 import {
   freezeFrame,
+  FrameStream,
   isFullMap,
   presentFrameSchema,
   type PresentEntity,
@@ -16,7 +17,14 @@ import {
 } from '@engine/core/present';
 import { levelSchema } from './level';
 import { profileSchema } from './profile';
-import { BUMP_RISE, PlatformerPresentState, presentMap, presentWorld, REMAINS_TICKS } from './present';
+import {
+  BUMP_RISE,
+  PlatformerPresentState,
+  platformerFrames,
+  presentMap,
+  presentWorld,
+  REMAINS_TICKS,
+} from './present';
 import { snapshotWorld } from './snapshot';
 import { PlatformerWorld, type PlatformerEvent } from './world';
 
@@ -361,5 +369,24 @@ describe('presentWorld: mini games', () => {
     const next = step(['attack']);
     expect(next.status['miniGame']).toBe('hold');
     expect(isFullMap(next.map!)).toBe(false);
+  });
+});
+
+describe('platformerFrames', () => {
+  it('streams the same frames as presentWorld with one state per world, sized, starting afresh on a new world', () => {
+    const size = { width: 320, height: 240 };
+    const stream = new FrameStream(platformerFrames(size));
+    const state = new PlatformerPresentState();
+    let first: PlatformerWorld | null = null;
+    playTiny((world, ev) => {
+      first ??= world;
+      const frame = stream.next(world, ev);
+      expect(frame).toEqual(presentWorld(world, ev, { state, size }));
+      expect(Object.isFrozen(frame)).toBe(true);
+    });
+    // A new world gets a new state: the full map again.
+    const again = stream.next(new PlatformerWorld(tiny(), PROFILE, { seed: 1 }), []);
+    expect(again.map && isFullMap(again.map)).toBe(true);
+    expect(first).not.toBeNull();
   });
 });

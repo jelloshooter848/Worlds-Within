@@ -102,6 +102,7 @@ export const FORBIDDEN_CORE = [
       'engine/core/scene.ts',
       'engine/core/minigame-scene.ts',
       'engine/core/loop.ts',
+      'engine/core/shell/**',
     ],
   },
 ];
@@ -161,6 +162,9 @@ export const PURE_CORE = [
   'engine/core/rules.ts',
   'engine/core/kit.ts',
   'engine/core/minigame.ts',
+  'engine/core/minigame-scene.ts',
+  'engine/core/shell/backend-choice.ts',
+  'engine/core/shell/host-scene.ts',
   'engine/core/math/**',
   'engine/core/scene.ts',
   'engine/core/input/actions.ts',

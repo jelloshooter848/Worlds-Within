@@ -28,6 +28,10 @@ for and holds no game rules.
   event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
   event. Details in the folder's CLAUDE.md.
 
+- `canvasDisplay`, `CanvasDisplayOptions` (`display.ts`, Engine 0.7): the page's 2D
+  `BrowserDisplay` for `bootBrowserGame` (`@engine/core/shell`): viewport, renderer and a
+  `SkinnedCanvasPresenter` with the game's skin, fitted to the screen layout.
+
 ## Imports allowed
 
 - `@engine/core/*`, files in this folder, and browser APIs (canvas, `window`).
@@ -37,4 +41,5 @@ for and holds no game rules.
 
 `*.test.ts` here run in Node with `pnpm test` against a fake 2D context that records calls;
 `presenter.test.ts` uses a recording `Renderer` with inline fixture frames and skin.
-`Viewport` needs a real DOM and is checked by running a game (`pnpm dev`).
+`Viewport` needs a real DOM and is checked by running a game (`pnpm dev`); `display.test.ts`
+checks `canvasDisplay` on fake canvases.

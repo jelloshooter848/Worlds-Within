@@ -4,6 +4,7 @@ import { TILE, toPx } from '@engine/core/math/units';
 import {
   MapTracker,
   type CameraHint,
+  type FrameSource,
   type PresentBox,
   type PresentEntity,
   type PresentEvent,
@@ -527,5 +528,19 @@ export function presentWorld(
     events: presentedEvents,
     status: presentStatus(world),
     camera: cameraHint(world),
+  };
+}
+
+/**
+ * The kit's `FrameSource` (`@engine/core/present`, `FrameStream`): a fresh
+ * `PlatformerPresentState` per world and `presentWorld` at the picture `size`. A game's stream of
+ * frames is `new FrameStream(platformerFrames(screen))`: a new level starts afresh.
+ */
+export function platformerFrames(
+  size?: ScreenSize,
+): FrameSource<PlatformerWorld, PlatformerEvent, PlatformerPresentState> {
+  return {
+    start: () => new PlatformerPresentState(),
+    present: (world, events, state) => presentWorld(world, events, size ? { state, size } : { state }),
   };
 }

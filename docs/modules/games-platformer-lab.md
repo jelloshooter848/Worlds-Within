@@ -29,16 +29,17 @@ It is a test game: content and glue, not engine.
   `LevelSequence` over the levels with the lab's mini games (`LabGame`), `LEVEL_PAUSE` ticks
   between them; the kit's `SequenceSnapshot` (the world's plus `stage` and `pause`).
 - `minigame.ts`: `STOP_BAR`, `LAB_MINI_GAMES` (the mini game hook's defs).
-- `picture.ts`: `labLook(content)`, `LabFrames` (the one frozen frame stream), `LabPicture`
-  (`draw(world, events)`: the kit's frame through `SkinnedCanvasPresenter`). `picture3d.ts`:
-  `labLook3d`, `labOptions3d`, `labScenePresenter` (a `Presenter` over the Node-side
-  `ThreeScene`) and `LabPicture3d` (the same frames onto a 3D presenter). `view.ts`: `createView`
-  (the `ViewGame` contract, for `screenshot`, with `render(r)` and the `frame()` hook).
-- `scene.ts` (`LabScene`, with the `miniGameScene` glue; it draws through the drawer it is
-  given), `main.ts` (the browser boot: Canvas2D by default, `?backend=three` for 3D),
-  `backend.ts` (`labBackend`, `otherBackendLink`, `LabDisplay`), `main3d.ts` (the 3D display:
-  `ThreePresenter` on the page's canvas, or why WebGL cannot start), `index.html` (with the
-  2D/3D toggle and the launcher's `ww-alternate` 3D link), `files.ts`.
+- `picture.ts`: `labLook(content)` (skin, sheets, size, sky), `labFrames(screen)` (the engine's
+  `FrameStream` over the kit's `platformerFrames`: the one frozen frame stream), `labPicture(presenter,
+screen)` (a `FramePicture`: those frames onto any presenter) and `labCanvasPicture(r, look)` (onto
+  a `SkinnedCanvasPresenter`). `picture3d.ts`: `labLook3d` (the `three` skin, size and sky, as
+  `threeDisplay` and `threeScenePresenter` take them). `view.ts`: `createView` (the `ViewGame`
+  contract, for `screenshot`, with `render(r)` and the `frame()` hook).
+- `scene.ts` (`labScene(content, stack, picture)`: the engine's `HostScene` over the lab's level
+  sequence, which pushes the mini game's scene), `main.ts` (a dozen lines: the engine's
+  `bootBrowserGame` with `canvasDisplay` and, only for `?backend=three`, a lazily imported
+  `threeDisplay`), `index.html` (with the 2D/3D toggle and the launcher's `ww-alternate` 3D link),
+  `files.ts`.
 - `runs/*.run.json` with golden `*.hashes.json`: `start-to-goal`, `moves`, `objects`, `shells`,
   `walkers`, `mini-game`, each with `guards`.
 

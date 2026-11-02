@@ -5,7 +5,8 @@ The 3D backend (Engine 0.6, "Basic 3D backend"): shows any presentation frame
 perspective, in the style of New Super Mario Bros. It reads the same snapshot as the Canvas2D
 backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), the WebGL
 `ThreePresenter` (`presenter.ts`), the renderer check (`renderer-info.ts`), the canvas fit helper
-(`fit.ts`) and the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
+(`fit.ts`), the page's display (`display.ts`: `threeDisplay`, `threeScenePresenter`,
+`webgl2Available`) and the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
 `GeometryCache`).
 
 Node vs browser: `scene.ts`, `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
@@ -101,6 +102,20 @@ places the canvas absolutely in its (positioned) container with `image-rendering
 - `particles` effects are not drawn.
 - Same-layer entities are not ordered by list order (they share a depth plane).
 
+## The page's display (`display.ts`, Engine 0.7)
+
+`threeDisplay(canvas, { screen, skin, background?, integerScale?, onSound? })` is the 3D
+`BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`, or a sentence saying why
+it cannot start: `webgl2Available()` is false (no WebGL 2), or `ThreePresenter` threw (the
+message names the error). Its `presenter` is a `ThreePresenter` with the game's `three` skin on
+the page's canvas; `fit(layout)` places the canvas with `fitCanvas` + `applyCanvasBox` from the
+layout's `fit`; its `renderer` draws nothing (scenes show frames through the presenter) and
+`present()` does nothing. A game reaches it with `await import('@engine/backends/three')` so its
+2D page loads no Three.js (moved from `games/platformer-lab/main3d.ts`).
+`threeScenePresenter(skin, { screen, background? })` is a `Presenter` over the Node-side
+`ThreeScene` (`present` is `sync`; `.scene` for read-outs): what tests use to check what 3D shows
+(backend parity) with no WebGL.
+
 ## Imports
 
 - Allowed: `@engine/core/*`, files in this folder, the `three` package and browser APIs.
@@ -123,4 +138,4 @@ event, the flash overlay, frozen frames and skin never changed, and repeatable b
 SwiftShader, llvmpipe, softpipe, Microsoft Basic Render) and typical hardware ones (ANGLE on
 NVIDIA, AMD, Intel and Apple, Mesa, Adreno), and `webglRendererInfo` with a fake context with and
 without the debug extension. `fit.test.ts` checks `fitCanvas` against `fitGame` and
-`canvasToScreen`. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
+`canvasToScreen`. `display.test.ts` checks `threeScenePresenter` and the no-WebGL 2 message. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.

@@ -31,7 +31,8 @@ the world's plus `stage` and `pause`. It never draws and holds no content beyond
 (`profileSchema`, `ProfileDef`, `profileKind`, `SUB`, `VEL`), `schema` (`levelKind`), `rules`
 (`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
 (`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`) and `snapshot` (`snapshotWorld`,
-`platformerGame`) and `present` (`presentWorld`, `PlatformerPresentState`, `presentMap`,
+`platformerGame`) and `present` (`presentWorld`, `PlatformerPresentState`, `platformerFrames` (the `FrameSource` for
+the engine's `FrameStream`), `presentMap`,
 `presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`) and `sequence` (`LevelSequence`,
 `LevelSequenceOptions`, `LevelStage`, `levelStages`, `LEVEL_PAUSE`, `SequenceSnapshot`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
 kinds `level` and `profile`, its named rules, `strictMutants: true`); `engine/tools/kits.ts` finds
