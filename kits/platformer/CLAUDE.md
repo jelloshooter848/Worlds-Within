@@ -1,12 +1,12 @@
 # kits/platformer
 
 The platformer kit: gameplay rules for a side-scrolling platformer, extracted from SMBC as rules
-only, with generic names and none of its content. Today (Engine 0.5, T8) it holds the content
+only, with generic names and none of its content. Today (Engine 0.5, T9) it holds the content
 kinds and a headless world that plays a whole level: integer physics, tile collision and named
 movement rules for the player, level objects (coins, bump blocks, bricks, hazards, pits, goals),
 data-set enemies (walkers and shells: stomps, kicks, harm), hit points with invulnerability,
 lives, the camera's scroll lock and the mini game hook (a trigger that pauses the level for a
-mini game and acts on its result). Presentation frames follow in a later task of the release.
+mini game and acts on its result), and its presentation frames (`present.ts`, T9).
 
 - `legend.ts`: `LEGEND`, the level text format: one character per 16x16 tile (`.` empty, `#`
   solid, `B` breakable brick, `?` bump block, `=` one-way platform, `^` hazard, `o` coin, `@`
@@ -43,6 +43,9 @@ mini game and acts on its result). Presentation frames follow in a later task of
 - `snapshot.ts`: `snapshotWorld(world, events?)`, a JSON-safe, whole-number snapshot with no
   presentation state, and `platformerGame(world)`, the headless contract (`engine/core/headless.ts`)
   as `topdownGame` does it: each step takes that step's events.
+- `present.ts`: `presentWorld(world, events?, { size, state, miniGameFrames })`, the world as a
+  read-only `PresentFrame` (under Presentation frames), and `PlatformerPresentState`, what a
+  stream of frames remembers outside the world.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
   `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES` and `strictMutants: true`.
   `index.ts` re-exports the rest (not the hook); games import it as `@kits/platformer`.
@@ -233,6 +236,68 @@ two runs, the rule switched off, and the `triggers` schema codes. The `mini-game
 guarded by a run file (no game uses the kit before `games/platformer-lab`); that game's run files
 must guard it for `pnpm cli mutants` to pass.
 
+## Presentation frames (`present.ts`)
+
+`presentWorld(world, events?, opts?)` describes the world as a `PresentFrame`
+(`@engine/core/present`) without drawing; a backend draws it through a skin. Pass the step's
+events (`world.events.splice(0)` after `update`). It only reads the world: no RNG draws, nothing
+`snapshotWorld` reads is changed, so state hashes are the same with or without it
+(`present.test.ts` checks it per tick on the fixture playthrough). Options: `size` (the picture,
+`DEFAULT_SCREEN` when left out), `state` (a `PlatformerPresentState`, one per stream of frames:
+the `MapTracker`, animation clocks, the last frame's boxes and short effects; without it every
+runner or actor `anim.t` is 0, there are no effects, and the map is sent in full each time) and
+`miniGameFrames` (true by default; under Mini game). Positions are world pixels (the level's
+top-left tile at 0,0); boxes are whole pixels (the body's sub-pixel box floored).
+
+- **Map** (`presentMap`): the terrain only, as rows of `PRESENT_TILES` characters: `.` open air,
+  `#` solid, `B` brick, `?` bump block, `u` used bump block, `=` one-way platform, `^` hazard.
+  Coins, goals, triggers and the start are `.` (coins, goals and triggers are entities). `id` is
+  the level's id, `tileSize` 16, tags `scroll:<right|free|none>`, `version` a 32-bit hash of the
+  rows, so it changes when a bump block is used, a brick breaks or a gate opens (`open:` outcome),
+  never when a coin is taken. With `state` the map is sent in full on the first frame and after a
+  change, else as `{ id, version }`.
+- **Entities**, in draw order, with `layer` from `PF_DEPTH`:
+
+  | id                    | kind                                         | layer | `anim.state` / `t`                                                                          | tags                                    |
+  | --------------------- | -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
+  | `coin@<col>,<row>`    | `coin`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
+  | `goal@<col>,<row>`    | `goal`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
+  | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`                      |
+  | `bump-block@<c>,<r>`  | `bump-block`                                 | 5     | `bump`, `t` 0..7; the box is raised by `BUMP_RISE[t]` px                                    | the cell now: `used`, `bump` or `brick` |
+  | `coin-pop@<c>,<r>`    | `coin`                                       | 5     | `pop`, `t` 0..29 (`COIN_POP_TICKS`), one tile over the block                                | `popped`                                |
+  | `actor#<n>`           | the actor type name (`walker`, `shell`, ...) | 10    | `idle` (asleep or still), `walk`, `run` (faster than its type's `speed`: kicked), `fall`    | `asleep`, `kicked`                      |
+  | `actor#<n>` (remains) | its last type                                | 10    | `stomped` (stomped, no `stompInto`) or `dead` (hit by a shell), `t` 0..29 (`REMAINS_TICKS`) |                                         |
+  | `runner/dead`         | `runner`                                     | 20    | `dead`, `t` 0..59 (`RUNNER_DEAD_TICKS`), where it died                                      |                                         |
+  | `runner`              | `runner`                                     | 20    | see below                                                                                   | `invuln`, `hp:<n>`                      |
+
+  Effects (bounces, popped coins, remains, `runner/dead`) need `state`. The bump-block entity is
+  drawn over its own tile (a skin should draw it with the block's look, raised). `actor#<n>` keeps
+  its number when a stomp turns it into another type (a `shell-walker` into a `shell`), so a skin
+  sees the kind change on the same id. Actors not yet woken are listed with `asleep`.
+
+- **Runner** (`runnerState`): `dead` (the level is `failed`), `hurt` (the first `HURT_TICKS`, 12,
+  of invulnerability), in the air `jump` (rising) or `fall`, on the ground `skid`, `idle` (no
+  speed), `run` (over the profile's `maxWalk`) or `walk`. `t` is ticks in the state (with `state`).
+  Facing `left`/`right`. A death with lives left respawns at once (the world's rule), so the
+  remains `runner/dead` show where it died.
+- **Events**: every `PlatformerEvent` field copied. `jump`, `land`, `hurt`, `died`, `respawn`,
+  `cleared` sit at the runner's centre with `entity: 'runner'` (`died` where the last frame showed
+  it); `spawn`, `stomp`, `kick`, `defeat` at the actor's centre (the last frame's box when it is
+  gone) with `entity: 'actor#<n>'`; `bump`, `block`, `break`, `coin` at the tile's centre;
+  `mini-game`, `mini-game-end` at the trigger's centre.
+- **Status** (`presentStatus`): `coins`, `hp`, `maxHp`, `lives`, `outcome` (`playing`, `cleared`,
+  `failed`), `level` and `miniGame` (the running mini game's id, '' when none).
+- **Camera** (`cameraHint`): `follow: 'runner'`; `x`/`y` the centre of the world's own view
+  (`scrollX`, `viewWidth`) as the fallback; `bounds` carries the scroll lock: scrolling `right`
+  with `scroll-lock` on, `{ x: scrollX px, y: 0, w: level width - that, h: level height }` (the
+  view never goes back left); `none` the level's first `viewWidth` px; `free` none (the map).
+- **Mini game**: while a round runs and its `MiniGame` has `present()`, the frame is that one
+  (copied), with the world's `frame`, the given `size`, `status.miniGame` set, the level's events
+  of the tick it started put first, and its full map passed through the same `MapTracker` (so the
+  level map is sent in full again after the round). With no `present()` (or
+  `miniGameFrames: false`) the frame is the paused level with `status.miniGame` set and the
+  trigger tagged `running`. A mini game's `present()` must only read its state.
+
 ## Content kinds
 
 - `level` (`levels/<id>.json` + `levels/<id>.map.txt`): `id`, `profile` (a `profile` id), `scroll`
@@ -271,7 +336,7 @@ object rules (coins, blocks, bricks, hazards, pits, goal, scroll lock, waking, t
 bounce, kick, shell hits, touch damage, invulnerability), `minigame.test.ts` the mini game hook
 (under Mini games), and `objects.test.ts` plays the fixture level from start to
 goal with a scripted input (`cleared`, both coins, the same snapshot hashes on two runs); `golden.test.ts` checks the movement against
-SMBC (above); `world.test.ts` also checks that two runs of the same input
+SMBC (above); `present.test.ts` the presentation frames (under Presentation frames); `world.test.ts` also checks that two runs of the same input
 and seed give equal `canonicalJson` snapshots tick by tick, and that snapshots hold whole numbers. After changing a schema or a
 description, run `pnpm docs:gen` (the schema reference lists both kinds; their examples are
 `docs/reference/examples/level.json`, `level.map.txt` and `profile.json`).

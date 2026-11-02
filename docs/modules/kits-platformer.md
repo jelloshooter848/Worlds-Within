@@ -16,7 +16,9 @@ snapshot and `platformerGame(world)` for the headless contract. Its mini game ho
 trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), the level pauses
 while it runs, its snapshot sits in the level's, and the trigger's data-set outcome for its
 `pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile).
-Presentation frames follow later in 0.5. It never draws and holds no content beyond tiny test fixtures.
+Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
+sent through a `MapTracker`, runner, actors, coins, goals, triggers, block bounces and remains,
+placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw. It never draws and holds no content beyond tiny test fixtures.
 
 ## Public API entry points
 
@@ -25,7 +27,8 @@ Presentation frames follow later in 0.5. It never draws and holds no content bey
 (`profileSchema`, `ProfileDef`, `profileKind`, `SUB`, `VEL`), `schema` (`levelKind`), `rules`
 (`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
 (`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`) and `snapshot` (`snapshotWorld`,
-`platformerGame`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
+`platformerGame`) and `present` (`presentWorld`, `PlatformerPresentState`, `presentMap`,
+`presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
 kinds `level` and `profile`, its named rules, `strictMutants: true`); `engine/tools/kits.ts` finds
 it by the `kit` name in `game.json`.
 
@@ -43,7 +46,10 @@ it by the `kit` name in `game.json`.
 (`kits/platformer/__fixtures__/`) through the kit's hook; `world.test.ts` covers the movement rules (each switched off must fail a
 case), determinism and whole-number snapshots; `objects.test.ts` covers the level objects and
 enemies the same way and plays the fixture level from start to goal; `minigame.test.ts` covers the
-mini game hook with a test-only mini game (pass, fail, quit, determinism, the rule off); `golden.test.ts` replays six scripted inputs and
+mini game hook with a test-only mini game (pass, fail, quit, determinism, the rule off);
+`present.test.ts` checks that presenting every tick leaves the state hashes alone, that every
+frame of the fixture playthrough passes `presentFrameSchema` and survives `freezeFrame`, when the
+map is sent in full, and the animation states, tags, remains, camera and mini-game frames; `golden.test.ts` replays six scripted inputs and
 must match SMBC's recorded player positions and velocities at every tick (the traces and their
 provenance are in `kits/platformer/__fixtures__/golden/`; SMBC is not needed to run it). `pnpm docs:gen` keeps the kinds in
 `docs/reference/schemas.md`; the architecture tests (`tests/architecture/`) check its imports,
