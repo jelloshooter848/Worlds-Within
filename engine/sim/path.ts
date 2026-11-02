@@ -113,17 +113,22 @@ export function nextStep(t: TerrainData, field: Int32Array, from: Cell): Cell | 
   return best;
 }
 
-/** A binary min-heap of (priority, cell) pairs; equal priorities pop the lower cell first. */
-class MinHeap {
+/**
+ * A binary min-heap of (priority, tie, cell) triples: the lowest priority pops first, then the
+ * lowest tie, then the lowest cell. `distanceField` leaves `tie` at 0; A* (`astar.ts`) uses it.
+ */
+export class MinHeap {
   private readonly keys: number[] = [];
+  private readonly ties: number[] = [];
   private readonly cells: number[] = [];
 
   get size(): number {
     return this.keys.length;
   }
 
-  push(key: number, cell: number): void {
+  push(key: number, cell: number, tie = 0): void {
     this.keys.push(key);
+    this.ties.push(tie);
     this.cells.push(cell);
     let i = this.keys.length - 1;
     while (i > 0) {
@@ -137,9 +142,11 @@ class MinHeap {
   pop(): [number, number] {
     const top: [number, number] = [this.keys[0] as number, this.cells[0] as number];
     const lastKey = this.keys.pop() as number;
+    const lastTie = this.ties.pop() as number;
     const lastCell = this.cells.pop() as number;
     if (this.keys.length > 0) {
       this.keys[0] = lastKey;
+      this.ties[0] = lastTie;
       this.cells[0] = lastCell;
       let i = 0;
       for (;;) {
@@ -159,11 +166,16 @@ class MinHeap {
   private less(a: number, b: number): boolean {
     const ka = this.keys[a] as number;
     const kb = this.keys[b] as number;
-    return ka < kb || (ka === kb && (this.cells[a] as number) < (this.cells[b] as number));
+    if (ka !== kb) return ka < kb;
+    const ta = this.ties[a] as number;
+    const tb = this.ties[b] as number;
+    if (ta !== tb) return ta < tb;
+    return (this.cells[a] as number) < (this.cells[b] as number);
   }
 
   private swap(a: number, b: number): void {
     [this.keys[a], this.keys[b]] = [this.keys[b] as number, this.keys[a] as number];
+    [this.ties[a], this.ties[b]] = [this.ties[b] as number, this.ties[a] as number];
     [this.cells[a], this.cells[b]] = [this.cells[b] as number, this.cells[a] as number];
   }
 }

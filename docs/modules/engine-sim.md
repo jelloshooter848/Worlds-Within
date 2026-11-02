@@ -45,6 +45,13 @@ From `engine/sim/index.ts`:
 - Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
   cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
   west.
+- Pathfinding (`astar.ts`, Engine 0.9): `findPath(t, from, goal, { neighbourhood?, maxExpanded? })`
+  -> `{ cells, cost, expanded }` or null (A* for one unit, a cap on expanded cells, fixed
+  tie-breaking), and `flowField(t, goal, { neighbourhood?, near? })` with `flowStep(t, field, from)`
+  for a group sharing a goal (`FLOW_GROUP_SIZE`, 4, units or more). Neighbourhood 4 (default, the
+  same as `distanceField`) or 8: straight steps cost `STRAIGHT_COST` (10) and diagonals
+  `DIAGONAL_COST` (14) times the cell's cost, no corner cutting, ties N, NE, E, SE, S, SW, W, NW
+  (`STEPS_8`); `stepCost` is one move's cost.
 - Systems (`systems.ts`): components `Walk` `{ wait }` and `Hauler` `{ item, source, capacity,
 carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, and `haulSystem`
   (workers fetch from a source and carry it to the nearest unfinished building as work, resting at
@@ -101,8 +108,9 @@ the lint rule fires on sim files. `components.test.ts` checks each standard sche
 load -> save gives the same canonical JSON, that a world loaded at tick N gives the same snapshots
 for the next ticks as the uninterrupted one, that RNG state, `nextId`, tick and log survive, and
 that malformed saves fail naming the field. `scenario.test.ts` checks world scenarios (ids, `$ref`,
-squads, errors naming the field), `path.test.ts` walking costs and tie order, `systems.test.ts`
-hauling, building and patrols, and `sample-world.test.ts` the Engine 0.8 proof: the village runs
-10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
+squads, errors naming the field), `path.test.ts` walking costs and tie order, `astar.test.ts` A*
+(cheapest paths, no rock or corner cutting, null with no way, same ties every run), a group on a
+flow field and the A* vs flow field measurement, `systems.test.ts` hauling, building and
+patrols, and `sample-world.test.ts` the Engine 0.8 proof: the village runs 10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
 ticks (`WW_SAVE_EVERY_TICK=1` reloads at every tick, about two minutes).
 `engine/tools/world-run.test.ts` checks `run` and `dump` on a world run file.

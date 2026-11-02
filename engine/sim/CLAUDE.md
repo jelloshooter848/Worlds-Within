@@ -21,6 +21,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `scenario.ts`: `worldFromScenario(json, { components?, systems?, log? })`, the world-start file
   schema `scenarioSchema` and `ScenarioError` (see "Scenarios" below).
 - `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
+- `astar.ts`: RTS pathfinding, `findPath` (A*) for one unit and `flowField`/`flowStep` for a
+  group, 4-way or 8-way (see "Walking").
 - `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward` and the
   systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
@@ -209,6 +211,33 @@ goal is the cell or any cell next to it (for reaching something on a cell no one
 `WeakMap`; the terrain is replaced, never changed, so the cache never changes a result). Height
 changes no cost (item 101); a walker stands at the elevation of the cell it enters (`z`).
 
+`astar.ts` (Engine 0.9, items 126-127) adds A* and group flow fields, all integer. Each takes a
+`neighbourhood`: 4 (the default; the same moves and costs as `distanceField`, so the 0.8 sample
+world and its golden hashes are untouched) or 8. In 8-way a straight step costs the entered cell's
+cost times `STRAIGHT_COST` (10) and a diagonal times `DIAGONAL_COST` (14), and a diagonal is only
+allowed when both straight cells beside it are passable (no corner cutting); ties go N, NE, E, SE,
+S, SW, W, NW (`STEPS_8`). `stepCost(t, x, y, step, n)` is the cost of one move or null.
+
+- `findPath(t, from, goal, { neighbourhood?, maxExpanded? })`: A* for one unit. It returns
+  `{ cells, cost, expanded }` (cells entered in order, not the start) or null when the start or
+  goal is impassable or off the grid, there is no way, or none was found within `maxExpanded`
+  expanded cells (default `ASTAR_MAX_EXPANDED`, 65,536). Heuristic: Manhattan (4-way) or octile
+  (8-way) distance times the cheapest passable cost, so the path is always a cheapest one.
+  **Ties:** the open cell with the lowest estimate goes first, then the lowest heuristic, then the
+  lowest cell index; a cell's way in changes only for a strictly cheaper one, so among equal ways
+  the first neighbour in step order keeps it. Results are cached per terrain object and arguments (at most 4,096 per
+  terrain; the cache is emptied when full, never changing a result).
+- `flowField(t, goal, { neighbourhood?, near? })` -> `FlowField`
+  `{ neighbourhood, goal, near, dist }`: the cheapest cost from every cell to the goal, shared by
+  a group. 4-way `dist` is exactly `distanceField(t, goal, near)`; 8-way it is a Dijkstra with
+  the 8-way costs. Cached per terrain object and goal. `flowStep(t, field, from)` is the next cell (ties in step order), or
+  null at the goal or with no way; 4-way it is `nextStep`.
+- **When to use which** (measured in `astar.test.ts`): on a 256x256 map with forest and walls, one
+  8-way field expands every reachable cell (59,173) in about 55 ms, one A* across the map about
+  11,000 cells in about 12 ms, and 300 units running A* expand 3.35 million cells. A group of
+  `FLOW_GROUP_SIZE` (4) or more units sharing a goal reads one flow field; fewer units, or a near
+  goal (about 0.13 ms for 8 cells), use A*.
+
 ## Systems
 
 `systems.ts` holds the world's first systems. They are machinery, not game rules: every number
@@ -289,4 +318,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
-  `path.test.ts`, `systems.test.ts`, `sample-world.test.ts`).
+  `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `sample-world.test.ts`).

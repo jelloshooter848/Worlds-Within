@@ -28,6 +28,19 @@ export type { HaulerData, WalkData } from './systems';
 export { STEPS, UNREACHABLE, distanceField, nextStep } from './path';
 export type { Cell } from './path';
 export {
+  ASTAR_MAX_EXPANDED,
+  DIAGONAL_COST,
+  FLOW_GROUP_SIZE,
+  STEPS_8,
+  STRAIGHT_COST,
+  findPath,
+  flowField,
+  flowStep,
+  stepCost,
+  stepsOf,
+} from './astar';
+export type { FlowField, FlowOptions, Neighbourhood, Path, PathOptions } from './astar';
+export {
   ANGLE_STEPS,
   FIXED_ONE,
   QUARTER_TURN,
