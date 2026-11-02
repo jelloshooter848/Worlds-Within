@@ -8,6 +8,7 @@ import {
   cameraZoom,
   CameraFollower,
   isFullMap,
+  resolveSkinEvent,
   resolveSkinFrame,
   type DeepReadonly,
   type PresentEntity,
@@ -159,10 +160,9 @@ export class SkinnedCanvasPresenter implements Presenter {
     });
     if (this.lastEvents === frame.frame) return;
     this.lastEvents = frame.frame;
-    const events = this.skin.events ?? {};
     for (const ev of frame.events) {
-      if (!Object.hasOwn(events, ev.type)) continue;
-      const entry = events[ev.type]!;
+      const entry = resolveSkinEvent(this.skin.events, ev);
+      if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
       if (entry.effect === undefined) continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);

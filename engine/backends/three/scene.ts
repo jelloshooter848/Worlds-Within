@@ -26,6 +26,7 @@ import {
   isFullMap,
   resolveCamera3d,
   resolveMeshParts,
+  resolveSkinEvent,
   type DeepReadonly,
   type MeshPart,
   type PresentBox,
@@ -226,10 +227,9 @@ export class ThreeScene {
     });
     if (this.lastEvents === frame.frame) return;
     this.lastEvents = frame.frame;
-    const events = this.skin.events ?? {};
     for (const ev of frame.events) {
-      if (!Object.hasOwn(events, ev.type)) continue;
-      const entry = events[ev.type]!;
+      const entry = resolveSkinEvent(this.skin.events, ev);
+      if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
       if (entry.effect !== undefined) this.effects.push({ effect: entry.effect, start: frame.frame });
     }

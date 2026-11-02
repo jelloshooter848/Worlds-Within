@@ -39,7 +39,9 @@ Import from `@engine/core/present` (`index.ts`).
   `missing_frame`). `resolveSkinFrame(skin, entity)` gives the `SkinFrame` to draw (sheet, frame,
   flip, fallback colour) from the entity's kind, animation state and tick, and facing (a
   diagonal with no frame uses its horizontal part; `flipFacing` mirrors right-hand frames for the
-  left-hand facings). Field
+  left-hand facings). An `events` key may also match a field (Engine 0.11, gap G28):
+  `mini-game-end:pass` (the event's `result`) or `type:field=value`; `resolveSkinEvent(events,
+event)` gives the entry, the first matching field key in file order, else the bare type's. Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named

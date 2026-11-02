@@ -36,8 +36,9 @@ renumbered (item 184), so they do not mix with the stacking test's `G` ids.
 
 ## Gaps
 
-| Id  | What | Where | Status | Item |
-| --- | ---- | ----- | ------ | ---- |
+| Id  | What                                                                                                                                                                                                                                                                                          | Where                                                       | Status                                                                                                                | Item |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---- |
+| M1  | The shell's audio (G27, T3) takes the player's `volumes` from the game, but nothing in the engine stores them or shows a mute or volume control: `engine/core/save/settings.ts` holds only defaults, so a page that wants a mute button writes it and its storage itself over `booted.audio`. | `engine/core/shell/boot.ts`, `engine/core/save/settings.ts` | moved to 0.15 (the sample set: every sample page gets the same settings; the mini siege plays at the default volumes) |      |
 
 ## Glue review
 

@@ -84,7 +84,8 @@ release that will).
     every `PRESENT_TILES` character, `runner` (every `RUNNER_ANIMS` state, mirrored for left),
     every actor type of the profile (every `ACTOR_ANIMS` state), `coin` (`idle`, `pop`), `goal`,
     `trigger` (drawn as the door: the game's one trigger; gap G13), `bump-block`; every
-    `PlatformerEvent` with effects and the sounds above; HUD `hp` (hearts), `coins` and `lives`
+    `PlatformerEvent` with effects and the sounds above (`mini-game-end:pass` plays `pass` and
+    `mini-game-end:fail` plays `fail`, the bare `mini-game-end` the `door` for a quit: gap G28); HUD `hp` (hearts), `coins` and `lives`
     (icon and number in `hopper-font`); camera follow `runner`, deadzone 32x48, lerp 0.25.
   - `content/skins/canvas2d-vault.json`: the vault round's skin: the top-down kit's tiles the room
     shows (`#`, `.`, `S`, `~`), `hero` (`walk`, `attack`, `hurt`, `dying`, `poof`), `sword`
@@ -139,12 +140,13 @@ backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backen
     `new HostScene({ stack, game: createGame(content, seed), picture })`, the engine's scene over
     the game itself (it pushes the core `miniGameScene` while the door's round runs and pops it on
     the result; `scene.ts` and its five accessors went away in Engine 0.10, gap G37), with `canvasDisplay(canvas, { ...look,
-onSound })` and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content),
+onSound })` (the `onSound` the shell hands the factory) and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content),
 onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk with Three.js).
     Both displays take the round skins (`rounds`) and pick one per frame, so the scene draws
     `testPicture(display.presenter)` either way (gap G34). The `#backend` link toggles 2D and 3D.
-    An `AudioManager` with the sfx gets the skins' sounds (`onSound`) and is unlocked on the
-    first key, tap or click (the shell has no audio yet: gap G27);
+    Sound is the shell's: `audio: { sfx: contentSfx(content) }` makes the `AudioManager`, unlocks
+    it on the first key, tap or click and hands each display factory its `onSound` (gap G27,
+    fixed in Engine 0.11); the page has no audio code of its own;
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
     kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
     `testMiniGames(content)` (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and

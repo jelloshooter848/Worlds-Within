@@ -8,7 +8,9 @@ import {
   DEFAULT_CAMERA3D,
   DEFAULT_FALLBACK_COLOR,
   resolveCamera3d,
+  parseEventKey,
   resolveMeshParts,
+  resolveSkinEvent,
   resolveSkinFrame,
   skinSchema,
   type SkinFile,
@@ -157,6 +159,60 @@ describe('the skin content kind', () => {
       ['games/g/skins/canvas2d.json', 'tiles["#"].frame', 'missing_frame'],
       ['games/g/skins/canvas2d.json', 'events.hit.sound', 'missing_ref'],
     ]);
+  });
+
+  it('checks the sounds of field-matched event keys too', () => {
+    const s = fixture();
+    s.events = { ...s.events, 'end:pass': { sound: 'tune' }, 'end:fail': { sound: 'sad' } };
+    const r = loadContent(files(s), engineContentKinds(), { root: 'games/g/' });
+    expect(r.errors.map((e) => [e.path, e.code])).toEqual([['events["end:fail"].sound', 'missing_ref']]);
+  });
+});
+
+describe('event keys with a field match (G28)', () => {
+  it('reads a bare type, type:value (the result field) and type:field=value', () => {
+    expect(parseEventKey('mini-game-end')).toEqual({ type: 'mini-game-end', match: null });
+    expect(parseEventKey('mini-game-end:pass')).toEqual({
+      type: 'mini-game-end',
+      match: { field: 'result', value: 'pass' },
+    });
+    expect(parseEventKey('mission-commit:outcome=both-burnt')).toEqual({
+      type: 'mission-commit',
+      match: { field: 'outcome', value: 'both-burnt' },
+    });
+    for (const bad of [':pass', 'end:', 'end:=x', 'end:f=', 'a:b:c', 'a:b=c=d', 'a=b'])
+      expect(parseEventKey(bad), bad).toBeNull();
+  });
+
+  it('rejects a bad key at its field', () => {
+    const s = fixture();
+    s.events = { ...s.events, 'end:pass': { sound: 'hurt' }, 'end:': {}, 'a:b:c': {} };
+    expect(errorsOf(s)).toEqual([
+      ['events["end:"]', 'bad_event_key'],
+      ['events["a:b:c"]', 'bad_event_key'],
+    ]);
+  });
+
+  it('tries the field keys in file order, then the bare type', () => {
+    const events = {
+      end: 'bare',
+      'end:pass': 'pass',
+      'end:result=pass': 'never: the first match wins',
+      'end:level=2': 'level two',
+      'end:won=true': 'won',
+      'other:pass': 'other',
+    };
+    expect(resolveSkinEvent(events, { type: 'end', result: 'pass' })).toBe('pass');
+    expect(resolveSkinEvent(events, { type: 'end', result: 'fail' })).toBe('bare');
+    expect(resolveSkinEvent(events, { type: 'end', result: 'fail', level: 2 })).toBe('level two');
+    expect(resolveSkinEvent(events, { type: 'end', won: true })).toBe('won');
+    expect(resolveSkinEvent(events, { type: 'end', result: { pass: 1 } })).toBe('bare');
+    expect(resolveSkinEvent(events, { type: 'other', result: 'fail' })).toBeUndefined();
+    expect(resolveSkinEvent(events, { type: 'nope' })).toBeUndefined();
+    expect(resolveSkinEvent(undefined, { type: 'end' })).toBeUndefined();
+    // Order decides, not specificity of the field: a later key never beats an earlier match.
+    const first = { 'end:level=2': 'level', 'end:pass': 'pass' };
+    expect(resolveSkinEvent(first, { type: 'end', result: 'pass', level: 2 })).toBe('level');
   });
 });
 

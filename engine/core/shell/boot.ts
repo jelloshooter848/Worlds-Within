@@ -1,3 +1,5 @@
+import { AudioManager, type Volumes } from '../audio/audio-manager';
+import type { Sfx, Song } from '../audio/mml';
 import type { ScreenSize } from '../gfx/screen';
 import { GamepadSource } from '../input/gamepad';
 import { InputManager } from '../input/input-manager';
@@ -17,11 +19,43 @@ import type { BrowserDisplay, DisplayResult } from './display';
  * gamepad and the touch pad (shown on touch devices, laid out clear of the picture with
  * `layoutScreen`), the game's first scene on a `SceneStack`, stepped by a `FixedLoop`. The picture
  * comes from a display factory per backend the game hands in, so the core imports no backend and
- * a game can `import()` Three.js only in 3D. Browser only (DOM, clock): not on `PURE_CORE`.
+ * a game can `import()` Three.js only in 3D. With `audio` (Engine 0.11, gap G27) it also makes the
+ * game's `AudioManager`, unlocked on the first key, tap or click, and hands the displays its
+ * `onSound`. Browser only (DOM, clock): not on `PURE_CORE`.
  */
 
+/** What the shell gives a display factory besides the canvas. */
+export interface DisplayShell {
+  /**
+   * Plays a skin's event sound (pass it as the display's `onSound`): the shell's `AudioManager`
+   * with the game's sfx when the boot has `audio`, else it does nothing.
+   */
+  onSound(id: string): void;
+}
+
 /** Builds a display on the page's canvas (may load its backend first). */
-export type DisplayFactory = (canvas: HTMLCanvasElement) => DisplayResult | Promise<DisplayResult>;
+export type DisplayFactory = (
+  canvas: HTMLCanvasElement,
+  shell: DisplayShell,
+) => DisplayResult | Promise<DisplayResult>;
+
+/**
+ * The page's sound (Engine 0.11, gap G27): the game's songs and sound effects (`contentSongs`,
+ * `contentSfx` from `@engine/core/content/game-content`), a song to start, and the player's volumes.
+ */
+export interface BootAudio {
+  /** The sound effects the skins name (`sfx` content). */
+  sfx?: readonly Sfx[];
+  /** The songs (`song` content). */
+  songs?: readonly Song[];
+  /** A song id to play once audio is unlocked (it waits for the first gesture). */
+  music?: string;
+  /** The player's settings (master, music and sfx volume, mute); the manager's defaults otherwise. */
+  volumes?: Partial<Volumes>;
+}
+
+/** The DOM events that count as the first gesture: browsers allow sound only after one. */
+export const AUDIO_UNLOCK_EVENTS = ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click'] as const;
 
 export interface BrowserBootOptions {
   /** The game's picture size (`content.manifest.screen`). */
@@ -47,6 +81,13 @@ export interface BrowserBootOptions {
   toggleId?: string;
   /** The URL query to read the backend from (default `location.search`). */
   search?: string;
+  /**
+   * Music and sound (Engine 0.11, gap G27): an `AudioManager` with these songs and sfx, unlocked on
+   * every key, tap or click (the first starts it; later ones recover a context the browser
+   * suspended), `music` played once unlocked, and `onSound` for the display factories. Without it
+   * the page is silent, as before.
+   */
+  audio?: BootAudio;
 }
 
 /** The page's inputs beyond the `InputFrame`, for a game's scenes. */
@@ -62,6 +103,8 @@ export interface BootedGame extends BootPage {
   scenes: SceneStack;
   input: InputManager;
   loop: FixedLoop;
+  /** The page's audio (change volumes, play another song), or null without the `audio` option. */
+  audio: AudioManager | null;
 }
 
 /**
@@ -77,10 +120,21 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const backend: PageBackend = asked === 'three' && opts.displays.three ? 'three' : 'canvas2d';
   showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend');
   const make = backend === 'three' ? opts.displays.three! : opts.displays.canvas2d;
-  const display = await make(canvas);
+  const audio = opts.audio ? shellAudio(opts.audio) : null;
+  const display = await make(canvas, { onSound: (id) => audio?.sfx(id) });
   if (typeof display === 'string') {
     showDisplayMessage(canvas, display);
     return null;
+  }
+  if (audio) {
+    const unlock = () => audio.unlock();
+    for (const ev of AUDIO_UNLOCK_EVENTS) window.addEventListener(ev, unlock, { passive: true });
+    // Back from the background (a phone's home screen): resume now if allowed, redo the unlock
+    // on the next gesture otherwise (`AudioManager.wake`).
+    window.addEventListener('pageshow', () => audio.wake());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') audio.wake();
+    });
   }
 
   const input = new InputManager(1);
@@ -127,7 +181,17 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   });
   loop.start();
   document.body.dataset.backend = backend;
-  return { backend, display, scenes, input, loop, pointer };
+  return { backend, display, scenes, input, loop, pointer, audio };
+}
+
+/** The boot's `AudioManager`: the songs and sfx registered, the volumes set, the music waiting. */
+function shellAudio(opts: BootAudio): AudioManager {
+  const audio = new AudioManager();
+  audio.registerSongs([...(opts.songs ?? [])]);
+  audio.registerSfx([...(opts.sfx ?? [])]);
+  if (opts.volumes) audio.setVolumes(opts.volumes);
+  if (opts.music !== undefined) audio.playMusic(opts.music);
+  return audio;
 }
 
 /** The pointer source on the canvas, in picture pixels through the display (else the canvas box). */

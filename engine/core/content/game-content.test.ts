@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { defineKit } from '../kit';
 import { loadContent } from './bundle';
-import { contentArt, contentSfx, kitContentKinds, mustLoad } from './game-content';
+import { contentArt, contentSfx, contentSongs, kitContentKinds, mustLoad } from './game-content';
 import type { ContentKind } from './kinds';
 
 const note: ContentKind = { name: 'note', description: 'a note', schema: z.strictObject({ id: z.string() }) };
@@ -13,13 +13,14 @@ const files = {
   'game.json': JSON.stringify({
     id: 'g',
     kit: 'notes',
-    content: { sprite: ['s/*.txt'], palette: ['p/*.json'], sfx: ['x/*.json'] },
+    content: { sprite: ['s/*.txt'], palette: ['p/*.json'], sfx: ['x/*.json'], song: ['m/*.json'] },
     start: { seed: 1 },
     headless: 'h.ts',
   }),
   'p/pal.json': JSON.stringify({ id: 'pal', colors: ['#000000', '#fcfcfc'] }),
   's/dots.txt': 'palette pal\nlegend . clear\nlegend w 1\n\nframe dot\nw.\n',
   'x/beep.json': JSON.stringify({ id: 'beep', bpm: 240, pulse: 'l32 o5 c' }),
+  'm/tune.json': JSON.stringify({ id: 'tune', bpm: 120, loop: true, pulse1: 'l8 o4 c' }),
 };
 
 describe('game content glue (gap G4)', () => {
@@ -36,6 +37,7 @@ describe('game content glue (gap G4)', () => {
     expect(Object.keys(contentArt(content).sprites)).toEqual(['dots']);
     expect(Object.keys(contentArt(content).palettes)).toEqual(['pal']);
     expect(contentSfx(content).map((s) => s.id)).toEqual(['beep']);
+    expect(contentSongs(content).map((s) => s.id)).toEqual(['tune']);
     const bad = loadContent(
       { ...files, 'p/pal.json': JSON.stringify({ id: 'pal' }) },
       kitContentKinds([notes]),

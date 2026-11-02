@@ -28,7 +28,7 @@ for and holds no game rules.
   copy, tiles, sprites and boxes are scaled, positions rounded to whole picture pixels, and the
   follower frames and clamps the zoomed view `cameraView(size, zoom)`), draws
   event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
-  event. Details in the folder's CLAUDE.md. Its speed on an RTS view is measured by
+  event (the skin entry from `resolveSkinEvent`, so `mini-game-end:pass` can have its own sound). Details in the folder's CLAUDE.md. Its speed on an RTS view is measured by
   `pnpm exec tsx tests/bench/rts-render/run.ts` (Engine 0.9 T3; numbers in the build log).
 
 - `canvasDisplay`, `CanvasDisplayOptions` (`display.ts`, Engine 0.7): the page's 2D

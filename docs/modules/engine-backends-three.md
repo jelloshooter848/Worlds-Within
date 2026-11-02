@@ -21,7 +21,7 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   rotate and alpha, a fallback box for unlisted kinds); the `PerspectiveCamera` is framed by the
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
-  directional light; `onSound(id)` once per event; flash and tint as a full-screen overlay. The HUD
+  directional light; `onSound(id)` once per event (by `resolveSkinEvent`); flash and tint as a full-screen overlay. The HUD
   and particles are not drawn (known gaps; moved to 0.15, gap G33 of the stacking test).
 - `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
   `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing })`

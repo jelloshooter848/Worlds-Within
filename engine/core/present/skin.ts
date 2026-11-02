@@ -47,8 +47,13 @@ import {
  * entity's depth plane. {@link resolveMeshParts} is the one reading of this text that backends and
  * tests share. `camera3d` gives the 3D framing defaults ({@link DEFAULT_CAMERA3D}).
  *
+ * An `events` key is an event type, or (Engine 0.11, gap G28) a type with a field match:
+ * `mini-game-end:pass` (the event's `result` is `pass`) or `mission-commit:outcome=both-burnt`.
+ * {@link resolveSkinEvent} tries the field keys of the event's type in file order, then the bare
+ * type, so `"mini-game-end:fail"` and a fallback `"mini-game-end"` can sit side by side.
+ *
  * Checks: every `mesh` must be a primitive or a key of `meshes` (`missing_ref`, in the skin
- * itself). Cross-file (`SKIN_KIND.checkAll`): every sheet, palette and sound a skin names must be a
+ * itself); every `events` key must have one of those shapes (`bad_event_key`). Cross-file (`SKIN_KIND.checkAll`): every sheet, palette and sound a skin names must be a
  * sprite, palette, song or sfx of the game (`missing_ref`), and every frame a frame of its sheet
  * (`missing_frame`).
  */
@@ -413,6 +418,19 @@ function checkMeshes(
   }
 }
 
+/** Every `events` key must be a bare type, `type:value` or `type:field=value` ({@link parseEventKey}). */
+function checkEventKeys(events: Record<string, unknown>, ctx: z.RefinementCtx): void {
+  for (const key of Object.keys(events)) {
+    if (parseEventKey(key) !== null) continue;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['events', key],
+      message: `"${key}" is not an event key: use "type", "type:value" or "type:field=value"`,
+      params: { code: 'bad_event_key' },
+    });
+  }
+}
+
 function isPrimitive(name: string): name is MeshPrimitive {
   return (MESH_PRIMITIVES as readonly string[]).includes(name);
 }
@@ -423,7 +441,12 @@ export const skinSchema = z
     sheets: sheets.exactOptional().describe('defaults for entries that leave a field out'),
     kinds: z.record(id, kindEntry).describe('entity kind -> how it looks'),
     tiles: z.record(id, tileEntry).exactOptional().describe('map tile character or id -> how it looks'),
-    events: z.record(id, eventEntry).exactOptional().describe('event type -> its sound and effect'),
+    events: z
+      .record(id, eventEntry)
+      .exactOptional()
+      .describe(
+        'event type -> its sound and effect; a key may match a field too: `type:value` (the `result` field, `mini-game-end:pass`) or `type:field=value`, tried first in file order, then the bare type',
+      ),
     hud: z.array(hudItem).exactOptional().describe('status values drawn on screen, in order'),
     camera: camera.exactOptional().describe("framing defaults; a frame's own camera hint wins"),
     meshes: z
@@ -433,6 +456,7 @@ export const skinSchema = z
     camera3d: camera3d.exactOptional().describe('3D: perspective framing and light defaults'),
   })
   .superRefine((skin, ctx) => {
+    checkEventKeys(skin.events ?? {}, ctx);
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, 'kinds', ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
@@ -539,6 +563,59 @@ export const SKIN_KIND = {
   schema: skinSchema,
   checkAll: (entries, others) => entries.flatMap((e) => checkSkinRefs(e.name, e.value, others)),
 } satisfies ContentKind<typeof skinSchema>;
+
+// ---- Event sounds and effects ----
+
+/**
+ * The field an `events` key of the short form `type:value` matches (gap G28, Engine 0.11): the
+ * `result` of a `mini-game-end` (`pass`, `fail`, `quit`) and of other results.
+ */
+export const EVENT_KEY_FIELD = 'result';
+
+/** An `events` key read: the event type, and the field and value it also matches (or null). */
+export interface EventKey {
+  type: string;
+  match: { field: string; value: string } | null;
+}
+
+const EVENT_KEY = /^([^:=]+)(?::(?:([^:=]+)=)?([^:=]+))?$/;
+
+/**
+ * Reads an `events` key: `type` (any event of that type), `type:value` (its `result` field is
+ * `value`) or `type:field=value`. Null for anything else (an empty part, a second `:` or `=`).
+ */
+export function parseEventKey(key: string): EventKey | null {
+  const m = EVENT_KEY.exec(key);
+  if (!m) return null;
+  const [, type, field, value] = m;
+  if (value === undefined) return { type: type!, match: null };
+  return { type: type!, match: { field: field ?? EVENT_KEY_FIELD, value } };
+}
+
+/** One event as a skin reads it: its type and its other fields. */
+type SkinEventInput = { readonly type: string } & { readonly [field: string]: unknown };
+
+/**
+ * The skin entry for one event (gap G28): the first key, in file order, of the event's type that
+ * also matches one of its fields (`mini-game-end:pass`, `mission-commit:outcome=both-burnt`), else
+ * the bare type's entry, else undefined. A field matches when it is a string, number or boolean
+ * whose text is the key's value. Both backends' presenters play sounds and effects through this,
+ * so a skin with only bare keys reads as before.
+ */
+export function resolveSkinEvent<E>(
+  events: Readonly<Record<string, E>> | undefined,
+  ev: SkinEventInput,
+): E | undefined {
+  if (events === undefined) return undefined;
+  for (const key of Object.keys(events)) {
+    const parsed = parseEventKey(key);
+    if (parsed?.match == null || parsed.type !== ev.type) continue;
+    const v = ev[parsed.match.field];
+    const text = typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean' ? String(v) : null;
+    if (text === parsed.match.value) return events[key];
+  }
+  return Object.hasOwn(events, ev.type) ? events[ev.type] : undefined;
+}
 
 // ---- Picking a frame ----
 

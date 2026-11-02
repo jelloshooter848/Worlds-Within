@@ -31,7 +31,7 @@ miniGame, picture, translucentMiniGame? })` with accessors (one tick; the world 
   world object changes). `picture(r)` makes the drawer (`draw(world, events)`) on the first
   render; usually a `FramePicture` (`@engine/core/present`) onto the display's presenter.
 - `boot.ts` (browser only): `bootBrowserGame({ screen, displays: { canvas2d, three? }, scene,
-canvasId?, toggleId?, search?, pointer?, touchPad? })`: reads the backend from the query, sets the toggle link
+canvasId?, toggleId?, search?, pointer?, touchPad?, audio? })`: reads the backend from the query, sets the toggle link
   (`#backend`; hidden when the game has no `three` display), builds the display (a factory may be
   `async`, so a game passes `async (c) => (await import('@engine/backends/three')).threeDisplay(c,
 ...)` and its 2D page loads no Three.js), shows the display's message with a link to 2D instead
@@ -39,7 +39,7 @@ canvasId?, toggleId?, search?, pointer?, touchPad? })`: reads the backend from t
   the touch pad (laid out with `layoutScreen`, re-laid on resize), `scene(stack, display)` on a
   `SceneStack`, and a `FixedLoop` (step: one input frame and `stack.update`; render:
   `stack.render(display.renderer)` then `display.present()`). Sets `body[data-backend]` once
-  running and returns `{ backend, display, scenes, input, loop, pointer }` (null when the display
+  running and returns `{ backend, display, scenes, input, loop, pointer, audio }` (null when the display
   could not start). Pointer input (Engine 0.9 T5): `pointer: true` (or the `PointerGestures`
   options but `screen`) makes a `PointerSource` on the canvas (`input/pointer.ts`), stepped by the
   loop with `beginFrame(performance.now())` right after the input frame, so each step's gestures
@@ -47,12 +47,24 @@ canvasId?, toggleId?, search?, pointer?, touchPad? })`: reads the backend from t
   `scene(stack, display, page)` with `page.pointer` (null when not asked for); a scene reads
   `page.pointer.gestures()` in `update` (gestures it does not read that step are dropped).
   `touchPad: false` leaves out the on-screen touch pad (an RTS page played by pointer); it
-  defaults to on. Both default to what games had, so existing games boot and behave as before. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
+  defaults to on. Both default to what games had, so existing games boot and behave as before.
+  Audio (Engine 0.11, gap G27, item 179): `audio: BootAudio` `{ sfx?, songs?, music?, volumes? }`
+  (the game's `contentSfx(content)` and `contentSongs(content)` from
+  `@engine/core/content/game-content`, a song id, and the player's `Volumes`: master, music, sfx,
+  muted) makes one `AudioManager` before the display: the songs and sfx registered, the volumes
+  set, `music` waiting. Each display factory gets `(canvas, shell)` with `shell.onSound(id)`
+  (`DisplayShell`; the manager's `sfx`, a no-op without `audio`) to pass on as the display's
+  `onSound`. Once the display runs, every `AUDIO_UNLOCK_EVENTS` event on `window` (`keydown`,
+  `pointerdown`, `pointerup`, `touchend`, `click`) calls `unlock()`: the first makes the
+  `AudioContext` and starts `music`; later ones are cheap and recover a context the browser
+  suspended. `pageshow` and `visibilitychange` (visible) call `wake()`, so a page back from the
+  background resumes, or redoes the unlock on the next gesture. The manager is `booted.audio` (null without the option) for volume changes or
+  another song. A game writes no audio code. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
   two page helpers it uses.
 - `index.ts`: re-exports all of the above (`@engine/core/shell`).
 
-A game's `main.ts` is then: load its content, then `bootBrowserGame` with `canvasDisplay(canvas,
-{ screen, skin, sheet, background })` for 2D, the lazy `threeDisplay` for 3D, and a `scene` that
+A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
+songs, if it has sound) and `canvasDisplay(canvas, { screen, skin, sheet, background, onSound })` for 2D, the lazy `threeDisplay` for 3D, and a `scene` that
 is `new HostScene({ stack, game: createGame(content, seed), picture })` drawing a `FramePicture`
 onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` since Engine 0.10).
 
@@ -72,6 +84,9 @@ drawer once with the renderer it is handed, passing the events of several steps 
 dropping events of a world that is gone, pushing, stepping and popping a mini game, and the same
 when given the game itself (a `HostedGame`);
 (`PointerSource` itself is tested with fake events in `../input/pointer.test.ts`) the page
-helpers and `bootBrowserGame`'s display choice and no-WebGL message on a fake page. The full boot
+helpers and `bootBrowserGame`'s display choice and no-WebGL message on a fake page; and a full
+boot on a fake page with a fake `AudioContext` (Engine 0.11): with `audio`, no context and no song
+before a gesture, `onSound` reaching the manager's `sfx`, the first key making one context and
+playing the song once, later gestures reusing it; without it, no manager and no listeners. The full boot
 (input sources, loop) is browser-only: `tests/browser/lab-3d.test.ts` plays the lab through it in
 headless Chromium (skipped where none is installed).

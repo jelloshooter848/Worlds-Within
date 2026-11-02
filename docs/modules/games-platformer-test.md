@@ -43,7 +43,7 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 - `view.ts`: `createView` (the engine's `frameView`), for `pnpm cli screenshot`.
 - `main.ts` and `index.html`: the page (`bootBrowserGame` with the engine's `HostScene` over
   `createGame` itself (no `scene.ts` since Engine 0.10, gap G37), `canvasDisplay`, and `threeDisplay` from a lazily
-  imported chunk for `?backend=three`; an `AudioManager` for the sounds).
+  imported chunk for `?backend=three`; sound through the shell's `audio` option, gap G27).
 - `minigames.ts`: `testMiniGames(content)`, one `roomChallenge` per room file (id = room id,
   title = the room's `title`).
 - `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's

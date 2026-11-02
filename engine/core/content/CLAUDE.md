@@ -53,7 +53,7 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   every game wrote for itself. `kitContentKinds(kits)`: the engine's kinds plus each kit hook's
   `kinds()` (`import { kit } from '@kits/<name>/kit'`, `game.json`'s `kit` then `uses`; throws on a
   clash), the same set the tools build from the manifest. `contentArt(content)` (sprites and
-  palettes by id, for the asset registry), `contentSfx(content)` and `mustLoad(result, who?)`
+  palettes by id, for the asset registry), `contentSfx(content)`, `contentSongs(content)` (Engine 0.11, for the shell's `audio` option) and `mustLoad(result, who?)`
   (the bundle, or one error listing every problem).
 
 The schemas for engine data live next to the code that uses the data, not here:
@@ -83,7 +83,8 @@ file formats are described at the top of that file).
   `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`
   (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,
   `unknown_actor` and `missing_field` (`kits/platformer/profile.ts`); the RTS kit's `unknown_type` (a plan naming a type no types table has, `kits/rts/schema.ts`); the skin's `wrong_backend_field`, `missing_field`,
-  `missing_ref` and `missing_frame` (`present/skin.ts`); the mission's `duplicate_outcome` (an
+  `missing_ref`, `missing_frame` and `bad_event_key` (an `events` key not of the form `type`,
+  `type:value` or `type:field=value`, Engine 0.11) (`present/skin.ts`); the mission's `duplicate_outcome` (an
   outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
   is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
   `open` and `close`) (`missions.ts`); the campaign's `bad_entry` (an entry without exactly one of

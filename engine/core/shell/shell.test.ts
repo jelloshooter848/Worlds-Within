@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NullRenderer } from '@engine/backends/null';
+import { AudioManager } from '../audio/audio-manager';
+import { Sequencer } from '../audio/sequencer';
 import type { Renderer } from '../gfx/renderer';
 import type { HostedGame } from '../headless';
 import type { InputFrame } from '../input/input-manager';
@@ -7,7 +9,7 @@ import { ScriptedInput } from '../input/scripted-input';
 import type { MiniGame, MiniGameResult } from '../minigame';
 import { SceneStack } from '../scene';
 import { backendFromQuery, otherBackendLink, THREE_QUERY } from './backend-choice';
-import { bootBrowserGame, showBackendToggle, showDisplayMessage } from './boot';
+import { AUDIO_UNLOCK_EVENTS, bootBrowserGame, showBackendToggle, showDisplayMessage } from './boot';
 import { HostScene } from './host-scene';
 
 describe('backend choice', () => {
@@ -263,5 +265,134 @@ describe('the page helpers', () => {
     });
     expect(made).toEqual(['2d']);
     expect(byId.get('backend')).toMatchObject({ hidden: true });
+  });
+});
+
+/** Absorbs any Web Audio call: every property is itself, every call and `new` returns it. */
+const anything: unknown = new Proxy(function () {}, {
+  get: (_t, k) => (k === 'then' ? undefined : k === Symbol.toPrimitive ? () => 0 : anything),
+  set: () => true,
+  apply: () => anything,
+  construct: () => anything as object,
+});
+
+/** A fake `AudioContext`: counts how many were made; everything else is `anything`. */
+class FakeAudioContext {
+  static made = 0;
+  state = 'running';
+  sampleRate = 48000;
+  currentTime = 0;
+  constructor() {
+    FakeAudioContext.made++;
+    return new Proxy(this, { get: (t, k) => (k in t ? t[k as keyof FakeAudioContext] : anything) });
+  }
+  resume() {
+    return Promise.resolve();
+  }
+}
+
+/** The fake page for a full boot: window listeners, no touch pad, a loop that never ticks. */
+function fakeBootPage() {
+  const page = fakePage(['screen']);
+  const listeners = new Map<string, ((e: unknown) => void)[]>();
+  const on = (type: string, fn: (e: unknown) => void) =>
+    listeners.set(type, [...(listeners.get(type) ?? []), fn]);
+  vi.stubGlobal('window', {
+    location: { search: '' },
+    innerWidth: 256,
+    innerHeight: 240,
+    devicePixelRatio: 1,
+    AudioContext: FakeAudioContext,
+    addEventListener: on,
+  });
+  const doc = globalThis.document as unknown as Record<string, unknown>;
+  doc['addEventListener'] = () => {};
+  const createElement = doc['createElement'] as (tag: string) => Record<string, unknown>;
+  doc['createElement'] = (tag: string) =>
+    Object.assign(createElement(tag), { play: () => Promise.resolve() });
+  vi.stubGlobal('requestAnimationFrame', () => 0);
+  const event = { code: 'KeyZ', repeat: false, preventDefault() {} };
+  const fire = (type: string) => (listeners.get(type) ?? []).forEach((fn) => fn(event));
+  return { ...page, fire, listeners };
+}
+
+const display = () => ({
+  renderer: new NullRenderer(),
+  presenter: { present() {} },
+  fit() {},
+  present() {},
+});
+
+describe('bootBrowserGame with audio (G27)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('unlocks on the first gesture and plays the song, with onSound for the displays', async () => {
+    const { fire, listeners } = fakeBootPage();
+    FakeAudioContext.made = 0;
+    const played: string[] = [];
+    vi.spyOn(Sequencer.prototype, 'play').mockImplementation((song) => void played.push(song.id));
+    const sfx = vi.spyOn(AudioManager.prototype, 'sfx');
+    let onSound: ((id: string) => void) | null = null;
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      audio: {
+        songs: [{ id: 'tune', bpm: 120, loop: true, pulse1: 'c' }],
+        sfx: [{ id: 'beep', pulse: 'c' }],
+        music: 'tune',
+        volumes: { muted: true },
+      },
+      displays: {
+        canvas2d: (_canvas, shell) => {
+          onSound = shell.onSound;
+          return display();
+        },
+      },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    expect(booted?.audio).toBeInstanceOf(AudioManager);
+    // The keyboard source listens for keydown too; each gesture has the unlock once.
+    for (const ev of AUDIO_UNLOCK_EVENTS)
+      expect(listeners.get(ev)?.length, ev).toBe(ev === 'keydown' ? 2 : 1);
+    // Nothing plays before a gesture: no context yet, the song waits.
+    expect(FakeAudioContext.made).toBe(0);
+    expect(played).toEqual([]);
+    onSound!('beep');
+    expect(sfx).toHaveBeenLastCalledWith('beep');
+    fire('keydown');
+    expect(booted?.audio?.unlocked).toBe(true);
+    expect(FakeAudioContext.made).toBe(1);
+    expect(played).toEqual(['tune']);
+    // Later gestures reuse the one context and do not restart the song.
+    fire('click');
+    fire('touchend');
+    expect(FakeAudioContext.made).toBe(1);
+    expect(played).toEqual(['tune']);
+    // Coming back from the background wakes it; the next gesture redoes the unlock, still one context.
+    const wake = vi.spyOn(AudioManager.prototype, 'wake');
+    fire('pageshow');
+    expect(wake).toHaveBeenCalledTimes(1);
+    fire('pointerdown');
+    expect(FakeAudioContext.made).toBe(1);
+  });
+
+  it('is silent without the option: no manager, no listeners, onSound does nothing', async () => {
+    const { listeners } = fakeBootPage();
+    let onSound: ((id: string) => void) | null = null;
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      displays: {
+        canvas2d: (_canvas, shell) => {
+          onSound = shell.onSound;
+          return display();
+        },
+      },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    expect(booted?.audio).toBeNull();
+    for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click'])
+      expect(listeners.has(ev), ev).toBe(false);
+    expect(() => onSound!('beep')).not.toThrow();
   });
 });

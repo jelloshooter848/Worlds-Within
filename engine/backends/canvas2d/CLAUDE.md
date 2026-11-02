@@ -21,7 +21,8 @@ skin's `camera.clamp`, else true),
 `reduceFlashing?`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
 canvas, none in Node). Each `present(frame)`, in order:
 
-- Events: each event whose type the skin lists calls `onSound(sound)` once and starts its
+- Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
+  `mini-game-end:pass` first, then the bare type; gap G28) calls `onSound(sound)` once and starts its
   `effect` (`flash` full-screen, `tint` translucent full-screen, `particles` from the event's
   `x`/`y` or its `entity`'s centre, `shake` a camera wobble), timed by `frame.frame` and lasting
   `ticks`. A frame with the same `frame` number as the last one does not replay its events.

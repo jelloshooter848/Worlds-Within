@@ -7,7 +7,7 @@ import { readGameFiles } from '@engine/core/node/game-files';
 import { NullRenderer } from '@engine/backends/null';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
-import { isFullMap, type SkinFile } from '@engine/core/present';
+import { isFullMap, parseEventKey, resolveSkinEvent, type SkinFile } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
 import { contentSfx, mustLoad } from '@engine/core/content/game-content';
 import { loadTest, testRooms, testStages } from './content';
@@ -271,7 +271,9 @@ describe('platformer test 2D skins', () => {
     expect(states('runner')).toEqual([...RUNNER_ANIMS].sort());
     for (const type of Object.keys(testStages(content)[0]!.profile.actors))
       expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
-    expect(Object.keys(skin.events ?? {}).sort()).toEqual([...PLATFORMER_EVENTS].sort());
+    // A field key (`mini-game-end:pass`, gap G28) is still its type's entry.
+    const types = new Set(Object.keys(skin.events ?? {}).map((k) => parseEventKey(k)?.type));
+    expect([...types].sort()).toEqual([...PLATFORMER_EVENTS].sort());
   });
 
   it.each(['level', 'vault'])(
@@ -302,6 +304,14 @@ describe('platformer test 2D skins', () => {
       for (const entry of Object.values(skin.events ?? {}))
         if (entry.sound !== undefined) expect(sfx, entry.sound).toContain(entry.sound);
     expect([...sfx].sort()).toEqual(['coin', 'door', 'fail', 'hurt', 'jump', 'pass', 'stomp', 'sword']);
+  });
+
+  it("gives the round's end a sound per result in both level skins, the door for a quit (G28)", () => {
+    for (const skin of [look.skin, testLook3d(content).skin]) {
+      const sound = (result: string) =>
+        resolveSkinEvent(skin.events, { type: 'mini-game-end', result })?.sound;
+      expect(['pass', 'fail', 'quit'].map(sound)).toEqual(['pass', 'fail', 'door']);
+    }
   });
 
   it('keeps its assets as text: pixel art, palettes, skins and MML only', () => {

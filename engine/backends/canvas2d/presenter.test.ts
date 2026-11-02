@@ -494,6 +494,25 @@ describe('SkinnedCanvasPresenter', () => {
     expect(s.screen).toContain('rect 0,0 48x32 #fff');
   });
 
+  it("plays an event's sound by its result field, falling back to the bare type (G28)", () => {
+    const sounds: string[] = [];
+    const skin: SkinFile = {
+      ...SKIN,
+      events: {
+        end: { sound: 'door' },
+        'end:pass': { sound: 'pass' },
+        'end:fail': { sound: 'fail', effect: { kind: 'flash', color: '#f00' } },
+      },
+    };
+    const p = new SkinnedCanvasPresenter(recorder().r, skin, lookup, {
+      mapSurface: () => null,
+      onSound: (id) => sounds.push(id),
+    });
+    const ends = ['pass', 'fail', 'quit'].map((result) => ({ type: 'end', result }));
+    p.present(frame({ events: [...ends, { type: 'end' }] }));
+    expect(sounds).toEqual(['pass', 'fail', 'door', 'door']);
+  });
+
   it('ends an effect after its ticks', () => {
     const s = setup();
     s.p.present(frame({ events: [{ type: 'hit' }] }));

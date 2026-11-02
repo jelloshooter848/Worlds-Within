@@ -47,7 +47,10 @@ events?, hud?, camera?, meshes?, camera3d? }`. `sheets` gives defaults (`sheet`,
   state to a frame name, a cycle `{ frames, ticks? (default 8), loop? }` or a per-facing map
   of names or cycles, keyed by any of the eight facings, all optional. `tiles` maps a tile character or id to
   `{ sheet?, frame, fallbackColor }`; `events` maps an event type to `{ sound?, effect? }`
-  (`effect.kind`: `flash`, `particles`, `shake`, `tint`); `hud` lists `{ status, as: hearts |
+  (`effect.kind`: `flash`, `particles`, `shake`, `tint`); a key may also match one of the event's
+  fields (Engine 0.11, gap G28, item 180): `type:value` matches its `result` field
+  (`EVENT_KEY_FIELD`; `mini-game-end:pass`), `type:field=value` any other
+  (`mission-commit:outcome=both-burnt`); any other shape is `bad_event_key`; `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`.
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
@@ -68,6 +71,13 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
   - Cross-file (`SKIN_KIND.checkAll`, `checkSkinRefs`): every sheet, palette and sound must be a
     sprite, palette, song or sfx of the game (`missing_ref`), and every frame a frame of its
     sheet (`missing_frame`), each at the skin file and field.
+  - `resolveSkinEvent(skin.events, event)` (pure, for backends; gap G28): the entry for one event:
+    the first key of its type, in file order, whose field matches (a string, number or boolean
+    whose text is the key's value), else the bare type's entry, else undefined. So
+    `mini-game-end:pass`, `mini-game-end:fail` and a fallback `mini-game-end` sit side by side,
+    and a skin with bare keys only reads as before. `parseEventKey(key)` reads a key
+    (`{ type, match: { field, value } | null }`, null for a bad one). Both backends' presenters
+    play sounds and start effects through it.
   - `resolveSkinFrame(skin, entity)` (pure, for backends): the `SkinFrame` `{ sheet, frame, flipX,
 palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (else `idle`,
     else the first state), `anim.t` (cycle frame; `loop: false` holds the last) and `facing`. A facing without its own
@@ -149,7 +159,9 @@ at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the
 frame and on a version (or id) change only. `present.test.ts` also checks all eight facings pass the schema and the facing helpers.
 `skin.test.ts`: a fixture skin passes, bad fields
 are reported at their path (inside unions too), 2D and 3D fields are kept apart, missing sheets,
-palettes, sounds and frames are cross-file errors, and `resolveSkinFrame` picks states, cycles
+palettes, sounds and frames are cross-file errors (sounds of field-matched event keys too), event
+keys are read and bad ones rejected, `resolveSkinEvent` tries field keys in file order then the
+bare type, and `resolveSkinFrame` picks states, cycles
 frames by `t`, handles facings and flips (a diagonal falling back to its cardinal, diagonal
 frames, a mirrored left diagonal, all eight facings in the schema), and falls back for unknown kinds. Its 3D part covers a
 `three` skin with primitives and compound meshes, unknown mesh ids (`missing_ref`), 2D/3D fields

@@ -1,9 +1,9 @@
-import type { Sfx } from '../audio/mml';
+import type { Sfx, Song } from '../audio/mml';
 import type { PaletteTable } from '../gfx/palette';
 import type { SpriteDef } from '../gfx/pixelart';
 import type { KitDef } from '../kit';
 import { contentOf, type ContentBundle } from './bundle';
-import { engineContentKinds, PALETTE_KIND, SFX_KIND, SPRITE_KIND } from './engine-kinds';
+import { engineContentKinds, PALETTE_KIND, SFX_KIND, SONG_KIND, SPRITE_KIND } from './engine-kinds';
 import type { ContentKinds } from './kinds';
 import { formatErrors, type ContentResult } from './validate';
 
@@ -41,6 +41,11 @@ export function contentArt(content: ContentBundle): {
 /** Every sound effect (MML text), for the audio manager: the sounds the skins name. */
 export function contentSfx(content: ContentBundle): Sfx[] {
   return contentOf(content, SFX_KIND).map((e) => e.value);
+}
+
+/** Every song (MML text), for the audio manager: the music a game plays (Engine 0.11, gap G27). */
+export function contentSongs(content: ContentBundle): Song[] {
+  return contentOf(content, SONG_KIND).map((e) => e.value);
 }
 
 /**

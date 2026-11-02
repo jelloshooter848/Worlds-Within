@@ -329,6 +329,8 @@
     "respawn": {},
     "cleared": { "sound": "pass", "effect": { "kind": "tint", "color": "#f8d800", "ticks": 20 } },
     "mini-game": { "sound": "door", "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
+    "mini-game-end:pass": { "sound": "pass", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } },
+    "mini-game-end:fail": { "sound": "fail", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } },
     "mini-game-end": { "sound": "door", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } }
   },
   "camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 },

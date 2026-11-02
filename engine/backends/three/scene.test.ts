@@ -396,6 +396,18 @@ describe('ThreeScene: lights, events and effects', () => {
     expect(sounds).toEqual(['jump', 'jump']);
   });
 
+  it("plays an event's sound by its result field, falling back to the bare type (G28)", () => {
+    const sounds: string[] = [];
+    const skin: SkinFile = {
+      ...SKIN,
+      events: { end: { sound: 'door' }, 'end:pass': { sound: 'pass' }, 'end:fail': { sound: 'fail' } },
+    };
+    const s = new ThreeScene(skin, { onSound: (id) => sounds.push(id) });
+    const ends = ['fail', 'pass', 'quit'].map((result) => ({ type: 'end', result }));
+    s.sync(frame({ frame: 1, events: ends }));
+    expect(sounds).toEqual(['fail', 'pass', 'door']);
+  });
+
   it('shows a flash as a full-screen overlay for its ticks, unless flashing is reduced', () => {
     const s = new ThreeScene(SKIN, { onSound: () => {} });
     s.sync(frame({ frame: 0, events: [{ type: 'hit' }] }));

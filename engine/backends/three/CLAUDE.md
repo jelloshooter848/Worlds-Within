@@ -56,7 +56,8 @@ camera.
   box. `camera3d.tilt` (degrees, positive looks down) raises it on a circle round that centre.
   `cameraShake` (hint `shake` plus `shake` effects) moves it on x each frame, never stored.
 - Lights: one `AmbientLight` and one `DirectionalLight` (`camera3d.lights`), no shadows.
-- Events: each event whose type the skin lists calls `onSound(sound)` once; a frame with the same
+- Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
+  `mini-game-end:pass` first, then the bare type; gap G28) calls `onSound(sound)` once; a frame with the same
   `frame` number as the last one does not replay them. Effects: `flash` (skipped with
   `reduceFlashing`) and `tint` (fading from 0.4) show on `overlay`, a full-screen plane on the
   camera drawn last; `shake` moves the camera; `particles` are not drawn.
@@ -145,7 +146,7 @@ only on a new id or version, map layers' depth, entities added, moved and remove
 parts placed from the box, layer to z, the facing mirror (left-hand diagonals too), squash about the bottom centre, rotate
 and alpha, the fallback box, the camera framing the same world box as `CameraFollower` (corners
 projected to the picture's corners), hint framing, zoom, tilt and shake, lights, sounds once per
-event, the flash overlay, frozen frames and skin never changed, and repeatable builds.
+event (by the event's `result` field, falling back to the bare type), the flash overlay, frozen frames and skin never changed, and repeatable builds.
 `renderer-info.test.ts` checks `isSoftwareRenderer` on software strings (SwiftShader, ANGLE on
 SwiftShader, llvmpipe, softpipe, Microsoft Basic Render) and typical hardware ones (ANGLE on
 NVIDIA, AMD, Intel and Apple, Mesa, Adreno), and `webglRendererInfo` with a fake context with and

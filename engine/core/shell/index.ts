@@ -15,11 +15,14 @@ export {
   type HostSceneOptions,
 } from './host-scene';
 export {
+  AUDIO_UNLOCK_EVENTS,
   bootBrowserGame,
   showBackendToggle,
   showDisplayMessage,
+  type BootAudio,
   type BootedGame,
   type BootPage,
   type BrowserBootOptions,
   type DisplayFactory,
+  type DisplayShell,
 } from './boot';
