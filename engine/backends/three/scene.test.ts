@@ -228,6 +228,16 @@ describe('ThreeScene: entities', () => {
     expect(s.entity('p1')!.scale.toArray()).toEqual([1, 1, 1]);
   });
 
+  it('maps a diagonal to its horizontal cardinal: the left-hand ones mirror x', () => {
+    const s = new ThreeScene(SKIN);
+    const facings = ['up-left', 'down-left', 'up-right', 'down-right'] as const;
+    const mirrored = facings.map((facing, i) => {
+      s.sync(frame({ frame: i, entities: [hero({ facing })] }));
+      return s.entity('p1')!.scale.x;
+    });
+    expect(mirrored).toEqual([-1, -1, 1, 1]);
+  });
+
   it('applies squash and stretch about the bottom centre, rotate and alpha', () => {
     const s = new ThreeScene(SKIN);
     s.sync(frame({ entities: [hero({ facing: 'left', fx: { squashX: 1.25, squashY: 0.5, alpha: 0.5 } })] }));

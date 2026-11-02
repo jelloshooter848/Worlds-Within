@@ -53,8 +53,9 @@ export class CameraFollower {
   }
 
   /**
-   * The camera's top-left for `frame`, framed in a picture of `size`. `map` is the map shown
-   * this frame (null when none is), `skinCamera` the skin's `camera` defaults.
+   * The camera's top-left for `frame`, framed in a view of `size` world pixels: the picture size
+   * at zoom 1, else `cameraView(picture, zoom)`. `map` is the map shown this frame (null when
+   * none is), `skinCamera` the skin's `camera` defaults. The deadzone is in world pixels too.
    */
   update(
     frame: Frame,
@@ -130,6 +131,23 @@ export class CameraFollower {
     if (bounds) return { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h };
     return map ? { x: 0, y: 0, w: map.cols * map.tileSize, h: map.rows * map.tileSize } : null;
   }
+}
+
+/**
+ * The zoom to draw `frame` at: the hint's `zoom`, else the skin's `camera.zoom`, else 1 (1 is one
+ * world pixel per picture pixel; 2 draws everything twice as big).
+ */
+export function cameraZoom(frame: Frame, skinCam: SkinCamera | undefined): number {
+  return frame.camera?.zoom ?? skinCam?.zoom ?? 1;
+}
+
+/**
+ * The world box a picture of `size` shows at `zoom`, in world pixels (the picture size divided
+ * by `zoom`). `CameraFollower.update` takes this, so framing, the deadzone and clamping all work in
+ * zoomed units: at zoom 2 a 256-wide picture shows 128 world pixels and is clamped as such.
+ */
+export function cameraView(size: ScreenSize, zoom: number): ScreenSize {
+  return { width: size.width / zoom, height: size.height / zoom };
 }
 
 /** The world point to keep in view (see `CameraFollower`), or null when there is none. */

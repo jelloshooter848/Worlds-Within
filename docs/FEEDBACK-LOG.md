@@ -98,6 +98,8 @@ Choices the autonomous build made that the owner should check. Answer by number.
   debug text drawn by the game. OK?
 - **48.** An entity's `facing` is a closed set (`up`, `down`, `left`, `right`), which fits the
   top-down kit. The RTS (0.9) may need more directions or an angle. Widen it then, or now?
+  _Answered by 128 (Engine 0.9): widened then, to eight directions (`up-left`, `up-right`,
+  `down-left`, `down-right` added); done in Engine 0.9 T2._
 - **49.** A room slide is sent as one combined map of both rooms, because a frame holds only one
   map. On a picture wider than 256 the neighbouring room shows in the side strips during a slide.
   OK?
@@ -397,6 +399,9 @@ units, target }`), typed and validated in `engine/core` (the layer both sim and 
   `down-right` added); a skin with no diagonal frame falls back to the diagonal's horizontal part
   (`up-right` uses `right`), then the existing rule, so existing kits and skins stay valid. OK, or
   fall back to the vertical part?
+  _Done in Engine 0.9 T2: `FACINGS` in `engine/core/present`; with `flipFacing`, a left-hand
+  diagonal with no frame of its own first uses its right-hand diagonal mirrored, then the
+  horizontal part; the 3D backend mirrors the left-hand diagonals like `left`._
 - **129.** The benchmark target: 500 units (stretch 1000) with health bars and selection rings on
   a map of at least 128 x 128 cells, at the RTS sample's picture size and zoom 0.5, 1 and 2, with
   a 95th-percentile frame time of at most 16.7 ms over 600 frames in headless Chromium through

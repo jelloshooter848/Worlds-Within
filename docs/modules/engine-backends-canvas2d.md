@@ -24,7 +24,9 @@ for and holds no game rules.
   `transformed()`), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
-  instance lives in the presenter only, and `zoom` is still ignored), draws
+  instance lives in the presenter only), honours `zoom` (the hint's, else the skin's; the map
+  copy, tiles, sprites and boxes are scaled, positions rounded to whole picture pixels, and the
+  follower frames and clamps the zoomed view `cameraView(size, zoom)`), draws
   event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
   event. Details in the folder's CLAUDE.md.
 

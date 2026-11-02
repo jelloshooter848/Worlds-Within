@@ -38,7 +38,9 @@ camera.
 - Entities: one root `Group` per entity id, made on first sight, updated each frame, removed when
   the id is gone, rebuilt when its kind or box size changes. The root is the box's bottom centre
   (`x + w/2`, `-(y + h)`) at z = `layer` * `camera3d.layerDepth`; its children are the skin's mesh
-  parts. Facing left mirrors x (scale -1); `fx.squashX`/`squashY` scale the root (so about the
+  parts. Facing left mirrors x (scale -1); a diagonal maps to its horizontal cardinal
+  (`cardinalFacing`), so `up-left` and `down-left` mirror too (`facesLeft`) and the right-hand
+  diagonals do not; `fx.squashX`/`squashY` scale the root (so about the
   bottom centre); `fx.rotate` turns clockwise on screen (negative about z); `fx.alpha` sets each
   material's opacity (transparent below 1). A kind the skin does not list, or an entry with no
   mesh, is a fallback box of the entity's box, as deep as it is wide, in `sheets.fallbackColor`,
@@ -46,8 +48,9 @@ camera.
   plane: list order is not kept there (depth decides).
 - Camera: a `PerspectiveCamera` framed by the core `CameraFollower` (shared with Canvas2D; change
   the framing there, not here) from the frame's hint (`follow`, `x`/`y`, `bounds`, `deadzone`,
-  `lerp`) and the skin's `camera` defaults. `zoom` (the hint's, else the skin's, else 1) is honoured
-  by distance: the view is the picture size divided by `zoom`, and the follower frames that view.
+  `lerp`) and the skin's `camera` defaults. `zoom` (`cameraZoom`: the hint's, else the skin's, else 1) is
+  honoured by distance: the view is `cameraView(size, zoom)` (the picture size divided by `zoom`),
+  and the follower frames that view, as the Canvas2D presenter does.
   The camera looks at the view's centre from distance `view.height / (2 tan(fov / 2))`, so the
   z = 0 plane shows exactly the view at the skin's `camera3d.fov` and 2D and 3D frame the same world
   box. `camera3d.tilt` (degrees, positive looks down) raises it on a circle round that centre.
@@ -139,7 +142,7 @@ layout's `fit`; its `renderer` draws nothing (scenes show frames through the pre
 `scene.test.ts` runs in Node (`pnpm test`) with inline fixture frames and an inline `three` skin
 (never import a kit or a game's skin). It covers tiles becoming instanced blocks, the map built
 only on a new id or version, map layers' depth, entities added, moved and removed by id, mesh
-parts placed from the box, layer to z, the facing mirror, squash about the bottom centre, rotate
+parts placed from the box, layer to z, the facing mirror (left-hand diagonals too), squash about the bottom centre, rotate
 and alpha, the fallback box, the camera framing the same world box as `CameraFollower` (corners
 projected to the picture's corners), hint framing, zoom, tilt and shake, lights, sounds once per
 event, the flash overlay, frozen frames and skin never changed, and repeatable builds.

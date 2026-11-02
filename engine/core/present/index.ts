@@ -16,10 +16,12 @@ export type {
   PresentTilesText,
   Presenter,
 } from './types';
-export { isFullMap } from './types';
+export { cardinalFacing, FACINGS, facesLeft, isFullMap, mirrorFacing } from './types';
 export {
   cameraShake,
   cameraTarget,
+  cameraView,
+  cameraZoom,
   CameraFollower,
   type CameraFollowerOptions,
   type CameraMap,

@@ -4,6 +4,8 @@ import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import {
   cameraShake,
+  cameraView,
+  cameraZoom,
   CameraFollower,
   isFullMap,
   resolveSkinFrame,
@@ -63,6 +65,17 @@ interface ActiveEffect {
   x: number;
   y: number;
   start: number;
+}
+
+/**
+ * Where world pixels land on the picture this frame: a world point (wx, wy) is drawn at
+ * (`round(wx * zoom) - x`, `round(wy * zoom) - y`). `x`/`y` are the camera's top-left in picture
+ * pixels (whole, shake included).
+ */
+interface View {
+  x: number;
+  y: number;
+  zoom: number;
 }
 
 /** The map being shown and its cached drawing. */
@@ -128,12 +141,12 @@ export class SkinnedCanvasPresenter implements Presenter {
     const size = this.size ?? frame.size;
     this.takeEvents(frame);
     this.updateMap(frame);
-    const cam = this.cameraOffset(frame, size);
+    const view = this.cameraView(frame, size);
 
     r.clear(this.opts.background ?? '#000');
-    this.drawMap(cam.x, cam.y);
-    for (const e of depthOrder(frame.entities)) this.drawEntity(e, cam.x, cam.y);
-    this.drawEffects(frame.frame, cam.x, cam.y, size);
+    this.drawMap(view);
+    for (const e of depthOrder(frame.entities)) this.drawEntity(e, view);
+    this.drawEffects(frame.frame, view, size);
     this.drawHud(frame);
   }
 
@@ -165,7 +178,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     return cameraShake(frame, sizes);
   }
 
-  private drawEffects(tick: number, camX: number, camY: number, size: ScreenSize): void {
+  private drawEffects(tick: number, view: View, size: ScreenSize): void {
     const r = this.r;
     for (const a of this.effects) {
       const { effect } = a;
@@ -179,11 +192,18 @@ export class SkinnedCanvasPresenter implements Presenter {
       } else if (effect.kind === 'particles') {
         const count = effect.count ?? 6;
         const side = Math.max(1, Math.round(effect.size ?? 2));
+        const drawn = Math.max(1, Math.round(side * view.zoom));
         for (let i = 0; i < count; i++) {
           const angle = (i / count) * Math.PI * 2;
-          const px = a.x + Math.cos(angle) * age - camX - side / 2;
-          const py = a.y + Math.sin(angle) * age - camY - side / 2;
-          r.rect(Math.round(px), Math.round(py), side, side, color);
+          const px = a.x + Math.cos(angle) * age - side / 2;
+          const py = a.y + Math.sin(angle) * age - side / 2;
+          r.rect(
+            Math.round(px * view.zoom) - view.x,
+            Math.round(py * view.zoom) - view.y,
+            drawn,
+            drawn,
+            color,
+          );
         }
       }
     }
@@ -192,13 +212,16 @@ export class SkinnedCanvasPresenter implements Presenter {
   // ---- Camera ----
 
   /**
-   * The world pixel at the picture's top-left, with shake added. The framing (follow, deadzone,
-   * lerp, clamp) is `CameraFollower` in `@engine/core/present`, shared with the 3D backend.
+   * The zoom and the picture pixel at the top-left, with shake added (in picture pixels). The
+   * framing (follow, deadzone, lerp, clamp) is `CameraFollower` in `@engine/core/present`, shared
+   * with the 3D backend; it frames the zoomed view (`cameraView`: the picture size over `zoom`,
+   * in world pixels), so clamping keeps that view inside the map.
    */
-  private cameraOffset(frame: Frame, size: ScreenSize): { x: number; y: number } {
+  private cameraView(frame: Frame, size: ScreenSize): View {
+    const zoom = cameraZoom(frame, this.skin.camera);
     const map = this.mapVisible ? (this.shown?.map ?? null) : null;
-    const cam = this.camera.update(frame, this.skin.camera, size, map);
-    return { x: cam.x + this.shake(frame), y: cam.y };
+    const cam = this.camera.update(frame, this.skin.camera, cameraView(size, zoom), map);
+    return { x: Math.round(cam.x * zoom) + this.shake(frame), y: Math.round(cam.y * zoom), zoom };
   }
 
   // ---- Map ----
@@ -220,24 +243,33 @@ export class SkinnedCanvasPresenter implements Presenter {
     const surface = (this.opts.mapSurface ?? defaultMapSurface)(w, h);
     let cache: SpriteSheet | null = null;
     if (surface) {
-      this.drawTiles(surface.renderer, map, 0, 0);
+      this.drawTiles(surface.renderer, map, { x: 0, y: 0, zoom: 1 });
       const frames = new Map([['map', { x: 0, y: 0, w, h }]]);
       cache = { id: `map:${map.id}@${map.version}`, image: surface.image, frames };
     }
     this.shown = { map, cache };
   }
 
-  private drawMap(camX: number, camY: number): void {
+  /** Copies the cached map (scaled by the zoom), or draws its tiles where there is no cache. */
+  private drawMap(view: View): void {
     if (!this.shown || !this.mapVisible) return;
-    if (this.shown.cache) this.r.sprite(this.shown.cache, 'map', -camX, -camY);
-    else this.drawTiles(this.r, this.shown.map, camX, camY);
+    const cache = this.shown.cache;
+    if (!cache) this.drawTiles(this.r, this.shown.map, view);
+    else if (view.zoom === 1) this.r.sprite(cache, 'map', -view.x, -view.y);
+    else this.r.sprite(cache, 'map', -view.x, -view.y, false, false, 0, view.zoom);
   }
 
-  /** Draws the map's tiles and then its layers; a tile the skin does not list is left empty. */
-  private drawTiles(r: Renderer, map: DeepReadonly<PresentMap>, camX: number, camY: number): void {
+  /**
+   * Draws the map's tiles and then its layers; a tile the skin does not list is left empty. Each
+   * tile spans from its own corner to the next one's (both rounded), so tiles meet without gaps
+   * at any zoom.
+   */
+  private drawTiles(r: Renderer, map: DeepReadonly<PresentMap>, view: View): void {
     const tiles = this.skin.tiles ?? {};
     const defaults = this.skin.sheets;
     const ts = map.tileSize;
+    const { zoom } = view;
+    const at = (n: number) => Math.round(n * ts * zoom);
     for (const grid of [map.tiles, ...(map.layers ?? []).map((l) => l.tiles)]) {
       for (let row = 0; row < grid.length; row++) {
         const line = grid[row]!;
@@ -245,14 +277,16 @@ export class SkinnedCanvasPresenter implements Presenter {
           const key = String(line[col]);
           if (!Object.hasOwn(tiles, key)) continue;
           const entry = tiles[key]!;
-          const x = col * ts - camX;
-          const y = row * ts - camY;
+          const x = at(col) - view.x;
+          const y = at(row) - view.y;
           const sheetId = entry.sheet ?? defaults?.sheet;
           const sheet = sheetId === undefined ? null : this.sheet(sheetId, defaults?.palette);
-          if (entry.frame !== undefined && sheet?.frames.has(entry.frame)) r.sprite(sheet, entry.frame, x, y);
-          else {
+          if (entry.frame !== undefined && sheet?.frames.has(entry.frame)) {
+            if (zoom === 1) r.sprite(sheet, entry.frame, x, y);
+            else r.sprite(sheet, entry.frame, x, y, false, false, 0, zoom);
+          } else {
             const color = entry.fallbackColor ?? entry.color ?? defaults?.fallbackColor;
-            if (color !== undefined) r.rect(x, y, ts, ts, color);
+            if (color !== undefined) r.rect(x, y, at(col + 1) - view.x - x, at(row + 1) - view.y - y, color);
           }
         }
       }
@@ -261,18 +295,23 @@ export class SkinnedCanvasPresenter implements Presenter {
 
   // ---- Entities ----
 
-  private drawEntity(e: DeepReadonly<PresentEntity>, camX: number, camY: number): void {
+  private drawEntity(e: DeepReadonly<PresentEntity>, view: View): void {
     const r = this.r;
+    const { zoom } = view;
     const sf = resolveSkinFrame(this.skin, e);
     const sheet = sf.sheet === null || sf.frame === null ? null : this.sheet(sf.sheet, sf.palette);
     const rect = sf.frame === null ? undefined : sheet?.frames.get(sf.frame);
-    const w = rect?.w ?? sf.size?.w ?? e.w;
-    const h = rect?.h ?? sf.size?.h ?? e.h;
-    const x = Math.round(e.x + (sf.offset?.x ?? 0) - camX);
-    const y = Math.round(e.y + (sf.offset?.y ?? 0) - camY);
+    // The drawn size in picture pixels: the sprite's or box's size times the zoom.
+    const scaled = (n: number) => (zoom === 1 ? n : Math.max(1, Math.round(n * zoom)));
+    const w = scaled(rect?.w ?? sf.size?.w ?? e.w);
+    const h = scaled(rect?.h ?? sf.size?.h ?? e.h);
+    const x = Math.round((e.x + (sf.offset?.x ?? 0)) * zoom) - view.x;
+    const y = Math.round((e.y + (sf.offset?.y ?? 0)) * zoom) - view.y;
     const draw = (to: Renderer, dx: number, dy: number) => {
-      if (rect && sheet) to.sprite(sheet, sf.frame!, dx, dy, sf.flipX);
-      else to.rect(dx, dy, w, h, sf.fallbackColor);
+      if (rect && sheet) {
+        if (zoom === 1) to.sprite(sheet, sf.frame!, dx, dy, sf.flipX);
+        else to.sprite(sheet, sf.frame!, dx, dy, sf.flipX, false, 0, zoom);
+      } else to.rect(dx, dy, w, h, sf.fallbackColor);
     };
     const fx = e.fx;
     const sx = fx?.squashX ?? 1;

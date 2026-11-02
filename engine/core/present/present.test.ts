@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { validate } from '../content/validate';
 import {
+  cardinalFacing,
+  FACINGS,
+  facesLeft,
   freezeFrame,
   isFullMap,
+  mirrorFacing,
   MapTracker,
   presentFrameSchema,
   type DeepReadonly,
@@ -95,6 +99,48 @@ describe('presentFrameSchema', () => {
       'camera.deadzone.w',
       'camera.lerp',
     ]);
+  });
+
+  it('accepts all eight facings, cardinal and diagonal', () => {
+    for (const facing of FACINGS) {
+      const f = fixture();
+      f.entities[0]!.facing = facing;
+      expect(validate('frame.json', f, presentFrameSchema).errors).toEqual([]);
+    }
+    expect(FACINGS).toEqual([
+      'up',
+      'down',
+      'left',
+      'right',
+      'up-left',
+      'up-right',
+      'down-left',
+      'down-right',
+    ]);
+  });
+
+  it('maps a facing to its cardinal, its mirror and its side', () => {
+    expect(FACINGS.map(cardinalFacing)).toEqual([
+      'up',
+      'down',
+      'left',
+      'right',
+      'left',
+      'right',
+      'left',
+      'right',
+    ]);
+    expect(FACINGS.map(mirrorFacing)).toEqual([
+      'up',
+      'down',
+      'right',
+      'left',
+      'up-right',
+      'up-left',
+      'down-right',
+      'down-left',
+    ]);
+    expect(FACINGS.filter(facesLeft)).toEqual(['left', 'up-left', 'down-left']);
   });
 
   it('names the field when an entity is wrong', () => {

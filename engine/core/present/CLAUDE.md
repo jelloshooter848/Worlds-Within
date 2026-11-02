@@ -7,7 +7,12 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
 - `types.ts`: `PresentFrame` `{ frame, size, entities, map?, events, status, camera? }`.
   - `PresentEntity` `{ id, kind, x, y, w, h, facing, anim: { state, t }, tags, layer?, fx? }`:
     `id` is stable across frames; `x`/`y`/`w`/`h` are the box in world pixels (top-left); `facing`
-    is `up | down | left | right`; `anim.t` is ticks since the state began.
+    is one of `FACINGS`: `up | down | left | right` or (Engine 0.9, owner answer 128 to item 48)
+    a diagonal `up-left | up-right | down-left | down-right`; `anim.t` is ticks since the state
+    began. Four-way kits (topdown, platformer) keep emitting cardinals only.
+  - Facing helpers (pure): `cardinalFacing(f)` (a diagonal's horizontal part: `up-right` gives
+    `right`), `mirrorFacing(f)` (left to right: `up-left` gives `up-right`) and `facesLeft(f)`
+    (`left`, `up-left`, `down-left`).
   - `map` is either the full `PresentMap` `{ id, version, tileSize, cols, rows, tiles, layers?, tags? }`
     (`tiles` as text rows or a grid of tile ids; `tags?` free labels such as `dark`) or only a `PresentMapRef` `{ id, version }`.
     `isFullMap(map)` tells them apart. Bump `version` whenever any tile changes.
@@ -40,7 +45,7 @@ events?, hud?, camera?, meshes?, camera3d? }`. `sheets` gives defaults (`sheet`,
   other shape (including the skin-level `meshes` and `camera3d` on a 2D skin) is a
   `wrong_backend_field` error, a needed one left out `missing_field`. `frames` maps an animation
   state to a frame name, a cycle `{ frames, ticks? (default 8), loop? }` or a per-facing map
-  `{ up?, down?, left?, right? }` of names or cycles. `tiles` maps a tile character or id to
+  of names or cycles, keyed by any of the eight facings, all optional. `tiles` maps a tile character or id to
   `{ sheet?, frame, fallbackColor }`; `events` maps an event type to `{ sound?, effect? }`
   (`effect.kind`: `flash`, `particles`, `shake`, `tint`); `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`.
@@ -65,15 +70,22 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
     sheet (`missing_frame`), each at the skin file and field.
   - `resolveSkinFrame(skin, entity)` (pure, for backends): the `SkinFrame` `{ sheet, frame, flipX,
 palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (else `idle`,
-    else the first state), `anim.t` (cycle frame; `loop: false` holds the last) and `facing` (a
-    left-facing entity without a `left` frame uses `right` mirrored when `flipFacing`; else
-    `down`, else the first given). An unknown kind or a mesh entry gives `frame: null`: draw a
+    else the first state), `anim.t` (cycle frame; `loop: false` holds the last) and `facing`. A facing without its own
+    frame falls back in turn: a left-hand facing uses its right-hand mirror flipped when
+    `flipFacing` (`up-left` uses `up-right`, `left` uses `right`); a diagonal uses its horizontal
+    part (`cardinalFacing`), then that part's own fallback; then `down`, then the first given (in
+    `FACINGS` order). A single frame or cycle is flipped for any left-hand facing under
+    `flipFacing`. An unknown kind or a mesh entry gives `frame: null`: draw a
     `fallbackColor` box (`DEFAULT_FALLBACK_COLOR` when the skin gives none).
 - `camera.ts`: camera framing shared by every backend, so 2D and 3D frame the same world point.
   `CameraFollower` (`new CameraFollower({ clamp? })`, default clamp on; both presenters pass the
   skin's `camera.clamp` unless their own `clamp` option is set, Engine 0.7 T9) keeps one camera's state;
-  `update(frame, skin.camera, size, map)` returns its top-left in whole world pixels (`map` is the
-  shown map's `{ id, cols, rows, tileSize }`, or null). Target: the hint's `follow` entity (by id,
+  `update(frame, skin.camera, view, map)` returns its top-left in whole world pixels (`map` is the
+  shown map's `{ id, cols, rows, tileSize }`, or null). It works in zoomed units: `view` is the
+  world box the picture shows, `cameraView(size, zoom)` (the picture size over the zoom), with
+  `cameraZoom(frame, skin.camera)` the hint's `zoom`, else the skin's, else 1; so the deadzone
+  is in world pixels and clamping keeps the zoomed picture inside the area. Both backends call it
+  this way. Target: the hint's `follow` entity (by id,
   its box centre) when in the frame, else the hint's `x`/`y`, else the skin's `camera.follow`
   (entity id, then kind), else none (top-left 0, 0). `deadzone` and `lerp`: the hint's, else the
   skin's, else 0x0 and 1. Past the deadzone the camera moves just enough to put the target back on
@@ -119,10 +131,12 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
 
 `present.test.ts`: a fixture frame using every field passes the schema, wrong fields are reported
 at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the map on the first
-frame and on a version (or id) change only. `skin.test.ts`: a fixture skin passes, bad fields
+frame and on a version (or id) change only. `present.test.ts` also checks all eight facings pass the schema and the facing helpers.
+`skin.test.ts`: a fixture skin passes, bad fields
 are reported at their path (inside unions too), 2D and 3D fields are kept apart, missing sheets,
 palettes, sounds and frames are cross-file errors, and `resolveSkinFrame` picks states, cycles
-frames by `t`, handles facings and flips, and falls back for unknown kinds. Its 3D part covers a
+frames by `t`, handles facings and flips (a diagonal falling back to its cardinal, diagonal
+frames, a mirrored left diagonal, all eight facings in the schema), and falls back for unknown kinds. Its 3D part covers a
 `three` skin with primitives and compound meshes, unknown mesh ids (`missing_ref`), 2D/3D fields
 on the wrong backend, the demo and platformer-lab canvas2d skins still validating,
 `resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `stream.test.ts` covers `FrameStream`
@@ -131,5 +145,6 @@ on the wrong backend, the demo and platformer-lab canvas2d skins still validatin
 ignored, resize to all). `skin-set.test.ts` covers `skinSet` (main and rounds by file name, the
 fallbacks) and `presenterBySkinSet`. `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
-small-area centring, snap on a new map id, repeated frames, `reset`) and `cameraShake`. Run with
+small-area centring, the zoomed view at 0.5 and 2, snap on a new map id, repeated frames,
+`reset`), `cameraZoom`, `cameraView` and `cameraShake`. Run with
 `pnpm test`.

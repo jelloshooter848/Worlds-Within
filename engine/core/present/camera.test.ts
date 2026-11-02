@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cameraShake, CameraFollower, type CameraMap } from './camera';
+import { cameraShake, cameraView, cameraZoom, CameraFollower, type CameraMap } from './camera';
 import { freezeFrame } from './freeze';
 import type { CameraHint, PresentEntity, PresentFrame } from './types';
 
@@ -91,6 +91,39 @@ describe('CameraFollower', () => {
     const cam2 = new CameraFollower();
     const corner = [ent('p', 'hero', 630, 310)];
     expect(cam2.update(frame(0, corner), { follow: 'hero' }, SIZE, MAP)).toEqual({ x: 540, y: 240 });
+  });
+
+  it('frames and clamps the zoomed view (the picture over the zoom, in world pixels)', () => {
+    const corner = [ent('p', 'hero', 630, 310)];
+    // Zoom 2: a 100 x 80 picture shows 50 x 40 world pixels, clamped inside 640 x 320.
+    expect(cameraView(SIZE, 2)).toEqual({ width: 50, height: 40 });
+    expect(
+      new CameraFollower().update(frame(0, corner), { follow: 'hero' }, cameraView(SIZE, 2), MAP),
+    ).toEqual({
+      x: 590,
+      y: 280,
+    });
+    // Zoom 0.5: 200 x 160 world pixels.
+    expect(
+      new CameraFollower().update(frame(0, corner), { follow: 'hero' }, cameraView(SIZE, 0.5), MAP),
+    ).toEqual({
+      x: 440,
+      y: 160,
+    });
+    // A map smaller than the zoomed-out view is centred in it.
+    const small: CameraMap = { id: 's', cols: 5, rows: 5, tileSize: 16 };
+    expect(
+      new CameraFollower().update(frame(0, corner), { follow: 'hero' }, cameraView(SIZE, 0.5), small),
+    ).toEqual({
+      x: -60,
+      y: -40,
+    });
+  });
+
+  it('takes the zoom from the hint, else the skin, else 1', () => {
+    expect(cameraZoom(frame(0, [], { x: 0, y: 0, zoom: 2 }), { zoom: 0.5 })).toBe(2);
+    expect(cameraZoom(frame(0, []), { zoom: 0.5 })).toBe(0.5);
+    expect(cameraZoom(frame(0, []), undefined)).toBe(1);
   });
 
   it("clamps to the hint's bounds instead of the map", () => {

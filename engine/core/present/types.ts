@@ -11,8 +11,65 @@ import type { JsonValue } from '../headless';
  * framing, depth layers, squash and stretch) that a backend may ignore.
  */
 
-/** Which way an entity looks. */
-export type Facing = 'up' | 'down' | 'left' | 'right';
+/**
+ * Which way an entity looks: the four cardinals, or (Engine 0.9, owner answer 128 to item 48) a
+ * diagonal for views such as the RTS. A kit that only turns four ways keeps emitting cardinals.
+ */
+export type Facing = 'up' | 'down' | 'left' | 'right' | 'up-left' | 'up-right' | 'down-left' | 'down-right';
+
+/** Every facing: the four cardinals first, then the four diagonals. */
+export const FACINGS: readonly Facing[] = [
+  'up',
+  'down',
+  'left',
+  'right',
+  'up-left',
+  'up-right',
+  'down-left',
+  'down-right',
+];
+
+/**
+ * The cardinal a facing falls back to: itself for a cardinal, a diagonal's horizontal part
+ * (`up-right` gives `right`, owner answer 128). Pure.
+ */
+export function cardinalFacing(facing: Facing): 'up' | 'down' | 'left' | 'right' {
+  switch (facing) {
+    case 'up-left':
+    case 'down-left':
+      return 'left';
+    case 'up-right':
+    case 'down-right':
+      return 'right';
+    default:
+      return facing;
+  }
+}
+
+/** True for `left` and the left-hand diagonals: the facings a flipped right-hand frame stands in for. */
+export function facesLeft(facing: Facing): boolean {
+  return cardinalFacing(facing) === 'left';
+}
+
+/** The facing mirrored left to right (`up-left` gives `up-right`; `up` and `down` stay). Pure. */
+export function mirrorFacing(facing: Facing): Facing {
+  switch (facing) {
+    case 'left':
+      return 'right';
+    case 'right':
+      return 'left';
+    case 'up-left':
+      return 'up-right';
+    case 'up-right':
+      return 'up-left';
+    case 'down-left':
+      return 'down-right';
+    case 'down-right':
+      return 'down-left';
+    default:
+      return facing;
+  }
+}
 
 /** An entity's animation: the state's name (`walk`, `hurt`) and the ticks spent in it. */
 export interface PresentAnim {

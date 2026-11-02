@@ -209,6 +209,51 @@ describe('resolveSkinFrame', () => {
     expect(at('bat', 'fly', 0, 'left')).toMatchObject({ frame: 'a', flipX: false });
   });
 
+  it('falls back from a diagonal to its horizontal cardinal frame (item 128)', () => {
+    // No `up-right` in idle: `right`.
+    expect(at('hero', 'idle', 0, 'up-right')).toMatchObject({ frame: 'side-0', flipX: false });
+    expect(at('hero', 'walk', 8, 'down-right')).toMatchObject({ frame: 'side-1', flipX: false });
+    // `down-left` falls to `left`, then to `right` mirrored under flipFacing.
+    expect(at('hero', 'idle', 0, 'down-left')).toMatchObject({ frame: 'side-0', flipX: true });
+    // A plain frame is mirrored for a left-hand diagonal too.
+    expect(at('coin', 'idle', 0, 'up-left')).toMatchObject({ frame: 'a', flipX: true });
+    expect(at('coin', 'idle', 0, 'up-right')).toMatchObject({ frame: 'a', flipX: false });
+  });
+
+  it('uses diagonal frames when given, mirroring the right-hand ones for the left diagonals', () => {
+    const s = fixture();
+    s.kinds['hero']!.frames!['idle'] = {
+      down: 'down-0',
+      'up-right': 'ur',
+      'down-right': 'dr',
+      'down-left': 'dl',
+    };
+    const r = (facing: Facing) =>
+      resolveSkinFrame(s, { kind: 'hero', facing, anim: { state: 'idle', t: 0 } });
+    expect(r('up-right')).toMatchObject({ frame: 'ur', flipX: false });
+    expect(r('up-left')).toMatchObject({ frame: 'ur', flipX: true });
+    // Its own frame beats the mirror.
+    expect(r('down-left')).toMatchObject({ frame: 'dl', flipX: false });
+    // A cardinal with no frame and no diagonal stand-in: `down`.
+    expect(r('right')).toMatchObject({ frame: 'down-0', flipX: false });
+    delete s.kinds['hero']!.flipFacing;
+    // Without flipFacing, `up-left` has no own frame and no `left`: `down`.
+    expect(r('up-left')).toMatchObject({ frame: 'down-0', flipX: false });
+  });
+
+  it('accepts a frame or cycle for each of the eight facings, all optional', () => {
+    const s = fixture();
+    s.kinds['hero']!.frames!['run'] = {
+      'up-left': 'a',
+      'up-right': { frames: ['a', 'b'] },
+      'down-left': 'a',
+      'down-right': 'b',
+    };
+    expect(skinSchema.safeParse(s).success).toBe(true);
+    const bad = { ...s, kinds: { hero: { ...s.kinds['hero']!, frames: { run: { 'up-up': 'a' } } } } };
+    expect(skinSchema.safeParse(bad).success).toBe(false);
+  });
+
   it('without flipFacing, a left-facing entity with no left frame uses down', () => {
     const s = fixture();
     delete s.kinds['hero']!.flipFacing;

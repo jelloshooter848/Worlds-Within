@@ -1,7 +1,15 @@
 import { z } from 'zod';
 import type { ContentKind, ContentLookup, KindIssue } from '../content/kinds';
 import type { FieldPath } from '../content/validate';
-import type { DeepReadonly, Facing, PresentEntity } from './types';
+import {
+  cardinalFacing,
+  FACINGS,
+  facesLeft,
+  mirrorFacing,
+  type DeepReadonly,
+  type Facing,
+  type PresentEntity,
+} from './types';
 
 /**
  * Skin files (docs/ROADMAP.md, Engine 0.4): one text file per backend that says how each kind of
@@ -77,8 +85,6 @@ export const DEFAULT_FALLBACK_COLOR = '#ff00ff';
 
 /** Ticks a frame of a cycle shows when the cycle gives no `ticks`. */
 export const DEFAULT_FRAME_TICKS = 8;
-
-const FACINGS: readonly Facing[] = ['up', 'down', 'left', 'right'];
 
 const color = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
   message: 'a colour is "#rgb" or "#rrggbb"',
@@ -230,12 +236,12 @@ const kindEntry = z.strictObject({
     .record(id, stateFrames)
     .exactOptional()
     .describe(
-      '2D: animation state -> a frame name, `{ frames, ticks?, loop? }` (a cycle) or `{ up?, down?, left?, right? }` (a frame or cycle per facing); `idle` is used for a state not listed',
+      '2D: animation state -> a frame name, `{ frames, ticks?, loop? }` (a cycle) or `{ up?, down?, left?, right?, up-left?, up-right?, down-left?, down-right? }` (a frame or cycle per facing, all optional; a diagonal left out uses its horizontal part); `idle` is used for a state not listed',
     ),
   flipFacing: z
     .boolean()
     .exactOptional()
-    .describe('2D: draw the right-facing frames mirrored when the entity faces left'),
+    .describe('2D: draw the right-hand frames mirrored when the entity faces left or a left-hand diagonal'),
   size: z
     .strictObject({
       w: z.number().int().min(1).describe('width in pixels'),
@@ -561,9 +567,12 @@ function cycleFrame(spec: string | DeepReadonly<SkinCycle>, t: number): string {
 /**
  * The frame to draw for `entity` with `skin`: its kind's entry, the frames of its animation state
  * (`idle` when the state is not listed, else the first state), the frame of a cycle at `anim.t`,
- * and the facing's frame. A left-facing entity with no `left` frame uses `right` mirrored when the
- * entry sets `flipFacing`; a state without a frame for the facing uses `down`, then the first
- * given. A kind the skin does not list, or a mesh entry, gives a `fallbackColor` box. Pure.
+ * and the facing's frame. A facing the state gives no frame for falls back in turn: a left-hand
+ * facing (`left`, `up-left`, `down-left`) uses its right-hand mirror flipped when the entry sets
+ * `flipFacing`; a diagonal uses its horizontal part (`up-right` uses `right`, owner answer 128),
+ * then that part's own fallback (mirrored `right` for `left`); then `down`, then the first given.
+ * A cycle or frame for every facing flips for a left-hand facing under `flipFacing`. A kind the
+ * skin does not list, or a mesh entry, gives a `fallbackColor` box. Pure.
  */
 export function resolveSkinFrame(
   skin: DeepReadonly<SkinFile>,
@@ -594,18 +603,35 @@ export function resolveSkinFrame(
   if (typeof spec === 'string' || spec.frames !== undefined) {
     out.frame =
       typeof spec === 'string' ? spec : cycleFrame({ ...spec, frames: spec.frames! }, entity.anim.t);
-    out.flipX = flipFacing && entity.facing === 'left';
+    out.flipX = flipFacing && facesLeft(entity.facing);
     return out;
   }
-  let facing: Facing | undefined = entity.facing;
-  if (spec[facing] === undefined) {
-    if (facing === 'left' && flipFacing && spec.right !== undefined) {
-      facing = 'right';
-      out.flipX = true;
-    } else facing = spec.down !== undefined ? 'down' : FACINGS.find((f) => spec[f] !== undefined);
+  const facing = pickFacing(entity.facing, (f) => spec[f] !== undefined, flipFacing);
+  if (facing !== undefined) {
+    out.frame = cycleFrame(spec[facing.facing]!, entity.anim.t);
+    out.flipX = facing.flipX;
   }
-  if (facing !== undefined) out.frame = cycleFrame(spec[facing]!, entity.anim.t);
   return out;
+}
+
+/**
+ * The facing whose frame stands in for `want`, and whether to draw it mirrored (see
+ * `resolveSkinFrame`), or undefined when `has` is false for every facing.
+ */
+function pickFacing(
+  want: Facing,
+  has: (f: Facing) => boolean,
+  flipFacing: boolean,
+): { facing: Facing; flipX: boolean } | undefined {
+  const tries: Facing[] = [want];
+  if (want !== cardinalFacing(want)) tries.push(cardinalFacing(want));
+  for (const f of tries) {
+    if (has(f)) return { facing: f, flipX: false };
+    if (flipFacing && facesLeft(f) && has(mirrorFacing(f))) return { facing: mirrorFacing(f), flipX: true };
+  }
+  if (has('down')) return { facing: 'down', flipX: false };
+  const first = FACINGS.find(has);
+  return first === undefined ? undefined : { facing: first, flipX: false };
 }
 
 // ---- Reading meshes ----

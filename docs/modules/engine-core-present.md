@@ -17,9 +17,13 @@ Import from `@engine/core/present` (`index.ts`).
 - Types: `PresentFrame`, `PresentEntity`, `PresentAnim`, `PresentFx`, `Facing`, `PresentMap`,
   `PresentMapRef`, `PresentMapLayer`, `PresentEvent`, `PresentStatusValue`, `CameraHint`,
   `PresentBox`, `DeepReadonly`.
+- `Facing` (Engine 0.9, owner answer 128): `up`, `down`, `left`, `right` and the diagonals
+  `up-left`, `up-right`, `down-left`, `down-right` (`FACINGS`). Helpers: `cardinalFacing(f)` (a
+  diagonal's horizontal part), `mirrorFacing(f)` and `facesLeft(f)`. Four-way kits keep emitting
+  cardinals.
 - `CameraHint` (all optional past `x`/`y`, a backend may ignore them): `zoom`, `follow` (an
   entity id; beats `x`/`y`), `shake`, and overrides of the skin's camera defaults for this frame:
-  `deadzone` (`{ w, h }` whole pixels), `lerp` (0 to 1, 1 snaps) and `bounds` (a world box the
+  `deadzone` (`{ w, h }` world pixels), `lerp` (0 to 1, 1 snaps) and `bounds` (a world box the
   view stays inside instead of the map, for a kit-side scroll lock). The hint wins over the skin
   field by field; the skin's `camera` gives the defaults.
 - `Presenter`: what a backend implements, `present(frame: DeepReadonly<PresentFrame>)` and
@@ -33,7 +37,9 @@ Import from `@engine/core/present` (`index.ts`).
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file
   check reports sheets, palettes, sounds and frames the game lacks (`missing_ref`,
   `missing_frame`). `resolveSkinFrame(skin, entity)` gives the `SkinFrame` to draw (sheet, frame,
-  flip, fallback colour) from the entity's kind, animation state and tick, and facing. Field
+  flip, fallback colour) from the entity's kind, animation state and tick, and facing (a
+  diagonal with no frame uses its horizontal part; `flipFacing` mirrors right-hand frames for the
+  left-hand facings). Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named
@@ -43,9 +49,11 @@ Import from `@engine/core/present` (`index.ts`).
   `resolveCamera3d(skin)`). `resolveMeshParts(skin, entry, box)` turns an entry into the
   `MeshPart` list a 3D backend builds, so the backend and tests read the text the same way.
 - Camera framing (`camera.ts`): `CameraFollower` (`new CameraFollower({ clamp? })`,
-  `update(frame, skin.camera, size, map)` gives the camera's whole-pixel world top-left;
+  `update(frame, skin.camera, view, map)` gives the camera's whole-pixel world top-left;
   `reset()`) is the one copy of the follow, deadzone, 1/256 fixed-point lerp and clamp maths, so
-  the 2D and 3D backends frame the same point. `cameraShake(frame, extra)` is the shake offset,
+  the 2D and 3D backends frame the same point. It works in zoomed units: `view` is
+  `cameraView(picture, cameraZoom(frame, skin.camera))`, the picture size over the zoom in world
+  pixels, so clamping keeps the zoomed picture inside the map. `cameraShake(frame, extra)` is the shake offset,
   added on top and never stored; `cameraTarget(frame, skin.camera)` the point to keep in view.
   Each presenter owns its follower: camera state is never in a kit, a frame or a hash.
 

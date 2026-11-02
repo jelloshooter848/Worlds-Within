@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { JsonValue } from '../headless';
 import { SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
-import type { PresentFrame } from './types';
+import { FACINGS, type Facing, type PresentFrame } from './types';
 
 /**
  * A Zod schema for `PresentFrame`, for tests and tools (a backend never runs it per frame). It
@@ -16,7 +16,7 @@ const jsonValue: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([z.null(), z.boolean(), finite, z.string(), z.array(jsonValue), z.record(z.string(), jsonValue)]),
 );
 
-const facing = z.enum(['up', 'down', 'left', 'right']);
+const facing = z.enum(FACINGS as [Facing, ...Facing[]]);
 
 const fx = z.strictObject({
   squashX: finite.exactOptional(),

@@ -11,7 +11,10 @@ function recorder(withTransform = true) {
   const r: Renderer = {
     clear: (c) => calls.push(`clear ${c}`),
     rect: (x, y, w, h, c) => calls.push(`rect ${x},${y} ${w}x${h} ${c}`),
-    sprite: (s, f, x, y, flipX) => calls.push(`sprite ${s.id}:${f} ${x},${y}${flipX ? ' flip' : ''}`),
+    sprite: (s, f, x, y, flipX, _flipY, _rotate, scale) =>
+      calls.push(
+        `sprite ${s.id}:${f} ${x},${y}${flipX ? ' flip' : ''}${scale !== undefined && scale !== 1 ? ` x${scale}` : ''}`,
+      ),
     text: (font, str, x, y) => calls.push(`text ${font.id} "${str}" ${x},${y}`),
     debugText: () => {},
     line: () => {},
@@ -366,6 +369,100 @@ describe('SkinnedCanvasPresenter', () => {
       const first = run();
       expect(first.length).toBeGreaterThan(60);
       expect(run()).toEqual(first);
+    });
+  });
+
+  describe('zoom', () => {
+    /** 20x10 tiles of 16 px: 320x160, in a 48x32 picture. */
+    const BIG: PresentMap = { ...MAP, id: 'big', cols: 20, rows: 10, tiles: Array(10).fill('.'.repeat(20)) };
+
+    function draw(
+      zoom: number | undefined,
+      over: Partial<PresentFrame> & { noMap?: boolean } = {},
+      skinZoom?: number,
+    ) {
+      const skin: SkinFile = skinZoom === undefined ? SKIN : { ...SKIN, camera: { zoom: skinZoom } };
+      const screen = recorder();
+      const p = new SkinnedCanvasPresenter(screen.r, skin, lookup, {
+        mapSurface: () => ({ renderer: recorder().r, image: null }),
+      });
+      const camera = zoom === undefined ? {} : { camera: { x: 0, y: 0, zoom } };
+      p.present(frame({ ...camera, ...over }));
+      return screen.calls;
+    }
+
+    it('scales the map copy and the sprites by the zoom: 0.5, 1 and 2', () => {
+      const entities = [hero({ x: 8, y: 4 }), hero({ id: 'g', kind: 'ghost', x: 20, y: 6 })];
+      // Zoom 1 (no hint): drawn as before, no scale passed.
+      expect(draw(undefined, { entities }).filter((c) => !c.startsWith('clear'))).toEqual([
+        'sprite map:room@0:map 0,0',
+        'sprite hero:down-0 8,4',
+        'rect 20,6 16x16 #f00',
+      ]);
+      // Zoom 2: the view is 24x16 world px inside the 48x32 map, so (0, 0) clamps to the top-left.
+      expect(draw(2, { entities }).filter((c) => !c.startsWith('clear'))).toEqual([
+        'sprite map:room@0:map 0,0 x2',
+        'sprite hero:down-0 16,8 x2',
+        'rect 40,12 32x32 #f00',
+      ]);
+      // Zoom 0.5: the 48x32 map is centred in the 96x64 world view (24x16 on screen, at 12,8).
+      expect(draw(0.5, { entities }).filter((c) => !c.startsWith('clear'))).toEqual([
+        'sprite map:room@0:map 12,8 x0.5',
+        'sprite hero:down-0 16,10 x0.5',
+        'rect 22,11 8x8 #f00',
+      ]);
+    });
+
+    it("takes the skin's zoom when the hint gives none", () => {
+      expect(draw(undefined, { noMap: true, entities: [hero({ x: 8, y: 4 })] }, 2)).toContain(
+        'sprite hero:down-0 16,8 x2',
+      );
+    });
+
+    it('clamps using the zoomed picture size', () => {
+      const corner = { map: BIG, camera: { x: 1000, y: 1000 } };
+      // Zoom 1: the view is 48x32 world px, so the top-left clamps to (272, 128).
+      expect(draw(undefined, corner).find((c) => c.startsWith('sprite map:'))).toBe(
+        'sprite map:big@0:map -272,-128',
+      );
+      // Zoom 2: the view is 24x16 world px, top-left (296, 144), which is (592, 288) on screen.
+      expect(
+        draw(2, { ...corner, camera: { ...corner.camera, zoom: 2 } }).find((c) =>
+          c.startsWith('sprite map:'),
+        ),
+      ).toBe('sprite map:big@0:map -592,-288 x2');
+      // Zoom 0.5: the view is 96x64 world px, top-left (224, 96), which is (112, 48) on screen.
+      expect(
+        draw(0.5, { ...corner, camera: { ...corner.camera, zoom: 0.5 } }).find((c) =>
+          c.startsWith('sprite map:'),
+        ),
+      ).toBe('sprite map:big@0:map -112,-48 x0.5');
+    });
+
+    it('draws uncached tiles scaled and gap-free at zoom 2', () => {
+      const { r, calls } = recorder();
+      const p = new SkinnedCanvasPresenter(r, SKIN, lookup, { mapSurface: () => null });
+      p.present(frame({ camera: { x: 0, y: 0, zoom: 2 } }));
+      expect(calls.filter((c) => !c.startsWith('clear'))).toEqual([
+        'sprite walls:wall 0,0 x2',
+        'rect 32,0 32x32 #00f',
+      ]);
+    });
+
+    it('scales a squashed sprite about its zoomed bottom centre', () => {
+      const s = recorder();
+      const p = new SkinnedCanvasPresenter(s.r, SKIN, lookup, { mapSurface: () => null });
+      p.present(
+        frame({
+          noMap: true,
+          camera: { x: 0, y: 0, zoom: 2 },
+          entities: [hero({ x: 10, y: 4, fx: { squashX: 1.5, squashY: 0.5 } })],
+        }),
+      );
+      // Centred on (0, 0): the camera's top-left is (-24, -16) on screen; the 32x32 box at (44, 24).
+      const at = s.calls.indexOf('transform 60,56 0 1.5,0.5');
+      expect(at).toBeGreaterThan(-1);
+      expect(s.calls[at + 1]).toBe('sprite hero:down-0 -16,-32 x2');
     });
   });
 

@@ -18,8 +18,11 @@ import {
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   cameraShake,
+  cameraView,
+  cameraZoom,
   CameraFollower,
   DEFAULT_FALLBACK_COLOR,
+  facesLeft,
   isFullMap,
   resolveCamera3d,
   resolveMeshParts,
@@ -97,7 +100,8 @@ interface ShownMap {
  *   `i` at z = -(i + 1) * `camera3d.layerDepth` (background scenery). A frame with no `map` hides it.
  * - Entities: one `Group` per entity id (made on first sight, updated, removed when gone; rebuilt
  *   when its kind or box size changes) at its box's bottom centre, at z = `layer` *
- *   `camera3d.layerDepth`. Facing left mirrors x; `fx` squash and stretch scale about the bottom
+ *   `camera3d.layerDepth`. Facing left (or a left-hand diagonal, which
+ *   maps to its horizontal cardinal) mirrors x; `fx` squash and stretch scale about the bottom
  *   centre, `rotate` turns clockwise on screen, `alpha` sets the materials' opacity. A kind the skin
  *   does not list (or whose entry gives no mesh) is a fallback box of its box size, as deep as it
  *   is wide, in `sheets.fallbackColor`, else `DEFAULT_FALLBACK_COLOR`.
@@ -401,7 +405,7 @@ export class ThreeScene {
 
   private place(node: EntityNode, e: Entity): void {
     const fx = e.fx;
-    const mirror = e.facing === 'left' ? -1 : 1;
+    const mirror = facesLeft(e.facing) ? -1 : 1;
     node.root.position.set(e.x + e.w / 2, -(e.y + e.h), (e.layer ?? 0) * this.cam3d.layerDepth);
     node.root.scale.set(mirror * (fx?.squashX ?? 1), fx?.squashY ?? 1, 1);
     // `rotate` is clockwise on screen; with y up that is a negative turn about z.
@@ -420,8 +424,8 @@ export class ThreeScene {
   // ---- Camera ----
 
   private updateCamera(frame: Frame, size: ScreenSize): void {
-    const zoom = frame.camera?.zoom ?? this.skin.camera?.zoom ?? 1;
-    const view = { width: size.width / zoom, height: size.height / zoom };
+    const zoom = cameraZoom(frame, this.skin.camera);
+    const view = cameraView(size, zoom);
     const map = this.mapVisible ? (this.shown?.map ?? null) : null;
     const top = this.follower.update(frame, this.skin.camera, view, map);
     this.framed = { x: top.x, y: top.y, w: view.width, h: view.height };

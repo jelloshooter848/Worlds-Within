@@ -37,13 +37,23 @@ canvas, none in Node). Each `present(frame)`, in order:
   snaps, 0 holds. The first frame, a new map id and a frame with no target snap; a frame shown
   twice (same `frame` number) does not move it again. Clamp (unless `clamp: false`): inside the
   hint's `bounds` (a kit-side scroll lock or room), else the map; an area smaller than the
-  picture is centred on that axis. Offsets are whole pixels; `shake` is added after, never
-  stored. `zoom` (hint and skin) is still ignored: honouring it would mean scaling the map cache
-  and every sprite through `transformed()`.
+  picture is centred on that axis. Offsets are whole pixels; `shake` is added after (in picture pixels), never
+  stored.
+- Zoom (Engine 0.9 T2): `cameraZoom(frame, skin.camera)` (the hint's `zoom`, else the skin's,
+  else 1). The follower frames the zoomed view, `cameraView(size, zoom)` (the picture over the
+  zoom, in world pixels), so clamping and centring use the zoomed picture size. A world point
+  (wx, wy) is drawn at `round(wx * zoom) - camX` with `camX = round(cam.x * zoom) + shake`, so
+  every position is a whole picture pixel and screenshots stay deterministic. The map copy, tiles
+  and sprites go through `Renderer.sprite`'s `scale` (nearest neighbour; not passed at zoom 1, so
+  zoom-1 draw calls are unchanged); fallback boxes and particles are scaled and rounded; an
+  uncached tile spans from its rounded corner to the next one's, so tiles meet without gaps. Squash
+  pivots on the zoomed bottom centre. Flash, tint and the HUD are in picture pixels (not zoomed).
+  Whole-number zooms (2, 3) and halves (0.5) keep tiles evenly sized.
 - Map: a full map is drawn onto the surface once per id and version and copied each frame; a
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`.
-- Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip;
+- Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip
+  (all eight facings: a diagonal without a frame uses its horizontal one);
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.
@@ -82,7 +92,10 @@ resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `*.test.ts` here run in Node against a fake 2D context that records calls and maps points through
 the transform (see `renderer.test.ts`). `presenter.test.ts` uses a recording `Renderer`, fixture
 frames and a fixture skin written inline (never import a kit or a game's skin); its `camera`
-block reads the camera's top-left off the recorded map copy. `Viewport` needs a
+block reads the camera's top-left off the recorded map copy. The recorder writes a sprite's
+`scale` as ` xN` when it is not 1; the `zoom` block checks the map copy, tiles, sprites, boxes
+and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses the zoomed
+picture size. `Viewport` needs a
 real DOM and is checked by running a game. `display.test.ts` builds a `canvasDisplay` on fake
 canvases: its presenter clears the backbuffer to the background, and `fit` + `present` copy it
 fitted to the page.
