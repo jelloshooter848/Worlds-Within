@@ -136,7 +136,8 @@ export abstract class Walker extends TdEnemy {
   protected speed: readonly number[] = [1, 1, 1, 0];
   /** Chance of a random turn at each tile. */
   protected turnChance = 0.25;
-  protected anim = 0;
+  /** Steps walked (the walk animation's counter; read by presentation). */
+  anim = 0;
 
   /** One frame of walking. Returns false when it bumped into something. */
   protected walk(world: TopDownWorld): boolean {

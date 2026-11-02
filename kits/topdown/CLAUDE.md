@@ -76,8 +76,52 @@ by default), `reduceFlashing` and `state` (a `TdPresentState`, one per stream of
   place for (`hit`, `kill`, `room`) carry none (adding places to `TdEvent` would change hashes).
 - **Ids**: `TdPresentIds` (in `TdPresentState`) names a thing the room text placed
   `<room>/<kind>@<col,row>` and anything else `<kind>#<n>` in the order first seen, kept in a
-  `WeakMap`, never in the world. Other entities and room effects are presented from 0.4-6.
+  `WeakMap`, never in the world. Parts of one thing are `<id>/<part>` (`hero/sword`, `hero/held`,
+  `<enemy>/stun`, `<burst>/0..3`).
+- **Entities** (0.4-6): every living entity the old `renderWorld` drew, in its draw order, with
+  depths (`layer`) from `TD_DEPTH` that say the same: kit layer 0 floor things `0`, layer-1 actors
+  `10`, stun stars `11`, townsfolk (`ySort`) whose y is not below the hero's `12` (sorted by y),
+  the held prize `13`, the sword `14`, the hero `15`, townsfolk in front `16`, layer 2 shots `20`,
+  layer 3 effects `30`. Layers other than 0..3 were never drawn and are not listed. Kinds come from
+  `presentKind`. Not listed (the old code drew nothing): a hidden pickup, a hidden townsperson or
+  one with `frames: null` (a sign). `present-entities.test.ts` finds every `TdEntity` class with
+  a `render` method in the kit's files and fails if one has no presented kind, and checks the
+  frame's order against the order `renderWorld` draws in.
+- **Tags**: enemies `invuln` + `flashing`/`calm` (the hurt blink), `knockback`, `stunned`;
+  things drawn from the tile sheet (pickups, chests, push blocks, switches, torches, the held
+  prize) `dark` in a dark room (the old `tilePalette`); flickering things (bombs, beams, shards,
+  stun stars) `flashing`, or `calm` with reduce flashing, when their `t` is held at 0. Shut
+  building doors (the old `drawShutEntrances`) and the dark room are the map's `D`/`d` tiles and
+  `dark` tag.
 - `liveDoorLook` / `pastDoorLook` (how a doorway looks) are shared with the old `render.ts`.
+
+### Old frame names -> presented kind and animation
+
+What each old `render` method drew, so a skin (the demo skin, 0.4-7) can reproduce it. `t` is
+`anim.t`; "cycle N" means the old code changed frame every N ticks of `t`. Sheets are the
+`DEFAULT_SHEETS` roles (`tiles`, `hero`, `enemies`) unless named.
+
+| Old frame (sheet)                                                                                            | Kind                               | `anim.state` / `t`                                            | Notes                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `<dir>-<0/1>`, `attack-<dir>`, `throw-<dir>`, `hold` (hero)                                                  | `hero`                             | as before (0.4-5)                                             | `<dir>` is `up`/`down`/`side`, side mirrored for left                                                           |
+| `poof-0..2` (enemies), dying hero                                                                            | `poof` / `hero` `poof`             | `poof`, `t` = ticks; cycle 6 (hero: 8), holds `poof-2`        |                                                                                                                 |
+| prize over the head (tiles)                                                                                  | `held`                             | state = the frame name (`heart`, `key`, `map`, `<item>-icon`) | 16 px above the hero, centred                                                                                   |
+| `heart-pickup`, `key`, `bomb-pickup`, `heart-container`, `map`, `compass`, `triforce`, `<item>-icon` (tiles) | `pickup:<kind>`                    | `idle`, 0                                                     | `refill` drew four 7x7 `heart`s in a square; size = the box                                                     |
+| `chest` / `chest-open` (tiles)                                                                               | `chest`                            | `closed` / `open`                                             |                                                                                                                 |
+| `block` (tiles)                                                                                              | `push-block`                       | `idle`, `slide` while moving                                  | tag `fixed` once its puzzle is solved                                                                           |
+| `switch-up` / `switch-down` (tiles)                                                                          | `switch`                           | `up` / `down`                                                 | tag `plate` or `latch`                                                                                          |
+| `torch-off`, `torch-<0/1>` (tiles)                                                                           | `torch`                            | `off`; `lit`, `t` = frame, cycle 8                            | `t` 0 with reduce flashing (`torch-0`)                                                                          |
+| `bat-0`, `bat-<0/1>` (enemies)                                                                               | `bat`                              | `rest` (0); `fly`, `t` = frame, cycle 4                       |                                                                                                                 |
+| `knight-<down/up/side>-<0/1>` (enemies)                                                                      | `knight`                           | `walk`, `t` = steps walked, cycle 8                           | side mirrored for left                                                                                          |
+| `spitter-<side/down>-<0/1>` (enemies)                                                                        | `spitter`                          | `walk`, cycle 8; `spit` (frame 0)                             | left mirrored, up = down flipped vertically                                                                     |
+| two yellow stars (drawn, `drawStunned`)                                                                      | `stun`                             | `spin`, `t` = frame (0 calm)                                  | 16x6 box over the head; angle was `t / 8` radians                                                               |
+| `rock` (enemies), `Projectile.frames`                                                                        | `rock`, or a subclass's class name | `fly`, `t` = frame, cycle 4 through its frames                | tag `hostile`                                                                                                   |
+| `boomerang-0..3` (hero)                                                                                      | `boomerang`                        | `spin`, `t` = its own ticks, cycle 4                          | tag `returning`; carried pickups follow it, tag `carried`                                                       |
+| `bomb-<0/1>` (hero)                                                                                          | `bomb`                             | `fuse` (cycle 8), `fuse-short` (last third, cycle 4)          | `t` = frame, 0 calm (`bomb-0`)                                                                                  |
+| `blast-0..2` (hero)                                                                                          | `explosion`                        | `blast`, `t` = its ticks, cycle 8, holds `blast-2`            | 32x32                                                                                                           |
+| `sword-v` / `sword-h` (hero, `BEAM_PALETTES`)                                                                | `sword-beam`                       | `fly`, `t` = frame (0 calm)                                   | palette cycles every 2 ticks (`link-td-beam-calm` calm); `sword-h` mirrored left, `sword-v` flipped down        |
+| `beam-shard` (hero, beam palettes)                                                                           | `beam-shard`                       | `fly`, `t` = the burst's ticks                                | four per burst; tags `flip-x`/`flip-y`                                                                          |
+| `<base>-<0/1>`, `<base>-side`, `<base>-up` (`PERSON_SHEET` or its own)                                       | `person:<base>`                    | `idle`, `t` = its ticks, cycle `IDLE_FRAMES` (32)             | facing: `side` mirrored for left, `-up` if drawn; tags `sheet:<id>`, `palette:<id>`; bottom-aligned to its cell |
 
 ## Named rules (`rules.ts`)
 
@@ -118,5 +162,6 @@ make several dungeons.
 ## Testing
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`,
+`present-entities.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

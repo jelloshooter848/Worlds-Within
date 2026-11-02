@@ -83,6 +83,13 @@ function setup(door: 'L' | 'O' = 'L', seed = 7) {
   return { world, step };
 }
 
+/** The hero's entry in a frame. */
+function hero<E extends { id: string }>(frame: { entities: readonly E[] }): E {
+  const h = frame.entities.find((e) => e.id === 'hero');
+  if (!h) throw new Error('no hero in the frame');
+  return h;
+}
+
 function valid(frame: PresentFrame): void {
   const r = validate('frame.json', frame, presentFrameSchema);
   expect(r.errors).toEqual([]);
@@ -108,10 +115,9 @@ describe('presentWorld', () => {
     });
     expect(map.tiles[5]).toBe('#..............L');
     expect(map.tiles[8]).toBe('#...~..........#');
-    expect(frame.entities).toEqual([
-      expect.objectContaining({ id: 'hero', kind: 'hero', x: 112, y: 80, w: 16, h: 16, facing: 'up' }),
-    ]);
-    expect(frame.entities[0]!.anim).toEqual({ state: 'walk', t: 0 });
+    expect(frame.entities.map((e) => e.id)).toEqual(['hall/pickup:key@10,7', 'hall/bat@3,3', 'hero']);
+    expect(hero(frame)).toMatchObject({ kind: 'hero', x: 112, y: 80, w: 16, h: 16, facing: 'up' });
+    expect(hero(frame).anim).toEqual({ state: 'walk', t: 0 });
     expect(frame.status).toMatchObject({
       hp: 6,
       maxHp: 6,
@@ -209,7 +215,7 @@ describe('presentWorld', () => {
     expect(map.tags).toEqual(['slide', 'slide:e', 'wall:1', 'dark', 'from-wall:1']);
     expect(map.tiles[5]).toBe('#..............OO..............#');
     // The hero rides in the east room, which sits at x 256 in the map.
-    expect(frame.entities[0]!.x).toBe(ROOM_W + world.hero.x);
+    expect(hero(frame).x).toBe(ROOM_W + world.hero.x);
     expect(frame.camera).toEqual({ x: 128, y: 56 }); // the slide's first frame: still on the hall
     step();
     frame = presentWorld(world, [], { state });
@@ -229,24 +235,27 @@ describe('presentWorld', () => {
   it('gives the hero his animation state and tags, flashing only without reduce flashing', () => {
     const { world, step } = setup();
     step(['attack']);
-    let hero = presentWorld(world).entities;
-    expect(hero.map((e) => e.id)).toEqual(['hero', 'hero/sword']);
-    expect(hero[0]!.anim).toEqual({ state: 'attack', t: 0 });
+    world.entities.length = 0;
+    let es = presentWorld(world).entities;
+    expect(es.map((e) => e.id)).toEqual(['hero/sword', 'hero']);
+    expect(es[1]!.anim).toEqual({ state: 'attack', t: 0 });
     step();
-    expect(presentWorld(world).entities[0]!.anim).toEqual({ state: 'attack', t: 1 });
+    expect(presentWorld(world).entities[1]!.anim).toEqual({ state: 'attack', t: 1 });
     world.hero.attackT = 0;
     world.hero.invuln = HERO_INVULN;
     world.hero.kbT = 4;
-    hero = presentWorld(world).entities;
-    expect(hero[0]!.anim.state).toBe('hurt');
-    expect(hero[0]!.tags).toEqual(['invuln', 'flashing']);
+    es = presentWorld(world).entities;
+    expect(es[0]!.anim.state).toBe('hurt');
+    expect(es[0]!.tags).toEqual(['invuln', 'flashing']);
     expect(presentWorld(world, [], { reduceFlashing: true }).entities[0]!.tags).toEqual(['invuln', 'calm']);
     world.hero.kbT = 0;
     world.hero.invuln = 0;
     world.hero.holdUp('heart');
-    hero = presentWorld(world).entities;
-    expect(hero[0]!.anim).toEqual({ state: 'hold', t: 0 });
-    expect(hero[0]!.tags).toEqual(['holding:heart']);
+    es = presentWorld(world).entities;
+    expect(es.map((e) => e.id)).toEqual(['hero/held', 'hero']);
+    expect(es[1]!.anim).toEqual({ state: 'hold', t: 0 });
+    expect(es[1]!.tags).toEqual(['holding:heart']);
+    expect(es[0]).toMatchObject({ kind: 'held', anim: { state: 'heart', t: 0 }, y: world.hero.y - 16 });
     world.hero.holdT = 0;
     world.hero.holding = null;
     world.hero.dying = 10;
@@ -272,7 +281,7 @@ describe('presentWorld', () => {
   it('gives a frame a backend can read but not change', () => {
     const { world } = setup();
     const frame = freezeFrame(presentWorld(world));
-    expect(frame.entities[0]!.id).toBe('hero');
+    expect(hero(frame).id).toBe('hero');
     expect(Object.isFrozen(frame.map)).toBe(true);
   });
 });
@@ -281,7 +290,10 @@ describe('TdPresentIds', () => {
   it('names room-text things by room and cell, and others in order first seen', () => {
     const { world } = setup();
     const ids = new TdPresentIds();
-    expect(world.entities.map((e) => ids.of(e, world.room.id))).toEqual(['hall/bat@3,3', 'hall/key@10,7']);
+    expect(world.entities.map((e) => ids.of(e, world.room.id))).toEqual([
+      'hall/bat@3,3',
+      'hall/pickup:key@10,7',
+    ]);
     const bat = world.entities[0]!;
     const loose = Object.assign(Object.create(Object.getPrototypeOf(bat) as object) as typeof bat, bat, {
       key: null,

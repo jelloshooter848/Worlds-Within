@@ -3,6 +3,7 @@ import type { JsonValue } from '@engine/core/headless';
 import {
   MapTracker,
   type CameraHint,
+  type Facing,
   type PresentEntity,
   type PresentEvent,
   type PresentFrame,
@@ -12,7 +13,11 @@ import {
 } from '@engine/core/present';
 import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, type Side } from './geometry';
 import { ATTACK_FRAMES, HOLD_FRAMES, KNOCK_FRAMES, SPIN_FRAMES, USE_FRAMES, swordAt } from './hero';
-import type { TdEntity } from './entity';
+import { Chest, FloorSwitch, Pickup, Poof, PushBlock, TdEnemy, Torch, type TdEntity } from './entity';
+import { Bat, Projectile, Rock, Spitter, Walker } from './enemies';
+import { BOMB_FUSE, Bomb, Boomerang, Explosion } from './items';
+import { BeamBurst, SwordBeam } from './beam';
+import { TdPerson } from './person';
 import { sideOf, tileAt, type Room, type TileKind } from './room';
 import type { TopDownWorld } from './world';
 
@@ -248,11 +253,49 @@ export class TdPresentState {
   readonly ids = new TdPresentIds();
 }
 
-/** An entity's presented kind: its own `kind` (enemies, pickups, switches) or its class name. */
+/**
+ * An entity's presented kind (what a skin maps to a look). The kit's own classes have fixed names
+ * (`chest`, `torch`, `boomerang`, ...; see `kits/topdown/CLAUDE.md`), pickups are
+ * `pickup:<kind>`, townsfolk `person:<frames>`, floor switches `switch`; anything else (an enemy,
+ * a game's own entity) is its own `kind`, or its class name when it has none.
+ */
 export function presentKind(e: TdEntity): string {
+  if (e instanceof Pickup) return `pickup:${e.kind}`;
+  if (e instanceof TdPerson) return `person:${e.frames ?? 'none'}`;
+  if (e instanceof FloorSwitch) return 'switch';
+  if (e instanceof Poof) return 'poof';
+  if (e instanceof Chest) return 'chest';
+  if (e instanceof PushBlock) return 'push-block';
+  if (e instanceof Torch) return 'torch';
+  if (e instanceof Boomerang) return 'boomerang';
+  if (e instanceof Bomb) return 'bomb';
+  if (e instanceof Explosion) return 'explosion';
+  if (e instanceof SwordBeam) return 'sword-beam';
+  if (e instanceof BeamBurst) return 'beam-burst';
   const kind = (e as { kind?: unknown }).kind;
-  return typeof kind === 'string' ? kind : e.constructor.name;
+  if (typeof kind === 'string') return kind;
+  if (e instanceof Rock) return 'rock';
+  return e.constructor.name;
 }
+
+/**
+ * Depth layers (`PresentEntity.layer`), drawn low to high, in the old `renderWorld` order: an
+ * entity's kit `layer` 0..3 times ten (floor things, actors, shots, effects; other layers were
+ * never drawn and are not listed), with the actors' extras between: stun stars over the actors, then townsfolk (`ySort`) whose feet are not below
+ * the hero's, the prize he holds up, his sword, the hero, and the townsfolk in front of him.
+ */
+export const TD_DEPTH = {
+  floor: 0,
+  actors: 10,
+  stun: 11,
+  folkBehind: 12,
+  held: 13,
+  sword: 14,
+  hero: 15,
+  folkFront: 16,
+  shots: 20,
+  effects: 30,
+} as const;
 
 export interface TdPresentOptions {
   /** The game picture's size (`game.json`'s `screen`); DEFAULT_SCREEN when left out. */
@@ -274,9 +317,15 @@ export interface TdPresentOptions {
  * counter, advancing only while he moves), `attack`, `throw`, `hold`, `hurt` (knocked back),
  * `dying` (the spin) and `poof` (after it), `t` counting ticks in the state. Tags: `invuln` while
  * he can't be hurt, then `flashing` or (reduce flashing) `calm`; `holding:<frame>` for a prize
- * held up.
+ * held up. The prize itself is `hero/held` (kind `held`, `anim.state` its frame) and the blade
+ * while stabbing `hero/sword`; both are drawn under him (TD_DEPTH).
  */
-function presentHero(world: TopDownWorld, at: { x: number; y: number }, calm: boolean): PresentEntity[] {
+function presentHero(
+  world: TopDownWorld,
+  at: { x: number; y: number },
+  calm: boolean,
+  dark: boolean,
+): PresentEntity[] {
   const h = world.hero;
   if (h.dead) return [];
   let state = 'walk';
@@ -293,20 +342,22 @@ function presentHero(world: TopDownWorld, at: { x: number; y: number }, calm: bo
     tags.push(calm ? 'calm' : 'flashing');
   }
   if (h.holding) tags.push(`holding:${h.holding}`);
-  const out: PresentEntity[] = [
-    {
-      id: 'hero',
-      kind: 'hero',
+  const out: PresentEntity[] = [];
+  if (h.holding) {
+    // The prize held over his head (a tile-sheet frame; its art is centred on him, 16 px up).
+    out.push({
+      id: 'hero/held',
+      kind: 'held',
       x: at.x + h.x,
-      y: at.y + h.y,
+      y: at.y + h.y - 16,
       w: 16,
       h: 16,
-      facing: h.facing,
-      anim: { state, t: Math.max(0, t) },
-      tags,
-      layer: 1,
-    },
-  ];
+      facing: 'down',
+      anim: { state: h.holding, t: Math.max(0, HOLD_FRAMES - h.holdT) },
+      tags: dark ? ['dark'] : [],
+      layer: TD_DEPTH.held,
+    });
+  }
   if (h.attacking) {
     const b = swordAt(h.x, h.y, h.facing);
     out.push({
@@ -319,9 +370,192 @@ function presentHero(world: TopDownWorld, at: { x: number; y: number }, calm: bo
       facing: h.facing,
       anim: { state: 'stab', t: ATTACK_FRAMES - h.attackT },
       tags: [],
-      layer: 1,
+      layer: TD_DEPTH.sword,
     });
   }
+  out.push({
+    id: 'hero',
+    kind: 'hero',
+    x: at.x + h.x,
+    y: at.y + h.y,
+    w: 16,
+    h: 16,
+    facing: h.facing,
+    anim: { state, t: Math.max(0, t) },
+    tags,
+    layer: TD_DEPTH.hero,
+  });
+  return out;
+}
+
+/** What presenting one entity needs: the world, its offset in the map, the stream's ids and flags. */
+interface EntityCtx {
+  world: TopDownWorld;
+  at: { x: number; y: number };
+  ids: TdPresentIds;
+  calm: boolean;
+  /** The room on screen is dark (things drawn from the tile sheet take its dark palette). */
+  dark: boolean;
+}
+
+/** Tags for something that blinks or flickers: `flashing`, or `calm` with reduce flashing. */
+function flicker(ctx: EntityCtx): string {
+  return ctx.calm ? 'calm' : 'flashing';
+}
+
+/** A ticking counter for something that only flickers: the frame, or 0 with reduce flashing. */
+function flickerT(ctx: EntityCtx): number {
+  return ctx.calm ? 0 : ctx.world.frame;
+}
+
+/** Things drawn from the tile sheet (they take a dark room's palette): tagged `dark` there. */
+function tileTags(ctx: EntityCtx, tags: string[] = []): string[] {
+  return ctx.dark ? [...tags, 'dark'] : tags;
+}
+
+/** How an entity looks now: its animation state and `t`, facing and tags (see CLAUDE.md's table). */
+function lookOf(e: TdEntity, ctx: EntityCtx): { state: string; t: number; facing: Facing; tags: string[] } {
+  const frame = ctx.world.frame;
+  const look = (state: string, t = 0, tags: string[] = [], facing: Facing = 'down') => ({
+    state,
+    t: Math.max(0, t),
+    facing,
+    tags,
+  });
+  if (e instanceof TdEnemy) {
+    const tags: string[] = [];
+    if (e.invuln > 0) tags.push('invuln', flicker(ctx));
+    if (e.kbT > 0) tags.push('knockback');
+    if (e.stunT > 0) tags.push('stunned');
+    if (e instanceof Bat) return look(e.resting ? 'rest' : 'fly', e.resting ? 0 : frame, tags, e.facing);
+    if (e instanceof Spitter && e.stopT > 0) return look('spit', e.stopT - 1, tags, e.facing);
+    if (e instanceof Walker) return look('walk', e.anim, tags, e.facing);
+    return look('idle', frame, tags, e.facing);
+  }
+  if (e instanceof Pickup) return look('idle', 0, tileTags(ctx));
+  if (e instanceof Chest) return look(e.open ? 'open' : 'closed', 0, tileTags(ctx));
+  if (e instanceof PushBlock)
+    return look(e.moving ? 'slide' : 'idle', 0, tileTags(ctx, e.fixed ? ['fixed'] : []));
+  if (e instanceof FloorSwitch) return look(e.pressed ? 'down' : 'up', 0, tileTags(ctx, [e.kind]));
+  if (e instanceof Torch) return look(e.lit ? 'lit' : 'off', e.lit ? flickerT(ctx) : 0, tileTags(ctx));
+  if (e instanceof Poof) return look('poof', e.t);
+  if (e instanceof Boomerang) return look('spin', e.t, e.out ? [] : ['returning'], e.dir);
+  if (e instanceof Bomb)
+    return look(e.fuse < BOMB_FUSE / 3 ? 'fuse-short' : 'fuse', flickerT(ctx), [flicker(ctx)]);
+  if (e instanceof Explosion) return look('blast', e.t);
+  if (e instanceof SwordBeam) return look('fly', flickerT(ctx), [flicker(ctx)], e.dir);
+  if (e instanceof TdPerson) {
+    const tags = [`sheet:${e.sheet}`];
+    if (e.palette) tags.push(`palette:${e.palette}`);
+    return look('idle', e.t, tags, e.facing);
+  }
+  if (e instanceof Projectile) return look('fly', frame, e.hostile ? ['hostile'] : [], e.dir ?? 'down');
+  return look('idle', frame);
+}
+
+/**
+ * One entity as presented entities (most are one; a beam's burst is its four shards, a boomerang
+ * brings what rides on it). Nothing is listed for what the old renderer did not draw: a hidden
+ * pickup, a hidden townsperson or one with no picture (a sign).
+ */
+function presentOne(e: TdEntity, layer: number, ctx: EntityCtx): PresentEntity[] {
+  if (e instanceof Pickup && e.hidden) return [];
+  if (e instanceof TdPerson && (e.hidden || e.frames === null)) return [];
+  const id = ctx.ids.of(e, ctx.world.room.id);
+  const { x, y } = ctx.at;
+  if (e instanceof BeamBurst) {
+    return e.pieces().map((p, i) => ({
+      id: `${id}/${i}`,
+      kind: 'beam-shard',
+      x: Math.round(x + e.cx + p.dx - 4),
+      y: Math.round(y + e.cy + p.dy - 4),
+      w: 8,
+      h: 8,
+      facing: 'down',
+      anim: { state: 'fly', t: e.t },
+      // The shard art points up-left; each piece is flipped to point the way it flies.
+      tags: [...(p.dx > 0 ? ['flip-x'] : []), ...(p.dy > 0 ? ['flip-y'] : []), flicker(ctx)],
+      layer,
+    }));
+  }
+  const look = lookOf(e, ctx);
+  const out: PresentEntity[] = [
+    {
+      id,
+      kind: presentKind(e),
+      x: x + e.x,
+      y: y + e.y,
+      w: e.w,
+      h: e.h,
+      facing: look.facing,
+      anim: { state: look.state, t: look.t },
+      tags: look.tags,
+      layer,
+    },
+  ];
+  if (e instanceof Boomerang) {
+    // What it carries rides on it, centred (presenting never moves the pickups themselves).
+    for (const p of e.carried)
+      for (const one of presentOne(p, layer, ctx))
+        out.push({
+          ...one,
+          x: x + e.x + 4 - (p.w >> 1),
+          y: y + e.y + 4 - (p.h >> 1),
+          tags: [...one.tags, 'carried'],
+        });
+  }
+  return out;
+}
+
+/** Two little stars over a stunned monster's head (`<id>/stun`, kind `stun`, anim `spin`). */
+function presentStun(e: TdEnemy, ctx: EntityCtx): PresentEntity {
+  return {
+    id: `${ctx.ids.of(e, ctx.world.room.id)}/stun`,
+    kind: 'stun',
+    x: ctx.at.x + e.x + e.w / 2 - 8,
+    y: ctx.at.y + e.y - 6,
+    w: 16,
+    h: 6,
+    facing: 'down',
+    anim: { state: 'spin', t: flickerT(ctx) },
+    tags: [flicker(ctx)],
+    layer: TD_DEPTH.stun,
+  };
+}
+
+/**
+ * The room's entities and the hero, in the old `renderWorld` order and with depths (TD_DEPTH) that
+ * say the same: kit layer 0 (floor), the layer-1 actors, stun stars, townsfolk behind the hero (by
+ * their y, the hero's own included), the hero, townsfolk in front, layer 2 (shots) and 3 (effects).
+ */
+function presentEntities(world: TopDownWorld, ctx: EntityCtx): PresentEntity[] {
+  const out: PresentEntity[] = [];
+  const living = world.entities.filter((e) => !e.dead);
+  const byLayer = (l: number) => living.filter((e) => e.layer === l);
+  const add = (es: readonly TdEntity[], depth: number) => {
+    for (const e of es) out.push(...presentOne(e, depth, ctx));
+  };
+  add(byLayer(0), TD_DEPTH.floor);
+  const sorted = (e: TdEntity) => 'ySort' in e && e.ySort === true;
+  const actors = byLayer(1);
+  add(
+    actors.filter((e) => !sorted(e)),
+    TD_DEPTH.actors,
+  );
+  for (const e of world.enemies()) if (e.stunT > 0) out.push(presentStun(e, ctx));
+  const folk = actors.filter(sorted).sort((a, b) => a.y - b.y);
+  const heroY = world.hero.y;
+  add(
+    folk.filter((e) => e.y <= heroY),
+    TD_DEPTH.folkBehind,
+  );
+  out.push(...presentHero(world, ctx.at, ctx.calm, ctx.dark));
+  add(
+    folk.filter((e) => e.y > heroY),
+    TD_DEPTH.folkFront,
+  );
+  add(byLayer(2), TD_DEPTH.shots);
+  add(byLayer(3), TD_DEPTH.effects);
   return out;
 }
 
@@ -427,9 +661,9 @@ function presentEvents(
  * The world as a presentation frame: the map (or only its id and version when `opts.state`'s
  * tracker sent it already), the hero, HUD status values, this frame's `events` and a camera hint
  * that puts the play area `opts.top` (HUD_H) pixels down the picture. Pure: it only reads the
- * world (the same world gives the same frame) and keeps its memory in `opts.state`.
- *
- * Entities other than the hero come in 0.4-6.
+ * world (the same world gives the same frame) and keeps its memory in `opts.state`. Entities
+ * come in draw order with their depths (presentEntities); without `opts.state`, ids of things the
+ * room text did not place count from 1 in each frame.
  */
 export function presentWorld(
   world: TopDownWorld,
@@ -444,7 +678,13 @@ export function presentWorld(
   return {
     frame: world.frame,
     size: { width: size.width, height: size.height },
-    entities: presentHero(world, origin, opts.reduceFlashing ?? false),
+    entities: presentEntities(world, {
+      world,
+      at: origin,
+      ids: opts.state?.ids ?? new TdPresentIds(),
+      calm: opts.reduceFlashing ?? false,
+      dark: world.room.def.dark === true,
+    }),
     map: sent,
     events: presentEvents(world, events, origin),
     status: presentStatus(world, top),
