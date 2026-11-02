@@ -22,13 +22,15 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
   directional light; `onSound(id)` once per event; flash and tint as a full-screen overlay. The HUD
-  and particles are not drawn in 0.6 (known gaps).
+  and particles are not drawn (known gaps; moved to 0.15, gap G33 of the stacking test).
 - `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
   `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing })`
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
   `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
   `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour `background`, buffer at
-  the picture size); `resize(size)`; `rendererInfo()`; `dispose()`.
+  the picture size); `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
+  (Engine 0.7): another presenter on the same canvas and renderer with its own skin and scene (a
+  stacked mini game's frames).
 - `webglRendererInfo`, `isSoftwareRenderer`, `GlInfoSource`, `WebglRendererInfo`
   (`renderer-info.ts`, pure): the unmasked vendor and renderer through `WEBGL_debug_renderer_info`
   (else `VENDOR` / `RENDERER`), and whether a renderer string is a software rasteriser
@@ -42,7 +44,8 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
 - `threeDisplay`, `ThreeDisplayOptions`, `webgl2Available`, `threeScenePresenter`
   (`display.ts`, Engine 0.7): the page's 3D `BrowserDisplay` for `bootBrowserGame`
   (`@engine/core/shell`), or why it cannot start (no WebGL 2), and a Node-side `Presenter` over
-  `ThreeScene` for tests.
+  `ThreeScene` for tests. Both take `rounds` (a skin per mini game id, the core `skinSet`'s), so
+  a stacked mini game's frames are drawn through their own skin.
 
 ## Imports allowed
 

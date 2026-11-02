@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 82.** (Last used: 81.)
+**Next unused number: 83.** (Last used: 82.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -175,6 +175,8 @@ Choices the autonomous build made that the owner should check. Answer by number.
   `flash`, `tint` and `shake` are, with one ambient and one directional light and no shadows.
   Leave them out until a game needs them (0.7 is the first game shown in 3D), or add a HUD
   overlay now?
+  (Engine 0.7 T8 default taken: left out and moved to 0.15, gap G33; the stacking test plays in
+  3D without them. Overrule to get a HUD sooner.)
 - **67.** The 3D path reads a game through an optional `frame()` hook on the view (beside
   `render(r)`, with an optional `background` colour), so the 2D path and the demo did not change.
   Should every view give `frame()` (and `render` become a helper over it), or keep it optional?
@@ -226,3 +228,9 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **81.** Gap G20: on the tick a mini-game round ends, the platformer snapshot drops the round, so
   its last events (the final `kill`, `dead`, `exit`) are in no snapshot. Keep the ended round in
   the snapshot for that tick (changes the lab's `mini-game` golden hashes), or leave it?
+- **82.** Engine 0.7 T8, the top-down round in 3D: the vault room is laid flat facing the camera
+  (the top-down picture seen from the front: walls and statues stand forward as blocks, the floor
+  is sunk behind them, the hero and knights stand out of it), with skin data only, and centred in
+  the picture (2D keeps it under its HUD band; 3D draws no HUD, G33). OK, or should a top-down
+  round in a side-on 3D game be shown another way (the room tilted back like a table, a camera
+  override while the round runs)?

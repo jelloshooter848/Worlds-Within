@@ -6,7 +6,7 @@ import { NullPresenter } from '@engine/backends/null';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { freezeFrame, isFullMap } from '@engine/core/present';
+import { freezeFrame, isFullMap, MINI_GAME_STATUS, skinSet } from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
 import {
   PlatformerPresentState,
@@ -265,7 +265,7 @@ function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void):
   return hashes;
 }
 
-describe('backend parity: every other game with a view, through null and canvas2d', () => {
+describe('backend parity: every other game with a view, through null, canvas2d and three', () => {
   it('finds the platformer test runs', () => {
     expect(viewRuns).toContain('games/platformer-test/runs/level-4.run.json');
   });
@@ -294,5 +294,54 @@ describe('backend parity: every other game with a view, through null and canvas2
     expect(calls.get('sprite') ?? 0).toBeGreaterThan(run.ticks);
     expect(viaNull).toEqual(golden);
     expect(viaCanvas).toEqual(golden);
+
+    // 3D (Engine 0.7 T8), for a game with a `three` skin: `frame()` into the Three.js scene
+    // builder (no WebGL), a mini game's frames into the scene of its `three-<id>` skin as on the
+    // page (`skinSet`). No entity may be a fallback box (a kind without a mesh), and every map
+    // tile shown needs a block in the skin that showed it, but open air (the platformer kit's
+    // `.`, the sky) on the game's own skin.
+    const skins3d = skinSet(content, 'three');
+    if (skins3d.main === null) return;
+    const background = make().background;
+    const presenter3d = threeScenePresenter(skins3d.main, {
+      screen: content.manifest.screen,
+      rounds: skins3d.rounds,
+      ...(background !== undefined && { background }),
+    });
+    const fallbacks: string[] = [];
+    const noBlock = new Set<string>();
+    const sources = new Set<string>();
+    let synced = 0;
+    const viaThree = playView(make(), run, (view) => {
+      const frame = view.frame!();
+      presenter3d.present(frame);
+      synced++;
+      const id = String(frame.status[MINI_GAME_STATUS] ?? '');
+      const round = Object.hasOwn(skins3d.rounds, id);
+      const skin = round ? skins3d.rounds[id]! : skins3d.main!;
+      sources.add(round ? id : 'main');
+      if (frame.map && isFullMap(frame.map))
+        for (const row of frame.map.tiles)
+          for (const t of row) {
+            const tile = String(t);
+            if (!round && tile === PRESENT_TILES.empty) continue;
+            if (skin.tiles?.[tile]?.mesh === undefined) noBlock.add(`${round ? id : 'main'} ${tile}`);
+          }
+      const scene = presenter3d.shown;
+      for (const eid of scene.entityIds()) {
+        const root = scene.entity(eid)!;
+        if (root.userData['fallback'] === true)
+          fallbacks.push(`frame ${frame.frame}: ${eid} (${String(root.userData['kind'])})`);
+      }
+    });
+    presenter3d.scene.dispose();
+    for (const scene of Object.values(presenter3d.rounds)) scene.dispose();
+
+    expect(synced).toBe(run.ticks + 1);
+    expect(fallbacks.slice(0, 5), 'entities drawn as fallback boxes (kinds without a mesh)').toEqual([]);
+    expect([...noBlock].sort(), 'tiles without a three skin entry').toEqual([]);
+    if (file.endsWith('platformer-test/runs/level-4.run.json'))
+      expect([...sources].sort()).toEqual(['main', 'vault']);
+    expect(viaThree).toEqual(golden);
   });
 });

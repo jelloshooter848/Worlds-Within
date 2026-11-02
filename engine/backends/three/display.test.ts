@@ -32,7 +32,43 @@ describe('threeScenePresenter', () => {
       }),
     );
     expect(presenter.scene.entityIds()).toEqual(['p1']);
+    expect(presenter.shown).toBe(presenter.scene);
     presenter.scene.dispose();
+  });
+
+  it("hands a mini game's frames to the scene of its round skin, and the rest to the main one", () => {
+    const ROUND: SkinFile = { backend: 'three', kinds: { knight: { mesh: 'box', color: '#6844fc' } } };
+    const presenter = threeScenePresenter(SKIN, { screen: SCREEN, rounds: { vault: ROUND } });
+    const at = (frame: number, kind: string, miniGame: string) =>
+      freezeFrame({
+        frame,
+        size: SCREEN,
+        entities: [
+          {
+            id: kind,
+            kind,
+            x: 0,
+            y: 0,
+            w: 16,
+            h: 16,
+            facing: 'right' as const,
+            anim: { state: 'idle', t: 0 },
+            tags: [],
+          },
+        ],
+        events: [],
+        status: { miniGame },
+      });
+    presenter.present(at(0, 'hero', ''));
+    presenter.present(at(1, 'knight', 'vault'));
+    expect(presenter.shown).toBe(presenter.rounds['vault']);
+    expect(presenter.rounds['vault']!.entityIds()).toEqual(['knight']);
+    expect(presenter.rounds['vault']!.entity('knight')!.userData['fallback']).not.toBe(true);
+    expect(presenter.scene.entityIds()).toEqual(['hero']);
+    presenter.present(at(2, 'hero', 'other'));
+    expect(presenter.shown).toBe(presenter.scene);
+    presenter.scene.dispose();
+    presenter.rounds['vault']!.dispose();
   });
 });
 

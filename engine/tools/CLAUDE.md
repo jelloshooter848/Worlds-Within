@@ -244,8 +244,10 @@ platformer game whose door pushes a top-down mini game holds `room` files):
   the state, regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit the files.
 - `tests/runs/backend-parity.test.ts` plays every demo and platformer-lab run file presenting
   every tick through the null and the Canvas2D backends (and, for the lab, through the Three.js
-  backend's Node-side `ThreeScene` with its `three` skin) and requires every hash list to equal
-  the golden file.
+  backend's Node-side `ThreeScene` with its `three` skin), and every other game's with a `view`
+  through `frame()` into null, `render` into Canvas2D and, when the game has a `three` skin,
+  `frame()` into `threeScenePresenter` with its `skinSet` (Engine 0.7 T8: no fallback boxes, a
+  block for every tile shown), and requires every hash list to equal the golden file.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
@@ -364,8 +366,11 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
 - `--backend three` (Engine 0.6): the 3D picture. The page needs the view's `frame()` (else exit 3,
   `no_frame_hook` at `view` in `game.json`) and the command a skin with `"backend": "three"` in the
   game's content (else exit 3, `no_three_skin` at `content.skin`, listing the skins it has; checked
-  before Chromium starts). The page makes a WebGL canvas of the `screen` size and a
-  `ThreePresenter` with that skin (clear colour: the view's `background`, else black), reads the
+  before Chromium starts). The skins are the core `skinSet(content, 'three')` (Engine 0.7 T8):
+  `three.json` for the game and `three-<id>.json` for the frames of mini game `<id>` (a scene of
+  their own on the same canvas, `withSkin`, picked by `status.miniGame`). The page makes a WebGL
+  canvas of the `screen` size and a `ThreePresenter` with the main skin (clear colour: the view's
+  `background`, else black), reads the
   renderer string (`webglRendererInfo`) first, then steps exactly as for canvas2d, syncing the
   scene with every tick's `frame()` (so the camera's lerp is the one play shows) and rendering
   once at tick N; the PNG is `toDataURL` of the WebGL canvas (`preserveDrawingBuffer`). The result's

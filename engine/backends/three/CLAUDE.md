@@ -74,6 +74,10 @@ the scene. So a paused frame draws the same every time on one machine, the rende
 pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background`. The drawing buffer
 is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
 reads the context's renderer (below); `dispose()` frees the scene and the renderer.
+`withSkin(skin, opts?)` (Engine 0.7 T8) is another `Presenter` on the same canvas and renderer
+with a `ThreeScene` of its own (`.scene`; `opts` as above but `size`, which is this presenter's):
+for a second frame source in one stream, such as a stacked mini game's frames in another kit's
+skin. Each draws its own scene with the one WebGL context; `dispose()` frees them all.
 
 ## Renderer check (`renderer-info.ts`, pure)
 
@@ -98,23 +102,28 @@ places the canvas absolutely in its (positioned) container with `image-rendering
 
 ### Known gaps (Engine 0.6)
 
-- HUD: `skin.hud` and `frame.status` are not drawn in 3D.
-- `particles` effects are not drawn.
+- HUD: `skin.hud` and `frame.status` are not drawn in 3D (feedback item 66; decided in Engine 0.7
+  T8: moved to 0.15, gap G33 in `docs/reports/stacking-test.md`).
+- `particles` effects are not drawn (the same: moved to 0.15, G33).
 - Same-layer entities are not ordered by list order (they share a depth plane).
 
 ## The page's display (`display.ts`, Engine 0.7)
 
-`threeDisplay(canvas, { screen, skin, background?, integerScale?, onSound? })` is the 3D
+`threeDisplay(canvas, { screen, skin, rounds?, background?, integerScale?, onSound? })` is the 3D
 `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`, or a sentence saying why
 it cannot start: `webgl2Available()` is false (no WebGL 2), or `ThreePresenter` threw (the
 message names the error). Its `presenter` is a `ThreePresenter` with the game's `three` skin on
-the page's canvas; `fit(layout)` places the canvas with `fitCanvas` + `applyCanvasBox` from the
+the page's canvas; with `rounds` (a skin per mini game id, the core `skinSet`'s `rounds`: the
+game's `three-<id>.json`, Engine 0.7 T8) it is the core `presenterBySkinSet` over that and one
+`withSkin` presenter per round skin (black background), so a frame whose `status.miniGame` names
+one is drawn through its skin; `fit(layout)` places the canvas with `fitCanvas` + `applyCanvasBox` from the
 layout's `fit`; its `renderer` draws nothing (scenes show frames through the presenter) and
 `present()` does nothing. A game reaches it with `await import('@engine/backends/three')` so its
 2D page loads no Three.js (moved from `games/platformer-lab/main3d.ts`).
-`threeScenePresenter(skin, { screen, background? })` is a `Presenter` over the Node-side
+`threeScenePresenter(skin, { screen, background?, rounds? })` is a `Presenter` over the Node-side
 `ThreeScene` (`present` is `sync`; `.scene` for read-outs): what tests use to check what 3D shows
-(backend parity) with no WebGL.
+(backend parity) with no WebGL. With `rounds`, a mini game's frames go to a scene of their own
+(`.rounds[id]`), as on the page; `.shown` is the scene the last frame went to.
 
 ## Imports
 
@@ -138,4 +147,5 @@ event, the flash overlay, frozen frames and skin never changed, and repeatable b
 SwiftShader, llvmpipe, softpipe, Microsoft Basic Render) and typical hardware ones (ANGLE on
 NVIDIA, AMD, Intel and Apple, Mesa, Adreno), and `webglRendererInfo` with a fake context with and
 without the debug extension. `fit.test.ts` checks `fitCanvas` against `fitGame` and
-`canvasToScreen`. `display.test.ts` checks `threeScenePresenter` and the no-WebGL 2 message. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
+`canvasToScreen`. `display.test.ts` checks `threeScenePresenter` (with and without round skins)
+and the no-WebGL 2 message. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.

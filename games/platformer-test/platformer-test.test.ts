@@ -11,6 +11,7 @@ import { isFullMap, type SkinFile } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
 import { loadTest, mustLoad, testRooms, testSfx, testStages } from './content';
 import { testLook } from './picture';
+import { testLook3d } from './picture3d';
 import { testScene } from './scene';
 import { createView } from './view';
 import { testMiniGames } from './minigames';
@@ -192,8 +193,10 @@ interface Shown {
   status: Set<string>;
 }
 
+let shownCache: Map<string, Shown> | null = null;
 function shownByRuns(): Map<string, Shown> {
-  const out = new Map<string, Shown>();
+  if (shownCache) return shownCache;
+  const out = (shownCache = new Map<string, Shown>());
   const runs = readdirSync(new URL('./runs/', import.meta.url)).filter((f) => f.endsWith('.run.json'));
   expect(runs.length).toBeGreaterThanOrEqual(4);
   for (const name of runs) {
@@ -305,6 +308,51 @@ describe('platformer test 2D skins', () => {
     expect(vaultAt.get(2200)).toBe(0);
     expect(vaultAt.get(2400) ?? 0).toBeGreaterThan(100);
   });
+});
+
+describe('platformer test 3D skins', () => {
+  const look = testLook(content);
+  const look3d = testLook3d(content);
+  const shown = shownByRuns();
+
+  it('has a three skin for the levels and one for the vault round', () => {
+    expect(look3d.skin.backend).toBe('three');
+    expect(Object.keys(look3d.rounds)).toEqual(['vault']);
+    expect(look3d.rounds['vault']!.backend).toBe('three');
+  });
+
+  it.each([
+    ['level', () => look.skin, () => look3d.skin],
+    ['vault', () => look.rounds['vault']!, () => look3d.rounds['vault']!],
+  ])('the %s three skin has a mesh for every kind and tile its 2D skin maps', (source, flat, deep) => {
+    const skin2d = flat();
+    const skin3d = deep();
+    const noMesh = Object.keys(skin2d.kinds).filter((k) => skin3d.kinds[k]?.mesh === undefined);
+    // Open air on a level (`.`) is the sky behind the blocks: no block. A room's floor is one.
+    const tiles = Object.keys(skin2d.tiles ?? {}).filter(
+      (t) => source !== 'level' || t !== PRESENT_TILES.empty,
+    );
+    const noBlock = tiles.filter((t) => skin3d.tiles?.[t]?.mesh === undefined);
+    expect([...noMesh, ...noBlock]).toEqual([]);
+    expect(Object.keys(skin3d.events ?? {}).sort()).toEqual(Object.keys(skin2d.events ?? {}).sort());
+    for (const [type, entry] of Object.entries(skin3d.events ?? {}))
+      expect(entry.sound, type).toBe(skin2d.events?.[type]?.sound);
+    expect(skin3d.camera).toEqual(skin2d.camera);
+  });
+
+  it.each(['level', 'vault'])(
+    'the %s three skin has a mesh for every kind and tile its frames show',
+    (source) => {
+      const skin = source === 'level' ? look3d.skin : look3d.rounds[source]!;
+      const s = shown.get(source)!;
+      const missing = [...s.states.keys()].filter((k) => skin.kinds[k]?.mesh === undefined);
+      for (const t of s.tiles)
+        if (!(source === 'level' && t === PRESENT_TILES.empty) && skin.tiles?.[t]?.mesh === undefined)
+          missing.push(`tile ${t}`);
+      expect(missing).toEqual([]);
+      expect(s.states.size).toBeGreaterThan(2);
+    },
+  );
 });
 
 describe('platformer test page scene', () => {

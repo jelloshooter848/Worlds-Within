@@ -19,8 +19,9 @@ release that will).
 
 - `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the door level's room),
   256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `profile`, `room`,
-  `palette`, `sprite`, `skin` and `sfx`. `index.html` is the 2D page, so the root launcher lists
-  `games/platformer-test/` (the 3D page comes with 0.7 T8).
+  `palette`, `sprite`, `skin` and `sfx`. `index.html` is the page, so the root launcher lists
+  `games/platformer-test/`, and its `ww-alternate` meta tag adds the launcher's `3D` link
+  (`?backend=three`, 0.7 T8).
 - `content/levels/<id>.json` + `<id>.map.txt`: levels (format: `kits/platformer/CLAUDE.md`,
   Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in id order. Four, all `"scroll": "right"`, each about a few kit rules:
   - `level-1`: a short, easy first level, 48x10 tiles: a bump block with a
@@ -80,28 +81,57 @@ release that will).
     `kill`, `hurt`, `dying`, `dead`); HUD `hp` (one heart per half heart) and `timeLeft` (an
     hourglass and the ticks left). The two kits' tiles (`#`, `.`, `B`, `=`) and their camera and HUD
     clash, so a round's frames get their own skin: a skin named `<backend>-<mini game id>` is
-    that round's (`testSkins`), and the page and the view hand each frame to the presenter its
-    `status.miniGame` names (the engine's `presenterByStatus`; gap G14).
+    that round's (`testSkins`, over the engine's `skinSet`), and the page and the view hand each
+    frame to the presenter its `status.miniGame` names (the engine's `presenterByStatus`; gap G14).
+  - `content/skins/three.json` (0.7 T8): the levels' 3D skin, low-poly meshes written as text
+    (compound meshes of boxes, spheres, cylinders and cones in world px): `runner` (cap, face,
+    shirt, overalls, boots), `walker` (shared by `walker` and `ledge-walker` in their own
+    colours), `shell-walker`, `shell`, `coin`, `goal` (pole and flag), `door` (the trigger:
+    panelled wings and a knob), `bump-block` a plain box; tiles: every `PRESENT_TILES` character
+    but `.` (open air is the sky, no block): `#` a block with a lighter top course, `B` a brick
+    with mortar lines, `?` a block with a mark on its face, `u` a plain box, `=` a thin slab, `^`
+    two rows of cones on a base. `events` are the 2D skin's sounds, flashes, tints and shakes
+    (particles are not drawn in 3D); `camera` the 2D skin's; `camera3d` `fov` 40, `tilt` 4,
+    `layerDepth` 0.25 (the lab's framing).
+  - `content/skins/three-vault.json` (0.7 T8): the vault round's 3D skin. The room is **laid flat
+    facing the camera**: a top-down room seen from the front, exactly as the 2D picture shows it,
+    so the 3D backend needed no change of axes. Walls (`#`) and statues (`S`, a pillar on a
+    plinth) stand forward as blocks; the floor (`.`) is a thin slab sunk 8 px behind them and the
+    water (`~`) 2 px deeper, so the hero (tunic, cap and face toward the camera, a shield), the
+    knights and the poofs stand out of the floor; the sword is a thin box filling its blade's
+    box. `camera3d` `tilt` 8 (a little of the walls' tops shows). It has no `camera`: the
+    round's frames carry the top-down kit's hint, and the 3D round presenter clamps (the
+    default), so the 16x11 room is centred in the picture; 2D keeps it under its HUD band
+    (`clamp: false`), but 3D draws no HUD (gap G33), so there is no band to keep clear.
 - TypeScript is glue only:
   - `content.ts`: `testKinds()` (the engine's kinds, the platformer kit's `level` and `profile`,
     the top-down kit's `room`), `testRooms(content)`, `loadTest(files)`, `testStages(content)` (the levels in play
     order: by id, numbers compared as numbers, `level-2` before `level-10`; each paired with the
     profile it names by the kit's `levelStages`), `testSkins(content, backend)` (`{ level,
-rounds }`), `testArt(content)` (sprites and palettes by id), `testSfx(content)`, `mustLoad`;
+rounds }`: the engine's `skinSet`, throwing when the backend has no skin), `testArt(content)`
+    (sprites and palettes by id), `testSfx(content)`, `mustLoad`;
   - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets, size and `SKY`),
     `testFrames(screen)` (the engine's `FrameStream` over the kit's `platformerFrames`; while the
     round runs, its own frame), `testPicture(presenter, screen)`, `testCanvasPresenter(r, look, {
 level?, onSound? })` (a `SkinnedCanvasPresenter` per skin on `r`, the round's with `clamp:
 false` so the room sits under its HUD band; `presenterByStatus('miniGame', ...)` picks one per
     frame) and `testCanvasPicture(r, look)`;
+  - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, screen, background }`: the
+    `three` skins, picture size and `SKY`, as the 3D backend's `threeDisplay` and
+    `threeScenePresenter` take them). No Three.js import, so the 2D page bundles none;
   - `view.ts`: `createView` for `pnpm cli screenshot`: the engine's `frameView` with
-    `testCanvasPicture` for `render` and `testFrames` for `frame()`;
+    `testCanvasPicture` for `render` and `testFrames` for `frame()` (`--backend three` shows
+    `frame()` through the `three` skins: the screenshot page reads them with `skinSet` too);
   - `scene.ts`: `testScene(content, stack, picture)`: the engine's `HostScene` over `createGame`
     (it pushes the core `miniGameScene` while the door's round runs and pops it on the result);
-  - `main.ts` + `index.html`: the 2D page: `bootBrowserGame` with `canvasDisplay` (the level
-    skin) and a scene drawing `testPicture(testCanvasPresenter(...))` onto the display's renderer;
-    an `AudioManager` with the sfx gets the skins' sounds (`onSound`) and is unlocked on the first
-    key, tap or click (the shell has no audio yet: gap G27);
+  - `main.ts` + `index.html`: the page: `bootBrowserGame` with `canvasDisplay` (the level
+    skin) and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content), onSound
+})` from a dynamic `import('@engine/backends/three')` (its own chunk with Three.js; it hands
+    the round's frames to the `three-vault` skin itself). The scene draws one stream of frames:
+    in 2D `testPicture(testCanvasPresenter(...))` onto the display's renderer, in 3D
+    `testPicture(display.presenter)`. The `#backend` link toggles 2D and 3D. An `AudioManager`
+    with the sfx gets the skins' sounds (`onSound`, the same in both) and is unlocked on the
+    first key, tap or click (the shell has no audio yet: gap G27);
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
     kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
     `testMiniGames(content)`
@@ -122,6 +152,9 @@ false` so the room sits under its HUD band; `presenterByStatus('miniGame', ...)`
   tile, runner and actor state and event the kit has; the vault skin the hero's `hurt` and
   `dying`; every sound is an sfx file; the folder holds only text assets; the view draws a level
   with `hopper` and the round with `vault`; `testScene` pushes the round and pops it.
+- `platformer-test.test.ts` (0.7 T8 part): the `three` skins: a level skin and a vault one, each
+  with a mesh for every kind and tile its 2D skin maps (but the level's `.`), the 2D skin's
+  events, sounds and camera, and a mesh for every kind and tile the runs show in its frames.
 - `platformer-test.test.ts` (earlier parts): content loads, a broken field is named by file and field, the level
   order (with `level-10` after `level-9`), the start state, the first three levels cleared in
   order with `level-3.run.json`'s input, the door's round failed then passed and all four levels
@@ -233,23 +266,38 @@ at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
     lab uses it too. One skin per frame source needed `presenterByStatus` (gap G14).
 16. Checked with `pnpm -s cli screenshot <run> --tick N --json` (`matchesHeadless` true, ticks
     in a level and inside the round) and by replaying `level-4.run.json` through the built page
-    in headless Chromium (`tests/browser/platformer-test-2d.test.ts`).
+    in headless Chromium (`tests/browser/platformer-test.test.ts`).
+
+17. (0.7 T8) The two `three` skins written as text, starting from the lab's level meshes (own
+    colours, a door for the trigger) and a new round skin with the room laid flat facing the
+    camera; checked with `validate`, then with the backend parity test (every run through the
+    Three.js scene builder: no fallback box, a block for every tile shown) and with
+    `pnpm -s cli screenshot <run> --tick N --backend three --allow-software-gl --json` at a level
+    tick and a round tick, looking at the PNGs. The 3D page could not show the round with its
+    own skin: one `ThreePresenter` has one skin, and the screenshot page took the first `three`
+    skin it found; the engine got `skinSet`, `withSkin` and `rounds` (gap G32) first.
+18. `picture3d.ts`, the `three` display in `main.ts`, the `ww-alternate` tag and the toggle link
+    in `index.html`; the browser test plays `level-4.run.json` in both backends.
 
 ## How to test
 
 `pnpm test games/platformer-test`, `pnpm -s cli validate games/platformer-test --json`,
 `pnpm -s cli run games/platformer-test/runs/level-<n>.run.json --json`,
 `pnpm -s cli mutants games/platformer-test --json`, `pnpm test tests/runs` (golden hashes; backend
-parity plays every run through the view into the null backend and into Canvas2D, all giving the
-golden hashes), `pnpm -s cli screenshot games/platformer-test/runs/level-4.run.json --tick 3050
---json` (a tick inside the round; `matchesHeadless` true), `pnpm test tests/browser` (the built
-page plays `level-4.run.json`: the launcher lists the game, both rounds show the vault and the
-level comes back, no page errors; skipped without Chromium).
+parity plays every run through the view into the null backend, into Canvas2D and into the
+Three.js scene builder with the `three` skins, all giving the golden hashes, with no fallback box
+and a block for every tile shown), `pnpm -s cli screenshot games/platformer-test/runs/level-4.run.json --tick 3050
+--json` (a tick inside the round; `matchesHeadless` true; add `--backend three
+--allow-software-gl` for 3D where there is no GPU), `pnpm test tests/browser` (the built page
+plays `level-4.run.json` in 2D and in 3D: the launcher lists the game and its `3D` link, both
+rounds show the vault and the level comes back, no page errors; skipped without Chromium).
 
 ## How to play
 
 `pnpm dev` and open `/games/platformer-test/` (or `pnpm build && pnpm preview` and the root
-launcher's `games/platformer-test/` link): arrows (or the touch pad) move, Z jumps, X runs; in
+launcher's `games/platformer-test/` link); in 3D, `/games/platformer-test/?backend=three` (the
+launcher's `3D` link, or the `3D` link at the page's top left; without WebGL 2 the page says so
+and links to 2D; the 3D picture has no HUD yet, gap G33): arrows (or the touch pad) move, Z jumps, X runs; in
 the vault round arrows walk the hero and X stabs. The levels come in order; the door is in
 `level-4`.
 

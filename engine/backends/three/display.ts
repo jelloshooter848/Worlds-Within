@@ -1,6 +1,6 @@
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import type { DeepReadonly, Presenter, SkinFile } from '@engine/core/present';
+import { presenterBySkinSet, type DeepReadonly, type Presenter, type SkinFile } from '@engine/core/present';
 import type { DisplayResult } from '@engine/core/shell/display';
 import { applyCanvasBox, fitCanvas } from './fit';
 import { ThreePresenter } from './presenter';
@@ -10,6 +10,11 @@ import { ThreeScene } from './scene';
 export interface ThreeDisplayOptions {
   screen: ScreenSize;
   skin: DeepReadonly<SkinFile>;
+  /**
+   * A skin per mini game, by its id (a `SkinSet`'s `rounds`): frames whose `status.miniGame`
+   * names one are drawn through it, on the same canvas, with a black background (Engine 0.7 T8).
+   */
+  rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
   /** The clear colour behind the picture (default `#000`). */
   background?: string;
   /** Whole-number scaling only (default false: stretch to fit, letterboxed). */
@@ -59,9 +64,12 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
     const why = error instanceof Error ? error.message : String(error);
     return `The 3D view could not start WebGL: ${why}`;
   }
+  const rounds: Record<string, Presenter> = {};
+  for (const [id, skin] of Object.entries(opts.rounds ?? {}))
+    rounds[id] = presenter.withSkin(skin, opts.onSound !== undefined ? { onSound: opts.onSound } : {});
   return {
     renderer: NO_DRAW,
-    presenter,
+    presenter: Object.keys(rounds).length > 0 ? presenterBySkinSet(presenter, rounds) : presenter,
     fit(layout) {
       const dpr = window.devicePixelRatio || 1;
       applyCanvasBox(
@@ -82,15 +90,37 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
 
 /**
  * A `Presenter` over the Node-side `ThreeScene` (no WebGL): `present` is `scene.sync`. For tests
- * and tools that check what 3D would show (backend parity); `.scene` for read-outs.
+ * and tools that check what 3D would show (backend parity); `.scene` for read-outs. With
+ * `rounds` (as `threeDisplay`'s), frames of a mini game with a skin go to a scene of their own
+ * (`.rounds[id]`, black background), as on the page; `.shown` is the scene the last frame went to.
  */
 export function threeScenePresenter(
   skin: DeepReadonly<SkinFile>,
-  opts: { screen: ScreenSize; background?: string },
-): Presenter & { scene: ThreeScene } {
+  opts: {
+    screen: ScreenSize;
+    background?: string;
+    rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
+  },
+): Presenter & { scene: ThreeScene; rounds: Record<string, ThreeScene>; readonly shown: ThreeScene } {
   const scene = new ThreeScene(skin, {
     size: opts.screen,
     ...(opts.background !== undefined && { background: opts.background }),
   });
-  return { scene, present: (frame) => scene.sync(frame) };
+  let shown = scene;
+  const show = (s: ThreeScene): Presenter => ({ present: (frame) => (shown = s).sync(frame) });
+  const rounds: Record<string, ThreeScene> = {};
+  const roundPresenters: Record<string, Presenter> = {};
+  for (const [id, roundSkin] of Object.entries(opts.rounds ?? {})) {
+    rounds[id] = new ThreeScene(roundSkin, { size: opts.screen });
+    roundPresenters[id] = show(rounds[id]);
+  }
+  const picked = presenterBySkinSet(show(scene), roundPresenters);
+  return {
+    scene,
+    rounds,
+    get shown() {
+      return shown;
+    },
+    present: (frame) => picked.present(frame),
+  };
 }

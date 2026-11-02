@@ -6,6 +6,7 @@ import { contentOf } from '@engine/core/content/bundle';
 import { SKIN_KIND } from '@engine/core/content/engine-kinds';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, formatErrors, type ContentError } from '@engine/core/content/validate';
+import { skinSet } from '@engine/core/present';
 import { EXIT, UsageError } from '../exit-codes';
 import { loadGame } from '../game-loader';
 import { playRun, stateHash } from '../headless-run';
@@ -94,7 +95,7 @@ export const screenshotCommand = defineCommand({
 
     if (flags.backend === 'three') {
       const skins = contentOf(game.content.value, SKIN_KIND);
-      if (!skins.some((e) => e.value.backend === 'three')) {
+      if (skinSet(game.content.value, 'three').main === null) {
         const have =
           skins.length === 0
             ? 'it has no skins'
@@ -104,7 +105,7 @@ export const screenshotCommand = defineCommand({
             where,
             ['content', 'skin'],
             'no_three_skin',
-            `--backend three needs a skin with "backend": "three" in ${where} content.skin; ${have}`,
+            `--backend three needs a skin with "backend": "three" (not only mini games' three-<id> skins) in ${where} content.skin; ${have}`,
           ),
         ]);
       }

@@ -8,6 +8,8 @@
     />
     <meta name="theme-color" content="#000000" />
     <title>Platformer test</title>
+    <!-- The launcher's extra link to this page (build/pages.ts): label and query. -->
+    <meta name="ww-alternate" content="3D ?backend=three" />
     <style>
       html,
       body {
@@ -63,6 +65,8 @@
   </head>
   <body>
     <canvas id="screen"></canvas>
+    <!-- The toggle to the other backend; the shell sets its label and link (2D or 3D). -->
+    <a id="backend" href="./?backend=three">3D</a>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

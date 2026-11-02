@@ -54,3 +54,4 @@ export {
   type SkinStateFrames,
   type SkinTileEntry,
 } from './skin';
+export { MINI_GAME_STATUS, presenterBySkinSet, skinSet, type SkinSet } from './skin-set';

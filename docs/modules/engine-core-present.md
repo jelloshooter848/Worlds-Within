@@ -57,6 +57,10 @@ Import from `@engine/core/present` (`index.ts`).
 - `presenterByStatus(status, presenters, otherwise)` (`switch.ts`, Engine 0.7): one presenter
   per frame source, picked per frame by a status value (`miniGame`), so a stacked mini game's
   frames get their own skin, camera and map cache.
+- `skinSet(content, backend)`, `MINI_GAME_STATUS`, `presenterBySkinSet(main, rounds)`
+  (`skin-set.ts`, Engine 0.7 T8): one backend's skins by file name (`<backend>.json` for the
+  game, `<backend>-<id>.json` for mini game `<id>`'s frames), shared by pages, views and the
+  screenshot tool.
 
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs

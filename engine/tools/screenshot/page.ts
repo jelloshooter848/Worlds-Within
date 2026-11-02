@@ -1,8 +1,8 @@
 import { CanvasRenderer } from '@engine/backends/canvas2d';
-import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
-import { SKIN_KIND } from '@engine/core/content/engine-kinds';
+import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
+import { presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
 import { checkGameTexts } from '../game-check';
 import type { ShotJob, ShotRefusal, ShotResult } from './job';
@@ -18,7 +18,8 @@ import type { ShotJob, ShotRefusal, ShotResult } from './job';
  * check that drawing every tick changed nothing.
  *
  * With `job.backend` `three` the page shows the view's `frame()` through a `ThreePresenter` and
- * the game's `three` skin on a WebGL canvas of the same size instead: it reads the WebGL renderer
+ * the game's `three` skins (`skinSet`: `three.json`, and `three-<id>.json` for the frames of mini
+ * game `<id>`, Engine 0.7 T8) on a WebGL canvas of the same size instead: it reads the WebGL renderer
  * string first and refuses (a {@link ShotRefusal}) when there is no context, or when it is a
  * software renderer and `job.allowSoftwareGl` is false; it syncs the scene with every tick's
  * frame (so the camera's lerp is the one play shows) and renders once, at the last tick.
@@ -106,13 +107,13 @@ async function shootThree(
       renderer: null,
       message: `${job.viewUrl} gives no frame() (engine/core/view.ts), which --backend three needs`,
     };
-  const skin = contentOf(content, SKIN_KIND).find((e) => e.value.backend === 'three');
-  if (!skin) throw new Error(`the game has no skin with backend "three"`);
+  const skins = skinSet(content, 'three');
+  if (!skins.main) throw new Error(`the game has no skin with backend "three"`);
   const { ThreePresenter, isSoftwareRenderer } = await import('@engine/backends/three');
   const canvas = newCanvas(job);
   let presenter: InstanceType<typeof ThreePresenter>;
   try {
-    presenter = new ThreePresenter(canvas, skin.value, {
+    presenter = new ThreePresenter(canvas, skins.main, {
       size: job.screen,
       ...(game.background !== undefined && { background: game.background }),
     });
@@ -125,10 +126,19 @@ async function shootThree(
     presenter.dispose();
     return { refused: 'software_gl', renderer, message: `WebGL runs on a software renderer: ${renderer}` };
   }
-  const played = await play(job, game, (tick) => {
-    if (tick === job.ticks) presenter.present(frame());
-    else presenter.scene.sync(frame());
-  });
+  // Each mini game with a skin of its own gets a scene of its own on the same canvas; every tick
+  // syncs the scene its frame belongs to, and the last tick also draws it.
+  const draws: Record<string, Presenter> = {};
+  const syncs: Record<string, Presenter> = {};
+  for (const [id, skin] of Object.entries(skins.rounds)) {
+    const round = presenter.withSkin(skin);
+    draws[id] = round;
+    syncs[id] = { present: (f) => round.scene.sync(f) };
+  }
+  const main = presenter;
+  const draw = presenterBySkinSet(main, draws);
+  const sync = presenterBySkinSet({ present: (f) => main.scene.sync(f) }, syncs);
+  const played = await play(job, game, (tick) => (tick === job.ticks ? draw : sync).present(frame()));
   const png = canvas.toDataURL('image/png');
   presenter.dispose();
   return { png, width: canvas.width, height: canvas.height, ...played, renderer };

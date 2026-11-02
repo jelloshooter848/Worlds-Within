@@ -34,6 +34,8 @@ export class ThreePresenter implements Presenter {
   private size: ScreenSize | undefined;
   /** The buffer size last given to the renderer. */
   private drawn: ScreenSize | null = null;
+  /** The scenes of the presenters `withSkin` made, freed with this one. */
+  private readonly others: ThreeScene[] = [];
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, skin: Skin, opts: ThreePresenterOptions = {}) {
     const background = opts.background ?? '#000';
@@ -65,9 +67,30 @@ export class ThreePresenter implements Presenter {
   }
 
   present(frame: Frame): void {
-    this.setBuffer(this.size ?? frame.size);
-    this.scene.sync(frame);
-    this.renderer.render(this.scene.scene, this.scene.camera);
+    this.draw(this.scene, frame);
+  }
+
+  /**
+   * Another presenter on this one's canvas and renderer, with its own skin and `ThreeScene`
+   * (camera, map and entities): for a second frame source in one stream, such as a mini game's
+   * frames in another kit's skin (Engine 0.7 T8, gap G32). One WebGL context draws both, whichever
+   * gets the frame. `opts` are the scene's (`size` defaults to this presenter's); `.scene` for
+   * read-outs. `dispose()` on this presenter frees its scene too.
+   */
+  withSkin(skin: Skin, opts: Omit<ThreePresenterOptions, 'size'> = {}): Presenter & { scene: ThreeScene } {
+    const scene = new ThreeScene(skin, {
+      ...(this.size !== undefined && { size: this.size }),
+      ...(opts.background !== undefined && { background: opts.background }),
+      ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+      ...(opts.clamp !== undefined && { clamp: opts.clamp }),
+      ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+    });
+    this.others.push(scene);
+    return {
+      scene,
+      present: (frame) => this.draw(scene, frame),
+      resize: (size) => scene.resize({ width: size.width, height: size.height }),
+    };
   }
 
   /** The WebGL vendor and renderer this presenter draws with (see `isSoftwareRenderer`). */
@@ -78,7 +101,15 @@ export class ThreePresenter implements Presenter {
   /** Frees the scene's geometries and materials and the renderer's GPU resources. */
   dispose(): void {
     this.scene.dispose();
+    for (const scene of this.others.splice(0)) scene.dispose();
     this.renderer.dispose();
+  }
+
+  /** Syncs `scene` with `frame` and draws it on this presenter's canvas. */
+  private draw(scene: ThreeScene, frame: Frame): void {
+    this.setBuffer(this.size ?? frame.size);
+    scene.sync(frame);
+    this.renderer.render(scene.scene, scene.camera);
   }
 
   /** Sizes the drawing buffer to the picture (CSS size untouched: the page letterboxes it). */

@@ -94,12 +94,19 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
   of its own keys (a string), else to `otherwise`; `resize` goes to all. A game that stacks kits
   gives each frame source its own presenter (own skin, camera and map cache): the platformer
   kit's `status.miniGame` is the running round's id, '' on the level.
+- `skin-set.ts` (Engine 0.7 T8, gap G32): `skinSet(content, backend)` gives one backend's skins
+  for a game by file name: `main` (`content/skins/<backend>.json`, else the first skin of that
+  backend that is not a mini game's; null when none) and `rounds` (`<backend>-<id>.json`, by the
+  mini game id `<id>`). `MINI_GAME_STATUS` (`miniGame`) is the status a host kit sets to the
+  running mini game's id; `presenterBySkinSet(main, rounds)` is `presenterByStatus` on it. The
+  page, the view and `pnpm cli screenshot --backend three` all read the same set.
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
 
 - Pure: `engine/core/present/**` is on `PURE_CORE` (`config/layers.js`). No clock, DOM or
-  `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types).
+  `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types,
+  `../content/bundle` for `skinSet`).
 - Everything in a frame is plain JSON-safe data: no classes, functions, `Map`s or kit objects. A
   backend never sees kit internals.
 - Frames are read-only to backends. Never add a field a backend would write back to.
@@ -120,7 +127,8 @@ on the wrong backend, the demo and platformer-lab canvas2d skins still validatin
 `resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `stream.test.ts` covers `FrameStream`
 (state per world, frozen frames), `PendingEvents` (kept across steps, dropped on a new world) and
 `FramePicture`. `switch.test.ts` covers `presenterByStatus` (picking by value, inherited keys
-ignored, resize to all). `camera.test.ts` covers
+ignored, resize to all). `skin-set.test.ts` covers `skinSet` (main and rounds by file name, the
+fallbacks) and `presenterBySkinSet`. `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
 small-area centring, snap on a new map id, repeated frames, `reset`) and `cameraShake`. Run with
 `pnpm test`.
