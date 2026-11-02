@@ -16,7 +16,8 @@ layout needs it too. Never hard-code a picture size here: take it from the size 
 `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheets, opts?)` implements `Presenter`.
 `sheets` is a `SheetLookup` (`sheetLookup(assets)` from `@engine/core/assets/sheet-lookup`).
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
-`onSound?(id)`, `background?` (`#000`), `font?` (HUD font, default `font`), `clamp?` (true),
+`onSound?(id)`, `background?` (`#000`), `font?` (HUD font, default `font`), `clamp?` (the
+skin's `camera.clamp`, else true),
 `reduceFlashing?`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
 canvas, none in Node). Each `present(frame)`, in order:
 
@@ -51,13 +52,22 @@ canvas, none in Node). Each `present(frame)`, in order:
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 
+## A skin set (`skin-set.ts`, Engine 0.7 T9)
+
+`skinSetCanvasPresenter(r, { skin, rounds?, sheet, screen, background?, onSound?, main? })`: one
+`Presenter` for a game that stacks kits: a `SkinnedCanvasPresenter` with the game's skin (or
+`main`) and one per mini game skin in `rounds` (on black), picked per frame by `status.miniGame`
+(`presenterBySkinSet` from `@engine/core/present`). Each skin frames its map as its own `camera`
+says (`clamp: false` keeps a top-down room under its HUD band; gaps G29 and G34 in
+`docs/reports/stacking-test.md`), so games pass no per-round options.
+
 ## The page's display (`display.ts`, Engine 0.7)
 
-`canvasDisplay(canvas, { screen, skin, sheet, background?, integerScale?, onSound? })` is the
+`canvasDisplay(canvas, { screen, skin, rounds?, sheet, background?, integerScale?, onSound? })` is the
 Canvas2D `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`: a `Viewport` on
 the page's canvas at the picture size, a `CanvasRenderer` on its backbuffer (the scene stack's
-`renderer`), and a `SkinnedCanvasPresenter` with the game's skin on that same renderer (the
-display's `presenter`). `fit(layout)` sets the viewport's `fit` from the screen layout and
+`renderer`), and `skinSetCanvasPresenter` with the game's skin (and `rounds`, a skin per mini
+game, as `threeDisplay` takes them) on that same renderer (the display's `presenter`). `fit(layout)` sets the viewport's `fit` from the screen layout and
 resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `games/platformer-lab/main.ts`).
 

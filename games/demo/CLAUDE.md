@@ -30,12 +30,12 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   selected) along the bottom of the HUD band. Townsfolk (`person:*`) are not listed: they fall
   back to `sheets.fallbackColor`.
 - TypeScript is glue only: `content.ts` (the content kinds, `loadDemo`, and `demoDungeon`,
-  `demoSongs`, `demoSfx`, `demoSkin`, `demoArt` over the loaded bundle), `files.ts` (the browser's file pairs through
+  `demoSongs`, `demoSfx`, `demoSkin` over the loaded bundle; sheets are the engine's `contentSheets`), `files.ts` (the browser's file pairs through
   Vite's `import.meta.glob` with `?raw`), `headless.ts` (`createWorld(content, seed?)`, and `createGame(content, seed)`: the
   engine's headless contract, which `pnpm cli run` imports by the path in `game.json`),
   `picture.ts` (`demoLook(content)`: the skin, sheets and picture size; `DemoPicture`: each
   `draw(world, events)` calls the kit's `presentWorld`, freezes the frame, hands it to the
-  backend's `SkinnedCanvasPresenter` (clamping off, so the room stays under the HUD band) and
+  backend's `SkinnedCanvasPresenter` (the skin's `camera.clamp: false` keeps the room under the HUD band) and
   writes the three status lines, `drawStatusLines`, from the frame's `status`), `view.ts`
   (`createView(content, seed, opts?)`: the headless game plus `DemoPicture`, for `pnpm cli screenshot`),
   `scene.ts` (`DemoScene`: the world, its events since the last draw, `DemoPicture` with

@@ -22,9 +22,8 @@ It is a test game: content and glue, not engine.
   kind, tile, event and HUD value the kit presents; camera follow, deadzone and lerp) and
   `skins/three.json` (Engine 0.6: a low-poly mesh per kind, a block per solid tile, the same
   camera, `camera3d` fov, tilt and layer depth).
-- `content.ts`: `loadLab(files)`, `labStages(content)` (the levels in play order), `labSkin`,
-  `labSkin3d`,
-  `labArt`, `mustLoad`.
+- `content.ts`: `loadLab(files)`, `labStages(content)` (the levels in play order: the kit's
+  `contentStages` with `tiny` first), `labSkin`, `labSkin3d`, `mustLoad` (the engine's).
 - `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
   `LevelSequence` over the levels with the lab's mini games (`LabGame`), `LEVEL_PAUSE` ticks
   between them; the kit's `SequenceSnapshot` (the world's plus `stage` and `pause`).

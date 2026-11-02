@@ -51,6 +51,14 @@ describe('roomChallenge', () => {
     expect(miniGameTable([DEF]).get('arena')?.title).toBe('ARENA');
   });
 
+  it("takes its title from the room's title, else the id in capitals (gap G15)", () => {
+    expect(roomChallenge({ id: 'arena', room: { ...arena(), title: 'THE ARENA' } }).title).toBe('THE ARENA');
+    expect(roomChallenge({ id: 'big-arena', room: arena() }).title).toBe('BIG ARENA');
+    expect(
+      roomChallenge({ id: 'arena', title: 'MINE', room: { ...arena(), title: 'THE ARENA' } }).title,
+    ).toBe('MINE');
+  });
+
   it('passes on reach once the hero walks onto the exit tile', () => {
     const { round, snaps } = play({ goal: 'reach', ticks: 600 }, () => ['right']);
     expect(round.result()).toBe('pass');

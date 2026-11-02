@@ -88,6 +88,8 @@ export interface RoomDef {
   music?: string;
   /** Read to screen readers when the room is first entered. */
   hint?: string;
+  /** A title to show for the room, e.g. a mini game's ('THE VAULT'; `roomChallenge` uses it). */
+  title?: string;
   /** Free-form flag a game may use (e.g. a darker palette for a boss room). */
   dark?: boolean;
   /** The room the compass points to (Zelda's Triforce room), marked on the map once it is found. */

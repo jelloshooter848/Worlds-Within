@@ -315,6 +315,12 @@ const camera = z.strictObject({
     .max(1)
     .exactOptional()
     .describe('how far the camera closes the gap each frame (1 snaps)'),
+  clamp: z
+    .boolean()
+    .exactOptional()
+    .describe(
+      'keep the view inside the map, centring a smaller map (default true); false lets a camera hint place it',
+    ),
 });
 
 const sheets = z.strictObject({

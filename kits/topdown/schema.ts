@@ -57,6 +57,11 @@ export function roomSchema(
         .min(1)
         .exactOptional()
         .describe('read to screen readers when the room is first entered'),
+      title: z
+        .string()
+        .min(1)
+        .exactOptional()
+        .describe("a title to show for the room: a room challenge's (the mini game's) title"),
       dark: z.boolean().exactOptional().describe('a free flag a game may use (a darker palette)'),
       goal: z.boolean().exactOptional().describe('the room the compass points to'),
       chests: z

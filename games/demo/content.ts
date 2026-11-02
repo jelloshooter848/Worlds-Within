@@ -1,17 +1,9 @@
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import {
-  engineContentKinds,
-  PALETTE_KIND,
-  SFX_KIND,
-  SKIN_KIND,
-  SONG_KIND,
-  SPRITE_KIND,
-} from '@engine/core/content/engine-kinds';
+import { engineContentKinds, SKIN_KIND, SONG_KIND } from '@engine/core/content/engine-kinds';
+import { contentSfx, mustLoad as mustLoadContent } from '@engine/core/content/game-content';
 import type { ContentKinds } from '@engine/core/content/kinds';
-import { formatErrors, type ContentResult } from '@engine/core/content/validate';
+import type { ContentResult } from '@engine/core/content/validate';
 import type { Sfx, Song } from '@engine/core/audio/mml';
-import type { PaletteTable } from '@engine/core/gfx/palette';
-import type { SpriteDef } from '@engine/core/gfx/pixelart';
 import type { SkinFile } from '@engine/core/present';
 import { buildDungeon, roomKind, type Dungeon } from '@kits/topdown';
 
@@ -42,9 +34,9 @@ export function demoSongs(content: ContentBundle): Song[] {
   return contentOf(content, SONG_KIND).map((e) => e.value);
 }
 
-/** Every sound effect, for the audio manager (the skin's event sounds). */
+/** Every sound effect, for the audio manager (the skin's event sounds): the engine's `contentSfx`. */
 export function demoSfx(content: ContentBundle): Sfx[] {
-  return contentOf(content, SFX_KIND).map((e) => e.value);
+  return contentSfx(content);
 }
 
 /**
@@ -57,20 +49,7 @@ export function demoSkin(content: ContentBundle): SkinFile {
   return skin.value;
 }
 
-/** Sprite sheets by id (the file name) and palettes by id, for the asset registry. */
-export function demoArt(content: ContentBundle): {
-  sprites: Record<string, SpriteDef>;
-  palettes: PaletteTable;
-} {
-  const sprites: Record<string, SpriteDef> = {};
-  for (const e of contentOf(content, SPRITE_KIND)) sprites[e.name] = e.value;
-  const palettes: PaletteTable = {};
-  for (const e of contentOf(content, PALETTE_KIND)) palettes[e.value.id] = e.value.colors;
-  return { sprites, palettes };
-}
-
-/** Throws with every error, one per line: for entry points, where bad content is a build mistake. */
+/** Throws with every error, one per line: the engine's `mustLoad`, naming the demo. */
 export function mustLoad(result: ContentResult<ContentBundle>): ContentBundle {
-  if (result.ok) return result.value;
-  throw new Error(`the demo's content has errors:\n${formatErrors(result.errors)}`);
+  return mustLoadContent(result, 'the demo');
 }

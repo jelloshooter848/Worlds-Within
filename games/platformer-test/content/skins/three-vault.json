@@ -140,5 +140,6 @@
     "dying": { "sound": "fail" },
     "dead": { "effect": { "kind": "tint", "color": "#d82800", "ticks": 10 } }
   },
+  "camera": { "clamp": true },
   "camera3d": { "fov": 40, "tilt": 8, "layerDepth": 0.25, "lights": { "ambient": 0.6, "directional": 0.75 } }
 }

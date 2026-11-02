@@ -6,7 +6,16 @@ import { ScriptedInput } from '@engine/core/input/scripted-input';
 import type { MiniGameDef } from '@engine/core/minigame';
 import { levelSchema, type LevelDef } from './level';
 import { profileSchema } from './profile';
-import { LEVEL_PAUSE, LevelSequence, levelStages, type LevelStage, type SequenceSnapshot } from './sequence';
+import type { ContentBundle } from '@engine/core/content/bundle';
+import {
+  contentStages,
+  LEVEL_PAUSE,
+  LevelSequence,
+  levelsInPlayOrder,
+  levelStages,
+  type LevelStage,
+  type SequenceSnapshot,
+} from './sequence';
 
 const fixture = (name: string) => readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8');
 const PROFILE = profileSchema.parse(JSON.parse(fixture('runner.profile.json')));
@@ -152,5 +161,38 @@ describe('levelStages', () => {
     expect(() => levelStages([level('x', ['@G', '##'])], [], 'the lab')).toThrow(
       'level "x" names profile "runner", which the lab lacks',
     );
+  });
+});
+
+describe('levels in play order (gap G2)', () => {
+  const ids = (levels: readonly { id: string }[]) => levels.map((l) => l.id);
+  const map = ['......', '.@..G.', '######'];
+  const levels = ['level-10', 'level-2', 'tiny', 'level-1'].map((id) => level(id, map));
+
+  it('sorts by id with numbers compared as numbers, the first level ahead', () => {
+    expect(ids(levelsInPlayOrder(levels))).toEqual(['level-1', 'level-2', 'level-10', 'tiny']);
+    expect(ids(levelsInPlayOrder(levels, 'tiny'))).toEqual(['tiny', 'level-1', 'level-2', 'level-10']);
+    expect(() => levelsInPlayOrder(levels, 'nope')).toThrow(/nope/);
+  });
+
+  it("pairs a bundle's levels with their profiles", () => {
+    const entry = (kind: string, value: { id: string }) => ({
+      kind,
+      name: value.id,
+      file: `${value.id}.json`,
+      value,
+    });
+    const content = {
+      manifest: {},
+      entries: [...levels.map((l) => entry('level', l)), entry('profile', PROFILE)],
+    } as unknown as ContentBundle;
+    const stages = contentStages(content, { first: 'tiny' });
+    expect(ids(stages.map((s) => s.level))).toEqual(['tiny', 'level-1', 'level-2', 'level-10']);
+    expect(stages[0]?.profile).toBe(PROFILE);
+    expect(() => contentStages(content, { first: 'nope', who: 'the lab' })).toThrow(
+      /the lab has no level "nope"/,
+    );
+    const empty = { manifest: {}, entries: [] } as unknown as ContentBundle;
+    expect(() => contentStages(empty)).toThrow(/has no levels/);
   });
 });

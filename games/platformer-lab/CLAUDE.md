@@ -56,8 +56,8 @@ engine, and nothing in `engine/` or `kits/` depends on it.
 - TypeScript is glue only:
   - `content.ts`: `labKinds`, `loadLab(files)`, `labStages(content)` (the levels in play order:
     `FIRST_LEVEL` (`tiny`) first, then the others by id, each paired with its profile by the kit's
-    `levelStages`), `labSkin`,
-    `labSkin3d` (the `three` skin), `labArt`, `mustLoad`;
+    `contentStages` with `first`), `labSkin`,
+    `labSkin3d` (the `three` skin), `mustLoad` (the engine's, naming the lab);
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
     game: a marker sweeps along a bar of `cells` cells, one cell every `every` ticks; attack on
     the `zone` cells (placed by the round's seed) passes, anywhere else fails, select quits, and

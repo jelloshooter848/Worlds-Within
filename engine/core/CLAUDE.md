@@ -90,6 +90,8 @@ kits, the sim and the pure core itself into core and fails if a file it reaches 
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, `shell/boot.ts`, the
 browser input sources, `save/`, `assets/` (except `sheet-lookup.ts`, `sheetLookup(assets)`: a sheet getter that
 returns null, never throws, for a missing sheet or palette) and the backends.
+`assets/content-sheets.ts` (`contentSheets(content)`, Engine 0.7 T9) is a game's sprite and palette
+files as a `SheetLookup`, for the glue that hands a backend its sheets.
 
 ## Fixtures
 

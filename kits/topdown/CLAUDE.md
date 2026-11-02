@@ -177,10 +177,11 @@ pushes a one-room top-down challenge over the level). It implements the engine's
 contract (`engine/core/minigame.ts`: `MiniGameDef`, `MiniGame`); the host (the platformer kit's
 world) steps the round headless and acts on its result.
 
-- `roomChallenge({ id, title, room, extraLegend?, wall?, spawners?, items?, disabledRules?, size?,
+- `roomChallenge({ id, title?, room, extraLegend?, wall?, spawners?, items?, disabledRules?, size?,
 top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usually one of its
   room files); the kit holds no room. The room is checked once, here (`buildDungeon` of that one
-  room: it throws on a bad one).
+  room: it throws on a bad one). `title` defaults to the room's `title` field, else the id in
+  capitals (Engine 0.7 T9, gap G15).
 - Each round (`create(ctx, seed)`) is a `RoomChallenge`: a fresh one-room `TopDownWorld` seeded
   from the round's seed (and nothing else random), with the trigger's params read by
   `challengeParams(ctx.params)`: `goal` (`defeat-all`: every enemy beaten, `world.enemies()`

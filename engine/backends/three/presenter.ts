@@ -14,7 +14,7 @@ export interface ThreePresenterOptions {
   onSound?: (id: string) => void;
   /** The clear and background colour (default `#000`). */
   background?: string;
-  /** Keep the camera inside the map or the hint's `bounds` (default true). */
+  /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
   /** Skip `flash` effects (the player's reduced-flashing setting). */
   reduceFlashing?: boolean;

@@ -5,18 +5,11 @@ import { testRooms } from './content';
 
 /**
  * The game's mini games: one top-down room challenge (`kits/topdown/challenge.ts`) per room file
- * in `content/rooms/`, its id the room's id. What a round asks (goal, time limit, hit points) and
- * what its result does are the door level's trigger data (`content/levels/level-4.json`), not
- * code. The title is the id in capitals: a room file has no field for it (gap G15).
+ * in `content/rooms/`, its id the room's id and its title the room's `title` (gap G15, fixed in
+ * 0.7 T9). What a round asks (goal, time limit, hit points) and what its result does are the door
+ * level's trigger data (`content/levels/level-4.json`), not code.
  */
 export function testMiniGames(content: ContentBundle): MiniGameDef[] {
   const size = content.manifest.screen;
-  return testRooms(content).map((room) =>
-    roomChallenge({
-      id: room.id,
-      title: room.id.toUpperCase().replace(/-/g, ' '),
-      room,
-      ...(size ? { size } : {}),
-    }),
-  );
+  return testRooms(content).map((room) => roomChallenge({ id: room.id, room, ...(size ? { size } : {}) }));
 }

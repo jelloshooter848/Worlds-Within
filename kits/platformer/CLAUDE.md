@@ -52,7 +52,8 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
 - `sequence.ts`: `LevelSequence(stages, { seed, disabledRules, miniGames, pause })`, levels
   played one after another as the headless contract (under Level sequences), `LevelStage`
   (`{ level, profile }`), `levelStages(levels, profiles, who?)` (each level paired with the
-  profile it names), `LEVEL_PAUSE` and `SequenceSnapshot`.
+  profile it names), `levelsInPlayOrder(levels, first?)`, `contentStages(content, { first?, who? })`,
+  `LEVEL_PAUSE` and `SequenceSnapshot`.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
   `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES` and `strictMutants: true`.
   `index.ts` re-exports the rest (not the hook); games import it as `@kits/platformer`.
@@ -248,7 +249,11 @@ run files guard it (`runs/mini-game.run.json`) with every other rule, so
 The level-after-level flow every platformer game needs, as a gameplay flow rule (pure, no
 drawing): `new LevelSequence(stages, opts)` implements the headless contract over an ordered list
 of `LevelStage`s (`{ level, profile }`; `levelStages(levels, profiles)` pairs levels with the
-profiles they name and throws on a missing one). The order is the game's.
+profiles they name and throws on a missing one). The order is the game's; most games want
+`contentStages(content, { first?, who? })` (Engine 0.7 T9, gap G2): the bundle's `level` and
+`profile` files, the levels by id with numbers compared as numbers (`level-2` before `level-10`,
+`levelsInPlayOrder`), `first` ahead of the rest, each with its profile. An order written in data
+(a mission or campaign file) comes with the mission contract at Engine 0.10.
 
 - While a level's outcome is `playing`, `step(input)` steps its world and keeps that step's
   events (`events`; the world's own list is emptied every step).

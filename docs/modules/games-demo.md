@@ -17,7 +17,8 @@ at Engine 0.15.
 - `content/`: `rooms/*.json` + `*.map.txt`, `songs/*.json`, `sfx/*.json`, `palettes/*.json`,
   `sprites/*.txt`, `skins/canvas2d.json` (every kind, tile, event and HUD value the kit presents).
 - `content.ts`: `demoKinds`, `loadDemo(files)`, `demoDungeon`, `demoSongs`, `demoSfx`, `demoSkin`,
-  `demoArt`, `mustLoad`.
+  `mustLoad` (the engine's `contentArt`, `contentSfx` and `mustLoad` underneath; sheets from
+  `contentSheets`).
 - `picture.ts`: `demoLook(content)` (skin, sheets, picture size) and `DemoPicture`
   (`draw(world, events)`: `presentWorld` -> frozen frame -> `SkinnedCanvasPresenter`, plus the
   status lines; `onSound` for the skin's sounds).

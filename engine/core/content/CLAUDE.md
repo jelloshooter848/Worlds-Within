@@ -46,6 +46,12 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
   (`gfx/sprite-schema.ts`, JSON or `.txt`) and `skin` (`present/skin.ts`), each also exported
   (`SONG_KIND`, ..., `SKIN_KIND`) for `contentOf`.
+- `game-content.ts` (Engine 0.7 T9, gap G4 in `docs/reports/stacking-test.md`): the content glue
+  every game wrote for itself. `kitContentKinds(kits)`: the engine's kinds plus each kit hook's
+  `kinds()` (`import { kit } from '@kits/<name>/kit'`, `game.json`'s `kit` then `uses`; throws on a
+  clash), the same set the tools build from the manifest. `contentArt(content)` (sprites and
+  palettes by id, for the asset registry), `contentSfx(content)` and `mustLoad(result, who?)`
+  (the bundle, or one error listing every problem).
 
 The schemas for engine data live next to the code that uses the data, not here:
 `audio/song-schema.ts` (the `Song` and `Sfx` shapes, and every channel must compile as MML) and

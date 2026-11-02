@@ -3,6 +3,7 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { freezeFrame, type PresentFrame, type PresentMap, type SkinFile } from '@engine/core/present';
 import { SkinnedCanvasPresenter, type MapSurface } from './presenter';
+import { skinSetCanvasPresenter } from './skin-set';
 
 /** A renderer that records every call as a line of text; `transform` records and draws locally. */
 function recorder(withTransform = true) {
@@ -345,6 +346,13 @@ describe('SkinnedCanvasPresenter', () => {
       expect(free.show({ entities: at(2, 3) })).toEqual([-22, -13]);
     });
 
+    it("takes clamp from the skin's camera, which the option overrides (gap G29)", () => {
+      const fromSkin = cam({ follow: 'hero', clamp: false });
+      expect(fromSkin.show({ entities: at(2, 3) })).toEqual([-22, -13]);
+      const overridden = cam({ follow: 'hero', clamp: false }, { clamp: true });
+      expect(overridden.show({ entities: at(2, 3) })).toEqual([0, 0]);
+    });
+
     it('records the same draw calls for the same frame sequence on two runs', () => {
       const run = () => {
         const c = cam({ follow: 'hero', deadzone: { w: 12, h: 6 }, lerp: 0.3 });
@@ -417,5 +425,24 @@ describe('SkinnedCanvasPresenter', () => {
       p.resize({ width: 64, height: 64 });
       p.present(freezeFrame(frame({ frame: 1, map: { id: 'room', version: 0 } })));
     }).not.toThrow();
+  });
+});
+
+describe('skinSetCanvasPresenter (gap G34)', () => {
+  it("draws a mini game's frames through its skin, the rest through the game's", () => {
+    const { r, calls } = recorder();
+    const round: SkinFile = { ...SKIN, kinds: { hero: { frames: { idle: 'side-0' } } } };
+    const p = skinSetCanvasPresenter(r, {
+      skin: SKIN,
+      rounds: { vault: round },
+      sheet: lookup,
+      screen: { width: 48, height: 32 },
+    });
+    p.present(frame({ noMap: true, entities: [hero({ x: 16, y: 8 })] }));
+    p.present(
+      frame({ frame: 1, noMap: true, entities: [hero({ x: 16, y: 8 })], status: { miniGame: 'vault' } }),
+    );
+    const heroes = calls.filter((c) => c.startsWith('sprite hero:'));
+    expect(heroes.map((c) => c.split(' ')[1])).toEqual(['hero:down-0', 'hero:side-0']);
   });
 });

@@ -70,7 +70,8 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
     `down`, else the first given). An unknown kind or a mesh entry gives `frame: null`: draw a
     `fallbackColor` box (`DEFAULT_FALLBACK_COLOR` when the skin gives none).
 - `camera.ts`: camera framing shared by every backend, so 2D and 3D frame the same world point.
-  `CameraFollower` (`new CameraFollower({ clamp? })`, default clamp on) keeps one camera's state;
+  `CameraFollower` (`new CameraFollower({ clamp? })`, default clamp on; both presenters pass the
+  skin's `camera.clamp` unless their own `clamp` option is set, Engine 0.7 T9) keeps one camera's state;
   `update(frame, skin.camera, size, map)` returns its top-left in whole world pixels (`map` is the
   shown map's `{ id, cols, rows, tileSize }`, or null). Target: the hint's `follow` entity (by id,
   its box centre) when in the frame, else the hint's `x`/`y`, else the skin's `camera.follow`

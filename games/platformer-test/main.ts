@@ -1,9 +1,10 @@
 import { AudioManager } from '@engine/core/audio/audio-manager';
+import { contentSfx, mustLoad } from '@engine/core/content/game-content';
 import { canvasDisplay } from '@engine/backends/canvas2d';
-import { backendFromQuery, bootBrowserGame } from '@engine/core/shell';
-import { loadTest, mustLoad, testSfx } from './content';
+import { bootBrowserGame } from '@engine/core/shell';
+import { loadTest } from './content';
 import { TEST_FILES } from './files';
-import { testCanvasPresenter, testLook, testPicture } from './picture';
+import { testLook, testPicture } from './picture';
 import { testLook3d } from './picture3d';
 import { testScene } from './scene';
 
@@ -11,21 +12,19 @@ import { testScene } from './scene';
  * Boots the stacking test in the browser with the engine's `bootBrowserGame` (keyboard, gamepad,
  * the touch pad, the scene stack, the fixed loop and the 2D/3D toggle): Canvas2D by default, the
  * Three.js backend with `?backend=three` (imported only then, so the 2D page loads no Three.js).
- * The scene draws one stream of frames: in 2D onto the display's presenter for the levels and a
- * round presenter for the door's round (`testCanvasPresenter`); in 3D onto the display's
- * presenter, which already hands the round's frames to the round's `three-vault` skin. Sounds:
- * the skins' event sounds go to an `AudioManager` with the game's sfx; the shell has no audio
- * yet, so the unlock on the first gesture is here (gap G27).
+ * Both displays take the level skin and a skin per mini game (`rounds`) and hand each frame to the
+ * right one, so the scene draws one stream of frames onto `display.presenter` either way (gap G34,
+ * fixed in 0.7 T9). Sounds: the skins' event sounds go to an `AudioManager` with the game's sfx;
+ * the shell has no audio yet, so the unlock on the first gesture is here (gap G27).
  */
-const content = mustLoad(loadTest(TEST_FILES));
+const content = mustLoad(loadTest(TEST_FILES), 'the stacking test');
 const look = testLook(content);
 const audio = new AudioManager();
-audio.registerSfx(testSfx(content));
+audio.registerSfx(contentSfx(content));
 const unlock = () => audio.unlock();
 for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click'])
   window.addEventListener(ev, unlock, { passive: true });
 const onSound = (id: string) => audio.sfx(id);
-const in3d = backendFromQuery(window.location.search) === 'three';
 
 void bootBrowserGame({
   screen: look.screen,
@@ -34,11 +33,5 @@ void bootBrowserGame({
     three: async (canvas) =>
       (await import('@engine/backends/three')).threeDisplay(canvas, { ...testLook3d(content), onSound }),
   },
-  scene: (stack, display) =>
-    testScene(content, stack, (r) =>
-      testPicture(
-        in3d ? display.presenter : testCanvasPresenter(r, look, { level: display.presenter, onSound }),
-        look.screen,
-      ),
-    ),
+  scene: (stack, display) => testScene(content, stack, () => testPicture(display.presenter, look.screen)),
 });

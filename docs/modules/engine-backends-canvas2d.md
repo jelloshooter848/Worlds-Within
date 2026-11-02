@@ -30,7 +30,11 @@ for and holds no game rules.
 
 - `canvasDisplay`, `CanvasDisplayOptions` (`display.ts`, Engine 0.7): the page's 2D
   `BrowserDisplay` for `bootBrowserGame` (`@engine/core/shell`): viewport, renderer and a
-  `SkinnedCanvasPresenter` with the game's skin, fitted to the screen layout.
+  `SkinnedCanvasPresenter` with the game's skin (and one per mini game in `rounds`), fitted to
+  the screen layout.
+- `skinSetCanvasPresenter`, `CanvasSkinSetOptions` (`skin-set.ts`, Engine 0.7 T9): one presenter
+  over a game's skin and a skin per mini game, picked per frame by `status.miniGame`; each skin's
+  `camera.clamp` says how it frames its map.
 
 ## Imports allowed
 

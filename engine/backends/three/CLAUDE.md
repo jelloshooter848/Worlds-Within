@@ -20,7 +20,7 @@ in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebG
 `new ThreeScene(skin, opts?)` builds a scene graph; it needs no WebGL and runs in Node. A renderer
 (the WebGL `ThreePresenter`, Engine 0.6 T4) only draws `scene` with `camera`.
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
-`onSound?(id)`, `background?` (`#000`), `clamp?` (true), `reduceFlashing?`.
+`onSound?(id)`, `background?` (`#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`.
 `sync(frame)` brings `scene` and `camera` up to the frame. Read-outs for tests and the presenter:
 `entity(id)` (an entity's root `Group`), `entityIds()`, `map` (the built map `Group`, or null),
 `mapBuilds`, `view` (the world box, px with y down, framed on the z = 0 plane, without shake),
@@ -68,7 +68,7 @@ object UUIDs use randomness internally, which is fine: they never reach a state 
 its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `WebGLRenderer` on
 `canvas` (an `HTMLCanvasElement` or `OffscreenCanvas`); `resize(size)` changes the picture size.
 Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
-`onSound?(id)`, `background?` (`#000`), `clamp?` (true), `reduceFlashing?`; they are passed on to
+`onSound?(id)`, `background?` (`#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`; they are passed on to
 the scene. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
 pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background`. The drawing buffer

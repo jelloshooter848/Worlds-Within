@@ -38,7 +38,10 @@ export interface SkinnedPresenterOptions {
   background?: string;
   /** The bitmap font for HUD numbers and text when an item names none (default `font`). */
   font?: string;
-  /** Keep the camera inside the map; a map smaller than the picture is centred (default true). */
+  /**
+   * Keep the camera inside the map; a map smaller than the picture is centred (default: the skin's
+   * `camera.clamp`, else true).
+   */
   clamp?: boolean;
   /** Skip `flash` effects (the player's reduced-flashing setting). */
   reduceFlashing?: boolean;
@@ -113,7 +116,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.r = isRenderer(target) ? target : new CanvasRenderer(target);
     this.opts = opts;
     this.size = opts.size;
-    this.camera = new CameraFollower({ clamp: opts.clamp !== false });
+    this.camera = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
   }
 
   resize(size: ScreenSize): void {

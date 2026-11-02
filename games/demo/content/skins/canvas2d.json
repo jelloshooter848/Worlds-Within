@@ -1,6 +1,7 @@
 {
   "backend": "canvas2d",
   "sheets": { "sheet": "demo-placeholders", "fallbackColor": "#fcfcfc" },
+  "camera": { "clamp": false },
   "kinds": {
     "hero": {
       "sheet": "demo-hero",

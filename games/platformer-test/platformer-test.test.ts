@@ -9,7 +9,8 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { isFullMap, type SkinFile } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
-import { loadTest, mustLoad, testRooms, testSfx, testStages } from './content';
+import { contentSfx, mustLoad } from '@engine/core/content/game-content';
+import { loadTest, testRooms, testStages } from './content';
 import { testLook } from './picture';
 import { testLook3d } from './picture3d';
 import { testScene } from './scene';
@@ -272,7 +273,7 @@ describe('platformer test 2D skins', () => {
   });
 
   it('names only sounds the game has (MML sfx files)', () => {
-    const sfx = new Set(testSfx(content).map((s) => s.id));
+    const sfx = new Set(contentSfx(content).map((s) => s.id));
     for (const skin of [look.skin, ...Object.values(look.rounds)])
       for (const entry of Object.values(skin.events ?? {}))
         if (entry.sound !== undefined) expect(sfx, entry.sound).toContain(entry.sound);
@@ -337,7 +338,12 @@ describe('platformer test 3D skins', () => {
     expect(Object.keys(skin3d.events ?? {}).sort()).toEqual(Object.keys(skin2d.events ?? {}).sort());
     for (const [type, entry] of Object.entries(skin3d.events ?? {}))
       expect(entry.sound, type).toBe(skin2d.events?.[type]?.sound);
-    expect(skin3d.camera).toEqual(skin2d.camera);
+    // The same framing but for `clamp`: the 2D round keeps the room under its HUD band (`false`),
+    // the 3D round, with no HUD (gap G33), centres it (`true`), each said in its skin (gap G29).
+    const { clamp: clamp2d, ...camera2d } = skin2d.camera ?? {};
+    const { clamp: clamp3d, ...camera3d } = skin3d.camera ?? {};
+    expect(camera3d).toEqual(camera2d);
+    expect([clamp2d, clamp3d]).toEqual(source === 'vault' ? [false, true] : [undefined, undefined]);
   });
 
   it.each(['level', 'vault'])(

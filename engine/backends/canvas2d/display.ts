@@ -2,14 +2,19 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { DeepReadonly, SkinFile } from '@engine/core/present';
 import type { BrowserDisplay } from '@engine/core/shell/display';
-import { SkinnedCanvasPresenter } from './presenter';
 import { CanvasRenderer } from './renderer';
+import { skinSetCanvasPresenter } from './skin-set';
 import { Viewport } from './viewport';
 
 /** What a Canvas2D page needs from a game: its picture size, its `canvas2d` skin and sheets. */
 export interface CanvasDisplayOptions {
   screen: ScreenSize;
   skin: DeepReadonly<SkinFile>;
+  /**
+   * A skin per mini game, by its id (a `SkinSet`'s `rounds`): frames whose `status.miniGame`
+   * names one are drawn through it on the same renderer, on black (Engine 0.7 T9, as `threeDisplay`).
+   */
+  rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
   sheet: SheetLookup;
   /** The colour behind the picture (default `#000`). */
   background?: string;
@@ -22,18 +27,14 @@ export interface CanvasDisplayOptions {
 /**
  * The Canvas2D display for `bootBrowserGame` (`@engine/core/shell`, Engine 0.7, moved from
  * `games/platformer-lab/main.ts`): a `Viewport` on the page's canvas, a `CanvasRenderer` on its
- * backbuffer for the scene stack, and a `SkinnedCanvasPresenter` with the game's skin on that same
- * renderer. `fit` follows the screen layout; `present` copies the backbuffer to the page. Browser
- * only.
+ * backbuffer for the scene stack, and a `SkinnedCanvasPresenter` with the game's skin (and one per
+ * mini game in `rounds`, `skinSetCanvasPresenter`) on that same renderer. `fit` follows the
+ * screen layout; `present` copies the backbuffer to the page. Browser only.
  */
 export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOptions): BrowserDisplay {
   const viewport = new Viewport(canvas, { integerScale: opts.integerScale ?? false }, opts.screen);
   const renderer = new CanvasRenderer(viewport.ctx);
-  const presenter = new SkinnedCanvasPresenter(renderer, opts.skin, opts.sheet, {
-    size: opts.screen,
-    ...(opts.background !== undefined && { background: opts.background }),
-    ...(opts.onSound !== undefined && { onSound: opts.onSound }),
-  });
+  const presenter = skinSetCanvasPresenter(renderer, opts);
   return {
     renderer,
     presenter,

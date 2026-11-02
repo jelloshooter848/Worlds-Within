@@ -74,8 +74,11 @@ export function challengeParams(raw: JsonObject): ChallengeParams {
 export interface RoomChallengeOptions {
   /** The mini game id level data names it by (lower-case letters, digits and "-"). */
   id: string;
-  /** Its title, e.g. 'THE VAULT'. */
-  title: string;
+  /**
+   * Its title, e.g. 'THE VAULT'; the room's `title` when left out, else the id in capitals
+   * (Engine 0.7 T9, gap G15: a title is data, in the room file).
+   */
+  title?: string;
   /** The room, from the game's content (one room: its doors, if any, lead nowhere). */
   room: RoomDef;
   /** The game's own legend characters for the room (as for `buildDungeon`). */
@@ -196,7 +199,7 @@ export function roomChallenge(opts: RoomChallengeOptions): MiniGameDef {
   const dungeon = buildDungeon([opts.room], opts.extraLegend ?? {}, { wall: opts.wall ?? 1 });
   return {
     id: opts.id,
-    title: opts.title,
+    title: opts.title ?? opts.room.title ?? opts.id.toUpperCase().replace(/-/g, ' '),
     create: (ctx, seed) => new RoomChallenge(dungeon, opts, ctx, seed),
   };
 }

@@ -1,8 +1,10 @@
+import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessGame } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGameDef } from '@engine/core/minigame';
 import type { LevelDef } from './level';
-import type { ProfileDef } from './profile';
+import { profileKind, type ProfileDef } from './profile';
+import { levelKind } from './schema';
 import { snapshotWorld, type PlatformerSnapshot } from './snapshot';
 import { PlatformerWorld, type PlatformerEvent } from './world';
 
@@ -97,6 +99,49 @@ export class LevelSequence implements HeadlessGame {
       ...(miniGames ? { miniGames } : {}),
     });
   }
+}
+
+/**
+ * Levels in play order: by id, numbers in ids compared as numbers (`level-2` before `level-10`),
+ * with the level `first` (when given) ahead of the rest. Throws when `first` is not among them.
+ */
+export function levelsInPlayOrder(levels: readonly LevelDef[], first?: string): LevelDef[] {
+  const sorted = [...levels].sort((a, b) =>
+    a.id === first ? -1 : b.id === first ? 1 : a.id.localeCompare(b.id, 'en', { numeric: true }),
+  );
+  if (first !== undefined && sorted[0]?.id !== first) throw new Error(`there is no level "${first}"`);
+  return sorted;
+}
+
+/** Options for {@link contentStages}. */
+export interface ContentStagesOptions {
+  /** The level played first, ahead of the id order (the lab's fixture level). */
+  first?: string;
+  /** Names the game in error messages (default 'the game'). */
+  who?: string;
+}
+
+/**
+ * A game's levels from its loaded content (`level` and `profile` files), in play order
+ * ({@link levelsInPlayOrder}), each with its profile ({@link levelStages}): the content glue every
+ * platformer game wrote for itself (Engine 0.7 T9, gap G2 in docs/reports/stacking-test.md).
+ * Throws when there is no level, or `first` is missing, or a level's profile is.
+ */
+export function contentStages(content: ContentBundle, opts: ContentStagesOptions = {}): LevelStage[] {
+  const who = opts.who ?? 'the game';
+  const levels = contentOf(content, levelKind()).map((e) => e.value);
+  if (levels.length === 0) throw new Error(`${who} has no levels`);
+  let ordered: LevelDef[];
+  try {
+    ordered = levelsInPlayOrder(levels, opts.first);
+  } catch {
+    throw new Error(`${who} has no level "${opts.first}"`);
+  }
+  return levelStages(
+    ordered,
+    contentOf(content, profileKind()).map((e) => e.value),
+    who,
+  );
 }
 
 /**

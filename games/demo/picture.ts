@@ -1,5 +1,5 @@
-import { AssetRegistry } from '@engine/core/assets/registry';
-import { sheetLookup, type SheetLookup } from '@engine/core/assets/sheet-lookup';
+import { contentSheets } from '@engine/core/assets/content-sheets';
+import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
@@ -12,7 +12,7 @@ import {
 } from '@engine/core/present';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import { presentWorld, TdPresentState, type TopDownWorld } from '@kits/topdown';
-import { demoArt, demoSkin } from './content';
+import { demoSkin } from './content';
 
 /**
  * Glue between the kit's presentation frames and the Canvas2D backend: no drawing of its own
@@ -31,10 +31,7 @@ export interface DemoLook {
 
 /** The demo's skin, its sprite sheets (from the sprite and palette files) and picture size. */
 export function demoLook(content: ContentBundle): DemoLook {
-  const art = demoArt(content);
-  const assets = new AssetRegistry({ default: art.palettes });
-  assets.defineAll(art.sprites);
-  return { skin: demoSkin(content), sheet: sheetLookup(assets), screen: content.manifest.screen };
+  return { skin: demoSkin(content), sheet: contentSheets(content), screen: content.manifest.screen };
 }
 
 export interface DemoPictureOptions {
@@ -52,11 +49,10 @@ export class DemoPicture {
     private readonly look: DemoLook,
     opts: DemoPictureOptions = {},
   ) {
-    // The kit's camera hint puts the room under the HUD band; a map shorter than the picture
-    // must not be re-centred, so clamping is off.
+    // The kit's camera hint puts the room under the HUD band; the skin turns clamping off
+    // (`camera.clamp`), so a map shorter than the picture is not re-centred.
     this.presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
       size: look.screen,
-      clamp: false,
       ...(opts.onSound ? { onSound: opts.onSound } : {}),
     });
   }

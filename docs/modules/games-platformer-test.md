@@ -13,7 +13,9 @@ challenge (`kits/topdown`'s `roomChallenge`) over the level. Since 0.7 T7 it pla
 in 2D (Canvas2D) from the root launcher, with text assets (pixel art, palettes, MML sounds) and a
 skin per frame source (the levels' and the vault round's), and since 0.7 T8 in 3D (Three.js,
 `?backend=three`, the launcher's `3D` link) with low-poly `three` skins written as text (the
-vault room laid flat facing the camera). At 0.15 it becomes `games/samples/platformer/`.
+vault room laid flat facing the camera). 0.7 T9 reviewed its glue against DESIGN.md's rule of
+thumb and moved what another game would write too into the engine and kits (gaps G2, G4, G15,
+G29, G34, G35). At 0.15 it becomes `games/samples/platformer/`.
 
 ## Public API entry points
 
@@ -25,20 +27,23 @@ vault room laid flat facing the camera). At 0.15 it becomes `games/samples/platf
   `vault.json`, `sfx/*.json` (MML), `skins/canvas2d.json` (the levels),
   `skins/canvas2d-vault.json` (the vault round), `skins/three.json` and `skins/three-vault.json`
   (the same in 3D).
-- `content.ts`: `loadTest(files)`, `testStages(content)` (the levels in play order),
+- `content.ts`: `loadTest(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
+  `testStages(content)` (the kit's `contentStages`: the levels in play order),
   `testRooms(content)`, `testSkins(content, backend)` (`{ level, rounds }`: the engine's
-  `skinSet`, the skin named after the backend and one per mini game from `<backend>-<id>`),
-  `testArt`, `testSfx`, `mustLoad`.
+  `skinSet`, the skin named after the backend and one per mini game from `<backend>-<id>`). Art,
+  sounds and `mustLoad` are the engine's (`@engine/core/content/game-content`).
 - `picture3d.ts`: `testLook3d(content)` (the `three` skins, size and sky for `threeDisplay` and
   `threeScenePresenter`; no Three.js import).
-- `picture.ts`: `testLook(content)`, `testFrames(screen)`, `testPicture(presenter, screen)`,
-  `testCanvasPresenter(r, look, { level?, onSound? })` (the engine's `presenterByStatus` on
-  `miniGame`: the level skin's presenter, or the round's) and `testCanvasPicture(r, look)`.
+- `picture.ts`: `testLook(content)` (skins, the engine's `contentSheets`, size, sky),
+  `testFrames(screen)`, `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the
+  backend's `skinSetCanvasPresenter`: the level skin, or the round's, per frame; each skin's
+  `camera.clamp` frames its map).
 - `view.ts`: `createView` (the engine's `frameView`), for `pnpm cli screenshot`.
 - `scene.ts`: `testScene(content, stack, picture)` (the engine's `HostScene`); `main.ts` and
   `index.html`: the page (`bootBrowserGame` with `canvasDisplay`, and `threeDisplay` from a lazily
   imported chunk for `?backend=three`; an `AudioManager` for the sounds).
-- `minigames.ts`: `testMiniGames(content)`, one `roomChallenge` per room file (id = room id).
+- `minigames.ts`: `testMiniGames(content)`, one `roomChallenge` per room file (id = room id,
+  title = the room's `title`).
 - `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
   `LevelSequence` over the levels (`TestGame`) with the mini games, `LEVEL_PAUSE` ticks between them; the kit's
   `SequenceSnapshot` (the world's plus `stage` and `pause`).

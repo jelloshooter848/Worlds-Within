@@ -52,7 +52,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `bootBrowserGame`); see [engine/core/shell](engine-core-shell.md).
 - `assets/`: the sprite sheet registry (`registry.ts`), asset packs, and `sheet-lookup.ts`
   (`sheetLookup(assets)`, a `SheetLookup` that returns null instead of throwing for a missing sheet
-  or palette; backends and games use it).
+  or palette; backends and games use it) and `content-sheets.ts` (`contentSheets(content)`: a
+  game's sprite and palette files as a `SheetLookup`, Engine 0.7 T9).
 - `save/`, `a11y/`, `math/`, `platform.ts`.
 
 ## Imports allowed

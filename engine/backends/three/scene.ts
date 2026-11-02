@@ -46,7 +46,7 @@ export interface ThreeSceneOptions {
   onSound?: (id: string) => void;
   /** The scene's background colour (default `#000`). */
   background?: string;
-  /** Keep the camera inside the map or the hint's `bounds` (default true). */
+  /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
   /** Skip `flash` effects (the player's reduced-flashing setting). */
   reduceFlashing?: boolean;
@@ -142,7 +142,7 @@ export class ThreeScene {
     this.opts = opts;
     this.size = opts.size;
     this.cam3d = resolveCamera3d(skin);
-    this.follower = new CameraFollower({ clamp: opts.clamp !== false });
+    this.follower = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
     this.scene.background = new Color(opts.background ?? '#000');
 
     this.ambient = new AmbientLight(0xffffff, this.cam3d.lights.ambient);

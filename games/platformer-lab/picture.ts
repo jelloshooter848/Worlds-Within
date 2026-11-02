@@ -1,5 +1,5 @@
-import { AssetRegistry } from '@engine/core/assets/registry';
-import { sheetLookup, type SheetLookup } from '@engine/core/assets/sheet-lookup';
+import { contentSheets } from '@engine/core/assets/content-sheets';
+import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
@@ -11,7 +11,7 @@ import {
   type PlatformerPresentState,
   type PlatformerWorld,
 } from '@kits/platformer';
-import { labArt, labSkin } from './content';
+import { labSkin } from './content';
 
 /**
  * Glue between the platformer kit's frames and the Canvas2D backend: no drawing of its own. The
@@ -35,12 +35,9 @@ export const SKY = '#5c94fc';
 
 /** The lab's skin, its sprite sheets (from the sprite and palette files), picture size and sky. */
 export function labLook(content: ContentBundle): LabLook {
-  const art = labArt(content);
-  const assets = new AssetRegistry({ default: art.palettes });
-  assets.defineAll(art.sprites);
   return {
     skin: labSkin(content),
-    sheet: sheetLookup(assets),
+    sheet: contentSheets(content),
     screen: content.manifest.screen,
     background: SKY,
   };

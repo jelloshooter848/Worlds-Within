@@ -1,11 +1,10 @@
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { engineContentKinds, PALETTE_KIND, SKIN_KIND, SPRITE_KIND } from '@engine/core/content/engine-kinds';
+import { engineContentKinds, SKIN_KIND } from '@engine/core/content/engine-kinds';
+import { mustLoad as mustLoadContent } from '@engine/core/content/game-content';
 import type { ContentKinds } from '@engine/core/content/kinds';
-import { formatErrors, type ContentResult } from '@engine/core/content/validate';
-import type { PaletteTable } from '@engine/core/gfx/palette';
-import type { SpriteDef } from '@engine/core/gfx/pixelart';
+import type { ContentResult } from '@engine/core/content/validate';
 import type { SkinFile } from '@engine/core/present';
-import { levelKind, levelStages, profileKind, type LevelStage } from '@kits/platformer';
+import { contentStages, levelKind, profileKind, type LevelStage } from '@kits/platformer';
 
 /**
  * Glue between the lab's data files (`game.json` and `content/`) and the engine: the content
@@ -33,17 +32,11 @@ export type LabStage = LevelStage;
 
 /**
  * The lab's levels in the order they are played: the fixture level (`FIRST_LEVEL`) first, then
- * the lab's own levels by id (`lab-1-...`, `lab-2-...`), each with its profile.
+ * the lab's own levels by id (`lab-1-...`, `lab-2-...`), each with its profile (the kit's
+ * `contentStages`, gap G2).
  */
 export function labStages(content: ContentBundle): LabStage[] {
-  const levels = contentOf(content, LEVEL)
-    .map((e) => e.value)
-    .sort((a, b) =>
-      a.id === b.id ? 0 : a.id === FIRST_LEVEL ? -1 : b.id === FIRST_LEVEL ? 1 : a.id < b.id ? -1 : 1,
-    );
-  if (levels[0]?.id !== FIRST_LEVEL) throw new Error(`the lab has no level "${FIRST_LEVEL}"`);
-  const profiles = contentOf(content, PROFILE).map((e) => e.value);
-  return levelStages(levels, profiles, 'the lab');
+  return contentStages(content, { first: FIRST_LEVEL, who: 'the lab' });
 }
 
 /**
@@ -69,20 +62,7 @@ function skinFor(content: ContentBundle, backend: string): SkinFile {
   return skin.value;
 }
 
-/** Sprite sheets by id (the file name) and palettes by id, for the asset registry. */
-export function labArt(content: ContentBundle): {
-  sprites: Record<string, SpriteDef>;
-  palettes: PaletteTable;
-} {
-  const sprites: Record<string, SpriteDef> = {};
-  for (const e of contentOf(content, SPRITE_KIND)) sprites[e.name] = e.value;
-  const palettes: PaletteTable = {};
-  for (const e of contentOf(content, PALETTE_KIND)) palettes[e.value.id] = e.value.colors;
-  return { sprites, palettes };
-}
-
-/** Throws with every error, one per line: for entry points, where bad content is a build mistake. */
+/** Throws with every error, one per line: the engine's `mustLoad`, naming the lab. */
 export function mustLoad(result: ContentResult<ContentBundle>): ContentBundle {
-  if (result.ok) return result.value;
-  throw new Error(`the lab's content has errors:\n${formatErrors(result.errors)}`);
+  return mustLoadContent(result, 'the lab');
 }

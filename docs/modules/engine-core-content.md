@@ -25,6 +25,9 @@ object.
   `contentNamed`, `globToRegExp`.
 - `content/engine-kinds.ts`: `engineContentKinds()` with the `song`, `sfx`, `palette` and `sprite`
   kinds (also exported as `SONG_KIND`, `SFX_KIND`, `PALETTE_KIND`, `SPRITE_KIND`).
+- `content/game-content.ts` (Engine 0.7 T9): `kitContentKinds(kits)` (the engine's kinds plus each
+  kit hook's), `contentArt(content)`, `contentSfx(content)`, `mustLoad(result, who?)`: the content
+  glue every game wrote for itself.
 - `gfx/palette-schema.ts`: `paletteSchema` (`{ id, colors }`).
 - `node/game-files.ts` (Node only): `readGameFiles(dir)`, a game's `game.json` and `content/**`.
 - `audio/song-schema.ts`: `songSchema`, `sfxSchema` (every channel must compile as MML).
