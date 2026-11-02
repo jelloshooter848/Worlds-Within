@@ -206,7 +206,9 @@ See the table at the end of `docs/ROADMAP.md`.
 - **The AI-native engine space is crowded and moving fast.** What sets us apart is determinism and
   text-first design all the way down, not MCP.
 - **One RTS kit shared across views can pull rules back into the kit** (terrain height, line of sight).
-  Decide early (by 0.8) whether height is part of the simulation.
+  Decided at 0.8 (feedback item 101, reasoning in `docs/BUILD-LOG.md`): height is part of the
+  simulation as data (an integer elevation per terrain cell and an integer `z` on positions), so
+  line of sight and height bonuses are computed in `engine/sim`, never in the kit or views.
 - **Determinism is fragile.** WASM physics, floating-point functions like sin and cos (which can differ
   between machines), and iteration order can all break it. Simulation purity is enforced with a lint
   rule, and state hashes catch what slips through.

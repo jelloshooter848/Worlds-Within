@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 99.** (Last used: 98.)
+**Next unused number: 102.** (Last used: 101.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -287,3 +287,15 @@ topdown])`, because the kits' `index.ts` files do not re-export the hook (so pag
 - **98.** The committed browser test plays `level-4.run.json` in the built page in both backends
   by replacing the page's frame timer and clock, which a test hook in the engine does not offer
   yet (G31, moved to 0.14). This answers item 60 for this game. OK?
+
+**Engine 0.8, decisions needed first** (reasoning in `docs/BUILD-LOG.md`, Engine 0.8, Decisions)
+
+- **99.** ECS: our own small ECS in `engine/sim` (plain-object component stores keyed by entity id,
+  iteration always in ascending id order, no npm dependency), not Koota, bitECS or miniplex, so
+  the whole world saves as JSON and hashes canonically with no serialiser. OK?
+- **100.** A tick is one world minute: an integer `tick` counter with world time derived from it,
+  independent of the 60 Hz frame loop (each view steps the sim at its own rate; 0.10 may scale how
+  many ticks a view advances, never what a tick means). OK, or should a tick be another unit?
+- **101.** Height is part of the simulation as data only: an integer elevation per terrain cell
+  and an integer `z` on `Position`, so line of sight and height bonuses can later live in
+  `engine/sim` and never in the RTS kit or views. No line-of-sight rules in 0.8. OK?

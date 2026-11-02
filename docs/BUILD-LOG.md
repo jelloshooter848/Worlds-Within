@@ -7,6 +7,83 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.8
+
+The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,
+owner answer 24). In progress: this section grows as the release's tasks land.
+
+### Decisions
+
+The roadmap lists three "decisions needed first" for 0.8. They were settled before any code in
+`engine/sim`, so later tasks build on recorded choices. Each one is a feedback item the owner can
+overrule by number.
+
+**1. The ECS: our own small one in `engine/sim` (item 99).** Entities are integer ids handed out in
+order; each component is a plain-object store keyed by entity id; systems are plain functions run in
+a fixed order each tick; every query iterates entities in ascending id order. No npm dependency.
+Reasons:
+
+- **Save and load and hashing come for free.** The roadmap wants the whole world saved as JSON and
+  read back to an identical state, with state hashes. With plain data, a save is the stores written
+  out with sorted keys, and the canonical hash is the hash of that text. Koota and bitECS keep
+  components in typed arrays (structure of arrays) behind a world object and module-level state, so
+  a save would need a serialiser for each component and care with every library upgrade.
+- **Deterministic iteration order.** Library query order follows archetype tables or swap-remove
+  dense arrays, so it depends on the order of adds and removes, not on the ids. Ours is always
+  ascending id order, written down and tested, so two runs that reach the same state iterate the
+  same way.
+- **Licences and upkeep.** bitECS is MPL-2.0 (a caveat if its code is copied or patched);
+  miniplex's current activity is unconfirmed (`docs/research/prior-art.md`). Koota is the best
+  candidate (ISC, active), but its strengths (performance with very many entities, React
+  bindings) are not what a turn-paced village or siege world needs.
+- **No new owner in the `PACKAGES` table.** Any library would become an external package that only
+  `engine/sim` may import, with a new `PACKAGES` row and lint rule. Our own needs none.
+- **It is small.** Entities, stores, queries and a fixed system order are a few hundred lines that
+  an agent can read in one go, matching the repo's LLM-first rule.
+
+What it costs: no archetype speed-ups, so a query walks a store. That is fine at the planned sizes
+(hundreds to low thousands of entities); if a later release needs more, an index per component can
+be added without changing the data model. If a later builder switches to a library, it must show
+the same two properties: deterministic iteration order, and a whole-world JSON save that reads
+back to equal hashes.
+
+**2. A tick in world time: one tick is one world minute (item 100).** The world keeps an integer
+`tick` counter; world time is derived from it (`minute = tick`, hours and days by integer division)
+and never stored as a float. A tick is a step of the simulation, not a frame: it is independent of
+the 60 Hz frame loop, and each view decides how many ticks to advance per frame or per order (an
+RTS view might step one tick every few frames, a mission view none until its fixed world-time cost
+is applied). Reasons:
+
+- A minute is fine enough for the RTS view (a unit's move or a training step takes a few minutes)
+  and coarse enough that construction (hours) and caravans (days) are counts of ticks a scenario
+  can write as plain integers.
+- Integer ticks keep world time exact: no drift, nothing that rounds differently between machines,
+  and a save stores one number.
+- 0.10 (time and the mission contract) adds experience time and commitment time on top of world
+  time. It may scale how many ticks a view advances (a mission's fixed world-time cost is N ticks
+  applied at once), but it never changes what one tick means. Durations in scenario data are
+  written in ticks (world minutes), so changing the unit later would mean rewriting data, which is
+  why it is fixed now.
+
+**3. Height is part of the simulation, as data only (item 101).** Each cell of the world's terrain
+grid has an integer elevation, and `Position` has an integer `z` (the level an entity stands on)
+beside its `x` and `y`. 0.8 adds no rules that use height: no line of sight, no height bonus, no
+slopes in movement. Reasons:
+
+- **The DESIGN risk.** One RTS kit shared across a flat 2D view and a 2.5D view pulls terrain
+  height and line of sight back into the kit if the world does not know about height: each view
+  would invent its own. With height in the world, line of sight and height bonuses can be computed
+  later in `engine/sim` (0.9 onwards) from the same data, and the kit and views only read the result.
+- **It is cheap.** An integer per cell and one integer per position add little to a save and
+  nothing to determinism (no floats). A flat map is just every cell at 0.
+- **Deciding late is the expensive path.** Adding `z` after saves, scenarios and the RTS kit exist
+  would change every one of them.
+
+What it costs: every terrain and position in scenario data carries one more field (defaulting to
+0 keeps flat scenarios short), save files grow a little, and views must decide how to draw height
+(a flat 2D view can ignore it). Line-of-sight rules, when they come, must be written in integer
+maths so they stay deterministic.
+
 ## Engine 0.7
 
 The stacking test. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
