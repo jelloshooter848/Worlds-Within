@@ -8,6 +8,7 @@
 - [Design](docs/DESIGN.md): what the engine and the game are, and the dependency rule
 - [Roadmap](docs/ROADMAP.md): the release plan; check it before adding features
 - [Stacking-test gap report](docs/reports/stacking-test.md): what Engine 0.7's test game found missing, 37 gaps, each fixed (20 in 0.7, 3 more in 0.10) or moved to a named release, plus the glue review
+- [Mini-siege gap report](docs/reports/mini-siege.md): what Engine 0.11's multi-genre sample (an RTS siege with a top-down mission, played or delegated) finds missing, each gap fixed or moved to a named release, plus the glue review
 
 ## Modules
 

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 172.** (Last used: 171.)
+**Next unused number: 185.** (Last used: 184.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -641,3 +641,58 @@ entries: [{ level } | { mission }] }`), checked by `validate`; a platformer game
   and holds its hit; units outside the event may still walk toward it. OK?
 - **171.** Run files have no `commit` action: commits always happen by themselves at the fixed
   commit tick (`settleMissions` after every step), so a run never steps out of lockstep. OK?
+
+**Engine 0.11, decisions before code** (reasoning in `docs/BUILD-LOG.md`, Engine 0.11, Decisions).
+The mission (sabotaging siege engines, answer 23), the fixed cost and append-only records (150-151)
+and fair delegation (154) are the owner's rules and are not reopened here.
+
+- **172.** Game run files get the world runs' `missions` list, handed to a new optional
+  `HeadlessGame.mission?(step)` (null when taken, a reason when refused); `open`, `delegate` and
+  `quit` as in world runs, and `play` carries the round's recorded input (`input.steps`, frame 0
+  the round's first tick) instead of an `outcome`, so the played path runs the real kit round,
+  report and adapter. On a game run a late step is refused at run time, not at load. OK?
+- **173.** Live hosting is engine code: `MissionHost` in `engine/core` wraps a game and works
+  through a `MissionWorldPort` (open, delegate, play, quit, settle, snapshot, step) that
+  `engine/sim`'s `missionPort(world, { refs })` fills. While a round is hosted a game tick steps
+  the round only: the world, the scripted enemy and orders wait (orders and mission steps then are
+  refused). The round's seed is derived from the world seed and the mission id. OK?
+- **174.** After a played round the world is stepped through the cost **one world tick per game
+  tick**, through the game's ordinary step (enemy, world, settle), exactly as on the delegated
+  path, so the commit tick and the world's hashes per world tick match it; the page only shows the
+  step-through faster (presentation), and the player may give orders during it. Not all at once.
+  OK?
+- **175.** `kits/rts` reads offered and open missions from the snapshot, shows them as HUD status
+  (`offer`, `offers`, `mission`, `missionLeft`) and tags frozen units `frozen`; launching is
+  `missionRequest(view, id)` (a request, not an order; kit rule `launch-needs-offer`), a bar
+  button, and the interface action `{ "ui": "mission" }`. The host carries the request out. OK?
+- **176.** `kits/topdown` gets `missionRoom` and `topdownMissionAdapter`, driven by the mission's
+  `params`: `room` (a room file with foe slots), `goal`/`ticks`/`hp`, `foes` (world entities by
+  event, faction, type and squad role into slots, hp from `Health.hp` over `hpPer`) and an ordered
+  `outcomes` rule list (`destroyed`, `spared`, `minDestroyed`, `result`; the last has no
+  condition). No adapter code in the game. OK?
+- **177.** G18: `MiniGameDef.inputMap` (host action to round action, or null to drop), and every
+  action held on a round's first tick ignored until released, in one engine `RoundInput` every
+  host uses. A run file that holds a button into a door may have its golden hashes re-recorded
+  (listed in the commit). OK?
+- **178.** G19 (the rest): `MiniGameDef.hostStatus` lists host HUD keys copied into the round's
+  frame as `host:<key>`; without it a stacked frame shows the round's HUD only, as before. OK?
+- **179.** G27: `bootBrowserGame({ audio: { sfx, songs, music? } })` makes the `AudioManager`,
+  wires the displays' sounds, unlocks on the first key, tap or click and starts `music`. OK?
+- **180.** G28: skin event keys `<type>:<value>` (matching the event's `result`) and
+  `<type>:<field>=<value>`; the first match in file order wins, then the bare type. OK?
+- **181.** G13 and G30: an optional `look` on a platformer trigger entry, presented as the tag
+  `look:<id>`; a skin kind entry's `byTag` list picks frames (or a mesh) by tag, first match wins.
+  OK?
+- **182.** The mini siege: a 48x32 map; `village` (four soldiers and a captain in event `siege`,
+  three workers outside it, a hall and a `watchtower` site) against `raiders` (six raiders and two
+  siege engines, `ram` and `catapult`); mission `sabotage` offered ticks 20-200, cost 120 world
+  ticks, played as a top-down room; outcomes `both-burnt` (1), `ram-burnt` (2), `catapult-burnt`
+  (1) and `driven-off` (2, also `onQuit`), each destroying exactly what the round destroyed (or
+  hurting the captain). OK?
+- **183.** "Changes the battle the way the design says" is checked in both paths: the event holds
+  still while the watchtower finishes, the commit lands at open plus 120, the record and exactly
+  its outcome's effects are applied, and with both engines burnt the hall ends at full hp while
+  with them alive it loses hp; golden hashes, and the played world matching a world run with the
+  same outcome tick for tick. OK?
+- **184.** The mini siege's gap report uses ids `M1`, `M2`, ... (never reused), logged by each task
+  as found, with the glue review at the close-out. OK?

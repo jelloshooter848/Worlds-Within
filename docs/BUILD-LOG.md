@@ -7,6 +7,249 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.11
+
+The mini siege (multi-genre sample). Built on branch `engine/build-0.15`; not tagged (no tags
+during the build, owner answer 24). As in 0.9 and 0.10, the open questions were settled in writing
+before any code (T1); the later tasks build against them. The gap report is
+[docs/reports/mini-siege.md](reports/mini-siege.md), started in T1 so every task can log gaps as it
+finds them.
+
+**Stacking-test gaps assigned to 0.11:** G13, G18, G19 (the rest), G27, G28 and G30, from
+`docs/reports/stacking-test.md`. Their answers are decisions 6 to 10 below.
+
+### Decisions
+
+The roadmap's scope for 0.11 leaves open how a mission is played from a game (not a world) run
+file, how a mission is hosted live and how the world is stepped through the cost after the round
+(0.10 decision 2 left both to the mini siege), how the RTS kit offers a mission, how a mission's
+round is built from the world without adapter code in the game, the six stacking-test gaps, and the
+scenario's shape. Each is a feedback item (172-184) the owner can overrule by number. Three rules are
+the owner's and are restated, not open: **the mission is sabotaging siege engines** (answer 23), **a
+mission's world-time cost is fixed when it opens and committed results never change** (0.10, items
+150-151), and **delegating gives a fair, average result while playing gives choice, not a better
+one** (item 154).
+
+**1. Missions in game run files (item 172).** A game run file (`game`, not `world`) gets the same
+optional `missions` list as a world run: `{ "tick": 40, "mission": "sabotage", "action": "open" |
+"delegate" | "play" | "quit", "input"? }`, applied after the snapshot of `tick` and after that
+tick's orders, in file order. Each entry is handed, without `tick`, to a new optional
+`HeadlessGame.mission?(step)`, which returns null when the step was taken or a one-line reason when
+it was refused (listed in the result's `refusedMissions`, and the run goes on, as with orders, item
+136). A game without `mission` cannot play a run file with `missions` (a usage error, exit 2, as
+with `orders`).
+
+- `open`, `delegate` and `quit` mean what they mean in a world run (0.10 decision 12, item 163).
+- **`play` carries the round's recorded input** (`input: { steps: [...] }`, the run file's
+  `ScriptedInput` steps, frame 0 being the round's first tick) and no `outcome`: the step starts
+  the mission's real kit round (the mini game its `play` names, built by the adapter from the
+  snapshot the mission opened with), and the game's following ticks step that round with that
+  script until it ends (decision 2). The outcome is whatever the round's report maps to through the
+  adapter, so the played path goes through the real kit, the real report and the real adapter. A
+  run checks it with assertions on the snapshot (the mission's record after the commit).
+- On a game run, `outcome` and `experienceTicks` are schema errors (the round gives both); on a
+  world run, `input` is. A world run keeps the load-time `mission_unresolved` check; a game run
+  cannot (its world ticks are not its game ticks once a round is played), so there a late `play`
+  or `quit` is refused at run time (`mission_overdue` or `mission_committed`, the sim's codes).
+
+Reasons: one list in both kinds of run file keeps one vocabulary; a recorded round script relative
+to the round's start keeps a run file editable when the open tick moves; handing the step to the
+game rather than to the sim keeps the tools from knowing the game's world.
+
+**2. Live hosting: `MissionHost` in `engine/core` (item 173).** A new `engine/core/mission-host.ts`,
+`MissionHost`, wraps a game's `HeadlessGame` (the RTS kit's `RtsGame` in the mini siege) and hosts
+its missions. It never imports `engine/sim`: it works through a port, `MissionWorldPort`, with
+`open(def)` (returns the opened mission's plain snapshot and seed, or a refusal), `delegate(id)`,
+`play(id, result)`, `quit(id)`, `settle()` (commit every due mission; `settleMissions`),
+`snapshot()` (the plain world snapshot) and `step()` (the world's). `engine/sim` exports
+`missionPort(world, { refs })` filling it, so a game's glue is one call; if that cannot be built in
+the sim, the glue fills it and the mini siege report logs it as a gap.
+
+- `MissionHost({ game, port, missions, miniGames, adapters })` is itself a `HeadlessGame` with
+  `mission(step)` (decision 1), `launch(id)` (the live path: open, then the page asks play or
+  delegate), `miniGame()` (the round hosted now, or null, so the shell's `HostScene` pushes the
+  round's scene as it does for platformer rounds, G37) and `snapshot()`: the game's snapshot plus
+  `missions: { round }` only while a round is hosted or on the tick one ends (as G20's
+  `endedRound`), so a game that never hosts one keeps its hashes.
+- **What a game tick does while a round is hosted: the round steps, the world does not.** The
+  host's `step(input)` steps the round once (with the round's own input, decision 6) and does not
+  call the game's `step`, so the scripted enemy does not think, no order is applied (an order or
+  mission step at such a tick is refused: "a mission round is being played") and the world tick
+  stays where it was. The round's ticks are the mission's experience time. When the round ends,
+  the host maps its end through the adapter (`playMissionRound`'s checks, split so the round can
+  be stepped tick by tick) and calls the port's `play` or `quit` on that tick.
+- **Otherwise** the host calls the game's `step` (the enemy thinks, the world steps) and then the
+  port's `settle()`, so a due mission commits at its fixed tick exactly as in a world run.
+- The round's seed is `Rng.derived(world seed, "round:<mission id>")` (from the port), fixed by
+  the seed and the mission id alone, as delegation's draw is (item 154).
+
+Reasons: the mission lifecycle is the same for any game over the sim (an RTS map today, a
+platformer level or a tower-defense map later), so the host is engine code; the port keeps
+`engine/core` free of the sim, as `RtsWorldPort` does for the kit (item 122).
+
+**3. Stepping the world through the cost after the round (item 174).** **One world tick per game
+tick, through the game's ordinary step.** When a played round ends, nothing special happens to the
+world: from the next game tick the host steps the game again (enemy, world, `settle`) one world tick
+per game tick, and the result commits by itself at the fixed commit tick (open tick plus
+`worldTimeCost`), with the event frozen until then. This is exactly what the delegated path does
+from the moment it delegates, so the commit tick is the same and the world's state at every world
+tick is the same as the delegated path's for the same outcome. The page shows the step-through
+fast (it steps one world tick per loop step, 60 a second, instead of `TICKS_PER_SECOND`), which is
+presentation only; the player may give orders during it, recorded at their world ticks as at any
+other time. **Not all at once:** stepping the whole remaining cost in one game tick would have to
+run the scripted enemy and the player's orders inside one tick (or skip them, giving other hashes
+than the delegated path), and would hide the building going up.
+
+- **Checkable:** a played game run's `world` snapshot hashes the same, at every world tick, as a
+  world run file of the same scenario with `play` and that outcome at the same world tick (and the
+  round's tick count as its `experienceTicks`, item 166); before the commit the battle's units and
+  buildings are the same at every world tick as in the delegated run (only the mission's resolution
+  differs).
+
+**4. Missions in the RTS kit (item 175).** The kit shows offered missions and asks to launch one;
+it holds no world rules and opens nothing itself.
+
+- `readWorld` reads the snapshot's opportunity and mission state loosely (as it reads components):
+  `view.missions = { offered: [{ opportunity, mission, closes }], open: [{ id, commitTick }] }`,
+  empty when the world has none.
+- `presentWorld` takes the mission defs the game hands it (`missions?`, titles only) and adds HUD
+  status: `offer` (the first offered mission's title) and `offers` (how many), and while one is
+  open `mission` (its title) and `missionLeft` (world ticks to its commit). Members of a frozen
+  event get the tag `frozen`, so a skin can draw a held battle (decision 10).
+- **The launch command:** `missionRequest(view, missionId)` gives a `MissionRequest { mission,
+opportunity }`, or null when the mission is not offered now (kit rule `launch-needs-offer`, so
+  a mutant check can switch it off). A request is not an order: the host (decision 2) carries it
+  out with `launch`. `RtsControls.launchMission(id)` is the page's bar button. An interface action
+  `{ "ui": "mission", "mission": "sabotage" }` drives the same path from a run file.
+
+Reasons: offers are world state the sim already snapshots (0.10 decision 6), so the kit only reads
+and shows them; a request object instead of a sim call keeps the kit off the sim.
+
+**5. A data-driven top-down mission adapter in `kits/topdown` (item 176).** The kit exports a
+mission mini game, `missionRoom` (id `mission-room`), with a `paramsSchema`, and
+`topdownMissionAdapter`, the `MissionAdapter` that reads only the mission's `params` and the plain
+world snapshot (`snapshotEntities`). The game writes no adapter code; `validate` checks the fields
+through the schema (G16, item 157). The fields, all in the mission file's `params`:
+
+- `room`: the id of a `room` content file giving the layout: walls, floor, the hero's `@` and foe
+  slots, each a legend character a `foes` entry names.
+- `goal`, `ticks`, `hp`: the round's goal, time limit and the hero's hearts, as `roomChallenge`
+  takes them.
+- `foes`: a list of `{ slot, kind, select: { event?, faction?, types?, member? }, hpPer? }`. Each
+  entry picks world entities (by default members of the mission's `event`; then by `Owner`
+  faction, unit type and squad `Member` role) in ascending id and puts them, as enemies of `kind`,
+  into the room's `slot` cells in reading order. Room hp is the world's `Health.hp` divided by
+  `hpPer`, rounded up (at least 1), or the kind's own hp without `hpPer`. More entities than slots
+  refuses the round before it starts (`bad_mission_input`, and the mission stays open); spare
+  slots stay empty.
+- `outcomes`: an ordered list of rules `{ outcome, when?: { result?, destroyed?, spared?,
+minDestroyed? } }`, where `destroyed` and `spared` name scenario keys (or ids) and
+  `minDestroyed` counts the destroyed entities of the round. The first rule that holds names the
+  outcome; the last must have no `when`, so every report maps. A rule naming an outcome the mission
+  does not declare is a content error (`validate`). A quit round goes to `onQuit` (item 168) without
+  the rules.
+- The report's `defeated` and `hurt` room keys are mapped back to scenario keys and kept in the
+  result's `stats` (`destroyed`, `hurt`, `heroLost`, `ticks`), so the record says what was
+  destroyed and who was hurt.
+
+Reasons: every top-down mission over an RTS world is "these world entities in this room, this rule
+from report to outcome"; written as data it is the game's content, not its code (CLAUDE.md: game
+rules in data files). It follows the 0.10 test's adapter (`tests/kits/mission-adapter.test.ts`),
+which moves to this one.
+
+**6. G18: a per-round input map (item 177).** `MiniGameDef` gets an optional `inputMap`, a partial
+map from the host's actions to the round's (`{ "jump": "attack" }`; an action mapped to null is
+dropped), applied to the frame before the round sees it. **A button held into the round is ignored
+until released:** on the round's first tick every action already held is masked, and stays masked
+until a frame without it. Both are one engine wrapper, `RoundInput` (`engine/core/minigame.ts`),
+used by every host (`miniGameScene`, the platformer kit's host, `MissionHost`), so no game writes
+it. A round started from a run file's `play` script starts with nothing held. Only a run file that
+holds a button into a door can move: T2 re-records any such golden hashes and lists them; no other
+hash may move.
+
+**7. G19, the rest: an optional host status in the round's HUD (item 178).** `MiniGameDef` gets an
+optional `hostStatus`, a list of the host's HUD status keys the round's frame shows; the host copies
+them into the round frame's `status` as `host:<key>`, and the round's skin draws them like any other
+status. Without it a stacked frame shows the round's HUD only, as decided in 0.7 (G19). The mini
+siege's round shows `host:mission` (the mission's title).
+
+**8. G27: audio in the shell (item 179).** `bootBrowserGame` takes an optional `audio: { sfx,
+songs, music? }`: it makes the `AudioManager` with the game's sfx and songs, passes its `onSound` to
+the displays, unlocks audio on the first key, tap or click, and plays `music` (a song id) once
+unlocked; the settings (mute, volume) are the manager's own. The 8 lines in
+`games/platformer-test/main.ts` go; the demo's boot moves when it becomes a sample (0.15, as
+before).
+
+**9. G28: result-specific event sounds (item 180).** A skin's `events` key may be `<type>:<value>`,
+matching an event of `type` whose `result` field is `value` (`mini-game-end:pass`), or
+`<type>:<field>=<value>` for another field (`mission-commit:outcome=both-burnt`). An event takes
+the first matching field key in file order and falls back to the bare type, so every skin today
+reads the same. `validate` checks the keys' shape.
+
+**10. G13 and G30: trigger looks and frames by tag (item 181).** A platformer level's `triggers`
+entry gets an optional `look` (an id), presented as the tag `look:<id>` on the trigger's entity (a
+trigger without one gets no new tag, so no frame or hash moves). A skin's kind entry gets an
+optional `byTag` list, `[{ tag, frames?, sheet?, palette?, mesh? }]`: the first entry whose tag the
+entity has replaces the kind's frames (or mesh), and the state and facing are then picked inside it
+as today. The platformer test game uses it for a second trigger look, the lab for its bump blocks
+(`used`), and the mini siege for its construction site (the RTS kit's `site` tag) and frozen units
+(`frozen`, decision 4).
+
+**11. The mini siege's shape (item 182).** All of it is content in `games/samples/mini-siege/`
+(original, no Worlds Within places, characters or art):
+
+- **Map:** a 48 by 32 cell `scenario` (a 16-pixel tile, so the 256 by 240 picture scrolls with
+  `RtsCamera`): the village on the west with a hall and a field of gold, open ground, the raiders'
+  camp on the east.
+- **Factions:** `village` (the player) and `raiders` (the scripted enemy, an `rts-enemy` plan).
+- **Defenders:** four soldiers and a captain (a hero, item 121), members of the event `siege`.
+  **Builders:** three workers, not members, so they keep working while the battle is frozen.
+- **Attackers:** six raiders and two siege engines, a `ram` and a `catapult` (unit types with high
+  attack and health, slow), all members of `siege`; the plan sends the engines at the nearest
+  building and the raiders at the nearest enemy. They are the only units that attack buildings
+  early on, so whether they survive decides what happens to the hall.
+- **The building under construction:** a `watchtower` site beside the hall, built by the workers,
+  whose work is set so it finishes inside the mission's cost when the mission opens on time.
+- **The mission:** `sabotage`, "Burn the siege engines", taken through an opportunity offered from
+  tick 20 to tick 200; event `siege`; `worldTimeCost` 120; played as `mission-room` (decision 5)
+  with the engines in `E` slots, their guards (raiders with `Member` role `guard`) in `n` slots and
+  the captain as the hero. Outcomes, with weights and effects (answer 23):
+  - `both-burnt` (weight 1): destroy `ram` and `catapult`;
+  - `ram-burnt` (weight 2): destroy `ram`;
+  - `catapult-burnt` (weight 1): destroy `catapult`;
+  - `driven-off` (weight 2, also `onQuit`): damage `captain` by 10.
+    The adapter's rules: both destroyed, the ram, the catapult, otherwise driven off. Every effect
+    says what the round did, so a played result never changes more than what happened in it.
+- **Art and music:** NES-style pixel art as text, one short MML song, a Canvas2D skin for the map
+  and one for the round (answer 22).
+
+**12. What "changes the battle the way the design says" means, as checks (item 183).** Both paths
+(played: a game run whose `play` script burns both engines; delegated: a game run that delegates,
+with the seed's draw recorded and asserted) assert, in run files and a game test:
+
+- **Frozen while open:** from the open tick to the tick before the commit, every member of `siege`
+  keeps its position and hp (`sides`, and the event's units in the world snapshot).
+- **The building keeps going up:** the watchtower's progress rises during the cost and it is
+  finished by the commit tick (`sides.village.sites` 1 to 0, `buildings.watchtower` 1).
+- **The cost is fixed:** the record's commit tick is the open tick plus 120 in both paths, however
+  many round ticks the played run took; the event is unfrozen after it.
+- **The result is structured and applied:** the record names the outcome and how it was resolved
+  (`played` or `delegated`), its `stats` (played: what was destroyed and who was hurt), and exactly
+  that outcome's effects are applied (for `both-burnt`, no `ram` and no `catapult` at the commit
+  tick).
+- **It changes the battle:** with both engines burnt, the hall's hp at the run's last tick is its
+  full 400; in a run where the engines live (`driven-off`, by quitting the round), the hall has
+  lost hp by that tick. The delegated run asserts whichever of these its drawn outcome implies.
+  If T8's tuning cannot hold "full hp" (a raider strays to the hall), the check becomes "the hall
+  has more hp than in the driven-off run" and the reason is logged in the gap report.
+- **Same hashes every time:** golden hashes for each run file, and decision 3's cross-check with
+  world run files.
+
+**13. The gap report (item 184).** `docs/reports/mini-siege.md` follows the stacking test's format
+with ids `M1`, `M2`, ... (never reused) so they do not mix with the stacking test's `G` ids; each
+task logs what it finds as it goes, and the close-out (T10) fills in the glue review and moves each
+open gap to a named release.
+
 ## Engine 0.10
 
 Time and the mission contract. Built on branch `engine/build-0.15`; not tagged (no tags during
