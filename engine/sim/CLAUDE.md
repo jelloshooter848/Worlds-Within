@@ -23,11 +23,19 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
 - `astar.ts`: RTS pathfinding, `findPath` (A*) for one unit and `flowField`/`flowStep` for a
   group, 4-way or 8-way (see "Walking").
-- `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward` and the
-  systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
+- `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward`, `addWork`
+  and the systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
 - `rts.ts`: RTS units (Engine 0.9): the components `Unit`, `Facing8`, `Task`, `Target` and
-  `Cooldown` (`RTS_COMPONENTS`), `applyOrder` and the systems `moveSystem`, `attackSystem` and
-  `deathSystem` (`RTS_SYSTEMS`, in that order; see "RTS units").
+  `Cooldown` (`UNIT_COMPONENTS`), the unit order checks and writes, and the systems `moveSystem`,
+  `attackSystem` and `deathSystem` (see "RTS units").
+- `economy.ts`: the RTS economy (Engine 0.9 T8): the components `RtsTypes`, `Stockpile`,
+  `Resource`, `Producer` and `Gatherer` (`ECONOMY_COMPONENTS`, with `Building`), `spawnUnit`,
+  `placeBuilding`, the economy order checks and writes, and the systems `gatherSystem`,
+  `constructSystem` and `trainSystem` (see "RTS economy").
+- `footprint.ts`: the `Building` component and footprint helpers (`footprintOf`, `inReach`,
+  `inRect`, `rectsOverlap`, `ringAround`), shared by the two above.
+- `rts-orders.ts`: `applyOrder` for every order type, `RTS_COMPONENTS` and `RTS_SYSTEMS` (the
+  economy's systems, then the units', in that order).
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`. Fixtures only:
@@ -257,8 +265,12 @@ components, entities visited in id order.
   If resting it counts `rest` down; else with odds one in `restOdds` (an RNG draw) it rests 1 to
   `restTicks` ticks; else it walks next to its source and takes up to `capacity`, or, carrying,
   walks next to its job and adds `carry * rate` work (capped; `done` when complete).
+- `addWork(world, site, amount)`: adds work to a `Construction` (capped; `done` when complete) and
+  returns the progress before and after. The haulers' delivery and the RTS `constructSystem` both
+  use it.
 - `buildSystem` (`build`): a building's `Health.hp` follows its `Construction`:
-  `max * progress / work` rounded down (at least 1), `max` once done.
+  `max * progress / work` rounded down (at least 1), `max` once done. (The RTS does not run it:
+  there `constructSystem` raises health as work is added, so damage stays.)
 - `patrolSystem` (`patrol`): an entity with `Patrol` walks to its current waypoint (standing on
   it) and on arriving turns to the next one, looping.
 
@@ -268,13 +280,15 @@ components, entities visited in id order.
 is machinery like the other systems: every number is component data (copied from the game's unit
 type data when a unit is made), all integer, no randomness, entities in id order, all state in
 components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` and
-`systems: RTS_SYSTEMS` (`moveSystem`, `attackSystem`, `deathSystem`, in that order).
+`systems: RTS_SYSTEMS` (`gatherSystem`, `constructSystem`, `trainSystem`, then `moveSystem`,
+`attackSystem`, `deathSystem`, in that order; the economy is in "RTS economy" below).
 
 - **Orders** are plain JSON, defined once in `engine/core/orders.ts` (`orderSchema`, `Order`,
   `parseOrder`, re-exported here) so kits can make them without importing the sim (item 122):
-  `{ id, faction, type: "move" | "attack" | "stop", units: [ids], target? }`, a cell for `move`,
-  an entity id for `attack`. `build`, `train` and `gather` join with their systems (T8).
-- `applyOrder(world, order)`, between ticks: checks the shape, then the world (every unit exists,
+  `{ id, faction, type, units: [ids], target? }`: a cell for `move`, an entity id for `attack`,
+  none for `stop`; `build`, `train` and `gather` are in "RTS economy".
+- `applyOrder(world, order)` (`rts-orders.ts`), between ticks: checks the shape, then the world
+  (for a unit order, `unitOrderRefusal`: every unit exists,
   is a living `Unit` with `Position` and belongs to `faction`; a move target is on the map and
   enterable; an attack target is a living entity with `Health` and `Position`, not one of the
   ordered units and not of the order's faction). Refused: returns `{ ok: false, error }` (lines
@@ -282,33 +296,39 @@ components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_CO
   a bad order, so a stale order from the view (its unit just died) is simply dropped by the
   caller. Accepted: `{ ok: true, order }`, and every change it makes is logged under the cause
   `order:<id>`: each unit's `Task` (and `Target` for `attack`; `move` drops `Target`; `stop`
-  drops both).
-- `Unit` `{ speed, attack, range, cooldown, sight }`: `speed` is ticks per straight cell of cost 1;
+  drops both); a worker taken off a build leaves its job (`Worker.job` null).
+- `Unit` `{ type, speed, attack, range, cooldown, sight }`: `type` is the unit type it was made
+  from, for the view (null by default; no system reads it). `speed` is ticks per straight cell of cost 1;
   entering a cell takes `speed * stepCost / STRAIGHT_COST` ticks rounded to nearest, at least 1
   (8-way costs: a diagonal is 14, a cell of cost c is c times as much). `range` and `sight` are
   whole cells of integer distance, `distFloor` (the floor of the straight-line distance;
   `inRange(a, b, range)`), so range 1 reaches all eight neighbours. `cooldown` is ticks from one
   hit to the next. `sight` is stored for the view and fog of war; no system reads it yet.
-- `Task` `{ order, kind: "move" | "attack", goal, target, path, flow }`: what a unit is doing.
-  `path` is the rest of an A* way (planned on the first step, kept while its next cell is a legal
-  step and it still ends at the goal, else planned again); `flow` is set when the order named
-  `FLOW_GROUP_SIZE` (4) or more units: they read one shared 8-way `flowField` instead.
+- `Task` `{ order, kind: "move" | "attack" | "build" | "gather", goal, target, path, flow }`: what
+  a unit is doing; a `move` has a `goal` cell, the others a `target` entity. `path` is the rest of
+  an A* way (planned on the first step, kept while its next cell is a legal step and it still ends
+  at the goal, else planned again); `flow` is set when the order named `FLOW_GROUP_SIZE` (4) or
+  more units: they read one shared 8-way `flowField` instead. `build` and `gather` tasks always
+  have `flow` and walk by the 8-way field with `near` to the target's `Position`.
 - `Target` `{ entity }`: what a unit fights. `Cooldown` `{ move, attack }`: ticks before the unit
   may step or hit again, present only while one is above 0. `Facing8` `{ dir }`: `STEPS_8` index
   (0 north, 1 north-east ... 7 north-west) of the last step or hit, for the view (`facingOf`).
 - `moveSystem` (`move`): a unit with a `Task` cooling down counts down; else a move task at its
   goal is removed, an attack task whose target is gone or dead is removed (with `Target`), a unit
   within range of its target stands, and otherwise it steps one 8-way cell toward the goal (the
-  target's cell), standing at its elevation, sets `Facing8` and starts its step cooldown. No way
-  there: the task is dropped. Units do not block each other (stacking is allowed in 0.9).
+  target's cell), standing at its elevation, sets `Facing8` and starts its step cooldown. A
+  `build` or `gather` task stands while its target is gone (the economy systems run first and drop
+  or switch it) or within reach (`inReach`: on or next to the target's footprint, diagonals
+  included). No way there: the task is dropped. Units do not block each other (stacking is
+  allowed in 0.9), and buildings do not block units either (see "RTS economy").
 - `attackSystem` (`attack`): every living `Unit` counts its attack cooldown down; else, unless on
   a move task, it hits its `Target` when within range: `Health.hp - attack` (not below 0), faces
   it, and starts its cooldown. A unit with no task keeps a target only while it is in range and
   otherwise picks the nearest enemy within range (another faction's living entity with `Owner`;
   nearest by squared distance, ties to the lowest id). Hits land at once, in id order.
-- `deathSystem` (`death`): every `Unit` at 0 hp is destroyed (each removal and the destroy are
-  logged under `death`); a named squad member first leaves its squad (strength - 1, off
-  `members`, not captain).
+- `deathSystem` (`death`): every `Unit` or `Building` at 0 hp is destroyed (each removal and the
+  destroy are logged under `death`); a named squad member first leaves its squad (strength - 1,
+  off `members`, not captain).
 - **Heroes** (item 121) are ordinary units with a `Member` role `hero`; an order can name one
   alone. Nothing in the orders or systems tells them apart.
 - Tests: `rts.test.ts` (move around a wall, speed and cell cost, a flow-field group, stop, no way;
@@ -317,6 +337,66 @@ components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_CO
   hashes and log twice, causes only `order:<n>` or a system's name, and a save and load at seven
   ticks mid-battle steps on to the uninterrupted hashes). `engine/core/orders.test.ts` checks the
   order schema.
+
+## RTS economy
+
+`economy.ts` (Engine 0.9 T8; docs/BUILD-LOG.md, Engine 0.9, decisions 2 and 7) adds construction,
+training and one gatherable resource, as machinery driven by data. Same rules as the units: all
+integer, no randomness, entities in id order, all state in components.
+
+- **Types are data, never code.** The unit and building types (stats, costs, build and training
+  time, what a building trains, drop-offs) are the world's `RtsTypes` component, held by one entity
+  like `Terrain` (the lowest id wins; `rtsTypesOf`), so it is saved and hashed with the world. Its
+  schema is `rtsTypesSchema` in `engine/core/rts-types.ts` (shared with kits; in
+  `docs/reference/schemas.md`). A scenario gives it as an entity's component data. Whatever is
+  made from a type gets the type's numbers copied into its components, so later changes to the
+  table never change existing units or buildings.
+- `spawnUnit(world, faction, type, cell)`: `Position`, `Owner`, `Health` (full), `Unit` (with
+  `type`), plus `Worker { job: null, rate: work }` when the type has `work` and `Gatherer` when it
+  has `gather`. `placeBuilding(world, faction, kind, at, built?)`: `Position` (the north-west cell),
+  `Owner`, `Building { kind, w, h, dropoff }` (`footprint.ts`), `Health`, `Producer` when the type
+  trains anything, and unless `built` a site: `Construction` at 0 of the type's `work`, `Health.hp`
+  1. Neither checks placement or cost; orders do.
+- **Stockpiles.** A faction's resources are the `Inventory` of its `Stockpile { faction }` entity
+  (`stockpileOf`: the lowest id). Costs are paid from it when an order is accepted; an order the
+  faction cannot afford is refused (`faction "red" cannot afford barracks: needs 100 gold, has 40`)
+  and changes nothing. There is no refund (no cancel order in 0.9).
+- **Placement** (`placementRefusal`): every footprint cell on the map and enterable, none under
+  another `Building`'s footprint or a `Resource` node. Buildings do not block movement in 0.9: the
+  footprint is for placement and reach only (units stand on or next to it).
+- Orders (`economyOrderRefusal`, then written under `order:<id>`):
+  - `build` `{ units, target: cell, building }`: units are living units of the faction with
+    `Worker`; the type exists, the placement is free and the faction can pay. It pays, places the
+    site, and gives each unit `Worker.job` = the site and a `build` task on it.
+  - `train` `{ units, target: unit type }`: `units` are buildings of the faction with a
+    `Producer` whose `trains` lists the type, finished and standing; the faction pays the cost once
+    per building. Each queues `{ unit, ticks: trainTicks }`.
+  - `gather` `{ units, target: node }`: units with `Gatherer`, a `Resource` node, and a faction
+    with a stockpile. Each unit's `Gatherer.node` is set (a load of another item is dropped) and it
+    gets a `gather` task on the node.
+- `Resource { item }`: a node; its `Inventory` holds what is left. `Gatherer { capacity, ticks,
+node, item, carry, progress }`. `Producer { trains, queue: [{ unit, ticks }], progress }`.
+- `gatherSystem` (`gather`): while the task targets the gatherer's node, next to it the unit takes
+  one item every `ticks` ticks (an emptied node is destroyed); full, or with its node empty and a
+  load, it turns to the nearest finished, standing drop-off (`Building.dropoff`) of its faction
+  (none: it waits). Next to it, the load goes into the faction's stockpile and it turns back to
+  its node, or the nearest other node of the same item (none: the task ends). Nearest is by
+  squared distance to the footprint, ties to the lowest id.
+- `constructSystem` (`construct`): a worker next to its site adds `Worker.rate` work (`addWork`),
+  and the site's `Health.hp` rises by what that adds to `max * progress / work` (rounded down,
+  capped at `max`), so damage taken while it goes up stays. A finished, dead or gone site ends the
+  task (the worker leaves its job); the worker that finishes it ends its task at once.
+- `trainSystem` (`train`): a finished, standing `Producer` spends one tick per step on the first
+  queued unit; when its `ticks` are spent the unit appears (`spawnUnit`) on the first enterable
+  cell of `ringAround` the footprint (the south side first, west to east, then east, north and
+  west) and leaves the queue. No such cell: it waits there, done.
+- Tests: `economy.test.ts` (a build placed, paid and finished on the tick its work says, workers
+  walking up and sharing the work, a move order taking a worker off; refusals for cost, map edge,
+  rock, overlaps, unknown types and non-workers that change nothing; training after the type's
+  ticks with its cost charged, queues, a hall training workers, refusals; gathering raising the
+  stockpile across two nodes and the gather rate; a whole economy scenario with the same hashes
+  and log twice, and save and load mid-construction and mid-training stepping on to the same
+  hashes), `footprint.test.ts` and `engine/core/rts-types.test.ts`.
 
 ## The sample world
 
@@ -377,4 +457,5 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
-  `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `sample-world.test.ts`).
+  `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
+  `footprint.test.ts`, `sample-world.test.ts`).

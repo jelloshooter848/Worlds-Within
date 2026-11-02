@@ -7,6 +7,9 @@ describe('orders', () => {
       { id: 1, faction: 'red', type: 'move', units: [4, 5], target: { x: 3, y: 2 } },
       { id: 2, faction: 'red', type: 'attack', units: [4], target: 9 },
       { id: 3, faction: 'blue-2', type: 'stop', units: [7] },
+      { id: 4, faction: 'red', type: 'build', units: [4], target: { x: 6, y: 6 }, building: 'barracks' },
+      { id: 5, faction: 'red', type: 'train', units: [20], target: 'soldier' },
+      { id: 6, faction: 'red', type: 'gather', units: [4, 5], target: 11 },
     ];
     for (const order of orders) expect(parseOrder(order)).toEqual({ ok: true, order });
     expect(orders.map((o) => o.type)).toEqual(ORDER_TYPES);
@@ -33,5 +36,10 @@ describe('orders', () => {
       false,
     );
     expect(parseOrder({ id: 1, faction: 'red', type: 'fly', units: [1] }).ok).toBe(false);
+    expect(parseOrder({ id: 1, faction: 'red', type: 'build', units: [1], target: { x: 1, y: 1 } }).ok).toBe(
+      false,
+    );
+    expect(parseOrder({ id: 1, faction: 'red', type: 'train', units: [1], target: 3 }).ok).toBe(false);
+    expect(parseOrder({ id: 1, faction: 'red', type: 'gather', units: [1], target: 'gold' }).ok).toBe(false);
   });
 });

@@ -13,6 +13,7 @@ import {
   ScenarioError,
   Terrain,
   loadWorld,
+  rtsTypesSchema,
   scenarioSchema,
   worldFromScenario,
   worldSaveSchema,
@@ -209,6 +210,19 @@ export function defaultDocSources(): DocSources {
       schema: scenarioSchema,
       example: 'world-scenario.json',
       check: checkScenario,
+    },
+    {
+      name: 'rts-types',
+      title: 'RTS unit and building types (`rtsTypesSchema`)',
+      from: 'engine/core',
+      where:
+        "a game's RTS data, held in the world by the `RtsTypes` component (in a world scenario: an entity's `RtsTypes`)",
+      forms: '`.json`',
+      description:
+        'The unit and building types an RTS world makes things from (Engine 0.9): stats, costs, build and training time, what a building trains and whether it takes drop-offs',
+      schema: rtsTypesSchema,
+      example: 'rts-types.json',
+      check: jsonCheck(rtsTypesSchema),
     },
     ...engineContentKinds()
       .list()

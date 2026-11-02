@@ -105,6 +105,19 @@ function nearestSite(world: World, from: Cell): Entity | null {
 }
 
 /**
+ * Add `amount` work to the `Construction` of `site`, capped at the work it needs; `done` is set when
+ * it is complete. Returns the progress before and after. Shared by `haulSystem` and the RTS
+ * `constructSystem`.
+ */
+export function addWork(world: World, site: Entity, amount: number): { before: number; after: number } {
+  const c = world.get(site, Construction);
+  if (!c) throw new Error(`entity ${site} has no Construction to work on`);
+  const progress = Math.min(c.work, c.progress + amount);
+  world.add(site, Construction, { kind: c.kind, progress, work: c.work, done: progress === c.work });
+  return { before: c.progress, after: progress };
+}
+
+/**
  * `haul`: every entity with `Worker`, `Hauler` and `Position`, in id order. A worker whose job is
  * missing or finished takes the nearest unfinished building (none: it idles). Then, unless it is
  * resting or starts a rest (an RNG draw), it walks to its source and takes up to `capacity` items,
@@ -148,9 +161,7 @@ export const haulSystem: System = {
 
       const site = cellOf(world, job) as Cell;
       if (!walkToward(world, id, t, distanceField(t, site, true))) continue;
-      const c = world.get(job, Construction) as { kind: string; progress: number; work: number };
-      const progress = Math.min(c.work, c.progress + h.carry * worker.rate);
-      world.add(job, Construction, { kind: c.kind, progress, work: c.work, done: progress === c.work });
+      addWork(world, job, h.carry * worker.rate);
       world.add(id, Hauler, { ...h, carry: 0 });
     }
   },

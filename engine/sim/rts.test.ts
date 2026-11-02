@@ -3,19 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '../core/headless';
 import { Health, Member, Owner, Position, STANDARD_COMPONENTS, Squad } from './components';
 import { loadWorld, saveWorld } from './save';
-import {
-  Cooldown,
-  Facing8,
-  RTS_COMPONENTS,
-  RTS_SYSTEMS,
-  Target,
-  Task,
-  Unit,
-  applyOrder,
-  facingOf,
-  inRange,
-  type UnitData,
-} from './rts';
+import { Cooldown, Facing8, Target, Task, Unit, facingOf, inRange, type UnitData } from './rts';
+import { RTS_COMPONENTS, RTS_SYSTEMS, applyOrder } from './rts-orders';
 import { Terrain, moveCost, type TerrainData } from './terrain';
 import { createWorld, type Entity, type World } from './world';
 
@@ -45,7 +34,7 @@ function world(rows: string[], seed = 1): World {
   return w;
 }
 
-const STATS: UnitData = { speed: 1, attack: 2, range: 1, cooldown: 1, sight: 5 };
+const STATS: UnitData = { type: null, speed: 1, attack: 2, range: 1, cooldown: 1, sight: 5 };
 
 function unit(
   w: World,

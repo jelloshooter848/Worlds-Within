@@ -19,6 +19,7 @@ export {
   Hauler,
   SYSTEM_COMPONENTS,
   Walk,
+  addWork,
   buildSystem,
   haulSystem,
   patrolSystem,
@@ -28,20 +29,50 @@ export type { HaulerData, WalkData } from './systems';
 export {
   Cooldown,
   Facing8,
-  RTS_COMPONENTS,
-  RTS_SYSTEMS,
   Target,
   Task,
+  UNIT_COMPONENTS,
   Unit,
-  applyOrder,
   attackSystem,
   deathSystem,
   facingOf,
   inRange,
   moveSystem,
 } from './rts';
-export type { CooldownData, Facing8Data, OrderResult, TargetData, TaskData, UnitData } from './rts';
-export { ORDER_TYPES, orderSchema, parseOrder } from '../core/orders';
+export type { CooldownData, Facing8Data, TargetData, TaskData, UnitData } from './rts';
+export { RTS_COMPONENTS, RTS_SYSTEMS, applyOrder } from './rts-orders';
+export type { OrderResult } from './rts-orders';
+export {
+  ECONOMY_COMPONENTS,
+  Gatherer,
+  Producer,
+  Resource,
+  RtsTypes,
+  Stockpile,
+  constructSystem,
+  economyOrderRefusal,
+  finished,
+  gatherSystem,
+  placeBuilding,
+  placementRefusal,
+  rtsTypesOf,
+  spawnUnit,
+  stockpileOf,
+  trainSystem,
+} from './economy';
+export type { EconomyOrder, GathererData, ProducerData, ResourceData, StockpileData } from './economy';
+export { Building, footprintOf, inReach, inRect, rectsOverlap, ringAround } from './footprint';
+export type { BuildingData, Rect } from './footprint';
+export { rtsBuildingTypeSchema, rtsCostSchema, rtsTypesSchema, rtsUnitTypeSchema } from '../core/rts-types';
+export type { RtsBuildingType, RtsTypes as RtsTypesData, RtsUnitType } from '../core/rts-types';
+export {
+  ORDER_TYPES,
+  buildOrderSchema,
+  gatherOrderSchema,
+  orderSchema,
+  parseOrder,
+  trainOrderSchema,
+} from '../core/orders';
 export type { Order, OrderCell, OrderType } from '../core/orders';
 export { STEPS, UNREACHABLE, distanceField, nextStep } from './path';
 export type { Cell } from './path';

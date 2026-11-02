@@ -404,6 +404,78 @@ Example (`docs/reference/examples/world-scenario.json`):
 The engine defines some kinds and each kit adds its own (`engine/tools/kits.ts`); a game claims
 files for each kind in `game.json`.
 
+### RTS unit and building types (`rtsTypesSchema`)
+
+The unit and building types an RTS world makes things from (Engine 0.9): stats, costs, build and training time, what a building trains and whether it takes drop-offs.
+
+- Defined by: engine/core
+- Where: a game's RTS data, held in the world by the `RtsTypes` component (in a world scenario: an entity's `RtsTypes`)
+- Read from: `.json`
+
+| Field                     | Type                 | Required | Default | Limits                                    | Description                                                                                                 |
+| ------------------------- | -------------------- | -------- | ------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `units`                   | `{ <key>: object }`  | yes      |         | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$`  | unit types by id                                                                                            |
+| `units.<key>.health`      | `integer`            | yes      |         | >= 1                                      | hit points of a new unit (Health.max)                                                                       |
+| `units.<key>.speed`       | `integer`            | yes      |         | >= 1                                      | ticks to cross one cell of cost 1 in a straight line                                                        |
+| `units.<key>.attack`      | `integer`            | yes      |         | >= 0                                      | damage per hit (0: it never hurts anything)                                                                 |
+| `units.<key>.range`       | `integer`            | yes      |         | >= 1                                      | how far it hits, in whole cells                                                                             |
+| `units.<key>.cooldown`    | `integer`            | yes      |         | >= 1                                      | ticks from one hit to the next                                                                              |
+| `units.<key>.sight`       | `integer`            | yes      |         | >= 0                                      | how far it sees, in whole cells (for the view)                                                              |
+| `units.<key>.cost`        | `{ <key>: integer }` | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$`  | what one costs, paid from the faction stockpile: item id -> count                                           |
+| `units.<key>.trainTicks`  | `integer`            | yes      |         | >= 1                                      | ticks a building takes to train one                                                                         |
+| `units.<key>.work`        | `integer \| null`    | no       | `null`  |                                           | construction work it adds per tick; only units with it can build                                            |
+| `units.<key>.gather`      | `object \| null`     | no       | `null`  |                                           | { capacity, ticks }: it carries at most capacity, one item every ticks ticks; only units with it can gather |
+| `buildings`               | `{ <key>: object }`  | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$`  | building types by id                                                                                        |
+| `buildings.<key>.health`  | `integer`            | yes      |         | >= 1                                      | hit points once built (Health.max)                                                                          |
+| `buildings.<key>.size`    | `object`             | yes      |         |                                           | its footprint in cells, from its Position (the north-west cell)                                             |
+| `buildings.<key>.size.w`  | `integer`            | yes      |         | 1 to 16                                   | width in cells, west to east                                                                                |
+| `buildings.<key>.size.h`  | `integer`            | yes      |         | 1 to 16                                   | height in cells, north to south                                                                             |
+| `buildings.<key>.work`    | `integer`            | yes      |         | >= 1                                      | construction work to finish it (build time: work / the workers' rates)                                      |
+| `buildings.<key>.cost`    | `{ <key>: integer }` | no       | `{}`    | keys: matches `^[A-Za-z][A-Za-z0-9_-]*$`  | what one costs, paid from the faction stockpile: item id -> count                                           |
+| `buildings.<key>.trains`  | `string[]`           | no       | `[]`    | items: matches `^[A-Za-z][A-Za-z0-9_-]*$` | the unit types it can train, once finished                                                                  |
+| `buildings.<key>.dropoff` | `boolean`            | no       | `false` |                                           | whether gatherers can drop resources here, once finished                                                    |
+
+Example (`docs/reference/examples/rts-types.json`):
+
+```json
+{
+  "units": {
+    "worker": {
+      "health": 20,
+      "speed": 3,
+      "attack": 1,
+      "range": 1,
+      "cooldown": 4,
+      "sight": 5,
+      "cost": { "gold": 50 },
+      "trainTicks": 30,
+      "work": 2,
+      "gather": { "capacity": 5, "ticks": 4 }
+    },
+    "soldier": {
+      "health": 40,
+      "speed": 3,
+      "attack": 5,
+      "range": 1,
+      "cooldown": 6,
+      "sight": 6,
+      "cost": { "gold": 60 },
+      "trainTicks": 45
+    }
+  },
+  "buildings": {
+    "hall": { "health": 600, "size": { "w": 3, "h": 3 }, "work": 300, "trains": ["worker"], "dropoff": true },
+    "barracks": {
+      "health": 300,
+      "size": { "w": 2, "h": 2 },
+      "work": 120,
+      "cost": { "gold": 100 },
+      "trains": ["soldier"]
+    }
+  }
+}
+```
+
 ### `palette`
 
 A named list of colours (#rgb or #rrggbb) that sprite indices pick from.

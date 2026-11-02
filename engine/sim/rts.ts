@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { parseOrder, type Order } from '../core/orders';
+import type { Order } from '../core/orders';
 import { defineComponent } from './component';
-import { Health, Member, Owner, Position, Squad } from './components';
+import { Health, Member, Owner, Position, Squad, Worker } from './components';
 import { FLOW_GROUP_SIZE, STEPS_8, STRAIGHT_COST, findPath, flowField, flowStep, stepCost } from './astar';
+import { Building, footprintOf, inReach } from './footprint';
 import { distSq, idiv } from './math';
 import type { Cell } from './path';
 import { heightAt, moveCost, terrainOf, type TerrainData } from './terrain';
@@ -12,10 +13,12 @@ import type { Entity, System, World } from './world';
  * RTS units (Engine 0.9 T7): orders as data, movement on the 8-way grid, combat and deaths
  * (see "RTS units" in this folder's CLAUDE.md; docs/BUILD-LOG.md, Engine 0.9, items 121-127).
  *
- * Orders arrive between ticks through `applyOrder(world, order)`, which checks them against the
- * world and writes intent (`Task`, `Target`) under the cause `order:<id>`. The systems carry them
- * out on later ticks, in this order (`RTS_SYSTEMS`): `moveSystem` (`move`), `attackSystem`
- * (`attack`), `deathSystem` (`death`). Every number they use (speed, damage, range, cooldown,
+ * Orders arrive between ticks through `applyOrder(world, order)` (`rts-orders.ts`), which checks
+ * them against the world and writes intent (`Task`, `Target`) under the cause `order:<id>`; this
+ * file checks and writes the unit orders (`move`, `attack`, `stop`), `economy.ts` the others. The
+ * systems here carry them out on later ticks: `moveSystem` (`move`, which also walks builders and
+ * gatherers up to their target), `attackSystem` (`attack`), `deathSystem` (`death`), run after the
+ * economy's in `RTS_SYSTEMS`. Every number they use (speed, damage, range, cooldown,
  * sight, cell costs) is component data; none is a genre rule in code. All integer, no randomness,
  * entities visited in id order.
  *
@@ -42,10 +45,17 @@ const CellSchema = z.strictObject({ x: z.int(), y: z.int() });
  * - `cooldown`: ticks from one hit to the next (1: every tick).
  * - `sight`: how far it sees, in the same distance. Stored for the view and fog of war; no system
  *   here reads it yet (an idle unit fights back only within `range`).
+ * - `type`: the unit type it was made from (an id in the world's `RtsTypes`), for the view, or
+ *   null (the default); no system reads it.
  */
 export const Unit = defineComponent(
   'Unit',
   z.strictObject({
+    type: z
+      .string()
+      .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
+      .nullable()
+      .default(null),
     speed: z.int().min(1),
     attack: Count,
     range: z.int().min(1),
@@ -64,28 +74,28 @@ export type Facing8Data = z.infer<typeof Facing8.schema>;
 
 /**
  * What a unit is doing, set by an order: `order` is its id. A `move` walks to `goal`; an `attack`
- * closes to range of `target` (and `Target` names it for `attackSystem`). `path` holds the cells
+ * closes to range of `target` (and `Target` names it for `attackSystem`); a `build` walks up to the
+ * building `target` and works on it; a `gather` walks up to `target`, a resource node or, while
+ * carrying a load back, a drop-off building (`gatherSystem` switches it). `path` holds the cells
  * still to enter on an A* way (empty when not yet planned, or when the unit follows a flow field:
- * `flow`, set for a group of `FLOW_GROUP_SIZE` or more). The task is removed when the unit
- * arrives, its target is gone, or no way leads there.
+ * `flow`, set for a group of `FLOW_GROUP_SIZE` or more, and always for `build` and `gather`, which
+ * walk by the field to the cells next to their target). The task is removed when the unit
+ * arrives, its target is gone or finished, or no way leads there.
  */
 export const Task = defineComponent(
   'Task',
   z
     .strictObject({
       order: EntityId,
-      kind: z.enum(['move', 'attack']),
+      kind: z.enum(['move', 'attack', 'build', 'gather']),
       goal: CellSchema.nullable(),
       target: EntityId.nullable(),
       path: z.array(CellSchema),
       flow: z.boolean(),
     })
-    .refine(
-      (t) => (t.kind === 'move') === (t.goal !== null) && (t.kind === 'attack') === (t.target !== null),
-      {
-        message: 'a move task has a goal and no target, an attack task a target and no goal',
-      },
-    ),
+    .refine((t) => (t.kind === 'move') === (t.goal !== null) && (t.kind === 'move') === (t.target === null), {
+      message: 'a move task has a goal and no target, any other task a target and no goal',
+    }),
 );
 export type TaskData = z.infer<typeof Task.schema>;
 
@@ -100,25 +110,26 @@ export type TargetData = z.infer<typeof Target.schema>;
 export const Cooldown = defineComponent('Cooldown', z.strictObject({ move: Count, attack: Count }));
 export type CooldownData = z.infer<typeof Cooldown.schema>;
 
-/** The components the RTS systems use beyond the standard ones and `Terrain`. */
-export const RTS_COMPONENTS = Object.freeze([Unit, Facing8, Task, Target, Cooldown]);
-
-/** The result of `applyOrder`: applied, or refused with a reason (and nothing changed). */
-export type OrderResult = { ok: true; order: Order } | { ok: false; error: string };
+/** The unit components: `Unit`, `Facing8`, `Task`, `Target`, `Cooldown`. */
+export const UNIT_COMPONENTS = Object.freeze([Unit, Facing8, Task, Target, Cooldown]);
 
 /** A fighting entity: alive, placed, with `Health` above 0. */
-function fighting(world: World, id: Entity): boolean {
+export function fighting(world: World, id: Entity): boolean {
   if (!world.alive(id) || !world.has(id, Position)) return false;
   const h = world.get(id, Health);
   return h !== undefined && h.hp > 0;
 }
 
-function factionOf(world: World, id: Entity): string | null {
+/** The faction of `id` (its `Owner`), or null. */
+export function factionOf(world: World, id: Entity): string | null {
   return world.get(id, Owner)?.faction ?? null;
 }
 
-/** Why `order` cannot be carried out in `world`, or null when it can. */
-function refusal(world: World, order: Order): string | null {
+/**
+ * Why the units of `order` cannot take it, or null: every one must exist, be a living `Unit` on the
+ * map and belong to the order's faction.
+ */
+export function unitsRefusal(world: World, order: Order): string | null {
   for (const id of order.units) {
     if (!world.alive(id)) return `unit ${id} does not exist`;
     if (!world.has(id, Unit)) return `entity ${id} is not a unit (no Unit)`;
@@ -128,6 +139,19 @@ function refusal(world: World, order: Order): string | null {
       return `unit ${id} belongs to ${faction === null ? 'no faction' : `"${faction}"`}, not "${order.faction}"`;
     }
   }
+  return null;
+}
+
+type UnitOrder = Extract<Order, { type: 'move' | 'attack' | 'stop' }>;
+
+/**
+ * Why a unit order (`move`, `attack`, `stop`) cannot be carried out in `world`, or null when it can:
+ * the units (`unitsRefusal`), then a move target on the map and enterable, an attack target a
+ * living entity of another faction (or of none) that is not one of the ordered units.
+ */
+export function unitOrderRefusal(world: World, order: UnitOrder): string | null {
+  const units = unitsRefusal(world, order);
+  if (units !== null) return units;
   if (order.type === 'move') {
     const { x, y } = order.target;
     const t = terrainOf(world);
@@ -148,51 +172,40 @@ function refusal(world: World, order: Order): string | null {
   return null;
 }
 
-/**
- * Apply one order between ticks. It is checked first: against `orderSchema` (shape), then against
- * the world (every unit exists, is a living `Unit` on the map and belongs to the order's faction; a
- * move target is on the map and enterable; an attack target is a living entity of another faction,
- * or of none). A refused order returns `{ ok: false, error }`, one line starting with
- * `order <id>:`, and changes nothing. An accepted one writes, under the cause `order:<id>`, each
- * unit's `Task` (and `Target` for an attack); `stop` removes both. Units are handled in ascending
- * id order. Calling it during a step throws (`withCause` does).
- */
-export function applyOrder(world: World, json: unknown): OrderResult {
-  const parsed = parseOrder(json);
-  const label =
-    json !== null && typeof json === 'object' && typeof (json as { id?: unknown }).id === 'number'
-      ? `order ${(json as { id: number }).id}`
-      : 'order';
-  if (!parsed.ok) return { ok: false, error: `${label}: ${parsed.error.split('\n').join(`\n${label}: `)}` };
-  const order = parsed.order;
-  const why = refusal(world, order);
-  if (why !== null) return { ok: false, error: `order ${order.id}: ${why}` };
+/** A worker that leaves a build for another order is no longer on that job. */
+export function leaveJob(world: World, id: Entity): void {
+  const worker = world.get(id, Worker);
+  if (worker && worker.job !== null) world.add(id, Worker, { ...worker, job: null });
+}
 
+/**
+ * Write a checked unit order (inside `withCause`): for each unit in ascending id order, its `Task`
+ * (and `Target` for an attack); `move` drops `Target`, `stop` drops both. A worker leaves its job.
+ */
+export function writeUnitOrder(world: World, order: UnitOrder): void {
   const units = [...order.units].sort((a, b) => a - b);
   const flow = units.length >= FLOW_GROUP_SIZE;
-  world.withCause(`order:${order.id}`, (w) => {
-    for (const id of units) {
-      if (order.type === 'stop') {
-        w.remove(id, Task);
-        w.remove(id, Target);
-      } else if (order.type === 'move') {
-        const goal = { x: order.target.x, y: order.target.y };
-        w.add(id, Task, { order: order.id, kind: 'move', goal, target: null, path: [], flow });
-        w.remove(id, Target);
-      } else {
-        w.add(id, Task, {
-          order: order.id,
-          kind: 'attack',
-          goal: null,
-          target: order.target,
-          path: [],
-          flow,
-        });
-        w.add(id, Target, { entity: order.target });
-      }
+  for (const id of units) {
+    leaveJob(world, id);
+    if (order.type === 'stop') {
+      world.remove(id, Task);
+      world.remove(id, Target);
+    } else if (order.type === 'move') {
+      const goal = { x: order.target.x, y: order.target.y };
+      world.add(id, Task, { order: order.id, kind: 'move', goal, target: null, path: [], flow });
+      world.remove(id, Target);
+    } else {
+      world.add(id, Task, {
+        order: order.id,
+        kind: 'attack',
+        goal: null,
+        target: order.target,
+        path: [],
+        flow,
+      });
+      world.add(id, Target, { entity: order.target });
     }
-  });
-  return { ok: true, order };
+  }
 }
 
 /** Whether `target` is within `range` of `from` in integer distance (`distFloor <= range`). */
@@ -274,7 +287,10 @@ function nextCell(
  * - a `move` task at its goal is done (removed); else the unit steps toward the goal;
  * - an `attack` task whose target is gone or dead is done (task and `Target` removed); a unit
  *   within range of its target stands; else it steps toward the target's cell;
- * - with no way there the task is dropped.
+ * - a `build` or `gather` task stands while its target is gone (the economy systems, which run
+ *   first, drop or switch it) or within reach (`inReach`: on or next to its footprint); else it
+ *   steps by the shared 8-way flow field to the cells next to the target's `Position`;
+ * - with no way there the task is dropped (a worker leaves its job).
  * A step moves the unit one cell on the 8-way grid (by its task's A* path, or the shared flow field
  * for a group), standing at the cell's elevation, sets `Facing8`, and starts the step cooldown
  * (`Unit.speed`). Units do not block each other.
@@ -293,7 +309,13 @@ export const moveSystem: System = {
       const unit = world.get(id, Unit) as UnitData;
       const pos = world.get(id, Position) as { x: number; y: number };
       let goal: Cell;
-      if (task.kind === 'move') {
+      let near = false;
+      if (task.kind === 'build' || task.kind === 'gather') {
+        const rect = footprintOf(world, task.target as Entity);
+        if (rect === null || inReach(pos, rect)) continue;
+        goal = { x: rect.x, y: rect.y };
+        near = true;
+      } else if (task.kind === 'move') {
         goal = task.goal as Cell;
         if (pos.x === goal.x && pos.y === goal.y) {
           world.remove(id, Task);
@@ -310,10 +332,13 @@ export const moveSystem: System = {
         goal = { x: at.x, y: at.y };
         if (inRange(pos, goal, unit.range)) continue;
       }
-      const { cell, path } = nextCell(t, task, pos, goal);
+      const { cell, path } = near
+        ? { cell: flowStep(t, flowField(t, goal, { neighbourhood: 8, near: true }), pos), path: [] }
+        : nextCell(t, task, pos, goal);
       if (cell === null) {
         world.remove(id, Task);
         if (task.kind === 'attack') world.remove(id, Target);
+        leaveJob(world, id);
         continue;
       }
       const step = { x: cell.x - pos.x, y: cell.y - pos.y };
@@ -407,14 +432,15 @@ export const attackSystem: System = {
 };
 
 /**
- * `death`: every `Unit` whose `Health.hp` is 0, in id order, is destroyed (each removal and the
- * destroy are in the log under `death`). A named squad member that dies leaves its squad first:
- * the squad's strength drops by one and it is taken off `members` (and `captain`).
+ * `death`: every `Unit` or `Building` whose `Health.hp` is 0, in id order, is destroyed (each
+ * removal and the destroy are in the log under `death`). A named squad member that dies leaves its
+ * squad first: the squad's strength drops by one and it is taken off `members` (and `captain`).
  */
 export const deathSystem: System = {
   name: 'death',
   run(world) {
-    for (const id of world.query(Unit, Health)) {
+    for (const id of world.query(Health)) {
+      if (!world.has(id, Unit) && !world.has(id, Building)) continue;
       if ((world.get(id, Health) as { hp: number }).hp > 0) continue;
       const member = world.get(id, Member);
       if (member && member.squad !== null && world.alive(member.squad)) {
@@ -431,6 +457,3 @@ export const deathSystem: System = {
     }
   },
 };
-
-/** The RTS systems in their run order: move, then attack, then death. */
-export const RTS_SYSTEMS: readonly System[] = Object.freeze([moveSystem, attackSystem, deathSystem]);

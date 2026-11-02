@@ -53,22 +53,39 @@ From `engine/sim/index.ts`:
   `DIAGONAL_COST` (14) times the cell's cost, no corner cutting, ties N, NE, E, SE, S, SW, W, NW
   (`STEPS_8`); `stepCost` is one move's cost.
 - Systems (`systems.ts`): components `Walk` `{ wait }` and `Hauler` `{ item, source, capacity,
-carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, and `haulSystem`
+carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, `addWork`, and `haulSystem`
   (workers fetch from a source and carry it to the nearest unfinished building as work, resting at
   random through the world RNG), `buildSystem` (a building's health follows its progress) and
   `patrolSystem` (walk the waypoints in a loop).
-- RTS units (`rts.ts`, Engine 0.9): orders as plain JSON (`orderSchema`, `Order`, `parseOrder`,
-  defined in `engine/core/orders.ts` and re-exported: `move` to a cell, `attack` an entity, `stop`)
+- RTS units (`rts.ts`, `rts-orders.ts`, Engine 0.9): orders as plain JSON (`orderSchema`, `Order`,
+  `parseOrder`, defined in `engine/core/orders.ts` and re-exported: `move` to a cell, `attack` an
+  entity, `stop`, and the economy's `build`, `train`, `gather`)
   and `applyOrder(world, order)` -> `{ ok: true, order }` or `{ ok: false, error }` (checked
   against the world: units exist, are living units of the order's faction, targets are valid;
   a refused order changes nothing), writing under the cause `order:<id>`. Components `Unit`
   `{ speed, attack, range, cooldown, sight }`, `Facing8` `{ dir }`, `Task`
-  `{ order, kind, goal, target, path, flow }`, `Target` `{ entity }` and `Cooldown`
-  `{ move, attack }` (`RTS_COMPONENTS`); systems `moveSystem` (8-way A*, or a shared flow field
-  for a group of 4 or more; speed in ticks per cell), `attackSystem` (range in integer distance,
-  `inRange`; cooldown; nearest enemy for idle units, ties to the lowest id) and `deathSystem`
-  (dead units destroyed, leaving their squad), run in that order as `RTS_SYSTEMS`. `facingOf`.
+  `{ order, kind, goal, target, path, flow }` (kinds `move`, `attack`, `build`, `gather`),
+  `Target` `{ entity }` and `Cooldown` `{ move, attack }` (`UNIT_COMPONENTS`); systems
+  `moveSystem` (8-way A*, or a shared flow field for a group of 4 or more; speed in ticks per
+  cell; builders and gatherers walk up next to their target), `attackSystem` (range in integer
+  distance, `inRange`; cooldown; nearest enemy for idle units, ties to the lowest id) and
+  `deathSystem` (dead units and buildings destroyed, units leaving their squad). `facingOf`.
   Heroes are ordinary units an order can name alone.
+- RTS economy (`economy.ts`, `footprint.ts`, Engine 0.9): unit and building types as data, the
+  world's `RtsTypes` component (schema `rtsTypesSchema` from `engine/core/rts-types.ts`: stats,
+  costs, build and training time, what a building trains, drop-offs); a faction's resources in
+  the `Inventory` of its `Stockpile` `{ faction }`; `Building` `{ kind, w, h, dropoff }` (a
+  footprint from its north-west cell), `Resource` `{ item }` nodes, `Producer`
+  `{ trains, queue, progress }` and `Gatherer` `{ capacity, ticks, node, item, carry, progress }`
+  (`ECONOMY_COMPONENTS`); `spawnUnit` and `placeBuilding` copy a type's numbers in. Orders: `build`
+  (workers, a cell and a building type: placement and cost checked, paid, a site placed),
+  `train` (buildings and a unit type: paid per building, queued) and `gather` (gatherers and a
+  node); refused orders change nothing. Systems `gatherSystem` (one item per `ticks` next to a
+  node, loads carried to the nearest drop-off into the stockpile, the next node taken when one
+  runs dry), `constructSystem` (workers next to a site add their rate as work, `addWork`, and
+  raise its health) and `trainSystem` (the first queued unit appears next to the building after
+  its ticks). `RTS_COMPONENTS` (both sets) and `RTS_SYSTEMS` (gather, construct, train, move,
+  attack, death, in that order) are in `rts-orders.ts`.
 - The sample world: `engine/sim/__fixtures__/village.world.json`, run by
   `pnpm test engine/sim/sample-world`: 10,000 ticks, the same hashes twice and as the golden file
   `village.hashes.json`, and a save and load at 83 ticks matching the uninterrupted run.
@@ -124,6 +141,10 @@ squads, errors naming the field), `path.test.ts` walking costs and tie order, `a
 (cheapest paths, no rock or corner cutting, null with no way, same ties every run), a group on a
 flow field and the A* vs flow field measurement, `systems.test.ts` hauling, building and
 patrols, `rts.test.ts` orders, movement, combat and deaths (refused orders change nothing, a battle
-repeats its hashes and survives a save and load mid-battle), and `sample-world.test.ts` the Engine 0.8 proof: the village runs 10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
+repeats its hashes and survives a save and load mid-battle), `economy.test.ts` building (paid,
+placed, finished after its work ticks; refused for cost or blocked placement, changing nothing),
+training (after the type's ticks, cost charged), gathering (the stockpile rises) and an economy
+scenario with the same hashes twice and through a save and load mid-construction and
+mid-training, `footprint.test.ts` the footprint helpers, and `sample-world.test.ts` the Engine 0.8 proof: the village runs 10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
 ticks (`WW_SAVE_EVERY_TICK=1` reloads at every tick, about two minutes).
 `engine/tools/world-run.test.ts` checks `run` and `dump` on a world run file.

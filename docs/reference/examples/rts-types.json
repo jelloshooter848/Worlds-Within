@@ -1,0 +1,36 @@
+{
+  "units": {
+    "worker": {
+      "health": 20,
+      "speed": 3,
+      "attack": 1,
+      "range": 1,
+      "cooldown": 4,
+      "sight": 5,
+      "cost": { "gold": 50 },
+      "trainTicks": 30,
+      "work": 2,
+      "gather": { "capacity": 5, "ticks": 4 }
+    },
+    "soldier": {
+      "health": 40,
+      "speed": 3,
+      "attack": 5,
+      "range": 1,
+      "cooldown": 6,
+      "sight": 6,
+      "cost": { "gold": 60 },
+      "trainTicks": 45
+    }
+  },
+  "buildings": {
+    "hall": { "health": 600, "size": { "w": 3, "h": 3 }, "work": 300, "trains": ["worker"], "dropoff": true },
+    "barracks": {
+      "health": 300,
+      "size": { "w": 2, "h": 2 },
+      "work": 120,
+      "cost": { "gold": 100 },
+      "trains": ["soldier"]
+    }
+  }
+}

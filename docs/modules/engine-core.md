@@ -31,8 +31,11 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `unknownRules`). Pure.
 - `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`; `defineKit`
   checks it). Each kit exports one as `kit` from `kits/<name>/kit.ts`. Pure.
-- `orders.ts`: the RTS order as plain JSON (`orderSchema`: `move`, `attack`, `stop`; `Order`,
-  `ORDER_TYPES`, `parseOrder`), shared by `engine/sim` and kits.
+- `orders.ts`: the RTS order as plain JSON (`orderSchema`: `move`, `attack`, `stop`, `build`,
+  `train`, `gather`; `Order`, `ORDER_TYPES`, `parseOrder`), shared by `engine/sim` and kits.
+- `rts-types.ts`: the RTS unit and building type table as plain JSON (`rtsTypesSchema`: stats,
+  costs, build and training time, what a building trains, drop-offs), shared by `engine/sim` and
+  kits. Pure.
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`; `MiniGameDef`: `id`,
   `title`, `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
