@@ -3,7 +3,10 @@
 The stacking test's game (Engine 0.7, `docs/ROADMAP.md`, "0.7 The stacking test"): a small
 original platformer built on `kits/platformer` with the engine as it is, to find out what is
 missing. Every gap found while building it goes into `docs/reports/stacking-test.md` at once.
-It is also a worked example for LLM users: this file says how it was built, step by step.
+It is also a worked example for LLM users: this file says how it was built, step by step, and
+how to add a level or a mini game room. Engine 0.7 is done (T9): every gap is fixed or moved to a
+named release, and the glue review (the report's "Glue review") found this folder holds only
+content, skins and thin glue.
 At Engine 0.15 it grows into the platformer sample, `games/samples/platformer/`, and this folder
 goes away (its run files move with it and stay green).
 
@@ -46,8 +49,9 @@ release that will).
     (`respawn`; step off and on again for another round). Past the wall, the goal.
 - `content/rooms/vault.json` + `vault.map.txt`: the door's top-down room (`kits/topdown` room
   format, `kits/topdown/CLAUDE.md`, Room files): 16x11, four statues, a 2x2 pool, two knights
-  (`n`), the hero's start at (2,5). It is a `RoomDef` like any top-down game's; nothing in it says
-  it is a mini game (the level's trigger does).
+  (`n`), the hero's start at (2,5), `"title": "VAULT"` (the mini game's title, gap G15). It is a
+  `RoomDef` like any top-down game's; nothing in it says it is a mini game (the level's trigger
+  does).
 - `content/profiles/hopper.profile.json`: the game's own physics profile (`hopper`): it started
   from the kit's fixture profile and was changed (a little slower walk and run cap, a slower
   walker, 2 hit points, 3 lives, a 6-tick jump buffer, a softer middle jump tier). Its actor
@@ -79,10 +83,12 @@ release that will).
     shows (`#`, `.`, `S`, `~`), `hero` (`walk`, `attack`, `hurt`, `dying`, `poof`), `sword`
     (`stab`), `poof`, `knight` (`walk`); the round's events (`mini-game`, `room`, `sword`, `hit`,
     `kill`, `hurt`, `dying`, `dead`); HUD `hp` (one heart per half heart) and `timeLeft` (an
-    hourglass and the ticks left). The two kits' tiles (`#`, `.`, `B`, `=`) and their camera and HUD
+    hourglass and the ticks left); `camera` `{ "clamp": false }`, so the 16x11 room stays under
+    the HUD band where the kit's camera hint puts it (gap G29). The two kits' tiles (`#`, `.`, `B`, `=`) and their camera and HUD
     clash, so a round's frames get their own skin: a skin named `<backend>-<mini game id>` is
     that round's (`testSkins`, over the engine's `skinSet`), and the page and the view hand each
-    frame to the presenter its `status.miniGame` names (the engine's `presenterByStatus`; gap G14).
+    frame to the presenter its `status.miniGame` names (the backend's `skinSetCanvasPresenter`,
+    over the engine's `presenterBySkinSet`; gaps G14 and G34).
   - `content/skins/three.json` (0.7 T8): the levels' 3D skin, low-poly meshes written as text
     (compound meshes of boxes, spheres, cylinders and cones in world px): `runner` (cap, face,
     shirt, overalls, boots), `walker` (shared by `walker` and `ledge-walker` in their own
@@ -99,23 +105,23 @@ release that will).
     plinth) stand forward as blocks; the floor (`.`) is a thin slab sunk 8 px behind them and the
     water (`~`) 2 px deeper, so the hero (tunic, cap and face toward the camera, a shield), the
     knights and the poofs stand out of the floor; the sword is a thin box filling its blade's
-    box. `camera3d` `tilt` 8 (a little of the walls' tops shows). It has no `camera`: the
-    round's frames carry the top-down kit's hint, and the 3D round presenter clamps (the
-    default), so the 16x11 room is centred in the picture; 2D keeps it under its HUD band
-    (`clamp: false`), but 3D draws no HUD (gap G33), so there is no band to keep clear.
-- TypeScript is glue only:
-  - `content.ts`: `testKinds()` (the engine's kinds, the platformer kit's `level` and `profile`,
-    the top-down kit's `room`), `testRooms(content)`, `loadTest(files)`, `testStages(content)` (the levels in play
-    order: by id, numbers compared as numbers, `level-2` before `level-10`; each paired with the
-    profile it names by the kit's `levelStages`), `testSkins(content, backend)` (`{ level,
-rounds }`: the engine's `skinSet`, throwing when the backend has no skin), `testArt(content)`
-    (sprites and palettes by id), `testSfx(content)`, `mustLoad`;
-  - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets, size and `SKY`),
-    `testFrames(screen)` (the engine's `FrameStream` over the kit's `platformerFrames`; while the
-    round runs, its own frame), `testPicture(presenter, screen)`, `testCanvasPresenter(r, look, {
-level?, onSound? })` (a `SkinnedCanvasPresenter` per skin on `r`, the round's with `clamp:
-false` so the room sits under its HUD band; `presenterByStatus('miniGame', ...)` picks one per
-    frame) and `testCanvasPicture(r, look)`;
+    box. `camera3d` `tilt` 8 (a little of the walls' tops shows). `camera` `{ "clamp": true }`:
+    the round's frames carry the top-down kit's hint, and the 3D round presenter clamps, so the
+    16x11 room is centred in the picture; 2D keeps it under its HUD band (`clamp: false`), but 3D
+    draws no HUD (gap G33), so there is no band to keep clear. The difference is skin data.
+- TypeScript is glue only (each file a few calls into the engine and kits; the glue review in
+  `docs/reports/stacking-test.md` lists what each holds):
+  - `content.ts`: `loadTest(files)` (the content kinds of the game's two kits,
+    `kitContentKinds([platformer, topdown])` from `@engine/core/content/game-content`, over the
+    kits' hooks), `testStages(content)` (the kit's `contentStages`: the levels by id, numbers
+    compared as numbers, each with its profile), `testRooms(content)`, `testSkins(content,
+backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backend has no
+    skin). Art (`contentArt`), sounds (`contentSfx`) and `mustLoad` are the engine's (gap G4);
+  - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets from the engine's
+    `contentSheets`, size and `SKY`, the sky colour: gap G36), `testFrames(screen)` (the engine's
+    `FrameStream` over the kit's `platformerFrames`; while the round runs, its own frame),
+    `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the backend's
+    `skinSetCanvasPresenter`: the level skin or the round's, per frame);
   - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, screen, background }`: the
     `three` skins, picture size and `SKY`, as the 3D backend's `threeDisplay` and
     `threeScenePresenter` take them). No Three.js import, so the 2D page bundles none;
@@ -123,29 +129,26 @@ false` so the room sits under its HUD band; `presenterByStatus('miniGame', ...)`
     `testCanvasPicture` for `render` and `testFrames` for `frame()` (`--backend three` shows
     `frame()` through the `three` skins: the screenshot page reads them with `skinSet` too);
   - `scene.ts`: `testScene(content, stack, picture)`: the engine's `HostScene` over `createGame`
-    (it pushes the core `miniGameScene` while the door's round runs and pops it on the result);
-  - `main.ts` + `index.html`: the page: `bootBrowserGame` with `canvasDisplay` (the level
-    skin) and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content), onSound
-})` from a dynamic `import('@engine/backends/three')` (its own chunk with Three.js; it hands
-    the round's frames to the `three-vault` skin itself). The scene draws one stream of frames:
-    in 2D `testPicture(testCanvasPresenter(...))` onto the display's renderer, in 3D
-    `testPicture(display.presenter)`. The `#backend` link toggles 2D and 3D. An `AudioManager`
-    with the sfx gets the skins' sounds (`onSound`, the same in both) and is unlocked on the
+    (it pushes the core `miniGameScene` while the door's round runs and pops it on the result;
+    the five accessors are gap G37);
+  - `main.ts` + `index.html`: the page: `bootBrowserGame` with `canvasDisplay(canvas, { ...look,
+onSound })` and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content),
+onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk with Three.js).
+    Both displays take the round skins (`rounds`) and pick one per frame, so the scene draws
+    `testPicture(display.presenter)` either way (gap G34). The `#backend` link toggles 2D and 3D.
+    An `AudioManager` with the sfx gets the skins' sounds (`onSound`) and is unlocked on the
     first key, tap or click (the shell has no audio yet: gap G27);
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
     kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
-    `testMiniGames(content)`
-    (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and `SequenceSnapshot`). The
-    level flow is the kit's (`kits/platformer/CLAUDE.md`, Level sequences): `LEVEL_PAUSE` (60)
-    ticks after a level ends, then the next level or the failed one afresh; the snapshot is the
-    kit's plus `stage` and `pause`. (Until Engine 0.7 T2 this was a copy of the lab's: gap G1,
-    fixed.)
+    `testMiniGames(content)` (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and
+    `SequenceSnapshot`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
+    sequences): `LEVEL_PAUSE` (60) ticks after a level ends, then the next level or the failed
+    one afresh; the snapshot is the kit's plus `stage` and `pause`;
   - `minigames.ts`: `testMiniGames(content)`: one `roomChallenge` (`kits/topdown/challenge.ts`)
-    per room file, its id the room's id, its title the id in capitals (a room file has no title:
-    gap G15), at the manifest's `screen` size. What the round asks and what its result does are
-    level data, not code.
-  - `files.ts`: `TEST_FILES`, the data files through Vite's `import.meta.glob` (for the browser
-    pages to come; Node reads them with `readGameFiles`).
+    per room file, its id the room's id and its title the room's `title`, at the manifest's
+    `screen` size. What the round asks and what its result does are level data, not code;
+  - `files.ts`: `TEST_FILES`, the data files through Vite's `import.meta.glob` (Node reads them
+    with `readGameFiles`; a Vite plugin to drop this file is gap G5, 0.14).
 - `platformer-test.test.ts` (0.7 T7 part): every run file played through the view's `frame()`,
   each frame sorted by source (`status.miniGame`: the level or the vault round), and the right
   skin must map every kind and state, tile, event and HUD value shown; the level skin maps every
@@ -221,7 +224,7 @@ at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
   later level's: re-find them with `pnpm -s cli dump <run> --tick N --json` and keep the
   assertions on what the rules decide.
 
-## How it was built so far
+## How it was built, step by step
 
 1. (0.7 T1) `game.json` copied in shape from the lab (kit, screen, seed, `headless`), with only
    the `level` and `profile` content globs.
@@ -279,6 +282,67 @@ at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
 18. `picture3d.ts`, the `three` display in `main.ts`, the `ww-alternate` tag and the toggle link
     in `index.html`; the browser test plays `level-4.run.json` in both backends.
 
+19. (0.7 T9) The glue review: each `.ts` file read against the rule of thumb and against the
+    lab's and the demo's same file. What all three games wrote the same way moved out: kinds,
+    art, sounds and `mustLoad` to `engine/core/content/game-content.ts` (G4), sheets to
+    `engine/core/assets/content-sheets.ts` (G35), the level order to the kit's `contentStages`
+    (G2), the round's title to the room file (G15), the round's framing to the skin's
+    `camera.clamp` and the 2D round presenter to the backend's `skinSetCanvasPresenter`, which
+    `canvasDisplay` uses with `rounds` (G29, G34). Checked by the golden hashes (unchanged), the
+    screenshot PNGs at the same ticks (byte-identical before and after) and the browser test.
+    What could not move is in the report with a named release (G5, G27, G36, G37).
+
+## Files to run
+
+| File                    | Ends at                                                     | Command                                                              |
+| ----------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------- |
+| `runs/level-1.run.json` | `level-1` cleared, tick 493                                 | `pnpm -s cli run games/platformer-test/runs/level-1.run.json --json` |
+| `runs/level-2.run.json` | `level-2` cleared, tick 1101                                | `pnpm -s cli run games/platformer-test/runs/level-2.run.json --json` |
+| `runs/level-3.run.json` | `level-3` cleared, tick 1999                                | `pnpm -s cli run games/platformer-test/runs/level-3.run.json --json` |
+| `runs/level-4.run.json` | the round failed, then passed; `level-4` cleared, tick 3283 | `pnpm -s cli run games/platformer-test/runs/level-4.run.json --json` |
+| the whole folder        | every kit rule guarded                                      | `pnpm -s cli mutants games/platformer-test --json`                   |
+
+Each run's final state hash (`finalHash`): `level-1` `2e94bc209e1a168d`, `level-2`
+`26456b7489d5bd3d`, `level-3` `3d737aadfabe54b6`, `level-4` `06201f9a779cc2fc`; every hash is the
+same through the null backend, Canvas2D and the Three.js scene builder (`tests/runs`).
+
+## How to add a level
+
+1. Draw `content/levels/level-5.map.txt` in the kit's `LEGEND` (`kits/platformer/legend.ts`) and
+   write `content/levels/level-5.json` (`id` = the file name, `profile: "hopper"`, `scroll`,
+   any `triggers`). The id decides the order: `level-5` comes after `level-4`, `level-10` after
+   `level-9` (the kit's `contentStages`). No code changes.
+2. `pnpm -s cli validate games/platformer-test --json` (exit 0; every error names the file and
+   the field or map row). Fix single cells with `pnpm -s cli set <map> rows.<row>.<col> '#'`.
+3. New actor types go in the profile with `pnpm -s cli add
+games/platformer-test/content/profiles/hopper.profile.json actors.<type> '{...}'`; a new kind or
+   state the level shows needs entries in both skins (`canvas2d.json`, `three.json`) and frames
+   in `content/sprites/hopper.txt`: `platformer-test.test.ts` and the backend parity test fail
+   on a missing one.
+4. A run file `runs/level-5.run.json`: `level-4.run.json`'s input, then the new level's (a run
+   file starts at the first level, gap G9). Find the input a jump at a time with `pnpm -s cli dump
+<run> --tick N --json`, assert what the rules decide, list the rules it means to guard in
+   `guards` and check them with `pnpm -s cli mutants <run> --json`.
+5. Golden hashes: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, then `pnpm test` and commit.
+
+## How to add a mini game room
+
+1. Draw the room as `content/rooms/<id>.json` + `<id>.map.txt` (16x11, the top-down kit's
+   `LEGEND`, one hero start, `at: [0, 0]`, a `title`). `minigames.ts` makes a `roomChallenge` per
+   room file by itself. Today the top-down kind checks every room file as one dungeon, so a
+   second room with its own start fails `validate` (gap G17, moved to 0.15): until then a game
+   holds one challenge room.
+2. Put a trigger (`!`) in a level and a `triggers` entry naming the room's id in `game`, with its
+   `params` (`goal`: `defeat-all` or `reach`, `ticks`, `hp`) and what `pass` and `fail` do
+   (`coins`, `open:<col>:<row>`, `respawn`). The params are checked only when a round starts (gap
+   G16): play the run to the door to see an error.
+3. Skins named after the mini game: `content/skins/canvas2d-<id>.json` and `three-<id>.json` (the
+   top-down kit's kinds and tiles the room shows, its HUD, `camera.clamp`); the page, the view,
+   the parity test and `screenshot` pick them by file name.
+4. A run file that plays the round (`TopDownBot` from `@kits/topdown` can find the input in a
+   throwaway script; write it into the run file as plain steps), then validate, mutants and
+   golden hashes as for a level.
+
 ## How to test
 
 `pnpm test games/platformer-test`, `pnpm -s cli validate games/platformer-test --json`,
@@ -292,7 +356,7 @@ and a block for every tile shown), `pnpm -s cli screenshot games/platformer-test
 plays `level-4.run.json` in 2D and in 3D: the launcher lists the game and its `3D` link, both
 rounds show the vault and the level comes back, no page errors; skipped without Chromium).
 
-## How to play
+## How to play (2D and 3D)
 
 `pnpm dev` and open `/games/platformer-test/` (or `pnpm build && pnpm preview` and the root
 launcher's `games/platformer-test/` link); in 3D, `/games/platformer-test/?backend=three` (the

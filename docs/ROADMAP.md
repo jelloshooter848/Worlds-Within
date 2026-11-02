@@ -338,7 +338,7 @@ isometric, polished art.
 
 ---
 
-## 0.7 The stacking test
+## 0.7 The stacking test (done)
 
 **Goal:** find out what is missing, using a simple original game shown two ways.
 
@@ -364,6 +364,10 @@ isometric, polished art.
   with both backends.
 - `games/platformer-test/` contains only content, skins and thin glue (checked by review against the
   rule of thumb in DESIGN.md).
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-07); every gap is in the
+[gap report](reports/stacking-test.md).)_
 
 **Out of scope:** the world simulation, new kits beyond small fixes the gaps call for.
 
@@ -470,6 +474,15 @@ any sample uses them.
   for every mission.
 - Missions are defined as data files.
 
+**From the stacking test** (gaps moved here; [gap report](reports/stacking-test.md)):
+
+- G16: check a trigger's or mission's params with the content (a params schema the mini game or
+  mission gives, run by `validate`), not only when the round starts.
+- G20: keep a round's last tick (its final events and state) in the host's snapshot.
+- G37: a hosted round as part of the game contract (say `miniGame()` on `HeadlessGame`), so the
+  shell's `HostScene` takes the game itself instead of five accessors per game.
+- G2 (the rest): a level or mission order written in data (a campaign file), not only by id.
+
 **Done when:** headless tests cover partial success, failure with no retry, an opportunity closing, and
 construction finishing during a frozen battle, and each passes with the same hashes on every run. A test
 shows that a mission's world-time cost is the same however many ticks are spent inside it.
@@ -502,6 +515,14 @@ kit and the mission contract are joined in one small playable scenario well befo
 - **Every gap is written down,** like the stacking test: anything that needed engine changes, or that
   the sample had to do itself but should have been the engine's job. The report is
   `docs/reports/mini-siege.md`.
+
+**From the stacking test** (gaps moved here; [gap report](reports/stacking-test.md)):
+
+- G18: a per-round input map, and a button held into the door ignored on the round's first tick.
+- G27, G28: audio in the shell (unlock on the first gesture), and result-specific event sounds
+  (`mini-game-end:pass`).
+- G13, G30: more than one trigger look (a `look` tag on a trigger entry, a skin frame by tag).
+- G19 (the rest): a round's HUD that also shows the host's values, if the mission wants one.
 
 **Done when:**
 
@@ -563,6 +584,15 @@ the first scenario restores the same world (equal hashes).
   through a replay. It reads the same dumps and replay files the CLI writes.
 - A timeline viewer showing world time, opportunities and when results were committed.
 
+**From the stacking test** (gaps moved here; [gap report](reports/stacking-test.md)):
+
+- G5: a Vite plugin for a game's files (`virtual:game-files`), so `files.ts` goes away.
+- G8: a `trace` command (or `dump --ticks`) for tuning run files.
+- G9: a start level in run files (`"start": { "stage": 2 }`).
+- G10: region edits and a ruler for text maps.
+- G12: per-kit mutants (each kit's rules and strictness in a game that uses two).
+- G31: replaying a run file in a browser page.
+
 **Done when:** a new scenario added to the mini siege with data files only can be stepped through in the
 debugger, and a failing replay from the CLI opens at its failing tick.
 
@@ -586,6 +616,13 @@ debugger, and a failing replay from the CLI opens at its failing tick.
   placeholders, a `CLAUDE.md` that explains how it was built, and run files in CI.
 - A review of every kit and module API against what the samples needed, as the last chance to change
   them before they are written down as v1.
+
+**From the stacking test** (gaps moved here; [gap report](reports/stacking-test.md)):
+
+- G33: a HUD in the 3D backend (the platformer sample keeps both skins).
+- G36: a skin `background` colour, so the sky is not a constant in glue.
+- G17: a game with several separate challenge rooms (the top-down kit's kinds without the
+  one-dungeon check, chosen by the game).
 
 **Done when:** every sample plays from a link and passes its run files in CI, `games/platformer-test/`
 and `games/demo/` are gone, and the API review is

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 83.** (Last used: 82.)
+**Next unused number: 88.** (Last used: 87.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -234,3 +234,22 @@ Choices the autonomous build made that the owner should check. Answer by number.
   the picture (2D keeps it under its HUD band; 3D draws no HUD, G33). OK, or should a top-down
   round in a side-on 3D game be shown another way (the room tilted back like a table, a camera
   override while the round runs)?
+- **83.** Engine 0.7 close-out (T9): the glue review found `games/platformer-test/` holds only
+  content, skins and thin glue, after moving six more pieces of shared glue into the engine and
+  kits (gaps G2, G4, G15, G29, G34, G35). What is left that another game writes too is logged with
+  a named release: `files.ts` (G5, 0.14), the audio unlock in `main.ts` (G27, 0.11), the sky colour
+  (G36, 0.15) and `scene.ts`'s five accessors (G37, 0.10). Accept 0.7 as done on that basis?
+- **84.** Gap G16 (a trigger's `params` are checked only when the round starts, so `validate`
+  passes a door with a bad goal) is moved to 0.10, where missions get their data schemas. OK, or
+  should `MiniGameDef` get an optional params schema sooner?
+- **85.** Gap G18 (a round steps with the host's input as it is: actions mean different things
+  across the stack, and a button held into the door acts on the round's first tick) is moved to
+  0.11, the first stacked game whose round wants its own controls. OK?
+- **86.** Gap G36: the sky colour is a constant in each platformer game's `picture.ts`, not skin
+  data. Moved to 0.15 (a skin `background` field, with the samples' look). OK, or add the skin
+  field now?
+- **87.** Engine 0.7 T9: game glue imports a kit's hook directly (`import { kit } from
+'@kits/platformer/kit'`) to build its content kinds with `kitContentKinds([platformer,
+topdown])`, because the kits' `index.ts` files do not re-export the hook (so pages do not pull
+  in rule lists by accident). Keep that, or re-export the hooks from each kit's index (say
+  `platformerKit`)?

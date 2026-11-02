@@ -7,6 +7,155 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.7
+
+The stacking test. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
+answer 24). The gap report is [reports/stacking-test.md](reports/stacking-test.md).
+
+### What was built
+
+- **`games/platformer-test/`**, a small original platformer on `kits/platformer`: four short
+  levels (`level-1` to `level-4`) and its own `hopper` profile, all text. `level-4` has a door
+  (a mini-game trigger) that pushes a one-room top-down challenge (`kits/topdown`) over the
+  level; a pass gives coins and opens the wall to the goal, a fail puts the player back on the
+  door. Four run files, one per level, guard all 32 of the kit's rules (`mutants` exits 0).
+- **A game on two kits** (T4): an optional `uses` list beside `kit` in `game.json`; the tools
+  merge every listed kit's content kinds, with `unknown_kit`, `duplicate_kit` and `kind_clash`
+  errors at `game.json`.
+- **Room challenges as mini games** (T5): `roomChallenge` in `kits/topdown/challenge.ts`, a
+  fresh one-room top-down world per round behind the engine's `MiniGameDef`; the trigger's
+  `params` say the goal (`defeat-all`, `reach`), the time limit and the hit points. The
+  platformer kit needed no change to host it.
+- **Shared glue moved into the engine and kits**, as each gap was found: the level sequence
+  (`LevelSequence`, T2), the frame stream, host scene, backend choice, browser boot and both
+  displays (`engine/core/present/stream.ts`, `engine/core/shell/`, `canvasDisplay`,
+  `threeDisplay`; T6), `frameView` (T7), one skin per frame source by file name (`skinSet`,
+  `presenterBySkinSet`, `withSkin`, `rounds`; T7, T8), and in the glue review (T9) content
+  kinds from kit hooks, art, sounds and `mustLoad` (`engine/core/content/game-content.ts`),
+  `contentSheets`, the kit's `contentStages`, a room `title`, a skin `camera.clamp` and the
+  Canvas2D `skinSetCanvasPresenter` with `rounds` in `canvasDisplay`. The lab and the demo use
+  them too.
+- **2D and 3D** (T7, T8): original NES-style pixel art, palettes and MML sfx as text, a
+  `canvas2d` skin for the levels and one for the vault round, and low-poly `three` skins for both
+  (the room laid flat facing the camera). The page plays in 2D by default and in 3D with
+  `?backend=three`; the root launcher lists both links. The backend parity test plays every run
+  through null, Canvas2D and the Three.js scene builder; a browser test plays `level-4.run.json`
+  through the built page in both backends.
+- **The gap report**: 37 gaps, 21 fixed in 0.7 and 16 moved to 0.10, 0.11, 0.14 or 0.15, with a
+  glue review and a summary of what stacking showed. Each later release's section in
+  `ROADMAP.md` lists the gaps it took.
+- Agent docs: `games/platformer-test/CLAUDE.md` (a worked example: how it was built step by step,
+  the files, the files to run, how to run 2D and 3D, how to add a level or a mini game room),
+  `AGENTS.md`, `docs/modules/games-platformer-test.md` and its `llms.txt` link, and updated pages
+  for every module the gaps touched.
+
+### Choices made
+
+- **Gaps were fixed in the engine as they were found**, not saved for the end, so later tasks
+  built on the fixes (the lab moved onto each one too, with unchanged golden hashes).
+- **The kit stays strict** and this game guards every platformer rule (G7, item 76).
+- **One skin per frame source, told apart by file name** (`<backend>-<mini game id>.json`), not
+  a namespaced skin format (G14, G32): the two kits' tiles, cameras and HUDs clash.
+- **A stacked frame shows the round's HUD only** (G19).
+- **The round in 3D is laid flat facing the camera and centred** (item 82); 2D keeps it under its
+  HUD band. Since T9 both are skin data (`camera.clamp`).
+- **Game glue imports the kits' hooks** to build its kinds (`@kits/<name>/kit`; item 87).
+- **Release-sized gaps were moved, not forced in**: run-file start levels, traces, region edits
+  and per-kit mutants to the 0.14 creator tools; params checks, a round's last tick and a hosted
+  round in the game contract to the 0.10 mission contract; per-round input, shell audio and
+  trigger looks to the 0.11 mini siege; the 3D HUD, a skin background and several challenge
+  rooms to the 0.15 sample set (items 77-81, 83-86).
+- The root `package.json` version was left as it was, as in earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm dev   # then open /games/platformer-test/ (2D) or /games/platformer-test/?backend=three (3D)
+           # arrows move, Z jumps, X runs; in the vault round arrows walk and X stabs
+pnpm -s cli validate games/platformer-test --json
+pnpm -s cli run games/platformer-test/runs/level-4.run.json --json
+pnpm -s cli mutants games/platformer-test --json
+pnpm -s cli screenshot games/platformer-test/runs/level-4.run.json --tick 3060 --backend canvas2d --json
+pnpm -s cli screenshot games/platformer-test/runs/level-4.run.json --tick 3060 --backend three --allow-software-gl --json
+pnpm vitest run games/platformer-test tests/runs tests/browser
+```
+
+### Done when
+
+Each item was checked by running the commands on 2026-11-02 at commit `6b70bcd`, the last 0.7
+code commit.
+
+- **Met: a written gap report is committed at `docs/reports/stacking-test.md`, and each gap says
+  what was found, where, and whether it was fixed in this release or moved to a named later
+  release.** 37 gaps (G1-G37): 21 `fixed in 0.7 Tn (<commit>)`, 16 `moved to <release>` (0.10:
+  G16, G20, G37; 0.11: G13, G18, G27, G28, G30; 0.14: G5, G8, G9, G10, G12, G31; 0.15: G17, G33,
+  G36), none left open. The report also has the glue review and a summary of what stacking showed.
+- **Met: the game is playable from a link in both 2D and 3D.** `pnpm build` writes a launcher
+  (`dist/index.html`) with `href="games/platformer-test/"` and
+  `href="games/platformer-test/?backend=three"`.
+  `pnpm vitest run tests/browser --reporter=verbose`: 4 passed, among them "is in the launcher and
+  plays level-4.run.json in canvas2d, the door round and back" and "... in three, the door round
+  and back" (headless Chromium; WebGL is SwiftShader here). In both, the page plays the run's
+  input, shows the vault round twice and comes back to the level, with no page errors.
+- **Met: its run files give the same state hashes with both backends.**
+  `pnpm vitest run tests/runs --reporter=verbose`: every platformer-test run through null,
+  Canvas2D and the Three.js scene builder gives its golden hashes (4 runs, all ticks). From the
+  CLI, `pnpm -s cli run games/platformer-test/runs/level-<n>.run.json --json` exits 0 for n = 1..4
+  (final hashes `2e94bc209e1a168d`, `26456b7489d5bd3d`, `3d737aadfabe54b6`, `06201f9a779cc2fc`),
+  and `pnpm -s cli screenshot <run> --tick T --backend canvas2d --json` and `... --backend three
+--allow-software-gl --json` at the same ticks all exited 0 with `matchesHeadless: true`:
+
+  | Run       | Tick | golden (null)      | `--backend canvas2d` | `--backend three`  |
+  | --------- | ---- | ------------------ | -------------------- | ------------------ |
+  | `level-1` | 300  | `0ea6d18b5e241cd1` | `0ea6d18b5e241cd1`   | `0ea6d18b5e241cd1` |
+  | `level-1` | 520  | `2e94bc209e1a168d` | `2e94bc209e1a168d`   | `2e94bc209e1a168d` |
+  | `level-2` | 780  | `19e70e7aaec0f9cd` | `19e70e7aaec0f9cd`   | `19e70e7aaec0f9cd` |
+  | `level-2` | 1130 | `26456b7489d5bd3d` | `26456b7489d5bd3d`   | `26456b7489d5bd3d` |
+  | `level-3` | 1500 | `53f49e63490e99f1` | `53f49e63490e99f1`   | `53f49e63490e99f1` |
+  | `level-3` | 2030 | `3d737aadfabe54b6` | `3d737aadfabe54b6`   | `3d737aadfabe54b6` |
+  | `level-4` | 2700 | `55f4a450e8eb60eb` | `55f4a450e8eb60eb`   | `55f4a450e8eb60eb` |
+  | `level-4` | 3060 | `37de7dbb8764a8a0` | `37de7dbb8764a8a0`   | `37de7dbb8764a8a0` |
+  | `level-4` | 3300 | `06201f9a779cc2fc` | `06201f9a779cc2fc`   | `06201f9a779cc2fc` |
+
+  Ticks 2700 and 3060 are inside the first and second vault rounds. The T9 refactor changed no
+  picture: at `level-4` tick 3050 the canvas2d PNG is
+  `80e987a9b8f6fae0de4994ab36545aaa00d4eed447cf63258966ddd643d5793b` and the three PNG
+  `8c1302b8da53335387bea4be454c96823aa9590248548a6323fb5443d87729ac`, byte for byte the same as
+  at `2ba77dc` (before T9), and the demo's `walk-east` tick 120 PNG kept its sha256 `385b61d4...`.
+
+- **Met: `games/platformer-test/` contains only content, skins and thin glue (checked by review
+  against the rule of thumb in DESIGN.md).** The glue review is in the report ("Glue review
+  (0.7 T9)"): file by file, what is left and the verdict; what could not move yet is logged with a
+  named release (G5, G27, G36, G37).
+- `pnpm -s cli mutants games/platformer-test --json`, `... games/platformer-lab` and
+  `... games/demo` exit 0; every run file of the three games passes `pnpm -s cli run` (exit 0).
+- The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (95 test files,
+  1087 tests), and `pnpm docs:check` reports the generated docs up to date.
+
+### Deviations from the roadmap
+
+- **Engine changes beyond small kit fixes.** The scope says out of scope is "new kits beyond small
+  fixes the gaps call for"; most gaps were shared glue, so the fixes went into `engine/core`, both
+  backends and both kits (no new kit). The platformer kit gained `LevelSequence`,
+  `contentStages` and frames for a hosted round; the top-down kit gained `challenge.ts` and an
+  optional room `title`.
+- **The lab and the demo were moved onto each fix** (their golden hashes and screenshots did not
+  change), so no game keeps a copy of glue the engine now has.
+- **Feedback numbering:** the task asked for new items from 76; 76-82 were already used by
+  earlier 0.7 tasks, so the close-out items are 83-87 (numbers are never reused).
+
+### Outstanding issues
+
+- Sixteen gaps are moved to later releases (see the report), among them: run files always start
+  at the first level (G9), a trigger's params are checked only when a round starts (G16), the
+  3D picture has no HUD (G33), and the top-down rules inside a round are not mutant-checked
+  (G12).
+- Open owner decisions: items 76-87 in `FEEDBACK-LOG.md`.
+- The 3D checks ran on SwiftShader (no GPU in the build container), as in 0.6.
+- `files.ts` (12 lines) is still per game until a Vite plugin (G5, 0.14).
+- Once while checking T9, the first browser test run after deleting `dist/` reported one failed
+  test; three reruns passed. Not reproduced, so the cause (likely a timeout under load) is unknown.
+
 ## Engine 0.6
 
 Basic 3D backend. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
