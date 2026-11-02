@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 72.** (Last used: 71.)
+**Next unused number: 76.** (Last used: 75.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -189,3 +189,14 @@ Choices the autonomous build made that the owner should check. Answer by number.
   OK? Should other packages (Zod, Playwright) be listed too?
 - **71.** The 3D camera honours `zoom` (by distance), while the Canvas2D presenter still ignores it
   (item 51). Make 2D honour `zoom` as well, or leave it?
+- **72.** In 3D, map `layers` are background scenery behind the main tiles (layer i at
+  z = -(i+1) x `camera3d.layerDepth`), while in 2D they draw over the tiles and under the
+  entities. OK?
+- **73.** In 3D, entities on the same layer share one depth plane, so their list order does not
+  decide which is in front (in 2D it does). Fix now, or leave until a game needs it?
+- **74.** The lab's three skin sets `camera3d.layerDepth` to 0.25 instead of the default 16,
+  because the kit's draw layers go up to 20 and 16 would put the runner near the camera. Should
+  the default change, or should kits keep their layer numbers small?
+- **75.** Done-when item 3 (screenshot `--backend three`) was marked met using SwiftShader with
+  `--allow-software-gl`; the no-flag path on a real GPU was never run (no GPU in the container).
+  Accept, or keep 0.6 open until it is checked on a GPU?

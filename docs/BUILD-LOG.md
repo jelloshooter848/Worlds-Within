@@ -85,6 +85,7 @@ three` refuses it (exit 4). `--allow-software-gl` is an explicit opt-in that for
   dependency table: a package may be imported only by the units listed. (Item 70.)
 - **`zoom` works in 3D but not in 2D.** The 3D camera honours `zoom` by distance; the Canvas2D
   presenter still ignores it (as since 0.4). (Item 71.)
+- More build decisions for the owner are items 72-75 in `FEEDBACK-LOG.md`.
 - The root `package.json` version was left as it was, as in earlier releases of this build (no
   release is tagged or published during the build).
 
@@ -155,6 +156,11 @@ SwiftShader anyway`. With `--json` the result was `"ok": false`, `"exitCode": 4`
   against the 0.6 close-out) printed nothing, and `git diff --stat` for that path was empty.
 - The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (81 test files,
   984 tests). Every run file of both games passes `pnpm -s cli run` (exit 0).
+- Re-checked at `030da95` (after a fix that keeps the Vite client's websocket off the shared port
+  24678): the four checks pass (81 files, 984 tests), all seven run files exit 0, the browser smoke
+  and parity tests pass (12 tests), `screenshot --backend three --allow-software-gl` at tick 120
+  gave the same sha256 `86ede08b...` and `matchesHeadless: true`, the no-flag run exited 4 with
+  `refused: "software_gl"` and wrote no file, and `kits/platformer` is still unchanged since 0.5.
 
 ### Deviations from the roadmap
 
@@ -173,6 +179,9 @@ SwiftShader anyway`. With `--json` the result was `"ok": false`, `"exitCode": 4`
   repeatability across GPUs is untested.
 - The browser play check in 3D is a committed smoke test plus a manual Playwright script; the
   smoke test accepts SwiftShader.
+- Map `layers` sit behind the tiles in 3D but over them in 2D, and the lab needs a small
+  `camera3d.layerDepth` (0.25) because the kit's draw layers go up to 20 (items 72-74).
+- Done-when item 3 is met only on software WebGL (item 75).
 
 ## Engine 0.5
 
