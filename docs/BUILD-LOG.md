@@ -7,6 +7,223 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.10
+
+Time and the mission contract. Being built on branch `engine/build-0.15`; not tagged (no tags
+during the build, owner answer 24). As in 0.9, the decisions came first, before any code (T1); the
+later tasks build against them.
+
+**Stacking-test gaps assigned to 0.10:** G16 (item 84), G20 (item 81), G37 and the rest of G2, from
+`docs/reports/stacking-test.md`. Their answers are decisions 8 to 11 below.
+
+### Decisions
+
+The roadmap's "decisions needed first" for 0.10 are how delegated outcomes are weighted and the rules
+for flashback missions. The other open questions (what the three kinds of time are in code, how the
+fixed cost is applied, what a frozen event is, where the mission types live, what a run file says
+about missions, and the four stacking-test gaps) were settled in writing too, before any code. Each
+one is a feedback item (150-161) the owner can overrule by number. Three rules were already the
+owner's and are restated here as decided, not open: **a mission's world-time cost is fixed when it
+starts**, **delegating gives a fair, average result and playing gives choice, not a better one**, and
+**committed results never change** (DESIGN.md, "Game decisions so far").
+
+**1. Three kinds of time (item 150; the rules are the owner's).**
+
+- **World time** is the world's integer `tick` (one tick is one world minute, item 100). Only
+  `world.step()` moves it, and nothing a mission does moves it any other way.
+- **Experience time** is the ticks the player spends inside an open mission (the kit's own round
+  ticks). It is counted on the mission's record for reports and never moves the world: ten ticks or
+  ten thousand inside a mission leave the world where it was.
+- **Commitment time** is the world tick at which a mission's result is committed (decision 2 fixes
+  it at open tick plus cost).
+- **Committed results never change.** A commit is an append-only record in the world (mission id,
+  outcome, how it was resolved, open and commit ticks, experience ticks, the effects applied and
+  any skipped). Nothing edits or removes a record; opening, playing, delegating or committing a
+  mission that is already committed is refused (`mission_committed`), never an error that changes
+  state. A mission definition opens at most once per world; something that happens again is a new
+  mission id.
+
+Reasons: these are the DESIGN.md times made concrete with the tick the sim already has, so no second
+clock exists to drift; keeping experience time off the world clock is what makes "stalling gains
+nothing" true by construction; an append-only record is the simplest way to make "consequences are
+not flexible" checkable (a test can compare the log before and after any later action).
+
+**2. The fixed world-time cost (item 151; fixed at start is the owner's rule).** A mission's data
+gives `worldTimeCost`, a whole number of ticks, at least 1. It is read when the mission opens and
+copied onto the open mission's record, so editing the data later never changes a mission already
+open. Opening at tick `T` sets the commit tick to `T + worldTimeCost`.
+
+- **The world moves exactly `worldTimeCost` ticks between open and commit,** with the mission's
+  event frozen (decision 3) and everything else running. The result is committed at the end of the
+  step that brings the world to `T + worldTimeCost`, after that tick's systems and before its
+  snapshot, so the snapshot of the commit tick already shows the result. The result can never land
+  earlier, even when the mission was played or delegated at once.
+- **In live play** the world does not step while the player is inside the mission; when the round
+  ends, the shell steps the world through the cost (fast, with the event frozen) and the result
+  commits on the last of those ticks. **In a run file** the world steps tick by tick as usual and
+  the play or delegate entry can come at any tick between open and commit. Both give the same
+  ticks, the same commit tick and the same hashes, which is how the "cost is the same however many
+  ticks are spent inside it" test is written (decision 12's `experienceTicks`).
+- **If the cost runs out while the mission is still unresolved** (opened, then neither played nor
+  delegated by the commit tick), it is delegated at that moment (decision 5) and committed. Leaving a
+  mission open therefore gains nothing and loses nothing over delegating it at once. A mission being
+  played when its cost runs out cannot happen live (the world is not stepping); in a run file it is
+  refused at load (`mission_unresolved`: a `play` entry after the commit tick).
+
+Reasons: fixing the number at open is the owner's rule; committing at a fixed tick, not "when the
+player is done", is what keeps the world's history independent of experience time, so a played and
+a delegated run of the same mission reach the commit tick with the same unrelated world state (only
+the outcome and its effects differ). Delegating on time-out reuses the one fair path rather than
+adding a "missed" outcome every mission must declare.
+
+**3. Frozen events (item 152).** An **event** is a named group of entities taking part in one
+critical happening (a battle): each has an `EventMember` component `{ event: "<id>" }`, written in
+the scenario or by an effect. A mission names the event it belongs to (`event`, optional: a mission
+with no event freezes nothing). While a mission is open its event is **frozen**: the world keeps the
+set of frozen event ids as data (decision 12 keeps it out of snapshots that do not use it), and a
+frozen entity is one whose `EventMember.event` is in that set.
+
+- **Skip frozen entities:** `move`, `attack` (a frozen unit does not attack, and no unit attacks or
+  damages a frozen one, so the battle cannot be fought from outside), `death` (a frozen entity does
+  not die) and `patrol`; and a frozen worker does not walk, gather, haul or build (its task waits).
+- **Keep running:** `construct`, `train`, `gather`, `haul` and `build` for every entity outside the
+  event, and construction and training progress of buildings, frozen or not. **The barracks still
+  gets built:** the city's builders are not members of the battle; only the fighting forces are.
+- Two open missions may not freeze the same event: opening a second mission on a frozen event is
+  refused (`event_frozen`). Unfreezing happens at the commit, after the effects are applied.
+
+Reasons: a component tag is data, saved and hashed like everything else, and needs no new world
+structure; listing which systems skip frozen entities (rather than freezing whole systems) is what
+lets the economy run while the battle holds; refusing outside attacks keeps the "nearly frozen"
+battle from being decided before the mission returns.
+
+**4. The mission contract (item 153).** A mission takes a snapshot of world state, declares its
+outcome space up front (fixed when it opens) and returns structured changes. It starts from SMBC's
+`MiniGameDef` (and ours in `engine/core/minigame.ts`) with the roadmap's two changes:
+
+- **Structured results.** Not pass, fail or quit: a mission declares a list of outcomes, each with an
+  `id`, a short `title`, a delegation `weight` (decision 5) and the `effects` it makes (decision 4b
+  below), so partial success is an outcome of its own ("two of three engines burnt").
+- **No retries.** There is no `attempt` and no second round. A played mission ends in one of its
+  outcomes; quitting a played mission commits the outcome its data names as `onQuit` (required:
+  quitting is a choice like any other, not a way back to the average), and once play has started it
+  can no longer be delegated. Failure is an outcome whose effects can open new opportunities (a
+  rescue), never a retry.
+- **Where the types live.** The plain JSON contract goes in `engine/core` (a `missions.ts` beside
+  `orders.ts`, with Zod schemas), so `engine/sim`, kits and tools share it: the mission definition
+  (the `mission` content kind, `*.mission.json`), outcomes, effects, the kit's report (`{ outcome,
+stats }`) and the committed result record. The **lifecycle** (open, play or delegate, commit,
+  freezing) is in `engine/sim`. The **adapter** is an interface in `engine/core`, `MissionAdapter`:
+  `input(snapshot, mission)` turns the plain world snapshot into what a kit needs, and
+  `outcome(report, mission)` turns the kit's report into one declared outcome id. Adapters are
+  written per game and kit pairing in the game (or in a kit, when it reads only the plain snapshot,
+  as `kits/rts` does), and a kit never imports `engine/sim`; `config/layers.js` does not change.
+- **Existing mini games stay.** `MiniGameDef`, `MiniGameResult` and hosted rounds keep pass, fail and
+  quit for the platformer hosts; a mini game can be a mission's played path through an adapter that
+  maps its result and snapshot to an outcome id.
+
+**4b. Effects (part of item 153).** An outcome's effects are a small set of data-only world changes,
+applied in file order at the commit inside `world.withCause('mission:<id>')`, so each is in the event
+log with the mission as its cause:
+
+- `damage` `{ entity, amount }` (lowers `Health.hp`, never below 0; the death system removes it on a
+  later tick, after the unfreeze), `destroy` `{ entity }`;
+- `inventory` `{ entity, item, add }` (negative removes, never below 0);
+- `set` `{ entity, component, values }` (merged into the component and checked against its schema);
+- `opportunity` `{ open | close: "<id>" }` (decision 6).
+
+Entities are named by the scenario's `$ref` names or ids. An effect whose entity no longer exists at
+the commit is skipped and listed in the record's `skipped`, never an error; an effect that would
+break a component schema is a content error caught by `validate` where the data allows, and refused
+at commit otherwise. Reasons: data-only effects keep game rules in data (CLAUDE.md), give the
+delegated path and the played path exactly the same changes for the same outcome, and keep the list
+short enough for 0.11's mini siege; more kinds are added when a sample needs them.
+
+**5. Delegate or play, and how delegated outcomes are weighted (item 154; the rule is the
+owner's).** **Delegating draws one outcome from the declared outcome space with the world's seeded
+RNG and gives a fair, average result. Playing gives choice over which declared outcome happens, not
+a better one.** The roadmap's decision needed first is answered this way:
+
+- **Weights are whole numbers in the mission data**, one per outcome, at least 1 (default 1).
+  Delegating draws `world.rng.int(totalWeight)` once, at the moment of delegation, and walks the
+  outcomes in file order to the one that number falls in. One draw per delegation, from the world's
+  RNG, so a delegated run is repeatable from the seed and saved state.
+- **"Fair, average" means the weights are the designer's statement of how the mission usually goes
+  for a competent commander**: delegating gives each outcome with its weight's share, so partial
+  outcomes come up as often as the data says, and the delegated result is on average the weighted
+  mix of the declared outcomes. No outcome is hidden from delegation: weight 0 is not allowed, so
+  anything a player can reach by playing, delegation can also reach.
+- **Playing chooses, it does not improve.** A played mission commits the outcome its kit report
+  names, through the adapter; its effects are that outcome's declared effects, exactly as if it had
+  been drawn. A played result outside the declared space (an outcome id the mission does not list)
+  is refused (`unknown_outcome`) and the mission stays open. A mission may restrict which outcomes
+  can be played (`playable`, a subset, default all) but never adds any.
+
+Reasons: integer weights drawn with `world.rng` are the smallest rule that is deterministic, needs
+no floats, and lets a designer say "usually partial, sometimes clean, sometimes a loss" in data; a
+rule like "always the middle outcome" would make delegation predictable and partial outcomes
+pointless.
+
+**6. Opportunities (item 155).** An opportunity is a window, in data, in which a mission can be
+taken: `{ id, mission, opens, closes, exclusive?, closesOthers? }`, with `opens` and `closes` world
+ticks (`opens <= tick < closes`). They are listed in the world scenario (`opportunities`, optional;
+the scenario format stays version 1, as every version 1 file reads the same) or opened later by an
+effect (with ticks relative to the commit tick).
+
+- **Offered** means open and not yet taken or closed; the world's snapshot lists the offered ones
+  (when any opportunity data exists), so a kit or page can show them.
+- **Taking one** is opening its mission while it is offered. A mission named by an opportunity can
+  only be opened through it (opening it outside its window is refused, `opportunity_closed`).
+- **Taking one closes others**: every opportunity in the same `exclusive` group, and every id in its
+  `closesOthers` list, closes when it is taken. One whose `closes` tick passes untaken closes on its
+  own. Each close is logged (cause `mission:<id>` when a take closed it, `time` when it ran out).
+
+Reasons: windows in world ticks fit the one clock; an exclusive group covers "the convoy or the
+prisoner transfer" with no list to keep in step, and an explicit list covers one-way costs; both are
+data, so a test can show an opportunity closing with no game code.
+
+**7. Flashback missions are out of scope (item 156).** The rules for flashback (retrospective)
+missions are deferred until after Engine 1.0, as the roadmap allows. 0.10 keeps nothing that would
+block them: commitment time is already separate from world time, so a later release can let a
+mission commit "into the past" as a new append-only record without changing this contract.
+
+**8. G16: params checked with the content (item 157, answering item 84).** `MiniGameDef` gets an
+optional `params` Zod schema, and so does a mission definition (its `params`, checked against the
+schema of the kit or mini game it is played with). `validate` runs them over every level trigger's
+`params` and every mission's `params`, so a door with `"goal": "defeat-al"` fails `validate`, not the
+run. The tools learn a game's mini games from an optional `miniGames` list on the headless entry
+(`HeadlessEntry.miniGames`), beside `createGame`; a game without it is validated as today. Item 84
+is answered: yes, in 0.10.
+
+**9. G20: the round's last tick in the snapshot (item 158, answering item 81).** On the tick a
+hosted round ends, the host's snapshot keeps the ended round (its final state and its result) for
+that one tick, and drops it on the next. This moves the lab's `mini-game` golden hashes once:
+`games/platformer-lab/runs/mini-game.hashes.json` is re-recorded, and so is
+`games/platformer-test/runs/level-4.hashes.json` if its recorded ticks include a round's last tick.
+The commit lists every re-recorded file; no other golden hash may move. Item 81 is answered: keep it.
+
+**10. G37: the hosted round in the game contract (item 159).** `HeadlessGame` gets an optional
+`miniGame()` returning the round now hosted (`{ id, title, snapshot, present? }`) or null, so the
+shell's `HostScene` takes the game itself instead of the five accessors each game's `scene.ts`
+writes. Games without hosted rounds leave it out.
+
+**11. G2, the rest: a campaign file (item 160).** A new engine content kind, `campaign`
+(`*.campaign.json`): `{ "version": 1, "entries": [{ "level": "level-1" }, { "mission": "raid" }] }`,
+an ordered list of level or mission ids that `validate` checks against the content. A platformer
+game with a campaign plays its levels in that order; without one, the 0.7 order (by id, numbers as
+numbers) stays, so existing games and hashes do not change.
+
+**12. Missions in run files (item 161).** A world run file gets an optional `missions` list beside
+`orders`: `{ "tick": 40, "mission": "raid", "action": "open" | "play" | "delegate", "outcome"?,
+"experienceTicks"? }`. Entries apply between ticks like orders (after the snapshot of `tick`, before
+the step), after that tick's orders, in file order. `play` needs `outcome` (headless, the played
+round's report is stood in for by the outcome it reached; the kit path through an adapter is a game
+run, T7) and may give `experienceTicks`, which is recorded and changes nothing else. A refused entry
+is listed in the result (`refusedMissions`) and the run goes on, as with orders (item 136).
+**Existing 0.8 and 0.9 golden hashes must not move:** the world's snapshot gains mission, frozen
+event and opportunity state only when a scenario or run uses them, so `village.hashes.json`, the
+battle fixture and every sample run keep their hashes.
+
 ## Engine 0.9
 
 The RTS kit and view. Built on branch `engine/build-0.15`; not tagged (no tags during the build,

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 150.** (Last used: 149.)
+**Next unused number: 162.** (Last used: 161.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -510,3 +510,71 @@ orders)
   _Since the close-out, `tests/runs/rts-skirmish-mutants.test.ts` holds the sample to the strict
   standard (no rule unguarded, no run weak); opting the kit in would make `mutants` itself enforce
   it for every game on the kit._
+
+**Engine 0.10, decisions before code** (reasoning in `docs/BUILD-LOG.md`, Engine 0.10, Decisions).
+Three rules here are the owner's and are decided, not open: a mission's world-time cost is fixed when
+it starts (151), delegating gives a fair, average result and playing gives choice, not a better one
+(154), and committed results never change (150). What is open to overrule is how each is built.
+
+- **150.** Three kinds of time: world time is the world's integer `tick` (item 100), moved only by
+  `step()`; experience time is the ticks spent inside an open mission, recorded but never moving
+  the world; commitment time is the tick a mission's result is committed. **Committed results
+  never change (decided):** a commit is an append-only record, and reopening, replaying,
+  delegating or recommitting a committed mission is refused (`mission_committed`). A mission
+  definition opens at most once per world. OK?
+- **151.** **The world-time cost is fixed at start (decided):** `worldTimeCost` (whole ticks, at
+  least 1) is read from the mission's data when it opens, and the result commits at exactly open
+  tick + cost, at the end of that tick's step (before its snapshot), whatever experience time was
+  spent and however early it was played or delegated. Live, the world waits while the player is
+  inside and then steps through the cost; in a run file it steps as usual. A mission still
+  unresolved when its cost runs out is delegated then. OK?
+- **152.** Frozen events: an event is the entities with an `EventMember { event }` component; a
+  mission names its `event`, which is frozen while the mission is open (one open mission per event,
+  else `event_frozen`). `move`, `attack` (by or on a frozen entity), `death` and `patrol` skip frozen
+  entities, and frozen workers do not walk, gather, haul or build; construction and training
+  progress and every system for entities outside the event keep running, so the city's barracks
+  still gets built. OK?
+- **153.** The mission contract: the plain JSON types (mission definition as the `mission` content
+  kind, outcomes, effects, the kit report `{ outcome, stats }`, the committed record) and a
+  `MissionAdapter` interface (`input(snapshot, mission)`, `outcome(report, mission)`) live in
+  `engine/core` (`missions.ts`, like `orders.ts`); the lifecycle lives in `engine/sim`; adapters
+  are written per game and kit pairing and kits never import the sim (`config/layers.js`
+  unchanged). Changes from `MiniGameDef`: declared, structured outcomes instead of pass/fail/quit,
+  and no retries (no `attempt`; quitting a played mission commits its required `onQuit` outcome;
+  once play starts it cannot be delegated). Effects are data only, applied under
+  `mission:<id>`: `damage`, `destroy`, `inventory`, `set` and `opportunity` open/close; an effect
+  on an entity that no longer exists is skipped and listed. `MiniGameDef` itself keeps pass, fail
+  and quit for hosted rounds. OK?
+- **154.** **Delegate = fair average, play = choice not better (decided).** Answering the roadmap's
+  "how delegated outcomes are weighted": each outcome has a whole-number `weight` (at least 1,
+  default 1); delegating draws `world.rng.int(totalWeight)` once and picks the outcome by file
+  order, so each comes up with its weight's share (the weights are the designer's "how it usually
+  goes"). No weight 0, so every outcome a player can reach, delegation can reach too. A played
+  result must be a declared outcome (else `unknown_outcome`, the mission stays open) and commits
+  that outcome's declared effects, the same as if drawn; a mission may limit play to a `playable`
+  subset. OK?
+- **155.** Opportunities: `{ id, mission, opens, closes, exclusive?, closesOthers? }` with world
+  ticks (`opens <= tick < closes`), listed in the scenario (optional `opportunities`, format stays
+  version 1) or opened by an effect. Offered ones are in the snapshot; a mission named by an
+  opportunity opens only through it while offered (`opportunity_closed` otherwise); taking one
+  closes its `exclusive` group and its `closesOthers` list; an untaken one closes when its window
+  ends. OK?
+- **156.** Flashback (retrospective) missions are out of scope until after Engine 1.0, as the
+  roadmap allows; nothing in 0.10 blocks adding them later as new append-only commits. OK?
+- **157.** Answering 84 (G16): yes, in 0.10. `MiniGameDef` and mission definitions get an optional
+  `params` Zod schema, run by `validate` over level trigger and mission params; the tools learn a
+  game's mini games from an optional `miniGames` list on its headless entry. OK?
+- **158.** Answering 81 (G20): keep the ended round (final state and result) in the host snapshot
+  for its last tick, dropped the next tick. `games/platformer-lab/runs/mini-game.hashes.json` is
+  re-recorded once (and `games/platformer-test/runs/level-4.hashes.json` if its recorded ticks
+  include a round's last tick), listed in the commit; no other golden hash moves. OK?
+- **159.** G37: an optional `miniGame()` on `HeadlessGame` (the hosted round now, or null), so the
+  shell's `HostScene` takes the game itself instead of five accessors per game. OK?
+- **160.** G2, the rest: a `campaign` engine content kind (`*.campaign.json`, `{ version: 1,
+entries: [{ level } | { mission }] }`), checked by `validate`; a platformer game with a campaign
+  plays its levels in that order, and without one keeps the 0.7 id order. OK?
+- **161.** Missions in run files: an optional `missions` list beside `orders` on world runs,
+  `{ tick, mission, action: open | play | delegate, outcome?, experienceTicks? }`, applied between
+  ticks after that tick's orders; `play` names the outcome reached; refused entries are listed in
+  `refusedMissions` and the run goes on. Mission, frozen-event and opportunity state appear in the
+  snapshot only when used, so every existing 0.8 and 0.9 golden hash stays the same. OK?

@@ -416,7 +416,7 @@ _(Done. What was built, the choices made and how each item was checked are in
 
 **Decisions needed first:** what a tick means in world time, the ECS choice, and whether height is
 part of the simulation. _(Decided: items 99-101, reasoning in
-[BUILD-LOG.md](BUILD-LOG.md#decisions-1).)_
+[BUILD-LOG.md](BUILD-LOG.md#decisions-2).)_
 
 ---
 
@@ -455,7 +455,7 @@ and 2, so PixiJS does not come in and stays in "Later". Numbers in
 **Decisions needed first:** Whether the kit needs a "hero" unit type (a named unit the player controls
 directly) as well as squads. _(Decided: item 121, yes: a hero is an ordinary unit entity with a
 squad `Member` role `hero`. The other 0.9 decisions are items 122-132. Reasoning in
-[BUILD-LOG.md](BUILD-LOG.md#decisions).)_
+[BUILD-LOG.md](BUILD-LOG.md#decisions-1).)_
 
 ---
 
@@ -503,6 +503,9 @@ shows that a mission's world-time cost is the same however many ticks are spent 
 
 **Decisions needed first:** how delegated outcomes are weighted, and the rules for flashback missions
 (these can wait until after Engine 1.0).
+_(Decided before code, items 150-161: delegated outcomes use whole-number weights in the mission
+data drawn with the world's RNG (item 154); flashback missions wait until after Engine 1.0 (item 156).
+Reasoning in [BUILD-LOG.md](BUILD-LOG.md#decisions).)_
 
 ---
 
@@ -786,13 +789,13 @@ whose only difference is that hero's fate.
 
 | Question                                                                                               | Needed by                                                                                                                                                                   |
 | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which ECS: Koota, bitECS, miniplex, or our own?                                                        | 0.8: decided (item 99): our own small ECS with plain-data stores and ascending-id iteration ([build log](BUILD-LOG.md#decisions-1))                                         |
-| Is height part of the simulation (terrain height, line of sight)?                                      | 0.8: decided (item 101): yes, as data only (integer elevation per cell, integer `z` on Position); line of sight later, in the sim ([build log](BUILD-LOG.md#decisions-1))   |
-| What a simulation tick means in world time (minutes? hours?)                                           | 0.8: decided (item 100): one tick is one world minute, an integer counter independent of the frame loop ([build log](BUILD-LOG.md#decisions-1))                             |
-| Does the RTS kit need a directly controlled "hero" unit as well as squads?                             | 0.9: decided (item 121): yes, an ordinary unit entity with a squad `Member` role `hero`, ordered one by one alongside squads ([build log](BUILD-LOG.md#decisions))          |
+| Which ECS: Koota, bitECS, miniplex, or our own?                                                        | 0.8: decided (item 99): our own small ECS with plain-data stores and ascending-id iteration ([build log](BUILD-LOG.md#decisions-2))                                         |
+| Is height part of the simulation (terrain height, line of sight)?                                      | 0.8: decided (item 101): yes, as data only (integer elevation per cell, integer `z` on Position); line of sight later, in the sim ([build log](BUILD-LOG.md#decisions-2))   |
+| What a simulation tick means in world time (minutes? hours?)                                           | 0.8: decided (item 100): one tick is one world minute, an integer counter independent of the frame loop ([build log](BUILD-LOG.md#decisions-2))                             |
+| Does the RTS kit need a directly controlled "hero" unit as well as squads?                             | 0.9: decided (item 121): yes, an ordinary unit entity with a squad `Member` role `hero`, ordered one by one alongside squads ([build log](BUILD-LOG.md#decisions-1))        |
 | Does PixiJS come in for the RTS view, or does Canvas2D stay?                                           | 0.9: decided (item 133): Canvas2D stays, holding 60 fps with 500 units at zoom 0.5, 1 and 2; PixiJS moves to "Later" ([build log](BUILD-LOG.md#t3-the-rendering-benchmark)) |
-| How delegated outcomes are weighted                                                                    | 0.10                                                                                                                                                                        |
-| Exact rules for flashback (retrospective) missions                                                     | 0.10 (can be left out until after Engine 1.0)                                                                                                                               |
+| How delegated outcomes are weighted                                                                    | 0.10: decided (item 154): whole-number weights per outcome in the mission data, one draw with the world's seeded RNG; no weight 0 ([build log](BUILD-LOG.md#decisions))     |
+| Exact rules for flashback (retrospective) missions                                                     | 0.10: deferred until after Engine 1.0 (item 156)                                                                                                                            |
 | What the mini siege's top-down mission is                                                              | Decide later, by 0.11 (proposal: a sabotage-style mission, with original content)                                                                                           |
 | Art style for the samples                                                                              | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games)                                                                            |
 | Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 hero row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                                                                                                      |
