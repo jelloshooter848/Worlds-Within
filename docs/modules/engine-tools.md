@@ -78,7 +78,8 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
   (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
-  `writeReplay` and `checkReplay` (`replay.ts`), `KIT_RULES` and `kitRules` (`kits.ts`).
+  `writeReplay` and `checkReplay` (`replay.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`
+  (`kits.ts`: each kit by its hook `kits/<name>/kit.ts`, listed in the generated `kit-list.ts`).
 
 Example: `pnpm -s cli validate games/demo --json` prints
 `{"ok":true,"command":"validate","exitCode":0,"game":"games/demo","fileCount":10,"errorCount":0,...}`

@@ -24,6 +24,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
+- `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`; `defineKit`
+  checks it). Each kit exports one as `kit` from `kits/<name>/kit.ts`. Pure.
 - `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,

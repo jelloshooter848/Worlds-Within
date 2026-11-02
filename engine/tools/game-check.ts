@@ -3,7 +3,7 @@ import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import type { ContentKinds } from '@engine/core/content/kinds';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, type ContentError } from '@engine/core/content/validate';
-import { KIT_KINDS } from './kits';
+import { findKit, unknownKitMessage } from './kits';
 
 /**
  * Checking a game's files once they are text: the engine's content kinds plus the kit's. No file
@@ -26,8 +26,9 @@ function kitOf(text: string | undefined): unknown {
 }
 
 /**
- * The content kinds a game reads: the engine's plus its kit's, by the manifest's `kit`. An unknown
- * kit is an `unknown_kit` error at `kit` in `game.json` (`root` goes in front of the file name).
+ * The content kinds a game reads: the engine's plus its kit's (the kit's hook, `kits.ts`), by the
+ * manifest's `kit`. An unknown kit is an `unknown_kit` error at `kit` in `game.json` (`root` goes in
+ * front of the file name).
  */
 export function gameKinds(
   manifestText: string | undefined,
@@ -40,19 +41,9 @@ export function gameKinds(
   const errors: ContentError[] = [];
   const kit = kitOf(manifestText);
   if (typeof kit === 'string') {
-    const kitKinds = KIT_KINDS[kit];
-    if (kitKinds) for (const kind of kitKinds()) kinds.register(kind);
-    else {
-      const known = Object.keys(KIT_KINDS).join(', ');
-      errors.push(
-        contentError(
-          `${root}${MANIFEST_FILE}`,
-          ['kit'],
-          'unknown_kit',
-          `unknown kit "${kit}" (known: ${known})`,
-        ),
-      );
-    }
+    const hook = findKit(kit);
+    if (hook) for (const kind of hook.kinds()) kinds.register(kind);
+    else errors.push(contentError(`${root}${MANIFEST_FILE}`, ['kit'], 'unknown_kit', unknownKitMessage(kit)));
   }
   return { kinds, errors };
 }

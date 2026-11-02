@@ -23,6 +23,9 @@ camera hint; the kit's `CLAUDE.md` maps old frame names to presented kinds and a
 with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full adoption in 0.5)
 and `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
 `.map.txt` text grid). `bot.ts` (the scripted test bot) is imported directly by tests.
+`kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`: the
+name `topdown`, `kinds()` with the room kind, and `TOPDOWN_RULES`); `engine/tools/kits.ts` finds it
+by the `kit` name in `game.json`.
 
 ## Imports allowed
 

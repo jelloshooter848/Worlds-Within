@@ -8,6 +8,15 @@ such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`wal
 file schema (`schema.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
+## Kit hook (`kit.ts`)
+
+`kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): its
+name (`topdown`, what a `game.json` gives in `kit`), its content kinds (`roomKind()`) and its named
+rules (`TOPDOWN_RULES`). `engine/tools` finds it by name through the generated
+`engine/tools/kit-list.ts`; no engine table names the kit. When the kit gets a new content kind or
+names a rule, change the hook (and `rules.ts`), nothing in `engine/tools`. `index.ts` does not
+re-export it.
+
 ## Rules only
 
 - The kit holds gameplay rules, not world rules and not content. It never knows about a particular

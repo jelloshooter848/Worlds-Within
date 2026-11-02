@@ -8,7 +8,7 @@ import { gameManifestSchema, MANIFEST_FILE } from '@engine/core/content/manifest
 import { formatErrors, validate, type ContentError } from '@engine/core/content/validate';
 import { helpResult, helpText } from './commands/help';
 import { EXIT, EXIT_MEANINGS, type ExitName } from './exit-codes';
-import { KIT_KINDS } from './kits';
+import { allKits } from './kits';
 import { defaultRegistry } from './main';
 import type { Registry } from './registry';
 import { CHECK_OP_MEANINGS, CHECK_OPS, runFileSchema } from './run-file';
@@ -129,8 +129,8 @@ export function defaultDocSources(): DocSources {
       .list()
       .map((kind) => kindSubject(kind, 'engine')),
   ];
-  for (const kit of Object.keys(KIT_KINDS).sort()) {
-    for (const kind of KIT_KINDS[kit]!()) subjects.push(kindSubject(kind, `kit ${kit}`));
+  for (const kit of [...allKits()].sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const kind of kit.kinds()) subjects.push(kindSubject(kind, `kit ${kit.name}`));
   }
   return { registry: defaultRegistry(), subjects };
 }

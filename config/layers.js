@@ -133,6 +133,7 @@ export const PURE_CORE = [
   'engine/core/rng.ts',
   'engine/core/headless.ts',
   'engine/core/rules.ts',
+  'engine/core/kit.ts',
   'engine/core/math/**',
   'engine/core/scene.ts',
   'engine/core/input/actions.ts',

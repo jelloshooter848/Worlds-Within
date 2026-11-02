@@ -1,25 +1,51 @@
 import type { ContentKind } from '@engine/core/content/kinds';
+import type { KitDef } from '@engine/core/kit';
 import type { RuleList } from '@engine/core/rules';
-import { roomKind, TOPDOWN_RULES } from '@kits/topdown';
+import { KIT_HOOKS } from './kit-list';
 
 /**
- * The content kinds each kit adds to the engine's own, by the kit name a `game.json` gives in
- * `kit`. The tools read a game's content with the engine's kinds plus these. Add a line here when
- * a kit gets content kinds of its own.
+ * The kits the tools know, found by the kit name a `game.json` gives in `kit`. Each kit says what it
+ * adds through its own hook (`kits/<name>/kit.ts`, a `KitDef` from `engine/core/kit.ts`): its
+ * content kinds, its named rules and whether it opts in to strict mutants. The hooks come from
+ * `kit-list.ts`, which `pnpm docs:gen` generates from the kit folders, so there is no table of
+ * kits to edit here.
  */
-export const KIT_KINDS: Readonly<Record<string, () => readonly ContentKind[]>> = {
-  topdown: () => [roomKind() as unknown as ContentKind],
-};
 
-/**
- * The named rules each kit lets a run switch off (`engine/core/rules.ts`), by kit name, for
- * `disableRules`, `--disable-rule` and `mutants`. A kit with no line here has no named rules.
- */
-export const KIT_RULES: Readonly<Record<string, RuleList>> = {
-  topdown: TOPDOWN_RULES,
-};
+const BY_NAME: ReadonlyMap<string, KitDef> = new Map(KIT_HOOKS.map((k) => [k.name, k]));
 
-/** The named rules of kit `kit` (none for a kit that names none). */
-export function kitRules(kit: string): RuleList {
-  return KIT_RULES[kit] ?? [];
+/** Every kit's hook, by name. */
+export function allKits(): readonly KitDef[] {
+  return KIT_HOOKS;
+}
+
+/** The names of every kit, by name. */
+export function kitNames(): string[] {
+  return KIT_HOOKS.map((k) => k.name);
+}
+
+/** The hook of kit `name`, or undefined for a name no kit has. */
+export function findKit(name: string): KitDef | undefined {
+  return BY_NAME.get(name);
+}
+
+/** What to say about a kit name no kit has: the name, the field and the kits there are. */
+export function unknownKitMessage(name: string): string {
+  return `unknown kit "${name}" in "kit": there is no kits/${name}/kit.ts (known: ${kitNames().join(', ') || 'none'})`;
+}
+
+/** The hook of kit `name`; throws (see {@link unknownKitMessage}) for a name no kit has. */
+export function loadKit(name: string): KitDef {
+  const kit = findKit(name);
+  if (!kit) throw new Error(unknownKitMessage(name));
+  return kit;
+}
+
+/** The content kinds kit `name` adds to the engine's own. Throws for an unknown kit. */
+export function kitKinds(name: string): readonly ContentKind[] {
+  return loadKit(name).kinds();
+}
+
+/** The named rules of kit `name` (none for a kit that names none). Throws for an unknown kit. */
+export function kitRules(name: string): RuleList {
+  return loadKit(name).rules;
 }

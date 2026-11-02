@@ -28,9 +28,14 @@ the CLI starts.
 - `game-check.ts`: `checkGameTexts(texts, root)` and `gameKinds(manifestText, root)`, the checks
   on a game's files once they are text. No Node imports, so the screenshot page uses them in the
   browser too (`game-loader.ts` re-exports them).
-- `kits.ts`: `KIT_KINDS`, the content kinds each kit adds, and `KIT_RULES` / `kitRules(kit)`, the
-  named rules each kit lets a run switch off (`engine/core/rules.ts`), by the `kit` name in
-  `game.json`. Add a line when a kit gets content kinds or names rules.
+- `kits.ts`: the kits by the `kit` name in `game.json`: `allKits()`, `findKit(name)`,
+  `loadKit(name)` (throws `unknownKitMessage(name)` for an unknown kit), `kitKinds(name)` and
+  `kitRules(name)`. Each kit says what it adds through its own hook, `kits/<name>/kit.ts` exporting
+  `kit` (a `KitDef` from `engine/core/kit.ts`: content kinds, named rules, `strictMutants?`). There
+  is no table of kits here: the hooks come from `kit-list.ts`.
+- `kit-list.ts`: **generated** by `pnpm docs:gen` (`kit-list-gen.ts`) with one import per
+  `kits/<name>/kit.ts` on disk; never edit it by hand. A new kit needs its `kit.ts` and
+  `pnpm docs:gen`; `pnpm docs:check` and `kits.test.ts` fail while the list is stale.
 - `run-file.ts`: the run-file schema (`runFileSchema`), `readRunFile(cwd, path)`, the check ops
   (`CHECK_OPS`, `CHECK_OP_MEANINGS`), `valueAt(state, path)` and `failsCheck(state, check)`.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
@@ -55,7 +60,8 @@ the CLI starts.
 - `schema-doc.ts`: `fieldRows(schema)`, a Zod schema as rows of a field table (path, type,
   required, default, limits, description), walked from Zod's `toJSONSchema` of the input shape.
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
-  `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`.
+  `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
+  (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
 - `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add` and `remove`).
 
@@ -306,7 +312,7 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
 
 ## Generated docs
 
-`pnpm docs:gen` writes three pages from the code's own schemas; `pnpm docs:check` regenerates them
+`pnpm docs:gen` writes the kit list (`kit-list.ts`) and three pages from the code's own schemas; `pnpm docs:check` regenerates them
 in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for each stale one.
 `docs.test.ts` makes the same check, so `pnpm test` fails on stale docs (CI also runs
 `pnpm docs:check`).
@@ -314,7 +320,7 @@ in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for 
 - `docs/reference/cli.md`: `help` and `help <command>` for every command, the text `helpText`
   (`commands/help.ts`) prints, so the page and `pnpm cli help` are the same text.
 - `docs/reference/schemas.md`: one section per format, from `defaultDocSources().subjects`: the
-  manifest, run files, the engine's content kinds and each kit's (`KIT_KINDS`). Each has a field
+  manifest, run files, the engine's content kinds and each kit's (`allKits()`, from each kit's hook). Each has a field
   table (`fieldRows`) and an example from `docs/reference/examples/<name>.json|.txt` (plus a
   kind's part files, `room.map.txt`), which must pass the schema or generation fails.
 - `docs/CHEATSHEET.md`: hand-written, except the blocks between `<!-- generated:<name> -->` and

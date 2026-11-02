@@ -63,8 +63,9 @@ that text is the field's line in the schema reference. `readText` / `writeText` 
 (sprites); `gridParts: { map: '.map.txt' }` keeps a field in a sibling text grid (rooms); `checkAll` checks across all
 of a kind's files once each passes (rooms: doors that line up, one player start). Errors
 always name the file and the field (`{ file, path, pointer, code, message, row?, col?, line? }`).
-The engine's kinds come from `engineContentKinds()`; each kit's are listed in
-`engine/tools/kits.ts` (`KIT_KINDS`). Every format:
+The engine's kinds come from `engineContentKinds()`; each kit's come from its hook,
+`kits/<name>/kit.ts` (`kinds()`, see `engine/core/kit.ts`), which `pnpm docs:gen` lists in
+`engine/tools/kit-list.ts`. Every format:
 
 <!-- generated:files -->
 

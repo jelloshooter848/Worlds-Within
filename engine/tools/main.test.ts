@@ -155,8 +155,14 @@ describe('validate', () => {
     writeFileSync(file, readFileSync(file, 'utf8').replace('"topdown"', '"nokit"'));
     const result = (await cli(['validate', 'games/demo', '--json'], { cwd: root })).json();
     expect(result.errors).toContainEqual(
-      expect.objectContaining({ file: 'games/demo/game.json', path: 'kit', code: 'unknown_kit' }),
+      expect.objectContaining({
+        file: 'games/demo/game.json',
+        path: 'kit',
+        code: 'unknown_kit',
+        message: expect.stringContaining('unknown kit "nokit" in "kit"'),
+      }),
     );
+    expect(result.exitCode).toBe(3);
   });
 
   it('prints one line per error for people', async () => {
