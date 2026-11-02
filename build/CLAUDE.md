@@ -6,10 +6,13 @@ Build tooling for the repo: not engine, kit or game code.
   `games/samples/<name>/index.html`. `vite.config.ts` passes these, plus the root `index.html`, as
   `build.rollupOptions.input`, so a new game is built as its own page with no config edit. It also
   writes the list of games into the root `index.html` at the `<!-- games -->` marker (dev and build).
+  A game page can add extra launcher links to itself with a query (Engine 0.6): each
+  `<meta name="ww-alternate" content="<label> <?query>">` in its `index.html` becomes a link
+  `<dir>/<?query>` after the game's own (the platformer lab's `3D ?backend=three`).
 - `launcher.ts` is the root index page's own tiny bundle (it focuses the first game link).
 - Links in the index are relative, so every page works under `VITE_BASE` (e.g. `/Worlds-Within/`).
 - Tests: `tests/build/pages.test.ts` (discovery finds `games/demo`, sorting, skipping folders without
-  an `index.html`, HTML escaping).
+  an `index.html`, HTML escaping, `ww-alternate` links).
 
 ## Imports
 

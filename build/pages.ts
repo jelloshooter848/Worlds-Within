@@ -11,6 +11,19 @@ export interface GamePage {
   name: string;
   /** The page's `<title>`, or its folder path when it has none. */
   title: string;
+  /**
+   * Extra launcher links to the same page with a query, from `<meta name="ww-alternate"
+   * content="<label> <?query>">` tags in its `index.html` (the platformer lab's `3D ?backend=three`).
+   * Left out when the page has none.
+   */
+  alternates?: GameAlternate[];
+}
+
+/** One extra launcher link to a game page: a short label and the query it opens the page with. */
+export interface GameAlternate {
+  label: string;
+  /** Starts with `?`, e.g. `?backend=three`. */
+  query: string;
 }
 
 /** Folders searched for games, relative to the repo root. */
@@ -27,7 +40,14 @@ export function discoverGames(root: string): GamePage[] {
       const dir = `${parent}/${entry.name}`;
       const html = join(root, dir, 'index.html');
       if (!existsSync(html)) continue;
-      pages.push({ dir, name: dir.replace(/\//g, '-'), title: readTitle(readFileSync(html, 'utf8')) ?? dir });
+      const text = readFileSync(html, 'utf8');
+      const alternates = readAlternates(text);
+      pages.push({
+        dir,
+        name: dir.replace(/\//g, '-'),
+        title: readTitle(text) ?? dir,
+        ...(alternates.length > 0 && { alternates }),
+      });
     }
   }
   return pages.sort((a, b) => (a.dir < b.dir ? -1 : a.dir > b.dir ? 1 : 0));
@@ -43,10 +63,13 @@ export function pageInputs(root: string): Record<string, string> {
 /** The launcher's list of games as HTML. Links are relative, so they work under any base path. */
 export function gameListHtml(pages: readonly GamePage[]): string {
   if (pages.length === 0) return '<p>No games found.</p>';
-  const items = pages.map(
-    (page) =>
-      `<li><a href="${escapeHtml(page.dir)}/">${escapeHtml(page.dir)}</a> <span>${escapeHtml(page.title)}</span></li>`,
-  );
+  const items = pages.map((page) => {
+    const dir = escapeHtml(page.dir);
+    const extra = (page.alternates ?? [])
+      .map((alt) => ` <a href="${dir}/${escapeHtml(alt.query)}">${escapeHtml(alt.label)}</a>`)
+      .join('');
+    return `<li><a href="${dir}/">${dir}</a>${extra} <span>${escapeHtml(page.title)}</span></li>`;
+  });
   return `<ul id="games">\n${items.join('\n')}\n</ul>`;
 }
 
@@ -57,6 +80,18 @@ function readTitle(html: string): string | undefined {
   const match = /<title>([^<]*)<\/title>/i.exec(html);
   const title = match?.[1]?.trim();
   return title ? title : undefined;
+}
+
+/** The page's `ww-alternate` meta tags: `content` is a label, a space, then a `?query`. */
+function readAlternates(html: string): GameAlternate[] {
+  const out: GameAlternate[] = [];
+  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
+    if (!/\bname\s*=\s*"ww-alternate"/i.test(tag)) continue;
+    const content = /\bcontent\s*=\s*"([^"]*)"/i.exec(tag)?.[1]?.trim() ?? '';
+    const match = /^(\S.*?)\s+(\?\S+)$/.exec(content);
+    if (match) out.push({ label: match[1]!, query: match[2]! });
+  }
+  return out;
 }
 
 function escapeHtml(text: string): string {

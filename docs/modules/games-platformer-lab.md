@@ -8,7 +8,8 @@ The platformer kit's test lab (Engine 0.5): the kit's fixture level (a byte-iden
 from start to goal, then five small levels that each exercise one group of the kit's named rules,
 played in turn by the headless game. Its run files guard every kit rule, so
 `pnpm cli mutants games/platformer-lab` passes for the strict kit. It plays in the browser through
-the Canvas2D backend and an original placeholder skin, with keyboard, gamepad and touch, and has
+the Canvas2D backend and an original placeholder skin (or, with `?backend=three`, through the
+Three.js backend and a low-poly `three` skin), with keyboard, gamepad and touch, and has
 one original test mini game (`stop-bar`) pushed over the level as a scene when a trigger starts it.
 It is a test game: content and glue, not engine.
 
@@ -32,7 +33,11 @@ It is a test game: content and glue, not engine.
   `labLook3d`, `labOptions3d`, `labScenePresenter` (a `Presenter` over the Node-side
   `ThreeScene`) and `LabPicture3d` (the same frames onto a 3D presenter). `view.ts`: `createView`
   (the `ViewGame` contract, for `screenshot`, with `render(r)` and the `frame()` hook).
-- `scene.ts` (`LabScene`, with the `miniGameScene` glue), `main.ts`, `index.html`, `files.ts`.
+- `scene.ts` (`LabScene`, with the `miniGameScene` glue; it draws through the drawer it is
+  given), `main.ts` (the browser boot: Canvas2D by default, `?backend=three` for 3D),
+  `backend.ts` (`labBackend`, `otherBackendLink`, `LabDisplay`), `main3d.ts` (the 3D display:
+  `ThreePresenter` on the page's canvas, or why WebGL cannot start), `index.html` (with the
+  2D/3D toggle and the launcher's `ww-alternate` 3D link), `files.ts`.
 - `runs/*.run.json` with golden `*.hashes.json`: `start-to-goal`, `moves`, `objects`, `shells`,
   `walkers`, `mini-game`, each with `guards`.
 
@@ -48,4 +53,6 @@ level changes, the mini game). `pnpm -s cli validate games/platformer-lab --json
 `pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json`,
 `pnpm -s cli mutants games/platformer-lab --json` (exit 0), `pnpm test tests/runs` (golden hashes
 and backend parity through null, Canvas2D and the Three.js scene builder, plus the `three`
-skin's coverage of every kind and tile shown). `pnpm dev` and open `/games/platformer-lab/` to play it.
+skin's coverage of every kind and tile shown). `pnpm dev` and open `/games/platformer-lab/` to play it, or
+`/games/platformer-lab/?backend=three` to play it in 3D. `pnpm test tests/browser` runs the 3D
+smoke test in headless Chromium (dev server and a sub-path build; skipped without Chromium).

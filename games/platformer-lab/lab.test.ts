@@ -18,6 +18,9 @@ import { STOP_BAR } from './minigame';
 import { LabPicture, labLook } from './picture';
 import { LabPicture3d, labLook3d, labScenePresenter } from './picture3d';
 import { createView } from './view';
+import { labBackend, otherBackendLink } from './backend';
+import { LabScene } from './scene';
+import { SceneStack } from '@engine/core/scene';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
@@ -281,5 +284,43 @@ describe('the stop-bar mini game', () => {
     const frame = picture.draw(game.world, game.events);
     expect(frame.entities.some((e) => e.kind === 'bar-marker')).toBe(true);
     expect(frame.status['miniGame']).toBe('stop-bar');
+  });
+});
+
+describe('the page backend (main.ts)', () => {
+  it('opens in 3D only with ?backend=three, Canvas2D otherwise', () => {
+    expect(labBackend('?backend=three')).toBe('three');
+    expect(labBackend('?x=1&backend=three')).toBe('three');
+    for (const search of ['', '?backend=canvas2d', '?backend=Three', '?backend=3d'])
+      expect(labBackend(search)).toBe('canvas2d');
+  });
+
+  it('links to the other backend with relative links', () => {
+    expect(otherBackendLink('canvas2d')).toMatchObject({ label: '3D', href: './?backend=three' });
+    expect(otherBackendLink('three')).toMatchObject({ label: '2D', href: './' });
+  });
+
+  it('LabScene draws through the drawer it is given, made once, with the renderer it is handed', () => {
+    const scenes = new SceneStack();
+    const drawn: number[] = [];
+    const handed: Renderer[] = [];
+    const scene = new LabScene(
+      content,
+      (r) => {
+        handed.push(r);
+        return { draw: (world) => void drawn.push(world.frame) };
+      },
+      scenes,
+    );
+    scenes.push(scene);
+    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right'] }] });
+    const r = new NullRenderer();
+    for (let i = 0; i < 3; i++) {
+      input.next();
+      scenes.update([input]);
+      scenes.render(r);
+    }
+    expect(handed).toEqual([r]);
+    expect(drawn).toEqual([1, 2, 3]);
   });
 });

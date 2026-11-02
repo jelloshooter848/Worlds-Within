@@ -35,6 +35,8 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // The 3D pages' own chunk holds Three.js (~575 kB, loaded only with ?backend=three).
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       // The launcher plus every games/*/index.html and games/samples/*/index.html.
       input: pageInputs(root),

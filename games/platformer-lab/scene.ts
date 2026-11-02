@@ -5,11 +5,23 @@ import { miniGameScene } from '@engine/core/minigame-scene';
 import type { Scene, SceneStack } from '@engine/core/scene';
 import type { PlatformerEvent, PlatformerWorld } from '@kits/platformer';
 import { createGame, type LabGame } from './headless';
-import { LabPicture, type LabLook } from './picture';
+
+/** What the scene draws through: `LabPicture` (Canvas2D) or `LabPicture3d` (Three.js). */
+export interface LabDrawer {
+  draw(world: PlatformerWorld, events: readonly PlatformerEvent[]): unknown;
+}
 
 /**
- * The lab in the browser: the headless game (`LabGame`, every level in turn) drawn by the
- * Canvas2D backend from the kit's frames and the lab's skin (`picture.ts`). Arrows (or the touch
+ * Makes the scene's drawer on its first render. The Canvas2D one draws through the renderer it
+ * is handed (`r => new LabPicture(r, look)`); the 3D one ignores it, since `LabPicture3d` draws
+ * through its own presenter (`main3d.ts`).
+ */
+export type MakeLabDrawer = (r: Renderer) => LabDrawer;
+
+/**
+ * The lab in the browser: the headless game (`LabGame`, every level in turn) drawn from the kit's
+ * frames by whichever drawer `main.ts` gives it: Canvas2D and the lab's skin (`picture.ts`), or
+ * Three.js and the `three` skin (`picture3d.ts`, with `?backend=three`). Arrows (or the touch
  * pad) move, Z jumps, X runs; in the mini game X (attack) stops the bar.
  *
  * Mini games (the kit's hook, `kits/platformer/CLAUDE.md`): after a step that starts a round,
@@ -22,11 +34,11 @@ export class LabScene implements Scene {
   /** The events since the last draw (several steps can run between two draws), and their world. */
   private events: PlatformerEvent[] = [];
   private eventsOf: PlatformerWorld;
-  private picture: LabPicture | null = null;
+  private picture: LabDrawer | null = null;
 
   constructor(
     content: ContentBundle,
-    private readonly look: LabLook,
+    private readonly makePicture: MakeLabDrawer,
     private readonly stack: SceneStack,
   ) {
     this.game = createGame(content, content.manifest.start.seed);
@@ -48,7 +60,7 @@ export class LabScene implements Scene {
   }
 
   render(r: Renderer): void {
-    this.picture ??= new LabPicture(r, this.look);
+    this.picture ??= this.makePicture(r);
     this.picture.draw(this.game.world, this.events.splice(0));
   }
 

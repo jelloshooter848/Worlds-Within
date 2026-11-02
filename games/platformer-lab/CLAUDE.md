@@ -83,9 +83,17 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     `frame()` (the view contract's frame hook) returns the `LabFrames` frame with the events
     since the last call (dropped when the level changes, as the scene does); `scene.ts`: `LabScene`, which pushes the
     engine's `miniGameScene` over itself when a trigger starts a round (its `step` steps the lab,
-    so the world applies the outcome as headless) and pops it on the result; `main.ts`: the
-    browser boot (keyboard, gamepad, the touch pad laid out with `layoutScreen`, the scene stack
-    and the fixed loop); `files.ts`: the files through Vite's `import.meta.glob`.
+    so the world applies the outcome as headless) and pops it on the result; it draws through the
+    drawer `main.ts` gives it (`MakeLabDrawer`: `r => new LabPicture(r, look)` in 2D, a
+    `LabPicture3d` in 3D); `main.ts`: the browser boot (keyboard, gamepad, the touch pad laid
+    out with `layoutScreen`, the scene stack and the fixed loop) over a `LabDisplay`
+    (`backend.ts`): Canvas2D by default, Three.js with `?backend=three`; `backend.ts`:
+    `labBackend(search)`, `otherBackendLink(backend)` (the page's 2D/3D toggle) and the
+    `LabDisplay` interface; `main3d.ts` (imported by `main.ts` only in 3D, its own chunk with
+    Three.js): `threeDisplay(canvas, content)`, a `ThreePresenter` with the `three` skin on the
+    page's canvas, placed with `fitCanvas` + `applyCanvasBox`, or a sentence saying why not (no
+    WebGL 2), which `main.ts` shows with a link back to 2D; `files.ts`: the files through Vite's
+    `import.meta.glob`.
 
 ## Run files
 
@@ -124,6 +132,15 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
 
 - `pnpm dev` and open `/games/platformer-lab/`: arrows (or the touch pad) move, Z jumps, X runs
   (and stops the bar in the mini game). `pnpm build` builds it into `dist/games/platformer-lab/`.
+- In 3D (Engine 0.6): open `/games/platformer-lab/?backend=three` (the `3D` link at the top left
+  of the page, or the root launcher's `3D` link from the `ww-alternate` meta tag in `index.html`).
+  The same input, loop, scenes and frames as 2D; only the picture is the Three.js backend with
+  the `three` skin (the mini game's bar too). Without WebGL 2 the page says so and links to 2D.
+  `tests/browser/lab-3d.test.ts` is the smoke test: headless Chromium opens it from the Vite dev
+  server and from a build under a sub-path base, checks the WebGL 2 context and logs its renderer
+  string (SwiftShader here: it checks that 3D works, not hardware; `pnpm cli screenshot --backend
+three` is the one that refuses software rendering), holds right and jumps and checks the picture
+  changes far more than when idle, with no page errors. It skips where Chromium is missing.
 - `pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --json`
   (needs Chromium; `matchesHeadless` must be true).
 - `pnpm test games/platformer-lab` runs `lab.test.ts`: the fixture copies are byte-identical, the
@@ -133,7 +150,8 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
   with the events since the last call and changes nothing, the view draws with the placeholder sheet and font, the level change after
   `LEVEL_PAUSE` (cleared: next level; failed: the same again), equal snapshots on two runs, the
   mini game's pass, fail, quit and time-out, its frame against the schema, and the picture showing
-  it while a trigger runs it.
+  it while a trigger runs it, the `?backend=` choice and toggle link, and `LabScene` drawing
+  through the drawer it is given.
 
 ## Imports
 

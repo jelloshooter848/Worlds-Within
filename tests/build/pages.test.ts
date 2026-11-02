@@ -14,6 +14,14 @@ describe('game page discovery', () => {
     expect(dirs).toContain('games/platformer-lab');
   });
 
+  it("reads the platformer lab's 3D link from its ww-alternate meta tag", () => {
+    const lab = discoverGames(repoRoot).find((page) => page.dir === 'games/platformer-lab');
+    expect(lab?.alternates).toEqual([{ label: '3D', query: '?backend=three' }]);
+    expect(gameListHtml(lab ? [lab] : [])).toContain(
+      '<a href="games/platformer-lab/">games/platformer-lab</a> <a href="games/platformer-lab/?backend=three">3D</a>',
+    );
+  });
+
   it('passes the launcher and every game to the build', () => {
     const inputs = pageInputs(repoRoot);
     expect(inputs.index).toBe(join(repoRoot, 'index.html'));
@@ -28,7 +36,10 @@ describe('game page discovery', () => {
         mkdirSync(join(root, dir), { recursive: true });
         writeFileSync(join(root, dir, 'index.html'), html);
       };
-      page('games/zeta', '<title>Zeta</title>');
+      page(
+        'games/zeta',
+        '<title>Zeta</title><meta name="ww-alternate" content="Big view ?zoom=2" /><meta name="ww-alternate" content="broken" />',
+      );
       page('games/alpha', '<html></html>');
       page('games/samples/dungeon', '<title> Dungeon </title>');
       mkdirSync(join(root, 'games/notes'), { recursive: true });
@@ -37,7 +48,12 @@ describe('game page discovery', () => {
       expect(discoverGames(root)).toEqual([
         { dir: 'games/alpha', name: 'games-alpha', title: 'games/alpha' },
         { dir: 'games/samples/dungeon', name: 'games-samples-dungeon', title: 'Dungeon' },
-        { dir: 'games/zeta', name: 'games-zeta', title: 'Zeta' },
+        {
+          dir: 'games/zeta',
+          name: 'games-zeta',
+          title: 'Zeta',
+          alternates: [{ label: 'Big view', query: '?zoom=2' }],
+        },
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
