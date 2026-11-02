@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { JsonObject, JsonValue } from '../core/headless';
+import { Rng } from '../core/rng';
 import type {
   MissionDef,
   MissionEffect,
@@ -315,14 +316,19 @@ function resolve(
 }
 
 /**
- * Delegate open mission `id`: draw one declared outcome with `world.rng` (one `int(totalWeight)`
- * draw, walked in file order: item 154's fair, average result).
+ * The delegation draw for `def` (item 154's fair, average result): one `int(totalWeight)` draw,
+ * walked in file order, from the mission's own generator, `Rng.derived(world.seed, 'mission:<id>')`.
+ * It never touches `world.rng`, so the outcome and the rest of the world do not depend on the tick
+ * the mission was delegated at, or on whether it was played (item 151).
  */
+function delegationDraw(world: World, def: MissionDef): string {
+  const rng = Rng.derived(world.seed, missionCause(def.id));
+  return pickOutcome(def, rng.int(totalWeight(def))).id;
+}
+
+/** Delegate open mission `id`: one declared outcome drawn by weight ({@link delegationDraw}). */
 export function delegateMission(world: World, id: string): ResolveResult {
-  return resolve(world, id, (m) => ({
-    outcome: pickOutcome(m.def, world.rng.int(totalWeight(m.def))).id,
-    resolution: 'delegated',
-  }));
+  return resolve(world, id, (m) => ({ outcome: delegationDraw(world, m.def), resolution: 'delegated' }));
 }
 
 /**
@@ -407,7 +413,7 @@ function commitNow(world: World, open: OpenMission): { ok: true; record: Mission
     let resolved = open.resolved;
     let resolution: MissionResolution;
     if (resolved === null) {
-      const outcome = pickOutcome(open.def, world.rng.int(totalWeight(open.def))).id;
+      const outcome = delegationDraw(world, open.def);
       resolved = { outcome, resolution: 'delegated' };
       resolution = 'timeout';
     } else resolution = resolved.resolution;

@@ -557,8 +557,10 @@ it starts (151), delegating gives a fair, average result and playing gives choic
   and quit for hosted rounds. OK?
 - **154.** **Delegate = fair average, play = choice not better (decided).** Answering the roadmap's
   "how delegated outcomes are weighted": each outcome has a whole-number `weight` (at least 1,
-  default 1); delegating draws `world.rng.int(totalWeight)` once and picks the outcome by file
-  order, so each comes up with its weight's share (the weights are the designer's "how it usually
+  default 1); delegating draws `int(totalWeight)` once and picks the outcome by file order (the draw
+  comes from the mission's own generator, `Rng.derived(world seed, "mission:<id>")`, not
+  `world.rng`, so the tick it happens at, or a timeout, never moves the world's hashes; changed
+  after review), so each comes up with its weight's share (the weights are the designer's "how it usually
   goes"). No weight 0, so every outcome a player can reach, delegation can reach too. A played
   result must be a declared outcome (else `unknown_outcome`, the mission stays open) and commits
   that outcome's declared effects, the same as if drawn; a mission may limit play to a `playable`

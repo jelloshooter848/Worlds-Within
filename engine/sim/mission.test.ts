@@ -368,6 +368,39 @@ describe('delegation', () => {
     expect(Math.abs((counts['partial'] as number) / n - 0.5)).toBeLessThan(0.03);
     expect(Math.abs((counts['repelled'] as number) / n - 0.25)).toBeLessThan(0.03);
   });
+
+  it('does not depend on the tick it happens at, and never moves world.rng (item 154)', () => {
+    // A system that draws from world.rng every tick, as the hauler does.
+    const roller = { name: 'roller', run: (w: World) => void w.rng.int(1000) };
+    const run = (resolveAt: number, how: 'delegate' | 'play' | 'none'): [string, string] => {
+      const world = createWorld(5, { components: COMPONENTS, systems: [roller] });
+      const { event: _event, ...rest } = RAID;
+      const def = { ...rest, outcomes: RAID.outcomes.map((o) => ({ ...o, effects: [] })) };
+      expect(openMission(world, def).ok).toBe(true);
+      for (let i = 0; i < resolveAt; i++) world.step();
+      const rngBefore = world.rng.state();
+      if (how === 'delegate') expect(delegateMission(world, 'raid').ok).toBe(true);
+      if (how === 'play') expect(playMission(world, 'raid', 'partial').ok).toBe(true);
+      expect(world.rng.state()).toBe(rngBefore);
+      while (world.tick < 30) {
+        world.step();
+        settleMissions(world);
+      }
+      const record = missionsOf(world).committed()[0];
+      for (let i = 0; i < 5; i++) world.step();
+      // Everything but the record's outcome, resolution and report: the unrelated world state.
+      const unrelated = world
+        .canonical()
+        .replace(/("outcome":"[a-z]+"|"resolution":"[a-z]+"|"report":\{[^}]*\}),?/g, '');
+      return [record?.outcome ?? '', unrelated];
+    };
+    const [outcome, state] = run(0, 'delegate');
+    for (const at of [1, 12, 29]) expect(run(at, 'delegate')).toEqual([outcome, state]);
+    // Left unresolved, the timeout draw at the commit tick gives the same outcome and world.
+    expect(run(0, 'none')).toEqual([outcome, state]);
+    // Played, only the outcome (and its effects, none here) differs.
+    expect(run(7, 'play')[1]).toBe(state);
+  });
 });
 
 describe('the fixed world-time cost', () => {

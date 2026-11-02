@@ -33,4 +33,15 @@ describe('Rng', () => {
       expect(v).toBeLessThan(6);
     }
   });
+  it('derived gives the same numbers for a seed and key, different ones for other keys', () => {
+    const a = Rng.derived(7, 'mission:raid');
+    const b = Rng.derived(7, 'mission:raid');
+    for (let i = 0; i < 20; i++) expect(a.next()).toBe(b.next());
+    const firsts = new Set(
+      ['mission:raid', 'mission:convoy', 'mission:rescue'].flatMap((k) =>
+        [7, 8].map((seed) => Rng.derived(seed, k).next()),
+      ),
+    );
+    expect(firsts.size).toBe(6);
+  });
 });

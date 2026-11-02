@@ -314,7 +314,7 @@ export interface MissionAdapter<KitInput, KitReport> {
   outcome(report: KitReport, mission: MissionDef): MissionReport;
 }
 
-/** The sum of the outcomes' weights: delegation draws `rng.int(total)`. */
+/** The sum of the outcomes' weights: delegation draws `rng.int(total)` (in `engine/sim`, from `Rng.derived(seed, 'mission:<id>')`). */
 export function totalWeight(mission: MissionDef): number {
   return mission.outcomes.reduce((sum, o) => sum + o.weight, 0);
 }

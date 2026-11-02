@@ -507,7 +507,7 @@ _(Done. What was built, the choices made and how each item was checked are in
 **Decisions needed first:** how delegated outcomes are weighted, and the rules for flashback missions
 (these can wait until after Engine 1.0).
 _(Decided before code, items 150-161: delegated outcomes use whole-number weights in the mission
-data drawn with the world's RNG (item 154); flashback missions wait until after Engine 1.0 (item 156).
+data drawn with a generator seeded from the world seed and the mission id (item 154); flashback missions wait until after Engine 1.0 (item 156).
 Reasoning in [BUILD-LOG.md](BUILD-LOG.md#decisions).)_
 
 ---

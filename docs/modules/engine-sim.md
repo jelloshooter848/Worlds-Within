@@ -69,7 +69,8 @@ From `engine/sim/index.ts`:
   its outcome space, fixed `worldTimeCost`, open tick and commit tick (open + cost), starts its
   experience clock, freezes its `event` and returns `{ ok, mission, openTick, commitTick,
 snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(world, id)` draws
-  one declared outcome with `world.rng` (`int(totalWeight)`, walked in file order);
+  one declared outcome (`int(totalWeight)`, walked in file order) from the mission's own generator,
+  `Rng.derived(world.seed, 'mission:<id>')`, never `world.rng`, so the tick it happens at moves no hash;
   `playMission(world, id, outcomeId | report)` takes only a declared (and playable) outcome;
   `quitMission` takes `onQuit`. `commitMission(world, id, result?)` steps the world to the commit
   tick (committing any other mission due on the way), delegates an unresolved mission then

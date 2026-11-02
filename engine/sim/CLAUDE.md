@@ -217,9 +217,11 @@ commitTick, snapshot }`, `snapshot` being the plain world snapshot a kit's adapt
   (`missionSnapshot(world)` takes it again, e.g. after a load). Effects name entities by id or by
   a scenario key; every key must be in `refs` (copied onto the open mission), and every `set`
   component must be registered.
-- **Resolve.** `delegateMission(world, id)` draws `world.rng.int(totalWeight)` once and takes the
+- **Resolve.** `delegateMission(world, id)` draws `int(totalWeight)` once and takes the
   outcome it falls in, walking the outcomes in file order (`pickOutcome`): the fair, average
-  result (item 154). `playMission(world, id, outcomeId | { outcome, stats? })` takes only a
+  result (item 154). The draw comes from the mission's own generator,
+  `Rng.derived(world.seed, 'mission:<id>')`, never `world.rng`, so it is the same at whatever tick
+  the mission is delegated (or times out) and the rest of the world's randomness does not move. `playMission(world, id, outcomeId | { outcome, stats? })` takes only a
   declared outcome, and with `playable` only one of those; anything else is refused
   (`unknown_outcome`) and the mission stays open and unresolved. `quitMission(world, id)` takes
   `onQuit`. A mission resolves once: a second play, delegate or quit is refused
@@ -263,13 +265,14 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
 - **World data.** `Missions` `{ open, committed }` lives on the `WorldTime` entity and is
   `omitWhenEmpty`, so a world that never opens a mission snapshots, saves and hashes as before.
   Both system sets register `MISSION_COMPONENTS`; load a world with them in `components`. The
-  only randomness is the one delegation draw from `world.rng`.
+  only randomness is the one delegation draw, from the mission's own generator seeded from the
+  world seed and the mission id (it never draws from `world.rng`).
 - Read with `missionsOf(world)`: `open()`, `committed()` (commit order), `record(id)`,
   `status(id)` (`open`, `committed` or null).
 - Tests: `mission.test.ts` (open and its refusals; partial success applying only its effects;
   failure committed with every retry refused; results outside the declared or playable space
   refused; any declared outcome playable; delegation repeatable from the seed and matching the
-  weights over 4,000 seeds; timeout and overdue; skipped effects; a second mission committed on
+  weights over 4,000 seeds and the same at any delegation tick, with `world.rng` untouched; timeout and overdue; skipped effects; a second mission committed on
   the way; the same hash after commit for 0, 1 or 10,000 experience ticks; played at once or
   ticked through giving the same hash; records unchanged across later ticks and save and load).
 
@@ -638,7 +641,8 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Headless and deterministic: the same seed, components and systems give the same snapshots,
   every run.
 - Imports only `engine/core` (plus `zod` for schemas). Never backends, `engine/tools`, kits or games.
-- All randomness through the world's seeded RNG. No `Math.random`, no `Date.now` or
+- All randomness through the world's seeded RNG (or, for a mission's delegation draw, a generator
+  derived from the world seed with `Rng.derived`, item 154). No `Math.random`, no `Date.now` or
   `performance.now`, no DOM. This purity rule is lint-enforced on every file under `engine/sim/`
   (the `purity` block in `eslint.config.js`), and any `engine/core` file the sim imports at run time
   must be on `PURE_CORE` in `config/layers.js` (`tests/architecture/purity.test.ts` checks it).

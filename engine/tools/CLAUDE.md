@@ -409,7 +409,7 @@ and seven run files (`raid-partial`, `raid-failure`, `opportunity-closing`, `fro
 - **Steps**: `{ tick, mission, action, outcome?, experienceTicks? }` in tick order, `tick` below
   `ticks`. Each applies after the state of its tick and after that tick's orders, before the step
   from it, in file order: `open` (`openMission`, with the scenario's keys as `refs`: an effect's
-  `"entity": "ram"` is the entity keyed `ram`), `delegate` (one weighted draw from the world RNG),
+  `"entity": "ram"` is the entity keyed `ram`), `delegate` (one weighted draw from the mission's own generator seeded from the world seed, so its tick never moves a hash),
   `play` (needs `outcome`, the outcome the stand-in round reached) or `quit` (its `onQuit`).
 - **The commit comes by itself.** After every step of a world run the tools call `settleMissions`,
   so a mission commits at open tick + `worldTimeCost`, after that tick's systems and before its

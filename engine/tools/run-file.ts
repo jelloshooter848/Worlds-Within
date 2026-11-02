@@ -161,7 +161,7 @@ export const missionEntrySchema = z.strictObject({
   action: z
     .enum(MISSION_ACTIONS)
     .describe(
-      '`open` (freezes its event, fixes its commit tick), `delegate` (an outcome drawn by weight with the world RNG), `play` (the outcome chosen) or `quit` (its `onQuit` outcome); the commit comes by itself at the commit tick',
+      '`open` (freezes its event, fixes its commit tick), `delegate` (an outcome drawn by weight, seeded from the world seed and the mission id), `play` (the outcome chosen) or `quit` (its `onQuit` outcome); the commit comes by itself at the commit tick',
     ),
   outcome: z
     .string()

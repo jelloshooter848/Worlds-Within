@@ -38,7 +38,7 @@ tasks built against them. The rules are in `engine/sim/CLAUDE.md` (Time, Mission
   skip frozen entities; `build`, `train` and everyone outside the event run on.
 - **The mission lifecycle** (T4, `f1d3934`): `engine/sim/mission.ts`: `openMission` (records the
   def, the fixed commit tick and freezes the event), `delegateMission` (one weighted draw from
-  `world.rng`), `playMission` and `quitMission` (declared, playable outcomes only),
+  the mission's own generator, seeded from the world seed and its id), `playMission` and `quitMission` (declared, playable outcomes only),
   `commitMission` and `settleMissions` (the effects under `mission:<id>`, the unfreeze, the
   commitment stamp and an append-only `MissionRecord`). Retries, replays and recommits are
   refused (`mission_committed`, `mission_resolved`).
@@ -128,7 +128,10 @@ open. Opening at tick `T` sets the commit tick to `T + worldTimeCost`.
   commits on the last of those ticks. **In a run file** the world steps tick by tick as usual and
   the play or delegate entry can come at any tick between open and commit. Both give the same
   ticks, the same commit tick and the same hashes, which is how the "cost is the same however many
-  ticks are spent inside it" test is written (decision 12's `experienceTicks`).
+  ticks are spent inside it" test is written (decision 12's `experienceTicks`). This holds because
+  resolving a mission changes nothing in the world before its commit and the delegation draw comes
+  from the mission's own seeded generator, not `world.rng` (decision 5), so the tick of a play or
+  delegate entry never moves a hash.
 - **If the cost runs out while the mission is still unresolved** (opened, then neither played nor
   delegated by the commit tick), it is delegated at that moment (decision 5) and committed. Leaving a
   mission open therefore gains nothing and loses nothing over delegating it at once. A mission being
@@ -137,8 +140,9 @@ open. Opening at tick `T` sets the commit tick to `T + worldTimeCost`.
 
 Reasons: fixing the number at open is the owner's rule; committing at a fixed tick, not "when the
 player is done", is what keeps the world's history independent of experience time, so a played and
-a delegated run of the same mission reach the commit tick with the same unrelated world state (only
-the outcome and its effects differ). Delegating on time-out reuses the one fair path rather than
+a delegated run of the same mission reach the commit tick with the same unrelated world state, and
+`world.rng` stays on the same stream before and after it (only the outcome, how it was resolved and
+its effects differ; decision 5's draw touches no shared randomness). Delegating on time-out reuses the one fair path rather than
 adding a "missed" outcome every mission must declare.
 
 **3. Frozen events (item 152).** An **event** is a named group of entities taking part in one
@@ -205,14 +209,21 @@ delegated path and the played path exactly the same changes for the same outcome
 short enough for 0.11's mini siege; more kinds are added when a sample needs them.
 
 **5. Delegate or play, and how delegated outcomes are weighted (item 154; the rule is the
-owner's).** **Delegating draws one outcome from the declared outcome space with the world's seeded
-RNG and gives a fair, average result. Playing gives choice over which declared outcome happens, not
+owner's).** **Delegating draws one outcome from the declared outcome space with a generator seeded
+from the world's seed and gives a fair, average result. Playing gives choice over which declared outcome happens, not
 a better one.** The roadmap's decision needed first is answered this way:
 
 - **Weights are whole numbers in the mission data**, one per outcome, at least 1 (default 1).
-  Delegating draws `world.rng.int(totalWeight)` once, at the moment of delegation, and walks the
-  outcomes in file order to the one that number falls in. One draw per delegation, from the world's
-  RNG, so a delegated run is repeatable from the seed and saved state.
+  Delegating draws `int(totalWeight)` once and walks the outcomes in file order to the one that
+  number falls in. The draw comes from the mission's own generator,
+  `Rng.derived(world.seed, "mission:<id>")` (`engine/core/rng.ts`), never from `world.rng`: a
+  mission opens at most once per world, so the draw is fixed by the seed and the mission id alone.
+  It is the same whenever the delegation happens (at the open tick, any tick before the commit, or
+  at the commit tick on a timeout), and it moves no other randomness, so a system drawing from
+  `world.rng` every tick (the hauler) sees the same stream whether the mission was delegated, played
+  or left to time out. A delegated run is still repeatable from the seed and saved state. (Fixed
+  after review: the first answer drew from `world.rng` at the moment of delegation, which made the
+  hashes depend on the delegate entry's tick and broke decision 2's promises.)
 - **"Fair, average" means the weights are the designer's statement of how the mission usually goes
   for a competent commander**: delegating gives each outcome with its weight's share, so partial
   outcomes come up as often as the data says, and the delegated result is on average the weighted
@@ -224,10 +235,12 @@ a better one.** The roadmap's decision needed first is answered this way:
   is refused (`unknown_outcome`) and the mission stays open. A mission may restrict which outcomes
   can be played (`playable`, a subset, default all) but never adds any.
 
-Reasons: integer weights drawn with `world.rng` are the smallest rule that is deterministic, needs
+Reasons: integer weights drawn with a seeded generator are the smallest rule that is deterministic, needs
 no floats, and lets a designer say "usually partial, sometimes clean, sometimes a loss" in data; a
 rule like "always the middle outcome" would make delegation predictable and partial outcomes
-pointless.
+pointless. A per-mission generator rather than a draw from `world.rng` at the commit tick keeps
+`delegateMission` able to name the outcome at once (the shell shows it) and keeps `world.rng`'s
+stream the same for played and delegated runs.
 
 **6. Opportunities (item 155).** An opportunity is a window, in data, in which a mission can be
 taken: `{ id, mission, opens, closes, exclusive?, closesOthers? }`, with `opens` and `closes` world

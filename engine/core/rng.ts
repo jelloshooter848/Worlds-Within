@@ -15,6 +15,25 @@ export class Rng {
     }
     return new Rng(state);
   }
+  /**
+   * An Rng of its own for `key` under `seed` (FNV-1a of the key mixed with the seed, then a
+   * finalizer): the same seed and key always give the same numbers, and drawing from it never moves
+   * any other generator. Used where a draw must not depend on when it happens (a mission's
+   * delegation draw, item 154).
+   */
+  static derived(seed: number, key: string): Rng {
+    let h = 0x811c9dc5 ^ (seed >>> 0);
+    for (let i = 0; i < key.length; i++) {
+      h ^= key.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    h ^= h >>> 16;
+    h = Math.imul(h, 0x85ebca6b) >>> 0;
+    h ^= h >>> 13;
+    h = Math.imul(h, 0xc2b2ae35) >>> 0;
+    h ^= h >>> 16;
+    return new Rng(h >>> 0);
+  }
   /** The generator's internal state (unsigned 32-bit): two Rngs with the same state draw the same numbers. */
   state(): number {
     return this.s;

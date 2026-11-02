@@ -285,6 +285,6 @@ describe('a mission played through the topdown kit by an adapter', () => {
 const GOLDEN = {
   round: ['d17b39d74adaacb2', 'befc970f9a34003d', 'e050d8cd96c88660', '90f7ede8b6c3ec9d'],
   played: 'f3bc87d6ecbe8175',
-  delegated: 'e904e2206fa48bb4',
+  delegated: '12e460df6445e177',
   drawn: 'partial',
 };
