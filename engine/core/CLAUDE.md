@@ -30,6 +30,18 @@ tools about itself, and `defineKit(def)`, which checks the name (lower-case lett
 "-") and the rule list (`defineRules`) and throws on a bad one. Each kit exports one as `kit` from
 `kits/<name>/kit.ts`. Pure (on `PURE_CORE`).
 
+`minigame.ts` is the mini game contract, in the style of SMBC's `MiniGameDef`: `MiniGameResult`
+(`pass` | `fail` | `quit`), `MiniGameContext` (`params`, the host's JSON data for the round, and
+`attempt`), `MiniGame` (`step(input)`, `snapshot()` as JSON-safe data, `result()` null until it
+ends, `present?()` a `PresentFrame`), `MiniGameDef` (`id`, `title`, `create(ctx, seed)`: everything
+random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
+twice). A host (a kit's world) steps the round headless while it pauses itself and puts the
+round's snapshot in its own, so hashes cover it. It imports no scene, so kits may use it; pure (on
+`PURE_CORE`). `minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
+step?, render, done, translucent? })`, a `Scene` to push over the level that steps the same
+`MiniGame` (or the host's `step`, so the host still applies the outcome) and calls `done(result)`
+once, for the glue to pop it; it is on `FORBIDDEN_CORE`, so kits never import it.
+
 `gfx/screen.ts` is the picture size and its fit: `ScreenSize`, `DEFAULT_SCREEN` (256x240, the size of
 a game whose `game.json` has no `screen`), `SCREEN_MIN` / `SCREEN_MAX` (64..1920, the manifest's
 limits) and `fitGame(size, cssW, cssH, dpr, integerScale, fit?)`, used by the canvas2d `Viewport`
@@ -48,7 +60,7 @@ never knows which one is drawing.
 - Randomness goes through `Rng` (`rng.ts`), never `Math.random`, in anything a kit or the sim uses.
 - Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
   `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
-  `assets/**`, audio output, `view.ts`, `scene.ts`, `loop.ts`). A kit describes frames through
+  `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`). A kit describes frames through
   `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
@@ -56,7 +68,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `minigame.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

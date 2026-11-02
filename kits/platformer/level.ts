@@ -25,6 +25,35 @@ import type { ProfileDef } from './profile';
 /** What a bump block can hold: a coin, several coins, a power-up, an extra life or an actor type. */
 export const BLOCK_CONTENTS = /^(coin|coins|powerup|life|actor:[a-z][a-z0-9-]*)$/;
 
+/**
+ * What a mini game's result does to the level, in order: `coins:<n>` gives n coins, `life` a life,
+ * `clear` ends the level as cleared, `respawn` puts the player back on the trigger, standing, and
+ * `open:<col>:<row>` empties that tile (a gate). An empty list does nothing.
+ */
+export const TRIGGER_OUTCOMES = /^(coins:[1-9][0-9]*|life|clear|respawn|open:[0-9]+:[0-9]+)$/;
+
+const outcomes = (what: string) =>
+  z
+    .array(z.string().regex(TRIGGER_OUTCOMES))
+    .default([])
+    .describe(
+      `what a ${what} does, in order: coins:<n>, life, clear, respawn (on the trigger) or open:<col>:<row>; nothing when left out`,
+    );
+
+const trigger = z.strictObject({
+  game: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9-]*$/)
+    .describe('the id of the mini game it starts, one the game supplies'),
+  params: z
+    .record(z.string(), z.json())
+    .default({})
+    .describe("data for the mini game's round (its MiniGameContext.params)"),
+  pass: outcomes('pass'),
+  fail: outcomes('fail'),
+  quit: outcomes('quit'),
+});
+
 const spawn = z.strictObject({
   actor: z.string().min(1).describe("the actor type it spawns, defined in the level's profile"),
   facing: z.enum(['left', 'right']).default('left').describe('the way it starts moving'),
@@ -51,6 +80,12 @@ export const levelSchema = z
       .exactOptional()
       .describe(
         'what each bump block (?) holds, in reading order: coin, coins, powerup, life or actor:<type>; all coins when left out',
+      ),
+    triggers: z
+      .array(trigger)
+      .default([])
+      .describe(
+        'what each mini-game trigger (!) starts, in reading order: the mini game id, its params and the outcome of each result',
       ),
     map: z
       .array(z.string())
@@ -81,9 +116,27 @@ export const levelSchema = z
         'wrong_block_count',
         `${def.blocks.length} block contents for ${bumps} bump blocks (?)`,
       );
+    const triggers = def.map.reduce((n, row) => n + [...row].filter((c) => c === '!').length, 0);
+    if (def.triggers.length !== triggers)
+      issue(
+        ['triggers'],
+        'wrong_trigger_count',
+        `${def.triggers.length} trigger entries for ${triggers} mini-game triggers (!)`,
+      );
+    def.triggers.forEach((t, i) => {
+      for (const result of ['pass', 'fail', 'quit'] as const) {
+        t[result].forEach((o, j) => {
+          const m = /^open:(\d+):(\d+)$/.exec(o);
+          if (m && (Number(m[1]) >= cols || Number(m[2]) >= rows))
+            issue(['triggers', i, result, j], 'bad_outcome', `"${o}" is outside the ${cols}x${rows} map`);
+        });
+      }
+    });
   });
 
 export type LevelDef = z.output<typeof levelSchema>;
+/** One entry of a level's `triggers`: what a mini-game trigger (!) starts and what results do. */
+export type LevelTrigger = LevelDef['triggers'][number];
 
 /** One cell of a level's map. */
 export interface LevelCell {

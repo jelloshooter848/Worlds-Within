@@ -7,7 +7,7 @@ import { px, tileToSub } from '@engine/core/math/units';
 import { CELL_COLLISION, LEGEND } from './legend';
 import { levelSchema } from './level';
 import { profileSchema, type ProfileDef } from './profile';
-import { MOVEMENT_RULES, OBJECT_RULES, PLATFORMER_RULES } from './rules';
+import { MINI_GAME_RULES, MOVEMENT_RULES, OBJECT_RULES, PLATFORMER_RULES } from './rules';
 import { platformerGame, type PlatformerSnapshot } from './snapshot';
 import { PlatformerWorld } from './world';
 
@@ -270,8 +270,10 @@ describe('the platformer world: level objects and enemies', () => {
     expect(weak).toEqual([]);
   });
 
-  it('names every kit rule once, movement rules first', () => {
-    expect(PLATFORMER_RULES.map((r) => r.id)).toEqual([...MOVEMENT_RULES, ...OBJECT_RULES].map((r) => r.id));
+  it('names every kit rule once: movement rules, then object rules, then mini game rules', () => {
+    expect(PLATFORMER_RULES.map((r) => r.id)).toEqual(
+      [...MOVEMENT_RULES, ...OBJECT_RULES, ...MINI_GAME_RULES].map((r) => r.id),
+    );
   });
 
   it('gives every cell kind the collision the legend gives it', () => {

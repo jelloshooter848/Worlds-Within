@@ -54,9 +54,17 @@ export const OBJECT_RULES = defineRules([
   { id: 'invulnerability', description: 'after a hit the player cannot be harmed for invulnTicks ticks' },
 ]);
 
+/** The mini game hook (`world.ts`, `engine/core/minigame.ts`). */
+export const MINI_GAME_RULES = defineRules([
+  {
+    id: 'mini-games',
+    description: 'touching a mini-game trigger pauses the level for its mini game, then applies the outcome',
+  },
+]);
+
 /**
  * The platformer kit's named rules, for mutant checks (`engine/core/rules.ts`): each one's code is
  * guarded by `rules.isOn(id)`, so a run can switch it off. The kit opts in to strict mutants
  * (`kit.ts`), so every rule listed here must be guarded by a run file.
  */
-export const PLATFORMER_RULES = defineRules([...MOVEMENT_RULES, ...OBJECT_RULES]);
+export const PLATFORMER_RULES = defineRules([...MOVEMENT_RULES, ...OBJECT_RULES, ...MINI_GAME_RULES]);

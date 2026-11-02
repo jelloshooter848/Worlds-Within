@@ -1,17 +1,18 @@
 # kits/platformer
 
 The platformer kit: gameplay rules for a side-scrolling platformer, extracted from SMBC as rules
-only, with generic names and none of its content. Today (Engine 0.5, T7) it holds the content
+only, with generic names and none of its content. Today (Engine 0.5, T8) it holds the content
 kinds and a headless world that plays a whole level: integer physics, tile collision and named
 movement rules for the player, level objects (coins, bump blocks, bricks, hazards, pits, goals),
 data-set enemies (walkers and shells: stomps, kicks, harm), hit points with invulnerability,
-lives and the camera's scroll lock. The mini game hook and presentation frames follow in later
-tasks of the release.
+lives, the camera's scroll lock and the mini game hook (a trigger that pauses the level for a
+mini game and acts on its result). Presentation frames follow in a later task of the release.
 
 - `legend.ts`: `LEGEND`, the level text format: one character per 16x16 tile (`.` empty, `#`
   solid, `B` breakable brick, `?` bump block, `=` one-way platform, `^` hazard, `o` coin, `@`
-  player start, `G` goal, `!` mini-game trigger, reserved for the mini game hook). Enemy spawns
-  have no fixed character: the level header's `spawns` maps characters of its own to actor types.
+  player start, `G` goal, `!` mini-game trigger: what it starts is the next entry of the header's
+  `triggers`). Enemy spawns have no fixed character: the level header's `spawns` maps characters
+  of its own to actor types.
 - `level.ts`: `levelSchema` (the level header plus its `map`), `LevelDef`, `levelCells`,
   `levelSize` and `checkLevel(level, profile)`, the checks beyond the shape.
 - `profile.ts`: `profileSchema`, `ProfileDef` and `profileKind()`: physics profiles, the player's
@@ -19,7 +20,8 @@ tasks of the release.
 - `schema.ts`: `levelKind()`, the `level` content kind (header JSON + `.map.txt` grid) whose
   `checkAll` runs `checkLevel` against the profile each level names.
 - `rules.ts`: `PLATFORMER_RULES`, the kit's named rules: `MOVEMENT_RULES` (under Movement rules
-  below) then `OBJECT_RULES` (under Level objects and enemies).
+  below), then `OBJECT_RULES` (under Level objects and enemies), then `MINI_GAME_RULES` (under
+  Mini games).
 - `tiles.ts`: `TileGrid`, a level's tiles as the world collides with them (a cell kind per tile,
   collision from `CELL_COLLISION` in `legend.ts`; empty outside the grid, so the left and right
   edges are the `level-bounds` rule's). The world changes cells as it plays (`setCell`: a coin
@@ -31,12 +33,13 @@ tasks of the release.
 - `actor.ts`: `Actor`, one enemy of an actor type from the profile: a body that waits until woken,
   walks `dir * speed`, turns at walls and (for `turnAt: ledges`) at drops, and falls with
   `actorGravity`; `id` is its number in the level, kept when a stomp changes its type.
-- `world.ts`: `PlatformerWorld(level, profile, { seed, disabledRules, viewWidth })`: checks the
-  level (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the
+- `world.ts`: `PlatformerWorld(level, profile, { seed, disabledRules, viewWidth, miniGames })`:
+  checks the level (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the
   seeded `rng`, the `rules` switch, the tiles, the player, the actors, `coins`, `lives`,
   `scrollX` (the view's left edge; the view is `viewWidth` px wide, 256 by default) and `outcome`
-  (`playing`, `cleared`, `failed`); `update(input)` steps one tick and pushes `PlatformerEvent`s
-  (below).
+  (`playing`, `cleared`, `failed`), the mini-game `triggers` (`TriggerState`) and `miniGame`
+  (the `MiniGameRun` being played, or null); `update(input)` steps one tick and pushes
+  `PlatformerEvent`s (below).
 - `snapshot.ts`: `snapshotWorld(world, events?)`, a JSON-safe, whole-number snapshot with no
   presentation state, and `platformerGame(world)`, the headless contract (`engine/core/headless.ts`)
   as `topdownGame` does it: each step takes that step's events.
@@ -168,6 +171,8 @@ One tick of the world (`world.ts`; nothing happens once the outcome is `cleared`
    hazard kills (`hazards-kill`), a goal ends the level as `cleared` (`goal-clears-level`;
    `cleared`);
 7. a player whose top is below the last row dies (`pits-kill`; off, it falls on for ever).
+8. an armed mini-game trigger the player touches starts its round (`mini-games`; under Mini
+   games); while a round runs, a tick steps only the round.
 
 A death (`died` with `cause` `pit`, `hazard` or `hurt` at 0 hit points, and the lives left) takes
 a life; with lives left the player starts again at the start with full hit points (`respawn`; the
@@ -175,7 +180,8 @@ view goes back to the start, the actors and tiles stay as they are), else the ou
 
 Events (`PlatformerEvent`, the last step's in the snapshot): `jump` (tier), `land`, `bump`,
 `block`, `break`, `coin`, `spawn`, `stomp`, `kick`, `defeat`, `hurt`, `died`, `respawn`,
-`cleared`. They are deterministic, so they are part of the hashed snapshot.
+`cleared`, `mini-game` and `mini-game-end` (under Mini games). They are deterministic, so they
+are part of the hashed snapshot.
 
 Left out for now (simplifications, not SMBC's full behaviour): a power-up is given at once (no
 moving item), a bump does not hit actors standing on the block, actors do not turn at each other,
@@ -186,14 +192,57 @@ off: `coins-collect`, `bump-blocks`, `brick-break`, `hazards-kill`, `pits-kill`,
 `goal-clears-level`, `scroll-lock`, `actors-wake`, `walkers-turn`, `ledge-turn`, `stomping`,
 `stomp-bounce`, `shell-kick`, `shell-hits-enemies`, `enemy-touch-hurts`, `invulnerability`.
 
+## Mini games
+
+The hook is SMBC's `MiniGameDef` made generic: the contract is `engine/core/minigame.ts`
+(`MiniGameDef { id, title, create(ctx, seed) }`, `MiniGame { step, snapshot, result, present? }`,
+`MiniGameResult` `pass` | `fail` | `quit`), which is pure and has no scenes, so the kit hosts mini
+games headless. The kit defines no mini games: **the game supplies the defs** as the world's
+`miniGames` option (checked by `miniGameTable`: well-formed ids, none twice), and the world throws
+when a level's trigger names an id that is not there.
+
+- A level's `!` cells are triggers; the header's `triggers` gives one entry per `!` in reading
+  order: `{ game, params?, pass?, fail?, quit? }`. `params` (JSON) is handed to the round as
+  `ctx.params`; each result's list of outcomes applies in order (`TRIGGER_OUTCOMES` in
+  `level.ts`): `coins:<n>` (n coins), `life`, `clear` (the level is `cleared`), `respawn` (the
+  player stands on the trigger again, with its hit points kept), `open:<col>:<row>` (that tile is
+  emptied: a gate). Left out, a result does nothing.
+- Each tick, after the pit check, a trigger the player overlaps starts a round when it is armed
+  (`mini-games`; `mini-game` event with `trigger`, `game` and `attempt`): `def.create({ params,
+attempt }, seed)`, the seed drawn from the world's `rng`. A trigger is disarmed by its round and
+  re-armed once the player no longer touches it, so standing on it (or a `respawn` onto it) does
+  not start another round.
+- While the round runs, `update(input)` steps only the round (the frame counter goes on; the
+  player, actors, view and tiles stay as they are). On the tick it reports a result the world
+  emits `mini-game-end` (`trigger`, `game`, `result`), empties the trigger on a `pass`, applies the
+  outcomes, and the level moves again from the next tick.
+- The snapshot holds `triggers` (`col`, `row`, `game`, `armed`, `attempts`) and `miniGame`
+  (`trigger`, `game` and `state`, the round's own `snapshot()`, or null), so state hashes cover
+  the round.
+- **Browser glue (games, not the kit):** a game's level scene, after `world.update(input)`, pushes
+  `miniGameScene` (`engine/core/minigame-scene.ts`) over itself when `world.miniGame` is set,
+  with `step: (input) => world.update(input)` so the world still steps the round and applies its
+  outcome, and pops it in `done`. A `SceneStack` updates only its top, so the level stays paused
+  exactly as headless. The kit never imports the scene helper (it is on `FORBIDDEN_CORE`).
+
+Rule id (`MINI_GAME_RULES`): `mini-games` (off: a trigger is an empty tile). `minigame.test.ts`
+plays a test-only mini game (passes after N ticks of holding attack, fails on left, quits on
+select): a pass (coins, a gate opened, the level goes on to the goal), a fail (`respawn` onto the
+trigger, which waits to be left), a quit with no outcome and a second attempt, equal snapshots on
+two runs, the rule switched off, and the `triggers` schema codes. The `mini-games` rule is not yet
+guarded by a run file (no game uses the kit before `games/platformer-lab`); that game's run files
+must guard it for `pnpm cli mutants` to pass.
+
 ## Content kinds
 
 - `level` (`levels/<id>.json` + `levels/<id>.map.txt`): `id`, `profile` (a `profile` id), `scroll`
   (`right` default, `free`, `none`), `size` (optional `[cols, rows]`; the size comes from the grid
   and must match), `spawns` (`{ "<char>": { actor, facing } }`), `blocks` (what each `?` holds in
-  reading order: `coin`, `coins`, `powerup`, `life` or `actor:<type>`; all coins when left out)
-  and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
-  character), `size_mismatch`, `wrong_block_count`, plus the grid's `ragged_row`, `unknown_char`,
+  reading order: `coin`, `coins`, `powerup`, `life` or `actor:<type>`; all coins when left out),
+  `triggers` (one per `!` in reading order: `game`, `params`, `pass`, `fail`, `quit`; under Mini
+  games) and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
+  character), `size_mismatch`, `wrong_block_count`, `wrong_trigger_count`, `bad_outcome` (an
+  `open:<col>:<row>` outside the map), plus the grid's `ragged_row`, `unknown_char`,
   `empty_grid` at the `.map.txt` line.
 - `checkAll` (`checkLevel`), once every file passes its schema: `no_start`, `two_starts` (at each
   extra `@`, row/col), `no_goal`, `missing_profile` (at `profile`) and `unknown_actor` (at each map
@@ -219,7 +268,8 @@ off: `coins-collect`, `bump-blocks`, `brick-break`, `hazards-kill`, `pits-kill`,
 movement tests as a list of cases, plays each with every rule on, then with each movement rule off
 in turn and fails if a rule leaves every case passing; `objects.test.ts` does the same for the
 object rules (coins, blocks, bricks, hazards, pits, goal, scroll lock, waking, turning, stomp,
-bounce, kick, shell hits, touch damage, invulnerability), and plays the fixture level from start to
+bounce, kick, shell hits, touch damage, invulnerability), `minigame.test.ts` the mini game hook
+(under Mini games), and `objects.test.ts` plays the fixture level from start to
 goal with a scripted input (`cleared`, both coins, the same snapshot hashes on two runs); `golden.test.ts` checks the movement against
 SMBC (above); `world.test.ts` also checks that two runs of the same input
 and seed give equal `canonicalJson` snapshots tick by tick, and that snapshots hold whole numbers. After changing a schema or a

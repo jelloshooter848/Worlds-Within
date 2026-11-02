@@ -18,6 +18,10 @@ import type { PlatformerEvent, PlatformerWorld } from './world';
  * - `actors`: every actor in the level, in spawn order: `id`, `type`, `x`/`y` (bottom centre),
  *   `vx`, `vy`, `dir`, `speed`, `active`, `onGround`, `grace`;
  * - `tiles`: the cells changed since the start, in reading order (`col`, `row`, `cell`);
+ * - `triggers`: every mini-game trigger, in reading order: `col`, `row`, `game`, `armed`,
+ *   `attempts`;
+ * - `miniGame`: the round being played over the level (`trigger`, `game`, and `state`, the mini
+ *   game's own snapshot), or null;
  * - `events`: what happened on the last step (`PlatformerEvent`s), when the snapshot comes from
  *   {@link platformerGame}.
  */
@@ -57,6 +61,8 @@ export interface PlatformerSnapshot extends JsonObject {
     grace: number;
   }[];
   tiles: { col: number; row: number; cell: string }[];
+  triggers: { col: number; row: number; game: string; armed: boolean; attempts: number }[];
+  miniGame: { trigger: number; game: string; state: JsonObject } | null;
   events: JsonObject[];
 }
 
@@ -67,6 +73,7 @@ export function snapshotWorld(
 ): PlatformerSnapshot {
   const p = world.player;
   const b = p.body;
+  const run = world.miniGame;
   return {
     frame: world.frame,
     level: world.level.id,
@@ -103,6 +110,14 @@ export function snapshotWorld(
       grace: a.grace,
     })),
     tiles: world.tiles.changed().map((c) => ({ ...c })),
+    triggers: world.triggers.map((t) => ({
+      col: t.col,
+      row: t.row,
+      game: t.def.game,
+      armed: t.armed,
+      attempts: t.attempts,
+    })),
+    miniGame: run && { trigger: run.trigger.index, game: run.def.id, state: run.game.snapshot() },
     events: events.map((e) => ({ ...e })),
   };
 }

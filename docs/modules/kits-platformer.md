@@ -12,16 +12,19 @@ behaviour is set by data), and a headless world (`PlatformerWorld`) that moves t
 level with SMBC-style whole-number physics and named, switchable movement rules, and plays a whole level: coins, bump blocks
 and bricks, hazards and pits, data-set walker and shell enemies (stomps, kicks, harm), hit points
 with invulnerability, lives, the scroll lock and a `cleared` or `failed` outcome, with a JSON-safe
-snapshot and `platformerGame(world)` for the headless contract. The mini game hook and
-presentation frames follow later in 0.5. It never draws and holds no content beyond tiny test fixtures.
+snapshot and `platformerGame(world)` for the headless contract. Its mini game hook: a level's `!`
+trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), the level pauses
+while it runs, its snapshot sits in the level's, and the trigger's data-set outcome for its
+`pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile).
+Presentation frames follow later in 0.5. It never draws and holds no content beyond tiny test fixtures.
 
 ## Public API entry points
 
 `index.ts`, imported as `@kits/platformer`, re-exports `legend` (`LEGEND`, the level text format),
-`level` (`levelSchema`, `LevelDef`, `levelCells`, `levelSize`, `checkLevel`), `profile`
+`level` (`levelSchema`, `LevelDef`, `LevelTrigger`, `TRIGGER_OUTCOMES`, `levelCells`, `levelSize`, `checkLevel`), `profile`
 (`profileSchema`, `ProfileDef`, `profileKind`, `SUB`, `VEL`), `schema` (`levelKind`), `rules`
-(`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
-(`Player`), `actor` (`Actor`), `world` (`PlatformerWorld`, `PlatformerEvent`, `Outcome`) and `snapshot` (`snapshotWorld`,
+(`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
+(`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`) and `snapshot` (`snapshotWorld`,
 `platformerGame`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
 kinds `level` and `profile`, its named rules, `strictMutants: true`); `engine/tools/kits.ts` finds
 it by the `kit` name in `game.json`.
@@ -39,7 +42,8 @@ it by the `kit` name in `game.json`.
 `pnpm test kits/platformer` runs the schema tests and loads the fixture level and profile
 (`kits/platformer/__fixtures__/`) through the kit's hook; `world.test.ts` covers the movement rules (each switched off must fail a
 case), determinism and whole-number snapshots; `objects.test.ts` covers the level objects and
-enemies the same way and plays the fixture level from start to goal; `golden.test.ts` replays six scripted inputs and
+enemies the same way and plays the fixture level from start to goal; `minigame.test.ts` covers the
+mini game hook with a test-only mini game (pass, fail, quit, determinism, the rule off); `golden.test.ts` replays six scripted inputs and
 must match SMBC's recorded player positions and velocities at every tick (the traces and their
 provenance are in `kits/platformer/__fixtures__/golden/`; SMBC is not needed to run it). `pnpm docs:gen` keeps the kinds in
 `docs/reference/schemas.md`; the architecture tests (`tests/architecture/`) check its imports,

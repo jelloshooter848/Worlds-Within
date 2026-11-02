@@ -1,10 +1,12 @@
+import type { JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { overlaps } from '@engine/core/math/aabb';
 import { clamp, px, tileAt, tileToSub } from '@engine/core/math/units';
+import { miniGameTable, type MiniGame, type MiniGameDef, type MiniGameResult } from '@engine/core/minigame';
 import { Rng } from '@engine/core/rng';
 import { RuleSwitch } from '@engine/core/rules';
 import { Actor, DEFAULT_KICK_GRACE } from './actor';
-import { checkLevel, levelCells, type LevelCell, type LevelDef } from './level';
+import { checkLevel, levelCells, type LevelCell, type LevelDef, type LevelTrigger } from './level';
 import { Player } from './player';
 import type { ProfileDef } from './profile';
 import { PLATFORMER_RULES } from './rules';
@@ -28,7 +30,9 @@ export type PlatformerEvent =
   | { type: 'hurt'; hp: number }
   | { type: 'died'; cause: DeathCause; lives: number }
   | { type: 'respawn' }
-  | { type: 'cleared' };
+  | { type: 'cleared' }
+  | { type: 'mini-game'; trigger: number; game: string; attempt: number }
+  | { type: 'mini-game-end'; trigger: number; game: string; result: MiniGameResult };
 
 /** Where the level stands: still being played, cleared at a goal, or failed (no lives left). */
 export type Outcome = 'playing' | 'cleared' | 'failed';
@@ -49,6 +53,31 @@ export interface PlatformerWorldOptions {
   disabledRules?: readonly string[];
   /** The view's width in px, for scrolling and waking actors (256 when left out). */
   viewWidth?: number;
+  /**
+   * The mini games the level's triggers name, supplied by the game (`engine/core/minigame.ts`).
+   * A trigger naming an id that is not here throws.
+   */
+  miniGames?: readonly MiniGameDef[];
+}
+
+/** One mini-game trigger (`!`) of the level: where it is, its data and its state. */
+export interface TriggerState {
+  /** Its number in reading order: its entry in the level's `triggers`. */
+  readonly index: number;
+  readonly col: number;
+  readonly row: number;
+  readonly def: LevelTrigger;
+  /** False while the player still touches it after a round (it starts one only when entered). */
+  armed: boolean;
+  /** Rounds started here so far. */
+  attempts: number;
+}
+
+/** The round being played over the level. */
+export interface MiniGameRun {
+  readonly trigger: TriggerState;
+  readonly def: MiniGameDef;
+  readonly game: MiniGame;
 }
 
 /**
@@ -67,7 +96,11 @@ export interface PlatformerWorldOptions {
  *      stomps (`stomping`, `stomp-bounce`), else a harmful one hurts (`enemy-touch-hurts`);
  *   6. the player touches tiles: coins (`coins-collect`), hazards (`hazards-kill`) and goals
  *      (`goal-clears-level`);
- *   7. a player whose top is below the last row dies (`pits-kill`).
+ *   7. a player whose top is below the last row dies (`pits-kill`);
+ *   8. a mini-game trigger the player enters starts a round of the mini game it names
+ *      (`mini-games`, seeded from `rng`). While it runs, `update` steps the round instead of
+ *      the level; once it reports a result, the trigger's outcomes for that result apply and the
+ *      level goes on from the next tick.
  *
  * A death takes a life; with lives left the player starts again at the start, else the outcome is
  * `failed`. Everything random comes from `rng` (seeded), so the same level, seed and input give the
@@ -88,10 +121,14 @@ export class PlatformerWorld {
   scrollX = 0;
   readonly viewWidth: number;
   private readonly start: LevelCell;
+  private readonly games: ReadonlyMap<string, MiniGameDef>;
   /** What each bump block holds, by tile index; and how often a `coins` block has given. */
   private readonly contents = new Map<number, string>();
   private readonly hits = new Map<number, number>();
   private nextId = 1;
+  /** The level's mini-game triggers, in reading order, and the round being played, if any. */
+  readonly triggers: TriggerState[] = [];
+  private run: MiniGameRun | null = null;
 
   constructor(
     readonly level: LevelDef,
@@ -117,6 +154,20 @@ export class PlatformerWorld {
     if (!start) throw new Error(`level "${level.id}" has no start`); // checkLevel has caught it
     this.start = start;
     this.player = Player.atStart(start.col, start.row, profile.player, this.rules);
+    const games = miniGameTable(opts.miniGames ?? []);
+    cells
+      .filter((c) => c.ch === '!')
+      .forEach((c, index) => {
+        const def = level.triggers[index]!; // the schema has checked the count
+        if (!games.has(def.game)) {
+          const known = [...games.keys()].join(', ') || 'none';
+          throw new Error(
+            `level "${level.id}" trigger ${index} names mini game "${def.game}" (given: ${known})`,
+          );
+        }
+        this.triggers.push({ index, col: c.col, row: c.row, def, armed: true, attempts: 0 });
+      });
+    this.games = games;
     const bumps = cells.filter((c) => c.ch === '?');
     bumps.forEach((c, i) => this.contents.set(this.index(c.col, c.row), level.blocks?.[i] ?? 'coin'));
     for (const c of cells) {
@@ -139,6 +190,7 @@ export class PlatformerWorld {
   update(input: InputFrame): void {
     this.frame++;
     if (this.outcome !== 'playing') return;
+    if (this.run) return this.stepMiniGame(input);
     const p = this.player;
     if (p.invuln > 0) p.invuln--;
     const prevBottom = p.body.y + p.body.h;
@@ -157,6 +209,69 @@ export class PlatformerWorld {
     if (this.player === p) this.touchTiles();
     if (this.player === p && this.outcome === 'playing' && p.body.y >= tileToSub(this.tiles.rows)) {
       if (this.rules.isOn('pits-kill')) this.die('pit');
+    }
+    if (this.player === p && this.outcome === 'playing' && this.rules.isOn('mini-games'))
+      this.touchTriggers();
+  }
+
+  /** The round being played over the level, or null: a game's browser glue reads it to push a scene. */
+  get miniGame(): MiniGameRun | null {
+    return this.run;
+  }
+
+  /** Re-arms the triggers the player has left; an armed one it touches starts its mini game. */
+  private touchTriggers(): void {
+    const b = this.player.body;
+    for (const t of this.triggers) {
+      if (this.tiles.cellAt(t.col, t.row) !== 'trigger') continue;
+      const box = { x: tileToSub(t.col), y: tileToSub(t.row), w: tileToSub(1), h: tileToSub(1) };
+      if (!overlaps(b, box)) {
+        t.armed = true;
+        continue;
+      }
+      if (!t.armed || this.run) continue;
+      t.armed = false;
+      t.attempts++;
+      const def = this.games.get(t.def.game)!;
+      const params = t.def.params as JsonObject;
+      const game = def.create({ params, attempt: t.attempts }, this.rng.next());
+      this.run = { trigger: t, def, game };
+      this.emit({ type: 'mini-game', trigger: t.index, game: def.id, attempt: t.attempts });
+    }
+  }
+
+  /** One tick of the round over the level; when it ends, its outcome applies. */
+  private stepMiniGame(input: InputFrame): void {
+    const run = this.run!;
+    run.game.step(input);
+    const result = run.game.result();
+    if (result === null) return;
+    this.run = null;
+    const t = run.trigger;
+    this.emit({ type: 'mini-game-end', trigger: t.index, game: run.def.id, result });
+    if (result === 'pass') this.tiles.setCell(t.col, t.row, 'empty');
+    for (const o of t.def[result]) this.applyOutcome(o, t);
+  }
+
+  /** One outcome of a trigger's result (`TRIGGER_OUTCOMES` in `level.ts`). */
+  private applyOutcome(outcome: string, t: TriggerState): void {
+    const [what, a, b] = outcome.split(':');
+    if (what === 'coins') {
+      this.coins += Number(a);
+    } else if (what === 'life') {
+      this.lives++;
+    } else if (what === 'clear') {
+      if (this.outcome !== 'playing') return;
+      this.outcome = 'cleared';
+      this.emit({ type: 'cleared' });
+    } else if (what === 'respawn') {
+      const hp = this.player.hp;
+      this.player = Player.atStart(t.col, t.row, this.profile.player, this.rules);
+      this.player.hp = hp;
+      t.armed = false;
+      this.emit({ type: 'respawn' });
+    } else if (what === 'open') {
+      this.tiles.setCell(Number(a), Number(b), 'empty');
     }
   }
 

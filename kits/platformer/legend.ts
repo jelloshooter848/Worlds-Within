@@ -66,7 +66,7 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
   '!': {
     cell: 'trigger',
     collision: 'empty',
-    meaning: 'a mini-game trigger (reserved for the mini game hook)',
+    meaning: 'a mini-game trigger; what it starts is the next entry of the header\'s "triggers"',
   },
 };
 

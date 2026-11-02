@@ -26,6 +26,11 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `unknownRules`). Pure.
 - `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`; `defineKit`
   checks it). Each kit exports one as `kit` from `kits/<name>/kit.ts`. Pure.
+- `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
+  `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`; `MiniGameDef`: `id`,
+  `title`, `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
+- `minigame-scene.ts`: `miniGameScene(opts)`, the `Scene` a game's glue pushes over a level to
+  drive the same `MiniGame` and pop it on its result. Games only (kits may not import it).
 - `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
