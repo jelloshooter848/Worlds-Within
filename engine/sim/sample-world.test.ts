@@ -29,6 +29,8 @@ import type { World } from './world';
 // golden file with `WW_UPDATE_GOLDEN=1 pnpm test engine/sim/sample-world` and commit it.
 // Timing: about 6 to 8 seconds for the whole file (one tick steps in about 0.04 ms, hashing a
 // snapshot takes about 0.3 ms and a save and load about 10 ms), so the long tests get 60 s each.
+// The exhaustive check (a save and load at every one of the 10,001 ticks, about 2.5 minutes) is
+// opt-in: `WW_SAVE_EVERY_TICK=1 pnpm test engine/sim/sample-world`.
 const SLOW = 60_000;
 
 const FIXTURE = fileURLToPath(new URL('./__fixtures__/village.world.json', import.meta.url));
@@ -246,5 +248,20 @@ describe('sample world: the village scenario', () => {
       expect(hash(world)).toBe(run.hashes.get(TICKS));
     },
     SLOW,
+  );
+
+  it.runIf(process.env.WW_SAVE_EVERY_TICK === '1')(
+    'matches the uninterrupted run when saved and reloaded at every tick (WW_SAVE_EVERY_TICK=1)',
+    () => {
+      let world = village();
+      for (;;) {
+        world = reload(world);
+        const want = run.hashes.get(world.tick);
+        if (want !== undefined) expect(hash(world), `tick ${world.tick}`).toBe(want);
+        if (world.tick === TICKS) break;
+        world.step();
+      }
+    },
+    600_000,
   );
 });

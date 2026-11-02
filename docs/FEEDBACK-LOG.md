@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 102.** (Last used: 101.)
+**Next unused number: 112.** (Last used: 111.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -299,3 +299,43 @@ topdown])`, because the kits' `index.ts` files do not re-export the hook (so pag
 - **101.** Height is part of the simulation as data only: an integer elevation per terrain cell
   and an integer `z` on `Position`, so line of sight and height bonuses can later live in
   `engine/sim` and never in the RTS kit or views. No line-of-sight rules in 0.8. OK?
+
+**Engine 0.8, builder choices** (taken while building the world simulation; the owner can overrule
+them; summary in `docs/BUILD-LOG.md`, Engine 0.8, Choices made)
+
+- **102.** The event log is not part of `snapshot()`, so it never changes a state hash; it keeps
+  every change by default (`log: { ticks: n }` keeps the last n ticks, the sample world keeps 100),
+  and stored component data is deep-frozen so no change can bypass the log. OK, or should the log
+  be hashed too?
+- **103.** Systems keep no state of their own (anything to remember is component data) and are
+  never saved: `loadWorld` takes the same system list and refuses a save whose system names
+  differ. OK?
+- **104.** Float maths in `engine/sim`: every `Math` function that is not required to be correctly
+  rounded (`sin`, `cos`, `atan2`, `pow`, `exp`, `log`, `hypot`, ...) and the `**` operator are lint
+  errors in all sim files, tests included; `Math.sqrt` stays allowed (IEEE 754 rounds it
+  exactly). Angles are binary (256 steps per turn) with sines in 16.16 fixed point. OK?
+- **105.** Squad losses take unnamed people first; named people leave only when the strength drops
+  below their number, regulars, then heroes, the captain last, newest first within a role, with
+  no randomness. People who leave stay in the world with `squad: null` (their fate is the caller's
+  rule). OK, or should losses among named people be seeded-random?
+- **106.** World scenarios write terrain as text grids (one character per cell, a legend of ground
+  types) with one elevation digit (0-9) per cell, hand out ids in file order and link entities
+  with `{ "$ref": "<key>" }`. Ten height levels are enough for now. OK?
+- **107.** The sample world's systems (`haul`, `build`, `patrol`, with the `Walk` and `Hauler`
+  components) live in `engine/sim/systems.ts` as engine machinery (all their numbers are
+  component data), not inside the test fixture. OK, or keep them test-only until the RTS kit
+  (0.9) shows what systems the engine should ship?
+- **108.** Walking (`path.ts`) is 4-way on the grid: entering a cell costs its type's cost,
+  impassable cells are never entered, ties go north, east, south, west, and height changes no
+  cost (item 101). OK, or 8-way now?
+- **109.** A run file plays a world with `"world": "<name>.world.json"` instead of `game` (exactly
+  one of the two); a world run has no input, `disableRules` or guards, and `mutants` and
+  `screenshot` refuse it. State hashes are the same as for games (first 16 hex digits of the
+  SHA-256 of the canonical snapshot). OK?
+- **110.** "Survives a save and load at any tick" is proved on CI with 83 ticks (0, 1, every 250th,
+  40 seeded random ones, 9,999 and 10,000). Saving and reloading at every one of the 10,001 ticks
+  takes about two minutes, so it is an opt-in test (`WW_SAVE_EVERY_TICK=1`), run once for the
+  close-out. OK, or put it on CI?
+- **111.** The sample world (`village.world.json`) is an engine test fixture in
+  `engine/sim/__fixtures__/`, with golden hashes every 100 ticks (`village.hashes.json`) and a CLI
+  run file on it. OK?

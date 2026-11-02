@@ -247,6 +247,8 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
   runs to 10,000 from a few loads; and reloads at every one of those ticks in a single run. It
   also asserts the buildings complete, the woodpile is drawn down, the squad reaches every
   waypoint without entering river or rock, and workers rest at random.
+- Exhaustive, opt-in: `WW_SAVE_EVERY_TICK=1 pnpm test engine/sim/sample-world` also saves and
+  reloads at every one of the 10,001 ticks in one run (about two minutes; not on CI).
 - After a change meant to change the sample's state, regenerate the golden file with
   `WW_UPDATE_GOLDEN=1 pnpm test engine/sim/sample-world` and commit it.
 

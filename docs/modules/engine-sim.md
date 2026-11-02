@@ -100,4 +100,9 @@ the lint rule fires on sim files. `components.test.ts` checks each standard sche
 `terrain.test.ts` height lookup, movement cost and grid validation. `save.test.ts` checks that save ->
 load -> save gives the same canonical JSON, that a world loaded at tick N gives the same snapshots
 for the next ticks as the uninterrupted one, that RNG state, `nextId`, tick and log survive, and
-that malformed saves fail naming the field.
+that malformed saves fail naming the field. `scenario.test.ts` checks world scenarios (ids, `$ref`,
+squads, errors naming the field), `path.test.ts` walking costs and tie order, `systems.test.ts`
+hauling, building and patrols, and `sample-world.test.ts` the Engine 0.8 proof: the village runs
+10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
+ticks (`WW_SAVE_EVERY_TICK=1` reloads at every tick, about two minutes).
+`engine/tools/world-run.test.ts` checks `run` and `dump` on a world run file.

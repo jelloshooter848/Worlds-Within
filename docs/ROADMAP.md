@@ -384,7 +384,7 @@ _(Done. What was built, the choices made and how each item was checked are in
 
 ---
 
-## 0.8 World simulation
+## 0.8 World simulation (done)
 
 **Goal:** the world exists as data, with no graphics. Games that need a living world (Worlds Within
 and the mini siege sample, for a start) use it; simple games never touch it.
@@ -408,10 +408,14 @@ and the mini siege sample, for a start) use it; simple games never touch it.
 **Done when:** the sample world runs for 10,000 ticks with the same state hashes on every run and on
 CI, and survives a save and load at any tick (the hashes after loading match).
 
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-08).)_
+
 **Out of scope:** graphics, input, any genre.
 
 **Decisions needed first:** what a tick means in world time, the ECS choice, and whether height is
-part of the simulation.
+part of the simulation. _(Decided: items 99-101, reasoning in
+[BUILD-LOG.md](BUILD-LOG.md#decisions).)_
 
 ---
 
@@ -772,16 +776,16 @@ whose only difference is that hero's fate.
 
 "0.x" and "1.0" mean engine releases. Worlds Within releases are written "WW 0.x".
 
-| Question                                                                                          | Needed by                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which ECS: Koota, bitECS, miniplex, or our own?                                                   | 0.8 (proposal, item 99: our own small ECS with plain-data stores and ascending-id iteration)                                                 |
-| Is height part of the simulation (terrain height, line of sight)?                                 | 0.8 (proposal, item 101: yes, as data only: integer elevation per terrain cell and integer `z` on Position; line of sight later, in the sim) |
-| What a simulation tick means in world time (minutes? hours?)                                      | 0.8 (proposal, item 100: one tick is one world minute, an integer counter independent of the frame loop)                                     |
-| Does the RTS kit need a directly controlled "hero" unit as well as squads?                        | 0.9 (proposal: yes, so the kit doesn't rule out a commander plus heroes)                                                                     |
-| How delegated outcomes are weighted                                                               | 0.10                                                                                                                                         |
-| Exact rules for flashback (retrospective) missions                                                | 0.10 (can be left out until after Engine 1.0)                                                                                                |
-| What the mini siege's top-down mission is                                                         | Decide later, by 0.11 (proposal: a sabotage-style mission, with original content)                                                            |
-| Art style for the samples                                                                         | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games)                                             |
-| Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                                                                       |
-| Art direction: chiptune and NES-style pixels like SMBC, or something else                         | WW 0.1 (engine samples use their own simple art)                                                                                             |
-| Which third mode                                                                                  | WW 0.3                                                                                                                                       |
+| Question                                                                                          | Needed by                                                                                                                                                               |
+| ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Which ECS: Koota, bitECS, miniplex, or our own?                                                   | 0.8: decided (item 99): our own small ECS with plain-data stores and ascending-id iteration ([build log](BUILD-LOG.md#decisions))                                       |
+| Is height part of the simulation (terrain height, line of sight)?                                 | 0.8: decided (item 101): yes, as data only (integer elevation per cell, integer `z` on Position); line of sight later, in the sim ([build log](BUILD-LOG.md#decisions)) |
+| What a simulation tick means in world time (minutes? hours?)                                      | 0.8: decided (item 100): one tick is one world minute, an integer counter independent of the frame loop ([build log](BUILD-LOG.md#decisions))                           |
+| Does the RTS kit need a directly controlled "hero" unit as well as squads?                        | 0.9 (proposal: yes, so the kit doesn't rule out a commander plus heroes)                                                                                                |
+| How delegated outcomes are weighted                                                               | 0.10                                                                                                                                                                    |
+| Exact rules for flashback (retrospective) missions                                                | 0.10 (can be left out until after Engine 1.0)                                                                                                                           |
+| What the mini siege's top-down mission is                                                         | Decide later, by 0.11 (proposal: a sabotage-style mission, with original content)                                                                                       |
+| Art style for the samples                                                                         | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games)                                                                        |
+| Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                                                                                                  |
+| Art direction: chiptune and NES-style pixels like SMBC, or something else                         | WW 0.1 (engine samples use their own simple art)                                                                                                                        |
+| Which third mode                                                                                  | WW 0.3                                                                                                                                                                  |

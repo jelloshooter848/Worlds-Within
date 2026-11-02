@@ -178,7 +178,7 @@ games/
 docs/
 ```
 
-- **The simulation lives in `engine/sim/`**, because it is a reusable engine system. It stays headless
+- **The simulation lives in `engine/sim/`** (from Engine 0.8), because it is a reusable engine system. It stays headless
   and deterministic from a seed, and never imports from backends or kits (enforced by lint and a test).
 - **Mission contract (0.10):** a snapshot of world state goes in, a declared outcome space is fixed
   when the mission starts, and changes to the world come out. A retrospective (flashback) mission is

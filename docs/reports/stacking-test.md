@@ -43,7 +43,7 @@ Each gap has one entry, in the order found; ids are never reused or renumbered.
 - **Found:** what was found, in a sentence or two.
 - **Where:** the file or module it was found in (and the one that should own it).
 - **Status:** `open (0.7 Tn)` while planned for a task of this release; `fixed in 0.7 Tn (<commit>)`
-  once done; or `moved to <release>` (0.8, 0.10, 0.14, 0.15, ...) with the reason.
+  once done; or `moved to <release>` (0.10, 0.11, 0.14, 0.15, ...) with the reason.
 - **Feedback:** when the owner must decide, the feedback item number (`docs/FEEDBACK-LOG.md`).
 
 ## Gaps

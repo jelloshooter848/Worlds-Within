@@ -10,7 +10,53 @@ review the choices.
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,
-owner answer 24). In progress: this section grows as the release's tasks land.
+owner answer 24). The module's rules are in `engine/sim/CLAUDE.md`, its agent page in
+`docs/modules/engine-sim.md`.
+
+### What was built
+
+- **`engine/sim`, the world core** (T2): `createWorld(seed, ...)` with integer entity ids handed
+  out in order and never reused, component kinds with Zod schemas (`defineComponent`), queries
+  always in ascending id order, systems run in a fixed order by `step()`, an integer `tick`, a
+  seeded `Rng` per world, and `snapshot()` / `canonical()` (the whole world as canonical JSON, for
+  the tools to hash).
+- **Sim purity and maths** (T3): the existing purity lint (no backends, kits, games, unseeded
+  randomness, clocks or DOM) plus a `sim-math` lint rule that forbids machine-dependent float
+  maths (`Math.sin`, `cos`, `atan2`, `pow`, `exp`, `log`, `hypot` and the rest of
+  `SIM_FORBIDDEN_MATH` in `config/layers.js`, and the `**` operator) in every file under
+  `engine/sim/`. `engine/sim/math.ts` holds the exact replacements: integer `idiv`, `imod`,
+  `ipow`, `isqrt`, grid distances, and binary angles with fixed-point `sinFixed`/`cosFixed` and
+  `iatan2`.
+- **Standard components, terrain with height and squads** (T4): `Position {x, y, z}`, `Health`,
+  `Owner`, `Inventory`, `Construction`, `Worker`, `Patrol`, `Squad` and `Member`
+  (`STANDARD_COMPONENTS`); `Terrain` with an integer elevation and a ground type per cell; squad
+  helpers where a squad is one number (`strength`) that still names its people (captain, heroes,
+  regulars), with seeded picking and a fixed loss order.
+- **The event log** (T5): every spawn, destroy and component add, set or remove made through the
+  World API is one JSON-safe `Change` with its tick and cause (the running system's name, or the
+  cause given by `withCause`, or `external`). A step's changes join the log only when the tick
+  commits. Stored component data is frozen, so nothing can change the world past the log.
+  Retention is configurable (all, the last n ticks, or none).
+- **Save and load** (T6): `saveWorld` / `loadWorld`, the whole world as JSON (seed, tick, RNG
+  state, next id, component kinds, system names, entities, the event log), checked by a Zod
+  schema with errors naming each bad field; a loaded world steps on identically. The format is in
+  the generated schema reference with an example.
+- **The sample world** (T7): world-start scenarios written as data (`worldFromScenario`: terrain as
+  text grids of ground types and elevation digits, entities, squads with named members, `$ref`
+  keys), integer walking on the terrain (`path.ts`) and the first systems (`haul`, `build`,
+  `patrol`, with `Walk` and `Hauler`). The proof is the fixture
+  `engine/sim/__fixtures__/village.world.json`: a 24x14 village with a river, hills, three
+  workers, a hall and a granary going up and a patrolling squad of 12 with four named members,
+  plus its golden hashes. No game content.
+- **The CLI on a world** (T8): a run file can name a `world` (a `*.world.json` scenario) instead
+  of a `game`; `run`, `dump`, state hashes and replays work on it, and `mutants` and `screenshot`
+  refuse it with a usage error. The sample world run is
+  `engine/sim/__fixtures__/village-build.run.json` with its golden hashes, played by `tests/runs`.
+- **Close-out** (T9): an opt-in exhaustive check that saves and reloads the sample world at every
+  one of its 10,001 ticks (`WW_SAVE_EVERY_TICK=1`), this section, the roadmap and the agent docs.
+- Agent docs: `engine/sim/CLAUDE.md` (replacing the placeholder), `docs/modules/engine-sim.md`,
+  the `llms.txt` links for `engine/sim` and `engine/tools`, and the world rows of
+  `docs/CHEATSHEET.md` and the schema and CLI references.
 
 ### Decisions
 
@@ -83,6 +129,106 @@ What it costs: every terrain and position in scenario data carries one more fiel
 0 keeps flat scenarios short), save files grow a little, and views must decide how to draw height
 (a flat 2D view can ignore it). Line-of-sight rules, when they come, must be written in integer
 maths so they stay deterministic.
+
+### Choices made
+
+The three decisions above are items 99-101. The builders' further choices are items 102-111 in
+`FEEDBACK-LOG.md` ("Engine 0.8, builder choices"); in short:
+
+- **The event log stays out of the state hash** and keeps every change by default; the sample
+  world keeps the last 100 ticks (item 102). Stored component data is frozen so every change goes
+  through the logged API.
+- **Systems keep no state of their own** and are never saved; a load must pass the same system
+  list, checked by name (item 103).
+- **Float maths:** the non-correctly-rounded `Math` functions and `**` are lint errors in all of
+  `engine/sim/` (tests too); `Math.sqrt` stays allowed; angles are binary (256 per turn) in 16.16
+  fixed point (item 104).
+- **Squad losses take unnamed people first**, then regulars, heroes and the captain last, newest
+  first within a role, with no randomness; people who leave stay in the world (item 105).
+- **Scenario format:** terrain as text grids with a one-character legend and one elevation digit
+  (0-9) per cell, ids in file order, `$ref` keys between entities (item 106).
+- **The sample's systems are engine code** (`engine/sim/systems.ts`: haul, build, patrol), as
+  machinery whose numbers are all component data, not a fixture-only helper (item 107).
+- **Walking is 4-way**, each cell entered costs its type's cost, ties go north, east, south, west,
+  and height changes no cost (item 108).
+- **World runs in the CLI** use a `world` field instead of `game`, have no input, rules or guards,
+  and hash the canonical snapshot the same way game runs do (item 109).
+- **"Save and load at any tick" is proved on CI by 83 ticks** (0, 1, every 250th, 40 seeded random
+  ones, 9,999 and 10,000), with the every-tick check opt-in because it takes about two minutes
+  (item 110).
+- **The sample world is an engine test fixture** in `engine/sim/__fixtures__/`, with golden hashes
+  every 100 ticks (item 111).
+- The root `package.json` version was left as it was, as in earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm vitest run engine/sim --reporter=verbose        # the sim's tests, the 10,000-tick proof among them
+WW_SAVE_EVERY_TICK=1 pnpm vitest run engine/sim/sample-world   # save and reload at every tick (~2 min)
+pnpm -s cli run engine/sim/__fixtures__/village-build.run.json --json
+pnpm -s cli dump engine/sim/__fixtures__/village-build.run.json --tick 500 --json
+pnpm vitest run engine/tools/world-run tests/runs tests/architecture/purity
+```
+
+### Done when
+
+Checked on 2026-11-02 at `a8dbb9b` (the last 0.8 code commit) and again for this close-out.
+
+- **Met: the sample world runs for 10,000 ticks with the same state hashes on every run.**
+  `pnpm vitest run engine/sim/sample-world --reporter=verbose`: "runs 10,000 ticks with the same
+  hashes twice" passes (two runs in one process, compared every 10 ticks) and "matches the
+  committed golden hashes" passes (`engine/sim/__fixtures__/village.hashes.json`, 101 hashes, one
+  every 100 ticks: tick 0 `5e095f2b735b6f31`, tick 10,000 `955756733b7c286b`), so every run in any
+  process must give the same hashes. From the CLI, `pnpm -s cli run
+engine/sim/__fixtures__/village-build.run.json --json` exits 0 with final hash
+  `8e728f67a3bb77e6` at tick 1,000 on every run (its golden file is checked by
+  `tests/runs/run-files.test.ts`), and its tick 0 hash is the same `5e095f2b735b6f31`.
+- **Met: ... and on CI.** CI (`.github/workflows/ci.yml`) runs `pnpm test` on every push, so the
+  golden-file test runs there; the CI runs for `630eeac` (the sample world, run 41486858702) and
+  `a8dbb9b` (the CLI, run 41487987888) passed on GitHub's Ubuntu runners.
+- **Met: the sample world survives a save and load at any tick (the hashes after loading match).**
+  In `pnpm vitest run engine/sim/sample-world`: "survives a save and load at 83 ticks, spread over
+  the run" (each save written as text, loaded, saved again to the same text, hash equal at once
+  and for 250 ticks after), "matches the uninterrupted run to the end after loading at any of a
+  sample of ticks" and "matches the uninterrupted run when saved and reloaded at every tested tick
+  in one run" all pass. The exhaustive check, `WW_SAVE_EVERY_TICK=1 pnpm vitest run
+engine/sim/sample-world`, saves and reloads at every one of the 10,001 ticks in one run and
+  matches the uninterrupted hashes: passed in 124 s on 2026-11-02 (opt-in, not on CI; item 110).
+- Scope items, each with its test: entities, components, seeded RNG and ascending-id iteration
+  (`engine/sim/world.test.ts`); the ECS, tick and height decisions (items 99-101, above);
+  squads with named members (`engine/sim/squad.test.ts`); the event log with causes
+  (`engine/sim/events.test.ts`); save and load (`engine/sim/save.test.ts`); `dump`, `run` and
+  hashes on a world (`engine/tools/world-run.test.ts`, `tests/runs/run-files.test.ts`); purity
+  and float maths lint (`tests/architecture/purity.test.ts`, `engine/sim/math.test.ts`); the
+  scenario as data (`engine/sim/scenario.test.ts`).
+- Every run file of the three games and the sample world passes `pnpm -s cli run` (exit 0, same
+  final hashes as in 0.7), and `mutants` exits 0 for all three games.
+- The checks pass: `pnpm lint && pnpm docs:check && pnpm typecheck && pnpm test && pnpm build`
+  (107 test files, 1222 tests passed and 1 skipped: the opt-in every-tick check).
+- **The stacking-test report assigns no gap to 0.8.** `docs/reports/stacking-test.md` has 37 gaps:
+  21 fixed in 0.7 and 16 moved to 0.10 (G16, G20, G37), 0.11 (G13, G18, G27, G28, G30), 0.14 (G5,
+  G8, G9, G10, G12, G31) and 0.15 (G17, G33, G36). None names 0.8, so this release had no gap to
+  take. The report's format note listed 0.8 as an example target; it now lists the releases gaps
+  were actually moved to.
+
+### Deviations from the roadmap
+
+- **The sample's systems are in the engine**, not only in the fixture: the roadmap asks for a
+  scenario written as data, and the systems that make a village work (haul, build, patrol) had to
+  be code, so they are shared machinery in `engine/sim/systems.ts` (item 107).
+- **"At any tick" is sampled on CI** (83 ticks, 40 of them seeded random), with every tick checked
+  by an opt-in test (item 110).
+- **Feedback numbering:** the close-out items continue at 102 (102-111).
+
+### Outstanding issues
+
+- No line of sight or height rules yet (by design, item 101); they come with the RTS view (0.9
+  onwards), in integer maths in `engine/sim`.
+- A world has no orders or input yet: world runs are pure simulation. Orders (`withCause('order:<id>')`)
+  and missions come with 0.9 and 0.10.
+- A save and load costs about 10-15 ms on the sample (it re-checks every schema and rebuilds the
+  path caches); fine for saves, too slow to reload every tick on CI.
+- Open owner decisions: items 99-111 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.7
 
