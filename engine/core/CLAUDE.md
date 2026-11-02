@@ -49,11 +49,12 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
-`audio/mml.ts`, the song, sprite and palette schemas, `content/**` and `present/**`). ESLint enforces the rule on those
+`audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, the
-browser input sources, `save/`, `assets/` and the backends.
+browser input sources, `save/`, `assets/` (except `sheet-lookup.ts`, `sheetLookup(assets)`: a sheet getter that
+returns null, never throws, for a missing sheet or palette) and the backends.
 
 ## Fixtures
 

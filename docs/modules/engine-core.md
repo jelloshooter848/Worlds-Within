@@ -35,7 +35,10 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `content/`: reading and checking content files; see [engine/core/content](engine-core-content.md).
 - `present/`: the presentation contract, the read-only frame a backend draws from; see
   [engine/core/present](engine-core-present.md).
-- `save/`, `assets/`, `a11y/`, `math/`, `platform.ts`.
+- `assets/`: the sprite sheet registry (`registry.ts`), asset packs, and `sheet-lookup.ts`
+  (`sheetLookup(assets)`, a `SheetLookup` that returns null instead of throwing for a missing sheet
+  or palette; backends and games use it).
+- `save/`, `a11y/`, `math/`, `platform.ts`.
 
 ## Imports allowed
 

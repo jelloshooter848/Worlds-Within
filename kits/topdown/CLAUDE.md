@@ -4,7 +4,7 @@ The top-down kit: gameplay rules for a room-based action game seen from above. R
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
-`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), sheet helpers (`view.ts`, `frames.ts`) and the room
+`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), sheet helpers (`view.ts`, `frames.ts`; `sheetLookup` there is a re-export of `@engine/core/assets/sheet-lookup`, kept until 0.4-7) and the room
 file schema (`schema.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 

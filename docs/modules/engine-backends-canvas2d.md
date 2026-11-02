@@ -7,7 +7,8 @@ Folder: `engine/backends/canvas2d`. Detailed rules:
 
 The browser backend for 2D. It draws the core `Renderer` contract onto a 2D canvas and presents the
 backbuffer, sized to the game's picture (`screen` in `game.json`, 256x240 by default), on the
-display canvas, scaled and letterboxed. It draws only what the caller asks
+display canvas, scaled and letterboxed. It also implements the presentation contract: it draws any
+`PresentFrame` (`@engine/core/present`) through a skin. It draws only what the caller asks
 for and holds no game rules.
 
 ## Public API entry points
@@ -16,6 +17,13 @@ for and holds no game rules.
 
 - `CanvasRenderer` (`renderer.ts`): the `Renderer` implementation for a 2D context.
 - `Viewport`, `ViewportOptions` (`viewport.ts`): owns the backbuffer and presents it.
+- `SkinnedCanvasPresenter`, `SkinnedPresenterOptions`, `MapSurface` (`presenter.ts`):
+  `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
+  is a `Presenter`. It caches the map per id and version, draws entities by layer then `y` with
+  skin frames (flipped by facing, a fallback box when art is missing, squash through
+  `transformed()`), frames the camera (hint or skin follow, clamped, small maps centred), draws
+  event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
+  event. Details in the folder's CLAUDE.md.
 
 ## Imports allowed
 
@@ -24,5 +32,6 @@ for and holds no game rules.
 
 ## How to test
 
-`*.test.ts` here run in Node with `pnpm test` against a fake 2D context that records calls.
+`*.test.ts` here run in Node with `pnpm test` against a fake 2D context that records calls;
+`presenter.test.ts` uses a recording `Renderer` with inline fixture frames and skin.
 `Viewport` needs a real DOM and is checked by running a game (`pnpm dev`).

@@ -115,4 +115,5 @@ export const PURE_CORE = [
   'engine/core/gfx/palette-schema.ts',
   'engine/core/content/**',
   'engine/core/present/**',
+  'engine/core/assets/sheet-lookup.ts',
 ];

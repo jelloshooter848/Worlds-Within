@@ -6,7 +6,7 @@ import { KeyboardSource } from '@engine/core/input/keyboard';
 import { FixedLoop } from '@engine/core/loop';
 import { SceneStack } from '@engine/core/scene';
 import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
-import { sheetLookup } from '@kits/topdown';
+import { sheetLookup } from '@engine/core/assets/sheet-lookup';
 import { demoArt, demoSongs, loadDemo, mustLoad } from './content';
 import { DEMO_FILES } from './files';
 import { DemoScene } from './scene';

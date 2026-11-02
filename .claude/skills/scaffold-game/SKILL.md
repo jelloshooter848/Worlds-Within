@@ -121,7 +121,8 @@ import { AssetRegistry } from '@engine/core/assets/registry';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessOptions } from '@engine/core/headless';
 import type { ViewGame } from '@engine/core/view';
-import { DEFAULT_SHEETS, renderWorld, sheetLookup, topdownGame } from '@kits/topdown';
+import { sheetLookup } from '@engine/core/assets/sheet-lookup';
+import { DEFAULT_SHEETS, renderWorld, topdownGame } from '@kits/topdown';
 import { createWorld } from './headless';
 
 /** The headless game plus drawing (`engine/core/view.ts`), for `pnpm cli screenshot` and `main.ts`. */

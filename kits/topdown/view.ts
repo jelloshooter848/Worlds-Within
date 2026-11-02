@@ -1,4 +1,3 @@
-import type { AssetRegistry } from '@engine/core/assets/registry';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
@@ -31,24 +30,8 @@ export interface TdView {
 
 const EMPTY_FONT: SpriteSheet = { id: 'missing-font', image: null, frames: new Map() };
 
-/**
- * A sheet getter that never throws: a sheet or palette that is not registered (yet) is null, so
- * callers draw a flat placeholder or the plain sheet. Only misses are remembered; hits go to the
- * registry each time, which caches them itself and drops them when the colour mode changes.
- */
-export function sheetLookup(assets: AssetRegistry): (id: string, palette?: string) => SpriteSheet | null {
-  const missing = new Set<string>();
-  return (id, palette) => {
-    const key = palette ? `${id}@${palette}` : id;
-    if (missing.has(key) || !assets.has(id)) return null;
-    try {
-      return assets.sheet(id, palette);
-    } catch {
-      missing.add(key);
-      return null;
-    }
-  };
-}
+/** Moved to the engine (0.4-4); this re-export goes when the kit stops drawing (0.4-7). */
+export { sheetLookup } from '@engine/core/assets/sheet-lookup';
 
 /** The bitmap font, or an empty stand-in so text calls still happen (and tests can read them). */
 export function fontOf(view: TdView): SpriteSheet {

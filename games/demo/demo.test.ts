@@ -7,7 +7,8 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { renderWorld, sheetLookup } from '@kits/topdown';
+import { sheetLookup } from '@engine/core/assets/sheet-lookup';
+import { renderWorld } from '@kits/topdown';
 import { DEMO_SHEETS, demoArt, demoDungeon, demoSongs, loadDemo, mustLoad } from './content';
 import { createWorld } from './headless';
 
