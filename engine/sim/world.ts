@@ -129,7 +129,46 @@ export interface World {
 
 type Store = Map<Entity, JsonValue>;
 
+/**
+ * The state a loaded world starts from (`save.ts` builds it from a checked save file). Component
+ * data is already parsed by its schema; the log entries are already checked. Not part of the
+ * public API: load a world with `loadWorld`.
+ */
+export interface RestoredState {
+  readonly tick: number;
+  readonly nextId: number;
+  readonly rng: number;
+  /** Live entities, ascending. */
+  readonly entities: readonly Entity[];
+  /** Per component name, the data of each entity that has it. */
+  readonly data: ReadonlyMap<string, ReadonlyMap<Entity, JsonValue>>;
+  readonly log: readonly Change[];
+}
+
+/** What `saveWorld` needs beyond the public API: the world's log policy and whether a step runs. */
+export interface WorldInternals {
+  readonly stepping: () => boolean;
+  readonly log: { readonly enabled: boolean; readonly ticks: number | undefined };
+}
+
+const internals = new WeakMap<World, WorldInternals>();
+
+/** The internals of a world made by `createWorld` or `loadWorld` (for `save.ts` only). */
+export function worldInternals(world: World): WorldInternals {
+  const found = internals.get(world);
+  if (!found) throw new Error('not a world made by createWorld or loadWorld');
+  return found;
+}
+
 export function createWorld(seed: number, options: WorldOptions = {}): World {
+  return makeWorld(seed, options);
+}
+
+/**
+ * A world, new (no `restored`) or rebuilt from a save. Rebuilding sets the state directly: it logs
+ * nothing, and the saved log is taken over as it was.
+ */
+export function makeWorld(seed: number, options: WorldOptions, restored?: RestoredState): World {
   if (!Number.isInteger(seed)) throw new Error(`world seed must be an integer, got ${seed}`);
   const defs = new Map<string, AnyComponent>();
   const stores = new Map<string, Store>();
@@ -137,9 +176,9 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
   // Ascending by construction: ids are handed out in increasing order and only ever removed.
   const live: Entity[] = [];
   const liveSet = new Set<Entity>();
-  let tick = 0;
-  let nextId = 1;
-  const rng = new Rng(seed >>> 0);
+  let tick = restored?.tick ?? 0;
+  let nextId = restored?.nextId ?? 1;
+  const rng = restored ? Rng.fromState(restored.rng) : new Rng(seed >>> 0);
   let stepping = false;
   // The cause of changes made now: the running system during a step, else the withCause cause.
   let cause: Cause = EXTERNAL_CAUSE;
@@ -364,5 +403,17 @@ export function createWorld(seed: number, options: WorldOptions = {}): World {
 
   for (const def of options.components ?? []) world.registerComponent(def);
   for (const system of options.systems ?? []) world.addSystem(system);
+  if (restored) {
+    for (const id of restored.entities) {
+      live.push(id);
+      liveSet.add(id);
+    }
+    for (const [name, values] of restored.data) {
+      const store = storeOf(name);
+      for (const [id, value] of values) store.set(id, deepFreeze(structuredClone(value)));
+    }
+    for (const change of restored.log) log.push(deepFreeze(structuredClone(change)));
+  }
+  internals.set(world, { stepping: () => stepping, log: { enabled: logOn, ticks: keepTicks } });
   return world;
 }

@@ -4,6 +4,8 @@ export type { ComponentDef } from './component';
 export { createWorld } from './world';
 export type { AnyComponent, Entity, System, World, WorldOptions, WorldSnapshot } from './world';
 export { EXTERNAL_CAUSE } from './events';
+export { SAVE_FORMAT, SAVE_VERSION, SaveError, loadWorld, saveWorld, worldSaveSchema } from './save';
+export type { LoadOptions, SaveIssue, WorldSave } from './save';
 export type { Cause, Change, ChangeOp, LogOptions } from './events';
 export {
   ANGLE_STEPS,

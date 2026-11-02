@@ -1,0 +1,107 @@
+{
+  "format": "worlds-within/world",
+  "version": 1,
+  "seed": 7,
+  "tick": 1,
+  "nextId": 3,
+  "rng": 7,
+  "components": [
+    "Construction",
+    "Health",
+    "Inventory",
+    "Member",
+    "Owner",
+    "Patrol",
+    "Position",
+    "Squad",
+    "Terrain",
+    "Worker"
+  ],
+  "systems": ["heal"],
+  "entities": [
+    {
+      "id": 1,
+      "components": {
+        "Terrain": {
+          "width": 3,
+          "height": 2,
+          "types": [{ "name": "ground", "cost": 1, "passable": true }],
+          "elevation": [0, 0, 1, 0, 1, 2],
+          "cells": [0, 0, 0, 0, 0, 0]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "components": {
+        "Health": { "hp": 4, "max": 4 },
+        "Inventory": { "wood": 2 },
+        "Owner": { "faction": "village" },
+        "Position": { "x": 1, "y": 1, "z": 0 }
+      }
+    }
+  ],
+  "log": {
+    "enabled": true,
+    "ticks": null,
+    "events": [
+      { "tick": 0, "cause": "scenario", "op": "spawn", "entity": 1 },
+      {
+        "tick": 0,
+        "cause": "scenario",
+        "op": "add",
+        "entity": 1,
+        "component": "Terrain",
+        "value": {
+          "width": 3,
+          "height": 2,
+          "types": [{ "name": "ground", "cost": 1, "passable": true }],
+          "elevation": [0, 0, 1, 0, 1, 2],
+          "cells": [0, 0, 0, 0, 0, 0]
+        }
+      },
+      { "tick": 0, "cause": "scenario", "op": "spawn", "entity": 2 },
+      {
+        "tick": 0,
+        "cause": "scenario",
+        "op": "add",
+        "entity": 2,
+        "component": "Position",
+        "value": { "x": 1, "y": 1, "z": 0 }
+      },
+      {
+        "tick": 0,
+        "cause": "scenario",
+        "op": "add",
+        "entity": 2,
+        "component": "Health",
+        "value": { "hp": 3, "max": 4 }
+      },
+      {
+        "tick": 0,
+        "cause": "scenario",
+        "op": "add",
+        "entity": 2,
+        "component": "Owner",
+        "value": { "faction": "village" }
+      },
+      {
+        "tick": 0,
+        "cause": "scenario",
+        "op": "add",
+        "entity": 2,
+        "component": "Inventory",
+        "value": { "wood": 2 }
+      },
+      {
+        "tick": 0,
+        "cause": "heal",
+        "op": "set",
+        "entity": 2,
+        "component": "Health",
+        "before": { "hp": 3, "max": 4 },
+        "value": { "hp": 4, "max": 4 }
+      }
+    ]
+  }
+}

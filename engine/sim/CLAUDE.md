@@ -11,6 +11,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `world.ts`: `createWorld(seed, { components?, systems?, log? })` -> `World`.
 - `events.ts`: the event log's types (`Change`, `ChangeOp`, `Cause`, `LogOptions`) and
   `EXTERNAL_CAUSE` (see "Event log" below).
+- `save.ts`: `saveWorld(world)` and `loadWorld(json, { components, systems? })`, the save file
+  schema `worldSaveSchema` and `SaveError` (see "Save and load" below).
 - `math.ts`: deterministic integer and fixed-point maths (see "Maths" below).
 - `components.ts`: the standard components (see "Standard components" below), `STANDARD_COMPONENTS`
   and `inventoryAdd`.
@@ -68,6 +70,40 @@ changes they lead to (the RNG state is in every snapshot).
   pass `log: { ticks: n }` to keep only the changes of the last `n` committed ticks (trimmed at
   each commit: after reaching tick T, changes with `tick < T - n` go), or `log: { enabled: false }`
   to record nothing. The log is not part of `snapshot()`, so it never changes a state hash.
+
+## Save and load
+
+`saveWorld(world)` returns the whole world as JSON-safe data; write it as text with
+`canonicalJson`. `loadWorld(json, { components, systems })` checks it and rebuilds the world:
+same snapshot, RNG state, `nextId`, tick and event log, and it steps on exactly as the saved world
+would. `canonicalJson(saveWorld(loadWorld(save)))` is the same text as the save (tested).
+
+```text
+{ format: "worlds-within/world", version: 1, seed, tick, nextId, rng,
+  components: ["Health", ...],          // registered kinds, sorted
+  systems: ["move", ...],               // names in run order
+  entities: [{ id, components: { Position: {...}, ... } }],   // ascending id
+  log: { enabled, ticks /* or null */, events: [Change, ...] } }
+```
+
+- **Systems are code**, never saved. `loadWorld` takes the same list in the same order and refuses
+  a save whose `systems` names differ. Systems keep no state of their own: what a system must
+  remember between ticks is component data, so it is saved like the rest. (There is no system
+  state in the format.)
+- **Components**: every kind the save lists must be in `components` (extra kinds start empty);
+  each entity's data is checked by its component's schema. Terrain is the `Terrain` component of
+  one entity, so it is saved with it (pass `Terrain` in `components`).
+- **RNG**: the save holds `Rng.state()`; load uses `Rng.fromState` (`engine/core/rng.ts`).
+- **Ids**: `nextId` is saved, so an id is never reused after a load, even when the newest
+  entities were destroyed.
+- **Event log**: the kept changes and the retention (`enabled`, `ticks`) are saved and restored as
+  they were; loading logs nothing itself.
+- **Errors**: a bad save throws `SaveError` (`issues: { path, message }[]`), its message one line
+  per bad field: `entities.1.components.Health.hp: ...`, `log.events.0.op: ...`, `systems: ...`.
+- `saveWorld` throws during a step (a step's changes are not committed yet): save between ticks.
+- The format is in `docs/reference/schemas.md` ("World save", from `worldSaveSchema`, with the
+  example `docs/reference/examples/world-save.json`). A change to the format bumps
+  `SAVE_VERSION`.
 
 ## Standard components
 
@@ -154,4 +190,4 @@ integer maths, here in `engine/sim`.
 - Component data is plain JSON-safe data: no classes, `Map`, `Set`, functions, `undefined` or
   non-finite numbers. No genre rules here: no game content, only the world's machinery.
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
-  `components.test.ts`, `squad.test.ts`, `terrain.test.ts`).
+  `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`).

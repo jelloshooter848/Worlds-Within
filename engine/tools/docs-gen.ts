@@ -6,6 +6,7 @@ import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import { partFileName, parseContent, type ContentKind, type ContentPart } from '@engine/core/content/kinds';
 import { gameManifestSchema, MANIFEST_FILE } from '@engine/core/content/manifest';
 import { formatErrors, validate, type ContentError } from '@engine/core/content/validate';
+import { SaveError, STANDARD_COMPONENTS, Terrain, loadWorld, worldSaveSchema } from '@engine/sim/index';
 import { helpResult, helpText } from './commands/help';
 import { EXIT, EXIT_MEANINGS, type ExitName } from './exit-codes';
 import { allKits } from './kits';
@@ -72,6 +73,33 @@ function jsonCheck(schema: z.ZodType) {
   };
 }
 
+/**
+ * Checks a world save example by loading it with the standard components and `Terrain`, and a
+ * do-nothing stand-in for each system it names (systems are code, never in a save).
+ */
+function checkWorldSave(file: string, text: string): ContentError[] {
+  try {
+    const json = JSON.parse(text) as { systems?: unknown };
+    const names = Array.isArray(json.systems) ? json.systems.map(String) : [];
+    loadWorld(json, {
+      components: [...STANDARD_COMPONENTS, Terrain],
+      systems: names.map((name) => ({ name, run: () => undefined })),
+    });
+    return [];
+  } catch (error) {
+    if (error instanceof SaveError) {
+      return error.issues.map((i) => ({
+        file,
+        path: i.path,
+        pointer: '',
+        code: 'invalid_save',
+        message: i.message,
+      }));
+    }
+    return [{ file, path: '', pointer: '', code: 'invalid_json', message: String(error) }];
+  }
+}
+
 /** A content kind as a doc subject; its example is `<name>.txt` when the kind reads `.txt` files. */
 export function kindSubject(kind: ContentKind, from: string): DocSubject {
   const partSuffixes = Object.values(kind.gridParts ?? {});
@@ -124,6 +152,19 @@ export function defaultDocSources(): DocSources {
       schema: runFileSchema,
       example: 'run.json',
       check: jsonCheck(runFileSchema),
+    },
+    {
+      name: 'world-save',
+      title: 'World save (`saveWorld`)',
+      from: 'engine/sim',
+      where:
+        'wherever a game keeps its saves; `saveWorld(world)` writes it, `loadWorld(json, options)` reads it',
+      forms: '`.json`',
+      description:
+        "The whole simulated world (Engine 0.8): seed, tick, RNG state, next entity id, every entity's components, the system names and the event log",
+      schema: worldSaveSchema,
+      example: 'world-save.json',
+      check: checkWorldSave,
     },
     ...engineContentKinds()
       .list()
@@ -265,13 +306,13 @@ function subjectSection(subject: DocSubject, example: Example, level: string): s
 }
 
 function schemasPage(root: string, subjects: readonly DocSubject[]): string {
-  const files = subjects.filter((s) => s.name === 'manifest' || s.name === 'run');
+  const files = subjects.filter((s) => ['manifest', 'run', 'world-save'].includes(s.name));
   const kinds = subjects.filter((s) => !files.includes(s));
   return [
     '# Schema reference',
     '',
     GENERATED_NOTE(
-      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, each content kind) and `docs/reference/examples/`',
+      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, each content kind) and `docs/reference/examples/`',
     ),
     '',
     'One section per file format. Each table lists every field: nested fields are written under their',

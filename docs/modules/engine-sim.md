@@ -30,6 +30,13 @@ From `engine/sim/index.ts`:
     the tick commits; changes between ticks join at once with the cause from
     `withCause(cause, fn)` (`order:<id>`, `scenario`, `load`, ...) or `'external'`. Retention: all
     by default, `log: { ticks: n }` keeps the last `n` ticks, `log: { enabled: false }` none.
+- Save and load (`save.ts`): `saveWorld(world)` -> the whole world as JSON-safe data (format
+  `worlds-within/world`, version 1: seed, tick, RNG state, `nextId`, component kinds, system
+  names, entities in id order with their components, the event log and its retention);
+  `loadWorld(json, { components, systems? })` -> a `World` in the same state that steps on
+  identically. Systems are code: pass the same list (checked by name). A bad save throws
+  `SaveError` whose `issues` (and message) name each bad field (`entities.1.components.Health.hp`).
+  `worldSaveSchema` is the file's Zod schema (documented in `docs/reference/schemas.md`).
 - Deterministic maths (`math.ts`): `idiv`, `imod`, `clamp`, `ipow`, `isqrt`; `distSq`, `distFloor`,
   `manhattan`, `chebyshev`; binary angles (`ANGLE_STEPS` = 256 per turn) with fixed-point
   `sinFixed`/`cosFixed` (`FIXED_ONE` = 65536), `directionAngle`, `directionVector`, `scaleFixed`
@@ -71,4 +78,7 @@ ticks, nothing visible before commit, retention, and an identical log across two
 integer results and that the sine table is symmetric; `tests/architecture/purity.test.ts` checks
 the lint rule fires on sim files. `components.test.ts` checks each standard schema,
 `squad.test.ts` squad strength against named members, seeded picking and the loss order, and
-`terrain.test.ts` height lookup, movement cost and grid validation.
+`terrain.test.ts` height lookup, movement cost and grid validation. `save.test.ts` checks that save ->
+load -> save gives the same canonical JSON, that a world loaded at tick N gives the same snapshots
+for the next ticks as the uninterrupted one, that RNG state, `nextId`, tick and log survive, and
+that malformed saves fail naming the field.
