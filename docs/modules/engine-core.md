@@ -24,7 +24,7 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
-- `gfx/renderer.ts`: the presentation contract (`Renderer`, `Rotation`, `transformed`,
+- `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
   `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
@@ -33,6 +33,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `audio/`: `mml.ts` (MML compiler), `sequencer.ts`, `apu.ts`, `audio-manager.ts`.
 - `audio/song-schema.ts`, `gfx/sprite-schema.ts`: the song, sound-effect and sprite file schemas.
 - `content/`: reading and checking content files; see [engine/core/content](engine-core-content.md).
+- `present/`: the presentation contract, the read-only frame a backend draws from; see
+  [engine/core/present](engine-core-present.md).
 - `save/`, `assets/`, `a11y/`, `math/`, `platform.ts`.
 
 ## Imports allowed

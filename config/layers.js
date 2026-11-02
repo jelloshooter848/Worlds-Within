@@ -114,4 +114,5 @@ export const PURE_CORE = [
   'engine/core/gfx/sprite-schema.ts',
   'engine/core/gfx/palette-schema.ts',
   'engine/core/content/**',
+  'engine/core/present/**',
 ];

@@ -5,7 +5,8 @@ audio and MML (`audio/`), save and settings (`save/`), the seeded RNG (`rng.ts`)
 asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.ts`), graphics
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
-[content/CLAUDE.md](content/CLAUDE.md)), with `node/game-files.ts` reading a game's content
+[content/CLAUDE.md](content/CLAUDE.md)), the presentation contract (`present/`: the read-only
+per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), with `node/game-files.ts` reading a game's content
 files from disk for Node tools and tests.
 
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
@@ -30,7 +31,7 @@ limits) and `fitGame(size, cssW, cssH, dpr, integerScale, fit?)`, used by the ca
 and the touch layout (`layoutScreen` takes `screen` in its input). Nothing else hard-codes a
 picture size. Pure.
 
-`gfx/renderer.ts` is the presentation contract: the `Renderer` interface, `Rotation`, and the
+`gfx/renderer.ts` is the drawing interface: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`. Backends implement it; core
 never knows which one is drawing.
 
@@ -48,7 +49,7 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
-`audio/mml.ts`, the song, sprite and palette schemas and `content/**`). ESLint enforces the rule on those
+`audio/mml.ts`, the song, sprite and palette schemas, `content/**` and `present/**`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, the
