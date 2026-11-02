@@ -1,6 +1,10 @@
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { InputScript } from '@engine/core/input/scripted-input';
 
+/** The backends `pnpm cli screenshot` can draw with (`--backend`). */
+export const SHOT_BACKENDS = ['canvas2d', 'three'] as const;
+export type ShotBackend = (typeof SHOT_BACKENDS)[number];
+
 /** What the CLI sends the screenshot page: everything it needs, so the page reads no files. */
 export interface ShotJob {
   /** The game's files as `{ path: text }` (as `readGameFiles` gives them). */
@@ -18,6 +22,13 @@ export interface ShotJob {
   disabledRules: string[];
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
   screen: ScreenSize;
+  /**
+   * What draws the picture: `canvas2d` (the view's `render` every tick) or `three` (the view's
+   * `frame()` every tick through a `ThreePresenter` and the game's `three` skin, drawn once).
+   */
+  backend: ShotBackend;
+  /** `three` only: go on when WebGL runs on a software renderer (SwiftShader, llvmpipe...). */
+  allowSoftwareGl: boolean;
 }
 
 /** What the page gives back. */
@@ -33,4 +44,18 @@ export interface ShotResult {
    * `hashEvery` ticks and the last tick), so the CLI can check drawing changed nothing.
    */
   hashes: { tick: number; hash: string }[];
+  /** `three`: the WebGL renderer string the picture was drawn with; `canvas2d`: null. */
+  renderer: string | null;
+}
+
+/**
+ * What the page gives back instead of a picture when it cannot take one: the view has no
+ * `frame()` (`no_frame_hook`), the canvas gives no WebGL context (`no_webgl`), or WebGL runs on a
+ * software renderer and the job does not allow it (`software_gl`).
+ */
+export interface ShotRefusal {
+  refused: 'no_frame_hook' | 'no_webgl' | 'software_gl';
+  /** The WebGL renderer string, when there was a context to read it from. */
+  renderer: string | null;
+  message: string;
 }

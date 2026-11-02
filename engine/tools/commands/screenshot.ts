@@ -2,6 +2,8 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { z } from 'zod';
+import { contentOf } from '@engine/core/content/bundle';
+import { SKIN_KIND } from '@engine/core/content/engine-kinds';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, formatErrors, type ContentError } from '@engine/core/content/validate';
 import { EXIT, UsageError } from '../exit-codes';
@@ -10,9 +12,10 @@ import { playRun, stateHash } from '../headless-run';
 import { defineCommand } from '../registry';
 import { readRunFile } from '../run-file';
 import { pngSize, takeScreenshot } from '../screenshot';
+import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
 
 /**
- * `screenshot <run-file> --tick N [--out path]`: plays the run file to tick N in headless Chromium
+ * `screenshot <run-file> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`: plays the run file to tick N in headless Chromium
  * through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
  * backend, drawing every tick on the way (as a player's screen would), and writes the last frame as a PNG of the game's picture size (`screen` in `game.json`,
  * 256x240 by default; devicePixelRatio 1). No real-time loop and no
@@ -27,6 +30,15 @@ import { pngSize, takeScreenshot } from '../screenshot';
  * headless run's. Exit 0, 4 (`failedCheck`) when they differ (the PNG is still written),
  * 3 (`invalidContent`) for a bad run file or content or a game with no view module, 2 for a bad
  * tick or `--out`, 5 when Chromium is not installed (`pnpm exec playwright install chromium`).
+ *
+ * `--backend three` shows the view's `frame()` through the Three.js backend and the game's `three`
+ * skin instead (Chromium with the GPU on), syncing every tick and rendering once at tick N. A view
+ * without `frame()` is exit 3 (`no_frame_hook` at `view`), a game without a `three` skin exit 3
+ * (`no_three_skin` at `content.skin`). WebGL on a software renderer (SwiftShader, llvmpipe...) is
+ * refused with exit 4 (`failedCheck`, no PNG written, `renderer` and `message` name it and the
+ * flag) unless `--allow-software-gl`, which also makes Chromium use SwiftShader on purpose so the
+ * PNG is the same every run; no WebGL context at all is exit 4 too. The result adds `backend` and
+ * `renderer` (the WebGL renderer string; null for canvas2d).
  */
 export const screenshotCommand = defineCommand({
   name: 'screenshot',
@@ -41,8 +53,20 @@ export const screenshotCommand = defineCommand({
       .min(1)
       .optional()
       .describe('where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)'),
+    backend: z
+      .enum(SHOT_BACKENDS)
+      .default('canvas2d')
+      .describe(
+        "what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)",
+      ),
+    allowSoftwareGl: z
+      .boolean()
+      .default(false)
+      .describe('three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)'),
   }),
   async run({ args, flags }, ctx) {
+    if (flags.allowSoftwareGl && flags.backend !== 'three')
+      throw new UsageError('--allow-software-gl is for --backend three only');
     if (flags.out !== undefined && !flags.out.toLowerCase().endsWith('.png'))
       throw new UsageError(`--out must name a .png file, not ${flags.out}`);
     const runFile = readRunFile(ctx.cwd, args.runFile);
@@ -68,6 +92,24 @@ export const screenshotCommand = defineCommand({
         contentError(where, ['view'], 'missing_file', `no file at ${root}${view}`),
       ]);
 
+    if (flags.backend === 'three') {
+      const skins = contentOf(game.content.value, SKIN_KIND);
+      if (!skins.some((e) => e.value.backend === 'three')) {
+        const have =
+          skins.length === 0
+            ? 'it has no skins'
+            : `its skins are ${skins.map((e) => `${root}${e.file} (${e.value.backend})`).join(', ')}`;
+        return invalid(loaded.file, [
+          contentError(
+            where,
+            ['content', 'skin'],
+            'no_three_skin',
+            `--backend three needs a skin with "backend": "three" in ${where} content.skin; ${have}`,
+          ),
+        ]);
+      }
+    }
+
     const shot = await takeScreenshot(
       {
         files: { ...game.texts },
@@ -78,10 +120,13 @@ export const screenshotCommand = defineCommand({
         input: loaded.run.input,
         disabledRules,
         screen,
+        backend: flags.backend,
+        allowSoftwareGl: flags.allowSoftwareGl,
       },
       gameAbs,
       viewAbs,
     );
+    if ('refused' in shot) return refused(shot, loaded.file, where, `${root}${view}`);
     const size = pngSize(shot.png);
     const name = basename(loaded.file)
       .replace(/\.run\.json$/, '')
@@ -101,6 +146,8 @@ export const screenshotCommand = defineCommand({
         game: loaded.gameDir,
         seed,
         tick: lastTick,
+        backend: flags.backend,
+        renderer: shot.renderer,
         path: relative(ctx.cwd, out).replaceAll('\\', '/'),
         width: size.width,
         height: size.height,
@@ -120,6 +167,7 @@ export const screenshotCommand = defineCommand({
   },
   text(result) {
     if (result.errors) return formatErrors(result.errors as ContentError[]);
+    if (result.refused) return String(result.message);
     const head = `${String(result.path)} (${String(result.width)}x${String(result.height)}, sha256 ${String(result.sha256)})`;
     const state = `${String(result.run)} @ tick ${String(result.tick)}, state hash ${String(result.hash)}`;
     return result.matchesHeadless ? `${head}\n${state}` : `${head}\n${state}\n${String(result.message)}`;
@@ -128,6 +176,27 @@ export const screenshotCommand = defineCommand({
 
 function invalid(run: string, errors: ContentError[]) {
   return { exit: EXIT.invalidContent, result: { run, errors } };
+}
+
+/** The page's refusal as a result: a view without `frame()` is content (3), WebGL a failed check (4). */
+function refused(shot: ShotRefusal, run: string, where: string, viewFile: string) {
+  if (shot.refused === 'no_frame_hook')
+    return invalid(run, [
+      contentError(
+        where,
+        ['view'],
+        'no_frame_hook',
+        `${viewFile} (view in ${where}) gives no frame() (engine/core/view.ts), which --backend three needs`,
+      ),
+    ]);
+  const message =
+    shot.refused === 'software_gl'
+      ? `WebGL is not hardware-backed: the renderer is "${String(shot.renderer)}", a software one. Run where a GPU is available, or pass --allow-software-gl to take the picture with SwiftShader anyway`
+      : `no WebGL context, so --backend three cannot draw (${shot.message}). Pass --allow-software-gl to use SwiftShader`;
+  return {
+    exit: EXIT.failedCheck,
+    result: { run, backend: 'three', renderer: shot.renderer, refused: shot.refused, message },
+  };
 }
 
 type TickHashes = readonly { tick: number; hash: string }[];

@@ -221,12 +221,12 @@ Exit codes:
 
 <!-- generated:exit-codes -->
 
-| Code | Name             | Meaning                                                                              |
-| ---- | ---------------- | ------------------------------------------------------------------------------------ |
-| 0    | `ok`             | the command did what it was asked and every check passed                             |
-| 2    | `usage`          | bad command line: unknown command or flag, a missing or extra argument               |
-| 3    | `invalidContent` | a content file (or game.json) breaks its schema; the result names the file and field |
-| 4    | `failedCheck`    | the content is valid but a check failed                                              |
-| 5    | `crash`          | an exception: a bug in the tools, the engine or the game                             |
+| Code | Name             | Meaning                                                                                        |
+| ---- | ---------------- | ---------------------------------------------------------------------------------------------- |
+| 0    | `ok`             | the command did what it was asked and every check passed                                       |
+| 2    | `usage`          | bad command line: unknown command or flag, a missing or extra argument                         |
+| 3    | `invalidContent` | a content file (or game.json) breaks its schema; the result names the file and field           |
+| 4    | `failedCheck`    | the content is valid but a check failed (a run's assertion, screenshot's WebGL renderer check) |
+| 5    | `crash`          | an exception: a bug in the tools, the engine or the game                                       |
 
 <!-- /generated:exit-codes -->

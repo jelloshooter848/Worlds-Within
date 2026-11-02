@@ -1,15 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT } from './exit-codes';
 import { main } from './main';
 import { firstDifference } from './commands/screenshot';
-import { launchChromium, NoBrowserError, pngSize, servedPath } from './screenshot';
+import { isSoftwareRenderer } from '@engine/backends/three';
+import { chromiumArgs, launchChromium, NoBrowserError, pngSize, servedPath } from './screenshot';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const WALK = 'games/demo/runs/walk-east.run.json';
+const LAB = 'games/platformer-lab/runs/start-to-goal.run.json';
 
 /**
  * Whether headless Chromium starts here. Locally a missing browser skips the browser tests with a
@@ -119,10 +121,116 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
   }, 60_000);
 });
 
+/** A copy of the demo with a `three` skin added, so only its view's missing `frame()` stops it. */
+function demoWithThreeSkin(): string {
+  const dir = tempDir();
+  cpSync(join(ROOT, 'games/demo'), join(dir, 'demo'), { recursive: true });
+  writeFileSync(join(dir, 'demo/content/skins/three.json'), JSON.stringify({ backend: 'three', kinds: {} }));
+  return join(dir, 'demo/runs/walk-east.run.json');
+}
+
+describe.skipIf(missing !== null)('screenshot --backend three (headless Chromium)', () => {
+  it('takes a byte-identical 3D PNG on SwiftShader with --allow-software-gl', async () => {
+    const dir = tempDir();
+    const argv = (name: string) => [
+      'screenshot',
+      LAB,
+      '--tick',
+      '120',
+      '--backend',
+      'three',
+      '--allow-software-gl',
+      '--out',
+      join(dir, name),
+    ];
+    const a = await cli(argv('a.png'));
+    const b = await cli(argv('b.png'));
+    expect(a.code).toBe(EXIT.ok);
+    expect(a.result).toMatchObject({
+      ok: true,
+      backend: 'three',
+      tick: 120,
+      width: 256,
+      height: 240,
+      matchesHeadless: true,
+    });
+    expect(a.result.renderer).toMatch(/SwiftShader/);
+    expect(b.result.sha256).toBe(a.result.sha256);
+    expect(readFileSync(join(dir, 'a.png')).equals(readFileSync(join(dir, 'b.png')))).toBe(true);
+
+    const flat = await cli(['screenshot', LAB, '--tick', '120', '--out', join(dir, 'flat.png')]);
+    expect(flat.result).toMatchObject({ backend: 'canvas2d', renderer: null });
+    expect(flat.result.sha256).not.toBe(a.result.sha256);
+  }, 180_000);
+
+  it('refuses software WebGL without --allow-software-gl, naming the renderer and the flag', async () => {
+    const out = join(tempDir(), 'x.png');
+    const { code, result } = await cli([
+      'screenshot',
+      LAB,
+      '--tick',
+      '5',
+      '--backend',
+      'three',
+      '--out',
+      out,
+    ]);
+    const renderer = String(result.renderer);
+    if (!isSoftwareRenderer(renderer)) {
+      // A machine with a real GPU: the picture is taken.
+      expect(code).toBe(EXIT.ok);
+      return;
+    }
+    expect(code).toBe(EXIT.failedCheck);
+    expect(result).toMatchObject({ ok: false, backend: 'three', refused: 'software_gl' });
+    expect(result.message).toContain(renderer);
+    expect(result.message).toContain('--allow-software-gl');
+    expect(existsSync(out)).toBe(false);
+  }, 120_000);
+
+  it('reports a view without frame() as invalid content at view', async () => {
+    const run = demoWithThreeSkin();
+    const argv = ['screenshot', run, '--tick', '1', '--backend', 'three', '--allow-software-gl'];
+    const { code, result } = await cli(argv);
+    expect(code).toBe(EXIT.invalidContent);
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        file: expect.stringMatching(/demo\/game\.json$/),
+        path: 'view',
+        code: 'no_frame_hook',
+      }),
+    ]);
+  }, 120_000);
+});
+
 describe('screenshot (no browser needed)', () => {
   it('refuses a tick after the run and an --out that is not a PNG', async () => {
     expect((await cli(['screenshot', WALK, '--tick', '9999'])).code).toBe(EXIT.usage);
     expect((await cli(['screenshot', WALK, '--tick', '1', '--out', 'x.jpg'])).code).toBe(EXIT.usage);
+  });
+
+  it('refuses --allow-software-gl without --backend three, and an unknown backend', async () => {
+    expect((await cli(['screenshot', WALK, '--tick', '1', '--allow-software-gl'])).code).toBe(EXIT.usage);
+    expect((await cli(['screenshot', WALK, '--tick', '1', '--backend', 'pixi'])).code).toBe(EXIT.usage);
+  });
+
+  it('reports a game with no three skin as invalid content at content.skin, naming its skins', async () => {
+    const { code, result } = await cli(['screenshot', WALK, '--tick', '1', '--backend', 'three']);
+    expect(code).toBe(EXIT.invalidContent);
+    const errors = result.errors as { file: string; path: string; code: string; message: string }[];
+    expect(errors).toEqual([
+      expect.objectContaining({ file: 'games/demo/game.json', path: 'content.skin', code: 'no_three_skin' }),
+    ]);
+    expect(errors[0]!.message).toContain('games/demo/content/skins/canvas2d.json (canvas2d)');
+  });
+
+  it('turns the GPU off for canvas2d and picks the WebGL flags for three', () => {
+    expect(chromiumArgs()).toContain('--disable-gpu');
+    expect(chromiumArgs({ backend: 'three' })).not.toContain('--disable-gpu');
+    expect(chromiumArgs({ backend: 'three' })).not.toContain('--use-angle=swiftshader');
+    expect(chromiumArgs({ backend: 'three', allowSoftwareGl: true })).toEqual(
+      expect.arrayContaining(['--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
+    );
   });
 
   it('serves files in the repo by their path and others through /@fs/', () => {

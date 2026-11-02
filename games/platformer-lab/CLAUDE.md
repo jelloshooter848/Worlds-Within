@@ -81,7 +81,8 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     Three.js;
   - `view.ts`: `createView` for `pnpm cli screenshot`: `render(r)` draws through `LabPicture`, and
     `frame()` (the view contract's frame hook) returns the `LabFrames` frame with the events
-    since the last call (dropped when the level changes, as the scene does); `scene.ts`: `LabScene`, which pushes the
+    since the last call (dropped when the level changes, as the scene does), and `background` is
+    the sky (`SKY`) for `pnpm cli screenshot --backend three`; `scene.ts`: `LabScene`, which pushes the
     engine's `miniGameScene` over itself when a trigger starts a round (its `step` steps the lab,
     so the world applies the outcome as headless) and pops it on the result; it draws through the
     drawer `main.ts` gives it (`MakeLabDrawer`: `r => new LabPicture(r, look)` in 2D, a

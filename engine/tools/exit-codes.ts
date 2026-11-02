@@ -7,7 +7,8 @@
  * | 0    | `ok`             | the command did what it was asked and every check passed        |
  * | 2    | `usage`          | bad command line: unknown command or flag, missing argument     |
  * | 3    | `invalidContent` | a content file (or `game.json`) breaks its schema               |
- * | 4    | `failedCheck`    | the content is valid but a check failed (an assertion in a run) |
+ * | 4    | `failedCheck`    | the content is valid but a check failed (an assertion in a run, |
+ * |      |                  | or screenshot's WebGL renderer check)                           |
  * | 5    | `crash`          | an exception: a bug in the tools, the engine or the game        |
  *
  * 1 is left unused on purpose: Node exits with 1 on its own for an uncaught error, so a 1 always
@@ -34,7 +35,8 @@ export const EXIT_MEANINGS: Readonly<Record<ExitName, string>> = {
   ok: 'the command did what it was asked and every check passed',
   usage: 'bad command line: unknown command or flag, a missing or extra argument',
   invalidContent: 'a content file (or game.json) breaks its schema; the result names the file and field',
-  failedCheck: 'the content is valid but a check failed',
+  failedCheck:
+    "the content is valid but a check failed (a run's assertion, screenshot's WebGL renderer check)",
   crash: 'an exception: a bug in the tools, the engine or the game',
 };
 

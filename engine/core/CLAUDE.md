@@ -22,7 +22,8 @@ draws, taken from `content.manifest.screen`, `render(r)`, and the optional `fram
 `PresentFrame` for the state now, with the events since the last call, so a tool can show the game
 through any `Presenter` (the Three.js backend) instead of drawing it with `render(r)`; a run uses
 one or the other, never both (each keeps its own stream of frames). Like `render`, it must not
-change the game. Types only.
+change the game. The optional `background` (a CSS hex colour) is the colour a presenter of
+`frame()` clears to (`screenshot --backend three`; black when left out). Types only.
 
 `rules.ts` is the named-rule mechanism behind mutant checks: a kit declares its rules with
 `defineRules([{ id, description }])` and builds a `RuleSwitch(rules, disabled)` from the ids a run

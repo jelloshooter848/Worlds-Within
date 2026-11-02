@@ -37,6 +37,11 @@ export interface ViewGame extends HeadlessGame {
    * Used instead of `render`, never both in one run.
    */
   frame?(): DeepReadonly<PresentFrame>;
+  /**
+   * Optional: the colour behind the picture (CSS hex, such as `#5c94fc`) for a presenter that
+   * shows `frame()` (the Three.js backend's clear colour); black when left out.
+   */
+  readonly background?: string;
 }
 
 /** What a game's view module (named by `view` in `game.json`) exports. */

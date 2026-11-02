@@ -32,7 +32,7 @@ Exit codes:
   0  ok              the command did what it was asked and every check passed
   2  usage           bad command line: unknown command or flag, a missing or extra argument
   3  invalidContent  a content file (or game.json) breaks its schema; the result names the file and field
-  4  failedCheck     the content is valid but a check failed
+  4  failedCheck     the content is valid but a check failed (a run's assertion, screenshot's WebGL renderer check)
   5  crash           an exception: a bug in the tools, the engine or the game
 
 Run "pnpm cli help <command>" for one command.
@@ -120,8 +120,10 @@ Arguments:
   <runFile>  the run file, such as games/demo/runs/walk-east.run.json
 
 Flags:
-  --tick <number>  the tick to draw (0 is the start, before any step)
-  --out <string>   where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
+  --tick <number>             the tick to draw (0 is the start, before any step)
+  --out <string>              where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
+  --backend <canvas2d|three>  what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)
+  --allow-software-gl         three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

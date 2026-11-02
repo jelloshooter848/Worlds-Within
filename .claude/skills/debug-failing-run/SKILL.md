@@ -54,6 +54,11 @@ seeded frame, and checks its state hash against the headless run (`matchesHeadle
 hero, walls and enemies really are. Needs the game's `view` entry and Chromium; without a browser it
 exits with a clear error, and steps 1, 2 and 4 are enough on their own.
 
+To see the same frame in 3D (a game with a `three` skin and a view `frame()`, such as
+`games/platformer-lab`), add `--backend three`. In a container without a GPU WebGL runs on
+SwiftShader, which the command refuses (exit 4, naming the renderer string) unless you add
+`--allow-software-gl`. The state hash is the same whichever backend draws.
+
 ## 4. Check the replay reproduces it
 
 ```sh

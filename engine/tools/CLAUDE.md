@@ -47,8 +47,9 @@ the CLI starts.
   hashes.
 - `screenshot.ts`: `takeScreenshot(job, gameAbs, viewAbs)` serves the repo with Vite in middleware
   mode on a free local port, opens the screenshot page in headless Chromium (Playwright) and
-  returns the PNG bytes; `launchChromium()` (throws `NoBrowserError` with the install command),
-  `servedPath(abs)`, `pngSize(png)`.
+  returns the PNG bytes (or the page's `ShotRefusal`); `launchChromium(opts?)` (throws
+  `NoBrowserError` with the install command), `chromiumArgs(opts?)` (Chromium's flags per
+  backend), `servedPath(abs)`, `pngSize(png)`.
 - `screenshot/`: the tools-only screenshot page (`index.html`, `page.ts`) and the job it takes
   (`job.ts`). Never in the Pages build: `build/pages.ts` only builds the launcher and game pages.
 - `content-path.ts`: paths for the editing verbs (`parsePath`, dotted or JSON pointer) and the
@@ -73,8 +74,8 @@ the CLI starts.
   Nothing else goes to stdout; `console.log` and friends are sent to stderr while a command runs.
 - Exit codes (`exit-codes.ts`): `0` ok, `2` usage (unknown command or flag, missing or extra
   argument, a folder that is not there), `3` invalid content (the result names file and field),
-  `4` failed check (valid content, a check failed: a `run` assertion or invariant), `5` crash (an
-  exception). `1` is never used by the CLI, so a `1` means Node died before it could report.
+  `4` failed check (valid content, a check failed: a `run` assertion or invariant, or
+  `screenshot --backend three` refusing software WebGL), `5` crash (an exception). `1` is never used by the CLI, so a `1` means Node died before it could report.
 - Output cap: over `--max-output` bytes (default 32 KiB) the whole result goes to
   `.ww-out/<command>-<hash>.json` (or `.txt` without `--json`), and the printed result is cut: the
   longest top-level arrays are halved until it fits, and it gets `truncated: true`,
@@ -108,11 +109,13 @@ hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, 
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, seed, tick,
 hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
-- `screenshot <runFile> --tick N [--out path]`: a PNG of the frame at tick N (Screenshots, below).
-  Result: `{ run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash,
-hashes, matchesHeadless }`. Exit 0, 4 when a state hash the page saw is not the headless one, 3 for a bad
-  run file or content or a game without `view`, 2 for a bad `--tick` or `--out`, 5 when Chromium
-  is not installed.
+- `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
+  a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, tick, backend,
+renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matchesHeadless }`.
+  Exit 0, 4 when a state hash the page saw is not the headless one or (`three`) WebGL is not
+  hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
+  `view`, or (`three`) a view without `frame()` or a game without a `three` skin, 2 for a bad
+  `--tick`, `--out` or flag, 5 when Chromium is not installed.
 - `mutants <target>`: mutant checks (below) on a run file or a game folder. Run file result:
   `{ run, game, kit, strict, baseline: { passed, failure }, guards, rules: [{ id, description,
 skipped, expected, passed, guarded, failure }], guarded, weak }`. Game folder result: `{ game,
@@ -329,9 +332,29 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   ticks and the last, as `run` lists them). All must match the headless run (`matchesHeadless`);
   if not, the view plays (or its drawing changes the state) differently from the headless module
   and the command exits 4 (the PNG is still written), with `message` naming the first tick.
-- Same run file and tick, same machine: byte-identical PNG (`screenshot.test.ts` checks it, and
-  that different ticks give different PNGs). Text drawn with `debugText` uses a system font, so a
+- Same run file and tick, same machine: byte-identical PNG (`screenshot.test.ts` checks it for both
+  backends, that different ticks give different PNGs, the software-GL refusal and the 3D content
+  errors). Text drawn with `debugText` uses a system font, so a
   PNG's hash can differ between machines; compare hashes on one machine.
+- `--backend three` (Engine 0.6): the 3D picture. The page needs the view's `frame()` (else exit 3,
+  `no_frame_hook` at `view` in `game.json`) and the command a skin with `"backend": "three"` in the
+  game's content (else exit 3, `no_three_skin` at `content.skin`, listing the skins it has; checked
+  before Chromium starts). The page makes a WebGL canvas of the `screen` size and a
+  `ThreePresenter` with that skin (clear colour: the view's `background`, else black), reads the
+  renderer string (`webglRendererInfo`) first, then steps exactly as for canvas2d, syncing the
+  scene with every tick's `frame()` (so the camera's lerp is the one play shows) and rendering
+  once at tick N; the PNG is `toDataURL` of the WebGL canvas (`preserveDrawingBuffer`). The result's
+  `renderer` is that string (null for canvas2d); `matchesHeadless` still compares state hashes.
+- The renderer check: Chromium runs with the GPU on for `three` (`--enable-gpu
+--ignore-gpu-blocklist`; canvas2d keeps `--disable-gpu`, so its PNGs are unchanged). If the
+  renderer is a software one (`isSoftwareRenderer`: SwiftShader, llvmpipe...) the command exits 4
+  with `refused: 'software_gl'`, `renderer` and a `message` naming the string and
+  `--allow-software-gl`, and writes no PNG; no WebGL context at all is exit 4 with
+  `refused: 'no_webgl'`. With `--allow-software-gl` Chromium starts with `--use-angle=swiftshader
+--enable-unsafe-swiftshader`, so SwiftShader is used on purpose and two runs give the same bytes.
+  In this container (no GPU) that flag is needed: `pnpm -s cli screenshot
+games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --allow-software-gl
+--json`. 3D PNG hashes differ between GPUs and drivers; compare them on one machine.
 - Chromium: `pnpm exec playwright install --with-deps chromium` (CI does this). Without it the
   command crashes (exit 5) with that line, and the browser tests skip with a message locally; in
   CI (`CI` set) they are required.

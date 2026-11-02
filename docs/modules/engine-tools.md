@@ -49,14 +49,20 @@ rules: [{ id, description, skipped, expected, passed, guarded, failure }], guard
   unguarded rule. Details: `engine/tools/CLAUDE.md` (Mutant checks).
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, seed, tick, hash, state }`, the whole
   snapshot at tick N.
-- `pnpm cli screenshot <run-file> --tick N [--out path]`: plays the run in headless Chromium
+- `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
+[--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
   backend, drawing every tick on the way, and writes the frame at tick N as a PNG of the game's picture size (`screen` in
   `game.json`, 256x240 by default; default
   `.ww-out/screenshots/<name>-t<N>.png`). `--json` result: `{ ok, command: 'screenshot', exitCode,
-run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash, hashes,
-matchesHeadless }` (`hashes`: the state hashes the page saw; all must be the headless run's).
-  Two runs in a row give byte-identical PNGs. Needs `pnpm exec playwright install --with-deps
+run, game, seed, tick, backend, renderer, path, width, height, bytes, sha256, hash, headlessHash,
+hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be the headless run's).
+  Two runs in a row give byte-identical PNGs. `--backend three` shows the view's `frame()`
+  through the Three.js backend and the game's `three` skin (exit 3 `no_frame_hook` at `view`, or
+  `no_three_skin` at `content.skin`, when either is missing); `renderer` is the WebGL renderer
+  string, and a software one (SwiftShader, llvmpipe) is refused with exit 4 naming it and
+  `--allow-software-gl`, which takes the picture on SwiftShader on purpose (needed in a container
+  without a GPU). Needs `pnpm exec playwright install --with-deps
 chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
 - `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,
   `remove <file> <path>`: one verb set for editing `game.json`, content files, text-grid part
@@ -102,5 +108,5 @@ the exit code and the one JSON object, using temp copies of `games/demo` for bro
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `screenshot.test.ts` takes the same screenshot twice and
-compares the bytes (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
+compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes.

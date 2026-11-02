@@ -22,7 +22,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `screen`, the
   picture size from the manifest, `render(r)`, and optional `frame()`: the frozen
   `PresentFrame` for the state now with the events since the last call, for any presenter, used
-  instead of `render` and never both in one run;
+  instead of `render` and never both in one run, and optional `background`, the colour a
+  presenter of `frame()` clears to;
   `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
