@@ -11,6 +11,7 @@ export {
   SCENARIO_FORMAT,
   SCENARIO_VERSION,
   ScenarioError,
+  scenarioKeys,
   scenarioSchema,
   worldFromScenario,
 } from './scenario';

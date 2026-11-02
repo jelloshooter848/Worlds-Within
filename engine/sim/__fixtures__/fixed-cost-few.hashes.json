@@ -1,0 +1,57 @@
+{
+  "run": "engine/sim/__fixtures__/fixed-cost-few.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "301cdb23f2530446"
+    },
+    {
+      "tick": 5,
+      "hash": "55f76d0c2a590cd8"
+    },
+    {
+      "tick": 10,
+      "hash": "9adab8c3e3e80a7f"
+    },
+    {
+      "tick": 15,
+      "hash": "d50ae04b9096b0d1"
+    },
+    {
+      "tick": 20,
+      "hash": "d1dbdfcba15f23ae"
+    },
+    {
+      "tick": 25,
+      "hash": "df911d4cc6794fe2"
+    },
+    {
+      "tick": 30,
+      "hash": "3ffa57cba6a17df3"
+    },
+    {
+      "tick": 35,
+      "hash": "fa0225680250f4ff"
+    },
+    {
+      "tick": 40,
+      "hash": "504c83fa67cdd461"
+    },
+    {
+      "tick": 45,
+      "hash": "ba76102f2c988512"
+    },
+    {
+      "tick": 50,
+      "hash": "c76047beeb8a4e81"
+    },
+    {
+      "tick": 55,
+      "hash": "bb80f125e22f85e9"
+    },
+    {
+      "tick": 60,
+      "hash": "60557f2e9c5e2245"
+    }
+  ]
+}

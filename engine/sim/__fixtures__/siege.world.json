@@ -1,0 +1,381 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 1010,
+  "systems": "rts",
+  "terrain": {
+    "legend": {
+      ".": {
+        "name": "ground",
+        "cost": 1,
+        "passable": true
+      }
+    },
+    "rows": [
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................",
+      "................"
+    ],
+    "elevation": [
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000",
+      "0000000000000000"
+    ]
+  },
+  "entities": [
+    {
+      "key": "types",
+      "components": {
+        "RtsTypes": {
+          "units": {
+            "worker": {
+              "health": 20,
+              "speed": 2,
+              "attack": 1,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 4,
+              "cost": {
+                "gold": 50
+              },
+              "trainTicks": 12,
+              "work": 2
+            },
+            "soldier": {
+              "health": 30,
+              "speed": 2,
+              "attack": 4,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 5,
+              "cost": {
+                "gold": 60
+              },
+              "trainTicks": 16
+            },
+            "engine": {
+              "health": 40,
+              "speed": 4,
+              "attack": 6,
+              "range": 1,
+              "cooldown": 4,
+              "sight": 3,
+              "cost": {
+                "gold": 120
+              },
+              "trainTicks": 40
+            }
+          },
+          "buildings": {
+            "hall": {
+              "health": 400,
+              "size": {
+                "w": 2,
+                "h": 2
+              },
+              "work": 100,
+              "dropoff": true,
+              "trains": ["worker"]
+            },
+            "barracks": {
+              "health": 200,
+              "size": {
+                "w": 2,
+                "h": 2
+              },
+              "work": 30,
+              "cost": {
+                "gold": 100
+              },
+              "trains": ["soldier"]
+            }
+          }
+        }
+      }
+    },
+    {
+      "key": "hall",
+      "components": {
+        "Position": {
+          "x": 0,
+          "y": 0
+        },
+        "Owner": {
+          "faction": "red"
+        },
+        "Building": {
+          "kind": "hall",
+          "w": 2,
+          "h": 2,
+          "dropoff": true
+        },
+        "Health": {
+          "hp": 400,
+          "max": 400
+        },
+        "Producer": {
+          "trains": ["worker"],
+          "queue": [],
+          "progress": 0
+        },
+        "Stockpile": {
+          "faction": "red"
+        },
+        "Inventory": {
+          "gold": 200
+        }
+      }
+    },
+    {
+      "key": "site",
+      "components": {
+        "Position": {
+          "x": 2,
+          "y": 6
+        },
+        "Owner": {
+          "faction": "red"
+        },
+        "Building": {
+          "kind": "barracks",
+          "w": 2,
+          "h": 2,
+          "dropoff": false
+        },
+        "Health": {
+          "hp": 1,
+          "max": 200
+        },
+        "Producer": {
+          "trains": ["soldier"],
+          "queue": [],
+          "progress": 0
+        },
+        "Construction": {
+          "kind": "barracks",
+          "progress": 0,
+          "work": 30,
+          "done": false
+        }
+      }
+    },
+    {
+      "key": "builder",
+      "components": {
+        "Position": {
+          "x": 4,
+          "y": 6
+        },
+        "Owner": {
+          "faction": "red"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "worker",
+          "speed": 2,
+          "attack": 1,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 4
+        },
+        "Worker": {
+          "job": {
+            "$ref": "site"
+          },
+          "rate": 2
+        },
+        "Task": {
+          "order": 1,
+          "kind": "build",
+          "goal": null,
+          "target": {
+            "$ref": "site"
+          },
+          "path": [],
+          "flow": true
+        }
+      }
+    },
+    {
+      "key": "s1",
+      "components": {
+        "Position": {
+          "x": 10,
+          "y": 4
+        },
+        "Owner": {
+          "faction": "red"
+        },
+        "Health": {
+          "hp": 30,
+          "max": 30
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 4,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "s2",
+      "components": {
+        "Position": {
+          "x": 10,
+          "y": 5
+        },
+        "Owner": {
+          "faction": "red"
+        },
+        "Health": {
+          "hp": 30,
+          "max": 30
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 4,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "ram",
+      "components": {
+        "Position": {
+          "x": 11,
+          "y": 4
+        },
+        "Owner": {
+          "faction": "blue"
+        },
+        "Health": {
+          "hp": 40,
+          "max": 40
+        },
+        "Unit": {
+          "type": "engine",
+          "speed": 4,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 3
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "tower",
+      "components": {
+        "Position": {
+          "x": 11,
+          "y": 5
+        },
+        "Owner": {
+          "faction": "blue"
+        },
+        "Health": {
+          "hp": 40,
+          "max": 40
+        },
+        "Unit": {
+          "type": "engine",
+          "speed": 4,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 3
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "catapult",
+      "components": {
+        "Position": {
+          "x": 12,
+          "y": 4
+        },
+        "Owner": {
+          "faction": "blue"
+        },
+        "Health": {
+          "hp": 40,
+          "max": 40
+        },
+        "Unit": {
+          "type": "engine",
+          "speed": 4,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 3
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "night-raid",
+      "mission": "raid",
+      "opens": 0,
+      "closes": 60,
+      "exclusive": "sortie"
+    },
+    {
+      "id": "supply-run",
+      "mission": "convoy",
+      "opens": 10,
+      "closes": 50,
+      "exclusive": "sortie"
+    },
+    {
+      "id": "rescue-window",
+      "mission": "rescue",
+      "opens": 0,
+      "closes": 40,
+      "relative": true
+    },
+    {
+      "id": "scout-gap",
+      "mission": "scout",
+      "opens": 0,
+      "closes": 25
+    }
+  ]
+}

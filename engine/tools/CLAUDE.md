@@ -38,7 +38,7 @@ the CLI starts.
   `kits/<name>/kit.ts` on disk; never edit it by hand. A new kit needs its `kit.ts` and
   `pnpm docs:gen`; `pnpm docs:check` and `kits.test.ts` fail while the list is stale.
 - `run-file.ts`: the run-file schema (`runFileSchema`, with `orderEntrySchema` for recorded
-  orders), `readRunFile(cwd, path)`, the check ops (`CHECK_OPS`, `CHECK_OP_MEANINGS`),
+  orders and `missionEntrySchema`/`MISSION_ACTIONS` for mission steps), `readRunFile(cwd, path)`, the check ops (`CHECK_OPS`, `CHECK_OP_MEANINGS`),
   `valueAt(state, path)` and `failsCheck(state, check)`.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
@@ -49,7 +49,9 @@ the CLI starts.
 - `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
   its scenario with the engine system set the scenario names (`worldSystemSet(json)`:
   `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log, and returns it
-  with the set's name (World runs, below).
+  with the set's name and the scenario's keys (`scenarioKeys`) (World runs, below);
+  `loadMissionDefs`, `applyMissionStep` and `settleWorld` drive a world run's `missions`
+  (Missions in world runs, below).
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
@@ -107,19 +109,22 @@ the CLI starts.
   `--disable-rule` switches kit rules off (comma-separated ids, on top of the run file's
   `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
-hash }], finalHash, orders, ordersPlayed, refusedOrders, hashesChecked, hashMismatch, replayFile, replay }`.
+hash }], finalHash, orders, ordersPlayed, refusedOrders, missions, missionsPlayed, refusedMissions,
+experience, hashesChecked, hashMismatch, replayFile, replay }`.
   `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
   that failed at that tick. The run stops at the first failing tick and then writes a replay file
   (below) whose path is `replayFile` (null when the run passed, and for replays). `replay` is the
   replay check on a replay file (null otherwise). `orders`, `ordersPlayed`, `refusedOrders`,
   `hashesChecked` and `hashMismatch` are about recorded orders and sync hashes (Recorded orders,
-  below). Exit 0 passed, 4 a failed check or a sync hash that differs, 2 a run file with `orders`
+  below); `missions`, `missionsPlayed`, `refusedMissions` and `experience` about a world run's
+  mission steps (Missions in world runs, below). Exit 0 passed, 4 a failed check or a sync hash that differs, 2 a run file with `orders`
   for a game without an `order` method, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, tick,
-hash, state, orders }`, the whole snapshot and the recorded orders applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
+hash, state, orders, missions }`, the whole snapshot and the recorded orders and mission steps
+  applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
 - `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
   a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, tick, backend,
@@ -241,6 +246,7 @@ platformer game whose door pushes a top-down mini game holds `room` files):
   that entry; an id twice is a schema error. Replay files keep the rules that were off.
 - `orders` (default none): recorded orders, `{ tick, ...order }` (Recorded orders, below).
 - `hashes` (optional): sync hashes `[{ tick, hash }]` the run must give (Recorded orders, below).
+- `missions` (default none; world runs only): mission steps (Missions in world runs, below).
 - `guards` (optional): the kit rules this run is meant to guard (Mutant checks). An id the kit
   does not name is an `unknown_rule` content error at that entry (exit 3, naming the run file and
   `guards`); an id twice, or one the run's `disableRules` switches off, is a schema error.
@@ -367,6 +373,60 @@ differs after tick 20 and by tick 40)`). `hashesChecked` counts the hashes compa
 - Try it: `pnpm -s cli run engine/sim/__fixtures__/battle.run.json` passes with 11 sync hashes;
   change an order (blue's move target to `{ "x": 9, "y": 7 }`) and it fails at tick 40.
   `orders-run.test.ts` covers all of this.
+
+## Missions in world runs
+
+Engine 0.10 (item 161; docs/BUILD-LOG.md, Engine 0.10, decisions 2 and 12): a world run file
+drives missions (`engine/sim/mission.ts`) from data. The samples are the siege fixture,
+`engine/sim/__fixtures__/siege.world.json` (an `rts` battle event `siege`, a barracks going up
+outside it, four opportunities) with `raid`, `convoy`, `rescue` and `scout` `.mission.json` files
+and seven run files (`raid-partial`, `raid-failure`, `opportunity-closing`, `frozen-construction`,
+`raid-delegated`, `fixed-cost-few`, `fixed-cost-many`):
+
+```json
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    { "tick": 5, "mission": "raid", "action": "open" },
+    { "tick": 5, "mission": "raid", "action": "play", "outcome": "partial", "experienceTicks": 240 }
+  ]
+}
+```
+
+- **Steps**: `{ tick, mission, action, outcome?, experienceTicks? }` in tick order, `tick` below
+  `ticks`. Each applies after the state of its tick and after that tick's orders, before the step
+  from it, in file order: `open` (`openMission`, with the scenario's keys as `refs`: an effect's
+  `"entity": "ram"` is the entity keyed `ram`), `delegate` (one weighted draw from the world RNG),
+  `play` (needs `outcome`, the outcome the stand-in round reached) or `quit` (its `onQuit`).
+- **The commit comes by itself.** After every step of a world run the tools call `settleMissions`,
+  so a mission commits at open tick + `worldTimeCost`, after that tick's systems and before its
+  snapshot (delegated then, `timeout`, if no step resolved it), and scenario opportunities open and
+  close on time. There is no `commit` action. Without missions or opportunities this changes
+  nothing, so the 0.8 and 0.9 hashes stay.
+- **Definitions**: `<mission>.mission.json` beside the scenario, else in a `missions/` folder
+  there (`missionFileCandidates`), checked as the `mission` content kind. Every mission a step names
+  needs one: none is `missing_file` at `missions.<i>.mission` in the run file; a bad file gives its
+  own errors (that file and field), and an `id` that is not the file name is `id_mismatch`.
+- **Load checks** (exit 3, naming the run file and field): `missions` on a game run; out of tick
+  order; a tick at or after `ticks`; `play` without `outcome`, `outcome` on another action,
+  `experienceTicks` on `open` or `delegate`; a `play` or `quit` at or after the commit tick its
+  `open` fixed is `mission_unresolved` (the cost has run out by then).
+- **Refused steps are not failures**: a step the world refuses (`mission_committed` for a retry,
+  `mission_resolved`, `opportunity_closed`, `unknown_outcome`...) is listed in `refusedMissions`
+  (`{ tick, mission, action, code, error }`; text: `tick 36: refused: open "raid":
+mission_committed: ...`) and the run goes on, as with orders.
+- **Experience ticks** are the stand-in round's own ticks: summed per mission in the result's
+  `experience` (`[{ mission, ticks }]`) and never written to the world, so they cannot move it or
+  change a hash (decision 2: the same ticks, commit tick and hashes however long the round took).
+  `fixed-cost-few` (played at tick 5, 1 tick) and `fixed-cost-many` (played at tick 34, 100,000
+  ticks) give the same hashes from the commit tick (35) on; `tests/runs/missions.test.ts` checks
+  it with the other done-when cases.
+- Paths read the mission state at `components.Missions.0.1` (`open`, `committed`), the time
+  service at `components.WorldTime.0.1` and opportunities at `components.Opportunities.0.1.list`
+  (sorted by id).
+- `dump` lists the steps applied before its tick (`missions`); a replay file keeps the steps before
+  the failing tick. `missions-run.test.ts` covers the errors, refusals, dump and replays.
 
 ## Mutant checks
 

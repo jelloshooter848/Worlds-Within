@@ -19,7 +19,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `squad.ts`: squad helpers (see "Squads" below).
 - `terrain.ts`: the `Terrain` component and its helpers (see "Terrain" below).
 - `scenario.ts`: `worldFromScenario(json, { components?, systems?, log? })`, the world-start file
-  schema `scenarioSchema` and `ScenarioError` (see "Scenarios" below).
+  schema `scenarioSchema`, `ScenarioError` and `scenarioKeys(json)` (each `key`'s entity id, for a
+  mission's `refs`) (see "Scenarios" below).
 - `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
 - `astar.ts`: RTS pathfinding, `findPath` (A*) for one unit and `flowField`/`flowStep` for a
   group, 4-way or 8-way (see "Walking").
@@ -56,8 +57,17 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`; and
   `battle.world.json`, a tiny `rts` battle, with `battle.run.json`, its recorded orders and sync
-  hashes (`engine/tools/CLAUDE.md`, Recorded orders), and the golden `battle.hashes.json`. Fixtures
-  only: no game content anywhere else in the folder.
+  hashes (`engine/tools/CLAUDE.md`, Recorded orders), and the golden `battle.hashes.json`; and
+  (Engine 0.10 T6) `siege.world.json`, an `rts` world with a battle event `siege` (red soldiers and
+  three blue siege engines keyed `ram`, `tower`, `catapult`, all `EventMember`s), a barracks site
+  outside it with its builder, and four opportunities (`night-raid` and `supply-run` in one
+  `exclusive` group, a `relative` `rescue-window`, `scout-gap` closing at 25), with the missions
+  `raid` (event `siege`, cost 30; `clean`, `partial`, `repelled` opening the rescue), `convoy`,
+  `rescue` and `scout` as `*.mission.json`, and the run files `raid-partial`, `raid-failure`,
+  `opportunity-closing`, `frozen-construction`, `raid-delegated`, `fixed-cost-few` and
+  `fixed-cost-many` with their golden `.hashes.json` (`engine/tools/CLAUDE.md`, Missions in world
+  runs; Engine 0.10's done-when cases, checked by `tests/runs/missions.test.ts`). Fixtures only: no
+  game content anywhere else in the folder.
 - `index.ts`: the public entry point; import from here outside this folder.
 
 ## The world

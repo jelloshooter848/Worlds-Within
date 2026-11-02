@@ -1,0 +1,64 @@
+{
+  "id": "raid",
+  "title": "Burn the siege engines",
+  "event": "siege",
+  "worldTimeCost": 30,
+  "play": "sabotage",
+  "params": {
+    "engines": 3
+  },
+  "onQuit": "repelled",
+  "outcomes": [
+    {
+      "id": "clean",
+      "title": "All three engines burnt",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "destroy",
+          "entity": "ram"
+        },
+        {
+          "type": "destroy",
+          "entity": "tower"
+        },
+        {
+          "type": "destroy",
+          "entity": "catapult"
+        }
+      ]
+    },
+    {
+      "id": "partial",
+      "title": "The ram burnt, the tower scorched",
+      "weight": 2,
+      "effects": [
+        {
+          "type": "destroy",
+          "entity": "ram"
+        },
+        {
+          "type": "damage",
+          "entity": "tower",
+          "amount": 25
+        }
+      ]
+    },
+    {
+      "id": "repelled",
+      "title": "Driven off, a captain taken",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "damage",
+          "entity": "s1",
+          "amount": 12
+        },
+        {
+          "type": "opportunity",
+          "open": "rescue-window"
+        }
+      ]
+    }
+  ]
+}

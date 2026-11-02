@@ -272,6 +272,29 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
   return world;
 }
 
+/**
+ * The entity id each `key` of a scenario gets (`{ "$ref": "<key>" }` becomes it), in the same file
+ * order `worldFromScenario` hands ids out: the terrain is 1, then `entities`, then each squad
+ * followed by its members. A mission's effects name entities by these keys (`openMission`'s
+ * `refs`). Empty when the file is not a scenario; a repeated key keeps its first id.
+ */
+export function scenarioKeys(json: unknown): Record<string, Entity> {
+  const parsed = scenarioSchema.safeParse(json);
+  if (!parsed.success) return {};
+  const keys: Record<string, Entity> = {};
+  let next = 1;
+  const claim = (key: string | undefined) => {
+    const id = ++next;
+    if (key !== undefined && !Object.hasOwn(keys, key)) keys[key] = id;
+  };
+  for (const e of parsed.data.entities) claim(e.key);
+  for (const s of parsed.data.squads) {
+    claim(s.key);
+    for (const m of s.members) claim(m.key);
+  }
+  return keys;
+}
+
 /** The terrain data from the scenario's grids, reporting any mismatch through `at`. */
 function buildTerrain(
   src: Scenario['terrain'],

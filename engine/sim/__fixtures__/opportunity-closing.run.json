@@ -1,0 +1,78 @@
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    {
+      "tick": 12,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 13,
+      "mission": "convoy",
+      "action": "open"
+    },
+    {
+      "tick": 30,
+      "mission": "scout",
+      "action": "open"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 13,
+      "path": "components.Opportunities.0.1.list.0.status",
+      "op": "eq",
+      "value": "taken"
+    },
+    {
+      "tick": 14,
+      "path": "components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "closed"
+    },
+    {
+      "tick": 14,
+      "path": "components.Opportunities.0.1.list.3.by",
+      "op": "eq",
+      "value": "mission:raid"
+    },
+    {
+      "tick": 24,
+      "path": "components.Opportunities.0.1.list.2.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 25,
+      "path": "components.Opportunities.0.1.list.2.status",
+      "op": "eq",
+      "value": "closed"
+    },
+    {
+      "tick": 25,
+      "path": "components.Opportunities.0.1.list.2.by",
+      "op": "eq",
+      "value": "time"
+    },
+    {
+      "tick": 42,
+      "path": "components.Missions.0.1.committed.0.resolution",
+      "op": "eq",
+      "value": "timeout"
+    },
+    {
+      "tick": 42,
+      "path": "components.Missions.0.1.committed.length",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "hashEvery": 6
+}

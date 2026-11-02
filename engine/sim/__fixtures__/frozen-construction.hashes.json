@@ -1,0 +1,57 @@
+{
+  "run": "engine/sim/__fixtures__/frozen-construction.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "301cdb23f2530446"
+    },
+    {
+      "tick": 5,
+      "hash": "a2dff920d0cf83a8"
+    },
+    {
+      "tick": 10,
+      "hash": "e62944ab0a01f981"
+    },
+    {
+      "tick": 15,
+      "hash": "d00c510a32d2952b"
+    },
+    {
+      "tick": 20,
+      "hash": "086ef260e699ec3b"
+    },
+    {
+      "tick": 25,
+      "hash": "5dbdb9fafb992007"
+    },
+    {
+      "tick": 30,
+      "hash": "e904e2206fa48bb4"
+    },
+    {
+      "tick": 35,
+      "hash": "61956f5bb4c9b9e9"
+    },
+    {
+      "tick": 40,
+      "hash": "7713f602ef20149b"
+    },
+    {
+      "tick": 45,
+      "hash": "4cd255e85c64e8bd"
+    },
+    {
+      "tick": 50,
+      "hash": "77d4df265e1b8335"
+    },
+    {
+      "tick": 55,
+      "hash": "03a826f947fb8787"
+    },
+    {
+      "tick": 60,
+      "hash": "f501aa52a7049a04"
+    }
+  ]
+}

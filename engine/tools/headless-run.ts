@@ -17,9 +17,18 @@ import { unknownRules } from '@engine/core/rules';
 import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
 import { kitRules } from './kits';
-import { applyOrder } from '@engine/sim/index';
+import { applyOrder, type MissionDef } from '@engine/sim/index';
 import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile, type OrderEntry } from './run-file';
-import { loadWorldRun } from './world-run';
+import {
+  applyMissionStep,
+  loadMissionDefs,
+  loadWorldRun,
+  settleWorld,
+  type MissionStep,
+  type RefusedMission,
+} from './world-run';
+
+export type { RefusedMission } from './world-run';
 
 /**
  * Plays a run file headless: loads the game's content, imports its headless module (the
@@ -28,7 +37,9 @@ import { loadWorldRun } from './world-run';
  * the state. A world run (`world` in the run file) builds the world from its scenario instead
  * (`world-run.ts`) and steps it with no input. Recorded `orders` are applied in lockstep: each one
  * after the state of its tick (checks and hash taken) and before the step from it, on a world with
- * `applyOrder`, on a game through its `order` method. Used by `run` and `dump`.
+ * `applyOrder`, on a game through its `order` method. A world run's `missions` steps go in right
+ * after their tick's orders, and the world settles its missions after every step (each commits by
+ * itself at its commit tick). Used by `run` and `dump`.
  */
 
 /**
@@ -96,6 +107,15 @@ export interface PlayedRun {
   ordersPlayed: number;
   /** The orders the world or game dropped, in the order they came. */
   refusedOrders: RefusedOrder[];
+  /** The mission steps handed over (applied or refused) before `lastTick`. */
+  missionsPlayed: number;
+  /** The mission steps the world refused, in the order they came. */
+  refusedMissions: RefusedMission[];
+  /**
+   * Experience ticks the played (or quit) missions spent inside their stand-in rounds, per mission
+   * in first-step order: counted here, never in the world (they cannot move it).
+   */
+  experience: { mission: string; ticks: number }[];
   /** How many of the run file's sync `hashes` were compared (0 without `hashes`). */
   hashesChecked: number;
   /** The first sync hash that differed (the run stops there), or null. */
@@ -152,7 +172,13 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       throw new UsageError(`${loaded.file} plays a world, which has no kit rules to switch off`);
     const built = loadWorldRun(cwd, loaded.file, loaded.worldFile, loaded.run.seed);
     if (!built.ok) return built;
-    const { world } = built;
+    const { world, keys } = built;
+    let defs: ReadonlyMap<string, MissionDef> = new Map();
+    if (loaded.run.missions.length > 0) {
+      const read = loadMissionDefs(cwd, loaded.file, loaded.worldFile, loaded.run.missions);
+      if (!read.ok) return read;
+      defs = read.defs;
+    }
     // Orders are RTS orders (`engine/core/orders.ts`): only the `rts` systems carry them out.
     if (loaded.run.orders.length > 0 && built.systems !== 'rts')
       return {
@@ -167,12 +193,16 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
         ],
       };
     const stepper: Stepper = {
-      step: () => world.step(),
+      step: () => {
+        world.step();
+        settleWorld(world);
+      },
       snapshot: () => world.snapshot(),
       order: (order) => {
         const applied = applyOrder(world, order);
         return applied.ok ? null : applied.error;
       },
+      mission: (step) => applyMissionStep(world, step, defs, keys),
     };
     return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts) };
   }
@@ -237,6 +267,8 @@ interface Stepper {
   snapshot(): JsonObject;
   /** Applies one order between steps: null when applied, else why it was dropped. */
   order(order: JsonObject): string | null;
+  /** Applies one mission step between steps (world runs only): null when taken, else the refusal. */
+  mission?(step: MissionStep): { code: string; error: string } | null;
 }
 
 /** An entry's order: the entry without its `tick`. */
@@ -260,11 +292,14 @@ function play(
   const hashes: TickHash[] = [];
   const failures: FailedCheck[] = [];
   const refusedOrders: RefusedOrder[] = [];
+  const refusedMissions: RefusedMission[] = [];
+  const experience = new Map<string, number>();
   const stored = new Map((checking ? (run.hashes ?? []) : []).map((h) => [h.tick, h.hash]));
   let hashesChecked = 0;
   let hashMismatch: HashMismatch | null = null;
   let lastMatch: number | null = null;
   let next = 0; // the next order entry to hand over
+  let nextMission = 0; // the next mission step to hand over
   let snapshot = stepper.snapshot();
 
   for (let tick = 0; ; tick++) {
@@ -274,6 +309,19 @@ function play(
         const entry = run.orders[next]!;
         const error = stepper.order(orderOf(entry));
         if (error !== null) refusedOrders.push({ tick: entry.tick, id: entry.id ?? null, error });
+      }
+      // Then that tick's mission steps, in file order.
+      for (
+        ;
+        nextMission < run.missions.length && run.missions[nextMission]!.tick === tick - 1;
+        nextMission++
+      ) {
+        const step = run.missions[nextMission]!;
+        const refused = stepper.mission?.(step) ?? null;
+        if (refused !== null)
+          refusedMissions.push({ tick: step.tick, mission: step.mission, action: step.action, ...refused });
+        else if (step.experienceTicks !== undefined)
+          experience.set(step.mission, (experience.get(step.mission) ?? 0) + step.experienceTicks);
       }
       stepper.step();
       snapshot = stepper.snapshot();
@@ -330,6 +378,9 @@ function play(
         snapshot,
         ordersPlayed: next,
         refusedOrders,
+        missionsPlayed: nextMission,
+        refusedMissions,
+        experience: [...experience].map(([mission, ticks]) => ({ mission, ticks })),
         hashesChecked,
         hashMismatch,
       };

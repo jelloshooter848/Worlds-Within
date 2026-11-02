@@ -1,0 +1,33 @@
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "play",
+      "outcome": "partial",
+      "experienceTicks": 1
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.commitTick",
+      "op": "eq",
+      "value": 35
+    },
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.experienceTicks",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "hashEvery": 5
+}

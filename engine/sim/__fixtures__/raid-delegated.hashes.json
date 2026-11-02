@@ -1,0 +1,57 @@
+{
+  "run": "engine/sim/__fixtures__/raid-delegated.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "301cdb23f2530446"
+    },
+    {
+      "tick": 5,
+      "hash": "55f76d0c2a590cd8"
+    },
+    {
+      "tick": 10,
+      "hash": "3581ca6cc290a288"
+    },
+    {
+      "tick": 15,
+      "hash": "0c2eafa42b82f19a"
+    },
+    {
+      "tick": 20,
+      "hash": "b4ec9d67bc9afb5b"
+    },
+    {
+      "tick": 25,
+      "hash": "d129e3dab0df3fa0"
+    },
+    {
+      "tick": 30,
+      "hash": "344f0b2ba813835c"
+    },
+    {
+      "tick": 35,
+      "hash": "6d575cb970422278"
+    },
+    {
+      "tick": 40,
+      "hash": "070d92eb5c603d3d"
+    },
+    {
+      "tick": 45,
+      "hash": "ba3ba94c72bb753b"
+    },
+    {
+      "tick": 50,
+      "hash": "182d4fcb79e4af06"
+    },
+    {
+      "tick": 55,
+      "hash": "f767b7b6ef3d863f"
+    },
+    {
+      "tick": 60,
+      "hash": "3a7ebb1aca21ada0"
+    }
+  ]
+}

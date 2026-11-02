@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Member, Position, STANDARD_COMPONENTS, Squad, Worker } from './components';
-import { SCENARIO_FORMAT, ScenarioError, worldFromScenario } from './scenario';
+import { SCENARIO_FORMAT, ScenarioError, scenarioKeys, worldFromScenario } from './scenario';
 import { squadMembers } from './squad';
 import { SYSTEM_SETS } from './system-sets';
 import { Terrain, heightAt, moveCost, terrainOf } from './terrain';
@@ -72,6 +72,13 @@ describe('worldFromScenario', () => {
     expect(squadMembers(world, 4).map((m) => m.name)).toEqual(['Ana', 'Bo']);
     expect(world.tick).toBe(0);
     expect(new Set(world.events().map((c) => c.cause))).toEqual(new Set(['scenario']));
+  });
+
+  it('names the ids its keys get, as $ref resolves them (scenarioKeys)', () => {
+    expect(scenarioKeys(scenario())).toEqual({ site: 2, watch: 4, boss: 6 });
+    const world = worldFromScenario(scenario(), { components: COMPONENTS });
+    expect(world.get(3, Worker)?.job).toBe(scenarioKeys(scenario())['site']);
+    expect(scenarioKeys({ format: 'nope' })).toEqual({});
   });
 
   it('gives the same world every time', () => {

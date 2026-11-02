@@ -27,8 +27,8 @@ deterministic screenshots of a run at a tick in headless Chromium (`screenshot`)
   format in `engine/tools/run-file.ts` and `engine/tools/CLAUDE.md`) headless from its seed with its
   scripted input, checking invariants every tick and assertions at their tick. `--json` result:
   `{ ok, command: 'run', exitCode, run, game, world, seed, ticks, lastTick, passed, checks, failure,
-failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders, hashesChecked,
-hashMismatch, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
+failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders, missions,
+missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
   and `actual`. Exit 0 passed, 4 failed check or sync hash, 3 invalid run file or content.
 - Recorded orders and sync hashes (Engine 0.9, lockstep replay): a run file's `orders` lists
   `{ tick, ...order }` entries in tick order (same tick: ascending `id`), each applied after its
@@ -39,6 +39,18 @@ hashMismatch, replayFile, replay }`; `failure` names the first failing tick, the
 lastMatch }`. Malformed orders, ticks out of order or at/after `ticks`, and repeated ids are
   schema errors naming the entry (`orders.3.target.x`). `dump` and replay files carry the orders.
   Sample: `engine/sim/__fixtures__/battle.run.json` (`engine/tools/CLAUDE.md`, Recorded orders).
+- Missions in world runs (Engine 0.10, item 161): a world run file's `missions` lists `{ tick,
+mission, action: open | delegate | play | quit, outcome?, experienceTicks? }` steps in tick order,
+  applied after that tick's orders and before the step from it; the world then settles after every
+  step (`settleMissions`), so each mission commits by itself at open tick + `worldTimeCost` and
+  scenario opportunities open and close on time. Definitions are `<id>.mission.json` beside the
+  scenario (or in its `missions/` folder), checked as the `mission` content kind (errors name that
+  file and field); effects name entities by the scenario's keys (`scenarioKeys`). Refused steps are
+  listed in `refusedMissions` (`{ tick, mission, action, code, error }`), not failures; a `play` or
+  `quit` at or after its commit tick is a `mission_unresolved` content error. `experienceTicks` are
+  reported in `experience` and never reach the world, so they cannot change a hash. Samples:
+  `engine/sim/__fixtures__/raid-*.run.json`, `opportunity-closing`, `frozen-construction`,
+  `fixed-cost-few`/`-many` (`engine/tools/CLAUDE.md`, Missions in world runs).
 - World runs (Engine 0.8): a run file with `world` (a `*.world.json` scenario, relative to the
   run file) instead of `game` plays that `engine/sim` world with the system set its scenario
   names in `systems` (`village`, the 0.8 haul/build/patrol set, by default; `rts` for RTS battles;
@@ -65,8 +77,9 @@ rules: [{ id, description, skipped, expected, passed, guarded, failure }], guard
   `pnpm cli mutants games/<game>` does this for every run file of the game and reports which run
   files guard each rule (`rules[].guardedBy`, `unguarded`); exit 4 for a strict kit with an
   unguarded rule. Details: `engine/tools/CLAUDE.md` (Mutant checks).
-- `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state, orders }`, the
-  whole snapshot (a game's or a world's) at tick N and the recorded orders applied before it.
+- `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state, orders,
+missions }`, the whole snapshot (a game's or a world's) at tick N and the recorded orders and
+  mission steps applied before it.
 - `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
 [--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
@@ -130,7 +143,7 @@ Tests sit next to the code and run with `pnpm test`: they call `main` with captu
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
-verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
+verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
 compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
-against their golden hashes.
+against their golden hashes (`tests/runs/missions.test.ts` holds Engine 0.10's done-when cases).

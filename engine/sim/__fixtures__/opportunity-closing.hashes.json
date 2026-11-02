@@ -1,0 +1,49 @@
+{
+  "run": "engine/sim/__fixtures__/opportunity-closing.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "301cdb23f2530446"
+    },
+    {
+      "tick": 6,
+      "hash": "40cf52bb65c07027"
+    },
+    {
+      "tick": 12,
+      "hash": "8c67049d8264853c"
+    },
+    {
+      "tick": 18,
+      "hash": "35675aa91d50808d"
+    },
+    {
+      "tick": 24,
+      "hash": "9f60a0233f7e8a60"
+    },
+    {
+      "tick": 30,
+      "hash": "9efad768cc2301bb"
+    },
+    {
+      "tick": 36,
+      "hash": "ecad9d12bd3660a0"
+    },
+    {
+      "tick": 42,
+      "hash": "04a51f2d9820761c"
+    },
+    {
+      "tick": 48,
+      "hash": "c33a7154d7eb0df9"
+    },
+    {
+      "tick": 54,
+      "hash": "4f3256edf7326c87"
+    },
+    {
+      "tick": 60,
+      "hash": "c3fd8ebb6b3d1981"
+    }
+  ]
+}

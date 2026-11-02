@@ -5,6 +5,7 @@ import {
   playRun,
   type FailedCheck,
   type HashMismatch,
+  type RefusedMission,
   type RefusedOrder,
   type TickHash,
 } from '../headless-run';
@@ -24,9 +25,12 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  *
  * Result: `{ run, game, world, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
  * failure, failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders,
- * hashesChecked, hashMismatch }`. `orders` counts the run file's recorded orders, `ordersPlayed`
+ * missions, missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch }`. `orders` counts the run file's recorded orders, `ordersPlayed`
  * those handed over before `lastTick` and `refusedOrders` (`{ tick, id, error }`) those the world
- * or game dropped (not a failure). `hashMismatch` is the first of the run file's sync `hashes`
+ * or game dropped (not a failure). `missions`, `missionsPlayed` and `refusedMissions` (`{ tick,
+ * mission, action, code, error }`) are the same for a world run's mission steps, and `experience`
+ * (`[{ mission, ticks }]`) the experience ticks its played missions spent (never in the world).
+ * `hashMismatch` is the first of the run file's sync `hashes`
  * that differs, `{ tick, expected, actual, lastMatch }` (the state first differs after `lastMatch`
  * and by `tick`), or null; the run stops there and fails. `failure` is the first failed check
  * (`{ tick, kind, index, path, op, expected, actual, message }`) or null, and `failures` every
@@ -64,6 +68,7 @@ export const runCommand = defineCommand({
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
     const { loaded, seed, disabledRules, lastTick, hashes, failures } = played.value;
     const { ordersPlayed, refusedOrders, hashesChecked, hashMismatch } = played.value;
+    const { missionsPlayed, refusedMissions, experience } = played.value;
     const stored = loaded.run.replay;
     const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
     const passed = failures.length === 0 && !replay?.hashMismatch && hashMismatch === null;
@@ -87,6 +92,10 @@ export const runCommand = defineCommand({
         orders: loaded.run.orders.length,
         ordersPlayed,
         refusedOrders,
+        missions: loaded.run.missions.length,
+        missionsPlayed,
+        refusedMissions,
+        experience,
         hashesChecked,
         hashMismatch,
         replayFile,
@@ -111,6 +120,16 @@ export const runCommand = defineCommand({
         `  orders: ${String(result.ordersPlayed)} of ${orders} played, ${refusedOrders.length} refused`,
       );
     for (const r of refusedOrders) lines.push(`  tick ${r.tick}: refused: ${r.error}`);
+    const missions = result.missions as number;
+    const refusedMissions = result.refusedMissions as RefusedMission[];
+    if (missions > 0)
+      lines.push(
+        `  missions: ${String(result.missionsPlayed)} of ${missions} steps played, ${refusedMissions.length} refused`,
+      );
+    for (const r of refusedMissions)
+      lines.push(`  tick ${r.tick}: refused: ${r.action} "${r.mission}": ${r.code}: ${r.error}`);
+    for (const e of result.experience as { mission: string; ticks: number }[])
+      lines.push(`  experience: "${e.mission}" ${e.ticks} tick(s) inside, the world did not move`);
     const mismatch = result.hashMismatch as HashMismatch | null;
     if (mismatch)
       lines.push(

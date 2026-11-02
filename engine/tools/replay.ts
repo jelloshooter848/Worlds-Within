@@ -55,6 +55,10 @@ export function replayOf(played: PlayedRun, cwd: string, replayDir: string): Rec
     hashEvery: run.hashEvery,
     // The recorded orders that shaped the state up to the failing tick (those before it).
     ...(run.orders.some((o) => o.tick < tick) ? { orders: run.orders.filter((o) => o.tick < tick) } : {}),
+    // Likewise the mission steps (a world run's).
+    ...(run.missions.some((m) => m.tick < tick)
+      ? { missions: run.missions.filter((m) => m.tick < tick) }
+      : {}),
     // The rules that were off (the run file's and any `--disable-rule`), so the replay fails alike.
     ...(played.disabledRules.length > 0 ? { disableRules: played.disabledRules } : {}),
     replay,

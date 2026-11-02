@@ -1,0 +1,57 @@
+{
+  "run": "engine/sim/__fixtures__/raid-failure.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "301cdb23f2530446"
+    },
+    {
+      "tick": 5,
+      "hash": "55f76d0c2a590cd8"
+    },
+    {
+      "tick": 10,
+      "hash": "8411de16a62272d0"
+    },
+    {
+      "tick": 15,
+      "hash": "22627abd41dd16fd"
+    },
+    {
+      "tick": 20,
+      "hash": "cfb256cc484329d2"
+    },
+    {
+      "tick": 25,
+      "hash": "3f1d29faa7eb8415"
+    },
+    {
+      "tick": 30,
+      "hash": "6e61cef7ca225078"
+    },
+    {
+      "tick": 35,
+      "hash": "b35eff79721cb118"
+    },
+    {
+      "tick": 40,
+      "hash": "cac58eb25fd598c7"
+    },
+    {
+      "tick": 45,
+      "hash": "412f7bb5e3f299f5"
+    },
+    {
+      "tick": 50,
+      "hash": "d777601bf38331d2"
+    },
+    {
+      "tick": 55,
+      "hash": "36195982b7adc7d5"
+    },
+    {
+      "tick": 60,
+      "hash": "c219347c68a05f79"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "scout",
+  "title": "Slip a scout through the lines",
+  "worldTimeCost": 10,
+  "play": "stealth",
+  "onQuit": "missed",
+  "outcomes": [
+    {
+      "id": "spotted",
+      "title": "The camp is mapped",
+      "weight": 1
+    },
+    {
+      "id": "missed",
+      "title": "Nothing seen",
+      "weight": 1
+    }
+  ]
+}

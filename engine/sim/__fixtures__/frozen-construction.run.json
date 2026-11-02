@@ -1,0 +1,86 @@
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    {
+      "tick": 0,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 1,
+      "mission": "raid",
+      "action": "delegate"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "components.Construction.0.1.done",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 29,
+      "path": "components.Construction.0.1.done",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 29,
+      "path": "components.Health.1.1.hp",
+      "op": "eq",
+      "value": 200
+    },
+    {
+      "tick": 29,
+      "path": "components.WorldTime.0.1.frozen.0.event",
+      "op": "eq",
+      "value": "siege"
+    },
+    {
+      "tick": 29,
+      "path": "components.Unit.length",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 29,
+      "path": "components.Health.3.1.hp",
+      "op": "eq",
+      "value": 30
+    },
+    {
+      "tick": 29,
+      "path": "components.Health.4.1.hp",
+      "op": "eq",
+      "value": 30
+    },
+    {
+      "tick": 29,
+      "path": "components.Cooldown.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 30,
+      "path": "components.WorldTime.0.1.frozen.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 30,
+      "path": "components.Missions.0.1.committed.0.resolution",
+      "op": "eq",
+      "value": "delegated"
+    }
+  ],
+  "invariants": [
+    {
+      "path": "components.Construction.0.1.work",
+      "op": "eq",
+      "value": 30
+    }
+  ],
+  "hashEvery": 5
+}

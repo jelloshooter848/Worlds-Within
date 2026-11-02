@@ -1,0 +1,94 @@
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "play",
+      "outcome": "partial",
+      "experienceTicks": 240
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 34,
+      "path": "components.Missions.0.1.open.0.resolved.outcome",
+      "op": "eq",
+      "value": "partial"
+    },
+    {
+      "tick": 34,
+      "path": "components.Missions.0.1.committed.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 34,
+      "path": "components.Health.3.1.hp",
+      "op": "eq",
+      "value": 18
+    },
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.outcome",
+      "op": "eq",
+      "value": "partial"
+    },
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.resolution",
+      "op": "eq",
+      "value": "played"
+    },
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.commitTick",
+      "op": "eq",
+      "value": 35
+    },
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.skipped.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 35,
+      "path": "components.Unit.length",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 35,
+      "path": "components.Health.5.1.hp",
+      "op": "eq",
+      "value": 7
+    },
+    {
+      "tick": 35,
+      "path": "components.Health.6.1.hp",
+      "op": "eq",
+      "value": 40
+    },
+    {
+      "tick": 35,
+      "path": "components.WorldTime.0.1.frozen.length",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "invariants": [
+    {
+      "path": "components.Stockpile.length",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "hashEvery": 5
+}

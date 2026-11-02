@@ -1,0 +1,29 @@
+{
+  "id": "rescue",
+  "title": "Free the captured captain",
+  "worldTimeCost": 15,
+  "play": "breakout",
+  "onQuit": "lost",
+  "outcomes": [
+    {
+      "id": "freed",
+      "title": "The captain is back",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "set",
+          "entity": "s1",
+          "component": "Health",
+          "values": {
+            "hp": 30
+          }
+        }
+      ]
+    },
+    {
+      "id": "lost",
+      "title": "The guards were ready",
+      "weight": 1
+    }
+  ]
+}

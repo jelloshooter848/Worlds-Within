@@ -1,0 +1,35 @@
+{
+  "id": "convoy",
+  "title": "Bring the supply carts in",
+  "worldTimeCost": 20,
+  "play": "escort",
+  "onQuit": "ambushed",
+  "outcomes": [
+    {
+      "id": "delivered",
+      "title": "The carts arrive",
+      "weight": 3,
+      "effects": [
+        {
+          "type": "inventory",
+          "entity": "hall",
+          "item": "gold",
+          "add": 100
+        }
+      ]
+    },
+    {
+      "id": "ambushed",
+      "title": "Half the carts lost",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "inventory",
+          "entity": "hall",
+          "item": "gold",
+          "add": 40
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,102 @@
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 6,
+      "mission": "raid",
+      "action": "play",
+      "outcome": "repelled",
+      "experienceTicks": 90
+    },
+    {
+      "tick": 10,
+      "mission": "raid",
+      "action": "play",
+      "outcome": "clean"
+    },
+    {
+      "tick": 36,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 36,
+      "mission": "raid",
+      "action": "delegate"
+    },
+    {
+      "tick": 36,
+      "mission": "rescue",
+      "action": "open"
+    },
+    {
+      "tick": 37,
+      "mission": "rescue",
+      "action": "quit",
+      "experienceTicks": 12
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.outcome",
+      "op": "eq",
+      "value": "repelled"
+    },
+    {
+      "tick": 35,
+      "path": "components.Health.3.1.hp",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 35,
+      "path": "components.Opportunities.0.1.list.1.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 35,
+      "path": "components.Opportunities.0.1.list.1.by",
+      "op": "eq",
+      "value": "mission:raid"
+    },
+    {
+      "tick": 36,
+      "path": "components.Missions.0.1.committed.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 51,
+      "path": "components.Missions.0.1.committed.1.mission",
+      "op": "eq",
+      "value": "rescue"
+    },
+    {
+      "tick": 51,
+      "path": "components.Missions.0.1.committed.1.outcome",
+      "op": "eq",
+      "value": "lost"
+    },
+    {
+      "tick": 51,
+      "path": "components.Missions.0.1.committed.1.resolution",
+      "op": "eq",
+      "value": "quit"
+    },
+    {
+      "tick": 60,
+      "path": "components.Missions.0.1.committed.0.outcome",
+      "op": "eq",
+      "value": "repelled"
+    }
+  ],
+  "hashEvery": 5
+}

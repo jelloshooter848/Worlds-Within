@@ -1,0 +1,31 @@
+{
+  "world": "siege.world.json",
+  "ticks": 60,
+  "missions": [
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "open"
+    },
+    {
+      "tick": 5,
+      "mission": "raid",
+      "action": "delegate"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.resolution",
+      "op": "eq",
+      "value": "delegated"
+    },
+    {
+      "tick": 35,
+      "path": "components.Missions.0.1.committed.0.outcome",
+      "op": "in",
+      "value": ["clean", "partial", "repelled"]
+    }
+  ],
+  "hashEvery": 5
+}

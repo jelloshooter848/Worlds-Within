@@ -8,8 +8,9 @@ import { defineCommand } from '../registry';
 /**
  * `dump <run-file> --tick N`: plays the run file up to tick N (no checks) and prints the whole
  * snapshot there (a game's, or for a world run the world's `World.snapshot()`). Result: `{ run,
- * game, world, seed, tick, hash, state, orders }` (`game` or `world` null, whichever is not
- * played; `orders` the recorded order entries applied before tick N, those with `tick < N`); the cap (`--max-output`)
+ * game, world, seed, tick, hash, state, orders, missions }` (`game` or `world` null, whichever is
+ * not played; `orders` the recorded order entries applied before tick N, those with `tick < N`, and
+ * `missions` the mission steps likewise); the cap (`--max-output`)
  * applies as for every command. N must be between 0 and the run's `ticks` (a usage error
  * otherwise). Exit 0, or 3 (`invalidContent`, with `errors`) when the run file or content is bad.
  */
@@ -41,6 +42,7 @@ export const dumpCommand = defineCommand({
         hash: stateHash(snapshot),
         state: snapshot,
         orders: loaded.run.orders.filter((o) => o.tick < lastTick),
+        missions: loaded.run.missions.filter((m) => m.tick < lastTick),
       },
     };
   },
