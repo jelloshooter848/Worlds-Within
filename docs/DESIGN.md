@@ -150,8 +150,8 @@ How a kit and a backend talk:
 
 ## Architecture
 
-The target layout. The move happens in 0.2; until then the code is under `src/` (see README). Release
-numbers without a name are engine releases.
+The layout (in place since 0.2; folders marked with a release arrive then). Release numbers without
+a name are engine releases.
 
 ```
 engine/

@@ -9,13 +9,22 @@ export default defineConfig({
   resolve: {
     alias: {
       '@engine': alias('./engine'),
-      '@kits': alias('./src/kits'),
+      '@kits': alias('./kits'),
     },
   },
-  build: { target: 'es2022', sourcemap: true },
+  build: {
+    target: 'es2022',
+    sourcemap: true,
+    rollupOptions: {
+      input: {
+        index: alias('./index.html'),
+        demo: alias('./games/demo/index.html'),
+      },
+    },
+  },
   server: { port: 5173 },
   test: {
     environment: 'node',
-    include: ['engine/**/*.test.ts', 'src/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: ['engine/**/*.test.ts', 'kits/**/*.test.ts', 'games/**/*.test.ts', 'tests/**/*.test.ts'],
   },
 });

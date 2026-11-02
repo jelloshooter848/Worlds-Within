@@ -5,8 +5,8 @@ import { KeyboardSource } from '@engine/core/input/keyboard';
 import { FixedLoop } from '@engine/core/loop';
 import { SceneStack } from '@engine/core/scene';
 import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
-import { DEMO_SONG } from './game/demo/music';
-import { DemoScene } from './game/demo/scene';
+import { DEMO_SONG } from './music';
+import { DemoScene } from './scene';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;

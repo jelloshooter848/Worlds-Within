@@ -10,7 +10,7 @@ import type { FrameRect, SpriteSheet } from './spritesheet';
  * This keeps art diffable, hand-editable and legally clean (everything is drawn here).
  */
 export interface SpriteDef {
-  /** Palette name (see src/content/palettes.ts). */
+  /** Palette name (a key of the palettes a game registers). */
   palette: string;
   frames: Record<string, readonly string[]>;
 }

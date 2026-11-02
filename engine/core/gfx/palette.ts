@@ -59,8 +59,8 @@ export function hexToRgb(hex: string): [number, number, number] {
 }
 
 /**
- * A curated subset of the NES master palette (the common "2C02" approximations). Art in
- * src/content uses these names so the whole game stays within an NES-like range.
+ * A curated subset of the NES master palette (the common "2C02" approximations). Game art
+ * uses these names so the whole game stays within an NES-like range.
  */
 export const NES = {
   black: '#000000',

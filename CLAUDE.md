@@ -11,8 +11,8 @@
 - **Engine vs. game.** If two games could use it, it's engine. If it's content, it's the game. Game rules
   go in data files (scenarios, missions) wherever possible, not code.
 - **Dependencies point one way.** Games depend on the engine; the engine and kits never import from
-  games. The target layout (`engine/`, `kits/`, `games/`) arrives in Engine 0.2; until then code is in
-  `src/`.
+  games. Code lives in `engine/` (core, backends, sim, tools), `kits/` and `games/`; each folder's
+  `CLAUDE.md` lists what it may import.
 - The world simulation (`engine/sim`, from Engine 0.8) must stay headless and deterministic: no imports
   from backends, kits or games, and all randomness through the world's seeded RNG.
 - Kits hold no world rules and never draw: they read what a mission gives them and report what happened,
