@@ -37,15 +37,19 @@ the CLI starts.
 - `kit-list.ts`: **generated** by `pnpm docs:gen` (`kit-list-gen.ts`) with one import per
   `kits/<name>/kit.ts` on disk; never edit it by hand. A new kit needs its `kit.ts` and
   `pnpm docs:gen`; `pnpm docs:check` and `kits.test.ts` fail while the list is stale.
-- `run-file.ts`: the run-file schema (`runFileSchema`), `readRunFile(cwd, path)`, the check ops
-  (`CHECK_OPS`, `CHECK_OP_MEANINGS`), `valueAt(state, path)` and `failsCheck(state, check)`.
+- `run-file.ts`: the run-file schema (`runFileSchema`, with `orderEntrySchema` for recorded
+  orders), `readRunFile(cwd, path)`, the check ops (`CHECK_OPS`, `CHECK_OP_MEANINGS`),
+  `valueAt(state, path)` and `failsCheck(state, check)`.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
   checks the run file's `disableRules` and `guards` against the kit's rules, plays the ticks and
-  makes the checks; for a world run it builds the world instead (`world-run.ts`). `stateHash(snapshot)`.
+  makes the checks, hands recorded `orders` over at their ticks and compares the run file's sync
+  `hashes` (Recorded orders, below); for a world run it builds the world instead (`world-run.ts`).
+  `stateHash(snapshot)`, `orderOf(entry)`.
 - `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
-  its scenario with `WORLD_COMPONENTS` (standard, `Terrain`, the systems' own) and `WORLD_SYSTEMS`
-  (`haulSystem`, `buildSystem`, `patrolSystem`, in that order), no event log (World runs, below).
+  its scenario with the engine system set the scenario names (`worldSystemSet(json)`:
+  `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log, and returns it
+  with the set's name (World runs, below).
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
@@ -103,16 +107,19 @@ the CLI starts.
   `--disable-rule` switches kit rules off (comma-separated ids, on top of the run file's
   `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
-hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, `{ tick, kind: 'assertion' |
+hash }], finalHash, orders, ordersPlayed, refusedOrders, hashesChecked, hashMismatch, replayFile, replay }`.
+  `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
   that failed at that tick. The run stops at the first failing tick and then writes a replay file
   (below) whose path is `replayFile` (null when the run passed, and for replays). `replay` is the
-  replay check on a replay file (null otherwise). Exit 0 passed, 4 a failed
-  check, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
+  replay check on a replay file (null otherwise). `orders`, `ordersPlayed`, `refusedOrders`,
+  `hashesChecked` and `hashMismatch` are about recorded orders and sync hashes (Recorded orders,
+  below). Exit 0 passed, 4 a failed check or a sync hash that differs, 2 a run file with `orders`
+  for a game without an `order` method, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, tick,
-hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
+hash, state, orders }`, the whole snapshot and the recorded orders applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
 - `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
   a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, tick, backend,
@@ -232,6 +239,8 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 - `disableRules` (default none): kit rules switched off for the whole run (ids from the kit's
   rule list, see Mutant checks). An id the kit does not name is an `unknown_rule` content error at
   that entry; an id twice is a schema error. Replay files keep the rules that were off.
+- `orders` (default none): recorded orders, `{ tick, ...order }` (Recorded orders, below).
+- `hashes` (optional): sync hashes `[{ tick, hash }]` the run must give (Recorded orders, below).
 - `guards` (optional): the kit rules this run is meant to guard (Mutant checks). An id the kit
   does not name is an `unknown_rule` content error at that entry (exit 3, naming the run file and
   `guards`); an id twice, or one the run's `disableRules` switches off, is a schema error.
@@ -276,12 +285,17 @@ From Engine 0.8 a run file can play a world (`engine/sim`) instead of a game: `w
 
 - Exactly one of `game` and `world`: both is a schema error at `world`, neither at the file (exit
   3, naming the run file).
-- The world is `worldFromScenario` with every engine component kind and the engine's systems
-  (`world-run.ts`); a scenario that does not build is one `invalid_scenario` error per field, in
+- The world is `worldFromScenario` with the engine system set the scenario names in `systems`
+  (`world-run.ts`; `SYSTEM_SETS` in `engine/sim/system-sets.ts`): `village` (the 0.8 set:
+  haul, build, patrol, with their components) when it names none, or `rts` (the RTS units and
+  economy, `RTS_COMPONENTS` and `RTS_SYSTEMS`), so an RTS battle can be a world run (items 118 and
+  132). A name the engine has no set for is an `invalid_scenario` error at `systems`. A scenario that does not build is one `invalid_scenario` error per field, in
   the scenario file; a missing file is `missing_file` at the run file's `world`. `seed`, when
   given, replaces the scenario's.
-- A world has no input and no kit in Engine 0.8: `input` with steps, `disableRules` and `guards`
-  are schema errors on a world run, and `--disable-rule`, `mutants` and `screenshot` on one are
+- A world has no input and no kit: it is driven by recorded `orders` only (Recorded orders,
+  below), and only an `rts` world takes them (`orders` on another set is a `no_orders` content
+  error at `orders`). `input` with steps, `disableRules` and `guards` are schema errors on a world
+  run, and `--disable-rule`, `mutants` and `screenshot` on one are
   usage errors (exit 2).
 - A step is `world.step()` and the snapshot `world.snapshot()`: `{ seed, tick, nextId, rng,
 entities, components: { <Kind>: [[id, data], ...] } }`, so paths read
@@ -292,6 +306,64 @@ entities, components: { <Kind>: [[id, data], ...] } }`, so paths read
   and `game: null` (and the other way round for a game run). A replay of a world run names
   `world`. `tests/runs/run-files.test.ts` also plays `engine/**/__fixtures__/*.run.json` against
   their golden `<name>.hashes.json`.
+
+## Recorded orders
+
+Engine 0.9 (items 124-125, the OpenRA lockstep idea): a battle is its seed plus its recorded
+orders, and replaying them headless gives the same state hashes. The sample is
+`engine/sim/__fixtures__/battle.run.json`, an `rts` world (`battle.world.json`) with seven orders
+and its sync hashes:
+
+```json
+{
+  "world": "battle.world.json",
+  "ticks": 200,
+  "orders": [
+    { "tick": 0, "id": 1, "faction": "red", "type": "gather", "units": [5], "target": 4 },
+    {
+      "tick": 20,
+      "id": 4,
+      "faction": "blue",
+      "type": "move",
+      "units": [8, 9, 10],
+      "target": { "x": 9, "y": 6 }
+    }
+  ],
+  "hashEvery": 20,
+  "hashes": [
+    { "tick": 0, "hash": "fe79b2d56cdbb801" },
+    { "tick": 20, "hash": "de6fea3c6c3deda9" }
+  ]
+}
+```
+
+- **`orders`**: entries `{ tick, ...order }` in tick order, same-tick entries in ascending `id`
+  (ids unique). An entry is applied after the state of its tick (its checks and hash are taken
+  first) and before the step from it, so `tick` must be below the run's `ticks`. On a world run
+  every entry must be an `engine/core/orders.ts` order (`id` required; schema errors name the
+  field, `orders.3.target.x`) and is applied with `applyOrder`; on a game run the entry without
+  `tick` goes to the game's `HeadlessGame.order(order)` (`engine/core/headless.ts`), and a game
+  without that method is a usage error (exit 2). Out of tick order, an id twice or out of order
+  within a tick, or a tick at or after `ticks`, is a schema error at that entry.
+- **Refused orders are not failures**: an order the world or game drops (a unit that died, a
+  faction that cannot pay) is listed in `refusedOrders` (`{ tick, id, error }`) and the run goes
+  on, as the battle would have.
+- **`hashes`** (sync hashes, same `{ tick, hash }` format and same state hash as everywhere else):
+  `run` hashes the state at each listed tick (also between `hashEvery` multiples) and compares.
+  The first that differs stops the run (exit 4, `passed: false`, `failure: null`) with
+  `hashMismatch: { tick, expected, actual, lastMatch }`: the state first differs after `lastMatch`
+  (null when none matched) and by `tick` (text: `hash MISMATCH at tick 40 ... (the state first
+differs after tick 20 and by tick 40)`). `hashesChecked` counts the hashes compared. Without
+  `hashes` nothing is compared. Sync hashes every 20 ticks is the default (item 124): set
+  `hashEvery` to 20 and copy the run's `hashes` into the file.
+- **Recording a battle**: write the orders as they were applied, with their ticks, run the file
+  once, and copy its `hashes` into it (the browser recording comes with the RTS sample).
+- `dump` prints the orders applied before its tick (`orders`); a replay file keeps the orders
+  before the failing tick (and not `hashes`: its `replay.hashes` hold the run's); `screenshot`
+  hands the orders to the view's `order` the same way.
+- Try it: `pnpm -s cli run engine/sim/__fixtures__/battle.run.json` passes with 11 sync hashes;
+  change an order (blue's move target to `{ "x": 9, "y": 7 }`) and it fails at tick 40.
+  `orders-run.test.ts` covers all of this.
 
 ## Mutant checks
 

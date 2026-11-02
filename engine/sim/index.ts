@@ -15,6 +15,8 @@ export {
   worldFromScenario,
 } from './scenario';
 export type { Scenario, ScenarioIssue, ScenarioOptions } from './scenario';
+export { DEFAULT_SYSTEM_SET, SYSTEM_SETS, SYSTEM_SET_NAMES } from './system-sets';
+export type { SystemSet, SystemSetName } from './system-sets';
 export {
   Hauler,
   SYSTEM_COMPONENTS,

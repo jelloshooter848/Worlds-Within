@@ -16,7 +16,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `loop.ts`: `FixedLoop`, `Stepper` (the fixed-step loop).
 - `scene.ts`: `Scene`, `SceneStack`.
 - `rng.ts`: `Rng`, the seeded RNG. All randomness in kits and the sim goes through it.
-- `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`;
+- `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`, and the
+  optional `order(order)` that takes a run file's recorded orders between steps, returning null
+  or why it dropped one;
   `HeadlessEntry`: `createGame(content, seed, opts?)`, `HeadlessOptions` with `disabledRules`),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
 - `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `screen`, the

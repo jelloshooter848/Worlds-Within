@@ -12,8 +12,13 @@ games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`
 files from disk for Node tools and tests.
 
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
-JSON-safe data) and `HeadlessEntry` (`createGame(content, seed)`), which a game's headless module
-(named by `headless` in `game.json`) exports for `pnpm cli run` and `dump`. `canonicalJson(value)`
+JSON-safe data, and the optional `order(order)`) and `HeadlessEntry` (`createGame(content, seed)`),
+which a game's headless module (named by `headless` in `game.json`) exports for `pnpm cli run` and
+`dump`. `order(order)` (Engine 0.9, items 124-125) takes one recorded order between steps: a run
+file's `orders` entry `{ tick, ...order }` goes in, without `tick`, after the snapshot of its tick
+and before the step from it, and the game returns null (applied) or a one-line reason (dropped, not
+an error). Games without orders leave it out and are unchanged; a run file with `orders` for a game
+without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). `canonicalJson(value)`
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 

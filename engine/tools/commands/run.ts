@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { formatErrors, type ContentError } from '@engine/core/content/validate';
 import { EXIT } from '../exit-codes';
-import { playRun, type FailedCheck, type TickHash } from '../headless-run';
+import {
+  playRun,
+  type FailedCheck,
+  type HashMismatch,
+  type RefusedOrder,
+  type TickHash,
+} from '../headless-run';
 import { defineCommand } from '../registry';
 import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
 
@@ -17,7 +23,12 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  * on it is a usage error.
  *
  * Result: `{ run, game, world, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
- * failure, failures, hashes: [{ tick, hash }], finalHash }`. `failure` is the first failed check
+ * failure, failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders,
+ * hashesChecked, hashMismatch }`. `orders` counts the run file's recorded orders, `ordersPlayed`
+ * those handed over before `lastTick` and `refusedOrders` (`{ tick, id, error }`) those the world
+ * or game dropped (not a failure). `hashMismatch` is the first of the run file's sync `hashes`
+ * that differs, `{ tick, expected, actual, lastMatch }` (the state first differs after `lastMatch`
+ * and by `tick`), or null; the run stops there and fails. `failure` is the first failed check
  * (`{ tick, kind, index, path, op, expected, actual, message }`) or null, and `failures` every
  * check that failed at that tick. A failing run writes a replay file (`replay.ts`) and gives its
  * path in `replayFile` (null otherwise, and for replays themselves). On a replay file `replay` is
@@ -52,9 +63,10 @@ export const runCommand = defineCommand({
     if (!played.ok)
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
     const { loaded, seed, disabledRules, lastTick, hashes, failures } = played.value;
+    const { ordersPlayed, refusedOrders, hashesChecked, hashMismatch } = played.value;
     const stored = loaded.run.replay;
     const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
-    const passed = failures.length === 0 && !replay?.hashMismatch;
+    const passed = failures.length === 0 && !replay?.hashMismatch && hashMismatch === null;
     const replayFile = failures.length > 0 && !stored ? writeReplay(played.value, ctx.cwd, ctx.outDir) : null;
     return {
       exit: passed ? EXIT.ok : EXIT.failedCheck,
@@ -72,6 +84,11 @@ export const runCommand = defineCommand({
         failures,
         hashes,
         finalHash: hashes[hashes.length - 1]?.hash ?? null,
+        orders: loaded.run.orders.length,
+        ordersPlayed,
+        refusedOrders,
+        hashesChecked,
+        hashMismatch,
         replayFile,
         replay,
       },
@@ -87,6 +104,20 @@ export const runCommand = defineCommand({
     if (off.length > 0) lines.push(`  rules off: ${off.join(', ')}`);
     for (const f of result.failures as FailedCheck[])
       lines.push(`  tick ${f.tick}: ${f.kind} ${f.index}: ${f.message}`);
+    const orders = result.orders as number;
+    const refusedOrders = result.refusedOrders as RefusedOrder[];
+    if (orders > 0)
+      lines.push(
+        `  orders: ${String(result.ordersPlayed)} of ${orders} played, ${refusedOrders.length} refused`,
+      );
+    for (const r of refusedOrders) lines.push(`  tick ${r.tick}: refused: ${r.error}`);
+    const mismatch = result.hashMismatch as HashMismatch | null;
+    if (mismatch)
+      lines.push(
+        `  hash MISMATCH at tick ${mismatch.tick}: expected ${mismatch.expected}, got ${mismatch.actual} (the state first differs ${mismatch.lastMatch === null ? 'at or before' : `after tick ${mismatch.lastMatch} and by`} tick ${mismatch.tick})`,
+      );
+    else if ((result.hashesChecked as number) > 0)
+      lines.push(`  ${String(result.hashesChecked)} sync hash(es) match`);
     const replay = result.replay as ReplayCheck | null;
     if (replay) {
       lines.push(

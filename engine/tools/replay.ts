@@ -6,8 +6,8 @@ import type { FailedCheck, PlayedRun, TickHash } from './headless-run';
 import type { Replay } from './run-file';
 
 /**
- * Replay files: when `run` fails a check, it writes a run file that plays the same seed and input
- * up to the first failing tick and makes the same checks, plus a `replay` block with the source
+ * Replay files: when `run` fails a check, it writes a run file that plays the same seed, input and
+ * recorded orders up to the first failing tick and makes the same checks, plus a `replay` block with the source
  * run, the failed check and the state hashes so far. A replay is an ordinary run file (`run` and
  * `dump` take it); on a replay `run` also checks the stored hashes and reports the first tick
  * whose hash differs, which says the game changed there.
@@ -53,6 +53,8 @@ export function replayOf(played: PlayedRun, cwd: string, replayDir: string): Rec
     assertions: run.assertions.filter((a) => a.tick <= tick),
     invariants: run.invariants,
     hashEvery: run.hashEvery,
+    // The recorded orders that shaped the state up to the failing tick (those before it).
+    ...(run.orders.some((o) => o.tick < tick) ? { orders: run.orders.filter((o) => o.tick < tick) } : {}),
     // The rules that were off (the run file's and any `--disable-rule`), so the replay fails alike.
     ...(played.disabledRules.length > 0 ? { disableRules: played.disabledRules } : {}),
     replay,

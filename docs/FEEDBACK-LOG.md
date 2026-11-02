@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 134.** (Last used: 133.)
+**Next unused number: 137.** (Last used: 136.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -362,6 +362,7 @@ them; summary in `docs/BUILD-LOG.md`, Engine 0.8, Choices made)
 - **118.** World runs in the CLI always use one fixed set of engine systems (haul, build, patrol, in
   that order); a run file or scenario cannot choose its systems yet. Choosing them can come with the
   RTS kit (0.9). OK?
+  _Resolved in Engine 0.9 T9 by item 132: a scenario names its system set._
 - **119.** A world run starts only from a scenario, not from a save file, and a `seed` in the run
   file replaces the scenario's seed. OK?
 - **120.** `loadWorld(json, { components, systems })` also takes the component definitions, so it
@@ -386,9 +387,11 @@ units, target }`), typed and validated in `engine/core` (the layer both sim and 
   (same-tick orders in id order), sync hashes every 20 ticks by default through the existing
   `hashEvery` and replay machinery, and a run-file `orders` field for both world and game runs.
   OK, or another default for N?
+  _Done in Engine 0.9 T9: run-file `orders` (`{ tick, ...order }`) and sync `hashes`; see 134._
 - **125.** Game runs get orders through a new optional `HeadlessGame.order(order)`, called between
   `step()`s at the order's tick; a run file with `orders` for a game without it is a usage error.
   OK?
+  _Done in Engine 0.9 T9: `order(order)` returns null, or a reason when the game drops the order._
 - **126.** Pathfinding is in-house in `engine/sim`: A\* for single units on the terrain grid, and
   the existing `distanceField` reused as a flow field for a group sharing a goal (the group size
   that switches is measured and recorded in T6). OK?
@@ -414,6 +417,8 @@ units, target }`), typed and validated in `engine/core` (the layer both sim and 
 - **132.** Following 118: a scenario may name an engine system set (such as `"systems": "rts"`),
   defaulting to the 0.8 set (haul, build, patrol), so world runs can play RTS battles and the
   village's hashes do not change. OK?
+  _Done in Engine 0.9 T9: `"systems": "village" | "rts"` (`SYSTEM_SETS` in
+  `engine/sim/system-sets.ts`); see 135._
 
 **Engine 0.9 T3, the rendering benchmark** (numbers in `docs/BUILD-LOG.md`, Engine 0.9, T3)
 
@@ -423,3 +428,20 @@ units, target }`), typed and validated in `engine/core` (the layer both sim and 
   view at zoom 0.5 (p95 about 33 ms). The RTS sample's picture size is 320 x 240. The measured
   machine renders in software (no GPU in the container), so a real GPU should only do better.
   OK?
+
+**Engine 0.9 T9, recorded orders and sync hashes** (details in `engine/tools/CLAUDE.md`, Recorded
+orders)
+
+- **134.** A recorded run keeps its sync hashes in the run file itself, as a top-level `hashes`
+  list (`[{ tick, hash }]`, the replay format), and `run` checks them: the first that differs stops
+  the run (exit 4) and names that tick and the last tick that still matched. Orders sit in the run
+  file as flat `{ tick, ...order }` entries (decision 3's example), in tick order with ids ascending
+  within a tick; only inline `orders`, no separate `ordersFile`. OK?
+- **135.** The two system sets are named `village` (the 0.8 haul, build, patrol set, the default
+  when a scenario names none) and `rts`. Adding the optional `systems` field kept the scenario
+  format at version 1, since every version 1 file still reads the same. OK, or other names, or a
+  version bump?
+- **136.** An order the world or game refuses during a recorded run is listed in the result's
+  `refusedOrders` and the run goes on (not a failure, as decision 2 says for live play); `orders` on
+  a world whose system set is not `rts` is a content error (`no_orders`). Mutant checks still judge
+  a run only by its checks, not by its sync hashes. OK?

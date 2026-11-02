@@ -245,6 +245,16 @@ the shell. The roadmap's "Later" bullet (more backends: PixiJS, not adopted at 0
 RTS sample later comes close to the budget, culling off-screen entities in the Canvas2D presenter
 is tried before a new backend (see T3).
 
+### T9: recorded orders, lockstep replay and sync hashes
+
+A battle is now its seed plus its recorded orders. A run file's `orders` (`{ tick, ...order }`) are
+applied before the step from their tick (a world with `applyOrder`, a game through the new optional
+`HeadlessGame.order`), and its `hashes` are sync hashes `run` checks, stopping at the first that
+differs. A scenario names its system set (`"systems": "rts"`, items 118 and 132), so a world run can
+be an RTS battle. The fixture `engine/sim/__fixtures__/battle.run.json` (seven orders, sync hashes
+every 20 ticks) passes with `pnpm -s cli run`; moving blue's order 4 target one cell south makes it
+fail at tick 40 (`hashMismatch`, last match tick 20). Choices for the owner: items 134-136.
+
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,

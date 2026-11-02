@@ -3,6 +3,7 @@ import { dottedPath, type FieldPath } from '../core/content/validate';
 import type { JsonValue } from '../core/headless';
 import { Member, STANDARD_COMPONENTS, Squad, type Role } from './components';
 import type { LogOptions } from './events';
+import { SYSTEM_SETS, SYSTEM_SET_NAMES } from './system-sets';
 import { Terrain, type TerrainData, type TerrainType } from './terrain';
 import { createWorld, type AnyComponent, type Entity, type System, type World } from './world';
 
@@ -40,6 +41,12 @@ export const scenarioSchema = z.strictObject({
   format: z.literal(SCENARIO_FORMAT).describe('always `worlds-within/scenario`'),
   version: z.literal(SCENARIO_VERSION).describe('the scenario format version'),
   seed: z.int().describe("the world's seed"),
+  systems: z
+    .enum(SYSTEM_SET_NAMES)
+    .optional()
+    .describe(
+      'the engine system set the world runs with: `village` (haul, build, patrol) or `rts` (the RTS units and economy); the tools use `village` when left out',
+    ),
   terrain: z
     .strictObject({
       legend: z
@@ -111,9 +118,12 @@ export class ScenarioError extends Error {
 }
 
 export interface ScenarioOptions {
-  /** The component kinds (default: the standard ones and `Terrain`); must include `Terrain`. */
+  /**
+   * The component kinds (default: those of the scenario's `systems` set, else the standard ones
+   * and `Terrain`); must include `Terrain`.
+   */
   readonly components?: readonly AnyComponent[];
-  /** The world's systems, in run order. */
+  /** The world's systems, in run order (default: the scenario's `systems` set, else none). */
   readonly systems?: readonly System[];
   /** Event log retention (default: keep every change). */
   readonly log?: LogOptions;
@@ -142,7 +152,8 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
   const issues: ScenarioIssue[] = [];
   const at = (path: FieldPath, message: string) => issues.push({ path: dottedPath(path), message });
 
-  const components = options.components ?? [...STANDARD_COMPONENTS, Terrain];
+  const set = sc.systems === undefined ? null : SYSTEM_SETS[sc.systems];
+  const components = options.components ?? set?.components ?? [...STANDARD_COMPONENTS, Terrain];
   const defs = new Map(components.map((d) => [d.name, d]));
   if (defs.get(Terrain.name) !== Terrain) at(['terrain'], 'the components must include Terrain');
   if (sc.squads.length > 0 && (defs.get(Squad.name) !== Squad || defs.get(Member.name) !== Member)) {
@@ -224,7 +235,7 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
 
   const world = createWorld(sc.seed, {
     components,
-    systems: options.systems ?? [],
+    systems: options.systems ?? set?.systems ?? [],
     ...(options.log ? { log: options.log } : {}),
   });
   world.withCause('scenario', (w) => {

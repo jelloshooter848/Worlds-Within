@@ -41,7 +41,13 @@ From `engine/sim/index.ts`:
   `World` a world-start file describes (format `worlds-within/scenario`, version 1: seed, terrain
   as a text grid with a legend and a grid of elevation digits, entities with components, squads
   with named members; `{ "$ref": "<key>" }` in component data is another entity's id).
-  `scenarioSchema`, `ScenarioError` (`issues` name each bad field).
+  `scenarioSchema`, `ScenarioError` (`issues` name each bad field). A scenario may name an engine
+  system set in `systems` (`village` or `rts`), which it runs with when the caller passes no
+  components or systems of its own.
+- System sets (`system-sets.ts`, Engine 0.9): `SYSTEM_SETS` (`village`: standard components,
+  `Terrain`, `SYSTEM_COMPONENTS` with haul, build, patrol; `rts`: standard components, `Terrain`,
+  `RTS_COMPONENTS` with `RTS_SYSTEMS`), `SYSTEM_SET_NAMES`, `DEFAULT_SYSTEM_SET` (`village`, what
+  the tools' world runs use when a scenario names none).
 - Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
   cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
   west.
@@ -92,6 +98,11 @@ carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, `addWor
 - On the CLI: `pnpm cli run engine/sim/__fixtures__/village-build.run.json` and
   `pnpm cli dump engine/sim/__fixtures__/village-build.run.json --tick N` play the sample world
   from a run file (`world` instead of `game`; see `docs/modules/engine-tools.md`).
+- A recorded battle: `engine/sim/__fixtures__/battle.world.json` (an `rts` scenario: a red base
+  with a hall, a gold node, two workers and a soldier; three blue units) and `battle.run.json`, its
+  seven recorded orders (gather, build a barracks, train, move, attack) with sync hashes every 20
+  ticks. `pnpm -s cli run engine/sim/__fixtures__/battle.run.json` replays it headless to the same
+  hashes; a changed order fails at the first sync hash that differs.
 - Deterministic maths (`math.ts`): `idiv`, `imod`, `clamp`, `ipow`, `isqrt`; `distSq`, `distFloor`,
   `manhattan`, `chebyshev`; binary angles (`ANGLE_STEPS` = 256 per turn) with fixed-point
   `sinFixed`/`cosFixed` (`FIXED_ONE` = 65536), `directionAngle`, `directionVector`, `scaleFixed`

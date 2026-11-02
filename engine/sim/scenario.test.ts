@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Member, Position, STANDARD_COMPONENTS, Squad, Worker } from './components';
 import { SCENARIO_FORMAT, ScenarioError, worldFromScenario } from './scenario';
 import { squadMembers } from './squad';
+import { SYSTEM_SETS } from './system-sets';
 import { Terrain, heightAt, moveCost, terrainOf } from './terrain';
 
 const COMPONENTS = [...STANDARD_COMPONENTS, Terrain];
@@ -136,5 +137,18 @@ describe('worldFromScenario', () => {
     expect(() => worldFromScenario(scenario(), { components: STANDARD_COMPONENTS })).toThrow(
       /terrain: the components must include Terrain/,
     );
+  });
+
+  it('runs with the system set it names when the caller gives none', () => {
+    const rts = worldFromScenario(scenario({ systems: 'rts', squads: [] }));
+    expect(rts.systems()).toEqual(SYSTEM_SETS.rts.systems.map((s) => s.name));
+    const village = worldFromScenario(scenario({ systems: 'village' }));
+    expect(village.systems()).toEqual(['haul', 'build', 'patrol']);
+    // The caller's own systems win.
+    const own = worldFromScenario(scenario({ systems: 'rts' }), { components: COMPONENTS, systems: [] });
+    expect(own.systems()).toEqual([]);
+    // No set named: the standard components and no systems, as before.
+    expect(worldFromScenario(scenario(), { components: COMPONENTS }).systems()).toEqual([]);
+    expect(issues(scenario({ systems: 'space' }))[0]).toMatch(/^systems: /);
   });
 });

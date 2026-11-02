@@ -5,6 +5,12 @@ import type { InputScript } from '@engine/core/input/scripted-input';
 export const SHOT_BACKENDS = ['canvas2d', 'three'] as const;
 export type ShotBackend = (typeof SHOT_BACKENDS)[number];
 
+/**
+ * A recorded order as the page gets it: `tick` plus the order's JSON fields (typed loosely so the
+ * job stays something Playwright can pass to the page).
+ */
+export type OrderEntryJson = { tick: number } & Record<string, unknown>;
+
 /** What the CLI sends the screenshot page: everything it needs, so the page reads no files. */
 export interface ShotJob {
   /** The game's files as `{ path: text }` (as `readGameFiles` gives them). */
@@ -19,6 +25,11 @@ export interface ShotJob {
   /** Report the state hash every this many ticks (the run file's `hashEvery`), and at the last tick. */
   hashEvery: number;
   input: InputScript;
+  /**
+   * The run file's recorded orders (`{ tick, ...order }`, in tick order), each handed to the
+   * view's `order` after its tick's state and before the step from it, as `run` does.
+   */
+  orders: OrderEntryJson[];
   disabledRules: string[];
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
   screen: ScreenSize;

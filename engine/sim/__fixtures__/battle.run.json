@@ -1,0 +1,54 @@
+{
+  "world": "battle.world.json",
+  "ticks": 200,
+  "orders": [
+    { "tick": 0, "id": 1, "faction": "red", "type": "gather", "units": [5], "target": 4 },
+    {
+      "tick": 0,
+      "id": 2,
+      "faction": "red",
+      "type": "build",
+      "units": [6],
+      "target": { "x": 3, "y": 5 },
+      "building": "barracks"
+    },
+    { "tick": 2, "id": 3, "faction": "red", "type": "train", "units": [3], "target": "worker" },
+    {
+      "tick": 20,
+      "id": 4,
+      "faction": "blue",
+      "type": "move",
+      "units": [8, 9, 10],
+      "target": { "x": 9, "y": 6 }
+    },
+    { "tick": 30, "id": 5, "faction": "red", "type": "gather", "units": [12], "target": 4 },
+    { "tick": 40, "id": 6, "faction": "red", "type": "train", "units": [11], "target": "soldier" },
+    { "tick": 80, "id": 7, "faction": "red", "type": "attack", "units": [7, 13], "target": 8 }
+  ],
+  "assertions": [
+    { "tick": 40, "path": "components.Construction.0.1.done", "op": "eq", "value": true },
+    { "tick": 80, "path": "components.Resource.length", "op": "eq", "value": 0 },
+    { "tick": 80, "path": "components.Unit.length", "op": "eq", "value": 8 },
+    { "tick": 200, "path": "components.Unit.length", "op": "eq", "value": 6 },
+    { "tick": 200, "path": "components.Inventory.0.1.gold", "op": "eq", "value": 80 },
+    { "tick": 200, "path": "components.Health.3.1.hp", "op": "eq", "value": 2 }
+  ],
+  "invariants": [
+    { "path": "components.Stockpile.length", "op": "eq", "value": 1 },
+    { "path": "components.Building.length", "op": "gte", "value": 1 }
+  ],
+  "hashEvery": 20,
+  "hashes": [
+    { "tick": 0, "hash": "fe79b2d56cdbb801" },
+    { "tick": 20, "hash": "de6fea3c6c3deda9" },
+    { "tick": 40, "hash": "48276878e8f02467" },
+    { "tick": 60, "hash": "5d9fd5e109309af5" },
+    { "tick": 80, "hash": "3c8b80b237e328e5" },
+    { "tick": 100, "hash": "6fec3c7410f9c143" },
+    { "tick": 120, "hash": "9518b49b92983648" },
+    { "tick": 140, "hash": "675c2aabe3a37f8e" },
+    { "tick": 160, "hash": "1ffb52f7047b5410" },
+    { "tick": 180, "hash": "029fd0e51ee0f27d" },
+    { "tick": 200, "hash": "83fc6e868fe25a82" }
+  ]
+}

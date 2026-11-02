@@ -8,7 +8,8 @@ import type { InputFrame } from './input/input-manager';
  *
  *   export function createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame
  *
- * The tools step the game once per tick with one input frame and read a snapshot after each step.
+ * The tools step the game once per tick with one input frame and read a snapshot after each step;
+ * a game that takes recorded orders (`order`) gets each one between steps, at its tick.
  * A snapshot is plain JSON-safe data (objects, arrays, strings, finite numbers, booleans, null):
  * the same content, seed and input always give the same snapshots, so their hashes can be
  * compared across runs and machines.
@@ -26,6 +27,16 @@ export interface HeadlessGame {
   step(input: InputFrame): void;
   /** The whole game state now, as plain JSON-safe data. Must not change the game. */
   snapshot(): JsonObject;
+  /**
+   * Optional (Engine 0.9, items 124-125): takes one recorded order, between steps. A run file's
+   * `orders` entry `{ "tick": t, ...order }` is handed over, without `tick`, after the snapshot of
+   * tick `t` and before the step from `t` to `t + 1`; orders of one tick come in file order (id
+   * order). The order is whatever the game's orders are (an RTS game's are `engine/core/orders.ts`
+   * orders). Returns null when the order was applied, or a one-line reason when the game dropped
+   * it (a refused order is not an error; the run reports it). A game without `order` cannot play
+   * a run file with `orders` (a usage error). Games without orders leave it out.
+   */
+  order?(order: JsonObject): string | null;
 }
 
 /** How the tools ask for a game to be set up, beyond its content and seed. */

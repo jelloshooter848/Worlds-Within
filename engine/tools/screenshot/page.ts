@@ -1,6 +1,6 @@
 import { CanvasRenderer } from '@engine/backends/canvas2d';
 import type { ContentBundle } from '@engine/core/content/bundle';
-import { canonicalJson } from '@engine/core/headless';
+import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
@@ -49,7 +49,7 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
   return job.backend === 'three' ? shootThree(job, game, content.value) : shootCanvas(job, game);
 }
 
-/** Plays the job's input on `game`, calling `show(tick)` at every tick (tick 0 included). */
+/** Plays the job's input and recorded orders on `game`, calling `show(tick)` at every tick (tick 0 included). */
 async function play(
   job: ShotJob,
   game: ViewGame,
@@ -58,8 +58,15 @@ async function play(
   const input = new ScriptedInput(job.input);
   const hashes: ShotResult['hashes'] = [];
   let snapshot = '';
+  let next = 0; // the next recorded order to hand over
   for (let tick = 0; ; tick++) {
     if (tick > 0) {
+      for (; next < job.orders.length && job.orders[next]!.tick === tick - 1; next++) {
+        if (!game.order)
+          throw new Error(`${job.viewUrl}: the run has orders, but the view has no order(order) method`);
+        const { tick: _tick, ...order } = job.orders[next]!;
+        game.order(order as JsonObject);
+      }
       input.next();
       game.step(input);
     }

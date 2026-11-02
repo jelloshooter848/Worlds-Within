@@ -121,6 +121,7 @@ export const screenshotCommand = defineCommand({
         ticks: lastTick,
         hashEvery: loaded.run.hashEvery,
         input: loaded.run.input,
+        orders: loaded.run.orders,
         disabledRules,
         screen,
         backend: flags.backend,

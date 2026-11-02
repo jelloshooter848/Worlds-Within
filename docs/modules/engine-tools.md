@@ -27,14 +27,24 @@ deterministic screenshots of a run at a tick in headless Chromium (`screenshot`)
   format in `engine/tools/run-file.ts` and `engine/tools/CLAUDE.md`) headless from its seed with its
   scripted input, checking invariants every tick and assertions at their tick. `--json` result:
   `{ ok, command: 'run', exitCode, run, game, world, seed, ticks, lastTick, passed, checks, failure,
-failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` names the first
-  failing tick, the check, `expected` and `actual`. Exit 0 passed, 4 failed check, 3 invalid run
-  file or content.
+failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders, hashesChecked,
+hashMismatch, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
+  and `actual`. Exit 0 passed, 4 failed check or sync hash, 3 invalid run file or content.
+- Recorded orders and sync hashes (Engine 0.9, lockstep replay): a run file's `orders` lists
+  `{ tick, ...order }` entries in tick order (same tick: ascending `id`), each applied after its
+  tick's state and before the step from it (a world: `applyOrder`; a game: its
+  `HeadlessGame.order`, a usage error when it has none). Orders the world or game drops are listed
+  in `refusedOrders`, not failures. `hashes: [{ tick, hash }]` are sync hashes `run` compares; the
+  first that differs stops the run (exit 4) with `hashMismatch: { tick, expected, actual,
+lastMatch }`. Malformed orders, ticks out of order or at/after `ticks`, and repeated ids are
+  schema errors naming the entry (`orders.3.target.x`). `dump` and replay files carry the orders.
+  Sample: `engine/sim/__fixtures__/battle.run.json` (`engine/tools/CLAUDE.md`, Recorded orders).
 - World runs (Engine 0.8): a run file with `world` (a `*.world.json` scenario, relative to the
-  run file) instead of `game` plays that `engine/sim` world with the engine's components and
-  systems (`world-run.ts`: `WORLD_COMPONENTS`, `WORLD_SYSTEMS`); exactly one of the two, else a
-  schema error. No input, `disableRules` or `guards` (schema errors); `seed` replaces the
-  scenario's. `run`, `dump`, hashes and replays work as for a game, on `World.snapshot()`
+  run file) instead of `game` plays that `engine/sim` world with the system set its scenario
+  names in `systems` (`village`, the 0.8 haul/build/patrol set, by default; `rts` for RTS battles;
+  `world-run.ts`, `SYSTEM_SETS` in `engine/sim`); exactly one of the two, else a schema error. No
+  input, `disableRules` or `guards` (schema errors); only an `rts` world takes `orders`; `seed`
+  replaces the scenario's. `run`, `dump`, hashes and replays work as for a game, on `World.snapshot()`
   (paths like `components.Construction.0.1.done`); results give `world` (and `game: null`).
   `mutants` and `screenshot` refuse a world run (exit 2). Sample:
   `engine/sim/__fixtures__/village-build.run.json`.
@@ -55,8 +65,8 @@ rules: [{ id, description, skipped, expected, passed, guarded, failure }], guard
   `pnpm cli mutants games/<game>` does this for every run file of the game and reports which run
   files guard each rule (`rules[].guardedBy`, `unguarded`); exit 4 for a strict kit with an
   unguarded rule. Details: `engine/tools/CLAUDE.md` (Mutant checks).
-- `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state }`, the whole
-  snapshot (a game's or a world's) at tick N.
+- `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state, orders }`, the
+  whole snapshot (a game's or a world's) at tick N and the recorded orders applied before it.
 - `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
 [--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
@@ -100,8 +110,8 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
   (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
-  `writeReplay` and `checkReplay` (`replay.ts`), `loadWorldRun`, `WORLD_COMPONENTS` and
-  `WORLD_SYSTEMS` (`world-run.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`
+  `writeReplay` and `checkReplay` (`replay.ts`), `loadWorldRun` and `worldSystemSet`
+  (`world-run.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`
   (`kits.ts`: each kit by its hook `kits/<name>/kit.ts`, listed in the generated `kit-list.ts`).
 
 Example: `pnpm -s cli validate games/demo --json` prints
@@ -120,7 +130,7 @@ Tests sit next to the code and run with `pnpm test`: they call `main` with captu
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
-verbs on temp copies of the demo, `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
+verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
 compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes.

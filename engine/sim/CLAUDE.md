@@ -36,10 +36,17 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `inRect`, `rectsOverlap`, `ringAround`), shared by the two above.
 - `rts-orders.ts`: `applyOrder` for every order type, `RTS_COMPONENTS` and `RTS_SYSTEMS` (the
   economy's systems, then the units', in that order).
+- `system-sets.ts`: named system sets (Engine 0.9 T9, items 118 and 132): `SYSTEM_SETS`
+  (`village`: `[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]` with `haulSystem`,
+  `buildSystem`, `patrolSystem`; `rts`: `[...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` with
+  `RTS_SYSTEMS`), `SYSTEM_SET_NAMES` and `DEFAULT_SYSTEM_SET` (`village`). A scenario names one in
+  `systems` (Scenarios, below).
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
-  `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`. Fixtures only:
-  no game content anywhere else in the folder.
+  `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`; and
+  `battle.world.json`, a tiny `rts` battle, with `battle.run.json`, its recorded orders and sync
+  hashes (`engine/tools/CLAUDE.md`, Recorded orders), and the golden `battle.hashes.json`. Fixtures
+  only: no game content anywhere else in the folder.
 - `index.ts`: the public entry point; import from here outside this folder.
 
 ## The world
@@ -182,10 +189,14 @@ A scenario is a world written as data (`scenario.ts`). `worldFromScenario(json, 
 and returns the world at tick 0; every change it makes is logged with the cause `scenario`.
 `options.components` defaults to `STANDARD_COMPONENTS` plus `Terrain` and must include `Terrain`
 (and `Squad` and `Member` when there are squads); pass the systems and log retention the world
-should run with.
+should run with. A scenario may name an engine system set, `"systems": "village" | "rts"`
+(`system-sets.ts`): with no `components` or `systems` option, the world gets that set's (the
+caller's own always win). Left out, nothing changes; the tools' world runs then use `village`, so
+the 0.8 sample world and its hashes are unchanged. Adding the optional field kept the format at
+version 1 (every version 1 file reads as before).
 
 ```text
-{ format: "worlds-within/scenario", version: 1, seed,
+{ format: "worlds-within/scenario", version: 1, seed, systems?,  // "village" | "rts"
   terrain: { legend: { ".": { name, cost, passable }, ... },  // one ground type per character
              rows: ["..~~..", ...],                           // the grid, north first
              elevation: ["110011", ...] },                    // one digit (0-9) per cell

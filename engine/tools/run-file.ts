@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Actions } from '@engine/core/input/actions';
 import { canonicalJson, type JsonValue } from '@engine/core/headless';
 import { contentError, validate, type ContentError } from '@engine/core/content/validate';
+import { orderSchema } from '@engine/core/orders';
 import { UsageError } from './exit-codes';
 
 /**
@@ -19,12 +20,22 @@ import { UsageError } from './exit-codes';
  *     "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
  *     "hashEvery": 50,
  *     "disableRules": [],
- *     "guards": ["doors-change-room"] }
+ *     "guards": ["doors-change-room"],
+ *     "orders": [{ "tick": 40, "id": 1, "faction": "blue", "type": "move", "units": [5], "target": { "x": 9, "y": 2 } }],
+ *     "hashes": [{ "tick": 0, "hash": "0123456789abcdef" }] }
  *
  * A run file plays either a game (`game`, a game folder) or a world (`world`, a `*.world.json`
  * scenario played by `engine/sim` with the engine's systems; see `world-run.ts`), never both. A
  * world run takes no input and has no kit rules (`input`, `disableRules` and `guards` are schema
  * errors on it); its snapshot is the world's (`World.snapshot()`).
+ *
+ * Recorded orders (Engine 0.9, items 124-125, the OpenRA lockstep idea): `orders` lists
+ * `{ tick, ...order }` entries in tick order (same-tick entries in ascending `id`); each is applied
+ * after the state of its tick and before the step from it. On a world run every entry must be an
+ * `engine/core/orders.ts` order (applied with `applyOrder`); on a game run it is handed to the
+ * game's `order` method (`engine/core/headless.ts`). `hashes` are the sync hashes a recorded run
+ * must give: `run` compares each with the state hash at its tick and fails at the first that
+ * differs, so a replay that drifts names the tick.
  *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
@@ -105,6 +116,24 @@ export const replaySchema = z.strictObject({
   hashes: z.array(tickHashSchema).describe('the state hashes of the source run, up to the failing tick'),
 });
 
+/**
+ * One recorded order: `tick` plus the order's own fields (a world run's are checked against
+ * `orderSchema` in `runFileSchema`; a game's are the game's business).
+ */
+export const orderEntrySchema = z.looseObject({
+  tick: z
+    .number()
+    .int()
+    .min(0)
+    .describe("the tick the order applies at: after that tick's state, before the step from it"),
+  id: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe('the order number (required on a world run): unique, ascending within a tick'),
+});
+
 export const runFileSchema = z
   .strictObject({
     game: z
@@ -158,6 +187,18 @@ export const runFileSchema = z
       .describe(
         "the kit rules this run is meant to guard (ids from the kit's rule list); `mutants` checks these, or every rule when left out",
       ),
+    orders: z
+      .array(orderEntrySchema)
+      .default([])
+      .describe(
+        "recorded orders, `{ tick, ...order }` in tick order, applied before the step from their tick (world runs: engine/core orders; game runs: the game's `order` method)",
+      ),
+    hashes: z
+      .array(tickHashSchema)
+      .exactOptional()
+      .describe(
+        'sync hashes the run must give, in tick order: `run` fails at the first tick whose state hash differs',
+      ),
     replay: replaySchema
       .exactOptional()
       .describe('only in replay files: the source run, its failing check and its hashes'),
@@ -182,7 +223,7 @@ export const runFileSchema = z
         ctx.addIssue({
           code: 'custom',
           path: ['input', 'steps'],
-          message: 'a world run takes no input (a world has no input in Engine 0.8): leave "input" out',
+          message: 'a world run takes no input (a world is driven by "orders"): leave "input" out',
         });
       if (run.disableRules.length > 0)
         ctx.addIssue({
@@ -223,6 +264,21 @@ export const runFileSchema = z
           message: `tick ${a.tick} is after the run's last tick (${run.ticks})`,
         });
     });
+    checkOrders(run, ctx);
+    run.hashes?.forEach((h, i, hashes) => {
+      if (h.tick > run.ticks)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hashes', i, 'tick'],
+          message: `tick ${h.tick} is after the run's last tick (${run.ticks})`,
+        });
+      else if (i > 0 && h.tick <= hashes[i - 1]!.tick)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hashes', i, 'tick'],
+          message: `hashes must be in tick order, one per tick: tick ${h.tick} comes after tick ${hashes[i - 1]!.tick}`,
+        });
+    });
     run.replay?.hashes.forEach((h, i) => {
       if (h.tick > run.ticks)
         ctx.addIssue({
@@ -233,7 +289,50 @@ export const runFileSchema = z
     });
   });
 
+/** `ctx.addIssue` at `path`, as the schema's refinements do. */
+type IssueSink = Pick<z.RefinementCtx, 'addIssue'>;
+
+/**
+ * The checks on `orders` the shape alone cannot make: tick order, a tick the run plays a step
+ * from, ids unique and ascending within a tick, and on a world run every entry an order.
+ */
+function checkOrders(
+  run: { world?: string; ticks: number; orders: { tick: number; id?: number }[] },
+  ctx: IssueSink,
+): void {
+  const seen = new Set<number>();
+  run.orders.forEach((entry, i) => {
+    const prev = i > 0 ? run.orders[i - 1] : undefined;
+    const issue = (path: (string | number)[], message: string) =>
+      ctx.addIssue({ code: 'custom', path: ['orders', i, ...path], message });
+    if (prev !== undefined && entry.tick < prev.tick)
+      issue(['tick'], `orders must be in tick order: tick ${entry.tick} comes after tick ${prev.tick}`);
+    if (entry.tick >= run.ticks)
+      issue(
+        ['tick'],
+        `tick ${entry.tick} is not before the run's last tick (${run.ticks}): an order applies before the step from its tick`,
+      );
+    if (entry.id !== undefined) {
+      if (seen.has(entry.id)) issue(['id'], `order id ${entry.id} is used twice`);
+      else if (prev?.id !== undefined && prev.tick === entry.tick && entry.id < prev.id)
+        issue(['id'], `orders of one tick must be in id order: id ${entry.id} comes after id ${prev.id}`);
+      seen.add(entry.id);
+    }
+    if (run.world !== undefined) {
+      const { tick: _tick, ...order } = entry;
+      const parsed = orderSchema.safeParse(order);
+      if (!parsed.success)
+        for (const bad of parsed.error.issues)
+          issue(
+            bad.path as (string | number)[],
+            `${bad.message} (a world run's orders are engine/core orders)`,
+          );
+    }
+  });
+}
+
 export type RunFile = z.output<typeof runFileSchema>;
+export type OrderEntry = z.output<typeof orderEntrySchema>;
 export type Replay = z.output<typeof replaySchema>;
 export type Assertion = z.output<typeof assertionSchema>;
 export type Invariant = z.output<typeof invariantSchema>;

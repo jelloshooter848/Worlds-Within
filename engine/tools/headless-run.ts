@@ -17,7 +17,8 @@ import { unknownRules } from '@engine/core/rules';
 import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
 import { kitRules } from './kits';
-import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile } from './run-file';
+import { applyOrder } from '@engine/sim/index';
+import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile, type OrderEntry } from './run-file';
 import { loadWorldRun } from './world-run';
 
 /**
@@ -25,7 +26,9 @@ import { loadWorldRun } from './world-run';
  * `headless` path in `game.json`, by its path at run time: never a static import), and steps the
  * game tick by tick with the run's scripted input, checking invariants and assertions and hashing
  * the state. A world run (`world` in the run file) builds the world from its scenario instead
- * (`world-run.ts`) and steps it with no input. Used by `run` and `dump`.
+ * (`world-run.ts`) and steps it with no input. Recorded `orders` are applied in lockstep: each one
+ * after the state of its tick (checks and hash taken) and before the step from it, on a world with
+ * `applyOrder`, on a game through its `order` method. Used by `run` and `dump`.
  */
 
 /**
@@ -55,6 +58,25 @@ export interface TickHash {
   hash: string;
 }
 
+/** An order the world or game dropped: its tick, its `id` (null when it has none) and why. */
+export interface RefusedOrder {
+  tick: number;
+  id: number | null;
+  error: string;
+}
+
+/**
+ * The first sync hash (the run file's `hashes`) that differs from the run's: the tick, the stored
+ * hash, the run's, and the last tick whose stored hash still matched (null when none did), so the
+ * state first differs after `lastMatch` and by `tick`.
+ */
+export interface HashMismatch {
+  tick: number;
+  expected: string;
+  actual: string;
+  lastMatch: number | null;
+}
+
 /** A run that got as far as playing (its content and run file were valid). */
 export interface PlayedRun {
   loaded: LoadedRunFile;
@@ -70,6 +92,14 @@ export interface PlayedRun {
   failures: FailedCheck[];
   /** The snapshot at `lastTick`. */
   snapshot: JsonObject;
+  /** The recorded orders handed over (applied or refused) before `lastTick`. */
+  ordersPlayed: number;
+  /** The orders the world or game dropped, in the order they came. */
+  refusedOrders: RefusedOrder[];
+  /** How many of the run file's sync `hashes` were compared (0 without `hashes`). */
+  hashesChecked: number;
+  /** The first sync hash that differed (the run stops there), or null. */
+  hashMismatch: HashMismatch | null;
 }
 
 export type PlayOutcome = { ok: true; value: PlayedRun } | { ok: false; errors: ContentError[] };
@@ -123,7 +153,27 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     const built = loadWorldRun(cwd, loaded.file, loaded.worldFile, loaded.run.seed);
     if (!built.ok) return built;
     const { world } = built;
-    const stepper: Stepper = { step: () => world.step(), snapshot: () => world.snapshot() };
+    // Orders are RTS orders (`engine/core/orders.ts`): only the `rts` systems carry them out.
+    if (loaded.run.orders.length > 0 && built.systems !== 'rts')
+      return {
+        ok: false,
+        errors: [
+          contentError(
+            loaded.file,
+            ['orders'],
+            'no_orders',
+            `${loaded.worldFile} runs the "${built.systems}" system set, which takes no orders: orders need "systems": "rts" in the scenario`,
+          ),
+        ],
+      };
+    const stepper: Stepper = {
+      step: () => world.step(),
+      snapshot: () => world.snapshot(),
+      order: (order) => {
+        const applied = applyOrder(world, order);
+        return applied.ok ? null : applied.error;
+      },
+    };
     return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts) };
   }
   const { run } = loaded;
@@ -165,6 +215,10 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
 
   const seed = run.seed ?? content.manifest.start.seed;
   const instance: HeadlessGame = imported.entry.createGame(content, seed, { disabledRules });
+  if (run.orders.length > 0 && typeof instance.order !== 'function')
+    throw new UsageError(
+      `${loaded.file} has orders, but the game's headless module (${content.manifest.headless}) takes none: its game has no order(order) method (engine/core/headless.ts)`,
+    );
   const input = new ScriptedInput(run.input);
   const stepper: Stepper = {
     step: () => {
@@ -172,14 +226,23 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       instance.step(input);
     },
     snapshot: () => instance.snapshot(),
+    order: (order) => instance.order?.(order) ?? null,
   };
   return { ok: true, value: play(loaded, stepper, seed, content.manifest.kit, disabledRules, opts) };
 }
 
-/** What `play` needs of a game or a world: one step, and the snapshot after it. */
+/** What `play` needs of a game or a world: one step, the snapshot after it, and taking an order. */
 interface Stepper {
   step(): void;
   snapshot(): JsonObject;
+  /** Applies one order between steps: null when applied, else why it was dropped. */
+  order(order: JsonObject): string | null;
+}
+
+/** An entry's order: the entry without its `tick`. */
+export function orderOf(entry: OrderEntry): JsonObject {
+  const { tick: _tick, ...order } = entry;
+  return order as JsonObject;
 }
 
 /** Steps a game or world tick by tick, making the run file's checks and hashing the state. */
@@ -196,10 +259,22 @@ function play(
   const last = opts.untilTick ?? run.ticks;
   const hashes: TickHash[] = [];
   const failures: FailedCheck[] = [];
+  const refusedOrders: RefusedOrder[] = [];
+  const stored = new Map((checking ? (run.hashes ?? []) : []).map((h) => [h.tick, h.hash]));
+  let hashesChecked = 0;
+  let hashMismatch: HashMismatch | null = null;
+  let lastMatch: number | null = null;
+  let next = 0; // the next order entry to hand over
   let snapshot = stepper.snapshot();
 
   for (let tick = 0; ; tick++) {
     if (tick > 0) {
+      // Lockstep: the orders of the previous tick go in after its state, before the step from it.
+      for (; next < run.orders.length && run.orders[next]!.tick === tick - 1; next++) {
+        const entry = run.orders[next]!;
+        const error = stepper.order(orderOf(entry));
+        if (error !== null) refusedOrders.push({ tick: entry.tick, id: entry.id ?? null, error });
+      }
       stepper.step();
       snapshot = stepper.snapshot();
     }
@@ -232,8 +307,31 @@ function play(
           });
       });
     }
-    const end = tick === last || failures.length > 0;
-    if (tick % run.hashEvery === 0 || end) hashes.push({ tick, hash: stateHash(snapshot) });
-    if (end) return { loaded, seed, kit, disabledRules, lastTick: tick, hashes, failures, snapshot };
+    const want = stored.get(tick);
+    let hash: string | null = null;
+    if (want !== undefined) {
+      hash = stateHash(snapshot);
+      hashesChecked++;
+      if (hash === want) lastMatch = tick;
+      else hashMismatch = { tick, expected: want, actual: hash, lastMatch };
+    }
+    const end = tick === last || failures.length > 0 || hashMismatch !== null;
+    if (tick % run.hashEvery === 0 || end || want !== undefined)
+      hashes.push({ tick, hash: hash ?? stateHash(snapshot) });
+    if (end)
+      return {
+        loaded,
+        seed,
+        kit,
+        disabledRules,
+        lastTick: tick,
+        hashes,
+        failures,
+        snapshot,
+        ordersPlayed: next,
+        refusedOrders,
+        hashesChecked,
+        hashMismatch,
+      };
   }
 }

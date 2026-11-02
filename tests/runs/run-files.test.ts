@@ -46,6 +46,10 @@ describe('run files', () => {
     expect(files).toContain('engine/sim/__fixtures__/village-build.run.json');
   });
 
+  it('finds the recorded battle (an rts world with orders and sync hashes)', () => {
+    expect(files).toContain('engine/sim/__fixtures__/battle.run.json');
+  });
+
   it.each(files)('%s passes, twice with the same hashes, matching its golden file', async (file) => {
     const first = await run(file);
     expect(
