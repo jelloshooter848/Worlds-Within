@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { main } from '../../engine/tools/main';
 
-// Every game's run files (games/**/runs/*.run.json) through `pnpm cli run`, as CI sees them: each
+// Every game's run files (games/**/runs/*.run.json), and the engine's world run files
+// (engine/**/__fixtures__/*.run.json, Engine 0.8), through `pnpm cli run`, as CI sees them: each
 // must pass, give the same state hashes twice in a row, and match its committed golden file
 // (<name>.hashes.json next to it). After a change that is meant to change the state, regenerate
 // the golden files with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit them.
@@ -12,13 +13,14 @@ import { main } from '../../engine/tools/main';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const UPDATE = process.env.WW_UPDATE_GOLDEN === '1';
 
-/** Every run file under games/, as repo paths. */
-function runFiles(dir = 'games'): string[] {
+/** Every run file in a `folder` folder under `dir` (`runs` in games/), as repo paths. */
+function runFiles(dir: string, folder: string): string[] {
   const out: string[] = [];
   for (const e of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
     const path = `${dir}/${e.name}`;
-    if (e.isDirectory()) out.push(...runFiles(path));
-    else if (e.name.endsWith('.run.json') && dir.endsWith('/runs')) out.push(path);
+    if (e.isDirectory()) {
+      if (e.name !== 'node_modules') out.push(...runFiles(path, folder));
+    } else if (e.name.endsWith('.run.json') && dir.endsWith(`/${folder}`)) out.push(path);
   }
   return out.sort();
 }
@@ -33,11 +35,15 @@ async function run(file: string): Promise<{ code: number; result: Record<string,
   return { code, result: JSON.parse(stdout) as Record<string, unknown> };
 }
 
-const files = runFiles();
+const files = [...runFiles('games', 'runs'), ...runFiles('engine', '__fixtures__')];
 
 describe('run files', () => {
   it('finds the demo run', () => {
     expect(files).toContain('games/demo/runs/walk-east.run.json');
+  });
+
+  it('finds the sample world run', () => {
+    expect(files).toContain('engine/sim/__fixtures__/village-build.run.json');
   });
 
   it.each(files)('%s passes, twice with the same hashes, matching its golden file', async (file) => {

@@ -42,7 +42,10 @@ export function replayOf(played: PlayedRun, cwd: string, replayDir: string): Rec
     hashes: played.hashes,
   };
   return {
-    game: fromReplay(played.loaded.gameDir),
+    // The game or the world the source run played (a run file names exactly one).
+    ...(played.loaded.worldFile !== null
+      ? { world: fromReplay(played.loaded.worldFile) }
+      : { game: fromReplay(played.loaded.gameDir ?? '.') }),
     seed: played.seed,
     // A run plays at least one tick; a failure at tick 0 still stops the replay there.
     ticks: Math.max(tick, 1),

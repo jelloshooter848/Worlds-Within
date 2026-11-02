@@ -21,6 +21,11 @@ import { UsageError } from './exit-codes';
  *     "disableRules": [],
  *     "guards": ["doors-change-room"] }
  *
+ * A run file plays either a game (`game`, a game folder) or a world (`world`, a `*.world.json`
+ * scenario played by `engine/sim` with the engine's systems; see `world-run.ts`), never both. A
+ * world run takes no input and has no kit rules (`input`, `disableRules` and `guards` are schema
+ * errors on it); its snapshot is the world's (`World.snapshot()`).
+ *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
  * is the input of the step from tick `f` to tick `f + 1`.
@@ -102,13 +107,25 @@ export const replaySchema = z.strictObject({
 
 export const runFileSchema = z
   .strictObject({
-    game: z.string().min(1).describe('the game folder, relative to the run file (".." for games/<g>/runs/)'),
+    game: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe('the game folder, relative to the run file (".." for games/<g>/runs/); give this or `world`'),
+    world: z
+      .string()
+      .min(1)
+      .regex(/\.world\.json$/, 'a world is a scenario file ending in .world.json')
+      .exactOptional()
+      .describe(
+        'a world scenario (*.world.json, engine/sim), relative to the run file, played instead of a game; give this or `game`',
+      ),
     seed: z
       .number()
       .int()
       .min(0)
       .exactOptional()
-      .describe("the world's seed; the manifest's start.seed if left out"),
+      .describe("the world's seed; the manifest's start.seed (or the scenario's seed) if left out"),
     ticks: z.number().int().min(1).max(1_000_000).describe('how many steps the run plays'),
     input: z
       .strictObject({
@@ -146,6 +163,40 @@ export const runFileSchema = z
       .describe('only in replay files: the source run, its failing check and its hashes'),
   })
   .superRefine((run, ctx) => {
+    if (run.game === undefined && run.world === undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: [],
+        message:
+          'a run file needs exactly one of "game" (a game folder) or "world" (a *.world.json scenario)',
+      });
+    if (run.game !== undefined && run.world !== undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['world'],
+        message: 'a run file gives "game" or "world", not both',
+      });
+    if (run.world !== undefined) {
+      // A world has no input and no kit (Engine 0.8): say so rather than ignore what was asked.
+      if (run.input.steps.length > 0)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['input', 'steps'],
+          message: 'a world run takes no input (a world has no input in Engine 0.8): leave "input" out',
+        });
+      if (run.disableRules.length > 0)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['disableRules'],
+          message: 'a world run has no kit rules to switch off: leave "disableRules" out',
+        });
+      if (run.guards !== undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['guards'],
+          message: 'a world run has no kit rules to guard: leave "guards" out',
+        });
+    }
     run.disableRules.forEach((id, i) => {
       if (run.disableRules.indexOf(id) !== i)
         ctx.addIssue({
@@ -190,8 +241,10 @@ export type Invariant = z.output<typeof invariantSchema>;
 export interface LoadedRunFile {
   /** The run file as given, relative to the working folder, with `/`. */
   file: string;
-  /** The game folder, relative to the working folder, with `/`. */
-  gameDir: string;
+  /** The game folder, relative to the working folder, with `/` (null for a world run). */
+  gameDir: string | null;
+  /** The world scenario, relative to the working folder, with `/` (null for a game run). */
+  worldFile: string | null;
   run: RunFile;
 }
 
@@ -215,8 +268,11 @@ export function readRunFile(
   }
   const result = validate(file, data, runFileSchema);
   if (!result.ok) return { ok: false, errors: result.errors };
-  const gameDir = relative(cwd, resolve(dirname(abs), result.value.game)).replaceAll('\\', '/') || '.';
-  return { ok: true, value: { file, gameDir, run: result.value } };
+  const fromCwd = (path: string | undefined) =>
+    path === undefined ? null : relative(cwd, resolve(dirname(abs), path)).replaceAll('\\', '/') || '.';
+  const gameDir = fromCwd(result.value.game);
+  const worldFile = fromCwd(result.value.world);
+  return { ok: true, value: { file, gameDir, worldFile, run: result.value } };
 }
 
 /** The value at a dotted path (`hero.hp`, `entities.0.kind`, `entities.length`), or `undefined`. */

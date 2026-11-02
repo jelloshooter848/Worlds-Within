@@ -12,7 +12,11 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  * `--disable-rule <ids>` switches kit rules off (comma-separated ids, on top of the run file's
  * `disableRules`); an id the kit does not name is a usage error.
  *
- * Result: `{ run, game, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
+ * A run file plays a game (`game`) or a world scenario (`world`, see `world-run.ts`); the result
+ * gives both fields, the one not played as null. A world run has no kit rules: `--disable-rule`
+ * on it is a usage error.
+ *
+ * Result: `{ run, game, world, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
  * failure, failures, hashes: [{ tick, hash }], finalHash }`. `failure` is the first failed check
  * (`{ tick, kind, index, path, op, expected, actual, message }`) or null, and `failures` every
  * check that failed at that tick. A failing run writes a replay file (`replay.ts`) and gives its
@@ -57,6 +61,7 @@ export const runCommand = defineCommand({
       result: {
         run: loaded.file,
         game: loaded.gameDir,
+        world: loaded.worldFile,
         seed,
         disabledRules,
         ticks: loaded.run.ticks,

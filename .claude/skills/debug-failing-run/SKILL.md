@@ -28,6 +28,13 @@ pnpm -s cli run games/<game>/runs/<run>.run.json --json
   - `hashes`: the state hashes up to that tick;
   - `replayFile`: a replay file in `.ww-out/replays/` that reproduces the failure.
 
+A run file plays a game (`game`) or, from Engine 0.8, an `engine/sim` world (`world`, a
+`*.world.json` scenario; sample `engine/sim/__fixtures__/village-build.run.json`). Steps 1, 2, 4,
+5 and 7 work the same on a world run; a world has no input, view or kit rules, so step 3
+(screenshot) and step 6 (mutants) do not apply (both exit 2 on it). Its state is the world
+snapshot: compare `components.<Kind>` between dumps, and look in `engine/sim` (scenario, systems)
+rather than a game.
+
 Write down `T = failure.tick`. Everything below looks at ticks `T` and `T - 1`.
 
 ## 2. Dump the state at the failing tick and the tick before

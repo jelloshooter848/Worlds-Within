@@ -24,7 +24,9 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward` and the
   systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
-  hashes `village.hashes.json`. Fixtures only: no game content anywhere else in the folder.
+  hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
+  `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`. Fixtures only:
+  no game content anywhere else in the folder.
 - `index.ts`: the public entry point; import from here outside this folder.
 
 ## The world

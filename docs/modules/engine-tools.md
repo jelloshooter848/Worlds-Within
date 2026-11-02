@@ -26,10 +26,18 @@ deterministic screenshots of a run at a tick in headless Chromium (`screenshot`)
 - `pnpm cli run <run-file>`: plays a run file (`games/<game>/runs/<name>.run.json`; schema and
   format in `engine/tools/run-file.ts` and `engine/tools/CLAUDE.md`) headless from its seed with its
   scripted input, checking invariants every tick and assertions at their tick. `--json` result:
-  `{ ok, command: 'run', exitCode, run, game, seed, ticks, lastTick, passed, checks, failure,
+  `{ ok, command: 'run', exitCode, run, game, world, seed, ticks, lastTick, passed, checks, failure,
 failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` names the first
   failing tick, the check, `expected` and `actual`. Exit 0 passed, 4 failed check, 3 invalid run
   file or content.
+- World runs (Engine 0.8): a run file with `world` (a `*.world.json` scenario, relative to the
+  run file) instead of `game` plays that `engine/sim` world with the engine's components and
+  systems (`world-run.ts`: `WORLD_COMPONENTS`, `WORLD_SYSTEMS`); exactly one of the two, else a
+  schema error. No input, `disableRules` or `guards` (schema errors); `seed` replaces the
+  scenario's. `run`, `dump`, hashes and replays work as for a game, on `World.snapshot()`
+  (paths like `components.Construction.0.1.done`); results give `world` (and `game: null`).
+  `mutants` and `screenshot` refuse a world run (exit 2). Sample:
+  `engine/sim/__fixtures__/village-build.run.json`.
 - Replay files: a failing `run` writes `.ww-out/replays/<name>-t<tick>-<hash>.run.json` (path in
   `replayFile`), a run file with the seed, the input and checks up to the failing tick, and a
   `replay` block (`source`, `failure`, `hashes`). Running it fails at the same tick; `run` also
@@ -47,8 +55,8 @@ rules: [{ id, description, skipped, expected, passed, guarded, failure }], guard
   `pnpm cli mutants games/<game>` does this for every run file of the game and reports which run
   files guard each rule (`rules[].guardedBy`, `unguarded`); exit 4 for a strict kit with an
   unguarded rule. Details: `engine/tools/CLAUDE.md` (Mutant checks).
-- `pnpm cli dump <run-file> --tick N`: `{ run, game, seed, tick, hash, state }`, the whole
-  snapshot at tick N.
+- `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state }`, the whole
+  snapshot (a game's or a world's) at tick N.
 - `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
 [--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
@@ -75,7 +83,8 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   door pair can be changed one room at a time; they are listed in `crossErrors` and `validate`
   fails on them until the matching edit is made. Details:
   `engine/tools/CLAUDE.md` (Editing content).
-- Every game's run files are checked by `tests/runs/run-files.test.ts` against committed golden
+- Every game's run files, and the engine's world run files (`engine/**/__fixtures__/*.run.json`),
+  are checked by `tests/runs/run-files.test.ts` against committed golden
   hashes (`<name>.hashes.json`; regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).
 - A game on two kits: `uses` in `game.json` (beside `kit`) adds more kits' content kinds, merged
   by `gameKinds`; every command reads those files. `unknown_kit` / `duplicate_kit` / `kind_clash`
@@ -91,7 +100,8 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
   (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
-  `writeReplay` and `checkReplay` (`replay.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`
+  `writeReplay` and `checkReplay` (`replay.ts`), `loadWorldRun`, `WORLD_COMPONENTS` and
+  `WORLD_SYSTEMS` (`world-run.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`
   (`kits.ts`: each kit by its hook `kits/<name>/kit.ts`, listed in the generated `kit-list.ts`).
 
 Example: `pnpm -s cli validate games/demo --json` prints
@@ -110,6 +120,7 @@ Tests sit next to the code and run with `pnpm test`: they call `main` with captu
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
-verbs on temp copies of the demo, `screenshot.test.ts` takes the same screenshot twice and
+verbs on temp copies of the demo, `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
+sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
 compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes.

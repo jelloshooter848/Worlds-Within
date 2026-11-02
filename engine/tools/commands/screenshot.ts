@@ -71,13 +71,15 @@ export const screenshotCommand = defineCommand({
     if (flags.out !== undefined && !flags.out.toLowerCase().endsWith('.png'))
       throw new UsageError(`--out must name a .png file, not ${flags.out}`);
     const runFile = readRunFile(ctx.cwd, args.runFile);
+    if (runFile.ok && runFile.value.worldFile !== null)
+      throw new UsageError(`${runFile.value.file} plays a world, which has no view to draw (Engine 0.8)`);
     if (runFile.ok && flags.tick > runFile.value.run.ticks)
       throw new UsageError(`--tick ${flags.tick} is after the run's last tick (${runFile.value.run.ticks})`);
     const played = await playRun(ctx.cwd, args.runFile, { untilTick: flags.tick });
     if (!played.ok) return invalid(args.runFile, played.errors);
     const { loaded, seed, lastTick, snapshot, disabledRules, hashes: headlessHashes } = played.value;
 
-    const game = loadGame(ctx.cwd, loaded.gameDir);
+    const game = loadGame(ctx.cwd, loaded.gameDir ?? '.');
     if (!game.content.ok) return invalid(loaded.file, game.content.errors);
     const root = game.dir === '.' ? '' : `${game.dir}/`;
     const { view, screen } = game.content.value.manifest;

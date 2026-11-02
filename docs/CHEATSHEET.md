@@ -147,12 +147,20 @@ next step. Paths are dotted, into the snapshot (`hero.hp`, `entities.0.kind`, `e
 }
 ```
 
+A run file can play a world instead of a game (Engine 0.8): `"world": "village.world.json"` (a
+`*.world.json` scenario, relative to the run file) in place of `game`, exactly one of the two. A
+world run has no `input`, `disableRules` or `guards`; its paths read the world snapshot
+(`components.Construction.0.1.done`: entry 0 of that kind in id order, `.1` its data). `run`,
+`dump`, hashes and replays work on it; `mutants` and `screenshot` refuse it. Sample:
+`engine/sim/__fixtures__/village-build.run.json`.
+
 <!-- generated:run-file -->
 
 | Field                 | Type                                                                                                         | Default        | Description                                                                                                                  |
 | --------------------- | ------------------------------------------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `game`                | `string`                                                                                                     | required       | the game folder, relative to the run file (".." for games/&lt;g>/runs/)                                                      |
-| `seed`                | `integer`                                                                                                    |                | the world's seed; the manifest's start.seed if left out                                                                      |
+| `game`                | `string`                                                                                                     |                | the game folder, relative to the run file (".." for games/&lt;g>/runs/); give this or `world`                                |
+| `world`               | `string`                                                                                                     |                | a world scenario (*.world.json, engine/sim), relative to the run file, played instead of a game; give this or `game`         |
+| `seed`                | `integer`                                                                                                    |                | the world's seed; the manifest's start.seed (or the scenario's seed) if left out                                             |
 | `ticks`               | `integer`                                                                                                    | required       | how many steps the run plays                                                                                                 |
 | `input`               | `object`                                                                                                     | `{"steps":[]}` | the scripted input (ScriptedInput steps)                                                                                     |
 | `input.steps`         | `object[]`                                                                                                   | required       | each step holds its actions from its frame until the next step                                                               |
@@ -225,7 +233,7 @@ these steps in order.
 | `help`       | `pnpm cli help [command]`               | list the commands, or show one command with its arguments and flags                       |
 | `validate`   | `pnpm cli validate <game>`              | check every content file of a game against its schema (starts nothing)                    |
 | `run`        | `pnpm cli run <runFile> [flags]`        | play a run file headless from its seed and check its assertions and invariants            |
-| `dump`       | `pnpm cli dump <runFile> [flags]`       | the whole game state at one tick of a run file, as JSON                                   |
+| `dump`       | `pnpm cli dump <runFile> [flags]`       | the whole game or world state at one tick of a run file, as JSON                          |
 | `screenshot` | `pnpm cli screenshot <runFile> [flags]` | a PNG of one paused, seeded frame of a run file (headless Chromium)                       |
 | `mutants`    | `pnpm cli mutants <target>`             | play run files once per kit rule switched off and report the rules they don't guard       |
 | `get`        | `pnpm cli get <file> <path>`            | read one value of a content file (path dotted or a JSON pointer)                          |

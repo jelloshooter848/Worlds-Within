@@ -133,6 +133,7 @@ function playLab(content: ContentBundle, run: RunFile, present: PresentLab): Tic
 function load(file: string): { content: ContentBundle; run: RunFile; golden: TickHash[] } {
   const loaded = readRunFile(ROOT, file);
   if (!loaded.ok) throw new Error(JSON.stringify(loaded.errors));
+  if (loaded.value.gameDir === null) throw new Error(`${file} plays a world, not a game`);
   const game = loadGame(ROOT, loaded.value.gameDir);
   if (!game.content.ok) throw new Error(JSON.stringify(game.content.errors));
   const goldenFile = join(ROOT, file.replace(/\.run\.json$/, '.hashes.json'));

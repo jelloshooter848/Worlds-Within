@@ -1,0 +1,18 @@
+{
+  "world": "village.world.json",
+  "ticks": 1000,
+  "assertions": [
+    { "tick": 0, "path": "components.Construction.0.1.done", "op": "eq", "value": false },
+    { "tick": 500, "path": "components.Construction.0.1.kind", "op": "eq", "value": "hall" },
+    { "tick": 500, "path": "components.Construction.0.1.done", "op": "eq", "value": true },
+    { "tick": 1000, "path": "components.Construction.1.1.done", "op": "eq", "value": false },
+    { "tick": 1000, "path": "components.Construction.1.1.progress", "op": "gt", "value": 0 },
+    { "tick": 1000, "path": "components.Inventory.0.1.wood", "op": "lt", "value": 2000 }
+  ],
+  "invariants": [
+    { "path": "components.Squad.0.1.strength", "op": "eq", "value": 12 },
+    { "path": "components.Squad.0.1.members.length", "op": "eq", "value": 4 },
+    { "path": "components.Worker.length", "op": "eq", "value": 3 }
+  ],
+  "hashEvery": 100
+}

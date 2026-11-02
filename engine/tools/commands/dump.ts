@@ -7,13 +7,14 @@ import { defineCommand } from '../registry';
 
 /**
  * `dump <run-file> --tick N`: plays the run file up to tick N (no checks) and prints the whole
- * snapshot there. Result: `{ run, game, seed, tick, hash, state }`; the cap (`--max-output`)
+ * snapshot there (a game's, or for a world run the world's `World.snapshot()`). Result: `{ run,
+ * game, world, seed, tick, hash, state }` (`game` or `world` null, whichever is not played); the cap (`--max-output`)
  * applies as for every command. N must be between 0 and the run's `ticks` (a usage error
  * otherwise). Exit 0, or 3 (`invalidContent`, with `errors`) when the run file or content is bad.
  */
 export const dumpCommand = defineCommand({
   name: 'dump',
-  summary: 'the whole game state at one tick of a run file, as JSON',
+  summary: 'the whole game or world state at one tick of a run file, as JSON',
   args: z.strictObject({
     runFile: z.string().min(1).describe('the run file, such as games/demo/runs/walk-east.run.json'),
   }),
@@ -33,6 +34,7 @@ export const dumpCommand = defineCommand({
       result: {
         run: loaded.file,
         game: loaded.gameDir,
+        world: loaded.worldFile,
         seed,
         tick: lastTick,
         hash: stateHash(snapshot),

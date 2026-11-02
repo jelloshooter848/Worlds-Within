@@ -2,10 +2,11 @@ import { readdirSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import { formatErrors, type ContentError } from '@engine/core/content/validate';
-import { EXIT, type ExitCode } from '../exit-codes';
+import { EXIT, UsageError, type ExitCode } from '../exit-codes';
 import { loadGame } from '../game-loader';
 import { playRun, type FailedCheck } from '../headless-run';
 import { loadKit } from '../kits';
+import { readRunFile } from '../run-file';
 import { defineCommand } from '../registry';
 
 /**
@@ -30,6 +31,8 @@ import { defineCommand } from '../registry';
  * [{ id, description, guardedBy: [run files] }], unguarded: [ids] }`. Here a run's `weak` is only
  * its own `guards` it does not guard (none without `guards`). For a strict kit, a rule no run file
  * guards, or a run with a weak rule, is exit 4.
+ *
+ * A world run file (`world`, no kit) is a usage error: it has no rules to switch off.
  *
  * Both: exit 4 (`failedCheck`) when a run fails as it is (its rules are not tried), 3 (with
  * `errors`) for a bad run file or content. No replay files are written.
@@ -64,6 +67,8 @@ async function checkRun(cwd: string, runFile: string): Promise<Checked> {
   const base = await playRun(cwd, runFile);
   if (!base.ok) return base;
   const { loaded, kit } = base.value;
+  if (kit === null || loaded.gameDir === null)
+    throw new UsageError(`${loaded.file} plays a world, which has no kit rules to switch off`);
   const hook = loadKit(kit);
   const guards = loaded.run.guards ?? null;
   const baseline = { passed: base.value.failures.length === 0, failure: base.value.failures[0] ?? null };
@@ -176,7 +181,11 @@ export const mutantsCommand = defineCommand({
     } catch {
       // Not there: readRunFile reports it as a usage error.
     }
-    return isDir ? mutantsOfGame(ctx.cwd, args.target) : mutantsOfRun(ctx.cwd, args.target);
+    if (isDir) return mutantsOfGame(ctx.cwd, args.target);
+    const runFile = readRunFile(ctx.cwd, args.target);
+    if (runFile.ok && runFile.value.worldFile !== null)
+      throw new UsageError(`${runFile.value.file} plays a world, which has no kit rules to switch off`);
+    return mutantsOfRun(ctx.cwd, args.target);
   },
   text(result) {
     if (result.errors) return formatErrors(result.errors as ContentError[]);

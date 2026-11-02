@@ -53,6 +53,9 @@ carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, and `ha
 - The sample world: `engine/sim/__fixtures__/village.world.json`, run by
   `pnpm test engine/sim/sample-world`: 10,000 ticks, the same hashes twice and as the golden file
   `village.hashes.json`, and a save and load at 83 ticks matching the uninterrupted run.
+- On the CLI: `pnpm cli run engine/sim/__fixtures__/village-build.run.json` and
+  `pnpm cli dump engine/sim/__fixtures__/village-build.run.json --tick N` play the sample world
+  from a run file (`world` instead of `game`; see `docs/modules/engine-tools.md`).
 - Deterministic maths (`math.ts`): `idiv`, `imod`, `clamp`, `ipow`, `isqrt`; `distSq`, `distFloor`,
   `manhattan`, `chebyshev`; binary angles (`ANGLE_STEPS` = 256 per turn) with fixed-point
   `sinFixed`/`cosFixed` (`FIXED_ONE` = 65536), `directionAngle`, `directionVector`, `scaleFixed`

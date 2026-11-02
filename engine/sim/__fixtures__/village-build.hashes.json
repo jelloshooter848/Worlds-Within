@@ -1,0 +1,49 @@
+{
+  "run": "engine/sim/__fixtures__/village-build.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "5e095f2b735b6f31"
+    },
+    {
+      "tick": 100,
+      "hash": "89111fc433e3d029"
+    },
+    {
+      "tick": 200,
+      "hash": "58af12ee813f458c"
+    },
+    {
+      "tick": 300,
+      "hash": "b1f826543c220160"
+    },
+    {
+      "tick": 400,
+      "hash": "060d4170ebabe018"
+    },
+    {
+      "tick": 500,
+      "hash": "ea0e4dcfd58fd598"
+    },
+    {
+      "tick": 600,
+      "hash": "0dea87ac798dcfe5"
+    },
+    {
+      "tick": 700,
+      "hash": "5961ef43e50f4b1a"
+    },
+    {
+      "tick": 800,
+      "hash": "65cfc0f16a3789fc"
+    },
+    {
+      "tick": 900,
+      "hash": "5d7e59515abdfa7b"
+    },
+    {
+      "tick": 1000,
+      "hash": "8e728f67a3bb77e6"
+    }
+  ]
+}

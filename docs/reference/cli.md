@@ -15,7 +15,7 @@ Commands:
   help        list the commands, or show one command with its arguments and flags
   validate    check every content file of a game against its schema (starts nothing)
   run         play a run file headless from its seed and check its assertions and invariants
-  dump        the whole game state at one tick of a run file, as JSON
+  dump        the whole game or world state at one tick of a run file, as JSON
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
   get         read one value of a content file (path dotted or a JSON pointer)
@@ -95,7 +95,7 @@ Global flags:
 ```text
 pnpm cli dump <runFile> [flags]
 
-  the whole game state at one tick of a run file, as JSON
+  the whole game or world state at one tick of a run file, as JSON
 
 Arguments:
   <runFile>  the run file, such as games/demo/runs/walk-east.run.json

@@ -42,7 +42,10 @@ the CLI starts.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
   checks the run file's `disableRules` and `guards` against the kit's rules, plays the ticks and
-  makes the checks; `stateHash(snapshot)`.
+  makes the checks; for a world run it builds the world instead (`world-run.ts`). `stateHash(snapshot)`.
+- `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
+  its scenario with `WORLD_COMPONENTS` (standard, `Terrain`, the systems' own) and `WORLD_SYSTEMS`
+  (`haulSystem`, `buildSystem`, `patrolSystem`, in that order), no event log (World runs, below).
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
@@ -98,7 +101,7 @@ the CLI starts.
   content it passes is content the game can build.
 - `run <runFile> [--disable-rule <ids>]`: plays a run file headless and checks it (below).
   `--disable-rule` switches kit rules off (comma-separated ids, on top of the run file's
-  `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, seed,
+  `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
 hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
@@ -108,7 +111,7 @@ hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, 
   check, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
-- `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, seed, tick,
+- `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, tick,
 hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
 - `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
@@ -214,7 +217,8 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 }
 ```
 
-- `game`: the game folder, relative to the run file's folder (`..` from `games/<game>/runs/`).
+- `game`: the game folder, relative to the run file's folder (`..` from `games/<game>/runs/`). A
+  world run gives `world` instead (World runs, below); exactly one of the two.
 - `seed` (optional): the world's seed; the manifest's `start.seed` when left out.
 - `ticks`: how many steps to play. Tick 0 is the state the game starts in, tick `t` the state after
   `t` steps.
@@ -253,6 +257,41 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
   returning a `HeadlessGame` (`engine/core/headless.ts`); it passes `opts.disabledRules` to its
   kit.
+
+## World runs
+
+From Engine 0.8 a run file can play a world (`engine/sim`) instead of a game: `world` names a
+`*.world.json` scenario, relative to the run file. The sample is
+`engine/sim/__fixtures__/village-build.run.json`:
+
+```json
+{
+  "world": "village.world.json",
+  "ticks": 1000,
+  "assertions": [{ "tick": 500, "path": "components.Construction.0.1.done", "op": "eq", "value": true }],
+  "invariants": [{ "path": "components.Squad.0.1.strength", "op": "eq", "value": 12 }],
+  "hashEvery": 100
+}
+```
+
+- Exactly one of `game` and `world`: both is a schema error at `world`, neither at the file (exit
+  3, naming the run file).
+- The world is `worldFromScenario` with every engine component kind and the engine's systems
+  (`world-run.ts`); a scenario that does not build is one `invalid_scenario` error per field, in
+  the scenario file; a missing file is `missing_file` at the run file's `world`. `seed`, when
+  given, replaces the scenario's.
+- A world has no input and no kit in Engine 0.8: `input` with steps, `disableRules` and `guards`
+  are schema errors on a world run, and `--disable-rule`, `mutants` and `screenshot` on one are
+  usage errors (exit 2).
+- A step is `world.step()` and the snapshot `world.snapshot()`: `{ seed, tick, nextId, rng,
+entities, components: { <Kind>: [[id, data], ...] } }`, so paths read
+  `components.<Kind>.<i>.1.<field>` (entry `i` in id order; `.0` is its id). The event log is not
+  kept (it is not part of a snapshot). Hashes are the same as `engine/sim`'s own
+  (`village.hashes.json`).
+- `run`, `dump` and replays work as for a game; results carry `world` (the scenario, repo path)
+  and `game: null` (and the other way round for a game run). A replay of a world run names
+  `world`. `tests/runs/run-files.test.ts` also plays `engine/**/__fixtures__/*.run.json` against
+  their golden `<name>.hashes.json`.
 
 ## Mutant checks
 
@@ -422,7 +461,7 @@ in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for 
 
 ## Rules
 
-- May import anything in `engine/` and `kits/`.
+- May import anything in `engine/` and `kits/` (`engine/sim` through `@engine/sim/index`).
 - Loads a game by its folder path at run time, never by a static import: nothing in `engine/`
   imports from `games/` (`tests/architecture/tools-no-game-import.test.ts` and `dependency-rule.test.ts`).
 - Every run is repeatable from a seed, and nothing in a result depends on the clock: the capped

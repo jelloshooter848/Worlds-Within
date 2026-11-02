@@ -18,12 +18,14 @@ import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
 import { kitRules } from './kits';
 import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile } from './run-file';
+import { loadWorldRun } from './world-run';
 
 /**
  * Plays a run file headless: loads the game's content, imports its headless module (the
  * `headless` path in `game.json`, by its path at run time: never a static import), and steps the
  * game tick by tick with the run's scripted input, checking invariants and assertions and hashing
- * the state. Used by `run` and `dump`.
+ * the state. A world run (`world` in the run file) builds the world from its scenario instead
+ * (`world-run.ts`) and steps it with no input. Used by `run` and `dump`.
  */
 
 /**
@@ -57,8 +59,8 @@ export interface TickHash {
 export interface PlayedRun {
   loaded: LoadedRunFile;
   seed: number;
-  /** The game's kit (`kit` in `game.json`). */
-  kit: string;
+  /** The game's kit (`kit` in `game.json`); null for a world run, which has no kit. */
+  kit: string | null;
   /** The kit rules switched off (the run file's `disableRules` plus any asked for), in kit order. */
   disabledRules: string[];
   /** The last tick played: the run's `ticks`, the first failing tick, or the tick asked for. */
@@ -115,8 +117,17 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   const runFile = readRunFile(cwd, runPath);
   if (!runFile.ok) return runFile;
   const loaded = runFile.value;
+  if (loaded.worldFile !== null) {
+    if ((opts.disableRules ?? []).length > 0)
+      throw new UsageError(`${loaded.file} plays a world, which has no kit rules to switch off`);
+    const built = loadWorldRun(cwd, loaded.file, loaded.worldFile, loaded.run.seed);
+    if (!built.ok) return built;
+    const { world } = built;
+    const stepper: Stepper = { step: () => world.step(), snapshot: () => world.snapshot() };
+    return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts) };
+  }
   const { run } = loaded;
-  const game = loadGame(cwd, loaded.gameDir);
+  const game = loadGame(cwd, loaded.gameDir ?? '.');
   if (!game.content.ok) return { ok: false, errors: game.content.errors };
   const content = game.content.value;
   const imported = await importEntry(cwd, game.dir, content);
@@ -155,17 +166,42 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   const seed = run.seed ?? content.manifest.start.seed;
   const instance: HeadlessGame = imported.entry.createGame(content, seed, { disabledRules });
   const input = new ScriptedInput(run.input);
+  const stepper: Stepper = {
+    step: () => {
+      input.next();
+      instance.step(input);
+    },
+    snapshot: () => instance.snapshot(),
+  };
+  return { ok: true, value: play(loaded, stepper, seed, content.manifest.kit, disabledRules, opts) };
+}
+
+/** What `play` needs of a game or a world: one step, and the snapshot after it. */
+interface Stepper {
+  step(): void;
+  snapshot(): JsonObject;
+}
+
+/** Steps a game or world tick by tick, making the run file's checks and hashing the state. */
+function play(
+  loaded: LoadedRunFile,
+  stepper: Stepper,
+  seed: number,
+  kit: string | null,
+  disabledRules: string[],
+  opts: PlayOptions,
+): PlayedRun {
+  const { run } = loaded;
   const checking = opts.untilTick === undefined;
   const last = opts.untilTick ?? run.ticks;
   const hashes: TickHash[] = [];
   const failures: FailedCheck[] = [];
-  let snapshot = instance.snapshot();
+  let snapshot = stepper.snapshot();
 
   for (let tick = 0; ; tick++) {
     if (tick > 0) {
-      input.next();
-      instance.step(input);
-      snapshot = instance.snapshot();
+      stepper.step();
+      snapshot = stepper.snapshot();
     }
     if (checking) {
       run.invariants.forEach((c, index) => {
@@ -198,19 +234,6 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     }
     const end = tick === last || failures.length > 0;
     if (tick % run.hashEvery === 0 || end) hashes.push({ tick, hash: stateHash(snapshot) });
-    if (end)
-      return {
-        ok: true,
-        value: {
-          loaded,
-          seed,
-          kit: content.manifest.kit,
-          disabledRules,
-          lastTick: tick,
-          hashes,
-          failures,
-          snapshot,
-        },
-      };
+    if (end) return { loaded, seed, kit, disabledRules, lastTick: tick, hashes, failures, snapshot };
   }
 }
