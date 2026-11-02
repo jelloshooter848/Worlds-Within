@@ -9,5 +9,6 @@
     "sprite": ["content/sprites/*.txt"]
   },
   "start": { "seed": 1 },
-  "headless": "headless.ts"
+  "headless": "headless.ts",
+  "view": "view.ts"
 }

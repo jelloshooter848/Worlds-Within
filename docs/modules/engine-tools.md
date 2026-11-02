@@ -8,8 +8,8 @@ The command-line tools for agents and people: `pnpm cli <command> [arguments] [f
 validates a game's content, plays run files headless (seeded scripted input, tick assertions,
 invariants, state hashes), writes replay files for failing runs, dumps the state at a tick and
 edits content files (`get`, `set`, `add`, `remove`, every write checked and verified) and runs
-mutant checks (`mutants`: does a run fail when a kit rule is switched off?); screenshots
-arrive during the rest of Engine 0.3.
+mutant checks (`mutants`: does a run fail when a kit rule is switched off?), and takes
+deterministic screenshots of a run at a tick in headless Chromium (`screenshot`).
 
 ## Public API entry points
 
@@ -41,6 +41,13 @@ description, skipped, passed, guarded, failure }], guarded, weak }`; `weak` list
   is, 4 when it does not. Details: `engine/tools/CLAUDE.md` (Mutant checks).
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, seed, tick, hash, state }`, the whole
   snapshot at tick N.
+- `pnpm cli screenshot <run-file> --tick N [--out path]`: plays the run in headless Chromium
+  through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
+  backend, and writes the frame at tick N as a 256x240 PNG (default
+  `.ww-out/screenshots/<name>-t<N>.png`). `--json` result: `{ ok, command: 'screenshot', exitCode,
+run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash, matchesHeadless }`.
+  Two runs in a row give byte-identical PNGs. Needs `pnpm exec playwright install --with-deps
+chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
 - `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,
   `remove <file> <path>`: one verb set for editing `game.json`, content files, text-grid part
   files (`rows.3`, `rows.3.5`) and run files. Paths are dotted (`frames["down-0"].3`) or JSON
@@ -57,7 +64,8 @@ description, skipped, passed, guarded, failure }], guarded, weak }`; `weak` list
 - Output over the cap (32 KiB by default) is cut; the whole result is written under `.ww-out/` and
   the printed one has `truncated: true` and `fullOutput: <path>`.
 - In code: `main(argv, io)` (`engine/tools/main.ts`), `defineCommand` and `Registry`
-  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-loader.ts`),
+  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, re-exported by `game-loader.ts`),
+  `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`),
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
   (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
@@ -79,5 +87,6 @@ Tests sit next to the code and run with `pnpm test`: they call `main` with captu
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
-verbs on temp copies of the demo, and `tests/runs/run-files.test.ts` checks every game's run files
+verbs on temp copies of the demo, `screenshot.test.ts` takes the same screenshot twice and
+compares the bytes (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes.

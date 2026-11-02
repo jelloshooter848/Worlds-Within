@@ -31,6 +31,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # Chromium for the screenshot tests (engine/tools/screenshot.test.ts), which CI requires.
+      - run: pnpm exec playwright install --with-deps chromium
       # The same checks as CI, so nothing is published that CI would reject.
       - run: pnpm lint
       - run: pnpm typecheck

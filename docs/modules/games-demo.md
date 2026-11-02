@@ -11,16 +11,18 @@ at Engine 0.15.
 
 ## Public API entry points
 
-- `game.json`: the game manifest (id, kit, content globs by kind, start seed, headless entry).
+- `game.json`: the game manifest (id, kit, content globs by kind, start seed, headless and view entries).
 - `content/`: `rooms/*.json` + `*.map.txt`, `songs/*.json`, `palettes/*.json`, `sprites/*.txt`.
 - `content.ts`: `demoKinds`, `loadDemo(files)`, `demoDungeon`, `demoSongs`, `demoArt`,
   `DEMO_SHEETS`, `mustLoad`.
 - `headless.ts`: `createWorld(content, seed?)` and `createGame(content, seed)` (the engine's
   `HeadlessGame` contract), the headless entry named in `game.json`.
+- `view.ts`: `createView(content, seed, opts?)` (the engine's `ViewGame` contract), the view entry
+  named in `game.json`, for `pnpm cli screenshot games/demo/runs/walk-east.run.json --tick 60`.
 - `runs/walk-east.run.json`: a run file (`pnpm -s cli run games/demo/runs/walk-east.run.json --json`)
   and `runs/walk-east.hashes.json`, its committed golden state hashes (checked by
   `tests/runs/run-files.test.ts`).
-- `index.html` and `main.ts` (browser boot, files from `files.ts`); `scene.ts` (`DemoScene`).
+- `index.html` and `main.ts` (browser boot, files from `files.ts`); `scene.ts` (`DemoScene`, `renderDemo`).
 
 ## Imports allowed
 

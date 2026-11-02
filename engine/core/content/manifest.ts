@@ -3,13 +3,14 @@ import { z } from 'zod';
 /**
  * The game manifest: `game.json` at the root of a game's folder. It names the game and its kit,
  * says which files hold which kind of content, how a run starts, and which module boots the game
- * headless (for the CLI's `run`).
+ * headless (for the CLI's `run`) and, optionally, which one draws it (for `screenshot`).
  *
  *   { "id": "demo",
  *     "kit": "topdown",
  *     "content": { "room": ["content/rooms/*.json"], "song": ["content/songs/*.json"] },
  *     "start": { "seed": 1 },
- *     "headless": "headless.ts" }
+ *     "headless": "headless.ts",
+ *     "view": "view.ts" }
  *
  * Content paths are relative to the game folder, with forward slashes. Each entry is a file path
  * or a glob: `*` and `?` match within one folder, `**` matches any number of folders.
@@ -45,6 +46,11 @@ export const gameManifestSchema = z.strictObject({
   }),
   /** The module (relative to the game folder) that boots the game headless, for `run`. */
   headless: relativePath,
+  /**
+   * The module (relative to the game folder) that boots the game for drawing (`engine/core/view.ts`),
+   * for `screenshot`. Optional: a game without one can still `run`.
+   */
+  view: relativePath.exactOptional(),
 });
 
 export type GameManifest = z.output<typeof gameManifestSchema>;

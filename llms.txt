@@ -15,7 +15,7 @@
 - [engine/backends/canvas2d](docs/modules/engine-backends-canvas2d.md): the browser 2D backend and viewport
 - [engine/backends/null](docs/modules/engine-backends-null.md): the headless backend that draws nothing
 - [engine/sim](docs/modules/engine-sim.md): the headless, deterministic world simulation (placeholder until Engine 0.8)
-- [engine/tools](docs/modules/engine-tools.md): the CLI for agents and people (`pnpm cli help`): validate content, play run files headless with tick assertions, invariants and state hashes, write replay files for failing runs (with hash-mismatch checks), dump the state at a tick, edit content with get/set/add/remove (every write schema-checked and verified), mutant checks that switch kit rules off to find weak run files, with one JSON result per command and grouped exit codes
+- [engine/tools](docs/modules/engine-tools.md): the CLI for agents and people (`pnpm cli help`): validate content, play run files headless with tick assertions, invariants and state hashes, write replay files for failing runs (with hash-mismatch checks), dump the state at a tick, edit content with get/set/add/remove (every write schema-checked and verified), mutant checks that switch kit rules off to find weak run files, deterministic PNG screenshots of a run at a tick (headless Chromium), with one JSON result per command and grouped exit codes
 - [kits/topdown](docs/modules/kits-topdown.md): gameplay rules for a room-based top-down action game, with named rules a run can switch off
 - [games/demo](docs/modules/games-demo.md): the proof-of-life demo game built on the top-down kit
 

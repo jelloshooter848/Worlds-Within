@@ -38,16 +38,24 @@ export class DemoScene implements Scene {
   }
 
   render(r: Renderer): void {
-    r.clear('#000');
-    const view: TdView = {
-      frame: this.frame,
-      reduceFlashing: false,
-      sheets: DEMO_SHEETS,
-      sheet: this.sheet,
-    };
-    renderWorld(r, view, this.world);
-    r.debugText('WORLDS WITHIN - engine demo', 8, 14, '#fff');
-    r.debugText(`room: ${this.world.room.id}   hearts: ${this.world.hero.hp / 2}`, 8, 30, '#aaa');
-    r.debugText('arrows move, Z/X sword, C item', 8, 46, '#aaa');
+    renderDemo(r, this.world, this.frame, this.sheet);
   }
+}
+
+/**
+ * Draws one frame of the demo: the world, then the title and status lines. Shared by the scene
+ * and the view module (`view.ts`, for `pnpm cli screenshot`), so a screenshot is what a player sees.
+ */
+export function renderDemo(
+  r: Renderer,
+  world: TopDownWorld,
+  frame: number,
+  sheet: (id: string, palette?: string) => SpriteSheet | null,
+): void {
+  r.clear('#000');
+  const view: TdView = { frame, reduceFlashing: false, sheets: DEMO_SHEETS, sheet };
+  renderWorld(r, view, world);
+  r.debugText('WORLDS WITHIN - engine demo', 8, 14, '#fff');
+  r.debugText(`room: ${world.room.id}   hearts: ${world.hero.hp / 2}`, 8, 30, '#aaa');
+  r.debugText('arrows move, Z/X sword, C item', 8, 46, '#aaa');
 }

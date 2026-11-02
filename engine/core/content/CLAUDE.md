@@ -23,7 +23,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   takes those parts' texts, and an error in the field names the part file and its line.
 - `manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json`: `id`, `title?`, `kit`,
   `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`) and
-  `headless` (the module that boots the game headless).
+  `headless` (the module that boots the game headless) and `view?` (the module that draws it, for
+  `screenshot`; `engine/core/view.ts`).
 - `bundle.ts`: `loadContent(files, kinds, { root })` turns `{ path: text }` pairs (from Vite's
   `import.meta.glob` in the browser, `../node/game-files.ts` in Node) into a `ContentBundle`
   (`{ manifest, entries }`); `contentOf(bundle, kind)` and `contentNamed` give typed entries. An

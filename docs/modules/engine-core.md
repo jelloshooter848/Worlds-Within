@@ -19,6 +19,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`;
   `HeadlessEntry`: `createGame(content, seed, opts?)`, `HeadlessOptions` with `disabledRules`),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
+- `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `render(r)`;
+  `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
 - `gfx/renderer.ts`: the presentation contract (`Renderer`, `Rotation`, `transformed`,

@@ -24,7 +24,10 @@ the CLI starts.
   `.ww-out/`, git-ignored). Replay files go to `.ww-out/replays/`.
 - `game-loader.ts`: `loadGame(cwd, dir)` reads `<dir>/game.json` and its content files with the
   file system (`readGameFiles`) and checks them with the engine's kinds plus the kit's. It never
-  imports a game's code.
+  imports a game's code. `texts` keeps every file's text.
+- `game-check.ts`: `checkGameTexts(texts, root)` and `gameKinds(manifestText, root)`, the checks
+  on a game's files once they are text. No Node imports, so the screenshot page uses them in the
+  browser too (`game-loader.ts` re-exports them).
 - `kits.ts`: `KIT_KINDS`, the content kinds each kit adds, and `KIT_RULES` / `kitRules(kit)`, the
   named rules each kit lets a run switch off (`engine/core/rules.ts`), by the `kit` name in
   `game.json`. Add a line when a kit gets content kinds or names rules.
@@ -36,6 +39,12 @@ the CLI starts.
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
+- `screenshot.ts`: `takeScreenshot(job, gameAbs, viewAbs)` serves the repo with Vite in middleware
+  mode on a free local port, opens the screenshot page in headless Chromium (Playwright) and
+  returns the PNG bytes; `launchChromium()` (throws `NoBrowserError` with the install command),
+  `servedPath(abs)`, `pngSize(png)`.
+- `screenshot/`: the tools-only screenshot page (`index.html`, `page.ts`) and the job it takes
+  (`job.ts`). Never in the Pages build: `build/pages.ts` only builds the launcher and game pages.
 - `content-path.ts`: paths for the editing verbs (`parsePath`, dotted or JSON pointer) and the
   edits on a parsed file (`getAt`, `setAt`, `addAt`, `removeAt`), plus `parseValue` (JSON, else a
   string).
@@ -43,7 +52,7 @@ the CLI starts.
   how its text becomes a tree and back, and the check a new text must pass before it is written.
 - `json-format.ts`: reads JSON remembering which objects are spread over lines, and writes it back
   through Prettier with the repo's settings, so edits are lint-clean and change little.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `mutants.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add` and `remove`).
 
 ## The contract
@@ -86,6 +95,11 @@ hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, 
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, seed, tick,
 hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
+- `screenshot <runFile> --tick N [--out path]`: a PNG of the frame at tick N (Screenshots, below).
+  Result: `{ run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash,
+matchesHeadless }`. Exit 0, 4 when the page's state hash is not the headless one, 3 for a bad
+  run file or content or a game without `view`, 2 for a bad `--tick` or `--out`, 5 when Chromium
+  is not installed.
 - `mutants <runFile>`: mutant checks (below). Result: `{ run, game, kit, baseline: { passed,
 failure }, rules: [{ id, description, skipped, passed, guarded, failure }], guarded, weak }`.
   Exit 0 when the run passes as it is (weak rules are reported, not failed), 4 when it fails as it
@@ -241,6 +255,34 @@ hashMismatch }`: `reproduced` is true when the first failure is at the same tick
   if every check passes. A replay that fails writes no further replay.
 - Debugging: `run` the replay, then `dump <replay> --tick N` at the failing tick, or at the
   mismatch tick and the stored hash tick before it, to see what changed.
+
+## Screenshots
+
+`pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 60 --json` writes
+`.ww-out/screenshots/walk-east-t60.png` (or `--out <file>.png`, relative to the working folder) and
+prints its `path`, `width`, `height` (256x240), `bytes` and `sha256` (the whole PNG, hex).
+
+- The game names a view module in `game.json` (`view`, optional), which exports
+  `createView(content, seed, opts?)` returning a `ViewGame` (`engine/core/view.ts`): the headless
+  game plus `render(r)`. The demo's is `games/demo/view.ts`, drawing what its scene draws. No
+  `view` is a `no_view` content error at `view`; a missing file is `missing_file`.
+- How: the command first plays the run headless to tick N (as `dump`), then serves the repo with
+  a Vite dev server (middleware mode, no HMR, no dependency pre-bundling) and opens
+  `engine/tools/screenshot/index.html` in headless Chromium at 256x240, devicePixelRatio 1. The
+  page gets the game's file texts, seed, input and switched-off rules, checks the content, imports
+  the view module by URL (the game is still loaded by folder path), steps it exactly N times with
+  `ScriptedInput` (no real-time loop, no audio), draws once with the canvas2d `CanvasRenderer` onto
+  a fixed 256x240 canvas and returns `canvas.toDataURL('image/png')`: the canvas, not a page
+  screenshot, so page scaling and font smoothing stay out.
+- `hash` is the state hash of the snapshot the page drew; `headlessHash` is `dump`'s at that tick.
+  They must match (`matchesHeadless`); if not, the view plays differently from the headless
+  module and the command exits 4 (the PNG is still written).
+- Same run file and tick, same machine: byte-identical PNG (`screenshot.test.ts` checks it, and
+  that different ticks give different PNGs). Text drawn with `debugText` uses a system font, so a
+  PNG's hash can differ between machines; compare hashes on one machine.
+- Chromium: `pnpm exec playwright install --with-deps chromium` (CI does this). Without it the
+  command crashes (exit 5) with that line, and the browser tests skip with a message locally; in
+  CI (`CI` set) they are required.
 
 ## Adding a command
 

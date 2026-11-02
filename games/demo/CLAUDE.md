@@ -6,7 +6,7 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
 ## Files
 
 - `game.json`: the game manifest (schema: `engine/core/content/manifest.ts`). It names the kit, the
-  content files by kind (globs), the start seed and the headless entry (`headless.ts`).
+  content files by kind (globs), the start seed, the headless entry (`headless.ts`) and the view entry (`view.ts`).
 - `content/rooms/<id>.json` + `<id>.map.txt`: a room (schema: `kits/topdown/schema.ts`). The JSON
   holds `id` (must match the file name), `at`, `music`, `chests` and the other `RoomDef` fields;
   the `.map.txt` file is the 11x16 map grid in the kit's `LEGEND` (`kits/topdown/room.ts`).
@@ -18,8 +18,9 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
 - TypeScript is glue only: `content.ts` (the content kinds, `loadDemo`, and `demoDungeon`,
   `demoSongs`, `demoArt` over the loaded bundle), `files.ts` (the browser's file pairs through
   Vite's `import.meta.glob` with `?raw`), `headless.ts` (`createWorld(content, seed?)`, and `createGame(content, seed)`: the
-  engine's headless contract, which `pnpm cli run` imports by the path in `game.json`), `scene.ts`
-  (`DemoScene`) and `main.ts` (boots the Canvas2D backend, input, audio and assets).
+  engine's headless contract, which `pnpm cli run` imports by the path in `game.json`), `view.ts`
+  (`createView(content, seed, opts?)`: the headless game plus drawing, for `pnpm cli screenshot`),
+  `scene.ts` (`DemoScene`, and `renderDemo`, the drawing the scene and the view share) and `main.ts` (boots the Canvas2D backend, input, audio and assets).
 
 ## Adding or changing content
 

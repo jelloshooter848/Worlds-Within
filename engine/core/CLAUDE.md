@@ -14,6 +14,10 @@ JSON-safe data) and `HeadlessEntry` (`createGame(content, seed)`), which a game'
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 
+`view.ts` is the view contract: `ViewGame` (a `HeadlessGame` plus `render(r)`) and `ViewEntry`
+(`createView(content, seed, opts?)`), which a game's view module (named by `view` in `game.json`)
+exports for `pnpm cli screenshot`. Types only.
+
 `rules.ts` is the named-rule mechanism behind mutant checks: a kit declares its rules with
 `defineRules([{ id, description }])` and builds a `RuleSwitch(rules, disabled)` from the ids a run
 switches off (`HeadlessOptions.disabledRules`, passed by `createGame(content, seed, opts)`); its
