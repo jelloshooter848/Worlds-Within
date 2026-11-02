@@ -184,3 +184,44 @@ export const PURE_CORE = [
   'engine/core/present/**',
   'engine/core/assets/sheet-lookup.ts',
 ];
+
+/**
+ * The sim's maths rule (docs/ROADMAP.md, 0.8): the world simulation may not use floating-point
+ * maths whose last bits can differ between machines and JavaScript engines (the spec does not
+ * require these `Math` functions to be correctly rounded). ESLint forbids each `Math.<name>` below,
+ * and the `**` operator, in every file under {@link SIM_MATH_DIRS} (tests included), on top of the
+ * purity rule; the deterministic replacements are in {@link SIM_MATH_HELPERS}. Exact operations
+ * (`Math.floor`, `trunc`, `abs`, `min`, `max`, `sign`, `sqrt`, `fround`, integer arithmetic) stay
+ * allowed.
+ * @type {readonly string[]}
+ */
+export const SIM_FORBIDDEN_MATH = [
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'atan2',
+  'sinh',
+  'cosh',
+  'tanh',
+  'asinh',
+  'acosh',
+  'atanh',
+  'exp',
+  'expm1',
+  'log',
+  'log1p',
+  'log2',
+  'log10',
+  'pow',
+  'cbrt',
+  'hypot',
+];
+
+/** Folders the sim's maths rule covers. @type {readonly string[]} */
+export const SIM_MATH_DIRS = ['engine/sim'];
+
+/** Where the deterministic replacements live (named in every lint message). */
+export const SIM_MATH_HELPERS = 'engine/sim/math.ts';

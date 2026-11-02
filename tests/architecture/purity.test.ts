@@ -5,7 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import ts from 'typescript';
 import { isPure, resolveSpecifier } from '../../config/deps.js';
-import { PURE_CORE, PURE_DIRS } from '../../config/layers.js';
+import {
+  PURE_CORE,
+  PURE_DIRS,
+  SIM_FORBIDDEN_MATH,
+  SIM_MATH_DIRS,
+  SIM_MATH_HELPERS,
+} from '../../config/layers.js';
 
 // The purity rule (docs/ROADMAP.md, 0.2): engine/sim, kits/ and the core files they use may not use
 // Math.random, Date.now, performance.now or the DOM. ESLint enforces it from the lists in
@@ -102,7 +108,10 @@ async function purityErrors(filePath: string, code: string): Promise<string[]> {
   return (result?.messages ?? [])
     .filter(
       (m) =>
-        (m.ruleId === 'no-restricted-properties' || m.ruleId === 'no-restricted-globals') && m.severity === 2,
+        (m.ruleId === 'no-restricted-properties' ||
+          m.ruleId === 'no-restricted-globals' ||
+          m.ruleId === 'no-restricted-syntax') &&
+        m.severity === 2,
     )
     .map((m) => m.message);
 }
@@ -215,5 +224,62 @@ describe('purity rule: ESLint', () => {
   it('does not mistake a local named like a global for the global', async () => {
     const code = 'export const within = (window: number, t: number) => t < window;\n';
     expect(await purityErrors('kits/topdown/good.ts', code)).toEqual([]);
+  });
+});
+
+describe("purity rule: the sim's maths", () => {
+  // engine/sim avoids floating-point maths that can differ between machines (docs/ROADMAP.md, 0.8).
+  // The sim-math block in eslint.config.js sets no-restricted-properties again for these files, so
+  // these tests also prove it kept the purity entries (Math.random, Date.now) rather than replacing them.
+
+  it('covers engine/sim and names helpers that exist', () => {
+    expect(SIM_MATH_DIRS).toContain('engine/sim');
+    expect(existsSync(join(ROOT, SIM_MATH_HELPERS))).toBe(true);
+    expect(SIM_FORBIDDEN_MATH).toEqual(
+      expect.arrayContaining(['sin', 'cos', 'tan', 'atan2', 'pow', 'exp', 'log', 'hypot', 'cbrt']),
+    );
+  });
+
+  it('rejects Math.sin in a sim file, naming the helpers', async () => {
+    const errors = await purityErrors('engine/sim/bad.ts', 'export const y = (a: number) => Math.sin(a);\n');
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('Math.sin');
+    expect(errors[0]).toContain('engine/sim/math.ts');
+  });
+
+  it.each(SIM_FORBIDDEN_MATH.map((name) => [name]))('rejects Math.%s in a sim file', async (name) => {
+    const code = `export const f = Math.${name};\n`;
+    const errors = await purityErrors('engine/sim/systems/bad.ts', code);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('engine/sim/math.ts');
+  });
+
+  it.each([
+    ['Math.random', 'export const roll = () => Math.random();\n', 'engine/core/rng'],
+    ['Date.now', 'export const t = () => Date.now();\n', 'wall clock'],
+    ['performance.now', 'export const t = () => performance.now();\n', 'wall clock'],
+  ])('still rejects %s in a sim file', async (_name, code, hint) => {
+    const errors = await purityErrors('engine/sim/bad.ts', code);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.join('\n')).toContain(hint);
+  });
+
+  it('rejects destructuring and the ** operator', async () => {
+    const destructured = 'const { atan2 } = Math;\nexport const f = atan2;\n';
+    expect(await purityErrors('engine/sim/bad.ts', destructured)).toHaveLength(1);
+    const power = 'export const f = (a: number) => a ** 2;\n';
+    const errors = await purityErrors('engine/sim/bad.ts', power);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('engine/sim/math.ts');
+    const assign = 'export const f = (a: number) => {\n  a **= 2;\n  return a;\n};\n';
+    expect(await purityErrors('engine/sim/bad.ts', assign)).toHaveLength(1);
+  });
+
+  it('allows exact Math functions in the sim and leaves other folders alone', async () => {
+    const exact = 'export const f = (a: number) => Math.floor(Math.sqrt(Math.abs(Math.max(a, 0))));\n';
+    expect(await purityErrors('engine/sim/good.ts', exact)).toEqual([]);
+    const trig = 'export const y = (a: number) => Math.sin(a) + 2 ** a;\n';
+    expect(await purityErrors('kits/topdown/good.ts', trig)).toEqual([]);
+    expect(await purityErrors('engine/core/math/good.ts', trig)).toEqual([]);
   });
 });

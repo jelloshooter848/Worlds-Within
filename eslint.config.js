@@ -2,7 +2,14 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 import layersPlugin from './config/eslint-plugin-layers.js';
-import { LAYERS, PURE_CORE, PURE_DIRS } from './config/layers.js';
+import {
+  LAYERS,
+  PURE_CORE,
+  PURE_DIRS,
+  SIM_FORBIDDEN_MATH,
+  SIM_MATH_DIRS,
+  SIM_MATH_HELPERS,
+} from './config/layers.js';
 
 // The dependency rule: one block per layer in config/layers.js, each running the shared checker
 // (config/deps.js), so ESLint and tests/architecture/dependency-rule.test.ts read one table. Test
@@ -64,24 +71,52 @@ const DOM_GLOBALS = [
   'ResizeObserver',
   'IntersectionObserver',
 ];
+const PURITY_PROPERTIES = [
+  { object: 'Math', property: 'random', message: `Math.random is not seeded. ${RNG_HINT}` },
+  { object: 'Date', property: 'now', message: `Date.now reads the wall clock. ${CLOCK_HINT}` },
+  {
+    object: 'performance',
+    property: 'now',
+    message: `performance.now reads the wall clock. ${CLOCK_HINT}`,
+  },
+];
 const purityBlock = {
   name: 'purity',
   files: [...PURE_DIRS.map((dir) => `${dir}/**/*.{ts,tsx,js,mjs}`), ...PURE_CORE],
   rules: {
-    'no-restricted-properties': [
-      'error',
-      { object: 'Math', property: 'random', message: `Math.random is not seeded. ${RNG_HINT}` },
-      { object: 'Date', property: 'now', message: `Date.now reads the wall clock. ${CLOCK_HINT}` },
-      {
-        object: 'performance',
-        property: 'now',
-        message: `performance.now reads the wall clock. ${CLOCK_HINT}`,
-      },
-    ],
+    'no-restricted-properties': ['error', ...PURITY_PROPERTIES],
     'no-restricted-globals': [
       'error',
       { name: 'performance', message: `performance reads the wall clock. ${CLOCK_HINT}` },
       ...DOM_GLOBALS.map((name) => ({ name, message: `${name} is browser-only. ${DOM_HINT}` })),
+    ],
+  },
+};
+
+// The sim's maths rule (docs/ROADMAP.md, 0.8): engine/sim also avoids floating-point maths that can
+// differ between machines (SIM_FORBIDDEN_MATH in config/layers.js) and the `**` operator. ESLint
+// replaces a rule's options when a later block sets it again, so this block repeats the purity
+// properties; tests/architecture/purity.test.ts checks both still fire on sim files.
+const MATH_HINT = `Use the integer and fixed-point helpers in ${SIM_MATH_HELPERS}.`;
+const simMathBlock = {
+  name: 'sim-math',
+  files: SIM_MATH_DIRS.map((dir) => `${dir}/**/*.{ts,tsx,js,mjs}`),
+  rules: {
+    'no-restricted-properties': [
+      'error',
+      ...PURITY_PROPERTIES,
+      ...SIM_FORBIDDEN_MATH.map((property) => ({
+        object: 'Math',
+        property,
+        message: `Math.${property} can differ between machines. ${MATH_HINT}`,
+      })),
+    ],
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: "BinaryExpression[operator='**'], AssignmentExpression[operator='**=']",
+        message: `The ** operator is Math.pow and can differ between machines. Use ipow in ${SIM_MATH_HELPERS}, or write the constant out.`,
+      },
     ],
   },
 };
@@ -102,4 +137,5 @@ export default tseslint.config(
   },
   ...layerBlocks,
   purityBlock,
+  simMathBlock,
 );
