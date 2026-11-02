@@ -4,9 +4,11 @@ import { fileURLToPath } from 'node:url';
 import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { loadTest, mustLoad, testStages } from './content';
+import { loadTest, mustLoad, testRooms, testStages } from './content';
+import { testMiniGames } from './minigames';
 import { LEVEL_PAUSE } from '@kits/platformer';
 import { createGame, type TestSnapshot } from './headless';
+import type { RoomChallenge } from '@kits/topdown';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
@@ -34,7 +36,7 @@ describe('platformer test content', () => {
 
   it('plays its levels in id order, numbers compared as numbers, each with its own profile', () => {
     const stages = testStages(content);
-    expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3']);
+    expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3', 'level-4']);
     expect(stages.every((s) => s.profile.id === 'hopper')).toBe(true);
   });
 
@@ -48,6 +50,7 @@ describe('platformer test content', () => {
       'level-1',
       'level-2',
       'level-3',
+      'level-4',
       'level-9',
       'level-10',
     ]);
@@ -76,7 +79,7 @@ describe('platformer test headless game', () => {
     expect(play(300)).toEqual(play(300));
   });
 
-  it("plays its three levels start to goal, in order, with the level-3 run file's input", () => {
+  it("plays its first three levels start to goal, in order, with the level-3 run file's input", () => {
     const runFile = JSON.parse(readFileSync(new URL('./runs/level-3.run.json', import.meta.url), 'utf8')) as {
       ticks: number;
       input: InputScript;
@@ -109,5 +112,46 @@ describe('platformer test headless game', () => {
     }
     expect(game.world).not.toBe(failed);
     expect(game.snapshot()).toMatchObject({ level: 'level-1', stage: 0, pause: 0, outcome: 'playing' });
+  });
+
+  it("plays the door level's round, failed and then passed, with the level-4 run file's input", () => {
+    const runFile = JSON.parse(readFileSync(new URL('./runs/level-4.run.json', import.meta.url), 'utf8')) as {
+      ticks: number;
+      input: InputScript;
+    };
+    const game = createGame(content, 1);
+    const input = new ScriptedInput(runFile.input);
+    const results: string[] = [];
+    const cleared: string[] = [];
+    for (let t = 0; t < runFile.ticks; t++) {
+      input.next();
+      game.step(input);
+      for (const e of game.events) if (e.type === 'mini-game-end') results.push(e.result);
+      if (game.events.some((e) => e.type === 'cleared')) cleared.push(game.world.level.id);
+    }
+    expect(results).toEqual(['fail', 'pass']);
+    expect(cleared).toEqual(['level-1', 'level-2', 'level-3', 'level-4']);
+  });
+});
+
+describe("platformer test's mini games", () => {
+  it('builds one room challenge per room file, named by the room id', () => {
+    expect(testRooms(content).map((r) => r.id)).toEqual(['vault']);
+    expect(testMiniGames(content).map((d) => [d.id, d.title])).toEqual([['vault', 'VAULT']]);
+  });
+
+  it("starts a vault round from the door's params, at the game's screen size", () => {
+    const def = testMiniGames(content)[0]!;
+    const round = def.create(
+      { params: { goal: 'defeat-all', ticks: 600, hp: 4 }, attempt: 1 },
+      5,
+    ) as RoomChallenge;
+    expect(round.snapshot()).toMatchObject({
+      room: 'vault',
+      enemies: 2,
+      hero: { hp: 4 },
+      round: { limit: 600 },
+    });
+    expect(round.present().size).toEqual({ width: 256, height: 240 });
   });
 });

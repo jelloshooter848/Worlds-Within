@@ -3,6 +3,7 @@ import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import type { ContentKinds } from '@engine/core/content/kinds';
 import { formatErrors, type ContentResult } from '@engine/core/content/validate';
 import { levelKind, levelStages, profileKind, type LevelStage } from '@kits/platformer';
+import { roomKind, type RoomDef } from '@kits/topdown';
 
 /**
  * Glue between the stacking test's data files (`game.json` and `content/`) and the engine: the
@@ -12,10 +13,14 @@ import { levelKind, levelStages, profileKind, type LevelStage } from '@kits/plat
 
 const LEVEL = levelKind();
 const PROFILE = profileKind();
+const ROOM = roomKind();
 
-/** The engine's kinds plus the platformer kit's levels and profiles. */
+/**
+ * The engine's kinds plus the platformer kit's levels and profiles and the top-down kit's rooms
+ * (the door level's mini game; `game.json` lists `topdown` in `uses`).
+ */
 export function testKinds(): ContentKinds {
-  return engineContentKinds().register(LEVEL).register(PROFILE);
+  return engineContentKinds().register(LEVEL).register(PROFILE).register(ROOM);
 }
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/platformer-test`. */
@@ -37,6 +42,11 @@ export function testStages(content: ContentBundle): TestStage[] {
   if (levels.length === 0) throw new Error('the stacking test has no levels');
   const profiles = contentOf(content, PROFILE).map((e) => e.value);
   return levelStages(levels, profiles);
+}
+
+/** The top-down rooms (`content/rooms/`), each one a mini game's room, by id. */
+export function testRooms(content: ContentBundle): RoomDef[] {
+  return contentOf(content, ROOM).map((e) => e.value);
 }
 
 /** Throws with every error, one per line: for entry points, where bad content is a build mistake. */

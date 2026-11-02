@@ -1,0 +1,13 @@
+{
+  "id": "level-4",
+  "profile": "hopper",
+  "scroll": "right",
+  "triggers": [
+    {
+      "game": "vault",
+      "params": { "goal": "defeat-all", "ticks": 600, "hp": 4 },
+      "pass": ["coins:5", "open:22:6", "open:22:7", "open:22:8"],
+      "fail": ["respawn"]
+    }
+  ]
+}

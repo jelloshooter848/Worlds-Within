@@ -1,0 +1,545 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 3300,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 44,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 60,
+        "hold": ["right"]
+      },
+      {
+        "frame": 104,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 124,
+        "hold": ["right"]
+      },
+      {
+        "frame": 168,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 184,
+        "hold": ["right"]
+      },
+      {
+        "frame": 250,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 268,
+        "hold": ["right"]
+      },
+      {
+        "frame": 336,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 346,
+        "hold": ["right"]
+      },
+      {
+        "frame": 404,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 420,
+        "hold": ["right"]
+      },
+      {
+        "frame": 464,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 472,
+        "hold": ["right"]
+      },
+      {
+        "frame": 603,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 615,
+        "hold": ["right"]
+      },
+      {
+        "frame": 635,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 653,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 702,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 718,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 741,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 749,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 778,
+        "hold": ["left"]
+      },
+      {
+        "frame": 857,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 948,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 963,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 1010,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1016,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1038,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1100,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1113,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1267,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1287,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1415,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1435,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1488,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1508,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1763,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1783,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1803,
+        "hold": []
+      },
+      {
+        "frame": 1811,
+        "hold": ["left"]
+      },
+      {
+        "frame": 1817,
+        "hold": []
+      },
+      {
+        "frame": 1845,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 1869,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2281,
+        "hold": []
+      },
+      {
+        "frame": 2881,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2882,
+        "hold": ["left"]
+      },
+      {
+        "frame": 2921,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2965,
+        "hold": ["down"]
+      },
+      {
+        "frame": 2971,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2972,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2977,
+        "hold": ["down"]
+      },
+      {
+        "frame": 2989,
+        "hold": ["up"]
+      },
+      {
+        "frame": 2991,
+        "hold": ["down"]
+      },
+      {
+        "frame": 2992,
+        "hold": ["right"]
+      },
+      {
+        "frame": 2997,
+        "hold": ["down"]
+      },
+      {
+        "frame": 3003,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3014,
+        "hold": ["down"]
+      },
+      {
+        "frame": 3016,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3017,
+        "hold": []
+      },
+      {
+        "frame": 3032,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3033,
+        "hold": []
+      },
+      {
+        "frame": 3047,
+        "hold": ["up"]
+      },
+      {
+        "frame": 3049,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3081,
+        "hold": ["down"]
+      },
+      {
+        "frame": 3085,
+        "hold": ["up"]
+      },
+      {
+        "frame": 3089,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3094,
+        "hold": ["down"]
+      },
+      {
+        "frame": 3097,
+        "hold": ["up"]
+      },
+      {
+        "frame": 3100,
+        "hold": ["down"]
+      },
+      {
+        "frame": 3101,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3106,
+        "hold": ["down"]
+      },
+      {
+        "frame": 3112,
+        "hold": ["up"]
+      },
+      {
+        "frame": 3113,
+        "hold": ["right"]
+      },
+      {
+        "frame": 3126,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3127,
+        "hold": []
+      },
+      {
+        "frame": 3142,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 3143,
+        "hold": []
+      },
+      {
+        "frame": 3144,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 2059,
+      "path": "level",
+      "op": "eq",
+      "value": "level-4"
+    },
+    {
+      "tick": 2059,
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 2059,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 2281,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "vault",
+        "attempt": 1
+      }
+    },
+    {
+      "tick": 2281,
+      "path": "miniGame.game",
+      "op": "eq",
+      "value": "vault"
+    },
+    {
+      "tick": 2281,
+      "path": "miniGame.state.room",
+      "op": "eq",
+      "value": "vault"
+    },
+    {
+      "tick": 2281,
+      "path": "miniGame.state.round.goal",
+      "op": "eq",
+      "value": "defeat-all"
+    },
+    {
+      "tick": 2281,
+      "path": "miniGame.state.hero.maxHp",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 2281,
+      "path": "miniGame.state.enemies",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 2880,
+      "path": "miniGame.state.round.ticks",
+      "op": "eq",
+      "value": 599
+    },
+    {
+      "tick": 2880,
+      "path": "player.x",
+      "op": "eq",
+      "value": 84584
+    },
+    {
+      "tick": 2881,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "vault",
+        "result": "fail"
+      }
+    },
+    {
+      "tick": 2881,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "respawn"
+      }
+    },
+    {
+      "tick": 2881,
+      "path": "miniGame",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 2881,
+      "path": "coins",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 2881,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 2900,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 2930,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 2965,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "vault",
+        "attempt": 2
+      }
+    },
+    {
+      "tick": 2965,
+      "path": "miniGame.state.round.attempt",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 3143,
+      "path": "miniGame.state.enemies",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 3144,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "vault",
+        "result": "pass"
+      }
+    },
+    {
+      "tick": 3144,
+      "path": "coins",
+      "op": "eq",
+      "value": 7
+    },
+    {
+      "tick": 3144,
+      "path": "tiles",
+      "op": "contains",
+      "value": {
+        "col": 22,
+        "row": 7,
+        "cell": "empty"
+      }
+    },
+    {
+      "tick": 3144,
+      "path": "tiles",
+      "op": "contains",
+      "value": {
+        "col": 21,
+        "row": 8,
+        "cell": "empty"
+      }
+    },
+    {
+      "tick": 3283,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 3283,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 3283,
+      "path": "coins",
+      "op": "eq",
+      "value": 7
+    }
+  ],
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "gte",
+      "value": 1
+    },
+    {
+      "path": "stage",
+      "op": "in",
+      "value": [0, 1, 2, 3]
+    }
+  ],
+  "hashEvery": 60,
+  "guards": ["solid-tiles", "goal-clears-level", "mini-games"]
+}

@@ -1,0 +1,229 @@
+{
+  "run": "games/platformer-test/runs/level-4.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "00f28c784e2a9857"
+    },
+    {
+      "tick": 60,
+      "hash": "dfcad6c2a38adb28"
+    },
+    {
+      "tick": 120,
+      "hash": "da9e44eb53ed5409"
+    },
+    {
+      "tick": 180,
+      "hash": "d0fa3ccaca84f2ea"
+    },
+    {
+      "tick": 240,
+      "hash": "118006c91bd03783"
+    },
+    {
+      "tick": 300,
+      "hash": "0ea6d18b5e241cd1"
+    },
+    {
+      "tick": 360,
+      "hash": "465534b3594ae632"
+    },
+    {
+      "tick": 420,
+      "hash": "6df34161563bd0dd"
+    },
+    {
+      "tick": 480,
+      "hash": "ee7b19e7fa791c37"
+    },
+    {
+      "tick": 540,
+      "hash": "7434973165ae8816"
+    },
+    {
+      "tick": 600,
+      "hash": "c8308e5d1bf6cfc9"
+    },
+    {
+      "tick": 660,
+      "hash": "6695394707d525e9"
+    },
+    {
+      "tick": 720,
+      "hash": "12b41467c64b7fda"
+    },
+    {
+      "tick": 780,
+      "hash": "19e70e7aaec0f9cd"
+    },
+    {
+      "tick": 840,
+      "hash": "84ce1c71fcfec6dc"
+    },
+    {
+      "tick": 900,
+      "hash": "cc8220700a893268"
+    },
+    {
+      "tick": 960,
+      "hash": "1c28b83659d3d0b3"
+    },
+    {
+      "tick": 1020,
+      "hash": "7fab4999d5ac73b2"
+    },
+    {
+      "tick": 1080,
+      "hash": "832ef5c023ca3f9c"
+    },
+    {
+      "tick": 1140,
+      "hash": "ccdf6d5d4678fdec"
+    },
+    {
+      "tick": 1200,
+      "hash": "cb50af63e78e2d35"
+    },
+    {
+      "tick": 1260,
+      "hash": "e5e3a59782ff79a5"
+    },
+    {
+      "tick": 1320,
+      "hash": "25a8715c7b019f3b"
+    },
+    {
+      "tick": 1380,
+      "hash": "809af215f6c9c68f"
+    },
+    {
+      "tick": 1440,
+      "hash": "8126782d48884d51"
+    },
+    {
+      "tick": 1500,
+      "hash": "53f49e63490e99f1"
+    },
+    {
+      "tick": 1560,
+      "hash": "745b684640543032"
+    },
+    {
+      "tick": 1620,
+      "hash": "ab653d9c99d8c7ec"
+    },
+    {
+      "tick": 1680,
+      "hash": "6ffa45d9ddee7c7c"
+    },
+    {
+      "tick": 1740,
+      "hash": "71df6528afccaa2e"
+    },
+    {
+      "tick": 1800,
+      "hash": "7aad30a1d704577c"
+    },
+    {
+      "tick": 1860,
+      "hash": "ca564ae4c475c4a0"
+    },
+    {
+      "tick": 1920,
+      "hash": "d2a8d90f5aaeaa46"
+    },
+    {
+      "tick": 1980,
+      "hash": "06358836c168af28"
+    },
+    {
+      "tick": 2040,
+      "hash": "1da921d27c540dc5"
+    },
+    {
+      "tick": 2100,
+      "hash": "dae1fcce47ef88bd"
+    },
+    {
+      "tick": 2160,
+      "hash": "37658b55e3f3f2be"
+    },
+    {
+      "tick": 2220,
+      "hash": "ed2f9fe5d42c9f41"
+    },
+    {
+      "tick": 2280,
+      "hash": "72a436031dee01e4"
+    },
+    {
+      "tick": 2340,
+      "hash": "7bd23b827bc10da1"
+    },
+    {
+      "tick": 2400,
+      "hash": "9095fe0d5fe8eac5"
+    },
+    {
+      "tick": 2460,
+      "hash": "941f7f2b35613d6b"
+    },
+    {
+      "tick": 2520,
+      "hash": "31510ff8b55e8f38"
+    },
+    {
+      "tick": 2580,
+      "hash": "5e178a6c99d8f56f"
+    },
+    {
+      "tick": 2640,
+      "hash": "e342deb71e5f9251"
+    },
+    {
+      "tick": 2700,
+      "hash": "55f4a450e8eb60eb"
+    },
+    {
+      "tick": 2760,
+      "hash": "80445d273ef5773d"
+    },
+    {
+      "tick": 2820,
+      "hash": "b14a075d4d5a2002"
+    },
+    {
+      "tick": 2880,
+      "hash": "3cfc6c47b0abe93e"
+    },
+    {
+      "tick": 2940,
+      "hash": "6f011d5586f3cfb0"
+    },
+    {
+      "tick": 3000,
+      "hash": "338e1bcbc8c71787"
+    },
+    {
+      "tick": 3060,
+      "hash": "37de7dbb8764a8a0"
+    },
+    {
+      "tick": 3120,
+      "hash": "e518141493f5f6a9"
+    },
+    {
+      "tick": 3180,
+      "hash": "792439e95bc49a13"
+    },
+    {
+      "tick": 3240,
+      "hash": "e2f55a6c3ec53544"
+    },
+    {
+      "tick": 3300,
+      "hash": "06201f9a779cc2fc"
+    }
+  ]
+}

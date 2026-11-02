@@ -21,8 +21,12 @@ other entity in draw order with `TD_DEPTH` depths, HUD status values, events wit
 camera hint; the kit's `CLAUDE.md` maps old frame names to presented kinds and animations) without drawing and without changing any state;
 `TdPresentState` keeps the `MapTracker` and stable entity ids), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
 with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full adoption in 0.5)
-and `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
-`.map.txt` text grid). `bot.ts` (the scripted test bot) is imported directly by tests.
+`schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
+`.map.txt` text grid) and `challenge` (`roomChallenge(opts)`: a one-room challenge as the engine's
+`MiniGameDef`, for a host from another kit such as a platformer level's door; the game gives the
+room, the trigger's params give `goal` (`defeat-all` or `reach`), `ticks` and `hp`; a round passes
+on its goal, fails on the hero's death or time-out and quits on select; `snapshot()` is
+`snapshotWorld` plus `round`, `present()` the kit's `presentWorld` frame). `bot.ts` (the scripted test bot) is imported directly by tests.
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`: the
 name `topdown`, `kinds()` with the room kind, and `TOPDOWN_RULES`); `engine/tools/kits.ts` finds it
 by the `kit` name in `game.json`.
@@ -41,5 +45,5 @@ by the `kit` name in `game.json`.
 ## How to test
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed.

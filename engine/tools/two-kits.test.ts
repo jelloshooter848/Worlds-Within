@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,8 +12,8 @@ import { main } from './main';
 
 /**
  * A game on two kits (Engine 0.7 T4): `uses` in `game.json` adds another kit's content kinds to
- * the game's own kit's. The test game is a copy of games/platformer-test (kit `platformer`) that
- * also uses `topdown` and holds the demo's three rooms.
+ * the game's own kit's. The test game is a copy of games/platformer-test (kit `platformer`), which
+ * uses `topdown` and holds one room (`vault`, its door level's mini game, Engine 0.7 T5).
  */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -27,20 +27,23 @@ afterEach(() => {
 });
 
 /**
- * A temp folder with the test game on `platformer` using `uses` (`topdown` by default; null leaves
- * `uses` out), with the demo's rooms.
+ * A temp folder with the test game on `platformer` with `uses` set to `uses` (`topdown` by
+ * default; null leaves `uses` out) and its room files.
  */
 function twoKitGame(uses: unknown = ['topdown']): string {
   const cwd = mkdtempSync(join(tmpdir(), 'ww-two-kits-'));
   temps.push(cwd);
   cpSync(join(ROOT, GAME), join(cwd, GAME), { recursive: true });
   cpSync(join(ROOT, '.prettierrc'), join(cwd, '.prettierrc'));
-  mkdirSync(join(cwd, ROOMS), { recursive: true });
-  cpSync(join(ROOT, 'games/demo/content/rooms'), join(cwd, ROOMS), { recursive: true });
   const file = join(cwd, GAME, 'game.json');
-  const manifest = JSON.parse(readFileSync(file, 'utf8')) as { content: Record<string, string[]> };
+  const manifest = JSON.parse(readFileSync(file, 'utf8')) as {
+    content: Record<string, string[]>;
+    uses?: unknown;
+  };
   manifest.content.room = ['content/rooms/*.json'];
-  writeFileSync(file, JSON.stringify(uses === null ? manifest : { ...manifest, uses }, null, 2) + '\n');
+  if (uses === null) delete manifest.uses;
+  else manifest.uses = uses;
+  writeFileSync(file, JSON.stringify(manifest, null, 2) + '\n');
   return cwd;
 }
 
@@ -58,18 +61,16 @@ describe('a game on two kits', () => {
     expect(out.errors).toEqual([]);
     expect(code).toBe(EXIT.ok);
     const files = (out.files as { file: string }[]).map((f) => f.file);
-    expect(files).toContain(`${ROOMS}/courtyard.map.txt`);
+    expect(files).toContain(`${ROOMS}/vault.map.txt`);
     expect(files).toContain(`${GAME}/content/levels/level-1.json`);
   });
 
   it('reports a broken room file naming the file and field', async () => {
     const cwd = twoKitGame();
-    writeFileSync(join(cwd, ROOMS, 'store-room.json'), '{ "id": "store-room", "at": [0, 0], "chests": 3 }\n');
+    writeFileSync(join(cwd, ROOMS, 'vault.json'), '{ "id": "vault", "at": [0, 0], "chests": 3 }\n');
     const { code, out } = await cli(cwd, 'validate', GAME);
     expect(code).toBe(EXIT.invalidContent);
-    expect(out.errors).toEqual([
-      expect.objectContaining({ file: `${ROOMS}/store-room.json`, path: 'chests' }),
-    ]);
+    expect(out.errors).toEqual([expect.objectContaining({ file: `${ROOMS}/vault.json`, path: 'chests' })]);
   });
 
   it('without `uses`, a room kind in the manifest is unknown', async () => {
@@ -81,16 +82,16 @@ describe('a game on two kits', () => {
 
   it('edits a room file of the second kit, checked against its schema', async () => {
     const cwd = twoKitGame();
-    const room = `${ROOMS}/guard-room.json`;
+    const room = `${ROOMS}/vault.json`;
     const refused = await cli(cwd, 'set', room, 'at', '"nowhere"');
     expect(refused.code).toBe(EXIT.invalidContent);
-    const map = `${ROOMS}/guard-room.map.txt`;
+    const map = `${ROOMS}/vault.map.txt`;
     const get = await cli(cwd, 'get', map, 'rows.0');
     expect(get.code).toBe(EXIT.ok);
     expect(get.out).toMatchObject({ kind: 'room', value: '################' });
   });
 
-  it('runs, dumps and mutant-checks the game unchanged: same hashes as without the rooms', async () => {
+  it('runs, dumps and mutant-checks the game unchanged: same hashes as its golden file', async () => {
     const cwd = twoKitGame();
     const golden = JSON.parse(readFileSync(join(ROOT, `${GAME}/runs/level-1.hashes.json`), 'utf8')) as {
       hashes: unknown;

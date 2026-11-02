@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 80.** (Last used: 79.)
+**Next unused number: 82.** (Last used: 81.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -219,3 +219,10 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **79.** Gap G10: placing things by column in a 56-60 character map row is easy to get wrong
   (the map files have no ruler), and `set <map> rows.R.C` fixes one cell per call. Is that enough
   until the 0.14 creator tools (a region `set`, or a ruler in `get`), or should it come sooner?
+- **80.** Gap G12: the top-down kit's rules inside the door level's round are not mutant-checked
+  (`mutants` tries only `kit`'s rules, and the headless contract has one flat rule list).
+  `roomChallenge` already takes `disabledRules`. Make `mutants` per-kit (rule ids and strictness
+  per kit, routed by the game's glue) in 0.14 with the creator tools, or sooner?
+- **81.** Gap G20: on the tick a mini-game round ends, the platformer snapshot drops the round, so
+  its last events (the final `kill`, `dead`, `exit`) are in no snapshot. Keep the ended round in
+  the snapshot for that tick (changes the lab's `mini-game` golden hashes), or leave it?

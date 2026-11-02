@@ -4,8 +4,9 @@ The top-down kit: gameplay rules for a room-based action game seen from above. R
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
-`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), tile-sheet frame helpers (`frames.ts`) and the room
-file schema (`schema.ts`).
+`person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), tile-sheet frame helpers (`frames.ts`), the room
+file schema (`schema.ts`) and the one-room challenge adapter that hosts the kit as another kit's
+mini game (`challenge.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
 ## Kit hook (`kit.ts`)
@@ -169,6 +170,43 @@ at the room file (a map row at the `.map.txt` file and line) instead of the game
 `roomKind(extraLegend, wall, { oneDungeon: false })` leaves that out, for a game whose room files
 make several dungeons.
 
+## Room challenges as mini games (`challenge.ts`)
+
+The kit as a mini game over another kit (Engine 0.7, the stacking test: a platformer level's door
+pushes a one-room top-down challenge over the level). It implements the engine's mini game
+contract (`engine/core/minigame.ts`: `MiniGameDef`, `MiniGame`); the host (the platformer kit's
+world) steps the round headless and acts on its result.
+
+- `roomChallenge({ id, title, room, extraLegend?, wall?, spawners?, items?, disabledRules?, size?,
+top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usually one of its
+  room files); the kit holds no room. The room is checked once, here (`buildDungeon` of that one
+  room: it throws on a bad one).
+- Each round (`create(ctx, seed)`) is a `RoomChallenge`: a fresh one-room `TopDownWorld` seeded
+  from the round's seed (and nothing else random), with the trigger's params read by
+  `challengeParams(ctx.params)`: `goal` (`defeat-all`: every enemy beaten, `world.enemies()`
+  empty; `reach`: an exit tile `E` reached, `world.exited`), `ticks` (the time limit,
+  `CHALLENGE_TICKS` = 1800 when left out) and `hp` (the hero's hit points in half hearts). An
+  unknown param, a goal not in `CHALLENGE_GOALS` or a bad number throws naming it, and so does
+  `defeat-all` in a room with no enemies.
+- `step(input)` steps the world with the host's `InputFrame`, as it is. **Select is the round's**:
+  a press quits (`quit`) before the world sees it, so a hosted hero never cycles items. After each
+  step: the goal met is `pass`; else the hero dead (after the death spin, `hero.dead`) or the
+  time limit reached is `fail`. Once ended it stays ended and `step` does nothing.
+- `snapshot()` is the kit's `snapshotWorld` (with the last step's events) plus `round`: `goal`,
+  `ticks` (stepped so far), `limit`, `attempt` and `result` (`ChallengeSnapshot`). The host puts it
+  in its own snapshot (`miniGame.state`), so state hashes cover the round.
+- `present()` is the kit's `presentWorld` frame of the round at the options' `size` (and `top`),
+  with `status.goal` and `status.timeLeft` added. It keeps no stream state: every frame carries
+  the full map and ids of things the room text did not place count from 1 per frame.
+- `world` (read-only use) is the round's world, for a test bot (`TopDownBot`) or a tracer.
+- Rules: `disabledRules` switches kit rules off in every round. The tools do not route a run's
+  switched-off rules to a kit a game `uses` yet (gap G12 in `docs/reports/stacking-test.md`).
+
+`challenge.test.ts` covers a pass on `reach` and on `defeat-all` (driven by `TopDownBot`), a
+fail on the hero's death and on time-out, a quit on select (which the world never sees), the
+same snapshots from the same seed (and others from another), the presented frame and the param
+and room checks. Its room is built inline in the test.
+
 ## Imports
 
 - Allowed: `@engine/core/*` except the drawing and output side (`FORBIDDEN_CORE` in
@@ -182,5 +220,5 @@ make several dungeons.
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
 `beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`,
-`present-entities.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`present-entities.test.ts`, `challenge.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

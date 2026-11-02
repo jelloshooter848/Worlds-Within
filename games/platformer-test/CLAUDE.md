@@ -17,11 +17,11 @@ release that will).
 
 ## Files
 
-- `game.json`: the manifest: kit `platformer`, 256x240, seed 1, `headless.ts`. No `view` yet
+- `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the door level's room),
+  256x240, seed 1, `headless.ts`, content kinds `level`, `profile` and `room`. No `view` yet
   (2D and 3D views come with 0.7 T7 and T8), so there is no `index.html` and no screenshot.
 - `content/levels/<id>.json` + `<id>.map.txt`: levels (format: `kits/platformer/CLAUDE.md`,
-  Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in id order. Three today
-  (the door level, 0.7 T5, makes four), all `"scroll": "right"`, each about a few kit rules:
+  Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in id order. Four, all `"scroll": "right"`, each about a few kit rules:
   - `level-1`: a short, easy first level, 48x10 tiles: a bump block with a
     coin over the runway, two floor coins, a 2-tile gap, a 2-high step, a 3-tile gap with an arc
     of three coins over it, one `walker` (woken as the view nears it, stompable), a 2-high wall,
@@ -36,6 +36,16 @@ release that will).
     `walker`s close together (the first hurts, the second is passed while invulnerable), a
     `ledge-walker` pacing a floating platform, a 3-spike pit, a 2-tile island with two coins, one
     more spike and the goal.
+  - `level-4` ("the door"), 40x10: two floor coins, then a wall from the top of the level to the
+    ground at column 22 with a mini-game trigger (`!`) in front of it at (21,8): the door. Its
+    `triggers` entry starts the `vault` mini game with params `goal: defeat-all`, `ticks: 600`,
+    `hp: 4`; a `pass` gives 5 coins and opens the wall's three lowest tiles (`open:22:6` to
+    `open:22:8`; the trigger itself is emptied), a `fail` puts the player back on the door
+    (`respawn`; step off and on again for another round). Past the wall, the goal.
+- `content/rooms/vault.json` + `vault.map.txt`: the door's top-down room (`kits/topdown` room
+  format, `kits/topdown/CLAUDE.md`, Room files): 16x11, four statues, a 2x2 pool, two knights
+  (`n`), the hero's start at (2,5). It is a `RoomDef` like any top-down game's; nothing in it says
+  it is a mini game (the level's trigger does).
 - `content/profiles/hopper.profile.json`: the game's own physics profile (`hopper`): it started
   from the kit's fixture profile and was changed (a little slower walk and run cap, a slower
   walker, 2 hit points, 3 lives, a 6-tick jump buffer, a softer middle jump tier). Its actor
@@ -43,35 +53,44 @@ release that will).
   `shell`) and `shell` (still, kickable at 12288). Profiles live in
   their own folder because the `level` glob `content/levels/*.json` would claim them too.
 - TypeScript is glue only:
-  - `content.ts`: `testKinds()`, `loadTest(files)`, `testStages(content)` (the levels in play
+  - `content.ts`: `testKinds()` (the engine's kinds, the platformer kit's `level` and `profile`,
+    the top-down kit's `room`), `testRooms(content)`, `loadTest(files)`, `testStages(content)` (the levels in play
     order: by id, numbers compared as numbers, `level-2` before `level-10`; each paired with the
     profile it names by the kit's `levelStages`), `mustLoad`;
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
-    kit's `LevelSequence` over `testStages(content)` with the run's seed and switched-off rules
+    kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
+    `testMiniGames(content)`
     (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and `SequenceSnapshot`). The
     level flow is the kit's (`kits/platformer/CLAUDE.md`, Level sequences): `LEVEL_PAUSE` (60)
     ticks after a level ends, then the next level or the failed one afresh; the snapshot is the
     kit's plus `stage` and `pause`. (Until Engine 0.7 T2 this was a copy of the lab's: gap G1,
     fixed.)
+  - `minigames.ts`: `testMiniGames(content)`: one `roomChallenge` (`kits/topdown/challenge.ts`)
+    per room file, its id the room's id, its title the id in capitals (a room file has no title:
+    gap G15), at the manifest's `screen` size. What the round asks and what its result does are
+    level data, not code.
   - `files.ts`: `TEST_FILES`, the data files through Vite's `import.meta.glob` (for the browser
     pages to come; Node reads them with `readGameFiles`).
 - `platformer-test.test.ts`: content loads, a broken field is named by file and field, the level
-  order (with `level-10` after `level-9`), the start state, the three levels cleared in order with
-  `level-3.run.json`'s input, equal snapshots on two runs, and a failed level starting afresh
-  after `LEVEL_PAUSE`.
+  order (with `level-10` after `level-9`), the start state, the first three levels cleared in
+  order with `level-3.run.json`'s input, the door's round failed then passed and all four levels
+  cleared with `level-4.run.json`'s, equal snapshots on two runs, a failed level starting afresh
+  after `LEVEL_PAUSE`, and the mini games built from the room files (a vault round from the
+  door's params).
 
 ## Run files
 
 Every run file starts at the first level (a run file cannot start at a later one: gap G9), so
 `level-2.run.json` holds `level-1`'s input and then its own, and `level-3.run.json` both before
 its own. Each level starts `LEVEL_PAUSE` (60) ticks after the one before it is cleared: `level-2`
-at tick 553, `level-3` at tick 1161.
+at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
 
 | run       | ticks | ends at                        | guards                                                                                                                                                                                                                                                                                                         |
 | --------- | ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `level-1` | 520   | `level-1` cleared at tick 493  | gravity, walk, air-control, jump, jump-by-speed, variable-jump, solid-tiles, coins-collect, bump-blocks, goal-clears-level, actors-wake, stomping, stomp-bounce                                                                                                                                                |
 | `level-2` | 1130  | `level-2` cleared at tick 1101 | gravity, fall-cap, walk, run-speed, run-hold, skid, air-control, jump, jump-by-speed, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, level-bounds, coins-collect, brick-break, goal-clears-level, scroll-lock, actors-wake, walkers-turn, stomping, stomp-bounce, shell-kick, shell-hits-enemies |
 | `level-3` | 2030  | `level-3` cleared at tick 1999 | gravity, fall-cap, walk, skid, friction, air-control, jump, solid-tiles, hazards-kill, pits-kill, goal-clears-level, actors-wake, ledge-turn, enemy-touch-hurts, invulnerability                                                                                                                               |
+| `level-4` | 3300  | `level-4` cleared at tick 3283 | solid-tiles, goal-clears-level, mini-games                                                                                                                                                                                                                                                                     |
 
 - `level-1.run.json` walks right and jumps five times: under the bump block (coin at tick 59),
   over the 2-tile gap, onto the step (standing on it at 210), over the 3-tile gap through the coin
@@ -95,12 +114,23 @@ at tick 553, `level-3` at tick 1161.
   island, lets go and steps back (a skid, then friction: standing at `x` 171653 at 1840), hops
   the last spike and clears the level (1999) with 1 life, 1 hit point and 2 coins. Invariants:
   at least 1 life, stage 0 to 2.
+- `level-4.run.json` (level-4 from 2059; the earlier input is `level-3.run.json`'s): walks
+  right onto the door (two coins on the way) and the `vault` round starts (`mini-game`, attempt
+  1, tick 2281): the player holds nothing, the knights never reach the hero, and the round times
+  out after 600 ticks (`mini-game-end` `fail` and `respawn`, tick 2881; the level stood still
+  meanwhile: same `player.x` at 2880). The player steps left off the door (it re-arms by 2930),
+  walks back on and round 2 starts (2965) from a new seed; its input was found with the kit's
+  `TopDownBot` (`fight`) and written into the run file as plain steps: the hero stabs both knights
+  and the round passes (3144: 7 coins, the wall's tiles and the door empty), then the player
+  walks through the gap to the goal (3283). Assertions read the round inside the snapshot
+  (`miniGame.state.round.ticks`, `miniGame.state.enemies`, `miniGame.state.hero.maxHp`).
+  Invariants: at least 1 life, stage 0 to 3.
 - Run one: `pnpm -s cli run games/platformer-test/runs/level-2.run.json --json`. Its rules:
   `pnpm -s cli mutants games/platformer-test/runs/level-2.run.json --json` (exit 0 for each run
   file).
-- The whole folder, `pnpm -s cli mutants games/platformer-test --json`, guards 31 of the kit's
-  32 rules; it exits 4 with `unguarded: ["mini-games"]` until the door level (0.7 T5) adds a
-  run file through its mini game, after which it must exit 0 (gap G7, feedback item 76).
+- The whole folder, `pnpm -s cli mutants games/platformer-test --json`, guards all 32 of the
+  kit's rules (`level-4.run.json` guards `mini-games`) and must exit 0 (gap G7). The top-down
+  kit's rules inside a round are not mutant-checked (gap G12).
 - `runs/level-<n>.hashes.json` are the golden hashes (`tests/runs/run-files.test.ts`). After a
   change meant to change the state: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, and commit them.
 - Changing a level or the profile moves every later tick, in this level's run file and in every
@@ -132,6 +162,18 @@ at tick 553, `level-3` at tick 1161.
    `mutants <run file>` until its `guards` were all guarded. Then `mutants games/platformer-test`
    for the whole game (31 of 32 rules).
 
+10. (0.7 T5) The adapter first: `kits/topdown/challenge.ts` (`roomChallenge`) with its tests,
+    using only the engine's mini game contract; the platformer kit needed no change.
+11. `game.json` got `uses: ["topdown"]` and the `room` glob; the room drawn as text and checked
+    with `validate` (the top-down kind's dungeon checks run on it); `content.ts` registers the
+    room kind; `minigames.ts` builds the defs; `headless.ts` hands them to the sequence.
+12. `level-4` drawn with the trigger and the gate, its `triggers` entry written (params and
+    outcomes), `validate` again.
+13. The run file: a throwaway script played `level-3.run.json`'s input, then walked right, held
+    nothing through round 1, stepped off and on, and let `TopDownBot` fight round 2, recording
+    each tick's held actions and writing them as steps; the assertions read off `dump`, then
+    `mutants` on the run file and on the folder (exit 0), then golden hashes.
+
 ## How to test
 
 `pnpm test games/platformer-test`, `pnpm -s cli validate games/platformer-test --json`,
@@ -141,6 +183,6 @@ at tick 553, `level-3` at tick 1161.
 ## Imports
 
 - Allowed: relative paths inside `games/platformer-test`, `@engine/*` (core; backends once it has
-  views) and `@kits/platformer` (later in 0.7 also `@kits/topdown`, for the door level's mini game).
+  views) `@kits/platformer` and `@kits/topdown` (the door level's room challenge).
 - Never: other games (not even `games/platformer-lab`: copy and log a gap instead) or kits it does
   not use. Nothing in `engine/` or `kits/` imports from here.
