@@ -1,6 +1,6 @@
 import type { JsonObject, JsonValue } from './headless';
 import type { InputFrame } from './input/input-manager';
-import type { MiniGame, MiniGameResult } from './minigame';
+import { RoundInput, type MiniGame, type MiniGameInputMap, type MiniGameResult } from './minigame';
 import {
   missionResult,
   playedResult,
@@ -83,8 +83,14 @@ export interface MissionRoundOptions<KitInput> {
   readonly adapter: MissionAdapter<KitInput, MiniGameEnd>;
   /** Starts the kit's round from the adapter's input (e.g. a `MiniGameDef`'s `create`). */
   start(input: KitInput): MiniGame;
-  /** The input for round tick `tick` (0 first), already advanced to that tick's frame. */
+  /**
+   * The input for round tick `tick` (0 first), already advanced to that tick's frame. The round
+   * sees it through a `RoundInput` (Engine 0.11, gap G18): a button already held on tick 0 (held,
+   * not pressed there) is ignored until released, and `inputMap` is applied.
+   */
   input(tick: number, round: MiniGame): InputFrame;
+  /** The round's own controls (its def's `inputMap`), applied to every frame. */
+  readonly inputMap?: MiniGameInputMap;
   /** Ticks the round may take before it is refused as unfinished (default 100,000). */
   readonly maxTicks?: number;
 }
@@ -118,6 +124,7 @@ export const MISSION_ROUND_MAX_TICKS = 100_000;
 export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>): MissionRoundResult {
   const round = opts.start(opts.adapter.input(opts.snapshot, opts.mission));
   const max = opts.maxTicks ?? MISSION_ROUND_MAX_TICKS;
+  const roundInput = new RoundInput(opts.inputMap);
   let ticks = 0;
   while (round.result() === null) {
     if (ticks >= max)
@@ -128,7 +135,7 @@ export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>):
         end: null,
         round,
       };
-    round.step(opts.input(ticks, round));
+    round.step(roundInput.advance(opts.input(ticks, round)));
     ticks++;
   }
   const end: MiniGameEnd = {

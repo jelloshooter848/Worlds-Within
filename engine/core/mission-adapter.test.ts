@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { JsonObject } from './headless';
 import { ScriptedInput } from './input/scripted-input';
 import { playMissionRound, snapshotEntities, type MiniGameEnd } from './mission-adapter';
-import type { MiniGame, MiniGameResult } from './minigame';
+import type { Action } from './input/actions';
+import type { MiniGame, MiniGameInputMap, MiniGameResult } from './minigame';
 import { parseMission, type MissionAdapter, type MissionDef } from './missions';
 
 const parsed = parseMission({
@@ -169,6 +170,76 @@ describe('playMissionRound', () => {
     });
     expect(played).toMatchObject({ ok: false, code: 'unmappable_report', end: { report: null } });
     expect(!played.ok && played.error).toBe('mission "raid": no report');
+  });
+
+  it('drops a button held into the round and applies the input map (gap G18)', () => {
+    /** Passes on a press of attack, fails on left held. */
+    const pressRound = (): MiniGame => {
+      let result: MiniGameResult | null = null;
+      return {
+        step: (i) => {
+          if (i.held('left')) result = 'fail';
+          else if (i.pressed('attack')) result = 'pass';
+        },
+        snapshot: () => ({}),
+        result: () => result,
+        report: () => ({ result }),
+      };
+    };
+    // The caller's input was already holding left and attack when the round started.
+    const host = new ScriptedInput({ steps: [] });
+    host.setHeld(['left', 'attack']);
+    host.next();
+    const holds: Action[][] = [['left', 'attack'], ['left'], ['left', 'attack']];
+    const play = (inputMap?: MiniGameInputMap) =>
+      playMissionRound({
+        mission: MISSION,
+        snapshot: SNAPSHOT,
+        adapter: ADAPTER,
+        start: pressRound,
+        input: (tick) => {
+          host.setHeld(holds[Math.min(tick, holds.length - 1)]!);
+          host.next();
+          return host;
+        },
+        maxTicks: 50,
+        ...(inputMap ? { inputMap } : {}),
+      });
+    // Left and attack held into the round do nothing; attack pressed again on tick 2 passes it.
+    expect(play()).toMatchObject({ ok: true, end: { result: 'pass', ticks: 3 } });
+    // With the host's attack mapped to nothing and jump to attack, nothing ever presses it.
+    host.setHeld(['left', 'attack']);
+    host.next();
+    expect(play({ attack: null, jump: 'attack' })).toMatchObject({ ok: false, code: 'unfinished' });
+  });
+
+  it("applies the input map to a script's frames", () => {
+    let attacks = 0;
+    const played = playMissionRound({
+      mission: MISSION,
+      snapshot: SNAPSHOT,
+      adapter: ADAPTER,
+      inputMap: { jump: 'attack' },
+      start: () => {
+        const round = counter(3, 'pass');
+        return {
+          ...round,
+          step: (i) => {
+            if (i.held('attack')) attacks++;
+            round.step(i);
+          },
+        };
+      },
+      input: (() => {
+        const script = new ScriptedInput({ steps: [{ frame: 0, hold: ['jump'] }] });
+        return () => {
+          script.next();
+          return script;
+        };
+      })(),
+    });
+    expect(played.ok).toBe(true);
+    expect(attacks).toBe(3);
   });
 
   it('refuses a round that does not end within maxTicks', () => {

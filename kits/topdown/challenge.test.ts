@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import type { Action } from '@engine/core/input/actions';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { miniGameTable } from '@engine/core/minigame';
+import { hostStatusFor, miniGameTable } from '@engine/core/minigame';
 import { TopDownBot } from './bot';
 import { challengeParams, roomChallenge, type ChallengeSnapshot, type RoomChallenge } from './challenge';
 import type { RoomDef } from './room';
@@ -139,6 +139,31 @@ describe('roomChallenge', () => {
     expect(frame.entities.map((e) => e.kind)).toContain('hero');
     expect(frame.entities.map((e) => e.kind)).toContain('knight');
     expect(canonicalJson(round.snapshot())).toBe(canonicalJson(round.snapshot()));
+  });
+
+  it("shows the host's status in its HUD when given one, and is unchanged without (gap G19)", () => {
+    const def = roomChallenge({ id: 'arena', room: arena(), hostStatus: ['mission', 'missionLeft'] });
+    expect(def.hostStatus).toEqual(['mission', 'missionLeft']);
+    const host = hostStatusFor(def, { mission: 'Burn the engines', missionLeft: 120, offers: 1 });
+    expect(host).toEqual({ mission: 'Burn the engines', missionLeft: 120 });
+    const params = { goal: 'reach', ticks: 100 };
+    const given = def.create({ params, attempt: 1, ...(host ? { hostStatus: host } : {}) }, 3);
+    const plain = def.create({ params, attempt: 1 }, 3);
+    expect(given.present!().status).toMatchObject({
+      'host:mission': 'Burn the engines',
+      'host:missionLeft': 120,
+      goal: 'reach',
+    });
+    expect(Object.keys(plain.present!().status).filter((k) => k.startsWith('host:'))).toEqual([]);
+    const { ['host:mission']: _m, ['host:missionLeft']: _l, ...rest } = given.present!().status;
+    expect(rest).toEqual(plain.present!().status);
+    // The round's state is the same either way: the host status is presentation only.
+    expect(canonicalJson(given.snapshot())).toBe(canonicalJson(plain.snapshot()));
+    // A def without hostStatus is given nothing; one with an input map carries it.
+    expect(hostStatusFor(DEF, { mission: 'x' })).toBeUndefined();
+    expect(roomChallenge({ id: 'arena', room: arena(), inputMap: { jump: 'attack' } }).inputMap).toEqual({
+      jump: 'attack',
+    });
   });
 
   it('reports what was beaten, what was hit and what the hero lost, as plain JSON (Engine 0.10 T7)', () => {

@@ -78,8 +78,13 @@ const startTick = (s: PlatformerSnapshot[]) => s.findIndex((x) => x.miniGame !==
 const endTick = (s: PlatformerSnapshot[]) =>
   s.findIndex((x) => x.events.some((e) => e.type === 'mini-game-end'));
 
-/** Right and attack (run) all along: the round passes after 5 ticks of attack. */
-const RUN = () => ['right', 'attack'] as Action[];
+/** The round starts in this snapshot's tick (the `mini-game` event). */
+const starting = (s: PlatformerSnapshot | null) => s?.events.some((e) => e.type === 'mini-game') ?? false;
+/**
+ * Right and attack (run) all along, letting go for the round's first tick (attack held into the
+ * round is ignored until released, gap G18): the round passes after 5 more ticks of attack.
+ */
+const RUN = (s: PlatformerSnapshot | null) => (starting(s) ? [] : ['right', 'attack']) as Action[];
 /** Right, then left once the round is on: it fails. */
 const FAIL = (s: PlatformerSnapshot | null) => (s?.miniGame ? ['left'] : ['right']) as Action[];
 /** Right, then select once the round is on: the player quits. */
@@ -92,7 +97,7 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
       const s = play(RUN, 120, off);
       const at = startTick(s);
       const end = endTick(s);
-      if (at < 0 || end !== at + 5) return false;
+      if (at < 0 || end !== at + 6) return false;
       const paused = s.slice(at, end + 1);
       return (
         events(s, 'mini-game').length === 1 &&
@@ -194,12 +199,15 @@ describe('the mini game hook', () => {
     };
     const level = levelSchema.parse({ id: 'test', profile: 'runner', triggers: [TRIGGER], map: MAP });
     const game = platformerGame(new PlatformerWorld(level, PROFILE, { seed: 3, miniGames: [reported] }));
-    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right', 'attack'] }] });
+    const input = new ScriptedInput({ steps: [] });
     let ended: PlatformerSnapshot['endedRound'];
+    let last: PlatformerSnapshot | null = null;
     for (let i = 0; i < 120 && !ended; i++) {
+      input.setHeld(RUN(last));
       input.next();
       game.step(input);
-      ended = (game.snapshot() as PlatformerSnapshot).endedRound;
+      last = game.snapshot() as PlatformerSnapshot;
+      ended = last.endedRound;
     }
     expect(ended?.report).toEqual({ result: 'pass' });
   });
@@ -212,10 +220,11 @@ describe('the mini game hook', () => {
       map: MAP,
     });
     const seq = new LevelSequence([{ level, profile: PROFILE }], { seed: 3, miniGames: [HOLD], pause: 5 });
-    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right', 'attack'] }] });
+    const input = new ScriptedInput({ steps: [] });
     const snaps: SequenceSnapshot[] = [];
     const hosted: boolean[] = [];
     for (let i = 0; i < 60; i++) {
+      input.setHeld(RUN(snaps.at(-1) ?? null));
       input.next();
       seq.step(input);
       snaps.push(seq.snapshot());
@@ -227,6 +236,67 @@ describe('the mini game hook', () => {
     expect(snaps[end + 1]!.pause).toBe(1);
     expect(hosted.slice(0, end).some(Boolean)).toBe(true);
     expect(hosted[end]).toBe(false);
+  });
+
+  it('ignores a button held into the round until it is released (gap G18)', () => {
+    // Attack held from the start, through the trigger and on: the round never counts it.
+    const held = play(() => ['right', 'attack'], 60);
+    expect(startTick(held)).toBeGreaterThan(0);
+    expect(endTick(held)).toBe(-1);
+    expect(held.at(-1)!.miniGame?.state['held']).toBe(0);
+    // Let go for one tick and hold it again: now it counts, from the press on.
+    const s = play(RUN, 120);
+    const at = startTick(s);
+    expect(s[at + 1]!.miniGame?.state['held']).toBe(0);
+    expect(s[at + 2]!.miniGame?.state['held']).toBe(1);
+    // A button pressed on the round's first tick (not held into it) counts at once.
+    const fresh = play((x) => (starting(x) ? ['attack'] : ['right']), 60);
+    const f = startTick(fresh);
+    expect(fresh[f + 1]!.miniGame?.state['held']).toBe(1);
+  });
+
+  it("steps the round with its def's input map (gap G18)", () => {
+    // The round's attack is the host's jump; the host's own attack is dropped.
+    const mapped: MiniGameDef = { ...HOLD, inputMap: { jump: 'attack', attack: null } };
+    const level = levelSchema.parse({ id: 'test', profile: 'runner', triggers: [TRIGGER], map: MAP });
+    const run = (hold: Action[]) => {
+      const game = platformerGame(new PlatformerWorld(level, PROFILE, { seed: 3, miniGames: [mapped] }));
+      const input = new ScriptedInput({ steps: [] });
+      let last: PlatformerSnapshot | null = null;
+      for (let i = 0; i < 80 && !last?.endedRound; i++) {
+        input.setHeld(last?.miniGame ? (starting(last) ? [] : hold) : ['right']);
+        input.next();
+        game.step(input);
+        last = game.snapshot() as PlatformerSnapshot;
+      }
+      return last!;
+    };
+    expect(run(['jump']).endedRound).toMatchObject({ result: 'pass' });
+    expect(run(['attack']).endedRound).toBeUndefined();
+  });
+
+  it("hands a round the level's HUD values its def asks for, and none to one that asks for none (gap G19)", () => {
+    const given: Record<string, unknown>[] = [];
+    const asking: MiniGameDef = {
+      ...HOLD,
+      hostStatus: ['lives', 'coins', 'score'],
+      create: (ctx, seed) => {
+        given.push({ ...ctx });
+        return HOLD.create(ctx, seed);
+      },
+    };
+    const level = levelSchema.parse({ id: 'test', profile: 'runner', triggers: [TRIGGER], map: MAP });
+    for (const def of [asking, { ...asking, hostStatus: undefined }] as MiniGameDef[]) {
+      const game = platformerGame(new PlatformerWorld(level, PROFILE, { seed: 3, miniGames: [def] }));
+      const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right'] }] });
+      for (let i = 0; i < 60 && given.length < 2; i++) {
+        input.next();
+        game.step(input);
+        if ((game.snapshot() as PlatformerSnapshot).miniGame) break;
+      }
+    }
+    expect(given[0]).toEqual({ params: { ticks: 5 }, attempt: 1, hostStatus: { lives: 1, coins: 0 } });
+    expect(given[1]).toEqual({ params: { ticks: 5 }, attempt: 1 });
   });
 
   it('with mini-games off the trigger does nothing', () => {

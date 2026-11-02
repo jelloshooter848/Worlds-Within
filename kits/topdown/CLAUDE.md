@@ -178,7 +178,7 @@ contract (`engine/core/minigame.ts`: `MiniGameDef`, `MiniGame`); the host (the p
 world) steps the round headless and acts on its result.
 
 - `roomChallenge({ id, title?, room, extraLegend?, wall?, spawners?, items?, disabledRules?, size?,
-top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usually one of its
+top?, hostStatus?, inputMap? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usually one of its
   room files); the kit holds no room. The room is checked once, here (`buildDungeon` of that one
   room: it throws on a bad one). `title` defaults to the room's `title` field, else the id in
   capitals (Engine 0.7 T9, gap G15).
@@ -192,7 +192,10 @@ top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usual
   its mini games; `challengeParams` runs the same schema when a round starts. An
   unknown param, a goal not in `CHALLENGE_GOALS` or a bad number throws naming it, and so does
   `defeat-all` in a room with no enemies.
-- `step(input)` steps the world with the host's `InputFrame`, as it is. **Select is the round's**:
+- `step(input)` steps the world with the `InputFrame` the host gives it. Since Engine 0.11 (gap
+  G18) every host steps it through the engine's `RoundInput`: a button held into the round is
+  ignored until released, and the options' `inputMap` (the def's) maps the host's actions to the
+  round's; the round itself does nothing about either. **Select is the round's**:
   a press quits (`quit`) before the world sees it, so a hosted hero never cycles items. After each
   step: the goal met is `pass`; else the hero dead (after the death spin, `hero.dead`) or the
   time limit reached is `fail`. Once ended it stays ended and `step` does nothing.
@@ -209,7 +212,11 @@ top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usual
   itself; the adapter that does lives outside the kit (`engine/core/mission-adapter.ts` and, for
   the siege fixture, `tests/kits/mission-adapter.test.ts`).
 - `present()` is the kit's `presentWorld` frame of the round at the options' `size` (and `top`),
-  with `status.goal` and `status.timeLeft` added. It keeps no stream state: every frame carries
+  with `status.goal` and `status.timeLeft` added, and (Engine 0.11, gap G19) each host value the
+  round was given in `ctx.hostStatus` as `status['host:<key>']`, for the round's skin to draw like
+  any other status (a `hud` item with `"status": "host:mission"`). The options' `hostStatus` (the
+  def's) names the keys a host hands it (`hostStatusFor`); a round given none presents exactly as
+  before, and the host status never reaches the snapshot or the report. It keeps no stream state: every frame carries
   the full map and ids of things the room text did not place count from 1 per frame.
 - `world` (read-only use) is the round's world, for a test bot (`TopDownBot`) or a tracer.
 - Rules: `disabledRules` switches kit rules off in every round. The tools do not route a run's
@@ -217,7 +224,8 @@ top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usual
 
 `challenge.test.ts` covers a pass on `reach` and on `defeat-all` (driven by `TopDownBot`), a
 fail on the hero's death and on time-out, a quit on select (which the world never sees), the
-same snapshots from the same seed (and others from another), the presented frame, the report
+same snapshots from the same seed (and others from another), the presented frame (and the host
+status in it, gap G19), the report
 (beaten, hurt, the hero's loss; unchanged snapshots with it read) and the param and room checks. Its room is built inline in the test.
 
 ## Imports

@@ -232,9 +232,14 @@ attempt }, seed)`, the seed drawn from the world's `rng`. A trigger is disarmed 
   re-armed once the player no longer touches it, so standing on it (or a `respawn` onto it) does
   not start another round.
 - While the round runs, `update(input)` steps only the round (the frame counter goes on; the
-  player, actors, view and tiles stay as they are). On the tick it reports a result the world
-  emits `mini-game-end` (`trigger`, `game`, `result`), empties the trigger on a `pass`, applies the
-  outcomes, and the level moves again from the next tick.
+  player, actors, view and tiles stay as they are), through the engine's `RoundInput` (Engine
+  0.11, gap G18): a button held into the trigger (held, not newly pressed, on the round's first
+  tick) is ignored until released, and the def's `inputMap` applies. On the tick it reports a
+  result the world emits `mini-game-end` (`trigger`, `game`, `result`), empties the trigger on a
+  `pass`, applies the outcomes, and the level moves again from the next tick.
+- A def with `hostStatus` (gap G19) is handed the level's HUD values it names, from `coins`, `hp`,
+  `maxHp`, `lives` and `level` (as `presentStatus` gives them), in `ctx.hostStatus`; a def without
+  it gets no `hostStatus`, as before.
 - The snapshot holds `triggers` (`col`, `row`, `game`, `armed`, `attempts`) and `miniGame`
   (`trigger`, `game` and `state`, the round's own `snapshot()`, or null), so state hashes cover
   the round.

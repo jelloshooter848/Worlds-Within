@@ -26,7 +26,9 @@ with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full ad
 `MiniGameDef`, for a host from another kit such as a platformer level's door; the game gives the
 room (its title from the room file's `title`, Engine 0.7 T9), the trigger's params give `goal` (`defeat-all` or `reach`), `ticks` and `hp` (shape: `challengeParamsSchema`, the def's `paramsSchema`, so `validate` checks them with the content, Engine 0.10); a round passes
 on its goal, fails on the hero's death or time-out and quits on select; `snapshot()` is
-`snapshotWorld` plus `round`, `present()` the kit's `presentWorld` frame, and from Engine 0.10
+`snapshotWorld` plus `round`, `present()` the kit's `presentWorld` frame (from Engine 0.11 with
+the host's values a round is given, `ctx.hostStatus`, as `host:<key>` status for its skin, gap
+G19; the options' `hostStatus` and `inputMap` become the def's), and from Engine 0.10
 `report()` the round's structured report as plain JSON, `ChallengeReport`: result, ticks, the
 hero's `hp`/`lost`/`dead`, every starting enemy by its room cell and which were `defeated` or
 `hurt`, which a mission's adapter maps to a declared outcome; reading it changes no hash). `bot.ts` (the scripted test bot) is imported directly by tests.

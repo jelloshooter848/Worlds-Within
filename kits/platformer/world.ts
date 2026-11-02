@@ -2,7 +2,14 @@ import type { JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { overlaps } from '@engine/core/math/aabb';
 import { clamp, px, tileAt, tileToSub } from '@engine/core/math/units';
-import { miniGameTable, type MiniGame, type MiniGameDef, type MiniGameResult } from '@engine/core/minigame';
+import {
+  hostStatusFor,
+  miniGameTable,
+  RoundInput,
+  type MiniGame,
+  type MiniGameDef,
+  type MiniGameResult,
+} from '@engine/core/minigame';
 import { Rng } from '@engine/core/rng';
 import { RuleSwitch } from '@engine/core/rules';
 import { Actor, DEFAULT_KICK_GRACE } from './actor';
@@ -108,7 +115,8 @@ export interface EndedRound extends MiniGameRun {
  *   7. a player whose top is below the last row dies (`pits-kill`);
  *   8. a mini-game trigger the player enters starts a round of the mini game it names
  *      (`mini-games`, seeded from `rng`). While it runs, `update` steps the round instead of
- *      the level; once it reports a result, the trigger's outcomes for that result apply and the
+ *      the level (through a `RoundInput`: a button held into the trigger is ignored until released,
+ *      and the def's `inputMap` applies; gap G18); once it reports a result, the trigger's outcomes for that result apply and the
  *      level goes on from the next tick. The ended round stays readable (`endedRound`) until the
  *      next `update`, so the snapshot of that tick holds its last events and final state.
  *
@@ -139,6 +147,8 @@ export class PlatformerWorld {
   /** The level's mini-game triggers, in reading order, and the round being played, if any. */
   readonly triggers: TriggerState[] = [];
   private run: MiniGameRun | null = null;
+  /** What the round sees (gap G18: the first-tick drop and the def's `inputMap`). */
+  private runInput: RoundInput | null = null;
   private ended: EndedRound | null = null;
 
   constructor(
@@ -254,19 +264,39 @@ export class PlatformerWorld {
       t.attempts++;
       const def = this.games.get(t.def.game)!;
       const params = t.def.params as JsonObject;
-      const game = def.create({ params, attempt: t.attempts }, this.rng.next());
+      const hostStatus = hostStatusFor(def, this.hudStatus());
+      const ctx = { params, attempt: t.attempts, ...(hostStatus ? { hostStatus } : {}) };
+      const game = def.create(ctx, this.rng.next());
       this.run = { trigger: t, def, game };
+      this.runInput = new RoundInput(def.inputMap);
       this.emit({ type: 'mini-game', trigger: t.index, game: def.id, attempt: t.attempts });
     }
+  }
+
+  /**
+   * The level's HUD values a round may ask for (`MiniGameDef.hostStatus`, gap G19): the same keys
+   * and values as the presented frame's status (`presentStatus`): `coins`, `hp`, `maxHp`, `lives`
+   * and `level`.
+   */
+  private hudStatus(): Record<string, string | number> {
+    const pp = this.profile.player;
+    return {
+      coins: this.coins,
+      hp: this.player.hp,
+      maxHp: pp.maxHp ?? pp.hp,
+      lives: this.lives,
+      level: this.level.id,
+    };
   }
 
   /** One tick of the round over the level; when it ends, its outcome applies. */
   private stepMiniGame(input: InputFrame): void {
     const run = this.run!;
-    run.game.step(input);
+    run.game.step(this.runInput!.advance(input));
     const result = run.game.result();
     if (result === null) return;
     this.run = null;
+    this.runInput = null;
     this.ended = { ...run, result };
     const t = run.trigger;
     this.emit({ type: 'mini-game-end', trigger: t.index, game: run.def.id, result });

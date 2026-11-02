@@ -60,9 +60,25 @@ names a mini game and its params, such as a platformer level's triggers, for `va
 ends, `present?()` a `PresentFrame`, and from Engine 0.10 the optional `report?()`, a structured
 JSON-safe report read once the round has ended, which a mission's adapter turns into an outcome),
 `MiniGameDef` (`id`, `title`, the optional `paramsSchema` (Zod, Engine 0.10: the shape of the
-round's `params`, for `validate`, gap G16), `create(ctx, seed)`: everything random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
+round's `params`, for `validate`, gap G16), the optional `inputMap` and `hostStatus` (Engine 0.11,
+below), `create(ctx, seed)`: everything random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
 twice). A host (a kit's world) steps the round headless while it pauses itself and puts the
-round's snapshot in its own, so hashes cover it. It imports no scene, so kits may use it; pure (on
+round's snapshot in its own, so hashes cover it. **Round input and host HUD (Engine 0.11, gaps G18
+and G19, items 177-178).** `MiniGameDef.inputMap?` (`MiniGameInputMap`, host action to round
+action, null to drop it; unnamed actions pass as they are; `miniGameTable` throws on a name that is
+not an `Action`) is the round's own controls. `RoundInput(inputMap?)` is the one wrapper every host
+steps its round through, `round.step(roundInput.advance(hostFrame))`, one per round: on the round's
+first tick every host action held but not pressed there (it was down before the round started) is
+masked until a frame without it, then the map applies; `pressed`, `released`, `dirX` and the jump
+buffer are the round's own (a jump before the round never counts). A script whose first frame
+holds a button (a run file's `play` script) counts it as pressed, so it plays as written. The hosts
+are the platformer kit's world, `miniGameScene` when it steps the game itself, `playMissionRound`
+and (T5) `MissionHost`; `HostScene` steps the host, which does it, so no game writes it.
+`MiniGameDef.hostStatus?` lists the host HUD status keys a round shows; the host passes their
+values as `MiniGameContext.hostStatus?` (plain JSON, `HostStatus`), picked with
+`hostStatusFor(def, status)` (undefined when none, so the context leaves it out and the round is
+unchanged); a round that presents adds each as status `host:<key>` for its skin (the topdown
+kit's room challenge does). Tested in `minigame.test.ts`. It imports no scene, so kits may use it; pure (on
 `PURE_CORE`). `minigame-params.ts` (Engine 0.10 T8, gap G16, item 157) checks mini game params with the content:
 a `MiniGameUse` `{ file, game, gameAt, params, paramsAt }` is one place in a game's content that
 names a mini game (a level trigger, a mission's `play`) and hands it params;
@@ -74,7 +90,8 @@ field under the params (`triggers.0.params.goal`), with Zod's codes. It builds n
 `PURE_CORE`); tested in `minigame-params.test.ts`; `engine/tools/mini-game-check.ts` runs it.
 `minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
 step?, render, done, translucent? })`, a `Scene` to push over the level that steps the same
-`MiniGame` (or the host's `step`, so the host still applies the outcome) and calls `done(result)`
+`MiniGame` (through a `RoundInput` with the option `inputMap?`, Engine 0.11) or the host's `step`
+(given the raw frame, so the host still applies the outcome and its own `RoundInput`) and calls `done(result)`
 once, for the glue to pop it; it is on `FORBIDDEN_CORE`, so kits never import it, and pure (on
 `PURE_CORE`: `shell/host-scene.ts` imports it). Games rarely push it themselves: `shell/host-scene.ts`
 (`HostScene`) does it for any host that reports a running mini game.
@@ -130,8 +147,10 @@ mission through a kit's mini game with plain data only, so the kit never imports
 `snapshotEntities(snapshot, ...components)` lists a plain world snapshot's entities (`{ id,
 components }`, ascending id, with every component) that have all the named components; it throws
 on a snapshot not of the world's shape. `playMissionRound({ mission, snapshot, adapter, start,
-input, maxTicks? })` calls `adapter.input(snapshot, mission)`, starts the round with `start`
-(usually a `MiniGameDef`'s `create`), steps it with `input(tick, round)` until `result()` is
+input, inputMap?, maxTicks? })` calls `adapter.input(snapshot, mission)`, starts the round with `start`
+(usually a `MiniGameDef`'s `create`), steps it with `input(tick, round)` through a `RoundInput`
+(Engine 0.11, gap G18: a button already held, not pressed, on tick 0 is ignored until released;
+`inputMap` applied) until `result()` is
 non-null, then maps its end, `MiniGameEnd` `{ result, report (the round's `report()`, or null),
 ticks }`, through `adapter.outcome` and checks it with `playedResult`. It returns `{ ok: true,
 result, end, round }` (the `MissionResult` the caller commits, e.g. `commitMission(world, id,

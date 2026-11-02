@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { NullRenderer } from '@engine/backends/null';
 import { ScriptedInput } from './input/scripted-input';
-import { miniGameTable, type MiniGame, type MiniGameDef, type MiniGameResult } from './minigame';
+import type { Action } from './input/actions';
+import {
+  hostStatusFor,
+  miniGameTable,
+  RoundInput,
+  type MiniGame,
+  type MiniGameDef,
+  type MiniGameResult,
+} from './minigame';
 import { miniGameScene } from './minigame-scene';
 import { SceneStack, type Scene } from './scene';
 
@@ -59,6 +67,119 @@ describe('miniGameTable', () => {
   });
 });
 
+/** A host's frames: `holds[i]` held on tick i, fed to `round` (a fresh script, nothing held before). */
+function feed(
+  round: RoundInput,
+  holds: Action[][],
+): { held: Action[]; pressed: Action[]; released: Action[] }[] {
+  const host = new ScriptedInput({ steps: [] });
+  const all: Action[] = [
+    'left',
+    'right',
+    'up',
+    'down',
+    'jump',
+    'attack',
+    'special',
+    'start',
+    'select',
+    'run',
+  ];
+  return holds.map((h) => {
+    host.setHeld(h);
+    host.next();
+    round.advance(host);
+    return {
+      held: all.filter((a) => round.held(a)),
+      pressed: all.filter((a) => round.pressed(a)),
+      released: all.filter((a) => round.released(a)),
+    };
+  });
+}
+
+describe('RoundInput (gap G18)', () => {
+  it('ignores a button held into the round until it is released', () => {
+    const host = new ScriptedInput({ steps: [] });
+    host.setHeld(['right', 'attack']);
+    host.next(); // the host's tick before the round: both go down
+    const round = new RoundInput();
+    host.setHeld(['right', 'attack', 'jump']);
+    host.next(); // the round's first tick: right and attack held into it, jump pressed now
+    round.advance(host);
+    expect(round.held('right') || round.held('attack')).toBe(false);
+    expect(round.held('jump') && round.pressed('jump')).toBe(true);
+    expect(round.dirX).toBe(0);
+    host.setHeld(['right']);
+    host.next(); // attack let go (no release reaches the round), right still held: still ignored
+    round.advance(host);
+    expect(round.released('attack') || round.held('right')).toBe(false);
+    host.setHeld(['right', 'attack']);
+    host.next(); // attack pressed again: it counts
+    round.advance(host);
+    expect(round.pressed('attack')).toBe(true);
+    expect(round.held('right')).toBe(false);
+    host.setHeld([]);
+    host.next();
+    round.advance(host);
+    host.setHeld(['right']);
+    host.next();
+    round.advance(host);
+    expect(round.pressed('right') && round.dirX === 1).toBe(true);
+  });
+
+  it("takes a script's first frame as pressed, not held into the round", () => {
+    expect(feed(new RoundInput(), [['attack'], ['attack'], []])).toEqual([
+      { held: ['attack'], pressed: ['attack'], released: [] },
+      { held: ['attack'], pressed: [], released: [] },
+      { held: [], pressed: [], released: ['attack'] },
+    ]);
+  });
+
+  it("applies the input map: mapped actions become the round's, null drops one, others pass", () => {
+    const round = new RoundInput({ jump: 'attack', select: null });
+    expect(feed(round, [['jump', 'select', 'left'], []])).toEqual([
+      { held: ['left', 'attack'], pressed: ['left', 'attack'], released: [] },
+      { held: [], pressed: [], released: ['left', 'attack'] },
+    ]);
+  });
+
+  it("keeps the round's own jump buffer: a jump before the round never counts", () => {
+    const host = new ScriptedInput({ steps: [] });
+    host.setHeld(['jump']);
+    host.next();
+    host.setHeld([]);
+    host.next();
+    expect(host.bufferedJump(5)).toBe(true);
+    const round = new RoundInput();
+    round.advance(host);
+    expect(round.bufferedJump(5)).toBe(false);
+    host.setHeld(['jump']);
+    host.next();
+    round.advance(host);
+    expect(round.bufferedJump(5)).toBe(true);
+    round.consumeJumpBuffer();
+    expect(round.bufferedJump(5)).toBe(false);
+  });
+
+  it('miniGameTable refuses a map naming an action that is not one', () => {
+    const bad = { ...HOLD, inputMap: { jump: 'fire' } } as unknown as MiniGameDef;
+    expect(() => miniGameTable([bad])).toThrow(/input map "jump" -> "fire"/);
+    expect(() => miniGameTable([{ ...HOLD, inputMap: { jump: 'attack', start: null } }])).not.toThrow();
+  });
+});
+
+describe('hostStatusFor (gap G19)', () => {
+  it("picks the keys the def asks for that the host has, in the def's order", () => {
+    const def: MiniGameDef = { ...HOLD, hostStatus: ['mission', 'gone', 'left'] };
+    expect(hostStatusFor(def, { left: 40, mission: 'Burn', other: 1, gone: null })).toEqual({
+      mission: 'Burn',
+      left: 40,
+    });
+    expect(hostStatusFor(def, { other: 1 })).toBeUndefined();
+    expect(hostStatusFor(HOLD, { mission: 'Burn' })).toBeUndefined();
+  });
+});
+
 describe('miniGameScene', () => {
   const level: Scene = { update: () => undefined, render: () => undefined };
 
@@ -108,5 +229,23 @@ describe('miniGameScene', () => {
     }
     expect(steps).toBe(1);
     expect(done).toEqual(['fail']);
+  });
+
+  it('stepping the round itself, drops a button held into it and applies the input map (gap G18)', () => {
+    const game = HOLD.create({ params: { ticks: 2 }, attempt: 1 }, 1);
+    const scene = miniGameScene({
+      game,
+      inputMap: { jump: 'attack' },
+      render: () => undefined,
+      done: () => undefined,
+    });
+    const host = new ScriptedInput({ steps: [] });
+    host.setHeld(['left']);
+    host.next(); // the host's tick before the round: left goes down
+    host.setHeld(['left', 'jump']);
+    host.next(); // first tick: left held into the round (ignored, else it fails), jump pressed (its attack)
+    scene.update(host, [host]);
+    expect(game.result()).toBeNull();
+    expect(game.snapshot()).toEqual({ held: 1, need: 2 });
   });
 });

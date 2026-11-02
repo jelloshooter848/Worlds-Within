@@ -71,18 +71,25 @@ maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round 
   (the adapter threw) or `unknown_outcome` (undeclared or unplayable). A round ended by `quit`
   skips the adapter and the `playable` check: it returns `{ ok, quit: true, result }` with the
   mission's `onQuit`, which the caller resolves with `quitMission` before committing, so the record
-  says `quit`. Pure in practice, not on
+  says `quit`. The round steps through a `RoundInput` with the optional `inputMap` (Engine 0.11,
+  gap G18), so a button already held on tick 0 does nothing until released. Pure in practice, not on
   `PURE_CORE` yet (no kit or sim file imports it at run time).
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
-  0.10), `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
+  0.10), `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. From
+  Engine 0.11 (gaps G18, G19): `MiniGameDef.inputMap?` (host action to round action, null drops
+  it) and `RoundInput`, which every host steps its round through (`round.step(roundInput.advance(
+frame))`): a button held into the round (held, not pressed, on its first tick) is ignored until
+  released, then the map applies; `MiniGameDef.hostStatus?` (the host HUD keys a round shows),
+  `MiniGameContext.hostStatus?` (their values, plain JSON) and `hostStatusFor(def, status)`. Pure.
 - `minigame-params.ts` (Engine 0.10, gap G16): `MiniGameUse` (a place in the content naming a mini
   game and its params), `missionMiniGameUses(content)` and `miniGameParamErrors(uses, defs, root?)`:
   `unknown_mini_game` at the id, or the def's `paramsSchema` issues at their field
   (`triggers.0.params.goal`). A kit lists its own uses with `KitDef.miniGameUses`. Pure.
 - `minigame-scene.ts`: `miniGameScene(opts)`, the `Scene` a game's glue pushes over a level to
-  drive the same `MiniGame` and pop it on its result. Games only (kits may not import it); `HostScene`
+  drive the same `MiniGame` and pop it on its result; stepping the round itself it uses a
+  `RoundInput` (`inputMap?` option), while a host's `step` gets the raw frame. Games only (kits may not import it); `HostScene`
   (`shell/`) pushes it for a game. Pure.
 - `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.

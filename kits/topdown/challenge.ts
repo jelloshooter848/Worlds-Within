@@ -2,7 +2,13 @@ import { z } from 'zod';
 import { DEFAULT_SCREEN, type ScreenSize } from '@engine/core/gfx/screen';
 import type { JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import type { MiniGame, MiniGameContext, MiniGameDef, MiniGameResult } from '@engine/core/minigame';
+import type {
+  MiniGame,
+  MiniGameContext,
+  MiniGameDef,
+  MiniGameInputMap,
+  MiniGameResult,
+} from '@engine/core/minigame';
 import type { PresentFrame } from '@engine/core/present';
 import { presentWorld } from './present';
 import { buildDungeon, type Dungeon, type LegendEntry, type RoomDef } from './room';
@@ -110,6 +116,14 @@ export interface RoomChallengeOptions {
   size?: ScreenSize;
   /** Where the play area starts on that picture (the kit's `HUD_H` when left out). */
   top?: number;
+  /**
+   * The host HUD status keys a round shows (Engine 0.11, gap G19): the def's `hostStatus`, so a
+   * host hands their values in `ctx.hostStatus` (`hostStatusFor`) and `present()` adds them as
+   * `host:<key>` for the round's skin to draw. Left out, the round shows its own HUD only.
+   */
+  hostStatus?: readonly string[];
+  /** The round's own controls (gap G18): the def's `inputMap`, applied by the host's `RoundInput`. */
+  inputMap?: MiniGameInputMap;
 }
 
 /**
@@ -246,7 +260,8 @@ export class RoomChallenge implements MiniGame {
 
   /**
    * The kit's `presentWorld` frame of the round, at the options' size, with `status.timeLeft`
-   * (ticks) and `status.goal` added. No stream state: every frame carries the full map (a host's
+   * (ticks) and `status.goal` added, and each of the host's values the round was given
+   * (`ctx.hostStatus`, gap G19) as `status['host:<key>']`; a round given none is unchanged. No stream state: every frame carries the full map (a host's
    * own tracker trims it) and ids of things the room text did not place count from 1 per frame.
    */
   present(): PresentFrame {
@@ -259,6 +274,7 @@ export class RoomChallenge implements MiniGame {
       goal: this.params.goal,
       timeLeft: Math.max(0, this.params.ticks - this.ticks),
     };
+    for (const [key, value] of Object.entries(this.ctx.hostStatus ?? {})) frame.status[`host:${key}`] = value;
     return frame;
   }
 
@@ -272,7 +288,8 @@ export class RoomChallenge implements MiniGame {
  * A room challenge as a `MiniGameDef`. The room is checked once, here (it throws like
  * `buildDungeon`); each round (`create`) builds a fresh world on it from the round's seed and
  * reads the trigger's params (`challengeParams`, which throws on bad ones). Its `paramsSchema` is
- * `challengeParamsSchema`, so `validate` checks those params with the content (gap G16).
+ * `challengeParamsSchema`, so `validate` checks those params with the content (gap G16). The
+ * options' `hostStatus` and `inputMap` become the def's (gaps G19 and G18).
  */
 export function roomChallenge(opts: RoomChallengeOptions): MiniGameDef {
   const dungeon = buildDungeon([opts.room], opts.extraLegend ?? {}, { wall: opts.wall ?? 1 });
@@ -280,6 +297,8 @@ export function roomChallenge(opts: RoomChallengeOptions): MiniGameDef {
     id: opts.id,
     title: opts.title ?? opts.room.title ?? opts.id.toUpperCase().replace(/-/g, ' '),
     paramsSchema: challengeParamsSchema,
+    ...(opts.hostStatus ? { hostStatus: opts.hostStatus } : {}),
+    ...(opts.inputMap ? { inputMap: opts.inputMap } : {}),
     create: (ctx, seed) => new RoomChallenge(dungeon, opts, ctx, seed),
   };
 }
