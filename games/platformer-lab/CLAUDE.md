@@ -55,7 +55,8 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   kind's other states (a known gap of the 0.6 skin format).
 - TypeScript is glue only:
   - `content.ts`: `labKinds`, `loadLab(files)`, `labStages(content)` (the levels in play order:
-    `FIRST_LEVEL` (`tiny`) first, then the others by id, each with its profile), `labSkin`,
+    `FIRST_LEVEL` (`tiny`) first, then the others by id, each paired with its profile by the kit's
+    `levelStages`), `labSkin`,
     `labSkin3d` (the `three` skin), `labArt`, `mustLoad`;
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
     game: a marker sweeps along a bar of `cells` cells, one cell every `every` ticks; attack on
@@ -63,12 +64,14 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     `ticks` ticks without a press fail. Its numbers come from the trigger's `params`. Its
     `present()` lays the bar out as `bar-cell` entities (`idle`/`zone`) and a `bar-marker`
     (`idle`, then its result). `LAB_MINI_GAMES` is what the worlds are given;
-  - `headless.ts`: `LabGame` and `createGame(content, seed, opts?)`, the headless contract. The
-    lab plays its levels in turn: once a level is `cleared` or `failed` it waits `LEVEL_PAUSE` (60)
-    ticks, ignoring input, then starts the next level (after the last, `tiny` again) or the failed
-    one afresh, each a new `PlatformerWorld` with the run's seed and switched-off rules. Its
-    snapshot is the kit's (`snapshotWorld`, every path in `kits/platformer/CLAUDE.md`) plus
-    `stage` (the level's place in the order) and `pause`;
+  - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
+    kit's `LevelSequence` over `labStages(content)` with the run's seed, switched-off rules and
+    `LAB_MINI_GAMES` (`LabGame` and `LabSnapshot` are the kit's `LevelSequence` and
+    `SequenceSnapshot`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
+    sequences): once a level is `cleared` or `failed` it waits `LEVEL_PAUSE` (60) ticks, ignoring
+    input, then starts the next level (after the last, `tiny` again) or the failed one afresh,
+    each a new `PlatformerWorld`. The snapshot is the kit's (`snapshotWorld`) plus `stage` (the
+    level's place in the order) and `pause`;
   - `picture.ts`: `labLook(content)`, `LabFrames` (`next(world, events)`: `presentWorld` ->
     frozen frame, a fresh `PlatformerPresentState` per world: the one stream of frames every
     backend gets) and `LabPicture` (`draw(world, events)`: a `LabFrames` frame ->

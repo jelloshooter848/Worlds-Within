@@ -31,15 +31,15 @@ release that will).
   their own folder because the `level` glob `content/levels/*.json` would claim them too.
 - TypeScript is glue only:
   - `content.ts`: `testKinds()`, `loadTest(files)`, `testStages(content)` (the levels in play
-    order: by id, numbers compared as numbers, `level-2` before `level-10`; each with the
-    profile it names), `mustLoad`;
-  - `headless.ts`: `TestGame` and `createGame(content, seed, opts?)`, the headless contract. It
-    plays the levels in order: once a level is `cleared` or `failed` it waits `LEVEL_PAUSE` (60)
-    ticks, ignoring input, then starts the next level (after the last, the first again) or the
-    failed one afresh, each a new `PlatformerWorld` with the run's seed and switched-off rules.
-    Its snapshot is the kit's (`snapshotWorld`, every path in `kits/platformer/CLAUDE.md`) plus
-    `stage` and `pause`. This flow is a minimal copy of the lab's (gap G1; 0.7 T2 moves it into
-    the kit);
+    order: by id, numbers compared as numbers, `level-2` before `level-10`; each paired with the
+    profile it names by the kit's `levelStages`), `mustLoad`;
+  - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
+    kit's `LevelSequence` over `testStages(content)` with the run's seed and switched-off rules
+    (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and `SequenceSnapshot`). The
+    level flow is the kit's (`kits/platformer/CLAUDE.md`, Level sequences): `LEVEL_PAUSE` (60)
+    ticks after a level ends, then the next level or the failed one afresh; the snapshot is the
+    kit's plus `stage` and `pause`. (Until Engine 0.7 T2 this was a copy of the lab's: gap G1,
+    fixed.)
   - `files.ts`: `TEST_FILES`, the data files through Vite's `import.meta.glob` (for the browser
     pages to come; Node reads them with `readGameFiles`).
 - `platformer-test.test.ts`: content loads, a broken field is named by file and field, the level

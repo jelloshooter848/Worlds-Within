@@ -11,9 +11,16 @@ import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { presentFrameSchema } from '@engine/core/present';
 import { validate } from '@engine/core/content/validate';
-import { ACTOR_ANIMS, PRESENT_TILES, presentStatus, profileKind, RUNNER_ANIMS } from '@kits/platformer';
+import {
+  ACTOR_ANIMS,
+  LEVEL_PAUSE,
+  PRESENT_TILES,
+  presentStatus,
+  profileKind,
+  RUNNER_ANIMS,
+} from '@kits/platformer';
 import { FIRST_LEVEL, labSkin, labSkin3d, labStages, loadLab, mustLoad } from './content';
-import { createGame, LEVEL_PAUSE, type LabSnapshot } from './headless';
+import { createGame, type LabSnapshot } from './headless';
 import { STOP_BAR } from './minigame';
 import { LabPicture, labLook } from './picture';
 import { LabPicture3d, labLook3d, labScenePresenter } from './picture3d';

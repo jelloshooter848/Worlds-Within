@@ -11,3 +11,4 @@ export * from './snapshot';
 export * from './tiles';
 export * from './world';
 export * from './present';
+export * from './sequence';

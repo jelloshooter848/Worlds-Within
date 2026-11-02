@@ -2,7 +2,7 @@ import { contentOf, loadContent, type ContentBundle } from '@engine/core/content
 import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import type { ContentKinds } from '@engine/core/content/kinds';
 import { formatErrors, type ContentResult } from '@engine/core/content/validate';
-import { levelKind, profileKind, type LevelDef, type ProfileDef } from '@kits/platformer';
+import { levelKind, levelStages, profileKind, type LevelStage } from '@kits/platformer';
 
 /**
  * Glue between the stacking test's data files (`game.json` and `content/`) and the engine: the
@@ -23,28 +23,20 @@ export function loadTest(files: Readonly<Record<string, string>>): ContentResult
   return loadContent(files, testKinds(), { root: 'games/platformer-test/' });
 }
 
-/** A level and the physics profile it names. */
-export interface TestStage {
-  level: LevelDef;
-  profile: ProfileDef;
-}
+/** A level and the physics profile it names (the kit's `LevelStage`). */
+export type TestStage = LevelStage;
 
 /**
  * The levels in the order they are played: by id with numbers compared as numbers (`level-1`,
  * `level-2`, ..., `level-10`), each with its profile.
  */
 export function testStages(content: ContentBundle): TestStage[] {
-  const profiles = new Map(contentOf(content, PROFILE).map((e) => [e.value.id, e.value]));
   const levels = contentOf(content, LEVEL)
     .map((e) => e.value)
     .sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
   if (levels.length === 0) throw new Error('the stacking test has no levels');
-  return levels.map((level) => {
-    const profile = profiles.get(level.profile);
-    if (!profile)
-      throw new Error(`level "${level.id}" names profile "${level.profile}", which the game lacks`);
-    return { level, profile };
-  });
+  const profiles = contentOf(content, PROFILE).map((e) => e.value);
+  return levelStages(levels, profiles);
 }
 
 /** Throws with every error, one per line: for entry points, where bad content is a build mistake. */

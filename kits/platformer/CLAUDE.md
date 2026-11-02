@@ -6,7 +6,8 @@ kinds and a headless world that plays a whole level: integer physics, tile colli
 movement rules for the player, level objects (coins, bump blocks, bricks, hazards, pits, goals),
 data-set enemies (walkers and shells: stomps, kicks, harm), hit points with invulnerability,
 lives, the camera's scroll lock and the mini game hook (a trigger that pauses the level for a
-mini game and acts on its result), and its presentation frames (`present.ts`, T9).
+mini game and acts on its result), and its presentation frames (`present.ts`, T9). Since Engine
+0.7 it also holds the level-after-level flow (`sequence.ts`, `LevelSequence`).
 
 - `legend.ts`: `LEGEND`, the level text format: one character per 16x16 tile (`.` empty, `#`
   solid, `B` breakable brick, `?` bump block, `=` one-way platform, `^` hazard, `o` coin, `@`
@@ -46,6 +47,10 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
 - `present.ts`: `presentWorld(world, events?, { size, state, miniGameFrames })`, the world as a
   read-only `PresentFrame` (under Presentation frames), and `PlatformerPresentState`, what a
   stream of frames remembers outside the world.
+- `sequence.ts`: `LevelSequence(stages, { seed, disabledRules, miniGames, pause })`, levels
+  played one after another as the headless contract (under Level sequences), `LevelStage`
+  (`{ level, profile }`), `levelStages(levels, profiles, who?)` (each level paired with the
+  profile it names), `LEVEL_PAUSE` and `SequenceSnapshot`.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
   `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES` and `strictMutants: true`.
   `index.ts` re-exports the rest (not the hook); games import it as `@kits/platformer`.
@@ -236,6 +241,32 @@ two runs, the rule switched off, and the `triggers` schema codes. `games/platfor
 run files guard it (`runs/mini-game.run.json`) with every other rule, so
 `pnpm cli mutants games/platformer-lab` passes.
 
+## Level sequences (`sequence.ts`)
+
+The level-after-level flow every platformer game needs, as a gameplay flow rule (pure, no
+drawing): `new LevelSequence(stages, opts)` implements the headless contract over an ordered list
+of `LevelStage`s (`{ level, profile }`; `levelStages(levels, profiles)` pairs levels with the
+profiles they name and throws on a missing one). The order is the game's.
+
+- While a level's outcome is `playing`, `step(input)` steps its world and keeps that step's
+  events (`events`; the world's own list is emptied every step).
+- Once it is `cleared` or `failed`, each step only counts `pause` up (the input is ignored and
+  there are no events); at `opts.pause` ticks (`LEVEL_PAUSE`, 60, when left out; a whole number
+  > = 1) it starts the next level (cleared; after the last, the first again) or the same level
+  > afresh (failed).
+- Every level is a new `PlatformerWorld` with the options' `seed`, `disabledRules` and
+  `miniGames`, so a run file's switched-off rules reach every level.
+- `world`, `stage`, `pause`, `events` and `stageCount` are public for browser glue (a scene draws
+  `world` and watches for a new world to start a new event stream).
+- `snapshot()` is a `SequenceSnapshot`: `snapshotWorld(world, events)` (every path under
+  `snapshot.ts` above) plus `stage` (the level's place in the order, 0 for the first) and `pause`
+  (ticks waited since the level ended, 0 while it is played). These paths are the same in every
+  game that uses it, so run files check "between levels" the same way.
+
+`sequence.test.ts` covers cleared -> next, failed -> the same level afresh, wrap-around, the pause
+ignoring input, the pause from the options, the seed, rules and mini games given to every world,
+and equal snapshots on two runs.
+
 ## Presentation frames (`present.ts`)
 
 `presentWorld(world, events?, opts?)` describes the world as a `PresentFrame`
@@ -336,7 +367,7 @@ object rules (coins, blocks, bricks, hazards, pits, goal, scroll lock, waking, t
 bounce, kick, shell hits, touch damage, invulnerability), `minigame.test.ts` the mini game hook
 (under Mini games), and `objects.test.ts` plays the fixture level from start to
 goal with a scripted input (`cleared`, both coins, the same snapshot hashes on two runs); `golden.test.ts` checks the movement against
-SMBC (above); `present.test.ts` the presentation frames (under Presentation frames); `world.test.ts` also checks that two runs of the same input
+SMBC (above); `present.test.ts` the presentation frames (under Presentation frames); `sequence.test.ts` the level sequences (under Level sequences); `world.test.ts` also checks that two runs of the same input
 and seed give equal `canonicalJson` snapshots tick by tick, and that snapshots hold whole numbers. After changing a schema or a
 description, run `pnpm docs:gen` (the schema reference lists both kinds; their examples are
 `docs/reference/examples/level.json`, `level.map.txt` and `profile.json`).

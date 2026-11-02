@@ -4,7 +4,8 @@ import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { loadTest, mustLoad, testStages } from './content';
-import { createGame, LEVEL_PAUSE, type TestSnapshot } from './headless';
+import { LEVEL_PAUSE } from '@kits/platformer';
+import { createGame, type TestSnapshot } from './headless';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);

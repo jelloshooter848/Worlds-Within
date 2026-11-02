@@ -25,8 +25,9 @@ It is a test game: content and glue, not engine.
 - `content.ts`: `loadLab(files)`, `labStages(content)` (the levels in play order), `labSkin`,
   `labSkin3d`,
   `labArt`, `mustLoad`.
-- `headless.ts`: `LabGame` and `createGame(content, seed, opts?)` (the `HeadlessGame` contract):
-  the levels in turn, `LEVEL_PAUSE` ticks between them; the kit's snapshot plus `stage` and `pause`.
+- `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
+  `LevelSequence` over the levels with the lab's mini games (`LabGame`), `LEVEL_PAUSE` ticks
+  between them; the kit's `SequenceSnapshot` (the world's plus `stage` and `pause`).
 - `minigame.ts`: `STOP_BAR`, `LAB_MINI_GAMES` (the mini game hook's defs).
 - `picture.ts`: `labLook(content)`, `LabFrames` (the one frozen frame stream), `LabPicture`
   (`draw(world, events)`: the kit's frame through `SkinnedCanvasPresenter`). `picture3d.ts`:

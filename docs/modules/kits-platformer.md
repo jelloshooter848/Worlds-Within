@@ -18,7 +18,11 @@ while it runs, its snapshot sits in the level's, and the trigger's data-set outc
 `pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile).
 Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
 sent through a `MapTracker`, runner, actors, coins, goals, triggers, block bounces and remains,
-placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw. It never draws and holds no content beyond tiny test fixtures.
+placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw.
+Its level sequence (`LevelSequence`, Engine 0.7) plays a game's levels one after another as the
+headless contract: a pause after `cleared` or `failed`, then the next level or the same one
+afresh, each a new world with the run's seed, switched-off rules and mini games; its snapshot is
+the world's plus `stage` and `pause`. It never draws and holds no content beyond tiny test fixtures.
 
 ## Public API entry points
 
@@ -28,7 +32,8 @@ placed events, HUD status and a camera hint carrying the scroll lock) for a back
 (`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
 (`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`) and `snapshot` (`snapshotWorld`,
 `platformerGame`) and `present` (`presentWorld`, `PlatformerPresentState`, `presentMap`,
-`presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
+`presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`) and `sequence` (`LevelSequence`,
+`LevelSequenceOptions`, `LevelStage`, `levelStages`, `LEVEL_PAUSE`, `SequenceSnapshot`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
 kinds `level` and `profile`, its named rules, `strictMutants: true`); `engine/tools/kits.ts` finds
 it by the `kit` name in `game.json`.
 
@@ -47,6 +52,8 @@ it by the `kit` name in `game.json`.
 case), determinism and whole-number snapshots; `objects.test.ts` covers the level objects and
 enemies the same way and plays the fixture level from start to goal; `minigame.test.ts` covers the
 mini game hook with a test-only mini game (pass, fail, quit, determinism, the rule off);
+`sequence.test.ts` covers the level sequence (cleared -> next,
+failed -> same, wrap-around, the pause ignoring input, rules given to every world);
 `present.test.ts` checks that presenting every tick leaves the state hashes alone, that every
 frame of the fixture playthrough passes `presentFrameSchema` and survives `freezeFrame`, when the
 map is sent in full, and the animation states, tags, remains, camera and mini-game frames; `golden.test.ts` replays six scripted inputs and

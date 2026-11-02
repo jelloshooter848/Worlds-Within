@@ -5,7 +5,7 @@ import { formatErrors, type ContentResult } from '@engine/core/content/validate'
 import type { PaletteTable } from '@engine/core/gfx/palette';
 import type { SpriteDef } from '@engine/core/gfx/pixelart';
 import type { SkinFile } from '@engine/core/present';
-import { levelKind, profileKind, type LevelDef, type ProfileDef } from '@kits/platformer';
+import { levelKind, levelStages, profileKind, type LevelStage } from '@kits/platformer';
 
 /**
  * Glue between the lab's data files (`game.json` and `content/`) and the engine: the content
@@ -28,30 +28,22 @@ export function loadLab(files: Readonly<Record<string, string>>): ContentResult<
   return loadContent(files, labKinds(), { root: 'games/platformer-lab/' });
 }
 
-/** A level and the physics profile it names. */
-export interface LabStage {
-  level: LevelDef;
-  profile: ProfileDef;
-}
+/** A level and the physics profile it names (the kit's `LevelStage`). */
+export type LabStage = LevelStage;
 
 /**
  * The lab's levels in the order they are played: the fixture level (`FIRST_LEVEL`) first, then
  * the lab's own levels by id (`lab-1-...`, `lab-2-...`), each with its profile.
  */
 export function labStages(content: ContentBundle): LabStage[] {
-  const profiles = new Map(contentOf(content, PROFILE).map((e) => [e.value.id, e.value]));
   const levels = contentOf(content, LEVEL)
     .map((e) => e.value)
     .sort((a, b) =>
       a.id === b.id ? 0 : a.id === FIRST_LEVEL ? -1 : b.id === FIRST_LEVEL ? 1 : a.id < b.id ? -1 : 1,
     );
   if (levels[0]?.id !== FIRST_LEVEL) throw new Error(`the lab has no level "${FIRST_LEVEL}"`);
-  return levels.map((level) => {
-    const profile = profiles.get(level.profile);
-    if (!profile)
-      throw new Error(`level "${level.id}" names profile "${level.profile}", which the lab lacks`);
-    return { level, profile };
-  });
+  const profiles = contentOf(content, PROFILE).map((e) => e.value);
+  return levelStages(levels, profiles, 'the lab');
 }
 
 /**

@@ -16,9 +16,9 @@ later in 0.7. At 0.15 it becomes `games/samples/platformer/`.
 - `game.json`: the manifest (kit `platformer`, 256x240, seed 1, `headless.ts`).
 - `content/`: `levels/level-1.json` + `level-1.map.txt`, `profiles/hopper.profile.json`.
 - `content.ts`: `loadTest(files)`, `testStages(content)` (the levels in play order), `mustLoad`.
-- `headless.ts`: `TestGame` and `createGame(content, seed, opts?)` (the `HeadlessGame`
-  contract): the levels in turn, `LEVEL_PAUSE` ticks between them; the kit's snapshot plus
-  `stage` and `pause`.
+- `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
+  `LevelSequence` over the levels (`TestGame`), `LEVEL_PAUSE` ticks between them; the kit's
+  `SequenceSnapshot` (the world's plus `stage` and `pause`).
 - `files.ts`: `TEST_FILES` (the data files through Vite's `import.meta.glob`).
 - `runs/level-1.run.json` with golden `level-1.hashes.json`, with `guards`.
 
