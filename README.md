@@ -53,6 +53,30 @@ its own page in `dist/`. The page discovery lives in `build/` (see [build/CLAUDE
 
 Games depend on the engine; the engine never imports from games.
 
+## Releases
+
+Pushing a release tag (`engine-vX.Y.Z` or `ww-vX.Y.Z`, always three parts) runs
+[.github/workflows/pages.yml](.github/workflows/pages.yml). It runs the same checks as CI, builds with
+`VITE_BASE=/<repo name>/` and publishes `dist/` to GitHub Pages. It can also be started by hand from the
+Actions tab (**Run workflow**). Each page lands at:
+
+| Page             | URL                                                      |
+| ---------------- | -------------------------------------------------------- |
+| Index of games   | `https://<owner>.github.io/<repo>/`                      |
+| `games/demo`     | `https://<owner>.github.io/<repo>/games/demo/`           |
+| Any other game   | `https://<owner>.github.io/<repo>/games/<name>/`         |
+| An engine sample | `https://<owner>.github.io/<repo>/games/samples/<name>/` |
+
+One-time setup: in the repo's **Settings → Pages**, set **Source** to **GitHub Actions**. Without it the
+deploy step fails.
+
+To check a Pages build locally:
+
+```sh
+VITE_BASE=/Worlds-Within/ pnpm build
+pnpm preview      # then open http://localhost:4173/Worlds-Within/
+```
+
 ## Origin
 
 `engine/` and `kits/topdown` started as copies of the engine and top-down kit from
