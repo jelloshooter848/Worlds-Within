@@ -50,8 +50,9 @@ file formats are described at the top of that file).
   `no_frames`, `bad_legend_key`, `invalid_json`, `unsupported_extension`, `unknown_kind`, and the
   sprite `.txt` reader's `row_outside_frame`, `unknown_directive`, `duplicate_frame`,
   `duplicate_legend`; the parts' `duplicate_field`; the loader's `missing_file`, `no_match`,
-  `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; and the top-down
-  kit's room codes `wrong_size` and `invalid_room` (`kits/topdown/schema.ts`).
+  `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; the CLI loader's
+  `unknown_kit` (`engine/tools/game-loader.ts`); and the top-down kit's room codes `wrong_size`
+  and `invalid_room` (`kits/topdown/schema.ts`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.
 - Use `z.strictObject` for file shapes, so a misspelled field is an error, and `exactOptional()`

@@ -8,3 +8,6 @@ coverage/
 # Local Claude Code state
 .claude/*
 !.claude/settings.json
+
+# CLI output that went over the cap (engine/tools/output.ts)
+.ww-out/

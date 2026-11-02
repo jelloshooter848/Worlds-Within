@@ -27,6 +27,8 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
 - A new file must be claimed by a kind in `game.json` (otherwise it is an `unclaimed_file` error).
 - Node code reads the folder with `readGameFiles` (`engine/core/node/game-files.ts`) and checks it
   with `loadDemo`; every error names the file (`games/demo/content/...`) and the field.
+- After any content change run `pnpm -s cli validate games/demo --json`: exit 0 means every file
+  passes; exit 3 lists each error with its file and field.
 
 ## How to run
 

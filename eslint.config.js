@@ -88,7 +88,7 @@ const purityBlock = {
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.claude/**'],
+    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '.claude/**', '.ww-out/**'],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
