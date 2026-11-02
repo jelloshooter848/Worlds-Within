@@ -8,6 +8,7 @@ import { buildDungeon, type Dungeon, type LegendEntry, type RoomDef } from './ro
 import { snapshotWorld, type TdSnapshot } from './snapshot';
 import { TopDownWorld, type Spawner } from './world';
 import type { TdItem } from './items';
+import type { TdEnemy } from './entity';
 
 /**
  * A one-room top-down challenge as a mini game (`engine/core/minigame.ts`): the adapter that lets
@@ -105,6 +106,37 @@ export interface ChallengeSnapshot extends TdSnapshot {
   round: { goal: string; ticks: number; limit: number; attempt: number; result: MiniGameResult | null };
 }
 
+/** One enemy the room started with, as the round's report gives it. */
+export interface ChallengeFoe extends JsonObject {
+  /** Where the room text placed it, `"<col>,<row>"` (its snapshot `key`). */
+  key: string;
+  kind: string;
+  /** Hit points at the start of the round and now (0 or less once beaten). */
+  hp: number;
+  startHp: number;
+  /** Beaten in this round. */
+  defeated: boolean;
+}
+
+/**
+ * The round's structured report (`MiniGame.report()`, Engine 0.10 T7): plain JSON a mission's
+ * adapter maps to one of the mission's declared outcomes. `result` and the round's ticks; `hero`
+ * (`hp`, `maxHp`, `lost`: half hearts lost in the round, `dead`); `foes`, every enemy the room
+ * started with in room-text order; and, by key, `defeated` (what was destroyed) and `hurt` (hit
+ * but still standing). It only reads the round, so snapshots and hashes are the same with or
+ * without it.
+ */
+export interface ChallengeReport extends JsonObject {
+  result: MiniGameResult | null;
+  goal: ChallengeGoal;
+  ticks: number;
+  limit: number;
+  hero: { hp: number; maxHp: number; lost: number; dead: boolean };
+  foes: ChallengeFoe[];
+  defeated: string[];
+  hurt: string[];
+}
+
 /** One round of a room challenge: a `MiniGame` over a one-room `TopDownWorld`. */
 export class RoomChallenge implements MiniGame {
   /** The round's world (read it, e.g. for a test bot; the round steps it). */
@@ -113,6 +145,9 @@ export class RoomChallenge implements MiniGame {
   private ticks = 0;
   private ended: MiniGameResult | null = null;
   private last: object[];
+  /** The room's enemies as the round began, with their starting hit points (for `report`). */
+  private readonly foes: { enemy: TdEnemy; key: string; startHp: number }[];
+  private readonly heroStartHp: number;
 
   constructor(
     dungeon: Dungeon,
@@ -133,6 +168,8 @@ export class RoomChallenge implements MiniGame {
         `room challenge "${opts.id}": goal defeat-all, but room "${opts.room.id}" has no enemies`,
       );
     this.last = this.world.events.splice(0);
+    this.foes = this.world.enemies().map((enemy) => ({ enemy, key: enemy.key ?? '', startHp: enemy.hp }));
+    this.heroStartHp = this.world.hero.hp;
   }
 
   step(input: InputFrame): void {
@@ -163,6 +200,33 @@ export class RoomChallenge implements MiniGame {
         attempt: this.ctx.attempt,
         result: this.ended,
       },
+    };
+  }
+
+  /** The round's structured report (`ChallengeReport`); final once `result()` is non-null. */
+  report(): ChallengeReport {
+    const hero = this.world.hero;
+    const foes: ChallengeFoe[] = this.foes.map(({ enemy, key, startHp }) => ({
+      key,
+      kind: enemy.kind,
+      hp: enemy.hp,
+      startHp,
+      defeated: enemy.dead,
+    }));
+    return {
+      result: this.ended,
+      goal: this.params.goal,
+      ticks: this.ticks,
+      limit: this.params.ticks,
+      hero: {
+        hp: hero.hp,
+        maxHp: hero.maxHp,
+        lost: Math.max(0, this.heroStartHp - hero.hp),
+        dead: hero.dead,
+      },
+      foes,
+      defeated: foes.filter((f) => f.defeated).map((f) => f.key),
+      hurt: foes.filter((f) => !f.defeated && f.hp < f.startHp).map((f) => f.key),
     };
   }
 

@@ -47,6 +47,14 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `MissionAdapter<KitInput, KitReport>` (`input(snapshot, mission)`, `outcome(report, mission)`),
   `totalWeight`, `pickOutcome(mission, n)` (a delegation draw), `missionResult`, `playedResult`,
   `parseMission`. Pure.
+- `mission-adapter.ts` (Engine 0.10 T7): playing a mission through a kit's mini game with plain
+  data only. `snapshotEntities(snapshot, ...components)` reads a plain world snapshot's entities
+  (ascending id, every component); `playMissionRound({ mission, snapshot, adapter, start, input,
+maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round to its result,
+  maps its end (`MiniGameEnd`: `result`, the kit's `report()` or null, `ticks`) to a declared
+  outcome and returns `{ ok, result }` to commit, or refuses `unfinished`, `unmappable_report`
+  (the adapter threw) or `unknown_outcome` (undeclared or unplayable). Pure in practice, not on
+  `PURE_CORE` yet (no kit or sim file imports it at run time).
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
@@ -87,7 +95,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 
 Tests sit next to the code as `*.test.ts` and run in Node with `pnpm test`, using fakes for canvas,
 audio and DOM. `missions.test.ts` covers mission definitions (valid, no outcomes, duplicate outcome ids, a bad
-`worldTimeCost`), delegation draws and the adapter. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
+`worldTimeCost`), delegation draws and the adapter; `mission-adapter.test.ts` the snapshot reader and every
+`playMissionRound` path. `tests/kits/mission-adapter.test.ts` plays the siege fixture's `raid`
+mission through the topdown kit (and delegates it), outside every layer. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
 box, pan, wheel, pinch, long-press, edge scroll); `input/pointer.test.ts` drives `PointerSource`
 with fake events. `tests/architecture/purity.test.ts` and `no-content.test.ts` guard purity and the
 no-content rule.

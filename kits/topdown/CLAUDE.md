@@ -196,6 +196,15 @@ top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usual
 - `snapshot()` is the kit's `snapshotWorld` (with the last step's events) plus `round`: `goal`,
   `ticks` (stepped so far), `limit`, `attempt` and `result` (`ChallengeSnapshot`). The host puts it
   in its own snapshot (`miniGame.state`), so state hashes cover the round.
+- `report()` (Engine 0.10 T7, the optional `MiniGame.report()`) is the round's structured report
+  as plain JSON (`ChallengeReport`), for a mission's adapter to map to a declared outcome:
+  `result`, `goal`, `ticks`, `limit`, `hero` (`hp`, `maxHp`, `lost`: half hearts lost in the
+  round, `dead`), `foes` (every enemy the room started with, in room-text order: `key` its
+  `"<col>,<row>"` cell, `kind`, `hp`, `startHp`, `defeated`), and by key `defeated` (what was
+  destroyed) and `hurt` (hit but standing). It only reads the round: snapshots, results and every
+  hash are the same whether or not it is called (tested). The kit never maps it to an outcome
+  itself; the adapter that does lives outside the kit (`engine/core/mission-adapter.ts` and, for
+  the siege fixture, `tests/kits/mission-adapter.test.ts`).
 - `present()` is the kit's `presentWorld` frame of the round at the options' `size` (and `top`),
   with `status.goal` and `status.timeLeft` added. It keeps no stream state: every frame carries
   the full map and ids of things the room text did not place count from 1 per frame.
@@ -205,8 +214,8 @@ top? })` returns a `MiniGameDef`. **The room is the game's** (a `RoomDef`, usual
 
 `challenge.test.ts` covers a pass on `reach` and on `defeat-all` (driven by `TopDownBot`), a
 fail on the hero's death and on time-out, a quit on select (which the world never sees), the
-same snapshots from the same seed (and others from another), the presented frame and the param
-and room checks. Its room is built inline in the test.
+same snapshots from the same seed (and others from another), the presented frame, the report
+(beaten, hurt, the hero's loss; unchanged snapshots with it read) and the param and room checks. Its room is built inline in the test.
 
 ## Imports
 

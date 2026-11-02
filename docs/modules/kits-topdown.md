@@ -26,7 +26,10 @@ with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full ad
 `MiniGameDef`, for a host from another kit such as a platformer level's door; the game gives the
 room (its title from the room file's `title`, Engine 0.7 T9), the trigger's params give `goal` (`defeat-all` or `reach`), `ticks` and `hp`; a round passes
 on its goal, fails on the hero's death or time-out and quits on select; `snapshot()` is
-`snapshotWorld` plus `round`, `present()` the kit's `presentWorld` frame). `bot.ts` (the scripted test bot) is imported directly by tests.
+`snapshotWorld` plus `round`, `present()` the kit's `presentWorld` frame, and from Engine 0.10
+`report()` the round's structured report as plain JSON, `ChallengeReport`: result, ticks, the
+hero's `hp`/`lost`/`dead`, every starting enemy by its room cell and which were `defeated` or
+`hurt`, which a mission's adapter maps to a declared outcome; reading it changes no hash). `bot.ts` (the scripted test bot) is imported directly by tests.
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`: the
 name `topdown`, `kinds()` with the room kind, and `TOPDOWN_RULES`); `engine/tools/kits.ts` finds it
 by the `kit` name in `game.json`.
@@ -46,4 +49,6 @@ by the `kit` name in `game.json`.
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
 `beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
-seed.
+seed. `tests/kits/mission-adapter.test.ts` plays an `engine/sim` mission (the siege fixture's
+`raid`) through `roomChallenge` with the core's `playMissionRound`, outside every layer, since the
+kit never imports the sim.

@@ -95,6 +95,24 @@ window `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }` wi
 closes`; `engine/sim/opportunity.ts` runs it) and `parseOpportunity(json)`. Pure (on `PURE_CORE`); tested in
 `missions.test.ts`; in `docs/reference/schemas.md`.
 
+`mission-adapter.ts` (Engine 0.10 T7) is the reusable half of a `MissionAdapter`: playing a
+mission through a kit's mini game with plain data only, so the kit never imports `engine/sim`.
+`snapshotEntities(snapshot, ...components)` lists a plain world snapshot's entities (`{ id,
+components }`, ascending id, with every component) that have all the named components; it throws
+on a snapshot not of the world's shape. `playMissionRound({ mission, snapshot, adapter, start,
+input, maxTicks? })` calls `adapter.input(snapshot, mission)`, starts the round with `start`
+(usually a `MiniGameDef`'s `create`), steps it with `input(tick, round)` until `result()` is
+non-null, then maps its end, `MiniGameEnd` `{ result, report (the round's `report()`, or null),
+ticks }`, through `adapter.outcome` and checks it with `playedResult`. It returns `{ ok: true,
+result, end, round }` (the `MissionResult` the caller commits, e.g. `commitMission(world, id,
+result)`) or refuses with `code`: `unfinished` (no result within `maxTicks`, default
+`MISSION_ROUND_MAX_TICKS` = 100,000), `unmappable_report` (the adapter threw: the report fits no
+outcome) or `unknown_outcome` (an undeclared outcome, or one outside `playable`). A refusal commits
+nothing. The adapter itself (which entities become what, which report means which outcome) is per
+game and kit pairing; `tests/kits/mission-adapter.test.ts` has one for the topdown kit's room
+challenge over the siege fixture. Pure in practice; not on `PURE_CORE` yet because no kit or sim
+file imports it at run time (add it there when one does). Tested in `mission-adapter.test.ts`.
+
 `rts-types.ts` (Engine 0.9 T8, item 131) is the RTS unit and building type table as plain JSON
 data, for the same reason: `rtsTypesSchema` `{ units, buildings }` (a unit type: `health`,
 `speed`, `attack`, `range`, `cooldown`, `sight`, `cost`, `trainTicks`, and `work` for builders and

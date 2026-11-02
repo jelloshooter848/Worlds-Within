@@ -21,6 +21,9 @@ function arena(knight = true): RoomDef {
   return { id: 'arena', at: [0, 0], map: rows.map((r) => r.join('')) };
 }
 
+/** Ticks into the bot's fight in which the knight has taken one hit but stands. */
+const HIT_TICKS = 190;
+
 const DEF = roomChallenge({ id: 'arena', title: 'ARENA', room: arena() });
 
 /**
@@ -136,6 +139,55 @@ describe('roomChallenge', () => {
     expect(frame.entities.map((e) => e.kind)).toContain('hero');
     expect(frame.entities.map((e) => e.kind)).toContain('knight');
     expect(canonicalJson(round.snapshot())).toBe(canonicalJson(round.snapshot()));
+  });
+
+  it('reports what was beaten, what was hit and what the hero lost, as plain JSON (Engine 0.10 T7)', () => {
+    const bot = new TopDownBot({ arena: [{ do: 'fight' }] });
+    const fresh = DEF.create({ params: { goal: 'defeat-all', ticks: 3000 }, attempt: 1 }, 7) as RoomChallenge;
+    expect(fresh.report()).toEqual({
+      result: null,
+      goal: 'defeat-all',
+      ticks: 0,
+      limit: 3000,
+      hero: { hp: 6, maxHp: 6, lost: 0, dead: false },
+      foes: [{ key: '8,7', kind: 'knight', hp: 2, startHp: 2, defeated: false }],
+      defeated: [],
+      hurt: [],
+    });
+    const { round, snaps } = play({ goal: 'defeat-all', ticks: 3000 }, (r) => bot.next(r.world));
+    const report = round.report();
+    expect(report).toMatchObject({ result: 'pass', ticks: snaps.length, defeated: ['8,7'], hurt: [] });
+    expect(report.foes[0]).toMatchObject({ key: '8,7', defeated: true });
+    expect(JSON.parse(canonicalJson(report))).toEqual(report);
+    // Hit once, still standing when time runs out: hurt, not defeated.
+    const hitBot = new TopDownBot({ arena: [{ do: 'fight' }] });
+    const hit = play({ goal: 'defeat-all', ticks: HIT_TICKS }, (r) => hitBot.next(r.world)).round.report();
+    expect(hit).toMatchObject({ result: 'fail', defeated: [], hurt: ['8,7'] });
+    expect(hit.foes[0]).toMatchObject({ hp: 1, startHp: 2, defeated: false });
+    // The hero's loss when the knight kills him.
+    const dead = play({ goal: 'defeat-all', ticks: 3000, hp: 1 }, () => []).round.report();
+    expect(dead).toMatchObject({
+      result: 'fail',
+      hero: { hp: 0, maxHp: 1, lost: 1, dead: true },
+      defeated: [],
+    });
+  });
+
+  it('gives the same snapshots whether or not its report is read', () => {
+    const bot = () => new TopDownBot({ arena: [{ do: 'fight' }] });
+    const plain = play(
+      { goal: 'defeat-all', ticks: 3000 },
+      (
+        (b) => (r: RoomChallenge) =>
+          b.next(r.world)
+      )(bot()),
+    );
+    const b = bot();
+    const read = play({ goal: 'defeat-all', ticks: 3000 }, (r) => {
+      r.report();
+      return b.next(r.world);
+    });
+    expect(read.snaps.map((s) => canonicalJson(s))).toEqual(plain.snaps.map((s) => canonicalJson(s)));
   });
 
   it('checks its params and its room', () => {
