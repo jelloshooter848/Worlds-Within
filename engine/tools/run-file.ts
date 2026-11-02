@@ -40,7 +40,9 @@ import { UsageError } from './exit-codes';
  * Missions (Engine 0.10, item 161): a world run's `missions` lists `{ tick, mission, action,
  * outcome?, experienceTicks? }` steps (`open`, `delegate`, `play`, `quit`), applied after the
  * orders of their tick; each mission's result commits by itself at its commit tick
- * (`world-run.ts`). A refused step is reported, as a refused order is.
+ * (`world-run.ts`). From Engine 0.11 (item 172) a game run takes them too, `{ tick, mission,
+ * action, input? }`, handed to the game's `mission` method (a `play` starts the real kit round,
+ * with `input` its recorded script). A refused step is reported, as a refused order is.
  *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
@@ -139,14 +141,28 @@ export const orderEntrySchema = z.looseObject({
     .describe('the order number (required on a world run): unique, ascending within a tick'),
 });
 
+/** Scripted input: `ScriptedInput` steps (a run's input, or a played mission round's). */
+export const scriptedInputSchema = z.strictObject({
+  steps: z
+    .array(
+      z.strictObject({
+        frame: z.number().int().min(0).describe('the input frame the hold starts at'),
+        hold: z.array(z.enum(Actions)).describe('the actions held from that frame on'),
+      }),
+    )
+    .describe('each step holds its actions from its frame until the next step'),
+});
+
 /** What a mission entry does (Engine 0.10, item 161): open, delegate, play or quit a mission. */
 export const MISSION_ACTIONS = ['open', 'delegate', 'play', 'quit'] as const;
 export type MissionAction = (typeof MISSION_ACTIONS)[number];
 
 /**
- * One mission step of a world run (`missions`): applied after the state of `tick` and that tick's
- * orders, before the step from it, in file order. The mission's definition is the
- * `<mission>.mission.json` file beside the world scenario (or in a `missions/` folder there).
+ * One mission step (`missions`): applied after the state of `tick` and that tick's orders, before
+ * the step from it, in file order. On a world run the mission's definition is the
+ * `<mission>.mission.json` file beside the world scenario (or in a `missions/` folder there) and a
+ * `play` names its `outcome`; on a game run (Engine 0.11, item 172) the step goes to the game's
+ * `mission` method and a `play` may carry the round's recorded `input` instead.
  */
 export const missionEntrySchema = z.strictObject({
   tick: z
@@ -157,24 +173,31 @@ export const missionEntrySchema = z.strictObject({
   mission: z
     .string()
     .regex(/^[a-z0-9][a-z0-9-]*$/, 'a mission id is lower-case letters, digits and "-"')
-    .describe('the mission id: its definition is <id>.mission.json beside the world scenario'),
+    .describe(
+      "the mission id: on a world run its definition is <id>.mission.json beside the world scenario; on a game run one of the game's missions",
+    ),
   action: z
     .enum(MISSION_ACTIONS)
     .describe(
-      '`open` (freezes its event, fixes its commit tick), `delegate` (an outcome drawn by weight, seeded from the world seed and the mission id), `play` (the outcome chosen) or `quit` (its `onQuit` outcome); the commit comes by itself at the commit tick',
+      '`open` (freezes its event, fixes its commit tick), `delegate` (an outcome drawn by weight, seeded from the world seed and the mission id), `play` (world run: the outcome chosen; game run: the real kit round, played until it ends) or `quit` (its `onQuit` outcome); the commit comes by itself at the commit tick',
     ),
   outcome: z
     .string()
     .min(1)
     .exactOptional()
-    .describe('`play` only, required there: the outcome the played round reached'),
+    .describe('world runs, `play` only, required there: the outcome the played round reached'),
   experienceTicks: z
     .number()
     .int()
     .min(0)
     .exactOptional()
     .describe(
-      '`play` and `quit` only: ticks spent inside the stand-in round; reported in the result, never moving the world',
+      'world runs, `play` and `quit` only: ticks spent inside the stand-in round; reported in the result, never moving the world',
+    ),
+  input: scriptedInputSchema
+    .exactOptional()
+    .describe(
+      "game runs, `play` only: the round's recorded input (ScriptedInput steps, frame 0 the round's first tick); left out, the round reads the run's input",
     ),
 });
 
@@ -200,19 +223,7 @@ export const runFileSchema = z
       .exactOptional()
       .describe("the world's seed; the manifest's start.seed (or the scenario's seed) if left out"),
     ticks: z.number().int().min(1).max(1_000_000).describe('how many steps the run plays'),
-    input: z
-      .strictObject({
-        steps: z
-          .array(
-            z.strictObject({
-              frame: z.number().int().min(0).describe('the input frame the hold starts at'),
-              hold: z.array(z.enum(Actions)).describe('the actions held from that frame on'),
-            }),
-          )
-          .describe('each step holds its actions from its frame until the next step'),
-      })
-      .default({ steps: [] })
-      .describe('the scripted input (ScriptedInput steps)'),
+    input: scriptedInputSchema.default({ steps: [] }).describe('the scripted input (ScriptedInput steps)'),
     assertions: z.array(assertionSchema).default([]).describe('checks made at one tick each'),
     invariants: z.array(invariantSchema).default([]).describe('checks made at every tick, 0 included'),
     hashEvery: z
@@ -241,7 +252,7 @@ export const runFileSchema = z
       .array(missionEntrySchema)
       .default([])
       .describe(
-        "world runs only: mission steps, `{ tick, mission, action, outcome?, experienceTicks? }` in tick order, applied after the tick's orders, before the step from it",
+        "mission steps, `{ tick, mission, action, ... }` in tick order, applied after the tick's orders, before the step from it (world runs: `outcome?`, `experienceTicks?`; game runs: the game's `mission` method, `input?` on a `play`)",
       ),
     hashes: z
       .array(tickHashSchema)
@@ -383,19 +394,16 @@ function checkOrders(
 }
 
 /**
- * The checks on `missions` the shape alone cannot make: a world run, tick order, a tick the run
- * plays a step from, `outcome` exactly on `play`, `experienceTicks` only on a played path.
+ * The checks on `missions` the shape alone cannot make: tick order, a tick the run plays a step
+ * from, and the fields of each kind of run. On a world run `outcome` exactly on `play`,
+ * `experienceTicks` only on a played path, no `input`; on a game run (item 172) no `outcome` or
+ * `experienceTicks` (the round gives both) and `input` only on `play`.
  */
 function checkMissions(
   run: { world?: string; ticks: number; missions: z.output<typeof missionEntrySchema>[] },
   ctx: IssueSink,
 ): void {
-  if (run.world === undefined && run.missions.length > 0)
-    ctx.addIssue({
-      code: 'custom',
-      path: ['missions'],
-      message: 'missions run on a world (engine/sim): a game run takes no "missions"',
-    });
+  const world = run.world !== undefined;
   run.missions.forEach((entry, i) => {
     const prev = i > 0 ? run.missions[i - 1] : undefined;
     const issue = (path: (string | number)[], message: string) =>
@@ -407,12 +415,32 @@ function checkMissions(
         ['tick'],
         `tick ${entry.tick} is not before the run's last tick (${run.ticks}): a mission step applies before the step from its tick`,
       );
-    if (entry.action === 'play' && entry.outcome === undefined)
-      issue(['outcome'], 'a "play" entry needs the outcome the played round reached');
-    if (entry.action !== 'play' && entry.outcome !== undefined)
-      issue(['outcome'], `only a "play" entry takes an outcome, not "${entry.action}"`);
-    if (entry.experienceTicks !== undefined && entry.action !== 'play' && entry.action !== 'quit')
-      issue(['experienceTicks'], `only "play" and "quit" spend experience ticks, not "${entry.action}"`);
+    if (world) {
+      if (entry.action === 'play' && entry.outcome === undefined)
+        issue(['outcome'], 'a "play" entry needs the outcome the played round reached');
+      if (entry.action !== 'play' && entry.outcome !== undefined)
+        issue(['outcome'], `only a "play" entry takes an outcome, not "${entry.action}"`);
+      if (entry.experienceTicks !== undefined && entry.action !== 'play' && entry.action !== 'quit')
+        issue(['experienceTicks'], `only "play" and "quit" spend experience ticks, not "${entry.action}"`);
+      if (entry.input !== undefined)
+        issue(
+          ['input'],
+          'a world run plays no round: "input" is for a game run\'s "play" (a world run\'s "play" names its "outcome")',
+        );
+      return;
+    }
+    if (entry.outcome !== undefined)
+      issue(
+        ['outcome'],
+        'a game run plays the real round: its outcome comes from the round, leave "outcome" out',
+      );
+    if (entry.experienceTicks !== undefined)
+      issue(
+        ['experienceTicks'],
+        'a game run plays the real round: its experience ticks are the round\'s, leave "experienceTicks" out',
+      );
+    if (entry.input !== undefined && entry.action !== 'play')
+      issue(['input'], `only a "play" entry carries the round's input, not "${entry.action}"`);
   });
 }
 

@@ -50,6 +50,9 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `mission.ts`: the mission lifecycle (Engine 0.10 T4): `Missions` (`MISSION_COMPONENTS`),
   `openMission`, `delegateMission`, `playMission`, `quitMission`, `commitMission`,
   `settleMissions`, `missionsOf`, `missionSnapshot` (see "Missions" below).
+- `mission-port.ts`: `missionPort(world, { refs? })` (Engine 0.11 T5, item 173), the
+  `MissionWorldPort` an `engine/core` `MissionHost` drives (see "Missions", Live hosting), and
+  `roundSeed(seed, id)`.
 - `opportunity.ts`: opportunities (Engine 0.10 T5): `Opportunities` (`OPPORTUNITY_COMPONENTS`),
   `addOpportunities`, `settleOpportunities`, `opportunityGate`, `takeOpportunity`,
   `applyOpportunityEffect`, `opportunitiesOf` (see "Opportunities" below).
@@ -272,6 +275,15 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   world seed and the mission id (it never draws from `world.rng`).
 - Read with `missionsOf(world)`: `open()`, `committed()` (commit order), `record(id)`,
   `status(id)` (`open`, `committed` or null).
+- **Live hosting** (`mission-port.ts`, Engine 0.11, item 173): `missionPort(world, { refs? })`
+  fills `engine/core`'s `MissionWorldPort` so a game's glue gives a `MissionHost` the world in one
+  call: `open` is `openMission` with `refs` and also returns the round's seed, `roundSeed(seed,
+id)` = `Rng.derived(seed, "round:<id>").next()` (fixed by the seed and the mission id alone,
+  never `world.rng`); `delegate`, `play` (`playMission` with the result's report), `quit`,
+  `settle` (`settleMissions`, the ids committed), `snapshot` and `step` are the world's. Refusals
+  keep the sim's codes. It records no experience ticks (the host counts them), so the world after
+  a played round matches a world run's that resolved the same result at the open tick. It imports
+  only the port's type from core.
 - Tests: `mission.test.ts` (open and its refusals; partial success applying only its effects;
   failure committed with every retry refused; results outside the declared or playable space
   refused; any declared outcome playable; delegation repeatable from the seed and matching the

@@ -20,10 +20,13 @@ round the game is hosting now or null: gap G37, item 159) and `HeadlessEntry` (`
 file's `orders` entry `{ tick, ...order }` goes in, without `tick`, after the snapshot of its tick
 and before the step from it, and the game returns null (applied) or a one-line reason (dropped, not
 an error). Games without orders leave it out and are unchanged; a run file with `orders` for a game
-without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). `HostedGame<W, E>`
+without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). From Engine 0.11 (item 172) the optional `mission(step)` takes one run file `missions` step the same way (`{ mission,
+action, input? }`, after the tick's orders) and returns null or a `MissionStepRefusal` `{ code,
+error }`; the optional `missionExperience()` gives the ticks its played rounds took per mission,
+for the run's `experience` (`MissionHost` has both). `HostedGame<W, E>`
 (Engine 0.10, gap G37) is a `HeadlessGame` the browser shell's `HostScene` can play by itself:
 `world` (the world now; a new object on a new level), `events` (the last step's) and a required
-`miniGame()`; the platformer kit's `LevelSequence` is one, so a game's page passes the game to
+`miniGame()`; the platformer kit's `LevelSequence` is one (and so is `MissionHost`), so a game's page passes the game to
 `new HostScene({ stack, game, picture })` instead of writing accessors. `canonicalJson(value)`
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
@@ -73,7 +76,7 @@ masked until a frame without it, then the map applies; `pressed`, `released`, `d
 buffer are the round's own (a jump before the round never counts). A script whose first frame
 holds a button (a run file's `play` script) counts it as pressed, so it plays as written. The hosts
 are the platformer kit's world, `miniGameScene` when it steps the game itself, `playMissionRound`
-and (T5) `MissionHost`; `HostScene` steps the host, which does it, so no game writes it.
+and `MissionHost`; `HostScene` steps the host, which does it, so no game writes it.
 `MiniGameDef.hostStatus?` lists the host HUD status keys a round shows; the host passes their
 values as `MiniGameContext.hostStatus?` (plain JSON, `HostStatus`), picked with
 `hostStatusFor(def, status)` (undefined when none, so the context leaves it out and the round is
@@ -162,8 +165,51 @@ nothing. A round that ends in `quit` is not a played result: it skips the adapte
 report); the caller resolves it with `quitMission(world, id)` and then commits, so the record's
 resolution is `quit`. Every other success has `quit: false`. The adapter itself (which entities become what, which report means which outcome) is per
 game and kit pairing; `tests/kits/mission-adapter.test.ts` has one for the topdown kit's room
-challenge over the siege fixture. Pure in practice; not on `PURE_CORE` yet because no kit or sim
+challenge over the siege fixture. `missionRoundEnd(mission, adapter, end)` (Engine 0.11, item 173)
+is the end-mapping half of `playMissionRound` on its own (quit to `onQuit`, else the adapter and
+`playedResult`, refused as `unmappable_report` or `unknown_outcome`), for a host that steps the
+round tick by tick. Pure in practice; not on `PURE_CORE` yet because no kit or sim
 file imports it at run time (add it there when one does). Tested in `mission-adapter.test.ts`.
+
+`mission-host.ts` (Engine 0.11 T5; docs/BUILD-LOG.md, Engine 0.11, decisions 1-3, items 172-174)
+is live mission hosting. `MissionHost({ game?, port, missions, miniGames, adapters, hostStatus? })`
+wraps a game's `HeadlessGame` (the RTS kit's `RtsGame` in the mini siege) and is itself a
+`HeadlessGame` and a `HostedGame` (`world` is the host itself, `events` the game's), so the tools
+run it and the shell's `HostScene` plays it.
+
+- **The port.** It never imports `engine/sim`: the world is behind a `MissionWorldPort` with
+  `open(def)` (`{ ok, snapshot, commitTick, seed }`: the plain snapshot the mission opened with and
+  the round's seed), `delegate(id)`, `play(id, result)`, `quit(id)`, `settle()` (the ids
+  committed), `snapshot()` and `step()`. `missionPort(world, { refs })` in `engine/sim` fills it,
+  so the game's glue is one call. With no `game`, the host steps the port's world itself.
+- **Adapters** are keyed by mini game id (a mission's `play`): `MissionAdapter<JsonObject,
+MiniGameEnd>`, whose `input(snapshot, mission)` gives the round's `params`; `outcome` maps its end.
+- **Steps.** `mission(step)` (`{ mission, action, input? }`), or the live calls `launch(id)`
+  (open), `play(id, script?)`, `delegate(id)`, `quit(id)`, each null or a refusal: the port's
+  (the sim's codes), `unknown_mission`, `mission_not_open` / `mission_committed` /
+  `mission_resolved` for a play, `no_mini_game`, `no_adapter`, `bad_mission_input` (the adapter or
+  `create` threw; no round starts), and `round_hosted` for anything while a round is hosted.
+- **A step with no round** steps the game (the enemy thinks, the world steps), then the port's
+  `settle()`, so a due mission commits at its fixed tick exactly as in a world run.
+- **A step while a round is hosted** steps the round once, through a `RoundInput` with the def's
+  `inputMap`, fed the `play` step's recorded script (a `ScriptedInput`, frame 0 the round's first
+  tick) or else the host's frame; the game is not stepped, so the world tick stays and orders are
+  refused. On the tick the round ends, its end (`MiniGameEnd`) is mapped with `missionRoundEnd` and
+  resolved through the port's `play` (or `quit` for a quit round); a refused mapping resolves
+  nothing (the mission is delegated at its commit tick, `timeout`) and is shown in the snapshot.
+  From the next step the world steps one tick per game tick and the result commits by itself at
+  open tick + `worldTimeCost`, as the delegated path's does (decision 3).
+- **Snapshot**: the game's (or `{ world }`) plus `missions: { round: { mission, game, ticks,
+state, result, outcome, refused } }` only while a round is hosted and on the tick it ends.
+- **Experience** (the round's ticks) is counted per mission (`missionExperience()`) and never
+  written to the world, as in world runs, so the world after a played round is the world a run
+  that resolved the same result at the open tick has (tested).
+- The round's `hostStatus` gets `mission` (the mission's title) and the option's values.
+
+Tested in `mission-host.test.ts` (a fake port) and, over the siege fixture with the real sim, the
+RTS kit and the topdown kit's room challenge, `tests/kits/mission-host.test.ts` (outside the
+layers, like `mission-adapter.test.ts`). Pure in practice; not on `PURE_CORE` (no kit or sim file
+imports it at run time; `engine/sim` imports only its types).
 
 `rts-types.ts` (Engine 0.9 T8, item 131) is the RTS unit and building type table as plain JSON
 data, for the same reason: `rtsTypesSchema` `{ units, buildings }` (a unit type: `health`,

@@ -15,7 +15,9 @@ import type { Scene, SceneStack } from '../scene';
  * that scene steps the game too (so the host steps the round and applies its outcome, exactly as
  * headless) and is popped on the round's result. While it is on top the `SceneStack` does not
  * update this scene. Events are gathered between draws (several steps can run between two frames)
- * and dropped when the world changes (`PendingEvents`). It draws through the drawer `picture(r)`
+ * and dropped when the world changes (`PendingEvents`). A mission round is pushed the same way
+ * (Engine 0.11, item 173): a `MissionHost` (`../mission-host.ts`) is a `HostedGame` whose
+ * `miniGame()` is the round it hosts, and its `step` steps that round while the world waits. It draws through the drawer `picture(r)`
  * makes on its first render (a `FramePicture` onto a display's presenter, or anything that draws
  * through `r`). Pure: no clock, no DOM.
  */

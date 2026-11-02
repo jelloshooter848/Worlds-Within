@@ -37,9 +37,11 @@ export type { RefusedMission } from './world-run';
  * the state. A world run (`world` in the run file) builds the world from its scenario instead
  * (`world-run.ts`) and steps it with no input. Recorded `orders` are applied in lockstep: each one
  * after the state of its tick (checks and hash taken) and before the step from it, on a world with
- * `applyOrder`, on a game through its `order` method. A world run's `missions` steps go in right
- * after their tick's orders, and the world settles its missions after every step (each commits by
- * itself at its commit tick). Used by `run` and `dump`.
+ * `applyOrder`, on a game through its `order` method. `missions` steps go in right after their
+ * tick's orders: on a world the world settles its missions after every step (each commits by
+ * itself at its commit tick); on a game (Engine 0.11, item 172) each goes, without `tick`, to the
+ * game's `mission` method, and the game's `missionExperience` gives the run's `experience`. Used
+ * by `run` and `dump`.
  */
 
 /**
@@ -245,6 +247,10 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
 
   const seed = run.seed ?? content.manifest.start.seed;
   const instance: HeadlessGame = imported.entry.createGame(content, seed, { disabledRules });
+  if (run.missions.length > 0 && typeof instance.mission !== 'function')
+    throw new UsageError(
+      `${loaded.file} has missions, but the game's headless module (${content.manifest.headless}) takes none: its game has no mission(step) method (engine/core/headless.ts)`,
+    );
   if (run.orders.length > 0 && typeof instance.order !== 'function')
     throw new UsageError(
       `${loaded.file} has orders, but the game's headless module (${content.manifest.headless}) takes none: its game has no order(order) method (engine/core/headless.ts)`,
@@ -257,6 +263,8 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     },
     snapshot: () => instance.snapshot(),
     order: (order) => instance.order?.(order) ?? null,
+    mission: (step) => instance.mission?.(missionOf(step)) ?? null,
+    ...(instance.missionExperience ? { experience: () => [...(instance.missionExperience?.() ?? [])] } : {}),
   };
   return { ok: true, value: play(loaded, stepper, seed, content.manifest.kit, disabledRules, opts) };
 }
@@ -267,8 +275,19 @@ interface Stepper {
   snapshot(): JsonObject;
   /** Applies one order between steps: null when applied, else why it was dropped. */
   order(order: JsonObject): string | null;
-  /** Applies one mission step between steps (world runs only): null when taken, else the refusal. */
+  /** Applies one mission step between steps: null when taken, else the refusal. */
   mission?(step: MissionStep): { code: string; error: string } | null;
+  /**
+   * A game's own count of its played rounds' ticks (`HeadlessGame.missionExperience`), used for
+   * the result's `experience` instead of the run file's `experienceTicks` (a game run has none).
+   */
+  experience?(): { mission: string; ticks: number }[];
+}
+
+/** A game run's mission step as the game takes it: the entry without its `tick`. */
+export function missionOf(step: MissionStep): JsonObject {
+  const { tick: _tick, ...rest } = step;
+  return rest as JsonObject;
 }
 
 /** An entry's order: the entry without its `tick`. */
@@ -380,7 +399,7 @@ function play(
         refusedOrders,
         missionsPlayed: nextMission,
         refusedMissions,
-        experience: [...experience].map(([mission, ticks]) => ({ mission, ticks })),
+        experience: stepper.experience?.() ?? [...experience].map(([mission, ticks]) => ({ mission, ticks })),
         hashesChecked,
         hashMismatch,
       };

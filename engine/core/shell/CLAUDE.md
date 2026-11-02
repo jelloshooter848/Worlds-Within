@@ -27,7 +27,9 @@ miniGame, picture, translucentMiniGame? })` with accessors (one tick; the world 
   step's events; the mini game the world runs, or null) for a game that is not one
   (`HostSceneGameOptions` | `HostSceneAccessorOptions`). After a step that starts a round it pushes the core `miniGameScene` over itself
   with `step` as the round's step (the host steps the round and applies its outcome, as headless)
-  and pops it on the result. Events are kept between draws in a `PendingEvents` (dropped when the
+  and pops it on the result. A mission round is pushed the same way (Engine 0.11, item 173): pass a
+  `MissionHost` (`../mission-host.ts`, a `HostedGame` whose `miniGame()` is the round it hosts) as
+  `game`; the host steps the round and resolves the mission, and the world waits under it. Events are kept between draws in a `PendingEvents` (dropped when the
   world object changes). `picture(r)` makes the drawer (`draw(world, events)`) on the first
   render; usually a `FramePicture` (`@engine/core/present`) onto the display's presenter.
 - `boot.ts` (browser only): `bootBrowserGame({ screen, displays: { canvas2d, three? }, scene,
@@ -82,7 +84,8 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 `shell.test.ts` (Node, `pnpm test`): the query choice and toggle links; `HostScene` making its
 drawer once with the renderer it is handed, passing the events of several steps in one draw,
 dropping events of a world that is gone, pushing, stepping and popping a mini game, and the same
-when given the game itself (a `HostedGame`);
+when given the game itself (a `HostedGame`), and a `MissionHost`'s mission round pushed, stepped
+under the host while the world waits, and popped once the mission is resolved (Engine 0.11);
 (`PointerSource` itself is tested with fake events in `../input/pointer.test.ts`) the page
 helpers and `bootBrowserGame`'s display choice and no-WebGL message on a fake page; and a full
 boot on a fake page with a fake `AudioContext` (Engine 0.11): with `audio`, no context and no song

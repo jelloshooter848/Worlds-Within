@@ -23,7 +23,9 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
 - `host-scene.ts`: `HostScene<W, E>` (`{ stack, game, picture }` with the game itself, a
   `HostedGame` such as the platformer kit's `LevelSequence` (Engine 0.10, gap G37), or
   `{ stack, step, world, events, miniGame, picture }` with accessors): steps the game, keeps events between draws (dropped on a new world), pushes `miniGameScene`
-  while the host runs a mini game and pops it on the result. Pure.
+  while the host runs a mini game and pops it on the result. A `MissionHost` (`../mission-host.ts`,
+  Engine 0.11) is a `HostedGame` too: its hosted mission round is pushed and popped like any other
+  (the host steps it and resolves the mission). Pure.
 - `boot.ts`: `bootBrowserGame({ screen, displays: { canvas2d, three? }, scene })` (browser
   only; display factories may be `async`, so Three.js loads only in 3D), `showBackendToggle`,
   `showDisplayMessage`. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose

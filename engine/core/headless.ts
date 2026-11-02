@@ -39,12 +39,36 @@ export interface HeadlessGame {
    */
   order?(order: JsonObject): string | null;
   /**
+   * Optional (Engine 0.11, item 172): takes one mission step between steps. A game run file's
+   * `missions` entry `{ "tick": t, "mission": id, "action": "open" | "delegate" | "play" | "quit",
+   * "input"? }` is handed over, without `tick`, after the snapshot of tick `t` and after that tick's
+   * orders, in file order. `play` starts the mission's real kit round (its `input`, when given, is
+   * the round's recorded `ScriptedInput` script, frame 0 being the round's first tick); the game's
+   * following steps play that round until it ends. Returns null when the step was taken, or the
+   * refusal (`{ code, error }`, the sim's codes where it has one; not an error: the run reports it).
+   * A game without `mission` cannot play a run file with `missions` (a usage error).
+   * `MissionHost` (`mission-host.ts`) is one.
+   */
+  mission?(step: JsonObject): MissionStepRefusal | null;
+  /**
+   * Optional (Engine 0.11): the ticks the game's played mission rounds have taken so far, per
+   * mission in first-play order (the mission's experience time, which never moves the world). The
+   * tools report it as a run's `experience`.
+   */
+  missionExperience?(): readonly { mission: string; ticks: number }[];
+  /**
    * Optional (Engine 0.10, gap G37, item 159): the round the game is hosting now (a mini game
    * started by a level trigger), or null. The game still steps the round in `step` and applies
    * its result; the browser shell's `HostScene` reads this to push the round's scene. Games that
    * host no rounds leave it out.
    */
   miniGame?(): MiniGame | null;
+}
+
+/** Why a game refused a mission step: a short code and a one-line reason. */
+export interface MissionStepRefusal {
+  code: string;
+  error: string;
 }
 
 /**

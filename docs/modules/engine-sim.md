@@ -83,6 +83,11 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   changes nothing. Read with `missionsOf(world)` (`open`, `committed`, `record`, `status`). The
   state is the `Missions` component (`MISSION_COMPONENTS`, on the `WorldTime` entity,
   `omitWhenEmpty`), so a world without missions hashes as before.
+- Live hosting (`mission-port.ts`, Engine 0.11 T5, item 173): `missionPort(world, { refs? })` is
+  the `MissionWorldPort` an `engine/core` `MissionHost` drives (`open` = `openMission` plus the
+  round's seed `roundSeed(seed, id)`, `Rng.derived(seed, "round:<id>").next()`; `delegate`,
+  `play` with the result's report, `quit`, `settle` = `settleMissions`, `snapshot`, `step`), so a
+  game's glue fills it with one call. Refusals keep the sim's codes.
 - Opportunities (`opportunity.ts`, Engine 0.10 T5): windows of world ticks in which a mission can
   be taken (`OpportunityDef` `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }`
   and `opportunitySchema` from `engine/core/missions.ts`; offered while `opens <= tick < closes`).

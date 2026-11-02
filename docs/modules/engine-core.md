@@ -22,7 +22,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`, and the
   optional `order(order)` that takes a run file's recorded orders between steps, returning null
   or why it dropped one, and the optional `miniGame()`, the round the game is hosting now or null,
-  Engine 0.10 gap G37; `HostedGame<W, E>`: a `HeadlessGame` with `world`, `events` and
+  Engine 0.10 gap G37; from Engine 0.11 the optional `mission(step)`, a run file's mission step,
+  returning null or a `MissionStepRefusal` `{ code, error }`, and `missionExperience()`, the
+  played rounds' ticks per mission; `HostedGame<W, E>`: a `HeadlessGame` with `world`, `events` and
   `miniGame()`, what the shell's `HostScene` takes as `game`;
   `HeadlessEntry`: `createGame(content, seed, opts?)` and the optional `miniGames(content)` (Engine
   0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`),
@@ -72,8 +74,23 @@ maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round 
   skips the adapter and the `playable` check: it returns `{ ok, quit: true, result }` with the
   mission's `onQuit`, which the caller resolves with `quitMission` before committing, so the record
   says `quit`. The round steps through a `RoundInput` with the optional `inputMap` (Engine 0.11,
-  gap G18), so a button already held on tick 0 does nothing until released. Pure in practice, not on
-  `PURE_CORE` yet (no kit or sim file imports it at run time).
+  gap G18), so a button already held on tick 0 does nothing until released. `missionRoundEnd(mission,
+adapter, end)` (Engine 0.11) is the end-mapping half on its own, for a host that steps the round
+  tick by tick (`MissionHost`). Pure in practice, not on `PURE_CORE` yet (no kit or sim file imports
+  it at run time).
+- `mission-host.ts` (Engine 0.11 T5, items 172-174): live mission hosting. `MissionHost({ game?,
+port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGame` and is one
+  itself, with `mission(step)` (a run file's `missions` steps), `launch(id)`, `play(id, script?)`,
+  `delegate(id)`, `quit(id)`, `miniGame()` (the round hosted now, for `HostScene`) and
+  `missionExperience()`. The world is behind a `MissionWorldPort` (`open`, `delegate`, `play`,
+  `quit`, `settle`, `snapshot`, `step`) the game's glue fills with `missionPort(world, { refs })`
+  from `engine/sim`, so core never imports the sim. A step with no round steps the game (or the
+  port's world) and settles; while a round is hosted the round steps (through a `RoundInput`, fed
+  the `play` step's recorded script or the host's frame) and the world does not, orders and steps
+  are refused (`round_hosted`), and the round's end is mapped with `missionRoundEnd` and resolved
+  through the port on that tick; the world then steps on one tick per game tick and the result
+  commits at the fixed commit tick. The snapshot adds `missions: { round }` only while a round is
+  hosted and on the tick it ends.
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
@@ -126,7 +143,11 @@ Tests sit next to the code as `*.test.ts` and run in Node with `pnpm test`, usin
 audio and DOM. `missions.test.ts` covers mission definitions (valid, no outcomes, duplicate outcome ids, a bad
 `worldTimeCost`), delegation draws and the adapter; `mission-adapter.test.ts` the snapshot reader and every
 `playMissionRound` path. `tests/kits/mission-adapter.test.ts` plays the siege fixture's `raid`
-mission through the topdown kit (and delegates it), outside every layer. `campaign.test.ts` covers
+mission through the topdown kit (and delegates it), outside every layer. `mission-host.test.ts`
+covers `MissionHost` over a fake port; `tests/kits/mission-host.test.ts` hosts the siege fixture's
+`raid` live over the real sim and the RTS kit (played through a scripted topdown round and
+delegated, both committing at open + cost, the battle frozen, the barracks going up, the same
+hashes every run). `campaign.test.ts` covers
 campaign files (good, and each broken field's code), the play order from `start`, and the
 loader naming the file and field of a missing level or mission. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
 box, pan, wheel, pinch, long-press, edge scroll); `input/pointer.test.ts` drives `PointerSource`

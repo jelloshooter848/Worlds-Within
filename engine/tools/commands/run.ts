@@ -28,8 +28,10 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  * missions, missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch }`. `orders` counts the run file's recorded orders, `ordersPlayed`
  * those handed over before `lastTick` and `refusedOrders` (`{ tick, id, error }`) those the world
  * or game dropped (not a failure). `missions`, `missionsPlayed` and `refusedMissions` (`{ tick,
- * mission, action, code, error }`) are the same for a world run's mission steps, and `experience`
- * (`[{ mission, ticks }]`) the experience ticks its played missions spent (never in the world).
+ * mission, action, code, error }`) are the same for mission steps (a world run's, or from Engine
+ * 0.11 a game run's, handed to the game's `mission` method), and `experience` (`[{ mission, ticks
+ * }]`) the experience ticks its played missions spent (never in the world; on a game run the
+ * game's own count of its rounds' ticks, `missionExperience`).
  * `hashMismatch` is the first of the run file's sync `hashes`
  * that differs, `{ tick, expected, actual, lastMatch }` (the state first differs after `lastMatch`
  * and by `tick`), or null; the run stops there and fails. `failure` is the first failed check

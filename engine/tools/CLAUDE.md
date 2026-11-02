@@ -129,8 +129,9 @@ experience, hashesChecked, hashMismatch, replayFile, replay }`.
   (below) whose path is `replayFile` (null when the run passed, and for replays). `replay` is the
   replay check on a replay file (null otherwise). `orders`, `ordersPlayed`, `refusedOrders`,
   `hashesChecked` and `hashMismatch` are about recorded orders and sync hashes (Recorded orders,
-  below); `missions`, `missionsPlayed`, `refusedMissions` and `experience` about a world run's
-  mission steps (Missions in world runs, below). Exit 0 passed, 4 a failed check or a sync hash that differs, 2 a run file with `orders`
+  below); `missions`, `missionsPlayed`, `refusedMissions` and `experience` about mission steps
+  (Missions in world runs and Missions in game runs, below; a run file with `missions` for a game
+  without a `mission` method is exit 2). Exit 0 passed, 4 a failed check or a sync hash that differs, 2 a run file with `orders`
   for a game without an `order` method, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
@@ -258,7 +259,8 @@ platformer game whose door pushes a top-down mini game holds `room` files):
   that entry; an id twice is a schema error. Replay files keep the rules that were off.
 - `orders` (default none): recorded orders, `{ tick, ...order }` (Recorded orders, below).
 - `hashes` (optional): sync hashes `[{ tick, hash }]` the run must give (Recorded orders, below).
-- `missions` (default none; world runs only): mission steps (Missions in world runs, below).
+- `missions` (default none): mission steps (Missions in world runs, and from Engine 0.11 Missions
+  in game runs, below).
 - `guards` (optional): the kit rules this run is meant to guard (Mutant checks). An id the kit
   does not name is an `unknown_rule` content error at that entry (exit 3, naming the run file and
   `guards`); an id twice, or one the run's `disableRules` switches off, is a schema error.
@@ -420,9 +422,9 @@ and seven run files (`raid-partial`, `raid-failure`, `opportunity-closing`, `fro
   there (`missionFileCandidates`), checked as the `mission` content kind. Every mission a step names
   needs one: none is `missing_file` at `missions.<i>.mission` in the run file; a bad file gives its
   own errors (that file and field), and an `id` that is not the file name is `id_mismatch`.
-- **Load checks** (exit 3, naming the run file and field): `missions` on a game run; out of tick
+- **Load checks** (exit 3, naming the run file and field): out of tick
   order; a tick at or after `ticks`; `play` without `outcome`, `outcome` on another action,
-  `experienceTicks` on `open` or `delegate`; a `play` or `quit` at or after the commit tick its
+  `experienceTicks` on `open` or `delegate`, `input` (a game run's field); a `play` or `quit` at or after the commit tick its
   `open` fixed is `mission_unresolved` (the cost has run out by then).
 - **Refused steps are not failures**: a step the world refuses (`mission_committed` for a retry,
   `mission_resolved`, `opportunity_closed`, `unknown_outcome`...) is listed in `refusedMissions`
@@ -439,6 +441,51 @@ mission_committed: ...`) and the run goes on, as with orders.
   (sorted by id).
 - `dump` lists the steps applied before its tick (`missions`); a replay file keeps the steps before
   the failing tick. `missions-run.test.ts` covers the errors, refusals, dump and replays.
+
+## Missions in game runs
+
+Engine 0.11 (item 172; docs/BUILD-LOG.md, Engine 0.11, decisions 1-3): a game run file takes the
+same `missions` list, and the game plays them live. The game is a `MissionHost`
+(`engine/core/mission-host.ts`) over its own game, or any `HeadlessGame` with `mission(step)`:
+
+```json
+{
+  "game": "..",
+  "ticks": 300,
+  "missions": [
+    { "tick": 20, "mission": "sabotage", "action": "open" },
+    {
+      "tick": 20,
+      "mission": "sabotage",
+      "action": "play",
+      "input": { "steps": [{ "frame": 0, "hold": ["attack"] }] }
+    }
+  ]
+}
+```
+
+- **Steps** `{ tick, mission, action, input? }`: each goes, without `tick`, to the game's
+  `HeadlessGame.mission(step)` after the state of its tick and after that tick's orders, in file
+  order. `open`, `delegate` and `quit` mean what they mean in a world run. **`play` starts the
+  mission's real kit round** (the mini game its `play` names, built by the game's adapter from the
+  snapshot the mission opened with); its `input`, when given, is the round's own recorded
+  `ScriptedInput` script, frame 0 being the round's first tick (else the round reads the run's
+  input). The run's following ticks play the round until it ends while the world waits (a step or
+  order at such a tick is refused, `round_hosted`); the outcome is whatever the round's report
+  maps to, and the result commits by itself at open tick + `worldTimeCost`. Check it with
+  assertions on the snapshot (the mission's record after the commit; `missions.round` while a
+  round is hosted and on the tick it ends).
+- **Load checks** (exit 3): `outcome` and `experienceTicks` on a game run (the round gives both),
+  `input` on anything but `play`; tick order and ticks as on a world run. A world run's
+  `mission_unresolved` check cannot be made (its world ticks are not its game ticks once a round is
+  played), so a late `play` or `quit` is refused at run time (`mission_committed`).
+- A game without `mission` is a usage error (exit 2), as with `orders`.
+- **Refused steps** are listed in `refusedMissions` (`{ tick, mission, action, code, error }`, the
+  game's refusal) and the run goes on. `experience` is the game's `missionExperience()` (the
+  rounds' ticks per mission), never written to the world.
+- `dump` and replay files keep the steps as for a world run. `game-missions-run.test.ts` covers
+  steps, refusals, experience, hashes, dump, replay and the usage error with a plain-JS game;
+  `missions-run.test.ts` the field errors of each kind of run.
 
 ## Mutant checks
 

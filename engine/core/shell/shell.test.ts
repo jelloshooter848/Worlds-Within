@@ -10,6 +10,8 @@ import type { MiniGame, MiniGameResult } from '../minigame';
 import { SceneStack } from '../scene';
 import { backendFromQuery, otherBackendLink, THREE_QUERY } from './backend-choice';
 import { AUDIO_UNLOCK_EVENTS, bootBrowserGame, showBackendToggle, showDisplayMessage } from './boot';
+import { MissionHost, type MissionWorldPort } from '../mission-host';
+import type { MissionDef } from '../missions';
 import { HostScene } from './host-scene';
 
 describe('backend choice', () => {
@@ -170,6 +172,90 @@ describe('HostScene', () => {
     expect(depths.slice(0, 5)).toEqual([1, 2, 2, 2, 1]);
     expect(host.results).toEqual(['pass']);
     expect(drawn).toEqual([['t1', 't2', 'round', 'round', 'round', 't3', 't4', 't5']]);
+  });
+});
+
+describe('HostScene hosting a mission round (Engine 0.11, item 173)', () => {
+  const MISSION: MissionDef = {
+    id: 'raid',
+    title: 'Raid',
+    worldTimeCost: 4,
+    play: 'hold',
+    onQuit: 'lost',
+    outcomes: [
+      { id: 'won', title: 'Won', weight: 1, effects: [] },
+      { id: 'lost', title: 'Lost', weight: 1, effects: [] },
+    ],
+  };
+
+  it('pushes the round MissionHost.miniGame() reports, steps the host under it and pops it on the result', () => {
+    let worldTick = 0;
+    const calls: string[] = [];
+    const port: MissionWorldPort = {
+      open: () => ({ ok: true, snapshot: {}, commitTick: worldTick + 4, seed: 1 }),
+      delegate: () => ({ ok: true }),
+      play: (id, result) => (calls.push(`play ${id} ${result.outcome}@${worldTick}`), { ok: true }),
+      quit: () => ({ ok: true }),
+      settle: () => [],
+      snapshot: () => ({ tick: worldTick }),
+      step: () => void worldTick++,
+    };
+    let held = 0;
+    const host = new MissionHost({
+      port,
+      missions: [MISSION],
+      miniGames: [
+        {
+          id: 'hold',
+          title: 'HOLD',
+          create: (): MiniGame => {
+            held = 0;
+            return {
+              step: (i) => void (i.held('attack') && held++),
+              snapshot: () => ({ held }),
+              result: () => (held >= 2 ? 'pass' : null),
+            };
+          },
+        },
+      ],
+      adapters: { hold: { input: () => ({}), outcome: () => ({ outcome: 'won' }) } },
+    });
+    const stack = new SceneStack();
+    const drawn: unknown[] = [];
+    const scene = new HostScene({ stack, game: host, picture: () => ({ draw: (w) => void drawn.push(w) }) });
+    stack.push(scene);
+    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['attack'] }] });
+    const depths: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      if (i === 1) {
+        expect(host.launch('raid')).toBeNull();
+        expect(host.play('raid')).toBeNull();
+      }
+      input.next();
+      stack.update([input]);
+      depths.push(stack.depth);
+    }
+    stack.render(new NullRenderer());
+    // Tick 1 starts the round (pushed); attack, held into it, counts only once released and pressed
+    // again, so the scripted hold never ends it: give it a fresh press.
+    expect(depths[1]).toBe(2);
+    expect(host.miniGame()).not.toBeNull();
+    expect(worldTick).toBe(1); // the world waits while the round is hosted
+    const press = new ScriptedInput({
+      steps: [
+        { frame: 0, hold: [] },
+        { frame: 1, hold: ['attack'] },
+      ],
+    });
+    for (let i = 0; i < 4; i++) {
+      press.next();
+      stack.update([press]);
+    }
+    expect(calls).toEqual(['play raid won@1']);
+    expect(stack.top).toBe(scene);
+    expect(host.miniGame()).toBeNull();
+    expect(worldTick).toBe(2);
+    expect(drawn).toEqual([host]);
   });
 });
 

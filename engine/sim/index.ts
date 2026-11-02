@@ -200,6 +200,7 @@ export {
   quitMission,
   settleMissions,
 } from './mission';
+export { missionPort, roundSeed } from './mission-port';
 export type {
   CommitResult,
   MissionRefusal,

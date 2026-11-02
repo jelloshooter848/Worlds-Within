@@ -103,6 +103,8 @@ export interface MissionStep {
   action: 'open' | 'delegate' | 'play' | 'quit';
   outcome?: string;
   experienceTicks?: number;
+  /** Game runs only (Engine 0.11): a played round's recorded input. */
+  input?: { steps: { frame: number; hold: string[] }[] };
 }
 
 /** Where the definition of mission `id` may be: beside the scenario, or in a `missions/` folder there. */

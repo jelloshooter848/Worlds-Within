@@ -56,6 +56,13 @@ mission, action: open | delegate | play | quit, outcome?, experienceTicks? }` st
   reported in `experience` and never reach the world, so they cannot change a hash. Samples:
   `engine/sim/__fixtures__/raid-*.run.json`, `opportunity-closing`, `frozen-construction`,
   `fixed-cost-few`/`-many` (`engine/tools/CLAUDE.md`, Missions in world runs).
+- Missions in game runs (Engine 0.11, item 172): a game run file's `missions` are `{ tick,
+mission, action, input? }`; each goes, without `tick`, to the game's `HeadlessGame.mission(step)`
+  after that tick's orders (a game without it is a usage error). `play` starts the real kit round,
+  with `input` its own recorded script; the run's next ticks play it. `outcome` and
+  `experienceTicks` are schema errors on a game run (and `input` on a world run); refusals are
+  listed in `refusedMissions` and `experience` is the game's `missionExperience()`
+  (`engine/tools/CLAUDE.md`, Missions in game runs).
 - World runs (Engine 0.8): a run file with `world` (a `*.world.json` scenario, relative to the
   run file) instead of `game` plays that `engine/sim` world with the system set its scenario
   names in `systems` (`village`, the 0.8 haul/build/patrol set, by default; `rts` for RTS battles;
@@ -148,7 +155,7 @@ Tests sit next to the code and run with `pnpm test`: they call `main` with captu
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
-verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
+verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
 compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes (`tests/runs/missions.test.ts` holds Engine 0.10's done-when cases).

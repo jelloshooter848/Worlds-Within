@@ -143,23 +143,43 @@ export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>):
     report: round.report ? round.report() : null,
     ticks,
   };
+  const mapped = missionRoundEnd(opts.mission, opts.adapter, end);
+  if (!mapped.ok) return { ...mapped, end, round };
+  return { ...mapped, end, round };
+}
+
+/** How a round's end maps to a mission result (`missionRoundEnd`). */
+export type MissionRoundEndResult =
+  | { ok: true; quit: boolean; result: MissionResult }
+  | { ok: false; code: Exclude<MissionRoundRefusal, 'unfinished'>; error: string };
+
+/**
+ * The checks `playMissionRound` makes once a round has ended, on their own (Engine 0.11, item 173)
+ * so a host that steps the round tick by tick (`MissionHost`, `mission-host.ts`) maps its end the
+ * same way: a `quit` end resolves to `onQuit` without the adapter (`quit: true`); any other goes
+ * through `adapter.outcome` and `playedResult`, refused as `unmappable_report` (the adapter threw)
+ * or `unknown_outcome` (undeclared, or not `playable`). Pure.
+ */
+export function missionRoundEnd(
+  mission: MissionDef,
+  adapter: MissionAdapter<unknown, MiniGameEnd>,
+  end: MiniGameEnd,
+): MissionRoundEndResult {
   if (end.result === 'quit') {
-    const quit = missionResult(opts.mission, opts.mission.onQuit);
-    if (!quit.ok) return { ok: false, code: quit.code, error: quit.error, end, round };
-    return { ok: true, quit: true, result: quit.result, end, round };
+    const quit = missionResult(mission, mission.onQuit);
+    if (!quit.ok) return { ok: false, code: quit.code, error: quit.error };
+    return { ok: true, quit: true, result: quit.result };
   }
   let checked: ReturnType<typeof playedResult>;
   try {
-    checked = playedResult(opts.adapter, opts.mission, end);
+    checked = playedResult(adapter, mission, end);
   } catch (err) {
     return {
       ok: false,
       code: 'unmappable_report',
-      error: `mission "${opts.mission.id}": ${err instanceof Error ? err.message : String(err)}`,
-      end,
-      round,
+      error: `mission "${mission.id}": ${err instanceof Error ? err.message : String(err)}`,
     };
   }
-  if (!checked.ok) return { ok: false, code: checked.code, error: checked.error, end, round };
-  return { ok: true, quit: false, result: checked.result, end, round };
+  if (!checked.ok) return { ok: false, code: checked.code, error: checked.error };
+  return { ok: true, quit: false, result: checked.result };
 }

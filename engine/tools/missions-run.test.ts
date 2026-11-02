@@ -118,7 +118,7 @@ describe('missions in a world run file', () => {
     ]);
   });
 
-  it('refuses missions on a game run', async () => {
+  it("refuses a world run's fields on a game run, and a game run's on a world run", async () => {
     const dir = tempDir();
     const file = join(dir, 'g.run.json');
     writeFileSync(
@@ -126,10 +126,26 @@ describe('missions in a world run file', () => {
       JSON.stringify({
         game: join(ROOT, 'games/demo'),
         ticks: 5,
-        missions: [{ tick: 0, mission: 'raid', action: 'open' }],
+        missions: [
+          { tick: 0, mission: 'raid', action: 'open', input: { steps: [] } },
+          { tick: 0, mission: 'raid', action: 'play', outcome: 'clean', experienceTicks: 3 },
+        ],
       }),
     );
-    expect(await errorsOf(file)).toEqual([expect.stringMatching(/^g\.run\.json: missions: .*game run/)]);
+    expect(await errorsOf(file)).toEqual([
+      expect.stringMatching(/^g\.run\.json: missions\.0\.input: .*only a "play"/),
+      expect.stringMatching(/^g\.run\.json: missions\.1\.outcome: .*game run/),
+      expect.stringMatching(/^g\.run\.json: missions\.1\.experienceTicks: .*game run/),
+    ]);
+    const world = runFile({
+      missions: [
+        { tick: 0, mission: 'raid', action: 'open' },
+        { tick: 1, mission: 'raid', action: 'play', outcome: 'clean', input: { steps: [] } },
+      ],
+    });
+    expect(await errorsOf(world)).toEqual([
+      expect.stringMatching(/^test\.run\.json: missions\.1\.input: .*world run/),
+    ]);
   });
 
   it('names a mission with no file, and a bad mission file by file and field', async () => {
