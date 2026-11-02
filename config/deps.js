@@ -8,6 +8,13 @@
 import { posix } from 'node:path';
 import { ALIASES, EXCEPTIONS, LAYERS, PURE_CORE, PURE_DIRS } from './layers.js';
 
+/**
+ * Top-level repo folders. A bare specifier starting with one of these (`games/demo/rooms`) is read as
+ * a repo path, not a package: a resolver with a repo-rooted base would find it, so the checker must
+ * judge it too.
+ */
+const REPO_FOLDERS = ['engine', 'kits', 'games', 'tests', 'build', 'config'];
+
 /** @typedef {import('./layers.js').Layer} Layer */
 
 /**
@@ -44,8 +51,9 @@ export function placeOf(path) {
 
 /**
  * Turns an import specifier into a repo path, or null for an external package (`vitest`,
- * `node:fs`). Relative and `/`-rooted specifiers and the aliases in ALIASES resolve inside the
- * repo; a query such as `?raw` is dropped. The result may start with `..` if it leaves the repo.
+ * `node:fs`). Relative and `/`-rooted specifiers, the aliases in ALIASES and bare specifiers that
+ * start with a top-level repo folder (`games/demo/rooms`) resolve inside the repo; a query such as
+ * `?raw` is dropped. The result may start with `..` if it leaves the repo.
  * @param {string} fromFile Repo path of the importing file.
  * @param {string} specifier
  * @returns {string | null}
@@ -60,6 +68,7 @@ export function resolveSpecifier(fromFile, specifier) {
     if (spec === alias) return dir;
     if (spec.startsWith(alias + '/')) return posix.normalize(dir + spec.slice(alias.length));
   }
+  if (REPO_FOLDERS.includes(spec.split('/')[0] ?? '')) return posix.normalize(spec);
   return null;
 }
 

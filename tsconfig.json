@@ -20,8 +20,7 @@
     "paths": {
       "@engine/*": ["./engine/*"],
       "@kits/*": ["./kits/*"]
-    },
-    "baseUrl": "."
+    }
   },
   "include": ["config", "engine", "kits", "games", "tests", "build", "vite.config.ts"]
 }

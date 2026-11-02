@@ -118,6 +118,9 @@ describe('dependency rule: resolving specifiers', () => {
     ['kits/topdown/hero.ts', 'vitest', null],
     ['kits/topdown/hero.ts', 'node:fs', null],
     ['kits/topdown/hero.ts', '@engineering/x', null],
+    ['kits/topdown/hero.ts', 'games/demo/rooms', 'games/demo/rooms'],
+    ['engine/sim/world.ts', 'engine/backends/canvas2d', 'engine/backends/canvas2d'],
+    ['kits/topdown/hero.ts', 'gamesx/y', null],
   ])('%s: %s -> %s', (from, spec, expected) => {
     expect(resolveSpecifier(from, spec)).toBe(expected);
   });
@@ -128,6 +131,8 @@ describe('dependency rule: the checker', () => {
   const bad: [string, string, string][] = [
     ['kits/topdown/world.ts', '../../games/demo/rooms', 'kit -> game'],
     ['kits/topdown/world.ts', '/games/demo/rooms.ts', 'kit -> game by a rooted path'],
+    ['kits/topdown/world.ts', 'games/demo/rooms', 'kit -> game by a bare repo path'],
+    ['engine/sim/world.ts', 'engine/backends/canvas2d', 'sim -> backend by a bare repo path'],
     ['kits/topdown/world.ts', '../../games/demo/main.ts?raw', 'kit -> game with a query'],
     ['engine/sim/world.ts', '@engine/backends/null', 'sim -> backend'],
     ['engine/sim/world.ts', '@engine/backends/canvas2d', 'sim -> backend'],

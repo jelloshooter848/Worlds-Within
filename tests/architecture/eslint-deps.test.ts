@@ -32,6 +32,8 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['engine/sim/bad.ts', '../backends/canvas2d', 'sim -> backend (relative)'],
     ['engine/core/bad.ts', '@kits/topdown', 'core -> kit'],
     ['kits/other/bad.ts', '@kits/topdown', 'kit -> sibling kit'],
+    ['kits/topdown/bad.ts', 'games/demo/rooms', 'kit -> game (bare repo path)'],
+    ['engine/sim/bad.ts', 'engine/backends/canvas2d', 'sim -> backend (bare repo path)'],
   ];
 
   it.each(bad)('%s importing %s fails both (%s)', async (file, specifier) => {
