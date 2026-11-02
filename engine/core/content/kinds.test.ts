@@ -8,7 +8,7 @@ const SONG = JSON.stringify({ id: 't', bpm: 120, loop: false, pulse1: 'c d e' })
 
 describe('content kinds', () => {
   it('registers the engine kinds, listed by name', () => {
-    expect(kinds.list().map((k) => k.name)).toEqual(['palette', 'sfx', 'skin', 'song', 'sprite']);
+    expect(kinds.list().map((k) => k.name)).toEqual(['mission', 'palette', 'sfx', 'skin', 'song', 'sprite']);
     expect(kinds.has('song')).toBe(true);
     expect(kinds.get('sprite')?.readText).toBeTypeOf('function');
   });
@@ -42,7 +42,7 @@ describe('content kinds', () => {
       {
         file: 'r.json',
         code: 'unknown_kind',
-        message: 'unknown content kind "room" (known: palette, sfx, skin, song, sprite)',
+        message: 'unknown content kind "room" (known: mission, palette, sfx, skin, song, sprite)',
       },
     ]);
   });

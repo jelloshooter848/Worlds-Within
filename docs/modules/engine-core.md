@@ -38,9 +38,19 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `rts-types.ts`: the RTS unit and building type table as plain JSON (`rtsTypesSchema`: stats,
   costs, build and training time, what a building trains, drop-offs), shared by `engine/sim` and
   kits. Pure.
+- `missions.ts` (Engine 0.10): the mission contract as plain JSON, shared by `engine/sim` and
+  kits: `missionSchema` (the `mission` content kind, `*.mission.json`: `id`, `title`, `event?`,
+  `worldTimeCost` in ticks, `play`, `params?`, declared `outcomes` with `weight` and data-only
+  `effects`, `onQuit`, `playable?`; no retries), `MissionDef`, `MissionEffect`,
+  `MISSION_EFFECT_TYPES`, `MissionReport` (`{ outcome, stats? }`), `MissionResult`
+  (`{ mission, outcome, effects, report? }`), `MissionRecord` (the committed, append-only record),
+  `MissionAdapter<KitInput, KitReport>` (`input(snapshot, mission)`, `outcome(report, mission)`),
+  `totalWeight`, `pickOutcome(mission, n)` (a delegation draw), `missionResult`, `playedResult`,
+  `parseMission`. Pure.
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
-  `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`; `MiniGameDef`: `id`,
-  `title`, `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
+  `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
+  structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
+  0.10), `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. Pure.
 - `minigame-scene.ts`: `miniGameScene(opts)`, the `Scene` a game's glue pushes over a level to
   drive the same `MiniGame` and pop it on its result. Games only (kits may not import it); `HostScene`
   (`shell/`) pushes it for a game. Pure.
@@ -76,7 +86,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 ## How to test
 
 Tests sit next to the code as `*.test.ts` and run in Node with `pnpm test`, using fakes for canvas,
-audio and DOM. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
+audio and DOM. `missions.test.ts` covers mission definitions (valid, no outcomes, duplicate outcome ids, a bad
+`worldTimeCost`), delegation draws and the adapter. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
 box, pan, wheel, pinch, long-press, edge scroll); `input/pointer.test.ts` drives `PointerSource`
 with fake events. `tests/architecture/purity.test.ts` and `no-content.test.ts` guard purity and the
 no-content rule.

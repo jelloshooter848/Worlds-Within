@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import type { JsonObject } from './headless';
 import type { InputFrame } from './input/input-manager';
 import type { PresentFrame } from './present/types';
@@ -46,6 +47,13 @@ export interface MiniGame {
   result(): MiniGameResult | null;
   /** What to show, for a backend (optional: a game's glue may draw the snapshot itself). */
   present?(): PresentFrame;
+  /**
+   * A structured report of how the round went (what it reached, counts), JSON-safe, read once
+   * `result()` is non-null. Optional: hosts that only need pass, fail or quit never call it; a
+   * mission's adapter (`missions.ts`, `MissionAdapter`) turns it into one of the mission's
+   * declared outcomes.
+   */
+  report?(): JsonObject;
 }
 
 /** A mini game a game supplies by id: its title and how to start a round. */
@@ -54,6 +62,11 @@ export interface MiniGameDef {
   readonly id: string;
   /** Shown on a rules card or announced, e.g. 'HOLD ON'. */
   readonly title: string;
+  /**
+   * The shape of the `params` a round takes (a level trigger's or a mission's), optional. When
+   * given, `validate` checks the content's params against it (gap G16), not only the round.
+   */
+  readonly paramsSchema?: z.ZodType;
   /**
    * Starts a round. Everything random in it must come from `seed` (a host draws it from its own
    * seeded RNG), so the same seed and input always give the same round.

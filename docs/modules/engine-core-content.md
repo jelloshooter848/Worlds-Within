@@ -23,8 +23,10 @@ object.
   `uses`: more kits whose content kinds it also holds).
 - `content/bundle.ts`: `loadContent(files, kinds, { root })` -> `ContentBundle`, `contentOf`,
   `contentNamed`, `globToRegExp`.
-- `content/engine-kinds.ts`: `engineContentKinds()` with the `song`, `sfx`, `palette` and `sprite`
-  kinds (also exported as `SONG_KIND`, `SFX_KIND`, `PALETTE_KIND`, `SPRITE_KIND`).
+- `content/engine-kinds.ts`: `engineContentKinds()` with the `song`, `sfx`, `palette`, `sprite`,
+  `skin` and (Engine 0.10) `mission` kinds (also exported as `SONG_KIND`, `SFX_KIND`,
+  `PALETTE_KIND`, `SPRITE_KIND`, `SKIN_KIND`, `MISSION_KIND`), so any game's `*.mission.json`
+  files validate (`missions.ts`).
 - `content/game-content.ts` (Engine 0.7 T9): `kitContentKinds(kits)` (the engine's kinds plus each
   kit hook's), `contentArt(content)`, `contentSfx(content)`, `mustLoad(result, who?)`: the content
   glue every game wrote for itself.

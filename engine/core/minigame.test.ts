@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { NullRenderer } from '@engine/backends/null';
 import { ScriptedInput } from './input/scripted-input';
 import { miniGameTable, type MiniGame, type MiniGameDef, type MiniGameResult } from './minigame';
@@ -32,6 +33,29 @@ describe('miniGameTable', () => {
   it('throws on a bad id or an id given twice', () => {
     expect(() => miniGameTable([{ ...HOLD, id: 'Hold' }])).toThrow('lower-case');
     expect(() => miniGameTable([HOLD, HOLD])).toThrow('given twice');
+  });
+
+  it('takes an optional params schema and an optional structured report', () => {
+    const counted: MiniGameDef = {
+      ...HOLD,
+      id: 'counted',
+      paramsSchema: z.strictObject({ ticks: z.int().min(1) }),
+      create(ctx, seed) {
+        const round = HOLD.create(ctx, seed);
+        return { ...round, report: () => ({ result: round.result(), ...round.snapshot() }) };
+      },
+    };
+    expect(miniGameTable([HOLD, counted]).get('counted')?.paramsSchema?.safeParse({ ticks: 0 }).success).toBe(
+      false,
+    );
+    expect(HOLD.paramsSchema).toBeUndefined();
+    const round: MiniGame = counted.create({ params: { ticks: 1 }, attempt: 1 }, 1);
+    const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['attack'] }] });
+    input.next();
+    round.step(input);
+    expect(round.result()).toBe('pass');
+    expect(round.report?.()).toEqual({ result: 'pass', held: 1, need: 1 });
+    expect(HOLD.create({ params: {}, attempt: 1 }, 1).report).toBeUndefined();
   });
 });
 

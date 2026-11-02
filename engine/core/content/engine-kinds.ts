@@ -1,6 +1,7 @@
 import { sfxSchema, songSchema } from '../audio/song-schema';
 import { paletteSchema } from '../gfx/palette-schema';
 import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-schema';
+import { missionSchema } from '../missions';
 import { SKIN_KIND } from '../present/skin';
 import { ContentKinds, type ContentKind } from './kinds';
 
@@ -34,11 +35,20 @@ export const SPRITE_KIND = {
   writeText: writeSpriteText,
 } satisfies ContentKind;
 
+/** A mission definition (`missions.ts`), `*.mission.json`: Engine 0.10, item 153. */
+export const MISSION_KIND = {
+  name: 'mission',
+  description:
+    'A mission: its event, fixed world-time cost, the mini game it is played with, its params and its declared outcomes with delegation weights and effects',
+  schema: missionSchema,
+} satisfies ContentKind;
+
 export { SKIN_KIND };
 
 /**
  * A registry holding the content kinds the engine itself defines: `song`, `sfx`, `palette` (JSON),
- * `sprite` (JSON or text-grid `.txt`) and `skin` (JSON, `present/skin.ts`). Games register their own kinds (rooms, missions) on top.
+ * `sprite` (JSON or text-grid `.txt`), `skin` (JSON, `present/skin.ts`) and `mission` (JSON,
+ * `missions.ts`). Games and kits register their own kinds (rooms, levels) on top.
  */
 export function engineContentKinds(): ContentKinds {
   return new ContentKinds()
@@ -46,5 +56,6 @@ export function engineContentKinds(): ContentKinds {
     .register(SFX_KIND)
     .register(PALETTE_KIND)
     .register(SPRITE_KIND)
-    .register(SKIN_KIND as unknown as ContentKind);
+    .register(SKIN_KIND as unknown as ContentKind)
+    .register(MISSION_KIND);
 }

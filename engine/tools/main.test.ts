@@ -149,6 +149,43 @@ describe('validate', () => {
     ]);
   });
 
+  it('checks a mission file in any game, naming the file and field', async () => {
+    const root = demoCopy();
+    const game = join(root, 'games/demo/game.json');
+    const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
+    manifest.content['mission'] = ['content/missions/*.mission.json'];
+    writeFileSync(game, JSON.stringify(manifest));
+    mkdirSync(join(root, 'games/demo/content/missions'), { recursive: true });
+    const file = join(root, 'games/demo/content/missions/raid.mission.json');
+    const mission = {
+      id: 'raid',
+      title: 'Raid',
+      worldTimeCost: 20,
+      play: 'sabotage',
+      onQuit: 'lost',
+      outcomes: [
+        { id: 'won', title: 'Won', weight: 2, effects: [{ type: 'destroy', entity: 'ram' }] },
+        { id: 'lost', title: 'Lost' },
+      ],
+    };
+    writeFileSync(file, JSON.stringify(mission));
+    expect((await cli(['validate', 'games/demo', '--json'], { cwd: root })).code).toBe(EXIT.ok);
+
+    const outcomes = [mission.outcomes[0], { id: 'won', title: 'Again' }, mission.outcomes[1]];
+    writeFileSync(file, JSON.stringify({ ...mission, worldTimeCost: -1, outcomes }));
+    const bad = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    expect(bad.code).toBe(EXIT.invalidContent);
+    const errors = bad.json().errors as { file: string; path: string; code: string }[];
+    expect(errors.map(({ file, path, code }) => ({ file, path, code }))).toEqual([
+      { file: 'games/demo/content/missions/raid.mission.json', path: 'worldTimeCost', code: 'too_small' },
+      {
+        file: 'games/demo/content/missions/raid.mission.json',
+        path: 'outcomes.1.id',
+        code: 'duplicate_outcome',
+      },
+    ]);
+  });
+
   it('reports an unknown kit at the manifest field', async () => {
     const root = demoCopy();
     const file = join(root, 'games/demo/game.json');

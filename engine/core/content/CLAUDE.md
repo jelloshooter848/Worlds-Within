@@ -44,8 +44,9 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   entry's name is its file name up to the first dot; an `id` field must match it.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
-  (`gfx/sprite-schema.ts`, JSON or `.txt`) and `skin` (`present/skin.ts`), each also exported
-  (`SONG_KIND`, ..., `SKIN_KIND`) for `contentOf`.
+  (`gfx/sprite-schema.ts`, JSON or `.txt`), `skin` (`present/skin.ts`) and `mission`
+  (`missions.ts`, `*.mission.json`, Engine 0.10: a game claims them under `content.mission`), each
+  also exported (`SONG_KIND`, ..., `SKIN_KIND`, `MISSION_KIND`) for `contentOf`.
 - `game-content.ts` (Engine 0.7 T9, gap G4 in `docs/reports/stacking-test.md`): the content glue
   every game wrote for itself. `kitContentKinds(kits)`: the engine's kinds plus each kit hook's
   `kinds()` (`import { kit } from '@kits/<name>/kit'`, `game.json`'s `kit` then `uses`; throws on a
@@ -80,7 +81,10 @@ file formats are described at the top of that file).
   `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`
   (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,
   `unknown_actor` and `missing_field` (`kits/platformer/profile.ts`); the RTS kit's `unknown_type` (a plan naming a type no types table has, `kits/rts/schema.ts`); the skin's `wrong_backend_field`, `missing_field`,
-  `missing_ref` and `missing_frame` (`present/skin.ts`).
+  `missing_ref` and `missing_frame` (`present/skin.ts`); the mission's `duplicate_outcome` (an
+  outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
+  is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
+  `open` and `close`) (`missions.ts`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.
 - Use `z.strictObject` for file shapes, so a misspelled field is an error, and `exactOptional()`
@@ -90,5 +94,5 @@ file formats are described at the top of that file).
 
 Each schema has tests next to it with good and broken inputs that check the file name, the exact
 `path` and the `code`: `validate.test.ts`, `text-grid.test.ts`, `kinds.test.ts`, `bundle.test.ts`,
-`gfx/palette-schema.test.ts`,
+`gfx/palette-schema.test.ts`, `missions.test.ts`,
 `audio/song-schema.test.ts`, `gfx/sprite-schema.test.ts`. Run them with `pnpm test`.

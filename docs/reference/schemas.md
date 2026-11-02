@@ -483,6 +483,73 @@ Example (`docs/reference/examples/rts-types.json`):
 }
 ```
 
+### `mission`
+
+A mission: its event, fixed world-time cost, the mini game it is played with, its params and its declared outcomes with delegation weights and effects.
+
+- Defined by: engine
+- Where: `content/`, claimed in `game.json` under `content.mission`
+- Read from: `.json`
+
+| Field                | Type                                                 | Required | Default | Limits                                                 | Description                                                                                                                                                                                                                                                                                                |
+| -------------------- | ---------------------------------------------------- | -------- | ------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                 | `string`                                             | yes      |         | matches `^[a-z0-9][a-z0-9-]*$`                         | the mission id; the same as the file name                                                                                                                                                                                                                                                                  |
+| `title`              | `string`                                             | yes      |         | not empty                                              | shown when the mission is offered                                                                                                                                                                                                                                                                          |
+| `event`              | `string`                                             | no       |         | matches `^[a-z0-9][a-z0-9-]*$`                         | the event it belongs to, held frozen while it is open; none freezes nothing                                                                                                                                                                                                                                |
+| `worldTimeCost`      | `integer`                                            | yes      |         | >= 1                                                   | world ticks between opening and the commit, fixed when it opens (whole number, at least 1)                                                                                                                                                                                                                 |
+| `play`               | `string`                                             | yes      |         | matches `^[a-z0-9][a-z0-9-]*$`                         | the mini game (or kit round) a player plays it with                                                                                                                                                                                                                                                        |
+| `params`             | `{ <key>: JSON }`                                    | no       |         |                                                        | data handed to the mini game, checked by its params schema                                                                                                                                                                                                                                                 |
+| `outcomes`           | `object[]`                                           | yes      |         | at least 1 item                                        | the declared outcome space, in the order delegation walks it                                                                                                                                                                                                                                               |
+| `outcomes[].id`      | `string`                                             | yes      |         | matches `^[a-z0-9][a-z0-9-]*$`                         | the outcome id, unique in the mission; a kit report names it                                                                                                                                                                                                                                               |
+| `outcomes[].title`   | `string`                                             | yes      |         | not empty                                              | a short line for a report card, e.g. "Two of three burnt"                                                                                                                                                                                                                                                  |
+| `outcomes[].weight`  | `integer`                                            | no       | `1`     | >= 1                                                   | its share when the mission is delegated (whole number, at least 1)                                                                                                                                                                                                                                         |
+| `outcomes[].effects` | `(object \| object \| object \| object \| object)[]` | no       | `[]`    |                                                        | the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity, amount }`, `destroy` `{ entity }`, `inventory` `{ entity, item, add }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`; `entity` is a scenario key or an entity id |
+| `onQuit`             | `string`                                             | yes      |         | matches `^[a-z0-9][a-z0-9-]*$`                         | the outcome a played mission commits when the player quits                                                                                                                                                                                                                                                 |
+| `playable`           | `string[]`                                           | no       |         | at least 1 item; items: matches `^[a-z0-9][a-z0-9-]*$` | the outcomes a player can reach by playing; all of them when left out                                                                                                                                                                                                                                      |
+
+Example (`docs/reference/examples/mission.json`):
+
+```json
+{
+  "id": "raid",
+  "title": "Burn the siege engines",
+  "event": "siege",
+  "worldTimeCost": 30,
+  "play": "sabotage",
+  "params": { "engines": 3 },
+  "onQuit": "repelled",
+  "outcomes": [
+    {
+      "id": "clean",
+      "title": "All three burnt",
+      "weight": 1,
+      "effects": [
+        { "type": "destroy", "entity": "ram" },
+        { "type": "destroy", "entity": "tower" }
+      ]
+    },
+    {
+      "id": "partial",
+      "title": "Two of three burnt",
+      "weight": 2,
+      "effects": [
+        { "type": "destroy", "entity": "ram" },
+        { "type": "damage", "entity": "tower", "amount": 20 }
+      ]
+    },
+    {
+      "id": "repelled",
+      "title": "Driven off",
+      "weight": 1,
+      "effects": [
+        { "type": "inventory", "entity": "camp", "item": "oil", "add": -2 },
+        { "type": "opportunity", "open": "rescue" }
+      ]
+    }
+  ]
+}
+```
+
 ### `palette`
 
 A named list of colours (#rgb or #rrggbb) that sprite indices pick from.

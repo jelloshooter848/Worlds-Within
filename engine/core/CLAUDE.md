@@ -50,8 +50,10 @@ tools about itself, and `defineKit(def)`, which checks the name (lower-case lett
 `minigame.ts` is the mini game contract, in the style of SMBC's `MiniGameDef`: `MiniGameResult`
 (`pass` | `fail` | `quit`), `MiniGameContext` (`params`, the host's JSON data for the round, and
 `attempt`), `MiniGame` (`step(input)`, `snapshot()` as JSON-safe data, `result()` null until it
-ends, `present?()` a `PresentFrame`), `MiniGameDef` (`id`, `title`, `create(ctx, seed)`: everything
-random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
+ends, `present?()` a `PresentFrame`, and from Engine 0.10 the optional `report?()`, a structured
+JSON-safe report read once the round has ended, which a mission's adapter turns into an outcome),
+`MiniGameDef` (`id`, `title`, the optional `paramsSchema` (Zod, Engine 0.10: the shape of the
+round's `params`, for `validate`, gap G16), `create(ctx, seed)`: everything random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
 twice). A host (a kit's world) steps the round headless while it pauses itself and puts the
 round's snapshot in its own, so hashes cover it. It imports no scene, so kits may use it; pure (on
 `PURE_CORE`). `minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
@@ -69,6 +71,27 @@ entity id, `stop`, `build` with a `target` cell (the north-west cell) and a `bui
 `target` resource node; each with `id` >= 1, `faction` and unique `units`), the `Order` type,
 `ORDER_TYPES` and `parseOrder(json)` -> `{ ok, order }` or `{ ok: false, error }` with one line per
 bad field (`units: units must not repeat`). Pure (on `PURE_CORE`); tested in `orders.test.ts`.
+
+`missions.ts` (Engine 0.10 T2, items 153-154) is the mission contract as plain JSON data, here
+for the same reason: `engine/sim` runs the lifecycle (open, play or delegate, commit, frozen
+events) and kits play missions, and neither imports the other. `missionSchema` is a mission
+definition and the `mission` content kind (`*.mission.json`, `content/engine-kinds.ts`): `id`,
+`title`, `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
+fixed when it opens), `play` (the mini game or kit round a player plays it with), `params?` (JSON,
+checked by that mini game's `paramsSchema` from T8), `outcomes` (at least one, unique ids, each
+`{ id, title, weight (whole, >= 1, default 1), effects }`), `onQuit` (a declared outcome) and
+`playable?` (a subset). Effects are data only, told apart by `type`: `damage`, `destroy`,
+`inventory`, `set`, `opportunity` (`MISSION_EFFECT_TYPES`). There is no retry: no `attempt`, a
+mission ends in one declared outcome. The types: `MissionReport` (`{ outcome, stats? }`, what a kit
+reports through its adapter), `MissionResult` (`{ mission, outcome, effects, report? }`),
+`MissionRecord` (the committed, append-only record the sim keeps: `resolution`, `openTick`,
+`commitTick`, `experienceTicks`, `skipped`) and `MissionAdapter<KitInput, KitReport>`
+(`input(snapshot, mission)` from the plain world snapshot, `outcome(report, mission)` to a
+`MissionReport`). Helpers: `totalWeight`, `pickOutcome(mission, n)` (the outcome a delegation draw
+`n < totalWeight` falls in, walking file order), `missionResult(mission, id, report?)` (refuses an
+undeclared, or for a played one unplayable, id as `unknown_outcome`), `playedResult(adapter,
+mission, kitReport)` and `parseMission(json)`. Pure (on `PURE_CORE`); tested in
+`missions.test.ts`; in `docs/reference/schemas.md`.
 
 `rts-types.ts` (Engine 0.9 T8, item 131) is the RTS unit and building type table as plain JSON
 data, for the same reason: `rtsTypesSchema` `{ units, buildings }` (a unit type: `health`,
@@ -125,7 +148,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `rts-types.ts`, `minigame.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `rts-types.ts`, `minigame.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
