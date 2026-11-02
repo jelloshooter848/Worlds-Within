@@ -507,3 +507,6 @@ orders)
   `kits/rts` or the shell now, or when the mini siege (0.11) becomes the kit's second game?
 - **149.** `kits/rts` does not opt in to strict mutants, though the sample's run files guard all
   five of its rules and `mutants games/samples/rts-skirmish` exits 0. Opt in?
+  _Since the close-out, `tests/runs/rts-skirmish-mutants.test.ts` holds the sample to the strict
+  standard (no rule unguarded, no run weak); opting the kit in would make `mutants` itself enforce
+  it for every game on the kit._
