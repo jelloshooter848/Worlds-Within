@@ -95,6 +95,21 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
   smaller than the picture is centred. `cameraShake(frame, extra)` is the whole-pixel shake (the
   hint's `shake` plus `extra`, flipping side each frame), added by the backend and never stored.
   The follower lives in a presenter only: never in a kit, a frame or a hash.
+- `rts-camera.ts` (Engine 0.9 T5): `RtsCamera({ view, area, zoom?, minZoom?, maxZoom?, centre? })`,
+  a scrolling, zoomable view over a map larger than the picture: its position (the top-left in
+  world px, kept unrounded so slow pans add up) and zoom (`RTS_MIN_ZOOM` 0.5 to `RTS_MAX_ZOOM` 2 by
+  default, shown in 1/64 steps so 0.5, 1 and 2 are exact). `panBy(dx, dy)` (picture px, as a `pan`
+  gesture gives them), `zoomTo(z, at?)` / `zoomBy(factor, at?)` (keeping the world point under
+  picture point `at` still), `centreOn`, `apply(gesture)` (pan and zoom gestures from
+  `input/pointer-logic.ts`; false for taps and boxes), `resize(view)`. It clamps to `area` exactly as
+  `CameraFollower` does (`clampCameraAxis`, exported from `camera.ts`; an area smaller than the
+  view is centred). `topLeft()` is the whole-pixel top-left; `hint()` is the frame's `CameraHint`
+  `{ x, y, zoom, deadzone: 0x0, lerp: 1, bounds: area }`, which makes the follower (both
+  presenters) frame that same top-left whatever the skin's camera says. `worldToScreen(wx, wy)`
+  is where the Canvas2D presenter draws a world point (`round(wx * zoom) - round(left * zoom)`,
+  shake aside), `screenToWorld(sx, sy)` its inverse (unrounded world px) and
+  `screenBoxToWorld(box)` a box gesture's `boxRect` in world px. Presentation only: it lives in the
+  glue or a kit's presentation state, never in a world or a hash.
 - `stream.ts` (Engine 0.7): the per-frame stream games had written by hand. `FrameSource<W, E, S>`
   `{ start(world), present(world, events, state) }` is how a kit presents its world (the
   platformer kit's `platformerFrames(size)`); `FrameStream(source).next(world, events)` gives the
@@ -119,7 +134,7 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (e
 
 - Pure: `engine/core/present/**` is on `PURE_CORE` (`config/layers.js`). No clock, DOM or
   `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types,
-  `../content/bundle` for `skinSet`).
+  `../content/bundle` for `skinSet`; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
 - Everything in a frame is plain JSON-safe data: no classes, functions, `Map`s or kit objects. A
   backend never sees kit internals.
 - Frames are read-only to backends. Never add a field a backend would write back to.
@@ -146,5 +161,10 @@ ignored, resize to all). `skin-set.test.ts` covers `skinSet` (main and rounds by
 fallbacks) and `presenterBySkinSet`. `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
 small-area centring, the zoomed view at 0.5 and 2, snap on a new map id, repeated frames,
-`reset`), `cameraZoom`, `cameraView` and `cameraShake`. Run with
+`reset`), `cameraZoom`, `cameraView` and `cameraShake`. `rts-camera.test.ts` covers `RtsCamera`:
+clamping at zoom 0.5, 1 and 2 (no stored overshoot), a small area centred, zoom limits, zooming
+about a point, slow pans and pinches adding up, `apply`, round trips screen -> world -> screen at
+zoom 0.5, 1, 1.5 and 2, boxes, and that `CameraFollower` frames its `hint()` to exactly its
+`topLeft()` despite a skin deadzone and lerp. The agreement with the Canvas2D presenter's drawing
+is checked in `engine/backends/canvas2d/rts-camera.test.ts`. Run with
 `pnpm test`.

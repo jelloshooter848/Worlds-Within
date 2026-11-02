@@ -42,7 +42,10 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
   `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable
-  runs) and the browser sources (keyboard, gamepad, touch).
+  runs) and the browser sources (keyboard, gamepad, touch). Pointer input (Engine 0.9):
+  `pointer-logic.ts` (`PointerGestures`: samples in, `tap` / `box` / `pan` / `zoom` gestures out,
+  for mouse, pen and touch, with long-press, edge scroll, wheel and pinch; pure) and `pointer.ts`
+  (`PointerSource`, its DOM side on the canvas, read per game step with `gestures()`).
 - `audio/`: `mml.ts` (MML compiler), `sequencer.ts`, `apu.ts`, `audio-manager.ts`.
 - `audio/song-schema.ts`, `gfx/sprite-schema.ts`: the song, sound-effect and sprite file schemas.
 - `content/`: reading and checking content files; see [engine/core/content](engine-core-content.md).
@@ -66,5 +69,7 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 ## How to test
 
 Tests sit next to the code as `*.test.ts` and run in Node with `pnpm test`, using fakes for canvas,
-audio and DOM. `tests/architecture/purity.test.ts` and `no-content.test.ts` guard purity and the
+audio and DOM. `input/pointer-logic.test.ts` scripts mouse and two-finger touch sequences (click,
+box, pan, wheel, pinch, long-press, edge scroll); `input/pointer.test.ts` drives `PointerSource`
+with fake events. `tests/architecture/purity.test.ts` and `no-content.test.ts` guard purity and the
 no-content rule.

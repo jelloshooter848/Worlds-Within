@@ -2,6 +2,8 @@ import type { ScreenSize } from '../gfx/screen';
 import { GamepadSource } from '../input/gamepad';
 import { InputManager } from '../input/input-manager';
 import { KeyboardSource } from '../input/keyboard';
+import { PointerSource } from '../input/pointer';
+import type { PointerOptions } from '../input/pointer-logic';
 import { TouchSource } from '../input/touch';
 import { layoutScreen } from '../input/touch-layout';
 import { FixedLoop } from '../loop';
@@ -26,8 +28,19 @@ export interface BrowserBootOptions {
   screen: ScreenSize;
   /** A display per backend; a game without `three` always shows Canvas2D and hides the toggle. */
   displays: { canvas2d: DisplayFactory; three?: DisplayFactory };
-  /** The game's first scene, given the stack (to push mini games) and the display. */
-  scene(stack: SceneStack, display: BrowserDisplay): Scene;
+  /**
+   * The game's first scene, given the stack (to push mini games), the display and the page's
+   * extra inputs (`page.pointer`, when `pointer` is on).
+   */
+  scene(stack: SceneStack, display: BrowserDisplay, page: BootPage): Scene;
+  /**
+   * Pointer gestures on the canvas (Engine 0.9): true (or the recogniser's options, all but
+   * `screen`) makes a `PointerSource`, stepped with the input frame; its scenes read
+   * `page.pointer.gestures()` in `update`. Off by default, so existing games are unchanged.
+   */
+  pointer?: boolean | Omit<PointerOptions, 'screen'>;
+  /** The on-screen touch pad (default true). An RTS page that plays by pointer turns it off. */
+  touchPad?: boolean;
   /** The canvas element's id (default `screen`). */
   canvasId?: string;
   /** The toggle link's id (default `backend`); a page without one has no toggle. */
@@ -36,8 +49,14 @@ export interface BrowserBootOptions {
   search?: string;
 }
 
+/** The page's inputs beyond the `InputFrame`, for a game's scenes. */
+export interface BootPage {
+  /** Pointer gestures on the canvas, or null when the game did not ask for them. */
+  pointer: PointerSource | null;
+}
+
 /** What a booted page holds, for a game that wants to reach in (audio, debugging). */
-export interface BootedGame {
+export interface BootedGame extends BootPage {
   backend: PageBackend;
   display: BrowserDisplay;
   scenes: SceneStack;
@@ -67,9 +86,12 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const input = new InputManager(1);
   input.addSource('keyboard', new KeyboardSource());
   if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
-  const touch = new TouchSource(document.body);
-  input.addSource('touch', touch);
-  touch.show(TouchSource.likelyTouchDevice());
+  const touch = opts.touchPad === false ? null : new TouchSource(document.body);
+  if (touch) {
+    input.addSource('touch', touch);
+    touch.show(TouchSource.likelyTouchDevice());
+  }
+  const pointer = opts.pointer ? pointerSource(canvas, display, opts) : null;
 
   // The picture and the touch controls never overlap (engine/core/input/touch-layout.ts).
   const relayout = () => {
@@ -79,22 +101,23 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       insets: { top: 0, right: 0, bottom: 0, left: 0 },
       dpr: window.devicePixelRatio || 1,
       integerScale: false,
-      touch: touch.shown,
+      touch: touch?.shown ?? false,
       touchScale: 1,
       screen: opts.screen,
     });
     display.fit(layout);
-    touch.applyLayout(layout);
+    touch?.applyLayout(layout);
   };
   relayout();
   window.addEventListener('resize', relayout);
 
   const scenes = new SceneStack();
-  scenes.push(opts.scene(scenes, display));
+  scenes.push(opts.scene(scenes, display, { pointer }));
 
   const loop = new FixedLoop({
     step() {
       input.beginFrame();
+      pointer?.beginFrame(performance.now());
       scenes.update([input.player(0)]);
     },
     render() {
@@ -104,7 +127,27 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   });
   loop.start();
   document.body.dataset.backend = backend;
-  return { backend, display, scenes, input, loop };
+  return { backend, display, scenes, input, loop, pointer };
+}
+
+/** The pointer source on the canvas, in picture pixels through the display (else the canvas box). */
+function pointerSource(
+  canvas: HTMLCanvasElement,
+  display: BrowserDisplay,
+  opts: BrowserBootOptions,
+): PointerSource {
+  const { screen } = opts;
+  const toScreen =
+    display.toScreen?.bind(display) ??
+    ((clientX: number, clientY: number) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: ((clientX - rect.left) / (rect.width || 1)) * screen.width,
+        y: ((clientY - rect.top) / (rect.height || 1)) * screen.height,
+      };
+    });
+  const options = typeof opts.pointer === 'object' ? opts.pointer : {};
+  return new PointerSource(canvas, toScreen, { ...options, screen });
 }
 
 /** Sets the toggle link (`#backend`) to the other backend, or hides it (`backend` null). */

@@ -49,4 +49,5 @@ for and holds no game rules.
 `*.test.ts` here run in Node with `pnpm test` against a fake 2D context that records calls;
 `presenter.test.ts` uses a recording `Renderer` with inline fixture frames and skin.
 `Viewport` needs a real DOM and is checked by running a game (`pnpm dev`); `display.test.ts`
-checks `canvasDisplay` on fake canvases.
+checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCamera`'s
+`worldToScreen` / `screenToWorld` agree with this presenter's drawing at zoom 0.5, 1 and 2.

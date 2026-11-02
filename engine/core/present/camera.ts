@@ -110,9 +110,9 @@ export class CameraFollower {
         else if (offset < -half) want = Math.round(target - view / 2 + half);
         else want = from;
       }
-      if (area) want = clampAxis(want, start, extent, view);
+      if (area) want = clampCameraAxis(want, start, extent, view);
       let at = snap || from === undefined ? want : approach(from, want, lerp);
-      if (area) at = clampAxis(at, start, extent, view);
+      if (area) at = clampCameraAxis(at, start, extent, view);
       return at;
     };
     return {
@@ -177,9 +177,10 @@ export function cameraShake(frame: Frame, extra: readonly number[] = []): number
 
 /**
  * The whole-pixel top-left on one axis that keeps a `view`-wide picture inside the area from
- * `start`, `extent` wide; an area narrower than the picture is centred.
+ * `start`, `extent` wide; an area narrower than the picture is centred. `RtsCamera` clamps with
+ * it too, so its view is exactly the one the follower frames.
  */
-function clampAxis(at: number, start: number, extent: number, view: number): number {
+export function clampCameraAxis(at: number, start: number, extent: number, view: number): number {
   if (extent <= view) return Math.round(start + (extent - view) / 2);
   return Math.min(Math.max(at, Math.ceil(start)), Math.floor(start + extent - view));
 }

@@ -29,7 +29,8 @@ export interface CanvasDisplayOptions {
  * `games/platformer-lab/main.ts`): a `Viewport` on the page's canvas, a `CanvasRenderer` on its
  * backbuffer for the scene stack, and a `SkinnedCanvasPresenter` with the game's skin (and one per
  * mini game in `rounds`, `skinSetCanvasPresenter`) on that same renderer. `fit` follows the
- * screen layout; `present` copies the backbuffer to the page. Browser only.
+ * screen layout; `present` copies the backbuffer to the page; `toScreen` maps a client point to
+ * picture pixels (`Viewport.toScreen`) for pointer input. Browser only.
  */
 export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOptions): BrowserDisplay {
   const viewport = new Viewport(canvas, { integerScale: opts.integerScale ?? false }, opts.screen);
@@ -43,5 +44,6 @@ export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOpti
       viewport.resize();
     },
     present: () => viewport.present(),
+    toScreen: (clientX, clientY) => viewport.toScreen(clientX, clientY),
   };
 }

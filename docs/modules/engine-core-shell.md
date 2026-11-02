@@ -16,7 +16,8 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
 
 - `backend-choice.ts`: `PageBackend`, `THREE_QUERY`, `backendFromQuery(search)`,
   `otherBackendLink(backend)`. Pure.
-- `display.ts`: `BrowserDisplay` (`renderer`, `presenter`, `fit(layout)`, `present()`) and
+- `display.ts`: `BrowserDisplay` (`renderer`, `presenter`, `fit(layout)`, `present()`, optional
+  `toScreen(clientX, clientY)` for pointer input) and
   `DisplayResult` (a display or why it cannot start). Built by `canvasDisplay`
   (`@engine/backends/canvas2d`) and `threeDisplay` (`@engine/backends/three`).
 - `host-scene.ts`: `HostScene<W, E>` (`{ stack, step, world, events, miniGame, picture }`):
@@ -24,7 +25,10 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   while the host runs a mini game and pops it on the result. Pure.
 - `boot.ts`: `bootBrowserGame({ screen, displays: { canvas2d, three? }, scene })` (browser
   only; display factories may be `async`, so Three.js loads only in 3D), `showBackendToggle`,
-  `showDisplayMessage`.
+  `showDisplayMessage`. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
+  gestures (tap, box, pan, zoom) are made per game step beside the `InputFrame`; the scene factory
+  gets it as `scene(stack, display, page)` with `page.pointer`. `touchPad: false` hides the touch
+  pad (an RTS page). Both are off/on as before by default, so existing games are unchanged.
 
 Example (`games/platformer-lab/main.ts`):
 

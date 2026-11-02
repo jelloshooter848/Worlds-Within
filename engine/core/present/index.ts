@@ -22,12 +22,14 @@ export {
   cameraTarget,
   cameraView,
   cameraZoom,
+  clampCameraAxis,
   CameraFollower,
   type CameraFollowerOptions,
   type CameraMap,
   type CameraPoint,
 } from './camera';
 export { freezeFrame } from './freeze';
+export { RTS_MAX_ZOOM, RTS_MIN_ZOOM, RtsCamera, type RtsCameraOptions } from './rts-camera';
 export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';

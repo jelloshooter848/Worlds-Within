@@ -76,7 +76,8 @@ says (`clamp: false` keeps a top-down room under its HUD band; gaps G29 and G34 
 `canvasDisplay(canvas, { screen, skin, rounds?, sheet, background?, integerScale?, onSound? })` is the
 Canvas2D `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`: a `Viewport` on
 the page's canvas at the picture size, a `CanvasRenderer` on its backbuffer (the scene stack's
-`renderer`), and `skinSetCanvasPresenter` with the game's skin (and `rounds`, a skin per mini
+`renderer`), its `toScreen` (`Viewport.toScreen`, a client point in picture pixels for pointer
+input, Engine 0.9), and `skinSetCanvasPresenter` with the game's skin (and `rounds`, a skin per mini
 game, as `threeDisplay` takes them) on that same renderer (the display's `presenter`). `fit(layout)` sets the viewport's `fit` from the screen layout and
 resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `games/platformer-lab/main.ts`).
@@ -113,4 +114,8 @@ and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses t
 picture size. `Viewport` needs a
 real DOM and is checked by running a game. `display.test.ts` builds a `canvasDisplay` on fake
 canvases: its presenter clears the backbuffer to the background, and `fit` + `present` copy it
-fitted to the page.
+fitted to the page. `rts-camera.test.ts` (Engine 0.9 T5) checks that `RtsCamera`
+(`@engine/core/present`) agrees with this presenter: at zoom 0.5, 1 and 2, with a skin deadzone
+and lerp, each entity's box is drawn where `worldToScreen` says and maps back within half a picture
+pixel, and the map copy sits at the camera's top-left, in the middle of the map and clamped at
+its edge.

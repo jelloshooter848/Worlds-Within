@@ -56,6 +56,13 @@ Import from `@engine/core/present` (`index.ts`).
   pixels, so clamping keeps the zoomed picture inside the map. `cameraShake(frame, extra)` is the shake offset,
   added on top and never stored; `cameraTarget(frame, skin.camera)` the point to keep in view.
   Each presenter owns its follower: camera state is never in a kit, a frame or a hash.
+- RTS camera control (`rts-camera.ts`, Engine 0.9): `RtsCamera({ view, area, zoom?, minZoom?,
+maxZoom?, centre? })`: position and zoom (0.5 to 2 by default) clamped to the map as the
+  follower clamps (`clampCameraAxis`), `panBy`, `zoomBy(factor, at?)` about a picture point,
+  `centreOn`, `apply(gesture)` for pan and zoom gestures (`@engine/core/input/pointer-logic`),
+  `hint()` (the frame's `CameraHint` with `x`/`y`/`zoom`, no deadzone or lerp, `bounds` the area),
+  and `screenToWorld` / `worldToScreen` / `screenBoxToWorld`, which agree with where the Canvas2D
+  presenter draws at that zoom. Presentation state only, never in a world or a hash.
 
 - Frame streams (`stream.ts`, Engine 0.7): `FrameSource` (a kit's `start(world)` and
   `present(world, events, state)`), `FrameStream` (`next(world, events)`: frozen frames, fresh
@@ -85,4 +92,6 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `freezeFrame` makes mutation throw, and `MapTracker` sends the map only when it must;
 `engine/core/present/skin.test.ts` covers the skin schema (2D and 3D), its cross-file checks,
 `resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`; `engine/core/present/camera.test.ts`
-covers `CameraFollower` and `cameraShake`; `engine/core/present/stream.test.ts` the frame streams.
+covers `CameraFollower` and `cameraShake`; `engine/core/present/rts-camera.test.ts` covers
+`RtsCamera` (clamping, zoom limits, round trips at zoom 0.5, 1, 1.5 and 2, its hint through the
+follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams.

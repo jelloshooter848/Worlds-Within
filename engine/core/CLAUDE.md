@@ -62,6 +62,26 @@ limits) and `fitGame(size, cssW, cssH, dpr, integerScale, fit?)`, used by the ca
 and the touch layout (`layoutScreen` takes `screen` in its input). Nothing else hard-codes a
 picture size. Pure.
 
+`input/pointer-logic.ts` (Engine 0.9 T5, the RTS view) is pointer input without the DOM:
+`PointerGestures({ screen, slop?, longPressMs?, edgeMargin?, edgeSpeed?, wheelPerDouble? })`
+turns `PointerSample`s (`down` / `move` / `up` / `cancel` / `leave` / `wheel`, in picture pixels
+with a time in ms) into `PointerGesture`s: `feed(sample)` returns what a sample completes and
+`tick(t)`, once per game step, what time makes. Mouse and pen: a left click is a primary `tap`, a
+right click a secondary one, a left drag past the slop (4 px) a `box` (`move` while held, then
+`end`, or `cancel`), a middle drag a `pan`, the wheel a `zoom` about the cursor (500 px of
+`deltaY` halve or double it), and the hovering cursor within `edgeMargin` (4 px) of an edge an
+edge-scroll `pan` each tick (not while a button is down, not after `leave`). Touch: a tap is
+primary, a hold of `longPressMs` (500) without moving secondary, a one-finger drag a box, and two
+fingers `pan` (their midpoint) and `zoom` (`source: 'pinch'`, their distance, about the midpoint);
+a second finger cancels the first's box and fingers left after a pinch do nothing until they
+lift. A `pan`'s `dx`/`dy` is how far the content moves (drag right: dx > 0); `boxRect(g)` gives a
+box's corners as a box. Pure (on `PURE_CORE`). `input/pointer.ts` is its DOM side:
+`PointerSource(canvas, toScreen, opts)` listens for pointer events and the wheel on the canvas
+(`touch-action: none`, pointer capture, no context menu or page scroll there) and, like
+`InputManager`, makes this step's `gestures()` in `beginFrame(now)`; `cursor()` is the hovering
+cursor. `bootBrowserGame` makes one when a game asks (`shell/CLAUDE.md`). Pan and zoom gestures
+drive `RtsCamera` (`present/rts-camera.ts`).
+
 `gfx/renderer.ts` is the drawing interface: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`. Backends implement it; core
 never knows which one is drawing.
@@ -83,7 +103,7 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `minigame.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
-and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
+and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
@@ -115,4 +135,8 @@ and the MML noise macros.
 ## Testing
 
 Tests sit next to the code as `*.test.ts` and run in Node (`pnpm test`). They must not need a
-browser: use fakes for canvas, audio and DOM, as the existing tests do.
+browser: use fakes for canvas, audio and DOM, as the existing tests do. Pointer input:
+`input/pointer-logic.test.ts` feeds scripted mouse and two-finger touch samples (click, right
+click, box, cancelled box, middle-drag pan, wheel, edge scroll, tap, long-press, touch box,
+two-finger pan, pinch, a box cancelled by a second finger); `input/pointer.test.ts` drives
+`PointerSource` with fake DOM events.

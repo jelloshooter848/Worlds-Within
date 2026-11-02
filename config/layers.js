@@ -171,6 +171,7 @@ export const PURE_CORE = [
   'engine/core/input/bindings.ts',
   'engine/core/input/input-manager.ts',
   'engine/core/input/scripted-input.ts',
+  'engine/core/input/pointer-logic.ts',
   'engine/core/gfx/renderer.ts',
   'engine/core/gfx/palette.ts',
   'engine/core/gfx/animation.ts',

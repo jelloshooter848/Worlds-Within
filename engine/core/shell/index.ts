@@ -13,6 +13,7 @@ export {
   showBackendToggle,
   showDisplayMessage,
   type BootedGame,
+  type BootPage,
   type BrowserBootOptions,
   type DisplayFactory,
 } from './boot';

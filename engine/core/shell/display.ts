@@ -21,6 +21,12 @@ export interface BrowserDisplay {
   fit(layout: ScreenLayout): void;
   /** After the scenes drew: put the picture on the page. */
   present(): void;
+  /**
+   * A client (CSS px) point in picture pixels, for pointer input (Engine 0.9). Optional: without
+   * it the boot maps the canvas's own box onto the picture, right for a canvas sized to the
+   * picture (3D); a display that letterboxes inside its canvas (Canvas2D) gives its own.
+   */
+  toScreen?(clientX: number, clientY: number): { x: number; y: number };
 }
 
 /** A display, or a sentence saying why it cannot start (no WebGL 2), shown on the page instead. */
