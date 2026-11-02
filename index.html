@@ -3,11 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta http-equiv="refresh" content="0; url=games/demo/" />
-    <title>Worlds Within</title>
+    <title>Worlds Within games</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #111;
+        color: #eee;
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+      }
+      a {
+        color: #8cf;
+      }
+      span {
+        color: #999;
+      }
+    </style>
   </head>
   <body>
-    <!-- Until the dev index of games (Engine 0.2, T3), the root page just forwards to the demo. -->
-    <p><a href="games/demo/">Play the demo</a></p>
+    <h1>Worlds Within</h1>
+    <p>Every game in this build. The list is generated from the game folders by vite.config.ts.</p>
+    <!-- games -->
+    <script type="module" src="./build/launcher.ts"></script>
   </body>
 </html>

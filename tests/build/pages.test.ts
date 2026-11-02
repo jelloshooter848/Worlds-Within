@@ -1,0 +1,65 @@
+import { describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { discoverGames, gameListHtml, pageInputs } from '../../build/pages.ts';
+
+const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
+
+describe('game page discovery', () => {
+  it('finds games/demo in the repo', () => {
+    const dirs = discoverGames(repoRoot).map((page) => page.dir);
+    expect(dirs).toContain('games/demo');
+  });
+
+  it('passes the launcher and every game to the build', () => {
+    const inputs = pageInputs(repoRoot);
+    expect(inputs.index).toBe(join(repoRoot, 'index.html'));
+    expect(inputs['games-demo']).toBe(join(repoRoot, 'games/demo/index.html'));
+  });
+
+  it('finds games and samples with an index.html, and skips folders without one', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ww-pages-'));
+    try {
+      const page = (dir: string, html: string) => {
+        mkdirSync(join(root, dir), { recursive: true });
+        writeFileSync(join(root, dir, 'index.html'), html);
+      };
+      page('games/zeta', '<title>Zeta</title>');
+      page('games/alpha', '<html></html>');
+      page('games/samples/dungeon', '<title> Dungeon </title>');
+      mkdirSync(join(root, 'games/notes'), { recursive: true });
+      writeFileSync(join(root, 'games/readme.md'), 'not a game');
+
+      expect(discoverGames(root)).toEqual([
+        { dir: 'games/alpha', name: 'games-alpha', title: 'games/alpha' },
+        { dir: 'games/samples/dungeon', name: 'games-samples-dungeon', title: 'Dungeon' },
+        { dir: 'games/zeta', name: 'games-zeta', title: 'Zeta' },
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('copes with a repo that has no games folder', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ww-pages-'));
+    try {
+      expect(discoverGames(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('launcher list', () => {
+  it('links each game by a relative path so it works under any base', () => {
+    const html = gameListHtml([{ dir: 'games/demo', name: 'games-demo', title: 'A <b> & "c"' }]);
+    expect(html).toContain('<a href="games/demo/">games/demo</a>');
+    expect(html).toContain('A &lt;b&gt; &amp; &quot;c&quot;');
+  });
+
+  it('says so when there are no games', () => {
+    expect(gameListHtml([])).toContain('No games found');
+  });
+});

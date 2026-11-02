@@ -16,7 +16,7 @@ own version line (Worlds Within 0.1) only after Engine 1.0. See:
 
 ```sh
 pnpm install
-pnpm dev          # http://localhost:5173
+pnpm dev          # opens http://localhost:5173, a list of every game
 ```
 
 The current build is an engine demo: three top-down rooms with placeholder art and an original
@@ -41,12 +41,15 @@ numbers in this table are engine releases; rows marked (none) arrive in the rele
 | `engine/tools`             | `engine/tools`                                                         | The CLI for LLMs and people: validate, run, dump, screenshot (0.3)                             |
 | `engine/sim`               | `engine/sim`                                                           | The optional world simulation (0.8)                                                            |
 | `kits/topdown`             | `kits/topdown`, later `kits/platformer`, `kits/rts`                    | Gameplay rules: rooms, doors, heroes, enemies. Kits never draw                                 |
+| `build`                    | `build`                                                                | Build tooling: finds the game pages for Vite, and the launcher index's small script            |
 | `games/demo`               | `games/demo` (until 0.15), then `games/samples/dungeon`                | The current demo: content, skins and a thin entry point. Grows into the dungeon sample at 0.15 |
 | (none)                     | `games/platformer-test` (0.7 to 0.15), then `games/samples/platformer` | The stacking-test game. Grows into the platformer sample at 0.15                               |
 | (none)                     | `games/samples/<name>`                                                 | Engine sample games, one per kit plus the mini siege, all required for 1.0 (0.9 to 0.15)       |
 | (none)                     | `games/worlds-within`                                                  | Worlds Within itself (from Worlds Within 0.1, after Engine 1.0)                                |
 
-Run the demo with `pnpm dev` (the root page forwards to `games/demo/`).
+Run the demo with `pnpm dev`: it opens a small index of every game (found from the folders
+`games/*/` and `games/samples/*/`); pick `games/demo`. `pnpm build` builds the index and each game as
+its own page in `dist/`. The page discovery lives in `build/` (see [build/CLAUDE.md](build/CLAUDE.md)).
 
 Games depend on the engine; the engine never imports from games.
 

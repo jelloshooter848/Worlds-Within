@@ -12,8 +12,7 @@ world and restarts it when the hero dies. It grows into `games/samples/dungeon` 
 
 ## How to run
 
-- `pnpm dev`, then open the page it prints. The root page forwards to `/games/demo/` (until the dev
-  index of games arrives later in 0.2), or open `/games/demo/` directly.
+- `pnpm dev` opens the index of games; pick `games/demo`, or open `/games/demo/` directly.
 - `pnpm build` builds the demo into `dist/games/demo/`.
 - `pnpm test` runs `demo.test.ts`, which checks the song compiles and the rooms run headless through
   the kit with the null backend.

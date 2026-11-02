@@ -22,5 +22,5 @@
     },
     "baseUrl": "."
   },
-  "include": ["engine", "kits", "games", "tests", "vite.config.ts"]
+  "include": ["engine", "kits", "games", "tests", "build", "vite.config.ts"]
 }

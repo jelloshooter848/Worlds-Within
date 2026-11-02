@@ -1,11 +1,31 @@
 import { defineConfig } from 'vitest/config';
+import type { Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
+import { GAME_LIST_MARKER, discoverGames, gameListHtml, pageInputs } from './build/pages.ts';
 
+// VITE_BASE lets every page work under a sub-path (e.g. /Worlds-Within/ on GitHub Pages).
 const base = process.env.VITE_BASE ?? '/';
 const alias = (dir: string) => fileURLToPath(new URL(dir, import.meta.url));
+const root = alias('./');
+
+/** Fills the root launcher page with a link to every game found under games/ and games/samples/. */
+function gameIndex(): Plugin {
+  return {
+    name: 'worlds-within:game-index',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        if (!html.includes(GAME_LIST_MARKER)) return html;
+        if (ctx.filename !== alias('./index.html')) return html;
+        return html.replace(GAME_LIST_MARKER, gameListHtml(discoverGames(root)));
+      },
+    },
+  };
+}
 
 export default defineConfig({
   base,
+  plugins: [gameIndex()],
   resolve: {
     alias: {
       '@engine': alias('./engine'),
@@ -16,15 +36,20 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: true,
     rollupOptions: {
-      input: {
-        index: alias('./index.html'),
-        demo: alias('./games/demo/index.html'),
-      },
+      // The launcher plus every games/*/index.html and games/samples/*/index.html.
+      input: pageInputs(root),
     },
   },
-  server: { port: 5173 },
+  // Open the launcher on `pnpm dev`, except in CI where there is no browser.
+  server: { port: 5173, open: process.env.CI ? false : '/' },
   test: {
     environment: 'node',
-    include: ['engine/**/*.test.ts', 'kits/**/*.test.ts', 'games/**/*.test.ts', 'tests/**/*.test.ts'],
+    include: [
+      'engine/**/*.test.ts',
+      'kits/**/*.test.ts',
+      'games/**/*.test.ts',
+      'tests/**/*.test.ts',
+      'build/**/*.test.ts',
+    ],
   },
 });
