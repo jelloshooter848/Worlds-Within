@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 121.** (Last used: 120.)
+**Next unused number: 133.** (Last used: 132.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -364,3 +364,48 @@ them; summary in `docs/BUILD-LOG.md`, Engine 0.8, Choices made)
   file replaces the scenario's seed. OK?
 - **120.** `loadWorld(json, { components, systems })` also takes the component definitions, so it
   can check the saved data; the save keeps its log settings and loading cannot change them. OK?
+
+**Engine 0.9, decisions before code** (reasoning in `docs/BUILD-LOG.md`, Engine 0.9, Decisions)
+
+- **121.** The RTS hero (the roadmap's 0.9 question): yes. A directly controlled hero is an
+  ordinary unit entity with a squad `Member` role `hero` (reusing `engine/sim` squads), which
+  orders can target on its own, alongside squads. No hero-only rules until 0.13. OK?
+- **122.** Kits still may not import `engine/sim` (`config/layers.js` unchanged), so every world
+  rule (movement, combat, construction, training, gathering) is an `engine/sim` system driven by
+  component data; `kits/rts` reads a plain world snapshot, turns selection and commands into
+  orders, presents frames and runs the scripted enemy; game glue joins the two and stays a few
+  dozen lines (about 60 at most per entry), with anything a second RTS game would copy moved into
+  the engine or kit. OK?
+- **123.** Orders are plain JSON (`{ id, faction, type: move|attack|build|train|gather|stop,
+units, target }`), typed and validated in `engine/core` (the layer both sim and kits may
+  import), applied between ticks inside `world.withCause('order:<id>')`; an order that cannot be
+  carried out is dropped and logged, not an error. OK?
+- **124.** Recorded battles are lockstep: each order is stamped with the tick it applies before
+  (same-tick orders in id order), sync hashes every 20 ticks by default through the existing
+  `hashEvery` and replay machinery, and a run-file `orders` field for both world and game runs.
+  OK, or another default for N?
+- **125.** Game runs get orders through a new optional `HeadlessGame.order(order)`, called between
+  `step()`s at the order's tick; a run file with `orders` for a game without it is a usage error.
+  OK?
+- **126.** Pathfinding is in-house in `engine/sim`: A\* for single units on the terrain grid, and
+  the existing `distanceField` reused as a flow field for a group sharing a goal (the group size
+  that switches is measured and recorded in T6). OK?
+- **127.** Answering 108: the RTS moves 8-way with no corner cutting (a diagonal costs 14 against
+  10 straight, allowed only when both straight neighbours are passable; ties N, NE, E, SE, S, SW,
+  W, NW). 8-way is an option; the 0.8 sample world stays 4-way, so its hashes do not change. OK?
+- **128.** Answering 48: `Facing` widens to eight directions (`up-left`, `up-right`, `down-left`,
+  `down-right` added); a skin with no diagonal frame falls back to the diagonal's horizontal part
+  (`up-right` uses `right`), then the existing rule, so existing kits and skins stay valid. OK, or
+  fall back to the vertical part?
+- **129.** The benchmark target: 500 units (stretch 1000) with health bars and selection rings on
+  a map of at least 128 x 128 cells, at the RTS sample's picture size and zoom 0.5, 1 and 2, with
+  a 95th-percentile frame time of at most 16.7 ms over 600 frames in headless Chromium through
+  Playwright (skipped where no browser exists). OK?
+- **130.** PixiJS v8 (one exact pinned version) comes in only if Canvas2D misses the 500-unit
+  target; missing only the 1000 stretch is recorded but brings no PixiJS. OK?
+- **131.** The skirmish map is a sim scenario file (`*.world.json`) plus RTS unit and building type
+  data, new content kinds added by `kits/rts`; the scripted enemy's plan is separate kit content.
+  OK?
+- **132.** Following 118: a scenario may name an engine system set (such as `"systems": "rts"`),
+  defaulting to the 0.8 set (haul, build, patrol), so world runs can play RTS battles and the
+  village's hashes do not change. OK?

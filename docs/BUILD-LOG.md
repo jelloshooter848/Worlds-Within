@@ -7,6 +7,144 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.9
+
+The RTS kit and view. Being built on branch `engine/build-0.15`; not tagged (no tags during the
+build, owner answer 24). This section grows task by task; it starts with the decisions taken before
+any code.
+
+The stacking-test gap report (`docs/reports/stacking-test.md`) assigns no gap to 0.9: its 16 open
+gaps went to 0.10, 0.11, 0.14 and 0.15, so this release takes none over.
+
+### Decisions
+
+The roadmap's one "decision needed first" for 0.9 is the hero unit. The other questions below were
+open too (how a kit that may not import `engine/sim` drives it, how orders are recorded, items 48
+and 108, what the benchmark must reach, and what a map is), so they were settled in writing before
+any code, and later tasks build against them. Each one is a feedback item (121-132) the owner can
+overrule by number.
+
+**1. The hero unit: yes, as an ordinary unit entity (item 121).** A directly controlled hero is an
+ordinary unit entity in the world (`Position`, `Health`, `Owner` and the RTS unit components like
+any other unit) that also has a `Member` with role `hero` in its squad, reusing the squads of
+`engine/sim` (item 116). Orders name the entities they apply to, so the player can select and order
+a hero on its own, a whole squad, or a mix of both; nothing in the order format knows the
+difference. Reasons:
+
+- It keeps the door open for Worlds Within's commander plus named heroes (item 11, the WW 0.1
+  question) without a second kind of unit: a hero is a unit with a name and a role, not a new code
+  path in the kit or the sim.
+- Squads already name their heroes and captain (0.8), so a personal-scale mode (0.11 onwards) can
+  find the same hero the RTS view moved.
+- 0.9 adds no hero-only rules (no abilities, no levelling). Those belong to 0.13 (heroes and
+  consequences in the simulation). The kit may draw a hero's selection ring differently, read from
+  its `Member` role in the snapshot.
+
+**2. The kit/sim boundary (items 122-123).** `kits` may still import only `engine/core`;
+`config/layers.js` does not change. So:
+
+- **Every world rule is an `engine/sim` system driven by component data:** movement, combat,
+  construction, training and gathering. Numbers (speed, damage, range, build time, cost, carry
+  amount) live in components and in unit and building type data, never in code constants of the
+  kit.
+- **Orders are plain JSON data**, defined once (type and Zod schema) in `engine/core`, the one layer
+  both `engine/sim` and `kits` may import:
+  `{ "id": 7, "faction": "red", "type": "move" | "attack" | "build" | "train" | "gather" | "stop",
+"units": [12, 13], "target": ... }`. `id` counts up from 1 in each battle; `units` are world
+  entity ids; `target` depends on the type (a cell for `move` and `build`, an entity id for `attack`
+  and `gather`, a unit type for `train`, with a building kind for `build`; `stop` has none). An
+  order for units its faction does not own, or that cannot be carried out, is dropped with a log
+  entry, never an error.
+- **Orders are applied between ticks**, by an `engine/sim` function such as
+  `applyOrders(world, orders)`, inside `world.withCause('order:<id>')`, so every change an order
+  makes is in the event log with that order as its cause (item 113 recommends naming a cause; this
+  does). An order sets intent components (where to go, what to attack, what to build or train);
+  the systems carry it out on later ticks.
+- **`kits/rts` reads a plain world snapshot** (the JSON `World.snapshot()` gives, read through its
+  own small typed reader, with no `engine/sim` import), turns pointer selection and commands into
+  orders, presents frames (units, buildings, selection, the camera) and runs the scripted enemy,
+  which also only issues orders. It holds no world rules: whether a unit can reach a cell or a
+  faction can afford a barracks is the sim's answer, which the kit reads back.
+- **Game glue joins the two**, because only `games` may import both `kits` and `engine/sim`. The
+  glue loads the scenario, makes the world with the engine's RTS systems, and each tick passes the
+  snapshot to the kit, applies the orders the kit returns, and steps the world. It must stay small:
+  the sample's `headless.ts` and browser entry should each be a few dozen lines of wiring
+  (roughly 60 at most), as the platformer games' `createGame` became after G1. Anything a second RTS
+  game would copy (the step loop, applying orders, the hash schedule) belongs in `engine/sim` or
+  `kits/rts`, not in the game.
+
+**3. Order recording and replay (items 124-125).** The OpenRA idea, lockstep:
+
+- **Each recorded order is stamped with the tick it applies before**: an order with `"tick": 40`
+  is applied after tick 40's state and before the step to tick 41, in ascending `id` order. Two
+  orders at the same tick apply in id order. The recorded orders and the seed are the whole input
+  of a battle.
+- **Sync hashes every N ticks**: a recorded battle stores the state hash (the same hash as today,
+  the first 16 hex digits of the SHA-256 of the canonical snapshot, item 109) every N ticks, N = 20
+  by default, so a replay that drifts says the first tick it differs within 20 ticks. The existing
+  run-file `hashEvery` and replay machinery carry these hashes; no second hash format.
+- **The run file gets an `orders` field** (`[{ "tick": 40, "id": 1, "faction": "blue", ... }]`)
+  for both world runs (`"world"`) and game runs (`"game"`). On a world run the tools apply the
+  orders themselves through `engine/sim`. On a game run they hand each order to the game through
+  a new optional method on `HeadlessGame`: `order(order)`, called between `step()`s at its tick.
+  A game run with `orders` against a game whose headless module has no `order` method is a usage
+  error. Games without orders do not change.
+- **Recording**: the browser page (and the headless kit loop) collects every order it applied with
+  its tick, and can write them as a run file that a headless `pnpm cli run` replays to the same
+  hashes. That is the 0.9 "done when".
+
+**4. Pathfinding (items 126-127).** Written in-house in `engine/sim`, in integers:
+
+- **A\* for single units** on the existing terrain grid, with the same move costs as `path.ts` and
+  a fixed tie-break, so the same terrain and goal always give the same path.
+- **Flow fields for groups that share a goal**: the existing `distanceField` already is one (the
+  cheapest cost from every cell to the goal, cached per terrain and goal), so a group ordered to
+  one cell reads `nextStep` from one shared field instead of running A\* per unit. A\* is used for
+  a single unit or a small selection; the switch-over size is a builder's choice, recorded when T6
+  measures it.
+- **Item 108 answered: 8-way for the RTS, with no corner cutting.** A diagonal step costs the cell's
+  cost times 14 against 10 for a straight step (integer, so no square roots), and a diagonal step
+  is only allowed when both straight cells beside it are passable, so units never squeeze between
+  two blocked corners. Ties go north, north-east, east, south-east, south, south-west, west,
+  north-west. 8-way is an option (`STEPS` stays the 4-way list; an 8-way list and the cost scale are
+  chosen per call or per system), and the 0.8 sample world's systems keep 4-way, so
+  `village.hashes.json` and the village run file's hashes do not change.
+
+**5. Facing widened to eight directions (item 128, answering item 48).** `Facing` in
+`engine/core/present` becomes `up`, `down`, `left`, `right`, plus `up-left`, `up-right`,
+`down-left` and `down-right`. Skins may give frames for the diagonals; a skin without a diagonal's
+frame falls back to the nearest cardinal: its horizontal part (`up-right` uses `right`, then the
+existing rule, `down`, then the first frame), so `flipFacing` still mirrors side frames. Every
+existing kit only ever sets the four cardinal values and every existing skin stays valid with no
+edits, so their state hashes and screenshots do not change. The RTS kit derives a unit's facing
+from its last step in the snapshot.
+
+**6. The benchmark target (items 129-130).** The roadmap's "hundreds of units, zoom" becomes:
+
+- **500 units** (animated sprites, each with a health bar, plus their selection rings) on a map of
+  at least 128 x 128 cells, larger than the screen, at the RTS sample's picture size (decided in T3,
+  in the range of the other samples, such as 320 x 240), at zoom 0.5, 1 and 2, panning the camera.
+  **1000 units is the stretch target.**
+- **60 fps in headless Chromium through Playwright**: measured over at least 600 frames per case,
+  the 95th-percentile frame time is at most 16.7 ms. The benchmark skips cleanly where no browser
+  is available (CI stays green) and writes its numbers as text.
+- **PixiJS comes in only if Canvas2D misses the 500-unit target.** If it does, PixiJS v8 is added
+  as one more backend at one exact pinned version, reading the same snapshot and skin. If
+  Canvas2D reaches 500 but not 1000, PixiJS stays out and the 1000 result is recorded.
+
+**7. The map format (item 131).** The skirmish map is a sim scenario file (`*.world.json`, the 0.8
+format: terrain as text grids, entities with components, `$ref` links) plus RTS unit and building
+type data (speed, health, damage, range, cost, build and training time, what a building can train):
+new content kinds that `kits/rts` adds, validated by Zod like every other content kind, and read
+by the sim's systems as component data copied in when a unit or building is made. The map holds
+the starting units, buildings and resource nodes of both sides; the scripted enemy's plan is kit
+content of its own.
+
+**8. World runs choose their systems (item 132, following item 118).** A world run with orders
+needs the RTS systems, not the village's haul, build and patrol. A scenario may name an engine
+system set (for example `"systems": "rts"`), defaulting to today's set, so the village and its
+hashes do not change.
+
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,
