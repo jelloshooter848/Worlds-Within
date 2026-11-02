@@ -137,6 +137,21 @@ describe('move orders', () => {
     w.step();
     expect(at(w, id)).toEqual({ x: 1, y: 0 });
   });
+
+  it('counts a step cooldown down after a stop, so the next order does not wait it out', () => {
+    const w = world(['..........']);
+    const id = unit(w, 'red', 0, 0, { speed: 10 });
+    applyOrder(w, { id: 1, faction: 'red', type: 'move', units: [id], target: { x: 9, y: 0 } });
+    w.step();
+    expect(w.get(id, Cooldown)?.move).toBe(9);
+    applyOrder(w, { id: 2, faction: 'red', type: 'stop', units: [id] });
+    for (let i = 0; i < 9; i++) w.step();
+    expect(w.has(id, Cooldown)).toBe(false);
+    // A later order steps on the first tick.
+    applyOrder(w, { id: 3, faction: 'red', type: 'move', units: [id], target: { x: 9, y: 0 } });
+    w.step();
+    expect(at(w, id)).toEqual({ x: 2, y: 0 });
+  });
 });
 
 describe('attack orders and combat', () => {

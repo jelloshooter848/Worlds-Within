@@ -324,7 +324,8 @@ components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_CO
 - `Target` `{ entity }`: what a unit fights. `Cooldown` `{ move, attack }`: ticks before the unit
   may step or hit again, present only while one is above 0. `Facing8` `{ dir }`: `STEPS_8` index
   (0 north, 1 north-east ... 7 north-west) of the last step or hit, for the view (`facingOf`).
-- `moveSystem` (`move`): a unit with a `Task` cooling down counts down; else a move task at its
+- `moveSystem` (`move`): a unit cooling down from a step counts down (with or without a `Task`,
+  so a stop mid-step leaves no stale wait); else, with a task, a move task at its
   goal is removed, an attack task whose target is gone or dead is removed (with `Target`), a unit
   within range of its target stands, and otherwise it steps one 8-way cell toward the goal (the
   target's cell), standing at its elevation, sets `Facing8` and starts its step cooldown. A

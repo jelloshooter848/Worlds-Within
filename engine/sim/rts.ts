@@ -282,8 +282,9 @@ function nextCell(
 }
 
 /**
- * `move`: every entity with `Task`, `Unit` and `Position`, in id order. A unit still cooling down
- * from its last step counts down. Otherwise:
+ * `move`: every entity with `Unit` and `Position`, in id order. A unit still cooling down from its
+ * last step counts down, with or without a task (so a step cut short by a stop, a finished build or
+ * a dropped task never leaves a stale wait for the next order). Otherwise, with a `Task`:
  * - a `move` task at its goal is done (removed); else the unit steps toward the goal;
  * - an `attack` task whose target is gone or dead is done (task and `Target` removed); a unit
  *   within range of its target stands; else it steps toward the target's cell;
@@ -299,13 +300,14 @@ export const moveSystem: System = {
   name: 'move',
   run(world) {
     const t = terrainOf(world);
-    for (const id of world.query(Task, Unit, Position)) {
+    for (const id of world.query(Unit, Position)) {
       const cool = world.get(id, Cooldown);
       if (cool && cool.move > 0) {
         setCooldown(world, id, { ...cool, move: cool.move - 1 });
         continue;
       }
-      const task = world.get(id, Task) as TaskData;
+      const task = world.get(id, Task);
+      if (task === undefined) continue;
       const unit = world.get(id, Unit) as UnitData;
       const pos = world.get(id, Position) as { x: number; y: number };
       let goal: Cell;

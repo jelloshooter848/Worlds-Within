@@ -94,7 +94,7 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   `faction:<f>`, `site`, `progress:<0-100>`, `training:<unit>`, `selected`; 8);
   `<id>/ring` (`selection-ring` for each selected unit or building, tags its side and `hero` or
   `building`; 9); `unit-<id>` (`unit:<type>`, facing from `Facing8` in eight directions, `down`
-  before any move; `anim.state` `walk` (stepping or on a move), `attack` (has a target), `build`,
+  before any move; `anim.state` `walk` (stepping with a task, or on a move), `attack` (has a target), `build`,
   `gather`, `idle`; tags side, `faction:<f>`, `hero`/`captain`, `carrying`, `selected`; 10);
   `<id>/hp` (`health-bar`, `hp-0`..`hp-8` eighths, for the hurt and the selected; 20) and
   `building-<id>/progress` (`progress-bar`, `p-0`..`p-8`, for a site; 20); `placing`

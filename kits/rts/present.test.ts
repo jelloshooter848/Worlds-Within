@@ -144,6 +144,9 @@ describe('presentWorld', () => {
     expect(at(10)).toEqual({ state: 'walk', t: 0 });
     expect(at(13)).toEqual({ state: 'walk', t: 3 });
     expect(unitAnim({ ...readWorld(battleSnapshot()).units[0]!, task: null })).toBe('idle');
+    const stopped = { ...readWorld(battleSnapshot()).units[0]!, task: null, target: null, moveWait: 2 };
+    expect(unitAnim(stopped)).toBe('idle');
+    expect(unitAnim({ ...stopped, target: 4 })).toBe('attack');
   });
 
   it('only reads the view: presenting does not change it', () => {

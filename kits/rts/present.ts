@@ -121,9 +121,12 @@ export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE): PresentMap 
   };
 }
 
-/** A unit's animation state: `walk`, `attack`, `build`, `gather` or `idle`. */
+/**
+ * A unit's animation state: `walk`, `attack`, `build`, `gather` or `idle`. A step's wait shows as
+ * `walk` only while the unit has a task: a stopped unit finishing its last step stands.
+ */
 export function unitAnim(u: RtsUnitView): string {
-  if (u.moveWait > 0) return 'walk';
+  if (u.moveWait > 0 && u.task !== null) return 'walk';
   if (u.target !== null) return 'attack';
   if (u.task === 'build') return 'build';
   if (u.task === 'gather') return 'gather';
