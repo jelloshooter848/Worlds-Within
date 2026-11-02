@@ -19,3 +19,4 @@ export * from './frames';
 export * from './walker';
 export * from './person';
 export * from './schema';
+export * from './snapshot';

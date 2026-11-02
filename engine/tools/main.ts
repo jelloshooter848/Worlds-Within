@@ -1,5 +1,7 @@
 import { parseCommandLine, wantsJson } from './args';
+import { dumpCommand } from './commands/dump';
 import { helpCommand } from './commands/help';
+import { runCommand } from './commands/run';
 import { validateCommand } from './commands/validate';
 import { EXIT, exitName, UsageError, type ExitCode } from './exit-codes';
 import { capJson, capText, DEFAULT_MAX_OUTPUT, OUTPUT_DIR, writeFullOutput } from './output';
@@ -29,6 +31,8 @@ export function defaultRegistry(): Registry {
   const registry = new Registry();
   registry.add(helpCommand(registry));
   registry.add(validateCommand);
+  registry.add(runCommand);
+  registry.add(dumpCommand);
   return registry;
 }
 

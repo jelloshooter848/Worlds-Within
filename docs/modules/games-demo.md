@@ -15,7 +15,11 @@ at Engine 0.15.
 - `content/`: `rooms/*.json` + `*.map.txt`, `songs/*.json`, `palettes/*.json`, `sprites/*.txt`.
 - `content.ts`: `demoKinds`, `loadDemo(files)`, `demoDungeon`, `demoSongs`, `demoArt`,
   `DEMO_SHEETS`, `mustLoad`.
-- `headless.ts`: `createWorld(content, seed?)`, the headless entry named in `game.json`.
+- `headless.ts`: `createWorld(content, seed?)` and `createGame(content, seed)` (the engine's
+  `HeadlessGame` contract), the headless entry named in `game.json`.
+- `runs/walk-east.run.json`: a run file (`pnpm -s cli run games/demo/runs/walk-east.run.json --json`)
+  and `runs/walk-east.hashes.json`, its committed golden state hashes (checked by
+  `tests/runs/run-files.test.ts`).
 - `index.html` and `main.ts` (browser boot, files from `files.ts`); `scene.ts` (`DemoScene`).
 
 ## Imports allowed

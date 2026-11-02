@@ -1,5 +1,6 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
-import { TopDownWorld } from '@kits/topdown';
+import type { HeadlessGame } from '@engine/core/headless';
+import { TopDownWorld, topdownGame } from '@kits/topdown';
 import { demoDungeon } from './content';
 
 /**
@@ -8,4 +9,9 @@ import { demoDungeon } from './content';
  */
 export function createWorld(content: ContentBundle, seed = content.manifest.start.seed): TopDownWorld {
   return new TopDownWorld(demoDungeon(content), { seed });
+}
+
+/** The headless game contract (`engine/core/headless.ts`), for `pnpm cli run` and `dump`. */
+export function createGame(content: ContentBundle, seed: number): HeadlessGame {
+  return topdownGame(createWorld(content, seed));
 }

@@ -1,0 +1,33 @@
+{
+  "run": "games/demo/runs/walk-east.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d29e6b40530102ce"
+    },
+    {
+      "tick": 40,
+      "hash": "307b25d5cf0508b9"
+    },
+    {
+      "tick": 80,
+      "hash": "6f0c9999c28588f2"
+    },
+    {
+      "tick": 120,
+      "hash": "ba89383037a8499e"
+    },
+    {
+      "tick": 160,
+      "hash": "ebbbdd0bbe2fe046"
+    },
+    {
+      "tick": 200,
+      "hash": "08a5abeb7379f953"
+    },
+    {
+      "tick": 240,
+      "hash": "257c816edd617516"
+    }
+  ]
+}

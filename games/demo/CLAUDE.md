@@ -17,7 +17,8 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   sheet (`DEMO_SHEETS.hero`), with the kit's hero frame names (`down-0`, `side-1`, `attack-up`...).
 - TypeScript is glue only: `content.ts` (the content kinds, `loadDemo`, and `demoDungeon`,
   `demoSongs`, `demoArt` over the loaded bundle), `files.ts` (the browser's file pairs through
-  Vite's `import.meta.glob` with `?raw`), `headless.ts` (`createWorld(content, seed?)`), `scene.ts`
+  Vite's `import.meta.glob` with `?raw`), `headless.ts` (`createWorld(content, seed?)`, and `createGame(content, seed)`: the
+  engine's headless contract, which `pnpm cli run` imports by the path in `game.json`), `scene.ts`
   (`DemoScene`) and `main.ts` (boots the Canvas2D backend, input, audio and assets).
 
 ## Adding or changing content
@@ -29,6 +30,18 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   with `loadDemo`; every error names the file (`games/demo/content/...`) and the field.
 - After any content change run `pnpm -s cli validate games/demo --json`: exit 0 means every file
   passes; exit 3 lists each error with its file and field.
+
+## Run files
+
+- `runs/<name>.run.json`: a seeded, scripted headless run with tick assertions and invariants
+  (schema: `engine/tools/run-file.ts`; format in `engine/tools/CLAUDE.md`). `runs/walk-east.run.json`
+  walks the hero east into the guard room and checks his hearts never go below 0.
+- `runs/<name>.hashes.json`: the run's committed golden state hashes. `tests/runs/run-files.test.ts`
+  runs every run file twice and compares both to it, so CI checks them.
+- Run one: `pnpm -s cli run games/demo/runs/walk-east.run.json --json` (exit 0 passed, 4 a failed
+  check). See the state at a tick: `pnpm -s cli dump games/demo/runs/walk-east.run.json --tick 100 --json`.
+- After a change meant to change the game's state, regenerate the golden files with
+  `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit them with the change.
 
 ## How to run
 

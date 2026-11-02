@@ -4,6 +4,10 @@ export class Rng {
   constructor(seed = 0x9e3779b9) {
     this.s = seed >>> 0 || 1;
   }
+  /** The generator's internal state (unsigned 32-bit): two Rngs with the same state draw the same numbers. */
+  state(): number {
+    return this.s;
+  }
   /** Unsigned 32-bit. */
   next(): number {
     let x = this.s;

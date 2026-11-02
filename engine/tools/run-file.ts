@@ -1,0 +1,213 @@
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { dirname, relative, resolve } from 'node:path';
+import { z } from 'zod';
+import { Actions } from '@engine/core/input/actions';
+import { canonicalJson, type JsonValue } from '@engine/core/headless';
+import { contentError, validate, type ContentError } from '@engine/core/content/validate';
+import { UsageError } from './exit-codes';
+
+/**
+ * Run files: a seeded, scripted headless run and the checks it must pass, as JSON
+ * (`games/<game>/runs/<name>.run.json`). `pnpm cli run <run-file>` plays it; `dump` shows the
+ * state at one tick.
+ *
+ *   { "game": "..",
+ *     "seed": 1,
+ *     "ticks": 200,
+ *     "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
+ *     "assertions": [{ "tick": 200, "path": "room", "op": "eq", "value": "guard-room" }],
+ *     "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
+ *     "hashEvery": 50 }
+ *
+ * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
+ * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
+ * is the input of the step from tick `f` to tick `f + 1`.
+ */
+
+/** The comparison a check makes between the value at its path (`actual`) and its `value`. */
+export const CHECK_OPS = ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'in', 'nin', 'contains'] as const;
+export type CheckOp = (typeof CHECK_OPS)[number];
+
+/** What each op means, one line each, for help and docs. */
+export const CHECK_OP_MEANINGS: Readonly<Record<CheckOp, string>> = {
+  eq: 'actual equals value (deep, for arrays and objects)',
+  ne: 'actual does not equal value',
+  lt: 'actual < value (numbers)',
+  lte: 'actual <= value (numbers)',
+  gt: 'actual > value (numbers)',
+  gte: 'actual >= value (numbers)',
+  in: 'actual equals one of value (an array)',
+  nin: 'actual equals none of value (an array)',
+  contains: 'actual (an array) has an item equal to value, or actual (a string) contains value',
+};
+
+const checkFields = {
+  path: z
+    .string()
+    .min(1)
+    .describe('a dotted path into the snapshot: hero.hp, entities.0.kind, entities.length'),
+  op: z.enum(CHECK_OPS).describe('the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains'),
+  value: z.json().describe('what the value at the path is compared with'),
+};
+
+const listOps: readonly CheckOp[] = ['in', 'nin'];
+const numberOps: readonly CheckOp[] = ['lt', 'lte', 'gt', 'gte'];
+
+/** `in` and `nin` take an array; `lt`... take a number. */
+function checkValue(c: { op: CheckOp; value: JsonValue }, ctx: z.RefinementCtx): void {
+  if (listOps.includes(c.op) && !Array.isArray(c.value))
+    ctx.addIssue({ code: 'custom', path: ['value'], message: `"${c.op}" needs an array value` });
+  if (numberOps.includes(c.op) && typeof c.value !== 'number')
+    ctx.addIssue({ code: 'custom', path: ['value'], message: `"${c.op}" needs a number value` });
+}
+
+export const assertionSchema = z
+  .strictObject({
+    tick: z.number().int().min(0).describe('the tick the check is made at'),
+    ...checkFields,
+  })
+  .superRefine(checkValue);
+
+export const invariantSchema = z.strictObject(checkFields).superRefine(checkValue);
+
+export const runFileSchema = z
+  .strictObject({
+    game: z.string().min(1).describe('the game folder, relative to the run file (".." for games/<g>/runs/)'),
+    seed: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe("the world's seed; the manifest's start.seed if left out"),
+    ticks: z.number().int().min(1).max(1_000_000).describe('how many steps the run plays'),
+    input: z
+      .strictObject({
+        steps: z.array(
+          z.strictObject({
+            frame: z.number().int().min(0).describe('the input frame the hold starts at'),
+            hold: z.array(z.enum(Actions)).describe('the actions held from that frame on'),
+          }),
+        ),
+      })
+      .default({ steps: [] })
+      .describe('the scripted input (ScriptedInput steps)'),
+    assertions: z.array(assertionSchema).default([]).describe('checks made at one tick each'),
+    invariants: z.array(invariantSchema).default([]).describe('checks made at every tick, 0 included'),
+    hashEvery: z
+      .number()
+      .int()
+      .min(1)
+      .default(60)
+      .describe('a state hash every this many ticks (tick 0 and the last tick always get one)'),
+  })
+  .superRefine((run, ctx) => {
+    run.assertions.forEach((a, i) => {
+      if (a.tick > run.ticks)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['assertions', i, 'tick'],
+          message: `tick ${a.tick} is after the run's last tick (${run.ticks})`,
+        });
+    });
+  });
+
+export type RunFile = z.output<typeof runFileSchema>;
+export type Assertion = z.output<typeof assertionSchema>;
+export type Invariant = z.output<typeof invariantSchema>;
+
+export interface LoadedRunFile {
+  /** The run file as given, relative to the working folder, with `/`. */
+  file: string;
+  /** The game folder, relative to the working folder, with `/`. */
+  gameDir: string;
+  run: RunFile;
+}
+
+/**
+ * Reads and checks a run file. A file that is not there is a usage error; a file that breaks the
+ * schema comes back as content errors naming the file and the field.
+ */
+export function readRunFile(
+  cwd: string,
+  path: string,
+): { ok: true; value: LoadedRunFile } | { ok: false; errors: ContentError[] } {
+  const abs = resolve(cwd, path);
+  if (!existsSync(abs) || !statSync(abs).isFile()) throw new UsageError(`no run file at ${path}`);
+  const file = relative(cwd, abs).replaceAll('\\', '/');
+  let data: unknown;
+  try {
+    data = JSON.parse(readFileSync(abs, 'utf8'));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, errors: [contentError(file, [], 'invalid_json', message)] };
+  }
+  const result = validate(file, data, runFileSchema);
+  if (!result.ok) return { ok: false, errors: result.errors };
+  const gameDir = relative(cwd, resolve(dirname(abs), result.value.game)).replaceAll('\\', '/') || '.';
+  return { ok: true, value: { file, gameDir, run: result.value } };
+}
+
+/** The value at a dotted path (`hero.hp`, `entities.0.kind`, `entities.length`), or `undefined`. */
+export function valueAt(state: JsonValue, path: string): JsonValue | undefined {
+  let at: JsonValue | undefined = state;
+  for (const key of path.split('.')) {
+    if (Array.isArray(at)) {
+      if (key === 'length') at = at.length;
+      else if (/^\d+$/.test(key)) at = at[Number(key)];
+      else return undefined;
+    } else if (at !== null && typeof at === 'object' && Object.hasOwn(at, key)) at = at[key];
+    else return undefined;
+  }
+  return at;
+}
+
+const same = (a: JsonValue, b: JsonValue) => canonicalJson(a) === canonicalJson(b);
+
+/**
+ * Makes one check against a snapshot. Returns null when it holds, or why it fails. A path that is
+ * not in the snapshot always fails (so a typo cannot pass a `ne`).
+ */
+export function failsCheck(
+  state: JsonValue,
+  check: { path: string; op: CheckOp; value: JsonValue },
+): { actual: JsonValue | null; message: string } | null {
+  const actual = valueAt(state, check.path);
+  if (actual === undefined) return { actual: null, message: `no value at "${check.path}"` };
+  const want = check.value;
+  const show = (v: JsonValue) => JSON.stringify(v);
+  const fail = (what: string) => ({ actual, message: `${check.path} is ${show(actual)}, ${what}` });
+  switch (check.op) {
+    case 'eq':
+      return same(actual, want) ? null : fail(`expected ${show(want)}`);
+    case 'ne':
+      return same(actual, want) ? fail(`expected anything but ${show(want)}`) : null;
+    case 'lt':
+    case 'lte':
+    case 'gt':
+    case 'gte': {
+      if (typeof actual !== 'number') return fail(`not a number (expected ${check.op} ${show(want)})`);
+      const n = want as number;
+      const ok =
+        check.op === 'lt'
+          ? actual < n
+          : check.op === 'lte'
+            ? actual <= n
+            : check.op === 'gt'
+              ? actual > n
+              : actual >= n;
+      return ok ? null : fail(`expected ${check.op} ${show(want)}`);
+    }
+    case 'in':
+    case 'nin': {
+      const found = (want as JsonValue[]).some((v) => same(actual, v));
+      if (check.op === 'in') return found ? null : fail(`expected one of ${show(want)}`);
+      return found ? fail(`expected none of ${show(want)}`) : null;
+    }
+    case 'contains':
+      if (Array.isArray(actual))
+        return actual.some((v) => same(v, want)) ? null : fail(`expected it to contain ${show(want)}`);
+      if (typeof actual === 'string' && typeof want === 'string')
+        return actual.includes(want) ? null : fail(`expected it to contain ${show(want)}`);
+      return fail(`not an array or string (expected it to contain ${show(want)})`);
+  }
+}

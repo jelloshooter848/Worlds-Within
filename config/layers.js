@@ -96,6 +96,7 @@ export const PURE_DIRS = ['engine/sim', 'kits'];
  */
 export const PURE_CORE = [
   'engine/core/rng.ts',
+  'engine/core/headless.ts',
   'engine/core/math/**',
   'engine/core/scene.ts',
   'engine/core/input/actions.ts',

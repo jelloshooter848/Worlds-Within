@@ -1,0 +1,16 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 240,
+  "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
+  "assertions": [
+    { "tick": 0, "path": "room", "op": "eq", "value": "courtyard" },
+    { "tick": 240, "path": "hero.room", "op": "eq", "value": "guard-room" },
+    { "tick": 240, "path": "visited", "op": "contains", "value": "guard-room" }
+  ],
+  "invariants": [
+    { "path": "hero.hp", "op": "gte", "value": 0 },
+    { "path": "hero.dead", "op": "eq", "value": false }
+  ],
+  "hashEvery": 40
+}

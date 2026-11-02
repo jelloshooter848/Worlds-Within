@@ -27,7 +27,12 @@ the CLI starts.
   imports a game's code.
 - `kits.ts`: `KIT_KINDS`, the content kinds each kit adds, by the `kit` name in `game.json`. Add a
   line when a kit gets content kinds.
-- `commands/`: one file per command (`help.ts`, `validate.ts`).
+- `run-file.ts`: the run-file schema (`runFileSchema`), `readRunFile(cwd, path)`, the check ops
+  (`CHECK_OPS`, `CHECK_OP_MEANINGS`), `valueAt(state, path)` and `failsCheck(state, check)`.
+- `headless-run.ts`: `playRun(cwd, runFile, { untilTick? })` loads the game, imports its headless
+  module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
+  plays the ticks and makes the checks; `stateHash(snapshot)`.
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`).
 
 ## The contract
 
@@ -36,7 +41,7 @@ the CLI starts.
   Nothing else goes to stdout; `console.log` and friends are sent to stderr while a command runs.
 - Exit codes (`exit-codes.ts`): `0` ok, `2` usage (unknown command or flag, missing or extra
   argument, a folder that is not there), `3` invalid content (the result names file and field),
-  `4` failed check (valid content, a check failed: `run` assertions from T5), `5` crash (an
+  `4` failed check (valid content, a check failed: a `run` assertion or invariant), `5` crash (an
   exception). `1` is never used by the CLI, so a `1` means Node died before it could report.
 - Output cap: over `--max-output` bytes (default 32 KiB) the whole result goes to
   `.ww-out/<command>-<hash>.json` (or `.txt` without `--json`), and the printed result is cut: the
@@ -54,6 +59,60 @@ the CLI starts.
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
   is a usage error. Its own content code: `unknown_kit` (at `kit` in `game.json`).
+- `run <runFile>`: plays a run file headless and checks it (below). Result: `{ run, game, seed,
+ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
+hash }], finalHash }`. `failure` is the first failed check, `{ tick, kind: 'assertion' |
+'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
+  that failed at that tick. The run stops at the first failing tick. Exit 0 passed, 4 a failed
+  check, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
+  headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
+  2 when the run file is not there.
+- `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, seed, tick,
+hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
+  everything else: a big state gives the envelope plus `fullOutput`.
+
+## Run files
+
+`games/<game>/runs/<name>.run.json`, checked by `runFileSchema` (`run-file.ts`):
+
+```json
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 240,
+  "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
+  "assertions": [{ "tick": 240, "path": "hero.room", "op": "eq", "value": "guard-room" }],
+  "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
+  "hashEvery": 40
+}
+```
+
+- `game`: the game folder, relative to the run file's folder (`..` from `games/<game>/runs/`).
+- `seed` (optional): the world's seed; the manifest's `start.seed` when left out.
+- `ticks`: how many steps to play. Tick 0 is the state the game starts in, tick `t` the state after
+  `t` steps.
+- `input.steps` (default none): `ScriptedInput` steps, `{ frame, hold: Action[] }`; each holds its
+  actions from input frame `frame` on (until the next step). Frame `f` is the input of the step
+  from tick `f` to `f + 1`.
+- `assertions` (default none): `{ tick, path, op, value }`, checked at that tick (at most `ticks`).
+- `invariants` (default none): `{ path, op, value }`, checked at every tick, tick 0 included.
+- `hashEvery` (default 60): a state hash at every multiple of it, and always at the last tick
+  played.
+- `path`: dotted, into the game's snapshot (`hero.hp`, `entities.0.kind`, `entities.length`). A path
+  that is not in the snapshot always fails. The top-down kit's paths are listed in
+  `kits/topdown/CLAUDE.md` (Snapshots); `dump` shows them all.
+- `op`: `eq`, `ne` (deep equality), `lt`, `lte`, `gt`, `gte` (numbers), `in`, `nin` (value is an
+  array), `contains` (an array has an item equal to value, or a string contains it).
+- State hash: the first 16 hex digits of the SHA-256 of the snapshot's canonical JSON
+  (`canonicalJson`, sorted keys).
+- Golden hashes: each run file has `<name>.hashes.json` next to it, `{ run, hashes }`.
+  `tests/runs/run-files.test.ts` plays every `games/**/runs/*.run.json` twice, requires it to pass
+  and both hash lists to equal the golden file, so CI checks them. After a change meant to change
+  the state, regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit the files.
+- Run every game's run files: `pnpm test tests/runs`, or one by one with
+  `pnpm -s cli run <file> --json`.
+- A game's headless module (`headless` in `game.json`) exports `createGame(content, seed)`
+  returning a `HeadlessGame` (`engine/core/headless.ts`).
 
 ## Adding a command
 

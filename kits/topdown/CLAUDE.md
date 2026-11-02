@@ -4,7 +4,7 @@ The top-down kit: gameplay rules for a room-based action game seen from above. R
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
-`person.ts`), a scripted test bot (`bot.ts`), sheet helpers (`view.ts`, `frames.ts`) and the room
+`person.ts`), a scripted test bot (`bot.ts`), the world's snapshot for the tools (`snapshot.ts`), sheet helpers (`view.ts`, `frames.ts`) and the room
 file schema (`schema.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
@@ -32,6 +32,18 @@ file schema (`schema.ts`).
   this to a backend that draws from a read-only snapshot is planned for a later release. Do not add
   more drawing code.
 
+## Snapshots (`snapshot.ts`)
+
+`snapshotWorld(world, events?)` reads the world into plain JSON-safe data (`TdSnapshot`): `frame`,
+`room`, `rng` (the RNG's state), `keys`, `found`, `visited`, `sliding`, `sealed`, `exited`,
+`hero` (`room`, `x`, `y`, `facing`, `hp`, `maxHp`, `attacking`, `invuln`, `dying`, `dead`),
+`inventory` (`owned`, `current`, `ammo`), `entities` (`{ kind, x, y, key, hp? }`, `kind` being the
+enemy or pickup kind or else the class name), `enemies` (living count) and `events`.
+`topdownGame(world)` wraps a world as the engine's `HeadlessGame` (`engine/core/headless.ts`):
+`step` updates the world and takes its events, so `snapshot().events` is the last step's. Both
+only read the world and stay pure. Adding a field to the snapshot changes every state hash: update
+the golden files (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`) in the same commit.
+
 ## Room files (`schema.ts`)
 
 `roomSchema(extraLegend?, wall?)` checks a room file (a `RoomDef` as JSON) and `roomKind(...)` is
@@ -50,5 +62,5 @@ are `wrong_size`. Checks across rooms stay in `buildDungeon`.
 ## Testing
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.
