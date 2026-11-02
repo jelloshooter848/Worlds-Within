@@ -1,5 +1,6 @@
 import { parseCommandLine, wantsJson } from './args';
 import { dumpCommand } from './commands/dump';
+import { addCommand, getCommand, removeCommand, setCommand } from './commands/edit';
 import { helpCommand } from './commands/help';
 import { runCommand } from './commands/run';
 import { validateCommand } from './commands/validate';
@@ -33,6 +34,10 @@ export function defaultRegistry(): Registry {
   registry.add(validateCommand);
   registry.add(runCommand);
   registry.add(dumpCommand);
+  registry.add(getCommand);
+  registry.add(setCommand);
+  registry.add(addCommand);
+  registry.add(removeCommand);
   return registry;
 }
 

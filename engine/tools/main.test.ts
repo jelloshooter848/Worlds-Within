@@ -218,7 +218,7 @@ describe('help', () => {
   it('lists every command from the registry', async () => {
     const result = (await cli(['help', '--json'])).json();
     const names = (result.commands as { name: string }[]).map((c) => c.name);
-    expect(names).toEqual(['help', 'validate', 'run', 'dump']);
+    expect(names).toEqual(['help', 'validate', 'run', 'dump', 'get', 'set', 'add', 'remove']);
     expect(result.exitCodes).toContainEqual(expect.objectContaining({ code: 3, name: 'invalidContent' }));
   });
 

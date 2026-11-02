@@ -14,7 +14,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   It rejects ragged rows (`ragged_row`), characters missing from the legend (`unknown_char`) and
   empty grids (`empty_grid`), each with a 0-based `row` and `col`. `addGridIssues` does the same
   check inside a Zod `superRefine`, so a schema reports grid problems at `<field>.<row>`.
-- `kinds.ts`: a content-file kind is `{ name, description, schema, readText?, gridParts? }`. `parseContent`
+- `kinds.ts`: a content-file kind is `{ name, description, schema, readText?, writeText?, gridParts? }`
+  (`writeText` writes checked data back in the `.txt` form, for the CLI's editing verbs). `parseContent`
   reads `.json` with `JSON.parse`, or `.txt` with the kind's `readText`, then validates. A
   `.txt` reader returns a map of JSON pointers to lines, so errors also carry the line.
   `ContentKinds` is a registry by name. `gridParts` (field -> suffix, such as
@@ -51,7 +52,8 @@ file formats are described at the top of that file).
   sprite `.txt` reader's `row_outside_frame`, `unknown_directive`, `duplicate_frame`,
   `duplicate_legend`; the parts' `duplicate_field`; the loader's `missing_file`, `no_match`,
   `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; the CLI loader's
-  `unknown_kit` (`engine/tools/game-loader.ts`); and the top-down kit's room codes `wrong_size`
+  `unknown_kit` (`engine/tools/game-loader.ts`); the editing verbs' `not_writable` and
+  `multiline_row` (`engine/tools/content-file.ts`); and the top-down kit's room codes `wrong_size`
   and `invalid_room` (`kits/topdown/schema.ts`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.

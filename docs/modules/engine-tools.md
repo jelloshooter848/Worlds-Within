@@ -6,8 +6,9 @@ Folder: `engine/tools`. Detailed rules: [`engine/tools/CLAUDE.md`](../../engine/
 
 The command-line tools for agents and people: `pnpm cli <command> [arguments] [flags]`. Today it
 validates a game's content, plays run files headless (seeded scripted input, tick assertions,
-invariants, state hashes), writes replay files for failing runs and dumps the state at a tick;
-screenshots and content editing arrive during the rest of Engine 0.3.
+invariants, state hashes), writes replay files for failing runs, dumps the state at a tick and
+edits content files (`get`, `set`, `add`, `remove`, every write checked and verified); screenshots
+arrive during the rest of Engine 0.3.
 
 ## Public API entry points
 
@@ -31,6 +32,14 @@ failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` 
   first one that differs. Format: `engine/tools/CLAUDE.md` (Replay files).
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, seed, tick, hash, state }`, the whole
   snapshot at tick N.
+- `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,
+  `remove <file> <path>`: one verb set for editing `game.json`, content files, text-grid part
+  files (`rows.3`, `rows.3.5`) and run files. Paths are dotted (`frames["down-0"].3`) or JSON
+  pointers (`/frames/down-0/3`); values are JSON, else a string. A write is checked against the
+  file's schema (and the game for new errors) first and refused with exit 3 and `errors`, file
+  untouched, if it breaks anything; then written Prettier-clean, read back and reported as
+  `{ file, kind, path, pointer, written, verified, changed, before, after }`. Details:
+  `engine/tools/CLAUDE.md` (Editing content).
 - Every game's run files are checked by `tests/runs/run-files.test.ts` against committed golden
   hashes (`<name>.hashes.json`; regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).
 - Global flags: `--json` (exactly one JSON object on stdout), `--help`, `--max-output <bytes>`.
@@ -39,7 +48,9 @@ failures, hashes: [{ tick, hash }], finalHash, replayFile, replay }`; `failure` 
 - Output over the cap (32 KiB by default) is cut; the whole result is written under `.ww-out/` and
   the printed one has `truncated: true` and `fullOutput: <path>`.
 - In code: `main(argv, io)` (`engine/tools/main.ts`), `defineCommand` and `Registry`
-  (`registry.ts`), `loadGame(cwd, dir)` (`game-loader.ts`), `playRun` and `stateHash`
+  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-loader.ts`),
+  `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
+  (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
   `writeReplay` and `checkReplay` (`replay.ts`).
 
@@ -58,5 +69,6 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 Tests sit next to the code and run with `pnpm test`: they call `main` with captured IO and check
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
 test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
-invariants, broken run files, replay files and hash mismatches), and `tests/runs/run-files.test.ts` checks every game's run files
+invariants, broken run files, replay files and hash mismatches), `edit.test.ts` the editing
+verbs on temp copies of the demo, and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes.

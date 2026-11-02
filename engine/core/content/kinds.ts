@@ -15,6 +15,9 @@ export type LineMap = Readonly<Record<string, number>>;
 export type TextReadResult =
   { ok: true; data: unknown; lines?: LineMap } | { ok: false; errors: Omit<ContentError, 'file'>[] };
 
+/** What a kind's `.txt` writer gives: the new text, or why the data has no text form. */
+export type TextWriteResult = { ok: true; text: string } | { ok: false; message: string };
+
 export interface ContentKind<S extends z.ZodType = z.ZodType> {
   /** Short name, such as `song` or `sprite`. */
   name: string;
@@ -23,6 +26,13 @@ export interface ContentKind<S extends z.ZodType = z.ZodType> {
   schema: S;
   /** Reads the kind's `.txt` format. Kinds without one accept only `.json`. */
   readText?: (text: string) => TextReadResult;
+  /**
+   * Writes data (already checked by `schema`, in the shape `readText` gives) back in the kind's
+   * `.txt` format, for the CLI's editing verbs. `previous` is the file's old text, so the writer
+   * can keep what the data does not hold (a leading comment). Kinds without one are read-only as
+   * `.txt`.
+   */
+  writeText?: (data: unknown, previous: string) => TextWriteResult;
   /**
    * Fields kept in a sibling text-grid file next to a `.json` file: field -> file suffix. With
    * `{ map: '.map.txt' }`, `rooms/hall.map.txt` is read (as rows, see `gridRows`) into the `map`

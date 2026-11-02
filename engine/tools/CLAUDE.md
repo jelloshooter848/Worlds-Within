@@ -35,7 +35,15 @@ the CLI starts.
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`).
+- `content-path.ts`: paths for the editing verbs (`parsePath`, dotted or JSON pointer) and the
+  edits on a parsed file (`getAt`, `setAt`, `addAt`, `removeAt`), plus `parseValue` (JSON, else a
+  string).
+- `content-file.ts`: `openContentFile(cwd, path)`: what an editable file is (its kind and form),
+  how its text becomes a tree and back, and the check a new text must pass before it is written.
+- `json-format.ts`: reads JSON remembering which objects are spread over lines, and writes it back
+  through Prettier with the repo's settings, so edits are lint-clean and change little.
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, and `edit.ts`
+  for `get`, `set`, `add` and `remove`).
 
 ## The contract
 
@@ -75,6 +83,45 @@ hash }], finalHash, replayFile, replay }`. `failure` is the first failed check, 
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, seed, tick,
 hash, state }`, the whole snapshot. N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
+- `get <file> <path>`: `{ file, kind, path, pointer, value }`. `set <file> <path> <value>`,
+  `add <file> <path> <value>`, `remove <file> <path>`: the editing verbs (below). Result
+  `{ file, kind, path, pointer, written, verified, changed, before, after }`; exit 0 written and
+  verified, 3 refused (with `errors`, file untouched), 4 written but the read-back differs, 2 a
+  bad path or a file that cannot be edited.
+
+## Editing content
+
+`get / set / add / remove <file> <path> [value]` edit any of a game's files with one verb set.
+
+- Files: `game.json` (kind `manifest`), the content files `game.json` claims (JSON, or a kind's
+  `.txt` form when the kind has a `writeText`: sprites do), text-grid part files such as
+  `rooms/hall.map.txt` (kind of the `.json` they belong to), and run files (`*.run.json`, kind
+  `run`). Anything else is a usage error.
+- Paths (`content-path.ts`): dotted (`frames.idle.2`, `content.room.0`, `legend["#"]`,
+  `frames["down-0"].3`; a key that is not a plain name goes in `["..."]`) or a JSON pointer
+  (`/frames/down-0/3`, `~1` is `/`). These are the same spellings as `path` and `pointer` in a
+  `ContentError`, so an error's path can be fed straight back. `""` or `.` is the whole file. A
+  number after a string picks one character: in a text grid, `rows.3` is row 3 and `rows.3.5` its
+  cell in column 5 (a cell can only be read or set, to one character).
+- A text-grid part file is edited as `{ rows: [...] }`; a sprite `.txt` file as its JSON shape
+  (`{ palette, legend?, frames: { name: rows } }`).
+- Values are parsed as JSON, and text that is not JSON is taken as a string: `set f bpm 140` sets a
+  number, `set f id hall` a string, `set f id '"140"'` the string "140". A value starting with `--`
+  goes after `--`.
+- `set` replaces a value that is there. `add` appends to the array at the path, inserts into an
+  array at an index from 0 to its length (`-` is the end), or adds a key an object lacks (a key
+  that is there is a usage error: use `set`). `remove` deletes a key or an array item.
+- Before writing, the whole edited file is checked against its kind's schema, and the game is
+  checked for errors it did not have before (an `id` that no longer matches the file name, a
+  pattern in `game.json` that now matches nothing). Any error refuses the write: exit 3 with
+  `errors`, and the file is not touched. Its own content code: `not_writable` (a sprite `.txt` with
+  comments below its header, which would be lost, or a name with a space).
+- JSON is written with the repo's Prettier settings (2 spaces, final newline), keeping each
+  object's one-line or spread-out look; a grid one row per line with a final newline; a sprite
+  `.txt` with its header comments kept. Writing a file back unchanged gives the same text.
+- After writing, the file is read back from disk and parsed; `verified: true` says the text and
+  the parsed content are exactly what was meant. `before` and `after` are the value at the edited
+  place (`path`; for an `add` to an array, the new item), null when absent.
 
 ## Run files
 

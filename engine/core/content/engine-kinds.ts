@@ -1,6 +1,6 @@
 import { sfxSchema, songSchema } from '../audio/song-schema';
 import { paletteSchema } from '../gfx/palette-schema';
-import { readSpriteText, spriteSchema } from '../gfx/sprite-schema';
+import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-schema';
 import { ContentKinds, type ContentKind } from './kinds';
 
 /** An MML song (`audio/song-schema.ts`). */
@@ -30,6 +30,7 @@ export const SPRITE_KIND = {
   description: 'Text-grid pixel art: a palette name, an optional legend and named frames',
   schema: spriteSchema,
   readText: readSpriteText,
+  writeText: writeSpriteText,
 } satisfies ContentKind;
 
 /**

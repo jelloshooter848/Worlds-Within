@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { addGridIssues, type Legend } from '../content/text-grid';
-import type { TextReadResult } from '../content/kinds';
+import type { TextReadResult, TextWriteResult } from '../content/kinds';
 import { jsonPointer, type ContentError } from '../content/validate';
 import type { SpriteDef } from './pixelart';
 
@@ -181,4 +181,44 @@ export function readSpriteText(text: string): TextReadResult {
     }
   });
   return errors.length > 0 ? { ok: false, errors } : { ok: true, data, lines };
+}
+
+/** A word the text form can hold as one directive argument: no spaces, and not empty. */
+const WORD = /^\S+$/;
+
+/**
+ * Writes a raw {@link SpriteFile} (as {@link readSpriteText} reads it) in the text form: the
+ * comment lines at the top of `previous` (its header) are kept, then `palette`, the `legend` lines
+ * and each frame under its `frame` line, frames apart by one blank line, with a final newline.
+ * Comments anywhere else in `previous` have no place in the data, so a file with them is not
+ * written (the caller edits it by hand). Names with spaces have no text form either.
+ */
+export function writeSpriteText(data: unknown, previous: string): TextWriteResult {
+  const file = data as SpriteFile;
+  const lines = previous.split('\n');
+  let head = 0;
+  while (head < lines.length && lines[head]!.startsWith(';')) head++;
+  if (lines.slice(head).some((line) => line.startsWith(';'))) {
+    return {
+      ok: false,
+      message: 'the file has comments below its header; edit it by hand so they are not lost',
+    };
+  }
+  const out = lines.slice(0, head);
+  const bad = (what: string, value: string): TextWriteResult => ({
+    ok: false,
+    message: `${what} ${JSON.stringify(value)} has a space or is empty, which the text form cannot hold`,
+  });
+  if (!WORD.test(file.palette)) return bad('palette', file.palette);
+  out.push(`palette ${file.palette}`);
+  for (const [ch, value] of Object.entries(file.legend ?? {})) out.push(`legend ${ch} ${String(value)}`);
+  for (const [name, rows] of Object.entries(file.frames)) {
+    if (!WORD.test(name)) return bad('frame', name);
+    out.push('', `frame ${name}`);
+    for (const row of rows) {
+      if (!WORD.test(row)) return bad('row', row);
+      out.push(row);
+    }
+  }
+  return { ok: true, text: `${out.join('\n')}\n` };
 }
