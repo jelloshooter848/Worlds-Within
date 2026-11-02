@@ -12,13 +12,19 @@ could use it, it is engine; the game folder holds only content, skins and thin g
 
 ## Summary: what stacking showed
 
-Engine 0.7 is closed (T9): **37 gaps**, every one with what, where and a status. **21 were fixed
-in 0.7** (G1-G4, G6, G7, G11, G14, G15, G19, G21-G26, G29, G32, G34, G35) and **16 moved to a named
+Engine 0.7 is closed (T9): **37 gaps**, every one with what, where and a status. **20 were fixed
+in 0.7** (G1-G4, G6, G7, G11, G14, G15, G19, G21-G26, G29, G32, G34, G35) and **17 moved to a named
 later release**: 0.10, the time and mission contract (G16, G20, G37); 0.11, the mini siege
 (G13, G18, G27, G28, G30); 0.14, the creator tools (G5, G8, G9, G10, G12, G31); 0.15, the sample
 set (G17, G33, G36). Each later release's section in `docs/ROADMAP.md` lists the gaps it took.
-Since then, G16 was fixed in 0.10 (T8), G20 and G37 in 0.10 (T9; `scene.ts` is gone from both games),
-and the rest of G2 in 0.10 (T10: the `campaign` file).
+(Until Engine 0.10 this paragraph said 21 and 16; the lists were always 20 and 17.)
+
+**Engine 0.10 is closed: G2, G16, G20 and G37 were fixed in 0.10.** G16 in T8 (`b0a2d1a`: params
+checked by `validate`), G20 and G37 in T9 (`14953b2`: the round's last tick in the snapshot, the
+hosted round in the game contract; `scene.ts` is gone from both games), and the rest of G2 in T10
+(`b725997`: the `campaign` file; G2 was already counted fixed in 0.7). **Counts now: 23 fixed** (20
+in 0.7, 3 more in 0.10) **and 14 open, each moved to a named release**: 0.11 (G13, G18, G27, G28,
+G30), 0.14 (G5, G8, G9, G10, G12, G31) and 0.15 (G17, G33, G36).
 
 - **Stacking works with the contracts as they were.** A platformer level hosted a top-down room
   through the engine's `MiniGameDef` with no change to the platformer kit (T5), and the round's
@@ -32,10 +38,10 @@ and the rest of G2 in 0.10 (T10: the `campaign` file).
 - **A second kit in one game is a content question first.** `uses` in `game.json` (G11), a skin
   per mini game by file name (G14, G32), a room title in data (G15); the two kits' tiles, HUDs
   and cameras clash, so each frame source keeps its own skin.
-- **What is left is mostly about missions and tools.** Checking a trigger's params, a round's
-  last tick and a hosted round in the game contract wait for the mission contract (0.10); a
-  round's own input, sounds and trigger looks for the first stacked sample (0.11); run-file start
-  levels, traces, region edits and per-kit mutants for the creator tools (0.14).
+- **What is left is mostly about samples and tools.** Checking a trigger's params, a round's
+  last tick and a hosted round in the game contract came with the mission contract (fixed in
+  0.10); a round's own input, sounds and trigger looks wait for the first stacked sample (0.11);
+  run-file start levels, traces, region edits and per-kit mutants for the creator tools (0.14).
 
 ## Format
 

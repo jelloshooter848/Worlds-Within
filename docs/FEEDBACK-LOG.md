@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 162.** (Last used: 161.)
+**Next unused number: 166.** (Last used: 165.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -601,3 +601,20 @@ entries: [{ level } | { mission }] }`), checked by `validate`; a platformer game
   ticks after that tick's orders; `play` names the outcome reached; refused entries are listed in
   `refusedMissions` and the run goes on. Mission, frozen-event and opportunity state appear in the
   snapshot only when used, so every existing 0.8 and 0.9 golden hash stays the same. OK?
+  _Done in Engine 0.10 T6, with a fourth action, `quit` (see 163)._
+
+**Engine 0.10, builder choices** (details in `docs/BUILD-LOG.md`, Engine 0.10, Choices made)
+
+- **162.** At a commit, an effect that would break a component's schema is skipped and listed in
+  the record's `skipped` (like an effect whose entity is gone), not refused as decision 4b (item 153) said, so a mission that is due always commits. OK?
+- **163.** World run files also have a `quit` action (the mission's `onQuit`); a `play` or `quit`
+  at or after the commit tick its `open` fixed is refused at load (`mission_unresolved`, exit 3);
+  a mission's file is `<id>.mission.json` beside the scenario or in a `missions/` folder there. OK?
+- **164.** An opportunity opened by an effect is `relative` (its window counted from the commit
+  tick that opens it) and `dormant` until then, so a mission that succeeds leaves the rescue
+  untakeable; when several opportunities name one mission, opening it takes the lowest-id one
+  offered. OK?
+- **165.** `MissionAdapter`, `playMissionRound` and `snapshotEntities` are engine code
+  (`engine/core`); the one adapter so far (the siege raid as a top-down room) lives in a repo test
+  (`tests/kits/mission-adapter.test.ts`), and the first game adapter and live play of a mission
+  come with the mini siege (0.11). OK?

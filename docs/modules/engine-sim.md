@@ -7,7 +7,9 @@ Folder: `engine/sim`. Detailed rules: [`engine/sim/CLAUDE.md`](../../engine/sim/
 The optional world simulation, headless and deterministic: entities, components, systems in a fixed
 order, a seeded RNG per world and an integer tick (one tick is one world minute). The same seed and
 systems give the same world on every run. Games that need a living world use it; simple games never
-touch it.
+touch it. From Engine 0.10 it also runs time (world, experience and commitment time, and frozen
+events), the mission lifecycle (open, delegate or play, commit at a fixed world-time cost, with
+append-only records and no retries) and opportunities (windows that open and close in world time).
 
 ## Public API entry points
 

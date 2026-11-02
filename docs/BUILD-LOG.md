@@ -9,12 +9,77 @@ review the choices.
 
 ## Engine 0.10
 
-Time and the mission contract. Being built on branch `engine/build-0.15`; not tagged (no tags
-during the build, owner answer 24). As in 0.9, the decisions came first, before any code (T1); the
-later tasks build against them.
+Time and the mission contract. Built on branch `engine/build-0.15`; not tagged (no tags during
+the build, owner answer 24). As in 0.9, the decisions came first, before any code (T1); the later
+tasks built against them. The rules are in `engine/sim/CLAUDE.md` (Time, Missions, Opportunities),
+`engine/core/CLAUDE.md` (the mission contract, the adapter, the campaign) and
+`engine/tools/CLAUDE.md` (Missions in world runs); their agent pages are in `docs/modules/`.
 
 **Stacking-test gaps assigned to 0.10:** G16 (item 84), G20 (item 81), G37 and the rest of G2, from
-`docs/reports/stacking-test.md`. Their answers are decisions 8 to 11 below.
+`docs/reports/stacking-test.md`. Their answers are decisions 8 to 11 below, and all four are fixed
+(T8, T9, T10; see "Done when").
+
+### What was built
+
+- **Decisions before code** (T1, `c8448d9`): the three kinds of time, the fixed cost, frozen
+  events, the contract, effects, delegation weights, opportunities, flashbacks, the four
+  stacking-test gaps and missions in run files, settled in writing (items 150-161, below).
+- **The mission contract in `engine/core`** (T2, `7429dc2`): `engine/core/missions.ts`, plain JSON
+  with Zod schemas: the mission definition (`event`, a fixed `worldTimeCost`, the mini game it is
+  played with, `params`, declared outcomes with delegation `weight`s and data-only `effects`,
+  `onQuit`, `playable`; no retry field), the kit's report, the result and the committed record,
+  the `MissionAdapter` interface and the delegation draw (`pickOutcome`). The `mission` content
+  kind (`*.mission.json`) validates in any game. `MiniGameDef` gains an optional `paramsSchema`
+  and `MiniGame` an optional `report()`.
+- **The time service and frozen events** (T3, `9625316`): `engine/sim/time.ts`: world time (the
+  tick), experience-time clocks for open missions that never move the world, append-only
+  commitment stamps, read through `timeOf(world)`; `EventMember` tags and
+  `freezeEvent`/`unfreezeEvent`. `move`, `attack`, `death`, `patrol` and frozen workers' tasks
+  skip frozen entities; `build`, `train` and everyone outside the event run on.
+- **The mission lifecycle** (T4, `f1d3934`): `engine/sim/mission.ts`: `openMission` (records the
+  def, the fixed commit tick and freezes the event), `delegateMission` (one weighted draw from
+  `world.rng`), `playMission` and `quitMission` (declared, playable outcomes only),
+  `commitMission` and `settleMissions` (the effects under `mission:<id>`, the unfreeze, the
+  commitment stamp and an append-only `MissionRecord`). Retries, replays and recommits are
+  refused (`mission_committed`, `mission_resolved`).
+- **Opportunities** (T5, `e2b19aa`): `opportunitySchema` in `engine/core/missions.ts` and
+  `engine/sim/opportunity.ts`: windows of world ticks listed in a scenario or opened by an effect
+  (`relative` to the commit), offered, taken, or closed by a rival's take (`exclusive`,
+  `closesOthers`, cause `mission:<id>`) or by time (cause `time`).
+- **Missions in world run files** (T6, `a91f804`): a world run's `missions` steps (`open`,
+  `delegate`, `play`, `quit`, with `experienceTicks` reported and never written to the world),
+  refused steps listed in `refusedMissions`, missions committing by themselves at their commit
+  tick, `dump` and replay files keeping the steps. The siege fixture
+  (`engine/sim/__fixtures__/siege.world.json` with `raid`, `convoy`, `rescue` and `scout`
+  `.mission.json` files) and seven run files with golden hashes: `raid-partial`, `raid-failure`,
+  `opportunity-closing`, `frozen-construction`, `raid-delegated`, `fixed-cost-few`,
+  `fixed-cost-many`.
+- **The kit adapter** (T7, `9fbb27b`): `engine/core/mission-adapter.ts` (`snapshotEntities`,
+  `playMissionRound`: a kit's input built through a `MissionAdapter`, the round played, its end
+  mapped to a declared outcome; an unfinished round, an unmappable report or an undeclared outcome
+  is refused). The top-down room challenge gets `report()` (`ChallengeReport`).
+  `tests/kits/mission-adapter.test.ts` plays the siege's raid through `kits/topdown` with the
+  world's real siege engines as knights, commits it, and delegates the same mission. No kit
+  imports `engine/sim`; `config/layers.js` keeps its arrows.
+- **G16, params checked with the content** (T8, `b0a2d1a`): `engine/core/minigame-params.ts`,
+  `KitDef.miniGameUses`, an optional `miniGames(content)` on the headless entry and
+  `engine/tools/mini-game-check.ts`, so `validate` checks every level trigger's and mission's mini
+  game id (`unknown_mini_game`) and `params` against the def's `paramsSchema`.
+  `roomChallenge` and the lab's stop-bar have schemas; both platformer games export their mini
+  games.
+- **G20 and G37** (T9, `14953b2`): the platformer world keeps the ended round for the tick it ends,
+  and the snapshot has `endedRound` on that tick only; `HeadlessGame.miniGame?()` and
+  `HostedGame` in `engine/core/headless.ts`, `HostScene` takes `{ stack, game, picture }`, and
+  both platformer games' `scene.ts` went away.
+- **G2, a campaign file** (T10, `b725997`): the engine's `campaign` content kind
+  (`engine/core/campaign.ts`, `*.campaign.json`: `id`, ordered `{ level }` and `{ mission }`
+  entries, an optional `start`), checked by `validate`; the platformer kit plays a game's campaign
+  order and keeps the id order without one; both platformer games have a campaign file with their
+  old order.
+- Agent docs: the 0.10 parts of `engine/core`, `engine/core/content`, `engine/core/shell`,
+  `engine/sim`, `engine/tools`, `kits/topdown`, `kits/platformer` and both platformer games in
+  their `CLAUDE.md` files and module pages, `llms.txt`, the scaffold skill, the generated schema
+  and CLI references (with `mission.json` and `campaign.json` examples) and `docs/CHEATSHEET.md`.
 
 ### Decisions
 
@@ -227,6 +292,137 @@ is listed in the result (`refusedMissions`) and the run goes on, as with orders 
 **Existing 0.8 and 0.9 golden hashes must not move:** the world's snapshot gains mission, frozen
 event and opportunity state only when a scenario or run uses them, so `village.hashes.json`, the
 battle fixture and every sample run keep their hashes.
+
+### Choices made
+
+The decisions above are items 150-161; T8, T9 and T10 noted how they were built under 157-160 in
+`FEEDBACK-LOG.md`. The other builders' choices are items 162-165 ("Engine 0.10, builder choices"):
+
+- **An effect that would break a component schema is skipped, not refused** (T4, item 162): at the
+  commit it is listed in the record's `skipped`, like an effect whose entity is gone, so a commit
+  never fails part-way. Decision 4b said "refused at commit"; see "Deviations".
+- **Run files can `quit`, and know when it is too late** (T6, item 163): decision 12 listed
+  `open`, `play` and `delegate`; `quit` (the mission's `onQuit`) was added so the failure fixture
+  can show quitting is a choice. A `play` or `quit` at or after the commit tick its `open` fixed
+  is refused at load (`mission_unresolved`, exit 3). A mission's file is `<id>.mission.json` beside
+  the scenario or in a `missions/` folder there.
+- **Opportunities opened by an effect are `relative` and start `dormant`** (T5, item 164): their
+  window is counted from the commit tick that opens them, and one never opened stays dormant (a
+  success leaves the rescue untakeable). When several opportunities name one mission, opening it
+  takes the lowest-id one offered.
+- **The adapter helpers are engine code, the adapters are not** (T7, item 165): `MissionAdapter`,
+  `playMissionRound` and `snapshotEntities` are in `engine/core`; the one adapter written so far
+  (the siege raid as a top-down room) is in a repo test, since no game plays a mission until the
+  mini siege (0.11).
+- The root `package.json` version was left as it was, as in earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm -s cli run engine/sim/__fixtures__/raid-partial.run.json --json         # partial success, played
+pnpm -s cli run engine/sim/__fixtures__/raid-failure.run.json --json         # failure, retries refused
+pnpm -s cli run engine/sim/__fixtures__/opportunity-closing.run.json --json  # windows closing
+pnpm -s cli run engine/sim/__fixtures__/frozen-construction.run.json --json  # a barracks up during a frozen battle
+pnpm -s cli run engine/sim/__fixtures__/raid-delegated.run.json --json       # the same raid delegated
+pnpm -s cli run engine/sim/__fixtures__/fixed-cost-few.run.json --json       # played at once, 1 experience tick
+pnpm -s cli run engine/sim/__fixtures__/fixed-cost-many.run.json --json      # played late, 100,000 experience ticks
+pnpm -s cli dump engine/sim/__fixtures__/raid-failure.run.json --tick 36 --json   # the committed record
+pnpm -s cli validate games/platformer-test --json      # trigger params and the campaign checked
+pnpm vitest run tests/runs/missions.test.ts tests/kits/mission-adapter.test.ts
+```
+
+A refused step shows in the result's `refusedMissions` and the run still passes; the experience
+ticks of each played mission are in `experience`.
+
+### Done when
+
+Checked on 2026-11-02 at `928b1de` (the last 0.10 commit before this close-out): `pnpm lint &&
+pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (143 test files, 1553 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), and every one of the
+24 run files (9 sim fixtures, 7 of them the new mission runs; 1 demo, 6 lab, 4 stacking-test and
+4 skirmish runs) exits 0 with the same final hash on two runs in a row.
+
+- **Met: partial success.** `engine/sim/__fixtures__/raid-partial.run.json`: the raid opens at
+  tick 5 and is played to `partial` (240 experience ticks); at tick 35 the record says `partial`,
+  `played`, commit tick 35, nothing skipped; the ram is destroyed (5 units left) and the tower
+  damaged, the two effects of `partial` and no others. `engine/sim/mission.test.ts` ("applies only a partial success's
+  effects").
+- **Met: failure with no retry.** `raid-failure.run.json`: the raid is played to `repelled`; a
+  second play at tick 10 is refused `mission_resolved`, and reopening and redelegating it at tick 36
+  are refused `mission_committed` (`tests/runs/missions.test.ts` checks the three refusals); the
+  failure opens the `rescue-window` opportunity, whose mission is then quit (`lost`, `quit`).
+  `mission.test.ts` ("commits a failure and refuses any retry, replay or recommit").
+- **Met: an opportunity closing.** `opportunity-closing.run.json`: taking the raid at tick 13
+  closes its exclusive rival (cause `mission:raid`), so `convoy` is refused `opportunity_closed`;
+  another window closes by time at tick 25 (cause `time`), so `scout` is refused at tick 30; the
+  untouched raid is delegated on time-out at its commit. `opportunity.test.ts`.
+- **Met: construction finishing during a frozen battle.** `frozen-construction.run.json`: the raid
+  opens at tick 0 and freezes the `siege` event; at tick 29 the barracks is done while the battle's
+  units keep their hp and no cooldown runs; at tick 30 the event is unfrozen and the delegated
+  result committed. `engine/sim/time.test.ts` ("finishes a building while the battle's units do
+  not move, fight or cool down", and the same after a save and load mid-freeze).
+- **Met: each passes with the same hashes on every run.** `tests/runs/missions.test.ts` plays each
+  of the seven mission run files twice and compares both with its golden `<name>.hashes.json`;
+  `tests/runs/run-files.test.ts` does the same for every run file in the repo; the close-out ran
+  all 24 through `pnpm -s cli run` twice (final hashes: `raid-partial`, `fixed-cost-few` and
+  `fixed-cost-many` `60557f2e9c5e2245`, `raid-failure` `c219347c68a05f79`,
+  `opportunity-closing` `c3fd8ebb6b3d1981`, `frozen-construction` `f501aa52a7049a04`,
+  `raid-delegated` `3a7ebb1aca21ada0`; every earlier run file kept its hash).
+- **Met: a mission's world-time cost is the same however many ticks are spent inside it.**
+  `fixed-cost-few.run.json` (played at tick 5, 1 experience tick) and `fixed-cost-many.run.json`
+  (played at tick 34, 100,000 experience ticks) commit at tick 35 and have the same hashes from
+  there on (`tests/runs/missions.test.ts`), and `raid-partial` (240 ticks) ends on the same hash;
+  `mission.test.ts` ("the same hash after commit whether 0, 1 or 10,000 experience ticks pass
+  inside", "played at once or in a run that steps the world tick by tick").
+- Scope items, each with its code and tests: the three kinds of time in a time service
+  (`engine/sim/time.ts`, `time.test.ts`); the mission contract with structured results and no
+  retries (`engine/core/missions.ts`, `missions.test.ts`; `engine/sim/mission.ts`,
+  `mission.test.ts`); kits not importing the sim, with an adapter from snapshot to kit input and
+  from report to result (`engine/core/mission-adapter.ts`, `mission-adapter.test.ts`,
+  `tests/kits/mission-adapter.test.ts`, `kits/topdown/challenge.test.ts`,
+  `tests/architecture/dependency-rule.test.ts`); frozen events (`time.test.ts`,
+  `frozen-construction.run.json`); the fixed world-time cost (above); opportunities
+  (`engine/sim/opportunity.ts`, `opportunity.test.ts`, `opportunity-closing.run.json`); delegate
+  or play for every mission (`raid-delegated.run.json`, `mission.test.ts` "delegation": repeatable
+  from the seed, in proportion to the weights over 4,000 seeds; the adapter test delegates the
+  played mission too); missions as data files (the `mission` content kind,
+  `engine/core/content/kinds.test.ts`, `engine/tools/missions-run.test.ts`).
+- **Stacking-test gaps, all fixed in 0.10:** G16 (`engine/core/minigame-params.test.ts`,
+  `engine/tools/mini-game-check.test.ts`: `"goal": "defeat-al"` fails `validate` at
+  `triggers.0.params.goal`), G20 (`kits/platformer/minigame.test.ts`; `level-4.run.json` and the
+  lab's `mini-game.run.json` assert the round's last events from `endedRound`), G37
+  (`engine/core/shell/shell.test.ts`; both games' `scene.ts` deleted) and the rest of G2
+  (`engine/core/campaign.test.ts`, `kits/platformer/sequence.test.ts`, the games' tests showing a
+  reordered campaign reorders play). `docs/reports/stacking-test.md` marks all four fixed in 0.10.
+
+### Deviations from the roadmap
+
+- **Effects that break a schema are skipped at commit** (item 162), not refused as decision 4b
+  said: a refusal there would leave a due mission uncommittable, and "skipped and listed" was
+  already the rule for a missing entity.
+- **Run files have a `quit` action** (item 163) beyond decision 12's three.
+- **No game plays a mission yet.** The adapter path is proven in a repo test with the top-down kit
+  and the sim's siege fixture (T7); the roadmap keeps every playable sample for 0.11, so this is in
+  scope, but the first game adapter and live play (stepping the world through the cost after a
+  round, decision 2) are the mini siege's.
+- **Missions in a campaign are checked, not played** (item 160): playing them in order waits for
+  0.13.
+- **The stacking-test summary counts were off by one** since 0.7: its lists give 20 gaps fixed in
+  0.7 and 17 moved, not 21 and 16 (the 0.9 log above repeats the old numbers). The report now
+  says 20 fixed in 0.7, 4 fixed in 0.10 (G16, G20, G37 and the rest of G2, which was already
+  counted fixed in 0.7), and 14 still moved to 0.11, 0.14 and 0.15.
+- **Feedback numbering:** T1's decisions are 150-161; this close-out adds 162-165.
+
+### Outstanding issues
+
+- **Live play of a mission is not built**: the shell stepping the world through the cost after a
+  round (decision 2) and an RTS or platformer game hosting a mission come with the mini siege
+  (0.11).
+- **Only five effect kinds** (`damage`, `destroy`, `inventory`, `set`, `opportunity`); more come
+  when a sample needs them. Effects whose component data `validate` cannot see are checked only at
+  the commit (and skipped there).
+- **Flashback missions** are deferred until after Engine 1.0 (item 156).
+- **Campaign missions are not played in order** until 0.13.
+- Open owner decisions: items 150-165 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.9
 

@@ -9,7 +9,9 @@ validates a game's content, plays run files headless (seeded scripted input, tic
 invariants, state hashes), writes replay files for failing runs, dumps the state at a tick and
 edits content files (`get`, `set`, `add`, `remove`, every write checked and verified) and runs
 mutant checks (`mutants`: does a run fail when a kit rule is switched off?), and takes
-deterministic screenshots of a run at a tick in headless Chromium (`screenshot`).
+deterministic screenshots of a run at a tick in headless Chromium (`screenshot`). From Engine 0.10
+a world run file also drives missions (`open`, `delegate`, `play`, `quit`), and `validate` checks
+mini game params and `campaign` files against the content.
 
 ## Public API entry points
 

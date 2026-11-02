@@ -170,7 +170,8 @@ a name are engine releases.
 
 ```
 engine/
-  core/        loop, scenes, input, audio (MML synth), save, RNG, maths, presentation contract
+  core/        loop, scenes, input, audio (MML synth), save, RNG, maths, presentation contract,
+               the mission contract and campaign files as plain JSON (0.10)
   backends/    canvas2d (2D sprites), three (2.5D/3D, from 0.6), null (headless)
   sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8)
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
@@ -188,7 +189,14 @@ docs/
   and deterministic from a seed, and never imports from backends or kits (enforced by lint and a test).
 - **Mission contract (0.10):** a snapshot of world state goes in, a declared outcome space is fixed
   when the mission starts, and changes to the world come out. A retrospective (flashback) mission is
-  one whose outcome space already excludes anything that would contradict committed history.
+  one whose outcome space already excludes anything that would contradict committed history
+  (deferred until after Engine 1.0). As built, the contract is split by layer: the plain JSON types
+  (the `mission` content kind, outcomes with delegation weights and data-only effects, reports,
+  committed records, opportunity windows and the `MissionAdapter` interface) are in `engine/core`,
+  so the sim, kits and tools share them; the lifecycle (open, delegate or play, commit), the time
+  service, frozen events and opportunities run in `engine/sim`; each adapter is written where its
+  kit and world meet (a game, or a test). A mission's world-time cost is fixed when it opens, and
+  committed records are append-only.
 - A kit holds no rules about the world. It reads what it is given and reports what happened. Kits
   don't import the simulation: a small adapter turns a mission's snapshot into kit input and the kit's
   report into a mission result. The RTS kit (0.9) is the first: it reads the world's plain snapshot

@@ -7,7 +7,10 @@ Folder: `engine/core`. Detailed rules: [`engine/core/CLAUDE.md`](../../engine/co
 The engine's core, shared by every backend, kit and game: the fixed-step loop, scenes, input,
 chiptune audio and MML, save and settings, the seeded RNG, maths, asset packs, accessibility,
 platform detection and graphics data (palettes, sprite sheets, text pixel art, animation, screen
-size and fit maths). It holds no game rules and no game content.
+size and fit maths). From Engine 0.10 it also holds the mission contract as plain JSON (mission
+definitions, outcomes, effects, opportunities, reports, records and the `MissionAdapter`) and the
+`campaign` content kind, shared by the sim, kits and tools. It holds no game rules and no game
+content.
 
 ## Public API entry points
 

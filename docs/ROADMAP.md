@@ -459,7 +459,7 @@ squad `Member` role `hero`. The other 0.9 decisions are items 122-132. Reasoning
 
 ---
 
-## 0.10 Time and the mission contract
+## 0.10 Time and the mission contract (done)
 
 **Goal:** the rules that let one world be played through many genres, built and tested headless before
 any sample uses them.
@@ -498,6 +498,9 @@ any sample uses them.
 **Done when:** headless tests cover partial success, failure with no retry, an opportunity closing, and
 construction finishing during a frozen battle, and each passes with the same hashes on every run. A test
 shows that a mission's world-time cost is the same however many ticks are spent inside it.
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-010).)_
 
 **Out of scope:** any playable sample (that is 0.11), flashback missions.
 
