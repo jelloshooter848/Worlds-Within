@@ -91,16 +91,24 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
         await page.goto(server.url);
         expect(await page.locator(`#games a[href="${GAME}${query}"]`).count()).toBe(1);
 
-        // One frame per call, each 1/60 s (and a hair) after the last: exactly one step of the loop.
+        // The page's clock is the test's: `performance.now()` stands still between calls (so the
+        // loop's start reads the same time as its first frame, however long the page took to load
+        // or the test took to send keys), and each call runs one frame 1/60 s (and a hair) after
+        // the last: exactly one step of the loop. The first call runs a frame at the start time:
+        // no step. A real clock here let the loop catch up steps before tick 1 when the page was
+        // slow to start (often in 3D, after the async Three.js import), shifting the run.
         await page.addInitScript(() => {
           const queue: FrameRequestCallback[] = [];
           const w = window as unknown as { __frames(n: number): void };
           window.requestAnimationFrame = (cb) => queue.push(cb);
           window.cancelAnimationFrame = () => {};
-          let now: number | null = null;
+          let now = 0;
+          let started = false;
+          performance.now = () => now;
           w.__frames = (n) => {
             for (let i = 0; i < n; i++) {
-              now = now === null ? performance.now() : now + 1000 / 60 + 0.001;
+              if (started) now += 1000 / 60 + 0.001;
+              started = true;
               for (const cb of queue.splice(0)) cb(now);
             }
           };
@@ -110,7 +118,7 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
         expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe(backend);
         const frames = (n: number) =>
           page.evaluate((n) => (window as unknown as { __frames(n: number): void }).__frames(n), n);
-        await frames(1); // the loop's first frame only sets its clock
+        await frames(1); // the loop's first frame: no step (see the clock above)
         // The page's canvas copied onto a 2D one (a WebGL canvas keeps its buffer for this:
         // `preserveDrawingBuffer`), then one pixel read at (128, row) of the picture.
         const band = () =>

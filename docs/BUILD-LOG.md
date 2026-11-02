@@ -130,7 +130,9 @@ code commit.
 - `pnpm -s cli mutants games/platformer-test --json`, `... games/platformer-lab` and
   `... games/demo` exit 0; every run file of the three games passes `pnpm -s cli run` (exit 0).
 - The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (95 test files,
-  1087 tests), and `pnpm docs:check` reports the generated docs up to date.
+  1087 tests), and `pnpm docs:check` reports the generated docs up to date. They did not pass
+  reliably at `634320c` (the T9 commit): `tests/browser/platformer-test.test.ts` failed in review
+  4 of 6 runs on its own (and 3 of 4 at `2ba77dc`, so it predates T9), until the fix below.
 
 ### Deviations from the roadmap
 
@@ -153,8 +155,13 @@ code commit.
 - Open owner decisions: items 76-87 in `FEEDBACK-LOG.md`.
 - The 3D checks ran on SwiftShader (no GPU in the build container), as in 0.6.
 - `files.ts` (12 lines) is still per game until a Vite plugin (G5, 0.14).
-- Once while checking T9, the first browser test run after deleting `dist/` reported one failed
-  test; three reruns passed. Not reproduced, so the cause (likely a timeout under load) is unknown.
+- Fixed after review: the platformer-test page test was not deterministic (the T9 notes called
+  it a one-off "not reproduced"; review saw it fail 4 of 6 runs, mostly in 3D, with tick 3200
+  still in the black vault round). Cause: the test faked `requestAnimationFrame` but not
+  `performance.now()`, so `FixedLoop.start()` read the real clock and the first fake frame caught
+  up however many steps the page's start-up had taken (more after the async Three.js import),
+  shifting the run against its input. The page's clock is now the test's own (it stands still
+  between frames); the test passed 9 of 9 runs after the fix, 3 of them in parallel.
 
 ## Engine 0.6
 
