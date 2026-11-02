@@ -4,7 +4,9 @@ The first RTS sample (Engine 0.9, `docs/ROADMAP.md`, "0.9 RTS kit and view"): on
 (red: workers, a town centre, a hero) against a scripted raiding party (blue: four soldiers), on
 `kits/rts` over an `engine/sim` world. The first folder under `games/samples/`. Since T11 it is
 playable and replayable headless (`pnpm cli run`) and drawn by the Canvas2D backend for
-screenshots and the backend parity test; T12 adds the browser page and a recording from it.
+screenshots and the backend parity test; since T12 it is played in the browser
+(`index.html`, launcher link `games/samples/rts-skirmish/`), and a battle played there exports as
+a run file that `pnpm -s cli run` replays to the same state hashes (the 0.9 "done when").
 
 ## The rule
 
@@ -17,8 +19,8 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
 ## Files
 
 - `game.json`: kit `rts`, 320x240 (decided in T3), seed 9, `headless.ts`, `view.ts`; content kinds
-  `rts-map`, `rts-types`, `rts-enemy`, `palette`, `sprite`, `skin`. No `index.html` yet (T12), so
-  the launcher and `pnpm build` do not list it.
+  `rts-map`, `rts-types`, `rts-enemy`, `palette`, `sprite`, `skin`. `index.html` is its page:
+  the launcher lists it and `pnpm build` emits `games/samples/rts-skirmish/index.html`.
 - `content/maps/skirmish.world.json` (`rts-map`): a world scenario (`engine/sim` format,
   `"systems": "rts"`), 40x24 cells of 16 px (larger than the 20x15-cell picture): grass (`.`),
   dirt roads (`,`), rock (`#`, impassable) and a river (`~`, impassable) down columns 19-20 with
@@ -78,6 +80,29 @@ ui?)` (the engine's `FrameStream` over the kit's `presentWorld` for red; `ui` ad
   - `view.ts`: `createView` for `pnpm cli screenshot` and the parity test: `render` (Canvas2D),
     `frame()`, and `order` (the same orders as the headless game). The camera is the map's
     centre.
+  - `files.ts` (browser only): the data files bundled as text (`import.meta.glob`, `?raw`).
+  - `recording.ts`: `BattleRecorder(seed, hashEvery = 20)`: `reached(tick, snapshot)` (after
+    every step, and at tick 0: a hash tick's snapshot is taken before that tick's orders, where
+    `run` hashes it), `runFile(recorded, game = '..')` (the battle as a run file `{ game, seed,
+ticks, orders, hashEvery, hashes }`, ending at the last hash tick, with the orders applied
+    before it; null before tick 20). `stateHashOf(json)` is the tools' state hash through Web
+    Crypto (`crypto.subtle`, so the page needs no Node).
+  - `play.ts`: `SkirmishPlay`, the page's `Scene` (no DOM, no clock): the `SkirmishGame`, an
+    `RtsCamera` over the whole map starting on the player's base, the kit's `RtsControls`
+    (sharing the game's rule switch) and the recorder. Each loop step it carries out the bar's
+    buttons (`press`: `build`, `train`, `stop`, `heroes`, `cancel`) and the pointer's gestures
+    (an order goes to `RtsGame.issue`), hovers the placing ghost, and every `STEPS_PER_TICK` (6)
+    steps the game one tick (`TICKS_PER_SECOND` 10 on the page; the tools play ticks as fast as
+    they can). `buttons()` is what the bar shows (`build` for selected builders, `train` from
+    the kit's `trainButtons`, `stop`, `placing`); `exportRun(game?)`; `message` is the last
+    refusal. The controls' selection is the page's own: the game's `ui.selection` stays `[]`, as
+    in a replay of the recorded orders, so the page's hashes are the replay's.
+  - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay`), `pointer: true` and
+    `touchPad: false`; Shift for additive selection; the bar under the picture (`#bar`: the
+    status line, `#build-<building>`, `#train-<unit>`, `#stop`, `#heroes`, `#cancel`,
+    `#export`), and `window.wwSkirmish` (`SkirmishHook`: `tick`, `sides`, `units`,
+    `buildings`, `selection`, `camera`, `clientAt(wx, wy)` (world px to client px through the
+    camera and the display), `message`, `exportRun(game?)`) for the browser test.
 - `skirmish.test.ts`: content, the units' numbers against the types, the hero, `sides`,
   determinism, the interface actions of `commands.run.json` recording exactly
   `battle.run.json`'s orders, refusals, `sideKinds`, a sprite frame for every kind, state and
@@ -112,6 +137,37 @@ changes the ids of everything after it: re-record the run files (below).
   `game.rts.recorded()` into the run file's `orders`, read the assertions off `dump`, copy the
   run's `hashes` in, then `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`.
 
+## Playing in the browser
+
+`pnpm dev`, then `games/samples/rts-skirmish/` from the launcher (or `pnpm build && pnpm
+preview`). The picture is 320x240 over a 640x384 map; the bar under it holds the buttons.
+
+- **Mouse**: left click selects one thing (own unit first, else any unit, else a building; empty
+  ground clears), a left drag boxes your units, Shift adds to the selection, right click
+  commands (an enemy: attack; gold with workers selected: gather; else move). The wheel zooms
+  (0.5 to 2, about the cursor), a middle drag pans, and the cursor at the picture's edge scrolls.
+- **Touch**: a tap selects, a one-finger drag boxes, a long-press (half a second) commands, two
+  fingers pan and pinch-zoom. There is no on-screen pad.
+- **Bar**: with workers selected, `Build <building>`, then click (tap) the north-west cell to
+  place it (right click or `Cancel` stops placing); with a finished building selected, `Train
+<unit>` queues one (the town centre trains workers, the barracks soldiers); `Stop`; `Hero`
+  selects Wren alone. The status line shows the tick, the result once a side is beaten and the
+  last refused order's reason (not enough gold, a blocked site).
+- A battle: box workers 7 and 8 (just east of the town centre), build a barracks east of them, send
+  worker 9 to the southern gold, select the finished barracks and train three soldiers; once red
+  has 7 units blue raids; box the soldiers, Shift+click the hero and right click a raider.
+
+## Exporting and replaying a battle
+
+`Export` downloads the battle so far as `skirmish-t<tick>.run.json` (ending at the last tick that
+is a multiple of 20, with the orders before it and the page's sync hashes, every 20 ticks). Save
+it in `runs/` (its `game` is `..`) and replay it headless:
+`pnpm -s cli run games/samples/rts-skirmish/runs/skirmish-t140.run.json --json` passes with
+`hashesChecked` equal to the file's hashes and no `hashMismatch`. Any `hashMismatch` means the
+page and the headless game played differently. Add assertions (from `dump`) and a golden
+`.hashes.json` before keeping one as a run file of the game. A script reads the same with
+`await window.wwSkirmish.exportRun()`.
+
 ## How to test
 
 `pnpm test games/samples/rts-skirmish`, `pnpm -s cli validate games/samples/rts-skirmish --json`,
@@ -119,7 +175,13 @@ changes the ids of everything after it: re-record the run files (below).
 `pnpm -s cli mutants games/samples/rts-skirmish --json`, `pnpm test tests/runs` (golden hashes;
 backend parity plays every run through the view's `frame()` into the null backend and `render`
 into Canvas2D), `pnpm -s cli screenshot games/samples/rts-skirmish/runs/battle.run.json --tick 140
---json` (the fight at the southern ford; `matchesHeadless` true).
+--json` (the fight at the southern ford; `matchesHeadless` true). `play.test.ts`: the recorder
+hashes as `run` does and gives `battle.run.json`'s hashes for its orders; `SkirmishPlay` driven
+by scripted gestures and buttons builds, trains and beats the raid, and its export replays to its
+hashes. The page itself: `pnpm vitest run tests/browser/rts-skirmish.test.ts` (headless Chromium:
+the launcher lists it, a battle by mouse and touch, the export replayed with `pnpm -s cli run`;
+skipped where Chromium is missing). `tests/build/pages.test.ts` checks the launcher and the build
+inputs list the page.
 
 ## Imports
 

@@ -358,7 +358,9 @@ differs after tick 20 and by tick 40)`). `hashesChecked` counts the hashes compa
   `hashes` nothing is compared. Sync hashes every 20 ticks is the default (item 124): set
   `hashEvery` to 20 and copy the run's `hashes` into the file.
 - **Recording a battle**: write the orders as they were applied, with their ticks, run the file
-  once, and copy its `hashes` into it (the browser recording comes with the RTS sample).
+  once, and copy its `hashes` into it. The RTS sample's page records a battle played in the
+  browser and exports it as such a file (`games/samples/rts-skirmish/CLAUDE.md`, Exporting and
+  replaying a battle).
 - `dump` prints the orders applied before its tick (`orders`); a replay file keeps the orders
   before the failing tick (and not `hashes`: its `replay.hashes` hold the run's); `screenshot`
   hands the orders to the view's `order` the same way.

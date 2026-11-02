@@ -14,6 +14,21 @@ describe('game page discovery', () => {
     expect(dirs).toContain('games/platformer-lab');
   });
 
+  it('finds the RTS skirmish sample under games/samples (Engine 0.9 T12)', () => {
+    const rts = discoverGames(repoRoot).find((page) => page.dir === 'games/samples/rts-skirmish');
+    expect(rts).toEqual({
+      dir: 'games/samples/rts-skirmish',
+      name: 'games-samples-rts-skirmish',
+      title: 'RTS skirmish',
+    });
+    expect(gameListHtml(rts ? [rts] : [])).toContain(
+      '<a href="games/samples/rts-skirmish/">games/samples/rts-skirmish</a> <span>RTS skirmish</span>',
+    );
+    expect(pageInputs(repoRoot)['games-samples-rts-skirmish']).toBe(
+      join(repoRoot, 'games/samples/rts-skirmish/index.html'),
+    );
+  });
+
   it("reads the platformer lab's 3D link from its ww-alternate meta tag", () => {
     const lab = discoverGames(repoRoot).find((page) => page.dir === 'games/platformer-lab');
     expect(lab?.alternates).toEqual([{ label: '3D', query: '?backend=three' }]);

@@ -269,6 +269,21 @@ glue fills with a sim world. Content kinds `rts-map`, `rts-types`, `rts-enemy`; 
 `RTS_RULES`. `tests/kits/rts-sim.test.ts` drives it over the sim's battle fixture and replays the
 recorded player orders to the same hashes. Choices for the owner: items 137-140.
 
+### T12: the skirmish in the browser, replayed headless
+
+`games/samples/rts-skirmish/index.html` boots through `bootBrowserGame` with Canvas2D, pointer
+gestures on and the touch pad off. `play.ts` (`SkirmishPlay`, a scene with no DOM) joins the
+gestures and a button bar (build, train, stop, hero, cancel, export) to the kit's `RtsControls`
+over an `RtsCamera` on the same `SkirmishGame` the tools play, and records every order with its
+tick; `recording.ts` hashes the snapshot every 20 ticks with Web Crypto (the tools' state hash)
+and writes the battle as a run file. The page plays 10 ticks a second (6 loop steps a tick), a
+page-only choice: the tools play ticks as fast as they can, and the same orders at the same ticks
+give the same hashes at any speed. `tests/browser/rts-skirmish.test.ts` builds the repo, checks
+the launcher link, plays a battle with mouse (box, buttons, placing click, right clicks, middle
+drag, wheel, Shift+click) and touch (tap, one-finger box, long-press), beats the raid by tick 140,
+exports the recording through `window.wwSkirmish.exportRun()` and replays it with `pnpm -s cli
+run`: it passes with all 8 sync hashes equal. This meets the 0.9 "done when".
+
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,

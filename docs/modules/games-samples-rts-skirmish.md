@@ -9,7 +9,8 @@ written as a world scenario, one side (workers, a town centre, a hero) against a
 party, on `kits/rts` over an `engine/sim` world. Build a barracks, train soldiers and beat the
 raid, headless from recorded orders with the same state hashes every time. It holds only content
 (map, unit and building types, the enemy's plan, text pixel art, a Canvas2D skin) and thin glue.
-The browser page comes in Engine 0.9 T12.
+Since Engine 0.9 T12 it plays in the browser (mouse and touch), and a battle played there
+exports as a run file that `pnpm -s cli run` replays to the same state hashes.
 
 ## Public API entry points
 
@@ -22,6 +23,10 @@ The browser page comes in Engine 0.9 T12.
   `sidesOf`.
 - `actions.ts`: interface actions (`click`, `box`, `command`, `build`, `train`, `stop`) through
   the kit's selection and command mapper.
+- `index.html`, `main.ts` (the page: `bootBrowserGame`, the button bar, Export, the
+  `window.wwSkirmish` hook), `play.ts` (`SkirmishPlay`, the page's scene: camera, controls,
+  buttons, `TICKS_PER_SECOND` 10), `recording.ts` (`BattleRecorder`: sync hashes every 20 ticks
+  and the battle as a run file), `files.ts`.
 - `content.ts`, `picture.ts` (`skirmishLook`, `sideKinds`, `skirmishFrames`,
   `skirmishCanvasPicture`), `view.ts` (`createView`).
 - `runs/battle.run.json` (barracks, soldiers, the raid beaten), `commands.run.json` (the same
@@ -40,4 +45,6 @@ The browser page comes in Engine 0.9 T12.
 `pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json`,
 `pnpm -s cli mutants games/samples/rts-skirmish --json` (exit 0), `pnpm test tests/runs` (golden
 hashes and backend parity through null and Canvas2D), `pnpm -s cli screenshot
-games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json`.
+games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json`,
+`pnpm vitest run tests/browser/rts-skirmish.test.ts` (the page in headless Chromium: a battle by
+mouse and touch, its export replayed with `pnpm -s cli run` to the same hashes).
