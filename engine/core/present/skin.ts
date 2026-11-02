@@ -234,6 +234,29 @@ const camera3d = z.strictObject({
     .describe('kept minimal: ambient plus one directional light'),
 });
 
+/**
+ * One look of a kind for entities with a tag (Engine 0.11, gaps G13 and G30, item 181): the fields
+ * it gives replace the kind's own, the rest come from the kind.
+ */
+const tagEntry = z.strictObject({
+  tag: id.describe('the entity tag it is for (`used`, `look:door`, `site`)'),
+  sheet: id.exactOptional().describe("2D: the sprite file (default the kind's)"),
+  palette: id.exactOptional().describe("2D: a palette to draw with (default the kind's)"),
+  frames: z
+    .record(id, stateFrames)
+    .exactOptional()
+    .describe("2D: the frames by animation state, as the kind's `frames`, used instead of them"),
+  fallbackColor: color
+    .exactOptional()
+    .describe("2D: the box colour when a frame is missing (default the kind's)"),
+  mesh: meshRef.exactOptional(),
+  color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
+});
+
+/** The fields a tag entry may give, of each shape. */
+const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
+const TAG_MESH_FIELDS = ['mesh', 'color'] as const;
+
 const kindEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file the frames are in (default `sheets.sheet`)'),
   palette: id.exactOptional().describe("2D: a palette to draw with instead of the sprite's own"),
@@ -267,6 +290,12 @@ const kindEntry = z.strictObject({
   depth,
   z: zOffset,
   offset: offset.exactOptional(),
+  byTag: z
+    .array(tagEntry)
+    .exactOptional()
+    .describe(
+      "looks by entity tag, `{ tag, sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`: the first entry whose tag the entity has replaces those fields of the kind's; the state and facing are then picked as usual",
+    ),
 });
 
 const tileEntry = z.strictObject({
@@ -353,6 +382,18 @@ function checkShapes(
   const wrong: readonly string[] = mesh ? SPRITE_FIELDS : MESH_FIELDS;
   const needs = mesh ? ['mesh', 'color'] : needs2d;
   for (const [key, entry] of Object.entries(entries)) {
+    const looks = Array.isArray(entry['byTag']) ? (entry['byTag'] as Record<string, unknown>[]) : [];
+    looks.forEach((look, i) => {
+      for (const field of mesh ? TAG_SPRITE_FIELDS : TAG_MESH_FIELDS) {
+        if (look[field] === undefined) continue;
+        ctx.addIssue({
+          code: 'custom',
+          path: [where, key, 'byTag', i, field],
+          message: `"${field}" is a ${mesh ? '2D' : '3D'} field; backend "${backend}" takes ${mesh ? 'meshes' : 'sprites'}`,
+          params: { code: 'wrong_backend_field' },
+        });
+      }
+    });
     for (const field of wrong) {
       if (entry[field] === undefined) continue;
       const msg = `"${field}" is a ${mesh ? '2D' : '3D'} field; backend "${backend}" takes ${mesh ? 'meshes' : 'sprites'}`;
@@ -380,7 +421,7 @@ function checkShapes(
 function checkMeshes(
   skin: {
     backend: string;
-    kinds: Record<string, { mesh?: string }>;
+    kinds: Record<string, { mesh?: string; byTag?: { mesh?: string }[] }>;
     tiles?: Record<string, { mesh?: string }>;
     meshes?: Record<string, unknown>;
     camera3d?: unknown;
@@ -405,17 +446,20 @@ function checkMeshes(
       ctx.addIssue({ code: 'custom', path: ['meshes', name], message: `"${name}" is a primitive's name` });
     }
   }
-  for (const where of ['kinds', 'tiles'] as const) {
-    for (const [key, entry] of Object.entries(skin[where] ?? {})) {
-      if (entry.mesh === undefined || isPrimitive(entry.mesh) || Object.hasOwn(meshes, entry.mesh)) continue;
-      ctx.addIssue({
-        code: 'custom',
-        path: [where, key, 'mesh'],
-        message: `no primitive or mesh "${entry.mesh}" (primitives: ${MESH_PRIMITIVES.join(', ')})`,
-        params: { code: 'missing_ref' },
-      });
-    }
+  const check = (path: FieldPath, ref: string | undefined) => {
+    if (ref === undefined || isPrimitive(ref) || Object.hasOwn(meshes, ref)) return;
+    ctx.addIssue({
+      code: 'custom',
+      path: [...path, 'mesh'],
+      message: `no primitive or mesh "${ref}" (primitives: ${MESH_PRIMITIVES.join(', ')})`,
+      params: { code: 'missing_ref' },
+    });
+  };
+  for (const [key, entry] of Object.entries(skin.kinds)) {
+    check(['kinds', key], entry.mesh);
+    (entry.byTag ?? []).forEach((look, i) => check(['kinds', key, 'byTag', i], look.mesh));
   }
+  for (const [key, entry] of Object.entries(skin.tiles ?? {})) check(['tiles', key], entry.mesh);
 }
 
 /** Every `events` key must be a bare type, `type:value` or `type:field=value` ({@link parseEventKey}). */
@@ -471,6 +515,7 @@ export const skinSchema = z
 
 export type SkinFile = z.output<typeof skinSchema>;
 export type SkinKindEntry = z.output<typeof kindEntry>;
+export type SkinTagEntry = z.output<typeof tagEntry>;
 export type SkinStateFrames = z.output<typeof stateFrames>;
 export type SkinCycle = z.output<typeof cycle>;
 export type SkinTileEntry = z.output<typeof tileEntry>;
@@ -526,6 +571,15 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
       missing(['kinds', kind, 'palette'], 'palette', entry.palette);
     }
     if (entry.mesh === undefined) sheetAt(['kinds', kind], entry.sheet, framesOf(entry.frames ?? {}));
+    (entry.byTag ?? []).forEach((look, i) => {
+      const at: FieldPath = ['kinds', kind, 'byTag', i];
+      if (look.palette !== undefined && !palettes.has(look.palette))
+        missing([...at, 'palette'], 'palette', look.palette);
+      if (MESH_BACKENDS.includes(skin.backend)) return;
+      // A sheet the kind names and the game lacks is reported at the kind already.
+      if (look.sheet === undefined && entry.sheet !== undefined && !sprites.has(entry.sheet)) return;
+      sheetAt(at, look.sheet ?? entry.sheet, framesOf(look.frames ?? {}));
+    });
   }
   for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
     if (entry.mesh === undefined) sheetAt(['tiles', tile], entry.sheet, one(entry.frame));
@@ -619,6 +673,41 @@ export function resolveSkinEvent<E>(
 
 // ---- Picking a frame ----
 
+/** An entity as a skin's kind lookup reads it: its kind and (optionally) its tags. */
+export type SkinEntityInput = Pick<DeepReadonly<PresentEntity>, 'kind'> & {
+  readonly tags?: readonly string[];
+};
+
+/**
+ * The index in `entry.byTag` of the look an entity with `tags` takes: the first entry whose tag
+ * it has, or -1 (gaps G13 and G30). Pure.
+ */
+export function skinTagIndex(
+  entry: DeepReadonly<SkinKindEntry> | undefined,
+  tags: readonly string[] | undefined,
+): number {
+  if (entry?.byTag === undefined || tags === undefined || tags.length === 0) return -1;
+  return entry.byTag.findIndex((look) => tags.includes(look.tag));
+}
+
+/**
+ * The kind entry a skin draws `entity` with (Engine 0.11, gaps G13 and G30): its kind's entry
+ * with the fields of the first `byTag` look whose tag the entity has laid over it (`frames`
+ * replace the kind's frames whole), or the kind's entry as it is when no look matches; undefined
+ * for a kind the skin does not list. Both backends pick through it, so a skin without `byTag`
+ * draws as before. Pure.
+ */
+export function resolveSkinKind(
+  skin: DeepReadonly<SkinFile>,
+  entity: SkinEntityInput,
+): DeepReadonly<SkinKindEntry> | undefined {
+  const entry = Object.hasOwn(skin.kinds, entity.kind) ? skin.kinds[entity.kind] : undefined;
+  const i = skinTagIndex(entry, entity.tags);
+  if (entry === undefined || i < 0) return entry;
+  const { tag: _tag, ...look } = entry.byTag![i]!;
+  return { ...entry, ...look };
+}
+
 /** What to draw for one entity: a sprite frame, or (when `frame` is null) a box of `fallbackColor`. */
 export interface SkinFrame {
   /** The sprite file, or null when there is nothing to draw from. */
@@ -649,14 +738,16 @@ function cycleFrame(spec: string | DeepReadonly<SkinCycle>, t: number): string {
  * `flipFacing`; a diagonal uses its horizontal part (`up-right` uses `right`, owner answer 128),
  * then that part's own fallback (mirrored `right` for `left`); then `down`, then the first given.
  * A cycle or frame for every facing flips for a left-hand facing under `flipFacing`. A kind the
- * skin does not list, or a mesh entry, gives a `fallbackColor` box. Pure.
+ * skin does not list, or a mesh entry, gives a `fallbackColor` box. The entry is the kind's
+ * as {@link resolveSkinKind} gives it: an entity with a tag a `byTag` look names is drawn with
+ * that look's frames (and sheet, palette, colour), else with the kind's own. Pure.
  */
 export function resolveSkinFrame(
   skin: DeepReadonly<SkinFile>,
-  entity: Pick<DeepReadonly<PresentEntity>, 'kind' | 'facing' | 'anim'>,
+  entity: SkinEntityInput & Pick<DeepReadonly<PresentEntity>, 'facing' | 'anim'>,
 ): SkinFrame {
   const defaults = skin.sheets;
-  const entry = Object.hasOwn(skin.kinds, entity.kind) ? skin.kinds[entity.kind] : undefined;
+  const entry = resolveSkinKind(skin, entity);
   const fallbackColor =
     entry?.fallbackColor ?? entry?.color ?? defaults?.fallbackColor ?? DEFAULT_FALLBACK_COLOR;
   const sheet = entry?.sheet ?? defaults?.sheet ?? null;

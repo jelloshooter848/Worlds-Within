@@ -12,7 +12,9 @@ import {
   resolveMeshParts,
   resolveSkinEvent,
   resolveSkinFrame,
+  resolveSkinKind,
   skinSchema,
+  skinTagIndex,
   type SkinFile,
 } from './skin';
 
@@ -158,6 +160,21 @@ describe('the skin content kind', () => {
       ['games/g/skins/canvas2d.json', 'kinds.bat.sheet', 'missing_ref'],
       ['games/g/skins/canvas2d.json', 'tiles["#"].frame', 'missing_frame'],
       ['games/g/skins/canvas2d.json', 'events.hit.sound', 'missing_ref'],
+    ]);
+  });
+
+  it('checks the sheets, palettes and frames of byTag looks', () => {
+    const s = fixture();
+    s.kinds['bat']!.byTag = [
+      { tag: 'burnt', sheet: 'hero', frames: { fly: 'hurt' } },
+      { tag: 'used', frames: { fly: 'z' }, palette: 'grey' },
+      { tag: 'gone', sheet: 'nope' },
+    ];
+    const r = loadContent(files(s), engineContentKinds(), { root: 'games/g/' });
+    expect(r.errors.map((e) => [e.path, e.code])).toEqual([
+      ['kinds.bat.byTag.1.palette', 'missing_ref'],
+      ['kinds.bat.byTag.1.frames.fly', 'missing_frame'],
+      ['kinds.bat.byTag.2.sheet', 'missing_ref'],
     ]);
   });
 
@@ -338,6 +355,104 @@ describe('resolveSkinFrame', () => {
       frame: null,
       fallbackColor: '#123456',
     });
+  });
+});
+
+describe('frames by tag (G13, G30)', () => {
+  /** The fixture with tag looks on the bat: a burnt one in another sheet, a used one in its own. */
+  function tagged(): SkinFile {
+    const s = fixture();
+    s.kinds['bat']!.byTag = [
+      { tag: 'burnt', sheet: 'hero', frames: { fly: 'hurt' }, fallbackColor: '#000' },
+      { tag: 'look:door', frames: { fly: { frames: ['b', 'a'] } } },
+      { tag: 'grey', palette: 'hero' },
+    ];
+    return s;
+  }
+  const bat = (tags?: string[]) => ({
+    kind: 'bat',
+    facing: 'down' as Facing,
+    anim: { state: 'fly', t: 0 },
+    ...(tags ? { tags } : {}),
+  });
+
+  it('accepts byTag looks and keeps 2D and 3D fields apart in them', () => {
+    expect(errorsOf(tagged())).toEqual([]);
+    const s = tagged() as unknown as { kinds: { bat: { byTag: Record<string, unknown>[] } } };
+    s.kinds.bat.byTag[0]!['mesh'] = 'box';
+    s.kinds.bat.byTag[1]!['tag'] = 3;
+    expect(errorsOf(s)).toEqual([['kinds.bat.byTag.1.tag', 'invalid_type']]);
+    s.kinds.bat.byTag[1]!['tag'] = 'x';
+    expect(errorsOf(s)).toEqual([['kinds.bat.byTag.0.mesh', 'wrong_backend_field']]);
+  });
+
+  it('draws the first look whose tag the entity has, and the kind otherwise', () => {
+    const s = tagged();
+    expect(resolveSkinFrame(s, bat())).toMatchObject({ sheet: 'bat', frame: 'a', fallbackColor: '#f00' });
+    expect(resolveSkinFrame(s, bat(['armed']))).toMatchObject({ sheet: 'bat', frame: 'a' });
+    expect(resolveSkinFrame(s, bat(['burnt']))).toMatchObject({
+      sheet: 'hero',
+      frame: 'hurt',
+      palette: 'hero',
+      fallbackColor: '#000',
+    });
+    // The state's cycle is the look's; the sheet and colour are the kind's.
+    expect(resolveSkinFrame(s, { ...bat(['look:door']), anim: { state: 'fly', t: 8 } })).toMatchObject({
+      sheet: 'bat',
+      frame: 'a',
+      fallbackColor: '#f00',
+    });
+    expect(resolveSkinFrame(s, bat(['look:door']))).toMatchObject({ frame: 'b' });
+    // File order wins over the entity's tag order.
+    expect(resolveSkinFrame(s, bat(['look:door', 'burnt']))).toMatchObject({ frame: 'hurt' });
+    // A look with only a palette keeps the kind's frames.
+    expect(resolveSkinFrame(s, bat(['grey']))).toMatchObject({ sheet: 'bat', frame: 'a', palette: 'hero' });
+  });
+
+  it('reads the same as before for a skin without byTag', () => {
+    const s = fixture();
+    for (const tags of [undefined, [], ['burnt']]) {
+      expect(resolveSkinFrame(s, bat(tags))).toEqual(resolveSkinFrame(s, bat()));
+    }
+    expect(skinTagIndex(s.kinds['bat'], ['burnt'])).toBe(-1);
+    expect(resolveSkinKind(s, { kind: 'bat', tags: ['burnt'] })).toBe(s.kinds['bat']);
+    expect(resolveSkinKind(s, { kind: 'nope', tags: ['burnt'] })).toBeUndefined();
+  });
+
+  it('gives the look index and the merged entry', () => {
+    const s = tagged();
+    expect(skinTagIndex(s.kinds['bat'], ['grey', 'burnt'])).toBe(0);
+    expect(skinTagIndex(s.kinds['bat'], ['grey'])).toBe(2);
+    expect(skinTagIndex(s.kinds['bat'], undefined)).toBe(-1);
+    expect(resolveSkinKind(s, { kind: 'bat', tags: ['burnt'] })).toMatchObject({
+      sheet: 'hero',
+      palette: 'hero',
+      frames: { fly: 'hurt' },
+    });
+  });
+
+  it('picks a look mesh and colour on a three skin, and checks its mesh id', () => {
+    const s = threeFixture();
+    s.kinds['coin']!.byTag = [
+      { tag: 'burnt', mesh: 'runner', color: '#000' },
+      { tag: 'spent', color: '#7c7c7c' },
+    ];
+    expect(errorsOf(s)).toEqual([]);
+    expect(resolveSkinKind(s, { kind: 'coin', tags: ['burnt'] })).toMatchObject({
+      mesh: 'runner',
+      color: '#000',
+      depth: 4,
+    });
+    expect(resolveSkinKind(s, { kind: 'coin', tags: ['spent'] })).toMatchObject({
+      mesh: 'cylinder',
+      color: '#7c7c7c',
+    });
+    s.kinds['coin']!.byTag[0]!.mesh = 'nope';
+    (s.kinds['coin']!.byTag[1] as Record<string, unknown>)['frames'] = { idle: 'a' };
+    expect(errorsOf(s)).toEqual([
+      ['kinds.coin.byTag.0.mesh', 'missing_ref'],
+      ['kinds.coin.byTag.1.frames', 'wrong_backend_field'],
+    ]);
   });
 });
 

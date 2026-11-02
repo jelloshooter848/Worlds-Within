@@ -40,7 +40,7 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
 events?, hud?, camera?, meshes?, camera3d? }`. `sheets` gives defaults (`sheet`, `palette`, `fallbackColor`) for
   entries that leave them out. A kind entry is 2D (`sheet`, `palette?`, `frames`, `flipFacing?`,
   `size?`, `fallbackColor`, `offset?`) or 3D (`mesh`, `color`, `scale?`, `depth?`, `z?`,
-  `offset?`); a tile entry 2D (`sheet?`, `frame`, `fallbackColor`) or 3D (`mesh`, `color`,
+  `offset?`), either with an optional `byTag` list (below); a tile entry 2D (`sheet?`, `frame`, `fallbackColor`) or 3D (`mesh`, `color`,
   `depth?`, `z?`). The backend picks which (`MESH_BACKENDS`, today `three`), and a field of the
   other shape (including the skin-level `meshes` and `camera3d` on a 2D skin) is a
   `wrong_backend_field` error, a needed one left out `missing_field`. `frames` maps an animation
@@ -78,8 +78,23 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
     and a skin with bare keys only reads as before. `parseEventKey(key)` reads a key
     (`{ type, match: { field, value } | null }`, null for a bad one). Both backends' presenters
     play sounds and start effects through it.
+  - Looks by tag (Engine 0.11, gaps G13 and G30, item 181): a kind entry's `byTag` is a list of
+    `{ tag, sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`. For an entity with tags,
+    the first entry in file order whose `tag` it has lays its fields over the kind's (`frames`
+    replace the kind's frames whole; the fields it leaves out, `flipFacing`, `size`, `offset`,
+    `depth`, `scale`, `z`, come from the kind); the state and facing are then picked inside it as
+    usual. No match (or no tags) uses the kind as it is, so a skin without `byTag` draws as
+    before. `resolveSkinKind(skin, entity)` gives that entry (undefined for an unlisted kind) and
+    `skinTagIndex(entry, tags)` the look's index (-1: none); the Canvas2D presenter picks frames
+    and the 3D scene builds meshes through them (and rebuilds an entity whose look changes). The
+    other shape's fields in a look are `wrong_backend_field`, a look's unknown `mesh` is
+    `missing_ref`, and its sheet, palette and frames are checked across files like the kind's.
+    A tag is any of the entity's tags: `used`, `brick` (a bumped block), `look:<id>` (a platformer
+    trigger's `look`), `site` (the RTS kit's building under construction); the mini siege uses it
+    for its construction site and its burnt or damaged siege engines.
   - `resolveSkinFrame(skin, entity)` (pure, for backends): the `SkinFrame` `{ sheet, frame, flipX,
-palette?, fallbackColor, size?, offset? }` for an entity's kind, `anim.state` (else `idle`,
+palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, if any),
+    `anim.state` (else `idle`,
     else the first state), `anim.t` (cycle frame; `loop: false` holds the last) and `facing`. A facing without its own
     frame falls back in turn: a left-hand facing uses its right-hand mirror flipped when
     `flipFacing` (`up-left` uses `up-right`, `left` uses `right`); a diagonal uses its horizontal
@@ -163,7 +178,10 @@ palettes, sounds and frames are cross-file errors (sounds of field-matched event
 keys are read and bad ones rejected, `resolveSkinEvent` tries field keys in file order then the
 bare type, and `resolveSkinFrame` picks states, cycles
 frames by `t`, handles facings and flips (a diagonal falling back to its cardinal, diagonal
-frames, a mirrored left diagonal, all eight facings in the schema), and falls back for unknown kinds. Its 3D part covers a
+frames, a mirrored left diagonal, all eight facings in the schema), and falls back for unknown kinds.
+Its `frames by tag` block covers `byTag` (the first matching look in file order, the kind
+otherwise, a skin without it unchanged, its 2D/3D fields kept apart, mesh refs, and the cross-file
+sheet, palette and frame checks). Its 3D part covers a
 `three` skin with primitives and compound meshes, unknown mesh ids (`missing_ref`), 2D/3D fields
 on the wrong backend, the demo and platformer-lab canvas2d skins still validating,
 `resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `stream.test.ts` covers `FrameStream`

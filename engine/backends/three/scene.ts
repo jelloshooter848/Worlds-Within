@@ -26,6 +26,8 @@ import {
   isFullMap,
   resolveCamera3d,
   resolveMeshParts,
+  resolveSkinKind,
+  skinTagIndex,
   resolveSkinEvent,
   type DeepReadonly,
   type MeshPart,
@@ -78,6 +80,8 @@ interface EntityNode {
   kind: string;
   w: number;
   h: number;
+  /** The `byTag` look it was built with (-1: the kind's own). */
+  look: number;
   materials: MeshLambertMaterial[];
 }
 
@@ -350,7 +354,10 @@ export class ThreeScene {
     for (const e of frame.entities) {
       seen.add(e.id);
       let node = this.nodes.get(e.id);
-      if (node && (node.kind !== e.kind || node.w !== e.w || node.h !== e.h)) {
+      if (
+        node &&
+        (node.kind !== e.kind || node.w !== e.w || node.h !== e.h || node.look !== this.lookOf(e))
+      ) {
         this.scene.remove(node.root);
         disposeNode(node);
         node = undefined;
@@ -370,10 +377,15 @@ export class ThreeScene {
     }
   }
 
-  /** The meshes for an entity's kind and box, under a root at the box's bottom centre. */
-  private buildEntity(e: Entity): EntityNode {
+  /** The `byTag` look an entity takes (-1: its kind's own), so a new tag look rebuilds it. */
+  private lookOf(e: Entity): number {
     const kinds = this.skin.kinds;
-    const entry = Object.hasOwn(kinds, e.kind) ? kinds[e.kind] : undefined;
+    return skinTagIndex(Object.hasOwn(kinds, e.kind) ? kinds[e.kind] : undefined, e.tags);
+  }
+
+  /** The meshes for an entity's kind (or its tag's look) and box, under a root at the box's bottom centre. */
+  private buildEntity(e: Entity): EntityNode {
+    const entry = resolveSkinKind(this.skin, e);
     const box = { w: e.w, h: e.h };
     let parts: MeshPart[] = entry ? resolveMeshParts(this.skin, entry, box) : [];
     const fallback = parts.length === 0;
@@ -400,7 +412,7 @@ export class ThreeScene {
       mesh.rotation.y = (part.rotate * Math.PI) / 2;
       root.add(mesh);
     }
-    return { root, kind: e.kind, w: e.w, h: e.h, materials };
+    return { root, kind: e.kind, w: e.w, h: e.h, look: this.lookOf(e), materials };
   }
 
   private place(node: EntityNode, e: Entity): void {

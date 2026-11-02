@@ -236,7 +236,8 @@ function presentActor(a: Actor, ctx: Ctx): PresentEntity {
 }
 
 /**
- * Coins (`coin`), goals (`goal`) and mini-game triggers (`trigger`, tags `armed` and `running`)
+ * Coins (`coin`), goals (`goal`) and mini-game triggers (`trigger`, tags `armed`, `running` and
+ * `look:<id>` when its level entry gives a `look`)
  * from the tiles, in reading order: one 16x16 entity per cell, id `<kind>@<col>,<row>`, anim
  * `idle` with `t` the world's frame (they idle from the level's start).
  */
@@ -254,6 +255,7 @@ function presentObjects(ctx: Ctx): PresentEntity[] {
         const t = triggers.get(`${col},${row}`);
         if (t?.armed) tags.push('armed');
         if (t && t === running) tags.push('running');
+        if (t?.def.look !== undefined) tags.push(`look:${t.def.look}`);
       }
       out.push({
         id: `${cell}@${col},${row}`,

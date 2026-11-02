@@ -17,7 +17,9 @@ trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), 
 while it runs (the round sees the input through the engine's `RoundInput`: a button held into the
 trigger is ignored until released, and the def's `inputMap` applies; it is handed the level's HUD
 values its def's `hostStatus` names; Engine 0.11, gaps G18 and G19), its snapshot sits in the level's, and the trigger's data-set outcome for its
-`pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile). On
+`pass`, `fail` or `quit` applies (coins, a life, clear, respawn on the trigger, open a tile); an
+optional `look` on the entry (Engine 0.11, gap G13) is presented as the tag `look:<id>` on the
+trigger, for a skin's `byTag`. On
 the tick a round ends the snapshot keeps it as `endedRound` (its result, final state with its last
 events, and report; Engine 0.10, gap G20), so a run file can check a round's last tick.
 The kit's hook lists each trigger's `game` and `params` (`miniGameUses`, Engine 0.10), so

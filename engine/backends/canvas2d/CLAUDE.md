@@ -54,7 +54,8 @@ canvas, none in Node). Each `present(frame)`, in order:
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`.
 - Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip
-  (all eight facings: a diagonal without a frame uses its horizontal one);
+  (all eight facings: a diagonal without a frame uses its horizontal one), from the kind's first
+  `byTag` look whose tag the entity has, else the kind's own frames (Engine 0.11, gap G30);
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.
@@ -108,7 +109,8 @@ zoom are drawn.
 
 `*.test.ts` here run in Node against a fake 2D context that records calls and maps points through
 the transform (see `renderer.test.ts`). `presenter.test.ts` uses a recording `Renderer`, fixture
-frames and a fixture skin written inline (never import a kit or a game's skin); its `camera`
+frames and a fixture skin written inline (never import a kit or a game's skin; a `byTag` look is
+drawn for an entity with its tag, the kind's frame otherwise); its `camera`
 block reads the camera's top-left off the recorded map copy. The recorder writes a sprite's
 `scale` as ` xN` when it is not 1; the `zoom` block checks the map copy, tiles, sprites, boxes
 and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses the zoomed

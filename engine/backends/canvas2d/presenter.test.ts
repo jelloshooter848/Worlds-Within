@@ -126,6 +126,43 @@ describe('SkinnedCanvasPresenter', () => {
     expect(s.screen.at(-1)).toBe('sprite map:room@1:map 0,0');
   });
 
+  it("draws a frame by tag for an entity with that tag, and the kind's frame otherwise (G30)", () => {
+    const skin: SkinFile = {
+      ...SKIN,
+      kinds: {
+        ...SKIN.kinds,
+        hero: {
+          ...SKIN.kinds['hero']!,
+          byTag: [
+            { tag: 'burnt', sheet: 'walls', frames: { idle: 'wall' } },
+            { tag: 'ghostly', fallbackColor: '#0ff', frames: { idle: 'missing' } },
+          ],
+        },
+      },
+    };
+    const { r, calls } = recorder();
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null });
+    p.present(
+      freezeFrame(
+        frame({
+          noMap: true,
+          entities: [
+            hero({ id: 'a' }),
+            hero({ id: 'b', x: 16, tags: ['armed', 'burnt'] }),
+            hero({ id: 'c', x: 32, tags: ['ghostly'] }),
+            hero({ id: 'd', x: 48, tags: ['armed'], facing: 'left' }),
+          ],
+        }),
+      ),
+    );
+    expect(calls.filter((c) => c.startsWith('sprite') || c.startsWith('rect'))).toEqual([
+      'sprite hero:down-0 0,0',
+      'sprite walls:wall 16,0',
+      'rect 32,0 16x16 #0ff',
+      'sprite hero:side-0 48,0 flip',
+    ]);
+  });
+
   it('draws the tiles every frame when there is no surface to cache them on', () => {
     const { r, calls } = recorder();
     const p = new SkinnedCanvasPresenter(r, SKIN, lookup, { mapSurface: () => null });

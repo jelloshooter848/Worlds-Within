@@ -47,7 +47,9 @@ release that will).
     `triggers` entry starts the `vault` mini game with params `goal: defeat-all`, `ticks: 600`,
     `hp: 4`; a `pass` gives 5 coins and opens the wall's three lowest tiles (`open:22:6` to
     `open:22:8`; the trigger itself is emptied), a `fail` puts the player back on the door
-    (`respawn`; step off and on again for another round). Past the wall, the goal.
+    (`respawn`; step off and on again for another round), and `"look": "door"` draws it as a door
+    (Engine 0.11, gap G13: presented as the tag `look:door`, picked by the skins' `byTag`; not in
+    the snapshot, so no hash moved). Past the wall, the goal.
 - `content/campaigns/main.campaign.json` (Engine 0.10, gap G2): the play order as data, the
   engine's `campaign` kind (`engine/core/campaign.ts`): `level-1`, `level-2`, `level-3`,
   `level-4`, the order the levels were played in by id before, so no run file or golden hash
@@ -71,7 +73,7 @@ release that will).
     `bump`, `used`, `one-way`, `hazard`), the runner (12x16: idle, two walk frames, skid, jump,
     fall, hurt, dead), the actors (`walker`, `ledge-walker` in purple, `shell-walker` 16x24,
     `shell`, each with its flat or upside-down remains), `coin` (and its turn), `goal` (a flag),
-    `door` (the trigger) and the HUD's `heart`, `hud-coin`, `hud-life` (8x8).
+    `door` (the door trigger), `switch` (a trigger with no `look`) and the HUD's `heart`, `hud-coin`, `hud-life` (8x8).
     `content/sprites/hopper-font.txt`: the HUD's 8x8 digits.
   - `content/sprites/vault.txt` (palette `content/palettes/vault.json`): the vault round: room
     tiles (`wall`, `floor`, `statue`, `water`), the hero (`down`/`up`/`side`, two frames each, three
@@ -83,7 +85,9 @@ release that will).
   - `content/skins/canvas2d.json`: the levels' skin (format: `engine/core/present/skin.ts`):
     every `PRESENT_TILES` character, `runner` (every `RUNNER_ANIMS` state, mirrored for left),
     every actor type of the profile (every `ACTOR_ANIMS` state), `coin` (`idle`, `pop`), `goal`,
-    `trigger` (drawn as the door: the game's one trigger; gap G13), `bump-block`; every
+    `trigger` (a `switch` block, and the door for the tag `look:door` through `byTag`: gaps G13
+    and G30), `bump-block` (`used`, and `brick` for the tag `brick`: a bumped brick that does not
+    break bounces as a brick); every
     `PlatformerEvent` with effects and the sounds above (`mini-game-end:pass` plays `pass` and
     `mini-game-end:fail` plays `fail`, the bare `mini-game-end` the `door` for a quit: gap G28); HUD `hp` (hearts), `coins` and `lives`
     (icon and number in `hopper-font`); camera follow `runner`, deadzone 32x48, lerp 0.25.
@@ -100,8 +104,9 @@ release that will).
   - `content/skins/three.json` (0.7 T8): the levels' 3D skin, low-poly meshes written as text
     (compound meshes of boxes, spheres, cylinders and cones in world px): `runner` (cap, face,
     shirt, overalls, boots), `walker` (shared by `walker` and `ledge-walker` in their own
-    colours), `shell-walker`, `shell`, `coin`, `goal` (pole and flag), `door` (the trigger:
-    panelled wings and a knob), `bump-block` a plain box; tiles: every `PRESENT_TILES` character
+    colours), `shell-walker`, `shell`, `coin`, `goal` (pole and flag), `door` (the trigger with
+    `look:door`, through `byTag`: panelled wings and a knob; a trigger with no look is a purple
+    box), `bump-block` a plain box (a `brick` mesh for the tag `brick`); tiles: every `PRESENT_TILES` character
     but `.` (open air is the sky, no block): `#` a block with a lighter top course, `B` a brick
     with mortar lines, `?` a block with a mark on its face, `u` a plain box, `=` a thin slab, `^`
     two rows of cones on a base. `events` are the 2D skin's sounds, flashes, tints and shakes

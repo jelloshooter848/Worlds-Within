@@ -221,11 +221,13 @@ headless module (`miniGames(content)`, `engine/core/headless.ts`) gets that, and
 params against the def's `paramsSchema`, checked by `pnpm cli validate` (Engine 0.10, gap G16).
 
 - A level's `!` cells are triggers; the header's `triggers` gives one entry per `!` in reading
-  order: `{ game, params?, pass?, fail?, quit? }`. `params` (JSON) is handed to the round as
+  order: `{ game, params?, pass?, fail?, quit?, look? }`. `params` (JSON) is handed to the round as
   `ctx.params`; each result's list of outcomes applies in order (`TRIGGER_OUTCOMES` in
   `level.ts`): `coins:<n>` (n coins), `life`, `clear` (the level is `cleared`), `respawn` (the
   player stands on the trigger again, with its hit points kept), `open:<col>:<row>` (that tile is
-  emptied: a gate). Left out, a result does nothing.
+  emptied: a gate). Left out, a result does nothing. `look` (an id, lower-case letters, digits
+  and `-`; Engine 0.11, gap G13) is presentation only: the trigger's entity is tagged
+  `look:<id>`. It is not in the snapshot, so adding one moves no hash.
 - Each tick, after the pit check, a trigger the player overlaps starts a round when it is armed
   (`mini-games`; `mini-game` event with `trigger`, `game` and `attempt`): `def.create({ params,
 attempt }, seed)`, the seed drawn from the world's `rng`. A trigger is disarmed by its round and
@@ -340,13 +342,18 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   | --------------------- | -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
   | `coin@<col>,<row>`    | `coin`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
   | `goal@<col>,<row>`    | `goal`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
-  | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`                      |
+  | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`, `look:<id>`         |
   | `bump-block@<c>,<r>`  | `bump-block`                                 | 5     | `bump`, `t` 0..7; the box is raised by `BUMP_RISE[t]` px                                    | the cell now: `used`, `bump` or `brick` |
   | `coin-pop@<c>,<r>`    | `coin`                                       | 5     | `pop`, `t` 0..29 (`COIN_POP_TICKS`), one tile over the block                                | `popped`                                |
   | `actor#<n>`           | the actor type name (`walker`, `shell`, ...) | 10    | `idle` (asleep or still), `walk`, `run` (faster than its type's `speed`: kicked), `fall`    | `asleep`, `kicked`                      |
   | `actor#<n>` (remains) | its last type                                | 10    | `stomped` (stomped, no `stompInto`) or `dead` (hit by a shell), `t` 0..29 (`REMAINS_TICKS`) |                                         |
   | `runner/dead`         | `runner`                                     | 20    | `dead`, `t` 0..59 (`RUNNER_DEAD_TICKS`), where it died                                      |                                         |
   | `runner`              | `runner`                                     | 20    | see below                                                                                   | `invuln`, `hp:<n>`                      |
+
+  A trigger whose level entry gives a `look` (Engine 0.11, gap G13) is tagged `look:<id>`, so a
+  skin's `byTag` (`engine/core/present/CLAUDE.md`) draws it its own way (a door, a pipe, a sign);
+  one without a `look` gets no such tag. A bump-block's tag is the cell after the bump, so a skin
+  can draw a bumped brick as a brick and a used block as used (`byTag` on `bump-block`).
 
   Effects (bounces, popped coins, remains, `runner/dead`) need `state`. The bump-block entity is
   drawn over its own tile (a skin should draw it with the block's look, raised). `actor#<n>` keeps
@@ -382,8 +389,8 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   (`right` default, `free`, `none`), `size` (optional `[cols, rows]`; the size comes from the grid
   and must match), `spawns` (`{ "<char>": { actor, facing } }`), `blocks` (what each `?` holds in
   reading order: `coin`, `coins`, `powerup`, `life` or `actor:<type>`; all coins when left out),
-  `triggers` (one per `!` in reading order: `game`, `params`, `pass`, `fail`, `quit`; under Mini
-  games) and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
+  `triggers` (one per `!` in reading order: `game`, `params`, `pass`, `fail`, `quit`, `look`;
+  under Mini games) and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
   character), `size_mismatch`, `wrong_block_count`, `wrong_trigger_count`, `bad_outcome` (an
   `open:<col>:<row>` outside the map), plus the grid's `ragged_row`, `unknown_char`,
   `empty_grid` at the `.map.txt` line.

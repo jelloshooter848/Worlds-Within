@@ -18,7 +18,8 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   `sync(frame)` keeps `scene` and `camera` up to date. Map tiles become instanced blocks built once
   per map id and version (layers behind at their own depth); entities become meshes by id
   (bottom-centre roots, `layer` to z through `camera3d.layerDepth`, facing-left mirror (the left-hand diagonals mirror too), squash,
-  rotate and alpha, a fallback box for unlisted kinds); the `PerspectiveCamera` is framed by the
+  rotate and alpha, a fallback box for unlisted kinds, a skin's tag look by `resolveSkinKind`,
+  rebuilt when the look changes); the `PerspectiveCamera` is framed by the
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
   directional light; `onSound(id)` once per event (by `resolveSkinEvent`); flash and tint as a full-screen overlay. The HUD

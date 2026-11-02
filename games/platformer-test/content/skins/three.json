@@ -302,8 +302,18 @@
     "shell": { "mesh": "shell", "color": "#00a800" },
     "coin": { "mesh": "coin", "color": "#f8d800" },
     "goal": { "mesh": "goal", "color": "#00a800" },
-    "trigger": { "mesh": "door", "color": "#883c00" },
-    "bump-block": { "mesh": "box", "color": "#883c00", "depth": 16 }
+    "trigger": {
+      "mesh": "box",
+      "color": "#9878f8",
+      "depth": 16,
+      "byTag": [{ "tag": "look:door", "mesh": "door", "color": "#883c00" }]
+    },
+    "bump-block": {
+      "mesh": "box",
+      "color": "#883c00",
+      "depth": 16,
+      "byTag": [{ "tag": "brick", "mesh": "brick", "color": "#c84c0c" }]
+    }
   },
   "tiles": {
     "#": { "mesh": "ground", "color": "#c84c0c" },

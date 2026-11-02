@@ -370,6 +370,23 @@ describe('presentWorld: mini games', () => {
     expect(next.status['miniGame']).toBe('hold');
     expect(isFullMap(next.map!)).toBe(false);
   });
+
+  it("tags a trigger with its entry's look, and leaves the snapshot as it was (G13)", () => {
+    const two = ['.........', '.@.!..!.G', '#########'];
+    const looks = { triggers: [{ game: 'hold', look: 'door' }, { game: 'hold' }] };
+    const s = setup(two, looks, [make(false)]);
+    const f = s.frames[0]!;
+    expect(byId(f, 'trigger@3,1')!.tags).toEqual(['armed', 'look:door']);
+    expect(byId(f, 'trigger@6,1')!.tags).toEqual(['armed']);
+    const plain = setup(two, { triggers: [{ game: 'hold' }, { game: 'hold' }] }, [make(false)]);
+    for (let i = 0; i < 40; i++) {
+      s.step(['right']);
+      plain.step(['right']);
+      expect(canonicalJson(snapshotWorld(s.world))).toBe(canonicalJson(snapshotWorld(plain.world)));
+    }
+    expect(s.world.miniGame).not.toBeNull();
+    expect(byId(s.frames.at(-1)!, 'trigger@3,1')!.tags).toEqual(['running', 'look:door']);
+  });
 });
 
 describe('platformerFrames', () => {

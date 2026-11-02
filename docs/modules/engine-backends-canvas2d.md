@@ -20,7 +20,7 @@ for and holds no game rules.
 - `SkinnedCanvasPresenter`, `SkinnedPresenterOptions`, `MapSurface` (`presenter.ts`):
   `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
   is a `Presenter`. It caches the map per id and version, draws entities by layer then list order with
-  skin frames (flipped by facing, a fallback box when art is missing, squash through
+  skin frames (`resolveSkinFrame`, a kind's tag look first; flipped by facing, a fallback box when art is missing, squash through
   `transformed()`), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower

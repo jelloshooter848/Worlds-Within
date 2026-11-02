@@ -52,6 +52,13 @@ const trigger = z.strictObject({
   pass: outcomes('pass'),
   fail: outcomes('fail'),
   quit: outcomes('quit'),
+  look: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9-]*$/)
+    .exactOptional()
+    .describe(
+      "how it looks (Engine 0.11, gap G13): presented as the tag `look:<id>` on the trigger's entity, for a skin's `byTag`; left out, no tag",
+    ),
 });
 
 const spawn = z.strictObject({

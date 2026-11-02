@@ -686,3 +686,23 @@ dllllll.
 ..gppg..
 .pp..pp.
 ........
+
+; A trigger with no `look` (Engine 0.11, gap G13): a plain switch block. The door's trigger has
+; `"look": "door"` and draws `door` through the skin's `byTag`.
+frame switch
+.kkkkkkkkkkkkkk.
+kppppppppppppppk
+kpwppppppppppwpk
+kppppppwwppppppk
+kppppppwwppppppk
+kppppppwwppppppk
+kppppppwwppppppk
+kppppppwwppppppk
+kppppppwwppppppk
+kppppppppppppppk
+kppppppppppppppk
+kppppppwwppppppk
+kppppppwwppppppk
+kpwppppppppppwpk
+kppppppppppppppk
+kkkkkkkkkkkkkkkk

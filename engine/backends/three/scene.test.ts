@@ -286,6 +286,32 @@ describe('ThreeScene: entities', () => {
     expect(s.entity('p1')).not.toBe(before);
     expect(s.scene.children).not.toContain(before);
   });
+
+  it('builds a tag look for an entity with that tag, and rebuilds when the look changes (G30)', () => {
+    const skin: SkinFile = {
+      ...SKIN,
+      kinds: {
+        ...SKIN.kinds,
+        coin: { ...SKIN.kinds['coin']!, byTag: [{ tag: 'burnt', mesh: 'box', color: '#000000' }] },
+      },
+    };
+    const s = new ThreeScene(skin);
+    const coin = (tags: string[]) => hero({ id: 'c1', kind: 'coin', w: 8, h: 8, tags });
+    s.sync(frame({ entities: [coin(['armed'])] }));
+    const plain = s.entity('c1');
+    expect(meshesOf(s, 'c1')[0]!.geometry.type).toBe('CylinderGeometry');
+    s.sync(frame({ frame: 1, entities: [coin([])] }));
+    expect(s.entity('c1')).toBe(plain);
+    s.sync(frame({ frame: 2, entities: [coin(['armed', 'burnt'])] }));
+    expect(s.entity('c1')).not.toBe(plain);
+    const [burnt] = meshesOf(s, 'c1');
+    expect(burnt!.geometry).toBeInstanceOf(BoxGeometry);
+    // The look's colour; the kind's depth still applies to the look's primitive.
+    expect(colorOf(burnt!)).toBe('#000000');
+    expect((burnt!.geometry as BoxGeometry).parameters).toMatchObject({ width: 8, height: 8, depth: 4 });
+    s.sync(frame({ frame: 3, entities: [coin([])] }));
+    expect(meshesOf(s, 'c1')[0]!.geometry.type).toBe('CylinderGeometry');
+  });
 });
 
 describe('ThreeScene: camera', () => {

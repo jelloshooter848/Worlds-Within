@@ -36,7 +36,9 @@ camera.
   them at z = -(i + 1) * `camera3d.layerDepth` (background scenery; in 2D they draw after the
   tiles and still under the entities).
 - Entities: one root `Group` per entity id, made on first sight, updated each frame, removed when
-  the id is gone, rebuilt when its kind or box size changes. The root is the box's bottom centre
+  the id is gone, rebuilt when its kind, box size or tag look changes. The entry is
+  `resolveSkinKind(skin, entity)`: the kind's, with the first `byTag` look whose tag the entity
+  has laid over it (Engine 0.11, gap G30). The root is the box's bottom centre
   (`x + w/2`, `-(y + h)`) at z = `layer` * `camera3d.layerDepth`; its children are the skin's mesh
   parts. Facing left mirrors x (scale -1); a diagonal maps to its horizontal cardinal
   (`cardinalFacing`), so `up-left` and `down-left` mirror too (`facesLeft`) and the right-hand
@@ -144,7 +146,7 @@ layout's `fit`; its `renderer` draws nothing (scenes show frames through the pre
 (never import a kit or a game's skin). It covers tiles becoming instanced blocks, the map built
 only on a new id or version, map layers' depth, entities added, moved and removed by id, mesh
 parts placed from the box, layer to z, the facing mirror (left-hand diagonals too), squash about the bottom centre, rotate
-and alpha, the fallback box, the camera framing the same world box as `CameraFollower` (corners
+and alpha, the fallback box, a skin's tag look (built for the tag, rebuilt when the look changes), the camera framing the same world box as `CameraFollower` (corners
 projected to the picture's corners), hint framing, zoom, tilt and shake, lights, sounds once per
 event (by the event's `result` field, falling back to the bare type), the flash overlay, frozen frames and skin never changed, and repeatable builds.
 `renderer-info.test.ts` checks `isSoftwareRenderer` on software strings (SwiftShader, ANGLE on

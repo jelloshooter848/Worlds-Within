@@ -69,8 +69,16 @@
       "fallbackColor": "#f8d800"
     },
     "goal": { "frames": { "idle": "goal" }, "fallbackColor": "#00a800" },
-    "trigger": { "frames": { "idle": "door" }, "fallbackColor": "#883c00" },
-    "bump-block": { "frames": { "bump": "used" }, "fallbackColor": "#883c00" }
+    "trigger": {
+      "frames": { "idle": "switch" },
+      "fallbackColor": "#9878f8",
+      "byTag": [{ "tag": "look:door", "frames": { "idle": "door" }, "fallbackColor": "#883c00" }]
+    },
+    "bump-block": {
+      "frames": { "bump": "used" },
+      "fallbackColor": "#883c00",
+      "byTag": [{ "tag": "brick", "frames": { "bump": "brick" }, "fallbackColor": "#c84c0c" }]
+    }
   },
   "tiles": {
     ".": { "frame": "sky", "fallbackColor": "#5c94fc" },

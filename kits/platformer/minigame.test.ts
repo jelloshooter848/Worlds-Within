@@ -350,4 +350,31 @@ describe('level triggers', () => {
       ['triggers', 0, 'quit', 0],
     ]);
   });
+
+  it('takes an optional look id, and rejects one that is not a string (G13)', () => {
+    expect(codes({ triggers: [{ ...TRIGGER, look: 'door' }] })).toEqual([]);
+    const level = levelSchema.parse({
+      id: 'test',
+      profile: 'runner',
+      triggers: [{ ...TRIGGER, look: 'door' }],
+      map: MAP,
+    });
+    expect(level.triggers[0]!.look).toBe('door');
+    expect(
+      'look' in
+        levelSchema.parse({ id: 'test', profile: 'runner', triggers: [TRIGGER], map: MAP }).triggers[0]!,
+    ).toBe(false);
+    const bad = levelSchema.safeParse({
+      id: 'test',
+      profile: 'runner',
+      triggers: [{ ...TRIGGER, look: 3 }],
+      map: MAP,
+    });
+    expect(bad.success ? [] : bad.error.issues.map((i) => [i.path, i.code])).toEqual([
+      [['triggers', 0, 'look'], 'invalid_type'],
+    ]);
+    expect(codes({ triggers: [{ ...TRIGGER, look: 'Door!' }] }).map((c) => c.path)).toEqual([
+      ['triggers', 0, 'look'],
+    ]);
+  });
 });
