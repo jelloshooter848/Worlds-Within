@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 166.** (Last used: 165.)
+**Next unused number: 172.** (Last used: 171.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -620,3 +620,24 @@ entries: [{ level } | { mission }] }`), checked by `validate`; a platformer game
   (`engine/core`); the one adapter so far (the siege raid as a top-down room) lives in a repo test
   (`tests/kits/mission-adapter.test.ts`), and the first game adapter and live play of a mission
   come with the mini siege (0.11). OK?
+- **166.** Experience ticks a kit round records with `addExperience` stay in the world's hashed
+  state (one number on the commitment and the record), so a recorded count changes the hash after
+  the commit in that number only. Run files keep their `experienceTicks` out of the world (summed in
+  the result's `experience`), so their hashes match. Keep it, or move recorded experience out of
+  the hashed state?
+- **167.** A mission the world stepped past without settling is overdue: it can no longer be
+  played, delegated or quit (`mission_overdue`), and the next `settleMissions` or `commitMission`
+  commits it then, recorded at its own commit tick. Missions due together commit in commit tick,
+  then id order. OK?
+- **168.** A mission round that ends in quit resolves to the mission's `onQuit` as a quit (record
+  says `quit`), with no adapter and no `playable` check, even when `onQuit` is outside `playable`.
+  OK?
+- **169.** Two small `engine/sim` additions: `defineComponent({ omitWhenEmpty })` keeps unused time
+  state out of snapshots and saves, and `World.registered(c)`. The world-level `WorldTime` entity is
+  spawned on the first time write, so in worlds that use time every later spawn's id is one higher.
+  OK?
+- **170.** Frozen event members also stop hauling, gathering and constructing (their task waits);
+  building and training progress keep running. A unit targeting a frozen entity keeps the target
+  and holds its hit; units outside the event may still walk toward it. OK?
+- **171.** Run files have no `commit` action: commits always happen by themselves at the fixed
+  commit tick (`settleMissions` after every step), so a run never steps out of lockstep. OK?

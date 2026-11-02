@@ -349,8 +349,8 @@ ticks of each played mission are in `experience`.
 
 ### Done when
 
-Checked on 2026-11-02 at `928b1de` (the last 0.10 commit before this close-out): `pnpm lint &&
-pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (143 test files, 1553 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), and every one of the
+Checked again on 2026-11-02 at `8b1c8c6`, after the fixes below (first checked at `928b1de`): `pnpm lint &&
+pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (143 test files, 1560 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), and every one of the
 24 run files (9 sim fixtures, 7 of them the new mission runs; 1 demo, 6 lab, 4 stacking-test and
 4 skirmish runs) exits 0 with the same final hash on two runs in a row.
 
@@ -378,8 +378,9 @@ pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (143 test fil
   `tests/runs/run-files.test.ts` does the same for every run file in the repo; the close-out ran
   all 24 through `pnpm -s cli run` twice (final hashes: `raid-partial`, `fixed-cost-few` and
   `fixed-cost-many` `60557f2e9c5e2245`, `raid-failure` `c219347c68a05f79`,
-  `opportunity-closing` `c3fd8ebb6b3d1981`, `frozen-construction` `f501aa52a7049a04`,
-  `raid-delegated` `3a7ebb1aca21ada0`; every earlier run file kept its hash).
+  `opportunity-closing` `64b81a6c75dcf888`, `frozen-construction` `6fff6d27447601e1`,
+  `raid-delegated` `feef2c86380efd95`, the last three re-recorded by the delegation fix below;
+  every earlier run file kept its hash).
 - **Met: a mission's world-time cost is the same however many ticks are spent inside it.**
   `fixed-cost-few.run.json` (played at tick 5, 1 experience tick) and `fixed-cost-many.run.json`
   (played at tick 34, 100,000 experience ticks) commit at tick 35 and have the same hashes from
@@ -423,7 +424,24 @@ pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (143 test fil
   0.7 and 17 moved, not 21 and 16 (the 0.9 log above repeats the old numbers). The report now
   says 20 fixed in 0.7, 4 fixed in 0.10 (G16, G20, G37 and the rest of G2, which was already
   counted fixed in 0.7), and 14 still moved to 0.11, 0.14 and 0.15.
-- **Feedback numbering:** T1's decisions are 150-161; this close-out adds 162-165.
+- **Feedback numbering:** T1's decisions are 150-161; the close-out added 162-165 and the final
+  check 166-171.
+
+### Fixes after the first close-out
+
+A review after the first close-out (`9513ce6`) found three problems, each fixed with tests:
+
+- **Delegation drew from `world.rng`** (`499d3f5`): the draw happened at the delegation tick, so
+  the hashes depended on when a run delegated, against decision 2. It now comes from
+  `Rng.derived(world.seed, "mission:<id>")`, the same at any tick or on a timeout, and moves no
+  other randomness. Decisions 2 and 5 and item 154 were reworded; the golden hashes of
+  `frozen-construction`, `opportunity-closing` and `raid-delegated` were re-recorded.
+- **Commit order and overdue missions** (`ccded36`): `settleMissions` commits every due mission in
+  commit tick, then id order, and `commitMission` goes through it, so a live commit and a
+  tick-by-tick run give the same hashes. A mission stepped past unsettled is no longer stuck as
+  `mission_overdue`; it cannot be resolved any more and commits on the next settle (item 167).
+- **A quit round counted as played** (`8b1c8c6`): `playMissionRound` now takes a round that ends
+  in quit straight to `onQuit` and the record says `quit` (item 168).
 
 ### Outstanding issues
 
@@ -435,7 +453,9 @@ pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (143 test fil
   the commit (and skipped there).
 - **Flashback missions** are deferred until after Engine 1.0 (item 156).
 - **Campaign missions are not played in order** until 0.13.
-- Open owner decisions: items 150-165 in `FEEDBACK-LOG.md`.
+- **Recorded experience ticks are in the hashed state** (item 166): a kit round that records its
+  ticks with `addExperience` changes the hash after the commit in that one number.
+- Open owner decisions: items 150-171 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.9
 
