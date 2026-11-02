@@ -23,6 +23,19 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
   directional light; `onSound(id)` once per event; flash and tint as a full-screen overlay. The HUD
   and particles are not drawn in 0.6 (known gaps).
+- `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
+  `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing })`
+  implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
+  `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
+  `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour `background`, buffer at
+  the picture size); `resize(size)`; `rendererInfo()`; `dispose()`.
+- `webglRendererInfo`, `isSoftwareRenderer`, `GlInfoSource`, `WebglRendererInfo`
+  (`renderer-info.ts`, pure): the unmasked vendor and renderer through `WEBGL_debug_renderer_info`
+  (else `VENDOR` / `RENDERER`), and whether a renderer string is a software rasteriser
+  (SwiftShader, llvmpipe, softpipe, "Software", Microsoft Basic Render).
+- `fitCanvas`, `applyCanvasBox`, `canvasToScreen`, `CanvasBox` (`fit.ts`): letterbox the WebGL
+  canvas with the `fitGame` maths the Canvas2D `Viewport` uses (CSS only; the buffer stays the
+  picture size), and map client points back to game px.
 - `primitiveGeometry`, `GeometryCache`, `PartSize` (`geometry.ts`): the Three geometry of each skin
   primitive (`box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`), low-poly.
 
@@ -34,6 +47,10 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
 
 ## How to test
 
-`pnpm test` runs `scene.test.ts` in Node with inline fixture frames and an inline `three` skin; it
-reads the built scene graph and projects points through the camera. WebGL drawing needs a browser
-and is checked by the presenter and screenshot tasks.
+`pnpm test` runs in Node: `scene.test.ts` (inline fixture frames and an inline `three` skin; it
+reads the built scene graph and projects points through the camera), `renderer-info.test.ts`
+(software and hardware renderer strings, a fake WebGL context with and without the debug
+extension) and `fit.test.ts` (`fitCanvas` against `fitGame`). `ThreePresenter` and
+`applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
+Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
+browser is installed.

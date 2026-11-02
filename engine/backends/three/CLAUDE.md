@@ -3,8 +3,16 @@
 The 3D backend (Engine 0.6, "Basic 3D backend"): shows any presentation frame
 (`@engine/core/present`) as a 2.5D Three.js scene through a `three` skin, side-on with
 perspective, in the style of New Super Mario Bros. It reads the same snapshot as the Canvas2D
-backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`) and the primitive
-geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`, `GeometryCache`).
+backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), the WebGL
+`ThreePresenter` (`presenter.ts`), the renderer check (`renderer-info.ts`), the canvas fit helper
+(`fit.ts`) and the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
+`GeometryCache`).
+
+Node vs browser: `scene.ts`, `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
+in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebGLRenderer`) and
+`applyCanvasBox` (it sets CSS) are browser only: Node has no WebGL, so they only typecheck in
+`pnpm test` and are exercised in Playwright Chromium (the 3D play page and
+`pnpm cli screenshot --backend three`, Engine 0.6 T6/T7), which skip where no browser is installed.
 
 ## ThreeScene
 
@@ -53,6 +61,40 @@ It never changes the frame or the skin (tested with frozen ones) and knows no ga
 `Math.random`, `Date.now` or `performance.now` in this folder's code (a test checks); Three's own
 object UUIDs use randomness internally, which is fine: they never reach a state or a hash.
 
+## ThreePresenter (browser only)
+
+`new ThreePresenter(canvas, skin, opts?)` implements the core `Presenter`: `present(frame)` syncs
+its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `WebGLRenderer` on
+`canvas` (an `HTMLCanvasElement` or `OffscreenCanvas`); `resize(size)` changes the picture size.
+Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
+`onSound?(id)`, `background?` (`#000`), `clamp?` (true), `reduceFlashing?`; they are passed on to
+the scene. So a paused frame draws the same every time on one machine, the renderer is fixed:
+`antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
+pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background`. The drawing buffer
+is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
+reads the context's renderer (below); `dispose()` frees the scene and the renderer.
+
+## Renderer check (`renderer-info.ts`, pure)
+
+`webglRendererInfo(gl)` returns `{ vendor, renderer, unmasked }`: the `UNMASKED_VENDOR_WEBGL` /
+`UNMASKED_RENDERER_WEBGL` strings through the `WEBGL_debug_renderer_info` extension, else (no
+extension, or it gives nothing) the core `VENDOR` / `RENDERER`. It reads `gl` through
+`GlInfoSource` (`getParameter`, `getExtension`) and imports nothing from `three`.
+`isSoftwareRenderer(name)` is true when the string names SwiftShader, llvmpipe, softpipe,
+"Software" (a whole word) or Microsoft Basic Render, also inside an ANGLE string. Screenshots use
+it to fail clearly on a silent fall-back to software rendering. Playwright's bundled Chromium in a
+container without a GPU reports `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device ...), SwiftShader
+driver)`, which is software.
+
+## Fitting the canvas (`fit.ts`)
+
+`fitCanvas(size, cssW, cssH, dpr?, integerScale?, fit?)` letterboxes the picture with the same
+`fitGame` maths (`@engine/core/gfx/screen`) the Canvas2D `Viewport` uses and gives a `CanvasBox`
+in CSS px (`scale` is device px per game px, as `Viewport.scale`). `applyCanvasBox(canvas, box)`
+places the canvas absolutely in its (positioned) container with `image-rendering: pixelated`;
+`canvasToScreen(box, rect, clientX, clientY, dpr?)` maps a client point to game px, as
+`Viewport.toScreen`. The WebGL buffer never changes with the window; only CSS scales it.
+
 ### Known gaps (Engine 0.6)
 
 - HUD: `skin.hud` and `frame.status` are not drawn in 3D.
@@ -76,5 +118,9 @@ only on a new id or version, map layers' depth, entities added, moved and remove
 parts placed from the box, layer to z, the facing mirror, squash about the bottom centre, rotate
 and alpha, the fallback box, the camera framing the same world box as `CameraFollower` (corners
 projected to the picture's corners), hint framing, zoom, tilt and shake, lights, sounds once per
-event, the flash overlay, frozen frames and skin never changed, and repeatable builds. WebGL
-drawing is not tested here (it needs a browser).
+event, the flash overlay, frozen frames and skin never changed, and repeatable builds.
+`renderer-info.test.ts` checks `isSoftwareRenderer` on software strings (SwiftShader, ANGLE on
+SwiftShader, llvmpipe, softpipe, Microsoft Basic Render) and typical hardware ones (ANGLE on
+NVIDIA, AMD, Intel and Apple, Mesa, Adreno), and `webglRendererInfo` with a fake context with and
+without the debug extension. `fit.test.ts` checks `fitCanvas` against `fitGame` and
+`canvasToScreen`. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
