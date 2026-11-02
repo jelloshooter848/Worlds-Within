@@ -2,9 +2,10 @@
 
 The engine's core: the fixed-step loop (`loop.ts`), scenes (`scene.ts`), input (`input/`), chiptune
 audio and MML (`audio/`), save and settings (`save/`), the seeded RNG (`rng.ts`), maths (`math/`),
-asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.ts`) and graphics
+asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.ts`), graphics
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
-(`gfx/`).
+(`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
+[content/CLAUDE.md](content/CLAUDE.md)).
 
 `gfx/renderer.ts` is the presentation contract: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`. Backends implement it; core
@@ -23,10 +24,10 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
-and scripted input, the renderer contract, palette, animation, screen and sprite sheet data, and
-`audio/mml.ts`). ESLint enforces the rule on those files; `tests/architecture/purity.test.ts`
-follows every run-time import (not `import type`) from kits and the sim into core and fails if a
-file it reaches is not on the list. When a kit or the sim starts importing another core file, make
+and scripted input, the renderer contract, palette, animation, screen and sprite sheet data,
+`audio/mml.ts`, the song and sprite schemas and `content/**`). ESLint enforces the rule on those
+files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
+kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, the
 browser input sources, `save/`, `assets/` and the backends.
 

@@ -23,6 +23,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable
   runs) and the browser sources (keyboard, gamepad, touch).
 - `audio/`: `mml.ts` (MML compiler), `sequencer.ts`, `apu.ts`, `audio-manager.ts`.
+- `audio/song-schema.ts`, `gfx/sprite-schema.ts`: the song, sound-effect and sprite file schemas.
+- `content/`: reading and checking content files; see [engine/core/content](engine-core-content.md).
 - `save/`, `assets/`, `a11y/`, `math/`, `platform.ts`.
 
 ## Imports allowed

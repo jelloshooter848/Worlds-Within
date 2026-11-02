@@ -11,6 +11,7 @@
 ## Modules
 
 - [engine/core](docs/modules/engine-core.md): loop, scenes, input, audio and MML, save, seeded RNG, maths and the renderer contract
+- [engine/core/content](docs/modules/engine-core-content.md): content files read and checked with Zod schemas: text grids, song and sprite schemas, errors naming the file and field
 - [engine/backends/canvas2d](docs/modules/engine-backends-canvas2d.md): the browser 2D backend and viewport
 - [engine/backends/null](docs/modules/engine-backends-null.md): the headless backend that draws nothing
 - [engine/sim](docs/modules/engine-sim.md): the headless, deterministic world simulation (placeholder until Engine 0.8)

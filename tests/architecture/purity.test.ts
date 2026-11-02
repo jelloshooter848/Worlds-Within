@@ -124,6 +124,25 @@ describe('purity rule: the pure-core list', () => {
     expect(missing).toEqual([]);
   });
 
+  it('covers every core file the pure core itself reaches at run time', () => {
+    const pureCore = sourceFiles('engine/core').filter((f) => isPure(f) && !TEST.test(f));
+    // The content core and the schemas next to the MML compiler and pixel art are pure (Engine 0.3).
+    expect(pureCore).toEqual(
+      expect.arrayContaining([
+        'engine/core/content/validate.ts',
+        'engine/core/content/text-grid.ts',
+        'engine/core/content/kinds.ts',
+        'engine/core/content/engine-kinds.ts',
+        'engine/core/audio/song-schema.ts',
+        'engine/core/gfx/sprite-schema.ts',
+      ]),
+    );
+    const missing = [...coreClosure(pureCore)]
+      .filter(([file]) => !isPure(file))
+      .map(([file, by]) => `${file} (imported by ${by})`);
+    expect(missing).toEqual([]);
+  });
+
   it('names only files and folders that exist', () => {
     for (const entry of PURE_CORE) {
       const path = entry.endsWith('/**') ? entry.slice(0, -3) : entry;
