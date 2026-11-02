@@ -235,6 +235,16 @@ What the numbers say:
   0.5). `kits/rts` (T10) will draw a few more things (buildings, the selection box, a HUD); if the
   sample's own numbers come close to the budget, culling (above) comes before a new backend.
 
+### T4: the PixiJS backend, not needed
+
+**Not built in 0.9.** T3's decision (item 133, numbers in "T3: the rendering benchmark" above):
+Canvas2D holds 60 fps at the 500-unit target in every case (worst p95 14.3 ms against the 16.7 ms
+budget), so there is no `engine/backends/pixi`, no `pixi.js` dependency (`package.json`,
+`pnpm-lock.yaml` and `PACKAGES` in `config/layers.js` are unchanged) and no `?backend=pixi` choice in
+the shell. The roadmap's "Later" bullet (more backends: PixiJS, not adopted at 0.9) stands. If the
+RTS sample later comes close to the budget, culling off-screen entities in the Canvas2D presenter
+is tried before a new backend (see T3).
+
 ## Engine 0.8
 
 The world simulation. Built on branch `engine/build-0.15`; not tagged (no tags during the build,
