@@ -40,6 +40,11 @@ LLM tooling. Built on branch `engine/build-0.15`; not tagged (tagging is the own
 - **Editing verbs.** `get`, `set`, `add` and `remove` on game manifests, content files, text-grid
   parts and run files, by dotted path or JSON pointer. Every write is schema-checked (refused with
   exit 3, file untouched), written Prettier-clean, read back and reported as `verified`.
+- **Checks across files.** A content kind can have a `checkAll` hook that runs over all its files.
+  The top-down room kind uses it (`checkDungeon`), so `validate`, `run` and `screenshot` report two
+  player starts or a door that leads nowhere as `invalid_dungeon` errors at the room file and map
+  line, instead of crashing. The editing verbs do not refuse a write for such errors (joining two
+  rooms takes one edit per room); they list them in `crossErrors`.
 - **Mutant checks.** `engine/core/rules.ts` names rules; the top-down kit names four
   (`walls-block-movement`, `doors-change-room`, `damage-reduces-hp`, `keys-open-locked-doors`).
   `mutants` plays a run once per rule switched off and lists the rules the run does not guard.
@@ -117,6 +122,10 @@ Each item was checked by running the commands on 2026-11-02 at the commit that c
   scaffold skill made a one-room game in `games/` that passed `validate` and `run`.
 - The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (55 test files,
   595 tests).
+- **Re-checked** after the last two 0.3 commits (checks across files): the four checks pass (55 test
+  files, 601 tests), `pnpm docs:check` passes, the demo run file passes with the same hashes as its
+  golden file, and the validate, wrong-assertion and replay, screenshot (same sha256 `303b20d7...`),
+  set/get and output-cap checks above gave the same results.
 
 ### Hand check (scaffold skill)
 
@@ -171,6 +180,11 @@ Each item was checked by running the commands on 2026-11-02 at the commit that c
 - The screenshot test needs Chromium. Locally, a machine without one skips it with a message (CI
   sets `CI` and so requires it), so such a machine does not check screenshot determinism.
 - The hand check was run once, by one agent, as the roadmap asks; it is not automated.
+- Kit content kinds and rule lists come from a small table in `engine/tools/kits.ts` that only knows
+  the top-down kit's default room legend. A game with its own legend will need a kit-level hook.
+- Screenshot PNGs are byte-stable on one machine but may differ between machines (the demo's debug
+  text uses a system font), so no golden PNG hash is committed.
+- MML songs and sfx are JSON only; there is no `.txt` form for them yet.
 
 ## Engine 0.2
 
