@@ -6,7 +6,9 @@
     "room": ["content/rooms/*.json"],
     "song": ["content/songs/*.json"],
     "palette": ["content/palettes/*.json"],
-    "sprite": ["content/sprites/*.txt"]
+    "sprite": ["content/sprites/*.txt"],
+    "sfx": ["content/sfx/*.json"],
+    "skin": ["content/skins/*.json"]
   },
   "start": { "seed": 1 },
   "screen": { "width": 256, "height": 240 },

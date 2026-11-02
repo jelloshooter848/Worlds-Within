@@ -30,9 +30,6 @@ export interface TdView {
 
 const EMPTY_FONT: SpriteSheet = { id: 'missing-font', image: null, frames: new Map() };
 
-/** Moved to the engine (0.4-4); this re-export goes when the kit stops drawing (0.4-7). */
-export { sheetLookup } from '@engine/core/assets/sheet-lookup';
-
 /** The bitmap font, or an empty stand-in so text calls still happen (and tests can read them). */
 export function fontOf(view: TdView): SpriteSheet {
   return view.sheet('font') ?? EMPTY_FONT;

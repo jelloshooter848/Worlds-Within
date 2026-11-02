@@ -1,0 +1,102 @@
+{
+  "backend": "canvas2d",
+  "sheets": { "sheet": "demo-placeholders", "fallbackColor": "#fcfcfc" },
+  "kinds": {
+    "hero": {
+      "sheet": "demo-hero",
+      "frames": {
+        "walk": {
+          "down": { "frames": ["down-0", "down-1"], "ticks": 8 },
+          "up": { "frames": ["up-0", "up-1"], "ticks": 8 },
+          "right": { "frames": ["side-0", "side-1"], "ticks": 8 }
+        },
+        "attack": { "down": "attack-down", "up": "attack-up", "right": "attack-side" },
+        "throw": { "down": "throw-down", "up": "throw-up", "right": "throw-side" },
+        "hold": "down-0",
+        "hurt": { "down": "down-0", "up": "up-0", "right": "side-0" },
+        "dying": { "down": "down-0", "up": "up-0", "right": "side-0" },
+        "poof": "poof"
+      },
+      "flipFacing": true,
+      "fallbackColor": "#00a800"
+    },
+    "held": { "frames": { "idle": "held" }, "fallbackColor": "#fcfcfc" },
+    "sword": {
+      "frames": { "stab": { "down": "sword-v", "up": "sword-v", "right": "sword-h", "left": "sword-h" } }
+    },
+    "poof": { "frames": { "poof": "poof" } },
+    "pickup:heart": { "frames": { "idle": "heart-pickup" }, "fallbackColor": "#f83800" },
+    "pickup:key": { "frames": { "idle": "key" }, "fallbackColor": "#f8b800" },
+    "pickup:bombs": { "frames": { "idle": "bomb-pickup" } },
+    "pickup:map": { "frames": { "idle": "map" } },
+    "pickup:compass": { "frames": { "idle": "compass" } },
+    "pickup:triforce": { "frames": { "idle": "triforce" } },
+    "pickup:heart-container": { "frames": { "idle": "heart-container" } },
+    "pickup:refill": { "frames": { "idle": "refill" }, "fallbackColor": "#f83800" },
+    "pickup:bomb": { "frames": { "idle": "item-icon" } },
+    "pickup:boomerang": { "frames": { "idle": "item-icon" } },
+    "pickup:white-sword": { "frames": { "idle": "item-icon" } },
+    "chest": { "frames": { "closed": "chest", "open": "chest-open" }, "fallbackColor": "#ac7c00" },
+    "push-block": { "frames": { "idle": "push-block" }, "fallbackColor": "#503000" },
+    "switch": { "frames": { "up": "switch-up", "down": "switch-down" }, "fallbackColor": "#bcbcbc" },
+    "torch": { "frames": { "off": "torch-off", "lit": "torch-lit" }, "fallbackColor": "#7c7c7c" },
+    "bat": { "frames": { "rest": "bat", "fly": "bat" }, "fallbackColor": "#9878f8" },
+    "knight": { "frames": { "walk": "knight" }, "fallbackColor": "#bcbcbc" },
+    "spitter": {
+      "frames": {
+        "walk": {
+          "down": "spitter-down",
+          "up": "spitter-up",
+          "left": "spitter-left",
+          "right": "spitter-right"
+        },
+        "spit": {
+          "down": "spitter-down",
+          "up": "spitter-up",
+          "left": "spitter-left",
+          "right": "spitter-right"
+        }
+      },
+      "fallbackColor": "#e45c10"
+    },
+    "rock": { "frames": { "fly": "rock" }, "fallbackColor": "#bcbcbc" },
+    "stun": { "frames": { "spin": "stun" }, "fallbackColor": "#f8d878" },
+    "boomerang": { "frames": { "spin": "boomerang" }, "fallbackColor": "#ac7c00" },
+    "bomb": { "frames": { "fuse": "bomb", "fuse-short": "bomb" }, "fallbackColor": "#2038ec" },
+    "explosion": { "frames": { "blast": "blast" }, "fallbackColor": "#fca044" },
+    "sword-beam": {
+      "frames": { "fly": { "down": "beam-v", "up": "beam-v", "right": "beam-h", "left": "beam-h" } }
+    },
+    "beam-shard": { "frames": { "fly": "beam-shard" } }
+  },
+  "tiles": {
+    "#": { "frame": "wall", "fallbackColor": "#0c2440" },
+    ".": { "frame": "floor", "fallbackColor": "#183c5c" },
+    ":": { "frame": "floor-alt", "fallbackColor": "#1c4870" },
+    "B": { "frame": "block", "fallbackColor": "#4878a8" },
+    "S": { "frame": "statue", "fallbackColor": "#7c7c7c" },
+    "~": { "frame": "water", "fallbackColor": "#0058f8" },
+    "=": { "frame": "stairs", "fallbackColor": "#404040" },
+    "E": { "frame": "exit", "fallbackColor": "#f8d878" },
+    "O": { "frame": "door-open", "fallbackColor": "#000000" },
+    "L": { "frame": "door-locked", "fallbackColor": "#ac7c00" },
+    "X": { "frame": "door-shut", "fallbackColor": "#5c5c5c" },
+    "C": { "frame": "wall-cracked", "fallbackColor": "#24405c" },
+    "H": { "frame": "wall-hole", "fallbackColor": "#000000" },
+    "D": { "frame": "door-boarded", "fallbackColor": "#7c4c18" },
+    "d": { "frame": "door-closed", "fallbackColor": "#7c4c18" }
+  },
+  "events": {
+    "room": { "sound": "door" },
+    "unlock": { "sound": "door" },
+    "spit": { "sound": "spit" },
+    "hurt": { "sound": "hurt" },
+    "kill": { "effect": { "kind": "particles", "color": "#fcfcfc", "count": 6, "size": 2, "ticks": 12 } },
+    "blast": { "effect": { "kind": "shake", "size": 2, "ticks": 8 } }
+  },
+  "hud": [
+    { "status": "hp", "as": "hearts", "x": 8, "y": 52, "frame": "hud-half-heart" },
+    { "status": "keys", "as": "hearts", "x": 48, "y": 52, "frame": "hud-key" },
+    { "status": "item", "as": "icon", "x": 88, "y": 52, "frame": "hud-item" }
+  ]
+}

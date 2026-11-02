@@ -1,11 +1,19 @@
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { engineContentKinds, PALETTE_KIND, SONG_KIND, SPRITE_KIND } from '@engine/core/content/engine-kinds';
+import {
+  engineContentKinds,
+  PALETTE_KIND,
+  SFX_KIND,
+  SKIN_KIND,
+  SONG_KIND,
+  SPRITE_KIND,
+} from '@engine/core/content/engine-kinds';
 import type { ContentKinds } from '@engine/core/content/kinds';
 import { formatErrors, type ContentResult } from '@engine/core/content/validate';
-import type { Song } from '@engine/core/audio/mml';
+import type { Sfx, Song } from '@engine/core/audio/mml';
 import type { PaletteTable } from '@engine/core/gfx/palette';
 import type { SpriteDef } from '@engine/core/gfx/pixelart';
-import { buildDungeon, DEFAULT_SHEETS, roomKind, type Dungeon, type TdSheets } from '@kits/topdown';
+import type { SkinFile } from '@engine/core/present';
+import { buildDungeon, roomKind, type Dungeon } from '@kits/topdown';
 
 /**
  * Glue between the demo's data files (`game.json` and `content/`) and the engine: the content
@@ -34,6 +42,21 @@ export function demoSongs(content: ContentBundle): Song[] {
   return contentOf(content, SONG_KIND).map((e) => e.value);
 }
 
+/** Every sound effect, for the audio manager (the skin's event sounds). */
+export function demoSfx(content: ContentBundle): Sfx[] {
+  return contentOf(content, SFX_KIND).map((e) => e.value);
+}
+
+/**
+ * The skin the Canvas2D backend draws the demo with (`content/skins/canvas2d.json`): every kind,
+ * tile, event and HUD value the top-down kit presents, mapped to the demo's sheets and sounds.
+ */
+export function demoSkin(content: ContentBundle): SkinFile {
+  const skin = contentOf(content, SKIN_KIND).find((e) => e.value.backend === 'canvas2d');
+  if (!skin) throw new Error('the demo has no canvas2d skin (content/skins/canvas2d.json)');
+  return skin.value;
+}
+
 /** Sprite sheets by id (the file name) and palettes by id, for the asset registry. */
 export function demoArt(content: ContentBundle): {
   sprites: Record<string, SpriteDef>;
@@ -45,9 +68,6 @@ export function demoArt(content: ContentBundle): {
   for (const e of contentOf(content, PALETTE_KIND)) palettes[e.value.id] = e.value.colors;
   return { sprites, palettes };
 }
-
-/** The sheets the demo draws with: the kit's names, with the hero from `content/sprites/demo-hero.txt`. */
-export const DEMO_SHEETS: TdSheets = { ...DEFAULT_SHEETS, hero: 'demo-hero' };
 
 /** Throws with every error, one per line: for entry points, where bad content is a build mistake. */
 export function mustLoad(result: ContentResult<ContentBundle>): ContentBundle {

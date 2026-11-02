@@ -106,7 +106,7 @@ describe('validate', () => {
     const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
     manifest.content['skin'] = ['content/skins/*.json'];
     writeFileSync(game, JSON.stringify(manifest));
-    mkdirSync(join(root, 'games/demo/content/skins'));
+    mkdirSync(join(root, 'games/demo/content/skins'), { recursive: true });
     const skinFile = join(root, 'games/demo/content/skins/canvas2d.json');
     const skin = {
       backend: 'canvas2d',
