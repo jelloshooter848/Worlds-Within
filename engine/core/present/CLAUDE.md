@@ -8,8 +8,8 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
   - `PresentEntity` `{ id, kind, x, y, w, h, facing, anim: { state, t }, tags, layer?, fx? }`:
     `id` is stable across frames; `x`/`y`/`w`/`h` are the box in world pixels (top-left); `facing`
     is `up | down | left | right`; `anim.t` is ticks since the state began.
-  - `map` is either the full `PresentMap` `{ id, version, tileSize, cols, rows, tiles, layers? }`
-    (`tiles` as text rows or a grid of tile ids) or only a `PresentMapRef` `{ id, version }`.
+  - `map` is either the full `PresentMap` `{ id, version, tileSize, cols, rows, tiles, layers?, tags? }`
+    (`tiles` as text rows or a grid of tile ids; `tags?` free labels such as `dark`) or only a `PresentMapRef` `{ id, version }`.
     `isFullMap(map)` tells them apart. Bump `version` whenever any tile changes.
   - `PresentEvent` `{ type, x?, y?, entity?, ...any JSON-safe fields }`: this frame's events, for
     a skin's sounds and effects.

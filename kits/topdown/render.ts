@@ -4,6 +4,7 @@ import { isBorder, sideOf, tileAt, wallDepth, type Room, type TileKind } from '.
 import type { TdView } from './view';
 import type { TdEnemy, TdEntity } from './entity';
 import type { TopDownWorld } from './world';
+import { liveDoorLook, pastDoorLook, type DoorLook } from './present';
 
 /** Flat colours used when the tile art is missing. */
 const PLACEHOLDER: Record<
@@ -26,8 +27,6 @@ const PLACEHOLDER: Record<
   'door-locked': '#ac7c00',
   'door-shut': '#5c5c5c',
 };
-
-type DoorLook = 'open' | 'locked' | 'shut' | 'cracked' | 'hole';
 
 /** The frame of a doorway as it looks now (a cracked one is a wall frame, not a door). */
 const DOOR_FRAME: Record<DoorLook, keyof typeof PLACEHOLDER> = {
@@ -187,26 +186,6 @@ function drawShutEntrances(r: Renderer, view: TdView, world: TopDownWorld, ox: n
   }
 }
 
-/** How a doorway of the room on screen looks right now. */
-function liveDoor(world: TopDownWorld, side: Side): DoorLook {
-  const kind = world.room.doors[side];
-  if (kind === 'cracked') return world.doorOpen(side) ? 'hole' : 'cracked';
-  if (kind === 'locked' && !world.doorOpen(side)) return 'locked';
-  if (kind === 'shutter' && !world.doorOpen(side)) return 'shut';
-  return 'open';
-}
-
-/** How a doorway of a room being slid away from looks (its memory; shutters as last seen). */
-function pastDoor(world: TopDownWorld, room: Room, side: Side, left: Side): DoorLook {
-  const kind = room.doors[side];
-  const st = world.state(room.id);
-  if (kind === 'cracked') return st.blasted.has(side) ? 'hole' : 'cracked';
-  if (kind === 'locked' && !st.unlocked.has(side)) return 'locked';
-  if (kind === 'shutter' && side !== left && room.def.shutters && !st.met.has(room.def.shutters))
-    return 'shut';
-  return 'open';
-}
-
 /**
  * Draws the play area (y from `top` down: HUD_H under the kit's HUD band; Kakariko Village's room
  * sits lower, its HUD drawn over the screen): the room, its entities and the hero; during a slide,
@@ -232,7 +211,7 @@ export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld, top 
       r,
       view,
       tr.from,
-      (s) => pastDoor(world, tr.from, s, tr.side),
+      (s) => pastDoorLook(world, tr.from, s, tr.side),
       -v.dx * shift,
       top - v.dy * shift,
       (c) => world.state(tr.from.id).blasted.has(c),
@@ -244,7 +223,7 @@ export function renderWorld(r: Renderer, base: TdView, world: TopDownWorld, top 
     r,
     view,
     world.room,
-    (s) => liveDoor(world, s),
+    (s) => liveDoorLook(world, s),
     ox,
     oy,
     (c) => world.state().blasted.has(c),

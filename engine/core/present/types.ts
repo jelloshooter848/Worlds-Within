@@ -85,6 +85,8 @@ export interface PresentMap extends PresentMapRef {
   tiles: PresentTilesText | PresentTilesGrid;
   /** Extension point: extra layers, drawn in order after `tiles`. */
   layers?: PresentMapLayer[];
+  /** Free labels a skin may match on (`dark`); part of the map, so a change bumps `version`. */
+  tags?: string[];
 }
 
 /**

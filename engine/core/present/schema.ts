@@ -75,6 +75,7 @@ const fullMap = z
     rows: z.number().int().min(1),
     tiles,
     layers: z.array(z.strictObject({ name: z.string().min(1), tiles })).exactOptional(),
+    tags: z.array(z.string()).exactOptional(),
   })
   .superRefine((m, ctx) => {
     checkGrid(m.tiles, m.cols, m.rows, ['tiles'], ctx);

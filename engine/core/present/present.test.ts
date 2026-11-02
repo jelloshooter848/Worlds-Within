@@ -28,6 +28,7 @@ const MAP: PresentMap = {
       ],
     },
   ],
+  tags: ['dark'],
 };
 
 /** A fixture frame using every field, extension points included. */
