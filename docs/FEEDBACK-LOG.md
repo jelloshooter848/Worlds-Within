@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 65.** (Last used: 64.)
+**Next unused number: 72.** (Last used: 71.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -162,3 +162,30 @@ Choices the autonomous build made that the owner should check. Answer by number.
 - **64.** To match SMBC's traces the kit was changed, not the profile numbers: the player starts
   in the air (tick 0 is an air tick, the first jump is possible on tick 2), and the profile gained
   an optional `jumpBuffer` (4 ticks, as SMBC remembers a jump press). OK?
+
+**Engine 0.6**
+
+- **65.** Software GL policy: `pnpm cli screenshot --backend three` refuses a software WebGL
+  renderer (SwiftShader, llvmpipe and the like) with exit 4, and `--allow-software-gl` is an
+  explicit opt-in that forces SwiftShader so the PNG is repeatable on one machine. The build
+  container has no GPU, so every 3D screenshot so far was taken with the flag, and the browser
+  smoke test accepts SwiftShader. OK, or should CI also take 3D screenshots (with the flag), or
+  should the flag go?
+- **66.** In 3D the HUD (`skin.hud`, `frame.status`) and `particles` effects are not drawn;
+  `flash`, `tint` and `shake` are, with one ambient and one directional light and no shadows.
+  Leave them out until a game needs them (0.7 is the first game shown in 3D), or add a HUD
+  overlay now?
+- **67.** The 3D path reads a game through an optional `frame()` hook on the view (beside
+  `render(r)`, with an optional `background` colour), so the 2D path and the demo did not change.
+  Should every view give `frame()` (and `render` become a helper over it), or keep it optional?
+- **68.** The 3D mesh format: primitives (`box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`)
+  and named compound meshes of parts, in world px with `depth` and `z`, inside the skin JSON, with
+  no external model format (glTF, OBJ). OK?
+- **69.** In the browser, 3D is picked with `?backend=three` (Canvas2D stays the default), the page
+  has a 2D/3D toggle, and the root launcher lists a 3D link per game that has one. OK, or should a
+  game choose its default backend in `game.json`?
+- **70.** The dependency table gained `PACKAGES`: npm packages only some units may import (today
+  `three`, only from `engine/backends/three`), enforced by ESLint and the dependency-rule test.
+  OK? Should other packages (Zod, Playwright) be listed too?
+- **71.** The 3D camera honours `zoom` (by distance), while the Canvas2D presenter still ignores it
+  (item 51). Make 2D honour `zoom` as well, or leave it?

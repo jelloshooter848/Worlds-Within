@@ -12,7 +12,7 @@
 
 - [engine/core](docs/modules/engine-core.md): loop, scenes, input, audio and MML, save, seeded RNG, maths, the renderer contract, the kit hook (`KitDef`) and the mini game hook (`MiniGameDef`, `miniGameScene`)
 - [engine/core/content](docs/modules/engine-core-content.md): content files read and checked with Zod schemas: text grids, song, sfx, sprite and palette schemas, game manifests (with the picture size, `screen`) and the content loader, errors naming the file and field
-- [engine/core/present](docs/modules/engine-core-present.md): the presentation contract: the read-only per-frame snapshot (`PresentFrame`: entities, map, events, HUD status, camera and other extension points) a kit hands a backend, the `Presenter` interface, `freezeFrame`, `MapTracker`, the `presentFrameSchema` Zod schema, and skin files (the `skin` content kind and `resolveSkinFrame`)
+- [engine/core/present](docs/modules/engine-core-present.md): the presentation contract: the read-only per-frame snapshot (`PresentFrame`: entities, map, events, HUD status, camera and other extension points) a kit hands a backend, the `Presenter` interface, `freezeFrame`, `MapTracker`, the `presentFrameSchema` Zod schema, skin files (the `skin` content kind and `resolveSkinFrame`; `three` skins with text-defined low-poly meshes and `camera3d`), and `CameraFollower`, the camera framing maths both backends share
 - [engine/backends/canvas2d](docs/modules/engine-backends-canvas2d.md): the browser 2D backend, viewport and `SkinnedCanvasPresenter` (draws presentation frames through a skin)
 - [engine/backends/three](docs/modules/engine-backends-three.md): the 3D backend: `ThreeScene` builds a side-on 2.5D Three.js scene (instanced tile blocks, entity meshes by id, a perspective camera framed like the 2D one) from presentation frames and a `three` skin, testable in Node
 - [engine/backends/null](docs/modules/engine-backends-null.md): the headless backend that draws nothing (`NullRenderer`, `NullPresenter`)
@@ -21,7 +21,7 @@
 - [kits/topdown](docs/modules/kits-topdown.md): gameplay rules for a room-based top-down action game, with named rules a run can switch off; `presentWorld` describes each frame (map, entities, HUD status, events, camera hint) and the kit never draws
 - [kits/platformer](docs/modules/kits-platformer.md): gameplay rules for a side-scrolling platformer: `level` files (a JSON header plus a `.map.txt` text grid) and physics `profile` files in whole sub-pixel units with data-set actor types; integer physics and level objects as named rules (strict mutant checks), golden traces against SMBC, mini-game triggers; presentation frames (`presentWorld`); the kit never draws
 - [games/demo](docs/modules/games-demo.md): the proof-of-life demo game built on the top-down kit, drawn by the Canvas2D backend through its skin (`content/skins/canvas2d.json`)
-- [games/platformer-lab](docs/modules/games-platformer-lab.md): the platformer kit's test lab: the kit's fixture level and five rule levels played in turn, run files that guard every kit rule, a placeholder Canvas2D skin and a tiny test mini game
+- [games/platformer-lab](docs/modules/games-platformer-lab.md): the platformer kit's test lab: the kit's fixture level and five rule levels played in turn, run files that guard every kit rule, a placeholder Canvas2D skin and a low-poly 3D skin (`?backend=three` plays it through the Three.js backend), and a tiny test mini game
 
 ## Reference
 

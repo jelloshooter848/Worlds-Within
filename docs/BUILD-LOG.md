@@ -7,6 +7,173 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.6
+
+Basic 3D backend. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
+answer 24).
+
+### What was built
+
+- **3D skin format.** A skin for the `three` backend describes every kind and every tile type as a
+  primitive (`box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named compound mesh of
+  parts, in world px with `depth` and `z`, plus `camera3d` defaults (field of view, tilt, layer
+  depth, lights). All text, in the `skin` content kind. An unknown mesh id is `missing_ref` at the
+  field, and a 3D field on a 2D skin is `wrong_backend_field`. `resolveMeshParts` and
+  `resolveCamera3d` (`engine/core/present/skin.ts`) give backends and tests one reading.
+- **Shared camera framing.** The follow, deadzone, 1/256 fixed-point lerp, clamp, small-area
+  centring and shake maths moved from the Canvas2D presenter into `CameraFollower`
+  (`engine/core/present/camera.ts`), so 2D and 3D frame the same point. The Canvas2D presenter
+  draws byte-identically (the `start-to-goal` tick 120 screenshot's sha256 did not change).
+- **`engine/backends/three`.** `ThreeScene.sync(frame)` turns any read-only `PresentFrame` and a
+  `three` skin into a Three.js scene graph: instanced tile blocks built once per map id and
+  version, entity meshes kept by id (layer depth, facing mirror, squash, rotate, alpha, a fallback
+  box for an unlisted kind), a side-on perspective camera at the distance where the z = 0 plane
+  shows exactly the 2D picture, one ambient and one directional light, sounds once per event, and
+  a flash/tint overlay. It runs and is tested in Node. `ThreePresenter` is the browser `Presenter`
+  over a fixed `WebGLRenderer` (no antialias, pixel ratio 1, `preserveDrawingBuffer`, sRGB, a fixed
+  clear colour). `webglRendererInfo` / `isSoftwareRenderer` read and judge the WebGL renderer
+  string, and `fitCanvas` / `applyCanvasBox` / `canvasToScreen` letterbox the WebGL canvas with the
+  same `fitGame` maths as the 2D `Viewport`. `three` and `@types/three` are pinned at `0.187.0`.
+- **An external-package table.** `config/layers.js` gained `PACKAGES`: npm packages that belong to
+  one unit (`three` only from `engine/backends/three`). `config/deps.js`, ESLint and
+  `tests/architecture/dependency-rule.test.ts` enforce it.
+- **The view `frame()` hook.** `ViewGame` (`engine/core/view.ts`) has an optional `frame()` (the
+  frozen `PresentFrame` for the state now) and an optional `background`, so a tool can show a
+  game through any `Presenter` instead of `render(r)`. The platformer lab's view implements it.
+- **The lab in 3D.** `games/platformer-lab/content/skins/three.json` gives a low-poly mesh per
+  kind, a block per solid tile and a thin slab for one-way platforms, with the 2D skin's camera.
+  `LabFrames` is one frozen frame stream every backend shares. In the browser,
+  `/games/platformer-lab/?backend=three` boots `main3d.ts` (its own chunk, loaded only in 3D): a
+  `ThreePresenter` on the page canvas, with the same input, loop, scenes and mini game as 2D. The
+  page has a 2D/3D toggle, shows a message with a link back to 2D when WebGL 2 is missing, and
+  the root launcher lists a 3D link (`<meta name="ww-alternate">`).
+- **Three-way parity.** `tests/runs/backend-parity.test.ts` plays every lab run file presenting
+  each tick through null, Canvas2D and the Three.js scene builder, checks the golden hashes, and
+  fails if a kind or tile the runs show has no `three` skin entry.
+- **`pnpm cli screenshot --backend three`.** `screenshot` takes `--backend canvas2d|three`
+  (canvas2d is the default and gives the same bytes as before) and `--allow-software-gl`. With
+  `three` the page shows the view's `frame()` through a `ThreePresenter` and the game's `three`
+  skin, syncing every tick and rendering once at the target tick, and reports the WebGL renderer.
+  A software renderer (or no WebGL context) is exit 4 with a message naming the renderer and the
+  flag; `--allow-software-gl` forces SwiftShader so the PNG is repeatable. A view without
+  `frame()` or a game without a `three` skin is exit 3.
+- **Browser smoke test.** `tests/browser/lab-3d.test.ts` (skipped where Chromium is missing, never
+  in CI) opens the lab in 3D from the Vite dev server and from a build under a sub-path base,
+  reads the WebGL renderer, holds right and jumps, and checks that the picture changes far more
+  than when idle, with no page errors.
+- Agent docs: `engine/backends/three/CLAUDE.md` and `AGENTS.md`, `docs/modules/engine-backends-three.md`
+  and its `llms.txt` link, and updated pages for core, present, tools, Canvas2D and the lab.
+
+### Choices made
+
+- **Software GL policy.** Headless Chromium in this container has no GPU and reports
+  `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)`.
+  The roadmap wants a silent fall-back to software rendering caught, so `screenshot --backend
+three` refuses it (exit 4). `--allow-software-gl` is an explicit opt-in that forces SwiftShader,
+  which also makes the PNG repeatable on one machine. The browser smoke test accepts SwiftShader:
+  it checks that 3D plays, not that it is hardware-backed. (Item 65.)
+- **HUD and effects are minimal in 3D.** The 3D backend draws no HUD (`skin.hud`, `frame.status`)
+  and no `particles`; `flash`, `tint` and `shake` work. Lights are one ambient and one directional,
+  with no shadows. (Item 66.)
+- **`frame()` is an optional view hook** next to `render(r)`, not a replacement for it, so the
+  demo and the 2D screenshot path did not change. A run uses one or the other. (Item 67.)
+- **The 3D mesh format** is primitives and named compound meshes in the skin JSON, not an external
+  model format (glTF, OBJ), keeping content text and in line with owner answer 22. (Item 68.)
+- **`?backend=three` picks 3D** in the browser, with Canvas2D the default and a 2D/3D toggle on the
+  page. (Item 69.)
+- **The external-package table** (`PACKAGES` in `config/layers.js`) is a new kind of rule in the
+  dependency table: a package may be imported only by the units listed. (Item 70.)
+- **`zoom` works in 3D but not in 2D.** The 3D camera honours `zoom` by distance; the Canvas2D
+  presenter still ignores it (as since 0.4). (Item 71.)
+- The root `package.json` version was left as it was, as in earlier releases of this build (no
+  release is tagged or published during the build).
+
+### How to try it
+
+```sh
+pnpm dev   # then open /games/platformer-lab/?backend=three (arrows move, Z jumps, X runs)
+pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json
+pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend canvas2d --json
+pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --allow-software-gl --json
+pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three   # exit 4 without a GPU
+pnpm vitest run tests/runs/backend-parity.test.ts tests/browser/lab-3d.test.ts engine/backends/three
+```
+
+### Done when
+
+Each item was checked by running the commands on 2026-11-02 at commit `d7ea822`, the last 0.6
+code commit.
+
+- **Met: the 0.5 fixture level plays in the browser in 3D.**
+  `pnpm vitest run tests/browser/lab-3d.test.ts --reporter=verbose`: 2 passed ("plays from the Vite
+  dev server: WebGL renderer, input moves the picture, no page errors" and "plays from the build
+  under a sub-path base"). As a manual check, after `pnpm build` a Playwright script opened
+  `vite preview` at `/games/platformer-lab/?backend=three` in Chromium (800x600, launched with
+  `--enable-unsafe-swiftshader`). The canvas was 256x240 with a WebGL 2 context whose renderer was
+  `ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)`.
+  The first screenshot showed the fixture level in 3D: the runner on the left, the ground blocks,
+  a `?` block, a gap and a walker. Holding ArrowRight and X, then Z for a jump, the runner crossed
+  the gap and the camera scrolled to the coin and the goal flag (canvas screenshot sha256 prefixes:
+  start `921951ca969718c9`, after moving `d6edc8840f770f1f`). There were no console errors and no
+  page errors.
+- **Met: the same run file gives the same state hashes with the null, Canvas2D and Three.js
+  backends.** `pnpm vitest run tests/runs/backend-parity.test.ts --reporter=verbose`: 10 passed,
+  among them each of the six lab runs (`mini-game`, `moves`, `objects`, `shells`,
+  `start-to-goal`, `walkers`) through null, Canvas2D and the Three.js scene builder against the
+  golden hashes, and "the three skin has a mesh for every kind and a block for every tile the lab
+  runs show". From the CLI, for `games/platformer-lab/runs/start-to-goal.run.json`:
+  `pnpm -s cli run ... --json` (headless, null), then `screenshot ... --tick T --backend canvas2d
+--json` and `screenshot ... --tick T --backend three --allow-software-gl --json` for each tick
+  the run hashes. Every command exited 0, and every screenshot reported `matchesHeadless: true`:
+
+  | Tick | `run` (null)       | `--backend canvas2d` | `--backend three`  |
+  | ---- | ------------------ | -------------------- | ------------------ |
+  | 0    | `9ed173e616121d27` | `9ed173e616121d27`   | `9ed173e616121d27` |
+  | 60   | `522eeb1256650932` | `522eeb1256650932`   | `522eeb1256650932` |
+  | 120  | `50397aac3f28ba17` | `50397aac3f28ba17`   | `50397aac3f28ba17` |
+  | 180  | `9c9848d8d2b9a2b2` | `9c9848d8d2b9a2b2`   | `9c9848d8d2b9a2b2` |
+  | 240  | `7137cbde89f0fd44` | `7137cbde89f0fd44`   | `7137cbde89f0fd44` |
+
+  These are also the golden hashes in `start-to-goal.hashes.json`. The canvas2d tick 120 PNG kept
+  its 0.5 sha256 (`2c6cc55462fd9c74d0392e6d2471d2020743b8c1b0abd719a8e094a4b54e9c2d`).
+
+- **Met: `pnpm cli screenshot --backend three` writes a PNG and fails with a clear error if WebGL
+  is not hardware-backed.** With `--allow-software-gl` it wrote 256x240 PNGs for each tick above
+  (`renderer` reported as the SwiftShader string); tick 120 gave sha256
+  `86ede08b4258402e73ca572e835987dc1e16188f5b6da0ea2990ccb54c7d3150` on two separate runs. Without
+  the flag, in this container (no GPU),
+  `pnpm -s cli screenshot games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three`
+  exited 4, wrote no file, and printed: `WebGL is not hardware-backed: the renderer is "ANGLE
+(Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)", a
+software one. Run where a GPU is available, or pass --allow-software-gl to take the picture with
+SwiftShader anyway`. With `--json` the result was `"ok": false`, `"exitCode": 4`,
+  `"refused": "software_gl"` and the renderer string. The path that writes a PNG on hardware WebGL
+  could not be run here (no GPU); `engine/tools/screenshot.test.ts` covers the refusal and the
+  software-GL path.
+- **Met: the diff for this release changes nothing in `kits/platformer`.**
+  `git diff d9da45fbf7a82d0bdc13491aa810e0701fc3a24b -- kits/platformer` (the last 0.5 commit
+  against the 0.6 close-out) printed nothing, and `git diff --stat` for that path was empty.
+- The four checks pass: `pnpm lint && pnpm typecheck && pnpm test && pnpm build` (81 test files,
+  984 tests). Every run file of both games passes `pnpm -s cli run` (exit 0).
+
+### Deviations from the roadmap
+
+- **Additions not in the roadmap:** the shared `CameraFollower` in core, the `frame()` and
+  `background` view hooks, the external-package table, a canvas fit helper for WebGL, and
+  `zoom` honoured by the 3D camera.
+- **Screenshots on software WebGL** are allowed behind `--allow-software-gl`. The roadmap only asks
+  that a software fall-back is caught; the flag lets CI and this container take 3D pictures at all.
+
+### Outstanding issues
+
+- The 3D backend draws no HUD and no particles, and same-layer entities share a depth plane, so
+  their list order is not kept.
+- `zoom` is honoured in 3D but still ignored in 2D.
+- A screenshot on hardware WebGL has not been taken (no GPU in the build container), so PNG
+  repeatability across GPUs is untested.
+- The browser play check in 3D is a committed smoke test plus a manual Playwright script; the
+  smoke test accepts SwiftShader.
+
 ## Engine 0.5
 
 Platformer kit. Built on branch `engine/build-0.15`; not tagged (tagging is the owner's call).

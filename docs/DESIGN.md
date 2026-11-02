@@ -117,7 +117,12 @@ How a kit and a backend talk:
   values.
 - The backend **never sees kit internals** and can't change anything.
 - A per-backend **skin** text file maps each kind to a sprite or a mesh, and each event to a sound or
-  effect.
+  effect. A `canvas2d` skin names sprite frames; a `three` skin (from 0.6) describes each kind as a
+  low-poly mesh made of primitives (box, wedge, cylinder, cone, sphere, plane) in text, each tile
+  type as a block, and the 3D camera's defaults (`camera3d`).
+- Both backends frame the same point: the camera's follow, deadzone, lerp and clamp maths live in
+  core (`CameraFollower`, `engine/core/present/camera.ts`), and the 3D backend places its perspective
+  camera so the depth-0 plane shows exactly the 2D picture.
 - **Extension points** carry presentation-only effects: camera framing, depth, squash and stretch.
   Without them, 2.5D would look like flat 2D placed in 3D.
 

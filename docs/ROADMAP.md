@@ -306,7 +306,7 @@ _(Done. What was built, the choices made and how each item was checked are in
 
 ---
 
-## 0.6 Basic 3D backend
+## 0.6 Basic 3D backend (done)
 
 **Goal:** the platformer kit can be shown in 2.5D, in the style of New Super Mario Bros., without
 changing the kit.
@@ -329,6 +329,9 @@ changing the kit.
   hardware-backed.
 - The diff for this release changes nothing in `kits/platformer`. (If it must, that is a gap and goes
   in the release notes.)
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-06).)_
 
 **Out of scope:** a 3D kit (true 3D gameplay like Mario 64 is a separate kit, not a backend), PixiJS,
 isometric, polished art.

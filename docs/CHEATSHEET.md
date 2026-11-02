@@ -60,6 +60,14 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
   with the game's skin (`content/skins/canvas2d.json`, the `skin` kind). The presenter keeps the
   camera: it follows the frame's camera hint (else the skin's `camera`), with `deadzone`, `lerp`
   and clamping to the hint's `bounds` or the map; a hint's own values win over the skin's.
+- 3D (from 0.6): a view may also give `frame()`, the frozen `PresentFrame` for the state now, so a
+  tool can show it through any `Presenter`. `ThreeScene` / `ThreePresenter`
+  (`@engine/backends/three`) draw those frames with the game's `three` skin
+  (`content/skins/three.json`: a low-poly mesh per kind, a block per tile, `camera3d`). The lab
+  picks 3D in the browser with `?backend=three` (see `games/platformer-lab/main3d.ts`), and
+  `screenshot --backend three` uses `frame()`; it refuses software WebGL (exit 4) unless
+  `--allow-software-gl`. Only `engine/backends/three` may import `three` (`PACKAGES` in
+  `config/layers.js`).
 - Browser (`main.ts`): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
   songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).
@@ -194,7 +202,8 @@ Use `pnpm -s cli <command> ... --json`: stdout is then exactly one JSON object
    schema-checked and read back (`verified: true`).
 5. `run` again, then `mutants <run-file>` (or `mutants games/<game>` for every run file) to see
    which kit rules the run does not guard, and
-   `screenshot <run-file> --tick N` to look at a frame.
+   `screenshot <run-file> --tick N` to look at a frame (`--backend three --allow-software-gl` for
+   the 3D picture where there is no GPU).
 6. Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
 When a run fails, the [debug-failing-run skill](../.claude/skills/debug-failing-run/SKILL.md) walks
