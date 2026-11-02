@@ -124,7 +124,11 @@ export function saveWorld(world: World): JsonObject {
   const inner = worldInternals(world);
   if (inner.stepping()) throw new Error('saveWorld() called during a step: save between ticks');
   const snap = world.snapshot();
-  const names = Object.keys(snap.components).sort();
+  const events = world.events();
+  // The snapshot leaves out an empty `omitWhenEmpty` kind; one the kept log still names is listed.
+  const listed = new Set(Object.keys(snap.components));
+  for (const change of events) if (change.component !== undefined) listed.add(change.component);
+  const names = [...listed].sort();
   const byEntity = new Map<Entity, { [name: string]: JsonValue }>(snap.entities.map((id) => [id, {}]));
   for (const name of names) {
     for (const [id, data] of snap.components[name] ?? []) (byEntity.get(id) as JsonObject)[name] = data;
@@ -142,7 +146,7 @@ export function saveWorld(world: World): JsonObject {
     log: {
       enabled: inner.log.enabled,
       ticks: inner.log.ticks ?? null,
-      events: world.events().map((c) => structuredClone(c)),
+      events: events.map((c) => structuredClone(c)),
     },
   };
   return save as JsonObject;

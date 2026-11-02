@@ -9,6 +9,7 @@ import type { Cell } from './path';
 import { Target, Task, Unit, factionOf, fighting, leaveJob, unitsRefusal, type TaskData } from './rts';
 import { addWork } from './systems';
 import { heightAt, moveCost, terrainOf } from './terrain';
+import { frozenCheck } from './time';
 import type { Entity, System, World } from './world';
 
 /**
@@ -406,12 +407,14 @@ function retarget(world: World, id: Entity, task: TaskData, target: Entity): voi
  * or empty is replaced by the nearest node of the same item, or with nothing to carry the task
  * ends. Next to a drop-off it adds its load to its faction's stockpile and turns back to its node
  * (or the nearest other one; none: the task ends). Nearest is by squared distance to the
- * footprint, ties to the lowest id.
+ * footprint, ties to the lowest id. A gatherer in a frozen event (`time.ts`) waits.
  */
 export const gatherSystem: System = {
   name: 'gather',
   run(world) {
+    const frozen = frozenCheck(world);
     for (const id of world.query(Gatherer, Task, Position)) {
+      if (frozen(id)) continue;
       const task = world.get(id, Task) as TaskData;
       if (task.kind !== 'gather') continue;
       const g = world.get(id, Gatherer) as GathererData;
@@ -476,12 +479,15 @@ export const gatherSystem: System = {
  * building (`inReach`) the worker adds `Worker.rate` work (`addWork`, as the village's haulers do),
  * and the building's `Health.hp` rises by what the work adds to `max * progress / work` (rounded
  * down; never above `max`), so damage taken while it goes up stays. The worker that finishes it
- * ends its task at once.
+ * ends its task at once. A worker in a frozen event waits; the building takes work from any other
+ * worker, frozen or not.
  */
 export const constructSystem: System = {
   name: 'construct',
   run(world) {
+    const frozen = frozenCheck(world);
     for (const id of world.query(Task, Worker, Position)) {
+      if (frozen(id)) continue;
       const task = world.get(id, Task) as TaskData;
       if (task.kind !== 'build') continue;
       const site = task.target as Entity;

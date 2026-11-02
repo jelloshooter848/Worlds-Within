@@ -7,6 +7,7 @@ import { Building, footprintOf, inReach } from './footprint';
 import { distSq, idiv } from './math';
 import type { Cell } from './path';
 import { heightAt, moveCost, terrainOf, type TerrainData } from './terrain';
+import { frozenCheck } from './time';
 import type { Entity, System, World } from './world';
 
 /**
@@ -294,13 +295,16 @@ function nextCell(
  * - with no way there the task is dropped (a worker leaves its job).
  * A step moves the unit one cell on the 8-way grid (by its task's A* path, or the shared flow field
  * for a group), standing at the cell's elevation, sets `Facing8`, and starts the step cooldown
- * (`Unit.speed`). Units do not block each other.
+ * (`Unit.speed`). Units do not block each other. A member of a frozen event (`time.ts`) is skipped
+ * whole: it neither counts down nor steps.
  */
 export const moveSystem: System = {
   name: 'move',
   run(world) {
     const t = terrainOf(world);
+    const frozen = frozenCheck(world);
     for (const id of world.query(Unit, Position)) {
+      if (frozen(id)) continue;
       const cool = world.get(id, Cooldown);
       if (cool && cool.move > 0) {
         setCooldown(world, id, { ...cool, move: cool.move - 1 });
@@ -367,11 +371,12 @@ function nearestEnemy(
   from: Cell,
   faction: string | null,
   range: number,
+  frozen: (id: Entity) => boolean,
 ): Entity | null {
   let best: Entity | null = null;
   let bestDist = 0;
   for (const id of world.query(Owner, Health, Position)) {
-    if (id === self || !fighting(world, id)) continue;
+    if (id === self || !fighting(world, id) || frozen(id)) continue;
     if ((world.get(id, Owner) as { faction: string }).faction === faction) continue;
     const at = world.get(id, Position) as Cell;
     if (!inRange(from, at, range)) continue;
@@ -392,13 +397,16 @@ function nearestEnemy(
  * living entity with `Owner`; ties to the lowest id). With a target within range and no cooldown
  * left it hits: `Health.hp` drops by `Unit.attack` (not below 0), it faces the target, and its
  * attack cooldown starts (`Unit.cooldown`). A hit lands at once, so a unit later in id order that
- * was brought to 0 this tick does not hit back.
+ * was brought to 0 this tick does not hit back. Frozen events (`time.ts`): a frozen unit is skipped
+ * (no countdown, no hit), no unit picks a frozen one as a target, and a unit whose target is frozen
+ * holds its hit (keeping the target) until it unfreezes.
  */
 export const attackSystem: System = {
   name: 'attack',
   run(world) {
+    const frozen = frozenCheck(world);
     for (const id of world.query(Unit, Position)) {
-      if (!fighting(world, id)) continue;
+      if (!fighting(world, id) || frozen(id)) continue;
       let cool = world.get(id, Cooldown);
       if (cool && cool.attack > 0) {
         setCooldown(world, id, { ...cool, attack: cool.attack - 1 });
@@ -415,10 +423,10 @@ export const attackSystem: System = {
         target = null;
       }
       if (target === null && task === undefined) {
-        target = nearestEnemy(world, id, pos, factionOf(world, id), unit.range);
+        target = nearestEnemy(world, id, pos, factionOf(world, id), unit.range, frozen);
         if (target !== null) world.add(id, Target, { entity: target });
       }
-      if (target === null) continue;
+      if (target === null || frozen(target)) continue;
       const at = world.get(target, Position) as Cell;
       if (!inRange(pos, at, unit.range)) {
         if (task === undefined) world.remove(id, Target);
@@ -437,12 +445,15 @@ export const attackSystem: System = {
  * `death`: every `Unit` or `Building` whose `Health.hp` is 0, in id order, is destroyed (each
  * removal and the destroy are in the log under `death`). A named squad member that dies leaves its
  * squad first: the squad's strength drops by one and it is taken off `members` (and `captain`).
+ * A member of a frozen event does not die until it unfreezes.
  */
 export const deathSystem: System = {
   name: 'death',
   run(world) {
+    const frozen = frozenCheck(world);
     for (const id of world.query(Health)) {
       if (!world.has(id, Unit) && !world.has(id, Building)) continue;
+      if (frozen(id)) continue;
       if ((world.get(id, Health) as { hp: number }).hp > 0) continue;
       const member = world.get(id, Member);
       if (member && member.squad !== null && world.alive(member.squad)) {

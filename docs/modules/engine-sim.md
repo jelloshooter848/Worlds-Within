@@ -13,11 +13,12 @@ touch it.
 
 From `engine/sim/index.ts`:
 
-- `defineComponent(name, schema)`: a component kind (`ComponentDef<T>`) whose data matches a Zod
-  schema and is plain JSON-safe data.
+- `defineComponent(name, schema, { omitWhenEmpty? })`: a component kind (`ComponentDef<T>`) whose
+  data matches a Zod schema and is plain JSON-safe data; `omitWhenEmpty` keeps an unused kind out
+  of snapshots and saves.
 - `createWorld(seed, { components?, systems?, log? })` -> `World`:
   - `spawn()`, `destroy(id)`, `alive(id)`, `entities()`, `nextId`;
-  - `registerComponent(def)`, `add(id, def | name, data)`, `update(id, def, fn)`, `get`, `has`,
+  - `registerComponent(def)`, `registered(def | name)`, `add(id, def | name, data)`, `update(id, def, fn)`, `get`, `has`,
     `remove`; stored data is frozen, so every change goes through these;
   - `query(...components)`: entities with all of them, always ascending by id;
   - `addSystem({ name, run })`, `systems()`, `step()` (systems in order, then `tick` + 1), `tick`;
@@ -47,7 +48,19 @@ From `engine/sim/index.ts`:
 - System sets (`system-sets.ts`, Engine 0.9): `SYSTEM_SETS` (`village`: standard components,
   `Terrain`, `SYSTEM_COMPONENTS` with haul, build, patrol; `rts`: standard components, `Terrain`,
   `RTS_COMPONENTS` with `RTS_SYSTEMS`), `SYSTEM_SET_NAMES`, `DEFAULT_SYSTEM_SET` (`village`, what
-  the tools' world runs use when a scenario names none).
+  the tools' world runs use when a scenario names none). Both register `TIME_COMPONENTS` too.
+- Time and frozen events (`time.ts`, Engine 0.10): `timeOf(world)` -> `TimeService` reads **world
+  time** (`world`, the tick), **experience time** (`experience(mission)`, `open()`: ticks spent
+  inside an open mission, never moving the world) and **commitment time** (`commitment(mission)`,
+  `commitments()`: the append-only `{ mission, opened, tick, experience }` records), plus
+  `frozen()` and `isFrozen(id)`. Writes: `startExperience`, `addExperience`, `stampCommitment`,
+  `freezeEvent`, `unfreezeEvent` (each `{ ok: true }` or `{ ok: false, code, error }`, logged under
+  the cause given) and `joinEvent`, `leaveEvent`, `eventMembers`. An event is the entities with
+  `EventMember { event }`; while it is frozen, `move`, `attack` (and the cooldown countdown),
+  `death` and `patrol` skip its members, no unit attacks one, and its workers' `haul`, `gather` and
+  `construct` wait, while `build`, `train` and everyone outside the event run on. The state is
+  world data (`EventMember`, and `WorldTime` on one world-level entity), in snapshots and saves
+  only once used, so existing golden hashes do not move.
 - Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
   cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
   west.
@@ -158,4 +171,7 @@ training (after the type's ticks, cost charged), gathering (the stockpile rises)
 scenario with the same hashes twice and through a save and load mid-construction and
 mid-training, `footprint.test.ts` the footprint helpers, and `sample-world.test.ts` the Engine 0.8 proof: the village runs 10,000 ticks with the same hashes twice and as the golden file, and survives a save and load at 83
 ticks (`WW_SAVE_EVERY_TICK=1` reloads at every tick, about two minutes).
-`engine/tools/world-run.test.ts` checks `run` and `dump` on a world run file.
+`engine/tools/world-run.test.ts` checks `run` and `dump` on a world run file. `time.test.ts` checks
+the time service and the battle fixture with its battle frozen: a barracks finishes while the
+battle's units keep their `Position`, `Health` and `Cooldown`, freeze and unfreeze are logged with
+their cause, the battle resumes after, and a save and load mid-freeze gives equal hashes.

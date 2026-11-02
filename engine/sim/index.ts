@@ -1,6 +1,6 @@
 /** engine/sim: the headless, deterministic world simulation. See CLAUDE.md in this folder. */
 export { defineComponent } from './component';
-export type { ComponentDef } from './component';
+export type { ComponentDef, ComponentOptions } from './component';
 export { createWorld } from './world';
 export type { AnyComponent, Entity, System, World, WorldOptions, WorldSnapshot } from './world';
 export { EXTERNAL_CAUSE } from './events';
@@ -155,3 +155,31 @@ export {
   typeAt,
 } from './terrain';
 export type { TerrainData, TerrainType } from './terrain';
+export {
+  EventMember,
+  TIME_COMPONENTS,
+  WorldTime,
+  addExperience,
+  commitmentSchema,
+  eventMembers,
+  experienceSchema,
+  freezeEvent,
+  frozenCheck,
+  frozenSchema,
+  joinEvent,
+  leaveEvent,
+  stampCommitment,
+  startExperience,
+  timeOf,
+  unfreezeEvent,
+} from './time';
+export type {
+  Commitment,
+  EventMemberData,
+  Experience,
+  Frozen,
+  TimeRefusal,
+  TimeResult,
+  TimeService,
+  WorldTimeData,
+} from './time';

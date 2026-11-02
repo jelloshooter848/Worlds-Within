@@ -6,8 +6,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 
 ## Files
 
-- `component.ts`: `defineComponent(name, schema)` -> `ComponentDef<T>`, a component kind with the
-  Zod schema its data must match.
+- `component.ts`: `defineComponent(name, schema, { omitWhenEmpty? })` -> `ComponentDef<T>`, a
+  component kind with the Zod schema its data must match (`omitWhenEmpty`: see "Time").
 - `world.ts`: `createWorld(seed, { components?, systems?, log? })` -> `World`.
 - `events.ts`: the event log's types (`Change`, `ChangeOp`, `Cause`, `LogOptions`) and
   `EXTERNAL_CAUSE` (see "Event log" below).
@@ -40,7 +40,12 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   (`village`: `[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]` with `haulSystem`,
   `buildSystem`, `patrolSystem`; `rts`: `[...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` with
   `RTS_SYSTEMS`), `SYSTEM_SET_NAMES` and `DEFAULT_SYSTEM_SET` (`village`). A scenario names one in
-  `systems` (Scenarios, below).
+  `systems` (Scenarios, below). Both sets also register `TIME_COMPONENTS` (Engine 0.10), which
+  stay out of snapshots until used.
+- `time.ts`: the time service and frozen events (Engine 0.10 T3): `EventMember`, `WorldTime`
+  (`TIME_COMPONENTS`), `timeOf`, `freezeEvent`/`unfreezeEvent`, `joinEvent`/`leaveEvent`,
+  `eventMembers`, `frozenCheck`, `startExperience`, `addExperience`, `stampCommitment` (see
+  "Time" below).
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`; and
@@ -68,7 +73,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   is in every snapshot (`rng`).
 - **Snapshots**: `snapshot()` is the whole world as JSON-safe data (`seed`, `tick`, `nextId`,
   `rng`, `entities`, and per component kind a list of `[id, data]` in id order), copied from the
-  live state. `canonical()` is that snapshot as canonical JSON (`canonicalJson` from
+  live state. Every registered kind is listed, empty or not, except one defined with
+  `omitWhenEmpty: true` that no entity has (`registered(c)` says whether a kind is registered). `canonical()` is that snapshot as canonical JSON (`canonicalJson` from
   `engine/core/headless.ts`). Hashing stays in the tools (`node:crypto`); the sim never hashes.
 
 ## Event log
@@ -119,7 +125,8 @@ would. `canonicalJson(saveWorld(loadWorld(save)))` is the same text as the save 
   a save whose `systems` names differ. Systems keep no state of their own: what a system must
   remember between ticks is component data, so it is saved like the rest. (There is no system
   state in the format.)
-- **Components**: every kind the save lists must be in `components` (extra kinds start empty);
+- **Components**: every kind the save lists must be in `components` (extra kinds start empty).
+  The save lists the snapshot's kinds plus any `omitWhenEmpty` kind the kept log still names;
   each entity's data is checked by its component's schema. Terrain is the `Terrain` component of
   one entity, so it is saved with it (pass `Terrain` in `components`).
 - **RNG**: the save holds `Rng.state()`; load uses `Rng.fromState` (`engine/core/rng.ts`).
@@ -133,6 +140,52 @@ would. `canonicalJson(saveWorld(loadWorld(save)))` is the same text as the save 
 - The format is in `docs/reference/schemas.md` ("World save", from `worldSaveSchema`, with the
   example `docs/reference/examples/world-save.json`). A change to the format bumps
   `SAVE_VERSION`.
+
+## Time
+
+The time service and frozen events (`time.ts`, Engine 0.10 T3; docs/BUILD-LOG.md, Engine 0.10,
+items 150-152). The mission lifecycle (T4) is built on it.
+
+- **World time** is the world's `tick` (`timeOf(world).world`). Only `step()` moves it.
+- **Experience time** is the ticks spent inside an open mission: `startExperience(world, mission,
+cause)` opens the mission's clock at the current tick with 0 ticks, `addExperience(world,
+mission, ticks, cause)` adds to it. It never moves the world: ten ticks or ten thousand leave
+  `tick` where it was. Read with `timeOf(world).experience(mission)` (null when not open) and
+  `.open()`.
+- **Commitment time** is the tick a mission's result is committed at:
+  `stampCommitment(world, mission, cause, tick = world.tick)` closes the clock and appends
+  `{ mission, opened, tick, experience }` to the commitments (`timeOf(world).commitment(mission)`,
+  `.commitments()` in commit order). The list is append-only: a mission commits once, and opening,
+  adding to or committing a committed mission is refused (`mission_committed`).
+- **Frozen events.** An event is the entities with `EventMember { event }` (`joinEvent`,
+  `leaveEvent`, `eventMembers`; or written in a scenario). `freezeEvent(world, event, cause)` holds
+  it still until `unfreezeEvent(world, event, cause)`; `timeOf(world).frozen()` lists
+  `{ event, by, since }` (`by` is the cause that froze it). An event freezes once
+  (`event_frozen`). Systems build `frozenCheck(world)` once per run and skip what it says:
+  - **skip frozen entities:** `move` and `attack` (no step, no hit and no cooldown countdown;
+    no unit picks a frozen unit as a target, and a unit whose `Target` is frozen holds its hit),
+    `death` (a frozen entity does not die), `patrol`, and a frozen worker's `haul`, `gather` and
+    `construct` (its task waits; a frozen hauler draws nothing from the RNG);
+  - **keep running:** `build`, `train`, and `haul`, `gather` and `construct` for everyone
+    outside the event, so a building still goes up while the battle is held.
+- **Results.** Every write returns `{ ok: true }` or `{ ok: false, code, error }` (`TimeRefusal`:
+  `event_frozen`, `event_not_frozen`, `mission_open`, `mission_not_open`, `mission_committed`,
+  `bad_ticks`, `bad_id`); a refusal changes nothing.
+- **World data.** `EventMember` is on the members; `WorldTime` `{ frozen, experience, committed }`
+  is on one world-level entity spawned by the first time write (so it takes the next id). Both are
+  in snapshots, saves and hashes, and both are `omitWhenEmpty`, so a world that never uses them
+  snapshots, saves and hashes exactly as before (the 0.8 and 0.9 golden hashes do not move). A
+  world built without them registers them on first write; load it with `TIME_COMPONENTS` in
+  `components` (both system sets have them).
+- **Causes.** Between ticks a write runs under `withCause(cause)`, so freezes, unfreezes and clock
+  changes are in the event log as `WorldTime` changes with that cause. During a step the running
+  system is the logged cause and the cause given is kept in the data (`frozen[].by`).
+- Integers only, no randomness.
+- Tests: `time.test.ts` (the three kinds of time, refusals changing nothing, the time components
+  out of snapshots until used, a frozen patrol, and the battle fixture with its battle frozen: a
+  barracks finishes while the battle's units keep their `Position`, `Health` and `Cooldown`, the
+  freeze and unfreeze are logged with their cause, the battle resumes after, and a save and load
+  mid-freeze steps on with equal hashes).
 
 ## Standard components
 
@@ -470,4 +523,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `sample-world.test.ts`).

@@ -2,6 +2,7 @@ import { STANDARD_COMPONENTS } from './components';
 import { RTS_COMPONENTS, RTS_SYSTEMS } from './rts-orders';
 import { SYSTEM_COMPONENTS, buildSystem, haulSystem, patrolSystem } from './systems';
 import { Terrain } from './terrain';
+import { TIME_COMPONENTS } from './time';
 import type { AnyComponent, System } from './world';
 
 /**
@@ -13,6 +14,9 @@ import type { AnyComponent, System } from './world';
  * - `village`: the 0.8 set: standard components, `Terrain` and `SYSTEM_COMPONENTS`; systems
  *   `haulSystem`, `buildSystem`, `patrolSystem`.
  * - `rts`: standard components, `Terrain` and `RTS_COMPONENTS`; systems `RTS_SYSTEMS`.
+ *
+ * Both also register `TIME_COMPONENTS` (Engine 0.10), which stay out of snapshots until used, so a
+ * scenario may tag event members and the hashes of worlds that do not are unchanged.
  */
 
 /** The set names a scenario may give in `systems`. */
@@ -30,11 +34,11 @@ export interface SystemSet {
 
 export const SYSTEM_SETS: Readonly<Record<SystemSetName, SystemSet>> = Object.freeze({
   village: Object.freeze({
-    components: Object.freeze([...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]),
+    components: Object.freeze([...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS, ...TIME_COMPONENTS]),
     systems: Object.freeze([haulSystem, buildSystem, patrolSystem]),
   }),
   rts: Object.freeze({
-    components: Object.freeze([...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]),
+    components: Object.freeze([...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS, ...TIME_COMPONENTS]),
     systems: RTS_SYSTEMS,
   }),
 });

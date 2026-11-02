@@ -4,6 +4,7 @@ import { Construction, Health, Inventory, Patrol, Position, Worker, inventoryAdd
 import { idiv, imod, manhattan } from './math';
 import { distanceField, nextStep, type Cell } from './path';
 import { heightAt, moveCost, terrainOf, type TerrainData } from './terrain';
+import { frozenCheck } from './time';
 import type { Entity, System, World } from './world';
 
 /**
@@ -122,13 +123,16 @@ export function addWork(world: World, site: Entity, amount: number): { before: n
  * missing or finished takes the nearest unfinished building (none: it idles). Then, unless it is
  * resting or starts a rest (an RNG draw), it walks to its source and takes up to `capacity` items,
  * or, carrying, walks next to its job and delivers them as `carry * rate` work (capped at what the
- * building still needs). Arriving and acting take the same tick.
+ * building still needs). Arriving and acting take the same tick. A member of a frozen event
+ * (`time.ts`) is skipped (and draws nothing from the RNG).
  */
 export const haulSystem: System = {
   name: 'haul',
   run(world) {
     const t = terrainOf(world);
+    const frozen = frozenCheck(world);
     for (const id of world.query(Worker, Hauler, Position)) {
+      if (frozen(id)) continue;
       const worker = world.get(id, Worker) as { job: Entity | null; rate: number };
       let job = worker.job;
       if (!unfinished(world, job)) {
@@ -187,13 +191,15 @@ export const buildSystem: System = {
 /**
  * `patrol`: every entity with `Patrol` and `Position`, in id order, walks to its current waypoint
  * (standing on it; the waypoint's `z` is not checked). On arriving it turns to the next waypoint,
- * looping, and walks toward it from the next tick.
+ * looping, and walks toward it from the next tick. A member of a frozen event is skipped.
  */
 export const patrolSystem: System = {
   name: 'patrol',
   run(world) {
     const t = terrainOf(world);
+    const frozen = frozenCheck(world);
     for (const id of world.query(Patrol, Position)) {
+      if (frozen(id)) continue;
       const p = world.get(id, Patrol) as { waypoints: Cell[]; index: number };
       const goal = p.waypoints[p.index] as Cell;
       if (!walkToward(world, id, t, distanceField(t, { x: goal.x, y: goal.y }, false))) continue;

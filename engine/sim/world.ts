@@ -65,6 +65,8 @@ export interface World {
 
   /** Register a component kind; its name must be new. */
   registerComponent(def: AnyComponent): void;
+  /** Whether a component kind of this name is registered. */
+  registered(c: AnyComponent | string): boolean;
   /** Append a system to the run order; its name must be new. */
   addSystem(system: System): void;
   /** System names in run order. */
@@ -121,7 +123,10 @@ export interface World {
    */
   events(sinceTick?: number): Change[];
 
-  /** The whole world as JSON-safe data (copied: changing it does not change the world). */
+  /**
+   * The whole world as JSON-safe data (copied: changing it does not change the world). Every
+   * registered kind is listed, except an `omitWhenEmpty` kind that no entity has.
+   */
   snapshot(): WorldSnapshot;
   /** The snapshot as canonical JSON (sorted keys): equal worlds give equal text, for hashing. */
   canonical(): string;
@@ -242,6 +247,10 @@ export function makeWorld(seed: number, options: WorldOptions, restored?: Restor
       if (defs.has(def.name)) throw new Error(`component "${def.name}" is already registered`);
       defs.set(def.name, def);
       stores.set(def.name, new Map());
+    },
+
+    registered(c) {
+      return defs.has(nameOf(c));
     },
 
     addSystem(system) {
@@ -389,6 +398,7 @@ export function makeWorld(seed: number, options: WorldOptions, restored?: Restor
       const components: WorldSnapshot['components'] = {};
       for (const name of [...stores.keys()].sort()) {
         const store = stores.get(name) as Store;
+        if (store.size === 0 && (defs.get(name) as AnyComponent).omitWhenEmpty) continue;
         components[name] = live
           .filter((id) => store.has(id))
           .map((id): [number, JsonValue] => [id, structuredClone(store.get(id) as JsonValue)]);
