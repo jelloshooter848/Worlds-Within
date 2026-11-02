@@ -23,13 +23,14 @@ the CLI starts.
 - `output.ts`: the output cap (`DEFAULT_MAX_OUTPUT`, 32 KiB) and the output folder (`OUTPUT_DIR`,
   `.ww-out/`, git-ignored). Replay files go to `.ww-out/replays/`.
 - `game-loader.ts`: `loadGame(cwd, dir)` reads `<dir>/game.json` and its content files with the
-  file system (`readGameFiles`) and checks them with the engine's kinds plus the kit's. It never
+  file system (`readGameFiles`) and checks them with the engine's kinds plus its kits'. It never
   imports a game's code. `texts` keeps every file's text.
-- `game-check.ts`: `checkGameTexts(texts, root)` and `gameKinds(manifestText, root)`, the checks
-  on a game's files once they are text. No Node imports, so the screenshot page uses them in the
+- `game-check.ts`: `checkGameTexts(texts, root)` and `gameKinds(manifestText, root, find?)`, the
+  checks on a game's files once they are text. `gameKinds` merges the engine's kinds with those of
+  `kit` and of every kit in `uses` (A game on two kits, below). No Node imports, so the screenshot page uses them in the
   browser too (`game-loader.ts` re-exports them).
-- `kits.ts`: the kits by the `kit` name in `game.json`: `allKits()`, `findKit(name)`,
-  `loadKit(name)` (throws `unknownKitMessage(name)` for an unknown kit), `kitKinds(name)` and
+- `kits.ts`: the kits by the `kit` (and `uses`) names in `game.json`: `allKits()`, `findKit(name)`,
+  `loadKit(name)` (throws `unknownKitMessage(name, field?)` for an unknown kit), `kitKinds(name)` and
   `kitRules(name)`. Each kit says what it adds through its own hook, `kits/<name>/kit.ts` exporting
   `kit` (a `KitDef` from `engine/core/kit.ts`: content kinds, named rules, `strictMutants?`). There
   is no table of kits here: the hooks come from `kit-list.ts`.
@@ -91,7 +92,8 @@ the CLI starts.
 - `validate <game>`: checks `game.json` and every content file. Cheap: starts nothing. Result:
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
-  is a usage error. Its own content code: `unknown_kit` (at `kit` in `game.json`). It also runs
+  is a usage error. Its own content codes: `unknown_kit` (at `kit` or `uses.<i>` in `game.json`),
+  `duplicate_kit` and `kind_clash` (at `uses.<i>`; A game on two kits, below). It also runs
   each kind's checks across files (`checkAll`), such as the top-down rooms' `invalid_dungeon`, so
   content it passes is content the game can build.
 - `run <runFile> [--disable-rule <ids>]`: plays a run file headless and checks it (below).
@@ -170,6 +172,29 @@ guardedBy }], unguarded }`. Exit 0 when every run passes as it is and, for a str
 - After writing, the file is read back from disk and parsed; `verified: true` says the text and
   the parsed content are exactly what was meant. `before` and `after` are the value at the edited
   place (`path`; for an `add` to an array, the new item), null when absent.
+
+## A game on two kits
+
+`game.json` names the game's kit in `kit` and, optionally, more kits in `uses` (Engine 0.7: a
+platformer game whose door pushes a top-down mini game holds `room` files):
+
+```text
+{ "kit": "platformer", "uses": ["topdown"], "content": { "level": [...], "room": [...] } }
+```
+
+- Content kinds: the engine's, `kit`'s and each `uses` kit's (`gameKinds`, `game-check.ts`), so
+  `validate`, the editing verbs, `run`, `dump`, `mutants` and the screenshot page read and check
+  the other kit's files like the game's own (errors name the file and field).
+- Errors at `game.json`: a name no kit has is `unknown_kit` at that field (`uses.1`); a kit listed
+  twice (or `kit` again in `uses`) is `duplicate_kit`; a kind a `uses` kit adds that the engine or
+  an earlier kit already has is `kind_clash`, naming both (`content kind "room" of kit "x" in
+"uses.0" clashes with kit "topdown"`). Kinds are never merged or overridden.
+- Rules: only `kit`'s. `run`/`dump` check `disableRules`, `guards` and `--disable-rule` against
+  `kit`'s rules, `mutants` tries `kit`'s rules and its strictness is `kit`'s. A `uses` kit's rules
+  are not mutant-checked yet (the headless contract passes one flat `disabledRules` list, and each
+  kit's `RuleSwitch` throws on ids it does not know); see the stacking-test gap report (G12).
+- Imports: a game may import every kit it uses (`games -> kits` in `config/layers.js`; only sibling
+  games are kept apart).
 
 ## Run files
 

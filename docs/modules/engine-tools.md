@@ -77,13 +77,16 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   `engine/tools/CLAUDE.md` (Editing content).
 - Every game's run files are checked by `tests/runs/run-files.test.ts` against committed golden
   hashes (`<name>.hashes.json`; regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).
+- A game on two kits: `uses` in `game.json` (beside `kit`) adds more kits' content kinds, merged
+  by `gameKinds`; every command reads those files. `unknown_kit` / `duplicate_kit` / `kind_clash`
+  name the `game.json` field. Rules and mutants stay `kit`'s (`engine/tools/CLAUDE.md`).
 - Global flags: `--json` (exactly one JSON object on stdout), `--help`, `--max-output <bytes>`.
 - Exit codes (`engine/tools/exit-codes.ts`): `0` ok, `2` usage, `3` invalid content, `4` failed
   check, `5` crash. Every `--json` result, failures included, is `{ ok, command, exitCode, ... }`.
 - Output over the cap (32 KiB by default) is cut; the whole result is written under `.ww-out/` and
   the printed one has `truncated: true` and `fullOutput: <path>`.
 - In code: `main(argv, io)` (`engine/tools/main.ts`), `defineCommand` and `Registry`
-  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, re-exported by `game-loader.ts`),
+  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, the engine's kinds plus `kit`'s and each `uses` kit's, re-exported by `game-loader.ts`),
   `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`),
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
   (`content-path.ts`), `playRun` and `stateHash`

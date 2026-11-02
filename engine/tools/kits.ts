@@ -4,7 +4,7 @@ import type { RuleList } from '@engine/core/rules';
 import { KIT_HOOKS } from './kit-list';
 
 /**
- * The kits the tools know, found by the kit name a `game.json` gives in `kit`. Each kit says what it
+ * The kits the tools know, found by the kit names a `game.json` gives in `kit` (and `uses`). Each kit says what it
  * adds through its own hook (`kits/<name>/kit.ts`, a `KitDef` from `engine/core/kit.ts`): its
  * content kinds, its named rules and whether it opts in to strict mutants. The hooks come from
  * `kit-list.ts`, which `pnpm docs:gen` generates from the kit folders, so there is no table of
@@ -28,9 +28,12 @@ export function findKit(name: string): KitDef | undefined {
   return BY_NAME.get(name);
 }
 
-/** What to say about a kit name no kit has: the name, the field and the kits there are. */
-export function unknownKitMessage(name: string): string {
-  return `unknown kit "${name}" in "kit": there is no kits/${name}/kit.ts (known: ${kitNames().join(', ') || 'none'})`;
+/**
+ * What to say about a kit name no kit has: the name, the field of `game.json` it is in (`kit`, or
+ * `uses.1` for a kit the game also uses) and the kits there are.
+ */
+export function unknownKitMessage(name: string, field = 'kit'): string {
+  return `unknown kit "${name}" in "${field}": there is no kits/${name}/kit.ts (known: ${kitNames().join(', ') || 'none'})`;
 }
 
 /** The hook of kit `name`; throws (see {@link unknownKitMessage}) for a name no kit has. */

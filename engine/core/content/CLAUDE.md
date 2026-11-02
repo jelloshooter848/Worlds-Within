@@ -32,7 +32,9 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   each into a `ContentError` at that entry's file, or its part file and line (`checkAll: false`
   in `loadContent`'s options leaves it out; the editing verbs report those problems apart).
 - `manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json`: `id`, `title?`, `kit`,
-  `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`), `screen`
+  `uses?` (more kits whose content kinds the game also holds, beside `kit`'s: a platformer game
+  with `"uses": ["topdown"]` holds `room` files; kinds only, the rules stay `kit`'s; the tools
+  merge the kinds, see `engine/tools/game-check.ts`), `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`), `screen`
   (`{ width, height }`, whole numbers 64..1920, default 256x240: the game picture's size) and
   `headless` (the module that boots the game headless) and `view?` (the module that draws it, for
   `screenshot`; `engine/core/view.ts`).
@@ -65,7 +67,8 @@ file formats are described at the top of that file).
   sprite `.txt` reader's `row_outside_frame`, `unknown_directive`, `duplicate_frame`,
   `duplicate_legend`; the parts' `duplicate_field`; the loader's `missing_file`, `no_match`,
   `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; the CLI loader's
-  `unknown_kit` (`engine/tools/game-loader.ts`); the editing verbs' `not_writable` and
+  `unknown_kit`, `duplicate_kit` and `kind_clash` (at `kit` or `uses.<i>` in `game.json`:
+  `engine/tools/game-check.ts`); the editing verbs' `not_writable` and
   `multiline_row` (`engine/tools/content-file.ts`); and the top-down kit's room codes `wrong_size`
   and `invalid_room` (`kits/topdown/schema.ts`); the platformer kit's level codes `bad_spawn_key`, `size_mismatch`,
   `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`

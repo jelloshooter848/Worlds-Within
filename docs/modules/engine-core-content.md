@@ -19,7 +19,8 @@ object.
 - `content/kinds.ts`: `ContentKind`, `ContentKinds` (register, get, list, parse), `parseContent`.
 - `content/kinds.ts` also: `gridParts` on a kind keeps a field in a sibling text grid (`.map.txt`);
   `checkAll` checks across all of a kind's files (`KindIssue`s), run by `loadContent` last.
-- `content/manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json`.
+- `content/manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json` (its `kit`, and
+  `uses`: more kits whose content kinds it also holds).
 - `content/bundle.ts`: `loadContent(files, kinds, { root })` -> `ContentBundle`, `contentOf`,
   `contentNamed`, `globToRegExp`.
 - `content/engine-kinds.ts`: `engineContentKinds()` with the `song`, `sfx`, `palette` and `sprite`

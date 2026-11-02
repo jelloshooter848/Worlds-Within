@@ -10,7 +10,7 @@ hand. Full command help: [CLI reference](reference/cli.md).
 
 ```text
 games/<game>/
-  game.json            the manifest: id, kit, content files by kind, start seed, screen size, entry modules
+  game.json            the manifest: id, kit (and uses: more kits' kinds), content files by kind, start seed, screen size, entry modules
   content/             data files only (JSON, text grids); every file claimed by one kind
   headless.ts          createGame(content, seed, opts?): HeadlessGame   (for run, dump, mutants)
   view.ts              createView(content, seed, opts?): ViewGame       (for screenshot; optional)
@@ -82,7 +82,9 @@ of a kind's files once each passes (rooms: doors that line up, one player start)
 always name the file and the field (`{ file, path, pointer, code, message, row?, col?, line? }`).
 The engine's kinds come from `engineContentKinds()`; each kit's come from its hook,
 `kits/<name>/kit.ts` (`kinds()`, see `engine/core/kit.ts`), which `pnpm docs:gen` lists in
-`engine/tools/kit-list.ts`. Every format:
+`engine/tools/kit-list.ts`. A game reads its `kit`'s kinds plus those of every kit in `uses`
+(`"uses": ["topdown"]` lets a platformer game hold `room` files for a mini game; only the kinds:
+run rules and `mutants` stay `kit`'s). Every format:
 
 <!-- generated:files -->
 

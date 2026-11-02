@@ -219,6 +219,9 @@ describe('dependency rule: the checker', () => {
   // [importing file, specifier, the arrow]
   const good: [string, string, string][] = [
     ['games/demo/main.ts', '@kits/topdown', 'game -> kit'],
+    ['games/platformer-test/headless.ts', '@kits/platformer', 'a game on two kits -> its kit'],
+    ['games/platformer-test/headless.ts', '@kits/topdown', 'a game on two kits -> the kit it uses'],
+    ['games/platformer-test/minigame.ts', '../../kits/topdown/world', 'a game on two kits -> a kit file'],
     ['games/demo/main.ts', '@engine/sim/world', 'game -> sim'],
     ['games/demo/main.ts', '@engine/backends/canvas2d', 'game -> backend'],
     ['games/demo/main.ts', '@engine/core/loop', 'game -> core'],

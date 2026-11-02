@@ -14,6 +14,10 @@ import { DEFAULT_SCREEN, SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
  *     "headless": "headless.ts",
  *     "view": "view.ts" }
  *
+ * `uses` (optional) lists more kits whose content kinds the game also holds, beside `kit`'s: a
+ * platformer game with `"uses": ["topdown"]` can hold `room` files for a top-down mini game. Only
+ * the kinds come from them: the rules `run` switches off and `mutants` tries are `kit`'s.
+ *
  * `screen` is the game picture's size in game pixels (optional, 256x240 when left out): the
  * backbuffer, the integer scaling, the touch layout and screenshots all follow it.
  *
@@ -47,6 +51,13 @@ export const gameManifestSchema = z.strictObject({
   id: name('a game id').describe("the game's id: its folder name"),
   title: z.string().min(1).exactOptional().describe('one line saying what the game is'),
   kit: name('a kit name').describe('the kit the game is built on (a folder under `kits/`)'),
+  uses: z
+    .array(name('a kit name'))
+    .min(1)
+    .exactOptional()
+    .describe(
+      "more kits whose content kinds the game also holds (e.g. a mini game's rooms); kinds only: run rules and mutants stay `kit`'s",
+    ),
   content: z
     .record(
       name('a content kind'),
