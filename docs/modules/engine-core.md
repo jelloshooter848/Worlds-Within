@@ -68,7 +68,10 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round to its result,
   maps its end (`MiniGameEnd`: `result`, the kit's `report()` or null, `ticks`) to a declared
   outcome and returns `{ ok, result }` to commit, or refuses `unfinished`, `unmappable_report`
-  (the adapter threw) or `unknown_outcome` (undeclared or unplayable). Pure in practice, not on
+  (the adapter threw) or `unknown_outcome` (undeclared or unplayable). A round ended by `quit`
+  skips the adapter and the `playable` check: it returns `{ ok, quit: true, result }` with the
+  mission's `onQuit`, which the caller resolves with `quitMission` before committing, so the record
+  says `quit`. Pure in practice, not on
   `PURE_CORE` yet (no kit or sim file imports it at run time).
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a

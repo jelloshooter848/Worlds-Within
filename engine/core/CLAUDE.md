@@ -138,7 +138,10 @@ result, end, round }` (the `MissionResult` the caller commits, e.g. `commitMissi
 result)`) or refuses with `code`: `unfinished` (no result within `maxTicks`, default
 `MISSION_ROUND_MAX_TICKS` = 100,000), `unmappable_report` (the adapter threw: the report fits no
 outcome) or `unknown_outcome` (an undeclared outcome, or one outside `playable`). A refusal commits
-nothing. The adapter itself (which entities become what, which report means which outcome) is per
+nothing. A round that ends in `quit` is not a played result: it skips the adapter and the
+`playable` check and returns `{ ok: true, quit: true, result }` with the mission's `onQuit` (no
+report); the caller resolves it with `quitMission(world, id)` and then commits, so the record's
+resolution is `quit`. Every other success has `quit: false`. The adapter itself (which entities become what, which report means which outcome) is per
 game and kit pairing; `tests/kits/mission-adapter.test.ts` has one for the topdown kit's room
 challenge over the siege fixture. Pure in practice; not on `PURE_CORE` yet because no kit or sim
 file imports it at run time (add it there when one does). Tested in `mission-adapter.test.ts`.

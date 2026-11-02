@@ -1,7 +1,13 @@
 import type { JsonObject, JsonValue } from './headless';
 import type { InputFrame } from './input/input-manager';
 import type { MiniGame, MiniGameResult } from './minigame';
-import { playedResult, type MissionAdapter, type MissionDef, type MissionResult } from './missions';
+import {
+  missionResult,
+  playedResult,
+  type MissionAdapter,
+  type MissionDef,
+  type MissionResult,
+} from './missions';
 
 /**
  * Playing a mission through a kit's mini game (Engine 0.10 T7; the roadmap's "a small adapter
@@ -14,6 +20,7 @@ import { playedResult, type MissionAdapter, type MissionDef, type MissionResult 
  *     start: (input) => def.create({ params: input.params, attempt: 1 }, seed),
  *     input: (tick, round) => frame,                                // the player's, or a script's
  *   });
+ *   if (played.ok && played.quit) quitMission(world, 'raid');       // engine/sim: a quit
  *   if (played.ok) commitMission(world, 'raid', played.result);    // engine/sim: the commit
  *
  * `adapter.input` builds the kit's input from the plain world snapshot (`snapshotEntities` reads
@@ -21,7 +28,10 @@ import { playedResult, type MissionAdapter, type MissionDef, type MissionResult 
  * (`MiniGameEnd`: pass, fail or quit and the kit's `report()`) to one declared outcome. The result
  * is checked against the mission's declared (and playable) outcomes by `playedResult`: a report the
  * adapter cannot map (it throws) or one that names an outcome the mission does not declare is
- * refused, never committed.
+ * refused, never committed. A round that ends in `quit` is not a played result: it skips the
+ * adapter and the `playable` check, resolves to the mission's `onQuit` (with no report) and comes
+ * back with `quit: true`, so the caller resolves it with `quitMission` (resolution `quit`) before
+ * committing.
  */
 
 /** One entity of a plain world snapshot: its id and its components by name. */
@@ -82,7 +92,14 @@ export interface MissionRoundOptions<KitInput> {
 export type MissionRoundRefusal = 'unfinished' | 'unmappable_report' | 'unknown_outcome';
 
 export type MissionRoundResult =
-  | { ok: true; result: MissionResult; end: MiniGameEnd; round: MiniGame }
+  | {
+      ok: true;
+      /** The round was quit: `result` is the mission's `onQuit`; resolve it with `quitMission`. */
+      quit: boolean;
+      result: MissionResult;
+      end: MiniGameEnd;
+      round: MiniGame;
+    }
   | { ok: false; code: MissionRoundRefusal; error: string; end: MiniGameEnd | null; round: MiniGame };
 
 /** The default cap on a round's ticks. */
@@ -94,7 +111,8 @@ export const MISSION_ROUND_MAX_TICKS = 100_000;
  * `adapter.outcome` and check the outcome against the declared space. Refused (nothing to commit):
  * `unfinished` (no result within `maxTicks`), `unmappable_report` (the adapter threw: the report
  * fits no outcome) and `unknown_outcome` (the adapter named an outcome the mission does not
- * declare, or, with `playable`, one a player cannot reach). Pure: everything random is the round's
+ * declare, or, with `playable`, one a player cannot reach). A `quit` end resolves to `onQuit`
+ * without the adapter (`quit: true`; commit it after `quitMission`). Pure: everything random is the round's
  * own seed, so the same snapshot, seed and input give the same result.
  */
 export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>): MissionRoundResult {
@@ -118,6 +136,11 @@ export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>):
     report: round.report ? round.report() : null,
     ticks,
   };
+  if (end.result === 'quit') {
+    const quit = missionResult(opts.mission, opts.mission.onQuit);
+    if (!quit.ok) return { ok: false, code: quit.code, error: quit.error, end, round };
+    return { ok: true, quit: true, result: quit.result, end, round };
+  }
   let checked: ReturnType<typeof playedResult>;
   try {
     checked = playedResult(opts.adapter, opts.mission, end);
@@ -131,5 +154,5 @@ export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>):
     };
   }
   if (!checked.ok) return { ok: false, code: checked.code, error: checked.error, end, round };
-  return { ok: true, result: checked.result, end, round };
+  return { ok: true, quit: false, result: checked.result, end, round };
 }

@@ -115,7 +115,36 @@ describe('playMissionRound', () => {
       start: () => counter(1, 'quit'),
       input: step,
     });
-    expect(played.ok && played.result.outcome).toBe('off');
+    expect(played).toMatchObject({ ok: true, quit: true, result: { outcome: 'off' } });
+    expect(played.ok && played.result.report).toBeUndefined();
+  });
+
+  it('takes a quit to onQuit even when onQuit is not playable, without the adapter', () => {
+    const mission: MissionDef = { ...MISSION, playable: ['won'] };
+    const played = playMissionRound({
+      mission,
+      snapshot: SNAPSHOT,
+      adapter: {
+        ...ADAPTER,
+        outcome: () => {
+          throw new Error('the adapter maps no quit');
+        },
+      },
+      start: () => counter(1, 'quit', false),
+      input: step,
+    });
+    expect(played).toMatchObject({ ok: true, quit: true, result: { outcome: 'off', effects: [] } });
+  });
+
+  it('marks a played round as not quit', () => {
+    const played = playMissionRound({
+      mission: MISSION,
+      snapshot: SNAPSHOT,
+      adapter: ADAPTER,
+      start: () => counter(1, 'pass'),
+      input: step,
+    });
+    expect(played.ok && played.quit).toBe(false);
   });
 
   it('refuses an outcome outside the playable space', () => {

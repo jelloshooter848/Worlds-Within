@@ -16,6 +16,7 @@ import {
   missionsOf,
   openMission,
   playMission,
+  quitMission,
   scenarioKeys,
   worldFromScenario,
   type World,
@@ -114,12 +115,16 @@ function raidAdapter(refs: Readonly<Record<string, number>>, defending = 'blue')
 
 const hash = (value: unknown) => createHash('sha256').update(canonicalJson(value)).digest('hex').slice(0, 16);
 
-/** A bot's round: `fight` until the round ends, or for `fightTicks` and then stand still. */
-function botInput(fightTicks = Infinity) {
+/**
+ * A bot's round: `fight` until the round ends, or for `fightTicks` and then stand still; with
+ * `quitAt`, press select (quit) on that tick.
+ */
+function botInput(fightTicks = Infinity, quitAt = Infinity) {
   const bot = new TopDownBot({ 'siege-camp': [{ do: 'fight' }] });
   const input = new ScriptedInput({ steps: [] });
   return (tick: number, round: unknown) => {
-    input.setHeld(tick < fightTicks ? bot.next((round as RoomChallenge).world) : []);
+    const held = tick < fightTicks ? bot.next((round as RoomChallenge).world) : [];
+    input.setHeld(tick === quitAt ? ['select'] : held);
     input.next();
     return input;
   };
@@ -132,13 +137,15 @@ interface Played {
 }
 
 /** Open the raid on a fresh siege world and play it through the kit (nothing committed yet). */
-function playRaid(opts: { mission?: MissionDef; fightTicks?: number; ticks?: number } = {}): Played {
+function playRaid(
+  opts: { mission?: MissionDef; fightTicks?: number; ticks?: number; quitAt?: number } = {},
+): Played {
   const world = worldFromScenario(SCENARIO);
   const opened = openMission(world, opts.mission ?? RAID, { refs: REFS });
   if (!opened.ok) throw new Error(opened.error);
   const adapter = raidAdapter(REFS);
   const roundHashes: string[] = [];
-  const input = botInput(opts.fightTicks);
+  const input = botInput(opts.fightTicks, opts.quitAt);
   const played = playMissionRound({
     mission: opened.mission,
     snapshot: opened.snapshot,
@@ -268,6 +275,21 @@ describe('a mission played through the topdown kit by an adapter', () => {
     expect(!played.ok && played.error).toMatch(/names "2,8", which is no engine/);
     expect(hash(world.snapshot())).toBe(before);
     expect(missionsOf(world).open()[0]?.resolved).toBeNull();
+  });
+
+  it('commits a quit as its onQuit outcome, resolution quit, even when onQuit is not playable', () => {
+    const mission: MissionDef = { ...RAID, playable: ['clean', 'partial'] };
+    const { world, played } = playRaid({ mission, quitAt: 20 });
+    expect(played).toMatchObject({ ok: true, quit: true, end: { result: 'quit' } });
+    if (!played.ok) throw new Error(played.error);
+    expect(played.result.outcome).toBe('repelled');
+    const quit = quitMission(world, 'raid');
+    if (!quit.ok) throw new Error(quit.error);
+    const done = commitMission(world, 'raid', played.result);
+    if (!done.ok) throw new Error(done.error);
+    expect(done.record).toMatchObject({ outcome: 'repelled', resolution: 'quit' });
+    expect(done.record.report).toBeUndefined();
+    for (const key of ['ram', 'tower', 'catapult']) expect(has(world, key)).toBe(true);
   });
 
   it('refuses an outcome the mission does not let a player reach, in the adapter and in the sim', () => {
