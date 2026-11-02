@@ -122,7 +122,7 @@ n)` and `lossOrder(world, squad)`. Loss order: unnamed first, then regulars, her
 - Terrain (`terrain.ts`): the `Terrain` component `{ width, height, types, elevation, cells }`
   held by one entity; `flatTerrain`, `terrainOf`, `terrainEntity`, `heightAt(t, x, y)` (integer
   elevation), `typeAt`, `moveCost` (null when impassable or off the grid), `passable`, `inBounds`,
-  `cellIndex`, `cellAt`. Height is data only in 0.8; line of sight comes in 0.9 or later.
+  `cellIndex`, `cellAt`. Height is data only (0.8, and still in 0.9); line of sight comes later.
 
 ## Imports allowed
 

@@ -259,7 +259,8 @@ _(Done. What was built, the choices made and how each item was checked are in
 ### PixiJS: now or later?
 
 **Decided: later.** The Canvas2D renderer stays for now, and the RTS release (0.9) decides by
-measuring with a benchmark.
+measuring with a benchmark. _(Measured at 0.9, item 133: Canvas2D holds 60 fps with 500 units at
+zoom 0.5, 1 and 2, so PixiJS was not adopted and is listed under "Later".)_
 
 - Canvas2D works, is tested, and draws everything we have at our picture sizes easily.
 - Switching renderer in the same releases as the restructure and the contract would mix up the cause
@@ -419,7 +420,7 @@ part of the simulation. _(Decided: items 99-101, reasoning in
 
 ---
 
-## 0.9 RTS kit and view
+## 0.9 RTS kit and view (done)
 
 **Goal:** the first view of the simulation that can be played, shown in a sample RTS skirmish.
 
@@ -440,6 +441,9 @@ part of the simulation. _(Decided: items 99-101, reasoning in
 **Done when:** you can build a barracks, train units and fight an enemy group in the skirmish sample in
 the browser, and the same battle gives the same state hashes when replayed headless from the recorded
 orders.
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-09).)_
 
 **Out of scope:** missions, other genres.
 
@@ -705,8 +709,8 @@ both paths (playing the mission and delegating it) change the battle the way the
 offers both the RTS and tower-defense modes, and a full Siege replay gives the same hashes every time.
 
 **Decisions needed first:** art direction; whether the player is a civilization, a hero, or both. (The
-engine half of that question, whether the RTS kit supports a directly controlled hero unit, is answered
-at 0.9.)
+engine half of that question, whether the RTS kit supports a directly controlled hero unit, was answered
+at 0.9: yes, item 121.)
 
 ---
 
@@ -780,16 +784,17 @@ whose only difference is that hero's fate.
 
 "0.x" and "1.0" mean engine releases. Worlds Within releases are written "WW 0.x".
 
-| Question                                                                                          | Needed by                                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Which ECS: Koota, bitECS, miniplex, or our own?                                                   | 0.8: decided (item 99): our own small ECS with plain-data stores and ascending-id iteration ([build log](BUILD-LOG.md#decisions-1))                                       |
-| Is height part of the simulation (terrain height, line of sight)?                                 | 0.8: decided (item 101): yes, as data only (integer elevation per cell, integer `z` on Position); line of sight later, in the sim ([build log](BUILD-LOG.md#decisions-1)) |
-| What a simulation tick means in world time (minutes? hours?)                                      | 0.8: decided (item 100): one tick is one world minute, an integer counter independent of the frame loop ([build log](BUILD-LOG.md#decisions-1))                           |
-| Does the RTS kit need a directly controlled "hero" unit as well as squads?                        | 0.9: decided (item 121): yes, an ordinary unit entity with a squad `Member` role `hero`, ordered one by one alongside squads ([build log](BUILD-LOG.md#decisions))        |
-| How delegated outcomes are weighted                                                               | 0.10                                                                                                                                                                      |
-| Exact rules for flashback (retrospective) missions                                                | 0.10 (can be left out until after Engine 1.0)                                                                                                                             |
-| What the mini siege's top-down mission is                                                         | Decide later, by 0.11 (proposal: a sabotage-style mission, with original content)                                                                                         |
-| Art style for the samples                                                                         | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games)                                                                          |
-| Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                                                                                                    |
-| Art direction: chiptune and NES-style pixels like SMBC, or something else                         | WW 0.1 (engine samples use their own simple art)                                                                                                                          |
-| Which third mode                                                                                  | WW 0.3                                                                                                                                                                    |
+| Question                                                                                               | Needed by                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Which ECS: Koota, bitECS, miniplex, or our own?                                                        | 0.8: decided (item 99): our own small ECS with plain-data stores and ascending-id iteration ([build log](BUILD-LOG.md#decisions-1))                                         |
+| Is height part of the simulation (terrain height, line of sight)?                                      | 0.8: decided (item 101): yes, as data only (integer elevation per cell, integer `z` on Position); line of sight later, in the sim ([build log](BUILD-LOG.md#decisions-1))   |
+| What a simulation tick means in world time (minutes? hours?)                                           | 0.8: decided (item 100): one tick is one world minute, an integer counter independent of the frame loop ([build log](BUILD-LOG.md#decisions-1))                             |
+| Does the RTS kit need a directly controlled "hero" unit as well as squads?                             | 0.9: decided (item 121): yes, an ordinary unit entity with a squad `Member` role `hero`, ordered one by one alongside squads ([build log](BUILD-LOG.md#decisions))          |
+| Does PixiJS come in for the RTS view, or does Canvas2D stay?                                           | 0.9: decided (item 133): Canvas2D stays, holding 60 fps with 500 units at zoom 0.5, 1 and 2; PixiJS moves to "Later" ([build log](BUILD-LOG.md#t3-the-rendering-benchmark)) |
+| How delegated outcomes are weighted                                                                    | 0.10                                                                                                                                                                        |
+| Exact rules for flashback (retrospective) missions                                                     | 0.10 (can be left out until after Engine 1.0)                                                                                                                               |
+| What the mini siege's top-down mission is                                                              | Decide later, by 0.11 (proposal: a sabotage-style mission, with original content)                                                                                           |
+| Art style for the samples                                                                              | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games)                                                                            |
+| Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 hero row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                                                                                                      |
+| Art direction: chiptune and NES-style pixels like SMBC, or something else                              | WW 0.1 (engine samples use their own simple art)                                                                                                                            |
+| Which third mode                                                                                       | WW 0.3                                                                                                                                                                      |

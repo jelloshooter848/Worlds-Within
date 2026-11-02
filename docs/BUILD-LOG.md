@@ -9,12 +9,69 @@ review the choices.
 
 ## Engine 0.9
 
-The RTS kit and view. Being built on branch `engine/build-0.15`; not tagged (no tags during the
-build, owner answer 24). This section grows task by task; it starts with the decisions taken before
-any code.
+The RTS kit and view. Built on branch `engine/build-0.15`; not tagged (no tags during the build,
+owner answer 24). The kit's rules are in `kits/rts/CLAUDE.md` and the sample's in
+`games/samples/rts-skirmish/CLAUDE.md`; their agent pages are `docs/modules/kits-rts.md` and
+`docs/modules/games-samples-rts-skirmish.md`. The decisions came first, before any code; notes
+from the tasks that needed more than a line (T3, T4, T9, T10, T12) follow the summary.
 
-The stacking-test gap report (`docs/reports/stacking-test.md`) assigns no gap to 0.9: its 16 open
-gaps went to 0.10, 0.11, 0.14 and 0.15, so this release takes none over.
+**Stacking-test gaps: none are assigned to 0.9.** The gap report (`docs/reports/stacking-test.md`)
+moved its 16 open gaps to 0.10, 0.11, 0.14 and 0.15, so this release took none over.
+
+### What was built
+
+- **Decisions before code** (T1): the hero unit and the other open 0.9 questions, settled in
+  writing (items 121-132, below).
+- **Eight-way facing and Canvas2D zoom** (T2): `Facing` in `engine/core/present` gains the four
+  diagonals (`FACINGS`, `cardinalFacing`, `mirrorFacing`, `facesLeft`); a skin with no diagonal
+  frame falls back to the horizontal part, and `flipFacing` mirrors right-hand frames for the
+  left-hand ones (the 3D backend mirrors them too). `SkinnedCanvasPresenter` honours `zoom` (the
+  hint's, else the skin's): the map copy, tiles and sprites are scaled, positions rounded to whole
+  picture pixels, and `CameraFollower` frames and clamps the zoomed view (`cameraView`,
+  `cameraZoom`). Zoom-1 drawing, run files and golden hashes are unchanged.
+- **The rendering benchmark** (T3): `tests/bench/rts-render/`, a seeded synthetic RTS scene drawn
+  by the engine's Canvas2D presenter in headless Chromium, with an optional PixiJS v8 column from a
+  scratch install. Canvas2D holds the 500-unit target, so PixiJS is not added (item 133; numbers
+  in "T3: the rendering benchmark" below). T4, the PixiJS backend, was therefore not built.
+- **Pointer input and the RTS camera** (T5): `engine/core/input/pointer-logic.ts`
+  (`PointerGestures`, pure: tap, long-press, box drag, middle-button and two-finger pan, edge
+  scroll, wheel and pinch zoom, for mouse, pen and touch) and `pointer.ts` (`PointerSource` on the
+  canvas); `RtsCamera` in `engine/core/present` (scrolling clamped to the map, zoom 0.5 to 2,
+  `worldToScreen` / `screenToWorld` that match the Canvas2D presenter); `pointer` and `touchPad`
+  options in `bootBrowserGame`, off and on by default, so existing games are unchanged.
+- **Pathfinding** (T6): `engine/sim/astar.ts`, in-house and all integer: `findPath` (A\* with a
+  fixed tie-break, a cap on expanded cells and a per-terrain cache) and `flowField` / `flowStep`
+  for a group sharing a goal, 4-way (the default, identical to `distanceField`) or 8-way (10/14
+  costs, no corner cutting). Measured on a 256 x 256 map with 300 units; groups of
+  `FLOW_GROUP_SIZE` (4) or more use a flow field.
+- **Orders, movement and combat** (T7): the order as plain JSON with a Zod schema in
+  `engine/core/orders.ts` (shared by the sim and kits); `applyOrder` in `engine/sim/rts.ts`
+  (checked against the world, a refused order changes nothing, every change under
+  `order:<id>`); the `Unit`, `Facing8`, `Task`, `Target` and `Cooldown` components; `moveSystem`,
+  `attackSystem` and `deathSystem`. Heroes are ordinary units an order can name alone.
+- **Construction, training and one resource** (T8): `build`, `train` and `gather` orders; unit and
+  building types as data (`engine/core/rts-types.ts`, held in the world by `RtsTypes`);
+  `engine/sim/economy.ts` places paid sites with footprints, builds them with workers, trains
+  queued units next to finished buildings and gathers gold into the faction's stockpile.
+- **Recorded orders, lockstep replay and sync hashes** (T9): run-file `orders`
+  (`{ tick, ...order }`) and sync `hashes` that `run` checks, stopping at the first that differs;
+  the optional `HeadlessGame.order`; a scenario's system set (`"systems": "village" | "rts"`); the
+  recorded battle fixture `engine/sim/__fixtures__/battle.run.json`.
+- **`kits/rts`** (T10): a typed reader of the sim's plain world snapshot, click and box selection,
+  the command mapper, the scripted enemy as data, `presentWorld`, `RtsControls` and the headless
+  adapter `rtsGame`; content kinds `rts-map`, `rts-types`, `rts-enemy`; rules `RTS_RULES` (five;
+  mutant checks report-only, not strict). It imports only `engine/core`.
+- **`games/samples/rts-skirmish`** (T11, T12): the first sample game, one 40 x 24 map as a world
+  scenario, unit and building types, a scripted raiding party, text pixel art and a Canvas2D skin,
+  joined to `engine/sim` and `kits/rts` by thin glue; four run files with sync hashes and golden
+  hashes (they guard all five kit rules); and its page (`index.html`, `main.ts`, `play.ts`,
+  `recording.ts`): mouse and touch play over a scrolling, zooming camera, a button bar, and Export,
+  which downloads the battle as a run file the CLI replays.
+- Agent docs: `kits/rts/CLAUDE.md`, `games/samples/rts-skirmish/CLAUDE.md` and their pages
+  (`docs/modules/kits-rts.md`, `docs/modules/games-samples-rts-skirmish.md`) linked from
+  `llms.txt`; the 0.9 parts of `engine/sim`, `engine/core`, `engine/core/present`,
+  `engine/core/shell`, `engine/backends/canvas2d` and `engine/tools` in their `CLAUDE.md` files
+  and pages; the generated schema, CLI and kit-list references; `docs/CHEATSHEET.md`.
 
 ### Decisions
 
@@ -144,6 +201,157 @@ content of its own.
 needs the RTS systems, not the village's haul, build and patrol. A scenario may name an engine
 system set (for example `"systems": "rts"`), defaulting to today's set, so the village and its
 hashes do not change.
+
+### Choices made
+
+The decisions above are items 121-132 and the benchmark decision is item 133 (T3, below). T9 and
+T10 recorded their choices as items 134-140 (in "T9" and "T10" below, and in `FEEDBACK-LOG.md`).
+The other builders' choices are items 141-149 in `FEEDBACK-LOG.md` ("Engine 0.9, builder
+choices"); in short:
+
+- **Canvas2D zoom** (T2, item 141): zoom comes from the frame's camera hint, else the skin;
+  positions are rounded to whole picture pixels, so sprites stay crisp at zoom 0.5 and 2. This
+  finishes the last open part of item 51 (zoom was still ignored after 0.5).
+- **One gesture set for mouse, pen and touch** (T5, item 142): left click or tap selects, a drag
+  past 4 px draws a box, right click or a 500 ms long-press commands, middle drag or two fingers
+  pan, wheel or pinch zoom (500 wheel px per doubling), the cursor within 4 px of an edge scrolls;
+  `RtsCamera` keeps zoom between 0.5 and 2 and the view inside the map. Pointer input and hiding
+  the touch pad are opt-in options of `bootBrowserGame`.
+- **Pathfinding numbers** (T6, item 143): a group of 4 or more units ordered together shares one
+  flow field (`FLOW_GROUP_SIZE`, measured); A\* stops after a cap of expanded cells and reports no
+  way.
+- **Units do not collide** (T7, item 144): units may share a cell and walk through buildings
+  (footprints only decide placement and reach); a unit with no task fights the nearest enemy in
+  range (ties to the lowest id); hits land at once, in id order.
+- **Paying and making** (T8, item 145): a cost is paid when the order is accepted, with no refund
+  and no cancel order; a type's numbers are copied into what is made, so a later change to the
+  types table never changes existing units or buildings; a faction's gold is the `Inventory` of
+  its `Stockpile` entity.
+- **The sample's run files** (T11, item 146): besides recorded orders, a run file may give
+  interface actions (`{ tick, ui: "click" | "box" | "command" | "build" | "train" | "stop", ... }`)
+  that go through the kit's selection and command mapper, so the kit's interface rules are
+  mutant-checked headless; `commands.run.json` gives exactly `battle.run.json`'s orders this way.
+  Units are drawn in three facings (down, up, right, mirrored for left; diagonals use their
+  horizontal part).
+- **The page** (T12, item 147): 10 ticks a second (6 loop steps a tick); the page's selection is
+  its own, not game state, so the page's hashes are a replay's; Export downloads the battle as a
+  run file (`skirmish-t<ticks>.run.json`) that ends at its last sync hash.
+- **Glue size** (T11, T12, item 148): decision 2 asked for each entry to be about 60 lines at
+  most; see "Deviations" below.
+- **Mutant strictness** (T10, item 149): `kits/rts` does not opt in to strict mutants, though the
+  sample's run files guard all five of its rules and `mutants games/samples/rts-skirmish` exits 0.
+- The root `package.json` version was left as it was, as in earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm dev   # then open /games/samples/rts-skirmish/ (also linked from the launcher at /)
+           # mouse: left click or drag a box to select, right click to move, gather or attack,
+           # middle drag or the edges to scroll, wheel to zoom, Shift+click to add;
+           # touch: tap, one-finger box, long-press to command, two fingers to pan and pinch;
+           # the bar: Build barracks (then click a place), Train soldier, Stop, Hero, Export
+pnpm -s cli validate games/samples/rts-skirmish --json
+pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json    # replay with sync hashes
+pnpm -s cli run <exported>.run.json --json                                # replay a battle played in the page
+pnpm -s cli mutants games/samples/rts-skirmish --json
+pnpm -s cli screenshot games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json
+pnpm -s cli run engine/sim/__fixtures__/battle.run.json --json            # the sim's recorded battle
+pnpm vitest run tests/browser/rts-skirmish.test.ts                        # the page in headless Chromium
+pnpm exec tsx tests/bench/rts-render/run.ts                               # the rendering benchmark
+```
+
+An exported run file names its game as `..`, so put it in `games/samples/rts-skirmish/runs/` (or
+pass `exportRun(game)` the path) before running it.
+
+### Done when
+
+Checked on 2026-11-02 at `4458b54` (the last 0.9 code commit) and again for this close-out:
+`pnpm lint && pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (131 test files,
+1425 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), with the browser tests
+running against the container's Chromium; every run file exits 0; `mutants` exits 0 for all four
+games.
+
+- **Met: you can build a barracks, train units and fight an enemy group in the skirmish sample in
+  the browser.** `pnpm vitest run tests/browser/rts-skirmish.test.ts` builds the repo as `pnpm
+build` does, serves it as `pnpm preview` does, checks the launcher links
+  `games/samples/rts-skirmish/`, and plays the page in headless Chromium with real mouse and touch
+  input: a mouse box selects two workers, Build barracks and a click place the site, a click and
+  a right click send the third worker to gather; when the barracks stands, a touch tap selects it
+  and three Train soldier clicks queue three soldiers; a touch box and a long-press send the
+  builders to gather; a middle drag pans and the wheel zooms out; a box over the soldiers, a
+  Shift+click on the hero and a right click on a raider attack, and the test waits until blue has
+  no units left, with the barracks and the hero still standing. It passes in this container. It
+  skips cleanly where no Chromium is installed, which is the case on CI.
+- **Met: the same battle gives the same state hashes when replayed headless from the recorded
+  orders.** The same test exports the battle through `window.wwSkirmish.exportRun()` (the orders
+  with their ticks and the page's sync hashes, every 20 ticks, made with Web Crypto) and replays
+  it with `pnpm -s cli run`: exit 0, every sync hash equal (`hashesChecked` equals the
+  recording's hash count, 8 when it was first run in T12) and the same final hash. Headless on its
+  own (and on CI): `pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json` exits
+  0 with its 13 sync hashes (ticks 0 to 240) equal and final hash `588fe33bb3ecfcfd`, on every
+  run; `tests/runs/run-files.test.ts` plays every run file twice against its golden `<name>.hashes.json`; `tests/kits/rts-sim.test.ts`
+  replays the kit's recorded player orders over a sim world to the same hashes; and
+  `engine/tools/orders-run.test.ts` shows a changed order fails at the first sync hash that
+  differs (exit 4, naming that tick and the last that matched).
+- **Met: the rendering benchmark decides whether PixiJS comes in.** `pnpm exec tsx
+tests/bench/rts-render/run.ts` (numbers in "T3: the rendering benchmark" below): Canvas2D holds
+  the 500-unit target at zoom 0.5, 1 and 2 (worst p95 14.3 ms against the 16.7 ms budget), so
+  PixiJS is not added (item 133) and stays in the roadmap's "Later"; the 1000-unit stretch misses
+  only with all 1000 units in view at zoom 0.5. The scene's own check,
+  `tests/bench/rts-render/scene.test.ts`, runs in `pnpm test`.
+- Scope items, each with its test: `kits/rts` reads and writes the simulation through orders only
+  (`tests/architecture/dependency-rule.test.ts`: kits import only `engine/core`; `kits/rts/*.test.ts`;
+  `tests/kits/rts-sim.test.ts`); world rules in `engine/sim` (`engine/sim/rts.test.ts`,
+  `economy.test.ts`); in-house A\* and flow fields (`engine/sim/astar.test.ts`); recorded orders,
+  lockstep replay and sync hashes (`engine/tools/orders-run.test.ts`,
+  `engine/sim/__fixtures__/battle.run.json`); the scrolling camera with zoom and click or box
+  selection by mouse and touch (`engine/core/input/pointer-logic.test.ts`, `pointer.test.ts`,
+  `engine/core/present/rts-camera.test.ts`, `kits/rts/controls.test.ts`,
+  `kits/rts/selection.test.ts`, the browser test); Canvas2D zoom and eight-way facing
+  (`engine/backends/canvas2d` and `engine/core/present` tests, `tests/runs/backend-parity.test.ts`);
+  the sample with one map as data and its own art (`games/samples/rts-skirmish/skirmish.test.ts`,
+  `play.test.ts`, `tests/build/pages.test.ts`).
+- Every run file passes `pnpm -s cli run` with exit 0: the 4 skirmish runs, the 11 runs of the
+  three earlier games and the 2 sim fixtures (`village-build`, `battle`), with the same final
+  hashes as before this close-out (this close-out changes only docs); `pnpm -s cli mutants games/samples/rts-skirmish --json` exits 0
+  with all five kit rules guarded.
+- **The stacking-test report assigns no gap to 0.9.** `docs/reports/stacking-test.md` has 37 gaps:
+  21 fixed in 0.7 and 16 moved to 0.10 (G16, G20, G37), 0.11 (G13, G18, G27, G28, G30), 0.14 (G5,
+  G8, G9, G10, G12, G31) and 0.15 (G17, G33, G36). None names 0.9, so this release had no gap to
+  take.
+
+### Deviations from the roadmap
+
+- **No PixiJS backend** (T4 skipped): the roadmap made it conditional, and the benchmark found it
+  not needed (item 133).
+- **The game glue is larger than decision 2 asked** (item 148). Decision 2 said the sample's
+  `headless.ts` and browser entry should each be about 60 lines at most. `headless.ts` is 85 lines
+  of code: `createGame` itself is about 25, and the rest is `sidesOf` (a per-side summary run
+  files check) and `SkirmishGame` (interface actions for run files, item 146). `main.ts` is 160
+  lines of code, almost all page DOM: the button bar, the status line, Export and the
+  `window.wwSkirmish` hook the browser test reads. The step loop, order application, recording
+  and hash schedule are not in them (they are in `kits/rts`, `play.ts` and `recording.ts`).
+  `play.ts` and `recording.ts` are game code a second RTS game would copy; moving them (and
+  `sidesOf`) into `kits/rts` or the shell is left for the owner (item 148), at the latest for
+  the mini siege (0.11), the second game on the kit.
+- **Units art is three-facing**, not eight (item 146): the presentation contract carries eight
+  facings and the kit presents them, but the sample's skin gives down, up and right only, using
+  the fallback T2 added.
+- **Feedback numbering:** T1's decisions are 121-132, T3's is 133, T9's 134-136, T10's 137-140,
+  and this close-out adds 141-149.
+
+### Outstanding issues
+
+- **Browser play is not checked on CI**: CI has no Chromium, so `tests/browser/rts-skirmish.test.ts`
+  skips there (as the other browser tests do); the headless replays of the same orders run on CI.
+- **The benchmark is not in CI** and was measured once on a container with no GPU (software
+  rendering); the Canvas2D presenter draws every entity, in view or not. Culling off-screen
+  entities is the first step if a later RTS view needs more headroom (T3).
+- No line of sight, fog of war or height rules yet (height is still data only, item 101); units
+  do not collide (item 144); no cancel order or refund (item 145).
+- The glue a second RTS game would copy (`play.ts`, `recording.ts`, `sidesOf`) is in the sample
+  (item 148).
+- Open owner decisions: items 121-149 in `FEEDBACK-LOG.md`.
 
 ### T3: the rendering benchmark
 

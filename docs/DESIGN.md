@@ -87,7 +87,8 @@ result when it ends.
 - The engine ships no game content, only tiny fixtures for its own tests.
 - Each test game and sample game is also a worked example for LLM users and an integration test.
   Engine 1.0 requires a small sample game for every kit, plus a multi-genre sample (the mini siege),
-  in `games/samples/`. The 1.0 API is documented as v1 for our own games only; a public API with a
+  in `games/samples/`. The first, `games/samples/rts-skirmish` (the RTS kit's, Engine 0.9), is
+  there; the rest arrive with their kits and at 0.15. The 1.0 API is documented as v1 for our own games only; a public API with a
   promise to outside developers comes later. Samples are games like any other: the engine never imports from them.
 
 ### 5. The dependency rule
@@ -112,8 +113,9 @@ clock, no DOM.
 
 How a kit and a backend talk:
 
-- Each frame, the backend gets a **read-only snapshot**. For each entity: id, kind, position, facing,
-  animation state and tags. Also the level map, this frame's events (for sounds and effects) and HUD
+- Each frame, the backend gets a **read-only snapshot**. For each entity: id, kind, position, facing
+  (eight directions from 0.9: the four sides and the diagonals; a skin with no diagonal frame falls
+  back to the diagonal's horizontal side), animation state and tags. Also the level map, this frame's events (for sounds and effects) and HUD
   values.
 - The backend **never sees kit internals** and can't change anything.
 - A per-backend **skin** text file maps each kind to a sprite or a mesh, and each event to a sound or
@@ -123,6 +125,10 @@ How a kit and a backend talk:
 - Both backends frame the same point: the camera's follow, deadzone, lerp and clamp maths live in
   core (`CameraFollower`, `engine/core/present/camera.ts`), and the 3D backend places its perspective
   camera so the depth-0 plane shows exactly the 2D picture.
+- **Zoom and pointer input** (from 0.9): the Canvas2D backend honours a frame's camera `zoom`, and
+  `RtsCamera` in core scrolls and zooms a map larger than the screen with screen-to-world maths
+  that match the presenter, so pointer gestures (mouse and touch: tap, box, pan, zoom) from core's
+  input land on world points. A kit reads those points; it never sees the canvas.
 - **Extension points** carry presentation-only effects: camera framing, depth, squash and stretch.
   Without them, 2.5D would look like flat 2D placed in 3D.
 
@@ -168,11 +174,11 @@ engine/
   backends/    canvas2d (2D sprites), three (2.5D/3D, from 0.6), null (headless)
   sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8)
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
-kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12)
+kits/          gameplay rules: topdown, platformer (0.5), rts (0.9, built), towerdefense (0.12)
 games/
   demo/              the current top-down demo (becomes samples/dungeon at 0.15)
   platformer-test/   the stacking test (0.7; becomes samples/platformer at 0.15)
-  samples/           engine sample games: rts-skirmish (0.9), mini-siege (0.11), tower-defense (0.12),
+  samples/           engine sample games: rts-skirmish (0.9, built), mini-siege (0.11), tower-defense (0.12),
                      platformer and dungeon (0.15)
   worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
 docs/
@@ -185,7 +191,10 @@ docs/
   one whose outcome space already excludes anything that would contradict committed history.
 - A kit holds no rules about the world. It reads what it is given and reports what happened. Kits
   don't import the simulation: a small adapter turns a mission's snapshot into kit input and the kit's
-  report into a mission result.
+  report into a mission result. The RTS kit (0.9) is the first: it reads the world's plain snapshot
+  and gives orders (plain JSON defined in core); movement, combat, building, training and gathering
+  are `engine/sim` systems, and the game's glue applies the orders and steps the world. Recorded
+  orders and the seed replay any battle headless to the same state hashes.
 
 ## Open questions
 

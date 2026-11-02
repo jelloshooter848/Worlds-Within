@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 141.** (Last used: 140.)
+**Next unused number: 150.** (Last used: 149.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -118,6 +118,8 @@ Choices the autonomous build made that the owner should check. Answer by number.
   generates the tools' kit list (`engine/tools/kit-list.ts`).
 - **51:** deadzone, lerp and clamping (to the map or a hint's `bounds`) were implemented in 0.5.
   `zoom` is still ignored, and the demo keeps `clamp: false`. See item 55.
+  _Engine 0.9 T2: the Canvas2D presenter now honours `zoom` too (the hint's, else the skin's);
+  see 141._
 
 **Engine 0.5**
 
@@ -467,3 +469,41 @@ orders)
   (`every`, `times`). A step whose order cannot be made yet (no units, no target) waits and is
   tried again, rather than being skipped. Random choices (`area` cells, `random-enemy`) use the
   adapter's RNG seeded from the game seed. OK?
+
+**Engine 0.9, builder choices** (details in `docs/BUILD-LOG.md`, Engine 0.9, Choices made)
+
+- **141.** Canvas2D zoom (T2): zoom comes from the frame's camera hint, else the skin; entity and
+  tile positions are rounded to whole picture pixels after scaling, so sprites stay crisp at zoom
+  0.5 and 2, and zoom-1 drawing is unchanged. OK?
+- **142.** Pointer input (T5): one gesture set for mouse, pen and touch: left click or tap selects,
+  a drag past 4 px draws a box, right click or a 500 ms long-press commands, middle drag or two
+  fingers pan, wheel or pinch zoom (500 wheel px per doubling), the cursor within 4 px of the
+  picture's edge scrolls. `RtsCamera` keeps zoom between 0.5 and 2 and the view inside the map.
+  Pointer input is opt-in in `bootBrowserGame` (`pointer: true`), as is hiding the touch pad
+  (`touchPad: false`). OK?
+- **143.** Pathfinding numbers (T6): an order for 4 or more units shares one flow field
+  (`FLOW_GROUP_SIZE`, from the measurement on a 256 x 256 map with 300 units); fewer use A\* each,
+  which gives up (no way) after a cap of expanded cells. OK?
+- **144.** Units do not collide (T7): units may share a cell and walk through buildings (a
+  footprint decides only placement and reach); a unit with no task fights the nearest enemy in
+  range (ties to the lowest id); hits land at once, in id order. Add collision or separation
+  later, and if so when?
+- **145.** Paying and making (T8): a cost is paid when the order is accepted, with no refund and
+  no cancel order; a type's numbers are copied into what is made, so changing the types table
+  never changes existing units or buildings; a faction's gold is the `Inventory` of its
+  `Stockpile` entity. OK?
+- **146.** The sample's run files and art (T11): run files may hold interface actions
+  (`{ tick, ui, ... }`: click, box, command, build, train, stop) beside recorded orders, so the
+  kit's interface rules are mutant-checked headless; units are drawn in three facings (down, up,
+  right, mirrored for left; diagonals use their horizontal part) rather than eight. OK, or draw
+  the diagonals?
+- **147.** The page (T12): 10 ticks a second (6 loop steps a tick); the page's selection is its
+  own and not game state, so the page's hashes equal a replay's; Export downloads the battle as a
+  run file that ends at its last sync hash. OK?
+- **148.** Deviation from decision 2 (about 60 lines of glue per entry): the sample's `headless.ts`
+  is 85 lines of code (`createGame` about 25, plus `sidesOf` and the interface actions for run
+  files) and `main.ts` 160 (page DOM: the button bar, Export and the test hook); `play.ts` and
+  `recording.ts` are game code a second RTS game would copy. Move them (and `sidesOf`) into
+  `kits/rts` or the shell now, or when the mini siege (0.11) becomes the kit's second game?
+- **149.** `kits/rts` does not opt in to strict mutants, though the sample's run files guard all
+  five of its rules and `mutants games/samples/rts-skirmish` exits 0. Opt in?

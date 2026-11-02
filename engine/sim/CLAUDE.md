@@ -179,8 +179,8 @@ every snapshot and save. `{ width, height, types, elevation, cells }`: `types` i
 `types`) list every cell row by row (`index = y * width + x`). `flatTerrain(w, h, type?)` builds
 flat ground. Helpers: `terrainOf(world)` / `terrainEntity(world)`, `heightAt(t, x, y)`,
 `typeAt`, `moveCost(t, x, y)` (the type's cost, or null when impassable or off the grid),
-`passable`, `inBounds`, `cellIndex`, `cellAt`. Height is data only in 0.8 (item 101): it changes
-no cost and there is no line of sight. Line-of-sight and height rules are for 0.9 onwards, in
+`passable`, `inBounds`, `cellIndex`, `cellAt`. Height is data only (item 101; still so after 0.9): it
+changes no cost and there is no line of sight. Line-of-sight and height rules come later, in
 integer maths, here in `engine/sim`.
 
 ## Scenarios

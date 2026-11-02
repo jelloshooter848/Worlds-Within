@@ -47,6 +47,13 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
   `new TopDownWorld(buildDungeon(rooms), { seed, disabledRules: opts.disabledRules })`. The
   platformer kit's is `new PlatformerWorld(level, profile, { seed, disabledRules, miniGames })`
   (`level` and `profile` kinds; see `games/platformer-lab/headless.ts`).
+- An RTS game (Engine 0.9) is the one kind of game that imports both `engine/sim` and a kit: its
+  glue builds a world from the map (`worldFromScenario`, an `rts-map` scenario with
+  `"systems": "rts"`) and hands it to the kit's `rtsGame({ world: { snapshot, applyOrder, step },
+enemy, seed, disabledRules })` (`@kits/rts`), which takes the player's orders and runs the
+  scripted enemy (`rts-enemy`). World rules (movement, combat, building, training, gathering) are
+  `engine/sim` systems; the kit only reads the world's snapshot and gives orders (`orderSchema`
+  in `engine/core/orders.ts`). See `games/samples/rts-skirmish/headless.ts`.
 - Mini games (`engine/core/minigame.ts`, pure): a `MiniGameDef { id, title, create(ctx, seed) }`
   makes a `MiniGame { step, snapshot, result, present? }` that ends `pass`, `fail` or `quit`. The
   game supplies the defs (a kit defines none); a platformer level's `!` triggers start rounds
@@ -73,7 +80,10 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
   `config/layers.js`).
 - Browser (`main.ts`), from 0.7 for a game on a kit world: `bootBrowserGame` (`@engine/core/shell`)
   with `canvasDisplay` / `threeDisplay` and a `HostScene` drawing a `FramePicture` (see
-  `games/platformer-lab/main.ts`). By hand (the demo): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
+  `games/platformer-lab/main.ts`). From 0.9, `pointer: true` adds mouse and touch gestures (tap,
+  box, pan, zoom; `page.pointer`) and `touchPad: false` hides the touch pad; an RTS page scrolls and
+  zooms with `RtsCamera` (`@engine/core/present`), and the Canvas2D presenter honours the frame's
+  `zoom` (see `games/samples/rts-skirmish/main.ts` and `play.ts`). By hand (the demo): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
   songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).
 
@@ -120,6 +130,7 @@ run rules and `mutants` stay `kit`'s). Every format:
 interface HeadlessGame {
   step(input: InputFrame): void; // one tick
   snapshot(): JsonObject; // the whole state, plain JSON-safe data; must not change the game
+  order?(order: JsonObject): string | null; // optional (Engine 0.9): a recorded order; null, or why it was dropped
 }
 export function createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame;
 ```
@@ -157,6 +168,15 @@ world run has no `input`, `disableRules` or `guards`; its paths read the world s
 (`components.Construction.0.1.done`: entry 0 of that kind in id order, `.1` its data). `run`,
 `dump`, hashes and replays work on it; `mutants` and `screenshot` refuse it. Sample:
 `engine/sim/__fixtures__/village-build.run.json`.
+
+Recorded orders and sync hashes (Engine 0.9): `"orders": [{ "tick": 40, "id": 1, "faction": "red",
+"type": "move", "units": [7], "target": { "x": 9, "y": 6 } }]` are applied after that tick's state
+and before the step from it (a world run applies them through `engine/sim`, which needs a scenario
+with `"systems": "rts"`; a game run hands them to the game's `order` method), and `"hashes":
+[{ "tick": 20, "hash": "..." }]` are sync hashes `run` checks, stopping at the first that differs
+(exit 4, naming that tick and the last that matched). A battle played in the RTS sample's page
+exports as such a run file. Samples: `engine/sim/__fixtures__/battle.run.json`,
+`games/samples/rts-skirmish/runs/battle.run.json`.
 
 <!-- generated:run-file -->
 
