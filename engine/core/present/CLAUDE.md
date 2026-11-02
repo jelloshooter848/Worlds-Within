@@ -32,16 +32,34 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
   fields are JSON-safe. Unknown fields are errors everywhere except on events.
 - `skin.ts`: skin files, the engine's `skin` content kind (`SKIN_KIND`, registered in
   `content/engine-kinds.ts`). One JSON file per backend: `{ backend, sheets?, kinds, tiles?,
-events?, hud?, camera? }`. `sheets` gives defaults (`sheet`, `palette`, `fallbackColor`) for
+events?, hud?, camera?, meshes?, camera3d? }`. `sheets` gives defaults (`sheet`, `palette`, `fallbackColor`) for
   entries that leave them out. A kind entry is 2D (`sheet`, `palette?`, `frames`, `flipFacing?`,
-  `size?`, `fallbackColor`, `offset?`) or 3D (`mesh`, `color`, `scale?`, `offset?`); the backend
-  picks which (`MESH_BACKENDS`, today `three`), and a field of the other shape is a
+  `size?`, `fallbackColor`, `offset?`) or 3D (`mesh`, `color`, `scale?`, `depth?`, `z?`,
+  `offset?`); a tile entry 2D (`sheet?`, `frame`, `fallbackColor`) or 3D (`mesh`, `color`,
+  `depth?`, `z?`). The backend picks which (`MESH_BACKENDS`, today `three`), and a field of the
+  other shape (including the skin-level `meshes` and `camera3d` on a 2D skin) is a
   `wrong_backend_field` error, a needed one left out `missing_field`. `frames` maps an animation
   state to a frame name, a cycle `{ frames, ticks? (default 8), loop? }` or a per-facing map
   `{ up?, down?, left?, right? }` of names or cycles. `tiles` maps a tile character or id to
   `{ sheet?, frame, fallbackColor }`; `events` maps an event type to `{ sound?, effect? }`
   (`effect.kind`: `flash`, `particles`, `shake`, `tint`); `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`.
+  - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
+    is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
+    round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px
+    thick (default the box's width, so a tile is a one-tile block), or a key of `meshes`: a
+    compound mesh, a list of parts `{ shape, size: { w, h, d }, at?: { x, y, z }, color?,
+rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-left corner in
+    x/y and the centre in z; `rotate` is quarter turns about the upright axis). A `mesh` that is
+    neither is `missing_ref` at that field; a `meshes` key may not be a primitive's name.
+    `camera3d` `{ fov?, tilt?, layerDepth?, lights?: { ambient?, directional? } }` gives framing
+    defaults (`DEFAULT_CAMERA3D`; `layerDepth` is z px per entity `layer`).
+  - `resolveMeshParts(skin, entry, box)` (pure, the one reading of mesh text shared by backends
+    and tests): the `MeshPart[]` `{ shape, size, at, color, rotate }` for a kind or tile entry,
+    with `box` the entity box or `{ w: tileSize, h: tileSize }`: a primitive is one part filling
+    the box; parts default to the entry's colour; `scale` grows every part about the box's
+    bottom centre; then `offset` and `z` move the mesh. A sprite entry or unknown mesh gives `[]`.
+    `resolveCamera3d(skin)` fills `camera3d` from `DEFAULT_CAMERA3D`.
   - Cross-file (`SKIN_KIND.checkAll`, `checkSkinRefs`): every sheet, palette and sound must be a
     sprite, palette, song or sfx of the game (`missing_ref`), and every frame a frame of its
     sheet (`missing_frame`), each at the skin file and field.
@@ -71,4 +89,7 @@ at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the
 frame and on a version (or id) change only. `skin.test.ts`: a fixture skin passes, bad fields
 are reported at their path (inside unions too), 2D and 3D fields are kept apart, missing sheets,
 palettes, sounds and frames are cross-file errors, and `resolveSkinFrame` picks states, cycles
-frames by `t`, handles facings and flips, and falls back for unknown kinds. Run with `pnpm test`.
+frames by `t`, handles facings and flips, and falls back for unknown kinds. Its 3D part covers a
+`three` skin with primitives and compound meshes, unknown mesh ids (`missing_ref`), 2D/3D fields
+on the wrong backend, the demo and platformer-lab canvas2d skins still validating,
+`resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. Run with `pnpm test`.

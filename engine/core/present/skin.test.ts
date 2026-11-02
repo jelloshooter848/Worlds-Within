@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { loadContent } from '../content/bundle';
 import { engineContentKinds } from '../content/engine-kinds';
 import { validate } from '../content/validate';
 import type { Facing } from './types';
-import { DEFAULT_FALLBACK_COLOR, resolveSkinFrame, skinSchema, type SkinFile } from './skin';
+import {
+  DEFAULT_CAMERA3D,
+  DEFAULT_FALLBACK_COLOR,
+  resolveCamera3d,
+  resolveMeshParts,
+  resolveSkinFrame,
+  skinSchema,
+  type SkinFile,
+} from './skin';
 
 /** A fixture skin using every field. */
 function fixture(): SkinFile {
@@ -228,5 +237,183 @@ describe('resolveSkinFrame', () => {
       frame: null,
       fallbackColor: '#123456',
     });
+  });
+});
+
+/** A 3D fixture skin: primitives, a compound mesh, depth, z and the camera3d block. */
+function threeFixture(): SkinFile {
+  return {
+    backend: 'three',
+    meshes: {
+      runner: [
+        { shape: 'box', size: { w: 12, h: 10, d: 8 }, at: { x: 2, y: 6, z: 0 } },
+        { shape: 'sphere', size: { w: 10, h: 8, d: 8 }, at: { x: 3, y: 0, z: 0 }, color: '#fcbcb0' },
+        { shape: 'cone', size: { w: 4, h: 4, d: 4 }, at: { x: 6, y: -4, z: 2 }, rotate: 1 },
+      ],
+    },
+    kinds: {
+      runner: { mesh: 'runner', color: '#d82800', scale: 2, offset: { x: 1, y: -1 }, z: 3 },
+      coin: { mesh: 'cylinder', color: '#fcfc00', depth: 4 },
+      ghost: { mesh: 'sphere', color: '#fff' },
+    },
+    tiles: {
+      '#': { mesh: 'box', color: '#c84c0c' },
+      '/': { mesh: 'wedge', color: '#00a800', depth: 32, z: -8 },
+      '~': { mesh: 'plane', color: '#2038ec' },
+      '|': { mesh: 'cone', color: '#005800' },
+    },
+    events: { coin: { sound: 'tune' } },
+    camera: { follow: 'runner', lerp: 0.5 },
+    camera3d: { fov: 40, tilt: 6, layerDepth: 12, lights: { ambient: 0.5, directional: 1 } },
+  };
+}
+
+describe('3D skins', () => {
+  it('accepts a three skin with primitives, compound meshes, depth and camera3d', () => {
+    expect(validate('skin.json', threeFixture(), skinSchema).errors).toEqual([]);
+  });
+
+  it('reports a mesh id that is neither a primitive nor in meshes, at the field', () => {
+    const s = threeFixture();
+    s.kinds['coin']!.mesh = 'coin';
+    s.tiles!['#']!.mesh = 'brick';
+    expect(errorsOf(s)).toEqual([
+      ['kinds.coin.mesh', 'missing_ref'],
+      ['tiles["#"].mesh', 'missing_ref'],
+    ]);
+  });
+
+  it('checks compound parts and camera3d fields, and a mesh may not shadow a primitive', () => {
+    const s = threeFixture() as unknown as {
+      meshes: Record<string, Record<string, unknown>[]>;
+      camera3d: Record<string, unknown>;
+    };
+    s.meshes['runner']![0]!['shape'] = 'torus';
+    s.meshes['runner']![1]!['rotate'] = 4;
+    s.meshes['box'] = [{ shape: 'box', size: { w: 1, h: 1, d: 1 } }];
+    s.camera3d['fov'] = 0;
+    expect(errorsOf(s)).toEqual([
+      ['meshes.runner.0.shape', 'invalid_value'],
+      ['meshes.runner.1.rotate', 'too_big'],
+      ['camera3d.fov', 'too_small'],
+    ]);
+    s.meshes['runner']![0]!['shape'] = 'box';
+    s.meshes['runner']![1]!['rotate'] = 1;
+    s.camera3d['fov'] = 40;
+    expect(errorsOf(s)).toEqual([['meshes.box', 'custom']]);
+  });
+
+  it('flags sprite fields on a three skin and 3D fields on a canvas2d skin', () => {
+    const three = threeFixture() as unknown as {
+      kinds: Record<string, Record<string, unknown>>;
+      tiles: Record<string, Record<string, unknown>>;
+    };
+    three.kinds['coin']!['frames'] = { idle: 'a' };
+    three.tiles['#']!['frame'] = 'wall';
+    expect(errorsOf(three)).toEqual([
+      ['kinds.coin.frames', 'wrong_backend_field'],
+      ['tiles["#"].frame', 'wrong_backend_field'],
+    ]);
+
+    const flat = fixture() as unknown as Record<string, unknown> & {
+      kinds: Record<string, Record<string, unknown>>;
+      tiles: Record<string, Record<string, unknown>>;
+    };
+    flat.kinds['bat']!['depth'] = 8;
+    flat.kinds['hero']!['z'] = 2;
+    flat.tiles['#']!['mesh'] = 'box';
+    flat['meshes'] = { m: [{ shape: 'box', size: { w: 1, h: 1, d: 1 } }] };
+    flat['camera3d'] = { fov: 40 };
+    expect(errorsOf(flat)).toEqual([
+      ['meshes', 'wrong_backend_field'],
+      ['camera3d', 'wrong_backend_field'],
+      ['kinds.hero.z', 'wrong_backend_field'],
+      ['kinds.bat.depth', 'wrong_backend_field'],
+      ['tiles["#"].mesh', 'wrong_backend_field'],
+    ]);
+  });
+
+  it('leaves the demo and platformer-lab canvas2d skins valid', () => {
+    for (const game of ['demo', 'platformer-lab']) {
+      const url = new URL(`../../../games/${game}/content/skins/canvas2d.json`, import.meta.url);
+      const data: unknown = JSON.parse(readFileSync(url, 'utf8'));
+      expect(validate(`${game}/skins/canvas2d.json`, data, skinSchema).errors).toEqual([]);
+    }
+  });
+});
+
+describe('resolveMeshParts', () => {
+  const skin = threeFixture();
+
+  it('reads a primitive as one part filling the box, as deep as it is wide by default', () => {
+    expect(resolveMeshParts(skin, skin.tiles!['#']!, { w: 16, h: 16 })).toEqual([
+      { shape: 'box', size: { w: 16, h: 16, d: 16 }, at: { x: 0, y: 0, z: 0 }, color: '#c84c0c', rotate: 0 },
+    ]);
+    expect(resolveMeshParts(skin, skin.kinds['coin']!, { w: 8, h: 12 })).toEqual([
+      {
+        shape: 'cylinder',
+        size: { w: 8, h: 12, d: 4 },
+        at: { x: 0, y: 0, z: 0 },
+        color: '#fcfc00',
+        rotate: 0,
+      },
+    ]);
+    expect(resolveMeshParts(skin, skin.tiles!['/']!, { w: 16, h: 16 })).toEqual([
+      {
+        shape: 'wedge',
+        size: { w: 16, h: 16, d: 32 },
+        at: { x: 0, y: 0, z: -8 },
+        color: '#00a800',
+        rotate: 0,
+      },
+    ]);
+  });
+
+  it('reads a compound mesh as its parts, defaulting to the entry colour', () => {
+    const entry = { mesh: 'runner', color: '#d82800' };
+    expect(resolveMeshParts(skin, entry, { w: 16, h: 16 })).toEqual([
+      { shape: 'box', size: { w: 12, h: 10, d: 8 }, at: { x: 2, y: 6, z: 0 }, color: '#d82800', rotate: 0 },
+      { shape: 'sphere', size: { w: 10, h: 8, d: 8 }, at: { x: 3, y: 0, z: 0 }, color: '#fcbcb0', rotate: 0 },
+      { shape: 'cone', size: { w: 4, h: 4, d: 4 }, at: { x: 6, y: -4, z: 2 }, color: '#d82800', rotate: 1 },
+    ]);
+  });
+
+  it('scales about the bottom centre of the box, then applies offset and z', () => {
+    // Box 16x16: the bottom centre is (8, 16). x' = 8 + (x - 8) * 2 + 1, y' = 16 + (y - 16) * 2 - 1.
+    expect(resolveMeshParts(skin, skin.kinds['runner']!, { w: 16, h: 16 })).toEqual([
+      {
+        shape: 'box',
+        size: { w: 24, h: 20, d: 16 },
+        at: { x: -3, y: -5, z: 3 },
+        color: '#d82800',
+        rotate: 0,
+      },
+      {
+        shape: 'sphere',
+        size: { w: 20, h: 16, d: 16 },
+        at: { x: -1, y: -17, z: 3 },
+        color: '#fcbcb0',
+        rotate: 0,
+      },
+      { shape: 'cone', size: { w: 8, h: 8, d: 8 }, at: { x: 5, y: -25, z: 7 }, color: '#d82800', rotate: 1 },
+    ]);
+    const big = { mesh: 'box', color: '#fff', scale: 0.5 };
+    expect(resolveMeshParts(skin, big, { w: 16, h: 8 })).toEqual([
+      { shape: 'box', size: { w: 8, h: 4, d: 8 }, at: { x: 4, y: 4, z: 0 }, color: '#fff', rotate: 0 },
+    ]);
+  });
+
+  it('gives no parts for a sprite entry or an unknown mesh', () => {
+    expect(resolveMeshParts(skin, { frames: { idle: 'a' } }, { w: 16, h: 16 })).toEqual([]);
+    expect(resolveMeshParts(skin, { mesh: 'nope', color: '#fff' }, { w: 16, h: 16 })).toEqual([]);
+  });
+});
+
+describe('resolveCamera3d', () => {
+  it('fills the fields a skin leaves out with the defaults', () => {
+    expect(resolveCamera3d({ backend: 'three', kinds: {} })).toEqual(DEFAULT_CAMERA3D);
+    expect(
+      resolveCamera3d({ backend: 'three', kinds: {}, camera3d: { fov: 30, lights: { ambient: 1 } } }),
+    ).toEqual({ ...DEFAULT_CAMERA3D, fov: 30, lights: { ...DEFAULT_CAMERA3D.lights, ambient: 1 } });
   });
 });

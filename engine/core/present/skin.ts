@@ -17,17 +17,60 @@ import type { DeepReadonly, Facing, PresentEntity } from './types';
  *     "hud": [{ "status": "health", "as": "hearts", "x": 8, "y": 8, "frame": "heart" }] }
  *
  * The backend decides the entry shape: a 3D backend (`three`, see {@link MESH_BACKENDS}) takes
- * mesh entries (`mesh`, `color`, `scale?`), every other backend sprite entries (`sheet`, `frames`,
- * `fallbackColor`, ...). Both shapes share one field list, so 0.6 adds meshes without a format
- * break, and a field of the other shape is an error at that field.
+ * mesh entries (`mesh`, `color`, `scale?`, `depth?`, `z?`), every other backend sprite entries
+ * (`sheet`, `frames`, `fallbackColor`, ...). Both shapes share one field list, so 0.6 added meshes
+ * without a format break, and a field of the other shape is an error at that field.
  *
- * Cross-file checks (`SKIN_KIND.checkAll`): every sheet, palette and sound a skin names must be a
+ * A 3D skin (Engine 0.6) describes every mesh as text, low-poly and procedural:
+ *
+ *   { "backend": "three",
+ *     "meshes": { "hero": [{ "shape": "box", "size": { "w": 12, "h": 10, "d": 8 }, "at": { "x": 2, "y": 6, "z": 0 } },
+ *                          { "shape": "sphere", "size": { "w": 10, "h": 8, "d": 8 }, "at": { "x": 3, "y": 0, "z": 0 },
+ *                            "color": "#fcbcb0" }] },
+ *     "kinds": { "hero": { "mesh": "hero", "color": "#d82800" }, "coin": { "mesh": "cylinder", "color": "#fcfc00", "depth": 4 } },
+ *     "tiles": { "#": { "mesh": "box", "color": "#c84c0c" }, "/": { "mesh": "wedge", "color": "#00a800" } },
+ *     "camera3d": { "fov": 40, "tilt": 6, "layerDepth": 16, "lights": { "ambient": 0.6, "directional": 0.8 } } }
+ *
+ * A `mesh` names a primitive ({@link MESH_PRIMITIVES}), which fills the entity box (or the tile)
+ * and is `depth` px thick (default: as deep as the box is wide, so a tile is a cube-shaped block),
+ * or a key of `meshes`, a compound mesh: a list of primitive parts, sized and placed in world px.
+ * Local space is world px with x right, y down (as in 2D) and z toward the camera; a part's `at`
+ * is its top-left corner in x and y from the entity box's top-left, and its centre in z from the
+ * entity's depth plane. {@link resolveMeshParts} is the one reading of this text that backends and
+ * tests share. `camera3d` gives the 3D framing defaults ({@link DEFAULT_CAMERA3D}).
+ *
+ * Checks: every `mesh` must be a primitive or a key of `meshes` (`missing_ref`, in the skin
+ * itself). Cross-file (`SKIN_KIND.checkAll`): every sheet, palette and sound a skin names must be a
  * sprite, palette, song or sfx of the game (`missing_ref`), and every frame a frame of its sheet
  * (`missing_frame`).
  */
 
 /** Backends whose skins hold meshes; every other backend's skin holds sprites. */
 export const MESH_BACKENDS: readonly string[] = ['three'];
+
+/**
+ * The shapes a mesh is built from, sized by a `{ w, h, d }` box in world px (before `rotate`):
+ * - `box`: fills the box.
+ * - `wedge`: a slope; its side profile (x-y) rises from nothing at the left to full height at the
+ *   right, through the full depth.
+ * - `cylinder`, `cone`: upright (along y), with an elliptic base of w x d; a cone's tip is at the top.
+ * - `sphere`: an ellipsoid filling the box.
+ * - `plane`: a flat w x h face toward the camera at the box's middle depth (`d` is ignored).
+ * Round shapes use {@link LOW_POLY_SEGMENTS}, so every backend draws the same low-poly shape.
+ */
+export const MESH_PRIMITIVES = ['box', 'wedge', 'cylinder', 'cone', 'sphere', 'plane'] as const;
+export type MeshPrimitive = (typeof MESH_PRIMITIVES)[number];
+
+/** Segment counts for round primitives: around a cylinder, cone or sphere, and a sphere's rings. */
+export const LOW_POLY_SEGMENTS = { radial: 8, rings: 6 } as const;
+
+/** 3D framing defaults, used for every field a skin's `camera3d` leaves out. */
+export const DEFAULT_CAMERA3D = {
+  fov: 45,
+  tilt: 0,
+  layerDepth: 16,
+  lights: { ambient: 0.6, directional: 0.8 },
+} as const;
 
 /** The colour a backend draws a box in when a kind has no skin entry and the skin gives none. */
 export const DEFAULT_FALLBACK_COLOR = '#ff00ff';
@@ -100,8 +143,85 @@ const offset = z
   .describe("where the sprite or mesh sits from the entity box's top-left corner");
 
 /** Fields only a sprite (2D) entry has, and only a mesh (3D) entry has. */
-const SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'flipFacing', 'size', 'fallbackColor'] as const;
-const MESH_FIELDS = ['mesh', 'color', 'scale'] as const;
+const SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'flipFacing', 'size', 'fallbackColor', 'frame'] as const;
+const MESH_FIELDS = ['mesh', 'color', 'scale', 'depth', 'z'] as const;
+/** Skin-level fields only a 3D skin has. */
+const MESH_SKIN_FIELDS = ['meshes', 'camera3d'] as const;
+
+const meshRef = id.describe(
+  `3D: a primitive (${MESH_PRIMITIVES.map((p) => `\`${p}\``).join(', ')}) or a key of \`meshes\``,
+);
+const depth = z
+  .number()
+  .positive()
+  .exactOptional()
+  .describe("3D: a primitive mesh's thickness in px (default: the box's width; a tile is one tile deep)");
+const zOffset = z
+  .number()
+  .exactOptional()
+  .describe('3D: px toward the camera from the depth plane (default 0)');
+
+const meshPart = z.strictObject({
+  shape: z.enum(MESH_PRIMITIVES).describe('the primitive'),
+  size: z
+    .strictObject({
+      w: z.number().positive().describe('width (x) in px'),
+      h: z.number().positive().describe('height (y) in px'),
+      d: z.number().positive().describe('depth (z) in px'),
+    })
+    .describe('its box before `rotate`'),
+  at: z
+    .strictObject({
+      x: z.number().describe('px right of the entity box left edge, to the part left edge'),
+      y: z.number().describe('px down from the entity box top, to the part top'),
+      z: z.number().describe("px toward the camera from the depth plane, to the part's centre"),
+    })
+    .exactOptional()
+    .describe('where it sits (default all 0)'),
+  color: color.exactOptional().describe("its colour (default the entry's `color`)"),
+  rotate: z
+    .number()
+    .int()
+    .min(0)
+    .max(3)
+    .exactOptional()
+    .describe('quarter turns about the upright (y) axis through its centre (default 0)'),
+});
+
+const camera3d = z.strictObject({
+  fov: z
+    .number()
+    .min(1)
+    .max(179)
+    .exactOptional()
+    .describe(`vertical field of view, degrees (default ${DEFAULT_CAMERA3D.fov})`),
+  tilt: z
+    .number()
+    .min(-45)
+    .max(45)
+    .exactOptional()
+    .describe(`pitch, degrees; positive looks down a little (default ${DEFAULT_CAMERA3D.tilt})`),
+  layerDepth: z
+    .number()
+    .min(0)
+    .exactOptional()
+    .describe(`px toward the camera per entity \`layer\` (default ${DEFAULT_CAMERA3D.layerDepth})`),
+  lights: z
+    .strictObject({
+      ambient: z
+        .number()
+        .min(0)
+        .exactOptional()
+        .describe(`ambient light intensity (default ${DEFAULT_CAMERA3D.lights.ambient})`),
+      directional: z
+        .number()
+        .min(0)
+        .exactOptional()
+        .describe(`the one directional light's intensity (default ${DEFAULT_CAMERA3D.lights.directional})`),
+    })
+    .exactOptional()
+    .describe('kept minimal: ambient plus one directional light'),
+});
 
 const kindEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file the frames are in (default `sheets.sheet`)'),
@@ -126,9 +246,15 @@ const kindEntry = z.strictObject({
   fallbackColor: color
     .exactOptional()
     .describe('2D: the box colour when a frame is missing (default `sheets.fallbackColor`)'),
-  mesh: id.exactOptional().describe('3D: a mesh id or a primitive (`box`, `sphere`...)'),
+  mesh: meshRef.exactOptional(),
   color: color.exactOptional().describe("3D: the mesh's colour"),
-  scale: z.number().positive().exactOptional().describe('3D: size factor (default 1)'),
+  scale: z
+    .number()
+    .positive()
+    .exactOptional()
+    .describe("3D: size factor about the box's bottom centre (default 1)"),
+  depth,
+  z: zOffset,
   offset: offset.exactOptional(),
 });
 
@@ -138,8 +264,10 @@ const tileEntry = z.strictObject({
   fallbackColor: color
     .exactOptional()
     .describe('2D: the colour when the frame is missing (default `sheets.fallbackColor`)'),
-  mesh: id.exactOptional().describe('3D: a mesh id or primitive'),
+  mesh: meshRef.exactOptional(),
   color: color.exactOptional().describe("3D: the mesh's colour"),
+  depth,
+  z: zOffset,
 });
 
 const effect = z.strictObject({
@@ -231,6 +359,52 @@ function checkShapes(
   }
 }
 
+/** 3D-only skin fields on a 2D skin, mesh ids that name nothing, and meshes that shadow a primitive. */
+function checkMeshes(
+  skin: {
+    backend: string;
+    kinds: Record<string, { mesh?: string }>;
+    tiles?: Record<string, { mesh?: string }>;
+    meshes?: Record<string, unknown>;
+    camera3d?: unknown;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (!MESH_BACKENDS.includes(skin.backend)) {
+    for (const field of MESH_SKIN_FIELDS) {
+      if (skin[field] === undefined) continue;
+      ctx.addIssue({
+        code: 'custom',
+        path: [field],
+        message: `"${field}" is a 3D field; backend "${skin.backend}" takes sprites`,
+        params: { code: 'wrong_backend_field' },
+      });
+    }
+    return;
+  }
+  const meshes = skin.meshes ?? {};
+  for (const name of Object.keys(meshes)) {
+    if (isPrimitive(name)) {
+      ctx.addIssue({ code: 'custom', path: ['meshes', name], message: `"${name}" is a primitive's name` });
+    }
+  }
+  for (const where of ['kinds', 'tiles'] as const) {
+    for (const [key, entry] of Object.entries(skin[where] ?? {})) {
+      if (entry.mesh === undefined || isPrimitive(entry.mesh) || Object.hasOwn(meshes, entry.mesh)) continue;
+      ctx.addIssue({
+        code: 'custom',
+        path: [where, key, 'mesh'],
+        message: `no primitive or mesh "${entry.mesh}" (primitives: ${MESH_PRIMITIVES.join(', ')})`,
+        params: { code: 'missing_ref' },
+      });
+    }
+  }
+}
+
+function isPrimitive(name: string): name is MeshPrimitive {
+  return (MESH_PRIMITIVES as readonly string[]).includes(name);
+}
+
 export const skinSchema = z
   .strictObject({
     backend: id.describe('the backend it is for: `canvas2d`, `three` (meshes) or another backend name'),
@@ -240,8 +414,14 @@ export const skinSchema = z
     events: z.record(id, eventEntry).exactOptional().describe('event type -> its sound and effect'),
     hud: z.array(hudItem).exactOptional().describe('status values drawn on screen, in order'),
     camera: camera.exactOptional().describe("framing defaults; a frame's own camera hint wins"),
+    meshes: z
+      .record(id, z.array(meshPart).min(1))
+      .exactOptional()
+      .describe('3D: named compound meshes, each a list of primitive parts in world px'),
+    camera3d: camera3d.exactOptional().describe('3D: perspective framing and light defaults'),
   })
   .superRefine((skin, ctx) => {
+    checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, 'kinds', ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
       skin.backend,
@@ -257,6 +437,9 @@ export type SkinFile = z.output<typeof skinSchema>;
 export type SkinKindEntry = z.output<typeof kindEntry>;
 export type SkinStateFrames = z.output<typeof stateFrames>;
 export type SkinCycle = z.output<typeof cycle>;
+export type SkinTileEntry = z.output<typeof tileEntry>;
+export type SkinMeshPart = z.output<typeof meshPart>;
+export type SkinCamera3d = z.output<typeof camera3d>;
 
 // ---- Cross-file checks ----
 
@@ -417,4 +600,87 @@ export function resolveSkinFrame(
   }
   if (facing !== undefined) out.frame = cycleFrame(spec[facing]!, entity.anim.t);
   return out;
+}
+
+// ---- Reading meshes ----
+
+/** One primitive of a mesh, ready to build: everything resolved, in world px. */
+export interface MeshPart {
+  shape: MeshPrimitive;
+  /** Its box before `rotate`. */
+  size: { w: number; h: number; d: number };
+  /** Its top-left corner in x and y from the entity box's top-left, its centre in z from the depth plane. */
+  at: { x: number; y: number; z: number };
+  color: string;
+  /** Quarter turns about the upright (y) axis through its centre, 0 to 3. */
+  rotate: number;
+}
+
+/**
+ * The parts to build for a kind's or tile's mesh entry, in world px from the entity box's top-left
+ * (x right, y down) and its depth plane (z toward the camera). `box` is the entity box or the tile
+ * (`{ w: tileSize, h: tileSize }`). A primitive is one part filling `box`, `depth` px thick
+ * (default `box.w`); a compound mesh is its parts as written, each defaulting to the entry's
+ * colour. `scale` then grows every part about the box's bottom centre (so feet stay on the
+ * ground), and `offset` and `z` move the whole mesh. An entry with no `mesh` (a sprite entry), or
+ * a mesh id the skin lacks, gives no parts. Pure.
+ */
+export function resolveMeshParts(
+  skin: DeepReadonly<SkinFile>,
+  entry: DeepReadonly<SkinKindEntry | SkinTileEntry>,
+  box: { w: number; h: number },
+): MeshPart[] {
+  const name = entry.mesh;
+  if (name === undefined) return [];
+  const color = entry.color ?? DEFAULT_FALLBACK_COLOR;
+  let parts: MeshPart[];
+  if (isPrimitive(name)) {
+    const d = entry.depth ?? box.w;
+    parts = [{ shape: name, size: { w: box.w, h: box.h, d }, at: { x: 0, y: 0, z: 0 }, color, rotate: 0 }];
+  } else if (skin.meshes !== undefined && Object.hasOwn(skin.meshes, name)) {
+    parts = skin.meshes[name]!.map((p) => ({
+      shape: p.shape,
+      size: { ...p.size },
+      at: p.at ? { ...p.at } : { x: 0, y: 0, z: 0 },
+      color: p.color ?? color,
+      rotate: p.rotate ?? 0,
+    }));
+  } else return [];
+
+  const scale = 'scale' in entry ? (entry.scale ?? 1) : 1;
+  const offset = 'offset' in entry ? entry.offset : undefined;
+  const dx = offset?.x ?? 0;
+  const dy = offset?.y ?? 0;
+  const dz = entry.z ?? 0;
+  const cx = box.w / 2;
+  const cy = box.h;
+  return parts.map((p) => ({
+    ...p,
+    size: { w: p.size.w * scale, h: p.size.h * scale, d: p.size.d * scale },
+    at: {
+      x: cx + (p.at.x - cx) * scale + dx,
+      y: cy + (p.at.y - cy) * scale + dy,
+      z: p.at.z * scale + dz,
+    },
+  }));
+}
+
+/** A skin's 3D framing, with {@link DEFAULT_CAMERA3D} for every field it leaves out. Pure. */
+export function resolveCamera3d(skin: DeepReadonly<SkinFile>): {
+  fov: number;
+  tilt: number;
+  layerDepth: number;
+  lights: { ambient: number; directional: number };
+} {
+  const c = skin.camera3d;
+  const d = DEFAULT_CAMERA3D;
+  return {
+    fov: c?.fov ?? d.fov,
+    tilt: c?.tilt ?? d.tilt,
+    layerDepth: c?.layerDepth ?? d.layerDepth,
+    lights: {
+      ambient: c?.lights?.ambient ?? d.lights.ambient,
+      directional: c?.lights?.directional ?? d.lights.directional,
+    },
+  };
 }

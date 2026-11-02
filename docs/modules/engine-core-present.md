@@ -35,6 +35,13 @@ Import from `@engine/core/present` (`index.ts`).
   `missing_frame`). `resolveSkinFrame(skin, entity)` gives the `SkinFrame` to draw (sheet, frame,
   flip, fallback colour) from the entity's kind, animation state and tick, and facing. Field
   reference: `docs/reference/schemas.md`, section `skin`.
+- 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
+  primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named
+  compound mesh in the skin's `meshes` (a list of `{ shape, size, at?, color?, rotate? }` parts in
+  world px), with `depth` (tiles default to one tile deep) and `z`. `camera3d` gives `fov`,
+  `tilt`, `layerDepth` (z px per entity `layer`) and minimal `lights` (`DEFAULT_CAMERA3D`,
+  `resolveCamera3d(skin)`). `resolveMeshParts(skin, entry, box)` turns an entry into the
+  `MeshPart` list a 3D backend builds, so the backend and tests read the text the same way.
 
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs
@@ -49,5 +56,5 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 
 `engine/core/present/present.test.ts`, run with `pnpm test`: a fixture frame passes the schema,
 `freezeFrame` makes mutation throw, and `MapTracker` sends the map only when it must;
-`engine/core/present/skin.test.ts` covers the skin schema, its cross-file checks and
-`resolveSkinFrame`.
+`engine/core/present/skin.test.ts` covers the skin schema (2D and 3D), its cross-file checks,
+`resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`.
