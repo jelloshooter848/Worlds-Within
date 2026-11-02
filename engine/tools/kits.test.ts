@@ -18,10 +18,17 @@ describe('kits by name', () => {
     expect(allKits()).toContain(kit);
   });
 
+  it('finds the platformer kit by its hook: level and profile kinds, strict mutants', () => {
+    const kit = loadKit('platformer');
+    expect(kitKinds('platformer').map((k) => k.name)).toEqual(['level', 'profile']);
+    expect(kit.strictMutants).toBe(true);
+    expect(allKits()).toContain(kit);
+  });
+
   it('names the kit and the field for a kit name no kit has', () => {
     expect(findKit('nokit')).toBeUndefined();
     expect(() => loadKit('nokit')).toThrow('unknown kit "nokit" in "kit": there is no kits/nokit/kit.ts');
-    expect(() => kitRules('nokit')).toThrow('known: topdown');
+    expect(() => kitRules('nokit')).toThrow('known: platformer, topdown');
   });
 
   it('has one hook per kits/<name>/kit.ts, each named after its folder', () => {

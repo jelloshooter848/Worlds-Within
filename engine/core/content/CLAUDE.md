@@ -67,7 +67,10 @@ file formats are described at the top of that file).
   `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; the CLI loader's
   `unknown_kit` (`engine/tools/game-loader.ts`); the editing verbs' `not_writable` and
   `multiline_row` (`engine/tools/content-file.ts`); and the top-down kit's room codes `wrong_size`
-  and `invalid_room` (`kits/topdown/schema.ts`); the skin's `wrong_backend_field`, `missing_field`,
+  and `invalid_room` (`kits/topdown/schema.ts`); the platformer kit's level codes `bad_spawn_key`, `size_mismatch`,
+  `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`
+  (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,
+  `unknown_actor` and `missing_field` (`kits/platformer/profile.ts`); the skin's `wrong_backend_field`, `missing_field`,
   `missing_ref` and `missing_frame` (`present/skin.ts`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the
   engine's kinds stay generic. Content itself (real songs, sprites) never lives here.

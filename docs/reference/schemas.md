@@ -365,6 +365,149 @@ kggk
 .kk.
 ```
 
+### `level`
+
+A platformer level: id, physics profile, scroll mode, spawns and bump-block contents, with its map in a text grid of the kit legend.
+
+- Defined by: kit platformer
+- Where: `content/`, claimed in `game.json` under `content.level`
+- Read from: `.json` + `.map.txt`
+
+| Field                 | Type                          | Required | Default   | Limits                                                                 | Description                                                                                                              |
+| --------------------- | ----------------------------- | -------- | --------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`                  | `string`                      | yes      |           | not empty                                                              | the level id: its file name                                                                                              |
+| `profile`             | `string`                      | yes      |           | not empty                                                              | the physics profile it is played with: a `profile` id                                                                    |
+| `scroll`              | `"right" \| "free" \| "none"` | no       | `"right"` |                                                                        | `right`: the camera only scrolls forward; `free`: both ways; `none`: it never scrolls                                    |
+| `size`                | `[integer, integer]`          | no       |           |                                                                        | [columns, rows]; the size comes from the grid, and a size given here must match it                                       |
+| `spawns`              | `{ <key>: object }`           | no       | `{}`      |                                                                        | spawn characters of the map (one character, not a legend one) by the actor they spawn                                    |
+| `spawns.<key>.actor`  | `string`                      | yes      |           | not empty                                                              | the actor type it spawns, defined in the level's profile                                                                 |
+| `spawns.<key>.facing` | `"left" \| "right"`           | no       | `"left"`  |                                                                        | the way it starts moving                                                                                                 |
+| `blocks`              | `string[]`                    | no       |           | items: matches `^(coin\|coins\|powerup\|life\|actor:[a-z][a-z0-9-]*)$` | what each bump block (?) holds, in reading order: coin, coins, powerup, life or actor:&lt;type>; all coins when left out |
+| `map`                 | `string[]`                    | yes      |           |                                                                        | the level grid, top row first, of legend and spawn characters; usually in the `.map.txt` file                            |
+
+Example (`docs/reference/examples/level.json`):
+
+```json
+{
+  "id": "tiny",
+  "profile": "runner",
+  "scroll": "right",
+  "size": [24, 8],
+  "spawns": { "w": { "actor": "walker" } },
+  "blocks": ["coin"]
+}
+```
+
+With `docs/reference/examples/level.map.txt`:
+
+```text
+........................
+........................
+........................
+.......?................
+........................
+..................o.....
+.@.............w.##...G.
+##########...###########
+```
+
+### `profile`
+
+A platformer physics profile: player movement numbers and actor types in whole sub-pixel and 1/4096 px per tick units.
+
+- Defined by: kit platformer
+- Where: `content/`, claimed in `game.json` under `content.profile`
+- Read from: `.json`
+
+| Field                        | Type                  | Required | Default | Limits                            | Description                                                                                          |
+| ---------------------------- | --------------------- | -------- | ------- | --------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `id`                         | `string`              | yes      |         | not empty                         | the profile id: its file name (`runner.profile.json` is `runner`)                                    |
+| `player`                     | `object`              | yes      |         |                                   | the player's movement numbers                                                                        |
+| `player.box`                 | `object`              | yes      |         |                                   | the player's hit box in px                                                                           |
+| `player.box.w`               | `integer`             | yes      |         | 1 to 64                           | width in px                                                                                          |
+| `player.box.h`               | `integer`             | yes      |         | 1 to 64                           | height in px                                                                                         |
+| `player.minWalk`             | `integer`             | yes      |         | >= 0                              | the speed a walk from rest starts at, in 1/4096 px per tick                                          |
+| `player.walkAccel`           | `integer`             | yes      |         | >= 0                              | acceleration while walking, in 1/4096 px per tick, each tick                                         |
+| `player.runAccel`            | `integer`             | yes      |         | >= 0                              | acceleration while running, in 1/4096 px per tick, each tick                                         |
+| `player.friction`            | `integer`             | yes      |         | >= 0                              | deceleration with no direction held, in 1/4096 px per tick, each tick                                |
+| `player.skid`                | `integer`             | yes      |         | >= 0                              | deceleration while holding the way opposite to the motion (a skid), in 1/4096 px per tick, each tick |
+| `player.skidTurn`            | `integer`             | yes      |         | >= 0                              | below this speed a skid turns the player round at once, in 1/4096 px per tick                        |
+| `player.maxWalk`             | `integer`             | yes      |         | >= 0                              | the walking speed cap, in 1/4096 px per tick                                                         |
+| `player.maxRun`              | `integer`             | yes      |         | >= 0                              | the running speed cap, in 1/4096 px per tick                                                         |
+| `player.runHold`             | `integer`             | yes      |         | >= 0                              | ticks the running cap lasts after run is let go                                                      |
+| `player.jumps`               | `object[]`            | yes      |         | at least 1 item                   | jump tiers by take-off speed, slowest first: the first whose `below` \|vx\| is under                 |
+| `player.jumps[].below`       | `integer`             | no       |         | >= 1                              | the \|vx\| at take-off this tier applies below (left out on the last tier), in 1/4096 px per tick    |
+| `player.jumps[].speed`       | `integer`             | yes      |         | >= 0                              | the take-off speed upwards, in 1/4096 px per tick                                                    |
+| `player.jumps[].holdGravity` | `integer`             | yes      |         | >= 0                              | gravity while jump is held and the player still rises, in 1/4096 px per tick, each tick              |
+| `player.jumps[].gravity`     | `integer`             | yes      |         | >= 0                              | gravity otherwise, in 1/4096 px per tick, each tick                                                  |
+| `player.maxFall`             | `integer`             | yes      |         | >= 0                              | the fall speed cap, in 1/4096 px per tick                                                            |
+| `player.fallReset`           | `integer`             | yes      |         | >= 0                              | the fall speed set when a fall goes over `maxFall`, in 1/4096 px per tick                            |
+| `player.stompBounce`         | `integer`             | yes      |         | >= 0                              | the upward speed a stomp bounces the player with, in 1/4096 px per tick                              |
+| `actorGravity`               | `integer`             | yes      |         | >= 0                              | gravity on every actor, in 1/4096 px per tick, each tick                                             |
+| `actorMaxFall`               | `integer`             | yes      |         | >= 0                              | every actor's fall speed cap, in 1/4096 px per tick                                                  |
+| `actors`                     | `{ <key>: object }`   | yes      |         | keys: matches `^[a-z][a-z0-9-]*$` | actor types by generic name (`walker`, `shell`): lower-case letters, digits and "-"                  |
+| `actors.<key>.box`           | `object`              | no       |         |                                   | the hit box in px (16x16 when left out)                                                              |
+| `actors.<key>.box.w`         | `integer`             | yes      |         | 1 to 64                           | width in px                                                                                          |
+| `actors.<key>.box.h`         | `integer`             | yes      |         | 1 to 64                           | height in px                                                                                         |
+| `actors.<key>.speed`         | `integer`             | yes      |         | >= 0                              | walking speed; 0 stands still, in 1/4096 px per tick                                                 |
+| `actors.<key>.turnAt`        | `"walls" \| "ledges"` | yes      |         |                                   | `walls`: turns round at a wall; `ledges`: also at the edge of a drop                                 |
+| `actors.<key>.stompable`     | `boolean`             | yes      |         |                                   | a stomp from above beats it (and bounces the player)                                                 |
+| `actors.<key>.stompInto`     | `string`              | no       |         | not empty                         | the actor type a stomp turns it into; left out, a stomp defeats it                                   |
+| `actors.<key>.kickable`      | `boolean`             | yes      |         |                                   | touching it while it stands still kicks it away                                                      |
+| `actors.<key>.kickSpeed`     | `integer`             | no       |         | >= 0                              | the speed a kick sends it at; required when kickable, in 1/4096 px per tick                          |
+| `actors.<key>.harms`         | `boolean`             | yes      |         |                                   | touching it (other than a stomp or a kick) harms the player                                          |
+
+Example (`docs/reference/examples/profile.json`):
+
+```json
+{
+  "id": "runner",
+  "player": {
+    "box": { "w": 12, "h": 16 },
+    "minWalk": 304,
+    "walkAccel": 152,
+    "runAccel": 228,
+    "friction": 208,
+    "skid": 416,
+    "skidTurn": 2304,
+    "maxWalk": 6400,
+    "maxRun": 10496,
+    "runHold": 10,
+    "jumps": [
+      { "below": 4096, "speed": 16384, "holdGravity": 512, "gravity": 1792 },
+      { "below": 9472, "speed": 16384, "holdGravity": 480, "gravity": 1536 },
+      { "speed": 20480, "holdGravity": 640, "gravity": 2304 }
+    ],
+    "maxFall": 18432,
+    "fallReset": 16384,
+    "stompBounce": 16384
+  },
+  "actorGravity": 1024,
+  "actorMaxFall": 16384,
+  "actors": {
+    "walker": { "speed": 2048, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true },
+    "shell-walker": {
+      "box": { "w": 16, "h": 24 },
+      "speed": 2048,
+      "turnAt": "walls",
+      "stompable": true,
+      "stompInto": "shell",
+      "kickable": false,
+      "harms": true
+    },
+    "shell": {
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": true,
+      "stompInto": "shell",
+      "kickable": true,
+      "kickSpeed": 12288,
+      "harms": true
+    }
+  }
+}
+```
+
 ### `room`
 
 A top-down room: id, map cell, music, chests and an 11x16 map grid of the kit legend.
