@@ -12,7 +12,14 @@ such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`wal
 - The kit holds gameplay rules, not world rules and not content. It never knows about a particular
   game: a game supplies the rooms, any extra spawn kinds (a boss), its sheets and its own scene.
 - It reads what it is given (rooms, a seed, input frames) and reports what happened through
-  `world.events`. Rooms, songs and sprites belong in `games/`; tests may hold tiny fixtures.
+  `world.events`. Rooms, songs and sprites belong in `games/`; tests may hold tiny fixtures
+  (inline or in a `__fixtures__/` folder, see `engine/core/CLAUDE.md`).
+  `tests/architecture/no-content.test.ts` fails on any content in the kit's other files.
+- **Kit code, not content:** the frame helpers in `frames.ts` (`rotateCcw`, `withSideFrames` and
+  the `SIDE_FRAMES` / `THICK_SIDE_FRAMES` / `SPLIT_FRAMES` name lists), the sheet ids in
+  `DEFAULT_SHEETS` (`view.ts`), `PERSON_SHEET` and `BEAM_PALETTES` are the kit's art contract: the
+  names of sheets, frames and palettes it asks for. The pixels behind those names come from the game.
+  `LEGEND` (`room.ts`) is the room text format, not a room.
 - **Purity rule (lint-enforced):** randomness goes through the seeded `Rng` from
   `@engine/core/rng`, never `Math.random`; no `Date.now`, `performance.now` or DOM globals
   (`document`, `window`, `localStorage`, `requestAnimationFrame`, ...). ESLint fails on them in every

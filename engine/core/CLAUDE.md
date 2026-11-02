@@ -14,7 +14,7 @@ never knows which one is drawing.
 
 - Allowed: other files in `engine/core` (relative paths) and npm packages.
 - Never: `engine/backends`, `engine/sim`, `engine/tools`, kits or games.
-- No game rules or game content here. Tiny fixtures inside tests only.
+- No game rules or game content here (see Fixtures below).
 - Randomness goes through `Rng` (`rng.ts`), never `Math.random`, in anything a kit or the sim uses.
 
 ## The pure core
@@ -29,6 +29,25 @@ follows every run-time import (not `import type`) from kits and the sim into cor
 file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, the
 browser input sources, `save/`, `assets/` and the backends.
+
+## Fixtures
+
+All game content (rooms, songs, sprites, palettes made for a game's art) lives in `games/`. The
+engine and kits keep only **tiny test fixtures**, in one of two places:
+
+- inline in a `*.test.ts` file (a three-row room, a one-line song, a two-pixel frame), or
+- in a `__fixtures__/` folder next to the tests that use it, when several tests share it or it is
+  too long to read inline. Only tests import from `__fixtures__/`.
+
+Keep fixtures as small as the test allows; anything that looks like a level or a tune belongs in a
+game. `tests/architecture/no-content.test.ts` scans every other file under `engine/` and `kits/`
+and fails on content markers: `Song` and `Sfx` objects, MML source strings, `.mml` files, room literals
+(`map: [...]`), sprite definitions (`palette` plus `frames` with pixel rows) and any bare text grid
+of equal-length rows.
+
+Generic data the engine needs is not content and may stay: the `NES` colour names in
+`gfx/palette.ts` (the shared colour vocabulary every game picks from), the colour-blind mode list,
+and the MML noise macros.
 
 ## Testing
 
