@@ -12,10 +12,11 @@ import { readGameFiles } from '@engine/core/node/game-files';
 import { presentFrameSchema } from '@engine/core/present';
 import { validate } from '@engine/core/content/validate';
 import { ACTOR_ANIMS, PRESENT_TILES, presentStatus, profileKind, RUNNER_ANIMS } from '@kits/platformer';
-import { FIRST_LEVEL, labSkin, labStages, loadLab, mustLoad } from './content';
+import { FIRST_LEVEL, labSkin, labSkin3d, labStages, loadLab, mustLoad } from './content';
 import { createGame, LEVEL_PAUSE, type LabSnapshot } from './headless';
 import { STOP_BAR } from './minigame';
 import { LabPicture, labLook } from './picture';
+import { LabPicture3d, labLook3d, labScenePresenter } from './picture3d';
 import { createView } from './view';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
@@ -120,6 +121,63 @@ describe('platformer lab skin', () => {
     }
     expect(sprites.get('lab-placeholders') ?? 0).toBeGreaterThan(30);
     expect(sprites.get('lab-font') ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe('platformer lab 3D skin', () => {
+  const skin = labSkin3d(content);
+  const skin2d = labSkin(content);
+
+  it('is a three skin with a block for every solid tile (open air is the sky)', () => {
+    expect(skin.backend).toBe('three');
+    const solid = Object.values(PRESENT_TILES).filter((t) => t !== PRESENT_TILES.empty);
+    expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(solid.sort());
+    for (const t of solid) expect(skin.tiles?.[t]?.mesh, t).toBeDefined();
+    // The one-way platform is a thin slab, not a whole block.
+    const slab = skin.meshes?.[skin.tiles!['=']!.mesh!];
+    expect(slab?.every((p) => p.size.h < 16)).toBe(true);
+  });
+
+  it('has a mesh for every kind the 2D skin draws, and the same framing', () => {
+    expect(Object.keys(skin.kinds).sort()).toEqual(Object.keys(skin2d.kinds).sort());
+    for (const [kind, entry] of Object.entries(skin.kinds)) expect(entry.mesh, kind).toBeDefined();
+    expect(skin.camera).toEqual(skin2d.camera);
+    expect(skin.camera3d).toMatchObject({ fov: expect.any(Number), tilt: expect.any(Number) });
+    expect(skin.camera3d?.layerDepth).toBeGreaterThan(0);
+  });
+});
+
+describe('the view frame hook', () => {
+  it('gives the frames the pictures show, with the events since the last call, and changes nothing', () => {
+    const view = createView(content, 1);
+    const shadow = createGame(content, 1);
+    const look3d = labLook3d(content);
+    const presenter = labScenePresenter(look3d);
+    const picture3d = new LabPicture3d(presenter, look3d);
+    const script = { steps: [{ frame: 0, hold: ['right', 'jump'] as Action[] }] };
+    const input = new ScriptedInput(script);
+    const shadowInput = new ScriptedInput(script);
+    for (let tick = 0; tick <= 60; tick++) {
+      if (tick > 0) {
+        input.next();
+        view.step(input);
+        shadowInput.next();
+        shadow.step(shadowInput);
+      }
+      // Every other tick: two steps' events in one frame.
+      if (tick % 2 === 1) continue;
+      const frame = view.frame!();
+      expect(validate('frame', frame, presentFrameSchema).ok).toBe(true);
+      expect(Object.isFrozen(frame)).toBe(true);
+      expect(view.snapshot()).toEqual(shadow.snapshot());
+      if (tick === 2) expect(frame.events.map((e) => e.type)).toEqual(['land']);
+      // The same stream of frames as the pictures' (LabFrames), shown here through the 3D one.
+      const shown = picture3d.draw(shadow.world, []);
+      expect(frame.entities).toEqual(shown.entities);
+      expect(frame.map).toEqual(shown.map);
+      expect(presenter.scene.entityIds()).toContain('runner');
+    }
+    presenter.scene.dispose();
   });
 });
 

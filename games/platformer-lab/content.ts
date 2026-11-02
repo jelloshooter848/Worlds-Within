@@ -59,8 +59,21 @@ export function labStages(content: ContentBundle): LabStage[] {
  * tile, event and HUD value the platformer kit (and the lab's mini game) presents.
  */
 export function labSkin(content: ContentBundle): SkinFile {
-  const skin = contentOf(content, SKIN_KIND).find((e) => e.value.backend === 'canvas2d');
-  if (!skin) throw new Error('the lab has no canvas2d skin (content/skins/canvas2d.json)');
+  return skinFor(content, 'canvas2d');
+}
+
+/**
+ * The skin the Three.js backend shows the lab with (`content/skins/three.json`): a low-poly mesh
+ * for every kind and a block for every solid tile the kit (and the lab's mini game) presents, the
+ * 3D camera defaults, and the same follow, deadzone and lerp as the Canvas2D skin.
+ */
+export function labSkin3d(content: ContentBundle): SkinFile {
+  return skinFor(content, 'three');
+}
+
+function skinFor(content: ContentBundle, backend: string): SkinFile {
+  const skin = contentOf(content, SKIN_KIND).find((e) => e.value.backend === backend);
+  if (!skin) throw new Error(`the lab has no ${backend} skin (content/skins/${backend}.json)`);
   return skin.value;
 }
 

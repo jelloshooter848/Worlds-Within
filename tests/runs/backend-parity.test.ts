@@ -6,9 +6,10 @@ import { NullPresenter } from '@engine/backends/null';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { freezeFrame } from '@engine/core/present';
+import { freezeFrame, isFullMap } from '@engine/core/present';
 import {
   PlatformerPresentState,
+  PRESENT_TILES,
   presentWorld as presentPlatformer,
   type PlatformerEvent,
   type PlatformerWorld,
@@ -21,6 +22,7 @@ import { createWorld } from '../../games/demo/headless';
 import { DemoPicture, demoLook } from '../../games/demo/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
 import { LabPicture, labLook } from '../../games/platformer-lab/picture';
+import { LabPicture3d, labLook3d, labScenePresenter } from '../../games/platformer-lab/picture3d';
 
 // Backend parity (docs/ROADMAP.md, 0.4 "Done when"): the same demo run gives the same state hashes
 // whichever backend presents it. From Engine 0.5 the platformer lab's runs are checked the same way
@@ -149,7 +151,11 @@ describe('backend parity: null and canvas2d give the same state hashes', () => {
   });
 });
 
-describe('backend parity: the platformer lab through null and canvas2d', () => {
+describe('backend parity: the platformer lab through null, canvas2d and three', () => {
+  /** Every entity kind and map tile shown in the 3D pass, over all the lab runs. */
+  const seenKinds = new Set<string>();
+  const seenTiles = new Set<string>();
+
   it('finds the lab runs', () => {
     expect(labFiles).toContain('games/platformer-lab/runs/start-to-goal.run.json');
   });
@@ -176,10 +182,46 @@ describe('backend parity: the platformer lab through null and canvas2d', () => {
       drawnPerTick.push((calls.get('clear') ?? 0) - before);
     });
 
+    const look3d = labLook3d(content);
+    const presenter3d = labScenePresenter(look3d);
+    const picture3d = new LabPicture3d(presenter3d, look3d);
+    const fallbacks: string[] = [];
+    let synced = 0;
+    const viaThree = playLab(content, run, (world, events, tick) => {
+      const frame = picture3d.draw(world, events);
+      synced++;
+      for (const e of frame.entities) seenKinds.add(e.kind);
+      if (frame.map && isFullMap(frame.map))
+        for (const row of frame.map.tiles) for (const t of row) seenTiles.add(String(t));
+      for (const id of presenter3d.scene.entityIds()) {
+        const root = presenter3d.scene.entity(id)!;
+        if (root.userData['fallback'] === true)
+          fallbacks.push(`tick ${tick}: ${id} (${String(root.userData['kind'])})`);
+      }
+    });
+    presenter3d.scene.dispose();
+
     expect(nullPresenter.frames).toBe(run.ticks + 1);
     expect(drawnPerTick).toEqual(Array.from({ length: run.ticks + 1 }, () => 1));
     expect(calls.get('sprite') ?? 0).toBeGreaterThan(run.ticks);
+    expect(synced).toBe(run.ticks + 1);
+    expect(fallbacks.slice(0, 5)).toEqual([]);
     expect(viaNull).toEqual(golden);
     expect(viaCanvas).toEqual(golden);
+    expect(viaThree).toEqual(golden);
+  });
+
+  it('the three skin has a mesh for every kind and a block for every tile the lab runs show', () => {
+    const { content } = load(labFiles[0]!);
+    const skin = labLook3d(content).skin;
+    // Every lab run has played by now (tests in a file run in order); the mini-game run shows the bar.
+    expect(seenKinds).toContain('bar-marker');
+    const noMesh = [...seenKinds].filter((k) => skin.kinds[k]?.mesh === undefined).sort();
+    expect(noMesh, 'kinds without a three skin entry').toEqual([]);
+    // Open air (`.`) is the sky: no block. Every other tile shown needs one.
+    const solid = [...seenTiles].filter((t) => t !== PRESENT_TILES.empty);
+    const noBlock = solid.filter((t) => skin.tiles?.[t]?.mesh === undefined).sort();
+    expect(noBlock, 'tiles without a three skin entry').toEqual([]);
+    expect(solid.length).toBeGreaterThan(3);
   });
 });

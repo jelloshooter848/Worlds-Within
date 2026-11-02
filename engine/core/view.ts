@@ -2,6 +2,7 @@ import type { ContentBundle } from './content/bundle';
 import type { Renderer } from './gfx/renderer';
 import type { ScreenSize } from './gfx/screen';
 import type { HeadlessGame, HeadlessOptions } from './headless';
+import type { DeepReadonly, PresentFrame } from './present';
 
 /**
  * The view contract: the headless game plus a way to draw it, so the tools (`pnpm cli
@@ -17,6 +18,11 @@ import type { HeadlessGame, HeadlessOptions } from './headless';
  * names none) and the page checks against the size the CLI read. `step` and `snapshot` must
  * match the headless module's for the same content, seed and input: the screenshot result checks
  * the state hash against a headless run.
+ *
+ * A view may also give `frame()`: the presentation frame (`@engine/core/present`) for the state
+ * now, so a tool can show the game through any `Presenter` (the Three.js backend, the null one)
+ * instead of drawing it with `render`. A run uses one or the other, never both: each keeps its own
+ * stream of frames (map tracker, animation clocks, events since the last call).
  */
 
 /** A headless game that can also draw its current state. */
@@ -25,6 +31,12 @@ export interface ViewGame extends HeadlessGame {
   readonly screen: ScreenSize;
   /** Draws the state now onto `r` (the whole `screen`-sized picture). Must not change the game. */
   render(r: Renderer): void;
+  /**
+   * Optional: the frame for the state now, frozen, with the events since the last call (all of
+   * them since the start on the first call), for a presenter to show. Must not change the game.
+   * Used instead of `render`, never both in one run.
+   */
+  frame?(): DeepReadonly<PresentFrame>;
 }
 
 /** What a game's view module (named by `view` in `game.json`) exports. */

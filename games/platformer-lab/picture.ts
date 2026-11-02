@@ -40,16 +40,37 @@ export function labLook(content: ContentBundle): LabLook {
 /** The sky behind the levels (the colour of the skin's `.` tile, so the map's edges do not show). */
 export const SKY = '#5c94fc';
 
-/** One stream of lab frames onto one renderer. */
-export class LabPicture {
+/**
+ * One stream of lab frames, for any presenter: the kit's `presentWorld` with one
+ * `PlatformerPresentState` per world, each frame frozen. Shared by `LabPicture` (Canvas2D),
+ * `LabPicture3d` (Three.js) and the view's `frame()`, so every backend gets the same frames.
+ */
+export class LabFrames {
   private state = new PlatformerPresentState();
   private world: PlatformerWorld | null = null;
+
+  constructor(private readonly size: ScreenSize) {}
+
+  /**
+   * The frame for `world` now, with the events since the last frame. A new world (the next level,
+   * or the same one again) starts a new stream: its map and ids afresh.
+   */
+  next(world: PlatformerWorld, events: readonly PlatformerEvent[]): DeepReadonly<PresentFrame> {
+    if (world !== this.world) {
+      this.world = world;
+      this.state = new PlatformerPresentState();
+    }
+    return freezeFrame(presentWorld(world, events, { state: this.state, size: this.size }));
+  }
+}
+
+/** One stream of lab frames onto one renderer. */
+export class LabPicture {
+  private readonly frames: LabFrames;
   private readonly presenter: SkinnedCanvasPresenter;
 
-  constructor(
-    r: Renderer,
-    private readonly look: LabLook,
-  ) {
+  constructor(r: Renderer, look: LabLook) {
+    this.frames = new LabFrames(look.screen);
     this.presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
       size: look.screen,
       background: SKY,
@@ -61,11 +82,7 @@ export class LabPicture {
    * world (the next level, or the same one again) starts a new stream: its map and ids afresh.
    */
   draw(world: PlatformerWorld, events: readonly PlatformerEvent[]): DeepReadonly<PresentFrame> {
-    if (world !== this.world) {
-      this.world = world;
-      this.state = new PlatformerPresentState();
-    }
-    const frame = freezeFrame(presentWorld(world, events, { state: this.state, size: this.look.screen }));
+    const frame = this.frames.next(world, events);
     this.presenter.present(frame);
     return frame;
   }

@@ -3,7 +3,8 @@
 The platformer kit's test lab (Engine 0.5): the kit's fixture level played start to goal, five
 small levels that each put one group of the kit's named rules to work, and run files that guard
 every rule (`pnpm cli mutants` passes, the kit is strict). It plays in the browser through the
-Canvas2D backend and a placeholder skin. It is a test game, not Worlds Within: content, not
+Canvas2D backend and a placeholder skin, and (Engine 0.6) through the Three.js backend with a
+low-poly `three` skin. It is a test game, not Worlds Within: content, not
 engine, and nothing in `engine/` or `kits/` depends on it.
 
 ## Files
@@ -40,10 +41,22 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   the lab has no sounds); `hud` `hp` (hearts), `coins` and `lives` (icon and number in
   `lab-font`); `camera` follows the runner with a 32x48 deadzone and lerp 0.25 (the kit's hint
   adds the scroll lock as `bounds`).
+- `content/skins/three.json` (Engine 0.6): the 3D skin, low-poly meshes written as text. `meshes`
+  holds compound meshes (`runner`, `walker`, shared by `walker` and `ledge-walker` in their own
+  colours, `shell-walker`, `shell`, `coin`, `goal`, `trigger`, `brick`, `bump`, `slab`, `spikes`,
+  `bar-marker`); `kinds` maps every kind the 2D skin maps (`bump-block` and `bar-cell` are plain
+  boxes); `tiles` every `PRESENT_TILES` character but `.` (open air is the sky: no block): `#`
+  and `u` boxes, `B` a brick with a dark mortar course, `?` a block with a mark on its face, `=`
+  a thin 4 px slab, `^` a row of cones on a base. `events` keeps the 2D skin's flashes, tints and
+  shakes (particles are not drawn in 3D); `camera` is the 2D skin's (follow `runner`, deadzone
+  32x48, lerp 0.25); `camera3d` `fov` 40, `tilt` 4, `layerDepth` 0.25 (so the kit's `PF_DEPTH`
+  layers 0..20 sit within 5 px of the blocks' plane and do not drift in perspective). A 3D entry
+  has one mesh per kind, not per state: remains, `hurt`, and the bar's `zone` cells look like the
+  kind's other states (a known gap of the 0.6 skin format).
 - TypeScript is glue only:
   - `content.ts`: `labKinds`, `loadLab(files)`, `labStages(content)` (the levels in play order:
     `FIRST_LEVEL` (`tiny`) first, then the others by id, each with its profile), `labSkin`,
-    `labArt`, `mustLoad`;
+    `labSkin3d` (the `three` skin), `labArt`, `mustLoad`;
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
     game: a marker sweeps along a bar of `cells` cells, one cell every `every` ticks; attack on
     the `zone` cells (placed by the round's seed) passes, anywhere else fails, select quits, and
@@ -56,9 +69,19 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     one afresh, each a new `PlatformerWorld` with the run's seed and switched-off rules. Its
     snapshot is the kit's (`snapshotWorld`, every path in `kits/platformer/CLAUDE.md`) plus
     `stage` (the level's place in the order) and `pause`;
-  - `picture.ts`: `labLook(content)` and `LabPicture` (`draw(world, events)`: `presentWorld` ->
-    frozen frame -> `SkinnedCanvasPresenter`, a fresh `PlatformerPresentState` per world);
-  - `view.ts`: `createView` for `pnpm cli screenshot`; `scene.ts`: `LabScene`, which pushes the
+  - `picture.ts`: `labLook(content)`, `LabFrames` (`next(world, events)`: `presentWorld` ->
+    frozen frame, a fresh `PlatformerPresentState` per world: the one stream of frames every
+    backend gets) and `LabPicture` (`draw(world, events)`: a `LabFrames` frame ->
+    `SkinnedCanvasPresenter`);
+  - `picture3d.ts`: `labLook3d(content)` (the `three` skin and picture size), `labOptions3d(look)`
+    (size and the `SKY` background, for `ThreePresenter` or `ThreeScene`), `labScenePresenter(look)`
+    (a `Presenter` over the backend's Node-side `ThreeScene`, no WebGL; `.scene` for read-outs) and
+    `LabPicture3d` (`new LabPicture3d(presenter, look)`, `draw(world, events)`: the same `LabFrames`
+    frames onto any 3D presenter). `picture.ts` does not import it, so the 2D page bundles no
+    Three.js;
+  - `view.ts`: `createView` for `pnpm cli screenshot`: `render(r)` draws through `LabPicture`, and
+    `frame()` (the view contract's frame hook) returns the `LabFrames` frame with the events
+    since the last call (dropped when the level changes, as the scene does); `scene.ts`: `LabScene`, which pushes the
     engine's `miniGameScene` over itself when a trigger starts a round (its `step` steps the lab,
     so the world applies the outcome as headless) and pops it on the result; `main.ts`: the
     browser boot (keyboard, gamepad, the touch pad laid out with `layoutScreen`, the scene stack
@@ -87,8 +110,11 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
   rule). See one rule fail: `pnpm -s cli run <run> --disable-rule <id> --json`.
 - `runs/<name>.hashes.json` are the golden state hashes (`tests/runs/run-files.test.ts`), and
   `tests/runs/backend-parity.test.ts` plays every lab run presenting each tick through the null
-  backend and through `LabPicture` (Canvas2D) onto a recording renderer: both give the golden
-  hashes. After a change meant to change the state: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, and
+  backend, through `LabPicture` (Canvas2D) onto a recording renderer and through `LabPicture3d`
+  onto `labScenePresenter` (the Three.js scene builder, no WebGL): all three give the golden
+  hashes. The 3D pass also collects every kind and tile shown, and a test fails if the `three`
+  skin lacks one (or any entity is drawn as a fallback box): add the entry when a level or the
+  kit shows something new. After a change meant to change the state: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, and
   commit the hashes.
 - Changing a level or the script moves every later tick: re-find the ticks with `pnpm -s cli dump
 <run> --tick N --json`, keep each run's assertions on what its rules decide (a position, a
@@ -102,7 +128,9 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
   (needs Chromium; `matchesHeadless` must be true).
 - `pnpm test games/platformer-lab` runs `lab.test.ts`: the fixture copies are byte-identical, the
   level order, a broken field named by file and field, the skin covers every tile, kind, state,
-  event and HUD value, the view draws with the placeholder sheet and font, the level change after
+  event and HUD value, the `three` skin has a block for every solid tile (a thin slab for `=`), a
+  mesh for every kind and the 2D skin's framing, the view's `frame()` gives valid frozen frames
+  with the events since the last call and changes nothing, the view draws with the placeholder sheet and font, the level change after
   `LEVEL_PAUSE` (cleared: next level; failed: the same again), equal snapshots on two runs, the
   mini game's pass, fail, quit and time-out, its frame against the schema, and the picture showing
   it while a trigger runs it.

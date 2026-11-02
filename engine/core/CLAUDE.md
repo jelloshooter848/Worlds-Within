@@ -16,9 +16,13 @@ writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefi
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 
 `view.ts` is the view contract: `ViewGame` (a `HeadlessGame` plus `screen`, the picture size it
-draws, taken from `content.manifest.screen`, and `render(r)`) and `ViewEntry`
-(`createView(content, seed, opts?)`), which a game's view module (named by `view` in `game.json`)
-exports for `pnpm cli screenshot`. Types only.
+draws, taken from `content.manifest.screen`, `render(r)`, and the optional `frame()`) and
+`ViewEntry` (`createView(content, seed, opts?)`), which a game's view module (named by `view` in
+`game.json`) exports for `pnpm cli screenshot`. `frame()` (Engine 0.6) returns the frozen
+`PresentFrame` for the state now, with the events since the last call, so a tool can show the game
+through any `Presenter` (the Three.js backend) instead of drawing it with `render(r)`; a run uses
+one or the other, never both (each keeps its own stream of frames). Like `render`, it must not
+change the game. Types only.
 
 `rules.ts` is the named-rule mechanism behind mutant checks: a kit declares its rules with
 `defineRules([{ id, description }])` and builds a `RuleSwitch(rules, disabled)` from the ids a run

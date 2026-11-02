@@ -17,15 +17,21 @@ It is a test game: content and glue, not engine.
 - `game.json`: the manifest (kit `platformer`, 256x240, seed 1, headless and view entries).
 - `content/`: `levels/*.json` + `*.map.txt` (the fixture `tiny` and `lab-1-moves` ...
   `lab-5-trigger`), `profiles/*.profile.json` (the fixture `runner`, and `lab-runner`),
-  `palettes/`, `sprites/` (placeholder frames and the HUD font) and `skins/canvas2d.json` (every
-  kind, tile, event and HUD value the kit presents; camera follow, deadzone and lerp).
+  `palettes/`, `sprites/` (placeholder frames and the HUD font), `skins/canvas2d.json` (every
+  kind, tile, event and HUD value the kit presents; camera follow, deadzone and lerp) and
+  `skins/three.json` (Engine 0.6: a low-poly mesh per kind, a block per solid tile, the same
+  camera, `camera3d` fov, tilt and layer depth).
 - `content.ts`: `loadLab(files)`, `labStages(content)` (the levels in play order), `labSkin`,
+  `labSkin3d`,
   `labArt`, `mustLoad`.
 - `headless.ts`: `LabGame` and `createGame(content, seed, opts?)` (the `HeadlessGame` contract):
   the levels in turn, `LEVEL_PAUSE` ticks between them; the kit's snapshot plus `stage` and `pause`.
 - `minigame.ts`: `STOP_BAR`, `LAB_MINI_GAMES` (the mini game hook's defs).
-- `picture.ts`: `labLook(content)`, `LabPicture` (`draw(world, events)`: the kit's frame through
-  `SkinnedCanvasPresenter`). `view.ts`: `createView` (the `ViewGame` contract, for `screenshot`).
+- `picture.ts`: `labLook(content)`, `LabFrames` (the one frozen frame stream), `LabPicture`
+  (`draw(world, events)`: the kit's frame through `SkinnedCanvasPresenter`). `picture3d.ts`:
+  `labLook3d`, `labOptions3d`, `labScenePresenter` (a `Presenter` over the Node-side
+  `ThreeScene`) and `LabPicture3d` (the same frames onto a 3D presenter). `view.ts`: `createView`
+  (the `ViewGame` contract, for `screenshot`, with `render(r)` and the `frame()` hook).
 - `scene.ts` (`LabScene`, with the `miniGameScene` glue), `main.ts`, `index.html`, `files.ts`.
 - `runs/*.run.json` with golden `*.hashes.json`: `start-to-goal`, `moves`, `objects`, `shells`,
   `walkers`, `mini-game`, each with `guards`.
@@ -41,4 +47,5 @@ It is a test game: content and glue, not engine.
 level changes, the mini game). `pnpm -s cli validate games/platformer-lab --json`,
 `pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json`,
 `pnpm -s cli mutants games/platformer-lab --json` (exit 0), `pnpm test tests/runs` (golden hashes
-and backend parity). `pnpm dev` and open `/games/platformer-lab/` to play it.
+and backend parity through null, Canvas2D and the Three.js scene builder, plus the `three`
+skin's coverage of every kind and tile shown). `pnpm dev` and open `/games/platformer-lab/` to play it.
