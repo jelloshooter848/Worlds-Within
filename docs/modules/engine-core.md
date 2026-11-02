@@ -19,14 +19,15 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
 - `headless.ts`: the headless game contract (`HeadlessGame`: `step(input)`, `snapshot()`;
   `HeadlessEntry`: `createGame(content, seed, opts?)`, `HeadlessOptions` with `disabledRules`),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
-- `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `render(r)`;
+- `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `screen`, the
+  picture size from the manifest, and `render(r)`;
   `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
 - `gfx/renderer.ts`: the presentation contract (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
-  `screen.ts` (`SCREEN_W`, `SCREEN_H`, `fitGame`).
+  `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable
   runs) and the browser sources (keyboard, gamepad, touch).
 - `audio/`: `mml.ts` (MML compiler), `sequencer.ts`, `apu.ts`, `audio-manager.ts`.

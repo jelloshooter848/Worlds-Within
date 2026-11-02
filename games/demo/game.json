@@ -9,6 +9,7 @@
     "sprite": ["content/sprites/*.txt"]
   },
   "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
   "headless": "headless.ts",
   "view": "view.ts"
 }

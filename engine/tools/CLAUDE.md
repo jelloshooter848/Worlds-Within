@@ -273,20 +273,22 @@ hashMismatch }`: `reproduced` is true when the first failure is at the same tick
 
 `pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 60 --json` writes
 `.ww-out/screenshots/walk-east-t60.png` (or `--out <file>.png`, relative to the working folder) and
-prints its `path`, `width`, `height` (256x240), `bytes` and `sha256` (the whole PNG, hex).
+prints its `path`, `width`, `height` (the game's picture size: `screen` in `game.json`, 256x240
+by default), `bytes` and `sha256` (the whole PNG, hex).
 
 - The game names a view module in `game.json` (`view`, optional), which exports
   `createView(content, seed, opts?)` returning a `ViewGame` (`engine/core/view.ts`): the headless
-  game plus `render(r)`. The demo's is `games/demo/view.ts`, drawing what its scene draws. No
+  game plus `screen` (the manifest's picture size) and `render(r)`. The demo's is `games/demo/view.ts`, drawing what its scene draws. No
   `view` is a `no_view` content error at `view`; a missing file is `missing_file`.
 - How: the command first plays the run headless to tick N (as `dump`), then serves the repo with
   a Vite dev server (middleware mode, no HMR, no dependency pre-bundling) and opens
-  `engine/tools/screenshot/index.html` in headless Chromium at 256x240, devicePixelRatio 1. The
-  page gets the game's file texts, seed, input and switched-off rules, checks the content, imports
-  the view module by URL (the game is still loaded by folder path), steps it exactly N times with
-  `ScriptedInput` (no real-time loop, no audio), draws once with the canvas2d `CanvasRenderer` onto
-  a fixed 256x240 canvas and returns `canvas.toDataURL('image/png')`: the canvas, not a page
-  screenshot, so page scaling and font smoothing stay out.
+  `engine/tools/screenshot/index.html` in headless Chromium with a viewport of the manifest's
+  `screen` size (`ShotJob.screen`), devicePixelRatio 1. The page gets the game's file texts, seed,
+  input, switched-off rules and picture size, checks the content, imports the view module by URL
+  (the game is still loaded by folder path), steps it exactly N times with `ScriptedInput` (no
+  real-time loop, no audio), draws once with the canvas2d `CanvasRenderer` onto a canvas of that
+  size (it fails if the view's `screen` differs) and returns `canvas.toDataURL('image/png')`: the
+  canvas, not a page screenshot, so page scaling and font smoothing stay out.
 - `hash` is the state hash of the snapshot the page drew; `headlessHash` is `dump`'s at that tick.
   They must match (`matchesHeadless`); if not, the view plays differently from the headless
   module and the command exits 4 (the PNG is still written).

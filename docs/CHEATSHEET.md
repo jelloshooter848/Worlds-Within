@@ -10,7 +10,7 @@ hand. Full command help: [CLI reference](reference/cli.md).
 
 ```text
 games/<game>/
-  game.json            the manifest: id, kit, content files by kind, start seed, entry modules
+  game.json            the manifest: id, kit, content files by kind, start seed, screen size, entry modules
   content/             data files only (JSON, text grids); every file claimed by one kind
   headless.ts          createGame(content, seed, opts?): HeadlessGame   (for run, dump, mutants)
   view.ts              createView(content, seed, opts?): ViewGame       (for screenshot; optional)
@@ -45,8 +45,9 @@ const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the
 - Headless (`headless.ts`): build the world from the bundle and a seed, and return a `HeadlessGame`
   (`engine/core/headless.ts`). The top-down kit's `topdownGame(world)` does the wrapping:
   `new TopDownWorld(buildDungeon(rooms), { seed, disabledRules: opts.disabledRules })`.
-- View (`view.ts`, `engine/core/view.ts`): the same game plus `render(r: Renderer)`, drawing the
-  whole 256x240 picture. Its `step` and `snapshot` must match the headless module's.
+- View (`view.ts`, `engine/core/view.ts`): the same game plus `screen` (the manifest's picture
+  size) and `render(r: Renderer)`, drawing the whole picture. Its `step` and `snapshot` must match
+  the headless module's.
 - Browser (`main.ts`): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
   songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).

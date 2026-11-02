@@ -95,7 +95,7 @@ export function drawRoomTiles(
     for (let col = 0; col < ROOM_COLS; col++) {
       const x = ox + col * TILE;
       const y = oy + row * TILE;
-      if (x <= -TILE || x >= ROOM_W || y <= -TILE || y >= 240) continue;
+      if (x <= -TILE || x >= ROOM_W || y <= -TILE || y >= HUD_H + ROOM_H) continue;
       // The art layer (0.4.41): the cell's own pictures, bottom to top.
       const art = room.def.art?.[row * ROOM_COLS + col];
       if (art) {

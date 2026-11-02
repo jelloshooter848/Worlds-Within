@@ -15,7 +15,7 @@ import {
   type ScreenInput,
 } from './touch-layout';
 import { BUTTON_PLACES, FACE_BUTTON } from './touch-logic';
-import { fitGame } from '../gfx/screen';
+import { DEFAULT_SCREEN, fitGame } from '../gfx/screen';
 
 const NO_INSETS: Insets = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -116,7 +116,7 @@ describe('screen layout', () => {
   it('the game rect is exactly where the Viewport draws it', () => {
     for (const [name, inp] of cases()) {
       const l = layoutScreen(inp);
-      const b = fitGame(l.frame.w, l.frame.h, inp.dpr, inp.integerScale, l.fit);
+      const b = fitGame(inp.screen ?? DEFAULT_SCREEN, l.frame.w, l.frame.h, inp.dpr, inp.integerScale, l.fit);
       expect(l.game.x, name).toBeCloseTo(l.frame.x + b.ox / inp.dpr, 6);
       expect(l.game.y, name).toBeCloseTo(l.frame.y + b.oy / inp.dpr, 6);
       expect(l.game.w, name).toBeCloseTo(b.dw / inp.dpr, 6);
@@ -265,20 +265,60 @@ describe('screen layout', () => {
 
 describe('fitGame', () => {
   it('with no fit: the 0.4.44 Viewport maths (largest integer scale, centred)', () => {
-    expect(fitGame(393, 759, 3, true)).toEqual({
+    expect(fitGame(DEFAULT_SCREEN, 393, 759, 3, true)).toEqual({
       scale: 4,
       dw: 1024,
       dh: 960,
       ox: 77,
       oy: Math.floor((2277 - 960) / 2),
     });
-    expect(fitGame(1280, 800, 1, true)).toEqual({ scale: 3, dw: 768, dh: 720, ox: 256, oy: 40 });
+    expect(fitGame(DEFAULT_SCREEN, 1280, 800, 1, true)).toEqual({
+      scale: 3,
+      dw: 768,
+      dh: 720,
+      ox: 256,
+      oy: 40,
+    });
   });
 
   it('anchors to the top and honours maxW / maxH', () => {
-    expect(fitGame(393, 759, 3, true, { top: 8 }).oy).toBe(24);
-    expect(fitGame(393, 759, 3, true, { maxH: 300 }).scale).toBe(3);
-    expect(fitGame(852, 372, 3, true, { maxW: 400 }).scale).toBe(4);
-    expect(fitGame(852, 372, 3, true, { maxW: 300 }).scale).toBe(3);
+    expect(fitGame(DEFAULT_SCREEN, 393, 759, 3, true, { top: 8 }).oy).toBe(24);
+    expect(fitGame(DEFAULT_SCREEN, 393, 759, 3, true, { maxH: 300 }).scale).toBe(3);
+    expect(fitGame(DEFAULT_SCREEN, 852, 372, 3, true, { maxW: 400 }).scale).toBe(4);
+    expect(fitGame(DEFAULT_SCREEN, 852, 372, 3, true, { maxW: 300 }).scale).toBe(3);
+  });
+
+  it('fits a picture of any size: 320x180 at integer scales', () => {
+    const wide = { width: 320, height: 180 };
+    // 1920x1080 holds 6 whole 320x180 pictures exactly.
+    expect(fitGame(wide, 1920, 1080, 1, true)).toEqual({ scale: 6, dw: 1920, dh: 1080, ox: 0, oy: 0 });
+    // 1280x800: 4x is 1280x720, letterboxed 40 px top and bottom.
+    expect(fitGame(wide, 1280, 800, 1, true)).toEqual({ scale: 4, dw: 1280, dh: 720, ox: 0, oy: 40 });
+    // An upright phone (393x759 @3): width-bound, 1179 / 320 = 3.68, so 3.
+    expect(fitGame(wide, 393, 759, 3, true)).toMatchObject({ scale: 3, dw: 960, dh: 540, ox: 109 });
+    // Stretch-to-fit keeps the aspect ratio but not whole numbers.
+    expect(fitGame(wide, 393, 759, 3, false).scale).toBeCloseTo(1179 / 320, 9);
+    // Never smaller than 1x with integer scaling, even in a tiny window.
+    expect(fitGame(wide, 100, 100, 1, true).scale).toBe(1);
+  });
+});
+
+describe('layoutScreen with a non-default picture size', () => {
+  const wide = { width: 320, height: 180 };
+  it('lays the 320x180 game rect out with its own aspect and keeps the controls off it', () => {
+    for (const [name, inp] of cases()) {
+      const l = layoutScreen({ ...inp, screen: wide });
+      const b = fitGame(wide, l.frame.w, l.frame.h, inp.dpr, inp.integerScale, l.fit);
+      expect(l.game.w, name).toBeCloseTo(b.dw / inp.dpr, 6);
+      expect(l.game.h, name).toBeCloseTo(b.dh / inp.dpr, 6);
+      expect(l.game.w / l.game.h, name).toBeCloseTo(320 / 180, 1);
+      if (inp.integerScale) expect(Number.isInteger(b.scale), name).toBe(true);
+      for (const id of CONTROL_IDS) expect(overlaps(l.rects[id], l.game), `${id}: ${name}`).toBe(false);
+    }
+  });
+
+  it('defaults to 256x240 when no size is given', () => {
+    const [, inp] = cases().next().value as [string, ScreenInput];
+    expect(layoutScreen(inp)).toEqual(layoutScreen({ ...inp, screen: DEFAULT_SCREEN }));
   });
 });

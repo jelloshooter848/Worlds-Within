@@ -1,12 +1,13 @@
-import { SCREEN_H, SCREEN_W, fitGame, type GameFit } from '@engine/core/gfx/screen';
+import { DEFAULT_SCREEN, fitGame, type GameFit, type ScreenSize } from '@engine/core/gfx/screen';
 
 export interface ViewportOptions {
   integerScale: boolean;
 }
 
 /**
- * Owns the 256x240 backbuffer and presents it on the display canvas with integer scaling
- * (or stretch-to-fit) and letterboxing. Pixel art stays crisp: smoothing is off everywhere.
+ * Owns the backbuffer, the game's picture size (`screen` in `game.json`, 256x240 by default), and
+ * presents it on the display canvas with integer scaling (or stretch-to-fit) and letterboxing.
+ * Pixel art stays crisp: smoothing is off everywhere.
  */
 export class Viewport {
   readonly back: HTMLCanvasElement | OffscreenCanvas;
@@ -17,17 +18,22 @@ export class Viewport {
   fit: GameFit = {};
   offsetX = 0;
   offsetY = 0;
-  private dw = SCREEN_W;
-  private dh = SCREEN_H;
+  private dw: number;
+  private dh: number;
 
   constructor(
     readonly display: HTMLCanvasElement,
     public opts: ViewportOptions = { integerScale: false },
+    /** The game picture's size: the backbuffer's size in game px. */
+    readonly size: ScreenSize = DEFAULT_SCREEN,
   ) {
+    const { width, height } = size;
+    this.dw = width;
+    this.dh = height;
     this.back =
       typeof OffscreenCanvas !== 'undefined'
-        ? new OffscreenCanvas(SCREEN_W, SCREEN_H)
-        : Object.assign(document.createElement('canvas'), { width: SCREEN_W, height: SCREEN_H });
+        ? new OffscreenCanvas(width, height)
+        : Object.assign(document.createElement('canvas'), { width, height });
     const ctx = this.back.getContext('2d') as
       OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null;
     if (!ctx) throw new Error('2D canvas not supported');
@@ -50,7 +56,7 @@ export class Viewport {
       this.display.width = W;
       this.display.height = H;
     }
-    const box = fitGame(cssW, cssH, dpr, this.opts.integerScale, this.fit);
+    const box = fitGame(this.size, cssW, cssH, dpr, this.opts.integerScale, this.fit);
     this.scale = box.scale;
     this.dw = box.dw;
     this.dh = box.dh;

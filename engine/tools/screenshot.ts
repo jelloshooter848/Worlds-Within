@@ -8,8 +8,8 @@ import type { ShotJob, ShotResult } from './screenshot/job';
 /**
  * Takes a screenshot in headless Chromium (Playwright): serves the repo with a Vite dev server in
  * middleware mode on a free local port, opens the tools-only screenshot page
- * (`screenshot/index.html`, never in the Pages build) at a fixed 256x240 viewport with
- * devicePixelRatio 1, hands it the job and gets the canvas back as PNG bytes (`canvas.toDataURL`,
+ * (`screenshot/index.html`, never in the Pages build) with a viewport of the game's picture size
+ * (`job.screen`, from `game.json`) and devicePixelRatio 1, hands it the job and gets the canvas back as PNG bytes (`canvas.toDataURL`,
  * not a page screenshot, so no font smoothing or scaling of the page gets in). Used by the
  * `screenshot` command.
  */
@@ -96,7 +96,10 @@ export async function takeScreenshot(
   let server: Awaited<ReturnType<typeof serve>> | undefined;
   try {
     server = await serve(resolve(gameAbs));
-    const page = await browser.newPage({ viewport: { width: 256, height: 240 }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({
+      viewport: { width: job.screen.width, height: job.screen.height },
+      deviceScaleFactor: 1,
+    });
     const errors: string[] = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(`${server.base}/${SHOT_PAGE}`);

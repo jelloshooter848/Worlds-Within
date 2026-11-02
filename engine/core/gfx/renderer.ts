@@ -5,7 +5,8 @@ import type { SpriteSheet } from './spritesheet';
  * NullRenderer and the game logic never touches the DOM. This is the core presentation contract:
  * the backends (engine/backends/canvas2d, engine/backends/null) implement it, and nothing here
  * imports from them.
- * Coordinates are screen pixels (0..256, 0..240); callers subtract the camera.
+ * Coordinates are screen pixels, 0..width and 0..height of the game's picture size (`screen` in
+ * `game.json`, `gfx/screen.ts`); callers subtract the camera.
  */
 export interface Renderer {
   clear(color: string): void;

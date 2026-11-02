@@ -152,6 +152,37 @@ describe('loadContent', () => {
   });
 });
 
+describe('the manifest screen size', () => {
+  const withScreen = (screen: unknown) => files({ './game.json': JSON.stringify({ ...MANIFEST, screen }) });
+
+  it('defaults to 256x240 and takes a size of its own', () => {
+    const plain = loadContent(files(), kinds);
+    expect(plain.ok && plain.value.manifest.screen).toEqual({ width: 256, height: 240 });
+    const wide = loadContent(withScreen({ width: 320, height: 180 }), kinds);
+    expect(wide.errors).toEqual([]);
+    expect(wide.ok && wide.value.manifest.screen).toEqual({ width: 320, height: 180 });
+    expect(loadContent(withScreen({ width: 64, height: 1920 }), kinds).errors).toEqual([]);
+  });
+
+  it('rejects sizes out of range, fractions, missing sides and extra fields, at the field', () => {
+    const errs = (screen: unknown) => loadContent(withScreen(screen), kinds, { root: 'g/' }).errors;
+    expect(errs({ width: 63, height: 240 })).toMatchObject([
+      { file: 'g/game.json', path: 'screen.width', code: 'too_small' },
+    ]);
+    expect(errs({ width: 256, height: 1921 })).toMatchObject([
+      { file: 'g/game.json', path: 'screen.height', code: 'too_big' },
+    ]);
+    expect(errs({ width: 256.5, height: 240 })).toMatchObject([
+      { file: 'g/game.json', path: 'screen.width', code: 'invalid_type' },
+    ]);
+    expect(errs({ width: 256 })).toMatchObject([{ file: 'g/game.json', path: 'screen.height' }]);
+    expect(errs({ width: 256, height: 240, depth: 1 })).toMatchObject([
+      { file: 'g/game.json', path: 'screen.depth' },
+    ]);
+    expect(errs('256x240')).toMatchObject([{ file: 'g/game.json', path: 'screen', code: 'invalid_type' }]);
+  });
+});
+
 describe('globs and names', () => {
   it.each([
     ['content/*.json', 'content/a.json', true],

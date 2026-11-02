@@ -1,5 +1,5 @@
 import type { Renderer } from '@engine/core/gfx/renderer';
-import { HUD_H } from './geometry';
+import { HUD_H, ROOM_W } from './geometry';
 import { drawFrame, fontOf, type TdView } from './view';
 import type { TopDownWorld } from './world';
 
@@ -97,7 +97,7 @@ export const LIFE_FONT = 'font-red';
 export function drawTdHud(r: Renderer, view: TdView, hud: TdHudData): void {
   const font = fontOf(view);
   const tiles = view.sheet(view.sheets.tiles);
-  r.rect(0, 0, 256, HUD_H, '#000000');
+  r.rect(0, 0, ROOM_W, HUD_H, '#000000');
   // Level and map: the rooms (all of them once the map is found), the compass's goal in red,
   // the hero's room in green.
   r.text(font, hud.title, MAP_X, 8);

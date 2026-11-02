@@ -30,7 +30,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   each into a `ContentError` at that entry's file, or its part file and line (`checkAll: false`
   in `loadContent`'s options leaves it out; the editing verbs report those problems apart).
 - `manifest.ts`: `gameManifestSchema`, the shape of a game's `game.json`: `id`, `title?`, `kit`,
-  `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`) and
+  `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`), `screen`
+  (`{ width, height }`, whole numbers 64..1920, default 256x240: the game picture's size) and
   `headless` (the module that boots the game headless) and `view?` (the module that draws it, for
   `screenshot`; `engine/core/view.ts`).
 - `bundle.ts`: `loadContent(files, kinds, { root })` turns `{ path: text }` pairs (from Vite's

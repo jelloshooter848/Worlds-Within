@@ -89,6 +89,21 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
     expect(later.result.headlessHash).toBe(later.result.hash);
   }, 120_000);
 
+  it('takes the picture at the size game.json gives (320x180)', async () => {
+    const dir = tempDir();
+    cpSync(join(ROOT, 'games/demo'), join(dir, 'demo'), { recursive: true });
+    const manifest = join(dir, 'demo/game.json');
+    const data = JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, unknown>;
+    data.screen = { width: 320, height: 180 };
+    writeFileSync(manifest, JSON.stringify(data));
+    const out = join(dir, 'wide.png');
+    const run = join(dir, 'demo/runs/walk-east.run.json');
+    const { code, result } = await cli(['screenshot', run, '--tick', '10', '--out', out]);
+    expect(code).toBe(EXIT.ok);
+    expect(result).toMatchObject({ width: 320, height: 180, matchesHeadless: true });
+    expect(pngSize(readFileSync(out))).toEqual({ width: 320, height: 180 });
+  }, 120_000);
+
   it('reports a game with no view module as invalid content at view', async () => {
     const dir = tempDir();
     cpSync(join(ROOT, 'games/demo'), join(dir, 'demo'), { recursive: true });

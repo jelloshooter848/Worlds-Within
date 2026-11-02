@@ -6,7 +6,8 @@ Folder: `engine/backends/canvas2d`. Detailed rules:
 ## Purpose
 
 The browser backend for 2D. It draws the core `Renderer` contract onto a 2D canvas and presents the
-256x240 backbuffer on the display canvas, scaled and letterboxed. It draws only what the caller asks
+backbuffer, sized to the game's picture (`screen` in `game.json`, 256x240 by default), on the
+display canvas, scaled and letterboxed. It draws only what the caller asks
 for and holds no game rules.
 
 ## Public API entry points

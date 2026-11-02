@@ -26,6 +26,7 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
       game.step(input);
     },
     snapshot: () => game.snapshot(),
+    screen: content.manifest.screen,
     render: (r) => renderDemo(r, world, frame, sheet),
   };
 }

@@ -14,7 +14,8 @@ JSON-safe data) and `HeadlessEntry` (`createGame(content, seed)`), which a game'
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 
-`view.ts` is the view contract: `ViewGame` (a `HeadlessGame` plus `render(r)`) and `ViewEntry`
+`view.ts` is the view contract: `ViewGame` (a `HeadlessGame` plus `screen`, the picture size it
+draws, taken from `content.manifest.screen`, and `render(r)`) and `ViewEntry`
 (`createView(content, seed, opts?)`), which a game's view module (named by `view` in `game.json`)
 exports for `pnpm cli screenshot`. Types only.
 
@@ -22,6 +23,12 @@ exports for `pnpm cli screenshot`. Types only.
 `defineRules([{ id, description }])` and builds a `RuleSwitch(rules, disabled)` from the ids a run
 switches off (`HeadlessOptions.disabledRules`, passed by `createGame(content, seed, opts)`); its
 code guards each rule with `isOn(id)`. Unknown ids throw. It is pure (on `PURE_CORE`).
+
+`gfx/screen.ts` is the picture size and its fit: `ScreenSize`, `DEFAULT_SCREEN` (256x240, the size of
+a game whose `game.json` has no `screen`), `SCREEN_MIN` / `SCREEN_MAX` (64..1920, the manifest's
+limits) and `fitGame(size, cssW, cssH, dpr, integerScale, fit?)`, used by the canvas2d `Viewport`
+and the touch layout (`layoutScreen` takes `screen` in its input). Nothing else hard-codes a
+picture size. Pure.
 
 `gfx/renderer.ts` is the presentation contract: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`. Backends implement it; core

@@ -14,7 +14,8 @@ import { pngSize, takeScreenshot } from '../screenshot';
 /**
  * `screenshot <run-file> --tick N [--out path]`: plays the run file to tick N in headless Chromium
  * through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
- * backend, and writes that frame as a PNG (256x240, devicePixelRatio 1). No real-time loop and no
+ * backend, and writes that frame as a PNG of the game's picture size (`screen` in `game.json`,
+ * 256x240 by default; devicePixelRatio 1). No real-time loop and no
  * audio: the same run file and tick give a byte-identical PNG on two runs in a row.
  *
  * Result: `{ run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash,
@@ -52,7 +53,7 @@ export const screenshotCommand = defineCommand({
     const game = loadGame(ctx.cwd, loaded.gameDir);
     if (!game.content.ok) return invalid(loaded.file, game.content.errors);
     const root = game.dir === '.' ? '' : `${game.dir}/`;
-    const view = game.content.value.manifest.view;
+    const { view, screen } = game.content.value.manifest;
     const where = `${root}${MANIFEST_FILE}`;
     if (view === undefined)
       return invalid(loaded.file, [
@@ -66,7 +67,15 @@ export const screenshotCommand = defineCommand({
       ]);
 
     const shot = await takeScreenshot(
-      { files: { ...game.texts }, root, seed, ticks: lastTick, input: loaded.run.input, disabledRules },
+      {
+        files: { ...game.texts },
+        root,
+        seed,
+        ticks: lastTick,
+        input: loaded.run.input,
+        disabledRules,
+        screen,
+      },
       gameAbs,
       viewAbs,
     );

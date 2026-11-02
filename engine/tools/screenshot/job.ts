@@ -1,3 +1,4 @@
+import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { InputScript } from '@engine/core/input/scripted-input';
 
 /** What the CLI sends the screenshot page: everything it needs, so the page reads no files. */
@@ -13,6 +14,8 @@ export interface ShotJob {
   ticks: number;
   input: InputScript;
   disabledRules: string[];
+  /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
+  screen: ScreenSize;
 }
 
 /** What the page gives back. */

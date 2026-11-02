@@ -20,7 +20,7 @@ function boot(): void {
   const assets = new AssetRegistry({ default: art.palettes });
   assets.defineAll(art.sprites);
 
-  const viewport = new Viewport(canvas);
+  const viewport = new Viewport(canvas, { integerScale: false }, content.manifest.screen);
   const renderer = new CanvasRenderer(viewport.ctx);
   const input = new InputManager(1);
   input.addSource('keyboard', new KeyboardSource());

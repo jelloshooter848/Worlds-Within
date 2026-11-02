@@ -1,4 +1,4 @@
-import { fitGame, type GameFit } from '../gfx/screen';
+import { DEFAULT_SCREEN, fitGame, type GameFit, type ScreenSize } from '../gfx/screen';
 import { BUTTON_PLACES, FACE_BUTTON, SMALL_BUTTON } from './touch-logic';
 
 /*
@@ -46,6 +46,8 @@ export interface ScreenInput {
   touch: boolean;
   /** The player's touch scale (Options > Controls). */
   touchScale: number;
+  /** The game picture's size (`screen` in `game.json`); 256x240 when left out. */
+  screen?: ScreenSize;
 }
 
 export type LayoutMode = 'centred' | 'portrait' | 'landscape';
@@ -121,8 +123,9 @@ export function inside(a: Rect, box: Rect): boolean {
   );
 }
 
-function gameRect(frame: Rect, dpr: number, integerScale: boolean, fit: GameFit): Rect {
-  const b = fitGame(frame.w, frame.h, dpr, integerScale, fit);
+function gameRect(frame: Rect, input: ScreenInput, fit: GameFit): Rect {
+  const { dpr } = input;
+  const b = fitGame(input.screen ?? DEFAULT_SCREEN, frame.w, frame.h, dpr, input.integerScale, fit);
   return { x: frame.x + b.ox / dpr, y: frame.y + b.oy / dpr, w: b.dw / dpr, h: b.dh / dpr };
 }
 
@@ -141,7 +144,7 @@ function build(
     places[id] = { ...scalePlace(at1[id], scale), ...extra[id] };
     rects[id] = rectOf(frame, places[id], SIZES[id].w * scale, SIZES[id].h * scale);
   }
-  const game = gameRect(frame, input.dpr, input.integerScale, fit);
+  const game = gameRect(frame, input, fit);
   return { mode, frame, game, fit, scale, places, rects };
 }
 
@@ -188,7 +191,9 @@ function portrait(frame: Rect, input: ScreenInput): ScreenLayout {
     Math.max(...CONTROL_IDS.map((id) => ((at1[id].bottom ?? 0) + SIZES[id].h) * s));
   const place = (s: number, maxH?: number): { l: ScreenLayout; spare: number } => {
     const sized: GameFit = maxH === undefined ? {} : { maxH };
-    const gh = fitGame(frame.w, frame.h, input.dpr, input.integerScale, sized).dh / input.dpr;
+    const gh =
+      fitGame(input.screen ?? DEFAULT_SCREEN, frame.w, frame.h, input.dpr, input.integerScale, sized).dh /
+      input.dpr;
     const spare = frame.h - clusterTop(s) - gh;
     const { above, lift } = portraitBalance(Math.max(0, spare));
     const extra: Partial<Record<ControlId, Place>> = {};

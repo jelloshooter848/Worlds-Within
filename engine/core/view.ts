@@ -1,5 +1,6 @@
 import type { ContentBundle } from './content/bundle';
 import type { Renderer } from './gfx/renderer';
+import type { ScreenSize } from './gfx/screen';
 import type { HeadlessGame, HeadlessOptions } from './headless';
 
 /**
@@ -11,14 +12,18 @@ import type { HeadlessGame, HeadlessOptions } from './headless';
  *   export function createView(content: ContentBundle, seed: number, opts?: HeadlessOptions): ViewGame
  *
  * The page steps the view exactly like `run` steps the headless game (one input frame per tick, no
- * clock, no audio), then calls `render` once onto the 256x240 picture. `step` and `snapshot` must
+ * clock, no audio), then calls `render` once onto a canvas of the game's picture size: `screen`,
+ * which a view takes from its manifest (`content.manifest.screen`, 256x240 when `game.json`
+ * names none) and the page checks against the size the CLI read. `step` and `snapshot` must
  * match the headless module's for the same content, seed and input: the screenshot result checks
  * the state hash against a headless run.
  */
 
 /** A headless game that can also draw its current state. */
 export interface ViewGame extends HeadlessGame {
-  /** Draws the state now onto `r` (the whole 256x240 picture). Must not change the game. */
+  /** The picture size `render` draws onto (game px): the manifest's `screen`. */
+  readonly screen: ScreenSize;
+  /** Draws the state now onto `r` (the whole `screen`-sized picture). Must not change the game. */
   render(r: Renderer): void;
 }
 
