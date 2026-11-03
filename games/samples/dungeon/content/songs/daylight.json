@@ -1,0 +1,8 @@
+{
+  "id": "daylight",
+  "bpm": 150,
+  "loop": false,
+  "pulse1": "v11 @2 l16 o4 d f a > d8 < a > d f a8. r16 g f e d c+4 d2 r4",
+  "pulse2": "v7 @1 l8 o4 f a > d4 < a > c+ e f4 < b- a4 a2",
+  "triangle": "l8 o3 d4 a4 d4 b- > c+ < d2 r2"
+}

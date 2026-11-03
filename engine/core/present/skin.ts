@@ -17,7 +17,7 @@ import {
  * maps them to a game's sprites (2D) or meshes (3D), sounds and effects. No rules live here.
  *
  *   { "backend": "canvas2d",
- *     "sheets": { "sheet": "demo-hero", "fallbackColor": "#00a800" },
+ *     "sheets": { "sheet": "hero", "fallbackColor": "#00a800" },
  *     "kinds": { "hero": { "frames": { "walk": { "down": { "frames": ["down-0", "down-1"], "ticks": 8 } } },
  *                          "flipFacing": true } },
  *     "tiles": { "#": { "sheet": "walls", "frame": "wall", "fallbackColor": "#7c7c7c" } },

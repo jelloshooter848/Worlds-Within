@@ -145,11 +145,11 @@ describe('run', () => {
   it('reports bad game content as invalid content', async () => {
     const root = tempDir();
     cpSync(join(ROOT, 'games/samples/dungeon'), join(root, 'games/samples/dungeon'), { recursive: true });
-    writeFileSync(join(root, 'games/samples/dungeon/content/songs/demo.json'), '{ nope');
+    writeFileSync(join(root, 'games/samples/dungeon/content/songs/crypt.json'), '{ nope');
     const { code, result } = await cli(['run', WALK, '--json'], root);
     expect(code).toBe(EXIT.invalidContent);
     expect(result.errors).toContainEqual(
-      expect.objectContaining({ file: 'games/samples/dungeon/content/songs/demo.json' }),
+      expect.objectContaining({ file: 'games/samples/dungeon/content/songs/crypt.json' }),
     );
   });
 

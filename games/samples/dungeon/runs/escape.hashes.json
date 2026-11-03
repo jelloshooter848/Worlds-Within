@@ -1,0 +1,81 @@
+{
+  "run": "games/samples/dungeon/runs/escape.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d29e6b40530102ce"
+    },
+    {
+      "tick": 60,
+      "hash": "01108abd5f52586a"
+    },
+    {
+      "tick": 120,
+      "hash": "e49350499f5b8415"
+    },
+    {
+      "tick": 180,
+      "hash": "ba8d8ed054384ccc"
+    },
+    {
+      "tick": 240,
+      "hash": "c2adb1b817923697"
+    },
+    {
+      "tick": 300,
+      "hash": "197a4bbed1af5a76"
+    },
+    {
+      "tick": 360,
+      "hash": "e26996553cc849a1"
+    },
+    {
+      "tick": 420,
+      "hash": "aa06cb1aa6a7d17b"
+    },
+    {
+      "tick": 480,
+      "hash": "eafe85047f0fc904"
+    },
+    {
+      "tick": 540,
+      "hash": "d1068259913886f1"
+    },
+    {
+      "tick": 600,
+      "hash": "e050e2418019cf50"
+    },
+    {
+      "tick": 660,
+      "hash": "99e949bed0e4d577"
+    },
+    {
+      "tick": 720,
+      "hash": "d2d6630fbb132089"
+    },
+    {
+      "tick": 780,
+      "hash": "767207f5d4b2ae4c"
+    },
+    {
+      "tick": 840,
+      "hash": "06b45f00d7f028a5"
+    },
+    {
+      "tick": 900,
+      "hash": "98f4231d7217c69d"
+    },
+    {
+      "tick": 960,
+      "hash": "9ccfcfeb75bad4ca"
+    },
+    {
+      "tick": 1020,
+      "hash": "73eebaac1eb26eea"
+    },
+    {
+      "tick": 1060,
+      "hash": "0fe322678bda79c2"
+    }
+  ]
+}

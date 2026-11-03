@@ -133,7 +133,7 @@ describe('content rule: engine and kits hold no game content', () => {
 
   it('still recognises the demo game content (the detector works on real content)', () => {
     // The demo keeps its content in data files; written back as TypeScript, it must be flagged.
-    const song = readFileSync(join(ROOT, 'games/samples/dungeon/content/songs/demo.json'), 'utf8');
+    const song = readFileSync(join(ROOT, 'games/samples/dungeon/content/songs/crypt.json'), 'utf8');
     const music = contentMarkers(`export const SONG = ${song};`);
     expect(music.some((m) => m.endsWith('Song or Sfx object'))).toBe(true);
     expect(music.some((m) => m.endsWith('MML source string'))).toBe(true);

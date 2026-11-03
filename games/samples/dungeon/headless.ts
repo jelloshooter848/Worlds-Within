@@ -1,10 +1,10 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessGame, HeadlessOptions } from '@engine/core/headless';
 import { TopDownWorld, topdownGame } from '@kits/topdown';
-import { demoDungeon } from './content';
+import { dungeonRooms } from './content';
 
 /**
- * The demo's headless entry (named by `headless` in `game.json`): a world from the loaded content
+ * The dungeon sample's headless entry (named by `headless` in `game.json`): a world from the loaded content
  * and a seed (the manifest's `start.seed` when none is given). No browser, no drawing.
  */
 export function createWorld(
@@ -12,7 +12,7 @@ export function createWorld(
   seed = content.manifest.start.seed,
   disabledRules: readonly string[] = [],
 ): TopDownWorld {
-  return new TopDownWorld(demoDungeon(content), { seed, disabledRules });
+  return new TopDownWorld(dungeonRooms(content), { seed, disabledRules });
 }
 
 /**

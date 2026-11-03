@@ -57,7 +57,13 @@ re-export it.
 `room`, `rng` (the RNG's state), `keys`, `found`, `visited`, `sliding`, `sealed`, `exited`,
 `hero` (`room`, `x`, `y`, `facing`, `hp`, `maxHp`, `attacking`, `invuln`, `dying`, `dead`),
 `inventory` (`owned`, `current`, `ammo`), `entities` (`{ kind, x, y, key, hp? }`, `kind` being the
-enemy or pickup kind or else the class name), `enemies` (living count) and `events`.
+enemy or pickup kind or else the class name), `enemies` (living count) and `events`. The class
+name is `typeNameOf(e)` (`type-names.ts`, Engine 0.15 T12): the kit's classes by their names
+written out, since a minified page build renames classes and `constructor.name` there would give
+the page another hash than `pnpm cli run` (found replaying the dungeon sample's run files through
+its built page); a game's own class not in the table keeps `constructor.name`. The names are the
+classes' own, so no hash moved; `present-entities.test.ts` checks each kit class keeps its name
+with its `name` property changed, and `presentKind` uses it too.
 `topdownGame(world)` wraps a world as the engine's `HeadlessGame` (`engine/core/headless.ts`):
 `step` updates the world and takes its events, so `snapshot().events` is the last step's. Both
 only read the world and stay pure. Adding a field to the snapshot changes every state hash: update
@@ -120,7 +126,7 @@ by default), `reduceFlashing` and `state` (a `TdPresentState`, one per stream of
 ### Old frame names -> presented kind and animation
 
 What each old `render` method (removed in 0.4-8) drew, so a skin can reproduce it
-(`games/samples/dungeon/content/skins/canvas2d.json` does, with flat placeholder frames). `t` is `anim.t`;
+(`games/samples/dungeon/content/skins/canvas2d.json` maps every kind to its own art). `t` is `anim.t`;
 "cycle N" means the old code changed frame every N ticks of `t`. Sheets are the old sheet roles
 (`tiles` = `dungeon`, `hero` = `link-td`, `enemies` = `dungeon-enemies`) unless named.
 

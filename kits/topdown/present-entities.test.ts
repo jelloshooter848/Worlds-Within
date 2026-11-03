@@ -9,6 +9,7 @@ import { Bomb, Boomerang, Explosion } from './items';
 import { TdPerson } from './person';
 import { presentWorld, TD_DEPTH, TdPresentState } from './present';
 import { buildDungeon } from './room';
+import { typeNameOf } from './type-names';
 import { TdWalker } from './walker';
 import { TopDownWorld } from './world';
 
@@ -84,6 +85,25 @@ describe('presentWorld: every entity the kit has', () => {
       expect(kinds, name).toContain(kind);
       expect(kinds, name).toContain('hero');
     }
+  });
+
+  it('names every kit class the same in a minified build (typeNameOf, Engine 0.15 T12)', () => {
+    for (const [name, { make }] of Object.entries(FACTORIES)) {
+      const e = make();
+      expect(typeNameOf(e), name).toBe(name);
+      // A minifier renames the class: the snapshot's name for it must not follow.
+      const cls = e.constructor;
+      const was = Object.getOwnPropertyDescriptor(cls, 'name')!;
+      Object.defineProperty(cls, 'name', { value: 'a', configurable: true });
+      try {
+        expect(typeNameOf(e), name).toBe(name);
+      } finally {
+        Object.defineProperty(cls, 'name', was);
+      }
+    }
+    // A game's own class (not in the kit's table) keeps its class name.
+    class Boss extends Chest {}
+    expect(typeNameOf(new Boss(0, 0, 'key'))).toBe('Boss');
   });
 
   it('presents the walking hero (TdWalker) as the hero too', () => {

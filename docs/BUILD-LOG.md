@@ -289,6 +289,31 @@ record --bot '{"stockade": [{"do": "fight"}]}'`. **M11:** `engine/tools/mini-gam
   each ends before the pause after its last level). New runs with new hashes:
   `level-5-start` (`baff0936d93cd71f`) and `dawn-rescue-played`
   (`ea5896a26067e338`). No layer arrow changed.
+- **The dungeon sample finished** (T12, decision 13): `games/samples/dungeon` is **The Old
+  Crypt**, five rooms as data: the courtyard and guard room as they were (walk-east plays them),
+  the store room (its chest now holds the `bomb` item, and its east wall is cracked), and two new
+  rooms, the bat hall (bats, a key, a locked door) and the crypt (`goal: true`, the relic in a
+  chest, two exit tiles). A run ends escaped (`exited`) or fallen (`hero.dead`); the page shows
+  which and Z or X starts a new run. The placeholder sheet and palette are gone: original
+  NES-style art as text in two sheets, `hero` (the old hero art, plus `hold` and a three-frame
+  poof in place of the white placeholder square) and `dungeon` (72 frames: every tile, pickup,
+  object, monster with walk cycles, shot, effect and HUD icon), two MML songs (`crypt`, looping,
+  and `daylight` for the way out; every channel of a song the same length) and thirteen sfx; the
+  skin has a `background` (G36), no per-kind fallback colours, and a sound or effect for the main
+  events. The page boots through the shell's `bootBrowserGame` (audio, the stored-volume control
+  of T5, `?debug=step`); its scene reports the headless game (`headless()`), so the page's hashes
+  are the run files'. The glue was renamed off `demo` (`loadDungeon`, `DungeonPicture`,
+  `dungeonLook`, `DungeonScene`). Run files: `walk-east` byte for byte unchanged with its hashes
+  (`257c816edd617516` final); new `escape` (1060 ticks, the whole path to the exit, final
+  `0fe322678bda79c2`) and `lost-in-the-guard-room` (1521 ticks, the fall, final
+  `4f9c907fe8c1fe9b`); with walk-east they guard all four top-down rules (`tests/runs/dungeon-mutants.test.ts`:
+  none unguarded, no run weak). `tests/browser/dungeon.test.ts` follows the games index's link,
+  plays walk-east on the keyboard with the golden hashes and replays both new runs with theirs.
+  **A kit fix found by it:** the top-down snapshot named a thing without a `kind` (a chest, a
+  torch) by `constructor.name`, which the minified page build renames, so a page's hash differed
+  from `pnpm cli run` as soon as such a thing was in the room; `typeNameOf` (`kits/topdown/
+type-names.ts`) writes the kit's class names out (the same names, so no hash moved). No layer
+  arrow changed, no existing golden hash moved.
 
 ### Planned tasks
 

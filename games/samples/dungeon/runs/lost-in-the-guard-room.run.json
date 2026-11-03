@@ -1,0 +1,25 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 1521,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["left"] },
+      { "frame": 120, "hold": ["right"] },
+      { "frame": 402, "hold": ["down"] },
+      { "frame": 453, "hold": [] }
+    ]
+  },
+  "assertions": [
+    { "tick": 120, "path": "hero.x", "op": "eq", "value": 15 },
+    { "tick": 120, "path": "room", "op": "eq", "value": "courtyard" },
+    { "tick": 400, "path": "room", "op": "eq", "value": "guard-room" },
+    { "tick": 1400, "path": "hero.hp", "op": "lte", "value": 1 },
+    { "tick": 1430, "path": "hero.dying", "op": "eq", "value": true },
+    { "tick": 1521, "path": "hero.dead", "op": "eq", "value": true },
+    { "tick": 1521, "path": "hero.hp", "op": "eq", "value": 0 }
+  ],
+  "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
+  "hashEvery": 60,
+  "guards": ["walls-block-movement", "damage-reduces-hp"]
+}

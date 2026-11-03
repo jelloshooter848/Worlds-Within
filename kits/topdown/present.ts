@@ -18,6 +18,7 @@ import { Bat, Projectile, Rock, Spitter, Walker } from './enemies';
 import { BOMB_FUSE, Bomb, Boomerang, Explosion } from './items';
 import { BeamBurst, SwordBeam } from './beam';
 import { TdPerson } from './person';
+import { typeNameOf } from './type-names';
 import { sideOf, tileAt, type Room, type TileKind } from './room';
 import type { TopDownWorld } from './world';
 
@@ -275,7 +276,7 @@ export function presentKind(e: TdEntity): string {
   const kind = (e as { kind?: unknown }).kind;
   if (typeof kind === 'string') return kind;
   if (e instanceof Rock) return 'rock';
-  return e.constructor.name;
+  return typeNameOf(e);
 }
 
 /**

@@ -119,8 +119,8 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
     keys on the slider never reach the game. `bootBrowserGame({ game, volumeControl? })` mounts it
     on every page with `audio` (`booted.volume`; `volumeControl: false` leaves it out but still
     applies the stored volumes). Storage never throws (a blocked one plays at the defaults).
-    Headless runs never read it. Every sample page has it (the dungeon, with its own loop, calls
-    `mountVolumeControl`; the RTS skirmish passes `audio: {}` until it has sounds).
+    Headless runs never read it. Every sample page has it (the dungeon boots through the shell since Engine 0.15 T12; the RTS
+    skirmish passes `audio: {}` until it has sounds).
   - **Taps as frame input (D1).** With `pointer`, each loop step's tap gestures go onto the live
     frame (`tapsOf(gestures)` to `ActionState.addTaps`), in game screen pixels: `InputFrame.taps?()`
     (`frameTaps(frame)` reads it). `ScriptedInput` plays a script's `taps`, `InputRecorder` records

@@ -1,1 +1,1 @@
-{ "id": "door", "bpm": 240, "pulse": "v10 @1 l16 o4 c e g > c" }
+{ "id": "door", "bpm": 240, "noise": "v6 l32 h s h" }

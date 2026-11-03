@@ -1,0 +1,51 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 1060,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["up"] },
+      { "frame": 167, "hold": [] },
+      { "frame": 231, "hold": ["down"] },
+      { "frame": 252, "hold": ["right"] },
+      { "frame": 306, "hold": ["left"] },
+      { "frame": 307, "hold": ["up"] },
+      { "frame": 323, "hold": ["right"] },
+      { "frame": 325, "hold": ["special"] },
+      { "frame": 326, "hold": ["left"] },
+      { "frame": 366, "hold": [] },
+      { "frame": 426, "hold": ["right"] },
+      { "frame": 559, "hold": ["down"] },
+      { "frame": 581, "hold": ["up"] },
+      { "frame": 582, "hold": ["right"] },
+      { "frame": 705, "hold": ["left"] },
+      { "frame": 706, "hold": ["up"] },
+      { "frame": 727, "hold": ["right"] },
+      { "frame": 903, "hold": ["up"] },
+      { "frame": 909, "hold": [] },
+      { "frame": 973, "hold": ["right"] },
+      { "frame": 979, "hold": ["left"] },
+      { "frame": 980, "hold": ["up"] },
+      { "frame": 1023, "hold": [] }
+    ]
+  },
+  "assertions": [
+    { "tick": 0, "path": "room", "op": "eq", "value": "courtyard" },
+    { "tick": 200, "path": "room", "op": "eq", "value": "store-room" },
+    { "tick": 200, "path": "inventory.current", "op": "eq", "value": "bomb" },
+    { "tick": 400, "path": "inventory.ammo.bomb", "op": "eq", "value": 3 },
+    { "tick": 600, "path": "room", "op": "eq", "value": "bat-hall" },
+    { "tick": 700, "path": "keys", "op": "eq", "value": 1 },
+    { "tick": 900, "path": "room", "op": "eq", "value": "crypt" },
+    { "tick": 900, "path": "keys", "op": "eq", "value": 0 },
+    { "tick": 1000, "path": "found", "op": "contains", "value": "triforce" },
+    { "tick": 1060, "path": "exited", "op": "eq", "value": true },
+    { "tick": 1060, "path": "visited", "op": "eq", "value": ["bat-hall", "courtyard", "crypt", "store-room"] }
+  ],
+  "invariants": [
+    { "path": "hero.hp", "op": "eq", "value": 6 },
+    { "path": "hero.dead", "op": "eq", "value": false }
+  ],
+  "hashEvery": 60,
+  "guards": ["doors-change-room", "keys-open-locked-doors"]
+}

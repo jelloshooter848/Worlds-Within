@@ -1,0 +1,113 @@
+{
+  "run": "games/samples/dungeon/runs/lost-in-the-guard-room.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d29e6b40530102ce"
+    },
+    {
+      "tick": 60,
+      "hash": "40d3a9247255434c"
+    },
+    {
+      "tick": 120,
+      "hash": "d6e1e13a499cf7d6"
+    },
+    {
+      "tick": 180,
+      "hash": "02df319aca5f7cc6"
+    },
+    {
+      "tick": 240,
+      "hash": "d348c9cdb76e2a4a"
+    },
+    {
+      "tick": 300,
+      "hash": "8860f39c9adcf329"
+    },
+    {
+      "tick": 360,
+      "hash": "5da97e84addda819"
+    },
+    {
+      "tick": 420,
+      "hash": "b30033e05b623a9c"
+    },
+    {
+      "tick": 480,
+      "hash": "540b5bfecfdf8692"
+    },
+    {
+      "tick": 540,
+      "hash": "856d67d913880ace"
+    },
+    {
+      "tick": 600,
+      "hash": "b6bd25df03f0a2cc"
+    },
+    {
+      "tick": 660,
+      "hash": "9b73ec071a93d1c4"
+    },
+    {
+      "tick": 720,
+      "hash": "d4077177efcf0104"
+    },
+    {
+      "tick": 780,
+      "hash": "f3af79e4fff6af29"
+    },
+    {
+      "tick": 840,
+      "hash": "7a79b23ccc35c409"
+    },
+    {
+      "tick": 900,
+      "hash": "801fa787dcd1f6e5"
+    },
+    {
+      "tick": 960,
+      "hash": "5d1f90d62432dedb"
+    },
+    {
+      "tick": 1020,
+      "hash": "0651788af6858b6a"
+    },
+    {
+      "tick": 1080,
+      "hash": "342496f8405b9d25"
+    },
+    {
+      "tick": 1140,
+      "hash": "d73d9e4b23b4fe41"
+    },
+    {
+      "tick": 1200,
+      "hash": "5e7a20940eeb1083"
+    },
+    {
+      "tick": 1260,
+      "hash": "f94e5e3fdbd6317d"
+    },
+    {
+      "tick": 1320,
+      "hash": "c8e55a3ed790c9d7"
+    },
+    {
+      "tick": 1380,
+      "hash": "3030b174705c7d5e"
+    },
+    {
+      "tick": 1440,
+      "hash": "635e4156b6d9e6ae"
+    },
+    {
+      "tick": 1500,
+      "hash": "237a72fb9803bf03"
+    },
+    {
+      "tick": 1521,
+      "hash": "4f9c907fe8c1fe9b"
+    }
+  ]
+}

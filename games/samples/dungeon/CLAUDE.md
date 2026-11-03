@@ -1,125 +1,187 @@
 # games/samples/dungeon
 
-The top-down dungeon sample: the engine's sample game for the top-down kit. It began as the
-engine demo (a proof-of-life game in its own `demo` folder) and moved here at Engine 0.15 (T2), run files and
-golden hashes unchanged; 0.15 finishes it as a sample (original assets, this file explaining how
-it was built). Some names still say `demo` (`loadDemo`, `DemoPicture`, the `demo` song and sheets).
-It is content, not engine, and its content lives in data files, not TypeScript.
+**The Old Crypt**, the top-down kit's sample game: a short, finished dungeon of five rooms with a
+start, a way through, a goal and two end states, all in data files, with original NES-style pixel
+art, MML music and sound effects. This file is a worked example: it says how the sample was built,
+step by step, so an agent can build the next top-down game the same way. It began as the engine
+demo (a proof-of-life game in its own `demo` folder, Engine 0.2-0.14), moved here at Engine 0.15
+T2 with its run file and golden hashes unchanged, and was finished as a sample in Engine 0.15 T12.
+It is content, not engine: the kit holds the rules, this folder holds rooms, art, sound and thin
+glue.
+
+## The dungeon
+
+```
+ (0,0) store-room  --cracked wall-->  (1,0) bat-hall  --locked door-->  (2,0) crypt  --exit (north)-->
+        |                                                                  goal room
+ (0,1) courtyard (start)  --open door-->  (1,1) guard-room (a side room full of monsters)
+```
+
+1. **courtyard** (start, `@`): four blocks, a heart; doors north and east. Its `music` is `crypt`.
+2. **guard-room**: three bats, a knight and a rock-spitter; a dead end to fight in (or die
+   in: the fail case).
+3. **store-room**: a chest holding the `bomb` item (`chests: ["bomb"]`: the item itself, which
+   gives the bombs with their starting ammo; `bombs` would only add ammo to an item not owned),
+   two cold torches, and a cracked east wall (`C` on the border: a doorway that starts shut).
+4. **bat-hall**: reached by bombing the cracked wall (a blast opens both sides); three bats, a
+   statue block in the middle, a key (`k`) and a locked east door (`L`).
+5. **crypt**: the goal room (`goal: true`), its chest holding the relic (`triforce`, kept in the
+   world's `found`), and two exit tiles (`E`) on its north border: stepping on one sets the world's
+   `exited`, the run's win.
+
+A run ends **escaped** (the hero reached an exit: `exited`) or **fallen** (the hero died after his
+death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the status lines say which
+and the scene starts a new run on Z or X (below). Both are world state, so run files assert them.
+
+## How it was built (the worked example)
+
+1. **Start from the scaffold** (`.claude/skills/scaffold-game/SKILL.md`): `game.json` (kit
+   `topdown`, content globs by kind, seed, screen, headless and view entries), one room, a skin,
+   `headless.ts`, `view.ts`, `index.html` + `main.ts`, a run file.
+2. **Rooms as data.** Each room is `content/rooms/<id>.json` (its `RoomDef` fields: `id`, `at` its
+   map cell, `music`, `chests`, `goal`, `hint`, ...) plus `<id>.map.txt`, 11 rows of 16 characters
+   from the kit's `LEGEND` (`kits/topdown/room.ts`: `#` wall, `.` floor, `O` open door, `L` locked
+   door, `C` cracked wall, `E` exit, `@` start, `k` key, `c` chest, `b` bat, `n` knight, `r`
+   spitter, `S` statue ...). Neighbouring cells need facing doors that line up (east/west doors are
+   one cell, north/south two). `pnpm -s cli validate games/samples/dungeon` names any room, row and
+   column that is wrong. Keep rooms a run file already plays as they are (here the courtyard and
+   guard room: walk-east's hashes must not move) and grow the dungeon beside them.
+3. **Plan the path, then script it.** The path to the end needs the kit's rules in order: open a
+   chest by walking into it, select-free item use (the first item found goes in the slot), set a
+   bomb by a cracked wall (C, `special`), pick up a key, walk into a locked door. A small scratch
+   controller (hold a direction until `hero.x`/`hero.y` reaches a target, or until a world
+   condition holds) found the input steps; `pnpm -s cli trace <run> --paths hero.x,hero.y,room`
+   and `pnpm -s cli dump <run> --tick N` check them. The steps then went into the run file as
+   plain data: no bot is needed to replay it.
+4. **Run files with golden hashes** (below), then `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` to
+   write the new `.hashes.json` files (never by hand), and `pnpm -s cli mutants
+games/samples/dungeon --json` to see every kit rule guarded.
+5. **Art as text.** `content/palettes/<id>.json` (NES colours) and `content/sprites/<sheet>.txt`
+   (a `palette` line, a `legend` per character, then `frame <name>` and its rows; format at the top
+   of `engine/core/gfx/sprite-schema.ts`). Two sheets: `hero` (the hero's walk, attack, throw,
+   hold and poof frames, side frames facing right) and `dungeon` (every tile, pickup, chest,
+   switch, torch, monster, shot, effect and HUD icon). Draw tiles opaque (a tile's clear pixels
+   show the background, not the floor), monsters and items with a black outline on clear.
+6. **The skin** (`content/skins/canvas2d.json`, format: `engine/core/present/skin.ts`) maps what
+   the kit presents to the art: `kinds` (each presented kind and animation state to frames, with
+   `{ frames, ticks }` cycles and `flipFacing` for left; the table in `kits/topdown/CLAUDE.md`
+   lists every kind and state), `tiles` (every `PRESENT_TILES` character), `events` (sounds and
+   effects per kit event: `room` door, `unlock`, `sword`, `hit`, `kill` with particles, `pickup`,
+   `chest`, `bomb` fuse, `blast` with a shake, `hurt`, `dying`, `exit` with a gold flash and the
+   fanfare), `hud` (half-heart pips, keys, the item icon), `background` (black, Engine 0.15 gap
+   G36) and `sheets.fallbackColor` (a pink no frame should ever show: the kinds and tiles carry no
+   fallback colour of their own, and `dungeon.test.ts` fails if a run draws one).
+7. **Music and sound as MML.** `content/songs/crypt.json` (the looping dungeon theme, D minor,
+   four channels; every channel the same length so the loop stays in step: the test checks it)
+   and `daylight.json` (the short tune for the way out); `content/sfx/*.json`, one per skin sound.
+8. **Glue only in TypeScript** (below), then the browser test and the agent docs.
 
 ## Files
 
-- `game.json`: the game manifest (schema: `engine/core/content/manifest.ts`). It names the kit, the
-  content files by kind (globs), the start seed, the headless entry (`headless.ts`) and the view entry (`view.ts`).
-- `content/rooms/<id>.json` + `<id>.map.txt`: a room (schema: `kits/topdown/schema.ts`). The JSON
-  holds `id` (must match the file name), `at`, `music`, `chests` and the other `RoomDef` fields;
-  the `.map.txt` file is the 11x16 map grid in the kit's `LEGEND` (`kits/topdown/room.ts`).
-- `content/songs/<id>.json`: an MML song (schema: `engine/core/audio/song-schema.ts`).
-- `content/palettes/<id>.json`: a palette (schema: `engine/core/gfx/palette-schema.ts`).
-- `content/sprites/<sheet>.txt`: text-grid pixel art (format: top of
-  `engine/core/gfx/sprite-schema.ts`). The file name is the sheet id: `demo-hero.txt` is the hero
-  sheet (`down-0`, `side-1`, `attack-up`..., and `poof` for the puff he leaves);
-  `demo-placeholders.txt` (palette `demo-placeholders.json`) holds flat frames in exactly the
-  colours and places the kit drew before Engine 0.4 when a game had no art: every tile, every
-  other kind and three HUD icons. Real art replaces a frame by drawing it under the same name.
-- `content/sfx/<id>.json`: an MML sound effect (schema: `engine/core/audio/song-schema.ts`):
-  `door`, `spit`, `hurt`, played for the skin's events.
-- `content/skins/canvas2d.json`: the skin the Canvas2D backend draws the demo with (format:
-  `engine/core/present/skin.ts`, `engine/core/present/CLAUDE.md`). `kinds` maps every kind the
-  top-down kit presents (`hero`, `bat`, `pickup:heart`, ...; the table in `kits/topdown/CLAUDE.md`)
-  and its animation states to frames, with the kit's old flat colours as `fallbackColor`;
-  `tiles` maps every `PRESENT_TILES` character; `events` maps `room`/`unlock` -> `door`,
-  `spit` -> `spit`, `hurt` -> `hurt`, `kill` -> particles and `blast` -> a shake; `hud` shows
-  `hp` (one half-heart pip per half heart), `keys` (one key each) and `item` (an icon when one is
-  selected) along the bottom of the HUD band. Townsfolk (`person:*`) are not listed: they fall
-  back to `sheets.fallbackColor`.
-- TypeScript is glue only: `content.ts` (the content kinds, `loadDemo`, and `demoDungeon`,
-  `demoSongs`, `demoSfx`, `demoSkin` over the loaded bundle; sheets are the engine's `contentSheets`), `headless.ts` (`createWorld(content, seed?)`, and `createGame(content, seed)`: the
-  engine's headless contract, which `pnpm cli run` imports by the path in `game.json`),
-  `picture.ts` (`demoLook(content)`: the skin, sheets and picture size; `DemoPicture`: each
-  `draw(world, events)` calls the kit's `presentWorld`, freezes the frame, hands it to the
-  backend's `SkinnedCanvasPresenter` (the skin's `camera.clamp: false` keeps the room under the HUD band) and
-  writes the three status lines, `drawStatusLines`, from the frame's `status`), `view.ts`
-  (`createView(content, seed, opts?)`: the headless game plus `DemoPicture`, for `pnpm cli screenshot`),
-  `scene.ts` (`DemoScene`: the world, its events since the last draw, `DemoPicture` with
-  `onSound` -> `AudioManager.sfx`) and `main.ts` (boots the Canvas2D backend, input, audio with
-  songs and sfx, and the look; Engine 0.15 T5: the shell's `mountVolumeControl`, the mute button
-  and volume slider with the player's volumes stored under `ww:dungeon:volumes`, gap M1).
-- The demo never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's `render`):
-  `dungeon.test.ts` fails if its code names one.
+- `game.json`: the manifest (schema: `engine/core/content/manifest.ts`): kit `topdown`, content
+  globs (`room`, `song`, `palette`, `sprite`, `sfx`, `skin`), seed 1, 256x240, `headless.ts`,
+  `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
+- `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt` (above).
+- `content/songs/`: `crypt`, `daylight`. `content/sfx/`: `blast`, `chest`, `door`, `fall`,
+  `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`, `unlock`.
+- `content/palettes/`: `hero`, `dungeon`. `content/sprites/`: `hero.txt`, `dungeon.txt`.
+- `content/skins/canvas2d.json`: the skin (above).
+- `content.ts`: the content kinds (`dungeonKinds`), `loadDungeon(files)`, `mustLoad`, and
+  `dungeonRooms`, `dungeonSongs`, `dungeonSfx`, `dungeonSkin` over the loaded bundle;
+  `DUNGEON_MUSIC` and `ESCAPE_MUSIC` (song ids).
+- `headless.ts`: `createWorld(content, seed?, disabledRules?)` and `createGame(content, seed,
+opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
+- `picture.ts`: `dungeonLook(content)` (skin, sheets, picture size), `DungeonPicture`
+  (`draw(world, events)`: the kit's `presentWorld`, frozen, to the backend's
+  `SkinnedCanvasPresenter`, plus the status lines), `dungeonEnd(world)` and `drawStatusLines`
+  (title, room, hearts, bombs once found, and the end banner).
+- `view.ts`: `createView(content, seed, opts?)`, the view entry for `pnpm cli screenshot`.
+- `scene.ts`: `DungeonScene`: the world stepped once per loop step, its events drawn through
+  `DungeonPicture` with the shell's `onSound`, the `crypt` song on enter and `daylight` on the
+  way out; once the run has ended (`dungeonEnd`), Z or X at least `END_HOLD` (60) steps later
+  starts a new run seeded from the step count. The world keeps stepping after the end, so until a
+  restart the scene is exactly the headless game: `headless()` gives the page's step hook its
+  snapshot and hash.
+- `main.ts`: `bootBrowserGame` (keyboard, gamepad, touch pad, loop, `?debug=step` step hook, audio
+  with the songs and sfx and the `crypt` song once unlocked, the shell's volume control stored
+  under `ww:dungeon:volumes`, gap M1) with `canvasDisplay`; the scene draws on its renderer.
+- `index.html`: the page (canvas `#screen`); the root launcher lists it.
+- The sample never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's
+  `render`): `dungeon.test.ts` fails if its code names one. No rooms, MML or pixel rows in `.ts`
+  files (`tests/architecture/no-content.test.ts`).
 
-## Adding or changing content
+## Adding a room
 
-- Edit the data files; never put rooms, MML or pixel rows in `.ts` files
-  (`tests/architecture/no-content.test.ts` fails on them).
-- A new file must be claimed by a kind in `game.json` (otherwise it is an `unclaimed_file` error).
-- Node code reads the folder with `readGameFiles` (`engine/core/node/game-files.ts`) and checks it
-  with `loadDemo`; every error names the file (`games/samples/dungeon/content/...`) and the field.
-- After any content change run `pnpm -s cli validate games/samples/dungeon --json`: exit 0 means every file
-  passes; exit 3 lists each error with its file and field.
+1. Pick a free map cell next to an existing room; add `content/rooms/<id>.json` (`id`, `at`) and
+   `<id>.map.txt`; put a door on the facing edges of both rooms (same kind both sides for a locked
+   or cracked one: opening one side opens both).
+2. A new spawn character the kit lacks is a game's `extraLegend` (and spawner) in `headless.ts`.
+3. `pnpm -s cli validate games/samples/dungeon --json` (exit 0, or each error at its file, row and
+   column). The skin already covers every kind and tile the kit presents.
+4. Add or extend a run file through it (below) and rerun the run files: walk-east, escape and
+   lost-in-the-guard-room must keep their hashes unless the room changes a room they play.
 
-## Run files
+## Run files and what each guards
 
-- `runs/<name>.run.json`: a seeded, scripted headless run with tick assertions and invariants
-  (schema: `engine/tools/run-file.ts`; format in `engine/tools/CLAUDE.md`). `runs/walk-east.run.json`
-  walks the hero east into the guard room and checks his hearts never go below 0.
-- `runs/<name>.hashes.json`: the run's committed golden state hashes. `tests/runs/run-files.test.ts`
-  runs every run file twice and compares both to it, so CI checks them.
-- Run one: `pnpm -s cli run games/samples/dungeon/runs/walk-east.run.json --json` (exit 0 passed, 4 a failed
-  check). See the state at a tick: `pnpm -s cli dump games/samples/dungeon/runs/walk-east.run.json --tick 100 --json`.
-- `tests/runs/backend-parity.test.ts` plays every run here twice, presenting every tick through
-  the null backend's `NullPresenter` and through `DemoPicture` (the Canvas2D backend's
-  `SkinnedCanvasPresenter`) onto a recording renderer: both must give the golden hashes.
-- After a change meant to change the game's state, regenerate the golden files with
-  `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit them with the change.
+`runs/<name>.run.json` (schema: `engine/tools/run-file.ts`, format in `engine/tools/CLAUDE.md`)
+with `runs/<name>.hashes.json`, its golden state hashes; `tests/runs/run-files.test.ts` plays each
+twice against them and `tests/runs/backend-parity.test.ts` with every tick presented through the
+null backend and through `DungeonPicture`. Run one: `pnpm -s cli run
+games/samples/dungeon/runs/escape.run.json --json` (exit 0 passed, 4 a failed check).
+
+- `walk-east` (240 ticks, unchanged since the demo): right held from the courtyard into the guard
+  room; asserts the room it ends in (guards `doors-change-room`).
+- `escape` (1060 ticks, the path to the end): up into the store room and into the chest (the
+  bomb), a bomb by the cracked east wall, into the bat hall, the key, the locked door, the crypt's
+  chest (the relic) and out through the exit. Asserts each step (room, `inventory.current`,
+  `inventory.ammo.bomb` 3 after the blast, `keys` 1 then 0, `found` has `triforce`, `exited` and
+  the four rooms `visited`) and full hearts throughout; `guards: ["doors-change-room",
+"keys-open-locked-doors"]`.
+- `lost-in-the-guard-room` (1521 ticks, the fail case): left into the courtyard's west wall
+  (`hero.x` 15 at tick 120), then into the guard room to stand among its monsters until the hero
+  is down to one heart, dying (tick 1430) and dead with 0 hp at 1521; `guards:
+["walls-block-movement", "damage-reduces-hp"]`.
+
+`pnpm -s cli mutants games/samples/dungeon --json`: every `TOPDOWN_RULES` rule is guarded by some
+run, and no run is weak on its own `guards` (`tests/runs/dungeon-mutants.test.ts` holds it to that,
+though the top-down kit is not strict). After a change meant to move the game's state, regenerate
+the golden files with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and say why in the commit.
+
+## Tests
+
+- `dungeon.test.ts` (Node): the content loads (every file by kind), the rooms build, walk-east is
+  drawn through the skin from the `hero` and `dungeon` sheets, the songs compile with channels of
+  equal length, every skin sound is an sfx, walk-east's frames and golden hashes, walk-east's
+  `door` and `spit` sounds, no placeholder file names and no per-kind fallback colours, **every
+  tick of every run file drawn with no fallback box**, the end states of `escape` (escaped, with
+  the relic) and `lost-in-the-guard-room` (fallen), `DungeonScene` playing `escape` with the
+  headless game's snapshots, its music, the end held and Z starting over, and broken fields naming
+  their file and field.
+- `tests/browser/dungeon.test.ts` (headless Chromium, skipped without it): opens the built games
+  index, follows its `games/samples/dungeon/` link, plays walk-east on the keyboard with
+  `?debug=step` (the golden hash at every tick of `walk-east.hashes.json`, the guard room, the
+  black HUD band and the wall colour, the volume control), and replays `escape` and
+  `lost-in-the-guard-room` through `window.__ww.replay` with their golden hashes and end states.
+- `tests/browser/volume-control.test.ts` checks the volume control and stored volumes here too.
 
 ## Picture size
 
 `screen` in `game.json` is the only value to change for another picture size: the canvas, the
-integer scaling, the touch layout, the kit's frames and screenshots follow it. The kit's camera
-hint (`cameraHint`, `kits/topdown/present.ts`) keeps the HUD band (64 px) at the top and centres
-the room across the picture and in the height under the band; a shorter picture cuts the room's
-bottom, a narrower one both sides. The skin's HUD and the status lines stay at the top-left.
-`tests/build/two-resolutions.test.ts` copies this folder with `screen` set to 320x240 and checks
-`validate`, `run` (the same hashes), `screenshot` (a 320x240 PNG, the same bytes twice) and a
-Vite build of the copy.
+scaling, the touch layout, the kit's frames and screenshots follow it. The kit's camera hint
+(`cameraHint`, `kits/topdown/present.ts`) keeps the HUD band (64 px) on top and centres the room;
+the skin's HUD and the status lines stay top-left. `tests/build/two-resolutions.test.ts` copies
+this folder at 320x240 and checks `validate`, `run` (the same hashes), `screenshot` and a build.
 
 ## How to run
 
-- `pnpm dev` opens the index of games; pick `games/samples/dungeon`, or open `/games/samples/dungeon/` directly.
-- `pnpm build` builds the demo (content included) into `dist/games/samples/dungeon/`.
-- `pnpm test` runs `dungeon.test.ts`: it loads the data files from disk, walks the hero east into the
-  guard room drawn through the skin onto a counting renderer (hero and placeholder sprites drawn),
-  compiles the song, checks the skin lists every tile, every kind and HUD value walk-east shows
-  and that every sound it names is an sfx, that the walk's `room` (tick 89) and `spit` (tick 240)
-  events call the skin's sound callback with `door` and `spit`, and that a broken field gives an
-  error naming the file and the field.
-
-## Screenshot against Engine 0.3 (build log)
-
-`pnpm -s cli screenshot games/samples/dungeon/runs/walk-east.run.json --tick 120` was
-`303b20d7559004e80f01d68e53a54efdb060985419c1825070cfa617ee2a0579` at the end of 0.3 and is now
-`385b61d4a1ff684c27a8d497775c05949d935fd387e19be34a3fbbd632ba7cdd`. The two PNGs differ in 90
-pixels, all inside x 8..30, y 53..57 of the black HUD band: the six red half-heart pips of the new
-skin HUD entry for `hp` (black before, `#f83800` now). Nothing else differs: with the skin's `hud`
-removed the screenshot is byte-identical to 0.3's (sha `303b20d7...`), and so are ticks 60, 200
-and 240 against the 0.3 code. Judged visual-only: the state hashes are unchanged
-(`matchesHeadless: true`, walk-east's golden hashes pass).
-
-Differences a skin cannot express yet, none of them visible in walk-east (all visual-only):
-
-- A hurt hero or monster no longer blinks (the old code skipped drawing every other 2 frames
-  while invulnerable; a skin has no "hidden" frame). The hero's hurt and dying poses are his
-  first walk frame for his facing (the old code kept his walk frame).
-- Stun stars are drawn in one pose (the old code turned them a little each frame).
-- Within one depth layer the backend draws by `y` (the old code by list order), so two
-  overlapping monsters may swap which is in front.
-- The exit's two-frame glow and dark-room palettes were placeholder colours anyway; the skin has
-  one flat frame each.
-- Sounds and effects are new: the old demo played none for events.
+- `pnpm dev` opens the games index; pick `games/samples/dungeon/` (or open it directly).
+  Arrows move, X (or Z) the sword, C the item; `?debug=step` for the step hook.
+- `pnpm build` builds it into `dist/games/samples/dungeon/`.
+- `pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 950` shows the crypt.
 
 ## Imports
 
 - Allowed: relative paths inside `games/samples/dungeon`, `@engine/*` (core and backends) and `@kits/*`.
 - Never: other games. Nothing in `engine/` or `kits/` may import from here, and no alias points into
   `games/`.
-- Game rules belong in data (rooms, songs) wherever possible, not code.
+- Game rules belong in data (rooms, songs, skin) wherever possible, not code.

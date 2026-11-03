@@ -1,1 +1,6 @@
-{ "id": "store-room", "at": [0, 0], "chests": ["bombs"] }
+{
+  "id": "store-room",
+  "at": [0, 0],
+  "chests": ["bomb"],
+  "hint": "A store room. A chest sits between two cold torches; the east wall is cracked."
+}

@@ -1,0 +1,9 @@
+{
+  "id": "crypt",
+  "bpm": 112,
+  "loop": true,
+  "pulse1": "v9 @2 l8 o4 L [d f a > d < c+ a e a]2 [d f a > d < b- g e g] [c+ e a > c+ < a e c+ < a >] d4 f4 e4 a4 > d2 < a2 [g b- > d < b- f a > d < a] [e g b- g c+ e a e] d f a > d < a f d r",
+  "pulse2": "v5 @1 l4 o3 L [d a f a]2 [d b- g b-] [c+ a e a] d f e c+ [g b- f a] [e g c+ e] d2 r2 a1",
+  "triangle": "l8 o2 L [d r d > d < r d a a]2 [g r g > g < r g d d] [a r a > a < r a e e] d4 f4 a4 a4 > d2 < a2 [g r > g < r f r > f < r] [a r > a < r a r a r] d r d r d4 r4",
+  "noise": "v4 l8 L [k r h r s r h h]12 k r h r k k s s"
+}

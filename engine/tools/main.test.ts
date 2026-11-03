@@ -113,9 +113,9 @@ describe('validate', () => {
     const skinFile = join(root, 'games/samples/dungeon/content/skins/canvas2d.json');
     const skin = {
       backend: 'canvas2d',
-      sheets: { sheet: 'demo-hero', fallbackColor: '#00a800' },
+      sheets: { sheet: 'hero', fallbackColor: '#00a800' },
       kinds: { hero: { frames: { idle: { down: 'down-0', right: 'side-0' } }, flipFacing: true } },
-      events: { title: { sound: 'demo' } },
+      events: { title: { sound: 'crypt' } },
     };
     writeFileSync(skinFile, JSON.stringify(skin));
     expect((await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root })).code).toBe(EXIT.ok);
@@ -247,11 +247,11 @@ describe('validate', () => {
 
   it('prints one line per error for people', async () => {
     const root = demoCopy();
-    writeFileSync(join(root, 'games/samples/dungeon/content/songs/demo.json'), '{ nope');
+    writeFileSync(join(root, 'games/samples/dungeon/content/songs/crypt.json'), '{ nope');
     const run = await cli(['validate', 'games/samples/dungeon'], { cwd: root });
     expect(run.code).toBe(EXIT.invalidContent);
     expect(run.stdout).toContain('games/samples/dungeon: ');
-    expect(run.stdout).toContain('games/samples/dungeon/content/songs/demo.json: (file): not valid JSON');
+    expect(run.stdout).toContain('games/samples/dungeon/content/songs/crypt.json: (file): not valid JSON');
   });
 
   it('calls a missing folder a usage error', async () => {
@@ -320,7 +320,7 @@ describe('output cap', () => {
   it('cuts a long result and writes all of it to a file named in the result', async () => {
     const root = demoCopy();
     // Ten unknown fields in one file: ten errors, far over a 600-byte cap.
-    const file = join(root, 'games/samples/dungeon/content/palettes/demo-hero.json');
+    const file = join(root, 'games/samples/dungeon/content/palettes/hero.json');
     const palette = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
     for (let i = 0; i < 10; i++) palette[`extra${i}`] = i;
     writeFileSync(file, JSON.stringify(palette));

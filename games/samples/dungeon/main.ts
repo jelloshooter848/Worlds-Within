@@ -1,53 +1,35 @@
-import { AudioManager } from '@engine/core/audio/audio-manager';
-import { GamepadSource } from '@engine/core/input/gamepad';
-import { InputManager } from '@engine/core/input/input-manager';
-import { KeyboardSource } from '@engine/core/input/keyboard';
-import { FixedLoop } from '@engine/core/loop';
-import { SceneStack } from '@engine/core/scene';
-import { mountVolumeControl } from '@engine/core/shell/volume-control';
-import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
-import { demoSfx, demoSongs, loadDemo, mustLoad } from './content';
-import { demoLook } from './picture';
-import { DemoScene } from './scene';
+import type { AudioManager } from '@engine/core/audio/audio-manager';
+import { canvasDisplay } from '@engine/backends/canvas2d';
+import { bootBrowserGame } from '@engine/core/shell';
+import { DUNGEON_MUSIC, dungeonSfx, dungeonSongs, loadDungeon, mustLoad } from './content';
+import { dungeonLook } from './picture';
+import { DungeonScene } from './scene';
 import gameFiles from 'virtual:game-files';
 
-function boot(): void {
-  const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
-  if (!canvas) throw new Error('#screen canvas missing');
+/**
+ * Boots the dungeon sample in the browser with the engine's `bootBrowserGame`: keyboard,
+ * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display, audio with the
+ * sample's songs and sfx (the `crypt` song starts on the first key, tap or click), the shell's volume control
+ * (stored under `ww:dungeon:volumes`, gap M1) and the step hook with `?debug=step`. The scene
+ * draws through its own `DungeonPicture` on the display's renderer, with the shell's `onSound`.
+ */
+const content = mustLoad(loadDungeon(gameFiles));
+const look = dungeonLook(content);
+let onSound: (id: string) => void = () => {};
+let audio: AudioManager | null = null;
 
-  const content = mustLoad(loadDemo(gameFiles));
-  const look = demoLook(content);
-
-  const viewport = new Viewport(canvas, { integerScale: false }, content.manifest.screen);
-  const renderer = new CanvasRenderer(viewport.ctx);
-  const input = new InputManager(1);
-  input.addSource('keyboard', new KeyboardSource());
-  if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
-
-  const audio = new AudioManager();
-  audio.registerSongs(demoSongs(content));
-  audio.registerSfx(demoSfx(content));
-  // The shell's mute button and volume slider, with the player's stored volumes (gap M1).
-  mountVolumeControl({ game: content.manifest.id, audio });
-  // Browsers only start audio inside a user gesture; keep listening so an interrupted context recovers.
-  const unlock = () => audio.unlock();
-  for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click']) {
-    window.addEventListener(ev, unlock, { passive: true });
-  }
-
-  const scenes = new SceneStack();
-  scenes.push(new DemoScene(content, audio, look));
-
-  new FixedLoop({
-    step() {
-      input.beginFrame();
-      scenes.update([input.player(0)]);
+void bootBrowserGame({
+  screen: look.screen,
+  game: content.manifest.id,
+  audio: { songs: dungeonSongs(content), sfx: dungeonSfx(content), music: DUNGEON_MUSIC },
+  displays: {
+    canvas2d: (canvas, shell) => {
+      onSound = (id) => shell.onSound(id);
+      return canvasDisplay(canvas, { ...look, onSound: shell.onSound });
     },
-    render() {
-      scenes.render(renderer);
-      viewport.present();
-    },
-  }).start();
-}
-
-boot();
+  },
+  scene: () =>
+    new DungeonScene(content, look, { onSound: (id) => onSound(id), music: (id) => audio?.playMusic(id) }),
+}).then((booted) => {
+  audio = booted?.audio ?? null;
+});

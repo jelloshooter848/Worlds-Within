@@ -8,8 +8,8 @@ import { browserMissing, launch, serveBuilt } from './serve';
 // The shell's volume control on every sample page (Engine 0.15 T5, gap M1; docs/BUILD-LOG.md,
 // Engine 0.15, decision 5, item 282). The repo is built as `pnpm build` builds it; headless
 // Chromium opens each sample page, finds the mute button and the volume slider, mutes and moves
-// the slider on two pages (the tower-defense sample, on the shell's boot, and the dungeon, on its
-// own loop), reloads, and finds the same volumes, stored under `ww:<game>:volumes`. No page errors.
+// the slider on two pages (the tower-defense sample and the dungeon, both on the shell's boot),
+// reloads, and finds the same volumes, stored under `ww:<game>:volumes`. No page errors.
 // Skipped where Chromium is not installed (never in CI).
 
 const PAGES = ['dungeon', 'platformer', 'rts-skirmish', 'tower-defense', 'mini-siege'];

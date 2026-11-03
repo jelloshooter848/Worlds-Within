@@ -2,19 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { compileSong } from '@engine/core/audio/mml';
+import { compileSong, parseMml } from '@engine/core/audio/mml';
 import { NullRenderer } from '@engine/backends/null';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
-import { ScriptedInput } from '@engine/core/input/scripted-input';
+import type { Action } from '@engine/core/input/actions';
+import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { canonicalJson } from '@engine/core/headless';
 import { validate } from '@engine/core/content/validate';
 import { isFullMap, presentFrameSchema } from '@engine/core/present';
 import { PRESENT_TILES, presentWorld, TdPresentState, topdownGame } from '@kits/topdown';
-import { demoDungeon, demoSfx, demoSkin, demoSongs, loadDemo, mustLoad } from './content';
-import { createWorld } from './headless';
-import { DemoPicture, demoLook } from './picture';
+import { dungeonRooms, dungeonSfx, dungeonSkin, dungeonSongs, loadDungeon, mustLoad } from './content';
+import { createGame, createWorld } from './headless';
+import { DungeonPicture, dungeonEnd, dungeonLook } from './picture';
+import { DungeonScene, END_HOLD } from './scene';
 
 /** The null renderer, counting the sprites drawn from each sheet. */
 function countingRenderer(): { r: Renderer; sprites: Map<string, number> } {
@@ -28,74 +30,104 @@ function countingRenderer(): { r: Renderer; sprites: Map<string, number> } {
 }
 
 const FILES = readGameFiles(fileURLToPath(new URL('./', import.meta.url)));
-const content = mustLoad(loadDemo(FILES));
+const content = mustLoad(loadDungeon(FILES));
 
-/** The demo's files with one file's JSON changed by `edit`. */
+/** The sample's files with one file's JSON changed by `edit`. */
 function withJson(path: string, edit: (data: Record<string, unknown>) => void): Record<string, string> {
   const data = JSON.parse(FILES[path]!) as Record<string, unknown>;
   edit(data);
   return { ...FILES, [path]: JSON.stringify(data) };
 }
 
-describe('engine demo', () => {
+describe('the dungeon sample', () => {
   it('loads its manifest and every content file', () => {
     expect(content.manifest).toMatchObject({ id: 'dungeon', kit: 'topdown', headless: 'headless.ts' });
     expect(content.entries.map((e) => `${e.kind}:${e.name}`)).toEqual([
+      'room:bat-hall',
       'room:courtyard',
+      'room:crypt',
       'room:guard-room',
       'room:store-room',
-      'song:demo',
-      'palette:demo-hero',
-      'palette:demo-placeholders',
-      'sprite:demo-hero',
-      'sprite:demo-placeholders',
+      'song:crypt',
+      'song:daylight',
+      'palette:dungeon',
+      'palette:hero',
+      'sprite:dungeon',
+      'sprite:hero',
+      'sfx:blast',
+      'sfx:chest',
       'sfx:door',
+      'sfx:fall',
+      'sfx:fanfare',
+      'sfx:fuse',
+      'sfx:hit',
       'sfx:hurt',
+      'sfx:kill',
+      'sfx:pickup',
       'sfx:spit',
+      'sfx:sword',
+      'sfx:unlock',
       'skin:canvas2d',
     ]);
   });
 
   it('builds its rooms, starting in the courtyard', () => {
-    const d = demoDungeon(content);
+    const d = dungeonRooms(content);
     expect(d.startRoom).toBe('courtyard');
-    expect([...d.rooms.keys()].sort()).toEqual(['courtyard', 'guard-room', 'store-room']);
-    expect(d.rooms.get('store-room')?.def.chests).toEqual(['bombs']);
+    expect([...d.rooms.keys()].sort()).toEqual([
+      'bat-hall',
+      'courtyard',
+      'crypt',
+      'guard-room',
+      'store-room',
+    ]);
+    expect(d.rooms.get('store-room')?.def.chests).toEqual(['bomb']);
+    expect(d.rooms.get('crypt')?.def).toMatchObject({ goal: true, chests: ['triforce'] });
   });
 
   it('runs headless: the hero walks east into the guard room, drawn through the skin', () => {
     const world = createWorld(content);
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right'] }] });
     const { r, sprites } = countingRenderer();
-    const picture = new DemoPicture(r, demoLook(content));
+    const picture = new DungeonPicture(r, dungeonLook(content));
     for (let i = 0; i < 400 && world.room.id === 'courtyard'; i++) {
       input.next();
       world.update(input);
       picture.draw(world, world.events.splice(0));
     }
     expect(world.room.id).toBe('guard-room');
-    expect(sprites.get('demo-hero')).toBeGreaterThan(0);
-    // The map is drawn from the placeholder sheet (no map surface in Node: tile by tile).
-    expect(sprites.get('demo-placeholders')).toBeGreaterThan(0);
+    expect(sprites.get('hero')).toBeGreaterThan(0);
+    // The map is drawn from the dungeon sheet (no map surface in Node: tile by tile).
+    expect(sprites.get('dungeon')).toBeGreaterThan(0);
   });
 
-  it('has a song that compiles', () => {
-    const songs = demoSongs(content);
-    expect(songs.map((s) => s.id)).toEqual(['demo']);
-    expect(compileSong(songs[0]!).length).toBeGreaterThan(0);
+  it('has songs that compile, every channel of a song as long as the others', () => {
+    const songs = dungeonSongs(content);
+    expect(songs.map((s) => s.id)).toEqual(['crypt', 'daylight']);
+    for (const song of songs) {
+      expect(compileSong(song).length).toBeGreaterThan(0);
+      const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).flatMap((ch) =>
+        song[ch]
+          ? [parseMml(song[ch], ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length]
+          : [],
+      );
+      expect(new Set(lengths).size, song.id).toBe(1);
+    }
   });
 
   it('has a sound effect for every sound its skin names', () => {
-    const sfx = new Set(demoSfx(content).map((s) => s.id));
-    const sounds = Object.values(demoSkin(content).events ?? {}).flatMap((e) => (e.sound ? [e.sound] : []));
+    const sfx = new Set(dungeonSfx(content).map((s) => s.id));
+    const sounds = Object.values(dungeonSkin(content).events ?? {}).flatMap((e) =>
+      e.sound ? [e.sound] : [],
+    );
     expect(sounds.length).toBeGreaterThan(0);
     for (const s of sounds) expect(sfx.has(s)).toBe(true);
   });
 });
 
-describe('engine demo: broken content', () => {
+describe('the dungeon sample: broken content', () => {
   it('names the file and the field of a broken room field', () => {
-    const r = loadDemo(withJson('content/rooms/courtyard.json', (d) => (d.at = [0, 'one'])));
+    const r = loadDungeon(withJson('content/rooms/courtyard.json', (d) => (d.at = [0, 'one'])));
     expect(r.errors).toMatchObject([
       { file: 'games/samples/dungeon/content/rooms/courtyard.json', path: 'at.1', code: 'invalid_type' },
     ]);
@@ -103,7 +135,7 @@ describe('engine demo: broken content', () => {
 
   it('names the map file, row and line of a bad map character', () => {
     const map = FILES['content/rooms/guard-room.map.txt']!.replace('#...b', '#...?');
-    const r = loadDemo({ ...FILES, 'content/rooms/guard-room.map.txt': map });
+    const r = loadDungeon({ ...FILES, 'content/rooms/guard-room.map.txt': map });
     expect(r.errors).toMatchObject([
       {
         file: 'games/samples/dungeon/content/rooms/guard-room.map.txt',
@@ -117,21 +149,21 @@ describe('engine demo: broken content', () => {
   });
 
   it('names the song file and channel of bad MML', () => {
-    const r = loadDemo(withJson('content/songs/demo.json', (d) => (d.noise = 'k s q9')));
+    const r = loadDungeon(withJson('content/songs/crypt.json', (d) => (d.noise = 'k s q9')));
     expect(r.errors).toMatchObject([
-      { file: 'games/samples/dungeon/content/songs/demo.json', path: 'noise', code: 'invalid_mml' },
+      { file: 'games/samples/dungeon/content/songs/crypt.json', path: 'noise', code: 'invalid_mml' },
     ]);
   });
 
   it('names game.json and the field of a broken manifest', () => {
-    const r = loadDemo(withJson('game.json', (d) => (d.start = { seed: -1 })));
+    const r = loadDungeon(withJson('game.json', (d) => (d.start = { seed: -1 })));
     expect(r.errors).toMatchObject([
       { file: 'games/samples/dungeon/game.json', path: 'start.seed', code: 'too_small' },
     ]);
   });
 });
 
-describe('engine demo: presentation frames (0.4-5)', () => {
+describe('the dungeon sample: presentation frames (0.4-5)', () => {
   /** The walk-east run (runs/walk-east.run.json): seed 1, right held for 240 ticks. */
   const run = JSON.parse(readFileSync(new URL('./runs/walk-east.run.json', import.meta.url), 'utf8')) as {
     seed: number;
@@ -170,8 +202,8 @@ describe('engine demo: presentation frames (0.4-5)', () => {
   });
 });
 
-describe('engine demo: drawn by the Canvas2D backend through its skin (0.4-7)', () => {
-  const skin = demoSkin(content);
+describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.4-7)', () => {
+  const skin = dungeonSkin(content);
 
   it('maps every tile the kit presents, and every kind and HUD value walk-east shows', () => {
     for (const ch of Object.values(PRESENT_TILES)) expect(Object.keys(skin.tiles ?? {})).toContain(ch);
@@ -198,7 +230,7 @@ describe('engine demo: drawn by the Canvas2D backend through its skin (0.4-7)', 
     world.events.splice(0); // entering the first room, before any step (the scene drops it too)
     const sounds: { tick: number; id: string }[] = [];
     let tick = 0;
-    const picture = new DemoPicture(new NullRenderer(), demoLook(content), {
+    const picture = new DungeonPicture(new NullRenderer(), dungeonLook(content), {
       onSound: (id) => sounds.push({ tick, id }),
     });
     for (tick = 1; tick <= 240; tick++) {
@@ -220,16 +252,116 @@ describe('engine demo: drawn by the Canvas2D backend through its skin (0.4-7)', 
       .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
       .map((f) => readFileSync(`${dir}${f}`, 'utf8'))
       .join('\n');
-    for (const name of [
-      'renderWorld',
-      'drawTdHud',
-      'drawRoomTiles',
-      'drawFrame',
-      'drawStunned',
-      'DEMO_SHEETS',
-    ]) {
+    for (const name of ['renderWorld', 'drawTdHud', 'drawRoomTiles', 'drawFrame', 'drawStunned']) {
       expect(code).not.toContain(name);
     }
     expect(code).not.toMatch(/\.render\(r, /);
+  });
+});
+
+describe('the dungeon sample: original art, end states and the scene (Engine 0.15 T12)', () => {
+  interface Run {
+    seed: number;
+    ticks: number;
+    input: InputScript;
+  }
+  const runs = readdirSync(fileURLToPath(new URL('./runs/', import.meta.url)))
+    .filter((f) => f.endsWith('.run.json'))
+    .sort();
+  const readRun = (name: string) =>
+    JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as Run;
+  const FALLBACK = dungeonSkin(content).sheets?.fallbackColor;
+
+  it('has run files for the walk, the way out and a fall', () => {
+    expect(runs).toEqual(['escape.run.json', 'lost-in-the-guard-room.run.json', 'walk-east.run.json']);
+  });
+
+  it("names no placeholder art: every sheet and palette is the sample's own", () => {
+    for (const f of Object.keys(FILES)) expect(f).not.toMatch(/placeholder|demo/);
+    expect(FALLBACK).toBeDefined();
+    for (const entry of Object.values(dungeonSkin(content).kinds))
+      expect(entry.fallbackColor).toBeUndefined();
+    for (const entry of Object.values(dungeonSkin(content).tiles ?? {}))
+      expect(entry.fallbackColor).toBeUndefined();
+  });
+
+  it.each(runs)('draws every tick of %s from the art, never a fallback box', (name) => {
+    const run = readRun(name);
+    const world = createWorld(content, run.seed);
+    const input = new ScriptedInput(run.input);
+    world.events.splice(0);
+    let sprites = 0;
+    let fallbacks = 0;
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite() {
+        sprites++;
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, color: string) {
+        if (color === FALLBACK) fallbacks++;
+      },
+    });
+    const picture = new DungeonPicture(r, dungeonLook(content));
+    for (let tick = 0; tick <= run.ticks; tick++) {
+      if (tick > 0) {
+        input.next();
+        world.update(input);
+      }
+      picture.draw(world, world.events.splice(0));
+    }
+    expect(sprites).toBeGreaterThan(0);
+    expect(fallbacks).toBe(0);
+  });
+
+  it('ends escaped after the way out and fallen after the guard room', () => {
+    const play = (name: string) => {
+      const run = readRun(name);
+      const world = createWorld(content, run.seed);
+      const input = new ScriptedInput(run.input);
+      for (let t = 0; t < run.ticks; t++) {
+        input.next();
+        world.update(input);
+      }
+      return world;
+    };
+    const escaped = play('escape.run.json');
+    expect(dungeonEnd(escaped)).toBe('escaped');
+    expect(escaped.found.has('triforce')).toBe(true);
+    expect(dungeonEnd(play('lost-in-the-guard-room.run.json'))).toBe('fallen');
+    expect(dungeonEnd(createWorld(content))).toBeNull();
+  });
+
+  it('plays the run files in its scene: the same snapshots, then holds the end until Z starts over', () => {
+    const run = readRun('escape.run.json');
+    const music: string[] = [];
+    const scene = new DungeonScene(content, dungeonLook(content), { music: (id) => music.push(id) });
+    scene.enter();
+    const game = createGame(content, run.seed);
+    const input = new ScriptedInput(run.input);
+    expect(scene.headless().snapshot()).toEqual(game.snapshot());
+    for (let t = 1; t <= run.ticks; t++) {
+      input.next();
+      scene.update(input);
+      game.step(input);
+      if (t % 60 === 0) expect(scene.headless().snapshot(), `tick ${t}`).toEqual(game.snapshot());
+    }
+    expect(music).toEqual(['crypt', 'daylight']);
+    expect(scene.headless().snapshot()['exited']).toBe(true);
+    // The end holds until Z (jump) is pressed at least END_HOLD steps after it (the world steps
+    // on, as headless); then a new run starts in the courtyard.
+    const press = (held: Action[]) => {
+      const i = new ScriptedInput({ steps: [{ frame: 0, hold: held }] });
+      i.next();
+      return i;
+    };
+    const fresh = new DungeonScene(content, dungeonLook(content));
+    const exited = (s: DungeonScene) => s.headless().snapshot()['exited'];
+    for (let t = 1; t <= run.ticks && !exited(fresh); t++) fresh.update(press([]));
+    expect(exited(fresh)).toBe(false); // nobody walked: still playing
+    expect(scene.headless().snapshot()).toEqual(game.snapshot());
+    for (let i = 0; i < END_HOLD; i++) scene.update(press([]));
+    expect(scene.headless().snapshot()).toMatchObject({ exited: true, frame: run.ticks + END_HOLD });
+    scene.update(press(['jump']));
+    expect(scene.headless().snapshot()).toMatchObject({ exited: false, room: 'courtyard', frame: 0 });
+    expect(music.at(-1)).toBe('crypt');
   });
 });

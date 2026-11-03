@@ -22,7 +22,7 @@ import { loadGame } from '../../engine/tools/game-loader';
 import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { readRunFile, runStartOf, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/samples/dungeon/headless';
-import { DemoPicture, demoLook } from '../../games/samples/dungeon/picture';
+import { DungeonPicture, dungeonLook } from '../../games/samples/dungeon/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
 import { threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
@@ -38,7 +38,7 @@ vi.setConfig({ testTimeout: 60_000 });
 // From Engine 0.5 the platformer lab's runs are checked the same way
 // (its `LabGame` through the kit's `presentWorld` and the lab's `labCanvasPicture`). Every run file is played twice, presenting every tick: once
 // through the null backend's NullPresenter (frames checked against the schema and frozen), once
-// through the Canvas2D backend's SkinnedCanvasPresenter (the demo's `DemoPicture` with its skin) onto
+// through the Canvas2D backend's SkinnedCanvasPresenter (the dungeon sample's `DungeonPicture` with its skin) onto
 // a recording renderer. Both hash sequences must equal the run's committed golden file, which
 // `tests/runs/run-files.test.ts` checks against `pnpm cli run` (no presenting at all).
 
@@ -169,7 +169,7 @@ describe('backend parity: null and canvas2d give the same state hashes', () => {
     );
 
     const { r, calls } = recordingRenderer();
-    const picture = new DemoPicture(r, demoLook(content));
+    const picture = new DungeonPicture(r, dungeonLook(content));
     const drawnPerTick: number[] = [];
     const viaCanvas = play(content, run, (world, events) => {
       const before = calls.get('clear') ?? 0;

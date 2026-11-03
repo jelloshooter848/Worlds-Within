@@ -31,11 +31,11 @@ async function cli(cwd: string, ...argv: string[]): Promise<{ code: number; out:
   return { code, out: JSON.parse(stdout) as Record<string, unknown> };
 }
 
-const SONG = 'games/samples/dungeon/content/songs/demo.json';
-const PALETTE = 'games/samples/dungeon/content/palettes/demo-hero.json';
+const SONG = 'games/samples/dungeon/content/songs/crypt.json';
+const PALETTE = 'games/samples/dungeon/content/palettes/hero.json';
 const ROOM = 'games/samples/dungeon/content/rooms/guard-room.json';
 const MAP = 'games/samples/dungeon/content/rooms/guard-room.map.txt';
-const SPRITE = 'games/samples/dungeon/content/sprites/demo-hero.txt';
+const SPRITE = 'games/samples/dungeon/content/sprites/hero.txt';
 const RUN = 'games/samples/dungeon/runs/walk-east.run.json';
 
 /** A temp folder holding a copy of one game folder (repo path) and the repo's Prettier settings. */
@@ -62,7 +62,7 @@ describe('get, set, add, remove', () => {
     const cwd = demoCopy();
     const set = await cli(cwd, 'set', SONG, 'bpm', '140');
     expect(set.code).toBe(EXIT.ok);
-    expect(set.out).toMatchObject({ ok: true, verified: true, written: true, before: 132, after: 140 });
+    expect(set.out).toMatchObject({ ok: true, verified: true, written: true, before: 112, after: 140 });
     expect(set.out).toMatchObject({ file: SONG, kind: 'song', path: 'bpm', pointer: '/bpm' });
     const get = await cli(cwd, 'get', SONG, '/bpm');
     expect(get.code).toBe(EXIT.ok);
@@ -163,7 +163,7 @@ describe('get, set, add, remove', () => {
     const add = await cli(cwd, 'add', SPRITE, frame, '................');
     expect(add.out).toMatchObject({ verified: true, path: `${frame}.16` });
     expect((await cli(cwd, 'get', SPRITE, `/frames/down-0/16`)).out.value).toBe('................');
-    expect(read(cwd, SPRITE).startsWith('; The demo hero')).toBe(true);
+    expect(read(cwd, SPRITE).startsWith('; The hero')).toBe(true);
     expect((await cli(cwd, 'remove', SPRITE, `${frame}.16`)).out.verified).toBe(true);
     expect((await cli(cwd, 'add', SPRITE, 'legend.w', '3')).out.verified).toBe(true);
     expect((await cli(cwd, 'remove', SPRITE, 'legend.w')).out.verified).toBe(true);
@@ -178,7 +178,7 @@ describe('get, set, add, remove', () => {
     const cwd = demoCopy();
     const text = read(cwd, SPRITE).replace('frame up-0', '; the back\nframe up-0');
     writeFileSync(join(cwd, SPRITE), text);
-    const set = await cli(cwd, 'set', SPRITE, 'palette', 'demo-hero');
+    const set = await cli(cwd, 'set', SPRITE, 'palette', 'hero');
     expect(set.code).toBe(EXIT.invalidContent);
     expect(set.out.errors).toEqual([expect.objectContaining({ code: 'not_writable' })]);
     expect(read(cwd, SPRITE)).toBe(text);

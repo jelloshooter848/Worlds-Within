@@ -1,6 +1,7 @@
 import type { HeadlessGame, JsonObject, JsonValue } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { TdEntity } from './entity';
+import { typeNameOf } from './type-names';
 import type { TopDownWorld } from './world';
 
 /**
@@ -47,10 +48,10 @@ export interface TdSnapshot extends JsonObject {
   events: JsonObject[];
 }
 
-/** An entity's kind for a snapshot: its own `kind` (enemies, pickups, switches) or its class name. */
+/** An entity's kind for a snapshot: its own `kind` (enemies, pickups, switches) or its class name (`typeNameOf`). */
 function kindOf(e: TdEntity): string {
   const kind = (e as { kind?: unknown }).kind;
-  return typeof kind === 'string' ? kind : e.constructor.name;
+  return typeof kind === 'string' ? kind : typeNameOf(e);
 }
 
 /** Copies an event into plain JSON, dropping anything that is not JSON-safe (it never should be). */
