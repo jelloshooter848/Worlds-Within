@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 257.** (Last used: 256.)
+**Next unused number: 258.** (Last used: 257.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -997,3 +997,14 @@ values, events? }` as a top-level array so the output cap cuts whole rows; a mis
   `pnpm cli record <run> --mission <id> [--input <file> | --bot]` writing it into that mission's
   `play.input` and verifying by playing (unchanged file and exit 4 when the asserted outcome is not
   reached). Frame input only; taps stay D1's (0.15). OK?
+
+**Engine 0.14, build choices** (details in `docs/BUILD-LOG.md`, Engine 0.14, What was built)
+
+- **257.** G12 (T5, settling decision 8 for a strict kit a game `uses`): a run without `guards`
+  is expected to guard every rule of the game's own kit only, and a `uses` kit's rule is expected
+  only where a run file lists it in `guards`. So a strict `uses` kit fails `mutants` only on a
+  listed guard a run does not guard; its rules no run file guards are reported per kit
+  (`kits[].unguarded`) and recorded in the gap report, never a failure. The mini siege's
+  tower-defense rules (strict) are guarded by `fortify-played` for `towerdefense:win-on-clear`
+  only: the others change a sync hash before any check notices. OK, or should a strict `uses`
+  kit's unguarded rules fail the game (which would need new run files without sync hashes)?

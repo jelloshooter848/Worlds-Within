@@ -101,15 +101,22 @@ describe('a game on two kits', () => {
     expect(run.out.hashes).toEqual(golden.hashes);
     const dump = await cli(cwd, 'dump', LEVEL_1, '--tick', '10');
     expect(dump.code).toBe(EXIT.ok);
-    // Rules stay the game's own kit's: `uses` adds content kinds only.
+    // Every kit's rules are tried (Engine 0.14, gap G12): `kit`'s bare, a `uses` kit's as `kit:id`.
     const mutants = await cli(cwd, 'mutants', LEVEL_1);
     expect(mutants.out).toMatchObject({ kit: 'platformer', baseline: { passed: true } });
-    expect((mutants.out.rules as unknown[]).length).toBe(findKit('platformer')!.rules.length);
+    const rows = mutants.out.rules as { id: string; kit: string }[];
+    expect(rows.length).toBe(findKit('platformer')!.rules.length + findKit('topdown')!.rules.length);
+    expect(rows).toContainEqual(expect.objectContaining({ id: 'topdown:doors-change-room', kit: 'topdown' }));
+    // A bare id is still the game's own kit's rule.
     const topdownRule = await cli(cwd, 'run', LEVEL_1, '--disable-rule', 'doors-change-room');
     expect(topdownRule.code).toBe(EXIT.usage);
     expect(JSON.stringify(topdownRule.out)).toContain(
       'kit \\"platformer\\" has no rule \\"doors-change-room\\"',
     );
+    const qualified = await cli(cwd, 'run', LEVEL_1, '--disable-rule', 'topdown:doors-change-room');
+    expect(qualified.code).toBe(EXIT.ok);
+    expect(qualified.out.disabledRules).toEqual(['topdown:doors-change-room']);
+    expect(qualified.out.hashes).toEqual(golden.hashes);
   });
 
   it('names the field for an unknown kit in `uses`', async () => {

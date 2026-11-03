@@ -2,35 +2,47 @@ import { readdirSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import { formatErrors, type ContentError } from '@engine/core/content/validate';
+import type { KitDef } from '@engine/core/kit';
 import { EXIT, UsageError, type ExitCode } from '../exit-codes';
 import { loadGame } from '../game-loader';
 import { playRun, type FailedCheck } from '../headless-run';
-import { loadKit } from '../kits';
+import { gameKits, lookupRuleId, qualifiedRuleId } from '../kits';
 import { readRunFile } from '../run-file';
 import { defineCommand } from '../registry';
 
 /**
  * `mutants <run-file | game folder>`: mutant checks. Plays a run file once as it is (it must pass),
- * then once per named rule of the game's kit with that rule switched off (`engine/core/rules.ts`).
- * A run that fails with a rule off guards that rule; one that still passes does not: its checks do
- * not notice the rule is gone. Rules the run file already switches off are skipped.
+ * then once per named rule of every kit the game uses (`kit`, then each kit in `uses`; Engine 0.14,
+ * gap G12, decision 8) with that rule switched off (`engine/core/rules.ts`). A run that fails with
+ * a rule off guards that rule; one that still passes does not: its checks do not notice the rule
+ * is gone. Rules the run file already switches off are skipped.
+ *
+ * Rule ids are written as run files write them: bare for the game's own kit, `kit:id` for a kit it
+ * `uses` (`topdown:doors-change-room`). Each row also names its `kit` and that kit's `strict`.
  *
  * The rules a run is expected to guard are its `guards` when the run file gives them, else every
- * rule it does not skip. `weak` lists the expected rules it does not guard. A kit whose hook says
- * `strictMutants: true` fails the command (exit 4) on any weak rule; other kits (topdown) only
- * report them (exit 0).
+ * rule of the game's own kit it does not skip (a `uses` kit's rule is expected only when `guards`
+ * lists it). `weak` lists the expected rules it does not guard. A weak rule of a kit whose hook
+ * says `strictMutants: true` fails the command (exit 4); a weak rule of another kit (topdown, rts)
+ * is only reported (exit 0). Each rule is judged by its own kit's strictness.
  *
- * Run file result: `{ run, game, kit, strict, baseline: { passed, failure }, guards, rules: [{ id,
- * description, skipped, expected, passed, guarded, failure }], guarded: [ids], weak: [ids] }`.
- * `guards` is the run file's list or null; `failure` is the first failed check with that rule off
- * or null; a skipped rule has `passed` and `guarded` null.
+ * Run file result: `{ run, game, kit, strict, kits: [{ kit, strict, rules }], baseline: { passed,
+ * failure }, guards, rules: [{ id, kit, strict, description, skipped, expected, passed, guarded,
+ * failure }], guarded: [ids], weak: [ids] }`. `kit` and `strict` are the game's own kit's; `kits`
+ * lists every kit tried with its strictness and rule count. `guards` is the run file's list or
+ * null; `failure` is the first failed check with that rule off or null; a skipped rule has
+ * `passed` and `guarded` null.
  *
  * Game folder (`mutants games/<g>`): plays every run file of the game (`*.run.json` in a `runs/`
  * folder under it) the same way and asks of the game as a whole that each rule is guarded by some
- * run file. Result: `{ game, kit, strict, runs: [{ run, baseline, guards, guarded, weak }], rules:
- * [{ id, description, guardedBy: [run files] }], unguarded: [ids] }`. Here a run's `weak` is only
- * its own `guards` it does not guard (none without `guards`). For a strict kit, a rule no run file
- * guards, or a run with a weak rule, is exit 4.
+ * run file. Result: `{ game, kit, strict, kits: [{ kit, strict, rules, unguarded }], runs: [{ run,
+ * baseline, guards, guarded, weak }], rules: [{ id, kit, strict, description, guardedBy: [run
+ * files] }], unguarded: [ids] }`. Here a run's `weak` is only its own `guards` it does not guard
+ * (none without `guards`). A rule of the game's own kit that no run file guards when that kit is
+ * strict, or a run with a weak rule of a strict kit (its own `guards`), is exit 4. A `uses` kit's
+ * rules no run file guards are listed (`unguarded`, and per kit in `kits[].unguarded`) but fail
+ * nothing, even for a strict kit: strictness applies to another kit's rules where the game's run
+ * files list them in `guards` (decision 8, settled in T5).
  *
  * A world run file (`world`, no kit) is a usage error: it has no rules to switch off.
  *
@@ -40,6 +52,8 @@ import { defineCommand } from '../registry';
 
 interface RuleRow {
   id: string;
+  kit: string;
+  strict: boolean;
   description: string;
   skipped: boolean;
   expected: boolean;
@@ -48,11 +62,18 @@ interface RuleRow {
   failure: FailedCheck | null;
 }
 
+interface KitRow {
+  kit: string;
+  strict: boolean;
+  rules: number;
+}
+
 interface RunReport {
   run: string;
   game: string;
   kit: string;
   strict: boolean;
+  kits: KitRow[];
   baseline: { passed: boolean; failure: FailedCheck | null };
   guards: string[] | null;
   rules: RuleRow[];
@@ -62,21 +83,47 @@ interface RunReport {
 
 type Checked = { ok: true; report: RunReport } | { ok: false; errors: ContentError[] };
 
-/** Plays one run file as it is and once per kit rule switched off. */
+/** Every rule of every kit in `kits` (the game's own first), with its id as run files write it. */
+function kitRuleRows(kits: readonly KitDef[]) {
+  const main = kits[0]!.name;
+  return kits.flatMap((k) =>
+    k.rules.map((r) => ({
+      id: qualifiedRuleId({ kit: k.name, id: r.id }, main),
+      rule: r.id,
+      kit: k.name,
+      strict: k.strictMutants === true,
+      description: r.description,
+    })),
+  );
+}
+
+/** The ids in `ids` as `kitRuleRows` writes them (`platformer:jump` in a platformer game is `jump`). */
+function normalIds(ids: readonly string[], kits: readonly KitDef[]): string[] {
+  return ids.map((id) => {
+    const found = lookupRuleId(id, kits);
+    return found.ok ? qualifiedRuleId(found.rule, kits[0]!.name) : id;
+  });
+}
+
+/** Plays one run file as it is and once per rule of each of its game's kits switched off. */
 async function checkRun(cwd: string, runFile: string): Promise<Checked> {
   const base = await playRun(cwd, runFile);
   if (!base.ok) return base;
   const { loaded, kit } = base.value;
   if (kit === null || loaded.gameDir === null)
     throw new UsageError(`${loaded.file} plays a world, which has no kit rules to switch off`);
-  const hook = loadKit(kit);
+  const game = loadGame(cwd, loaded.gameDir);
+  if (!game.content.ok) return { ok: false, errors: game.content.errors };
+  const kits = gameKits(game.content.value.manifest);
   const guards = loaded.run.guards ?? null;
+  const expectedIds = guards ? new Set(normalIds(guards, kits)) : null;
   const baseline = { passed: base.value.failures.length === 0, failure: base.value.failures[0] ?? null };
   const report: RunReport = {
     run: loaded.file,
     game: loaded.gameDir,
     kit,
-    strict: hook.strictMutants === true,
+    strict: kits[0]!.strictMutants === true,
+    kits: kits.map((k) => ({ kit: k.name, strict: k.strictMutants === true, rules: k.rules.length })),
     baseline,
     guards,
     rules: [],
@@ -85,21 +132,28 @@ async function checkRun(cwd: string, runFile: string): Promise<Checked> {
   };
   if (!baseline.passed) return { ok: true, report };
 
-  for (const rule of hook.rules) {
-    const skipped = base.value.disabledRules.includes(rule.id);
-    const expected = guards ? guards.includes(rule.id) : !skipped;
+  for (const { rule: _rule, ...row } of kitRuleRows(kits)) {
+    const skipped = base.value.disabledRules.includes(row.id);
+    // A `uses` kit's rule is expected only when the run lists it in `guards` (decision 8, settled
+    // in T5): a game is held to another kit's rules where it says it guards them.
+    const expected = expectedIds ? expectedIds.has(row.id) : !skipped && row.kit === kit;
     if (skipped) {
-      report.rules.push({ ...rule, skipped, expected, passed: null, guarded: null, failure: null });
+      report.rules.push({ ...row, skipped, expected, passed: null, guarded: null, failure: null });
       continue;
     }
-    const played = await playRun(cwd, runFile, { disableRules: [rule.id] });
+    const played = await playRun(cwd, runFile, { disableRules: [row.id] });
     if (!played.ok) return played;
     const failure: FailedCheck | null = played.value.failures[0] ?? null;
-    report.rules.push({ ...rule, skipped, expected, passed: !failure, guarded: !!failure, failure });
+    report.rules.push({ ...row, skipped, expected, passed: !failure, guarded: !!failure, failure });
   }
   report.guarded = report.rules.filter((r) => r.guarded === true).map((r) => r.id);
   report.weak = report.rules.filter((r) => r.expected && r.guarded === false).map((r) => r.id);
   return { ok: true, report };
+}
+
+/** Is rule `id` (as `kitRuleRows` writes it) one of a strict kit's, among `rows`? */
+function strictRule(rows: readonly { id: string; strict: boolean }[], id: string): boolean {
+  return rows.some((r) => r.id === id && r.strict);
 }
 
 /** Every run file of the game in folder `abs`: `*.run.json` in a `runs/` folder under it, sorted. */
@@ -118,7 +172,8 @@ async function mutantsOfRun(cwd: string, runFile: string) {
   const checked = await checkRun(cwd, runFile);
   if (!checked.ok) return { exit: EXIT.invalidContent, result: { run: runFile, errors: checked.errors } };
   const r = checked.report;
-  const exit: ExitCode = !r.baseline.passed || (r.strict && r.weak.length > 0) ? EXIT.failedCheck : EXIT.ok;
+  const strictWeak = r.weak.some((id) => strictRule(r.rules, id));
+  const exit: ExitCode = !r.baseline.passed || strictWeak ? EXIT.failedCheck : EXIT.ok;
   return { exit, result: { ...r } };
 }
 
@@ -126,12 +181,13 @@ async function mutantsOfGame(cwd: string, gameDir: string) {
   const game = loadGame(cwd, gameDir);
   if (!game.content.ok)
     return { exit: EXIT.invalidContent, result: { game: game.dir, errors: game.content.errors } };
-  const hook = loadKit(game.content.value.manifest.kit);
+  const kits = gameKits(game.content.value.manifest);
+  const all = kitRuleRows(kits);
   const files = gameRunFiles(resolve(cwd, game.dir)).map((f) => relative(cwd, f).replaceAll('\\', '/'));
 
   const runs = [];
   const errors: ContentError[] = [];
-  const guardedBy = new Map<string, string[]>(hook.rules.map((r) => [r.id, []]));
+  const guardedBy = new Map<string, string[]>(all.map((r) => [r.id, []]));
   for (const file of files) {
     const checked = await checkRun(cwd, file);
     if (!checked.ok) {
@@ -149,16 +205,24 @@ async function mutantsOfGame(cwd: string, gameDir: string) {
       weak: r.guards ? r.weak : [],
     });
   }
-  const strict = hook.strictMutants === true;
-  const common = { game: game.dir, kit: hook.name, strict };
+  const strict = kits[0]!.strictMutants === true;
+  const common = { game: game.dir, kit: kits[0]!.name, strict };
   if (errors.length > 0) return { exit: EXIT.invalidContent, result: { ...common, errors } };
 
-  const rules = hook.rules.map((r) => ({ ...r, guardedBy: guardedBy.get(r.id) ?? [] }));
+  const rules = all.map(({ rule: _rule, ...r }) => ({ ...r, guardedBy: guardedBy.get(r.id) ?? [] }));
   const unguarded = rules.filter((r) => r.guardedBy.length === 0).map((r) => r.id);
+  const kitRows = kits.map((k) => ({
+    kit: k.name,
+    strict: k.strictMutants === true,
+    rules: k.rules.length,
+    unguarded: rules.filter((r) => r.kit === k.name && r.guardedBy.length === 0).map((r) => r.id),
+  }));
   const failed = runs.some((r) => !r.baseline.passed);
-  const weakRun = runs.some((r) => r.weak.length > 0);
-  const exit: ExitCode = failed || (strict && (unguarded.length > 0 || weakRun)) ? EXIT.failedCheck : EXIT.ok;
-  return { exit, result: { ...common, runs, rules, unguarded } };
+  const strictGap =
+    rules.some((r) => r.kit === kits[0]!.name && r.strict && r.guardedBy.length === 0) ||
+    runs.some((r) => r.weak.some((id) => strictRule(rules, id)));
+  const exit: ExitCode = failed || strictGap ? EXIT.failedCheck : EXIT.ok;
+  return { exit, result: { ...common, kits: kitRows, runs, rules, unguarded } };
 }
 
 export const mutantsCommand = defineCommand({
@@ -189,20 +253,21 @@ export const mutantsCommand = defineCommand({
   },
   text(result) {
     if (result.errors) return formatErrors(result.errors as ContentError[]);
-    const strict = result.strict ? ' (strict)' : '';
     if (Array.isArray(result.runs)) {
       type GameRun = Pick<RunReport, 'run' | 'baseline' | 'weak'>;
-      type GameRule = { id: string; guardedBy: string[] };
+      type GameRule = { id: string; kit: string; guardedBy: string[] };
       const runs = result.runs as GameRun[];
       const rules = result.rules as GameRule[];
       const lines = [
-        `${String(result.game)}: ${runs.length} run file(s), ${rules.length} rule(s) of kit "${String(result.kit)}"${strict}`,
+        `${String(result.game)}: ${runs.length} run file(s), ${rules.length} rule(s) of ${kitsText(result.kits as KitRow[])}`,
       ];
       for (const r of rules)
         lines.push(
           r.guardedBy.length > 0
             ? `  ${r.id}: guarded by ${r.guardedBy.join(', ')}`
-            : `  weak: no run file guards ${r.id}`,
+            : r.kit === result.kit
+              ? `  weak: no run file guards ${r.id}`
+              : `  not guarded: no run file guards ${r.id} (kit "${r.kit}" is held only to the run files' guards)`,
         );
       for (const r of runs) {
         if (!r.baseline.passed)
@@ -217,7 +282,7 @@ export const mutantsCommand = defineCommand({
     if (!baseline.passed)
       return `${String(result.run)}: FAILED as it is (tick ${baseline.failure?.tick}: ${baseline.failure?.message}); fix it before checking mutants`;
     const rows = result.rules as RuleRow[];
-    const lines = [`${String(result.run)}: ${rows.length} rule(s) of kit "${String(result.kit)}"${strict}`];
+    const lines = [`${String(result.run)}: ${rows.length} rule(s) of ${kitsText(result.kits as KitRow[])}`];
     for (const r of rows) {
       if (r.skipped) lines.push(`  skipped: ${r.id} (the run file switches it off)`);
       else if (r.guarded)
@@ -228,3 +293,8 @@ export const mutantsCommand = defineCommand({
     return lines.join('\n');
   },
 });
+
+/** `kit "rts", kit "towerdefense" (strict)`: the kits tried, each with its strictness. */
+function kitsText(kits: readonly KitRow[]): string {
+  return kits.map((k) => `kit "${k.kit}"${k.strict ? ' (strict)' : ''}`).join(', ');
+}

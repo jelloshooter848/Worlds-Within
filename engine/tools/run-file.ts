@@ -313,12 +313,14 @@ export const runFileSchema = z
     disableRules: z
       .array(z.string().min(1))
       .default([])
-      .describe("kit rules switched off for this run (ids from the kit's rule list; see `mutants`)"),
+      .describe(
+        "kit rules switched off for this run (ids from the kit's rule list; `kit:id` for a kit the game `uses`; see `mutants`)",
+      ),
     guards: z
       .array(z.string().min(1))
       .exactOptional()
       .describe(
-        "the kit rules this run is meant to guard (ids from the kit's rule list); `mutants` checks these, or every rule when left out",
+        "the kit rules this run is meant to guard (ids from the kit's rule list; `kit:id` for a kit the game `uses`); `mutants` checks these, or every rule of the game's kit when left out",
       ),
     orders: z
       .array(orderEntrySchema)

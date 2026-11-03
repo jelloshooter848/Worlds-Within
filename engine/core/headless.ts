@@ -98,9 +98,19 @@ export interface HostedGame<W extends object = object, E = unknown> extends Head
 export interface HeadlessOptions {
   /**
    * Kit rules to switch off (ids from the kit's rule list, `rules.ts`), for mutant checks. A game
-   * passes them to its kit; the tools have already checked the ids against the kit's list.
+   * passes them to its kit; the tools have already checked the ids against the kit's list. These
+   * are the rules of the game's own kit (`kit` in `game.json`); a kit it `uses` has its own list in
+   * `disabledRulesByKit`.
    */
   disabledRules?: readonly string[];
+  /**
+   * Engine 0.14 (gap G12, decision 8): the rules switched off per kit, by kit name, for every kit
+   * the game uses (`kit` and each of `uses`; the main kit's list equals `disabledRules`). A game on
+   * two or more kits routes each list to that kit's own rule switch (the round of a kit it `uses`
+   * takes its list as the round's `disabledRules`), so each `RuleSwitch` only sees its own ids;
+   * `rulesOffFor(opts, kit)` reads one. A run file names another kit's rule as `kit:id`.
+   */
+  disabledRulesByKit?: Readonly<Record<string, readonly string[]>>;
   /**
    * Optional (Engine 0.13, decision 9): start the game at this campaign save (from a run file's
    * `from`: another run's end, or a save code), at the entry its `position` names, from tick 0 and
@@ -118,6 +128,14 @@ export interface HeadlessOptions {
    * `HeadlessEntry.starts(content)`, and never with `campaign`.
    */
   start?: RunStart;
+}
+
+/**
+ * The rules switched off for kit `kit` (Engine 0.14, gap G12): `opts.disabledRulesByKit[kit]`,
+ * else none. A game passes the result to that kit's rounds or world.
+ */
+export function rulesOffFor(opts: HeadlessOptions | undefined, kit: string): readonly string[] {
+  return opts?.disabledRulesByKit?.[kit] ?? [];
 }
 
 /**

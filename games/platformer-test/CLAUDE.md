@@ -160,9 +160,10 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
     fails `validate` at `triggers.0.params.goal`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
     sequences): `LEVEL_PAUSE` (60) ticks after a level ends, then the next level or the failed
     one afresh; the snapshot is the kit's plus `stage` and `pause`;
-  - `minigames.ts`: `testMiniGames(content)`: one `roomChallenge` (`kits/topdown/challenge.ts`)
-    per room file, its id the room's id and its title the room's `title`, at the manifest's
-    `screen` size. What the round asks and what its result does are level data, not code;
+  - `minigames.ts`: `testMiniGames(content, disabledRules?)`: one `roomChallenge`
+    (`kits/topdown/challenge.ts`) per room file, its id the room's id and its title the room's
+    `title`, at the manifest's `screen` size, with the top-down rules a run switches off
+    (`topdown:<id>`, Engine 0.14 gap G12). What the round asks and what its result does are level data, not code;
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2); Node reads the same files with `readGameFiles`.
 - `platformer-test.test.ts` (0.7 T7 part): every run file played through the view's `frame()`,
   each frame sorted by source (`status.miniGame`: the level or the vault round), and the right
@@ -202,7 +203,7 @@ moves none of them.
 | `level-1`       | 520   | `level-1` cleared at tick 493  | gravity, walk, air-control, jump, jump-by-speed, variable-jump, solid-tiles, coins-collect, bump-blocks, goal-clears-level, actors-wake, stomping, stomp-bounce                                                                                                                                                |
 | `level-2`       | 1130  | `level-2` cleared at tick 1101 | gravity, fall-cap, walk, run-speed, run-hold, skid, air-control, jump, jump-by-speed, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, level-bounds, coins-collect, brick-break, goal-clears-level, scroll-lock, actors-wake, walkers-turn, stomping, stomp-bounce, shell-kick, shell-hits-enemies |
 | `level-3`       | 2030  | `level-3` cleared at tick 1999 | gravity, fall-cap, walk, skid, friction, air-control, jump, solid-tiles, hazards-kill, pits-kill, goal-clears-level, actors-wake, ledge-turn, enemy-touch-hurts, invulnerability                                                                                                                               |
-| `level-4`       | 3300  | `level-4` cleared at tick 3283 | solid-tiles, goal-clears-level, mini-games                                                                                                                                                                                                                                                                     |
+| `level-4`       | 3300  | `level-4` cleared at tick 3283 | solid-tiles, goal-clears-level, mini-games, topdown:walls-block-movement                                                                                                                                                                                                                                       |
 | `level-2-start` | 577   | `level-2` cleared at tick 548  | as `level-2`                                                                                                                                                                                                                                                                                                   |
 | `level-3-start` | 869   | `level-3` cleared at tick 838  | as `level-3`                                                                                                                                                                                                                                                                                                   |
 | `level-4-start` | 1241  | `level-4` cleared at tick 1224 | as `level-4`                                                                                                                                                                                                                                                                                                   |
@@ -247,8 +248,16 @@ moves none of them.
   `pnpm -s cli mutants games/platformer-test/runs/level-2.run.json --json` (exit 0 for each run
   file).
 - The whole folder, `pnpm -s cli mutants games/platformer-test --json`, guards all 32 of the
-  kit's rules (`level-4.run.json` guards `mini-games`) and must exit 0 (gap G7). The top-down
-  kit's rules inside a round are not mutant-checked (gap G12).
+  kit's rules (`level-4.run.json` guards `mini-games`) and must exit 0 (gap G7). Since Engine 0.14
+  (gap G12) it also tries the top-down kit's 4 rules inside the vault round, as
+  `topdown:<id>`: `level-4` and `level-4-start` guard `topdown:walls-block-movement` (with the
+  walls gone the recorded round 2 no longer passes); no check reads a hit the hero takes, and the
+  vault is one room with no locked door, so `topdown:damage-reduces-hp`,
+  `topdown:doors-change-room` and `topdown:keys-open-locked-doors` stay unguarded (reported, not a
+  failure: the top-down kit is not strict; recorded in `docs/reports/stacking-test.md`, G12).
+  `pnpm -s cli run games/platformer-test/runs/level-4-start.run.json --disable-rule
+topdown:walls-block-movement` switches it off in the round only (`headless.ts` hands
+  `rulesOffFor(opts, 'topdown')` to `testMiniGames`; the levels' worlds get `opts.disabledRules`).
 - `runs/level-<n>.hashes.json` are the golden hashes (`tests/runs/run-files.test.ts`). After a
   change meant to change the state: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, and commit them.
 - Changing a level or the profile moves every later tick, in this level's run file and in every

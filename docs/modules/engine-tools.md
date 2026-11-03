@@ -97,16 +97,19 @@ mission, action, input? }`; each goes, without `tick`, to the game's `HeadlessGa
   first one that differs. Format: `engine/tools/CLAUDE.md` (Replay files).
 - `pnpm cli run <run-file> --disable-rule <ids>` plays it with kit rules switched off
   (comma-separated; a run file can also list them in `disableRules`); the result's
-  `disabledRules` names them.
-- `pnpm cli mutants <run-file>`: plays the run as it is, then once per named kit rule with that
-  rule off. `--json` result: `{ run, game, kit, strict, baseline: { passed, failure }, guards,
-rules: [{ id, description, skipped, expected, passed, guarded, failure }], guarded, weak }`;
-  `weak` lists the rules the run is expected to guard (its `guards`, else every rule) and still
-  passes without (text: `weak: does not guard <id>`). Exit 0 when the run passes as it is, 4 when
-  it does not, or when the kit is strict (`strictMutants: true`) and a rule is weak.
+  `disabledRules` names them. A rule of a kit the game `uses` is written `kit:id`
+  (`topdown:walls-block-movement`); a bare id is the game's own kit's.
+- `pnpm cli mutants <run-file>`: plays the run as it is, then once per named rule of every kit the
+  game uses with that rule off. `--json` result: `{ run, game, kit, strict, kits: [{ kit, strict,
+rules }], baseline: { passed, failure }, guards, rules: [{ id, kit, strict, description, skipped,
+expected, passed, guarded, failure }], guarded, weak }`; `weak` lists the rules the run is
+  expected to guard (its `guards`, else every rule of the game's own kit) and still passes without
+  (text: `weak: does not guard <id>`). Exit 0 when the run passes as it is, 4 when it does not, or
+  when a weak rule's kit is strict (`strictMutants: true`): each rule is judged by its own kit.
   `pnpm cli mutants games/<game>` does this for every run file of the game and reports which run
-  files guard each rule (`rules[].guardedBy`, `unguarded`); exit 4 for a strict kit with an
-  unguarded rule. Details: `engine/tools/CLAUDE.md` (Mutant checks).
+  files guard each rule (`rules[].guardedBy`, `unguarded`, per kit `kits[].unguarded`); exit 4 for
+  a strict own kit with an unguarded rule (a `uses` kit's unguarded rules are only reported).
+  Details: `engine/tools/CLAUDE.md` (Mutant checks).
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state, orders,
 missions }`, the whole snapshot (a game's or a world's) at tick N and the recorded orders and
   mission steps applied before it.
@@ -147,7 +150,8 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   hashes (`<name>.hashes.json`; regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).
 - A game on two kits: `uses` in `game.json` (beside `kit`) adds more kits' content kinds, merged
   by `gameKinds`; every command reads those files. `unknown_kit` / `duplicate_kit` / `kind_clash`
-  name the `game.json` field. Rules and mutants stay `kit`'s (`engine/tools/CLAUDE.md`).
+  name the `game.json` field. Every kit's rules can be switched off and are mutant-checked: bare
+  ids are `kit`'s, `kit:id` a `uses` kit's (Engine 0.14, gap G12; `engine/tools/CLAUDE.md`).
 - Global flags: `--json` (exactly one JSON object on stdout), `--help`, `--max-output <bytes>`.
 - Exit codes (`engine/tools/exit-codes.ts`): `0` ok, `2` usage, `3` invalid content, `4` failed
   check, `5` crash. Every `--json` result, failures included, is `{ ok, command, exitCode, ... }`.

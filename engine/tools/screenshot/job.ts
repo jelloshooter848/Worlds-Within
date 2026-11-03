@@ -38,7 +38,10 @@ export interface ShotJob {
    * `run` does. Empty for a run without missions.
    */
   missions: OrderEntryJson[];
+  /** The game's own kit's rules switched off (`HeadlessOptions.disabledRules`). */
   disabledRules: string[];
+  /** Every kit's rules switched off, by kit (`HeadlessOptions.disabledRulesByKit`, Engine 0.14, gap G12). */
+  disabledRulesByKit: Record<string, string[]>;
   /**
    * The campaign save the run starts at (its `from`, as `run` reads it; Engine 0.13 T8, gap M33),
    * handed to the view's `createView` as `HeadlessOptions.campaign`; null for a run without `from`.

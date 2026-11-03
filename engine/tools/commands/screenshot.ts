@@ -9,7 +9,7 @@ import { contentError, formatErrors, type ContentError } from '@engine/core/cont
 import { skinSet } from '@engine/core/present';
 import { EXIT, UsageError } from '../exit-codes';
 import { loadGame } from '../game-loader';
-import { playRun, stateHash } from '../headless-run';
+import { headlessRules, playRun, stateHash } from '../headless-run';
 import { defineCommand } from '../registry';
 import { readRunFile } from '../run-file';
 import { pngSize, takeScreenshot } from '../screenshot';
@@ -89,7 +89,8 @@ export const screenshotCommand = defineCommand({
       seed,
       lastTick,
       snapshot,
-      disabledRules,
+      kit,
+      disabledRulesByKit,
       startSave,
       start,
       hashes: headlessHashes,
@@ -139,7 +140,7 @@ export const screenshotCommand = defineCommand({
         input: loaded.run.input,
         orders: loaded.run.orders,
         missions: loaded.run.missions,
-        disabledRules,
+        ...headlessRules(kit ?? '', disabledRulesByKit),
         campaign: startSave,
         start,
         screen,

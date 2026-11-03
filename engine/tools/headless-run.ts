@@ -22,10 +22,10 @@ import {
   type RunStart,
 } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { unknownRules } from '@engine/core/rules';
+import type { KitDef } from '@engine/core/kit';
 import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
-import { kitRules } from './kits';
+import { gameKits, lookupRuleId, qualifiedRuleId, type KitRuleRef } from './kits';
 import { applyOrder, type MissionDef } from '@engine/sim/index';
 import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile, type OrderEntry } from './run-file';
 import {
@@ -108,8 +108,14 @@ export interface PlayedRun {
   seed: number;
   /** The game's kit (`kit` in `game.json`); null for a world run, which has no kit. */
   kit: string | null;
-  /** The kit rules switched off (the run file's `disableRules` plus any asked for), in kit order. */
+  /**
+   * The kit rules switched off (the run file's `disableRules` plus any asked for), in kit order
+   * (`kit`'s, then each `uses` kit's): bare ids for the game's own kit, `kit:id` for another
+   * (Engine 0.14, gap G12).
+   */
   disabledRules: string[];
+  /** The same rules by kit, every kit the game uses listed (empty for a world run). */
+  disabledRulesByKit: Record<string, string[]>;
   /** The last tick played: the run's `ticks`, the first failing tick, or the tick asked for. */
   lastTick: number;
   hashes: TickHash[];
@@ -320,10 +326,38 @@ function checkStart(
 }
 
 /**
+ * The rules in `off` by kit, in each kit's own order, with every kit of `kits` listed (an empty
+ * list for a kit with none off).
+ */
+function rulesOffByKit(kits: readonly KitDef[], off: readonly KitRuleRef[]): Record<string, string[]> {
+  return Object.fromEntries(
+    kits.map((k) => [
+      k.name,
+      k.rules.filter((r) => off.some((o) => o.kit === k.name && o.id === r.id)).map((r) => r.id),
+    ]),
+  );
+}
+
+/**
+ * The rule options a game is created with (`HeadlessOptions`): `disabledRules`, the main kit's
+ * list as before Engine 0.14, and `disabledRulesByKit`, every kit's (gap G12).
+ */
+export function headlessRules(
+  mainKit: string,
+  byKit: Readonly<Record<string, readonly string[]>>,
+): { disabledRules: string[]; disabledRulesByKit: Record<string, string[]> } {
+  return {
+    disabledRules: [...(byKit[mainKit] ?? [])],
+    disabledRulesByKit: Object.fromEntries(Object.entries(byKit).map(([k, ids]) => [k, [...ids]])),
+  };
+}
+
+/**
  * Plays the run file at `runPath` (relative to `cwd`). With `untilTick` it plays only that far and
  * makes no checks (for `dump`); otherwise it plays every tick and stops at the first failing tick.
- * A rule in the run file's `disableRules` or `guards` that the game's kit does not name is a
- * content error (`unknown_rule`, at that entry).
+ * A rule in the run file's `disableRules` or `guards` that none of the game's kits names is a
+ * content error (`unknown_rule`, at that entry): a bare id is a rule of the game's own kit,
+ * `kit:id` one of a kit it `uses` (Engine 0.14, gap G12).
  */
 export async function playRun(cwd: string, runPath: string, opts: PlayOptions = {}): Promise<PlayOutcome> {
   const runFile = readRunFile(cwd, runPath);
@@ -366,7 +400,7 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       },
       mission: (step) => applyMissionStep(world, step, defs, keys),
     };
-    return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts, null, null, null) };
+    return { ok: true, value: play(loaded, stepper, world.seed, null, [], {}, opts, null, null, null) };
   }
   const { run } = loaded;
   const game = loadGame(cwd, loaded.gameDir ?? '.');
@@ -375,35 +409,31 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   const imported = await importEntry(cwd, game.dir, content);
   if (!imported.ok) return imported;
 
-  const rules = kitRules(content.manifest.kit);
-  const known = rules.map((r) => r.id).join(', ') || 'none';
+  // Rule ids: bare for the game's own kit, `kit:id` for a kit it `uses` (Engine 0.14, gap G12).
+  const kits = gameKits(content.manifest);
   const lists = [
     ['disableRules', run.disableRules],
     ['guards', run.guards ?? []],
   ] as const;
   const badInFile = lists.flatMap(([field, ids]) =>
-    ids.flatMap((id, i) =>
-      unknownRules(rules, [id]).length > 0
-        ? [
-            contentError(
-              loaded.file,
-              [field, i],
-              'unknown_rule',
-              `kit "${content.manifest.kit}" has no rule "${id}" in "${field}" (known: ${known})`,
-            ),
-          ]
-        : [],
-    ),
+    ids.flatMap((id, i) => {
+      const found = lookupRuleId(id, kits, ` in "${field}"`);
+      return found.ok ? [] : [contentError(loaded.file, [field, i], 'unknown_rule', found.message)];
+    }),
   );
   if (badInFile.length > 0) return { ok: false, errors: badInFile };
-  const asked = opts.disableRules ?? [];
-  const badAsked = unknownRules(rules, asked);
-  if (badAsked.length > 0)
-    throw new UsageError(
-      `kit "${content.manifest.kit}" has no rule ${badAsked.map((id) => `"${id}"`).join(', ')} (known: ${known})`,
-    );
-  const off = new Set([...run.disableRules, ...asked]);
-  const disabledRules = rules.filter((r) => off.has(r.id)).map((r) => r.id);
+  const off: KitRuleRef[] = [];
+  const badAsked: string[] = [];
+  for (const id of [...run.disableRules, ...(opts.disableRules ?? [])]) {
+    const found = lookupRuleId(id, kits);
+    if (found.ok) off.push(found.rule);
+    else badAsked.push(found.message);
+  }
+  if (badAsked.length > 0) throw new UsageError(badAsked.join('; '));
+  const rulesOff = rulesOffByKit(kits, off);
+  const disabledRules = kits.flatMap((k) =>
+    rulesOff[k.name]!.map((id) => qualifiedRuleId({ kit: k.name, id }, content.manifest.kit)),
+  );
 
   const runStart = checkStart(loaded, imported.entry, content);
   if (!runStart.ok) return runStart;
@@ -425,7 +455,7 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   }
   const seed = start?.seed ?? run.seed ?? content.manifest.start.seed;
   const instance: HeadlessGame = imported.entry.createGame(content, seed, {
-    disabledRules,
+    ...headlessRules(content.manifest.kit, rulesOff),
     ...(start === null ? {} : { campaign: start }),
     ...(runStart.start === null ? {} : { start: runStart.start }),
   });
@@ -461,6 +491,7 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       seed,
       content.manifest.kit,
       disabledRules,
+      rulesOff,
       opts,
       start,
       runStart.start,
@@ -518,6 +549,7 @@ function play(
   seed: number,
   kit: string | null,
   disabledRules: string[],
+  disabledRulesByKit: Record<string, string[]>,
   opts: PlayOptions,
   startSave: CampaignSave | null,
   start: RunStart | null,
@@ -630,6 +662,7 @@ function play(
         seed,
         kit,
         disabledRules,
+        disabledRulesByKit,
         lastTick: tick,
         hashes,
         failures,

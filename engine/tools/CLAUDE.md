@@ -30,8 +30,11 @@ the CLI starts.
   `kit` and of every kit in `uses` (A game on two kits, below). No Node imports, so the screenshot page uses them in the
   browser too (`game-loader.ts` re-exports them).
 - `kits.ts`: the kits by the `kit` (and `uses`) names in `game.json`: `allKits()`, `findKit(name)`,
-  `loadKit(name)` (throws `unknownKitMessage(name, field?)` for an unknown kit), `kitKinds(name)` and
-  `kitRules(name)`. Each kit says what it adds through its own hook, `kits/<name>/kit.ts` exporting
+  `loadKit(name)` (throws `unknownKitMessage(name, field?)` for an unknown kit), `kitKinds(name)`,
+  `kitRules(name)` and (Engine 0.14, gap G12) `gameKits(manifest)` (`kit` then each of `uses`),
+  `lookupRuleId(raw, kits, where?)` (a bare id is the main kit's rule, `kit:id` another kit's; the
+  reason when the kit or rule is unknown) and `qualifiedRuleId(rule, mainKit)` (bare for the main
+  kit, `kit:id` otherwise). Each kit says what it adds through its own hook, `kits/<name>/kit.ts` exporting
   `kit` (a `KitDef` from `engine/core/kit.ts`: content kinds, named rules, `strictMutants?`). There
   is no table of kits here: the hooks come from `kit-list.ts`.
 - `kit-list.ts`: **generated** by `pnpm docs:gen` (`kit-list-gen.ts`) with one import per
@@ -47,7 +50,10 @@ content)`, which imports the game's headless module by path for its optional
   `valueAt(state, path)` and `failsCheck(state, check)`.
 - `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules?, withSave?, onTick? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
-  checks the run file's `disableRules` and `guards` against the kit's rules, plays the ticks and
+  checks the run file's `disableRules` and `guards` against the rules of the game's kits (bare ids
+  `kit`'s, `kit:id` a `uses` kit's; A game on two kits, below), creates the game with
+  `headlessRules(mainKit, byKit)` (`HeadlessOptions.disabledRules` and `disabledRulesByKit`; the
+  result's `disabledRulesByKit` lists every kit), plays the ticks and
   makes the checks, hands recorded `orders` over at their ticks and compares the run file's sync
   `hashes` (Recorded orders, below); for a world run it builds the world instead (`world-run.ts`).
   `stateHash(snapshot)`, `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
@@ -126,7 +132,9 @@ content)`, which imports the game's headless module by path for its optional
   content it passes is content the game can build.
 - `run <runFile> [--disable-rule <ids>]`: plays a run file headless and checks it (below).
   `--disable-rule` switches kit rules off (comma-separated ids, on top of the run file's
-  `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, world, seed,
+  `disableRules`; `kit:id` for a kit the game `uses`; an id no kit of the game names, or a kit
+  prefix the game does not use, is a usage error). `disabledRules` in the result is bare for the
+  game's own kit and `kit:id` for another. Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
 hash }], finalHash, orders, ordersPlayed, refusedOrders, missions, missionsPlayed, refusedMissions,
 experience, hashesChecked, hashMismatch, from, start, codes, codesChecked, replayFile, replay }`.
@@ -169,14 +177,17 @@ renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matche
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
   `view`, or (`three`) a view without `frame()` or a game without a `three` skin, 2 for a bad
   `--tick`, `--out` or flag, 5 when Chromium is not installed.
-- `mutants <target>`: mutant checks (below) on a run file or a game folder. Run file result:
-  `{ run, game, kit, strict, baseline: { passed, failure }, guards, rules: [{ id, description,
-skipped, expected, passed, guarded, failure }], guarded, weak }`. Game folder result: `{ game,
-kit, strict, runs: [{ run, baseline, guards, guarded, weak }], rules: [{ id, description,
-guardedBy }], unguarded }`. Exit 0 when every run passes as it is and, for a strict kit, nothing
-  is weak or unguarded; 4 when a run fails as it is (its rules are not tried) or a strict kit has a
-  weak or unguarded rule (a kit that is not strict only reports them); 3 for a bad run file or
-  content.
+- `mutants <target>`: mutant checks (below) on a run file or a game folder, over the rules of
+  every kit the game uses. Run file result: `{ run, game, kit, strict, kits: [{ kit, strict, rules
+}], baseline: { passed, failure }, guards, rules: [{ id, kit, strict, description, skipped,
+expected, passed, guarded, failure }], guarded, weak }`. Game folder result: `{ game, kit, strict,
+kits: [{ kit, strict, rules, unguarded }], runs: [{ run, baseline, guards, guarded, weak }], rules:
+[{ id, kit, strict, description, guardedBy }], unguarded }`. `kit` and `strict` are the game's own
+  kit's; rule ids are bare for it and `kit:id` for a `uses` kit. Exit 0 when every run passes as
+  it is and no strict kit's rule is weak (and, for a strict own kit, none unguarded); 4 when a run
+  fails as it is (its rules are not tried), a weak rule belongs to a strict kit, or the game's own
+  strict kit has an unguarded rule (a kit that is not strict only reports them, and a `uses` kit's
+  unguarded rules are only reported; Mutant checks, below); 3 for a bad run file or content.
 - `get <file> <path>`: `{ file, kind, path, pointer, value }`. `set <file> <path> <value>`,
   `add <file> <path> <value>`, `remove <file> <path>`: the editing verbs (below). Result
   `{ file, kind, path, pointer, written, verified, changed, before, after, crossErrors }`; exit 0
@@ -240,10 +251,20 @@ platformer game whose door pushes a top-down mini game holds `room` files):
   twice (or `kit` again in `uses`) is `duplicate_kit`; a kind a `uses` kit adds that the engine or
   an earlier kit already has is `kind_clash`, naming both (`content kind "room" of kit "x" in
 "uses.0" clashes with kit "topdown"`). Kinds are never merged or overridden.
-- Rules: only `kit`'s. `run`/`dump` check `disableRules`, `guards` and `--disable-rule` against
-  `kit`'s rules, `mutants` tries `kit`'s rules and its strictness is `kit`'s. A `uses` kit's rules
-  are not mutant-checked yet (the headless contract passes one flat `disabledRules` list, and each
-  kit's `RuleSwitch` throws on ids it does not know); see the stacking-test gap report (G12).
+- Rules (Engine 0.14, gap G12; docs/BUILD-LOG.md, Engine 0.14, decision 8, item 254): every
+  kit's. A rule id is **bare** for `kit`'s rule (every run file from before stays valid, its
+  hashes with it) and **qualified, `kit:id`**, for a `uses` kit's (`topdown:walls-block-movement`;
+  `platformer:jump` in a platformer game is read as `jump` and written bare). `disableRules`,
+  `guards` and `--disable-rule` take both; a prefix naming a kit the game does not use, or a rule
+  its kit lacks, is `unknown_rule` at that entry (exit 3; a usage error for `--disable-rule`),
+  naming the game's kits or the kit's rules. The game is created with `HeadlessOptions.disabledRules`
+  (the main kit's ids, as before) and `disabledRulesByKit` (every kit's ids by kit name), and the
+  game routes each kit's list to that kit's rule switch: `rulesOffFor(opts, kit)`
+  (`engine/core/headless.ts`) into the round's `disabledRules` (the platformer test's
+  `testMiniGames(content, rulesOffFor(opts, 'topdown'))`, the mini siege's `miniGames(content,
+opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` only sees its own
+  ids. `mutants` tries every kit's rules, each judged by its own kit's strictness (Mutant checks,
+  below).
 - Imports: a game may import every kit it uses (`games -> kits` in `config/layers.js`; only sibling
   games are kept apart).
 
@@ -278,8 +299,9 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 - `hashEvery` (default 60): a state hash at every multiple of it, and always at the last tick
   played.
 - `disableRules` (default none): kit rules switched off for the whole run (ids from the kit's
-  rule list, see Mutant checks). An id the kit does not name is an `unknown_rule` content error at
-  that entry; an id twice is a schema error. Replay files keep the rules that were off.
+  rule list, see Mutant checks; `kit:id` for a kit the game `uses`, A game on two kits). An id no
+  kit of the game names is an `unknown_rule` content error at that entry; an id twice is a schema
+  error. Replay files keep the rules that were off (qualified where they were).
 - `orders` (default none): recorded orders, `{ tick, ...order }` (Recorded orders, below).
 - `hashes` (optional): sync hashes `[{ tick, hash }]` the run must give (Recorded orders, below).
 - `missions` (default none): mission steps (Missions in world runs, and from Engine 0.11 Missions
@@ -287,9 +309,10 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 - `start` (optional, game runs, Engine 0.14): start at a later level (`{ "stage": n }`, 0-based)
   or campaign entry (`{ "entry": "<id>" }`), fresh, from tick 0 (Start levels and entries,
   below).
-- `guards` (optional): the kit rules this run is meant to guard (Mutant checks). An id the kit
-  does not name is an `unknown_rule` content error at that entry (exit 3, naming the run file and
-  `guards`); an id twice, or one the run's `disableRules` switches off, is a schema error.
+- `guards` (optional): the kit rules this run is meant to guard (Mutant checks; `kit:id` for a
+  `uses` kit's rule). An id no kit of the game names is an `unknown_rule` content error at that
+  entry (exit 3, naming the run file and `guards`); an id twice, or one the run's `disableRules`
+  switches off, is a schema error.
 - `path`: dotted, into the game's snapshot (`hero.hp`, `entities.0.kind`, `entities.length`). A path
   that is not in the snapshot always fails. The top-down kit's paths are listed in
   `kits/topdown/CLAUDE.md` (Snapshots); `dump` shows them all.
@@ -312,7 +335,7 @@ platformer game whose door pushes a top-down mini game holds `room` files):
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
   returning a `HeadlessGame` (`engine/core/headless.ts`); it passes `opts.disabledRules` to its
-  kit.
+  kit and, on several kits, `rulesOffFor(opts, '<kit>')` to each `uses` kit's rounds.
 
 ## World runs
 
@@ -610,6 +633,20 @@ itself are `skipped`. To see one mutant fail: `pnpm -s cli run <run-file> --disa
 - **Strict kits.** A kit opts in with `strictMutants: true` in its hook (`engine/core/kit.ts`).
   Then a weak rule fails `mutants` (exit 4, `strict: true`); for other kits (topdown) weak rules
   are only reported (exit 0).
+- **A game on several kits** (Engine 0.14, gap G12, decision 8): `mutants` tries every rule of
+  `kit` and of each `uses` kit, ids as run files write them (`topdown:walls-block-movement`), and
+  each row carries its `kit` and that kit's `strict`; `kits` lists each kit with its strictness.
+  **Each rule is judged by its own kit's strictness**: a weak rule of a strict kit fails, a weak
+  rule of a lenient kit is reported. A run without `guards` is expected to guard every rule of the
+  game's own kit; **a `uses` kit's rule is expected only where a run file lists it in `guards`**
+  (settled in T5, item 257): its round may play in a few run files only, and their sync hashes
+  usually change before a check could notice. So in a game folder a `uses` kit's rules no run file
+  guards are listed (`unguarded`, `kits[].unguarded`; text: `not guarded: no run file guards
+<id>`) but fail nothing, even for a strict kit (the mini siege's `towerdefense`); a qualified
+  guard a run does not guard fails when its kit is strict. Record the unguarded ones in the game's
+  gap report. A rule switched off changes the sync hashes too, and a hash mismatch stops the run
+  without a failed check, so a guard needs an assertion or invariant that fails before the first
+  hash that moves.
 - **A whole game.** `pnpm -s cli mutants games/<game> --json` plays every run file of the game
   (`*.run.json` in a `runs/` folder under it) the same way. `rules[].guardedBy` lists the run
   files that guard each rule and `unguarded` the rules no run file guards (text:
@@ -618,8 +655,11 @@ itself are `skipped`. To see one mutant fail: `pnpm -s cli run <run-file> --disa
   as a whole must guard every rule, not each run. For a strict kit an unguarded rule or a run with
   a weak rule is exit 4; any run that fails as it is is exit 4 for every kit; a bad run file is
   exit 3 with every run file's errors.
-- Tests: `mutants.test.ts` adds a test-only strict kit to the kit list (`vi.mock('./kit-list')`)
-  and writes its game, a plain-JS headless module, to a temp folder.
+- Tests: `mutants.test.ts` adds a test-only strict kit and a lenient one to the kit list
+  (`vi.mock('./kit-list')`) and writes its game, a plain-JS headless module, to a temp folder;
+  a game on both (`uses`) covers qualified ids, an unknown kit prefix and per-kit strictness.
+  `two-kits.test.ts` and `tests/runs/per-kit-rules.test.ts` cover the platformer test and the
+  mini siege.
 
 ## Replay files
 

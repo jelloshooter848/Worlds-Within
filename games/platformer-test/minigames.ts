@@ -7,9 +7,12 @@ import { testRooms } from './content';
  * The game's mini games: one top-down room challenge (`kits/topdown/challenge.ts`) per room file
  * in `content/rooms/`, its id the room's id and its title the room's `title` (gap G15, fixed in
  * 0.7 T9). What a round asks (goal, time limit, hit points) and what its result does are the door
- * level's trigger data (`content/levels/level-4.json`), not code.
+ * level's trigger data (`content/levels/level-4.json`), not code. `disabledRules` are the top-down
+ * kit's rules switched off in every round (a run file's `topdown:<id>`, Engine 0.14 gap G12).
  */
-export function testMiniGames(content: ContentBundle): MiniGameDef[] {
+export function testMiniGames(content: ContentBundle, disabledRules: readonly string[] = []): MiniGameDef[] {
   const size = content.manifest.screen;
-  return testRooms(content).map((room) => roomChallenge({ id: room.id, room, ...(size ? { size } : {}) }));
+  return testRooms(content).map((room) =>
+    roomChallenge({ id: room.id, room, ...(size ? { size } : {}), disabledRules }),
+  );
 }

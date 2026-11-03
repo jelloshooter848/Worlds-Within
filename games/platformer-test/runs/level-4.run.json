@@ -580,5 +580,5 @@
     }
   ],
   "hashEvery": 60,
-  "guards": ["solid-tiles", "goal-clears-level", "mini-games"]
+  "guards": ["solid-tiles", "goal-clears-level", "mini-games", "topdown:walls-block-movement"]
 }

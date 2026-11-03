@@ -69,6 +69,21 @@ continuing that report's ids (the mini siege's from M37).
   (mini siege), each with golden hashes; the start-level files give the same hashes as the full
   runs from that level's tick, and no existing golden hash moved. Tests: `start-run.test.ts`,
   `sequence.test.ts`, `campaign.test.ts`.
+- **G12: per-kit rules and mutants** (T5, decision 8): a rule id is bare for the game's own kit
+  and `kit:id` for a kit it `uses`, in `disableRules`, `guards`, `--disable-rule` and `mutants`'
+  output (`lookupRuleId`, `qualifiedRuleId` and `gameKits` in `engine/tools/kits.ts`); a prefix
+  naming a kit the game does not use is `unknown_rule`, naming the game's kits. `HeadlessOptions`
+  gains `disabledRulesByKit` beside the main kit's `disabledRules`, read with `rulesOffFor(opts,
+kit)`; the platformer test hands the top-down ids to its vault rounds and the mini siege each
+  round's ids to its `mission-room` and `td-defence` rounds. `mutants` tries every kit's rules,
+  each row with its `kit` and that kit's `strict`, and judges each rule by its own kit's
+  strictness. Settled here (item 257): a `uses` kit's rule is expected only where a run file
+  lists it in `guards`, so a strict `uses` kit (the mini siege's `towerdefense`) fails only on a
+  listed guard a run does not guard, and its unguarded rules are reported per kit. New guards:
+  `topdown:walls-block-movement` in the platformer test's `level-4` and `level-4-start`,
+  `towerdefense:win-on-clear` in the mini siege's `fortify-played`; no other run file and no
+  golden hash changed. Tests: `mutants.test.ts` (a stub game on a lenient and a strict test kit),
+  `two-kits.test.ts`, `tests/runs/per-kit-rules.test.ts`, `platformer-test.test.ts`.
 
 ### Planned tasks
 

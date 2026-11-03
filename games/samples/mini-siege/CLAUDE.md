@@ -199,9 +199,11 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     entity 2), `PLAYER` (`village`).
   - `headless.ts`: `createWorld(content, seed, name?)`, `siegeCampaignPlace(content, seed, save?)`
     (Engine 0.13 T7: the campaign, the save, the scenario entry to build and the next scenario's
-    carry spec), `miniGames(content)` (the topdown kit's `missionRoom` over the
+    carry spec), `miniGames(content, opts?)` (the topdown kit's `missionRoom` over the
     rooms and the towerdefense kit's `tdDefence` over the walls' maps and towers; `validate`
-    checks each mission's params with the one its `play` names), `ADAPTERS` (`{ 'mission-room':
+    checks each mission's params with the one its `play` names; each round gets its own kit's
+    switched-off rules, `rulesOffFor(opts, 'topdown')` and `rulesOffFor(opts, 'towerdefense')`, a
+    run file's `topdown:<id>` and `towerdefense:<id>`, Engine 0.14 gap G12), `ADAPTERS` (`{ 'mission-room':
 topdownMissionAdapter, 'td-defence': towerdefenseMissionAdapter }`), `createGame(content,
 seed, opts?)`: the sim world, the kit's `rtsGame` (the plan, the switched-off rules), and a
     `MissionHost` with `missionPort(world, { refs: scenarioKeys })`, the missions, both mini
@@ -403,6 +405,17 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   `world.components.WorldTime.0.1.frozen` (one world-level entity, so index 0).
 - Every run file has sync `hashes` (every 20 ticks) and a golden `<name>.hashes.json`; each
   guards `enemy-follows-plan` (`pnpm -s cli mutants games/samples/mini-siege --json`).
+- **Every kit's rules** (Engine 0.14, gap G12; docs/BUILD-LOG.md, Engine 0.14, decision 8 and
+  item 257): `mutants` also tries the rounds' kits, as `topdown:<id>` (the sabotage and rescue
+  rounds) and `towerdefense:<id>` (the fortify round), each judged by its own kit's strictness.
+  `fortify-played` guards `towerdefense:win-on-clear` (with it off the round has no result at
+  game tick 126, where the run asserts its `pass`). Every other round rule stays unguarded: a rule
+  switched off in a round changes the next sync hash (every 20 ticks) before any check notices,
+  and a hash mismatch stops the run without a failed check. The tower-defense kit is strict, but
+  a `uses` kit is held only to the rules the run files list in `guards`, so its 13 unguarded rules
+  (and the top-down kit's 4) are reported (`kits[].unguarded`) and the command exits 0; they are
+  recorded in `docs/reports/stacking-test.md` (G12). The whole folder takes about four minutes
+  (13 run files, 24 rules).
 - **Recording the played round:** in a throwaway script, `createGame`, step to tick 40, `open`
   and `play` without input, then each tick give the host a `ScriptedInput` holding what
   `TopDownBot({ 'engine-camp': [{ do: 'fight' }] })` holds for the round's world

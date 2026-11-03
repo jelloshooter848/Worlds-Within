@@ -11,13 +11,14 @@ import {
 } from '@engine/core/campaign';
 import type { CarriedRecord, CarryFrom } from '@engine/core/carried';
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type {
-  HeadlessGame,
-  HeadlessOptions,
-  HeadlessStarts,
-  JsonObject,
-  MissionStepRefusal,
-  RunStart,
+import {
+  rulesOffFor,
+  type HeadlessGame,
+  type HeadlessOptions,
+  type HeadlessStarts,
+  type JsonObject,
+  type MissionStepRefusal,
+  type RunStart,
 } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
@@ -81,15 +82,18 @@ export interface SiegeCampaignPlace {
  * The game's mini games (`HeadlessEntry.miniGames`): the topdown kit's mission room over the rooms
  * and the towerdefense kit's `td-defence` over the walls' maps and towers (its frames at the game's
  * picture size, which the page's taps read through). `validate` checks each
- * mission's params with the one its `play` names.
+ * mission's params with the one its `play` names. Each round takes its own kit's switched-off
+ * rules from `opts.disabledRulesByKit` (a run file's `topdown:<id>` or `towerdefense:<id>`,
+ * Engine 0.14 gap G12).
  */
-export function miniGames(content: ContentBundle): readonly MiniGameDef[] {
+export function miniGames(content: ContentBundle, opts: HeadlessOptions = {}): readonly MiniGameDef[] {
   return [
-    missionRoom({ rooms: siegeRooms(content) }),
+    missionRoom({ rooms: siegeRooms(content), disabledRules: rulesOffFor(opts, 'topdown') }),
     tdDefence({
       maps: siegeDefenceMaps(content),
       towers: siegeTowers(content),
       size: content.manifest.screen,
+      disabledRules: rulesOffFor(opts, 'towerdefense'),
     }),
   ];
 }
@@ -269,7 +273,8 @@ export function siegeStartSave(content: ContentBundle, seed: number, start: RunS
 
 /**
  * The headless game contract (`engine/core/headless.ts`), for `pnpm cli run`, `dump` and
- * `mutants`: kit rules switched off in `opts` go to the RTS kit. `opts.campaign` (a run file's
+ * `mutants`: kit rules switched off in `opts` go to the RTS kit (`disabledRules`) and to each
+ * round's kit (`disabledRulesByKit`, through `miniGames`). `opts.campaign` (a run file's
  * `from`: another run's end or a save code) picks the campaign entry and its carried record: the
  * dawn built from what the siege left (`worldFromScenario(json, { carried })`); `opts.start` (a
  * run file's `start: { entry }`, Engine 0.14) picks an entry fresh, with nothing carried; left
@@ -303,7 +308,7 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
     game: rts,
     port: missionPort(world, { refs: keys }),
     missions: siegeMissions(content),
-    miniGames: miniGames(content),
+    miniGames: miniGames(content, opts),
     adapters: ADAPTERS,
   });
   return new MiniSiegeGame(world, rts, host, keys, [PLAYER, enemy.faction], place);

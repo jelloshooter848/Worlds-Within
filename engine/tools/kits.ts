@@ -52,3 +52,56 @@ export function kitKinds(name: string): readonly ContentKind[] {
 export function kitRules(name: string): RuleList {
   return loadKit(name).rules;
 }
+
+/**
+ * The kits a game uses (Engine 0.14, gap G12, decision 8): its `kit` first, then each kit in
+ * `uses`, in that order. Throws for an unknown kit (`validate` reports those first).
+ */
+export function gameKits(manifest: { kit: string; uses?: readonly string[] | undefined }): KitDef[] {
+  return [manifest.kit, ...(manifest.uses ?? [])].map(loadKit);
+}
+
+/** One rule of one of a game's kits. */
+export interface KitRuleRef {
+  /** The kit the rule belongs to. */
+  kit: string;
+  /** The rule's id in that kit's list. */
+  id: string;
+}
+
+/**
+ * A rule id as the tools write it for a game whose main kit is `mainKit`: the bare id for a rule
+ * of the main kit (so every run file and result from before Engine 0.14 reads the same), `kit:id`
+ * for a rule of a kit the game `uses`.
+ */
+export function qualifiedRuleId(rule: KitRuleRef, mainKit: string): string {
+  return rule.kit === mainKit ? rule.id : `${rule.kit}:${rule.id}`;
+}
+
+/**
+ * Which rule a run file's (or `--disable-rule`'s) id names in a game on `kits` (`gameKits`, the
+ * main kit first): `kit:id` names rule `id` of that kit, a bare id the main kit's rule. A kit the
+ * game does not use, or a rule its kit does not name, gives the reason instead (`where`, such as
+ * ` in "guards"`, goes after the id).
+ */
+export function lookupRuleId(
+  raw: string,
+  kits: readonly KitDef[],
+  where = '',
+): { ok: true; rule: KitRuleRef } | { ok: false; message: string } {
+  const colon = raw.indexOf(':');
+  const kitName = colon < 0 ? kits[0]!.name : raw.slice(0, colon);
+  const id = colon < 0 ? raw : raw.slice(colon + 1);
+  const kit = kits.find((k) => k.name === kitName);
+  if (kit === undefined)
+    return {
+      ok: false,
+      message: `the game uses no kit "${kitName}" (rule "${raw}"${where}; its kits: ${kits.map((k) => k.name).join(', ')})`,
+    };
+  if (!kit.rules.some((r) => r.id === id))
+    return {
+      ok: false,
+      message: `kit "${kit.name}" has no rule "${id}"${where} (known: ${kit.rules.map((r) => r.id).join(', ') || 'none'})`,
+    };
+  return { ok: true, rule: { kit: kit.name, id } };
+}

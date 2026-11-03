@@ -220,7 +220,7 @@
     { "path": "named.catapult.alive", "op": "eq", "value": true }
   ],
   "hashEvery": 20,
-  "guards": ["enemy-follows-plan"],
+  "guards": ["enemy-follows-plan", "towerdefense:win-on-clear"],
   "hashes": [
     { "tick": 0, "hash": "8eb4811aae418350" },
     { "tick": 20, "hash": "462384d9750f6ace" },

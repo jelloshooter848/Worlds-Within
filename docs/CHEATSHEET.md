@@ -111,8 +111,8 @@ always name the file and the field (`{ file, path, pointer, code, message, row?,
 The engine's kinds come from `engineContentKinds()`; each kit's come from its hook,
 `kits/<name>/kit.ts` (`kinds()`, see `engine/core/kit.ts`), which `pnpm docs:gen` lists in
 `engine/tools/kit-list.ts`. A game reads its `kit`'s kinds plus those of every kit in `uses`
-(`"uses": ["topdown"]` lets a platformer game hold `room` files for a mini game; only the kinds:
-run rules and `mutants` stay `kit`'s). Every format:
+(`"uses": ["topdown"]` lets a platformer game hold `room` files for a mini game; a `uses` kit's
+rules are written `kit:id` in run files and `--disable-rule`, and `mutants` tries them too). Every format:
 
 <!-- generated:files -->
 
@@ -166,10 +166,12 @@ export function createGame(content: ContentBundle, seed: number, opts?: Headless
 - A state hash is the first 16 hex digits of the SHA-256 of `canonicalJson(snapshot)` (sorted
   keys); `canonicalJson` throws on anything not JSON-safe, naming the path.
 - Kits name rules a run can switch off (`defineRules`, `RuleSwitch` in `engine/core/rules.ts`);
-  `opts.disabledRules` goes to the kit. `mutants` uses this to find weak run files; a run file's
-  `guards` says which rules it is meant to guard, and a kit with `strictMutants: true` fails
-  `mutants` (exit 4) on a weak rule. `mutants games/<game>` checks that every rule is guarded by
-  some run file of the game.
+  `opts.disabledRules` goes to the kit, and on several kits `rulesOffFor(opts, '<kit>')`
+  (`opts.disabledRulesByKit`) to each `uses` kit's rounds. `mutants` uses this to find weak run
+  files; a run file's `guards` says which rules it is meant to guard (`kit:id` for a `uses` kit),
+  and a kit with `strictMutants: true` fails `mutants` (exit 4) on a weak rule of its own.
+  `mutants games/<game>` checks that every rule of the game's kit is guarded by some run file of
+  the game, and lists a `uses` kit's unguarded rules.
 - Missions in a game (Engine 0.11; see `games/samples/mini-siege/headless.ts`): wrap the kit's
   game in a `MissionHost` (`@engine/core/mission-host`) with `port: missionPort(world, { refs:
 scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `miniGames` and
@@ -322,8 +324,8 @@ while the world waits; the world then steps on and the result commits at open ti
 | `invariants[].op`                | `"eq" \| "ne" \| "lt" \| "lte" \| "gt" \| "gte" \| "in" \| "nin" \| "contains"`                              | required       | the comparison: eq, ne, lt, lte, gt, gte, in, nin, contains                                                                                                                                                                                                                                                           |
 | `invariants[].value`             | `JSON`                                                                                                       | required       | what the value at the path is compared with                                                                                                                                                                                                                                                                           |
 | `hashEvery`                      | `integer`                                                                                                    | `60`           | a state hash every this many ticks (tick 0 and the last tick always get one)                                                                                                                                                                                                                                          |
-| `disableRules`                   | `string[]`                                                                                                   | `[]`           | kit rules switched off for this run (ids from the kit's rule list; see `mutants`)                                                                                                                                                                                                                                     |
-| `guards`                         | `string[]`                                                                                                   |                | the kit rules this run is meant to guard (ids from the kit's rule list); `mutants` checks these, or every rule when left out                                                                                                                                                                                          |
+| `disableRules`                   | `string[]`                                                                                                   | `[]`           | kit rules switched off for this run (ids from the kit's rule list; `kit:id` for a kit the game `uses`; see `mutants`)                                                                                                                                                                                                 |
+| `guards`                         | `string[]`                                                                                                   |                | the kit rules this run is meant to guard (ids from the kit's rule list; `kit:id` for a kit the game `uses`); `mutants` checks these, or every rule of the game's kit when left out                                                                                                                                    |
 | `orders`                         | `object[]`                                                                                                   | `[]`           | recorded orders, `{ tick, ...order }` in tick order, applied before the step from their tick (world runs: engine/core orders; game runs: the game's `order` method)                                                                                                                                                   |
 | `orders[].tick`                  | `integer`                                                                                                    | required       | the tick the order applies at: after that tick's state, before the step from it                                                                                                                                                                                                                                       |
 | `orders[].id`                    | `integer`                                                                                                    |                | the order number (required on a world run): unique, ascending within a tick                                                                                                                                                                                                                                           |

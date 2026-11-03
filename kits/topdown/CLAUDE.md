@@ -223,8 +223,9 @@ top?, hostStatus?, inputMap? })` returns a `MiniGameDef`. **The room is the game
   when the round starts (before `report()`'s `startHp`); the mission room gives its foes their
   world hp this way. Left out, every enemy has its kind's hp.
 - `world` (read-only use) is the round's world, for a test bot (`TopDownBot`) or a tracer.
-- Rules: `disabledRules` switches kit rules off in every round. The tools do not route a run's
-  switched-off rules to a kit a game `uses` yet (gap G12 in `docs/reports/stacking-test.md`).
+- Rules: `disabledRules` switches kit rules off in every round. A game on another kit routes a
+  run's `topdown:<id>` rules here (Engine 0.14, gap G12: `rulesOffFor(opts, 'topdown')` from
+  `engine/core/headless.ts`), so `mutants` tries them inside the round.
 
 `challenge.test.ts` covers a pass on `reach` and on `defeat-all` (driven by `TopDownBot`), a
 fail on the hero's death and on time-out, a quit on select (which the world never sees), the

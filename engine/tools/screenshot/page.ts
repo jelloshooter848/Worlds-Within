@@ -42,6 +42,7 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
     throw new Error(`${job.viewUrl} does not export createView(content, seed) (engine/core/view.ts)`);
   const game = entry.createView(content.value, job.seed, {
     disabledRules: job.disabledRules,
+    disabledRulesByKit: job.disabledRulesByKit,
     ...(job.campaign === null ? {} : { campaign: job.campaign }),
     ...(job.start === null ? {} : { start: job.start }),
   });

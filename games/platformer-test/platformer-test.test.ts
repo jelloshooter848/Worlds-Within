@@ -208,6 +208,17 @@ describe("platformer test's mini games", () => {
     });
     expect(round.present().size).toEqual({ width: 256, height: 240 });
   });
+
+  it("switches a top-down rule off in the vault round only (gap G12: a run's `topdown:<id>`)", () => {
+    const params = { params: { goal: 'defeat-all', ticks: 600, hp: 4 }, attempt: 1 };
+    const plain = testMiniGames(content)[0]!.create(params, 5) as RoomChallenge;
+    expect(plain.world.rules.disabled()).toEqual([]);
+    const off = testMiniGames(content, ['walls-block-movement'])[0]!.create(params, 5) as RoomChallenge;
+    expect(off.world.rules.disabled()).toEqual(['walls-block-movement']);
+    // The game hands `disabledRulesByKit.topdown` to the rounds, never to the levels' worlds.
+    const game = createGame(content, 1, { disabledRulesByKit: { topdown: ['walls-block-movement'] } });
+    expect(game.world.rules.disabled()).toEqual([]);
+  });
 });
 
 /** What the frames of every run file show, per frame source (`level`, or the mini game's id). */

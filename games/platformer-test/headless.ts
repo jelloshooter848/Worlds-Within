@@ -1,5 +1,5 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type { HeadlessOptions, HeadlessStarts } from '@engine/core/headless';
+import { rulesOffFor, type HeadlessOptions, type HeadlessStarts } from '@engine/core/headless';
 import { LevelSequence, stageStarts, startStage, type SequenceSnapshot } from '@kits/platformer';
 import { testStages } from './content';
 import { testMiniGames } from './minigames';
@@ -26,7 +26,8 @@ export type TestSnapshot = SequenceSnapshot;
 
 /**
  * The headless game contract (`engine/core/headless.ts`), for `pnpm cli run`, `dump` and
- * `mutants`: kit rules switched off in `opts` go to every level's world, and a run file's
+ * `mutants`: platformer rules switched off in `opts` go to every level's world, top-down ones
+ * (`opts.disabledRulesByKit.topdown`, a run file's `topdown:<id>`, gap G12) to every vault round, and a run file's
  * `start: { stage }` (`opts.start`, gap G9) is the level the sequence starts at.
  */
 export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): TestGame {
@@ -34,7 +35,7 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
   return new LevelSequence(testStages(content), {
     seed,
     disabledRules: opts.disabledRules ?? [],
-    miniGames: testMiniGames(content),
+    miniGames: testMiniGames(content, rulesOffFor(opts, 'topdown')),
     ...(start === undefined ? {} : { start }),
   });
 }

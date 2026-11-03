@@ -49,7 +49,10 @@ sequence), keeping the events between draws in a `PendingEvents` (dropped on a n
 `rules.ts` is the named-rule mechanism behind mutant checks: a kit declares its rules with
 `defineRules([{ id, description }])` and builds a `RuleSwitch(rules, disabled)` from the ids a run
 switches off (`HeadlessOptions.disabledRules`, passed by `createGame(content, seed, opts)`); its
-code guards each rule with `isOn(id)`. Unknown ids throw. It is pure (on `PURE_CORE`).
+code guards each rule with `isOn(id)`. Unknown ids throw. It is pure (on `PURE_CORE`). A game on
+several kits (Engine 0.14, gap G12) gets every kit's ids in `HeadlessOptions.disabledRulesByKit`
+(by kit name; `disabledRules` stays the main kit's) and hands each kit its own list with
+`rulesOffFor(opts, kit)` (`headless.ts`), so each `RuleSwitch` only sees its kit's ids.
 
 `kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants?, miniGameUses?,
 paramsDocs? }`, what a kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where
