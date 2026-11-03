@@ -1,9 +1,22 @@
 import type { Action } from './actions';
-import type { InputFrame } from './input-manager';
+import type { FrameTap, InputFrame } from './input-manager';
 
-/** Scripted input: each step sets the held actions from `frame` onward (presses are edges of holds). */
+/** One scripted tap: on input frame `frame`, at game screen pixel (x, y); `primary` when left out. */
+export interface ScriptedTap {
+  frame: number;
+  x: number;
+  y: number;
+  button?: FrameTap['button'];
+}
+
+/**
+ * Scripted input: each step sets the held actions from `frame` onward (presses are edges of holds).
+ * From Engine 0.15 (gap D1) the optional `taps` are pointer taps, each on its own frame (in file
+ * order within a frame), so a round played by tapping replays from a run file.
+ */
 export interface InputScript {
   steps: { frame: number; hold: Action[] }[];
+  taps?: ScriptedTap[];
 }
 
 /**
@@ -16,6 +29,7 @@ export class ScriptedInput implements InputFrame {
   private frame = -1;
   private jumpAt = -1000;
   private override: Action[] | null = null;
+  private tapList: readonly FrameTap[] = [];
   constructor(private readonly script: InputScript) {}
 
   /** Replace the script for the next frame (used by controllers). */
@@ -30,7 +44,13 @@ export class ScriptedInput implements InputFrame {
     if (this.override) held = this.override;
     else for (const s of this.script.steps) if (s.frame <= this.frame) held = s.hold;
     this.cur = new Set(held);
+    this.tapList = (this.script.taps ?? [])
+      .filter((t) => t.frame === this.frame)
+      .map((t) => ({ x: t.x, y: t.y, button: t.button ?? 'primary' }));
     if (this.pressed('jump')) this.jumpAt = this.frame;
+  }
+  taps(): readonly FrameTap[] {
+    return this.tapList;
   }
   held(a: Action): boolean {
     return this.cur.has(a);

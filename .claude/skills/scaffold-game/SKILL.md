@@ -579,7 +579,12 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   (`@engine/core/present`, the kit's `platformerFrames`); `main.ts` is `bootBrowserGame({ screen,
   displays: { canvas2d: (canvas) => canvasDisplay(canvas, { screen, skin, sheet }) },
   scene: (stack, display) => new HostScene({ stack, game, picture: () => ...display.presenter... }) })`
-  (see `games/platformer-lab/main.ts`).
+  (see `games/platformer-lab/main.ts`). With sound, also pass `game: content.manifest.id` and
+  `audio`: the shell then shows its mute button and volume slider and keeps the player's volumes
+  for this game (Engine 0.15, gap M1). A page that plays slower than 60 ticks a second gives its
+  scene a `tickRate` (the shell merges the input between ticks); with `pointer: true` taps are
+  frame input (`InputFrame.taps`), so a kit that reads them replays from a run file's
+  `input.taps`.
 - Showing the game in 3D (optional, Engine 0.6; the lab does all of this):
   1. Add `content/skins/three.json`, a 3D skin (format: `engine/core/present/skin.ts`, `three`
      section): low-poly `meshes` as text, a mesh for every kind the 2D skin maps, a block for

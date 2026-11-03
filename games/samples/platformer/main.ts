@@ -26,6 +26,7 @@ const look = testLook(content);
 
 void bootBrowserGame({
   screen: look.screen,
+  game: content.manifest.id,
   audio: { sfx: contentSfx(content) },
   displays: {
     canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }),

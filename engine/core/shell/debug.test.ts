@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { HeadlessGame, JsonObject } from '../headless';
-import type { InputFrame } from '../input/input-manager';
+import { frameTaps, type InputFrame } from '../input/input-manager';
 import { NO_INPUT } from '../input/input-manager';
 import { FixedLoop } from '../loop';
 import { stateHash } from '../state-hash';
@@ -12,8 +12,9 @@ class FakeGame implements HeadlessGame {
   log: string[] = [];
   step(input: InputFrame): void {
     this.tick++;
+    const taps = frameTaps(input).map((t) => ` tap ${t.x},${t.y} ${t.button}`);
     this.log.push(
-      `step ${this.tick}: ${input.held('right') ? 'right' : '-'}${input.pressed('jump') ? '+jump' : ''}`,
+      `step ${this.tick}: ${input.held('right') ? 'right' : '-'}${input.pressed('jump') ? '+jump' : ''}${taps.join('')}`,
     );
   }
   snapshot(): JsonObject {
@@ -85,6 +86,34 @@ describe('the page step hook (window.__ww)', () => {
     expect(ww.hash()).toBe(stateHash(game.snapshot()));
     expect(ww.replaying).toBe(false);
     expect(() => ww.step(-1)).toThrow(/whole number/);
+  });
+
+  it("replays a run file's taps (gap D1) and maps picture points to the page (gap D13)", () => {
+    const game = new FakeGame();
+    const { ww } = page(game);
+    expect(ww.toClient(1, 2)).toBeNull();
+    ww.replay({
+      ticks: 2,
+      input: {
+        steps: [],
+        taps: [
+          { frame: 1, x: 3, y: 4, button: 'secondary' },
+          { frame: 1, x: 5, y: 6 },
+        ],
+      },
+    });
+    ww.step(2);
+    expect(game.log).toEqual(['step 1: -', 'step 2: - tap 3,4 secondary tap 5,6 primary']);
+    expect(() =>
+      page(new FakeGame()).ww.replay({ ticks: 1, input: { steps: [], taps: [{ frame: 0 }] } }),
+    ).toThrow(/input\.taps\.0/);
+    const mapped = new PageDebugHook({
+      advance: () => {},
+      steps: () => 0,
+      game: () => null,
+      toClient: (x, y) => ({ x: x * 2, y: y * 2 + 10 }),
+    });
+    expect(mapped.api.toClient(3, 4)).toEqual({ x: 6, y: 18 });
   });
 
   it('has no hash or snapshot without a game', () => {

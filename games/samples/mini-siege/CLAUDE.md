@@ -254,13 +254,14 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     `launchButtons()` (the kit's `missionButtons`, none while a choice waits or a round runs),
     `press({ kind: 'launch', mission })` (the game's `open` step, through the kit's
     `launchMission`), then `choice()` and `press({ kind: 'play' | 'delegate' })`; nothing steps
-    while the choice waits. `defenceRound()` (the hosted round when it is the walls'
-    `TdDefenceRound`) and `roundTap(x, y, button?)` (Engine 0.12 T8): a pointer tap in the walls'
-    round goes to its `TdGame.tap` through the round's frame (the picture size, the kit's
-    `cameraHint`): a tap moves the cursor, a second tap on it places, a right click or long-press
-    sells (gap D12: the same lines as the sample's `TdPlay.tap`). `update(input)`: the battle one world tick every `STEPS_PER_TICK` (6:
-    `TICKS_PER_SECOND` 10), a hosted round one tick per loop step (60 a second, the world
-    waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors), which
+    while the choice waits. Taps in the walls' round (Engine 0.12 T8) are frame input since
+    Engine 0.15 (gaps D1, D12): the shell puts them on the frame, `MissionHost`'s `RoundInput`
+    passes them to the round and the kit's `TdDefenceRound` maps them through its own camera (a
+    tap moves the cursor, a second tap on it places, a right click or long-press sells); the glue's
+    `defenceRound()` and `roundTap` are gone. `update(input)`: the battle one world tick every
+    `STEPS_PER_TICK` (6: `TICKS_PER_SECOND` 10; kept here rather than the shell's scene
+    `tickRate`, gap D2, because the battle reads the pointer's gestures every loop step), a hosted
+    round one tick per loop step (60 a second, the world waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors), which
     pushes the core `miniGameScene` when the round starts and pops it on its end. `records()`,
     `title(mission)`, `outcomeTitle(mission, outcome)`, `sides()`, `message` (the last refusal).
     **The campaign** (Engine 0.13 T8): `game` is the entry played now (replaced when the campaign
@@ -284,9 +285,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     button per offered mission from `launchButtons()`, so from world tick 20 to 30 both;
     `#play`, `#delegate`, `#status`: the tick, the choice, the last outcome's title, the hall
     fallen or the raiders beaten, a refusal; while a round is hosted, its mini game's key hint)
-    and `window.wwSiege` (`tick`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the walls'
-    round's `kit` summary) and `clientAt(col, row)` (a walls' cell in client px, for the browser
-    test's taps; gap D13)). Engine 0.13 T8: `#delegate` reads **Decide** and `#play` hides for a
+    and `window.wwSiege` (`tick`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the hosted
+    round's `kit` summary: the walls' round's)). Engine 0.15 T5: `game` for the shell's volume
+    control (gap M1); `clientAt` is gone (gap D13): the browser test taps a walls' cell through the
+    kit's `screenAtCell` and `window.__ww.toClient`. Engine 0.13 T8: `#delegate` reads **Decide** and `#play` hides for a
     choice without a round; `#result` (the entry's end: title and verdict, outcomes, people, the
     save code in `#result-code` and `#continue`, "Continue: The dawn assault" or "Play again");
     `#code` and `#resume` (Enter too; keys typed there drive no game action) and `#stored`
@@ -325,9 +327,11 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   phase the same way: `fortify` launched at world tick 10, delegated (`overrun` at 40) or played
   (`fortify-played.run.json`'s recorded round as keys, `status.miniGame` `td-defence`, the host's
   title `Man the walls`, `mini-game-end` for `td-defence`, `held-cheap` at 40), ending with the
-  fortify run files' last hashes. Engine 0.12 T8: taps in the walls' round (picture (184, 88), the
-  centre of cell 11,1 with the map at picture y 64) move the cursor, place archers (gold 80), a
-  tap off the map does nothing, a secondary tap sells (gold 90), select quits to `overrun` at 40;
+  fortify run files' last hashes. Engine 0.12 T8 (frame taps since Engine 0.15): taps in the
+  walls' round (picture (184, 88), the centre of cell 11,1 with the map at picture y 64, the kit's
+  `screenAtCell`) move the cursor, place archers (gold 80), a tap off the map does nothing, a
+  secondary tap sells (gold 90), select quits to `overrun` at 40; the round's recording keeps its
+  taps (`input.taps`, gap D1); a tap in the battle does nothing;
   and the played round's frames: every kind, tile and the main sounds in
   `canvas2d-td-defence.json`, a commit sound for every fortify outcome in the battle's skin.
   Engine 0.13 T8, the campaign: the delegated siege ends at 260 with `delegated`'s last hash and
@@ -450,7 +454,8 @@ games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine
 games/samples/mini-siege/runs/fortify-played.run.json --mission fortify --bot '[{"do": "place",
 "tower": "archers", "col": 11, "row": 1}, {"do": "place", "tower": "archers", "col": 4, "row":
 5}, {"do": "wave"}]' --json` (the tower-defense kit's `TdBot`; also unchanged, final hash
-  `0b43372f77faea35`). Taps are not recorded (keys only, gap D1).
+  `0b43372f77faea35`). Since Engine 0.15 (gap D1) a round played by taps on the page records its
+  taps too (`input.taps`), which the run file's `play` step replays.
 
 ## The dawn assault (Engine 0.13 T7)
 

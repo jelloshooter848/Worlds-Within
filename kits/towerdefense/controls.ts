@@ -21,8 +21,9 @@ import type { TdCommand, TdWorld } from './world';
  *
  * A pointer tap (`tap`) is mapped to a cell through the frame's camera (`cellAtScreen`): a primary
  * tap moves the cursor there, or on the cursor's own cell places; a secondary tap (right click,
- * long-press) moves the cursor there and sells. Taps are page input, not frame input: a run file
- * cannot hold one (docs/reports/tower-defense.md, D1).
+ * long-press) moves the cursor there and sells. From Engine 0.15 (gap D1) taps are frame input
+ * (`InputFrame.taps`, game screen pixels): `TdGame.step` reads them and calls `tap`, so a run file's
+ * `input.taps` replays a round played by tapping. `screenAtCell` is `cellAtScreen`'s inverse.
  */
 
 /** Ticks a direction is held before it repeats. */
@@ -186,4 +187,29 @@ export function cellAtScreen(
   const row = Math.floor(wy / tileSize);
   if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) return null;
   return { col, row };
+}
+
+/**
+ * The centre of `cell` as a picture point of a frame (Engine 0.15, gap D13): the exact inverse of
+ * {@link cellAtScreen} for the frame's camera (the same top-left, then the cell's centre at the
+ * zoom), so `cellAtScreen(...screenAtCell(cell))` is `cell`. A page script or browser test maps it
+ * on to the page with the display's `toClient`. Off-map cells give points off the map too.
+ */
+export function screenAtCell(
+  cell: Cell,
+  frame: DeepReadonly<Pick<PresentFrame, 'size' | 'camera'>>,
+  grid: Pick<TdGrid, 'cols' | 'rows'>,
+  tileSize = TD_TILE_SIZE,
+): { x: number; y: number } {
+  const zoom = frame.camera?.zoom ?? 1;
+  const view = cameraView(frame.size, zoom);
+  const area = frame.camera?.bounds ?? { x: 0, y: 0, w: grid.cols * tileSize, h: grid.rows * tileSize };
+  const cx = frame.camera?.x ?? area.x + area.w / 2;
+  const cy = frame.camera?.y ?? area.y + area.h / 2;
+  const left = clampCameraAxis(Math.round(cx - view.width / 2), area.x, area.w, view.width);
+  const top = clampCameraAxis(Math.round(cy - view.height / 2), area.y, area.h, view.height);
+  return {
+    x: (cell.col + 0.5) * tileSize * zoom - Math.round(left * zoom),
+    y: (cell.row + 0.5) * tileSize * zoom - Math.round(top * zoom),
+  };
 }

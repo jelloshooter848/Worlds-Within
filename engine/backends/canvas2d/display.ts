@@ -31,7 +31,8 @@ export interface CanvasDisplayOptions {
  * backbuffer for the scene stack, and a `SkinnedCanvasPresenter` with the game's skin (and one per
  * mini game in `rounds`, `skinSetCanvasPresenter`) on that same renderer. `fit` follows the
  * screen layout; `present` copies the backbuffer to the page; `toScreen` maps a client point to
- * picture pixels (`Viewport.toScreen`) for pointer input. Browser only.
+ * picture pixels (`Viewport.toScreen`) for pointer input, and `toClient` its inverse
+ * (`Viewport.toClient`, Engine 0.15, gap D13) for page scripts. Browser only.
  */
 export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOptions): BrowserDisplay {
   const viewport = new Viewport(canvas, { integerScale: opts.integerScale ?? false }, opts.screen);
@@ -46,5 +47,6 @@ export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOpti
     },
     present: () => viewport.present(),
     toScreen: (clientX, clientY) => viewport.toScreen(clientX, clientY),
+    toClient: (x, y) => viewport.toClient(x, y),
   };
 }

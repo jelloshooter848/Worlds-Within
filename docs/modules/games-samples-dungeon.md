@@ -33,7 +33,8 @@ top-down kit's sample.
 - Any picture size: change only `screen` in `game.json` (such as 320x240); the kit's camera hint
   keeps the HUD band on top and centres the room. `tests/build/two-resolutions.test.ts` validates,
   runs, screenshots and builds such a copy.
-- `index.html` and `main.ts` (browser boot, data files from `virtual:game-files`); `scene.ts` (`DemoScene`).
+- `index.html` and `main.ts` (browser boot, data files from `virtual:game-files`, the shell's
+  volume control with stored volumes from Engine 0.15); `scene.ts` (`DemoScene`).
 
 ## Imports allowed
 

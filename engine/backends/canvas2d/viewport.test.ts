@@ -68,6 +68,8 @@ describe('Viewport', () => {
     expect(ctx.draws).toEqual([[0, 40, 1280, 720]]);
     // A client point maps back into the 320x180 picture.
     expect(v.toScreen(1280 - 2, 800 - 40 - 2)).toEqual({ x: 319.5, y: 179.5 });
+    // And back (Engine 0.15, gap D13).
+    expect(v.toClient(319.5, 179.5)).toEqual({ x: 1278, y: 758 });
   });
 
   it('honours the device pixel ratio with a non-default size', () => {
@@ -76,5 +78,10 @@ describe('Viewport', () => {
     expect(display.width).toBe(1179);
     expect(v.scale).toBe(3);
     expect(v.offsetX).toBe(Math.floor((1179 - 960) / 2));
+    // `toClient` inverts `toScreen` at any device pixel ratio.
+    const at = v.toClient(100.25, 37.5);
+    const back = v.toScreen(at.x, at.y);
+    expect(back.x).toBeCloseTo(100.25, 9);
+    expect(back.y).toBeCloseTo(37.5, 9);
   });
 });

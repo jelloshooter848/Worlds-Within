@@ -61,9 +61,11 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   frames or the hosted round's, with `mission-open`, `mini-game-end` and `mission-commit` events).
 - `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`.
 - `play.ts`: `SiegePlay` (launch buttons, play or delegate choice, the battle at 10 ticks a second,
-  the round at 60, taps in the walls' round through `roundTap`; Engine 0.13 T8: the campaign,
+  the round at 60, taps in the walls' round as frame input the round reads itself (Engine 0.15,
+  gaps D1 and D12; `roundTap` is gone); Engine 0.13 T8: the campaign,
   `ended()` an entry's `SiegeEntryResult`, `press` `continue`, `code` and `stored`, `canPlay`) and
-  its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`, pointer, shell audio,
+  its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`, pointer, shell audio
+  and its volume control (Engine 0.15, gap M1),
   the bar with the code box, the result panel, `window.wwSiege`).
 - `content/`: `maps/village.world.json` (`rts-map`, with the walls and the `fortify-window` and
   `sabotage-window` opportunities), `maps/dawn.world.json` (the follow-up: its `from`, the

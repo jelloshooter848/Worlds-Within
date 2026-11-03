@@ -16,12 +16,15 @@ import {
   recordFromQuery,
   showBackendToggle,
   showDisplayMessage,
+  tapsOf,
   type DebugWindow,
 } from './boot';
 import { stateHash } from '../state-hash';
 import { MissionHost, type MissionWorldPort } from '../mission-host';
 import type { MissionDef } from '../missions';
 import { HostScene } from './host-scene';
+import { VOLUME_CONTROL_ID } from './volume-control';
+import { DEFAULT_VOLUMES, readVolumes, volumesKey } from '../save/settings';
 
 describe('backend choice', () => {
   it('opens in 3D only with ?backend=three, Canvas2D otherwise', () => {
@@ -280,12 +283,18 @@ function fakePage(ids: string[]) {
       dataset: {},
       children: [],
       attrs: {},
+      listeners: {} as Record<string, ((e: unknown) => void)[]>,
       append(...kids: unknown[]) {
         el.children.push(...kids);
       },
       setAttribute(k: string, v: string) {
         el.attrs[k] = v;
       },
+      addEventListener(type: string, fn: (e: unknown) => void) {
+        const all = el['listeners'] as Record<string, ((e: unknown) => void)[]>;
+        (all[type] ??= []).push(fn);
+      },
+      blur() {},
     };
     return el;
   };
@@ -293,6 +302,7 @@ function fakePage(ids: string[]) {
   const body = make('body');
   vi.stubGlobal('document', {
     body,
+    head: make('head'),
     getElementById: (id: string) => byId.get(id) ?? null,
     createElement: make,
   });
@@ -579,5 +589,121 @@ describe('bootBrowserGame in manual-loop mode (G31)', () => {
     expect(manualFromQuery('?backend=three&debug=step')).toBe(true);
     expect(manualFromQuery('')).toBe(false);
     expect(manualFromQuery('?debug=1')).toBe(false);
+  });
+});
+
+/** A fake `localStorage`; `blocked` makes every call throw (a private window). */
+function fakeStorage(blocked = false) {
+  const data = new Map<string, string>();
+  const guard = () => {
+    if (blocked) throw new Error('storage blocked');
+  };
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => (guard(), data.get(k) ?? null),
+    setItem: (k: string, v: string) => (guard(), void data.set(k, v)),
+    removeItem: (k: string) => (guard(), void data.delete(k)),
+  });
+  return data;
+}
+
+type FakeEl = Record<string, unknown> & {
+  children: FakeEl[];
+  attrs: Record<string, string>;
+  listeners: Record<string, ((e: unknown) => void)[]>;
+};
+
+describe('the volume control (gap M1)', () => {
+  const boot = (game?: string, volumeControl?: boolean) =>
+    bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      ...(game !== undefined && { game }),
+      ...(volumeControl !== undefined && { volumeControl }),
+      audio: { volumes: { master: 0.7 } },
+      displays: { canvas2d: () => display() },
+      scene: () => ({ update() {}, render() {} }),
+    });
+  const control = (body: FakeEl) => {
+    const box = body.children.find((c) => c['id'] === VOLUME_CONTROL_ID)!;
+    const [mute, slider] = box.children as [FakeEl, FakeEl];
+    return { box, mute, slider };
+  };
+
+  it('starts at the page volumes, stores every change under the game, and a reload keeps them', async () => {
+    const data = fakeStorage();
+    const { body } = fakeBootPage();
+    const setVolumes = vi.spyOn(AudioManager.prototype, 'setVolumes');
+    const booted = await boot('tower-defense');
+    const { box, mute, slider } = control(body as unknown as FakeEl);
+    expect(box.attrs['aria-label']).toBe('Sound');
+    expect(mute.attrs['aria-pressed']).toBe('false');
+    expect(slider['value']).toBe('70');
+    expect(booted?.volume?.volumes()).toEqual({ master: 0.7, music: 1, sfx: 1, muted: false });
+    // Mute, then the slider (which unmutes): each stored at once, each applied to the audio.
+    mute.listeners['click']![0]!({});
+    expect(mute.attrs['aria-pressed']).toBe('true');
+    expect(JSON.parse(data.get(volumesKey('tower-defense'))!)).toMatchObject({ muted: true, master: 0.7 });
+    expect(setVolumes).toHaveBeenLastCalledWith(expect.objectContaining({ muted: true }));
+    slider['value'] = '30';
+    slider.listeners['input']![0]!({});
+    expect(JSON.parse(data.get(volumesKey('tower-defense'))!)).toEqual({
+      master: 0.3,
+      music: 1,
+      sfx: 1,
+      muted: false,
+    });
+    // Keys on the slider never reach the game's keyboard.
+    const stop = vi.fn();
+    slider.listeners['keydown']![0]!({ stopPropagation: stop });
+    expect(stop).toHaveBeenCalled();
+    // A reload: the stored volumes win over the page's.
+    const stored = data.get(volumesKey('tower-defense'))!;
+    vi.unstubAllGlobals();
+    fakeStorage().set(volumesKey('tower-defense'), stored.replace('"muted":false', '"muted":true'));
+    const again = fakeBootPage();
+    const reloaded = await boot('tower-defense');
+    expect(reloaded?.volume?.volumes()).toEqual({ master: 0.3, music: 1, sfx: 1, muted: true });
+    expect(control(again.body as unknown as FakeEl).mute.attrs['aria-pressed']).toBe('true');
+    expect(setVolumes).toHaveBeenLastCalledWith({ master: 0.3, music: 1, sfx: 1, muted: true });
+  });
+
+  it('plays on with blocked storage, and can be left out', async () => {
+    fakeStorage(true);
+    const { body } = fakeBootPage();
+    const booted = await boot('g');
+    expect(booted?.volume?.volumes().master).toBe(0.7);
+    control(body as unknown as FakeEl).mute.listeners['click']![0]!({});
+    expect(booted?.volume?.volumes().muted).toBe(true);
+    vi.unstubAllGlobals();
+    fakeStorage();
+    const page = fakeBootPage();
+    const off = await boot('g', false);
+    expect(off?.volume).toBeNull();
+    expect((page.body as unknown as FakeEl).children.some((c) => c['id'] === VOLUME_CONTROL_ID)).toBe(false);
+  });
+
+  it('reads stored volumes defensively', () => {
+    expect(readVolumes(null)).toEqual(DEFAULT_VOLUMES);
+    expect(readVolumes({ master: 3, music: -1, sfx: 'x', muted: 'yes' })).toEqual({
+      master: 1,
+      music: 0,
+      sfx: 1,
+      muted: false,
+    });
+  });
+});
+
+describe('pointer taps as frame input (gap D1)', () => {
+  it('turns tap gestures into frame taps, dropping the rest', () => {
+    expect(
+      tapsOf([
+        { type: 'tap', button: 'primary', x: 1, y: 2, kind: 'mouse' },
+        { type: 'zoom', factor: 2, x: 0, y: 0, source: 'wheel' } as never,
+        { type: 'tap', button: 'secondary', x: 3, y: 4, kind: 'touch' },
+      ]),
+    ).toEqual([
+      { x: 1, y: 2, button: 'primary' },
+      { x: 3, y: 4, button: 'secondary' },
+    ]);
   });
 });

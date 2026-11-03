@@ -59,6 +59,10 @@ const status = document.getElementById('status') as HTMLElement;
 
 const booted = await bootBrowserGame({
   screen: look.screen,
+  game: content.manifest.id,
+  // No sounds yet (T14 adds them); the shell's volume control is there and keeps the player's
+  // volumes (gap M1).
+  audio: {},
   displays: { canvas2d: (canvas) => canvasDisplay(canvas, look) },
   pointer: true,
   touchPad: false,
@@ -86,13 +90,6 @@ const booted = await bootBrowserGame({
 if (booted && play) {
   const scene: SkirmishPlay = play;
   const display = booted.display;
-  /** Client px from picture px: `toScreen` is affine, so two points invert it. */
-  const pictureToClient = (px: number, py: number) => {
-    const toScreen = display.toScreen!.bind(display);
-    const a = toScreen(0, 0);
-    const b = toScreen(1000, 1000);
-    return { x: ((px - a.x) * 1000) / (b.x - a.x), y: ((py - a.y) * 1000) / (b.y - a.y) };
-  };
   const hook: SkirmishHook = {
     tick: () => scene.tick,
     sides: () => scene.sides(),
@@ -113,7 +110,7 @@ if (booted && play) {
     camera: () => ({ zoom: scene.camera.zoom, ...scene.camera.centre() }),
     clientAt: (wx, wy) => {
       const p = scene.camera.worldToScreen(wx, wy);
-      return pictureToClient(p.x, p.y);
+      return display.toClient!(p.x, p.y); // the display's inverse of `toScreen` (gap D13)
     },
     message: () => scene.message,
     exportRun: (game) => scene.exportRun(game),

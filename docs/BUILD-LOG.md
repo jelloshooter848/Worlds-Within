@@ -54,6 +54,24 @@ from D15), or in a new report for a sample that has none.
   file order wins. The RTS skirmish's barracks draw a new `site-2x2-half` frame from
   `progress:50`. No golden hash moved; no screenshot changed except a barracks site past half
   way, which no committed screenshot shows.
+- **Shell input and settings** (T5, decisions 5 and 6): M1, D1, D2, D12 and D13 fixed. The
+  player's volumes are stored per game (`save/settings.ts`, `ww:<game>:volumes`) and the shell
+  draws its own mute button and volume slider (`shell/volume-control.ts`; `bootBrowserGame`'s
+  `game` and `volumeControl`), on all five sample pages (the dungeon calls `mountVolumeControl`
+  from its own loop; the RTS skirmish passes `audio: {}` until T14 gives it sounds). Taps are frame
+  input (`InputFrame.taps`, `ScriptedInput`'s and run files' `input.taps`, recorded by
+  `InputRecorder` and `MissionHost`, passed into hosted rounds by `RoundInput`); the
+  tower-defense kit reads them in `TdGame.step` (`size` option), and
+  `games/samples/tower-defense/runs/tapped.run.json` wins a round by taps. `Scene.tickRate`
+  paces a scene in `SceneStack` with `MergedInput` (the sample's `TickInput` moved into core);
+  page buttons press through `InputManager.press`. `screenAtCell` (the kit) and
+  `BrowserDisplay.toClient` (Canvas2D's `Viewport.toClient`; the boot's canvas-box mapping for 3D)
+  and `window.__ww.toClient` replace the pages' `pictureToClient` and the mini siege's
+  `clientAt`, `roundTap` and `defenceRound`. Choices: D12 needed no `MiniGame.tap` (decision 6);
+  the mini siege keeps its own battle counter, since a scene stepped only on its ticks would drop
+  the pointer gestures of the steps between (its rounds already step every loop step); the 3D
+  display's `toClient` is the boot's fallback rather than a change in `threeDisplay`. No golden
+  hash moved.
 
 ### Planned tasks
 

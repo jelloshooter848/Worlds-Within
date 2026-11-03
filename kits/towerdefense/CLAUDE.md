@@ -27,9 +27,10 @@ snapshot give it (`mission-defence.ts`, T6) and report what happened. It never i
   `presentMap`, `presentStatus`, `cameraHint`, `enemyPlace`, `facingToward`, `TD_DEPTH`,
   `TD_TILES`, `TD_TILE_SIZE`, `TD_EVENT_TYPES` (below).
 - `controls.ts`: `TdControls(grid)` (the cursor and chosen tower, `input(frame)` and `tap(...)`
-  giving `TdCommand`s), `gridOf(world)`, `cellAtScreen(x, y, frame, grid, tileSize?)`,
-  `REPEAT_DELAY`, `REPEAT_EVERY` (below).
-- `game.ts`: `tdGame({ map, towers, waves, seed, disabledRules? })` (`TdGame`, an `engine/core`
+  giving `TdCommand`s), `gridOf(world)`, `cellAtScreen(x, y, frame, grid, tileSize?)` and its
+  inverse `screenAtCell(cell, frame, grid, tileSize?)` (Engine 0.15, gap D13), `REPEAT_DELAY`,
+  `REPEAT_EVERY` (below).
+- `game.ts`: `tdGame({ map, towers, waves, seed, disabledRules?, size? })` (`TdGame`, an `engine/core`
   `HeadlessGame`) and `tdRound(content, map?)`, the round from a game's loaded content (below).
 - `bot.ts`: `TdBot(plan)`, a deterministic player for tests: `next(game)` gives the actions to
   hold this step (steps `place`, `sell`, `wave`, `wait`, `clear`; one press, then a released frame).
@@ -117,7 +118,13 @@ the commands, which `TdGame` queues for the round's next step:
 `tap(x, y, frame, button?, tileSize?)`: picture point to cell through the frame's camera
 (`cellAtScreen`, the presenters' framing: the hint's centre and zoom clamped to its `bounds`); a
 primary tap moves the cursor there, or on the cursor's own cell places; a secondary one moves
-there and sells; off the map nothing. Taps are page input, not in run files (lesson D1).
+there and sells; off the map nothing. From Engine 0.15 (lesson D1) taps are frame input
+(`InputFrame.taps`, game screen pixels): `TdGame.step` reads them, so a run file's `input.taps`
+replays a round played by tapping (`games/samples/tower-defense/runs/tapped.run.json`), and a
+hosted `TdDefenceRound` gets the host frame's taps through `RoundInput` (lesson D12).
+`screenAtCell(cell, frame, grid)` is the cell's centre as a picture point, the exact inverse of
+`cellAtScreen` for the frame's camera (a page script or browser test maps it on with the
+display's `toClient`; lesson D13).
 
 ## Presentation (`present.ts`)
 
@@ -151,13 +158,16 @@ cleared before the stream started) and `td-end` (`result` `won` or `lost`: skin 
 
 ## The headless game (`game.ts`)
 
-`TdGame`: `step(input)` queues the taps since the last step and the controls' commands, then
-steps the round (`events` is that step's); no `order(json)` (decision 3: frame input only).
+`TdGame`: `step(input)` maps the frame's taps (`frameTaps`, through `tapFrame()`: the game's
+`size`, default `DEFAULT_SCREEN`, and the kit's `cameraHint`), then takes any taps queued by `tap`
+and the controls' commands, and steps the round (`events` is that step's); no `order(json)`
+(decision 3: frame input only, taps included since Engine 0.15).
 `snapshot()` is `{ round, controls, kit }`: the round's `TdSnapshot`, the controls' `{ col, row,
 tower, held }` and `kit`, a summary for run-file paths: `outcome`, `gold`, `lives`, `wave`,
 `waves`, `towers`, `enemies`, `killed`, `leaked`, `spent`, `earned`. `world` and `controls` are
 public for a page's frame stream (`new FrameStream(tdFrames(screen, () => game.controls.view()))`)
-and `tap`. A game's `createGame` is `tdGame({ ...tdRound(content), seed, disabledRules })`.
+and `tap`. A game's `createGame` is `tdGame({ ...tdRound(content), seed, disabledRules, size:
+content.manifest.screen })`.
 
 ## The td-defence mission (`mission-defence.ts`)
 
@@ -261,7 +271,8 @@ problem with its cell, and the fixture round played to its end twice), `present.
 before and during a round, schema-valid and frozen; the ghost's reasons; towers, enemies, shots;
 enemy placement and facings; the same hashes presented or not; a stream's map, its events on a won
 and a lost round, refusals and sales, waves cleared once), `controls.test.ts` (cursor moves and
-repeats, the buttons, a round from `ScriptedInput`, taps through the frame's camera at zoom 1 and 2), `game.test.ts` (the snapshot and its `kit` summary, the bot winning with the same hashes on
+repeats, the buttons, a round from `ScriptedInput`, taps through the frame's camera at zoom 1 and 2,
+`screenAtCell` inverting `cellAtScreen` on every visible cell, and taps read from the frame), `game.test.ts` (the snapshot and its `kit` summary, the bot winning with the same hashes on
 two runs, losing, disabled rules, selling, `tdRound`) and `mission-defence.test.ts` (the adapter
 over a hand-written world snapshot: walls, capped budget, wave order and hp, names, refusals; the
 round's map, cells, waves; held, breached and quit rounds with their reports and outcomes; the

@@ -11,7 +11,7 @@ import { readGameFiles } from '@engine/core/node/game-files';
 import { isFullMap, MINI_GAME_STATUS, skinSet, type PresentFrame } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
 import type { Renderer } from '@engine/core/gfx/renderer';
-import type { PointerGesture } from '@engine/core/input/pointer-logic';
+import { screenAtCell } from '@kits/towerdefense';
 import { campaignOrder, entryId } from '@engine/core/campaign';
 import { loadMiniSiege, siegeCampaign, siegeMissions } from './content';
 import { siegePicture } from './picture';
@@ -56,20 +56,16 @@ const recordedRound = (name = 'played') =>
     }
   ).missions.find((m) => m.action === 'play')!.input!;
 
-/** The page's pointer in tests: the gestures queued since the last step. */
-class Taps {
-  readonly queued: PointerGesture[] = [];
-  tap(x: number, y: number, button: 'primary' | 'secondary' = 'primary'): void {
-    this.queued.push({ type: 'tap', button, x, y, kind: 'mouse' });
-  }
-  gestures(): readonly PointerGesture[] {
-    return this.queued.splice(0);
-  }
+/** A loop step's frame with one pointer tap at picture point (x, y) and nothing held. */
+function tap(x: number, y: number, button?: 'primary' | 'secondary'): ScriptedInput {
+  const input = new ScriptedInput({ steps: [], taps: [{ frame: 0, x, y, ...(button && { button }) }] });
+  input.next();
+  return input;
 }
 
 /** The page: the scene stack with `SiegePlay`'s scene, drawing every step into the null backend. */
-function page(pointer: Taps | null = null) {
-  const play = new SiegePlay({ content, seed: content.manifest.start.seed, pointer, stepsPerTick: 1 });
+function page() {
+  const play = new SiegePlay({ content, seed: content.manifest.start.seed, pointer: null, stepsPerTick: 1 });
   const stack = new SceneStack();
   const presenter = new NullPresenter({ validate: true, freeze: true });
   stack.push(play.scene(stack, () => siegePicture(presenter, content, play.ui)));
@@ -242,34 +238,34 @@ describe('the page glue, headless', () => {
     expect(hash(p.play.game.snapshot())).toBe(lastHash('fortify-played'));
   });
 
-  it('places and sells towers in the walls round by pointer taps, then quits to overrun', () => {
-    const taps = new Taps();
-    const p = page(taps);
+  it('places and sells towers in the walls round by pointer taps (frame input), then quits to overrun', () => {
+    const p = page();
     toFortify(p);
     p.play.press({ kind: 'play' });
     p.step();
-    const round = p.play.defenceRound()!;
-    expect(round).not.toBeNull();
-    const kit = () => round.game.snapshot()['kit'] as Record<string, unknown>;
+    const kit = () => p.play.game.miniGame()!.snapshot()['kit'] as Record<string, unknown>;
+    const cursor = () => p.play.game.miniGame()!.snapshot()['controls'] as Record<string, unknown>;
     expect(kit()).toMatchObject({ gold: 100, towers: 0 });
     // The 16x7 map is centred on the 256x240 picture: its top-left at picture (0, 64). The north
-    // tower's cell (11, 1) has its centre at picture (184, 88).
-    taps.tap(184, 88);
-    p.step();
-    expect(round.game.controls.view()).toMatchObject({ col: 11, row: 1 });
+    // tower's cell (11, 1) has its centre at picture (184, 88), the kit's `screenAtCell`.
+    expect(
+      screenAtCell({ col: 11, row: 1 }, { size: content.manifest.screen }, { cols: 16, rows: 7 }),
+    ).toEqual({
+      x: 184,
+      y: 88,
+    });
+    p.step(tap(184, 88));
+    expect(cursor()).toMatchObject({ col: 11, row: 1 });
     expect(kit()['towers']).toBe(0);
-    taps.tap(184, 88);
-    p.step();
+    p.step(tap(184, 88));
     expect(kit()).toMatchObject({ gold: 80, towers: 1 });
     const tower = p.frames.at(-1)!.entities.find((e) => e.kind === 'tower:archers');
     expect(tower).toMatchObject({ x: 176, y: 16 });
     expect(p.frames.at(-1)!.status[MINI_GAME_STATUS]).toBe('td-defence');
     // A tap off the map does nothing; a secondary tap sells (half the cost back).
-    taps.tap(10, 10);
-    p.step();
+    p.step(tap(10, 10));
     expect(kit()['towers']).toBe(1);
-    taps.tap(184, 88, 'secondary');
-    p.step();
+    p.step(tap(184, 88, 'secondary'));
     expect(kit()).toMatchObject({ gold: 90, towers: 0 });
     // Select gives up: the mission's onQuit outcome lands at the commit tick.
     const quit = new ScriptedInput({ steps: [{ frame: 0, hold: ['select'] }] });
@@ -281,9 +277,26 @@ describe('the page glue, headless', () => {
     expect(p.play.records()[0]).toMatchObject({ mission: 'fortify', outcome: 'overrun', resolution: 'quit' });
   });
 
-  it('ignores taps while no walls round is hosted', () => {
+  it('records the taps of a walls round played by tapping (gap D1)', () => {
     const p = page();
-    expect(p.play.roundTap(184, 88)).toBe(false);
+    p.play.game.recordRounds(true);
+    toFortify(p);
+    p.play.press({ kind: 'play' });
+    p.step();
+    p.step(tap(184, 88));
+    p.step(tap(184, 88, 'secondary'));
+    const recorded = p.play.game.roundRecordings()[0]!;
+    expect(recorded.input.taps).toEqual([
+      { frame: 1, x: 184, y: 88 },
+      { frame: 2, x: 184, y: 88, button: 'secondary' },
+    ]);
+  });
+
+  it('ignores taps in the battle (the kit reads gestures there, not frame taps)', () => {
+    const p = page();
+    p.step(tap(184, 88));
+    expect(p.play.tick).toBe(1);
+    expect(p.play.game.miniGame()).toBeNull();
   });
 
   it('draws the walls round with its own skin: every kind, tile and sound the round shows', () => {

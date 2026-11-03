@@ -81,4 +81,14 @@ export class Viewport {
     const y = ((clientY - rect.top) * dpr - this.offsetY) / this.scale;
     return { x, y };
   }
+
+  /** The inverse of `toScreen` (Engine 0.15, gap D13): a backbuffer point in client (CSS px) coordinates. */
+  toClient(x: number, y: number): { x: number; y: number } {
+    const rect = this.display.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    return {
+      x: rect.left + (x * this.scale + this.offsetX) / dpr,
+      y: rect.top + (y * this.scale + this.offsetY) / dpr,
+    };
+  }
 }

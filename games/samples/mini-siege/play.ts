@@ -18,7 +18,6 @@ import {
   type RtsView,
   type SideSummary,
 } from '@kits/rts';
-import { cameraHint, TD_TILE_SIZE, TdDefenceRound } from '@kits/towerdefense';
 import { PLAYER, siegeCampaign, siegeMissions } from './content';
 import { createGame, type MiniSiegeGame } from './headless';
 import type { InterfaceOptions } from './picture';
@@ -42,12 +41,15 @@ import type { InterfaceOptions } from './picture';
  *   it, the scene pushes the core `miniGameScene`, whose steps come back here and step the host one
  *   round tick each (60 a second; the world waits, as headless). It pops itself on the round's end;
  *   from then the world steps again and the result commits at its fixed tick, either path.
- * - **Taps in the walls' round** (Engine 0.12 T8): while the hosted round is the towerdefense
- *   kit's `TdDefenceRound` (the `fortify` mission), a pointer tap goes to its `TdGame.tap` through
- *   the round's camera (`roundTap`): a tap moves the cursor there, a second tap on the cursor's
- *   cell places the chosen tower, a right click or long-press sells. The other gestures, and every
- *   gesture in the sabotage's room, are dropped (the room has keys and the touch pad only). The
- *   same lines as the sample's `TdPlay.tap`: gap D12 in docs/reports/tower-defense.md.
+ * - **Taps in the walls' round** (Engine 0.12 T8; since Engine 0.15 frame input, gaps D1 and
+ *   D12): the shell puts each step's pointer taps on the frame, the host passes them through its
+ *   `RoundInput`, and the towerdefense kit's round (the `fortify` mission) maps them through its
+ *   own camera: a tap moves the cursor there, a second tap on the cursor's cell places the chosen
+ *   tower, a right click or long-press sells. No glue here; the sabotage's room ignores taps (it
+ *   has keys and the touch pad only), and the round's other gestures are dropped.
+ * - **The battle's pace** stays this glue's (`stepsPerTick`), not the shell's scene `tickRate`
+ *   (gap D2): the battle reads the pointer's gestures (select, box, pan) on every loop step, and a
+ *   scene the shell steps only on its ticks would drop the gestures of the steps between.
  * - **The campaign** (Engine 0.13 T8): the game is one entry of the campaign file
  *   (`content/campaigns/siege.campaign.json`: the siege, then the dawn assault). An entry ends at
  *   its `ticks` (260 world ticks for the siege, 200 for the dawn), or the first world tick after
@@ -198,28 +200,6 @@ export class SiegePlay {
     return sidesOf(this.view(), this.game.factions);
   }
 
-  /** The hosted round when it is the walls' tower-defense round (`fortify`), else null. */
-  defenceRound(): TdDefenceRound | null {
-    const round = this.game.miniGame();
-    return round instanceof TdDefenceRound ? round : null;
-  }
-
-  /**
-   * A pointer tap at picture point (x, y) in the walls' round (see the file comment), through the
-   * frame the round presents (the picture size and the kit's `cameraHint`). False when no such
-   * round is hosted.
-   */
-  roundTap(x: number, y: number, button: 'primary' | 'secondary' = 'primary'): boolean {
-    const round = this.defenceRound();
-    if (round === null) return false;
-    const frame = {
-      size: this.opts.content.manifest.screen,
-      camera: cameraHint(round.game.world, TD_TILE_SIZE),
-    };
-    round.game.tap(x, y, frame, button, TD_TILE_SIZE);
-    return true;
-  }
-
   /** The missions the launch buttons offer now: none while one waits for its choice or a round runs. */
   launchButtons(): string[] {
     if (this.waiting !== null || this.result !== null || this.game.miniGame() !== null) return [];
@@ -258,8 +238,7 @@ export class SiegePlay {
     if (this.game !== playing) return; // a new entry starts at its tick 0 on the next step
     const gestures = this.opts.pointer?.gestures() ?? [];
     if (this.game.miniGame() !== null) {
-      for (const g of gestures) if (g.type === 'tap') this.roundTap(g.x, g.y, g.button);
-      this.game.step(input);
+      this.game.step(input); // the round reads the frame's keys and taps
       return;
     }
     if (this.waiting !== null || this.result !== null) return;

@@ -24,8 +24,9 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes.
   `sidesOf` (the kit's, re-exported).
 - `actions.ts`: interface actions (`click`, `box`, `command`, `build`, `train`, `stop`) through
   the kit's selection and command mapper.
-- `index.html`, `main.ts` (the page: `bootBrowserGame`, the button bar, Export, the
-  `window.wwSkirmish` hook), `play.ts` (`SkirmishPlay`, the page's scene: camera, controls,
+- `index.html`, `main.ts` (the page: `bootBrowserGame` with the shell's volume control (Engine
+  0.15; no sounds yet), the button bar, Export, the `window.wwSkirmish` hook, its `clientAt`
+  through the display's `toClient`), `play.ts` (`SkirmishPlay`, the page's scene: camera, controls,
   buttons, `TICKS_PER_SECOND` 10), `recording.ts` (`BattleRecorder`: sync hashes every 20 ticks
   and the battle as a run file); the data files come from `virtual:game-files`.
 - `content.ts`, `picture.ts` (`skirmishLook`, `sideKinds`, `skirmishFrames`,

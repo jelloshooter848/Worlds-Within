@@ -28,8 +28,10 @@ report to a declared outcome. It holds no world rules, never draws and never imp
 `TdPresentState`, `presentStatus`, `TD_EVENT_TYPES`: frames with the map, towers, enemies, shots,
 the cursor and a placement ghost tagged `ok` or `blocked`, the HUD and `td-*` events for skin
 sounds), `controls` (`TdControls`: the shared actions as a cursor, place, cycle, sell and start
-wave, and pointer taps through the frame's camera, `cellAtScreen`), `game` (`tdGame`, a
-`HeadlessGame` stepped with frame input whose snapshot is `{ round, controls, kit }`; `tdRound`
+wave, and pointer taps through the frame's camera, `cellAtScreen`, and its inverse
+`screenAtCell`, Engine 0.15 gap D13), `game` (`tdGame`, a `HeadlessGame` stepped with frame input,
+taps included since Engine 0.15 (gap D1: `InputFrame.taps` in game screen pixels of its `size`),
+whose snapshot is `{ round, controls, kit }`; `tdRound`
 reads a round from a game's content), `bot` (`TdBot`, a deterministic player for tests) and
 `mission-defence` (`tdDefence`, the `td-defence` `MiniGameDef` with `paramsSchema`, `checkUse`
 and a `report()` of towers by type, gold spent, leaks, raiders killed and walls lost by world

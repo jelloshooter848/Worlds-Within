@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Action } from '@engine/core/input/actions';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { fixtureRound } from './__fixtures__/game';
-import { cellAtScreen, gridOf, REPEAT_DELAY, REPEAT_EVERY, TdControls } from './controls';
+import { cellAtScreen, gridOf, REPEAT_DELAY, REPEAT_EVERY, screenAtCell, TdControls } from './controls';
 import { tdGame } from './game';
 import { presentWorld } from './present';
 import { TdWorld, type TdCommand } from './world';
@@ -138,5 +138,44 @@ describe('pointer taps', () => {
     input.next();
     g.step(input);
     expect(g.world.towers.map((t) => [t.col, t.row])).toEqual([[1, 1]]);
+  });
+
+  it('screenAtCell is the inverse of cellAtScreen at zoom 1 and 2, centred or larger than the picture (gap D13)', () => {
+    const w = round();
+    const grid = gridOf(w);
+    for (const frame of [
+      presentWorld(w, { size: SIZE }),
+      presentWorld(w, { size: SIZE, zoom: 2 }),
+      presentWorld(w, { size: { width: 64, height: 48 } }),
+    ])
+      for (let row = 0; row < grid.rows; row++)
+        for (let col = 0; col < grid.cols; col++) {
+          const at = screenAtCell({ col, row }, frame, grid);
+          if (at.x < 0 || at.y < 0 || at.x >= frame.size.width || at.y >= frame.size.height) continue;
+          expect(cellAtScreen(at.x, at.y, frame, grid)).toEqual({ col, row });
+        }
+    // The centred 96 x 64 map in 256 x 240: cell (1, 1)'s centre at picture (80 + 24, 88 + 24).
+    expect(screenAtCell({ col: 1, row: 1 }, presentWorld(w, { size: SIZE }), grid)).toEqual({
+      x: 104,
+      y: 112,
+    });
+  });
+
+  it('reads taps from the frame (gap D1): move, then place, at the game size', () => {
+    const g = tdGame({ ...fixtureRound(), seed: 1, size: SIZE });
+    const cell = screenAtCell({ col: 3, row: 1 }, g.tapFrame(), g.controls.grid);
+    const input = new ScriptedInput({
+      steps: [],
+      taps: [
+        { frame: 0, ...cell },
+        { frame: 1, ...cell },
+      ],
+    });
+    input.next();
+    g.step(input);
+    expect([g.controls.col, g.controls.row, g.world.towers.length]).toEqual([3, 1, 0]);
+    input.next();
+    g.step(input);
+    expect(g.world.towers.map((t) => [t.col, t.row])).toEqual([[3, 1]]);
   });
 });

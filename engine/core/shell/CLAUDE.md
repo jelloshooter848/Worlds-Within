@@ -103,10 +103,41 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
     JSON: `copy(JSON.stringify(__ww.recordings()))` in the console, then `pnpm cli record
 <runFile> --mission <id> --input <file>`, `engine/tools/CLAUDE.md`). `tick` is the game tick
     of the round's `play` step (a run file's `missions[].tick`), `input` the round's held keys
-    from its frame 0 (`MissionHost` records them; keys only, pointer taps stay D1's, 0.15). The
+    from its frame 0 (`MissionHost` records them; from Engine 0.15 the round's taps too, as `input.taps`). The
     page's URL with **`?record`** (`recordFromQuery`, `RECORD_QUERY`) puts `__ww` on the page with
     recording on and the loop running as usual, so a person plays and copies the recording; with
     `?debug=step&record` a test steps it. Without either there is no `__ww`.
+- **Settings and input from Engine 0.15 T5** (gaps M1, D1, D2, D12, D13; docs/BUILD-LOG.md,
+  Engine 0.15, decisions 5 and 6, items 282-283):
+  - **Stored volumes and the volume control (M1).** `volume-control.ts` (browser only):
+    `mountVolumeControl({ game?, start?, audio, parent? })` draws the shell's own `#ww-volume`
+    group (fixed top-right): `#ww-mute` (a button, `aria-pressed` while muted) and `#ww-master`
+    (a range 0-100 in 10s, the master volume), starts at the player's stored volumes
+    (`save/settings.ts`: `loadVolumes`, `storeVolumes`, `volumesKey(game)` =
+    `ww:<game>:volumes`, `readVolumes` checking every field; `start` when nothing is stored),
+    applies them to the audio and stores every change at once; the button never keeps focus and
+    keys on the slider never reach the game. `bootBrowserGame({ game, volumeControl? })` mounts it
+    on every page with `audio` (`booted.volume`; `volumeControl: false` leaves it out but still
+    applies the stored volumes). Storage never throws (a blocked one plays at the defaults).
+    Headless runs never read it. Every sample page has it (the dungeon, with its own loop, calls
+    `mountVolumeControl`; the RTS skirmish passes `audio: {}` until it has sounds).
+  - **Taps as frame input (D1).** With `pointer`, each loop step's tap gestures go onto the live
+    frame (`tapsOf(gestures)` to `ActionState.addTaps`), in game screen pixels: `InputFrame.taps?()`
+    (`frameTaps(frame)` reads it). `ScriptedInput` plays a script's `taps`, `InputRecorder` records
+    them, and the step hook's `replay` takes a run file's `input.taps`. Gestures still reach
+    `page.pointer` as before.
+  - **Taps into hosted rounds (D12).** `HostScene` and `miniGameScene` forward the frame as they
+    always did; the core `RoundInput` passes its taps through (`taps()`) and `MissionHost`
+    records them, so a round reads taps like keys (the tower-defense kit's `TdDefenceRound`). No
+    `MiniGame.tap`.
+  - **A scene's tick rate (D2).** `Scene.tickRate` (ticks a second): `SceneStack` (`../scene.ts`)
+    steps such a scene only on its ticks with the steps' input merged (`input/merged-input.ts`,
+    `MergedInput`). Page buttons press through `InputManager.press(action)` (held on the next
+    frame only), which the merge keeps until the tick.
+  - **`toClient` (D13).** `BrowserDisplay.toClient(x, y)`, a picture point in client px: the
+    Canvas2D display's `Viewport.toClient`; a display without one (3D: its canvas is the picture)
+    gets the canvas box's mapping from the boot. The step hook has it as `window.__ww.toClient`
+    for browser tests (with the tower-defense kit's `screenAtCell`).
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)`, a campaign as a
   page plays it, with no DOM: `end(save)` keeps an entry's save in browser storage
   (`../save/campaign-store.ts`) and packs its save code (`../campaign-code.ts`), giving
@@ -116,7 +147,7 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   campaign's: nothing left to play); `stored()` is the save an earlier visit kept when it has an
   entry past the first left to play, else null; `run(save?)` is `campaignRun`. Storage never
   throws (`save/storage.ts`), so a page without it plays on. The mini siege's page uses it.
-- `index.ts`: re-exports all of the above (`@engine/core/shell`).
+- `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
 songs, if it has sound) and `canvasDisplay(canvas, { screen, skin, sheet, background, onSound })` for 2D, the lazy `threeDisplay` for 3D, and a `scene` that
@@ -130,7 +161,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
 - `backend-choice.ts`, `host-scene.ts` and `debug.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
-  (it alone touches `window.__ww`). `campaign-session.ts`
+  (it alone touches `window.__ww`) and `volume-control.ts` (the volume control's DOM and storage). `campaign-session.ts`
   is not pure: it reaches browser storage, through `save/storage.ts`, which never throws.
 - No game rules or content: the game says what to step, what to draw and with which skin.
 
@@ -161,6 +192,16 @@ run, and finds no `__ww` without `?debug=step`; every browser test that steps a 
 sabotage round on the keyboard with `?debug=step&record`, reads `__ww.recordings()` (the run
 file's committed input, at tick 40) and writes it with `record` into a copy of `played.run.json`
 that then passes with the golden hashes.
+Engine 0.15 T5: `shell.test.ts` boots a fake page with fake storage: the volume control starts at
+the page's volumes, stores mute and the slider under `ww:<game>:volumes`, stops slider keys, and a
+reload starts at the stored volumes; blocked storage plays on; `volumeControl: false` leaves it out;
+`readVolumes` clamps bad data; `tapsOf` keeps only taps. `debug.test.ts`: a replay's `input.taps`
+reach the game on their frame, a malformed tap is refused, `toClient` maps through the target.
+`../input/merged-input.test.ts`: `ScriptedInput` taps, `MergedInput`, `SceneStack` pacing (30, 24,
+none, a paused scene's clock, 0 refused) and `InputManager.press`. In the browser,
+`tests/browser/tower-defense-page.test.ts` and `mini-siege-page.test.ts` tap cells through
+`__ww.toClient` and `screenAtCell`, and check the volume control is there and its volumes survive
+a reload.
 `campaign-session.test.ts` (Engine 0.13 T8): an entry's save stored and its code packed and read
 back (in lower case), a bad code (`code_empty`, `code_typo`) and a finished campaign's
 (`campaign_done`) refused, a null save storing nothing, and blocked storage throwing nothing. The full boot

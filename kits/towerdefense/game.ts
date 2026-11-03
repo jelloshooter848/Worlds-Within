@@ -1,9 +1,10 @@
 import { contentNamed, contentOf, type ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessGame, JsonObject } from '@engine/core/headless';
-import type { InputFrame } from '@engine/core/input/input-manager';
+import { DEFAULT_SCREEN, type ScreenSize } from '@engine/core/gfx/screen';
+import { frameTaps, type InputFrame } from '@engine/core/input/input-manager';
 import type { DeepReadonly, PresentFrame } from '@engine/core/present';
 import { gridOf, TdControls } from './controls';
-import { TD_TILE_SIZE } from './present';
+import { cameraHint, TD_TILE_SIZE } from './present';
 import { tdMapKind, tdTowersKind, tdWavesKind, towerTable } from './schema';
 import { TdWorld, type TdCommand, type TdEvent, type TdRoundDef, type TdWorldOptions } from './world';
 
@@ -16,11 +17,12 @@ import { TdWorld, type TdCommand, type TdEvent, type TdRoundDef, type TdWorldOpt
  *     return tdGame({ ...tdRound(content), seed, disabledRules: opts?.disabledRules });
  *   }
  *
- * - `step(input)`: the controls read the frame and give their commands (plus any taps queued
- *   since the last step, in order), the round takes them and steps once.
+ * - `step(input)`: the frame's taps (`InputFrame.taps`, Engine 0.15, gap D1: in game screen
+ *   pixels of a picture of `size`, mapped to cells through the kit's own camera, `cameraHint`), then
+ *   any taps queued by `tap` since the last step, then the controls' commands from the frame's
+ *   keys, in that order; the round takes them and steps once.
  * - No `order(json)`: the input model is frame input only (decision 3, item 199), so a run file's
- *   `input` replays a round exactly. A tap on the page (`tap`) moves the cursor and places
- *   through the same commands, but is not in a run file (docs/reports/tower-defense.md, D1).
+ *   `input` replays a round exactly, taps included (`input.taps`).
  * - `snapshot()` is `{ round, controls, kit }`: the round's `TdSnapshot`, the cursor
  *   (`col`, `row`, `tower`, `held`) and `kit`, a short summary for run-file paths (`kit.outcome`,
  *   `kit.gold`, `kit.lives`, `kit.wave`, `kit.waves`, `kit.towers`, `kit.enemies`, `kit.killed`,
@@ -33,6 +35,8 @@ export interface TdGameOptions extends TdRoundDef {
   seed: number;
   /** Kit rules switched off (`TOWERDEFENSE_RULES`), for mutant checks. */
   disabledRules?: readonly string[] | undefined;
+  /** The picture size a frame's taps are in (the game's `screen`; `DEFAULT_SCREEN` when left out). */
+  size?: ScreenSize | undefined;
 }
 
 export class TdGame implements HeadlessGame {
@@ -40,8 +44,10 @@ export class TdGame implements HeadlessGame {
   readonly controls: TdControls;
   events: readonly TdEvent[] = [];
   private readonly taps: TdCommand[] = [];
+  private readonly size: ScreenSize;
 
   constructor(opts: TdGameOptions) {
+    this.size = opts.size ?? DEFAULT_SCREEN;
     const wopts: TdWorldOptions = { seed: opts.seed };
     if (opts.disabledRules !== undefined) wopts.disabledRules = opts.disabledRules;
     this.world = new TdWorld({ map: opts.map, towers: opts.towers, waves: opts.waves }, wopts);
@@ -62,7 +68,13 @@ export class TdGame implements HeadlessGame {
     this.taps.push(...this.controls.tap(x, y, frame, button, tileSize));
   }
 
+  /** The frame taps land on: the picture size and the kit's camera over the map. */
+  tapFrame(): Pick<PresentFrame, 'size' | 'camera'> {
+    return { size: this.size, camera: cameraHint(this.world, TD_TILE_SIZE) };
+  }
+
   step(input: InputFrame): void {
+    for (const t of frameTaps(input)) this.tap(t.x, t.y, this.tapFrame(), t.button);
     const commands = [...this.taps.splice(0), ...this.controls.input(input)];
     for (const c of commands) this.world.command(c);
     this.events = this.world.step();

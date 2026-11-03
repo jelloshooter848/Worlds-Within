@@ -1,9 +1,7 @@
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import type { JsonObject } from '@engine/core/headless';
-import { clampCameraAxis } from '@engine/core/present';
 import { bootBrowserGame } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
-import { cameraHint, TD_TILE_SIZE } from '@kits/towerdefense';
 import { loadMiniSiege, PLAYER } from './content';
 import { siegeLook, siegePicture } from './picture';
 import type { NamedSummary } from './headless';
@@ -21,7 +19,8 @@ import gameFiles from 'virtual:game-files';
  * Engine 0.12 T8 the bar also offers the preparation phase (`fortify`, from world tick 5 to 30):
  * from 20 to 30 both missions are offered and each has its button. While the walls' round is
  * hosted the picture is the round (its own skin, `canvas2d-td-defence.json`) and pointer taps
- * place towers (`SiegePlay.roundTap`). Since Engine 0.13 T8 the page plays the campaign: when an
+ * place towers (frame input the round reads itself; gaps D1, D12). The shell's volume control
+ * keeps the player's volumes (gap M1). Since Engine 0.13 T8 the page plays the campaign: when an
  * entry ends, `#result` shows its outcomes, the village's people and their fates, and the save
  * code, kept in browser storage too, with **Continue** to the dawn assault (its captive choices
  * in the bar when the captain was taken; a choice without a round offers **Decide**); `#code`
@@ -41,10 +40,8 @@ export interface SiegeHook {
   outcomes(): string[];
   /** The hosted mini game (the open mission's `play`: `mission-room`, `td-defence`), or ''. */
   miniGame(): string;
-  /** The walls' round's `kit` summary (`gold`, `towers`, `outcome`, ...), or null when it is not hosted. */
+  /** The hosted round's `kit` summary (the walls' round: `gold`, `towers`, `outcome`, ...), or null. */
   round(): JsonObject | null;
-  /** The centre of the walls' round's cell (col, row) on the page, in client (CSS) px. */
-  clientAt(col: number, row: number): { x: number; y: number };
   /** The campaign entry played now (`village`, `dawn`). */
   scenario(): string;
   /** How the entry played now ended (`SiegePlay.ended()`), or null while it is played. */
@@ -75,6 +72,7 @@ const continueButton = document.getElementById('continue') as HTMLButtonElement;
 let play: SiegePlay | null = null;
 const booted = await bootBrowserGame({
   screen: look.screen,
+  game: content.manifest.id,
   audio: { sfx: contentSfx(content), songs: contentSongs(content), music: 'siege' },
   displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }) },
   pointer: true,
@@ -96,18 +94,10 @@ const booted = await bootBrowserGame({
 
 if (booted && play) {
   const scene: SiegePlay = play;
-  const display = booted.display;
   launches.addEventListener('click', (e) => {
     const mission = (e.target as HTMLElement).closest<HTMLElement>('button[data-mission]')?.dataset.mission;
     if (mission !== undefined) scene.press({ kind: 'launch', mission });
   });
-  /** Client px from picture px: `toScreen` is affine, so two points invert it. */
-  const pictureToClient = (px: number, py: number) => {
-    const toScreen = display.toScreen!.bind(display);
-    const a = toScreen(0, 0);
-    const b = toScreen(1000, 1000);
-    return { x: ((px - a.x) * 1000) / (b.x - a.x), y: ((py - a.y) * 1000) / (b.y - a.y) };
-  };
   playButton.addEventListener('click', () => scene.press({ kind: 'play' }));
   delegate.addEventListener('click', () => scene.press({ kind: 'delegate' }));
   continueButton.addEventListener('click', () => scene.press({ kind: 'continue' }));
@@ -126,19 +116,7 @@ if (booted && play) {
     playing: () => scene.game.miniGame() !== null,
     outcomes: () => scene.records().map((r) => r.outcome),
     miniGame: () => (scene.game.miniGame() === null ? '' : (scene.game.host.playing?.play ?? '')),
-    round: () => (scene.defenceRound()?.game.snapshot()['kit'] as JsonObject | undefined) ?? null,
-    clientAt: (col, row) => {
-      const round = scene.defenceRound();
-      if (round === null) return { x: -1, y: -1 };
-      // The inverse of the kit's `cellAtScreen` at zoom 1 (gap logged as D13 in
-      // docs/reports/tower-defense.md): the map's top-left on the picture, then the cell's centre.
-      const camera = cameraHint(round.game.world, TD_TILE_SIZE);
-      const area = camera.bounds!;
-      const { width, height } = look.screen;
-      const left = clampCameraAxis(Math.round(camera.x - width / 2), area.x, area.w, width);
-      const top = clampCameraAxis(Math.round(camera.y - height / 2), area.y, area.h, height);
-      return pictureToClient((col + 0.5) * TD_TILE_SIZE - left, (row + 0.5) * TD_TILE_SIZE - top);
-    },
+    round: () => (scene.game.miniGame()?.snapshot()['kit'] as JsonObject | undefined) ?? null,
     scenario: () => scene.scenario,
     ended: () => scene.ended(),
     named: () => scene.game.named(),

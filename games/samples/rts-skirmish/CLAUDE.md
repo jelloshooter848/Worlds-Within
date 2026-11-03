@@ -106,11 +106,12 @@ ticks, orders, hashEvery, hashes }`, ending at the last hash tick, with the orde
     refusal. The controls' selection is the page's own: the game's `ui.selection` stays `[]`, as
     in a replay of the recorded orders, so the page's hashes are the replay's.
   - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay`), `pointer: true` and
-    `touchPad: false`; Shift for additive selection; the bar under the picture (`#bar`: the
+    `touchPad: false`, `game` and `audio: {}` (Engine 0.15 T5, gap M1: the shell's volume control
+    with stored volumes, before the sample has sounds); Shift for additive selection; the bar under the picture (`#bar`: the
     status line, `#build-<building>`, `#train-<unit>`, `#stop`, `#heroes`, `#cancel`,
     `#export`), and `window.wwSkirmish` (`SkirmishHook`: `tick`, `sides`, `units`,
     `buildings`, `selection`, `camera`, `clientAt(wx, wy)` (world px to client px through the
-    camera and the display), `message`, `exportRun(game?)`) for the browser test.
+    camera and the display's `toClient`, Engine 0.15 gap D13), `message`, `exportRun(game?)`) for the browser test.
 - `skirmish.test.ts`: content, the units' numbers against the types, the hero, `sides`,
   determinism, the interface actions of `commands.run.json` recording exactly
   `battle.run.json`'s orders, refusals, `sideKinds`, a sprite frame for every kind, state and

@@ -27,6 +27,12 @@ export interface BrowserDisplay {
    * picture (3D); a display that letterboxes inside its canvas (Canvas2D) gives its own.
    */
   toScreen?(clientX: number, clientY: number): { x: number; y: number };
+  /**
+   * The inverse of `toScreen` (Engine 0.15, gap D13): a picture point (game pixels) in client
+   * (CSS px) coordinates, for page scripts and browser tests that tap a spot of the picture (with
+   * a kit's `screenAtCell`, the towerdefense kit's cell centre). Both backends give it.
+   */
+  toClient?(x: number, y: number): { x: number; y: number };
 }
 
 /** A display, or a sentence saying why it cannot start (no WebGL 2), shown on the page instead. */

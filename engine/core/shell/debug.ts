@@ -58,6 +58,12 @@ export interface PageDebug {
    * writes its `input` into the run file's `play` step. `[]` with nothing recorded.
    */
   recordings(): RoundRecording[];
+  /**
+   * A picture point (game pixels) in client (CSS px) coordinates, through the display's
+   * `toClient` (Engine 0.15, gap D13): where a browser test clicks to tap that point (with a kit's
+   * `screenAtCell` for a cell). Null when the page has no display mapping.
+   */
+  toClient(x: number, y: number): { x: number; y: number } | null;
 }
 
 /** An order or mission step the game refused during a replay. */
@@ -77,6 +83,8 @@ export interface PageDebugTarget {
   steps(): number;
   /** The headless game the page plays now, or null. */
   game(): HeadlessGame | null;
+  /** The display's picture-to-client mapping (`BrowserDisplay.toClient`), when it has one. */
+  toClient?(x: number, y: number): { x: number; y: number };
 }
 
 /** A replay in progress: the input and the run's entries still to hand over. */
@@ -134,6 +142,7 @@ export class PageDebugHook {
       record: (on = true) => this.record(on),
       recordings: () =>
         JSON.parse(JSON.stringify(target.game()?.roundRecordings?.() ?? [])) as RoundRecording[],
+      toClient: (x, y) => target.toClient?.(x, y) ?? null,
     };
   }
 
@@ -215,7 +224,21 @@ function inputScript(value: unknown): InputScript {
       throw new Error(`replay: input.steps.${i} needs "frame" and "hold"`);
     return { frame: step['frame'], hold: step['hold'] as Action[] };
   });
-  return { steps };
+  const rawTaps = value['taps'];
+  if (rawTaps === undefined) return { steps };
+  if (!Array.isArray(rawTaps)) throw new Error('replay: "input.taps" is a list');
+  const taps = rawTaps.map((tap, i) => {
+    if (
+      !isObject(tap) ||
+      typeof tap['frame'] !== 'number' ||
+      typeof tap['x'] !== 'number' ||
+      typeof tap['y'] !== 'number'
+    )
+      throw new Error(`replay: input.taps.${i} needs "frame", "x" and "y"`);
+    const button = tap['button'] === 'secondary' ? 'secondary' : 'primary';
+    return { frame: tap['frame'], x: tap['x'], y: tap['y'], button } as const;
+  });
+  return { steps, taps };
 }
 
 /** A run file's `orders` or `missions`: each entry without its `tick`, in file order. */

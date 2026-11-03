@@ -4,6 +4,7 @@ import { InputManager } from '@engine/core/input/input-manager';
 import { KeyboardSource } from '@engine/core/input/keyboard';
 import { FixedLoop } from '@engine/core/loop';
 import { SceneStack } from '@engine/core/scene';
+import { mountVolumeControl } from '@engine/core/shell/volume-control';
 import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
 import { demoSfx, demoSongs, loadDemo, mustLoad } from './content';
 import { demoLook } from './picture';
@@ -26,6 +27,8 @@ function boot(): void {
   const audio = new AudioManager();
   audio.registerSongs(demoSongs(content));
   audio.registerSfx(demoSfx(content));
+  // The shell's mute button and volume slider, with the player's stored volumes (gap M1).
+  mountVolumeControl({ game: content.manifest.id, audio });
   // Browsers only start audio inside a user gesture; keep listening so an interrupted context recovers.
   const unlock = () => audio.unlock();
   for (const ev of ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click']) {

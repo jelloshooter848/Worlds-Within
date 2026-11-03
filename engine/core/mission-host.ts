@@ -382,7 +382,7 @@ export class MissionHost implements HostedGame<MissionHost> {
       frame = round.script;
     }
     round.game.step(round.input.advance(frame));
-    round.recorder?.record(round.input.source());
+    round.recorder?.record(round.input.source(), round.input.taps());
     round.ticks++;
     const id = round.mission.id;
     this.experience.set(id, (this.experience.get(id) ?? 0) + 1);

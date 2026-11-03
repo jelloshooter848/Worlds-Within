@@ -42,7 +42,25 @@ ended, and its input from frame 0 as `ScriptedInput` steps, what a run file's `p
 `script()` the shortest `InputScript` that replays it (one step per change of the held set, holds
 in `Actions` order, no step before the first held frame), and `heldActions(frame)`; tested in
 `input/input-recorder.test.ts` (recorded then replayed through `ScriptedInput`: the same held
-actions at every frame, on seeded random holds). Keys only: pointer taps stay D1's (0.15).
+actions at every frame, on seeded random holds). From Engine 0.15 T5 (gap D1) it records the
+frame's taps too (`record(held, taps?)`; the script's `taps`, left out when none).
+
+**Input and settings** (Engine 0.15 T5, gaps M1, D1, D2, D12; docs/BUILD-LOG.md, Engine 0.15,
+decisions 5 and 6, items 282-283). A pointer tap is frame input: `FrameTap { x, y, button }` in
+the game's screen pixels, the optional `InputFrame.taps()` (`frameTaps(frame)` reads it, none when
+left out; `TAP_BUTTONS`), on `ActionState` (the shell's `addTaps` from the pointer), on
+`ScriptedInput` (an `InputScript`'s optional `taps: [{ frame, x, y, button? }]`, a run file's
+`input.taps`) and passed through by `RoundInput` (`taps()`, so a hosted round reads them; D12)
+and recorded by `MissionHost`. `input/merged-input.ts` (pure, on `PURE_CORE`): `MergedInput`, the
+input of the loop steps since a slower scene's last tick as one frame (pressed on any counts as
+pressed and held, every step's taps); `Scene.tickRate` (`scene.ts`) makes `SceneStack` step that
+scene only on its ticks (`LOOP_HZ` 60, an accumulator, so any rate up to the loop's) with it (D2).
+`InputManager.press(action)` is a page button: held on player 1's next frame only.
+`save/settings.ts` holds the player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`,
+`volumesKey(game)` = `ww:<game>:volumes`, `readVolumes` checking every field, `loadVolumes(game,
+start?)`, `storeVolumes`; never throws, never read by a headless run) for the shell's volume
+control (M1, `shell/volume-control.ts`). Tested in `input/merged-input.test.ts`,
+`input/input-recorder.test.ts`, `minigame.test.ts` and `shell/shell.test.ts`.
 
 `state-hash.ts` (Engine 0.14 T8, gap G31) is the state hash, `stateHash(snapshot)`: the first 16
 hex digits of the SHA-256 (`sha256Hex`, written out, synchronous) of `canonicalJson(snapshot)`.
@@ -385,7 +403,7 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
-scripted input and input recorder, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
+scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make

@@ -160,7 +160,12 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
   `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable
   runs), `input-recorder.ts` (Engine 0.14 T9: `InputRecorder`, held actions per frame in, the
-  shortest `ScriptedInput` script out, `{ frame, hold }` per change; pure) and the browser sources (keyboard, gamepad, touch). Pointer input (Engine 0.9):
+  shortest `ScriptedInput` script out, `{ frame, hold }` per change; pure) and the browser sources (keyboard, gamepad, touch).
+  Engine 0.15 T5 (gaps D1, D2): pointer taps are frame input (`FrameTap`, the optional
+  `InputFrame.taps()`, `frameTaps(frame)`, `ScriptedInput`'s `taps`, recorded by `InputRecorder`
+  and passed through `RoundInput`), `merged-input.ts` (`MergedInput`, the steps since a scene's
+  last tick as one frame; pure), `Scene.tickRate` paced by `SceneStack`, and
+  `InputManager.press(action)` for page buttons. Pointer input (Engine 0.9):
   `pointer-logic.ts` (`PointerGestures`: samples in, `tap` / `box` / `pan` / `zoom` gestures out,
   for mouse, pen and touch, with long-press, edge scroll, wheel and pinch; pure) and `pointer.ts`
   (`PointerSource`, its DOM side on the canvas, read per game step with `gestures()`).
@@ -175,7 +180,9 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
   (`sheetLookup(assets)`, a `SheetLookup` that returns null instead of throwing for a missing sheet
   or palette; backends and games use it) and `content-sheets.ts` (`contentSheets(content)`: a
   game's sprite and palette files as a `SheetLookup`, Engine 0.7 T9).
-- `save/`, `a11y/`, `math/`, `platform.ts`.
+- `save/`, `a11y/`, `math/`, `platform.ts`. `save/settings.ts` (Engine 0.15 T5, gap M1): the
+  player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`, `volumesKey(game)`,
+  `readVolumes`, `loadVolumes`, `storeVolumes`; never read headless).
 
 ## Imports allowed
 

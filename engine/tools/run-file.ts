@@ -2,6 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import { Actions } from '@engine/core/input/actions';
+import { TAP_BUTTONS } from '@engine/core/input/input-manager';
 import { type JsonValue, type RunStart } from '@engine/core/headless';
 import { contentError, validate, type ContentError } from '@engine/core/content/validate';
 import { orderSchema } from '@engine/core/orders';
@@ -161,6 +162,24 @@ export const scriptedInputSchema = z.strictObject({
       }),
     )
     .describe('each step holds its actions from its frame until the next step'),
+  taps: z
+    .array(
+      z.strictObject({
+        frame: z.number().int().min(0).describe('the input frame the tap is on'),
+        x: z.number().finite().describe("where it lands: game screen pixels (the manifest's screen size)"),
+        y: z.number().finite().describe('where it lands: game screen pixels'),
+        button: z
+          .enum(TAP_BUTTONS)
+          .exactOptional()
+          .describe(
+            '`primary` (a left click or tap; the default) or `secondary` (a right click or long-press)',
+          ),
+      }),
+    )
+    .exactOptional()
+    .describe(
+      'pointer taps (Engine 0.15, gap D1): each on its frame, in file order within a frame; a kit that reads taps (the tower-defense kit) plays them, others ignore them',
+    ),
 });
 
 /** What a mission entry does (Engine 0.10, item 161): open, delegate, play or quit a mission. */

@@ -1,7 +1,7 @@
 import type { z } from 'zod';
 import type { JsonObject } from './headless';
 import { Actions, type Action } from './input/actions';
-import type { InputFrame } from './input/input-manager';
+import { frameTaps, type FrameTap, type InputFrame } from './input/input-manager';
 import type { PresentFrame } from './present/types';
 
 /**
@@ -181,14 +181,18 @@ export function hostStatusFor(
  *   (null drops it; unnamed actions stay themselves).
  *
  * `pressed`, `released`, `dirX` and the jump buffer are the round's own, from the mapped actions
- * of the ticks it has seen: a jump pressed before the round never counts in it. One per round;
- * pure (no clock, no DOM).
+ * of the ticks it has seen: a jump pressed before the round never counts in it. The host frame's
+ * pointer taps (`taps()`, Engine 0.15, gap D1/D12) pass through as they are, in game screen pixels:
+ * a hosted round is drawn on the host's picture, at its size, so a round reads them through its
+ * own frame (the towerdefense kit's `TdDefenceRound` places towers by them). One per round; pure
+ * (no clock, no DOM).
  */
 export class RoundInput implements InputFrame {
   private cur = new Set<Action>();
   private prev = new Set<Action>();
   private readonly masked = new Set<Action>();
   private passed: Action[] = [];
+  private tapList: readonly FrameTap[] = [];
   private started = false;
   private frame = 0;
   private jumpAt = -1000;
@@ -213,6 +217,7 @@ export class RoundInput implements InputFrame {
     this.prev = this.cur;
     this.cur = next;
     this.passed = passed;
+    this.tapList = frameTaps(host);
     this.frame++;
     if (this.pressed('jump')) this.jumpAt = this.frame;
     return this;
@@ -228,6 +233,10 @@ export class RoundInput implements InputFrame {
     return this.passed;
   }
 
+  /** The host frame's taps this tick (passed through; what a recorder writes beside `source()`). */
+  taps(): readonly FrameTap[] {
+    return this.tapList;
+  }
   held(a: Action): boolean {
     return this.cur.has(a);
   }

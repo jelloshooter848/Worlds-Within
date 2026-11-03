@@ -83,7 +83,8 @@ says (`clamp: false` keeps a top-down room under its HUD band; gaps G29 and G34 
 Canvas2D `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`: a `Viewport` on
 the page's canvas at the picture size, a `CanvasRenderer` on its backbuffer (the scene stack's
 `renderer`), its `toScreen` (`Viewport.toScreen`, a client point in picture pixels for pointer
-input, Engine 0.9), and `skinSetCanvasPresenter` with the game's skin (and `rounds`, a skin per mini
+input, Engine 0.9) and `toClient` (`Viewport.toClient`, its inverse: a picture point in client
+px, Engine 0.15 gap D13, tested in `viewport.test.ts`), and `skinSetCanvasPresenter` with the game's skin (and `rounds`, a skin per mini
 game, as `threeDisplay` takes them) on that same renderer (the display's `presenter`). `fit(layout)` sets the viewport's `fit` from the screen layout and
 resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `games/platformer-lab/main.ts`).

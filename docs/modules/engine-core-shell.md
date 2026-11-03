@@ -9,7 +9,7 @@ The browser shell every game page shares (Engine 0.7): choosing the backend from
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
 display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
-campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), and (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it. A game's `main.ts` and scene are then a few lines of glue.
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`. A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -43,6 +43,18 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   (`manualFromQuery`), is manual-loop mode: the `FixedLoop` never runs on `requestAnimationFrame`
   and `window.__ww` (`booted.debug`, a `PageDebug` from `debug.ts`) steps the page. Off by
   default (no `__ww`, the loop as before).
+- Engine 0.15 T5 (gaps M1, D1, D2, D12, D13):
+  - `volume-control.ts`: `mountVolumeControl({ game?, start?, audio, parent? })`, the shell's
+    `#ww-volume` (`#ww-mute`, `#ww-master`), starting at the player's stored volumes
+    (`save/settings.ts`, `ww:<game>:volumes`) and storing every change; `bootBrowserGame({ game,
+audio })` mounts it (`booted.volume`; `volumeControl: false` leaves it out). Every sample page
+    has it.
+  - Taps: with `pointer`, each step's taps go onto the frame (`tapsOf`, `InputFrame.taps`,
+    `frameTaps`), in game screen pixels; `RoundInput` passes them to hosted rounds and
+    `MissionHost` records them; run files carry them as `input.taps`.
+  - `Scene.tickRate`: the scene stack steps a slower scene on its ticks with merged input
+    (`MergedInput`); `InputManager.press(action)` for page buttons.
+  - `BrowserDisplay.toClient(x, y)` (picture to client px) and `window.__ww.toClient`.
 - `debug.ts` (Engine 0.14 T8): the step hook, `window.__ww` in manual-loop mode:
   - `tick`: the 60 Hz steps taken;
   - `step(n = 1)`: exactly n steps, then one draw; returns `tick`;
@@ -104,7 +116,9 @@ Example (`games/platformer-lab/main.ts`):
 
 `engine/core/shell/shell.test.ts` with `pnpm test` (Node, a fake page for the DOM helpers, and a
 full boot with a fake audio context for the `audio` option, and one in manual-loop mode) and
-`debug.test.ts` (the step hook and replay);
+`debug.test.ts` (the step hook and replay, taps, `toClient`);
+`tests/browser/volume-control.test.ts` finds the volume control on every sample page and checks
+two pages keep their volumes across a reload;
 `tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists, and
 `tests/browser/platformer.test.ts` replays the stacking test's run files through the page
 with `window.__ww` and checks the golden hashes.

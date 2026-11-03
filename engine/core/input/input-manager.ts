@@ -9,6 +9,21 @@ export interface InputSource {
   takeJustPressed?(): Code[];
 }
 
+/**
+ * A pointer tap as frame input (Engine 0.15, gap D1; docs/BUILD-LOG.md, Engine 0.15, decision 6,
+ * item 283): where it landed in the **game's screen pixels** (the manifest's `screen` size, before
+ * the display scales it, so a recording replays the same whatever the window), and which button
+ * (`primary`: a left click or a tap; `secondary`: a right click or a long-press).
+ */
+export interface FrameTap {
+  x: number;
+  y: number;
+  button: 'primary' | 'secondary';
+}
+
+/** The pointer buttons a tap may have, in the order a run file names them. */
+export const TAP_BUTTONS = ['primary', 'secondary'] as const;
+
 /** Per-player, per-frame view of input. The headless sim provides its own implementation. */
 export interface InputFrame {
   held(a: Action): boolean;
@@ -19,17 +34,32 @@ export interface InputFrame {
   consumeJumpBuffer(): void;
   /** Signed horizontal direction: -1, 0, 1 (right wins ties, like holding both on a d-pad is impossible). */
   readonly dirX: -1 | 0 | 1;
+  /**
+   * This frame's pointer taps, in the order they happened (Engine 0.15, gap D1). Optional: a frame
+   * without it has none; read it with `frameTaps(frame)`.
+   */
+  taps?(): readonly FrameTap[];
 }
+
+/** A frame's taps (`InputFrame.taps`), or none when the frame has no taps. */
+export function frameTaps(frame: InputFrame): readonly FrameTap[] {
+  return frame.taps?.() ?? NO_TAPS;
+}
+
+const NO_TAPS: readonly FrameTap[] = Object.freeze([]);
 
 export class ActionState implements InputFrame {
   private cur = new Set<Action>();
   private prev = new Set<Action>();
   private jumpPressedFrame = -1000;
   private frame = 0;
+  private tapList: readonly FrameTap[] = NO_TAPS;
 
-  beginFrame(next: Set<Action>): void {
+  /** The frame's held actions and its taps (the shell's pointer taps; none by default). */
+  beginFrame(next: Set<Action>, taps: readonly FrameTap[] = NO_TAPS): void {
     this.prev = this.cur;
     this.cur = next;
+    this.tapList = taps;
     this.frame++;
     if (this.pressed('jump')) this.jumpPressedFrame = this.frame;
   }
@@ -52,6 +82,13 @@ export class ActionState implements InputFrame {
     const l = this.cur.has('left');
     const r = this.cur.has('right');
     return l && !r ? -1 : r && !l ? 1 : 0;
+  }
+  taps(): readonly FrameTap[] {
+    return this.tapList;
+  }
+  /** Adds taps to this frame (the shell, after `InputManager.beginFrame`, from the pointer). */
+  addTaps(taps: readonly FrameTap[]): void {
+    if (taps.length > 0) this.tapList = [...this.tapList, ...taps];
   }
   /** Any action held at all (used by the title screen gate). */
   get any(): boolean {
@@ -96,6 +133,8 @@ export class InputManager {
    * down): ignored until released, so the new key does not also fire its new action at once.
    */
   private readonly suppressed = new Set<Code>();
+  /** Actions a page button pressed, held on player 1's next frame only (`press`). */
+  private readonly queued = new Set<Action>();
 
   constructor(playerCount = 2, bindings?: PlayerBindings[]) {
     this.bindings = bindings ?? Array.from({ length: playerCount }, (_, i) => defaultBindings(i));
@@ -115,6 +154,15 @@ export class InputManager {
         resolve(got);
       };
     });
+  }
+
+  /**
+   * A page button (Engine 0.15, gap D2): `action` held on player 1's next frame (so pressed there)
+   * and released on the one after unless a key holds it. With a scene's tick rate the shell's
+   * merged input keeps the press until the scene's next tick.
+   */
+  press(action: Action): void {
+    this.queued.add(action);
   }
 
   cancelCapture(): void {
@@ -172,9 +220,11 @@ export class InputManager {
         if (b.keyboard[a]?.some(kbDown)) next.add(a);
         else if (b.gamepad[a]?.some(padDown)) next.add(a);
         else if (p === 0 && touch.has(`touch:${a}`)) next.add(a);
+        else if (p === 0 && this.queued.has(a)) next.add(a);
       }
       this.players[p]?.beginFrame(next);
     }
+    this.queued.clear();
   }
 
   player(i: number): ActionState {

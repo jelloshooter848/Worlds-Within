@@ -1,0 +1,65 @@
+{
+  "run": "games/samples/tower-defense/runs/tapped.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "3f3e14aefc1b4bad"
+    },
+    {
+      "tick": 50,
+      "hash": "ad6925623a60dc78"
+    },
+    {
+      "tick": 100,
+      "hash": "2443931b89d2987b"
+    },
+    {
+      "tick": 150,
+      "hash": "f4c2a158fdb62472"
+    },
+    {
+      "tick": 200,
+      "hash": "321d1c848acec5fa"
+    },
+    {
+      "tick": 250,
+      "hash": "6bc140f6c0a8d49e"
+    },
+    {
+      "tick": 300,
+      "hash": "399b8c499e40a9db"
+    },
+    {
+      "tick": 350,
+      "hash": "caa66c19ac5f82dc"
+    },
+    {
+      "tick": 400,
+      "hash": "132ce423f9c9ce4b"
+    },
+    {
+      "tick": 450,
+      "hash": "ed7f0f3c71edd04e"
+    },
+    {
+      "tick": 500,
+      "hash": "3dde53a13cb68f83"
+    },
+    {
+      "tick": 550,
+      "hash": "bdb59a50742163f5"
+    },
+    {
+      "tick": 600,
+      "hash": "3346417578c0f9c9"
+    },
+    {
+      "tick": 650,
+      "hash": "1f457b2dbba6e8ac"
+    },
+    {
+      "tick": 700,
+      "hash": "9bbdc8413bc8a0e2"
+    }
+  ]
+}

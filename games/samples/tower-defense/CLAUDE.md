@@ -19,15 +19,19 @@ right: build towers on the grey stone pads, then send each wave.
   tower under the cursor for its sell value, Enter (start) sends the next wave (otherwise the timer
   does, 400 ticks after the last).
 - Pointer: a click or tap moves the cursor to a cell, a second one on the same cell builds there; a
-  right click or long-press sells.
+  right click or long-press sells. Taps are frame input (Engine 0.15, gap D1), so a round played by
+  tapping is a run file (`runs/tapped.run.json`).
+- The shell's sound control at the top right (Engine 0.15, gap M1): mute and the volume, kept in
+  this browser for this game.
 - The bar under the picture: Wave, Tower and Sell (the same as Enter, X and C), and the status
   line (the tick, then `the road is held!` or `the road is lost`).
 - The HUD: gold, lives, the wave (`started/total`) and, with the timer running, the ticks to the
   next wave; at the bottom the chosen tower and its cost. The ghost tower on the cursor is green
   where it can be built and red where not (a path cell, a taken pad, too little gold).
 
-The page plays 30 game ticks a second (`TICKS_PER_SECOND` in `play.ts`); the tools play the same
-ticks, so a run file's `input` typed one tick at a time plays the same round.
+The page plays 30 game ticks a second (`TICKS_PER_SECOND` in `play.ts`, the scene's `tickRate`,
+which the shell paces since Engine 0.15, gap D2); the tools play the same ticks, so a run file's
+`input` typed one tick at a time plays the same round.
 
 ## How it was built
 
@@ -91,16 +95,22 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 - `view.ts`: `createView(content, seed, opts?)`, the engine's `frameView` over `createGame` and the
   pictures above (the cursor and ghost shown), for `pnpm cli screenshot` and the backend parity
   test.
-- `play.ts`: `TdPlay`, the page's `Scene` (no DOM, no clock): keys through the kit's controls,
-  taps through `TdGame.tap` (`tap(x, y, button)`), page buttons (`press(action)`), one game tick
-  every `STEPS_PER_TICK` (2) loop steps, with the steps' input merged by `TickInput` (pressed on
-  any step counts on the tick; docs/reports/tower-defense.md, D2).
-- `main.ts` + `index.html`: the page: `bootBrowserGame` with Canvas2D, the touch pad, `pointer:
-true` and `audio` (the sfx and the song `road`), the bar (Wave, Tower, Sell, status) and
-  `window.wwTd` (`tick()`, `kit()`, `cursor()`, `clientAt(col, row)`) for the browser test.
-- `play.test.ts`: `TdPlay` headless into the null backend: the `won` input typed one tick at a time
-  wins with the run's golden hash at tick 700 and shows every kind of event; a key pressed for one
-  loop step counts; taps move, place and sell; buttons press on the next tick.
+- `play.ts`: `TdPlay`, the page's `Scene` (no DOM, no clock): one game tick per `update`, its
+  `tickRate` `TICKS_PER_SECOND` (30): the shell's `SceneStack` steps it every `STEPS_PER_TICK` (2)
+  loop steps with the steps' input merged (`MergedInput`: pressed on any step counts on the tick,
+  every tap arrives; Engine 0.15, gap D2, which removed the sample's own `TickInput` and counter).
+  Keys and taps are frame input the kit's `TdGame` reads (gap D1); `headless()` is the game, for
+  `window.__ww`.
+- `main.ts` + `index.html`: the page: `bootBrowserGame` with Canvas2D, `game` (the volume
+  control's storage key, gap M1), the touch pad, `pointer: true` and `audio` (the sfx and the song
+  `road`), the bar (Wave, Tower, Sell, pressing through the shell's `InputManager.press`, and the
+  status) and `window.wwTd` (`tick()`, `kit()`, `cursor()`) for the browser test. No cell-to-client
+  copy (gap D13): the test taps through the kit's `screenAtCell` and `window.__ww.toClient`.
+- `play.test.ts`: `TdPlay` on a `SceneStack` (paced at its `tickRate`) into the null backend: the
+  `won` input typed one tick at a time wins with the run's golden hash at tick 700 and shows every
+  kind of event; one tick every two loop steps; a key pressed for one loop step counts; frame taps
+  move, place and sell; the `tapped` run's taps give its golden hash; `InputManager.press`
+  presses on the next tick.
 - `content.ts`: `loadTowerDefense(files)` (the checked bundle) and `sampleRound(content)` (the
   kit's `tdRound`).
 - No `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
@@ -111,7 +121,7 @@ true` and `audio` (the sfx and the song `road`), the bar (Wave, Tower, Sell, sta
   the start state, every run file played twice to the same snapshots with its assertions passing,
   won and lost, each run failing without each rule in its `guards`, and the `won` input equal to
   the bot's plan.
-- `runs/`: four run files, each with sync `hashes` and a golden `<name>.hashes.json`:
+- `runs/`: five run files, each with sync `hashes` and a golden `<name>.hashes.json`:
   - `build.run.json` (40 ticks): an arrow on the path is refused (`not_build_cell`), a cannon
     bought, a second refused (`too_poor`), the first sold for 15, an arrow bought. Guards
     `build-on-build-cells`, `build-costs-gold`, `sell-refunds`.
@@ -124,6 +134,12 @@ true` and `audio` (the sfx and the song `road`), the bar (Wave, Tower, Sell, sta
     by the timer (ticks 401, 801, 1201); wave 1 is held, waves 2 and 3 leak, and the round is lost
     at tick 1320. Guards `wave-timer`, `tower-range`, `tower-cooldown`, `leak-costs-life`,
     `lose-at-zero-lives`.
+  - `tapped.run.json` (700 ticks, Engine 0.15 T5, gap D1): `won`'s defence played by pointer
+    taps (`input.taps`, game screen pixels: the cell centres `col * 16 + 8`): two taps per tower
+    (the first moves the cursor, the second places) and keys only for `attack` and `start`; the
+    waves start 20 ticks earlier than `won`'s, the same towers stand and the round is won with all
+    5 lives (its tick-700 hash equals `won`'s: the same end state). Guards nothing (it proves taps
+    replay; `won` guards the rules).
 
 ## Rules
 
@@ -152,7 +168,8 @@ true` and `audio` (the sfx and the song `road`), the bar (Wave, Tower, Sell, sta
 ## Testing
 
 `pnpm test games/samples/tower-defense`; `pnpm -s cli validate games/samples/tower-defense`;
-`pnpm -s cli run games/samples/tower-defense/runs/won.run.json` (and `build`, `target`, `leaked`);
+`pnpm -s cli run games/samples/tower-defense/runs/won.run.json` (and `build`, `target`, `leaked`,
+`tapped`);
 `pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 14 rules guarded);
 `pnpm test tests/runs` (golden hashes, the mutants test and backend parity through `view.ts`).
 

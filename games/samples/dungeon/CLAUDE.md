@@ -42,7 +42,8 @@ It is content, not engine, and its content lives in data files, not TypeScript.
   (`createView(content, seed, opts?)`: the headless game plus `DemoPicture`, for `pnpm cli screenshot`),
   `scene.ts` (`DemoScene`: the world, its events since the last draw, `DemoPicture` with
   `onSound` -> `AudioManager.sfx`) and `main.ts` (boots the Canvas2D backend, input, audio with
-  songs and sfx, and the look).
+  songs and sfx, and the look; Engine 0.15 T5: the shell's `mountVolumeControl`, the mute button
+  and volume slider with the player's volumes stored under `ww:dungeon:volumes`, gap M1).
 - The demo never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's `render`):
   `dungeon.test.ts` fails if its code names one.
 

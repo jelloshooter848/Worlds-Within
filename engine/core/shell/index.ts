@@ -23,6 +23,7 @@ export {
   recordFromQuery,
   showBackendToggle,
   showDisplayMessage,
+  tapsOf,
   type BootAudio,
   type BootedGame,
   type BootPage,
@@ -31,6 +32,13 @@ export {
   type DisplayFactory,
   type DisplayShell,
 } from './boot';
+export {
+  mountVolumeControl,
+  VOLUME_CONTROL_ID,
+  type VolumeControl,
+  type VolumeControlOptions,
+  type VolumeTarget,
+} from './volume-control';
 export { PageDebugHook, type PageDebug, type PageDebugTarget, type ReplayRefusal } from './debug';
 export type { RoundRecording } from '../headless';
 export {

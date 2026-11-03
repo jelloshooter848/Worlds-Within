@@ -23,8 +23,11 @@ launcher.
   `sfx/` (one per kit event) and `songs/road.json`.
 - `picture.ts`: `tdLook`, `tdFrameStream`, `tdPicture`, `tdCanvasPicture`; `view.ts`:
   `createView` (the engine's `frameView`).
-- `play.ts`: `TdPlay` (the page's scene: keys, taps, buttons, 30 ticks a second, `TickInput`);
-  `main.ts` + `index.html`: the page over `bootBrowserGame` (`window.wwTd` for scripts).
+- `play.ts`: `TdPlay` (the page's scene: one game tick per update at its `tickRate` of 30, paced
+  and merged by the shell since Engine 0.15, gap D2; keys and taps are frame input the kit reads,
+  gap D1); `main.ts` + `index.html`: the page over `bootBrowserGame` (the shell's volume control,
+  gap M1; the bar's buttons through `InputManager.press`; `window.wwTd` for scripts).
+- `runs/tapped.run.json` (Engine 0.15): a round won by pointer taps (`input.taps`).
 - `headless.ts`: `createGame(content, seed, opts?)`, the kit's `TdGame` (snapshot
   `{ round, controls, kit }`).
 - `content.ts`: `loadTowerDefense(files)`, `sampleRound(content)`; the page's data
@@ -42,7 +45,7 @@ launcher.
 ## How to test
 
 `pnpm test games/samples/tower-defense`, `pnpm -s cli validate games/samples/tower-defense --json`,
-`pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json`,
+`pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json` (and `tapped`),
 `pnpm -s cli mutants games/samples/tower-defense --json` (exit 0, `strict: true`, every rule
 guarded; `tests/runs/tower-defense-mutants.test.ts`), `pnpm test tests/runs` (golden hashes,
 backend parity). How to play: arrows move, Z or a second tap builds, X picks the tower, C or a

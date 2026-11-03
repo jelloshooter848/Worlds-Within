@@ -3,15 +3,18 @@ import type { Sfx, Song } from '../audio/mml';
 import type { ScreenSize } from '../gfx/screen';
 import { GamepadSource } from '../input/gamepad';
 import { InputManager } from '../input/input-manager';
+import type { FrameTap } from '../input/input-manager';
 import { KeyboardSource } from '../input/keyboard';
 import { PointerSource } from '../input/pointer';
-import type { PointerOptions } from '../input/pointer-logic';
+import type { PointerGesture, PointerOptions } from '../input/pointer-logic';
 import { TouchSource } from '../input/touch';
 import { layoutScreen } from '../input/touch-layout';
 import { FixedLoop } from '../loop';
+import { loadVolumes } from '../save/settings';
 import { SceneStack, type Scene } from '../scene';
 import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
 import { PageDebugHook, type PageDebug } from './debug';
+import { mountVolumeControl, type VolumeControl } from './volume-control';
 import type { BrowserDisplay, DisplayResult } from './display';
 
 /**
@@ -76,7 +79,10 @@ export interface BootAudio {
   songs?: readonly Song[];
   /** A song id to play once audio is unlocked (it waits for the first gesture). */
   music?: string;
-  /** The player's settings (master, music and sfx volume, mute); the manager's defaults otherwise. */
+  /**
+   * The volumes (master, music and sfx, mute) a player who stored none starts at; the manager's
+   * defaults otherwise. From Engine 0.15 (gap M1) the player's stored volumes win.
+   */
   volumes?: Partial<Volumes>;
 }
 
@@ -86,6 +92,17 @@ export const AUDIO_UNLOCK_EVENTS = ['keydown', 'pointerdown', 'pointerup', 'touc
 export interface BrowserBootOptions {
   /** The game's picture size (`content.manifest.screen`). */
   screen: ScreenSize;
+  /**
+   * The game's id (`content.manifest.id`, Engine 0.15, gap M1): the key the player's volumes are
+   * stored under (`save/settings.ts`). Left out, the volume control works but stores nothing.
+   */
+  game?: string;
+  /**
+   * The shell's mute button and volume slider (Engine 0.15, gap M1; `volume-control.ts`): on by
+   * default on every page with `audio`, which then starts at the player's stored volumes and
+   * stores every change. `false` leaves it out (the stored volumes still apply).
+   */
+  volumeControl?: boolean;
   /** A display per backend; a game without `three` always shows Canvas2D and hides the toggle. */
   displays: { canvas2d: DisplayFactory; three?: DisplayFactory };
   /**
@@ -140,6 +157,8 @@ export interface BootedGame extends BootPage {
   audio: AudioManager | null;
   /** The step hook (also `window.__ww`) in manual-loop mode or with `?record`, else null. */
   debug: PageDebug | null;
+  /** The mute button and volume slider (with `audio`, unless `volumeControl: false`), else null. */
+  volume: VolumeControl | null;
 }
 
 /**
@@ -164,7 +183,11 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     showDisplayMessage(canvas, display);
     return null;
   }
+  let volume: VolumeControl | null = null;
   if (audio) {
+    const start = opts.audio?.volumes;
+    if (opts.volumeControl === false) audio.setVolumes(loadVolumes(opts.game, start));
+    else volume = mountVolumeControl({ game: opts.game, start, audio });
     const unlock = () => audio.unlock();
     for (const ev of AUDIO_UNLOCK_EVENTS) window.addEventListener(ev, unlock, { passive: true });
     // Back from the background (a phone's home screen): resume now if allowed, redo the unlock
@@ -184,6 +207,15 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     touch.show(TouchSource.likelyTouchDevice());
   }
   const pointer = opts.pointer ? pointerSource(canvas, display, opts) : null;
+  // Picture to client px (gap D13): a display without its own inverse (3D: the canvas is sized to
+  // the picture) gets the canvas box's.
+  display.toClient ??= (x, y) => {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: rect.left + (x / opts.screen.width) * rect.width,
+      y: rect.top + (y / opts.screen.height) * rect.height,
+    };
+  };
 
   // The picture and the touch controls never overlap (engine/core/input/touch-layout.ts).
   const relayout = () => {
@@ -214,6 +246,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
         input.beginFrame();
         pointer?.beginFrame(manual ? loop.steps * loop.stepMs : performance.now());
         const frame = input.player(0);
+        if (pointer) frame.addTaps(tapsOf(pointer.gestures()));
         scenes.update([hook ? hook.frame(frame) : frame]);
       },
       render() {
@@ -230,6 +263,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       advance: (n) => loop.advance(n),
       steps: () => loop.steps,
       game: () => scenes.find((s) => (s.headless?.() ?? null) !== null)?.headless?.() ?? null,
+      toClient: (x, y) => display.toClient!(x, y),
     });
     if (record) hook.api.record(true);
     (window as DebugWindow).__ww = hook.api;
@@ -238,7 +272,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     loop.advance(0); // the first picture, before any step
   else loop.start();
   document.body.dataset.backend = backend;
-  return { backend, display, scenes, input, loop, pointer, audio, debug: hook?.api ?? null };
+  return { backend, display, scenes, input, loop, pointer, audio, debug: hook?.api ?? null, volume };
 }
 
 /** The boot's `AudioManager`: the songs and sfx registered, the volumes set, the music waiting. */
@@ -249,6 +283,13 @@ function shellAudio(opts: BootAudio): AudioManager {
   if (opts.volumes) audio.setVolumes(opts.volumes);
   if (opts.music !== undefined) audio.playMusic(opts.music);
   return audio;
+}
+
+/** A step's tap gestures as frame taps (Engine 0.15, gap D1): game screen pixels, the button. */
+export function tapsOf(gestures: readonly PointerGesture[]): FrameTap[] {
+  const taps: FrameTap[] = [];
+  for (const g of gestures) if (g.type === 'tap') taps.push({ x: g.x, y: g.y, button: g.button });
+  return taps;
 }
 
 /** The pointer source on the canvas, in picture pixels through the display (else the canvas box). */

@@ -85,4 +85,25 @@ describe('InputRecorder', () => {
     }
     expect(rec.script()).toEqual(script);
   });
+
+  it('records taps beside the holds, and a script without taps has none (gap D1)', () => {
+    const script: InputScript = {
+      steps: [{ frame: 2, hold: ['jump'] }],
+      taps: [
+        { frame: 0, x: 8, y: 9 },
+        { frame: 4, x: 1.5, y: 2, button: 'secondary' },
+        { frame: 4, x: 3, y: 4 },
+      ],
+    };
+    const input = new ScriptedInput(script);
+    const rec = new InputRecorder();
+    for (let f = 0; f < 6; f++) {
+      input.next();
+      rec.recordFrame(input);
+    }
+    expect(rec.script()).toEqual(script);
+    const keys = new InputRecorder();
+    keys.record(['up']);
+    expect(keys.script()).toEqual({ steps: [{ frame: 0, hold: ['up'] }] });
+  });
 });

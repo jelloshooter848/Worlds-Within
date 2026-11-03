@@ -9,5 +9,10 @@ import { sampleRound } from './content';
  * go to the kit. No browser, no drawing, no rules of its own.
  */
 export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): TdGame {
-  return tdGame({ ...sampleRound(content), seed, disabledRules: opts.disabledRules });
+  return tdGame({
+    ...sampleRound(content),
+    seed,
+    disabledRules: opts.disabledRules,
+    size: content.manifest.screen,
+  });
 }

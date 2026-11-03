@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import type { Browser, Page } from 'playwright';
 import type { InputScript } from '@engine/core/input/scripted-input';
 import type { DebugWindow } from '@engine/core/shell';
+import { screenAtCell } from '@kits/towerdefense';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The tower-defense sample played from a link (docs/ROADMAP.md, 0.12 "done when": the
@@ -41,7 +42,6 @@ interface Hook {
   tick(): number;
   kit(): Record<string, number | string>;
   cursor(): { col: number; row: number; tower: string };
-  clientAt(col: number, row: number): { x: number; y: number };
 }
 
 const wonInput = (): InputScript =>
@@ -101,7 +101,17 @@ describe.skipIf(missing !== null)('the tower-defense page (headless Chromium)', 
         const { page, ticks } = await open(browser, server.url, errors);
         await ticks(1);
         expect(await hook(page, 'tick')).toBe(1);
-        const at = await hook(page, 'clientAt', 5, 4);
+        // The cell's centre (the kit's `screenAtCell` on the 256x240 picture over the 16x15 map),
+        // on the page through the display's `toClient` (gap D13).
+        const cell = screenAtCell(
+          { col: 5, row: 4 },
+          { size: { width: 256, height: 240 } },
+          { cols: 16, rows: 15 },
+        );
+        const at = (await page.evaluate(([x, y]) => (window as DebugWindow).__ww!.toClient(x, y), [
+          cell.x,
+          cell.y,
+        ] as const))!;
         await page.mouse.click(at.x, at.y);
         await ticks(1);
         expect(await hook(page, 'cursor')).toEqual({ col: 5, row: 4, tower: 'arrow' });

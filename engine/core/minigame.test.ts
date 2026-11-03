@@ -98,6 +98,17 @@ function feed(
 }
 
 describe('RoundInput (gap G18)', () => {
+  it("passes the host frame's taps through, each tick its own (gaps D1, D12)", () => {
+    const host = new ScriptedInput({ steps: [], taps: [{ frame: 0, x: 4, y: 5, button: 'secondary' }] });
+    const round = new RoundInput({ jump: 'attack' });
+    host.next();
+    round.advance(host);
+    expect(round.taps()).toEqual([{ x: 4, y: 5, button: 'secondary' }]);
+    host.next();
+    round.advance(host);
+    expect(round.taps()).toEqual([]);
+  });
+
   it('ignores a button held into the round until it is released', () => {
     const host = new ScriptedInput({ steps: [] });
     host.setHeld(['right', 'attack']);

@@ -529,7 +529,8 @@ export class TdDefenceRound implements MiniGame {
     private readonly ctx: MiniGameContext,
     private readonly opts: { size?: ScreenSize; disabledRules?: readonly string[] } = {},
   ) {
-    this.game = new TdGame({ ...def, seed, disabledRules: opts.disabledRules });
+    // The round's frame is drawn at `size`, so the host frame's taps land on it (gaps D1, D12).
+    this.game = new TdGame({ ...def, seed, disabledRules: opts.disabledRules, size: opts.size });
   }
 
   step(input: InputFrame): void {
