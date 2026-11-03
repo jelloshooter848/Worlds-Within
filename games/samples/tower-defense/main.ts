@@ -5,9 +5,9 @@ import { bootBrowserGame } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { TD_TILE_SIZE } from '@kits/towerdefense';
 import { loadTowerDefense } from './content';
-import { TOWER_DEFENSE_FILES } from './files';
 import { tdLook, tdPicture } from './picture';
 import { TdPlay } from './play';
+import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the tower-defense sample in the browser (Engine 0.12 T5) with the engine's
@@ -30,7 +30,7 @@ export interface TdHook {
   clientAt(col: number, row: number): { x: number; y: number };
 }
 
-const content = mustLoad(loadTowerDefense(TOWER_DEFENSE_FILES), 'the tower-defense sample');
+const content = mustLoad(loadTowerDefense(gameFiles), 'the tower-defense sample');
 const look = tdLook(content);
 const status = document.getElementById('status') as HTMLElement;
 /** The status line before the first wave. */

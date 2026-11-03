@@ -2,11 +2,11 @@ import { mustLoad } from '@engine/core/content/game-content';
 import { bootBrowserGame } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { loadSkirmish, PLAYER } from './content';
-import { SKIRMISH_FILES } from './files';
 import { skirmishLook, skirmishPicture } from './picture';
 import { SkirmishPlay, type ButtonState, type PageButton } from './play';
 import type { RecordedRun } from './recording';
 import type { SideSummary } from './headless';
+import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the skirmish in the browser (Engine 0.9 T12) with the engine's `bootBrowserGame`: Canvas2D
@@ -46,7 +46,7 @@ export interface SkirmishHook {
   exportRun(game?: string): Promise<RecordedRun | null>;
 }
 
-const content = mustLoad(loadSkirmish(SKIRMISH_FILES), 'the RTS skirmish');
+const content = mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish');
 const look = skirmishLook(content);
 let shift = false;
 window.addEventListener('keydown', (e) => (shift = e.shiftKey));

@@ -105,7 +105,7 @@ picture })` (`@engine/core/shell`) over the game itself (the kit's `LevelSequenc
     either way.
     (Engine 0.7 T6 moved `backend.ts`, `main3d.ts` and the hand-written boot, scene and frame
     stream into the engine: gaps G21-G25 in `docs/reports/stacking-test.md`);
-  - `files.ts`: the files through Vite's `import.meta.glob`.
+  - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
 
 ## Run files
 

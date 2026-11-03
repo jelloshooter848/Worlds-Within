@@ -6,15 +6,15 @@ import { FixedLoop } from '@engine/core/loop';
 import { SceneStack } from '@engine/core/scene';
 import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
 import { demoSfx, demoSongs, loadDemo, mustLoad } from './content';
-import { DEMO_FILES } from './files';
 import { demoLook } from './picture';
 import { DemoScene } from './scene';
+import gameFiles from 'virtual:game-files';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;
   if (!canvas) throw new Error('#screen canvas missing');
 
-  const content = mustLoad(loadDemo(DEMO_FILES));
+  const content = mustLoad(loadDemo(gameFiles));
   const look = demoLook(content);
 
   const viewport = new Viewport(canvas, { integerScale: false }, content.manifest.screen);

@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { layoutScreen, overlaps, CONTROL_IDS } from '../../engine/core/input/touch-layout';
 import { fitGame } from '../../engine/core/gfx/screen';
+import { gameFiles } from '../../build/game-files';
 import { EXIT } from '../../engine/tools/exit-codes';
 import { main } from '../../engine/tools/main';
 import { launchChromium, NoBrowserError, pngSize } from '../../engine/tools/screenshot';
@@ -108,6 +109,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
       configFile: false,
       root: temp,
       logLevel: 'silent',
+      plugins: [gameFiles()],
       resolve: { alias: { '@engine': join(ROOT, 'engine'), '@kits': join(ROOT, 'kits') } },
       build: {
         outDir,
@@ -121,7 +123,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
       .filter((f) => f.endsWith('.js'))
       .map((f) => readFileSync(join(outDir, 'assets', f), 'utf8'))
       .join('\n');
-    // game.json goes into the bundle as text (files.ts), and main.ts sizes the canvas from it.
+    // game.json goes into the bundle as text (virtual:game-files), and main.ts sizes the canvas from it.
     expect(js).toMatch(/width\\?"\s*:\s*320/);
   }, 120_000);
 

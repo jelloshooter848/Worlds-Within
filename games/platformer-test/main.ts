@@ -2,10 +2,10 @@ import { contentSfx, mustLoad } from '@engine/core/content/game-content';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { bootBrowserGame, HostScene } from '@engine/core/shell';
 import { loadTest } from './content';
-import { TEST_FILES } from './files';
 import { testLook, testPicture } from './picture';
 import { testLook3d } from './picture3d';
 import { createGame } from './headless';
+import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the stacking test in the browser with the engine's `bootBrowserGame` (keyboard, gamepad,
@@ -21,7 +21,7 @@ import { createGame } from './headless';
  * G37, fixed in 0.10): it pushes the core `miniGameScene` when the door starts the vault round
  * (the level sequence still steps it, so the round's result acts on the level as headless).
  */
-const content = mustLoad(loadTest(TEST_FILES), 'the stacking test');
+const content = mustLoad(loadTest(gameFiles), 'the stacking test');
 const look = testLook(content);
 
 void bootBrowserGame({

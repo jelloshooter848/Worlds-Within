@@ -102,7 +102,7 @@ true` and `audio` (the sfx and the song `road`), the bar (Wave, Tower, Sell, sta
   loop step counts; taps move, place and sell; buttons press on the next tick.
 - `content.ts`: `loadTowerDefense(files)` (the checked bundle) and `sampleRound(content)` (the
   kit's `tdRound`).
-- `files.ts`: `TOWER_DEFENSE_FILES`, the data files bundled by Vite for the page.
+- No `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
 - `headless.ts`: `createGame(content, seed, opts?)`, the kit's `TdGame` (snapshot
   `{ round, controls, kit }`; see `kits/towerdefense/CLAUDE.md`), rules switched off in `opts`
   passed to the kit.

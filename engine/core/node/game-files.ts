@@ -5,7 +5,8 @@ import { MANIFEST_FILE } from '../content/manifest';
 /**
  * Node only: a game folder's content files as `{ path: text }` pairs for `loadContent`
  * (`content/bundle.ts`): its `game.json` and every file under `content/`, with paths relative to the
- * folder and forward slashes, sorted. The browser gets the same pairs from Vite's `import.meta.glob`.
+ * folder and forward slashes, sorted. The browser gets the same files from
+ * `virtual:game-files` (`build/game-files.ts`), keyed with a leading `./`.
  */
 export function readGameFiles(gameDir: string): Record<string, string> {
   const out: Record<string, string> = {};

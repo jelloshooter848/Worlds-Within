@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config';
 import type { Plugin } from 'vite';
 import { fileURLToPath } from 'node:url';
+import { gameFiles } from './build/game-files.ts';
 import { GAME_LIST_MARKER, discoverGames, gameListHtml, pageInputs } from './build/pages.ts';
 
 // VITE_BASE lets every page work under a sub-path (e.g. /Worlds-Within/ on GitHub Pages).
@@ -25,7 +26,8 @@ function gameIndex(): Plugin {
 
 export default defineConfig({
   base,
-  plugins: [gameIndex()],
+  // gameFiles(): `virtual:game-files`, a game page's data files (build/game-files.ts).
+  plugins: [gameIndex(), gameFiles()],
   resolve: {
     alias: {
       '@engine': alias('./engine'),

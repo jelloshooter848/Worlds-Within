@@ -37,7 +37,7 @@ import { roomKind, buildDungeon, TopDownWorld, topdownGame } from '@kits/topdown
 const ROOM = roomKind();
 const kinds = engineContentKinds().register(ROOM); // engine kinds + the kit's
 const result = loadContent(files, kinds, { root: 'games/<game>/' }); // { ok, value, errors }
-// files: in the browser `import.meta.glob(['./game.json', './content/**/*'], { query: '?raw', ... })`,
+// files: in the browser `import files from 'virtual:game-files'` (build/game-files.ts),
 // in Node `readGameFiles(dir)` (engine/core/node/game-files.ts).
 const rooms = contentOf(result.value, ROOM).map((e) => e.value); // typed by the kind's schema
 ```

@@ -163,8 +163,7 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
   - `minigames.ts`: `testMiniGames(content)`: one `roomChallenge` (`kits/topdown/challenge.ts`)
     per room file, its id the room's id and its title the room's `title`, at the manifest's
     `screen` size. What the round asks and what its result does are level data, not code;
-  - `files.ts`: `TEST_FILES`, the data files through Vite's `import.meta.glob` (Node reads them
-    with `readGameFiles`; a Vite plugin to drop this file is gap G5, 0.14).
+  - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2); Node reads the same files with `readGameFiles`.
 - `platformer-test.test.ts` (0.7 T7 part): every run file played through the view's `frame()`,
   each frame sorted by source (`status.miniGame`: the level or the vault round), and the right
   skin must map every kind and state, tile, event and HUD value shown; the level skin maps every

@@ -13,7 +13,7 @@ import { contentError, validate, type ContentError, type ContentResult } from '.
 
 /**
  * The content loader: a game's files, as `{ path: text }` pairs, into one checked, typed bundle.
- * Pure: the browser gets the pairs from Vite's `import.meta.glob(..., { query: '?raw' })` and Node
+ * Pure: the browser gets the pairs from the build's `virtual:game-files` module and Node
  * from the file system (`engine/core/node/game-files.ts`); this file only reads the strings.
  *
  * Paths are relative to the game folder (`game.json`, `content/rooms/hall.json`); a leading `./`

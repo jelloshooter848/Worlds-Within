@@ -395,13 +395,9 @@ import { FixedLoop } from '@engine/core/loop';
 import { CanvasRenderer, Viewport } from '@engine/backends/canvas2d';
 import { roomKind } from '@kits/topdown';
 import { createView } from './view';
-
-// The game's data files as { path: text } pairs, bundled by Vite (Node tools use readGameFiles).
-const files = import.meta.glob(['./game.json', './content/**/*'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
+// The game's data files as { path: text } pairs: the build's plugin finds this folder by its
+// game.json (build/game-files.ts). No files.ts and no import.meta.glob. Node tools use readGameFiles.
+import files from 'virtual:game-files';
 
 function boot(): void {
   const canvas = document.getElementById('screen') as HTMLCanvasElement | null;

@@ -43,6 +43,18 @@ continuing that report's ids (the mini siege's from M37).
   stepping and rewinding, how the event log and world time reach the tools, the timeline record,
   G8, G9, G10, G12, G31 and M19, settled in writing (items 247-256, below), and the planned task
   list. No code changed.
+- **G5: `virtual:game-files`** (T2): one Vite plugin, `build/game-files.ts` (registered in
+  `vite.config.ts`, typed by `build/virtual-game-files.d.ts`), gives a game page its data files:
+  `import files from 'virtual:game-files'` finds the importer's nearest folder with a `game.json`
+  and returns its `./game.json` and `./content/**/*` as text, with the same keys and order as the
+  old `import.meta.glob`. Every game's `files.ts` is deleted (the demo, the platformer lab and
+  test, and the three samples); the pages import the virtual id instead, the scaffold-game skill
+  writes no `files.ts`, and a data file added, changed or removed reloads the dev page. Outside a
+  game folder the import fails with an error naming the importer. The dependency rule needs no
+  change: the virtual id is a bare specifier, read as an external package that no layer owns.
+  The screenshot page never used `files.ts` (it receives the files in its job), so it is
+  unchanged. Tests: `tests/build/game-files.test.ts` (the folder walk, keys and texts against a
+  real `import.meta.glob` for two games, hidden files, a real build and the error).
 
 ### Planned tasks
 

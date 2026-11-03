@@ -26,7 +26,7 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes.
 - `index.html`, `main.ts` (the page: `bootBrowserGame`, the button bar, Export, the
   `window.wwSkirmish` hook), `play.ts` (`SkirmishPlay`, the page's scene: camera, controls,
   buttons, `TICKS_PER_SECOND` 10), `recording.ts` (`BattleRecorder`: sync hashes every 20 ticks
-  and the battle as a run file), `files.ts`.
+  and the battle as a run file); the data files come from `virtual:game-files`.
 - `content.ts`, `picture.ts` (`skirmishLook`, `sideKinds`, `skirmishFrames`,
   `skirmishCanvasPicture`), `view.ts` (`createView`).
 - `runs/battle.run.json` (barracks, soldiers, the raid beaten), `commands.run.json` (the same

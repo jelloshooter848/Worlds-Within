@@ -27,8 +27,8 @@ launcher.
   `main.ts` + `index.html`: the page over `bootBrowserGame` (`window.wwTd` for scripts).
 - `headless.ts`: `createGame(content, seed, opts?)`, the kit's `TdGame` (snapshot
   `{ round, controls, kit }`).
-- `content.ts`: `loadTowerDefense(files)`, `sampleRound(content)`; `files.ts`:
-  `TOWER_DEFENSE_FILES` for the page.
+- `content.ts`: `loadTowerDefense(files)`, `sampleRound(content)`; the page's data
+  files come from `virtual:game-files`.
 - `runs/build.run.json` (placing, refusals, selling), `won.run.json` (every wave held),
   `target.run.json` (the tower shoots the runner furthest along), `leaked.run.json` (waves by the
   timer, lives lost, the round lost), each with sync `hashes` and golden `<name>.hashes.json`.

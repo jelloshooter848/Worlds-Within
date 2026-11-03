@@ -81,7 +81,7 @@ ui?)` (the engine's `FrameStream` over the kit's `presentWorld` for red; `ui` ad
   - `view.ts`: `createView` for `pnpm cli screenshot` and the parity test: `render` (Canvas2D),
     `frame()`, and `order` (the same orders as the headless game). The camera is the map's
     centre.
-  - `files.ts` (browser only): the data files bundled as text (`import.meta.glob`, `?raw`).
+  - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
   - `recording.ts`: `BattleRecorder(seed, hashEvery = 20)`: `reached(tick, snapshot)` (after
     every step, and at tick 0: a hash tick's snapshot is taken before that tick's orders, where
     `run` hashes it), `runFile(recorded, game = '..')` (the battle as a run file `{ game, seed,

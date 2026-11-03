@@ -232,7 +232,7 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     each frame to its skin).
   - `view.ts`: `createView` for `pnpm cli screenshot` and the backend parity test: `render`,
     `frame()`, `order` and `mission` (a run file's mission steps), the camera at the map's centre.
-  - `files.ts` (browser only): the data files bundled as text (`import.meta.glob`, `?raw`).
+  - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
   - `play.ts`: `SiegePlay`, the page's glue without DOM or clock: the `MiniSiegeGame`, an
     `RtsCamera` starting east of the hall, the kit's `RtsControls` (pointer gestures to orders).
     `launchButtons()` (the kit's `missionButtons`, none while a choice waits or a round runs),

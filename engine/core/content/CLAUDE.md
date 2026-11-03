@@ -40,8 +40,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   (`{ width, height }`, whole numbers 64..1920, default 256x240: the game picture's size) and
   `headless` (the module that boots the game headless) and `view?` (the module that draws it, for
   `screenshot`; `engine/core/view.ts`).
-- `bundle.ts`: `loadContent(files, kinds, { root })` turns `{ path: text }` pairs (from Vite's
-  `import.meta.glob` in the browser, `../node/game-files.ts` in Node) into a `ContentBundle`
+- `bundle.ts`: `loadContent(files, kinds, { root })` turns `{ path: text }` pairs (from the build's
+  `virtual:game-files` module in the browser, `../node/game-files.ts` in Node) into a `ContentBundle`
   (`{ manifest, entries }`); `contentOf(bundle, kind)` and `contentNamed` give typed entries. An
   entry's name is its file name up to the first dot; an `id` field must match it.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and

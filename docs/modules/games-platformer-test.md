@@ -49,7 +49,7 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 - `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
   `LevelSequence` over the levels (`TestGame`) with the mini games, `LEVEL_PAUSE` ticks between them; the kit's
   `SequenceSnapshot` (the world's plus `stage` and `pause`).
-- `files.ts`: `TEST_FILES` (the data files through Vite's `import.meta.glob`).
+- `main.ts` gets the data files from `virtual:game-files` (`build/game-files.ts`; no `files.ts`).
 - `runs/level-<n>.run.json` (one per level, each played from the first level on) with golden
   `level-<n>.hashes.json` and `guards`; together they guard every kit rule (`level-4` guards
   `mini-games`: a failed round, then a passed one).

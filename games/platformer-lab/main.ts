@@ -1,10 +1,10 @@
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { bootBrowserGame, HostScene } from '@engine/core/shell';
 import { loadLab, mustLoad } from './content';
-import { LAB_FILES } from './files';
 import { labLook, labPicture } from './picture';
 import { labLook3d } from './picture3d';
 import { createGame } from './headless';
+import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the lab in the browser with the engine's `bootBrowserGame` (keyboard, gamepad, the touch
@@ -16,7 +16,7 @@ import { createGame } from './headless';
  * trigger starts a round. Arrows (or the touch pad) move, Z jumps, X runs; in the mini game X
  * (attack) stops the bar.
  */
-const content = mustLoad(loadLab(LAB_FILES));
+const content = mustLoad(loadLab(gameFiles));
 const screen = content.manifest.screen;
 
 void bootBrowserGame({

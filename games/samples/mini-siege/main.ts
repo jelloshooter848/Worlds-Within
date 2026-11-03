@@ -5,10 +5,10 @@ import { bootBrowserGame } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { cameraHint, TD_TILE_SIZE } from '@kits/towerdefense';
 import { loadMiniSiege, PLAYER } from './content';
-import { SIEGE_FILES } from './files';
 import { siegeLook, siegePicture } from './picture';
 import type { NamedSummary } from './headless';
 import { SiegePlay, type SiegeEntryResult } from './play';
+import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the mini siege in the browser (Engine 0.11 T9) with the engine's `bootBrowserGame`:
@@ -55,7 +55,7 @@ export interface SiegeHook {
   captive(): string;
 }
 
-const content = mustLoad(loadMiniSiege(SIEGE_FILES), 'the mini siege');
+const content = mustLoad(loadMiniSiege(gameFiles), 'the mini siege');
 const look = siegeLook(content);
 const bar = document.getElementById('bar') as HTMLElement;
 const status = document.getElementById('status') as HTMLElement;
