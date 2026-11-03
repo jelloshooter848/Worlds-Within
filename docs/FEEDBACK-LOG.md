@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 278.** (Last used: 277.)
+**Next unused number: 292.** (Last used: 291.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -1099,3 +1099,59 @@ built and Choices made)
 - **277.** Three heavy test files set a 60 s test timeout (`world-data.test.ts`, the debugger's
   `model.test.ts`, `trace.test.ts`), as in item 233: they replay the mini siege several times and
   went over the 5 s default only under a loaded full run. OK?
+
+**Engine 0.15, decisions before code** (details in `docs/BUILD-LOG.md`, Engine 0.15, Decisions)
+
+- **278.** The demo moves to `games/samples/dungeon/` and the stacking-test game to
+  `games/samples/platformer/` (`git mv`; ids `dungeon` and `platformer`; module pages
+  `games-samples-dungeon.md` and `games-samples-platformer.md`); their run files move byte for byte
+  with identical hashes; `games/platformer-lab/` stays where it is. OK?
+- **279.** Golden hashes may move only in T9 (M12's fixture and M20's enemy, with the mini siege's
+  `named` removal and offer `marker`, so its hashes move once), in T8 where D3/D4 change a record
+  (the mini siege's `fortify` runs; save code v2 moves pinned codes), and for new sample content,
+  which adds runs rather than moving old ones, with one named exception (M32's rescue room moves
+  the rescue-playing `dawn-*` runs); always regenerated with `WW_UPDATE_GOLDEN=1` and logged. OK?
+- **280.** G36: an optional skin `background` colour in both skin formats, black when absent. M2:
+  a `byTag` look matches by `tag` or by `prefix` with optional `min`/`max` on the rest read as an
+  integer, first match wins; a look for two tags at once moves to 1.0. OK?
+- **281.** G33: the HUD layout becomes one pure core function both backends draw; the `three` skin
+  gains `sheets` and `hud`; Three.js draws the items as an orthographic pass of `DataTexture`
+  quads (no 2D canvas, runs in Node); particles are built as pooled low-poly boxes. OK?
+- **282.** M1: stored `{ master, music, sfx, muted }` per game, guarded storage, and the shell's
+  own mute button and volume slider on every sample page. D2: a per-scene tick rate in the shell
+  with merged input (the tower-defense sample's `TickInput` rule). OK?
+- **283.** D1: taps become frame input (`InputFrame.taps()`, `InputScript.taps` in game pixels),
+  recorded by the M19 recorder. D12: `HostScene` forwards taps with keys (no `MiniGame.tap`).
+  D13: the tower-defense kit's `screenAtCell` and a display `toClient`. OK?
+- **284.** M21: `MissionHost` emits `mission-open`, `mini-game-end` and `mission-commit` events.
+  D9: the core puts `status.miniGame` on a hosted round's frame. M6: one round-picture frame
+  source in core/present. M18: `MissionHostOptions.canOpen` and `onChange` with an RTS kit helper.
+  M27: `engine/sim`'s `rtsWorldPort(world)`, structurally typed. OK?
+- **285.** M10/D6: scenario keys kept with the world outside the hashed snapshot and handed to the
+  round (`refs` unchanged). M17/M28: run checks `world.key.<key>.<Comp>.<field>`; records through
+  `missionRecords`, the port and `MissionHost.records()`. M25: a mission's optional `marker` key.
+  M16: a `squad` selector (roles stay three). D10: a `slot` build cell per selector entry. D7:
+  `checkUse` sees the world scenarios. D8: a `td-map`'s `waves` is optional. OK?
+- **286.** D3/D4: `fromReport` on `inventory` (with `negate`), a per-entity `each` on `damage` and
+  `destroy`, limits `max` and `owner` checked (a round over them is refused late, then delegated),
+  not clamped. M4: experience ticks stay out of the hashed record. M5: late refusals in
+  `refusedMissions` with `late: true`. M31: a lost stockpile carries as zeros; an entry's `endIf`
+  ends a campaign in data. M35: one `entryOver` rule. M38: save code v2 with ids written as short
+  id codes (collisions refused by `validate`), v1 still read. OK?
+- **287.** M12: `raid.mission.json` becomes a real `mission-room` mission with its params inlined
+  (the world-run goldens it touches re-recorded). M20: `ScriptedEnemy` skips units of a frozen
+  event (every mini siege hash moves, once). OK?
+- **288.** M26/M34/M36: a mission-launch scene and a campaign flow (entries held at tick 0 behind
+  a briefing, the result panel, save code, Continue, code box) in `engine/core/shell`. D14: a mini
+  game's controls as data on `MiniGameDef`, with an optional mission `hint`. OK?
+- **289.** G17: a `game.json` `kitOptions` read by `KitDef.kinds(manifest)`; the top-down kit's
+  `rooms: "dungeon" | "separate"`. M32: the dawn rescue gets its own mission room. M11: a
+  generated params page per game-defined mini game under `docs/reference/mini-games/`. OK?
+- **290.** A finished sample (dungeon, platformer, RTS skirmish, tower defense) has original
+  NES-style text art with no fallback looks, MML music and sfx, low-poly meshes where 3D (the
+  platformer), a `CLAUDE.md` and module page, run files in CI with a win and a loss and its kit's
+  rules guarded, a browser test, the volume control, and a line in the games index. The mini siege
+  is not re-finished. OK?
+- **291.** The API review is `docs/reports/api-review.md`: every module's exported entry points,
+  each kept, changed in 0.15 (with the commit) or listed for 1.0, every 0.15 gap with where it
+  landed; D5 and D11 stay 1.0 documentation, listed as rules with no code change. OK?

@@ -7,6 +7,386 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.15
+
+The sample set. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
+answer 24). As in 0.9 to 0.14, the open questions were settled in writing before any code (T1);
+the later tasks build against them. The release's goal is the roadmap's: **every gameplay kit has
+a small, finished sample game, ready for 1.0**: the demo grows into `games/samples/dungeon/`, the
+stacking test's game into `games/samples/platformer/`, the RTS skirmish and the tower-defense
+sample are finished, and a review of every kit and module API is written up, with each change it
+calls for made in 0.15 or listed for 1.0. The base commit for the golden-hash and `engine/sim`
+checks is `235899cf27115e6053fba368c143824ea95077ab` (`235899c`), the head when T1 started: every
+hash that moves and every `engine/sim` change is measured against it. Unlike 0.14, **some golden
+hashes move in 0.15**, but only in the tasks decision 2 names, each for the reason it gives, and
+each logged in that task's commit and entry below.
+
+**Gaps assigned to 0.15 from earlier reports** (the roadmap's list, 38 in all): from
+[docs/reports/stacking-test.md](reports/stacking-test.md), **G17**, **G33** and **G36**; from
+[docs/reports/mini-siege.md](reports/mini-siege.md), **M1**, **M2**, **M4**, **M5**, **M6** (the
+rest), **M10**, **M11** (the rest), **M12**, **M16**, **M17**, **M18**, **M20**, **M21**, **M25**,
+**M26**, **M27**, **M28**, **M31**, **M32**, **M34**, **M35**, **M36** and **M38**; from
+[docs/reports/tower-defense.md](reports/tower-defense.md), **D1**, **D2**, **D3**, **D4**, **D6**,
+**D7**, **D8**, **D9**, **D10**, **D12**, **D13** and **D14**. **D5** and **D11** are not 0.15
+work: the roadmap lists them under Engine 1.0, written down in the v1 docs as the API's rule and
+not changed (decision 14). Every one of the 38 is settled by a decision below and built in the
+task named there; **none is left unbuilt**. Where a decision builds only one of the shapes a gap
+offered, the other is rejected, not deferred, and where a gap names a smaller extra that is not
+built, it says so and moves it to 1.0 explicitly (decision 3's two-tag look is the only one). A
+new gap found during 0.15 is logged in the report of the game it was seen in, continuing that
+report's ids (the stacking test's from G37, the mini siege's from M39, the tower-defense lessons'
+from D15), or in a new report for a sample that has none.
+
+### What was built
+
+- **Decisions before code** (T1, this commit): the folder moves, which tasks may move golden
+  hashes, and the shapes of all 38 gaps, settled in writing (items 278-291, below), and the
+  planned task list. No code changed.
+
+### Planned tasks
+
+1. **T1** Decisions before code for 0.15 (docs only; this section).
+2. **T2** Move the demo and the stacking-test game into `games/samples` (`dungeon`, `platformer`),
+   their run files unchanged with identical hashes (decision 1).
+3. **T3** A skin `background` colour (G36) and `byTag` prefix and value matching (M2) (decision 3).
+4. **T4** A HUD in the 3D backend (G33) (decision 4).
+5. **T5** Shell input and settings: stored volumes and a volume control, a tick rate, pointer taps
+   as recorded input, taps into hosted rounds, `screenAtCell` and `toClient` (M1, D1, D2, D12,
+   D13) (decisions 5 and 6).
+6. **T6** The mission hosting API: host events, the hosted mini game named on its frame, one round
+   picture, the host and the kit's game in one, the sim-to-RTS port bridge (M6, M18, M21, D9, M27)
+   (decision 7).
+7. **T7** Mission data by scenario key: keys kept in the world, keyed run checks and records read
+   through the port, the offer marker by key, squads in selectors, slots, selector validation,
+   `td-map` without waves (M10, D6, M17, M28, M25, M16, D10, D7, D8) (decision 8).
+8. **T8** Commit and campaign rules: report-driven effects, experience ticks, late refusals, lost
+   stockpiles and a campaign end in data, one entry-end rule, save code v2 (D3, D4, M4, M5, M31,
+   M35, M38) (decision 9).
+9. **T9** The hash-moving fixes: the siege fixture as a `mission-room` mission (M12) and the
+   scripted enemy skipping frozen units (M20) (decision 10).
+10. **T10** The shared mission-launch scene and campaign page flow, and round key hints from the
+    mini game (M26, M34, M36, D14) (decision 11).
+11. **T11** Rooms that are not one dungeon, a second mission room, a params page per mini game
+    (G17, M32, M11) (decision 12).
+12. **T12** Finish the dungeon sample (decision 13).
+13. **T13** Finish the platformer sample (decision 13).
+14. **T14** Finish the RTS skirmish and tower-defense samples (decision 13).
+15. **T15** The API review write-up, `docs/reports/api-review.md` (decision 14).
+16. **T16** The Done when's proof and the games index.
+17. **T17** Finalize: roadmap, gap reports, module pages, cheat sheet, this log and the owner's
+    summary.
+
+### Decisions
+
+The roadmap's scope for 0.15 leaves open how the two old games move, which changes may move a
+golden hash, and the shape of each of the 38 gaps above; it also leaves open what "finished"
+means for a sample and what the API review looks like. Each decision is a feedback item
+(278-291) the owner can overrule by number. The rules every earlier release kept hold unchanged:
+every run is repeatable from a seed, the simulation stays headless and deterministic (all
+randomness through the world's seeded RNG, no imports from backends, kits or games), kits hold
+no world rules and never draw, backends draw from a read-only snapshot, and the tools only read
+and replay. No layer arrow in `config/layers.js` changes in 0.15; a task that finds it needs one
+stops and says so. Exact file, field and function names are the later tasks', kept to these
+meanings; where a field is named here it is the intended name, which a task may change only with
+its reason in its entry.
+
+**1. The folder moves (item 278).** By the owner's answer 14, the demo and the stacking-test
+game grow into samples: `games/demo/` moves to **`games/samples/dungeon/`** and
+`games/platformer-test/` to **`games/samples/platformer/`**, each with `git mv` so the history
+follows the files. Their `game.json` ids become `dungeon` and `platformer` (titles to match),
+their `CLAUDE.md` and `AGENTS.md` move with them, and their module pages are renamed
+`docs/modules/games-demo.md` to **`games-samples-dungeon.md`** and `games-platformer-test.md` to
+**`games-samples-platformer.md`**, with `llms.txt`, `docs/modules/README.md`, `config/deps.js`,
+the tools' tests, the browser tests, the skills and the cheat sheet following. **Run files move
+unchanged, with identical hashes**: their `"game": ".."` is relative, a game's id is not part of
+any hashed snapshot (checked: the demo's and the stacking test's snapshots carry no `id`), so T2
+moves each `*.run.json` and `*.hashes.json` byte for byte and proves it by running every one
+before and after the move (`pnpm cli run`) with the same final hashes; content ids inside the
+games (the demo's song `demo`, room ids) are not renamed by the move (T12 and T13 may replace
+content, under decision 2). The old folders are gone at the end of T2, and nothing under `games/`
+names them. `games/platformer-lab/` stays where it is: it is the platformer kit's test lab, not a
+sample, and the roadmap does not move it. The build log, the feedback log and the gap reports are
+history and keep the old paths where they describe the past; T17 adds one line at the top of the
+stacking-test report saying where its game now lives.
+
+**2. Which tasks may move golden hashes (item 279).** Measured against `235899c`, a golden hash
+(a `runs/*.hashes.json` file, a world run's hashes, or `engine/sim`'s sample-world golden) may
+move only in these places, each for the reason given:
+
+- **T9 (M12 and M20).** Moving the siege fixture `raid.mission.json` to `mission-room` changes the
+  open mission's def in every world run that opens it (the seven world-run golden files the gap
+  names, and the sample-world golden if it opens it); the scripted enemy skipping frozen units
+  changes the order log and so every mini siege hash. The mini siege's other snapshot changes
+  that move its hashes anyway (decision 8's removal of the glue's `named` and the offer
+  `marker` adopted in its mission files) are made in the same task, so its hashes move **once**.
+- **T8 (D3, D4, M4) only if a record changes.** Decision 9 is shaped so that no existing record
+  changes: new effect fields are optional and M4 keeps experience out of the hashed record. The
+  one planned move is the mini siege's `fortify` mission adopting report-driven effects (D3, D4),
+  which changes its def (hashed while open) and the world it commits, so the `fortify-*` runs'
+  hashes move. Save code v2 (M38) moves every **pinned save code** in run files (codes are
+  assertions, not golden hashes) and is logged the same way.
+- **New sample content (T11 to T14) adds runs rather than moving old ones.** A finished sample's
+  new rooms, levels, waves and art come with new run files; the moved run files keep their hashes
+  (art and music are not in any snapshot; a room or level an old run plays is kept as it is, and
+  new ones are added beside it). The one exception, named here so the owner can overrule it, is
+  M32 (decision 12): the dawn's rescue gets a mission room of its own, which is the gap's point,
+  so the `dawn-*` runs that play the rescue round move in T11.
+
+Every other task (T2-T7, T10, T15-T17) moves no golden hash; a task that finds it must is a
+deviation, stopped and reported. A move is always regenerated with the documented commands,
+**`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`** for run files and
+**`WW_UPDATE_GOLDEN=1 pnpm test engine/sim/sample-world`** for the sim's golden, never by hand,
+and logged in the task's entry below with the files that moved, the old and new final hash of
+each, and the reason; `git diff 235899c -- 'games/**/*.hashes.json' engine/sim` is the audit.
+
+**3. Skin `background` (G36) and `byTag` prefix and value matching (M2) (item 280).** **G36:**
+both skin formats (the 2D `canvas2d` skin and the 3D `three` skin, `engine/core/present/skin.ts`)
+gain an optional top-level **`background`**, a colour in the skins' existing colour format.
+Both backends clear to it before drawing a frame (the Canvas2D fill and the Three.js scene's
+clear colour), a skin set clears to the skin it draws with (so a hosted round keeps its own,
+black by default as today), and the screenshot page draws through the backends so it follows.
+Absent, the clear colour is black, today's behaviour, so every skin without it draws the same.
+The platformer games' `SKY` constant (`picture.ts` in the stacking test and the lab) goes away
+into their skins with the same value, so no picture changes. **M2:** a `byTag` look matches by
+exactly one of **`tag`** (the whole tag, as now), or **`prefix`** (any tag starting with it,
+e.g. `"progress:"`) with optional **`min`** and **`max`** (inclusive whole numbers compared with
+the rest of the tag read as an integer; a tag whose rest is not one does not match a look with
+`min` or `max`). Looks are still tried in order and the first match wins, so a skin lists its
+stages from the most specific. The skin schema refuses a look with both `tag` and `prefix`, or
+`min`/`max` without `prefix`. Not built, **moved to 1.0** explicitly: a look for **two tags at
+once** (the burnt and frozen engine), the extra M2 names; the order of the list already picks
+one, and a combined look waits for a game that needs it. No hash moves (pictures are not hashed).
+
+**4. The 3D HUD (G33) (item 281).** The HUD is laid out once and drawn by each backend. A pure
+function in `engine/core/present` turns a skin's `hud` list and a frame's `status` into a list of
+draw items (a sprite frame or font digit at a screen pixel, in order), the layout the Canvas2D
+presenter computes inline today, which moves there so both backends share it. The `three` skin
+gains the 2D skin's **`sheets`** and **`hud`** fields, in the same shapes (the palettes and
+text sprites the game already has). The Three.js backend draws the items as a second,
+orthographic pass over the 3D scene: one textured quad per item, its texture a `DataTexture`
+built from the decoded pixel art (`engine/core/gfx`), nearest-neighbour filtered so the pixels
+stay crisp. No 2D canvas over the WebGL one and no canvas texture, so it runs in Node as the
+scene's tests do, and the screen scale follows the 2D HUD's (game pixels, letterboxed like the
+picture). The gap's **particles** are built too, as a small pooled set of low-poly boxes in the
+effect's colour, so the 3D platformer shows its coin and stomp bursts; a pool size limit is the
+backend's. Tests: the layout in Node against the Canvas2D presenter's old output, the 3D pass's
+quads for a frame's status, and the platformer's 3D screenshot in the browser test. No hash moves.
+
+**5. Stored volumes and a volume control (M1), and the shell's tick rate (D2) (item 282).**
+**M1:** `engine/core/save/settings.ts` gains the player's audio settings, **`{ master, music,
+sfx, muted }`**, stored through `storage.ts` under one key per game (the game's id), read at boot
+with every read and write guarded (a private window or blocked storage falls back to the
+defaults, `DEFAULT_MASTER`, and the page still plays). `bootBrowserGame` applies them to the
+audio and draws a small **mute button and volume slider** of the shell's own (like its touch pad:
+the shell's DOM, never a kit's), on by default on every sample page and turned off with an option;
+a change is stored at once. **D2:** a scene may declare a **tick rate** (ticks a second, at most
+the loop's 60); the shell steps that scene only on its ticks and hands it **merged input**: an
+action pressed on any loop step since the scene's last tick counts as pressed and held on the
+tick (the tower-defense sample's `TickInput` rule, moved into `engine/core/input`). The rate is
+per scene, not per page, so a battle at 10 ticks a second and a round pushed over it at 60 work
+in one page (decision 11 uses this). Rejected: a merging `InputFrame` alone (each page would
+still count its steps). The tower-defense sample and the mini siege's glue drop their own
+counters. Headless runs are unchanged (they step every tick), so no hash moves.
+
+**6. Pointer taps as recorded input (D1), taps into hosted rounds (D12), `screenAtCell` and
+`toClient` (D13) (item 283).** **D1:** a tap becomes **frame input**: `InputFrame` gains
+`taps()`, this frame's taps as `{ x, y, button }` in the **game's screen pixels** (the manifest's
+`screen` size, before the display scales it, so a recording replays the same whatever the window),
+and `InputScript` gains an optional **`taps: [{ frame, x, y, button? }]`** beside its `steps`,
+so a run file's `input` (and a mission's `play` input) can carry taps. The shell's pointer
+gestures feed `taps()` on the live input through the display's inverse mapping, and the M19
+recorder records taps with the held actions. Rejected: a recorded `order(json)` command (it
+would put kit commands into run files, and a tap is the player's input, not an order). The
+tower-defense kit reads taps from its input in `step` (`TdControls.tap` keeps its meaning,
+called from there), so a round played by tapping is a run file. **D12:** with taps in the frame
+input, `HostScene` and `miniGameScene` forward them as they forward keys, and `RoundInput` passes
+them through to the round (in the round's frame: the host maps them with the round's frame size,
+which `MiniGame.present()` already gives). This closes D12 without a `MiniGame.tap` method
+(rejected: a second path for the same input, and recording would miss it); the mini siege's
+`roundTap` and its `instanceof TdDefenceRound` go away. **D13:** the tower-defense kit exports
+**`screenAtCell(cell)`** beside `cellAtScreen` (the cell's centre in game pixels, the exact
+inverse for the map's camera), and both backends' displays gain **`toClient(x, y)`** (game pixels
+to client CSS pixels) beside the inverse they use for gestures; the pages' `pictureToClient` and
+the mini siege's `clientAt` go away, and the browser tests tap through them. A script without
+`taps` replays as before, so no hash moves.
+
+**7. The mission hosting API (M21, D9, M6, M18, M27) (item 284).** **M21:** `MissionHost` emits
+its own events on its `events`, after the hosted game's for that step, as plain objects like a
+kit's: **`mission-open`** `{ mission, play }`, **`mini-game-end`** `{ mission, game, result }` and
+**`mission-commit`** `{ mission, outcome, resolution }`, matched by skins as the mini siege's
+sounds already match them (`mini-game-end:pass`, `mission-commit:outcome=both-burnt`). Events are
+draw data, never in the snapshot, so no hash moves; the mini siege's `siegeSource` diff goes
+away. **D9:** the core names the hosted mini game on the round's frame: a hosted round's frame
+carries **`status.miniGame`** (the open mission's `play`), set by the core's host status
+(`hostStatusFor`), so no page reads `MissionHost.playing` for it (the getter stays for tools).
+**M6 (the rest):** one round picture for every hosted mission: a frame source in
+`engine/core/present` that gives the host's frame, or the round's own frame (with D9's
+`status.miniGame`) while a round is hosted, which the existing skin sets already pick a skin by.
+A page writes one call instead of the switch. **M18:** `MissionHostOptions` gains two optional
+hooks, **`canOpen(id)`** (a refusal or null, the kit's `not_offered` check before `open`) and
+**`onChange()`** (called after every mission step and every commit), and the RTS kit exports a
+helper giving both for an `RtsGame` (`launchMission`'s check, `refresh()`); the mini siege's
+wrapper class goes away. Rejected: the kit's game owning a `MissionHost` (the host is core, used
+by any kit). **M27:** the bridge is **`engine/sim`'s `rtsWorldPort(world)`**, beside
+`missionPort`, structurally typed to the RTS kit's `RtsWorldPort` (the sim may not import the
+kit, and the kit may not import the sim); a test under `tests/` (which may import both) checks
+the two types agree. The two samples and the tests use it; it is the same seven lines, so no hash
+moves.
+
+**8. Mission data by scenario key (M10, D6, M17, M28, M25, M16, D10, D7, D8) (item 285).**
+**M10 and D6:** every scenario key is **kept with the world** as its key table (`scenarioKeys`,
+key to entity id, fixed at load and kept in world saves as an optional field, so old saves load),
+but **outside the hashed snapshot**, and `MissionWorldPort.open` hands the round the whole table
+beside the snapshot. The open mission's `refs` stay what they are (the keys its effects name), so
+no snapshot changes and no hash moves; a mission's params and a kit's rules (`destroyed`,
+`spared`, `keys` selectors, `killed`) may name any key the table holds. Rejected: widening
+`refs` (it is hashed and would move every mission run). **M17:** run checks may name an entity by
+key: **`world.key.<key>.<Component>.<field>`** (and `world.key.<key>.alive`), resolved by the
+tools through the key table to the entity's entry in `world.components`; a key not in the table
+is `no_key` at the check's path, exit 3. **M28:** the committed mission records are read through
+the sim (`missionRecords(world)`) and the port (an optional `MissionWorldPort.records()`), and
+`MissionHost.records()` gives them to pages, so the mini siege's `records()` and its status line
+read the host. The mini siege's run files switch to `world.key` paths in T7 while its `named`
+summary stays in the snapshot; T9 removes `named` (decision 2), so its hashes move once.
+**M25:** a mission file gains an optional **`marker`**, a scenario key the offer marker stands
+over, resolved through the key table for `RtsMissionInfo.marker`; absent, the marker is where it
+is today. The mini siege's `sabotage` names its siege engine in T9 (the def is hashed while open).
+**M16:** `mission-room`'s selectors gain **`squad`** (a squad id); roles stay the RTS kit's three
+(`regular`, `hero`, `captain`), so a guard is "the squad `escort`" and a role typo is still
+refused. Rejected: free-form roles (they would lose the kit's checked meaning of each role).
+**D10:** a `td-defence` `build` selector entry may carry a **`slot`**, a build cell `{ x, y }` of
+the mission's map: a slotted entity is placed there, the rest fill the remaining build cells in
+the old order, and a slot that is not a free build cell is a `checkUse` problem. **D7:**
+`MiniGameUseCheck` gains the game's **world scenarios** (each one's data and key table), and
+`checkUse` checks the mission's selectors against every scenario whose opportunities offer the
+mission (a selector that picks nothing, a budget faction with no `Stockpile`, more walls than
+build cells, a key or slot that does not exist); `validate` reports them at the mission's path.
+**D8:** a `td-map`'s `waves` becomes optional; a map without one is valid for `td-defence`
+missions only, and a standalone level naming it is refused by `validate` (`no_waves`). Data that
+uses none of the new fields validates and plays as before.
+
+**9. Commit and campaign rules (D3, D4, M4, M5, M31, M35, M38) (item 286).** **D3:** the
+`inventory` effect gains the `fromReport` the `damage` effect has had since 0.13 (item 223), with
+**`negate`** (take the stat away instead of adding it) and a declared **`max`**, the limit on the
+amount; `damage`'s `fromReport` gains the same optional `max`. **D4:** `damage` and `destroy`
+gain a per-entity form, **`each`**: a report stat holding a list of entity ids or keys (the fallen
+walls, the killed raiders), applied to every one it names, with the declared limits **`owner`**
+(every named entity must be alive and owned by that faction) and **`max`** (at most that many).
+**Limits are checked, not clamped:** a played round whose report goes over a declared limit is
+refused at the round's end (`report_over_limit`, through M5's channel) and the mission is
+delegated at its commit, as an unmappable report is today. Delegated, quit and timed-out missions
+have no report and use the declared amounts, as `damage` does. The mini siege's `fortify` adopts
+both in T8 (its gold spent and walls lost as the round reports them), the one planned hash move
+there. **M4:** a played round's experience ticks stay **out of the hashed record**: the world's
+`experienceTicks` stays 0 for played missions, so world runs and game runs with the same outcome
+keep the same world (item 166, decision 3 of 0.10); the run result's `experience`, the timeline
+and `missionExperience()` carry them. The field's meaning is written into the 1.0 docs. **M5:**
+refusals after their step get a channel: `MissionHost` keeps them as `{ tick, mission, code,
+error }` (an optional `HeadlessGame` hook gives them since a tick), and the tools add them to the
+run result's `refusedMissions` with **`late: true`** and the tick, so a run file sees them without
+reading the snapshot. **M31:** a carried stockpile that is gone **carries as zeros** of each item
+the carry spec names (no throw, no new flag: an empty stockpile is the ordinary reading), and a
+campaign entry gains an optional **`endIf`** in data (first shape: `{ "gone": "<scenario key>" }`,
+the campaign ends when that keyed entity is not alive at the entry's end); the campaign save
+records that it ended (an optional `ended` with the entry and reason), and `campaignSave()` no
+longer returns null for a lost stockpile. **M35:** one entry-end rule in `engine/core/campaign.ts`,
+**`entryOver`**: a scenario entry is over at the first world tick at or after its `ticks` with no
+mission open (an open mission commits at a fixed tick, so this is bounded); the page and
+`campaignSave()` both read it, and `campaignSave()` is null until it holds (no run file ends with a
+mission open, so no pinned code moves for this). **M38:** **save code v2** writes the campaign,
+each mission and each scenario by a **stable id code** (a short CRC of its id), not its index in
+a sorted list, and each outcome by its index in the mission file's own order (an outcome appended
+later moves nothing); `validate` refuses a game where two ids of one kind share a code
+(`code_collision`). Rejected: a game-declared mission order (one more list to keep in step). The
+v1 reader stays, so an old code still resumes against the content it was written for; new codes
+are v2, so every pinned code in run files moves in T8 (logged, decision 2).
+
+**10. The M12 fixture and the M20 scripted enemy (item 287).** **M12:** the sim's
+`engine/sim/__fixtures__/raid.mission.json` becomes a real `mission-room` mission: `play:
+"mission-room"` and the params now in `tests/kits/__fixtures__/raid.params.json` inlined, so the
+repo tests play the fixture as it is and the params fixture and the spread in
+`tests/kits/mission-adapter.test.ts` and `mission-host.test.ts` go away. The open mission's def is
+in every world run that opens it, so those golden files (seven at 0.11, recounted in T9) and the
+sample-world golden if it opens the raid are re-recorded (decision 2). The fixture stays the record
+of the mission contract, now in its real form. **M20:** `ScriptedEnemy.think` (`kits/rts/enemy.ts`)
+skips units whose event is frozen when it selects whom to order (the view's `frozen` flag, so
+the kit still never imports the sim), so the order log and `kit.nextOrder` stop growing during a
+freeze. Every mini siege hash moves, together with decision 8's `named` removal and `marker`, in
+one regeneration; the RTS skirmish has no missions and so no freezes, and T9 shows its hashes
+unchanged.
+
+**11. The shared mission-launch scene and campaign page flow (M26, M34, M36), and round key
+hints (D14) (item 288).** They are written once in **`engine/core/shell`**, where `HostScene` and
+`CampaignSession` already are, because hosted missions and campaigns are core concepts any kit's
+game can have; anything RTS-only (the offer marker, the RTS controls) stays in the kit and is
+handed in. **M26:** a **mission-launch scene** over a `HostScene`: the launch buttons from the
+open offers, the host paused while the player chooses to play or delegate, the round pushed and
+stepped at its own rate while the host steps at its tick rate (decision 5's per-scene rate), and
+the outcome's title in the status line. **M34 and M36:** a **campaign flow** beside
+`CampaignSession`: each entry **held at tick 0** until the player begins it (a briefing panel with
+the entry's title and text from the campaign data, so the dawn's 60-tick window is the player's
+time, not reading time), the entry's end by decision 9's `entryOver`, the result panel (the
+outcomes, the named people's fates, the save code), Continue, the code box and the stored save's
+button. The shell owns this DOM, as it owns the touch pad; kits never draw it. **D14:** a
+`MiniGameDef` gains its **controls** as data (actions with a short label each), and the host's
+page shows them as the round's hint, written with the shell's current key names; a mission file
+may give its own wording with an optional **`hint`**. The mini siege's `ROUND_HINTS` and the
+tower-defense sample's `HINT` go away. The mini siege's page and the tower-defense sample's move
+onto these in T10; pages are not hashed, so no hash moves.
+
+**12. Rooms that are not one dungeon (G17), a second mission room (M32) and a params page per
+mini game (M11) (item 289).** **G17:** a game chooses how a kit checks its kinds with a
+**`game.json` option** read by the kit's hook, `KitDef.kinds(manifest)`: the manifest gains an
+optional **`kitOptions`** keyed by kit name, each kit giving the schema for its own (refused
+`unknown_option` otherwise), and the top-down kit's first option is **`rooms`**, `"dungeon"`
+(the default, today's one-dungeon check) or `"separate"` (each room checked alone: its own start,
+doors only within itself). The kit's `roomKind(..., { oneDungeon })` is what the option sets.
+Rejected: a different kind name per mode (every tool and skill would learn two names). **M32:** with
+`rooms: "separate"`, the mini siege's dawn rescue gets **its own mission room** instead of the
+sabotage's `engine-camp`; this moves the `dawn-*` runs that play the rescue (decision 2's named
+exception). **M11 (the rest):** `pnpm docs:gen` writes **one page per mini game a game defines**
+(`HeadlessEntry.miniGames`, such as the room challenge), `docs/reference/mini-games/<game>-<id>.md`
+with its params table from the schema, linked from the "Mini game params" section of
+`docs/reference/schemas.md`, and kept fresh by the docs test like the rest.
+
+**13. What "finished" means for a sample (item 290).** A sample (`dungeon`, `platformer`,
+`rts-skirmish`, `tower-defense`) is finished when it has all of these, checked in T16:
+
+- **Original NES-style pixel art as text** (owner answer 22) for every tile, sprite and HUD item it
+  draws: no placeholder boxes, no look drawn by a `fallbackColor`, and no art copied from another
+  game (the SMBC REMIX source is read for technique only). A test fails if any kind a run draws
+  falls back.
+- **MML music**: at least one original song, played on its page, plus sfx for its main events.
+- **Low-poly meshes where it is 3D**: the platformer keeps both skins (G33's HUD and particles in
+  3D), meshes procedural or text-defined; the others are 2D only, and that is finished for them.
+- **A `CLAUDE.md`** that explains how it was built (its content files, how to add a room, level,
+  wave or unit, its run files and what each guards), the one-line `AGENTS.md`, and its module page
+  linked from `llms.txt`.
+- **Run files in CI** (`tests/runs`) with golden hashes, covering a win and a loss (or a failure
+  state), and every rule of its kit guarded where the kit is strict (`mutants` clean).
+- **A browser test** that loads its page, plays to a checked state (by keys or the step hook) and
+  skips cleanly without Chromium; the page has M1's volume control.
+- **Listed in the games index**: the launcher list the Pages build writes from the root
+  `index.html` (`build/launcher.ts`), with a one-line description, playable from that link in
+  `pnpm build`'s output (nothing is published during the build, owner answer 24).
+
+The mini siege is the 1.0 multi-genre sample, not one of the four; it gets the shared pieces of
+decisions 5-12 and keeps its art, and is not re-finished in 0.15.
+
+**14. The API review's form, and D5 and D11 (item 291).** T15 writes
+**`docs/reports/api-review.md`**: one section per module (each `engine/core` part, `engine/sim`,
+`engine/tools` and its CLI, each backend and each kit), listing **every exported entry point**
+(from the module's `index.ts` and the module page) with what the samples needed of it and a
+verdict: **keep**, **changed in 0.15** (with the commit), or **listed for 1.0** (with what the v1
+docs must say, or what change waits and why). Every 0.15 gap above appears in it with where it
+landed, and the roadmap's Done when ("every change it calls for either made or listed for 1.0")
+is checked against it in T16. The review is the last chance to rename or reshape an API before it
+is written down as v1 (internal, owner answer 16); a change it finds that fits 0.15 is made in
+T15's own commit, and anything bigger is listed for 1.0. **D5 and D11 stay 1.0 documentation**,
+not 0.15 changes: the review lists both under the tower-defense kit and `engine/sim` as rules
+the v1 docs state ("walls lost" is the report's reading of the leaks; two missions on one event
+exclude each other for the first one's cost), with no code change.
+
 ## Engine 0.14
 
 Creator tools v1. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner

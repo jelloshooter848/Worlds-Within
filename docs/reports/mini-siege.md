@@ -15,7 +15,7 @@ folder should hold only content, skins and thin glue; the scenario, the map and 
 data files, not code.
 
 The decisions this release was built against (items 172-184) are in
-[BUILD-LOG.md, Engine 0.11, Decisions](../BUILD-LOG.md#decisions-3). The stacking-test gaps assigned
+[BUILD-LOG.md, Engine 0.11, Decisions](../BUILD-LOG.md#decisions-4). The stacking-test gaps assigned
 to 0.11 (G13, G18, G19 the rest, G27, G28, G30) are tracked in the stacking test's report, not here.
 
 ## Summary
@@ -52,7 +52,7 @@ The stacking test's gaps assigned to 0.11 (G13, G18, G19 the rest, G27, G28, G30
 at M29 (statuses `open (0.13 Tn)`, `fixed in 0.13 Tn (<commit>)` or `moved to <release>`).
 
 - **M13**, the one gap 0.11 moved to 0.13 (decision 4 of
-  [BUILD-LOG.md, Engine 0.13, Decisions](../BUILD-LOG.md#decisions-1)), is **fixed** in T4
+  [BUILD-LOG.md, Engine 0.13, Decisions](../BUILD-LOG.md#decisions-2)), is **fixed** in T4
   (`8f740e2`, `mission-room`'s `hero: { select, hpPer }` and `fromReport`), and the mini siege's
   `sabotage` uses it since T7 (`c2d6d43`: the captain is the round's hero).
 - **Eight new gaps, M29-M36:** M29 and M30 found in T1, M31-M33 in T7 (the dawn follow-up), M34-M36
