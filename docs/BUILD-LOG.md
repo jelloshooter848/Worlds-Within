@@ -55,6 +55,11 @@ continuing that report's ids (the mini siege's from M37).
   The screenshot page never used `files.ts` (it receives the files in its job), so it is
   unchanged. Tests: `tests/build/game-files.test.ts` (the folder walk, keys and texts against a
   real `import.meta.glob` for two games, hidden files, a real build and the error).
+- **G8: the `trace` command** (T3, decision 5, `85d54d8`): `pnpm cli trace <run> --paths a,b
+[--from N] [--to M] [--every K]` plays the run like `dump` and prints one row per traced tick,
+  `{ tick, hash, values }`, a missing path as null (and listed in `missing`); `rows` is a top-level
+  array the output cap halves, and the text form is a table. It reads each tick through
+  `playRun`'s `onTick`, the one playing loop. No golden hash moved. Tests: `trace.test.ts`.
 - **G9: a start level or entry in run files** (T4): a game run file's optional `start` is
   `{ "stage": n }` (a level of the game's level sequence, 0-based) or `{ "entry": "<id>" }` (a
   campaign entry, fresh, no carried record), handed to `createGame` as `HeadlessOptions.start`; it
@@ -84,6 +89,12 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   `towerdefense:win-on-clear` in the mini siege's `fortify-played`; no other run file and no
   golden hash changed. Tests: `mutants.test.ts` (a stub game on a lenient and a strict test kit),
   `two-kits.test.ts`, `tests/runs/per-kit-rules.test.ts`, `platformer-test.test.ts`.
+- **G10: a ruler and region edits for text maps** (T6, decision 7, `42f3155`): `get <map> rows
+--ruler` (or `rows.R1-R2`) prints the rows under a column ruler with row numbers;
+  `get <map> rows.R1.C1:R2.C2` copies a rectangle; `paste <map> rows.R.C <block>` (`\n`-split
+  lines, `@path` or `--from-file`, optional `--transparent`) writes one in a single call through
+  `set`'s schema check and read-back; a ragged or off-grid block is exit 2 with nothing written.
+  Works on rooms, platformer levels and tower-defence maps. Tests: `edit.test.ts`.
 - **The world event log and timeline as data** (T7, decisions 2-4): `engine/sim/timeline.ts`,
   `timelineOf(source)`, a pure reader over a world's plain data (a snapshot or save and its event
   log) giving the `worlds-within/timeline` record (world tick, `logFrom`, a game run's `clock`,
@@ -104,6 +115,13 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   3 had said exit 2). The timeline and dump file schemas are in `docs/reference/schemas.md`. No
   golden hash moved. Tests: `timeline.test.ts` (siege and captive fixtures), `world-data.test.ts`,
   `mission-host.test.ts`.
+- **G31: the page-side step hook and `?replay=`** (T8, decision 9, `e1e3315`): `bootBrowserGame`'s
+  manual-loop mode (`manual: true` or `?debug=step`) never runs the loop on
+  `requestAnimationFrame` and puts the step hook on `window.__ww` (`engine/core/shell/debug.ts`):
+  `step(n)`, `tick`, `snapshot()`, `hash()` (core's `stateHash`, `engine/core/state-hash.ts`,
+  shared with the tools) and `replay(runFile)` (its input, orders and mission steps through the
+  real page). `tests/browser/platformer-test.test.ts` replays `level-1` to `level-4` in the page
+  with the golden hashes, without replacing `requestAnimationFrame`. No golden hash moved.
 - **M19: recording a hosted round's input** (T9, decision 10): `engine/core/input/input-recorder.ts`
   (`InputRecorder`, pure: held actions per frame in, the shortest `ScriptedInput` script out; the
   decision's `input/recorder.ts`, named after the class). `MissionHost.recordRounds(on)` and
@@ -161,6 +179,29 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   a replay does not reproduce). The debug-failing-run skill opens the replay in the debugger as
   its step 2. No layer arrow and no golden hash changed. Tests: `debugger/timeline.test.ts`,
   `debugger/model.test.ts`, `debug.test.ts`, `run.test.ts`, `tests/browser/debugger.test.ts`.
+
+- **The Done when's proof: a data-only scenario** (T12, `46d5aed`, `909e239`): the mini siege's
+  third campaign entry, **the ridge camp** (`content/maps/ridge.world.json`, the
+  `stores-raid` mission, the `ridge` entry in `siege.campaign.json` and `runs/ridge-raid.run.json`
+  started with `start: { entry: "ridge" }`, with its golden hashes). Its commit (`909e239`)
+  changes only `content/`, `runs/` and docs: no `.ts` file. The glue built and played it
+  unchanged; what blocked it was the game's own tests, which pinned the campaign to two entries
+  (gap M37, fixed in the commit before it, `46d5aed`, by reading every entry after the dawn from
+  the campaign file). Adding the mission found M38 (save codes index missions by sorted id, so an
+  id sorting earlier moves every pinned code; moved to 0.15, item 259): the mission is named
+  `stores-raid`, which sorts last, so no code moved. `tests/browser/debugger-done-when.test.ts`
+  opens the ridge run in the debugger, steps it forward over every hashed tick and rewinds back
+  over them with the golden hashes, reads the raid's mission events and its timeline (against
+  `pnpm cli timeline`), and runs a temp copy with a wrong assertion through `run --json`, then
+  opens the `replayFile` it names with `debug --check` and in the page at `replay.failure.tick`.
+  The close-out (this commit): this section, the roadmap, both gap reports, `llms.txt` and the
+  feedback log.
+
+**Commits** (T1-T12): `2289516` (T1), `9fa1060` and `5a5e7ef` (T2, G5), `85d54d8` and `dcae2e9`
+(T3, G8), `6cb80a5` and `d200d0a` (T4, G9), `a2830cd` and `fa75a96` (T5, G12), `42f3155` and
+`5ef7718` (T6, G10), `37e4f96` (T7), `e1e3315` and `733884c` (T8, G31), `61f9774` and `90538a5`
+(T9, M19), `4eca0a7` (T10), `bcf12cc` (T11), `46d5aed`, `909e239` and the close-out commit
+(T12).
 
 ### Planned tasks
 
@@ -360,6 +401,127 @@ the page recorded or, with `--bot`, by stepping the hosted round with the kit's 
 throwaway script does), and then **verifies it by playing** the run file: the round must end in
 the outcome the run file asserts; when it does not, the run file is left unchanged and the command
 fails (exit 4). Recordings are frame input only (keys and pads); pointer taps stay D1's (0.15).
+
+### Choices made
+
+The decisions above are items 247-256; item 257 settled decision 8 for a strict `uses` kit (T5).
+The close-out's choices are items 258-259 ("Engine 0.14, close-out" in `FEEDBACK-LOG.md`):
+
+- **The data-only scenario is the ridge camp** (item 258): a third entry of the mini siege's
+  campaign rather than a scenario outside it, because a run file reaches a scenario only through
+  the campaign (`start: { entry }` or `from`), so "added with data files only" includes the
+  campaign line. It has no `from` (it starts as written, the dawn's save carries nothing into it),
+  one delegated-only mission so the timeline has an opportunity, an open and a commit to show, and
+  160 world ticks. The page plays it after the dawn (Continue: The ridge camp).
+- **M37 fixed as a test change, in its own commit before the scenario** (item 258): the tests
+  that pinned two entries now check that the siege and the dawn come first and read the rest from
+  the campaign file, so the scenario's commit is data only and every commit passes the checks.
+- **M38 moved, not fixed** (item 259): a stable mission index in save codes is a code format
+  change (every pinned code moves), which belongs to the 0.15 API review with M31 and M35; the
+  ridge camp's mission id sorts after the existing ones meanwhile.
+- **A longer timeout for `engine/tools/world-data.test.ts`**: its `events` tests replay the mini
+  siege's played run several times each, and one went over vitest's default 5 s while the whole
+  suite ran on a busy machine (it passes alone in about 10 s for the file); the file sets
+  `vi.setConfig({ testTimeout: 60_000 })` as the run-file tests did in 0.13 (item 233). No test or
+  expectation changed.
+- **No tag** (owner answer 24), and the root `package.json` version was left as it was.
+
+### How to try it
+
+```sh
+pnpm -s cli run games/samples/mini-siege/runs/ridge-raid.run.json --json        # the data-only scenario
+pnpm -s cli trace games/samples/mini-siege/runs/ridge-raid.run.json --paths named.ram.alive,sides.raiders.units --every 10
+pnpm -s cli timeline games/samples/mini-siege/runs/ridge-raid.run.json         # the raid's window, open and commit
+pnpm -s cli events games/samples/mini-siege/runs/ridge-raid.run.json --cause mission
+pnpm cli debug games/samples/mini-siege/runs/ridge-raid.run.json                # the debugger page; open the URL it prints
+pnpm -s cli debug games/samples/mini-siege/runs/ridge-raid.run.json --tick 160 --check --json
+pnpm -s cli get games/samples/mini-siege/content/rooms/engine-camp.map.txt rows --ruler
+pnpm vitest run tests/browser/debugger-done-when.test.ts tests/browser/debugger.test.ts engine/tools/debugger
+```
+
+A failing run prints its replay file and the line `pnpm cli debug <replayFile>`, which opens the
+debugger at the failing tick with the failed check, the tick before and the timeline.
+
+### Done when
+
+Checked on 2026-11-03 on the tree of the close-out commit (on top of `909e239`): `pnpm lint &&
+pnpm typecheck && pnpm test && pnpm build` pass (189 test files, 2126 tests passed and 1 skipped:
+the opt-in every-tick save check of 0.8), `pnpm docs:check` says the generated docs are up to
+date, `pnpm -s cli validate` passes for all six games, and every one of the **50 run files** in
+the repo (13 sim fixtures, 1 demo, 7 lab, 7 platformer-test, 4 skirmish, 14 mini siege and 4
+tower-defense runs) exits 0 through `pnpm -s cli run`; `tests/runs/run-files.test.ts` runs each
+twice with the same hashes against its golden file. The browser tests (`tests/browser`: 10 files)
+ran in headless Chromium, none skipped.
+
+- **Met: a new scenario added to the mini siege with data files only can be stepped through in
+  the debugger.** `git show --stat 909e239` lists only
+  `games/samples/mini-siege/content/` (the map, the mission, the campaign line),
+  `games/samples/mini-siege/runs/` (the run file and its golden hashes) and docs; no `.ts` file in
+  the game or anywhere else. `ridge-raid.run.json` passes `pnpm -s cli run ... --json` (final hash
+  `91b8badf8fc51139`) and `tests/runs/run-files.test.ts` against its golden file.
+  `tests/browser/debugger-done-when.test.ts` opens it in the debugger, steps forward to each
+  hashed tick (0, 40, 80, 120, 160) and rewinds back to each, with the page's hash equal to the
+  golden one and no mismatch at every stop, reads the state and the mission's events at tick 30
+  (the ram burnt) with every check passing, and reads the timeline at 160 (the `stores-window`
+  window offered and taken, the open, the commit `ram-burnt (delegated)`, the row
+  `mission:stores-raid`), matching `pnpm cli timeline`'s record. `pnpm -s cli debug
+.../ridge-raid.run.json --tick 160 --check --json` gives `matchesHeadless: true`,
+  `mismatch: null`, 693 events kept.
+- **Met: a failing replay from the CLI opens at its failing tick.** The same test copies the run
+  to a temp folder with an assertion it cannot pass (the ram alive at tick 30), runs it with
+  `run --json` (exit 4), takes `replayFile` from the result (its `start` kept, its
+  `replay.failure` at tick 30 on `named.ram.alive`), and `debug <replayFile> --check --json`
+  exits 0 with `tick` and `openTick` equal to `replay.failure.tick`, `reproduced: true`,
+  `hashMismatch: null` and the failure read with `actual: false`; the page opens at tick 30 with
+  `failure()` showing the check and `tickBefore` 29. `tests/browser/debugger.test.ts` (T11) does
+  the same on the demo.
+- **Scope: an in-browser simulation debugger** (the world state, the event log, stepping and
+  rewinding through a replay; the same dumps and replay files the CLI writes): T10,
+  `engine/tools/debugger/` (`debugger/model.test.ts`, `debug.test.ts`,
+  `tests/browser/debugger.test.ts`: the state tree and diff, the event log with filters, stepping
+  and rewinding with golden hashes on `delegated`, dump files opened read-only).
+- **Scope: a timeline viewer** (world time, opportunities, when results were committed): T11
+  (`debugger/timeline.test.ts`, and the played sabotage's frozen span, open and commit read and
+  clicked in `tests/browser/debugger.test.ts`), fed by T7's timeline record
+  (`engine/sim/timeline.test.ts`, `world-data.test.ts`).
+- **G5, G8, G9, G10, G12 and G31 are fixed** (T2, T3, T4, T5, T6, T8), each row in
+  [stacking-test.md](reports/stacking-test.md) with its commit; **M19 is fixed** (T9), its row in
+  [mini-siege.md](reports/mini-siege.md) with its commit. The new mini siege gaps: M37 fixed
+  (`46d5aed`), M38 moved to 0.15 and listed there. No row is `open`.
+- **Out of scope kept out:** no editing in the debugger (it reads files and replays; it never
+  changes a world or a file).
+- **`engine/sim` stays headless and deterministic.** `pnpm lint` (purity and integer maths),
+  `tests/architecture/dependency-rule.test.ts` and `purity.test.ts` are green. The `engine/sim`
+  diff against `b1e21cf` is the timeline reader (`timeline.ts`, `timeline.test.ts`), the
+  `missionPort`'s `events` and `timeline`, `changeSchema` exported from `save.ts`, the index's
+  exports and `CLAUDE.md`: 6 files, no system or rule changed.
+- **No golden hash moved in 0.14** (decisions 3 and 4): every hash file changed in the release
+  is a new run file's (`level-2-start`, `level-3-start`, `level-4-start`, `mini-game-start`,
+  `dawn-fresh`, `ridge-raid`); no pinned save code moved.
+- **No tag** (owner answer 24).
+
+### Deviations from the roadmap
+
+- **None in scope.** Both Done when items and both Scope bullets are met as above.
+- **The data-only scenario needed one test-only commit first** (M37): the game's tests pinned the
+  campaign's length; no glue or engine code changed for it.
+- **Decision 3's exit code for `no_world`** is 3 (T7, as the task asked), not 2.
+- **Decision 6's `start: { stage }` is 0-based** as decided; the mini siege takes only
+  `{ entry }` (no level sequence), refused `bad_start` otherwise.
+- **Feedback numbering:** T1's decisions are 247-256; T5 added 257; the close-out added 258-259.
+
+### Outstanding issues
+
+- **M38: save codes are not stable under new missions** (moved to 0.15): until the API review a
+  new mission's id must sort after the existing ones, or every pinned code moves and old codes
+  misread.
+- **D1 stays 0.15**: the recorder records keys and pads only; a round played by tapping cannot be
+  recorded.
+- **The debugger steps game runs only**: a world run opens as a dump file, read-only (decision 2);
+  long rewinds re-simulate from tick 0 with every tick's record cached in the page.
+- **Mini siege gaps waiting in 0.15**: M31, M32, M34-M36, M38 and the 15 from 0.11, with the
+  stacking test's G17, G33, G36 and the tower-defense lessons, for the sample set's API review.
+- Open owner decisions: items 247-259 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.13
 

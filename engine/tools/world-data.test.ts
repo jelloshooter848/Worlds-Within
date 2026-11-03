@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
@@ -8,6 +8,10 @@ import { causeMatches } from './commands/events';
 import { DUMP_FORMAT, dumpFileSchema, parseDumpFile } from './dump-file';
 import { EXIT } from './exit-codes';
 import { main } from './main';
+
+// The mini siege's played run is replayed several times per test (each `events` call plays it), so
+// on a busy machine a test can pass its work and still go over vitest's default 5 s (as item 233).
+vi.setConfig({ testTimeout: 60_000 });
 
 // `events`, `timeline` and `dump --out` (Engine 0.14 T7; docs/BUILD-LOG.md, Engine 0.14,
 // decisions 2-4): the world's event log and timeline as data, for game and world runs.

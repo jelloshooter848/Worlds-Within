@@ -68,7 +68,13 @@ at M29 (statuses `open (0.13 Tn)`, `fixed in 0.13 Tn (<commit>)` or `moved to <r
 **Engine 0.14:** **M19**, the one gap moved here, is **fixed** in T9 (`61f9774`): a recorder for a
 hosted round's input and `pnpm cli record`, which writes it into a run file's `play` step from
 the page (`?record`, `window.__ww.recordings()`) or from the kit's bot; the mini siege's two
-recorded rounds re-record unchanged. Across the report: 16 fixed, 20 moved to 0.15.
+recorded rounds re-record unchanged. Engine 0.14 is closed (T12): **38 gaps**, `M1`-`M38`. The
+Done when's data-only scenario (the ridge camp, T12) found two: **M37** (the game's tests pinned
+the campaign to two entries) is **fixed** (`46d5aed`, before the scenario's data-only commit
+`909e239`), and **M38** (save codes index missions by sorted id, so a mission added with an id
+that sorts earlier moves every pinned code) is **moved to 0.15** and listed there (item 259).
+None open, none left assigned to 0.14. Across the report: 17 fixed (11 in 0.11, 4 in 0.13, 2 in
+0.14: M19, M37), 21 moved to 0.15.
 
 ## Format
 

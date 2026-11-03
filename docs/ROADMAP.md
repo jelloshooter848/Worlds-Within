@@ -632,7 +632,7 @@ siege's dawn assault, and run files that start from another run or a code. Reaso
 
 ---
 
-## 0.14 Creator tools v1
+## 0.14 Creator tools v1 (done)
 
 **Goal:** tools for people (not just the CLI) to inspect a world.
 
@@ -658,6 +658,21 @@ siege's dawn assault, and run files that start from another run or a code. Reaso
 debugger, and a failing replay from the CLI opens at its failing tick.
 
 **Out of scope:** editing (the visual editor comes after Engine 1.0).
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-014): the mini siege's third scenario, the ridge camp, was added
+with data files only (`ridge.world.json`, the `stores-raid` mission, a campaign line and
+`ridge-raid.run.json`) and is stepped forward and rewound in the debugger with its golden hashes and
+timeline, and a deliberately failing copy's replay from `run --json` opens with `debug --check` at
+its failing tick. G5, G8, G9, G10, G12, G31 and M19 are fixed; the new mini siege gaps are M37
+(fixed: the game's tests pinned the campaign's length) and M38 (moved to 0.15: save codes index
+missions by sorted id) ([gap reports](reports/stacking-test.md), [mini siege](reports/mini-siege.md)).)_
+
+_(Decided before code, items 247-256: where the debugger lives and what it reads, stepping and
+rewinding by re-simulation, the event log and timeline hooks, the timeline record, `trace`, a
+run file's `start`, map rulers and region writes, per-kit rule ids, the page-side step hook and
+the round recorder. Reasoning in [BUILD-LOG.md](BUILD-LOG.md#decisions); item 257 settled per-kit
+mutants for a strict `uses` kit; the close-out's choices are items 258-259.)_
 
 ---
 

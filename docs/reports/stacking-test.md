@@ -38,6 +38,15 @@ each moved to a named release**: 0.14 (G5, G8, G9, G10, G12, G31) and 0.15 (G17,
 mini siege uses G19's host status and G28's result sounds in its skins; its own gaps are in
 [its report](mini-siege.md).
 
+**Engine 0.14 is closed: G5, G8, G9, G10, G12 and G31 were fixed in 0.14.** G5 in T2
+(`9fa1060`: the `virtual:game-files` plugin; every `files.ts` is gone), G8 in T3 (`85d54d8`: the
+`trace` command), G9 in T4 (`6cb80a5`: a run file's `start`), G12 in T5 (`a2830cd`: `kit:id` rule
+ids and per-kit mutants), G10 in T6 (`42f3155`: `--ruler`, rectangles and `paste`) and G31 in T8
+(`e1e3315`: the page's step hook and `replay`). **Counts now: 34 fixed** (20 in 0.7, 3 in 0.10, 5
+in 0.11, 6 in 0.14) **and 3 open, each moved to 0.15** (G17, G33, G36). The debugger built on G31
+and the timeline (0.14 T10-T11) is how a failing run of any of these games is now opened at its
+failing tick.
+
 - **Stacking works with the contracts as they were.** A platformer level hosted a top-down room
   through the engine's `MiniGameDef` with no change to the platformer kit (T5), and the round's
   result acted on the level headless, in 2D and in 3D, with the same state hashes on every

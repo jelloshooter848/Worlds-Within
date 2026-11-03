@@ -96,7 +96,11 @@ sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `cam
   `dawn-fresh.run.json` (Engine 0.14, gap G9: `start: { "entry": "dawn" }`, the dawn fresh with
   no carried record; `headless.ts` exports `starts(content)`, the campaign's entries);
   `dawn-rescue`, `dawn-rescue-failed` (the round given up: the ransom opens, the rescue is
-  refused), `dawn-exchange` and `dawn-leave`.
+  refused), `dawn-exchange` and `dawn-leave`. Engine 0.14 T12, the ridge camp (Engine 0.14's Done
+  when: a scenario added with **data files only**): `content/maps/ridge.world.json`, the
+  delegated-only `stores-raid` mission, the campaign's third entry `ridge` and
+  `ridge-raid.run.json` (`start: { "entry": "ridge" }`; the raid draws `ram-burnt` at world 30),
+  stepped and rewound in the debugger by `tests/browser/debugger-done-when.test.ts`.
 
 ## Imports allowed
 
@@ -115,5 +119,6 @@ room; `delegated.run.json --tick 80` the frozen battle; `fortify-played.run.json
 walls' round; `dawn-captured.run.json --tick 10` the dawn with the captain held),
 `tests/browser/mini-siege-shots.test.ts`; the page played from its link, both missions on both
 paths (and the walls' round by taps), and the campaign along both captain fates and from a save
-code: `tests/browser/mini-siege-page.test.ts`.
+code: `tests/browser/mini-siege-page.test.ts`; the ridge camp in the debugger, and a failing
+copy's replay opened at its failing tick: `tests/browser/debugger-done-when.test.ts`.
 To play: `pnpm dev`, then `games/samples/mini-siege/` from the launcher.
