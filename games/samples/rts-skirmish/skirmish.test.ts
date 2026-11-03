@@ -1,15 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { NullPresenter, NullRenderer } from '@engine/backends/null';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import { compileSong, parseMml } from '@engine/core/audio/mml';
+import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { mustLoad } from '@engine/core/content/game-content';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { isFullMap, resolveSkinFrame, type PresentFrame } from '@engine/core/present';
-import { loadSkirmish, PLAYER, skirmishEnemy, skirmishMap, skirmishScenario, skirmishTypes } from './content';
-import { createGame, sidesOf } from './headless';
-import { sideKinds, skirmishFrames, skirmishLook } from './picture';
+import { isFullMap, resolveSkinEvent, resolveSkinFrame, type PresentFrame } from '@engine/core/present';
+import {
+  loadSkirmish,
+  PLAYER,
+  SKIRMISH_MUSIC,
+  skirmishEnemy,
+  skirmishMap,
+  skirmishScenario,
+  skirmishTypes,
+} from './content';
+import { createGame, sidesOf, skirmishResult } from './headless';
+import { sideKinds, skirmishCanvasPicture, skirmishFrames, skirmishLook } from './picture';
 import { createView } from './view';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
@@ -21,19 +32,27 @@ interface RunEntry extends JsonObject {
 }
 
 /** A run file's orders (recorded orders or interface actions) and length. */
-function runFile(name: string): { ticks: number; orders: RunEntry[] } {
+function runFile(name: string): { ticks: number; orders?: RunEntry[] } {
   return JSON.parse(readFileSync(new URL(`./runs/${name}.run.json`, import.meta.url), 'utf8')) as {
     ticks: number;
-    orders: RunEntry[];
+    orders?: RunEntry[];
   };
 }
 
-/** Plays `name` headless as `pnpm cli run` does; `each` sees the game after every tick's orders. */
-function play(name: string, each?: (game: ReturnType<typeof createGame>) => void) {
+/**
+ * Plays `name` headless as `pnpm cli run` does; `each` sees the game after every tick's orders,
+ * `before` before them (as a page draws a tick's first frame before the player's clicks).
+ */
+function play(
+  name: string,
+  each?: (game: ReturnType<typeof createGame>) => void,
+  before?: (game: ReturnType<typeof createGame>) => void,
+) {
   const run = runFile(name);
   const game = createGame(content, 9);
   for (let t = 0; t < run.ticks; t++) {
-    for (const { tick, ...o } of run.orders) if (tick === t) game.order(o as JsonObject);
+    before?.(game);
+    for (const { tick, ...o } of run.orders ?? []) if (tick === t) game.order(o as JsonObject);
     each?.(game);
     game.step(NO_INPUT);
   }
@@ -212,7 +231,7 @@ describe('the skirmish picture', () => {
     const game = createGame(content, 9);
     const run = runFile('battle');
     for (let t = 0; t < 60; t++) {
-      for (const { tick, ...o } of run.orders)
+      for (const { tick, ...o } of run.orders ?? [])
         if (tick === t) expect(view.order(o as JsonObject)).toBe(game.order(o as JsonObject));
       view.step(NO_INPUT);
       game.step(NO_INPUT);
@@ -230,5 +249,133 @@ describe('the skirmish picture', () => {
     const snapshot = canonicalJson(view.snapshot());
     view.render(r);
     expect(canonicalJson(view.snapshot())).toBe(snapshot);
+  });
+});
+
+describe('the finished skirmish: art, sound and its end (Engine 0.15 T14)', () => {
+  const runs = readdirSync(fileURLToPath(new URL('./runs/', import.meta.url)))
+    .filter((f) => f.endsWith('.run.json'))
+    .map((f) => f.slice(0, -'.run.json'.length))
+    .sort();
+  const { skin } = skirmishLook(content);
+  const FALLBACK = skin.sheets?.fallbackColor;
+
+  it('has run files for a win, a loss and the rest', () => {
+    expect(runs).toEqual(['battle', 'commands', 'economy', 'hold', 'lost']);
+  });
+
+  it('names no placeholder look: no kind, tag look or tile has its own fallback colour', () => {
+    expect(FALLBACK).toBe('#ff00ff');
+    for (const [kind, entry] of Object.entries(skin.kinds)) {
+      expect(entry.fallbackColor, kind).toBeUndefined();
+      for (const tagged of entry.byTag ?? []) expect(tagged.fallbackColor, kind).toBeUndefined();
+    }
+    for (const [tile, entry] of Object.entries(skin.tiles ?? {}))
+      expect(entry.fallbackColor, tile).toBeUndefined();
+  });
+
+  it.each(runs)('draws every tick of %s from the art, never a fallback box', (name) => {
+    let sprites = 0;
+    const fallbacks: number[] = [];
+    let tick = 0;
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite() {
+        sprites++;
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, color: string) {
+        if (color === FALLBACK) fallbacks.push(tick);
+      },
+    });
+    const picture = skirmishCanvasPicture(r, skirmishLook(content));
+    play(name, (g) => {
+      tick = g.rts.tick;
+      picture.draw(g.rts, []);
+    });
+    expect(sprites).toBeGreaterThan(0);
+    expect(fallbacks.slice(0, 5)).toEqual([]);
+  });
+
+  it('has one song, its channels the same length, and an sfx for every sound the skin names', () => {
+    const songs = contentSongs(content);
+    expect(songs.map((s) => s.id)).toEqual([SKIRMISH_MUSIC]);
+    const song = songs[0]!;
+    expect(compileSong(song).length).toBeGreaterThan(0);
+    const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).map(
+      (ch) => parseMml(song[ch]!, ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length,
+    );
+    expect(new Set(lengths).size).toBe(1);
+    const sfx = new Set(contentSfx(content).map((s) => s.id));
+    const sounds = Object.values(skin.events ?? {}).flatMap((e) => (e.sound ? [e.sound] : []));
+    expect(sounds.length).toBeGreaterThanOrEqual(9);
+    for (const sound of sounds) expect(sfx.has(sound), sound).toBe(true);
+  });
+
+  /** Every event the frames of `name` carry, as `type:side` (or `type:result`), with the last frame's status. */
+  function eventsOf(name: string) {
+    const frames = skirmishFrames(content.manifest.screen);
+    const seen = new Map<string, number>();
+    const sounds = new Set<string>();
+    let status: PresentFrame['status'] = {};
+    // A frame before each tick's orders and one after, as the page draws many frames a tick.
+    const draw = (g: ReturnType<typeof createGame>) => {
+      const frame = frames.next(g.rts, []);
+      status = { ...frame.status };
+      for (const e of frame.events) {
+        const key = `${e.type}:${String(e['side'] ?? e['result'])}`;
+        seen.set(key, (seen.get(key) ?? 0) + 1);
+        const sound = resolveSkinEvent(skin.events, e)?.sound;
+        if (sound) sounds.add(sound);
+      }
+    };
+    play(name, draw, draw);
+    return { seen, sounds, status };
+  }
+
+  it('sounds the battle: the site, the barracks, the soldiers, gold, the fight and the win once', () => {
+    const { seen, sounds, status } = eventsOf('battle');
+    for (const key of [
+      'site-placed:own',
+      'building-done:own',
+      'unit-ready:own',
+      'stock-up:own',
+      'unit-hit:own',
+      'unit-hit:enemy',
+      'unit-down:enemy',
+    ])
+      expect(seen.has(key), key).toBe(true);
+    expect(seen.get('unit-down:enemy')).toBe(4);
+    expect(seen.get('battle-end:won')).toBe(1);
+    expect(seen.has('battle-end:lost')).toBe(false);
+    // One of the three soldiers falls in the fight (`fall`).
+    expect([...sounds].sort()).toEqual([
+      'built',
+      'clash',
+      'coin',
+      'fall',
+      'placed',
+      'ready',
+      'slain',
+      'victory',
+    ]);
+    expect(status['won']).toBe(true);
+    expect(status['lost']).toBeUndefined();
+  });
+
+  it('ends the lost run with the defeat: every red unit down, the jingle once and the banner', () => {
+    const { seen, sounds, status } = eventsOf('lost');
+    expect(seen.get('unit-down:own')).toBe(4);
+    expect(seen.get('battle-end:lost')).toBe(1);
+    expect(sounds.has('defeat')).toBe(true);
+    expect(sounds.has('fall')).toBe(true);
+    expect(status['lost']).toBe(true);
+    expect(skin.hud?.find((h) => h.status === 'lost')?.frame).toBe('banner-lost');
+    expect(skin.hud?.find((h) => h.status === 'won')?.frame).toBe('banner-won');
+  });
+
+  it('reads the end off the view: won, lost, or still going', () => {
+    expect(skirmishResult(play('battle').rts.view())).toBe('won');
+    expect(skirmishResult(play('lost').rts.view())).toBe('lost');
+    expect(skirmishResult(play('hold').rts.view())).toBeNull();
+    expect(skirmishResult(play('economy').rts.view())).toBeNull();
   });
 });

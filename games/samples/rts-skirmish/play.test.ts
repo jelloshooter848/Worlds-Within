@@ -181,8 +181,13 @@ describe('SkirmishPlay (the page without the DOM)', () => {
     play.controls.selection.set([...soldiers.map((u) => u.id), 15]);
     const enemy = play.view().units.find((u) => u.faction === 'blue')!;
     step([tap(play, enemy.x, enemy.y, 'secondary')]);
+    expect(play.result()).toBeNull();
     while (play.tick < 300 && (play.sides().blue?.units ?? 0) > 0) step();
     expect(play.sides().blue?.units).toBe(0);
+    // The end (Engine 0.15 T14): won, and the frame carries the banner's status.
+    expect(play.result()).toBe('won');
+    play.render(new NullRenderer());
+    expect(presenter.last?.status['won']).toBe(true);
     while (play.tick % 20 !== 0) step();
 
     const run = await play.exportRun();

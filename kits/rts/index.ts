@@ -4,6 +4,7 @@ export * from './selection';
 export * from './commands';
 export * from './enemy';
 export * from './present';
+export * from './events';
 export * from './controls';
 export * from './game';
 export * from './rules';

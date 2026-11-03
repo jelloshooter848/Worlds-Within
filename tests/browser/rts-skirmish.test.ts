@@ -46,6 +46,7 @@ interface Hook {
   camera(): { zoom: number; x: number; y: number };
   clientAt(wx: number, wy: number): { x: number; y: number };
   message(): string;
+  result(): 'won' | 'lost' | null;
   exportRun(game?: string): Promise<RecordedRun | null>;
 }
 interface RecordedRun {
@@ -98,14 +99,23 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       });
       await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
 
+      // The games index lists it by its name; follow the index's own link (Engine 0.15 T14).
       await page.goto(server.url);
-      expect(await page.locator(`#games a[href="${GAME}"]`).count()).toBe(1);
+      const link = page.locator(`#games a[href="${GAME}"]`);
+      expect(await link.count()).toBe(1);
+      expect(await link.locator('xpath=..').textContent()).toContain('The River Ford');
+      await link.click();
+      await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      expect(new URL(page.url()).pathname).toBe(`/${GAME}`);
 
       // The page in manual-loop mode (`?debug=step`): `window.__ww.step(n)` takes n loop steps
       // (see platformer.test.ts).
-      await page.goto(`${server.url}${GAME}?debug=step`);
+      await page.goto(`${page.url()}?debug=step`);
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
       expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
+      // The shell's volume control (gap M1), and no end screen yet.
+      expect(await page.locator('#ww-volume').count()).toBe(1);
+      expect(await page.isVisible('#end')).toBe(false);
       const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
       const tick = () => hook(page, 'tick');
       const sides = () => hook(page, 'sides');
@@ -212,6 +222,11 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       const raider = (await units()).find((u) => u.faction === 'blue')!;
       await click(raider.x, raider.y, 'right');
       await until('the raiders beaten', async () => (await sides()).blue?.units === 0);
+      // The end screen (Engine 0.15 T14): the win, over the picture's banner.
+      await frames(1);
+      expect(await hook(page, 'result')).toBe('won');
+      expect(await page.isVisible('#end')).toBe(true);
+      expect(await page.locator('#end-title').textContent()).toContain('Victory');
       const red = (await sides()).red!;
       expect(red.buildings['barracks']).toBe(1);
       expect(red.unitTypes['hero']).toBe(1);

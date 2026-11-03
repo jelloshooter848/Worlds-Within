@@ -6,7 +6,14 @@ three waves on `kits/towerdefense`, as data files plus a few lines of glue. Ever
 leaks, won and lost) is the kit's; this folder holds only content and the run files that prove the
 kit's rules. It does not use `engine/sim`. Since T5 it has original NES-style art, sound and a
 Canvas2D skin as text files, a `view.ts` for `pnpm cli screenshot` and a playable page
-(`index.html`, listed by the root launcher).
+(`index.html`, listed by the root launcher). Since Engine 0.15 T14 it is **finished** as **The
+Winding Road** (docs/BUILD-LOG.md, Engine 0.15, decision 13): its assets were audited (every
+kind, tile, event and HUD item drawn from its own art; no look with a `fallbackColor` of its own;
+a test draws every tick of every run without a fallback box; an sfx for every sound the skin
+names and the song's channels one length), its page uses the shell's tick rate and frame taps
+(gaps D1, D2) and its tests tap through the kit's `screenAtCell` (gap D13), and the browser test
+follows the games index's link. Its run files and their hashes did not change. This file is the
+worked example of a tower-defense game on the kit ("How it was built", below).
 
 ## How to play
 
@@ -33,7 +40,7 @@ The page plays 30 game ticks a second (`TICKS_PER_SECOND` in `play.ts`, the scen
 which the shell paces since Engine 0.15, gap D2); the tools play the same ticks, so a run file's
 `input` typed one tick at a time plays the same round.
 
-## How it was built
+## How it was built (the worked example)
 
 1. `game.json` names the kit (`towerdefense`), claims the three content kinds, the seed (12) and a
    256x240 picture; the map is 16 x 15 cells of 16 px, so it fills the picture.
@@ -52,6 +59,11 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
 7. T5: the art (`content/sprites/`, `content/palettes/`), the skin, the sfx and the song were
    written as text and checked with `validate`; then `picture.ts` and `view.ts` (checked with
    `pnpm cli screenshot`), then `play.ts`, `main.ts` and `index.html` over `bootBrowserGame`.
+8. Engine 0.15 (T5, T10, T14): the page's own tick counter, `TickInput`, hint string and
+   cell-to-client copy went to the engine (the scene's `tickRate`, `MergedInput`, frame taps, the
+   kit's `TD_CONTROLS` with `controlsHint`, `screenAtCell` and the display's `toClient`); a round
+   played by taps became a run file (`tapped`); the skin's per-look `fallbackColor`s were removed
+   (the sheet's `#ff00ff` stays, so a missing frame shows) and the asset tests added.
 
 ## Files
 
@@ -77,7 +89,8 @@ which the shell paces since Engine 0.15, gap D2); the tools play the same ticks,
 - `content/palettes/`: `td` (the NES colours the art uses) and three recolours with the same
   letters: `td-ok` (green) and `td-blocked` (red) for the ghost tower, `td-hit` (white) for an enemy
   shot this step.
-- `content/skins/canvas2d.json`: keyed on the kit's kinds: `tower:arrow`, `tower:cannon` (`idle`,
+- `content/skins/canvas2d.json` (no look with a `fallbackColor` of its own since Engine 0.15
+  T14; the sheet's `#ff00ff` is the only one): keyed on the kit's kinds: `tower:arrow`, `tower:cannon` (`idle`,
   `fire`), `enemy:runner`, `enemy:brute` (`walk`, mirrored when facing left; `byTag` `hit` draws
   them with `td-hit`), `shot:arrow`, `shot:cannon`, `ghost:arrow`, `ghost:cannon` (the tower's
   frame; `byTag` `ok` with `td-ok`, `blocked` with `td-blocked`) and `cursor` (blinking). Tiles
@@ -101,7 +114,8 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
   every tap arrives; Engine 0.15, gap D2, which removed the sample's own `TickInput` and counter).
   Keys and taps are frame input the kit's `TdGame` reads (gap D1); `headless()` is the game, for
   `window.__ww`.
-- `main.ts` + `index.html`: the page: `bootBrowserGame` with Canvas2D, `game` (the volume
+- `main.ts` + `index.html` (title "Tower defense: The Winding Road, ...", the name the games index
+  shows): the page: `bootBrowserGame` with Canvas2D, `game` (the volume
   control's storage key, gap M1), the touch pad, `pointer: true` and `audio` (the sfx and the song
   `road`), the bar (Wave, Tower, Sell, pressing through the shell's `InputManager.press`, and the
   status; before the first wave its hint is the kit's `TD_CONTROLS` written by `controlsHint` with
@@ -110,8 +124,8 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 - `play.test.ts`: `TdPlay` on a `SceneStack` (paced at its `tickRate`) into the null backend: the
   `won` input typed one tick at a time wins with the run's golden hash at tick 700 and shows every
   kind of event; one tick every two loop steps; a key pressed for one loop step counts; frame taps
-  move, place and sell; the `tapped` run's taps give its golden hash; `InputManager.press`
-  presses on the next tick.
+  move, place and sell (each tap at a cell's centre from the kit's `screenAtCell`, gap D13); the
+  `tapped` run's taps give its golden hash; `InputManager.press` presses on the next tick.
 - `content.ts`: `loadTowerDefense(files)` (the checked bundle) and `sampleRound(content)` (the
   kit's `tdRound`).
 - No `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
@@ -121,7 +135,9 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 - `tower-defense.test.ts`: the content (one map filling the picture, two tower types, three waves),
   the start state, every run file played twice to the same snapshots with its assertions passing,
   won and lost, each run failing without each rule in its `guards`, and the `won` input equal to
-  the bot's plan.
+  the bot's plan. Engine 0.15 T14 (the asset audit): no look, tag look or tile with its own
+  fallback colour; every tick of every run drawn through `view.ts`'s Canvas2D picture without a
+  fallback box; the one song's channels the same length; the skin's sounds exactly the sfx files.
 - `runs/`: five run files, each with sync `hashes` and a golden `<name>.hashes.json`:
   - `build.run.json` (40 ticks): an arrow on the path is refused (`not_build_cell`), a cannon
     bought, a second refused (`too_poor`), the first sold for 15, an arrow bought. Guards
@@ -177,8 +193,8 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 The art and the page: `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick
 300` (a PNG in `.ww-out/screenshots/`, the same bytes every time; `--json` gives its sha256 and
 `matchesHeadless`). In headless Chromium (skipped where none is installed):
-`pnpm test tests/browser/tower-defense-page.test.ts` builds the repo, finds the page in the
-launcher, places an arrow with two taps and starts a wave with the Wave button (it kills runners),
+`pnpm test tests/browser/tower-defense-page.test.ts` builds the repo, follows the games index's
+link to the page (as "The Winding Road"), checks the shell's volume control, places an arrow with two taps and starts a wave with the Wave button (it kills runners),
 then types the `won` run's input on the keyboard and wins at tick 673 with 5 lives, with no page
 errors; `pnpm test tests/browser/tower-defense-shots.test.ts` takes `build` at tick 40, `won` at
 300 and `leaked` at 1330 twice each (byte-identical, matching the headless hashes, all different).

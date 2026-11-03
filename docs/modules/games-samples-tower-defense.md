@@ -11,7 +11,11 @@ round is the kit's. Its run files place towers with the cursor, hold every wave 
 defence, and guard every kit rule (the kit is strict). Since T5 it has original NES-style art,
 MML sound and a Canvas2D skin (all text), a view for `pnpm cli screenshot` and a playable page
 (keys, the touch pad, taps to build, the bar's Wave, Tower and Sell buttons), listed by the root
-launcher.
+launcher. Since Engine 0.15 T14 it is finished as **The Winding Road**: its assets audited (no
+look with its own fallback colour, every tick of every run drawn from the art, an sfx for every
+sound), its page on the shell's tick rate and frame taps, its tests tapping through the kit's
+`screenAtCell`, and its browser test following the games index's link; no run file or hash
+changed. Its `CLAUDE.md` is the worked example of a tower-defense game.
 
 ## Public API entry points
 
@@ -52,6 +56,6 @@ guarded; `tests/runs/tower-defense-mutants.test.ts`), `pnpm test tests/runs` (go
 backend parity). How to play: arrows move, Z or a second tap builds, X picks the tower, C or a
 right click sells, Enter or the Wave button sends a wave. The page and the art:
 `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick 300 --json`
-(deterministic PNG), `tests/browser/tower-defense-page.test.ts` (the built page played from the
-launcher's link by taps and by keys, no page errors) and `tests/browser/tower-defense-shots.test.ts`
+(deterministic PNG), `tests/browser/tower-defense-page.test.ts` (the built page opened from the
+games index's link, the volume control, played by taps and by keys, no page errors) and `tests/browser/tower-defense-shots.test.ts`
 (headless Chromium; skipped where none is installed), `tests/build/pages.test.ts` (the launcher).

@@ -1,6 +1,6 @@
 {
   "id": "rts-skirmish",
-  "title": "RTS skirmish: one side against a scripted raiding party",
+  "title": "The River Ford: an RTS skirmish against a scripted raiding party",
   "kit": "rts",
   "content": {
     "rts-map": ["content/maps/*.world.json"],
@@ -8,7 +8,9 @@
     "rts-enemy": ["content/enemy/*.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
-    "skin": ["content/skins/*.json"]
+    "skin": ["content/skins/*.json"],
+    "sfx": ["content/sfx/*.json"],
+    "song": ["content/songs/*.json"]
   },
   "start": { "seed": 9 },
   "screen": { "width": 320, "height": 240 },

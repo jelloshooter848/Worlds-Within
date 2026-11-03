@@ -36,6 +36,12 @@ content kinds). `kit.ts` exports `kit`, the hook the tools find by the name `rts
 
 - Engine 0.15 T7 (gap M25): `RtsMissionInfo.marker` may be a scenario key (a mission file's
   `marker`), resolved through `presentWorld`'s `keys` option; `rtsMissionInfo(def)`.
+- Engine 0.15 T14: `events` (`RtsEventTracker(faction, tileSize?)`, `rtsEvents(before, after,
+faction)`): what changed between two views as presentation events, each with its `side`
+  (`own`, `enemy`, `neutral`) for a skin's `type:side=own` keys: `unit-ready`, `unit-down`,
+  `unit-hit`, `site-placed`, `building-done`, `building-down`, `building-hit`, `stock-up`. The
+  world snapshot carries no events, so this is how a game on the kit gets battle sounds (the RTS
+  skirmish passes them to `presentWorld`'s `events`). It reads views only: no world rule.
 
 ## Imports allowed
 

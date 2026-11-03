@@ -10,15 +10,13 @@
       "frames": {
         "idle": "arrow-idle",
         "fire": "arrow-fire"
-      },
-      "fallbackColor": "#7c4800"
+      }
     },
     "tower:cannon": {
       "frames": {
         "idle": "cannon-idle",
         "fire": "cannon-fire"
-      },
-      "fallbackColor": "#7c7c7c"
+      }
     },
     "enemy:runner": {
       "frames": {
@@ -28,7 +26,6 @@
         }
       },
       "flipFacing": true,
-      "fallbackColor": "#00e800",
       "byTag": [
         {
           "tag": "hit",
@@ -44,7 +41,6 @@
         }
       },
       "flipFacing": true,
-      "fallbackColor": "#6844fc",
       "byTag": [
         {
           "tag": "hit",
@@ -55,20 +51,17 @@
     "shot:arrow": {
       "frames": {
         "idle": "shot-arrow"
-      },
-      "fallbackColor": "#bcbcbc"
+      }
     },
     "shot:cannon": {
       "frames": {
         "idle": "shot-cannon"
-      },
-      "fallbackColor": "#f8b800"
+      }
     },
     "ghost:arrow": {
       "frames": {
         "idle": "arrow-idle"
       },
-      "fallbackColor": "#b8f818",
       "byTag": [
         {
           "tag": "ok",
@@ -76,8 +69,7 @@
         },
         {
           "tag": "blocked",
-          "palette": "td-blocked",
-          "fallbackColor": "#f83800"
+          "palette": "td-blocked"
         }
       ]
     },
@@ -85,7 +77,6 @@
       "frames": {
         "idle": "cannon-idle"
       },
-      "fallbackColor": "#b8f818",
       "byTag": [
         {
           "tag": "ok",
@@ -93,8 +84,7 @@
         },
         {
           "tag": "blocked",
-          "palette": "td-blocked",
-          "fallbackColor": "#f83800"
+          "palette": "td-blocked"
         }
       ]
     },
@@ -104,30 +94,24 @@
           "frames": ["cursor-0", "cursor-1"],
           "ticks": 16
         }
-      },
-      "fallbackColor": "#fcfcfc"
+      }
     }
   },
   "tiles": {
     ".": {
-      "frame": "ground",
-      "fallbackColor": "#00a800"
+      "frame": "ground"
     },
     "#": {
-      "frame": "road",
-      "fallbackColor": "#c84c0c"
+      "frame": "road"
     },
     "B": {
-      "frame": "pad",
-      "fallbackColor": "#7c7c7c"
+      "frame": "pad"
     },
     "S": {
-      "frame": "cave",
-      "fallbackColor": "#000000"
+      "frame": "cave"
     },
     "X": {
-      "frame": "gate",
-      "fallbackColor": "#bcbcbc"
+      "frame": "gate"
     }
   },
   "events": {

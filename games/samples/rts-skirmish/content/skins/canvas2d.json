@@ -70,8 +70,7 @@
           }
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#d82800"
+      "flipFacing": true
     },
     "unit:worker:enemy": {
       "frames": {
@@ -138,7 +137,6 @@
         }
       },
       "flipFacing": true,
-      "fallbackColor": "#0078f8",
       "palette": "skirmish-blue"
     },
     "unit:soldier": {
@@ -205,8 +203,7 @@
           }
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#d82800"
+      "flipFacing": true
     },
     "unit:soldier:enemy": {
       "frames": {
@@ -273,7 +270,6 @@
         }
       },
       "flipFacing": true,
-      "fallbackColor": "#0078f8",
       "palette": "skirmish-blue"
     },
     "unit:hero": {
@@ -340,8 +336,7 @@
           }
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#d82800"
+      "flipFacing": true
     },
     "unit:hero:enemy": {
       "frames": {
@@ -408,7 +403,6 @@
         }
       },
       "flipFacing": true,
-      "fallbackColor": "#0078f8",
       "palette": "skirmish-blue"
     },
     "building:town-centre": {
@@ -416,8 +410,7 @@
         "idle": "town-centre",
         "train": "town-centre",
         "site": "site-3x3"
-      },
-      "fallbackColor": "#883c00"
+      }
     },
     "building:town-centre:enemy": {
       "frames": {
@@ -425,7 +418,6 @@
         "train": "town-centre",
         "site": "site-3x3"
       },
-      "fallbackColor": "#883c00",
       "palette": "skirmish-blue"
     },
     "building:barracks": {
@@ -434,12 +426,14 @@
         "train": "barracks",
         "site": "site-2x2"
       },
-      "fallbackColor": "#883c00",
       "byTag": [
         {
           "prefix": "progress:",
           "min": 50,
-          "frames": { "idle": "site-2x2-half", "site": "site-2x2-half" }
+          "frames": {
+            "idle": "site-2x2-half",
+            "site": "site-2x2-half"
+          }
         }
       ]
     },
@@ -449,13 +443,15 @@
         "train": "barracks",
         "site": "site-2x2"
       },
-      "fallbackColor": "#883c00",
       "palette": "skirmish-blue",
       "byTag": [
         {
           "prefix": "progress:",
           "min": 50,
-          "frames": { "idle": "site-2x2-half", "site": "site-2x2-half" }
+          "frames": {
+            "idle": "site-2x2-half",
+            "site": "site-2x2-half"
+          }
         }
       ]
     },
@@ -463,14 +459,12 @@
       "frames": {
         "idle": "gold",
         "empty": "gold-empty"
-      },
-      "fallbackColor": "#f8b800"
+      }
     },
     "selection-ring": {
       "frames": {
         "idle": "ring"
-      },
-      "fallbackColor": "#00e800"
+      }
     },
     "health-bar": {
       "frames": {
@@ -483,8 +477,7 @@
         "hp-6": "hp-6",
         "hp-7": "hp-7",
         "hp-8": "hp-8"
-      },
-      "fallbackColor": "#00e800"
+      }
     },
     "progress-bar": {
       "frames": {
@@ -497,38 +490,113 @@
         "p-6": "p-6",
         "p-7": "p-7",
         "p-8": "p-8"
-      },
-      "fallbackColor": "#f8b800"
+      }
     },
     "ghost:barracks": {
       "frames": {
         "idle": "ghost-2x2"
-      },
-      "fallbackColor": "#00e800"
+      }
     },
     "selection-box": {
       "frames": {
         "idle": "box"
-      },
-      "fallbackColor": "#fcfcfc"
+      }
     }
   },
   "tiles": {
     "0": {
-      "frame": "rock",
-      "fallbackColor": "#7c7c7c"
+      "frame": "rock"
     },
     "1": {
-      "frame": "dirt",
-      "fallbackColor": "#ac7c00"
+      "frame": "dirt"
     },
     "2": {
-      "frame": "grass",
-      "fallbackColor": "#00a800"
+      "frame": "grass"
     },
     "3": {
-      "frame": "water",
-      "fallbackColor": "#0058f8"
+      "frame": "water"
+    }
+  },
+  "events": {
+    "unit-down:side=own": {
+      "sound": "fall",
+      "effect": {
+        "kind": "particles",
+        "color": "#d82800",
+        "count": 8,
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "unit-down:side=enemy": {
+      "sound": "slain",
+      "effect": {
+        "kind": "particles",
+        "color": "#0078f8",
+        "count": 8,
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "unit-hit": {
+      "sound": "clash",
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 3,
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "unit-ready:side=own": {
+      "sound": "ready",
+      "effect": {
+        "kind": "particles",
+        "color": "#f8b800",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "site-placed:side=own": {
+      "sound": "placed",
+      "effect": {
+        "kind": "particles",
+        "color": "#ac7c00",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "building-done:side=own": {
+      "sound": "built",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "building-hit:side=own": {
+      "sound": "clash"
+    },
+    "stock-up:side=own": {
+      "sound": "coin"
+    },
+    "battle-end:won": {
+      "sound": "victory",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 20
+      }
+    },
+    "battle-end:lost": {
+      "sound": "defeat",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 20
+      }
     }
   },
   "hud": [
@@ -573,6 +641,20 @@
       "x": 98,
       "y": 4,
       "font": "skirmish-font"
+    },
+    {
+      "status": "won",
+      "as": "icon",
+      "x": 80,
+      "y": 96,
+      "frame": "banner-won"
+    },
+    {
+      "status": "lost",
+      "as": "icon",
+      "x": 80,
+      "y": 96,
+      "frame": "banner-lost"
     }
   ],
   "camera": {

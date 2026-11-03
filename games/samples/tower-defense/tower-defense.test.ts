@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { mustLoad } from '@engine/core/content/game-content';
+import { NullRenderer } from '@engine/backends/null';
+import type { Renderer } from '@engine/core/gfx/renderer';
+import { compileSong, parseMml } from '@engine/core/audio/mml';
+import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { TD_TILE_SIZE, TdBot, TOWERDEFENSE_RULES, type TdBotStep } from '@kits/towerdefense';
 import { loadTowerDefense, sampleRound } from './content';
 import { createGame } from './headless';
+import { tdLook } from './picture';
+import { createView } from './view';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const content = mustLoad(loadTowerDefense(readGameFiles(ROOT)));
@@ -145,5 +150,60 @@ describe('the tower-defense headless', () => {
       snaps.push(canonicalJson(game.snapshot()));
     }
     expect(snaps).toEqual(play('won').map((s) => canonicalJson(s)));
+  });
+});
+
+describe('the tower-defense assets (Engine 0.15 T14 audit)', () => {
+  const { skin } = tdLook(content);
+  const FALLBACK = skin.sheets?.fallbackColor;
+
+  it('names no placeholder look: no kind, tag look or tile has its own fallback colour', () => {
+    expect(FALLBACK).toBe('#ff00ff');
+    for (const [kind, entry] of Object.entries(skin.kinds)) {
+      expect(entry.fallbackColor, kind).toBeUndefined();
+      for (const tagged of entry.byTag ?? []) expect(tagged.fallbackColor, kind).toBeUndefined();
+    }
+    for (const [tile, entry] of Object.entries(skin.tiles ?? {}))
+      expect(entry.fallbackColor, tile).toBeUndefined();
+  });
+
+  it.each(RUNS)('draws every tick of %s from the art, never a fallback box', (name) => {
+    const run = runFile(name);
+    const view = createView(content, SEED);
+    const input = new ScriptedInput(run.input);
+    let sprites = 0;
+    const fallbacks: number[] = [];
+    let tick = 0;
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite() {
+        sprites++;
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, color: string) {
+        if (color === FALLBACK) fallbacks.push(tick);
+      },
+    });
+    for (tick = 0; tick <= run.ticks; tick++) {
+      if (tick > 0) {
+        input.next();
+        view.step(input);
+      }
+      view.render(r);
+    }
+    expect(sprites).toBeGreaterThan(0);
+    expect(fallbacks.slice(0, 5)).toEqual([]);
+  });
+
+  it('has one song with channels of one length, and an sfx for every sound the skin names', () => {
+    const songs = contentSongs(content);
+    expect(songs.map((s) => s.id)).toEqual(['road']);
+    const song = songs[0]!;
+    expect(compileSong(song).length).toBeGreaterThan(0);
+    const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).map(
+      (ch) => parseMml(song[ch]!, ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length,
+    );
+    expect(new Set(lengths).size).toBe(1);
+    const sfx = new Set(contentSfx(content).map((s) => s.id));
+    const sounds = Object.values(skin.events ?? {}).flatMap((e) => (e.sound ? [e.sound] : []));
+    expect(new Set(sounds)).toEqual(sfx);
   });
 });

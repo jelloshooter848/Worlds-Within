@@ -1,0 +1,9 @@
+{
+  "id": "ford",
+  "bpm": 126,
+  "loop": true,
+  "pulse1": "v9 @2 l8 o4 L [g4 b > d < c4 e g]2 [a4 > c e < d4 f+ a] g b > d < b a f+ d4 [e g b g] [c e g e] d f+ a > c < b4 g4",
+  "pulse2": "v5 @1 l4 o3 L [b > d < c e]2 [> c e < f+ a] b > d < b a [g b] [e g] f+ a g2",
+  "triangle": "l8 o2 L [g r g > d < c r c g]2 [a r a > e < d r d a] g r g > d < d r d a [e r e b] [c r c g] d r d > d < g4 r4",
+  "noise": "v4 l8 L [k h s h k k s h]7 k h s h k s s s"
+}

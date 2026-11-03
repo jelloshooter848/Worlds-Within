@@ -19,10 +19,10 @@ describe('game page discovery', () => {
     expect(rts).toEqual({
       dir: 'games/samples/rts-skirmish',
       name: 'games-samples-rts-skirmish',
-      title: 'RTS skirmish',
+      title: 'RTS skirmish: The River Ford, hold the ford against a raiding party',
     });
     expect(gameListHtml(rts ? [rts] : [])).toContain(
-      '<a href="games/samples/rts-skirmish/">games/samples/rts-skirmish</a> <span>RTS skirmish</span>',
+      '<a href="games/samples/rts-skirmish/">games/samples/rts-skirmish</a> <span>RTS skirmish: The River Ford, hold the ford against a raiding party</span>',
     );
     expect(pageInputs(repoRoot)['games-samples-rts-skirmish']).toBe(
       join(repoRoot, 'games/samples/rts-skirmish/index.html'),
@@ -49,10 +49,10 @@ describe('game page discovery', () => {
     expect(td).toEqual({
       dir: 'games/samples/tower-defense',
       name: 'games-samples-tower-defense',
-      title: 'Tower defense',
+      title: 'Tower defense: The Winding Road, hold it against three waves',
     });
     expect(gameListHtml(td ? [td] : [])).toContain(
-      '<a href="games/samples/tower-defense/">games/samples/tower-defense</a> <span>Tower defense</span>',
+      '<a href="games/samples/tower-defense/">games/samples/tower-defense</a> <span>Tower defense: The Winding Road, hold it against three waves</span>',
     );
     expect(pageInputs(repoRoot)['games-samples-tower-defense']).toBe(
       join(repoRoot, 'games/samples/tower-defense/index.html'),

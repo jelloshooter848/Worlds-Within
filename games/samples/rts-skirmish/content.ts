@@ -12,6 +12,9 @@ import { kit as rts } from '@kits/rts/kit';
  * content lives here: the map, types, plan, art and skin are all text files under `content/`.
  */
 
+/** The song the page plays (`content/songs/ford.json`, Engine 0.15 T14). */
+export const SKIRMISH_MUSIC = 'ford';
+
 /** The side the player commands. The enemy's side is the plan's `faction` (`content/enemy/`). */
 export const PLAYER = 'red';
 

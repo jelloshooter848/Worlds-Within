@@ -1,7 +1,7 @@
-import { mustLoad } from '@engine/core/content/game-content';
+import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { bootBrowserGame } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
-import { loadSkirmish, PLAYER } from './content';
+import { loadSkirmish, PLAYER, SKIRMISH_MUSIC } from './content';
 import { skirmishLook, skirmishPicture } from './picture';
 import { SkirmishPlay, type ButtonState, type PageButton } from './play';
 import type { RecordedRun } from './recording';
@@ -13,8 +13,14 @@ import gameFiles from 'virtual:game-files';
  * (T3 kept PixiJS out), pointer gestures on (mouse and touch: `PointerSource`), the touch pad off
  * (the RTS plays by pointer), keyboard Shift for additive selection. The scene is `SkirmishPlay`
  * (`play.ts`); this file is only the DOM: the button bar under the picture, the status line, the
- * export (a download of the recorded battle as a run file) and the `window.wwSkirmish` hook the
- * browser test (`tests/browser/rts-skirmish.test.ts`) reads.
+ * export (a download of the recorded battle as a run file), the end screen and the
+ * `window.wwSkirmish` hook the browser test (`tests/browser/rts-skirmish.test.ts`) reads.
+ *
+ * Engine 0.15 T14: the shell's `audio` plays the sample's song (`ford`, from the first click, tap
+ * or key) and the skin's event sounds through the display's `onSound`; the volume control keeps
+ * the player's volumes (gap M1). When the battle ends the picture shows the skin's banner and
+ * `#end` (the result, the tick, and Play again) opens over it; the game keeps stepping, so an
+ * export still ends on a hash tick.
  */
 
 /** What the page offers scripts (the browser test) on `window.wwSkirmish`. */
@@ -42,6 +48,8 @@ export interface SkirmishHook {
   clientAt(wx: number, wy: number): { x: number; y: number };
   /** The last refused order's reason, or ''. */
   message(): string;
+  /** How the battle has ended: `won`, `lost`, or null while it goes on. */
+  result(): 'won' | 'lost' | null;
   /** The battle so far as a run file (null before tick 20). */
   exportRun(game?: string): Promise<RecordedRun | null>;
 }
@@ -56,14 +64,16 @@ window.addEventListener('blur', () => (shift = false));
 let play: SkirmishPlay | null = null;
 const bar = document.getElementById('bar') as HTMLElement;
 const status = document.getElementById('status') as HTMLElement;
+const end = document.getElementById('end') as HTMLElement;
+document.getElementById('again')?.addEventListener('click', () => location.reload());
 
 const booted = await bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
-  // No sounds yet (T14 adds them); the shell's volume control is there and keeps the player's
-  // volumes (gap M1).
-  audio: {},
-  displays: { canvas2d: (canvas) => canvasDisplay(canvas, look) },
+  // The song and the skin's event sounds (Engine 0.15 T14); the shell's volume control keeps the
+  // player's volumes (gap M1).
+  audio: { songs: contentSongs(content), sfx: contentSfx(content), music: SKIRMISH_MUSIC },
+  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }) },
   pointer: true,
   touchPad: false,
   scene(_stack, display, page) {
@@ -82,6 +92,7 @@ const booted = await bootBrowserGame({
         scene.render(r);
         showButtons(scene.buttons());
         showStatus(scene);
+        showEnd(scene);
       },
     };
   },
@@ -113,6 +124,7 @@ if (booted && play) {
       return display.toClient!(p.x, p.y); // the display's inverse of `toScreen` (gap D13)
     },
     message: () => scene.message,
+    result: () => scene.result(),
     exportRun: (game) => scene.exportRun(game),
   };
   (window as unknown as { wwSkirmish: SkirmishHook }).wwSkirmish = hook;
@@ -156,18 +168,32 @@ function showButtons(state: ButtonState): void {
 }
 
 function showStatus(scene: SkirmishPlay): void {
-  const sides = scene.sides();
-  const enemies = Object.entries(sides).filter(([f]) => f !== PLAYER);
-  const won = enemies.every(([, s]) => s.units === 0 && Object.keys(s.buildings).length === 0);
-  const lost = (sides[PLAYER]?.units ?? 0) === 0;
+  const result = scene.result();
   const text = [
     `tick ${scene.tick}`,
-    won ? 'the raiders are beaten' : lost ? 'your side is beaten' : '',
+    result === 'won' ? 'the raiders are beaten' : result === 'lost' ? 'your side is beaten' : '',
     scene.message,
   ]
     .filter((s) => s !== '')
     .join(' | ');
   if (status.textContent !== text) status.textContent = text;
+}
+
+let ended: string | null = null;
+/** The end screen: opened once when the battle ends, with the result and the tick it ended on. */
+function showEnd(scene: SkirmishPlay): void {
+  const result = scene.result();
+  if (result === null || ended !== null) return;
+  ended = result;
+  end.dataset['result'] = result;
+  (document.getElementById('end-title') as HTMLElement).textContent =
+    result === 'won' ? 'Victory: the ford is held' : 'Defeat: your side has fallen';
+  const own = scene.sides()[PLAYER];
+  (document.getElementById('end-text') as HTMLElement).textContent =
+    result === 'won'
+      ? `The raiders were beaten at tick ${scene.tick} with ${own?.units ?? 0} of your units standing.`
+      : `Your last unit fell at tick ${scene.tick}. Build a barracks and train soldiers before the raid.`;
+  end.hidden = false;
 }
 
 /** Saves the battle so far as `skirmish-t<tick>.run.json` (put it in `runs/` to keep `"game": ".."`). */

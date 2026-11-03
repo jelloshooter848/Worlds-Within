@@ -66,8 +66,11 @@ function hook<K extends keyof Hook>(
   ) as Promise<ReturnType<Hook[K]>>;
 }
 
-/** A fresh page of the game in manual-loop mode (no step yet). */
-async function open(browser: Browser, url: string, errors: string[]) {
+/**
+ * A fresh page of the game in manual-loop mode (no step yet); `fromIndex` first opens the games
+ * index and follows its link to the game (Engine 0.15 T14), then asks that page for the mode.
+ */
+async function open(browser: Browser, url: string, errors: string[], fromIndex = false) {
   const context = await browser.newContext({ viewport: { width: 640, height: 560 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
@@ -75,9 +78,20 @@ async function open(browser: Browser, url: string, errors: string[]) {
     if (msg.type() === 'error') errors.push(`console: ${msg.text()} (${msg.location().url})`);
   });
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
+  if (fromIndex) {
+    await page.goto(url);
+    const link = page.locator(`#games a[href="${GAME}"]`);
+    expect(await link.count()).toBe(1);
+    expect(await link.locator('xpath=..').textContent()).toContain('The Winding Road');
+    await link.click();
+    await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+    expect(new URL(page.url()).pathname).toBe(`/${GAME}`);
+  }
   await page.goto(`${url}${GAME}?debug=step`); // manual-loop mode: `window.__ww.step(n)`
   await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
   expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
+  // The shell's volume control (gap M1).
+  expect(await page.locator('#ww-volume').count()).toBe(1);
   /** `n` game ticks (`STEPS_PER_TICK` loop steps each). */
   const ticks = (n: number) =>
     page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n * STEPS_PER_TICK);
@@ -85,7 +99,7 @@ async function open(browser: Browser, url: string, errors: string[]) {
 }
 
 describe.skipIf(missing !== null)('the tower-defense page (headless Chromium)', () => {
-  it('is in the launcher, and plays from its link by taps and by keys', async () => {
+  it('is in the games index, and plays from its link by taps and by keys', async () => {
     const dist = join(temp, 'dist');
     const server = await serveBuilt('/', dist);
     const browser = await launch();
@@ -98,7 +112,7 @@ describe.skipIf(missing !== null)('the tower-defense page (headless Chromium)', 
 
       // By taps: a tap moves the cursor to a build cell, a second one places an arrow there.
       {
-        const { page, ticks } = await open(browser, server.url, errors);
+        const { page, ticks } = await open(browser, server.url, errors, true);
         await ticks(1);
         expect(await hook(page, 'tick')).toBe(1);
         // The cell's centre (the kit's `screenAtCell` on the 256x240 picture over the 16x15 map),

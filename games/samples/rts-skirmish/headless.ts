@@ -9,7 +9,7 @@ import {
   worldTimeline,
   type World,
 } from '@engine/sim/index';
-import { rtsGame, sidesOf, type RtsGame, type SideSummary } from '@kits/rts';
+import { rtsGame, sidesOf, type RtsGame, type RtsView, type SideSummary } from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
 import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
 
@@ -27,6 +27,23 @@ export function createWorld(content: ContentBundle, seed: number): World {
 
 /** Every side at a glance (the kit's `sidesOf`), re-exported for the page and the tests. */
 export { sidesOf, type SideSummary };
+
+/** How the skirmish has ended for the player, or null while it goes on. */
+export type SkirmishResult = 'won' | 'lost' | null;
+
+/**
+ * The skirmish's end (Engine 0.15 T14), the sample's own rule, read off the view and kept out of
+ * the snapshot (so no hash moves): `lost` once the player has no unit left, `won` once no other
+ * side has a unit or a building, else null. The page shows the end screen and the skin plays its
+ * jingle from it; run files check the same through `sides` (`sides.red.units`, `sides.blue.units`).
+ */
+export function skirmishResult(view: RtsView): SkirmishResult {
+  if (!view.units.some((u) => u.faction === PLAYER)) return 'lost';
+  const enemy = (f: string | null) => f !== null && f !== PLAYER;
+  if (!view.units.some((u) => enemy(u.faction)) && !view.buildings.some((b) => enemy(b.faction)))
+    return 'won';
+  return null;
+}
 
 /**
  * The game the tools play: the kit's `RtsGame` over the world and the player's interface

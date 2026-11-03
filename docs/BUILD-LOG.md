@@ -342,6 +342,43 @@ type-names.ts`) writes the kit's class names out (the same names, so no hash mov
   a failed round); the glue keeps its `test*` names (they are in the gap report and docs). **No
   golden hash moved** (no snapshot changed: every platformer run passes with its hashes,
   `level-4` final `06201f9a779cc2fc`, `level-5-start` `baff0936d93cd71f`); no layer arrow changed.
+- **The RTS skirmish and tower-defense samples finished** (T14, decision 13). **The RTS
+  skirmish, The River Ford:** it had no sound, so a kit helper came first: the RTS world snapshot
+  carries no events (the sim's rules announce nothing), and every RTS game wanting a sound when a
+  unit falls would diff two views itself, so `kits/rts/events.ts` gives `RtsEventTracker` /
+  `rtsEvents` (what changed between two views as presentation events, each with its `side` for
+  the player: `unit-ready`, `unit-down`, `unit-hit`, `site-placed`, `building-done`,
+  `building-down`, `building-hit`, `stock-up`; it reads views only, no world rule). The sample's
+  stream passes them to `presentWorld`'s `events`, adds its own `battle-end` (`won` / `lost`, once)
+  from `skirmishResult(view)` (the game's end rule: no red unit is a loss, no enemy unit or
+  building a win; out of the snapshot) and, once over, `won` or `lost` in the frame's status. New
+  content: nine sfx and the song `ford` (every channel 1536 ticks), the skin's `events` (keyed
+  `type:side=own`) and two end banners (`banner-won`, `banner-lost`, 160x48 text art from a
+  throwaway script) as HUD icons on that status; every per-kind and per-tile `fallbackColor`
+  removed (a test draws every tick of every run through Canvas2D and finds the sheet's `#ff00ff`
+  never used). The page plays the song and the skin's sounds through the shell's `audio` and the
+  display's `onSound`, with the volume control (gap M1, no longer `audio: {}`), and opens an end
+  screen (`#end`: Victory or Defeat, the tick, Play again) while the game keeps stepping (so an
+  export still ends on a hash tick). It already used the shared bridge (`rtsWorldPort`, T6). New
+  run file `lost` (100 ticks: every red unit sent at the raiders, the last falls on tick 79; final
+  `2cc7b6a08b67cdfd`, guards both enemy rules, `mutants` still clean); **no existing golden hash
+  moved** (`battle` `588fe33bb3ecfcfd`, `commands` `9f8fc0dc11549b95`, `hold` `dcf2c02f2cb6d266`,
+  `economy` `34bf04d6b067075d`). **The tower-defense sample, The Winding Road:** the asset
+  audit found the art, the eleven sfx and the song complete and every sound the skin names present;
+  its 17 per-look `fallbackColor`s were removed, with the same tests as the other samples (no own
+  fallback colour, every tick of every run drawn without a fallback box, the song's channels one
+  length, the skin's sounds exactly the sfx files). The page already used the shell's tick rate and
+  frame taps (T5); `play.test.ts` now taps at the kit's `screenAtCell` instead of its own cell
+  centres. Its run files are unchanged, hashes and all. Both pages are titled for the games index
+  ("The River Ford", "The Winding Road"; `tests/build/pages.test.ts` updated), and both browser
+  tests now follow the index's own link and check the volume control (the skirmish's also checks
+  the end screen after its win). Both `CLAUDE.md` files gained "How it was built (the worked
+  example)"; the module pages, `kits/rts/CLAUDE.md`, `docs/modules/kits-rts.md` and `llms.txt`
+  were updated. Choices: the end rule is the sample's (it reads the view), not the kit's, as the
+  mini siege's ends are its campaign's; the event reader is a kit helper rather than glue (two RTS
+  games would write it), and the mini siege was not moved onto it (it keeps its host events, decision
+  13 does not re-finish it); the tower-defense sample keeps its status-line end (its skin already
+  tints and plays `td-end:won` / `lost`) rather than a new banner. No layer arrow changed.
 
 ### Planned tasks
 

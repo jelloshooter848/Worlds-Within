@@ -6,7 +6,14 @@ import { RtsCamera } from '@engine/core/present';
 import type { Scene } from '@engine/core/scene';
 import { RtsControls, RTS_TILE_SIZE, trainButtons, type OrderDraft, type RtsView } from '@kits/rts';
 import { PLAYER } from './content';
-import { createGame, sidesOf, type SideSummary, type SkirmishGame } from './headless';
+import {
+  createGame,
+  sidesOf,
+  skirmishResult,
+  type SideSummary,
+  type SkirmishGame,
+  type SkirmishResult,
+} from './headless';
 import type { InterfaceOptions, SkirmishPicture } from './picture';
 import { BattleRecorder, type RecordedRun } from './recording';
 
@@ -117,6 +124,11 @@ export class SkirmishPlay implements Scene {
   /** Every side at a glance (`sidesOf`). */
   sides(): Record<string, SideSummary> {
     return sidesOf(this.view(), this.game.factions);
+  }
+
+  /** How the battle has ended (`skirmishResult`): `won`, `lost`, or null while it goes on. */
+  result(): SkirmishResult {
+    return skirmishResult(this.view());
   }
 
   /** A bar button: carried out at the start of the next step. */

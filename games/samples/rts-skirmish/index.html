@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
     />
     <meta name="theme-color" content="#000000" />
-    <title>RTS skirmish</title>
+    <title>RTS skirmish: The River Ford, hold the ford against a raiding party</title>
     <style>
       html,
       body {
@@ -67,6 +67,45 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      #end {
+        position: fixed;
+        left: 50%;
+        bottom: 56px;
+        transform: translateX(-50%);
+        max-width: calc(100vw - 32px);
+        box-sizing: border-box;
+        padding: 10px 16px;
+        border: 2px solid #f8b800;
+        border-radius: 4px;
+        background: #301800;
+        color: #fce0a8;
+        font:
+          15px/1.4 system-ui,
+          sans-serif;
+        text-align: center;
+      }
+      #end[data-result='lost'] {
+        border-color: #f83800;
+      }
+      #end[hidden] {
+        display: none;
+      }
+      #end h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      #end p {
+        margin: 0 0 8px;
+      }
+      #end button {
+        min-height: 30px;
+        padding: 0 12px;
+        border: 1px solid #f8b800;
+        border-radius: 4px;
+        background: #503000;
+        color: #fff;
+        font: inherit;
+      }
       #message {
         position: fixed;
         inset: 0;
@@ -85,6 +124,12 @@
   </head>
   <body>
     <canvas id="screen"></canvas>
+    <!-- The end screen: main.ts fills it in and shows it when the battle is won or lost. -->
+    <div id="end" hidden>
+      <h2 id="end-title"></h2>
+      <p id="end-text"></p>
+      <button id="again" type="button">Play again</button>
+    </div>
     <!-- The command bar: main.ts adds build, train, stop, hero and cancel buttons before Export. -->
     <div id="bar">
       <span id="status"></span>

@@ -11,7 +11,7 @@ import { InputManager, type InputFrame } from '@engine/core/input/input-manager'
 import { readGameFiles } from '@engine/core/node/game-files';
 import type { PresentFrame } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
-import { TD_TILE_SIZE } from '@kits/towerdefense';
+import { screenAtCell } from '@kits/towerdefense';
 import { loadTowerDefense } from './content';
 import { tdPicture } from './picture';
 import { STEPS_PER_TICK, TdPlay } from './play';
@@ -40,14 +40,16 @@ const wonInput = () =>
     }
   ).input;
 
-/** A frame holding nothing and tapping at `taps` (cells' centres), for one loop step. */
+/**
+ * A frame holding nothing and tapping at `taps`, for one loop step: each cell's centre on the
+ * picture by the kit's `screenAtCell` (gap D13; the 16x15 map fills the 256x240 picture).
+ */
 function tapFrame(...taps: { col: number; row: number; button?: 'primary' | 'secondary' }[]): ScriptedInput {
   const input = new ScriptedInput({
     steps: [],
     taps: taps.map((t) => ({
       frame: 0,
-      x: (t.col + 0.5) * TD_TILE_SIZE,
-      y: (t.row + 0.5) * TD_TILE_SIZE,
+      ...screenAtCell(t, { size: content.manifest.screen }, { cols: 16, rows: 15 }),
       ...(t.button && { button: t.button }),
     })),
   });

@@ -73,6 +73,16 @@ camera?, missions?, events?, state? })`, below. `RtsPresentState` (map tracker, 
   (`{ id, title, event?, marker? }`; a `MissionDef` fits). `marker` is an entity id or (Engine
   0.15 T7, gap M25) a scenario key, the mission file's `marker`, resolved through the options'
   `keys` (the world's key table: `MissionHost.worldKeys()`); a key the table lacks is ignored.
+- `events.ts` (Engine 0.15 T14): `RtsEventTracker(faction, tileSize?)`: `next(view)` gives the
+  presentation events between the last view it saw and this one (none for the first view or
+  another view of the same tick, as a page draws many frames a tick), `reset()`; `rtsEvents(before,
+after, faction, tileSize?)` is the same for two views. Events, each with `side` (`own`, `enemy`,
+  `neutral` for the player; a skin keys `unit-down:side=own`), `entity` and `x`/`y` (the box's
+  centre, world px): `unit-ready` (`unitType`), `unit-down` (`unitType`), `unit-hit` (`damage`),
+  `site-placed` (`kind`), `building-done`, `building-down`, `building-hit` (`damage`) and
+  `stock-up` (`item`, `amount`; no `entity`), in that order, each ascending by id. It only reads
+  views (the snapshot has no events; the sim's rules announce nothing), so it holds no world rule;
+  a game hands them to `presentWorld`'s `events` (the RTS skirmish does). `events.test.ts`.
 - `controls.ts`: `RtsControls(faction, camera, tileSize, rules?)`, the pointer glue a page uses:
   `gesture(g, view, additive?)` takes `PointerGesture`s (`engine/core/input/pointer-logic.ts`):
   pan and zoom move the `RtsCamera`, a primary tap selects (or places the building being placed),
@@ -162,7 +172,8 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   captive marker in the HUD; `snapshot.test.ts` checks both).
 - **Camera**: the given hint (`RtsCamera.hint()`, from `RtsControls.presentOptions`), else the
   map's centre.
-- **Events**: passed through (the world snapshot carries none).
+- **Events**: passed through (the world snapshot carries none; `RtsEventTracker` reads them off
+  two views, Engine 0.15 T14).
 
 ## Named rules (`rules.ts`)
 

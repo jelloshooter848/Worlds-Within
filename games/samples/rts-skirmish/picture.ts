@@ -12,8 +12,15 @@ import {
   type SkinFile,
 } from '@engine/core/present';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
-import { presentWorld, RtsPresentState, type RtsPresentOptions, type RtsView } from '@kits/rts';
+import {
+  presentWorld,
+  RtsEventTracker,
+  RtsPresentState,
+  type RtsPresentOptions,
+  type RtsView,
+} from '@kits/rts';
 import { PLAYER, skirmishSkin } from './content';
+import { skirmishResult, type SkirmishResult } from './headless';
 
 /**
  * Glue between the RTS kit's frames and the Canvas2D backend: no drawing of its own. One stream of
@@ -25,6 +32,13 @@ import { PLAYER, skirmishSkin } from './content';
  * tag (`own`, `enemy`). A skin picks frames by kind only, so `sideKinds` gives the enemy's units
  * and buildings their own kind (`unit:soldier:enemy`), which the skin draws with the enemy's
  * palette (`content/palettes/skirmish-blue.json`).
+ *
+ * Sounds (Engine 0.15 T14): the world snapshot carries no events, so each frame carries the kit's
+ * `RtsEventTracker` reading of what changed since the last tick (`unit-down`, `unit-hit`,
+ * `unit-ready`, `site-placed`, `building-done`, `stock-up`, each with its `side`), plus the
+ * sample's own `battle-end` (`result` `won` or `lost`, once, on the tick `skirmishResult` first
+ * gives it). The skin's `events` turn them into sfx and effects. Once the battle is over the frame's
+ * status also has `won` or `lost` (true), which the skin's HUD shows as the end banner.
  */
 
 /**
@@ -63,20 +77,44 @@ export interface ShowsWorld {
 /** The player's interface state a frame shows (selection, box, placing, camera), when there is one. */
 export type InterfaceOptions = () => Partial<Omit<RtsPresentOptions, 'faction' | 'size' | 'state'>>;
 
-/** How the skirmish presents its world: the kit's `presentWorld` for the player's side. */
+/** One stream's state: the kit's presentation state, its event tracker and the end seen so far. */
+export class SkirmishPresentState {
+  readonly present = new RtsPresentState();
+  readonly events = new RtsEventTracker(PLAYER);
+  result: SkirmishResult = null;
+}
+
+/**
+ * How the skirmish presents its world: the kit's `presentWorld` for the player's side, with the
+ * tick's events and, once it is over, the end (see the file comment).
+ */
 export function skirmishSource(
   screen: ScreenSize,
   ui: InterfaceOptions = () => ({}),
-): FrameSource<ShowsWorld, never, RtsPresentState> {
+): FrameSource<ShowsWorld, never, SkirmishPresentState> {
   return {
-    start: () => new RtsPresentState(),
-    present: (world, _events, state) =>
-      sideKinds(presentWorld(world.view(), { ...ui(), faction: PLAYER, size: screen, state })),
+    start: () => new SkirmishPresentState(),
+    present: (world, _events, state) => {
+      const view = world.view();
+      const events = state.events.next(view);
+      const result = skirmishResult(view);
+      if (result !== null && state.result === null) events.push({ type: 'battle-end', result });
+      state.result = result;
+      const frame = presentWorld(view, {
+        ...ui(),
+        faction: PLAYER,
+        size: screen,
+        events,
+        state: state.present,
+      });
+      if (result !== null) frame.status[result] = true;
+      return sideKinds(frame);
+    },
   };
 }
 
 /** One stream of frames for any presenter. */
-export type SkirmishFrames = FrameStream<ShowsWorld, never, RtsPresentState>;
+export type SkirmishFrames = FrameStream<ShowsWorld, never, SkirmishPresentState>;
 
 /** A new stream of frames at the picture size. */
 export function skirmishFrames(screen: ScreenSize, ui?: InterfaceOptions): SkirmishFrames {
@@ -95,14 +133,16 @@ export function skirmishPicture(
   return new FramePicture(skirmishFrames(screen, ui), presenter);
 }
 
-/** One stream of frames onto `r` through the Canvas2D backend and the game's skin. */
+/** One stream of frames onto `r` through the Canvas2D backend and the game's skin (`onSound` for its event sounds). */
 export function skirmishCanvasPicture(
   r: Renderer,
   look: SkirmishLook,
   ui?: InterfaceOptions,
+  onSound?: (id: string) => void,
 ): SkirmishPicture {
   const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
     size: look.screen,
+    ...(onSound && { onSound }),
   });
   return skirmishPicture(presenter, look.screen, ui);
 }
