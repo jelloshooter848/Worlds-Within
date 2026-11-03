@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 234.** (Last used: 233.)
+**Next unused number: 247.** (Last used: 246.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -911,3 +911,42 @@ stockpiles }, when }`; `carriedRecord` (in `engine/sim/carry.ts`) builds a plain
   `tests/runs/backend-parity.test.ts`, `games/samples/mini-siege/mini-siege.test.ts`) set a 60 s
   test timeout (`vi.setConfig`), since on a busy machine they passed their work but went over the
   default 5 s. OK?
+
+**Engine 0.13, smaller build choices** (details in `docs/BUILD-LOG.md`, Engine 0.13, Choices made)
+
+- **234.** A dead fate set from data (`killPerson`, a `fate` effect) also sets the person's hp to
+  0, so it matches a death in battle; decision 1 did not say this. OK?
+- **235.** A death in battle records `by: null`, since the attack system does not track who
+  struck. OK, or should attacks track the striker?
+- **236.** The mini siege glue lists `named.<key>.fate` only once a fate is set, so runs where no
+  named person dies keep their hashes; listing it always would have moved every hash. OK?
+- **237.** Sabotage's three success outcomes declare 10 captain damage for the delegated case
+  (`damage.amount` must be at least 1), which changed one assertion in `delegated.run.json`
+  (`named.captain.hp` at tick 160: 120 to 110), in the hash re-record commit, which names it. OK?
+- **238.** A mission round's `hero`: its `event` is any event when left out (a defender is seldom
+  in the battle's event); `hp` beside `hero` is a schema error; a captured, dead, missing or
+  ambiguous hero refuses the round as `bad_mission_input` with no fallback to `hp`; the hero is
+  never also a foe. OK?
+- **239.** An outcome's `damage.fromReport` falls back to the declared `amount` when the played
+  round's report lacks the number (or it is not a whole number of at least 0); 0 skips the effect.
+  OK?
+- **240.** Leaving a captive behind has no fate effect: the capture stands and the committed
+  `left` record is the final mark. OK, or should leaving set a fate of its own?
+- **241.** The dawn's balance: it reuses the raiders' siege plan (which never attacks buildings,
+  so the hall stays at 300 in every dawn run); with the captain home the raiders are beaten but he
+  dies by tick 100; ransom costs 120 gold (exchange 80); the freed captain stands at cell 10,15.
+  OK to keep this content?
+- **242.** `dawn-rescue` is a delegated rescue (seed 11 draws `freed`), not a played one; the
+  played rescue is covered by `dawn-rescue-failed`. OK?
+- **243.** Save-code layout details decision 7 left open: one "carried present" bit, `max` beside
+  `hp`, a committed mission as its index among the game's missions sorted by id, and a CRC over
+  every later bit. The mini siege's codes are 25 characters; a synthetic two-scenario campaign's
+  is 27, a little over decision 7's estimate of 26 and well under 40. OK?
+- **244.** Campaign entries gained an optional `title` (so the page's scenario names live in the
+  campaign file) and content lookups gained `'*'` (any kind), so a campaign's scenario entry can
+  name any scenario file found by its shape. OK?
+- **245.** A run file with `from` plays on the campaign save's seed, as the page does with a save
+  code, and a run file whose own `seed` differs is refused as `seed_mismatch` (`80f6774`, after
+  the close-out). OK?
+- **246.** The sergeant's look comes from the skin's `hero` tag, listed before `frozen`, so a
+  frozen sergeant keeps her colours (the known one-look-per-tag gap M2). OK?

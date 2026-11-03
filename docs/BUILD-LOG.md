@@ -452,6 +452,16 @@ close-out" in `FEEDBACK-LOG.md`):
   parity test passed their work but went over vitest's default 5 s. `tests/runs/run-files.test.ts`,
   `tests/runs/backend-parity.test.ts` and `games/samples/mini-siege/mini-siege.test.ts` set
   `vi.setConfig({ testTimeout: 60_000 })`; no test or expectation changed.
+- **More build choices for review** (items 234-246, "Engine 0.13, smaller build choices" in
+  `FEEDBACK-LOG.md`, added at the finalize step): a dead fate from data also sets hp 0; battle
+  deaths record `by: null`; `named.<key>.fate` listed only once set; sabotage's 10 captain damage
+  on delegated success (one `delegated.run.json` assertion, 120 to 110); the `hero` rules (any
+  event by default, no `hp` beside it, refused rather than a fallback, never a foe); the
+  `fromReport` fallback to `amount`; leaving a captive behind has no fate effect; the dawn's
+  balance (the raiders' plan reused, the captain dying in `dawn-held`, ransom 120 gold); a delegated
+  `dawn-rescue`; the save-code layout details and lengths; campaign entries' `title` and the `'*'`
+  content lookup; a `from` run playing on the save's seed (`seed_mismatch`); and the sergeant's
+  `hero` look.
 - **No tag** (owner answer 24), and the root `package.json` version was left as it was, as in
   earlier releases of this build.
 
@@ -562,6 +572,19 @@ headless Chromium as part of `pnpm test` and again alone (7 files, 21 tests), no
   commit with every assertion unchanged but `delegated`'s captain hp (a content change, named).
   The sim fixtures, the skirmish, the platformer games and the tower-defense sample did not move.
 - **No tag** (owner answer 24).
+
+Checked again at the finalize step on `80f6774` (the fix below): the same checks pass (174 test
+files, 1956 tests passed and 1 skipped), `pnpm -s cli validate` passes for all six games, and all
+44 run files exit 0; `quit.run.json`'s code is unchanged (`2VFP0-1P1T8-0M32N-PBJFC-J2A70`). Every
+item above is still met.
+
+### Fixes after the first close-out
+
+- **A run's `from` plays on its save's seed** (`80f6774`): a game run file with `from` now
+  creates the follow-up world with the campaign save's seed, as the page does with a save code,
+  so one code gives one world on the page and in the CLI. A run file whose own `seed` differs from
+  the save's is refused as `seed_mismatch` at `seed` (`campaign-run.test.ts`; item 245). No golden
+  hash moved: every `dawn-*` run already used the siege's seed 11.
 
 ### Deviations from the roadmap
 
