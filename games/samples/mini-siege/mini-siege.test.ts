@@ -437,8 +437,8 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
   it('plays the siege, then the dawn, from the campaign file', () => {
     const campaign = siegeCampaign(content);
     expect(campaign.entries).toEqual([
-      { scenario: 'village', ticks: 260 },
-      { scenario: 'dawn', ticks: 200 },
+      { scenario: 'village', ticks: 260, title: 'The siege' },
+      { scenario: 'dawn', ticks: 200, title: 'The dawn assault' },
     ]);
     expect(siegeMap(content, 'dawn').from?.scenario).toBe('village');
     // Without a save the game is the siege, as it always was.

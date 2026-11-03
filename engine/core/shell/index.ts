@@ -26,3 +26,9 @@ export {
   type DisplayFactory,
   type DisplayShell,
 } from './boot';
+export {
+  CampaignSession,
+  type CampaignEntryEnd,
+  type CampaignResume,
+  type CampaignResumeRefusalCode,
+} from './campaign-session';

@@ -110,6 +110,7 @@ missions }`, the whole snapshot (a game's or a world's) at tick N and the record
   `.ww-out/screenshots/<name>-t<N>.png`). `--json` result: `{ ok, command: 'screenshot', exitCode,
 run, game, seed, tick, backend, renderer, path, width, height, bytes, sha256, hash, headlessHash,
 hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be the headless run's).
+  A run's `from` (Engine 0.13 T8) starts the view at the same campaign save `run` starts from.
   Two runs in a row give byte-identical PNGs. `--backend three` shows the view's `frame()`
   through the Three.js backend and the game's `three` skin (exit 3 `no_frame_hook` at `view`, or
   `no_three_skin` at `content.skin`, when either is missing); `renderer` is the WebGL renderer

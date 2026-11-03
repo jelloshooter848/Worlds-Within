@@ -140,13 +140,15 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   entity, else the lowest-id enemy unit in its event, else its lowest-id member; only for an
   offered mission the game's `missions` names; 25); `placing`
   (`ghost:<kind>`, tag `ghost`; 30); `select-box` (`selection-box`, the dragged box normalised; 40).
-- **Status**: `faction`, `tick`, `stock.<item>`, `units`, `enemyUnits`, `heroes`, `selected`,
+- **Status**: `faction`, `tick`, `stock.<item>`, `units`, `enemyUnits`, `heroes`, `captives`
+  (Engine 0.13 T8: the player's named people captured, from `view.named`), `selected`,
   `selection` (the one type or kind, `mixed`, ''), `selectedHp`/`selectedMaxHp` (one selected),
   `queue`, `training`, `trainingProgress` (0-100), `trainButtons` (space separated), `placing`;
   and, each only while it applies (so a world without missions gives the same status as
   before): `offers` (how many offered) and `offer` (the first one's title, else its mission id),
   `mission` (the first open mission's title), `missionCommit` (its commit tick) and `missionLeft`
-  (world ticks to it).
+  (world ticks to it), and `captive` (Engine 0.13 T8: the first captured person's name, for a
+  captive marker in the HUD; `snapshot.test.ts` checks both).
 - **Camera**: the given hint (`RtsCamera.hint()`, from `RtsControls.presentOptions`), else the
   map's centre.
 - **Events**: passed through (the world snapshot carries none).

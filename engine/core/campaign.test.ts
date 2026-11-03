@@ -79,6 +79,17 @@ describe('the campaign schema', () => {
       }),
     ).toEqual([['entries.1.scenario', 'duplicate_entry']]);
   });
+
+  it('reads an entry title for a page (Engine 0.13 T8)', () => {
+    const entries = [
+      { scenario: 'village', ticks: 400, title: 'The siege' },
+      { mission: 'raid', title: 'Raid' },
+    ];
+    expect(codes({ ...MAIN, entries })).toEqual([]);
+    expect(codes({ ...MAIN, entries: [{ level: 'a', title: '' }] })).toEqual([
+      ['entries.0.title', 'too_small'],
+    ]);
+  });
 });
 
 describe('campaign order', () => {

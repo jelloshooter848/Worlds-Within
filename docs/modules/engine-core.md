@@ -68,7 +68,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   order a game plays its levels, missions and world scenarios in, as data, and the campaign run.
   `campaignSchema` is the `campaign` content kind (`*.campaign.json`: `version: 1`, `id`,
   `title?`, `entries` (each exactly one of `{ level }`, `{ mission }` and, from 0.13,
-  `{ scenario, ticks }`, none twice), `start?`); `campaignOrder(campaign)`, `campaignLevels`,
+  `{ scenario, ticks }`, none twice; any with an optional `title` for a page, Engine 0.13 T8),
+  `start?`); `campaignOrder(campaign)`, `campaignLevels`,
   `entryKind`, `entryId`, `campaignScenarios(entries)` (the content's `worlds-within/scenario`
   files and their `from`), and `checkCampaigns`, the kind's `checkAll`: every named level, mission
   and scenario must be in the game (`missing_level`, `missing_mission`, `missing_scenario`), and a

@@ -34,6 +34,9 @@ import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
  *
  * A game run's `missions` (Engine 0.11 T9) are handed to the view's `mission` after each tick's
  * orders, as `run` hands them to the headless game, so a screenshot can show a mission's round.
+ * A run's `from` (Engine 0.13 T8, gap M33) is played as `run` plays it: the view is created at the
+ * campaign save `run` starts from (`HeadlessOptions.campaign`), so a follow-up's screenshot draws
+ * the follow-up.
  *
  * `--backend three` shows the view's `frame()` through the Three.js backend and the game's `three`
  * skin instead (Chromium with the GPU on), syncing every tick and rendering once at tick N. A view
@@ -80,7 +83,15 @@ export const screenshotCommand = defineCommand({
       throw new UsageError(`--tick ${flags.tick} is after the run's last tick (${runFile.value.run.ticks})`);
     const played = await playRun(ctx.cwd, args.runFile, { untilTick: flags.tick });
     if (!played.ok) return invalid(args.runFile, played.errors);
-    const { loaded, seed, lastTick, snapshot, disabledRules, hashes: headlessHashes } = played.value;
+    const {
+      loaded,
+      seed,
+      lastTick,
+      snapshot,
+      disabledRules,
+      startSave,
+      hashes: headlessHashes,
+    } = played.value;
 
     const game = loadGame(ctx.cwd, loaded.gameDir ?? '.');
     if (!game.content.ok) return invalid(loaded.file, game.content.errors);
@@ -127,6 +138,7 @@ export const screenshotCommand = defineCommand({
         orders: loaded.run.orders,
         missions: loaded.run.missions,
         disabledRules,
+        campaign: startSave,
         screen,
         backend: flags.backend,
         allowSoftwareGl: flags.allowSoftwareGl,

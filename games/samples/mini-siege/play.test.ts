@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -24,17 +24,30 @@ import { SiegePlay } from './play';
 // the same for the preparation phase, `fortify` launched at world tick 10 and played (the recorded
 // round of `fortify-played.run.json`) or delegated. Engine 0.12 T8: pointer taps in the walls' round
 // place and sell towers through the round's camera, and the round's frames go to its own skin.
+// Engine 0.13 T8: the campaign. The siege ends at world tick 260 with its result and the save code
+// the run files pin; Continue builds the dawn from it (the captain on the map, or held with the
+// captive choices in the bar); a typed save code resumes the dawn with the same tick-0 hash as the
+// run files, a refused code keeps its reason; the save is kept in browser storage.
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const content = mustLoad(loadMiniSiege(readGameFiles(ROOT)));
 const NONE: InputFrame = new ScriptedInput({ steps: [] });
 const hash = (v: unknown) => createHash('sha256').update(canonicalJson(v)).digest('hex').slice(0, 16);
-const lastHash = (name: string) =>
+const goldenHashes = (name: string) =>
   (
     JSON.parse(readFileSync(new URL(`./runs/${name}.hashes.json`, import.meta.url), 'utf8')) as {
       hashes: { tick: number; hash: string }[];
     }
-  ).hashes.at(-1)!.hash;
+  ).hashes;
+const lastHash = (name: string) => goldenHashes(name).at(-1)!.hash;
+const firstHash = (name: string) => goldenHashes(name)[0]!.hash;
+/** The save code a run file pins at its last tick. */
+const pinnedCode = (name: string) =>
+  (
+    JSON.parse(readFileSync(new URL(`./runs/${name}.run.json`, import.meta.url), 'utf8')) as {
+      codes: { tick: number; code: string }[];
+    }
+  ).codes.at(-1)!.code;
 const recordedRound = (name = 'played') =>
   (
     JSON.parse(readFileSync(new URL(`./runs/${name}.run.json`, import.meta.url), 'utf8')) as {
@@ -295,5 +308,181 @@ describe('the page glue, headless', () => {
     const fortify = siegeMissions(content).find((m) => m.id === 'fortify')!;
     for (const o of fortify.outcomes)
       expect(main!.events?.[`mission-commit:outcome=${o.id}`], o.id).toBeDefined();
+  });
+});
+
+function memoryStorage(): Storage {
+  const data = new Map<string, string>();
+  return {
+    get length() {
+      return data.size;
+    },
+    clear: () => data.clear(),
+    getItem: (k) => data.get(k) ?? null,
+    key: (i) => [...data.keys()][i] ?? null,
+    removeItem: (k) => void data.delete(k),
+    setItem: (k, v) => void data.set(k, v),
+  };
+}
+
+/** Plays the sabotage at 40 and gives up at once: `driven-off`, the captain captured. */
+function quitSiege(p: ReturnType<typeof page>): void {
+  toLaunch(p);
+  p.play.press({ kind: 'play' });
+  const quit = new ScriptedInput({ steps: [{ frame: 0, hold: ['select'] }] });
+  quit.next();
+  p.step(quit);
+  expect(p.play.game.miniGame()).toBeNull();
+  toEnd(p);
+}
+
+/** Steps the dawn to world tick `tick`, launches `mission` there and delegates (decides) it. */
+function decide(p: ReturnType<typeof page>, mission: string, tick = 5): void {
+  while (p.play.tick < tick) p.step();
+  p.play.press({ kind: 'launch', mission });
+  p.step();
+  expect(p.play.choice()).toBe(mission);
+  p.play.press({ kind: 'delegate' });
+  p.step();
+  expect(p.play.choice()).toBeNull();
+}
+
+describe('the campaign on the page (Engine 0.13 T8)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('ends the siege at 260 with its save code, then continues to the dawn with the captain on the map', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const p = page();
+    expect(p.play.scenario).toBe('village');
+    expect(p.play.entryTitle()).toBe('The siege');
+    toLaunch(p);
+    p.play.press({ kind: 'delegate' });
+    toEnd(p);
+    const end = p.play.ended()!;
+    expect(p.play.tick).toBe(260);
+    expect(hash(p.play.game.snapshot())).toBe(lastHash('delegated'));
+    expect(end).toMatchObject({
+      scenario: 'village',
+      title: 'The siege',
+      code: pinnedCode('delegated'),
+      stored: true,
+      done: false,
+      next: 'The dawn assault',
+      verdict: 'the hall still stands',
+    });
+    expect(end.outcomes).toEqual([p.play.outcomeTitle('sabotage', 'ram-burnt')]);
+    expect(end.people).toEqual(['Captain Hale: active, 110/120 hp']);
+    // Nothing steps once the entry has ended, and nothing is offered.
+    p.step();
+    expect(p.play.tick).toBe(260);
+    expect(p.play.launchButtons()).toEqual([]);
+    // The save is in storage: a later visit offers to carry on.
+    expect(new SiegePlay({ content, seed: 11, pointer: null }).storedSave()).toEqual(end.save);
+
+    p.play.press({ kind: 'continue' });
+    p.step();
+    expect(p.play.scenario).toBe('dawn');
+    expect(p.play.ended()).toBeNull();
+    expect(p.play.game.named()['captain']).toMatchObject({ alive: true, hp: 110, x: 12, y: 15 });
+    expect(p.play.launchButtons()).toEqual([]);
+    expect(p.frames.at(-1)!.status['captives']).toBe(0);
+    // The sergeant (role `hero`) is drawn with her own frames: the skin's look for the tag `hero`.
+    p.step();
+    const sergeant = p.frames
+      .at(-1)!
+      .entities.find((e) => e.kind === 'unit:soldier' && e.tags.includes('hero'));
+    expect(sergeant).toBeDefined();
+    const soldier = skinSet(content, 'canvas2d').main!.kinds['unit:soldier'] as { byTag?: { tag: string }[] };
+    expect(soldier.byTag?.[0]?.tag).toBe('hero');
+    while (p.play.ended() === null) p.step();
+    expect(p.play.tick).toBe(200);
+    expect(p.play.ended()).toMatchObject({ scenario: 'dawn', done: true, next: null });
+    // The campaign is over: a later visit has nothing to carry on, and Continue starts over.
+    expect(new SiegePlay({ content, seed: 11, pointer: null }).storedSave()).toBeNull();
+    p.play.press({ kind: 'continue' });
+    p.step();
+    expect(p.play.scenario).toBe('village');
+  });
+
+  it('carries a captured captain into the dawn: the captive choices, Decide, the same world as the runs', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const p = page();
+    quitSiege(p);
+    const end = p.play.ended()!;
+    expect(hash(p.play.game.snapshot())).toBe(lastHash('quit'));
+    expect(end.code).toBe(pinnedCode('quit'));
+    expect(end.people).toEqual(['Captain Hale: captured, 90/120 hp']);
+    expect(end.outcomes).toEqual([p.play.outcomeTitle('sabotage', 'driven-off')]);
+    p.play.press({ kind: 'continue' });
+    p.step();
+    expect(p.play.scenario).toBe('dawn');
+    expect(p.play.tick).toBe(0);
+    expect(hash(p.play.game.snapshot())).toBe(firstHash('dawn-captured'));
+    expect(p.play.launchButtons().sort()).toEqual(['exchange-captain', 'leave-captain', 'rescue-captain']);
+    // The captive marker: the HUD names the captain while the raiders hold him.
+    expect(p.frames.at(-1)!.status).toMatchObject({ captives: 1, captive: 'Captain Hale' });
+    expect(p.play.canPlay('rescue-captain')).toBe(true);
+    expect(p.play.canPlay('exchange-captain')).toBe(false);
+    decide(p, 'exchange-captain');
+    while (p.play.ended() === null) p.step();
+    expect(hash(p.play.game.snapshot())).toBe(lastHash('dawn-exchange'));
+    expect(p.play.ended()!.outcomes).toEqual([p.play.outcomeTitle('exchange-captain', 'paid')]);
+    // Freed at 15 for 80 gold, he falls defending the village (as in the run): a dead record.
+    expect(p.play.game.named()['captain']).toMatchObject({ alive: false, fate: 'dead' });
+    expect(p.play.ended()!.people[0]).toBe('Captain Hale: dead');
+    const main = skinSet(content, 'canvas2d').main!;
+    for (const id of ['freed', 'paid', 'failed', 'left'])
+      expect(main.events?.[`mission-commit:outcome=${id}`], id).toBeDefined();
+  });
+
+  it('resumes from a save code, and refuses a bad one with its reason', () => {
+    const p = page();
+    p.step();
+    p.play.press({ kind: 'code', text: 'NOT-A-USABLE-CODE' });
+    p.step();
+    expect(p.play.message).toMatch(/^code_typo: /);
+    expect(p.play.scenario).toBe('village');
+    const code = pinnedCode('quit');
+    const typo = code.slice(0, 8) + (code[8] === '0' ? '1' : '0') + code.slice(9);
+    p.play.press({ kind: 'code', text: typo });
+    p.step();
+    expect(p.play.message).toMatch(/^code_typo: /);
+    p.play.press({ kind: 'code', text: pinnedCode('quit').toLowerCase() });
+    p.step();
+    expect(p.play.message).toBe('');
+    expect(p.play.scenario).toBe('dawn');
+    expect(hash(p.play.game.snapshot())).toBe(firstHash('dawn-captured'));
+    decide(p, 'leave-captain');
+    while (p.play.ended() === null) p.step();
+    expect(hash(p.play.game.snapshot())).toBe(lastHash('dawn-leave'));
+  });
+
+  it('carries on from the save this browser stored', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const first = page();
+    quitSiege(first);
+    const later = page();
+    expect(later.play.storedSave()).toEqual(first.play.ended()!.save);
+    later.play.press({ kind: 'stored' });
+    later.step();
+    expect(later.play.scenario).toBe('dawn');
+    expect(hash(later.play.game.snapshot())).toBe(firstHash('dawn-captured'));
+  });
+
+  it('gives no save once the hall has fallen, and starts over on Continue', () => {
+    const p = page();
+    toFortify(p);
+    p.play.press({ kind: 'delegate' });
+    toEnd(p);
+    expect(p.play.ended()).toMatchObject({
+      save: null,
+      code: null,
+      next: null,
+      verdict: 'the hall has fallen',
+    });
+    p.play.press({ kind: 'continue' });
+    p.step();
+    expect(p.play.scenario).toBe('village');
+    expect(p.play.tick).toBe(0);
   });
 });

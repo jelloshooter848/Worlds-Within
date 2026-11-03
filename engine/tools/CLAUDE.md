@@ -640,7 +640,10 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   screenshot, so page scaling and font smoothing stay out. A run file's recorded `orders` go to the
   view's `order` and, from Engine 0.11 T9, its game `missions` steps to the view's `mission` (the
   `HeadlessGame` method), after each tick's orders as `run` hands them over (`ShotJob.missions`),
-  so a picture can show a mission round or the battle after its commit (the mini siege's).
+  so a picture can show a mission round or the battle after its commit (the mini siege's). From
+  Engine 0.13 T8 (gap M33) a run's `from` is played as `run` plays it: the job carries the start
+  save `run` reads (`ShotJob.campaign`, `PlayedRun.startSave`) and the page hands it to
+  `createView` as `HeadlessOptions.campaign`, so a follow-up's picture is the follow-up's.
 - `hash` is the state hash of the snapshot the page drew; `headlessHash` is `dump`'s at that tick;
   `hashes` are the state hashes the page saw while drawing every tick (tick 0, every `hashEvery`
   ticks and the last, as `run` lists them). All must match the headless run (`matchesHeadless`);

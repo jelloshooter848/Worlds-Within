@@ -1,3 +1,4 @@
+import type { CampaignSave } from '@engine/core/campaign';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { InputScript } from '@engine/core/input/scripted-input';
 
@@ -37,6 +38,11 @@ export interface ShotJob {
    */
   missions: OrderEntryJson[];
   disabledRules: string[];
+  /**
+   * The campaign save the run starts at (its `from`, as `run` reads it; Engine 0.13 T8, gap M33),
+   * handed to the view's `createView` as `HeadlessOptions.campaign`; null for a run without `from`.
+   */
+  campaign: CampaignSave | null;
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
   screen: ScreenSize;
   /**

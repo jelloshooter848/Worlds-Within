@@ -399,7 +399,8 @@ export function missionStatus(
 
 /**
  * The HUD values: `faction`, `tick`, `stock.<item>` (the player's stockpile), `units` and
- * `enemyUnits` (living counts), `heroes`, `selected` (how many), `selection` (the one type or
+ * `enemyUnits` (living counts), `heroes`, `captives` (the player's named people captured) and
+ * `captive` (the first one's name, only while there is one; Engine 0.13 T8), `selected` (how many), `selection` (the one type or
  * building kind selected, `mixed`, or ''), `selectedHp` / `selectedMaxHp` (one thing selected),
  * `queue` (units queued at the selected own buildings), `training` (the first of them, or '') and
  * `trainingProgress` (0-100), `trainButtons` (the unit types the selection can train, space
@@ -418,6 +419,10 @@ export function presentStatus(
   status['units'] = view.units.filter((u) => u.faction === player).length;
   status['enemyUnits'] = view.units.filter((u) => u.faction !== null && u.faction !== player).length;
   status['heroes'] = view.units.filter((u) => u.faction === player && u.role === 'hero').length;
+  // Engine 0.13 T8: the player's named people held by another side, for a captive marker.
+  const captives = view.named.filter((n) => n.faction === player && n.fate === 'captured');
+  status['captives'] = captives.length;
+  if (captives[0] !== undefined) status['captive'] = captives[0].name;
   const sel = new Set(selection);
   const units = view.units.filter((u) => sel.has(u.id));
   const buildings = view.buildings.filter((b) => sel.has(b.id));

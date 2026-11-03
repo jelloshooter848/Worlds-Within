@@ -20,8 +20,10 @@ delegated. Every gap found is logged in `docs/reports/mini-siege.md` (ids `M1`, 
 Since Engine 0.13 T7 it is a **campaign of two scenarios**: the siege, then **the dawn assault**,
 a short second RTS scenario that starts from the siege's results (the captain's fate and hp, the
 hall's gold), where whether the captain was taken changes how it plays ("The dawn assault",
-below; docs/BUILD-LOG.md, Engine 0.13, decision 8). Headless in T7; the page plays the siege only
-until T8.
+below; docs/BUILD-LOG.md, Engine 0.13, decision 8). Headless in T7; since T8 the page plays the
+whole campaign: the siege's result and save code, Continue to the dawn (the captive choices in the
+bar when the captain was taken), a save code typed in to resume, and the save kept in browser
+storage ("Playing in the browser", below).
 
 ## The rule
 
@@ -79,7 +81,8 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   with one room hp per 40 world hp, the guards (raiders with squad role `regular`) as knights in
   the `n` cells; rules in order: both destroyed, the ram, the catapult, else driven off.
 - `content/campaigns/siege.campaign.json` (`campaign`, Engine 0.13 T7): `village` for 260 world
-  ticks, then `dawn` for 200. The glue builds the entry a campaign save names (`siegeCampaignPlace`);
+  ticks, then `dawn` for 200; since T8 each entry has the `title` the page shows (`The siege`,
+  `The dawn assault`). The glue builds the entry a campaign save names (`siegeCampaignPlace`);
   the order is never in code (gap M29).
 - `content/maps/dawn.world.json` (`rts-map`, Engine 0.13 T7): "The dawn assault", the morning
   after: the village's terrain, the hall patched to 300 of 400 hp (150 gold, replaced by the
@@ -134,7 +137,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     with flames); `hall` (48x48), `watchtower` (32x32) and its scaffold `site-2x2`; `gold`,
     `gold-empty`, `ring`, the bars `hp-0`..`hp-8` and `p-0`..`p-8`, `box`, the offer's torch
     `offer-0`/`offer-1`, HUD icons (`icon-gold`, `icon-units`, `icon-enemy`, `icon-time`,
-    `icon-torch`) and `heart`. `content/palettes/siege-held.json` is the same palette in cold
+    `icon-torch`) and `heart`. Since Engine 0.13 T8: the sergeant Mara Venn (`sergeant-<dir>-<0|1>`,
+    the soldier with a red sash and a gold plume) and the HUD's captive marker `icon-captive` (a
+    shackle, 8x8). `content/palettes/siege-held.json` is the same palette in cold
     blues: the units and buildings of the frozen event while the mission is open.
   - `content/sprites/camp.txt` (palette `content/palettes/camp.json`, night colours, the same
     letters): the room's `wall` (a palisade) and `floor`, the hero (a villager in a blue hood:
@@ -158,11 +163,14 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   `progress-bar`, `mission-offer`, `selection-box`), looks by tag (T4): the engines' `damaged`
   (the burnt frames: a catapult or ram the result damaged), the watchtower's `site` (the
   scaffold), and `frozen` on every unit and building (the `siege-held` palette), `damaged` listed
-  before `frozen` (gap M2); tiles `0`-`2`; HUD gold, own and enemy units, the commit countdown
-  (`missionLeft`), and at the bottom the offer's or open mission's title (`offer`, `mission`, as
-  `text`); event sounds: `mission-open` (`launch`), `mini-game-end:pass` / `:fail` / bare (quit),
-  `mission-commit:outcome=<id>` (`burn` for an outcome that burns an engine) and bare
-  `mission-commit`. `content/skins/canvas2d-mission-room.json` (the round, mini game
+  before `frozen` (gap M2); since Engine 0.13 T8 `unit:soldier`'s look for the tag `hero` (the
+  sergeant's frames, listed before `frozen`, so a frozen sergeant keeps her colours: M2 again); tiles `0`-`2`; HUD gold, own and enemy units, the commit countdown
+  (`missionLeft`), the captive marker (Engine 0.13 T8: `captive`, the RTS kit's status naming the
+  village's captured person, as `icon-captive` and `text` under the gold), and at the bottom the
+  offer's or open mission's title (`offer`, `mission`, as `text`); event sounds: `mission-open` (`launch`), `mini-game-end:pass` / `:fail` / bare (quit),
+  `mission-commit:outcome=<id>` (`burn` for an outcome that burns an engine; since Engine 0.13 T8
+  the dawn's: `freed` (`freed`, a gold tint), `paid` (`coins`), `failed` (`fail`, a red tint) and
+  `left` (`toll`, a grey tint)) and bare `mission-commit`. `content/skins/canvas2d-mission-room.json` (the round, mini game
   `mission-room`): `hero`, `sword`, `poof`, `pickup:heart` and `knight` (the guards) with looks by
   tag `foe:ram` and `foe:catapult` (the topdown kit tags each placed foe with its world name);
   tiles `#` and `.`; the camera unclamped (the room under its HUD band); HUD the host's
@@ -180,8 +188,8 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   battle's skin sounds the fortify commit: `mission-commit:outcome=held-cheap` / `held` /
   `held-bloodied` (`hold`, a gold tint) and `overrun` (`breach`, a shake).
 - Sound: `content/sfx/` (`sword`, `hurt`, `burn`, `pass`, `fail`, `launch`, `commit`; since
-  Engine 0.12 T8 `place`, `arrow`, `bolt`, `leak`, `refused`, `hold`, `breach`; one line of MML
-  each) and `content/songs/siege.json`, one short original loop in D minor (six bars at 120
+  Engine 0.12 T8 `place`, `arrow`, `bolt`, `leak`, `refused`, `hold`, `breach`; since Engine 0.13
+  T8 `freed`, `coins`, `toll`; one line of MML each) and `content/songs/siege.json`, one short original loop in D minor (six bars at 120
   bpm, two pulses, triangle and noise), played by the page once the first gesture unlocks sound.
 - TypeScript is glue:
   - `content.ts`: `loadMiniSiege(files)` (the kinds of `rts`, `topdown` and `towerdefense`),
@@ -239,6 +247,18 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors), which
     pushes the core `miniGameScene` when the round starts and pops it on its end. `records()`,
     `title(mission)`, `outcomeTitle(mission, outcome)`, `sides()`, `message` (the last refusal).
+    **The campaign** (Engine 0.13 T8): `game` is the entry played now (replaced when the campaign
+    moves on; `scenario`, `entryTitle(save?)`, `entryTicks` from the campaign file). An entry ends at
+    its `ticks`, or the first world tick after once no mission is open (gap M35), never while a
+    choice waits or a round runs; then nothing steps or is offered and `ended()` is a
+    `SiegeEntryResult`: the engine's `CampaignSession.end` (the save from `campaignSave()`, kept in
+    browser storage, its code, `stored`, `done`) plus `title`, the outcomes' titles, `people` (the
+    village's named people, `Captain Hale: captured, 90/120 hp`), `verdict` and `next` (the next
+    entry's title, null once done or with no save). `press({ kind: 'continue' })` builds the next
+    entry from the save (`createGame(content, save.seed, { campaign })`), or the siege again;
+    `press({ kind: 'code', text })` resumes from a typed code (`CampaignSession.resume`; a refusal
+    goes to `message` as `<code>: <reason>`, nothing changes) and `press({ kind: 'stored' })` from
+    `storedSave()`. A step that starts an entry does not step it, so the new world starts at tick 0. `canPlay(mission)` is false for a choice without a round (the dawn's exchange, ransom, leave).
   - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins and the
     shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone), `audio`
     (`contentSfx`, `contentSongs`, music `siege`); the bar (`#launches`, one `#launch-<mission>`
@@ -247,7 +267,12 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     fallen or the raiders beaten, a refusal; while a round is hosted, its mini game's key hint)
     and `window.wwSiege` (`tick`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the walls'
     round's `kit` summary) and `clientAt(col, row)` (a walls' cell in client px, for the browser
-    test's taps; gap D13)).
+    test's taps; gap D13)). Engine 0.13 T8: `#delegate` reads **Decide** and `#play` hides for a
+    choice without a round; `#result` (the entry's end: title and verdict, outcomes, people, the
+    save code in `#result-code` and `#continue`, "Continue: The dawn assault" or "Play again");
+    `#code` and `#resume` (Enter too; keys typed there drive no game action) and `#stored`
+    ("Carry on: ...", at tick 0 when this browser kept a save); the status starts with the entry's
+    title; `wwSiege` adds `scenario`, `ended`, `named` and `captive`.
 - `mini-siege.test.ts`: the content, the units against their types, the params checks
   (`bad_mini_game_use` at `params.room` and `params.outcomes.0.outcome`), the launch refusals,
   orders refused while the round is hosted, and over whole runs: the battle frozen at every
@@ -284,11 +309,26 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   tap off the map does nothing, a secondary tap sells (gold 90), select quits to `overrun` at 40;
   and the played round's frames: every kind, tile and the main sounds in
   `canvas2d-td-defence.json`, a commit sound for every fortify outcome in the battle's skin.
+  Engine 0.13 T8, the campaign: the delegated siege ends at 260 with `delegated`'s last hash and
+  pinned code, stored (a new page's `storedSave()`), Continue plays the dawn with the captain on
+  the map at 110 (no choices, the sergeant tagged `hero`) to its end at 200 (`done`, nothing
+  stored to carry on, Continue starts over); the quit siege ends with `quit`'s code and the
+  captain captured, Continue gives `dawn-captured`'s tick-0 hash, the three choices, the captive
+  marker (`captives` 1, `captive` `Captain Hale`), the exchange only decided, ending on
+  `dawn-exchange`'s last hash; a bad code refused (`code_typo`, twice) and `quit`'s code (lower
+  case) resuming at `dawn-captured`'s tick-0 hash and ending on `dawn-leave`'s; the stored save
+  carried on from; and no save once the hall has fallen (`fortify` delegated).
 - Also: `tests/browser/mini-siege-page.test.ts` (the built page played from the launcher's link in
   headless Chromium: Launch then Delegate, and Launch then Play with the recorded round typed as
   keys; Engine 0.11 T10; since Engine 0.12 T8 the same for `fortify` at world tick 10, delegated
   (`overrun`), played by the recorded keys (`held-cheap`) and played by taps then given up
-  (`overrun`), each committing at 40, with no page errors), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
+  (`overrun`), each committing at 40, with no page errors; since Engine 0.13 T8 the campaign: the
+  siege to its end at 260 along both captain fates (Delegate, and Play then Backspace), the result
+  panel's save code equal to `delegated`'s and `quit`'s pinned codes, Continue to the dawn (the
+  captain on the map to its end at 200, "Play again"; or held: the three choice buttons, the
+  exchange decided at 5 and committed at 15, the captive marker gone), a second page in the same
+  browser carrying on from the stored save, and a fresh page refusing a bad code with its reason
+  in the status and resuming the dawn from `quit`'s code), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
   `tests/build/pages.test.ts` (the launcher and the build list the page).
 
 ## Entity ids
@@ -428,8 +468,17 @@ the target): pressing it freezes the siege (the held units turn blue, the countd
   a right click, long-press) sells, Enter sends the raiders, Backspace gives up (`overrun`). Keep
   every raider off the gate for little gold to hold the walls cheaply. The result lands 30 world
   ticks after the launch, whether played or delegated; the sabotage can be launched after it.
-- Afterwards the status line names the outcome; watch whether the hall holds. A whole game takes
-  two or three minutes.
+- Afterwards the status line names the outcome; watch whether the hall holds.
+- **The campaign** (Engine 0.13 T8): at world tick 260 the siege ends and a panel shows its
+  result (the outcome, Captain Hale's fate and hp) and its **save code**, which this browser also
+  keeps. **Continue: The dawn assault** plays the follow-up from it. If the captain was taken
+  (give up the sabotage with Backspace, or a delegation that draws `driven-off`), the HUD shows the
+  shackle and his name, and for the first 60 world ticks (6 seconds, gap M34) the bar offers
+  **Break the captain out** (Play or Delegate, with Sergeant Mara Venn as the hero), **Pay for the
+  captain** and **Leave the captain behind** (Decide); a failed rescue offers a dearer ransom
+  instead. The dawn ends at its world tick 200; **Play again** starts over. Type a save code into
+  the box at the right of the bar and press Resume (or Enter) to start from it (a wrong code says
+  why), or press **Carry on** when the page opens to continue the campaign this browser saved.
 
 ## Screenshots
 
@@ -440,9 +489,11 @@ the burnt catapult, or both engines gone). The page plays the run's mission step
 view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is the same every run.
 The preparation phase (Engine 0.12 T8): `fortify-played.run.json --tick 90` (the walls' round
 mid-wave in its own skin) and `fortify-delegated.run.json --tick 60` (the battle after `overrun`,
-two walls gone). `tests/browser/mini-siege-shots.test.ts` checks all six (skipped where Chromium is
-missing). The `dawn-*` runs have no screenshots yet: `screenshot` ignores a run's `from` and
-would draw the siege (gap M33, T8); the backend parity test does start them at their save.
+two walls gone). `tests/browser/mini-siege-shots.test.ts` checks all eight (skipped where Chromium is
+missing). Since Engine 0.13 T8 `screenshot` starts a run at its `from` as `run` does (gap M33 fixed):
+`dawn-captured.run.json --tick 10` (the dawn with the captain held: the captive marker under the
+gold, the choices' offer title) and `dawn-held.run.json --tick 30` (the raiders' band marching; the
+view's camera is the map's centre, so the defenders by the hall are off the picture).
 
 ## How to test
 

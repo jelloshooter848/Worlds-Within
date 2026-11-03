@@ -40,7 +40,10 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
   const entry = (await import(/* @vite-ignore */ job.viewUrl)) as Partial<ViewEntry>;
   if (typeof entry.createView !== 'function')
     throw new Error(`${job.viewUrl} does not export createView(content, seed) (engine/core/view.ts)`);
-  const game = entry.createView(content.value, job.seed, { disabledRules: job.disabledRules });
+  const game = entry.createView(content.value, job.seed, {
+    disabledRules: job.disabledRules,
+    ...(job.campaign === null ? {} : { campaign: job.campaign }),
+  });
   const { width, height } = job.screen;
   if (game.screen?.width !== width || game.screen.height !== height)
     throw new Error(

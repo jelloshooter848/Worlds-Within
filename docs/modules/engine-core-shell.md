@@ -8,7 +8,8 @@ Folder: `engine/core/shell` (part of `engine/core`). Detailed rules:
 The browser shell every game page shares (Engine 0.7): choosing the backend from the page's
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
-display a backend builds, and (Engine 0.11) the page's music and sound. A game's `main.ts` and scene are then a few lines of glue.
+display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back). A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -37,6 +38,12 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   it), plays `music` once unlocked and hands each display factory `{ onSound }` as its second
   argument (`canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound })`).
   Without it the page is silent and `onSound` does nothing.
+- `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)` (a game's
+  `saveCodeContext(content)` and campaign): `end(save)` stores an entry's campaign save in browser
+  storage and packs its save code (`{ save, code, codeError, stored, done }`), `resume(text)` reads
+  a typed code (`{ ok: true, save, run }` or `{ ok: false, code, error }`: the codec's refusals,
+  `code_campaign`, `campaign_done`), `stored()` the save an earlier visit kept with an entry past
+  the first left. No DOM; storage never throws.
 
 Example (`games/platformer-lab/main.ts`):
 

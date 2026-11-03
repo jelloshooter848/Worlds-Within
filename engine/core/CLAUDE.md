@@ -152,7 +152,7 @@ run: `campaignSchema` is the `campaign` content kind (`*.campaign.json`, `conten
 `version` (1), `id`, `title?`, `entries` (at least one; each exactly one of `{ "level": id }`,
 `{ "mission": id }` and, from Engine 0.13, `{ "scenario": id, "ticks": n }` (a world scenario,
 any content file in the `worlds-within/scenario` format such as an `rts-map`, and the world ticks
-it is played; `ticks` on another entry or missing on a scenario is `bad_entry` at `ticks`),
+it is played; from Engine 0.13 T8 any entry may have a `title`, one line a page shows; `ticks` on another entry or missing on a scenario is `bad_entry` at `ticks`),
 `bad_entry`; none twice, `duplicate_entry`) and `start?` (the id of the entry played first,
 `unknown_entry` when there is none, `ambiguous_start` when entries of two kinds share it). Its
 `checkAll`, `checkCampaigns`, fails each entry naming a level, mission or scenario the game's

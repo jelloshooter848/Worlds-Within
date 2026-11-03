@@ -60,6 +60,11 @@ export const campaignEntrySchema = z
       .min(1)
       .exactOptional()
       .describe('with `scenario` only (and required there): how many world ticks the scenario is played'),
+    title: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe("one line naming the entry for a page (Engine 0.13 T8), e.g. a scenario's name"),
   })
   .superRefine((e, ctx) => {
     const named = CAMPAIGN_ENTRY_KINDS.filter((k) => e[k] !== undefined);

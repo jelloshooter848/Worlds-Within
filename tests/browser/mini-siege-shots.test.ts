@@ -15,6 +15,9 @@ import { launchChromium, NoBrowserError } from '../../engine/tools/screenshot';
 // the room and the battle must differ. Engine 0.12 T8 adds the preparation phase: the walls'
 // tower-defense round mid-wave (fortify-played, game tick 90, its own skin) and the battle after a
 // delegated fortify committed `overrun` (fortify-delegated, world tick 60: two walls gone).
+// Engine 0.13 T8 adds the follow-up, started from its run's `from` as `pnpm cli run` starts it
+// (gap M33): the dawn with the captain held (dawn-captured at 10: the captive marker in the HUD and
+// the choices' offer) and with him on the map beside the sergeant (dawn-held at 30).
 // Skipped where Chromium is not installed (never in CI).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -64,6 +67,8 @@ describe.skipIf(missing !== null)('the mini siege through pnpm cli screenshot', 
     ['played', 600, 'the battle after a played commit'],
     ['fortify-played', 90, "the walls' round"],
     ['fortify-delegated', 60, 'the battle after the walls were overrun'],
+    ['dawn-captured', 10, 'the dawn with the captain held (the captive marker, the choices offered)'],
+    ['dawn-held', 30, 'the dawn with the captain and the sergeant on the map'],
   ] as [string, number, string][])(
     '%s at tick %i (%s) is deterministic',
     async (run, tick) => {
@@ -76,6 +81,6 @@ describe.skipIf(missing !== null)('the mini siege through pnpm cli screenshot', 
   );
 
   it('shows different pictures at each', () => {
-    expect(new Set(Object.values(sha)).size).toBe(6);
+    expect(new Set(Object.values(sha)).size).toBe(8);
   });
 });

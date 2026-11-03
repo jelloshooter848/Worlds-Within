@@ -630,6 +630,7 @@ A campaign: the order a game plays its levels, missions and world scenarios in, 
 | `entries[].mission`  | `string`   | no       |         | matches `^[a-z0-9][a-z0-9-]*$`     | a mission id (the `*.mission.json` file name)                                                                                                        |
 | `entries[].scenario` | `string`   | no       |         | matches `^[A-Za-z][A-Za-z0-9_-]*$` | a world scenario id (Engine 0.13): the file name of a content file in the `worlds-within/scenario` format                                            |
 | `entries[].ticks`    | `integer`  | no       |         | >= 1                               | with `scenario` only (and required there): how many world ticks the scenario is played                                                               |
+| `entries[].title`    | `string`   | no       |         | not empty                          | one line naming the entry for a page (Engine 0.13 T8), e.g. a scenario's name                                                                        |
 | `start`              | `string`   | no       |         | not empty                          | the id of the entry played first; the first entry when left out                                                                                      |
 
 Example (`docs/reference/examples/campaign.json`):

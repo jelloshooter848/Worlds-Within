@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
 import { sidesOf } from './sides';
+import { presentStatus } from './present';
 import { facingOfDir, isFinished, readWorld, thingAt } from './snapshot';
 
 describe('readWorld', () => {
@@ -186,6 +187,17 @@ describe('readWorld: fates (Engine 0.13)', () => {
         y: null,
       },
     ]);
+    // The HUD's captive marker (Engine 0.13 T8): the player's captured people, the first by name.
+    expect(presentStatus(readWorld(snapshot()), 'red', [], null)).toMatchObject({
+      captives: 1,
+      captive: 'Dee',
+    });
+    expect(presentStatus(readWorld(snapshot()), 'blue', [], null)).toMatchObject({
+      captives: 1,
+      captive: 'Bo',
+    });
+    expect(presentStatus(readWorld(battleSnapshot()), 'red', [], null)).not.toHaveProperty('captive');
+    expect(presentStatus(readWorld(battleSnapshot()), 'red', [], null)['captives']).toBe(0);
     // A world where no fate moved reads everyone as active.
     expect(readWorld(battleSnapshot()).named).toEqual([
       { id: 7, name: 'Ada', role: 'hero', faction: 'red', fate: 'active', hp: 15, maxHp: 30, x: 2, y: 3 },

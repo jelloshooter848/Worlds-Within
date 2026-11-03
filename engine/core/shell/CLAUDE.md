@@ -63,6 +63,15 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio? })`: reads the backen
   background resumes, or redoes the unlock on the next gesture. The manager is `booted.audio` (null without the option) for volume changes or
   another song. A game writes no audio code. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
   two page helpers it uses.
+- `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)`, a campaign as a
+  page plays it, with no DOM: `end(save)` keeps an entry's save in browser storage
+  (`../save/campaign-store.ts`) and packs its save code (`../campaign-code.ts`), giving
+  `CampaignEntryEnd { save, code, codeError, stored, done }` (a null save stores nothing);
+  `resume(text)` reads a typed code into `{ ok, save, run }` or refuses it with the codec's code
+  and sentence, or `code_campaign` (another campaign's) and `campaign_done` (a finished
+  campaign's: nothing left to play); `stored()` is the save an earlier visit kept when it has an
+  entry past the first left to play, else null; `run(save?)` is `campaignRun`. Storage never
+  throws (`save/storage.ts`), so a page without it plays on. The mini siege's page uses it.
 - `index.ts`: re-exports all of the above (`@engine/core/shell`).
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
@@ -76,7 +85,8 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
 - `backend-choice.ts` and `host-scene.ts` are on `PURE_CORE` (and so is `../minigame-scene.ts`,
-  which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`.
+  which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`. `campaign-session.ts`
+  is not pure: it reaches browser storage, through `save/storage.ts`, which never throws.
 - No game rules or content: the game says what to step, what to draw and with which skin.
 
 ## Testing
@@ -90,6 +100,9 @@ under the host while the world waits, and popped once the mission is resolved (E
 helpers and `bootBrowserGame`'s display choice and no-WebGL message on a fake page; and a full
 boot on a fake page with a fake `AudioContext` (Engine 0.11): with `audio`, no context and no song
 before a gesture, `onSound` reaching the manager's `sfx`, the first key making one context and
-playing the song once, later gestures reusing it; without it, no manager and no listeners. The full boot
+playing the song once, later gestures reusing it; without it, no manager and no listeners.
+`campaign-session.test.ts` (Engine 0.13 T8): an entry's save stored and its code packed and read
+back (in lower case), a bad code (`code_empty`, `code_typo`) and a finished campaign's
+(`campaign_done`) refused, a null save storing nothing, and blocked storage throwing nothing. The full boot
 (input sources, loop) is browser-only: `tests/browser/lab-3d.test.ts` plays the lab through it in
 headless Chromium (skipped where none is installed).

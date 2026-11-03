@@ -7,7 +7,8 @@ import { cameraHint, TD_TILE_SIZE } from '@kits/towerdefense';
 import { loadMiniSiege, PLAYER } from './content';
 import { SIEGE_FILES } from './files';
 import { siegeLook, siegePicture } from './picture';
-import { SiegePlay } from './play';
+import type { NamedSummary } from './headless';
+import { SiegePlay, type SiegeEntryResult } from './play';
 
 /**
  * Boots the mini siege in the browser (Engine 0.11 T9) with the engine's `bootBrowserGame`:
@@ -20,7 +21,12 @@ import { SiegePlay } from './play';
  * Engine 0.12 T8 the bar also offers the preparation phase (`fortify`, from world tick 5 to 30):
  * from 20 to 30 both missions are offered and each has its button. While the walls' round is
  * hosted the picture is the round (its own skin, `canvas2d-td-defence.json`) and pointer taps
- * place towers (`SiegePlay.roundTap`).
+ * place towers (`SiegePlay.roundTap`). Since Engine 0.13 T8 the page plays the campaign: when an
+ * entry ends, `#result` shows its outcomes, the village's people and their fates, and the save
+ * code, kept in browser storage too, with **Continue** to the dawn assault (its captive choices
+ * in the bar when the captain was taken; a choice without a round offers **Decide**); `#code`
+ * and **Resume** resume from a typed save code (a refused code shows its reason in the status),
+ * and `#stored` carries on from the save this browser kept.
  */
 
 /** What the page offers scripts on `window.wwSiege`. */
@@ -39,6 +45,14 @@ export interface SiegeHook {
   round(): JsonObject | null;
   /** The centre of the walls' round's cell (col, row) on the page, in client (CSS) px. */
   clientAt(col: number, row: number): { x: number; y: number };
+  /** The campaign entry played now (`village`, `dawn`). */
+  scenario(): string;
+  /** How the entry played now ended (`SiegePlay.ended()`), or null while it is played. */
+  ended(): SiegeEntryResult | null;
+  /** Every keyed scenario entity at a glance (the headless snapshot's `named`). */
+  named(): Record<string, NamedSummary>;
+  /** The HUD's captive marker: the name of the village's captured person, or ''. */
+  captive(): string;
 }
 
 const content = mustLoad(loadMiniSiege(SIEGE_FILES), 'the mini siege');
@@ -48,6 +62,15 @@ const status = document.getElementById('status') as HTMLElement;
 const launches = document.getElementById('launches') as HTMLElement;
 const playButton = document.getElementById('play') as HTMLButtonElement;
 const delegate = document.getElementById('delegate') as HTMLButtonElement;
+const stored = document.getElementById('stored') as HTMLButtonElement;
+const codeInput = document.getElementById('code') as HTMLInputElement;
+const resume = document.getElementById('resume') as HTMLButtonElement;
+const result = document.getElementById('result') as HTMLElement;
+const resultTitle = document.getElementById('result-title') as HTMLElement;
+const resultLines = document.getElementById('result-lines') as HTMLElement;
+const resultCodeLabel = document.getElementById('result-code-label') as HTMLElement;
+const resultCode = document.getElementById('result-code') as HTMLElement;
+const continueButton = document.getElementById('continue') as HTMLButtonElement;
 
 let play: SiegePlay | null = null;
 const booted = await bootBrowserGame({
@@ -85,6 +108,16 @@ if (booted && play) {
   };
   playButton.addEventListener('click', () => scene.press({ kind: 'play' }));
   delegate.addEventListener('click', () => scene.press({ kind: 'delegate' }));
+  continueButton.addEventListener('click', () => scene.press({ kind: 'continue' }));
+  stored.addEventListener('click', () => scene.press({ kind: 'stored' }));
+  const resumeFromCode = () => scene.press({ kind: 'code', text: codeInput.value });
+  resume.addEventListener('click', resumeFromCode);
+  // Typing a code drives no game action (the shell's keyboard listens on window).
+  for (const type of ['keydown', 'keyup'] as const)
+    codeInput.addEventListener(type, (e) => {
+      e.stopPropagation();
+      if (type === 'keydown' && e.key === 'Enter') resumeFromCode();
+    });
   const hook: SiegeHook = {
     tick: () => scene.tick,
     choice: () => scene.choice(),
@@ -104,19 +137,32 @@ if (booted && play) {
       const top = clampCameraAxis(Math.round(camera.y - height / 2), area.y, area.h, height);
       return pictureToClient((col + 0.5) * TD_TILE_SIZE - left, (row + 0.5) * TD_TILE_SIZE - top);
     },
+    scenario: () => scene.scenario,
+    ended: () => scene.ended(),
+    named: () => scene.game.named(),
+    captive: () => scene.view().named.find((n) => n.faction === PLAYER && n.fate === 'captured')?.name ?? '',
   };
   (window as unknown as { wwSiege: SiegeHook }).wwSiege = hook;
 }
 
-/** The bar: one launch button per offered mission, the choice while one waits, the status. */
+/**
+ * The bar: one launch button per offered mission, the choice while one waits (Play and Delegate,
+ * or Decide alone for a choice without a round), the status, the stored campaign; and the result
+ * panel once an entry has ended.
+ */
 let shown = '';
 function showBar(scene: SiegePlay): void {
   const offered = scene.launchButtons();
   const waiting = scene.choice();
   const text = statusText(scene);
-  const key = JSON.stringify([offered, waiting, text]);
+  const ended = scene.ended();
+  const saved = scene.tick === 0 && ended === null ? scene.storedSave() : null;
+  const key = JSON.stringify([offered, waiting, text, ended, saved?.position ?? null, scene.scenario]);
   if (key === shown) return;
   shown = key;
+  showResult(ended);
+  stored.hidden = saved === null;
+  if (saved !== null) stored.textContent = `Carry on: ${scene.entryTitle(saved)}`;
   launches.replaceChildren(
     ...offered.map((mission) => {
       const b = document.createElement('button');
@@ -128,9 +174,36 @@ function showBar(scene: SiegePlay): void {
       return b;
     }),
   );
-  playButton.hidden = delegate.hidden = waiting === null;
+  delegate.hidden = waiting === null;
+  playButton.hidden = waiting === null || !scene.canPlay(waiting);
+  delegate.textContent = waiting !== null && !scene.canPlay(waiting) ? 'Decide' : 'Delegate';
   bar.dataset.choice = waiting ?? '';
+  bar.dataset.scenario = scene.scenario;
   status.textContent = text;
+}
+
+/** The result panel: an entry's title, outcomes, people and verdict, its save code, the way on. */
+function showResult(ended: SiegeEntryResult | null): void {
+  result.hidden = ended === null;
+  if (ended === null) return;
+  resultTitle.textContent = `${ended.title}: ${ended.verdict}`;
+  resultLines.replaceChildren(
+    ...[...ended.outcomes, ...ended.people].map((line) => {
+      const li = document.createElement('li');
+      li.textContent = line;
+      return li;
+    }),
+  );
+  const code = ended.next !== null ? ended.code : null;
+  resultCodeLabel.textContent =
+    code !== null
+      ? `Save code${ended.stored ? ' (also kept in this browser)' : ''}:`
+      : ended.done
+        ? 'The campaign is over.'
+        : 'No save: the hall has fallen, so nothing carries on.';
+  resultCode.textContent = code ?? '';
+  resultCode.hidden = code === null;
+  continueButton.textContent = ended.next !== null ? `Continue: ${ended.next}` : 'Play again';
 }
 
 /** What the keys do in each mini game, shown while its round is hosted. */
@@ -148,11 +221,15 @@ function statusText(scene: SiegePlay): string {
   const raiders = Object.entries(sides).filter(([f]) => f !== PLAYER);
   const beaten = raiders.every(([, s]) => s.units === 0);
   return [
-    `tick ${scene.tick}`,
-    scene.choice() !== null ? 'play the mission yourself, or delegate it?' : '',
+    `${scene.entryTitle()}, tick ${scene.tick}`,
+    scene.message,
+    scene.choice() === null
+      ? ''
+      : scene.canPlay(scene.choice()!)
+        ? 'play the mission yourself, or delegate it?'
+        : 'decide?',
     record ? scene.outcomeTitle(record.mission, record.outcome) : '',
     hall && !hall.alive ? 'the hall has fallen' : beaten ? 'the raiders are beaten' : '',
-    scene.message,
   ]
     .filter((s) => s !== '')
     .join(' | ');

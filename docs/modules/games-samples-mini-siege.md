@@ -38,8 +38,13 @@ three captive choices open at once (one exclusive group): **rescue** (`rescue-ca
 opens a dearer **ransom**, never the rescue again), **exchange** (`exchange-captain`, 80 gold, a
 choice with no round) and **leave** (`leave-captain`, no effects). With the captain home the dawn
 assault is beaten; without him the village falls. A run file starts the dawn from a siege run's end
-or from its save code (`from`), and the siege's runs pin their save codes (`codes`). Headless only
-in T7; the page plays the siege alone until T8.
+or from its save code (`from`), and the siege's runs pin their save codes (`codes`). Since T8 the
+page plays the campaign: the siege ends at world tick 260 with a result panel (the outcome, the
+captain's fate) and its save code, also kept in browser storage; Continue plays the dawn (the
+captive choices in the bar when he was taken, a choice without a round offered as Decide, the
+HUD's captive marker); a save code typed into the bar resumes it (a refused code shows its
+reason), and Carry on picks up the save this browser kept (`CampaignSession` in
+`engine/core/shell`).
 
 ## Public API entry points
 
@@ -48,15 +53,18 @@ in T7; the page plays the siege alone until T8.
   for the walls' round), `content/palettes/` (`siege`, `siege-held` for the frozen siege, `camp`
   at night, `defence-ok` / `defence-blocked` for the ghost tower, `defence-hit` for a struck
   raider), `content/skins/canvas2d.json` (the battle, looks by tag `damaged`, `site`, `frozen`;
-  commit sounds per outcome), `canvas2d-mission-room.json` (the room, looks by tag `foe:ram`,
+  commit sounds per outcome, the dawn's included; Engine 0.13 T8: the sergeant's look by tag
+  `hero` and the HUD's captive marker), `canvas2d-mission-room.json` (the room, looks by tag `foe:ram`,
   `foe:catapult`) and `canvas2d-td-defence.json` (the walls' round: towers, raiders, shots,
   cursor, ghost, tiles, `td-*` sounds), `content/sfx/`, `content/songs/siege.json`.
 - `picture.ts`: `siegeLook`, `siegeFrames` / `siegePicture` / `siegeCanvasPicture` (the battle's
   frames or the hosted round's, with `mission-open`, `mini-game-end` and `mission-commit` events).
 - `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`.
 - `play.ts`: `SiegePlay` (launch buttons, play or delegate choice, the battle at 10 ticks a second,
-  the round at 60, taps in the walls' round through `roundTap`) and its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`,
-  pointer, shell audio, `window.wwSiege`).
+  the round at 60, taps in the walls' round through `roundTap`; Engine 0.13 T8: the campaign,
+  `ended()` an entry's `SiegeEntryResult`, `press` `continue`, `code` and `stored`, `canPlay`) and
+  its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`, pointer, shell audio,
+  the bar with the code box, the result panel, `window.wwSiege`).
 - `content/`: `maps/village.world.json` (`rts-map`, with the walls and the `fortify-window` and
   `sabotage-window` opportunities), `maps/dawn.world.json` (the follow-up: its `from`, the
   captive choices' four `relative` opportunities), `campaigns/siege.campaign.json` (`village`
@@ -98,6 +106,8 @@ sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `cam
 games/samples/mini-siege/runs/quit.run.json` (the save code at the siege's end), `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs`,
 `pnpm -s cli screenshot games/samples/mini-siege/runs/played.run.json --tick 200 --json` (the
 room; `delegated.run.json --tick 80` the frozen battle; `fortify-played.run.json --tick 90` the
-walls' round), `tests/browser/mini-siege-shots.test.ts`; the page played from its link, both
-missions on both paths (and the walls' round by taps): `tests/browser/mini-siege-page.test.ts`.
+walls' round; `dawn-captured.run.json --tick 10` the dawn with the captain held),
+`tests/browser/mini-siege-shots.test.ts`; the page played from its link, both missions on both
+paths (and the walls' round by taps), and the campaign along both captain fates and from a save
+code: `tests/browser/mini-siege-page.test.ts`.
 To play: `pnpm dev`, then `games/samples/mini-siege/` from the launcher.

@@ -146,6 +146,72 @@
       "fallbackColor": "#0058f8",
       "byTag": [
         {
+          "tag": "hero",
+          "frames": {
+            "idle": {
+              "down": "sergeant-down-0",
+              "up": "sergeant-up-0",
+              "right": "sergeant-right-0"
+            },
+            "walk": {
+              "down": {
+                "frames": ["sergeant-down-0", "sergeant-down-1"],
+                "ticks": 4
+              },
+              "up": {
+                "frames": ["sergeant-up-0", "sergeant-up-1"],
+                "ticks": 4
+              },
+              "right": {
+                "frames": ["sergeant-right-0", "sergeant-right-1"],
+                "ticks": 4
+              }
+            },
+            "attack": {
+              "down": {
+                "frames": ["sergeant-down-0", "sergeant-down-1"],
+                "ticks": 3
+              },
+              "up": {
+                "frames": ["sergeant-up-0", "sergeant-up-1"],
+                "ticks": 3
+              },
+              "right": {
+                "frames": ["sergeant-right-0", "sergeant-right-1"],
+                "ticks": 3
+              }
+            },
+            "build": {
+              "down": {
+                "frames": ["sergeant-down-0", "sergeant-down-1"],
+                "ticks": 6
+              },
+              "up": {
+                "frames": ["sergeant-up-0", "sergeant-up-1"],
+                "ticks": 6
+              },
+              "right": {
+                "frames": ["sergeant-right-0", "sergeant-right-1"],
+                "ticks": 6
+              }
+            },
+            "gather": {
+              "down": {
+                "frames": ["sergeant-down-0", "sergeant-down-1"],
+                "ticks": 6
+              },
+              "up": {
+                "frames": ["sergeant-up-0", "sergeant-up-1"],
+                "ticks": 6
+              },
+              "right": {
+                "frames": ["sergeant-right-0", "sergeant-right-1"],
+                "ticks": 6
+              }
+            }
+          }
+        },
+        {
           "tag": "frozen",
           "palette": "siege-held"
         }
@@ -591,6 +657,38 @@
         "ticks": 12
       }
     },
+    "mission-commit:outcome=freed": {
+      "sound": "freed",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=paid": {
+      "sound": "coins",
+      "effect": {
+        "kind": "tint",
+        "color": "#fce0a8",
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=failed": {
+      "sound": "fail",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=left": {
+      "sound": "toll",
+      "effect": {
+        "kind": "tint",
+        "color": "#7c7c7c",
+        "ticks": 12
+      }
+    },
     "mission-commit": {
       "sound": "commit",
       "effect": {
@@ -683,6 +781,20 @@
       "as": "text",
       "x": 14,
       "y": 228,
+      "font": "siege-font"
+    },
+    {
+      "status": "captive",
+      "as": "icon",
+      "x": 4,
+      "y": 14,
+      "frame": "icon-captive"
+    },
+    {
+      "status": "captive",
+      "as": "text",
+      "x": 14,
+      "y": 14,
       "font": "siege-font"
     }
   ],
