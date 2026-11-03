@@ -2,10 +2,12 @@ import { z } from 'zod';
 import { dottedPath, type FieldPath } from '../core/content/validate';
 import type { JsonValue } from '../core/headless';
 import { opportunitySchema } from '../core/missions';
+import { applyCarried, carriedIssues, carryFromSchema, fromIssues, type CarriedRecord } from './carry';
 import { Member, STANDARD_COMPONENTS, Squad, type Role } from './components';
 import type { LogOptions } from './events';
 import { addOpportunities } from './opportunity';
 import { SYSTEM_SETS, SYSTEM_SET_NAMES } from './system-sets';
+import { ScenarioError, type ScenarioIssue } from './scenario-error';
 import { Terrain, type TerrainData, type TerrainType } from './terrain';
 import { createWorld, type AnyComponent, type Entity, type System, type World } from './world';
 
@@ -22,6 +24,9 @@ import { createWorld, type AnyComponent, type Entity, type System, type World } 
  * Ids are handed out in file order: the terrain entity first, then `entities`, then each squad
  * followed by its members. Every change is logged with the cause `scenario`, except opportunity
  * windows already open at tick 0, which `addOpportunities` opens under `time`.
+ *
+ * A scenario may follow another with `from` (Engine 0.13, `carry.ts`): pass the carried record
+ * built from the first one's end world as `options.carried`, and it is applied last, under `carry`.
  */
 
 /** The `format` every scenario carries. */
@@ -106,25 +111,17 @@ export const scenarioSchema = z.strictObject({
     .describe(
       'windows of world ticks in which a mission can be taken (Engine 0.10): `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }`; kept on a world-level entity spawned after the squads',
     ),
+  from: carryFromSchema
+    .optional()
+    .describe(
+      "the scenario this one follows (Engine 0.13): `{ scenario, carry: { people, stockpiles }, when? }`; a carried record built from that scenario's end world (`carriedRecord`) is applied at tick 0 under the cause `carry`; without one the scenario starts as written",
+    ),
 });
 
 export type Scenario = z.infer<typeof scenarioSchema>;
 
-/** One problem with a scenario: the field (dotted) and what is wrong. */
-export interface ScenarioIssue {
-  path: string;
-  message: string;
-}
-
-/** Thrown by `worldFromScenario` for a scenario it cannot build. Its message names every bad field. */
-export class ScenarioError extends Error {
-  readonly issues: readonly ScenarioIssue[];
-  constructor(issues: readonly ScenarioIssue[]) {
-    super(`invalid scenario:\n${issues.map((i) => `  ${i.path || '(file)'}: ${i.message}`).join('\n')}`);
-    this.name = 'ScenarioError';
-    this.issues = issues;
-  }
-}
+export { ScenarioError };
+export type { ScenarioIssue };
 
 export interface ScenarioOptions {
   /**
@@ -136,6 +133,12 @@ export interface ScenarioOptions {
   readonly systems?: readonly System[];
   /** Event log retention (default: keep every change). */
   readonly log?: LogOptions;
+  /**
+   * A carried record (`carriedRecord`, Engine 0.13) built from the end world of the scenario this
+   * one names in `from`; applied at tick 0 under the cause `carry`. Left out, the scenario starts as
+   * written. Checked against `from` (errors under the path `carried`).
+   */
+  readonly carried?: unknown;
 }
 
 /** One component to add once every id is known and every value checked. */
@@ -148,7 +151,8 @@ interface Pending {
 /**
  * The world a scenario describes, at tick 0. Throws a `ScenarioError` naming each bad field when
  * the file does not match `scenarioSchema`, the grids disagree, a key is repeated or unknown, or a
- * component is unknown or fails its schema.
+ * component is unknown or fails its schema, `from` does not fit the scenario, or `options.carried`
+ * does not fit `from` (paths under `carried`).
  */
 export function worldFromScenario(json: unknown, options: ScenarioOptions = {}): World {
   const parsed = scenarioSchema.safeParse(json);
@@ -252,6 +256,10 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
     }),
   );
 
+  fromIssues(sc, at);
+  let carried: CarriedRecord | null = null;
+  if (options.carried !== undefined) carried = carriedIssues(sc, options.carried, at);
+
   if (issues.length > 0) throw new ScenarioError(issues);
 
   const world = createWorld(sc.seed, {
@@ -269,6 +277,7 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
     const added = addOpportunities(world, sc.opportunities, 'scenario');
     if (!added.ok) throw new ScenarioError([{ path: 'opportunities', message: added.error }]);
   }
+  if (carried !== null && sc.from !== undefined) applyCarried(world, sc.from, carried, ids);
   return world;
 }
 

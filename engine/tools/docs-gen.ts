@@ -12,6 +12,7 @@ import {
   SYSTEM_COMPONENTS,
   ScenarioError,
   Terrain,
+  carriedRecordSchema,
   loadWorld,
   rtsTypesSchema,
   scenarioSchema,
@@ -214,6 +215,19 @@ export function defaultDocSources(): DocSources {
       check: checkScenario,
     },
     {
+      name: 'carried-record',
+      title: 'Carried record (`carriedRecord`)',
+      from: 'engine/sim',
+      where:
+        "built from a scenario's end world by `carriedRecord(world, from, keys)`; `worldFromScenario(json, { carried })` reads it",
+      forms: '`.json`',
+      description:
+        "What carries from one scenario's end world into the scenario that names it in `from` (Engine 0.13): each carried person's fate and `Health`, and stockpile item counts, keys sorted",
+      schema: carriedRecordSchema,
+      example: 'carried-record.json',
+      check: jsonCheck(carriedRecordSchema),
+    },
+    {
       name: 'rts-types',
       title: 'RTS unit and building types (`rtsTypesSchema`)',
       from: 'engine/core',
@@ -379,14 +393,16 @@ function subjectSection(subject: DocSubject, example: Example, level: string): s
 }
 
 function schemasPage(root: string, subjects: readonly DocSubject[]): string {
-  const files = subjects.filter((s) => ['manifest', 'run', 'world-save', 'world-scenario'].includes(s.name));
+  const files = subjects.filter((s) =>
+    ['manifest', 'run', 'world-save', 'world-scenario', 'carried-record'].includes(s.name),
+  );
   const params = subjects.filter((s) => s.section === 'params');
   const kinds = subjects.filter((s) => !files.includes(s) && !params.includes(s));
   return [
     '# Schema reference',
     '',
     GENERATED_NOTE(
-      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, `engine/sim/scenario.ts`, each content kind) and `docs/reference/examples/`',
+      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, `engine/sim/scenario.ts`, `engine/sim/carry.ts`, each content kind) and `docs/reference/examples/`',
     ),
     '',
     'One section per file format. Each table lists every field: nested fields are written under their',

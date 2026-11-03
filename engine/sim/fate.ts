@@ -288,6 +288,51 @@ export function setFate(world: World, id: Entity, state: FateState, options: Fat
   return { ok: true, fate };
 }
 
+/** Options for `startFate`: the cause, and who and when, as the other world recorded them. */
+export interface StartFateOptions {
+  readonly cause: Cause;
+  readonly by: string | null;
+  readonly at: number;
+}
+
+/**
+ * Give named person `id`, who has no `Fate` yet (a person just built from a scenario), the fate
+ * `state` reached in another world (carry-over, `carry.ts`), between ticks, under `options.cause`.
+ * The forward-only rule is not asked here: the state was reached in the other world, so any state
+ * may start. `captured` and `dead` take them off the map as `setFate` does (a captured person's
+ * `held` is their `Unit` and `Owner` here); `injured` and `freed` leave them where the scenario put
+ * them. `history` holds the one step, with `by`, `at` and the cause given. Refused (nothing changed)
+ * when `id` is not a living `Member` or already has a `Fate`, or during a step.
+ */
+export function startFate(world: World, id: Entity, state: FateState, options: StartFateOptions): FateResult {
+  checkCause(options.cause);
+  if (worldInternals(world).stepping()) return refuse('stepping', 'cannot set a fate during a step');
+  if (!Number.isInteger(id) || !world.alive(id)) return refuse('bad_id', `entity ${id} does not exist`);
+  if (!world.has(id, Member)) return refuse('not_named', `entity ${id} is not a named person (no Member)`);
+  if (world.registered(Fate) && world.has(id, Fate)) {
+    return refuse('fate_final', `entity ${id} already has a fate; a carried fate starts a fresh person`);
+  }
+  if (!(FATE_STATES as readonly string[]).includes(state)) {
+    return refuse('fate_final', `"${String(state)}" is not a fate (${FATE_STATES.join(', ')})`);
+  }
+  if (options.by !== null && !Id.safeParse(options.by).success) {
+    return refuse(
+      'bad_id',
+      `faction id ${JSON.stringify(options.by)} must be a letter followed by letters, digits, _ or -`,
+    );
+  }
+  if (!Tick.safeParse(options.at).success) {
+    return refuse('bad_id', `tick ${options.at} must be a whole number of at least 0`);
+  }
+  const { by, at, cause } = options;
+  const fate = world.withCause(cause, (w) => {
+    if (state !== 'freed') return writeFate(w, id, state, { cause, by, at });
+    if (!w.registered(Fate)) w.registerComponent(Fate);
+    return w.add(id, Fate, { state, by, at, held: null, history: [{ state, by, at, cause }] });
+  });
+  return { ok: true, fate };
+}
+
 /** Options for the one-state helpers: the cause, and who did it. */
 export interface FateWriteOptions {
   readonly cause: Cause;

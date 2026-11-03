@@ -50,7 +50,17 @@ From `engine/sim/index.ts`:
   `scenarioSchema`, `ScenarioError` (`issues` name each bad field). A scenario may name an engine
   system set in `systems` (`village` or `rts`), which it runs with when the caller passes no
   components or systems of its own. An optional `opportunities` list (Engine 0.10) adds
-  opportunity windows to the world it builds (see Opportunities below).
+  opportunity windows to the world it builds (see Opportunities below), and an optional `from`
+  (Engine 0.13) names the scenario it follows.
+- Carry-over (`carry.ts`, Engine 0.13): `carriedRecord(world, from, keys)` -> the plain JSON
+  carried record (`worlds-within/carried`, version 1: the carried people's fate and `Health`, by
+  key, and stockpile item counts, keys sorted) built from a first scenario's end world by the
+  second scenario's `from.carry` spec; `worldFromScenario(json, { carried })` applies it at tick 0
+  under the cause `carry` (a captured or dead person starts off the map, an injured one at their
+  hp, capped at the scenario's `max`; stockpile items replaced; `from.when` rules open dormant
+  opportunities for a carried fate). `carriedRecordSchema`, `carryFromSchema`, `carrySpecSchema`,
+  `CARRY_CAUSE`. Bad data throws `ScenarioError` with paths under `from` or `carried`.
+  `startFate(world, id, state, { cause, by, at })` gives a fresh person a fate reached elsewhere.
 - System sets (`system-sets.ts`, Engine 0.9): `SYSTEM_SETS` (`village`: standard components,
   `Terrain`, `SYSTEM_COMPONENTS` with haul, build, patrol; `rts`: standard components, `Terrain`,
   `RTS_COMPONENTS` with `RTS_SYSTEMS`), `SYSTEM_SET_NAMES`, `DEFAULT_SYSTEM_SET` (`village`, what
@@ -256,4 +266,7 @@ outcome that opens the ransom and never the rescue again, a rescue freeing the c
 kept, skipped fate effects, the refusals at open, the same hashes every run and through save and
 load, and records unchanged after save and load. Its run files (`capture-rescue`,
 `capture-rescue-failed`, `capture-exchange`, `capture-leave`) are checked with golden hashes by
-`tests/runs/missions.test.ts`.
+`tests/runs/missions.test.ts`. `carry.test.ts` (Engine 0.13) checks carry-over from the captive
+fixture's end into `captive-after.world.json`: the record, each fate carried in, equal start hashes
+every run and through save and load, two records differing in one person's fate giving start
+worlds differing only in that person, and path-named errors.

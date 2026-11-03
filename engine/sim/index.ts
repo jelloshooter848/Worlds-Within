@@ -16,6 +16,16 @@ export {
   worldFromScenario,
 } from './scenario';
 export type { Scenario, ScenarioIssue, ScenarioOptions } from './scenario';
+export {
+  CARRIED_FORMAT,
+  CARRIED_VERSION,
+  CARRY_CAUSE,
+  carriedRecord,
+  carriedRecordSchema,
+  carryFromSchema,
+  carrySpecSchema,
+} from './carry';
+export type { CarriedPerson, CarriedRecord, CarryFrom } from './carry';
 export { DEFAULT_SYSTEM_SET, SYSTEM_SETS, SYSTEM_SET_NAMES } from './system-sets';
 export type { SystemSet, SystemSetName } from './system-sets';
 export {
@@ -57,6 +67,7 @@ export {
   killPerson,
   namedPeople,
   setFate,
+  startFate,
 } from './fate';
 export type {
   FateData,
@@ -69,6 +80,7 @@ export type {
   FateView,
   FateWriteOptions,
   NamedPerson,
+  StartFateOptions,
 } from './fate';
 export type { OrderResult } from './rts-orders';
 export {

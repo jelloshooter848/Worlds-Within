@@ -1,0 +1,11 @@
+{
+  "format": "worlds-within/carried",
+  "version": 1,
+  "from": "captive",
+  "tick": 12,
+  "people": {
+    "captain": { "fate": "captured", "by": "raiders", "at": 12, "hp": 20, "max": 30 },
+    "sergeant": { "fate": "active", "by": null, "at": null, "hp": 30, "max": 30 }
+  },
+  "stockpiles": { "village": { "gold": 200 } }
+}

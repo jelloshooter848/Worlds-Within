@@ -1,0 +1,177 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 2417,
+  "systems": "rts",
+  "terrain": {
+    "legend": {
+      ".": {
+        "name": "ground",
+        "cost": 1,
+        "passable": true
+      },
+      "#": {
+        "name": "rock",
+        "cost": 1,
+        "passable": false
+      }
+    },
+    "rows": ["........", "........", "..##....", "........", "........"],
+    "elevation": ["00000000", "00000000", "00000000", "00000000", "00000000"]
+  },
+  "entities": [
+    {
+      "key": "hall",
+      "components": {
+        "Position": {
+          "x": 0,
+          "y": 0
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Stockpile": {
+          "faction": "village"
+        },
+        "Inventory": {
+          "gold": 50,
+          "wood": 7
+        }
+      }
+    },
+    {
+      "key": "raider",
+      "components": {
+        "Position": {
+          "x": 7,
+          "y": 3
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 3,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        }
+      }
+    }
+  ],
+  "squads": [
+    {
+      "key": "guard",
+      "strength": 4,
+      "components": {
+        "Owner": {
+          "faction": "village"
+        }
+      },
+      "members": [
+        {
+          "key": "captain",
+          "name": "Hale",
+          "role": "captain",
+          "components": {
+            "Position": {
+              "x": 1,
+              "y": 3
+            },
+            "Owner": {
+              "faction": "village"
+            },
+            "Health": {
+              "hp": 30,
+              "max": 30
+            },
+            "Unit": {
+              "type": "soldier",
+              "speed": 2,
+              "attack": 4,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 5
+            }
+          }
+        },
+        {
+          "key": "sergeant",
+          "name": "Mara",
+          "role": "hero",
+          "components": {
+            "Position": {
+              "x": 2,
+              "y": 3
+            },
+            "Owner": {
+              "faction": "village"
+            },
+            "Health": {
+              "hp": 30,
+              "max": 30
+            },
+            "Unit": {
+              "type": "soldier",
+              "speed": 2,
+              "attack": 4,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 5
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "rescue-window",
+      "mission": "rescue-captain",
+      "opens": 0,
+      "closes": 40,
+      "exclusive": "captive",
+      "relative": true
+    },
+    {
+      "id": "exchange-window",
+      "mission": "exchange-captain",
+      "opens": 0,
+      "closes": 40,
+      "exclusive": "captive",
+      "relative": true
+    },
+    {
+      "id": "leave-window",
+      "mission": "leave-captain",
+      "opens": 0,
+      "closes": 40,
+      "exclusive": "captive",
+      "relative": true
+    }
+  ],
+  "from": {
+    "scenario": "captive",
+    "carry": {
+      "people": ["captain", "sergeant"],
+      "stockpiles": [
+        {
+          "faction": "village",
+          "items": ["gold"]
+        }
+      ]
+    },
+    "when": [
+      {
+        "key": "captain",
+        "fate": "captured",
+        "open": ["rescue-window", "exchange-window", "leave-window"]
+      }
+    ]
+  }
+}

@@ -41,7 +41,14 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   (`FATE_COMPONENTS`, `omitWhenEmpty`), `FATE_STATES`, `MAP_COMPONENTS`, `fateOf`, `namedPeople`,
   `setFate` and its helpers `injurePerson`, `capturePerson`, `killPerson`, `freePerson`, and
   `deathSystem` (moved here from `rts.ts`: it keeps a named person who dies as a dead record) (see
-  "Fates" below).
+  "Fates" below). `startFate` (Engine 0.13 T5) gives a fresh person a fate reached in another
+  world (carry-over).
+- `carry.ts`: carry-over (Engine 0.13 T5): `carriedRecord(world, from, keys)`, the schemas
+  `carryFromSchema` (a scenario's `from`), `carrySpecSchema` and `carriedRecordSchema`,
+  `CARRIED_FORMAT`, `CARRIED_VERSION`, `CARRY_CAUSE` (`carry`), and the checks and apply step
+  `worldFromScenario` uses (see "Carry" below).
+- `scenario-error.ts`: `ScenarioError` and `ScenarioIssue` (re-exported by `scenario.ts`), in a file
+  of their own so `carry.ts` and `scenario.ts` do not import each other.
 - `system-sets.ts`: named system sets (Engine 0.9 T9, items 118 and 132): `SYSTEM_SETS`
   (`village`: `[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]` with `haulSystem`,
   `buildSystem`, `patrolSystem`; `rts`: `[...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` with
@@ -87,6 +94,10 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `freed`), `leave-captain` (no effects: the capture stands) and `ransom-captain` (150 gold and
   `freed`); and the run files `capture-rescue`, `capture-rescue-failed`, `capture-exchange` and
   `capture-leave` with their golden `.hashes.json`, checked by `tests/runs/missions.test.ts`.
+  And (Engine 0.13 T5) `captive-after.world.json`, the captive world's follow-up: its `from` names
+  `captive` and carries the `captain` and the `sergeant` (Health and fate) and the village's gold,
+  and a `when` rule opens its dormant `rescue-window`, `exchange-window` and `leave-window` when
+  the captain comes in captured (`carry.test.ts`).
   Fixtures only: no game content anywhere else in the folder.
 - `index.ts`: the public entry point; import from here outside this folder.
 
@@ -511,7 +522,8 @@ version 1 (every version 1 file reads as before).
   entities: [{ key?, components: { Position: {...}, ... } }],
   squads: [{ key?, strength?, components: {...},              // not Squad: it is built
              members: [{ key?, name, role, components? }] }],   // not Member: it is built
-  opportunities?: [{ id, mission, opens, closes, ... }] }      // Engine 0.10: see Opportunities
+  opportunities?: [{ id, mission, opens, closes, ... }],      // Engine 0.10: see Opportunities
+  from?: { scenario, carry: { people, stockpiles }, when? } }  // Engine 0.13: see Carry
 ```
 
 - **Terrain**: types are numbered in sorted legend character order (`#` before `.` before `a`);
@@ -527,9 +539,64 @@ version 1 (every version 1 file reads as before).
   field: `terrain.rows.1: character "x" at x 1 is not in the legend`,
   `entities.0.components.Position.x: ...`,
   `entities.1.components.Worker.job: $ref "zed" names no entity of the scenario`.
+- **From another scenario** (Engine 0.13): `from` names the scenario this one follows and what
+  carries from its end world; `worldFromScenario(json, { carried })` applies a carried record last,
+  under the cause `carry` (see "Carry"). `from` is optional, so the format stayed at version 1.
 - The format is in `docs/reference/schemas.md` ("World scenario", from `scenarioSchema`, with the
   example `docs/reference/examples/world-scenario.json`). A change to the format bumps
   `SCENARIO_VERSION`.
+
+## Carry
+
+A scenario that starts from another's results (`carry.ts`, Engine 0.13 T5; docs/BUILD-LOG.md,
+Engine 0.13, decision 5, item 224). The second scenario names the first in `from`; a **carried
+record**, plain JSON, is built from the first world's end state and applied to the second world
+at tick 0.
+
+```text
+"from": { "scenario": "captive",                       // the first scenario's content id
+          "carry": { "people": ["captain", "sergeant"],  // squad-member keys: Health and fate
+                     "stockpiles": [{ "faction": "village", "items": ["gold"] }] },
+          "when": [{ "key": "captain", "fate": "captured",
+                     "open": ["rescue-window", "exchange-window", "leave-window"] }] }
+
+const record = carriedRecord(endWorld, second.from, scenarioKeys(first));
+const world = worldFromScenario(second, { carried: record });
+```
+
+- **The record**: `{ format: "worlds-within/carried", version: 1, from, tick, people: { <key>:
+{ fate, by, at, hp, max } }, stockpiles: { <faction>: { <item>: n } } }`, every key sorted,
+  integers and ids only (`carriedRecordSchema`, in `docs/reference/schemas.md`). `fate` is
+  `active` or a `Fate` state (`by` and `at` null while active); `hp` and `max` are `Health` (both
+  null without one); a missing item counts 0. Only what the spec names carries: buildings,
+  positions, other units, the RNG and the seed do not, so two endings that differ only in one
+  person give records that differ only in that person's entry.
+- **`carriedRecord(world, from, keys)`** reads only; `keys` are the first scenario's
+  (`scenarioKeys`). A bad spec throws `ScenarioError` with paths under `from`: a key the first
+  scenario lacks (`from.carry.people.0: "nobody" is not a key of the first scenario`), one that
+  is not a living `Member`, a faction with no stockpile, a person, faction or item given twice.
+- **Applying** (`worldFromScenario`'s `carried`, after the entities, squads and opportunities),
+  under the cause `carry`: for each person in spec order, `Health` set to the carried hp capped
+  at the second scenario's `max`, then the fate by `startFate` (`captured`: off the map and out of
+  the squad, `held` their `Unit` and `Owner`; `dead`: off the map, hp 0, a record; `injured` and
+  `freed`: where the scenario put them; `history` one step with the cause `carry` and the first
+  world's `by` and `at`); then each stockpile item replaced; then each `when` rule whose fate
+  matches opens its opportunities (as an `opportunity` effect: offered at once when `opens` is 0).
+  Without `carried` the scenario starts as written, so it is playable alone.
+- **Checks** (one `ScenarioError` line per field, always made for `from`): each carried key is a
+  squad member's key of this scenario and has no `Fate` of its own in the file; each carried
+  faction has a `Stockpile` entity; each `when` names a carried key and `relative` opportunities
+  of the scenario. For `carried` (paths under `carried`): its schema, `from` equal to
+  `from.scenario`, and exactly the people, factions and items the spec names
+  (`carried.people.mayor: "mayor" is not carried by this scenario (from.carry.people)`,
+  `carried.people: has no entry for "sergeant"`); `carried` given to a scenario without `from` is
+  an error.
+- Deterministic: the same record gives the same start hash every run. Tests: `carry.test.ts`
+  (the captive fixture's end carried into `captive-after.world.json`: the record, a captured,
+  active, injured and dead person carried in, equal hashes every run, through 30 ticks and a save
+  and load, records differing in one person's fate giving start worlds differing only in that
+  person (and, for a capture, his squad and the opportunities his `when` rule opens), and every
+  error).
 
 ## Walking
 
