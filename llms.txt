@@ -9,6 +9,7 @@
 - [Roadmap](docs/ROADMAP.md): the release plan; check it before adding features
 - [Stacking-test gap report](docs/reports/stacking-test.md): what Engine 0.7's test game found missing, 37 gaps, each fixed (20 in 0.7, 3 more in 0.10) or moved to a named release, plus the glue review
 - [Mini-siege gap report](docs/reports/mini-siege.md): what Engine 0.11's multi-genre sample (an RTS siege with a top-down mission, played or delegated) finds missing, each gap fixed or moved to a named release, plus the glue review
+- [Tower-defense lessons report](docs/reports/tower-defense.md): what Engine 0.12's platform test (a new tower-defense mode added with no `engine/sim` change) needs elsewhere, each change logged as a lesson for the 1.0 mission API (ids `D1`, ...); no stacking-test or mini-siege gap is assigned to 0.12
 
 ## Modules
 

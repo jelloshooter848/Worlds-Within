@@ -15,7 +15,7 @@ folder should hold only content, skins and thin glue; the scenario, the map and 
 data files, not code.
 
 The decisions this release was built against (items 172-184) are in
-[BUILD-LOG.md, Engine 0.11, Decisions](../BUILD-LOG.md#decisions). The stacking-test gaps assigned
+[BUILD-LOG.md, Engine 0.11, Decisions](../BUILD-LOG.md#decisions-1). The stacking-test gaps assigned
 to 0.11 (G13, G18, G19 the rest, G27, G28, G30) are tracked in the stacking test's report, not here.
 
 ## Summary

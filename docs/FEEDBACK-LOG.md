@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 197.** (Last used: 196.)
+**Next unused number: 207.** (Last used: 206.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -746,3 +746,46 @@ Deviations from the roadmap)
   the unlock listeners stay on after the first gesture (cheap, and they recover a context the
   browser suspended). Only the player's volumes are applied; storing settings and a mute control
   are M1, moved to 0.15. OK?
+
+**Engine 0.12, decisions before code** (reasoning in `docs/BUILD-LOG.md`, Engine 0.12, Decisions).
+The preparation phase staying in the mini siege is the owner's (answer 19), and the 0.10 and 0.11
+mission rules (150-151, 154) hold for the new mission; they are not reopened here.
+
+- **197.** The kit's shape: `kits/towerdefense` holds its own deterministic round rules (integer
+  maths, the seeded `Rng`, named rules a run can switch off, `strictMutants` opt-in once every rule
+  is guarded), no world rules, no `engine/sim` import, no drawing. OK?
+- **198.** Its content kinds: a `td-map` (JSON header with legend, starting resource and lives,
+  plus a text grid of path, build and blocked cells with one entry and one exit, one unbranched
+  path), a tower-type table (cost, range, damage, cooldown) and waves (groups of kind, count,
+  spacing, hp, speed, bounty). OK?
+- **199.** The input model: a cursor moved with the shared `Actions`, `jump` to place, `attack` to
+  cycle the tower type, `start` to start the wave, so run files and a mission's recorded `play`
+  input replay it; a pointer tap on the page moves the cursor to that cell (a tap on its cell
+  places). OK?
+- **200.** The standalone sample: `games/samples/tower-defense/`, `kit: towerdefense` only and no
+  sim, one map, two or three tower types, three or four waves, run files `won` and `leaked` (and
+  more if the mutant checks need them) with golden hashes. OK?
+- **201.** The mini siege's preparation phase: a second mission, `fortify`, offered through a
+  second opportunity before the raid and launched through the RTS kit's mission offers; played as
+  the kit's `td-defence` with params picking the real walls (new `wall` building types and wall
+  entities on the village map) as build cells, the budget from the village's stockpile gold and
+  the wave from the real raiders, by selector; ordered outcome rules to declared outcomes whose
+  data-only effects (`inventory`, `damage`, `destroy`) write the losses back. Fixed effect amounts
+  per outcome are an expected lesson. OK?
+- **202.** `td-defence`'s report (`cleared`, `livesLeft`, `spent`, `towers`, `fallen`, `killed`,
+  `ticks`, with world keys) is kept in the mission record's `stats`; a quit round goes to `onQuit`.
+  OK?
+- **203.** The walls go on the one village map, not a second scenario; T7 re-records the golden
+  hashes of the 0.11 run files `played`, `delegated` and `quit` once, in its own commit, with the
+  reason, and keeps every assertion in them (placing the walls off the raiders' path if needed).
+  OK?
+- **204.** The new mode's code lives in the kit and its content in the mini siege; the glue only
+  adds the new mini game and adapter to `MissionHost`'s lists; any change outside the kit is
+  logged as a lesson. OK?
+- **205.** The lessons report `docs/reports/tower-defense.md` uses ids `D1`, `D2`, ... with a
+  "Sim" column and statuses `fixed in 0.12 Tn`, `moved to <release>` or `lesson for the 1.0
+mission API`. OK?
+- **206.** "The `engine/sim` diff is empty" is checked at the close-out with `git diff --stat` and
+  `git log` of `engine/sim` against `d6a102ab66f62c80e906ac979ece026dd781c415`, the output recorded
+  in the build log; each task checks it before committing; no test is added (it would need full
+  history in CI and mean nothing after 0.12). OK?

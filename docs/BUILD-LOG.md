@@ -7,6 +7,165 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.12
+
+The tower-defense kit (the platform test). Built on branch `engine/build-0.15`; not tagged (no
+tags during the build, owner answer 24). As in 0.9 to 0.11, the open questions were settled in
+writing before any code (T1); the later tasks build against them. The release's test is the
+roadmap's: **adding the new mode needs no change to `engine/sim`**, and every change it does need
+is recorded as a lesson for the mission API before that API is fixed at 1.0. The lessons report
+is [docs/reports/tower-defense.md](reports/tower-defense.md), started in T1 so every task can log
+lessons as it finds them. The base commit for the `engine/sim` check is
+`d6a102ab66f62c80e906ac979ece026dd781c415`, the head when T1 started (decision 10).
+
+**Gaps assigned to 0.12 from earlier reports: none.** Neither
+[docs/reports/stacking-test.md](reports/stacking-test.md) nor
+[docs/reports/mini-siege.md](reports/mini-siege.md) moves any gap to 0.12: every `G` and `M` gap is
+fixed or moved to 0.13, 0.14 or 0.15, and the only "0.12" in `mini-siege.md` is the line of its
+format that lists the releases a status may name. The close-out (T9) confirms this is still so.
+
+### What was built
+
+- **Decisions before code and the lessons report skeleton** (T1): the kit's shape and content
+  kinds, the input model, the sample, the mini siege's preparation mission, its round and outcomes,
+  the 0.11 hashes, the lessons report's ids and the `engine/sim` check, settled in writing (items
+  197-206, below); `docs/reports/tower-defense.md` started and linked from `llms.txt`.
+
+### Decisions
+
+The roadmap's scope for 0.12 leaves open the kit's shape and content, how a tower-defense round is
+controlled and replayed, what the standalone sample holds, how the mini siege offers and plays its
+preparation phase and writes its losses back, what happens to the 0.11 mini siege hashes when walls
+join the map, how lessons are numbered, and how "the `engine/sim` diff is empty" is checked. Each is
+a feedback item (197-206) the owner can overrule by number. Two rules are the owner's and are
+restated, not open: **the preparation phase stays in the mini siege** (answer 19), and **the real
+Siege's preparation phase is Worlds Within 0.1, not engine work** (the roadmap). The 0.10 and 0.11
+mission rules (a fixed world-time cost, append-only records, fair delegation; items 150-151 and 154) hold for the new mission as for `sabotage`.
+
+**1. The kit's shape (item 197).** `kits/towerdefense` (kit name `towerdefense`) holds its own
+deterministic round rules, as `kits/topdown` and `kits/platformer` do: integer maths only (cells,
+whole sub-cell units and whole ticks, no floats in the rules), every random choice through the
+seeded `Rng` from `engine/core`, each gameplay rule a named rule (`TOWERDEFENSE_RULES` through
+`defineRules`) that a run can switch off, and `strictMutants` opt-in once every rule is guarded by
+a run file (so the kit starts without it and T4 turns it on when the sample's run files guard every
+rule, or logs why not). The kit holds **no world rules** and **never imports `engine/sim`**: over a
+world it reads only the plain data a mission's params and snapshot give it and reports what
+happened (decision 6), and it never draws (it describes frames; backends draw them through a
+skin). Its rules, as a start for T2 to name: enemies walk the path from entry to exit one step at
+a whole-tick speed; a tower fires at the enemy furthest along the path within its range (squared
+cell distance, ties by lowest enemy id) when its cooldown is up; a placement needs a build cell
+with no tower and enough resource; a killed enemy pays its bounty; an enemy that reaches the exit
+costs a life; the round is won when the last wave is cleared with lives left and lost at 0 lives.
+
+**2. The kit's content kinds (item 198).** Three kinds, each a Zod schema in the kit, in
+`docs/reference/schemas.md` through `pnpm docs:gen`, and checked by `pnpm cli validate`:
+
+- **`td-map`**: a JSON header (`id`, `title?`, `legend`, `start` resource and `lives`, the tower
+  types and waves it allows) plus a `.map.txt` text grid, as the platformer's `level` is. The grid's
+  cells are path, build and blocked, with exactly one entry and one exit on the path; the path must
+  be one connected walk from entry to exit (no branches in 0.12; a branching path is a later
+  choice), checked at load with the file and the cell named.
+- **Tower types** (`td-towers`, one file holding a table, like `rts-types`): per type `cost`,
+  `range` (cells), `damage`, `cooldown` (ticks).
+- **Waves** (`td-waves`, one file per wave list): each wave a list of groups `{ kind, count,
+spacing (ticks), hp, speed, bounty }`, in file order.
+
+The starting resource and lives are the map header's (`start`, `lives`), so one sample map is one
+complete round. Exact file suffixes and field names are T2's, kept to these meanings.
+
+**3. The input model (item 199).** A cursor on the grid, moved with the shared `Actions`
+(`left`, `right`, `up`, `down`, one cell per press, repeating while held), and three buttons:
+`jump` places the selected tower type on the cursor's cell, `attack` cycles the tower type, and
+`start` starts the next wave. So `ScriptedInput` run files and a mission's recorded `play` input
+(0.11 decision 1) replay a round exactly, with no new input kind. On the page, a pointer tap is
+mapped to a cell (through the camera's screen-to-world maths) and moves the cursor there; a tap on
+the cursor's own cell places. The tap reaches the kit as the same cursor move and place, so the
+round's rules see one kind of input and replays stay frame input only. If `start` turns out to be
+taken by the shell (pause), T3 picks another button and logs it.
+
+**4. The standalone sample (item 200).** `games/samples/tower-defense/`, with `kit: towerdefense`
+only: no `uses`, no world, no `engine/sim`. One `td-map`, two or three tower types (for example a
+cheap short-range one and a dear long-range one) and a few waves (three or four), with original
+NES-style text art, a Canvas2D skin and a short MML song (owner answer 22) in T5. Run files with
+golden hashes, at least `won` (every wave cleared) and `leaked` (lives lost to a leak, the round
+lost), plus any T4 needs to guard every kit rule for mutant checks. Agent docs and a module page
+`docs/modules/games-samples-tower-defense.md` as for every sample.
+
+**5. The mini siege's preparation phase (item 201).** It stays in the mini siege (owner answer
+19). A second mission, `fortify` ("Man the walls"), is offered through a second opportunity,
+`fortify-window`, open before the raid reaches the village (its window before or overlapping the
+start of `sabotage-window`; T7 tunes the ticks), and launched through the RTS kit's existing
+mission offers and launch command (`missionButtons`, `launchMission`, a `MissionHost` carrying it
+out). Its event is the raid (`siege`), so the raiders are held while it is open, as in `sabotage`.
+Its `play` is a new mini game from `kits/towerdefense`, `td-defence`, with a data-driven adapter
+(`towerdefenseMissionAdapter`) built like the topdown kit's `mission-room` (0.11 decision 5): the
+game writes no adapter code. Its params, all in the mission file:
+
+- **The map:** a `td-map` giving the wall-side layout, whose build cells are the real walls: new
+  `wall` building types in the mini siege's types and wall entities added to the village map, picked
+  by selector (`{ faction?, types?, keys? }`, ascending id) into the map's build slots in reading
+  order, as `foes` fill slots in `mission-room`.
+- **The budget:** taken from a faction's stockpile item (`{ faction: "village", item: "gold" }`:
+  the `Inventory` of the entity with that faction's `Stockpile`, the hall).
+- **The wave:** taken from the real raider units by selector (`{ faction: "raiders", types?,
+member? }`), each becoming an enemy of a named kind with hp from the world's `Health.hp`
+  (divided by `hpPer` if given), in ascending id, spaced by a param.
+- **Outcomes:** an ordered list of rules from the round's report (cleared or not, lives left,
+  resource spent, which walls fell, which raiders were killed) to declared outcomes, the last with
+  no `when`, as in `mission-room`; a rule naming an undeclared outcome is a `validate` error
+  (`checkUse`).
+
+The outcomes' effects are data only (0.10): `inventory` for the gold spent, `damage` or `destroy`
+for walls, defenders and raiders, so the losses are written back to the world at the commit tick,
+through the sim's existing mission commit and no new sim code. **A known likely lesson:** effects
+carry fixed per-outcome amounts, so "the gold spent" can only be written back as the amount the
+matching outcome declares (bucketed outcomes such as `held-cheap` and `held-dear`), not the amount
+the round reports. If T6 or T7 hits it, it is logged as a lesson in the report (decision 9), not
+fixed in `engine/sim`.
+
+**6. The `td-defence` round and its report (item 202).** `td-defence` is a `MiniGameDef` with a
+`paramsSchema`, `checkUse` and `report()`: `{ cleared, livesLeft, spent, towers: [{ slot, type
+}], fallen: [keys], killed: [keys], ticks }`, with world keys mapped back from slots (as
+`mission-room`'s `stats`), kept in the record's `stats`. A quit round goes to the mission's
+`onQuit` without the rules. The kit lists the params with `paramsDocs()` so they appear in the
+schema reference.
+
+**7. The 0.11 mini siege run files once walls join the map (item 203).** The walls are added to the
+one village map (`village.world.json`), not a second scenario: the preparation phase is meant to be
+played in the same world as the raid, and a second scenario would leave the 0.11 runs testing a map
+the game no longer plays. So T7 **re-records the golden hashes of `played`, `delegated` and `quit`
+once, in its own commit, with the reason** (the map gained wall entities and a second
+opportunity, so every world snapshot moves). Every assertion in those run files must still hold
+unchanged (the frozen battle, the watchtower, the fixed commit tick, the outcome's effects, the
+hall's hp); where the walls change the battle so an assertion cannot hold, the walls are placed off
+the raiders' path rather than the assertion changed, and if that is not possible the change is
+logged as a lesson with its reason. The delegated draw does not move (it depends on the seed and
+the mission id only, item 154).
+
+**8. Where the new mode's code lives (item 204).** The kit's round, content kinds, adapter and
+presentation in `kits/towerdefense`; the wall types, wall entities, the `fortify` mission and its
+`td-map` in the mini siege's content; the glue in `games/samples/mini-siege/headless.ts` and
+`play.ts` only adds the new mini game and adapter to the lists it already passes to `MissionHost`.
+Anything else the mode needs in `engine/core`, `engine/tools` or a backend is allowed but is logged
+as a lesson (decision 9); anything it would need in `engine/sim` is not done in 0.12 unless there
+is no other way, and then justified in the release notes (the roadmap's "or each change is
+justified").
+
+**9. The lessons report (item 205).** `docs/reports/tower-defense.md`, ids **`D1`, `D2`, ...**
+(D for defence), never reused or renumbered, so they cannot be confused with task ids (`T1`...) or
+the stacking test's `G` and the mini siege's `M` ids. Each row: id, what, where, whether
+`engine/sim` needed it, and a status: `fixed in 0.12 Tn (<commit>)`, `moved to <release>` with the
+reason, or `lesson for the 1.0 mission API`. Every task logs what it finds as it goes; the
+close-out (T9) gives the summary.
+
+**10. Checking that the `engine/sim` diff is empty (item 206).** At the close-out (T9), run
+`git diff --stat d6a102ab66f62c80e906ac979ece026dd781c415 -- engine/sim` and `git log --oneline
+d6a102ab66f62c80e906ac979ece026dd781c415..HEAD -- engine/sim` and record their (empty) output in
+this log and the report. **No test is added for it:** a test pinned to a base commit needs the
+full history (CI checkouts may be shallow), would mean nothing after 0.12, and the dependency rule
+already stops kits from importing the sim. Each task also checks `git diff --stat -- engine/sim`
+is empty before it commits, so a change is caught when it is made, not at the end.
+
 ## Engine 0.11
 
 The mini siege (multi-genre sample). Built on branch `engine/build-0.15`; not tagged (no tags
