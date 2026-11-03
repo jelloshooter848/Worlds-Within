@@ -8,11 +8,13 @@ import { rtsEnemyKind, rtsMapKind, rtsTypesKind, type EnemyPlan, type RtsMap } f
 import { kit as rts } from '@kits/rts/kit';
 import { roomKind, type RoomDef } from '@kits/topdown';
 import { kit as topdown } from '@kits/topdown/kit';
+import { tdMapKind, tdTowersKind, towerTable, type TdMap, type TowerTable } from '@kits/towerdefense';
+import { kit as towerdefense } from '@kits/towerdefense/kit';
 
 /**
  * Glue between the mini siege's data files (`game.json` and `content/`) and the engine: the loaded
- * bundle as the map, the unit and building types, the raiders' plan, the missions and the mission
- * rooms. No content lives here: all of it is text files under `content/`.
+ * bundle as the map, the unit and building types, the raiders' plan, the missions, the mission
+ * rooms and the walls' tower-defense maps and towers. No content lives here: all of it is text files under `content/`.
  */
 
 /** The side the player commands. The raiders are the plan's `faction` (`content/enemy/`). */
@@ -22,8 +24,11 @@ const ROOM = roomKind();
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/mini-siege`. */
 export function loadMiniSiege(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
-  // The kits of `game.json`: `kit` (rts), then `uses` (topdown, for the mission's room).
-  return loadContent(files, kitContentKinds([rts, topdown]), { root: 'games/samples/mini-siege/' });
+  // The kits of `game.json`: `kit` (rts), then `uses` (topdown for the sabotage room,
+  // towerdefense for the fortify map).
+  return loadContent(files, kitContentKinds([rts, topdown, towerdefense]), {
+    root: 'games/samples/mini-siege/',
+  });
 }
 
 /** The one entry of `kind` the game has, or a thrown error naming the folder it belongs in. */
@@ -56,6 +61,16 @@ export function siegeMissions(content: ContentBundle): MissionDef[] {
 /** The mission rooms (`content/rooms/`), each one a `mission-room` mission's room. */
 export function siegeRooms(content: ContentBundle): RoomDef[] {
   return contentOf(content, ROOM).map((e) => e.value);
+}
+
+/** The tower-defense maps (`content/defence/maps/`), each one a `td-defence` mission's map. */
+export function siegeDefenceMaps(content: ContentBundle): TdMap[] {
+  return contentOf(content, tdMapKind()).map((e) => e.value);
+}
+
+/** The tower types the walls can be manned with (`content/defence/towers.json`). */
+export function siegeTowers(content: ContentBundle): TowerTable {
+  return towerTable(contentOf(content, tdTowersKind()));
 }
 
 /**

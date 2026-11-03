@@ -87,6 +87,28 @@
       "cost": {
         "gold": 80
       }
+    },
+    "wall": {
+      "health": 80,
+      "size": {
+        "w": 1,
+        "h": 1
+      },
+      "work": 40,
+      "cost": {
+        "gold": 10
+      }
+    },
+    "wall-tower": {
+      "health": 120,
+      "size": {
+        "w": 1,
+        "h": 1
+      },
+      "work": 60,
+      "cost": {
+        "gold": 20
+      }
     }
   }
 }

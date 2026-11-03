@@ -8,11 +8,21 @@ import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { miniGameParamErrors, missionMiniGameUses } from '@engine/core/minigame-params';
 import { missionPort, missionsOf } from '@engine/sim/index';
-import { loadMiniSiege, siegeEnemy, siegeMissions, siegeRooms, siegeScenario, siegeTypes } from './content';
+import {
+  loadMiniSiege,
+  siegeDefenceMaps,
+  siegeEnemy,
+  siegeMissions,
+  siegeRooms,
+  siegeScenario,
+  siegeTowers,
+  siegeTypes,
+} from './content';
 import { createGame, miniGames, type MiniSiegeGame, type NamedSummary } from './headless';
 
 // The mini siege headless (Engine 0.11 T8): the content, the launch through the kit, and the two
 // paths of decision 12 checked across a whole run (the run files check them at chosen ticks).
+// Engine 0.12 T7 adds the walls and the `fortify` mission (the preparation phase).
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const content = mustLoad(loadMiniSiege(readGameFiles(ROOT)));
@@ -20,6 +30,7 @@ const NO_INPUT = new ScriptedInput({ steps: [] });
 const SEED = 11;
 const OPEN = 40;
 const COMMIT = 160;
+const WALLS = ['north-wall', 'north-tower', 'south-wall', 'south-tower'];
 
 const hash = (v: unknown) => createHash('sha256').update(canonicalJson(v)).digest('hex').slice(0, 16);
 
@@ -44,18 +55,18 @@ function play(name: string, each?: (game: MiniSiegeGame) => void): MiniSiegeGame
   return game;
 }
 
-/** The battle's units (every keyed unit's place and hp), by world tick, while the mission is open. */
-function battleByWorldTick(name: string): Map<number, Record<string, NamedSummary>> {
+/** The battle's units (every keyed unit's place and hp), by world tick, up to `until` (the commit). */
+function battleByWorldTick(name: string, until = COMMIT): Map<number, Record<string, NamedSummary>> {
   const out = new Map<number, Record<string, NamedSummary>>();
   play(name, (game) => {
-    if (game.miniGame() !== null || game.world.tick > COMMIT) return;
+    if (game.miniGame() !== null || game.world.tick > until) return;
     out.set(game.world.tick, game.named());
   });
   return out;
 }
 
 describe('the mini siege content', () => {
-  it('has one map, one types table, one plan, the sabotage mission and its room', () => {
+  it("has one map, one types table, one plan, the two missions, the room and the walls' map", () => {
     expect(Object.keys(siegeTypes(content).units).sort()).toEqual([
       'captain',
       'catapult',
@@ -65,10 +76,36 @@ describe('the mini siege content', () => {
       'worker',
     ]);
     expect(siegeEnemy(content).faction).toBe('raiders');
+    expect(Object.keys(siegeTypes(content).buildings).sort()).toEqual([
+      'hall',
+      'wall',
+      'wall-tower',
+      'watchtower',
+    ]);
     expect(siegeMissions(content).map((m) => [m.id, m.play, m.worldTimeCost])).toEqual([
+      ['fortify', 'td-defence', 30],
       ['sabotage', 'mission-room', 120],
     ]);
     expect(siegeRooms(content).map((r) => r.id)).toEqual(['engine-camp']);
+    expect(siegeDefenceMaps(content).map((m) => [m.id, m.towers])).toEqual([
+      ['walls', ['archers', 'ballista']],
+    ]);
+    expect(Object.keys(siegeTowers(content))).toEqual(['archers', 'ballista']);
+  });
+
+  it("stands four walls off the raiders' road, each with its type's hp", () => {
+    const types = siegeTypes(content);
+    const scenario = siegeScenario(content, SEED);
+    const walls = scenario.entities.filter((e) => WALLS.includes(e.key ?? ''));
+    expect(walls.map((w) => w.key)).toEqual(WALLS);
+    for (const w of walls) {
+      const building = w.components['Building'] as { kind: string };
+      const hp = types.buildings[building.kind]!.health;
+      expect(w.components['Health']).toEqual({ hp, max: hp });
+      // North of row 13 or south of row 15 by more than the road: never the nearest building.
+      const y = (w.components['Position'] as { y: number }).y;
+      expect(y < 10 || y > 20).toBe(true);
+    }
   });
 
   it('starts every unit with the numbers of its type', () => {
@@ -95,7 +132,7 @@ describe('the mini siege content', () => {
   it("checks the mission's params against the room and its outcomes (validate)", () => {
     const defs = miniGames(content);
     expect(miniGameParamErrors(missionMiniGameUses(content), defs)).toEqual([]);
-    const entry = content.entries.find((e) => e.kind === 'mission')!;
+    const entry = content.entries.find((e) => e.kind === 'mission' && e.name === 'sabotage')!;
     const mission = entry.value as JsonObject & { params: JsonObject };
     const broken = {
       ...mission,
@@ -114,6 +151,28 @@ describe('the mini siege content', () => {
       ['bad_mini_game_use', 'params.outcomes.0.outcome'],
     ]);
   });
+
+  it("checks the fortify mission's params against the walls' map and its outcomes (validate)", () => {
+    const defs = miniGames(content);
+    const entry = content.entries.find((e) => e.kind === 'mission' && e.name === 'fortify')!;
+    const mission = entry.value as JsonObject & { params: JsonObject };
+    const broken = {
+      ...mission,
+      params: {
+        ...mission.params,
+        map: 'nowhere',
+        outcomes: [{ outcome: 'all-held', when: { leaksAtMost: 0 } }, { outcome: 'overrun' }],
+      },
+    };
+    const errors = miniGameParamErrors(
+      missionMiniGameUses({ ...content, entries: [{ ...entry, value: broken }] }),
+      defs,
+    );
+    expect(errors.map((e) => [e.code, e.path])).toEqual([
+      ['bad_mini_game_use', 'params.map'],
+      ['bad_mini_game_use', 'params.outcomes.0.outcome'],
+    ]);
+  });
 });
 
 describe('launching the mission', () => {
@@ -121,7 +180,7 @@ describe('launching the mission', () => {
     const game = createGame(content, SEED);
     expect(game.mission({ mission: 'sabotage', action: 'open' })).toMatchObject({ code: 'not_offered' });
     while (game.world.tick < 20) game.step(NO_INPUT);
-    expect(game.rts.view().missions.offered.map((o) => o.mission)).toEqual(['sabotage']);
+    expect(game.rts.view().missions.offered.map((o) => o.mission)).toEqual(['fortify', 'sabotage']);
     expect(game.mission({ mission: 'sabotage', action: 'open' })).toBeNull();
     expect(game.rts.view().missions.frozen).toEqual(['siege']);
     expect(game.mission({ mission: 'sabotage', action: 'open' })).toMatchObject({ code: 'not_offered' });
@@ -141,7 +200,7 @@ describe('launching the mission', () => {
 
 describe('the two paths (decision 12)', () => {
   it('holds the battle frozen from the open tick to the commit, the same in every path', () => {
-    const paths = ['played', 'delegated', 'quit'].map(battleByWorldTick);
+    const paths = ['played', 'delegated', 'quit'].map((n) => battleByWorldTick(n));
     for (const battle of paths) {
       const atOpen = battle.get(OPEN + 1)!;
       for (let w = OPEN + 1; w < COMMIT; w++) {

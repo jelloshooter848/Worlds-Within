@@ -595,6 +595,94 @@
           "event": "siege"
         }
       }
+    },
+    {
+      "key": "north-wall",
+      "components": {
+        "Position": {
+          "x": 6,
+          "y": 9
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Building": {
+          "kind": "wall",
+          "w": 1,
+          "h": 1,
+          "dropoff": false
+        },
+        "Health": {
+          "hp": 80,
+          "max": 80
+        }
+      }
+    },
+    {
+      "key": "north-tower",
+      "components": {
+        "Position": {
+          "x": 8,
+          "y": 9
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Building": {
+          "kind": "wall-tower",
+          "w": 1,
+          "h": 1,
+          "dropoff": false
+        },
+        "Health": {
+          "hp": 120,
+          "max": 120
+        }
+      }
+    },
+    {
+      "key": "south-wall",
+      "components": {
+        "Position": {
+          "x": 6,
+          "y": 21
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Building": {
+          "kind": "wall",
+          "w": 1,
+          "h": 1,
+          "dropoff": false
+        },
+        "Health": {
+          "hp": 80,
+          "max": 80
+        }
+      }
+    },
+    {
+      "key": "south-tower",
+      "components": {
+        "Position": {
+          "x": 8,
+          "y": 21
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Building": {
+          "kind": "wall-tower",
+          "w": 1,
+          "h": 1,
+          "dropoff": false
+        },
+        "Health": {
+          "hp": 120,
+          "max": 120
+        }
+      }
     }
   ],
   "squads": [
@@ -697,6 +785,12 @@
     }
   ],
   "opportunities": [
+    {
+      "id": "fortify-window",
+      "mission": "fortify",
+      "opens": 5,
+      "closes": 30
+    },
     {
       "id": "sabotage-window",
       "mission": "sabotage",

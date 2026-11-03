@@ -14,13 +14,23 @@ import {
 } from '@engine/sim/index';
 import { launchMission, rtsGame, sidesOf, type RtsGame } from '@kits/rts';
 import { MISSION_ROOM, missionRoom, topdownMissionAdapter } from '@kits/topdown';
-import { PLAYER, siegeEnemy, siegeMissions, siegeRooms, siegeScenario } from './content';
+import { TD_DEFENCE, tdDefence, towerdefenseMissionAdapter } from '@kits/towerdefense';
+import {
+  PLAYER,
+  siegeDefenceMaps,
+  siegeEnemy,
+  siegeMissions,
+  siegeRooms,
+  siegeScenario,
+  siegeTowers,
+} from './content';
 
 /**
  * The mini siege's headless entry (named by `headless` in `game.json`): thin glue joining an
  * `engine/sim` world built from the map, the RTS kit's `rtsGame` (the raiders' plan), and the
- * engine's `MissionHost` with the sim's `missionPort` and the topdown kit's data-driven mission
- * room and adapter (`mission-room`). No rules here: the battle is the sim's, the plan and the
+ * engine's `MissionHost` with the sim's `missionPort` and two data-driven mini games with their
+ * adapters: the topdown kit's mission room (`mission-room`, the sabotage) and the towerdefense
+ * kit's `td-defence` (the fortify mission on the walls). No rules here: the battle is the sim's, the plan and the
  * mission are data, the round and its mapping are the kits'.
  */
 
@@ -29,10 +39,23 @@ export function createWorld(content: ContentBundle, seed: number): World {
   return worldFromScenario(siegeScenario(content, seed));
 }
 
-/** The game's mini games (`HeadlessEntry.miniGames`): the topdown kit's mission room over the rooms. */
+/**
+ * The game's mini games (`HeadlessEntry.miniGames`): the topdown kit's mission room over the rooms
+ * and the towerdefense kit's `td-defence` over the walls' maps and towers. `validate` checks each
+ * mission's params with the one its `play` names.
+ */
 export function miniGames(content: ContentBundle): readonly MiniGameDef[] {
-  return [missionRoom({ rooms: siegeRooms(content) })];
+  return [
+    missionRoom({ rooms: siegeRooms(content) }),
+    tdDefence({ maps: siegeDefenceMaps(content), towers: siegeTowers(content) }),
+  ];
 }
+
+/** The mission adapters, by the mini game they map (`MissionHost`'s `adapters`). */
+export const ADAPTERS = {
+  [MISSION_ROOM]: topdownMissionAdapter,
+  [TD_DEFENCE]: towerdefenseMissionAdapter,
+} as const;
 
 /** One scenario entity at a glance, for run-file checks: alive, where, how hurt. */
 export interface NamedSummary {
@@ -141,7 +164,7 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
     port: missionPort(world, { refs: keys }),
     missions: siegeMissions(content),
     miniGames: miniGames(content),
-    adapters: { [MISSION_ROOM]: topdownMissionAdapter },
+    adapters: ADAPTERS,
   });
   return new MiniSiegeGame(world, rts, host, keys, [PLAYER, enemy.faction]);
 }

@@ -68,6 +68,19 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   per-outcome gold and losses, walls lost as the report's reading, world names, selectors
   `validate` cannot check, a mission map's wave list). No `engine/core` or `engine/sim` change was
   needed.
+- **The mini siege's preparation phase headless** (T7): the walls (`wall` and `wall-tower`
+  building types; `north-wall`, `north-tower`, `south-wall`, `south-tower` in the village map, rows
+  9 and 21, off the raiders' road so they are never the engines' nearest building), the walls'
+  `td-map` (`content/defence/`, with its towers and the one wave list the kind needs, lesson D8),
+  the `fortify` mission ("Man the walls", `td-defence`, cost 30) offered by `fortify-window` (world
+  ticks 5-30), and the glue: `headless.ts` gives `MissionHost` the kit's `tdDefence` and
+  `towerdefenseMissionAdapter` beside `mission-room`, `game.json` `uses` gains `towerdefense`, and
+  `picture.ts` labels a hosted round with the mini game its mission plays. **The golden hashes of
+  `played`, `delegated` and `quit` were re-recorded once, in their own commit** (decision 7): the
+  village map gained four wall entities and a second opportunity, so every world snapshot moved
+  from tick 0 (the squads' and the world-level entity's ids moved up by four). Every assertion of
+  those three run files holds unchanged, the recorded sabotage round included, so only `hashes`
+  and the `.hashes.json` files changed. No `engine/sim` change was needed.
 
 ### Decisions
 

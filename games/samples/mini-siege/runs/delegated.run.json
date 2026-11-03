@@ -106,19 +106,19 @@
   "hashEvery": 20,
   "guards": ["enemy-follows-plan"],
   "hashes": [
-    { "tick": 0, "hash": "824dd792dc4a7d24" },
-    { "tick": 20, "hash": "802fee22e52495b2" },
-    { "tick": 40, "hash": "80e169eed72dedbe" },
-    { "tick": 60, "hash": "f3c7053144a0340d" },
-    { "tick": 80, "hash": "494c837194f51794" },
-    { "tick": 100, "hash": "52da3c4e827275d8" },
-    { "tick": 120, "hash": "c07b6b23ccc130c5" },
-    { "tick": 140, "hash": "ca2a7a94111f9d98" },
-    { "tick": 160, "hash": "6820c5f7566938dc" },
-    { "tick": 180, "hash": "be96a65582c1cc35" },
-    { "tick": 200, "hash": "612630c6224c2ab7" },
-    { "tick": 220, "hash": "e222f2d20175b3d4" },
-    { "tick": 240, "hash": "255057e244048d2f" },
-    { "tick": 260, "hash": "0576a976323b2882" }
+    { "tick": 0, "hash": "8eb4811aae418350" },
+    { "tick": 20, "hash": "c9939cb5864e20e6" },
+    { "tick": 40, "hash": "f7d73869dc68eac1" },
+    { "tick": 60, "hash": "4bc7f96c8afec114" },
+    { "tick": 80, "hash": "8170960b78888b21" },
+    { "tick": 100, "hash": "a1ca2a3f53753ef8" },
+    { "tick": 120, "hash": "40d3d6f73277823e" },
+    { "tick": 140, "hash": "c700db6ab28bb1f7" },
+    { "tick": 160, "hash": "7db8750225e20320" },
+    { "tick": 180, "hash": "2a599fd0aba1cb7d" },
+    { "tick": 200, "hash": "65da85fb2e77c3a4" },
+    { "tick": 220, "hash": "86d2941b0fe3a62c" },
+    { "tick": 240, "hash": "99ff3789215eacb5" },
+    { "tick": 260, "hash": "bfd7dcff687c580a" }
   ]
 }

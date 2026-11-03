@@ -1,0 +1,6 @@
+{
+  "towers": {
+    "archers": { "cost": 20, "range": 2, "damage": 1, "cooldown": 3 },
+    "ballista": { "cost": 40, "range": 3, "damage": 2, "cooldown": 6 }
+  }
+}

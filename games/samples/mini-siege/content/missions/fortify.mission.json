@@ -1,0 +1,186 @@
+{
+  "id": "fortify",
+  "title": "Man the walls",
+  "event": "siege",
+  "worldTimeCost": 30,
+  "play": "td-defence",
+  "params": {
+    "map": "walls",
+    "lives": 2,
+    "build": {
+      "select": {
+        "faction": "village",
+        "types": ["wall", "wall-tower"]
+      },
+      "slot": "W"
+    },
+    "budget": {
+      "faction": "village",
+      "item": "gold",
+      "cap": 100
+    },
+    "wave": [
+      {
+        "kind": "raider",
+        "select": {
+          "faction": "raiders",
+          "keys": ["raider-1", "raider-2", "raider-3", "raider-4"]
+        },
+        "hpPer": 10,
+        "speed": 4,
+        "spacing": 10
+      }
+    ],
+    "outcomes": [
+      {
+        "outcome": "held-cheap",
+        "when": {
+          "leaksAtMost": 0,
+          "spentAtMost": 40
+        }
+      },
+      {
+        "outcome": "held",
+        "when": {
+          "leaksAtMost": 0
+        }
+      },
+      {
+        "outcome": "held-bloodied",
+        "when": {
+          "result": "pass"
+        }
+      },
+      {
+        "outcome": "overrun"
+      }
+    ]
+  },
+  "onQuit": "overrun",
+  "outcomes": [
+    {
+      "id": "held-cheap",
+      "title": "The walls held, for 40 gold",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "inventory",
+          "entity": "hall",
+          "item": "gold",
+          "add": -40
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-1"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-2"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-3"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-4"
+        }
+      ]
+    },
+    {
+      "id": "held",
+      "title": "The walls held, for 80 gold",
+      "weight": 2,
+      "effects": [
+        {
+          "type": "inventory",
+          "entity": "hall",
+          "item": "gold",
+          "add": -80
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-1"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-2"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-3"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-4"
+        }
+      ]
+    },
+    {
+      "id": "held-bloodied",
+      "title": "The walls held, the south wall scarred",
+      "weight": 2,
+      "effects": [
+        {
+          "type": "inventory",
+          "entity": "hall",
+          "item": "gold",
+          "add": -80
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-1"
+        },
+        {
+          "type": "destroy",
+          "entity": "raider-2"
+        },
+        {
+          "type": "damage",
+          "entity": "south-wall",
+          "amount": 40
+        },
+        {
+          "type": "damage",
+          "entity": "soldier-1",
+          "amount": 20
+        }
+      ]
+    },
+    {
+      "id": "overrun",
+      "title": "Overrun: two walls down, the towers and the defenders hurt",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "destroy",
+          "entity": "north-wall"
+        },
+        {
+          "type": "destroy",
+          "entity": "south-wall"
+        },
+        {
+          "type": "damage",
+          "entity": "north-tower",
+          "amount": 60
+        },
+        {
+          "type": "damage",
+          "entity": "south-tower",
+          "amount": 60
+        },
+        {
+          "type": "damage",
+          "entity": "soldier-1",
+          "amount": 30
+        },
+        {
+          "type": "damage",
+          "entity": "captain",
+          "amount": 30
+        }
+      ]
+    }
+  ]
+}

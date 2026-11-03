@@ -19,18 +19,19 @@ import {
 } from '@engine/core/present';
 import { skinSetCanvasPresenter } from '@engine/backends/canvas2d';
 import { presentWorld, RtsPresentState, type RtsMissionInfo, type RtsPresentOptions } from '@kits/rts';
-import { MISSION_ROOM } from '@kits/topdown';
 import { PLAYER, siegeMissions } from './content';
 import type { MiniSiegeGame } from './headless';
 
 /**
  * Glue between the kits' frames and the Canvas2D backend: no drawing of its own. One stream of
  * frames over the `MiniSiegeGame`: while no round is hosted, the RTS kit's `presentWorld` for the
- * village (with the game's missions, so the offer marker and the mission HUD show); while the
- * mission's round is hosted, the round's own frame (`MiniGame.present()`, the topdown kit's room
- * with the host's `mission` title) with `status.miniGame` set to `mission-room`. The backend's
- * `skinSetCanvasPresenter` sends each frame to its skin: `canvas2d.json` for the battle,
- * `canvas2d-mission-room.json` for the room (gap M6: the page's picture switches itself).
+ * village (with the game's missions, so the offer marker and the mission HUD show); while a
+ * mission's round is hosted, the round's own frame (`MiniGame.present()`: the topdown kit's room
+ * for `sabotage`, the towerdefense kit's walls for `fortify`, each with the host's `mission`
+ * title) with `status.miniGame` set to the mini game the mission plays (`mission-room`,
+ * `td-defence`). The backend's `skinSetCanvasPresenter` sends each frame to its skin:
+ * `canvas2d.json` for the battle, `canvas2d-mission-room.json` for the room (gap M6: the page's
+ * picture switches itself); the walls' skin is Engine 0.12 T8's.
  *
  * The sim's snapshot carries no events, so the stream makes the three the battle's skin plays
  * sounds for from what changed between two frames (gap M21): `mission-open` (a mission opened),
@@ -75,6 +76,8 @@ export class SiegePresentState {
   readonly rts = new RtsPresentState();
   readonly roundMaps = new MapTracker();
   round: MiniGame | null = null;
+  /** The mini game the hosted round is (the open mission's `play`), for its end event. */
+  roundGame = '';
   open = 0;
   committed = 0;
 }
@@ -84,10 +87,11 @@ function changes(game: MiniSiegeGame, state: SiegePresentState): PresentEvent[] 
   const events: PresentEvent[] = [];
   const round = game.miniGame();
   if (state.round !== null && state.round !== round) {
-    events.push({ type: 'mini-game-end', game: MISSION_ROOM, result: state.round.result() ?? 'quit' });
+    events.push({ type: 'mini-game-end', game: state.roundGame, result: state.round.result() ?? 'quit' });
     state.roundMaps.reset();
   }
   state.round = round;
+  state.roundGame = round === null ? '' : (game.host.playing?.play ?? '');
   const view = game.rts.view();
   const open = view.missions.open.length;
   if (open > state.open) events.push({ type: 'mission-open', mission: view.missions.open[0]?.id ?? '' });
@@ -114,7 +118,7 @@ export function siegeSource(
       if (round?.present) {
         frame = round.present();
         if (frame.map && isFullMap(frame.map)) frame.map = state.roundMaps.next(frame.map);
-        frame.status[MINI_GAME_STATUS] = MISSION_ROOM;
+        frame.status[MINI_GAME_STATUS] = state.roundGame;
       } else {
         frame = presentWorld(game.rts.view(), {
           ...ui(),
