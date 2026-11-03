@@ -110,19 +110,19 @@
   "guards": ["enemy-follows-plan"],
   "codes": [{ "tick": 260, "code": "4BRDD-P0DGB-90200-7SP9X-J8820-2G" }],
   "hashes": [
-    { "tick": 0, "hash": "8eb4811aae418350" },
-    { "tick": 20, "hash": "c9939cb5864e20e6" },
-    { "tick": 40, "hash": "f7d73869dc68eac1" },
-    { "tick": 60, "hash": "74d3cd8bc65bdd09" },
-    { "tick": 80, "hash": "118f7963df1133b7" },
-    { "tick": 100, "hash": "6636d2cf7a17449d" },
-    { "tick": 120, "hash": "ea176a6e3dae52c7" },
-    { "tick": 140, "hash": "776b3ca0b0de1150" },
-    { "tick": 160, "hash": "3ca1928ab963d1ab" },
-    { "tick": 180, "hash": "20de118b3e0c114a" },
-    { "tick": 200, "hash": "99a212088d45ffbe" },
-    { "tick": 220, "hash": "2bd957629ef59d75" },
-    { "tick": 240, "hash": "88a3423342b72c1c" },
-    { "tick": 260, "hash": "766ad9dde830f2bc" }
+    { "tick": 0, "hash": "1dddfe387d33c526" },
+    { "tick": 20, "hash": "eb7f22c88ce24c2d" },
+    { "tick": 40, "hash": "bcbd8ee39f616987" },
+    { "tick": 60, "hash": "d43443c0ac3fc122" },
+    { "tick": 80, "hash": "adb6326ee1bd6e7d" },
+    { "tick": 100, "hash": "bf975b28ed5f2bac" },
+    { "tick": 120, "hash": "1117e7aeded7d2dc" },
+    { "tick": 140, "hash": "116f2e858df0b5f8" },
+    { "tick": 160, "hash": "d99a4b7ac348b204" },
+    { "tick": 180, "hash": "a4b40017fc118cdf" },
+    { "tick": 200, "hash": "2060627e6d553124" },
+    { "tick": 220, "hash": "1a51dab6bad95f63" },
+    { "tick": 240, "hash": "b0269a6a1d18d69a" },
+    { "tick": 260, "hash": "eeba3b08975e07e1" }
   ]
 }

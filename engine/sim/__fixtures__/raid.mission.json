@@ -3,9 +3,18 @@
   "title": "Burn the siege engines",
   "event": "siege",
   "worldTimeCost": 30,
-  "play": "sabotage",
+  "play": "mission-room",
   "params": {
-    "engines": 3
+    "room": "siege-camp",
+    "goal": "defeat-all",
+    "ticks": 1200,
+    "hp": 6,
+    "foes": [{ "slot": "n", "kind": "knight", "select": { "faction": "blue" } }],
+    "outcomes": [
+      { "outcome": "clean", "when": { "destroyed": ["ram", "tower", "catapult"] } },
+      { "outcome": "partial", "when": { "minDestroyed": 1 } },
+      { "outcome": "repelled" }
+    ]
   },
   "onQuit": "repelled",
   "outcomes": [

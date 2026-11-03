@@ -176,6 +176,52 @@ cli code` and `pnpm cli set` for the pinned codes): `fortify-played` (`.run.json
   `4BRDD-P0DGB-90200-7SP9X-J8820-2G`, `quit` `2VFP0-1P1T8-0M32N-PBJFC-J2A70` to
   `4DWHD-P0DGB-902GC-APSE9-XJ882-070`, `dawn-fresh` `2PHJ0-2P100-0` to `4WXFD-P0NG8-00`. No other
   golden hash, sim golden or world-run golden moved; no layer arrow changed.
+- **Hash-moving fixes** (T9, decisions 2 and 10): M12 and M20 fixed, and the mini siege's two
+  snapshot changes decision 8 held for this task made with them, so its hashes moved once.
+  **M12:** `engine/sim/__fixtures__/raid.mission.json` is a real `mission-room` mission (`play:
+"mission-room"`, the params that were `tests/kits/__fixtures__/raid.params.json` inlined; that
+  file is gone), and `tests/kits/mission-adapter.test.ts` and `mission-host.test.ts` read the
+  fixture as it is (no spread, no runtime patch; the room stays in `tests/kits/__fixtures__/`).
+  **M20:** `ScriptedEnemy`'s unit selector skips a unit whose `frozen` flag is set, and `train`
+  skips a frozen building (`kits/rts/enemy.ts`; the view's flag, no sim import); `enemy.test.ts`
+  shows no order to a frozen unit, the step not firing (its `{ fired, last }` unchanged) while the
+  event is frozen, and a frozen hall training nothing. **Decision 8's held changes:** the mini
+  siege's snapshot lost `named` (`MiniSiegeGame.named()` stays for the page and tests, unhashed;
+  `tests/browser/debugger-done-when.test.ts` reads `world.key.ram.alive` instead), and
+  `sabotage.mission.json` adopted `"marker": "ram"` (M25). Choices: `train` skipping a frozen
+  building goes slightly past the decision's "units" so a plan gives no order at all to a held
+  event (no sample trains at a frozen building, so no hash depends on it).
+  **Moved (decision 2), regenerated with the repo's tools** (`pnpm cli remove`/`run`/`add` for the
+  mini siege run files' sync `hashes`, then `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`; `pnpm test
+engine/sim/sample-world` needed no update): exactly the files decision 10 predicted.
+  - **M12, the seven siege-fixture world runs** (the raid's def is in the snapshot while it is
+    open; it commits by tick 40, so every final hash is unchanged): `raid-partial`,
+    `raid-failure`, `raid-delegated`, `fixed-cost-few`, `fixed-cost-many` (from tick 10),
+    `frozen-construction` (from tick 5) and `opportunity-closing` (from tick 18)
+    `.hashes.json` in `engine/sim/__fixtures__/`. The sample-world golden and the other world
+    runs (`battle`, `village`, `village-build`, the four `capture-*`) did not move.
+  - **Every mini siege run** (`named` gone from tick 0; M20 in the runs that freeze the siege;
+    `marker` in the runs that open `sabotage`), each `.hashes.json` and, where it has them, the
+    `.run.json`'s sync `hashes` (all but `dawn-fresh` and `ridge-raid`, which have none); no
+    assertion, invariant or pinned save code changed. Final hashes: `played` `cf2a262208819d24`
+    to `4cb20d9d684a4849`, `delegated` `766ad9dde830f2bc` to `eeba3b08975e07e1`, `quit`
+    `f5282bcd8d9c7bdd` to `b3cb42a0c0409b65`, `fortify-played` `c758b3283ab59e88` to
+    `2b9327daefddd9a1`, `fortify-delegated` `bd8f76744d63c45e` to `830abca417810eaa`,
+    `ridge-raid` `91b8badf8fc51139` to `4670bab2df97d5f4`, `dawn-fresh` and `dawn-held`
+    `6e309a2e804edc78` to `c5e88a910dfe2710`, `dawn-captured` and `dawn-code` `beb1611ce699c5a0`
+    to `d13258df96b4db81`, `dawn-exchange` `a1516bdf0b2ba853` to `3250cd0dccd5925c`,
+    `dawn-leave` `facb7083b39bcf95` to `86ec1de1cef2d19d`, `dawn-rescue` `c4401c51749ac409` to
+    `1ebfaa6dae0eb6e5`, `dawn-rescue-failed` `41809d9356d8ed03` to `9d9f5ad86dd28cae`. With
+    `named` and `marker` in place and M20 alone undone, `played` and `delegated` (the runs that
+    freeze the siege) still differed (first at ticks 460 and 60), so M20 itself moves them.
+    The hashes written out elsewhere moved with them: `engine/tools/record.test.ts`'s final
+    hashes and the run tables in `games/samples/mini-siege/CLAUDE.md`.
+  - **Not moved:** the RTS skirmish (no missions, so no freezes), the tower-defense, dungeon and
+    platformer samples and the platformer lab.
+  - **Mutants:** `pnpm -s cli mutants games/samples/mini-siege --json` still exits 0: every run
+    passes as it is with no weak guard, `enemy-follows-plan` is guarded by 14 runs and
+    `towerdefense:win-on-clear` by one, and the rest are the lenient rules no run guards, as
+    before. No layer arrow changed.
 
 ### Planned tasks
 

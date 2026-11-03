@@ -83,7 +83,7 @@ describe('record', () => {
       verified: true,
       changed: true,
       passed: true,
-      finalHash: 'cf2a262208819d24',
+      finalHash: '4cb20d9d684a4849',
       hashMismatch: null,
     });
     expect(result.input).toEqual(committed);
@@ -101,7 +101,7 @@ describe('record', () => {
     expect(code).toBe(EXIT.ok);
     expect(result).toMatchObject({ ticks: 116, verified: true, passed: true });
     // Engine 0.15 T8: fortify's report-driven effects moved its hashes (0b43372f77faea35 before).
-    expect(result.finalHash).toBe('c758b3283ab59e88');
+    expect(result.finalHash).toBe('2b9327daefddd9a1');
     expect(result.input).toEqual(committed);
     expect(playInput(file)).toEqual(committed);
   }, 60_000);
@@ -164,7 +164,7 @@ describe('record', () => {
       verified: true,
       passed: true,
     });
-    expect(result.finalHash).toBe('cf2a262208819d24');
+    expect(result.finalHash).toBe('4cb20d9d684a4849');
     expect(playInput(file)).toEqual(committed);
   }, 60_000);
 

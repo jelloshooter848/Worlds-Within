@@ -62,7 +62,9 @@ false, request, code, error }` with `not_offered` (the kit's, without asking the
   `{ count: stock, item, op, value }`. `ScriptedEnemy(plan, rng, rules?)`: `think(view)` gives
   the tick's orders (steps in file order; a step fires at or after `at`, once its `when` holds,
   rule `enemy-waits-for-trigger`, and when its order can be made, else it waits), the whole plan
-  off with rule `enemy-follows-plan`; `snapshot()` is each step's `{ fired, last }`. All
+  off with rule `enemy-follows-plan`; `snapshot()` is each step's `{ fired, last }`. A selector
+  never picks a unit whose event is frozen, and `train` skips a frozen building (the view's
+  `frozen` flag; Engine 0.15 T9, gap M20), so no order goes to a unit an open mission holds. All
   randomness through the `Rng` it is given; nearest picks by squared distance, ties to the lowest id.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
 camera?, missions?, events?, state? })`, below. `RtsPresentState` (map tracker, animation starts),

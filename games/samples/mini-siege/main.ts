@@ -46,7 +46,7 @@ export interface SiegeHook {
   scenario(): string;
   /** How the entry played now ended (`SiegePlay.ended()`), or null while it is played. */
   ended(): SiegeEntryResult | null;
-  /** Every keyed scenario entity at a glance (the headless snapshot's `named`). */
+  /** Every keyed scenario entity at a glance (`MiniSiegeGame.named()`). */
   named(): Record<string, NamedSummary>;
   /** The HUD's captive marker: the name of the village's captured person, or ''. */
   captive(): string;

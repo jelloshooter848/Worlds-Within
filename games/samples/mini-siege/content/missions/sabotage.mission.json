@@ -2,6 +2,7 @@
   "id": "sabotage",
   "title": "Burn the siege engines",
   "event": "siege",
+  "marker": "ram",
   "worldTimeCost": 120,
   "play": "mission-room",
   "params": {

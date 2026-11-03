@@ -43,15 +43,8 @@ const kitFixture = (name: string): unknown =>
   JSON.parse(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8')) as unknown;
 
 const SCENARIO = fixture('siege.world.json');
-/**
- * The sim fixture's raid played as the kit's `mission-room`, with the params and room in
- * `tests/kits/__fixtures__/` (the sim fixture keeps its own, so the world run hashes stay).
- */
-const RAID: MissionDef = {
-  ...(fixture('raid.mission.json') as MissionDef),
-  play: MISSION_ROOM,
-  params: kitFixture('raid.params.json') as JsonObject,
-};
+/** The sim fixture's raid, a real `mission-room` mission (Engine 0.15 T9, gap M12); its room is here. */
+const RAID = fixture('raid.mission.json') as MissionDef;
 const CAMP = kitFixture('siege-camp.room.json') as RoomDef;
 const REFS = scenarioKeys(SCENARIO);
 const OPEN_TICK = 3;

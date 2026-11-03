@@ -68,7 +68,8 @@ the gap report with a named release.
   `bombard` (the catapult) attack the nearest building, `charge` (the raiders) the nearest
   village unit.
 - `content/missions/sabotage.mission.json` (`mission`): "Burn the siege engines", event
-  `siege`, `worldTimeCost` 120, `play` `mission-room`, `onQuit` `driven-off`. Outcomes (weight,
+  `siege`, `marker` `ram` (the offer marker stands over the ram, Engine 0.15 T9, gap M25),
+  `worldTimeCost` 120, `play` `mission-room`, `onQuit` `driven-off`. Outcomes (weight,
   effects): `both-burnt` (1: destroy `ram` and `catapult`), `ram-burnt` (2: destroy `ram`,
   damage `catapult` 40), `catapult-burnt` (1: destroy `catapult`, damage `ram` 40), each also
   damaging `captain` by the round's `heroHpLost` when played (`fromReport`; 10 when delegated),
@@ -228,9 +229,10 @@ seed, opts?)`: the sim world, the kit's `rtsGame` on the sim's `rtsWorldPort(wor
     and adds `named()` and `campaignSave()`; `records()` (the committed records, for the page) and
     `worldKeys()` (for `world.key` run checks) are the host's since Engine 0.15 T7 (gaps M28,
     M17), read through the sim's port. Its snapshot is the host's (`{ world,
-kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenario key:
+kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario key:
     `{ alive, x, y, hp, fate? }`; since Engine 0.13 `alive` is "exists and its fate is not
-    `dead`", and `fate` is listed only for a named person whose fate was set). Since Engine 0.13
+    `dead`", and `fate` is listed only for a named person whose fate was set) is for the page and
+    tests only, out of the snapshot since Engine 0.15 T9 (run files read `world.key.<key>`). Since Engine 0.13
     T7 `createGame`'s `opts.campaign` (a run file's `from`) picks the campaign entry: the dawn is
     built with the save's carried record (`worldFromScenario(json, { carried })`), the siege when
     left out; `MiniSiegeGame.campaignSave()` is the save at the end of the entry played now
@@ -407,11 +409,11 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
 
 | run                 | ticks | what happens                                                                                                                                                                                                                                                                                                                      | final hash         |
 | ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `cf2a262208819d24` |
-| `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt` (the captain down 10); the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                      | `766ad9dde830f2bc` |
-| `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30 and captured (off the map); both engines reach the hall, which ends at 112                                                                                                                                                                  | `f5282bcd8d9c7bdd` |
-| `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `c758b3283ab59e88` |
-| `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `bd8f76744d63c45e` |
+| `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `4cb20d9d684a4849` |
+| `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt` (the captain down 10); the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                      | `eeba3b08975e07e1` |
+| `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30 and captured (off the map); both engines reach the hall, which ends at 112                                                                                                                                                                  | `b3cb42a0c0409b65` |
+| `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `2b9327daefddd9a1` |
+| `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `830abca417810eaa` |
 
 - Game ticks are not world ticks once a round is played: during the round the world does not
   move, so in `played` world tick `w` after 40 is game tick `w + 406` (`quit`: `w + 1`;
@@ -462,8 +464,8 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   `world.key.<key>.alive`, `.fate`, `.Health.hp`, `.Position.x`/`.y` (`.Position` null off the
   map), `sides.<faction>.*`, `kit.enemy.<step>.fired`,
   `world.one.Missions.(open|committed).<i>.*` and `world.one.WorldTime.frozen` (the world-level
-  component; `engine/tools/CLAUDE.md`, Keyed paths). The snapshot's `named` summary is still
-  there until T9 removes it (decision 2: the hashes move once), but no run file reads it.
+  component; `engine/tools/CLAUDE.md`, Keyed paths). The snapshot's old `named` summary
+  was removed in Engine 0.15 T9 (decision 2: the hashes moved once, with M20 and `marker`).
 - Every run file has sync `hashes` (every 20 ticks) and a golden `<name>.hashes.json`; each
   guards `enemy-follows-plan` (`pnpm -s cli mutants games/samples/mini-siege --json`).
 - **Every kit's rules** (Engine 0.14, gap G12; docs/BUILD-LOG.md, Engine 0.14, decision 8 and
@@ -483,7 +485,7 @@ games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine
   `TopDownBot` fighting in the round, records the round (`MiniSiegeGame.recordRounds`, the
   host's) and writes it into the `play` step's `input` through the checked edit path, then runs
   the file. It writes the committed input unchanged (`changed: false`, `passed: true`, final hash
-  `cf2a262208819d24`), so the 0.11 script's recording is what the tool records. Or play it on the
+  `4cb20d9d684a4849` since Engine 0.15 T9), so the 0.11 script's recording is what the tool records. Or play it on the
   page with `?record` and write `window.__ww.recordings()` with `--input` (`engine/tools/CLAUDE.md`,
   Recording a round). Changing the map, the types, the room or the mission's params changes the
   round: remove the run file's `hashes`, re-record, read the new values off `dump`, copy the hashes
@@ -492,7 +494,7 @@ games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine
 games/samples/mini-siege/runs/fortify-played.run.json --mission fortify --bot '[{"do": "place",
 "tower": "archers", "col": 11, "row": 1}, {"do": "place", "tower": "archers", "col": 4, "row":
 5}, {"do": "wave"}]' --json` (the tower-defense kit's `TdBot`; also unchanged, final hash
-  `c758b3283ab59e88` since Engine 0.15 T8). Since Engine 0.15 (gap D1) a round played by taps on the page records its
+  `2b9327daefddd9a1` since Engine 0.15 T9). Since Engine 0.15 (gap D1) a round played by taps on the page records its
   taps too (`input.taps`), which the run file's `play` step replays.
 
 ## The dawn assault (Engine 0.13 T7)
@@ -515,14 +517,14 @@ read off `sides.<faction>.units` and the named people.
 
 | run                  | ticks | from               | what happens                                                                                                                                                                                                                                                                              | final hash         |
 | -------------------- | ----- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `dawn-held`          | 200   | `played.run.json`  | the captain on the map at 120 leads the defence: nothing opens; he falls by world tick 100 (a dead record), and the raiders are beaten by 200 (one soldier left)                                                                                                                          | `6e309a2e804edc78` |
-| `dawn-captured`      | 200   | `quit.run.json`    | the same run file but `from`: the captain is held (off the map, 90 hp), the three captive choices are offered from 0 and close unused at 60; the village falls by 100 and five raiders stand at 200                                                                                       | `beb1611ce699c5a0` |
-| `dawn-code`          | 200   | `quit`'s save code | `dawn-captured` from the code instead of the run: the same assertions and the same hashes (the done-when's equal hashes)                                                                                                                                                                  | `beb1611ce699c5a0` |
-| `dawn-rescue`        | 200   | `quit.run.json`    | `rescue-captain` opened at 5 (the other choices close, `dawn` frozen to 45) and delegated: seed 11 draws `freed`; at 45 the captain is back at 10,15 with 90 hp, the sergeant at 40; three raiders stand at 200                                                                           | `c4401c51749ac409` |
-| `dawn-rescue-failed` | 201   | `quit.run.json`    | the rescue played (the sergeant's 50 hp start the round on 5 half hearts) and given up at once: `failed` at world 45 injures her (30 hp) and offers `ransom-window`; reopening the rescue at game tick 50 is refused (`not_offered`); the ransom (120 gold) frees the captain at world 60 | `41809d9356d8ed03` |
-| `dawn-exchange`      | 200   | `quit.run.json`    | `exchange-captain` opened and delegated at 5: 80 gold (70 left) and the captain freed at 15; three raiders stand at 200                                                                                                                                                                   | `a1516bdf0b2ba853` |
-| `dawn-leave`         | 200   | `quit.run.json`    | `leave-captain` at 5: no effects, the captain stays captured; five raiders stand at 200, as with no choice at all                                                                                                                                                                         | `facb7083b39bcf95` |
-| `dawn-fresh`         | 200   | `start: dawn`      | the dawn started fresh (Engine 0.14, gap G9: no carried record): its scenario file's captain at 120 and 150 gold, so it plays as `dawn-held`; pins the save code at 200                                                                                                                   | `6e309a2e804edc78` |
+| `dawn-held`          | 200   | `played.run.json`  | the captain on the map at 120 leads the defence: nothing opens; he falls by world tick 100 (a dead record), and the raiders are beaten by 200 (one soldier left)                                                                                                                          | `c5e88a910dfe2710` |
+| `dawn-captured`      | 200   | `quit.run.json`    | the same run file but `from`: the captain is held (off the map, 90 hp), the three captive choices are offered from 0 and close unused at 60; the village falls by 100 and five raiders stand at 200                                                                                       | `d13258df96b4db81` |
+| `dawn-code`          | 200   | `quit`'s save code | `dawn-captured` from the code instead of the run: the same assertions and the same hashes (the done-when's equal hashes)                                                                                                                                                                  | `d13258df96b4db81` |
+| `dawn-rescue`        | 200   | `quit.run.json`    | `rescue-captain` opened at 5 (the other choices close, `dawn` frozen to 45) and delegated: seed 11 draws `freed`; at 45 the captain is back at 10,15 with 90 hp, the sergeant at 40; three raiders stand at 200                                                                           | `1ebfaa6dae0eb6e5` |
+| `dawn-rescue-failed` | 201   | `quit.run.json`    | the rescue played (the sergeant's 50 hp start the round on 5 half hearts) and given up at once: `failed` at world 45 injures her (30 hp) and offers `ransom-window`; reopening the rescue at game tick 50 is refused (`not_offered`); the ransom (120 gold) frees the captain at world 60 | `9d9f5ad86dd28cae` |
+| `dawn-exchange`      | 200   | `quit.run.json`    | `exchange-captain` opened and delegated at 5: 80 gold (70 left) and the captain freed at 15; three raiders stand at 200                                                                                                                                                                   | `3250cd0dccd5925c` |
+| `dawn-leave`         | 200   | `quit.run.json`    | `leave-captain` at 5: no effects, the captain stays captured; five raiders stand at 200, as with no choice at all                                                                                                                                                                         | `86ec1de1cef2d19d` |
+| `dawn-fresh`         | 200   | `start: dawn`      | the dawn started fresh (Engine 0.14, gap G9: no carried record): its scenario file's captain at 120 and 150 gold, so it plays as `dawn-held`; pins the save code at 200                                                                                                                   | `c5e88a910dfe2710` |
 
 - `dawn-held` and `dawn-captured` differ only in `from`, so the only difference in their input is
   the carried record, and that differs only in the captain's entry (`mini-siege.test.ts`).
@@ -554,7 +556,7 @@ folder) that the debugger steps through. Its files:
 - `runs/ridge-raid.run.json` (+ `.hashes.json`): `start: { entry: "ridge" }`, 160 ticks, hashes
   every 40; the raid opened and delegated at tick 10: seed 11 draws `ram-burnt` at world 30; the
   village wins (no raider left at 80, the chief among them), the hall untouched at 340, four
-  village units at 160. Final hash `91b8badf8fc51139`.
+  village units at 160. Final hash `4670bab2df97d5f4` (since Engine 0.15 T9).
   `tests/browser/debugger-done-when.test.ts` steps it forward and back in the debugger against the
   golden hashes and reads its timeline, and opens a deliberately failing copy's replay at its
   failing tick.

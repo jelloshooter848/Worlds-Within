@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { parseOrder } from '@engine/core/orders';
 import { Rng } from '@engine/core/rng';
 import { RuleSwitch } from '@engine/core/rules';
-import { battleSnapshot } from './__fixtures__/world';
+import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
 import { enemyPlanSchema, ScriptedEnemy, type EnemyPlan } from './enemy';
 import { RTS_RULES } from './rules';
 import { readWorld } from './snapshot';
@@ -134,6 +134,57 @@ describe('ScriptedEnemy', () => {
       'move',
       'attack',
     ]);
+  });
+
+  it('orders no frozen unit and trains at no frozen building while a mission holds the event (M20)', () => {
+    const charge = (faction: string) =>
+      plan({
+        faction,
+        steps: [
+          {
+            id: 'charge',
+            repeat: { every: 1, times: null },
+            order: { type: 'attack', units: {}, target: 'nearest-enemy' },
+          },
+        ],
+      });
+    const orders = (p: EnemyPlan, snap: Parameters<typeof readWorld>[0]) =>
+      new ScriptedEnemy(p, new Rng(1)).think(readWorld(snap));
+    // offered, nothing frozen: blue's siege units 9 and 10 are ordered
+    expect(orders(charge('blue'), siegeSnapshot()).map((o) => o.units)).toEqual([[9, 10]]);
+    // the raid open, `siege` frozen: blue has no unit left to order, so no order at all
+    const open = siegeSnapshot({ open: true, tick: 10 });
+    const frozen = new Set(
+      readWorld(open)
+        .units.filter((u) => u.frozen)
+        .map((u) => u.id),
+    );
+    expect([...frozen]).toEqual([6, 9, 10]);
+    expect(orders(charge('blue'), open)).toEqual([]);
+    // red's frozen unit 6 is left out; 5 and 7 stand outside the event and are still ordered
+    const red = orders(charge('red'), open);
+    expect(red.map((o) => o.units)).toEqual([[5, 7]]);
+    expect(red.flatMap((o) => o.units ?? []).some((id) => frozen.has(id))).toBe(false);
+    // the step does not fire while frozen, so its state does not grow either
+    const enemy = new ScriptedEnemy(charge('blue'), new Rng(1));
+    for (let t = 10; t < 15; t++) enemy.think(readWorld(siegeSnapshot({ open: true, tick: t })));
+    expect(enemy.snapshot()).toEqual({ charge: { fired: 0, last: null } });
+
+    // a frozen building trains nothing: red's hall (3) made a member of a frozen event
+    const train = plan({
+      faction: 'red',
+      steps: [{ id: 'train', order: { type: 'train', building: 'hall', unit: 'worker', queueMax: 2 } }],
+    });
+    const hallFrozen = battleSnapshot({
+      extra: {
+        EventMember: [[3, { event: 'siege' }]],
+        WorldTime: [
+          [11, { frozen: [{ event: 'siege', by: 'mission:raid', since: 0 }], experience: [], committed: [] }],
+        ],
+      },
+    });
+    expect(orders(train, battleSnapshot())).toHaveLength(1);
+    expect(orders(train, hallFrozen)).toEqual([]);
   });
 
   it('rejects a plan with a step id twice or a move without one target', () => {

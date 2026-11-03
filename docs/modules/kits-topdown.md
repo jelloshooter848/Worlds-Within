@@ -72,7 +72,7 @@ by the `kit` name in `game.json`.
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
 `beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed. `tests/kits/mission-adapter.test.ts` plays an `engine/sim` mission (the siege fixture's
-`raid`, played as the kit's `mission-room` with the params in `tests/kits/__fixtures__/`) through
+`raid`, a real `mission-room` mission since Engine 0.15 T9, with its room in `tests/kits/__fixtures__/`) through
 `topdownMissionAdapter` with the core's `playMissionRound`, outside every layer, since the kit
 never imports the sim; it holds no mapping of its own. `tests/kits/hero-mission.test.ts` (Engine
 0.13) plays a mission whose hero is a world unit through `MissionHost` (played, played and lost,

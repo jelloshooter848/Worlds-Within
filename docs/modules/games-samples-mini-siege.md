@@ -83,7 +83,7 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   `MissionHost` itself (it extends it, gap M18) over the kit's `rtsGame` on the sim's
   `rtsWorldPort` (gap M27), with the kit's `rtsMissionHooks` (`open` refused `not_offered`, the
   view refreshed); the sim world is `sim`; snapshot `{ world, kit, missions?,
-sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `campaignSave()`
+sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13: `opts.campaign` starts it at a campaign save, `campaignSave()`
   gives the save if the entry played now ended now; Engine 0.14 T7: `worldEvents(sinceTick)` and
   `timeline()`, the world's event log and timeline record, for `pnpm cli events` and `timeline`), `siegeCampaignPlace`, `miniGames(content)`
   (`mission-room` and `td-defence`), `ADAPTERS`, `createWorld`.

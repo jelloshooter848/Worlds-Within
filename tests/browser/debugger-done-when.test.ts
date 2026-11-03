@@ -110,9 +110,11 @@ describe.skipIf(missing !== null)("Engine 0.14's Done when: the ridge camp in th
     await page.evaluate(() => window.__wwDebugger!.goto(30));
     const at30 = await page.evaluate(() => {
       const d = window.__wwDebugger!;
-      const state = d.state() as { named?: { ram?: { alive?: boolean } } };
+      // the ram by its scenario key, as the run file's own check reads it (Engine 0.15 T9: no
+      // `named`): that check (`eq false`) passing at 30 is the ram burnt
+      const ram = d.checks().find((c) => c.path === 'world.key.ram.alive' && c.tick === 30);
       return {
-        ram: state.named?.ram?.alive,
+        ram: ram?.passed === true && ram.op === 'eq' ? ram.value : null,
         failed: d.checks().filter((c) => !c.passed).length,
         mission: d.events({ cause: 'mission' })?.length ?? null,
       };
@@ -150,7 +152,7 @@ describe.skipIf(missing !== null)("Engine 0.14's Done when: the ridge camp in th
     const run = JSON.parse(readFileSync(join(ROOT, RUN), 'utf8')) as { game: string; assertions: unknown[] };
     run.game = relative(dir, join(ROOT, 'games/samples/mini-siege'));
     // The ram burns at tick 30: an assertion that it still stands there cannot pass.
-    run.assertions.push({ tick: 30, path: 'named.ram.alive', op: 'eq', value: true });
+    run.assertions.push({ tick: 30, path: 'world.key.ram.alive', op: 'eq', value: true });
     writeFileSync(join(dir, 'ridge-wrong.run.json'), JSON.stringify(run, null, 2));
     const failed = await cli(
       ['run', relative(ROOT, join(dir, 'ridge-wrong.run.json'))],
@@ -164,7 +166,7 @@ describe.skipIf(missing !== null)("Engine 0.14's Done when: the ridge camp in th
       replay: { failure: { tick: number; path: string } };
     };
     expect(stored.start).toEqual({ entry: 'ridge' });
-    expect(stored.replay.failure).toMatchObject({ tick: 30, path: 'named.ram.alive' });
+    expect(stored.replay.failure).toMatchObject({ tick: 30, path: 'world.key.ram.alive' });
 
     const checked = await cli(['debug', replayFile, '--check']);
     expect(checked.code).toBe(0);
@@ -176,7 +178,7 @@ describe.skipIf(missing !== null)("Engine 0.14's Done when: the ridge camp in th
       mismatch: null,
       reproduced: true,
       hashMismatch: null,
-      failure: { tick: 30, path: 'named.ram.alive', expected: true, actual: false },
+      failure: { tick: 30, path: 'world.key.ram.alive', expected: true, actual: false },
     });
 
     const { page, server } = await openPage(browser, replayFile);
@@ -184,12 +186,12 @@ describe.skipIf(missing !== null)("Engine 0.14's Done when: the ridge camp in th
     expect(await page.evaluate(() => window.__wwDebugger!.tick)).toBe(stored.replay.failure.tick);
     expect(await page.evaluate(() => window.__wwDebugger!.failure())).toMatchObject({
       tick: 30,
-      path: 'named.ram.alive',
+      path: 'world.key.ram.alive',
       expected: true,
       actual: false,
       reproduced: true,
       tickBefore: 29,
     });
-    expect(await page.textContent('#failure-text')).toContain('named.ram.alive eq true');
+    expect(await page.textContent('#failure-text')).toContain('world.key.ram.alive eq true');
   }, 180_000);
 });

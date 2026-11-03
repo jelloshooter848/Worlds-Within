@@ -102,7 +102,8 @@ export const ADAPTERS = {
 } as const;
 
 /**
- * One scenario entity at a glance, for run-file checks: alive (it exists and its fate is not
+ * One scenario entity at a glance, for the page and tests (since Engine 0.15 T9 no longer in the
+ * snapshot: run files read `world.key.<key>`): alive (it exists and its fate is not
  * `dead`), where (null off the map: gone, captured or dead), how hurt, and `fate` (only for a named
  * person whose fate was set: `injured`, `captured`, `freed` or `dead`; left out while active, so
  * runs where no fate is set hash as before).
@@ -136,8 +137,8 @@ export interface MiniSiegeParts {
  * every `HeadlessGame` hook (orders, mission steps, experience, the world's events and timeline,
  * recorded rounds) and its mission events (gap M21); this class adds only what reads the mini
  * siege's world: the snapshot is the host's (`{ world, kit, missions? }`) plus `sides` (the kit's
- * `sidesOf`) and `named` (every keyed scenario entity with `alive`, `x`, `y` and `hp`, so a run
- * file can check `named.ram.alive`), and the campaign save.
+ * `sidesOf`), `named()` (every keyed scenario entity at a glance, for the page; not in the
+ * snapshot since Engine 0.15 T9: run files read `world.key.<key>`) and the campaign save.
  */
 export class MiniSiegeGame extends MissionHost {
   readonly sim: World;
@@ -195,7 +196,7 @@ export class MiniSiegeGame extends MissionHost {
     return advanced.save;
   }
 
-  /** Every keyed scenario entity at a glance (the snapshot's `named`). */
+  /** Every keyed scenario entity at a glance, for the page and tests (not hashed). */
   named(): Record<string, NamedSummary> {
     const named: Record<string, NamedSummary> = {};
     for (const [key, id] of Object.entries(this.keys)) {
@@ -219,7 +220,6 @@ export class MiniSiegeGame extends MissionHost {
     return {
       ...super.snapshot(),
       sides: sidesOf(this.rts.view(), this.factions) as unknown as JsonObject,
-      named: this.named() as unknown as JsonObject,
     };
   }
 }

@@ -25,7 +25,10 @@ import { isFinished, type RtsUnitView, type RtsView } from './snapshot';
  * that, `times` times in all (null: for ever). Steps are tried in file order each tick.
  *
  * Units are chosen by a selector: the plan's own units, optionally of one `type`, only `idle`
- * ones (no task), only `heroes`, at most `max` of them (lowest ids first). Targets:
+ * ones (no task), only `heroes`, at most `max` of them (lowest ids first). A unit whose event is
+ * frozen (the view's `frozen` flag: an open mission holds it) is never chosen, and a frozen
+ * building never trains (Engine 0.15 T9, gap M20), so a plan gives no orders the world would only
+ * hold still while a mission is open. Targets:
  * - `move`: a `cell`, or `area` (a box of cells; the cell is drawn with the seeded `Rng`);
  * - `attack`: `nearest-enemy` (unit), `nearest-building` (enemy building) or `random-enemy`
  *   (any enemy unit, drawn with the `Rng`), nearest to the first chosen unit by squared distance,
@@ -250,6 +253,7 @@ export class ScriptedEnemy {
     const list = view.units.filter(
       (u) =>
         u.faction === this.plan.faction &&
+        !u.frozen &&
         (sel.type === undefined || u.type === sel.type) &&
         (!sel.idle || u.task === null) &&
         (!sel.heroes || u.role === 'hero'),
@@ -263,6 +267,7 @@ export class ScriptedEnemy {
       const at = view.buildings.filter(
         (b) =>
           b.faction === faction &&
+          !b.frozen &&
           b.kind === o.building &&
           isFinished(b) &&
           b.producer !== null &&

@@ -5,6 +5,7 @@ import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { playMissionRound, type MissionRoundResult } from '@engine/core/mission-adapter';
 import type { MiniGameDef } from '@engine/core/minigame';
+import { miniGameParamErrors } from '@engine/core/minigame-params';
 import type { MissionDef } from '@engine/core/missions';
 import {
   commitMission,
@@ -31,9 +32,9 @@ import { TopDownBot } from '@kits/topdown/bot';
 // A mission played through a kit without the kit importing the sim (Engine 0.10 T7; from Engine
 // 0.11 T7 through the kit's own data-driven adapter, `kits/topdown/mission-room.ts`). Kits may not
 // import engine/sim, so this lives here, outside every layer, like rts-sim.test.ts: the siege
-// fixture world opens its `raid` mission played as the kit's `mission-room`, whose params (a
-// fixture, `__fixtures__/raid.params.json`) say which world entities become the room's knights and
-// which report means which declared outcome. No mapping is written here: the round is played with
+// fixture world opens its `raid` mission, a real `mission-room` mission (Engine 0.15 T9, gap M12),
+// whose params (in the sim's `raid.mission.json` itself) say which world entities become the room's
+// knights and which report means which declared outcome. No mapping is written here: the round is played with
 // a scripted bot, the kit's adapter maps its report, and the sim commits it. The same mission
 // delegated is the second path.
 
@@ -45,16 +46,9 @@ const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8')) as unknown;
 
 const SCENARIO = simFixture('siege.world.json');
-const PARAMS = fixture('raid.params.json') as JsonObject;
-/**
- * The sim fixture's raid (its outcomes and effects) played as the kit's mission room. The sim
- * fixture keeps its own `play` and `params`, so the world run files' hashes do not move.
- */
-const RAID: MissionDef = {
-  ...(simFixture('raid.mission.json') as MissionDef),
-  play: MISSION_ROOM,
-  params: PARAMS,
-};
+/** The sim fixture's raid, played as it is: `play: "mission-room"` and its params (gap M12). */
+const RAID = simFixture('raid.mission.json') as MissionDef;
+const PARAMS = RAID.params as JsonObject;
 const CAMP = fixture('siege-camp.room.json') as RoomDef;
 const ROOM = missionRoom({ rooms: [CAMP] });
 const REFS = scenarioKeys(SCENARIO);
@@ -131,6 +125,19 @@ function delegatedRun() {
 const has = (world: World, key: string) => world.alive(REFS[key]!);
 
 describe("a mission played through the topdown kit's data-driven adapter", () => {
+  it('reads the sim fixture as a real mission-room mission, its params valid for the kit (M12)', () => {
+    expect(RAID.play).toBe(MISSION_ROOM);
+    const use = {
+      file: 'raid.mission.json',
+      game: RAID.play ?? '',
+      gameAt: ['play'],
+      params: PARAMS,
+      paramsAt: ['params'],
+      owner: RAID as unknown as JsonObject,
+    };
+    expect(miniGameParamErrors([use], [ROOM])).toEqual([]);
+  });
+
   it("puts the world's real defenders in the room's slots, as the mission's data says", () => {
     const world = worldFromScenario(SCENARIO);
     const opened = openMission(world, RAID, { refs: REFS });

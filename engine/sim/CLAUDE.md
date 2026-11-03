@@ -99,7 +99,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   three blue siege engines keyed `ram`, `tower`, `catapult`, all `EventMember`s), a barracks site
   outside it with its builder, and four opportunities (`night-raid` and `supply-run` in one
   `exclusive` group, a `relative` `rescue-window`, `scout-gap` closing at 25), with the missions
-  `raid` (event `siege`, cost 30; `clean`, `partial`, `repelled` opening the rescue), `convoy`,
+  `raid` (event `siege`, cost 30; `clean`, `partial`, `repelled` opening the rescue; since Engine
+  0.15 T9 a real `mission-room` mission with its params, gap M12), `convoy`,
   `rescue` and `scout` as `*.mission.json`, and the run files `raid-partial`, `raid-failure`,
   `opportunity-closing`, `frozen-construction`, `raid-delegated`, `fixed-cost-few` and
   `fixed-cost-many` with their golden `.hashes.json` (`engine/tools/CLAUDE.md`, Missions in world
