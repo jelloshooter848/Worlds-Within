@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 214.** (Last used: 213.)
+**Next unused number: 220.** (Last used: 219.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -815,3 +815,27 @@ mission API`. OK?
 - **213.** The tower-defense run files' sync hashes leave out the ticks where a guarded rule's
   mutant changes the state before a check fails, so `mutants` sees a failed check (a weak rule)
   rather than a hash mismatch. OK?
+
+**Engine 0.12, smaller build choices** (details in `docs/BUILD-LOG.md`, Engine 0.12, Choices made)
+
+- **214.** The tower-defense sample's balance: 40 gold and 5 lives; arrow tower 10 gold (range 2,
+  damage 1, cooldown 6); cannon 25 gold (range 3, damage 4, cooldown 20, sells for 15); 400 ticks
+  between waves; seed 12. Without a `sell` value a tower sells for half its cost, rounded down, at
+  any time in the round. OK to keep these numbers?
+- **215.** Map rules: path cells may only touch along the walk (a cell with two unvisited path
+  neighbours is the error `path_branch`), so two path lanes side by side need a gap between them;
+  a map's optional `legend` may add its own characters, each meaning one of the kit's five cell
+  kinds (for example `W` for a build cell). OK?
+- **216.** `td-defence`'s report has no `cleared` field (item 202 listed one): `result` (pass or
+  fail) takes its place, and the report also gives `placed`, `killed`, `escaped`, `fallen`, `cells`
+  and `foes`. Outcome rules accept `result` beside `leaksAtMost`, `spentAtMost` and `killed`. OK?
+- **217.** The `fortify` mission as built: offered from world tick 5 to 30 (the runs open it at 10) for 30 ticks; four walls of two types (`wall` 80 hp, `wall-tower` 120 hp) north and south of
+  the hall, off the road; the wave is raider-1 to raider-4 (the guards stay with the engines);
+  outcomes `held-cheap` (40 gold), `held` and `held-bloodied` (80 gold) and `overrun` (no gold,
+  both wall towers damaged), with delegate weights 1/2/2/1. OK to keep this content?
+- **218.** Fortifying alone does not save the hall: without the sabotage the engines bring it down
+  by world tick 200 on both fortify paths, and the fortify run files assert that. Should holding
+  the walls also slow or weaken the siege?
+- **219.** The mini siege's bar now shows one launch button per offered mission
+  (`#launch-<mission>`) instead of a single `#launch`, since both missions are offered from world
+  tick 20 to 30. OK?

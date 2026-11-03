@@ -289,6 +289,11 @@ close-out" in `FEEDBACK-LOG.md`):
   the loop steps' input merged (D2) while a hosted `td-defence` round plays at the loop's 60; and
   the sample's sync hashes leave out the ticks where a guarded rule's mutant changes the state
   before a check fails, so `mutants` reports a failed check rather than a hash mismatch.
+- **More build choices for review** (items 214-219, "Engine 0.12, smaller build choices" in
+  `FEEDBACK-LOG.md`, added at the finalize step): the sample's balance numbers and the sell refund;
+  `path_branch` and a map's own `legend` characters; the round's report using `result` instead of
+  item 202's `cleared`; the `fortify` content (window, walls, wave, outcomes and weights); that
+  fortifying alone does not save the hall; and one launch button per offered mission.
 - **No tag** (owner answer 24), and the root `package.json` version was left as it was, as in
   earlier releases of this build.
 
@@ -323,7 +328,11 @@ Checked on 2026-11-03 on the tree of the close-out commit (T9, on top of `4aacf9
 the generated references unchanged, and every one of the **33 run files** in the repo (9 sim
 fixtures, 1 demo, 6 lab, 4 stacking-test, 4 skirmish, 5 mini siege and the 4 new tower-defense
 runs) exits 0 with the same final hash on two `pnpm -s cli run` runs in a row. The browser tests
-(`pnpm vitest run tests/browser`: 7 files, 18 tests) passed in headless Chromium, none skipped.
+(`pnpm vitest run tests/browser`: 7 files, 18 tests) passed in headless Chromium, none skipped. Rechecked at the
+finalize step (same date, on `256dcf8`): all checks, all 33 run files (twice, equal final hashes),
+`pnpm -s cli mutants games/samples/tower-defense` (strict, nothing unguarded), `validate` of both
+samples and the 7 browser test files green again, and the `engine/sim` diff and log against
+`d6a102ab` still empty.
 
 - **Met: the `engine/sim` diff for this release is empty** (decision 10). On the close-out's tree:
 
@@ -401,7 +410,7 @@ games/samples/tower-defense` exits 0 with `strict: true` and every kit rule guar
 - **Two hosting games' page glue is now copied** (D9, D12, D13, D14, with M6, M21, M26): the
   sample set is where it moves into the engine or the kits.
 - **Taps are not recorded** (D1): the browser tests are the only check of a tapped round.
-- Open owner decisions: items 197-213 in `FEEDBACK-LOG.md`.
+- Open owner decisions: items 197-219 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.11
 
