@@ -259,7 +259,9 @@ export const runFileSchema = z
       .int()
       .min(0)
       .exactOptional()
-      .describe("the world's seed; the manifest's start.seed (or the scenario's seed) if left out"),
+      .describe(
+        "the world's seed; the manifest's start.seed (or the scenario's seed) if left out; with `from`, the save's seed, and another is a `seed_mismatch` error",
+      ),
     ticks: z.number().int().min(1).max(1_000_000).describe('how many steps the run plays'),
     input: scriptedInputSchema.default({ steps: [] }).describe('the scripted input (ScriptedInput steps)'),
     assertions: z.array(assertionSchema).default([]).describe('checks made at one tick each'),

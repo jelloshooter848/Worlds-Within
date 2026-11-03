@@ -339,14 +339,23 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   const off = new Set([...run.disableRules, ...asked]);
   const disabledRules = rules.filter((r) => off.has(r.id)).map((r) => r.id);
 
-  const seed = run.seed ?? content.manifest.start.seed;
   const codeContext = saveCodeContext(content);
   let start: CampaignSave | null = null;
   if (run.from !== undefined) {
     const got = await startSave(cwd, loaded, codeContext);
     if (!got.ok) return got;
     start = got.save;
+    // The code is the save: its seed is the world's, as on the game's page. A run file that
+    // names another seed would replay the code on a different world.
+    if (run.seed !== undefined && run.seed !== start.seed)
+      return runError(
+        loaded,
+        ['seed'],
+        'seed_mismatch',
+        `"seed" is ${run.seed}, but the save "from" starts at has seed ${start.seed}: leave "seed" out or make it ${start.seed}`,
+      );
   }
+  const seed = start?.seed ?? run.seed ?? content.manifest.start.seed;
   const instance: HeadlessGame = imported.entry.createGame(
     content,
     seed,

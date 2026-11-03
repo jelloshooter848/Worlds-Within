@@ -522,7 +522,9 @@ scenario to the next is a campaign save, packed into a short save code
   `code_typo`, `code_newer`, `code_layout`, `code_campaign`, `code_position`, `code_record`);
   at `from.run` `from_chain` (the source run has a `from` itself: one step deep in 0.13),
   `from_game` (it plays another game) and `no_campaign` (its game gives no campaign save there);
-  `campaign_done` at `from` (the save is past the campaign's last entry). The result's `from` is
+  `campaign_done` at `from` (the save is past the campaign's last entry). The world's seed is the
+  save's (`save.seed`, as the game's page plays a code), so a run file with `from` may leave
+  `seed` out; a `seed` that differs from the save's is `seed_mismatch` at `seed`. The result's `from` is
   `{ run, code, campaign, position }` (null without one). A run from a run and a run from that
   run's code give the same hashes (`campaign-run.test.ts`).
 - **`codes`** (game runs only): `[{ tick, code }]` in tick order, each at most `ticks`. At that

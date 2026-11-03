@@ -202,6 +202,34 @@ describe('campaign runs, save codes and run files that start from them', () => {
     expect(replay.result.replay).toMatchObject({ reproduced: true });
   });
 
+  it("plays a start on its save's seed and refuses a run file that names another", async () => {
+    const cwd = campaignGame({ first: { ...FIRST, seed: 9 } });
+    const saveCode = (await cli(['code', run('first')], cwd)).result.code as string;
+    const runs = {
+      'code-no-seed': { ticks: 5, from: { code: saveCode } },
+      'code-same-seed': { ticks: 5, seed: 9, from: { code: saveCode } },
+      'code-other-seed': { ticks: 5, seed: 12, from: { code: saveCode } },
+      'run-other-seed': { ticks: 5, seed: 5, from: { run: 'first.run.json' } },
+    };
+    for (const [name, r] of Object.entries(runs))
+      writeFileSync(join(cwd, 'games/camp/runs', `${name}.run.json`), JSON.stringify({ game: '..', ...r }));
+    const plain = await cli(['run', run('code-no-seed')], cwd);
+    expect(plain.code).toBe(EXIT.ok);
+    expect(plain.result.seed).toBe(9);
+    const dump = await cli(['dump', run('code-no-seed'), '--tick', '0'], cwd);
+    expect(dump.result.state).toMatchObject({ seed: 9 });
+    const same = await cli(['run', run('code-same-seed')], cwd);
+    expect(same.code).toBe(EXIT.ok);
+    expect(same.result.hashes).toEqual(plain.result.hashes);
+    for (const name of ['code-other-seed', 'run-other-seed']) {
+      const { code, result } = await cli(['run', run(name)], cwd);
+      expect(code).toBe(EXIT.invalidContent);
+      expect((result.errors as { path: string; code: string }[]).map((e) => [e.path, e.code])).toEqual([
+        ['seed', 'seed_mismatch'],
+      ]);
+    }
+  });
+
   it('refuses a bad start, naming the field and the code', async () => {
     const cwd = campaignGame({
       first: FIRST,
