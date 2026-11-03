@@ -354,8 +354,13 @@ describe('fates in a battle', () => {
     return { ...b, hashes };
   }
 
-  it('keeps the captured hero out of the squad, then frees them', () => {
-    const { w, squad, hero, grunt } = run(5);
+  it('keeps a named captain killed in battle as dead, the captured hero out of the squad, then freed', () => {
+    const { w, squad, captain, hero, grunt } = run(5);
+    expect(fateOf(w, captain)?.state).toBe('dead');
+    expect(w.get(captain, Fate)?.history).toEqual([
+      { state: 'dead', by: null, at: expect.any(Number) as number, cause: 'death' },
+    ]);
+    expect(w.has(captain, Position)).toBe(false);
     expect(w.alive(grunt)).toBe(false);
     expect(fateOf(w, hero)?.history.map((h) => h.state)).toEqual(['captured', 'freed']);
     const s = w.get(squad, Squad);

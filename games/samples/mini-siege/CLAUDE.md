@@ -166,7 +166,8 @@ seed, opts?)`: the sim world, the kit's `rtsGame` (the plan, the switched-off ru
     `miniGame()` and `missionExperience()` are the host's; `records()` (T9) is the world's
     committed mission records, for the page. Its snapshot is the host's (`{ world,
 kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenario key:
-    `{ alive, x, y, hp }`).
+    `{ alive, x, y, hp, fate? }`; since Engine 0.13 `alive` is "exists and its fate is not
+    `dead`", and `fate` is listed only for a named person whose fate was set).
   - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size, the
     grass colour), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
     `MiniSiegeGame`: the RTS kit's `presentWorld` for `village` with the game's missions (the
@@ -252,11 +253,11 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
 
 | run                 | ticks | what happens                                                                                                                                                                                                                                                                                                                      | final hash         |
 | ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `cf041e302c463035` |
-| `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt`; the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                                            | `bfd7dcff687c580a` |
-| `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30; both engines reach the hall, which ends at 112                                                                                                                                                                                             | `9f67b4035d3a86ff` |
-| `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `7ca0d45f21cdbf53` |
-| `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `bbbf38c22b5e249a` |
+| `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `af2d3a6597bac8fb` |
+| `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt`; the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                                            | `955d09a86c76fbf2` |
+| `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30; both engines reach the hall, which ends at 112                                                                                                                                                                                             | `d58b3df54e444718` |
+| `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `0b43372f77faea35` |
+| `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `302436d18dc3917d` |
 
 - Game ticks are not world ticks once a round is played: during the round the world does not
   move, so in `played` world tick `w` after 40 is game tick `w + 406` (`quit`: `w + 1`;
@@ -264,6 +265,11 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
 - The 0.11 runs' golden hashes were re-recorded once in Engine 0.12 T7 (decision 7: the map
   gained the walls and `fortify-window`); none of their assertions changed. They never open
   `fortify`, so their battle is the 0.11 one.
+- Every run's golden hashes were re-recorded once more in Engine 0.13 T2 (decision 1): the
+  raiders' named guards (`guard-1` Grell, `guard-2` Vosk) die in every run and are now kept as
+  dead records (`Fate` dead, off the map) instead of destroyed, so the hashes move from the first
+  sync hash after their deaths (world ticks 170 and 178 in the sabotage runs, 80 and 86 or 88 in
+  the fortify runs); none of the assertions changed.
 - The fortify runs assert: the walls and the gold at tick 0; the mission open at world tick 11
   with commit tick 40 and `siege` frozen by `mission:fortify`; the ram, a raider, the captain, a
   soldier, the gold and the raiders' count unchanged at world ticks 11, 25 and 39 (the watchtower

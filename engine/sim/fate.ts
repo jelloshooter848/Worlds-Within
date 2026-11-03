@@ -33,7 +33,7 @@ import { worldInternals } from './world';
  *   `Unit` and `Owner` data so `freePerson` can put them back on a cell.
  * - **Freed**: back on the given cell with the held `Unit`, in no squad.
  * - **Dead**: off the map and out of their squad like a capture, `Health.hp` set to 0, kept as a
- *   record.
+ *   record. `deathSystem` does this for a named person brought to 0 hp in battle.
  *
  *   capturePerson(world, captain, { by: 'raiders', cause: 'mission:sabotage' });
  *   fateOf(world, captain)?.state;    // "captured"
@@ -321,9 +321,11 @@ export function freePerson(
 }
 
 /**
- * `death`: every `Unit` or `Building` whose `Health.hp` is 0, in id order, is destroyed (each
- * removal and the destroy are in the log under `death`); a named person first leaves their squad
- * (`leaveSquad`). A member of a frozen event does not die until it unfreezes.
+ * `death`: every `Unit` or `Building` whose `Health.hp` is 0, in id order. A named person (with
+ * `Member`) is kept as a dead record: they leave their squad (`leaveSquad`) and the map
+ * (`MAP_COMPONENTS`) and get `Fate { state: "dead", by: null, at: tick }` (the attack system does
+ * not record who struck). Anything else is destroyed (each removal and the destroy are in the log
+ * under `death`). A member of a frozen event does not die until it unfreezes.
  */
 export const deathSystem: System = {
   name: 'death',
@@ -333,8 +335,9 @@ export const deathSystem: System = {
       if (!world.has(id, Unit) && !world.has(id, Building)) continue;
       if (frozen(id)) continue;
       if ((world.get(id, Health) as { hp: number }).hp > 0) continue;
-      if (world.has(id, Member)) leaveSquad(world, id);
-      world.destroy(id);
+      if (!world.has(id, Member)) world.destroy(id);
+      else if (fateOf(world, id)?.state !== 'dead')
+        writeFate(world, id, 'dead', { cause: 'death', by: null });
     }
   },
 };

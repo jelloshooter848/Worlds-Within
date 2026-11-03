@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { canonicalJson } from '../core/headless';
 import { Health, Member, Owner, Position, STANDARD_COMPONENTS, Squad } from './components';
+import { Fate, fateOf } from './fate';
 import { loadWorld, saveWorld } from './save';
 import { Cooldown, Facing8, Target, Task, Unit, facingOf, inRange, type UnitData } from './rts';
 import { RTS_COMPONENTS, RTS_SYSTEMS, applyOrder } from './rts-orders';
@@ -245,12 +246,40 @@ describe('heroes', () => {
     expect(at(w, regular)).toEqual({ x: 0, y: 0 });
   });
 
-  it('leaves its squad when it dies', () => {
+  it('leaves its squad when it dies and stays in the world as a dead record (Engine 0.13)', () => {
     const { w, squad, regular, hero } = squadWorld();
     const blue = unit(w, 'blue', 2, 0, { attack: 5 });
     applyOrder(w, { id: 1, faction: 'blue', type: 'attack', units: [blue], target: hero });
-    stepUntil(w, () => !w.alive(hero), 5);
+    stepUntil(w, () => fateOf(w, hero)?.state === 'dead', 5);
     expect(w.get(squad, Squad)).toEqual({ strength: 4, captain: null, members: [regular] });
+    expect(w.alive(hero)).toBe(true);
+    expect(w.get(hero, Member)).toEqual({ name: 'Bram', squad: null, role: 'hero' });
+    expect(w.get(hero, Health)).toEqual({ hp: 0, max: 10 });
+    expect(w.get(hero, Owner)).toEqual({ faction: 'red' });
+    for (const c of [Position, Unit, Task, Target, Cooldown, Facing8]) expect(w.has(hero, c)).toBe(false);
+    expect(w.get(hero, Fate)).toEqual({
+      state: 'dead',
+      by: null,
+      at: w.tick - 1,
+      held: null,
+      history: [{ state: 'dead', by: null, at: w.tick - 1, cause: 'death' }],
+    });
+    const deaths = w.events().filter((e) => e.entity === hero && e.component === 'Fate');
+    expect(deaths.map((e) => e.cause)).toEqual(['death']);
+    // The death is written once, and the blue unit stops fighting the dead.
+    w.step();
+    expect(w.get(hero, Fate)?.history).toHaveLength(1);
+    expect(w.has(blue, Target)).toBe(false);
+  });
+
+  it('destroys an unnamed unit that dies, as before', () => {
+    const { w, regular } = squadWorld();
+    const grunt = unit(w, 'red', 3, 1, {}, 2);
+    const blue = unit(w, 'blue', 4, 1, { attack: 5 });
+    applyOrder(w, { id: 1, faction: 'blue', type: 'attack', units: [blue], target: grunt });
+    stepUntil(w, () => !w.alive(grunt), 5);
+    expect(w.alive(grunt)).toBe(false);
+    expect(fateOf(w, regular)?.state).toBe('active');
   });
 });
 
