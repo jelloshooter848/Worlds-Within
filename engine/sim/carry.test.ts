@@ -126,13 +126,31 @@ describe('carriedRecord', () => {
           FIRST_KEYS,
         ),
       ),
-    ).toEqual([
-      'from.carry.people.1: person "captain" is given twice',
-      'from.carry.stockpiles.0.faction: faction "raiders" has no stockpile in the first world',
-    ]);
+    ).toEqual(['from.carry.people.1: person "captain" is given twice']);
     expect(issues(() => carriedRecord(world, { scenario: 'captive' }, FIRST_KEYS))).toEqual([
       'from.carry: Invalid input: expected object, received undefined',
     ]);
+  });
+});
+
+describe('a lost stockpile (Engine 0.15 T8, gap M31)', () => {
+  it('carries as zeros of every item the spec names, not as an error', () => {
+    const world = firstEnd('held');
+    const from = {
+      scenario: 'captive',
+      carry: { people: ['captain'], stockpiles: [{ faction: 'raiders', items: ['gold', 'wood'] }] },
+    };
+    expect(carriedRecord(world, from, FIRST_KEYS).stockpiles).toEqual({ raiders: { gold: 0, wood: 0 } });
+  });
+
+  it('carries zeros once the stockpile entity is destroyed', () => {
+    const world = firstEnd('held');
+    world.withCause('test', () => world.destroy(FIRST_KEYS['hall'] as number));
+    const from = {
+      scenario: 'captive',
+      carry: { people: ['captain'], stockpiles: [{ faction: 'village', items: ['gold'] }] },
+    };
+    expect(carriedRecord(world, from, FIRST_KEYS).stockpiles).toEqual({ village: { gold: 0 } });
   });
 });
 

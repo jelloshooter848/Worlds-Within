@@ -676,8 +676,12 @@ same `missions` list, and the game plays them live. The game is a `MissionHost`
   played), so a late `play` or `quit` is refused at run time (`mission_committed`).
 - A game without `mission` is a usage error (exit 2), as with `orders`.
 - **Refused steps** are listed in `refusedMissions` (`{ tick, mission, action, code, error }`, the
-  game's refusal) and the run goes on. `experience` is the game's `missionExperience()` (the
-  rounds' ticks per mission), never written to the world.
+  game's refusal) and the run goes on. A refusal that comes after its step (Engine 0.15 T8, gap
+  M5: a hosted round's end the world would not take, such as a report over a declared limit,
+  `report_over_limit`) is read from the game's optional `lateRefusals(sinceTick)` after each step
+  and listed at the tick it came with `late: true` (text: `tick 126: refused late: play ...`).
+  `experience` is the game's `missionExperience()` (the rounds' ticks per mission), never written
+  to the world.
 - `dump` and replay files keep the steps as for a world run. `game-missions-run.test.ts` covers
   steps, refusals, experience, hashes, dump, replay and the usage error with a plain-JS game;
   `missions-run.test.ts` the field errors of each kind of run.
@@ -752,7 +756,8 @@ scenario to the next is a campaign save, packed into a short save code
   its campaigns, missions and `worlds-within/scenario` files). Either way the game is created with
   `HeadlessOptions.campaign` set to that save and plays the campaign's next entry from tick 0.
   Errors (exit 3, in the run file): a code's refusal code at `from.code` (`code_empty`,
-  `code_typo`, `code_newer`, `code_layout`, `code_campaign`, `code_position`, `code_record`);
+  `code_typo`, `code_newer`, `code_layout`, `code_campaign`, `code_position`, `code_record`;
+  version 1 codes are still read, Engine 0.15 T8);
   at `from.run` `from_chain` (the source run has a `from` itself: one step deep in 0.13),
   `from_game` (it plays another game) and `no_campaign` (its game gives no campaign save there);
   `campaign_done` at `from` (the save is past the campaign's last entry). The world's seed is the
@@ -765,6 +770,9 @@ scenario to the next is a campaign save, packed into a short save code
   matter); a different one, or none, fails the run like an assertion (`failure.kind` `code`,
   `path` `codes.<i>`, `expected` the file's code, `actual` the run's), so a run file can pin the
   save code its end gives. `codes` counts them in the result, `codesChecked` those compared.
+  Codes are save code version 2 since Engine 0.15 T8 (gap M38: missions by stable id code), and a
+  game's `campaignSave()` is null until the entry is over (`entryOver`, gap M35), so a code is
+  pinned at an entry's end.
 - A game without `campaignSave()` cannot take `from` or `codes` (exit 2), as with `orders`.
 - Replay files keep `from` (a `run` rewritten relative to the replay) and the `codes` up to the
   failing tick (and, from Engine 0.14, `start`).

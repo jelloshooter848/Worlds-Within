@@ -67,23 +67,17 @@
           "type": "inventory",
           "entity": "hall",
           "item": "gold",
-          "add": -40
+          "add": -40,
+          "fromReport": "spent",
+          "negate": true,
+          "max": 100
         },
         {
           "type": "destroy",
-          "entity": "raider-1"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-2"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-3"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-4"
+          "each": "killed",
+          "entities": ["raider-1", "raider-2", "raider-3", "raider-4"],
+          "owner": "raiders",
+          "max": 4
         }
       ]
     },
@@ -96,23 +90,17 @@
           "type": "inventory",
           "entity": "hall",
           "item": "gold",
-          "add": -80
+          "add": -80,
+          "fromReport": "spent",
+          "negate": true,
+          "max": 100
         },
         {
           "type": "destroy",
-          "entity": "raider-1"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-2"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-3"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-4"
+          "each": "killed",
+          "entities": ["raider-1", "raider-2", "raider-3", "raider-4"],
+          "owner": "raiders",
+          "max": 4
         }
       ]
     },
@@ -125,20 +113,25 @@
           "type": "inventory",
           "entity": "hall",
           "item": "gold",
-          "add": -80
+          "add": -80,
+          "fromReport": "spent",
+          "negate": true,
+          "max": 100
         },
         {
           "type": "destroy",
-          "entity": "raider-1"
-        },
-        {
-          "type": "destroy",
-          "entity": "raider-2"
+          "each": "killed",
+          "entities": ["raider-1", "raider-2"],
+          "owner": "raiders",
+          "max": 4
         },
         {
           "type": "damage",
-          "entity": "south-wall",
-          "amount": 40
+          "each": "fallen",
+          "entities": ["south-wall"],
+          "amount": 40,
+          "owner": "village",
+          "max": 4
         },
         {
           "type": "damage",
@@ -154,11 +147,10 @@
       "effects": [
         {
           "type": "destroy",
-          "entity": "north-wall"
-        },
-        {
-          "type": "destroy",
-          "entity": "south-wall"
+          "each": "fallen",
+          "entities": ["north-wall", "south-wall"],
+          "owner": "village",
+          "max": 4
         },
         {
           "type": "damage",

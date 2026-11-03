@@ -82,7 +82,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   the `n` cells; rules in order: both destroyed, the ram, the catapult, else driven off.
 - `content/campaigns/siege.campaign.json` (`campaign`, Engine 0.13 T7): `village` for 260 world
   ticks, then `dawn` for 200, then (Engine 0.14 T12) `ridge` for 160; since T8 each entry has the
-  `title` the page shows (`The siege`, `The dawn assault`, `The ridge camp`). The glue builds the
+  `title` the page shows (`The siege`, `The dawn assault`, `The ridge camp`). Since Engine 0.15 T8
+  (gap M31) the siege's entry has `endIf: { "gone": "hall" }`: the campaign ends there when the
+  hall has fallen, a loss said in data (the glue's own rule is gone). The glue builds the
   entry a campaign save names (`siegeCampaignPlace`); the order is never in code (gap M29), and
   the tests read every entry after the dawn from this file (gap M37).
 - `content/maps/dawn.world.json` (`rts-map`, Engine 0.13 T7): "The dawn assault", the morning
@@ -117,12 +119,17 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   11,5); `budget` the village stockpile's (the hall's) gold, capped at 100; `wave` the four
   `raider-*` units (by key; the guards stay with the engines) as `raider`s with one hp per 10 world
   hp, speed 4, 10 ticks apart; rules in order: no leak and at most 40 spent `held-cheap`, no leak
-  `held`, won `held-bloodied`, else `overrun`. Outcomes (weight, effects): `held-cheap` (1: gold
-  -40, destroy `raider-1`..`4`), `held` (2: gold -80, the same), `held-bloodied` (2: gold -80,
-  destroy `raider-1` and `raider-2`, damage `south-wall` 40 and `soldier-1` 20), `overrun` (1:
-  destroy `north-wall` and `south-wall`, damage both towers 60, `soldier-1` 30 and `captain` 30).
-  The gold written back is the matching outcome's fixed amount, not what the round spent (lesson
-  D3), and the losses are fixed per outcome (D4).
+  `held`, won `held-bloodied`, else `overrun`. Since Engine 0.15 T8 (lessons D3 and D4) its
+  effects are **report-driven**: played, the gold taken from the hall is the round's `spent`
+  (`inventory` with `fromReport: "spent"`, `negate`, `max` 100, the budget's cap), the raiders
+  removed are the round's `killed` (`destroy` with `each: "killed"`, `owner` `raiders`, `max` 4)
+  and the walls lost its `fallen` (`each: "fallen"`, `owner` `village`); a report over a limit is
+  refused (`report_over_limit`, a late refusal in the run's `refusedMissions`) and the mission is
+  delegated at its commit. Delegated or quit, the declared amounts and lists apply: `held-cheap`
+  (1: gold -40, destroy `raider-1`..`4`), `held` (2: gold -80, the same), `held-bloodied` (2: gold
+  -80, destroy `raider-1` and `raider-2`, damage `south-wall` 40 (the fallen walls, each 40 when
+  played) and `soldier-1` 20), `overrun` (1: destroy `north-wall` and `south-wall` (the fallen
+  walls when played), damage both towers 60, `soldier-1` 30 and `captain` 30).
 - `content/defence/` (the towerdefense kit's kinds): `maps/walls.json` + `.map.txt` (`td-map`,
   16x7: the road from the raiders' entry `S` on the east, bending down and back up to the hall's
   gate `X` on the west, `W` the four wall cells, legend `W` = build; `start` 0 gold, 2 lives, both
@@ -226,10 +233,13 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     `dead`", and `fate` is listed only for a named person whose fate was set). Since Engine 0.13
     T7 `createGame`'s `opts.campaign` (a run file's `from`) picks the campaign entry: the dawn is
     built with the save's carried record (`worldFromScenario(json, { carried })`), the siege when
-    left out; `MiniSiegeGame.campaignSave()` is the save if the entry played now ended now
-    (`advanceCampaign` with the world's committed missions and, in the siege, `carriedRecord`
-    for the dawn's `from`), null once the campaign is done or while the hall (the carried
-    stockpile) is gone (gap M31). Engine 0.14 (gap G9): `starts(content)` lists the campaign's
+    left out; `MiniSiegeGame.campaignSave()` is the save at the end of the entry played now
+    (`advanceCampaign` with the world's committed missions, in the siege `carriedRecord` for the
+    dawn's `from`, and `gone: (key) => !keyAlive(sim, key)` for the entry's `endIf`), null until
+    the entry is over and once the campaign is done. Since Engine 0.15 T8 the glue has no rule of
+    its own: `entryOver()` is the engine's `entryOver` (gap M35: the entry's `ticks` reached with
+    no mission open), read by the page too, a lost stockpile carries as zeros and the hall's fall
+    ends the campaign through the campaign file's `endIf` (gap M31): the save then has `ended`. Engine 0.14 (gap G9): `starts(content)` lists the campaign's
     entries (`village`, `dawn`) for a run file's `start: { entry }`, and `createGame`'s
     `opts.start` builds that entry fresh (`siegeStartSave`: the engine's `campaignSaveAt`, no
     carried record, nothing committed before it): the dawn as its scenario file is written.
@@ -278,7 +288,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     `title(mission)`, `outcomeTitle(mission, outcome)`, `sides()`, `message` (the last refusal).
     **The campaign** (Engine 0.13 T8): `game` is the entry played now (replaced when the campaign
     moves on; `scenario`, `entryTitle(save?)`, `entryTicks` from the campaign file). An entry ends at
-    its `ticks`, or the first world tick after once no mission is open (gap M35), never while a
+    its `ticks`, or the first world tick after once no mission is open (gap M35; since Engine 0.15
+    T8 the engine's `entryOver`, through `MiniSiegeGame.entryOver()`), never while a
     choice waits or a round runs; then nothing steps or is offered and `ended()` is a
     `SiegeEntryResult`: the engine's `CampaignSession.end` (the save from `campaignSave()`, kept in
     browser storage, its code, `stored`, `done`) plus `title`, the outcomes' titles, `people` (the
@@ -328,7 +339,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   hashes equal to `dawn-captured`'s), the rescue, exchange and leave each closing the other
   choices, a failed rescue committed for good (unchanged record, the rescue refused
   `not_offered` by the kit and `mission_committed` by the sim, the ransom paid), a dead captain
-  carried in as a record opening nothing, and no campaign save once the hall has fallen.
+  carried in as a record opening nothing, the campaign ended (`ended`, a v2 code) once the hall
+  has fallen, and no save before the entry is over (Engine 0.15 T8).
 - `play.test.ts`: the page's glue on a real `SceneStack`, drawing every step into the null
   backend: launch at world tick 40, then delegate (`ram-burnt` at 160, the commit's event) or play
   (the round pushed and popped, `played.run.json`'s recorded round fed as the page's keys and
@@ -354,7 +366,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   marker (`captives` 1, `captive` `Captain Hale`), the exchange only decided, ending on
   `dawn-exchange`'s last hash; a bad code refused (`code_typo`, twice) and `quit`'s code (lower
   case) resuming at `dawn-captured`'s tick-0 hash and ending on `dawn-leave`'s; the stored save
-  carried on from; and no save once the hall has fallen (`fortify` delegated).
+  carried on from; and the campaign ended once the hall has fallen (`fortify` delegated: `done`,
+  Continue starts over).
 - Also: `tests/runs/mission-events.test.ts` (Engine 0.15 T6, gap M21: `played` and `delegated`
   played through the tools' run loop, the host's `mission-open`, `mini-game-end` and
   `mission-commit` events on the game ticks their assertions name, the golden hashes unchanged),
@@ -397,8 +410,8 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
 | `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `cf2a262208819d24` |
 | `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt` (the captain down 10); the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                      | `766ad9dde830f2bc` |
 | `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30 and captured (off the map); both engines reach the hall, which ends at 112                                                                                                                                                                  | `f5282bcd8d9c7bdd` |
-| `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `0b43372f77faea35` |
-| `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `302436d18dc3917d` |
+| `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `c758b3283ab59e88` |
+| `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `bd8f76744d63c45e` |
 
 - Game ticks are not world ticks once a round is played: during the round the world does not
   move, so in `played` world tick `w` after 40 is game tick `w + 406` (`quit`: `w + 1`;
@@ -418,6 +431,12 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   at 160 is 110 (was 120), the declared 10 of `ram-burnt`. `played`'s recorded round loses no
   half heart, so its captain keeps 120; `quit`'s captain keeps 90 (`Health` stays with a captive)
   and the hall still ends at 112. The fortify runs never open the sabotage and did not move.
+- The two fortify runs' golden and sync hashes were re-recorded in Engine 0.15 T8 (decision 9):
+  `fortify`'s def (stored while it is open, and its effects in the committed record) gained the
+  report-driven effects, so both move from the first sync hash after the open (tick 20; final
+  `0b43372f77faea35` to `c758b3283ab59e88` and `302436d18dc3917d` to `bd8f76744d63c45e`). No
+  assertion changed: the played round spent 40 and killed all four raiders, which is what
+  `held-cheap` declared, and `overrun`'s declared walls are its fallen ones.
 - The fortify runs assert: the walls and the gold at tick 0; the mission open at world tick 11
   with commit tick 40 and `siege` frozen by `mission:fortify`; the ram, a raider, the captain, a
   soldier, the gold and the raiders' count unchanged at world ticks 11, 25 and 39 (the watchtower
@@ -473,7 +492,7 @@ games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine
 games/samples/mini-siege/runs/fortify-played.run.json --mission fortify --bot '[{"do": "place",
 "tower": "archers", "col": 11, "row": 1}, {"do": "place", "tower": "archers", "col": 4, "row":
 5}, {"do": "wave"}]' --json` (the tower-defense kit's `TdBot`; also unchanged, final hash
-  `0b43372f77faea35`). Since Engine 0.15 (gap D1) a round played by taps on the page records its
+  `c758b3283ab59e88` since Engine 0.15 T8). Since Engine 0.15 (gap D1) a round played by taps on the page records its
   taps too (`input.taps`), which the run file's `play` step replays.
 
 ## The dawn assault (Engine 0.13 T7)
@@ -484,12 +503,15 @@ ticks, the guard `enemy-follows-plan` (the raiders' `charge` fires at tick 1) an
 `world.key.hall.alive`; the raiders never attack buildings, so the hall stays at 300 and the fight is
 read off `sides.<faction>.units` and the named people.
 
-- **The siege's ends pin their save codes** (`codes` at the last tick): `played`
-  `2H120-1P1T8-0G01J-FJFCJ-2A00` (the captain active at 120), `delegated`
-  `3YEP0-1P1T8-0G01Y-DJFCJ-2A2G` (active at 110) and `quit` `2VFP0-1P1T8-0M32N-PBJFC-J2A70`
-  (captured by the raiders at 160, 90 hp); each records 150 gold. `pnpm -s cli code
-games/samples/mini-siege/runs/quit.run.json` prints it. The fortify runs give no save (the hall
-  falls, gap M31).
+- **The siege's ends pin their save codes** (`codes` at the last tick; save code v2 since Engine
+  0.15 T8, gap M38: missions by stable id code, so a mission file added later moves none):
+  `played` `5EWCD-P0DGB-90200-69Y9X-J8820-00` (the captain active at 120), `delegated`
+  `4BRDD-P0DGB-90200-7SP9X-J8820-2G` (active at 110) and `quit`
+  `4DWHD-P0DGB-902GC-APSE9-XJ882-070` (captured by the raiders at 160, 90 hp); each records 150
+  gold. `pnpm -s cli code games/samples/mini-siege/runs/quit.run.json` prints it. `dawn-code`
+  keeps `quit`'s version 1 code, `2VFP0-1P1T8-0M32N-PBJFC-J2A70`, which the v1 reader still reads
+  to the same save. The fortify runs' saves end the campaign (`ended`: the hall falls, the
+  campaign file's `endIf`, gap M31).
 
 | run                  | ticks | from               | what happens                                                                                                                                                                                                                                                                              | final hash         |
 | -------------------- | ----- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
@@ -525,8 +547,9 @@ folder) that the debugger steps through. Its files:
   10 to 90.
 - `content/missions/stores-raid.mission.json`: "Raid the raiders' stores on the ridge", cost 20,
   no `play` (only delegated), `onQuit` `stores-taken`; outcomes `stores-taken` (2: gold +60) and
-  `ram-burnt` (1: destroy `ram`). Its id sorts after `sabotage` on purpose: the save codes index
-  missions by sorted id, so an id sorting earlier would have moved every pinned code (gap M38).
+  `ram-burnt` (1: destroy `ram`). Its id sorts after `sabotage` on purpose: version 1 save codes
+  index missions by sorted id, so an id sorting earlier would have moved every pinned code (gap
+  M38; since Engine 0.15 T8 codes are version 2, by stable id code, and no longer care).
 - The campaign's third entry, `ridge` (above).
 - `runs/ridge-raid.run.json` (+ `.hashes.json`): `start: { entry: "ridge" }`, 160 ticks, hashes
   every 40; the raid opened and delegated at tick 10: seed 11 draws `ram-burnt` at world 30; the

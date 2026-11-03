@@ -1,7 +1,7 @@
 import { sfxSchema, songSchema } from '../audio/song-schema';
 import { paletteSchema } from '../gfx/palette-schema';
 import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-schema';
-import { campaignSchema, checkCampaigns } from '../campaign';
+import { campaignSchema, checkCampaigns, checkMissionCodes } from '../campaign';
 import { missionSchema } from '../missions';
 import { SKIN_KIND } from '../present/skin';
 import { ContentKinds, type ContentKind } from './kinds';
@@ -36,12 +36,16 @@ export const SPRITE_KIND = {
   writeText: writeSpriteText,
 } satisfies ContentKind;
 
-/** A mission definition (`missions.ts`), `*.mission.json`: Engine 0.10, item 153. */
+/**
+ * A mission definition (`missions.ts`), `*.mission.json`: Engine 0.10, item 153. Its `checkAll`
+ * (Engine 0.15, gap M38) refuses two missions whose ids share a save code id (`code_collision`).
+ */
 export const MISSION_KIND = {
   name: 'mission',
   description:
     'A mission: its event, fixed world-time cost, the mini game it is played with, its params and its declared outcomes with delegation weights and effects',
   schema: missionSchema,
+  checkAll: checkMissionCodes,
 } satisfies ContentKind;
 
 /**

@@ -4,6 +4,7 @@ import {
   campaignRun,
   campaignSaveAt,
   entryId,
+  entryOver,
   newCampaignSave,
   scenarioFrom,
   type CampaignDef,
@@ -23,9 +24,10 @@ import { MissionHost, type MissionHostOptions } from '@engine/core/mission-host'
 import {
   carriedRecord,
   fateOf,
+  keyAlive,
   missionPort,
+  missionsOf,
   rtsWorldPort,
-  stockpileOf,
   worldFromScenario,
   worldKeys,
   type World,
@@ -154,28 +156,41 @@ export class MiniSiegeGame extends MissionHost {
   }
 
   /**
-   * The campaign save if the entry played now ended at this tick (`HeadlessGame.campaignSave`,
-   * Engine 0.13 T7): the next position, the missions committed in this world added to the
-   * results, and the carried record the next scenario's `from` asks for, built from the world now
-   * (null at the dawn, the last entry). Reads only. Null once the campaign is done, and while a
-   * stockpile the next scenario carries is gone (the hall fallen: gap M31).
+   * Whether the entry played now is over (Engine 0.15 T8, gap M35): the engine's one rule,
+   * `entryOver` (`engine/core/campaign.ts`): its `ticks` reached with no mission open. The page
+   * and `campaignSave()` both read it.
+   */
+  entryOver(): boolean {
+    const entry = campaignRun(this.campaign.def, this.campaign.save).entry;
+    return (
+      entry !== null &&
+      entryOver(entry, { worldTick: this.sim.tick, missionsOpen: missionsOf(this.sim).open().length })
+    );
+  }
+
+  /**
+   * The campaign save at the end of the entry played now (`HeadlessGame.campaignSave`, Engine 0.13
+   * T7): the next position, the missions committed in this world added to the results, and the
+   * carried record the next scenario's `from` asks for, built from the world now (null at the
+   * ridge, the last entry). Reads only. Null until the entry is over ({@link entryOver}, gap M35)
+   * and once the campaign is done. A stockpile that is gone carries as zeros, and a loss the
+   * campaign file declares (`endIf`: the siege ends when the hall falls) is the engine's
+   * `advanceCampaign`'s, told which keys are gone (gap M31): no rule of its own here.
    */
   campaignSave(): CampaignSave | null {
     const { def, save, next } = this.campaign;
-    if (campaignRun(def, save).done) return null;
+    if (!this.entryOver()) return null;
     const missions = this.records().map((r) => ({
       mission: r.mission,
       outcome: r.outcome,
       resolution: r.resolution,
     }));
-    let carried: CarriedRecord | null = null;
-    if (next !== null) {
-      // A carried faction with no stockpile left (the hall fell, as in the fortify runs) cannot
-      // be carried: the engine refuses the record, so there is no save here (gap M31).
-      if (next.carry.stockpiles.some((s) => stockpileOf(this.sim, s.faction) === null)) return null;
-      carried = carriedRecord(this.sim, next, this.keys);
-    }
-    const advanced = advanceCampaign(def, save, { missions, carried });
+    const carried: CarriedRecord | null = next === null ? null : carriedRecord(this.sim, next, this.keys);
+    const advanced = advanceCampaign(def, save, {
+      missions,
+      carried,
+      gone: (key) => !keyAlive(this.sim, key),
+    });
     if (!advanced.ok) throw new Error(`the mini siege's campaign save: ${advanced.error}`);
     return advanced.save;
   }

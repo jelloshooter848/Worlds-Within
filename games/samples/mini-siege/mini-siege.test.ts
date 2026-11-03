@@ -6,7 +6,7 @@ import { mustLoad } from '@engine/core/content/game-content';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { canonicalJson, type JsonObject, type MissionStepRefusal } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import type { CampaignSave } from '@engine/core/campaign';
+import { campaignRun, type CampaignSave } from '@engine/core/campaign';
 import { decodeSaveCode, encodeSaveCode, saveCodeContext } from '@engine/core/campaign-code';
 import { miniGameParamErrors, missionMiniGameUses } from '@engine/core/minigame-params';
 import { missionPort, missionsOf } from '@engine/sim/index';
@@ -447,7 +447,7 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     // The siege, then the dawn; entries after them are data a scenario adds by itself (Engine
     // 0.14 T12, gap M37: the ridge camp), never pinned here.
     expect(campaign.entries.slice(0, 2)).toEqual([
-      { scenario: 'village', ticks: 260, title: 'The siege' },
+      { scenario: 'village', ticks: 260, title: 'The siege', endIf: { gone: 'hall' } },
       { scenario: 'dawn', ticks: 200, title: 'The dawn assault' },
     ]);
     expect(siegeMap(content, 'dawn').from?.scenario).toBe('village');
@@ -564,8 +564,12 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     const decoded = decodeSaveCode(code.code, ctx);
     if (!decoded.ok) throw new Error(decoded.error);
     expect(hash(dawn(decoded.save).snapshot())).toBe(hash(dawn(save).snapshot()));
-    // The run file from the code plays exactly as the one from the run.
-    expect(runFile('dawn-code').from).toEqual({ code: code.code });
+    // The run file from the code plays exactly as the one from the run. It keeps the version 1
+    // code `quit` pinned before Engine 0.15 T8 (gap M38): the v1 reader gives the same save.
+    const pinned = (runFile('dawn-code').from as { code: string }).code;
+    expect(pinned).not.toBe(code.code);
+    const fromV1 = decodeSaveCode(pinned, ctx);
+    expect(fromV1.ok && canonicalJson(fromV1.save)).toBe(canonicalJson(save));
     const golden = (n: string) =>
       (
         JSON.parse(readFileSync(new URL(`./runs/${n}.hashes.json`, import.meta.url), 'utf8')) as {
@@ -662,7 +666,21 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     expect(Object.values(OPP(game))).toEqual(['dormant', 'dormant', 'dormant', 'dormant']);
   });
 
-  it('gives no campaign save once the hall has fallen (gap M31)', () => {
-    expect(play('fortify-delegated').campaignSave()).toBeNull();
+  it('ends the campaign once the hall has fallen, as its campaign file says (Engine 0.15 T8, gap M31)', () => {
+    const game = play('fortify-delegated');
+    const save = game.campaignSave()!;
+    expect(save).toMatchObject({ position: 1, carried: null, ended: { entry: 0, reason: { gone: 'hall' } } });
+    expect(campaignRun(siegeCampaign(content), save).done).toBe(true);
+    // Its code holds the end (version 2), and reads back to the same save.
+    const code = encodeSaveCode(save, ctx);
+    const back = code.ok ? decodeSaveCode(code.code, ctx) : code;
+    expect(back.ok && canonicalJson(back.save)).toBe(canonicalJson(save));
+  });
+
+  it("gives no save before the entry is over (Engine 0.15 T8, gap M35: the engine's entryOver)", () => {
+    const game = createGame(content, SEED);
+    expect(game.entryOver()).toBe(false);
+    expect(game.campaignSave()).toBeNull();
+    expect(play('quit').entryOver()).toBe(true);
   });
 });

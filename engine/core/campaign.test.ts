@@ -9,6 +9,7 @@ import {
   campaignSchema,
   checkCampaigns,
   entryId,
+  entryOver,
   newCampaignSave,
   type CampaignDef,
 } from './campaign';
@@ -310,5 +311,95 @@ describe('a save at an entry (Engine 0.14, gap G9)', () => {
   it('follows the play order and gives null for an id the campaign lacks', () => {
     expect(campaignSaveAt({ ...main, start: 'raid' }, { game: 'g', seed: 1 }, 'level-2')?.position).toBe(2);
     expect(campaignSaveAt(main, { game: 'g', seed: 1 }, 'nowhere')).toBeNull();
+  });
+});
+
+describe('a campaign that ends on a loss in its data (Engine 0.15 T8, gap M31)', () => {
+  const campaign = campaignSchema.parse({
+    version: 1,
+    id: 'siege',
+    entries: [
+      { scenario: 'village', ticks: 260, endIf: { gone: 'hall' } },
+      { scenario: 'dawn', ticks: 200 },
+    ],
+  });
+  const start = newCampaignSave({ game: 'g', campaign: 'siege', seed: 3 });
+
+  it('takes `endIf` on a scenario entry only', () => {
+    expect(codes({ version: 1, id: 'c', entries: [{ level: 'a', endIf: { gone: 'hall' } }] })).toEqual([
+      ['entries.0.endIf', 'bad_entry'],
+    ]);
+  });
+
+  it("ends the campaign when the keyed entity is gone at the entry's end, recording why", () => {
+    const r = advanceCampaign(campaign, start, { gone: (key) => key === 'hall' });
+    if (!r.ok) throw new Error(r.error);
+    expect(r.save.ended).toEqual({ entry: 0, reason: { gone: 'hall' } });
+    expect(r.save.carried).toBeNull();
+    expect(campaignSaveSchema.safeParse(r.save).success).toBe(true);
+    const run = campaignRun(campaign, r.save);
+    expect(run.done).toBe(true);
+    expect(run.entry).toBeNull();
+    expect(run.ended).toEqual({ entry: 0, reason: { gone: 'hall' } });
+    const after = advanceCampaign(campaign, r.save);
+    expect(!after.ok && after.code).toBe('campaign_done');
+  });
+
+  it('goes on when the entity stands (or no `gone` is given)', () => {
+    for (const result of [{ gone: () => false }, {}]) {
+      const r = advanceCampaign(campaign, start, result);
+      expect(r.ok && r.save.ended).toBeUndefined();
+      expect(r.ok && campaignRun(campaign, r.save).entry?.scenario).toBe('dawn');
+    }
+  });
+
+  it("checks the key against the entry's scenario", () => {
+    const all = [
+      { name: 'village', value: { format: 'worlds-within/scenario', entities: [{ key: 'hall' }] } },
+    ];
+    const others = (kind: string) => (kind === '*' ? all : []);
+    const check = (gone: string) =>
+      checkCampaigns(
+        [
+          {
+            name: 'c',
+            value: campaignSchema.parse({
+              version: 1,
+              id: 'c',
+              entries: [{ scenario: 'village', ticks: 5, endIf: { gone } }],
+            }),
+          },
+        ],
+        others,
+      ).map((i) => [i.path.join('.'), i.code]);
+    expect(check('hall')).toEqual([]);
+    expect(check('barn')).toEqual([['entries.0.endIf.gone', 'unknown_key']]);
+  });
+
+  it('refuses a save whose `ended` is not its last finished entry', () => {
+    const r = advanceCampaign(campaign, start, { gone: () => true });
+    if (!r.ok) throw new Error(r.error);
+    expect(campaignSaveSchema.safeParse({ ...r.save, ended: { ...r.save.ended, entry: 1 } }).success).toBe(
+      false,
+    );
+  });
+});
+
+describe('one entry-end rule (Engine 0.15 T8, gap M35)', () => {
+  const entry = { scenario: 'village', ticks: 260 };
+
+  it('is over at its ticks with no mission open', () => {
+    expect(entryOver(entry, { worldTick: 259, missionsOpen: 0 })).toBe(false);
+    expect(entryOver(entry, { worldTick: 260, missionsOpen: 0 })).toBe(true);
+    expect(entryOver(entry, { worldTick: 300, missionsOpen: 0 })).toBe(true);
+  });
+
+  it('waits for an open mission to commit', () => {
+    expect(entryOver(entry, { worldTick: 260, missionsOpen: 1 })).toBe(false);
+  });
+
+  it('leaves level and mission entries to their own play', () => {
+    expect(entryOver({ level: 'a' }, { worldTick: 1_000, missionsOpen: 0 })).toBe(false);
+    expect(entryOver({ mission: 'raid' }, { worldTick: 1_000, missionsOpen: 0 })).toBe(false);
   });
 });

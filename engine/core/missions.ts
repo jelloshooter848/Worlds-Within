@@ -40,47 +40,162 @@ const ComponentName = z
   .string()
   .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'must be a letter followed by letters, digits or _');
 
+/** A report stat's name: what `fromReport` and `each` name in a played round's `stats`. */
+const StatName = z
+  .string()
+  .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -');
+/** A faction id, as `Owner.faction` holds it. */
+const FactionId = z
+  .string()
+  .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -');
+
+const fromReportField = StatName.exactOptional();
+const maxField = z.int().min(0).exactOptional();
+const eachFields = {
+  each: StatName.exactOptional().describe(
+    "Engine 0.15 (lesson D4): a stat of the played round's report holding a list of entity names (scenario keys or ids: the fallen walls, the killed raiders); the effect applies to every one it names. Without a report (delegated, quit, timed out) it applies to `entities`",
+  ),
+  entities: z
+    .array(EntityRef)
+    .min(1)
+    .exactOptional()
+    .describe('with `each`: the entities it applies to when the mission was not played (its declared list)'),
+  owner: FactionId.exactOptional().describe(
+    'with `each`: a declared limit: every entity the report names must be alive and owned by this faction (`Owner.faction`), else the played round is refused (`report_over_limit`)',
+  ),
+};
+
+/**
+ * The checks every effect with an `each` form shares (lesson D4): exactly one of `entity` and
+ * `each`; `entities`, `owner` (and, for `destroy`, `max`) only with `each`; `entities` no longer
+ * than `max`.
+ */
+function eachIssues(
+  e: { entity?: unknown; each?: string; entities?: readonly unknown[]; owner?: string; max?: number },
+  ctx: z.RefinementCtx,
+  maxIsEach: boolean,
+): void {
+  const issue = (path: string, message: string) =>
+    ctx.addIssue({ code: 'custom', path: [path], message, params: { code: 'bad_effect' } });
+  if ((e.entity === undefined) === (e.each === undefined))
+    ctx.addIssue({
+      code: 'custom',
+      message: 'give exactly one of "entity" and "each"',
+      params: { code: 'bad_effect' },
+    });
+  if (e.each === undefined) {
+    if (e.entities !== undefined) issue('entities', '"entities" goes with "each" only');
+    if (e.owner !== undefined) issue('owner', '"owner" goes with "each" only');
+    if (maxIsEach && e.max !== undefined) issue('max', '"max" goes with "each" only');
+  } else if (e.entities !== undefined && e.max !== undefined && e.entities.length > e.max)
+    issue('entities', `lists ${e.entities.length} entities, more than "max" (${e.max})`);
+}
+
 /**
  * Lower `Health.hp` by `amount` (never below 0). With `fromReport` (Engine 0.13, decision 4, item
  * 223) a played mission takes the amount from that stat of its record's report instead (a whole
  * number; 0 skips the effect), so a round's real cost comes back to the world while every effect
- * stays declared; delegated, quit and timed-out missions have no report and use `amount`.
+ * stays declared; delegated, quit and timed-out missions have no report and use `amount`. From
+ * Engine 0.15 (lessons D3, D4) `max` is a declared limit on that stat (a played round reporting
+ * more is refused, `report_over_limit`, never clamped), and `each` hits every entity a report stat
+ * lists by `amount` (with the limits `owner` and `max`, the most it may list).
  */
-export const damageEffectSchema = z.strictObject({
-  type: z.literal('damage'),
-  entity: EntityRef.describe('the entity hit: a scenario key or an entity id'),
-  amount: z
-    .int()
-    .min(1)
-    .describe('hit points taken off (with `fromReport`, only when the mission was not played)'),
-  fromReport: z
-    .string()
-    .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
-    .exactOptional()
-    .describe(
+export const damageEffectSchema = z
+  .strictObject({
+    type: z.literal('damage'),
+    entity: EntityRef.exactOptional().describe(
+      'the entity hit: a scenario key or an entity id (or `each` for every entity a report stat lists)',
+    ),
+    amount: z
+      .int()
+      .min(1)
+      .describe(
+        'hit points taken off (with `fromReport`, only when the mission was not played; with `each`, off every entity named)',
+      ),
+    fromReport: fromReportField.describe(
       "a stat of the played round's report (e.g. `heroHpLost`) the amount is taken from when the mission was played (0 skips the effect); `amount` when it was delegated, quit or timed out",
     ),
-});
+    max: maxField.describe(
+      'Engine 0.15 (lessons D3, D4): a declared limit, never a clamp: with `fromReport` the most hp the stat may give, with `each` the most entities it may list; a played round over it is refused (`report_over_limit`) and the mission is delegated at its commit',
+    ),
+    ...eachFields,
+  })
+  .superRefine((e, ctx) => {
+    eachIssues(e, ctx, false);
+    if (e.each !== undefined && e.fromReport !== undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['fromReport'],
+        message: 'give "fromReport" or "each", not both',
+        params: { code: 'bad_effect' },
+      });
+    if (e.max !== undefined && e.each === undefined && e.fromReport === undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['max'],
+        message: '"max" limits a report stat: give it with "fromReport" or "each"',
+        params: { code: 'bad_effect' },
+      });
+  });
 
-/** Remove an entity from the world. */
-export const destroyEffectSchema = z.strictObject({
-  type: z.literal('destroy'),
-  entity: EntityRef.describe('the entity removed: a scenario key or an entity id'),
-});
+/**
+ * Remove an entity from the world. From Engine 0.15 (lesson D4) `each` removes every entity a report
+ * stat lists (the killed raiders), with the declared limits `owner` and `max`.
+ */
+export const destroyEffectSchema = z
+  .strictObject({
+    type: z.literal('destroy'),
+    entity: EntityRef.exactOptional().describe(
+      'the entity removed: a scenario key or an entity id (or `each` for every entity a report stat lists)',
+    ),
+    max: maxField.describe(
+      'with `each`: a declared limit, the most entities the stat may list (a played round over it is refused, `report_over_limit`)',
+    ),
+    ...eachFields,
+  })
+  .superRefine((e, ctx) => eachIssues(e, ctx, true));
 
-/** Add to (or, negative, take from) an entity's inventory, never below 0. */
-export const inventoryEffectSchema = z.strictObject({
-  type: z.literal('inventory'),
-  entity: EntityRef.describe('whose inventory: a scenario key or an entity id'),
-  item: z
-    .string()
-    .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
-    .describe('the item, as the inventory names it'),
-  add: z
-    .int()
-    .refine((n) => n !== 0, { message: 'must not be 0' })
-    .describe('how many to add; negative takes away'),
-});
+/**
+ * Add to (or, negative, take from) an entity's inventory, never below 0. From Engine 0.15 (lesson
+ * D3) `fromReport` takes the amount from a played round's report stat (the gold spent), `negate`
+ * takes it away instead of adding it, and `max` is the declared limit on the stat (a played round
+ * reporting more is refused, `report_over_limit`); delegated, quit and timed-out missions use `add`.
+ */
+export const inventoryEffectSchema = z
+  .strictObject({
+    type: z.literal('inventory'),
+    entity: EntityRef.describe('whose inventory: a scenario key or an entity id'),
+    item: z
+      .string()
+      .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
+      .describe('the item, as the inventory names it'),
+    add: z
+      .int()
+      .refine((n) => n !== 0, { message: 'must not be 0' })
+      .describe(
+        'how many to add; negative takes away (with `fromReport`, only when the mission was not played)',
+      ),
+    fromReport: fromReportField.describe(
+      "Engine 0.15 (lesson D3): a stat of the played round's report (e.g. `spent`) the amount is taken from when the mission was played (0 skips the effect); `add` when it was delegated, quit or timed out",
+    ),
+    negate: z
+      .boolean()
+      .exactOptional()
+      .describe('with `fromReport`: true takes the stat away instead of adding it'),
+    max: maxField.describe(
+      'with `fromReport`: a declared limit, never a clamp: the most the stat may give; a played round over it is refused (`report_over_limit`)',
+    ),
+  })
+  .superRefine((e, ctx) => {
+    for (const field of ['negate', 'max'] as const)
+      if (e[field] !== undefined && e.fromReport === undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `"${field}" goes with "fromReport" only`,
+          params: { code: 'bad_effect' },
+        });
+  });
 
 /** Merge `values` into one of an entity's components (checked against the component's schema). */
 export const setEffectSchema = z.strictObject({
@@ -165,7 +280,7 @@ export const missionOutcomeSchema = z.strictObject({
     .array(missionEffectSchema)
     .default([])
     .describe(
-      'the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity, amount, fromReport? }`, `destroy` `{ entity }`, `inventory` `{ entity, item, add }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`, `fate` `{ entity, fate, by?, at? }` (`fate` injured, captured, freed or dead; `at`, a cell `{ x, y }`, on freed only and required there); `entity` is a scenario key or an entity id',
+      'the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity | each, amount, fromReport?, max?, entities?, owner? }`, `destroy` `{ entity | each, entities?, owner?, max? }`, `inventory` `{ entity, item, add, fromReport?, negate?, max? }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`, `fate` `{ entity, fate, by?, at? }` (`fate` injured, captured, freed or dead; `at`, a cell `{ x, y }`, on freed only and required there); `entity` is a scenario key or an entity id',
     ),
 });
 

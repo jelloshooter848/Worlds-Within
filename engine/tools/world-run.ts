@@ -207,6 +207,11 @@ export interface RefusedMission {
   action: string;
   code: string;
   error: string;
+  /**
+   * Engine 0.15 T8 (gap M5): true for a refusal that came after its step (a game's
+   * `lateRefusals`: a hosted round's end the world would not take), `tick` the tick it came at.
+   */
+  late?: true;
 }
 
 /**

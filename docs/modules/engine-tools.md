@@ -217,6 +217,9 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
   the table lacks is `no_key` at the check's path (exit 3, `unknownKeyAt`). `validate` builds the
   game's world scenarios (`worldScenarios`) and checks each mission's selectors against the ones
   that offer it (lesson D7).
+- Late refusals (Engine 0.15 T8, gap M5): a game's `lateRefusals(sinceTick)` (a `MissionHost`'s:
+  a round's end the world refused) are added to `run`'s `refusedMissions` at the tick they came,
+  with `late: true` (text: `refused late:`).
 
 ## Imports allowed
 

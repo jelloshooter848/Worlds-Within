@@ -111,6 +111,11 @@ sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `cam
   `world.one.Missions...`; no `named.` or positional component path is read), the host's
   `records()` and `worldKeys()` come from the sim's port, and the walls' `td-map` has no wave list
   (only `fortify` plays it; lesson D8).
+- Engine 0.15 T8: `fortify`'s effects read the round's report (the gold `spent`, the `killed`
+  raiders, the `fallen` walls, with declared limits; lessons D3, D4), the siege's campaign entry
+  ends the campaign when the hall is gone (`endIf`, gap M31), `campaignSave()` and the page use
+  the engine's `entryOver` (gap M35), and the pinned save codes are version 2 (gap M38;
+  `dawn-code` keeps a v1 code, still read). The fortify runs' hashes moved once.
 
 ## Imports allowed
 

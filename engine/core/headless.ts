@@ -106,6 +106,24 @@ export interface HeadlessGame {
   worldKeys?(): Readonly<Record<string, number>>;
   /** Optional (Engine 0.14 T9): the rounds recorded so far, in play order, as plain JSON. */
   roundRecordings?(): RoundRecording[];
+  /**
+   * Optional (Engine 0.15 T8, gap M5; docs/BUILD-LOG.md, Engine 0.15, decision 9): mission refusals
+   * that came after the step that asked for them (a hosted round's end the world would not take:
+   * an unmappable report, a report over a declared limit), from game tick `sinceTick` on, oldest
+   * first. The tools add them to a run's `refusedMissions` with `late: true`. Never part of
+   * `snapshot()`, so no hash moves. `MissionHost` has it.
+   */
+  lateRefusals?(sinceTick: number): readonly LateMissionRefusal[];
+}
+
+/**
+ * A mission refusal that came after its step (Engine 0.15 T8, gap M5): the game tick it came at
+ * (the snapshot it shows in), the mission, the step it belonged to (`play`) and the refusal.
+ */
+export interface LateMissionRefusal extends MissionStepRefusal {
+  readonly tick: number;
+  readonly mission: string;
+  readonly action: string;
 }
 
 /**

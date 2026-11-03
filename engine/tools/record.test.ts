@@ -100,7 +100,8 @@ describe('record', () => {
     const { code, result } = await cli(['record', file, '--mission', 'fortify', '--bot', plan]);
     expect(code).toBe(EXIT.ok);
     expect(result).toMatchObject({ ticks: 116, verified: true, passed: true });
-    expect(result.finalHash).toBe('0b43372f77faea35');
+    // Engine 0.15 T8: fortify's report-driven effects moved its hashes (0b43372f77faea35 before).
+    expect(result.finalHash).toBe('c758b3283ab59e88');
     expect(result.input).toEqual(committed);
     expect(playInput(file)).toEqual(committed);
   }, 60_000);

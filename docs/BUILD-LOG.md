@@ -129,6 +129,53 @@ from D15), or in a new report for a sample that has none.
   the manifest's `kit`; a mission no scenario's opportunities offer gets no world check. **No
   golden hash moved** (every run file passes with its golden hashes; keeping the table moves no
   snapshot), and no layer arrow changed.
+- **Commit and campaign rules** (T8, decision 9): D3, D4, M4, M5, M31, M35 and M38 fixed.
+  **D3, D4**: the `inventory` effect takes `fromReport` with `negate` and a declared `max`;
+  `damage`'s `fromReport` takes `max`; `damage` and `destroy` gain the per-entity form `each` (a
+  report stat listing entity names: keys of the open mission's `refs` or the world's key table, or
+  ids), with the declared `entities` for a mission that was not played and the limits `owner` and
+  `max`. `engine/sim`'s `playMission` checks the limits when a played result resolves
+  (`reportOverLimit`): a stat over its `max`, a list longer than its `max` or naming an entity not
+  alive and owned by `owner` is refused `report_over_limit`, never clamped, and the mission is
+  delegated at its commit (`timeout`) with the declared amounts (`engine/sim/mission-report.test.ts`).
+  The mini siege's `fortify` adopted both: its gold is the round's `spent` (max 100, the budget's
+  cap), its raiders the round's `killed` (owner `raiders`, max 4) and its walls the round's
+  `fallen` (owner `village`). **M4**: experience ticks stay out of the hashed record (the rule
+  since item 166, now written in `engine/sim/CLAUDE.md` and tested through `MissionHost`).
+  **M5**: `MissionHost.lateRefusals(sinceTick)` and the optional
+  `HeadlessGame.lateRefusals?` keep a round's end the world refused after its step
+  (`LateMissionRefusal`); the tools list each in `refusedMissions` at the tick it came with
+  `late: true`. **M31**: `carriedRecord` carries a gone stockpile as zeros; a campaign entry's
+  `endIf: { gone: key }` (checked against the scenario's keys, `unknown_key`) ends the campaign
+  when `advanceCampaign`'s new `gone` says so (the sim's `keyAlive`), the save records `ended` and
+  carries nothing, and `campaignRun` is `done`; the mini siege's siege entry has
+  `endIf: { gone: "hall" }` and its `campaignSave()` lost its own stockpile check. **M35**:
+  `entryOver(entry, { worldTick, missionsOpen })` in `engine/core/campaign.ts`;
+  `MiniSiegeGame.entryOver()` reads it, and so do its page (`SiegePlay.update`) and its
+  `campaignSave()` (null until the entry is over). **M38**: save code version 2 writes the campaign
+  and each mission as `saveCodeId(id)` (12 bits of a CRC-16 of the id) and one `ended` bit;
+  version 1 codes are still read (`encodeSaveCode(..., { version: 1 })` still writes one), and
+  `validate` refuses two missions or campaigns sharing a code (`code_collision`, the mission
+  kind's new `checkAll` and `checkCampaigns`); a test adds a mission file with an id sorting first
+  and shows every code unchanged (it moved a v1 code). Choices: `each` without a report applies
+  the declared `entities` (none: nothing); an `each` name that stands for no entity is left out
+  unless `owner` is given (then it is over the limit); limits are checked against the world when
+  the result resolves, not at the commit; `endIf` was put on the siege's entry only (as before,
+  the dawn's hall falling still moves on to the ridge, which carries nothing); scenarios are not
+  written in a code of either version, so only campaigns and missions get id codes; save codes
+  grew by about three characters (a two-scenario save fits 31, the 40-character budget holds);
+  `dawn-code` keeps `quit`'s version 1 code as the proof that v1 codes still read.
+  **Moved (decision 2), regenerated with the repo's tools** (`pnpm cli remove`/`run`/`add` for the
+  run files' sync `hashes`, `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` for the golden files, `pnpm
+cli code` and `pnpm cli set` for the pinned codes): `fortify-played` (`.run.json` sync hashes
+  and `.hashes.json`, final `0b43372f77faea35` to `c758b3283ab59e88`) and `fortify-delegated`
+  (final `302436d18dc3917d` to `bd8f76744d63c45e`), both from tick 20, because `fortify`'s def
+  (hashed while open, and its effects in the committed record) changed; no assertion changed.
+  Pinned codes (save code v2): `played` `2H120-1P1T8-0G01J-FJFCJ-2A00` to
+  `5EWCD-P0DGB-90200-69Y9X-J8820-00`, `delegated` `3YEP0-1P1T8-0G01Y-DJFCJ-2A2G` to
+  `4BRDD-P0DGB-90200-7SP9X-J8820-2G`, `quit` `2VFP0-1P1T8-0M32N-PBJFC-J2A70` to
+  `4DWHD-P0DGB-902GC-APSE9-XJ882-070`, `dawn-fresh` `2PHJ0-2P100-0` to `4WXFD-P0NG8-00`. No other
+  golden hash, sim golden or world-run golden moved; no layer arrow changed.
 
 ### Planned tasks
 

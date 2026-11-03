@@ -3,6 +3,7 @@ import type {
   HostedGame,
   JsonObject,
   JsonValue,
+  LateMissionRefusal,
   MissionStepRefusal,
   RoundRecording,
   WorldEvents,
@@ -52,6 +53,8 @@ import type { PresentEvent, PresentFrame } from './present/types';
  *   result commits by itself at the fixed commit tick, as the delegated path's does (decision 3).
  *   A round whose end does not map is refused there (`missions.round.refused` in the snapshot of
  *   that tick): nothing is resolved, and the mission is delegated at its commit tick (`timeout`).
+ *   Such a refusal comes after the step that asked for it, so the host also keeps it as a late
+ *   refusal (`lateRefusals(sinceTick)`, Engine 0.15 T8, gap M5) for the tools' `refusedMissions`.
  * - `snapshot()` is the game's (or `{ world }` from the port) plus `missions: { round }` only while
  *   a round is hosted and on the tick it ends, so a game that never hosts one keeps its hashes.
  *   `round` is `{ mission, game, ticks, state, result, outcome, refused }`.
@@ -230,6 +233,8 @@ export class MissionHost implements HostedGame<MissionHost> {
   private steps = 0;
   private recording = false;
   private readonly recorded: { mission: string; tick: number; round: HostedRound }[] = [];
+  /** Refusals that came after their step (gap M5), oldest first. */
+  private readonly late: LateMissionRefusal[] = [];
   /** The host's events of the last step, and those taken since (shown with the next step). */
   private stepEvents: MissionHostEvent[] = [];
   private nextEvents: MissionHostEvent[] = [];
@@ -557,18 +562,35 @@ export class MissionHost implements HostedGame<MissionHost> {
     };
     const mapped = missionRoundEnd(round.mission, round.adapter, end);
     if (!mapped.ok) {
-      round.refused = refusal(mapped.code, mapped.error);
+      this.refuseLate(round, refusal(mapped.code, mapped.error));
       return;
     }
     const done = mapped.quit ? this.port.quit(id) : this.port.play(id, mapped.result);
     if (!done.ok) {
-      round.refused = refusal(done.code, done.error);
+      this.refuseLate(round, refusal(done.code, done.error));
       return;
     }
     round.outcome = mapped.result.outcome;
     const open = this.opened.get(id);
     if (open) open.resolved = true;
     this.opts.onChange?.();
+  }
+
+  /** A round's end the world would not take: kept on the round (snapshot) and as a late refusal. */
+  private refuseLate(round: HostedRound, refused: MissionStepRefusal): void {
+    round.refused = refused;
+    this.late.push({ tick: this.steps, mission: round.mission.id, action: 'play', ...refused });
+  }
+
+  /**
+   * The refusals that came after their step (`HeadlessGame.lateRefusals`, Engine 0.15 T8, gap M5),
+   * from game tick `sinceTick` on: a round's end that did not map (`unmappable_report`,
+   * `unknown_outcome`) or that the world refused (`report_over_limit`, ...), at the step it ended
+   * on, as `{ tick, mission, action: 'play', code, error }`. The mission is delegated at its commit
+   * tick (`timeout`). Never in the snapshot: no hash moves.
+   */
+  lateRefusals(sinceTick = 0): LateMissionRefusal[] {
+    return this.late.filter((r) => r.tick >= sinceTick).map((r) => ({ ...r }));
   }
 
   private roundHosted(): MissionStepRefusal {

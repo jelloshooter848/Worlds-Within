@@ -246,8 +246,12 @@ validate` reports them at their field (`bad_mini_game_use`). `create(ctx, seed)`
   with the cursor and the events since the last frame, each enemy tagged `foe:<name>`, and the host
   values as `host:<key>`; no stream state (every frame has the full map).
 
-What the world gets back is the declared outcome's effects only: gold spent and losses are fixed
-amounts per outcome (lessons D3, D4).
+What the world gets back is the declared outcome's effects only. Since Engine 0.15 T8 (lessons D3,
+D4) those effects may read the report the adapter gives: an `inventory` effect's `fromReport:
+"spent"` (with `negate` and a declared `max`) takes the gold the round spent, and a `damage` or
+`destroy` effect's `each: "killed"` or `"fallen"` (with the limits `owner` and `max`) acts on every
+raider or wall the round names; the sim checks the limits (`engine/sim/CLAUDE.md`, Missions). The
+kit itself is unchanged: `stats.killed` and `stats.fallen` were already world names.
 
 ## Named rules (`rules.ts`)
 

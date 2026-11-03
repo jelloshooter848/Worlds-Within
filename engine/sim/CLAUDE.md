@@ -26,6 +26,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `worldKeys(world)`, the world's **key table** (every scenario key to its entity id, frozen;
   `{}` for a world with none), kept beside the world by `worldFromScenario` and `loadWorld`
   (`keepKeys`, internal), **never in the snapshot**, so no hash moves (see "Key table" below).
+  `keyAlive(world, key)` (Engine 0.15 T8, gap M31): whether a key's entity exists and is not
+  `dead`, what a game hands `advanceCampaign` for a campaign entry's `endIf`.
 - `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
 - `astar.ts`: RTS pathfinding, `findPath` (A*) for one unit and `flowField`/`flowStep` for a
   group, 4-way or 8-way (see "Walking").
@@ -319,7 +321,18 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   later; with `fromReport` (Engine 0.13, decision 4, M13) the amount is that stat of the played
   record's report when it is a whole number, a 0 skipping the effect, and the declared `amount`
   when the mission was delegated, quit or timed out or the report lacks it), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
-  `values` into the component. An effect whose entity is gone, a `damage` on an entity without
+  `values` into the component. **Report-driven effects** (Engine 0.15 T8, lessons D3 and D4;
+  docs/BUILD-LOG.md, Engine 0.15, decision 9, item 286): `inventory` takes `fromReport` too (the
+  stat's whole number added, or taken away with `negate`; a 0 skips it; `add` without a report),
+  and `damage` and `destroy` have a per-entity form, `each`: a report stat listing entity names
+  (keys of the open mission's `refs` or the key table, or ids, as a number or its digits), each hit
+  by `amount` or removed, in the order listed; without a report (delegated, quit, timed out) the
+  declared `entities` (none: nothing), whose keys are checked at open like an `entity`'s. Declared
+  **limits** are checked when a played result resolves, never clamped: a `fromReport` stat above
+  its `max`, an `each` list longer than its `max`, or (`owner`) naming an entity that is not alive
+  and owned by that faction is refused `report_over_limit` (nothing resolved; the mission is
+  delegated at its commit, `timeout`, with the declared amounts). An `each` effect that applies to
+  no entity is listed in `skipped`. An effect whose entity is gone, a `damage` on an entity without
   `Health`, or a `set` that would break the component's schema is skipped and listed in
   `skipped`, never an error (so is a `fromReport` damage of 0). `fate` (Engine 0.13, decision 2, item 221)
   `{ entity, fate, by?, at? }` moves a named person's fate with `setFate` ("Fates") under
@@ -341,7 +354,12 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   commit, however it is resolved and whether it was resolved at once or ticks later. Experience
   ticks (the kit's own round ticks, or ones recorded with `addExperience(world, id, n,
 'mission:<id>')`) never step the world; recorded ones are kept on the commitment and on the
-  record's `experienceTicks`, and nothing else differs.
+  record's `experienceTicks`, and nothing else differs. **A played round's experience ticks stay
+  out of the hashed record** (Engine 0.15 T8, gap M4, decision 9, the rule since item 166):
+  `missionPort` never records them, so a game run's committed record has `experienceTicks` 0 and
+  its world equals a world run's with the same outcome; the host's `missionExperience()`, the
+  run result's `experience` and the timeline carry them. `experienceTicks` holds only what
+  `addExperience` recorded (a world run's own count, never a hosted round's).
 - **No do-overs.** Recommitting, reopening, replaying or delegating a committed mission is refused
   (`mission_committed`), failure included: a failure is an ordinary outcome. Committed records are
   append-only and stored frozen, and never change after later ticks or a save and load. A
@@ -353,7 +371,7 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   `bad_mission`, `bad_id`, `unknown_ref`, `unknown_component`, `mission_open`,
   `mission_not_open`, `mission_committed`, `mission_resolved`, `mission_overdue`, `event_frozen`,
   `unknown_outcome`, `result_mismatch`, `opportunity_closed`, `unknown_opportunity`,
-  `reopens_self`, `not_playable`, `stepping`)
+  `reopens_self`, `not_playable`, `report_over_limit` (Engine 0.15), `stepping`)
   and change nothing. Everything runs between
   ticks (`stepping` during a step).
 - **World data.** `Missions` `{ open, committed }` lives on the `WorldTime` entity and is
@@ -381,7 +399,10 @@ id)` = `Rng.derived(seed, "round:<id>").next()` (fixed by the seed and the missi
   ticked through giving the same hash; records unchanged across later ticks and save and load),
   and `mission-fate.test.ts` (Engine 0.13: fate effects and capture follow-ups over the captive
   fixture, see "Opportunities"; and a `fromReport` damage played, played at 0, without the stat,
-  delegated, quit and timed out).
+  delegated, quit and timed out), and `mission-report.test.ts` (Engine 0.15 T8: an `inventory`
+  amount from the report, refused beyond its `max` and delegated at the commit, a `damage` with a
+  max, `each` over keys and ids, its declared list when delegated, its `max` and `owner` limits,
+  `destroy` by `each`, and the schemas' refusals).
 
 ## Opportunities
 
@@ -658,6 +679,10 @@ const record = carriedRecord(endWorld, second.from, scenarioKeys(first));
 const world = worldFromScenario(second, { carried: record });
 ```
 
+- **A lost stockpile** (Engine 0.15 T8, gap M31): a carried faction whose `Stockpile` is gone in
+  the first world (its hall destroyed) carries as zeros of every item the spec names, not an
+  error: an empty stockpile is the ordinary reading. A campaign that should end on such a loss
+  says so in data (`endIf` on its entry, `engine/core/campaign.ts`).
 - **The record**: `{ format: "worlds-within/carried", version: 1, from, tick, people: { <key>:
 { fate, by, at, hp, max } }, stockpiles: { <faction>: { <item>: n } } }`, every key sorted,
   integers and ids only (`carriedRecordSchema`, in `docs/reference/schemas.md`). `fate` is
@@ -668,7 +693,8 @@ const world = worldFromScenario(second, { carried: record });
 - **`carriedRecord(world, from, keys)`** reads only; `keys` are the first scenario's
   (`scenarioKeys`). A bad spec throws `ScenarioError` with paths under `from`: a key the first
   scenario lacks (`from.carry.people.0: "nobody" is not a key of the first scenario`), one that
-  is not a living `Member`, a faction with no stockpile, a person, faction or item given twice.
+  is not a living `Member`, a person, faction or item given twice (a faction with no stockpile
+  carries zeros since Engine 0.15).
 - **Applying** (`worldFromScenario`'s `carried`, after the entities, squads and opportunities),
   under the cause `carry`: for each person in spec order, `Health` set to the carried hp capped
   at the second scenario's `max`, then the fate by `startFate` (`captured`: off the map and out of
@@ -943,4 +969,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `keys.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `mission-report.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `keys.test.ts`, `sample-world.test.ts`).

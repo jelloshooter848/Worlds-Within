@@ -1,6 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { advanceCampaign, campaignSchema, newCampaignSave, type CampaignSave } from './campaign';
+import {
+  advanceCampaign,
+  campaignSchema,
+  checkMissionCodes,
+  newCampaignSave,
+  saveCodeId,
+  type CampaignSave,
+} from './campaign';
 import {
   crc16,
   decodeSaveCode,
@@ -8,6 +15,7 @@ import {
   normalizeSaveCode,
   saveCodeContext,
   SAVE_CODE_ALPHABET,
+  SAVE_CODE_VERSION,
   type SaveCodeContext,
 } from './campaign-code';
 import type { CarriedRecord } from './carried';
@@ -133,9 +141,11 @@ describe('save codes', () => {
     }
   });
 
-  it('stays short: at most 40 characters for a two-scenario campaign, about 27 after the first', () => {
+  it('stays short: at most 40 characters for a two-scenario campaign, about 30 after the first', () => {
     const chars = (save: CampaignSave) => encode(save).replace(/-/g, '').length;
-    expect(chars(afterFirst())).toBeLessThanOrEqual(28);
+    // Version 2 (Engine 0.15 T8) writes the campaign and each mission as a 12-bit id code: three
+    // characters more than version 1's 27 here.
+    expect(chars(afterFirst())).toBeLessThanOrEqual(31);
     const big = afterFirst({
       ...CARRIED,
       tick: 1_000,
@@ -265,5 +275,107 @@ describe('save codes', () => {
     if (!save.ok) throw new Error(save.error);
     const back = decodeSaveCode(encode(save.save, ctx), ctx);
     expect(back.ok && back.save).toEqual(save.save);
+  });
+});
+
+describe('save code v2 (Engine 0.15 T8, gap M38)', () => {
+  /** The context with one more mission file whose id sorts before every other one. */
+  function withEarlyMission(): SaveCodeContext {
+    const ctx = context();
+    return {
+      ...ctx,
+      missions: [{ id: 'aaa-early', outcomes: [{ id: 'done' }] }, ...ctx.missions],
+    };
+  }
+
+  it('writes version 2', () => {
+    expect(SAVE_CODE_VERSION).toBe(2);
+    const code = encode(afterFirst());
+    // The first character's top four bits are the version.
+    expect(SAVE_CODE_ALPHABET.indexOf(code[0]!) >> 1).toBe(2);
+  });
+
+  it('keeps every code when a mission file with an earlier-sorting id is added', () => {
+    const save = afterFirst();
+    const before = encode(save, context());
+    const after = encode(save, withEarlyMission());
+    expect(after).toBe(before);
+    const back = decodeSaveCode(before, withEarlyMission());
+    expect(back.ok && canonicalJson(back.save)).toBe(canonicalJson(save));
+  });
+
+  it('a version 1 code moved when such a file was added (the gap)', () => {
+    const save = afterFirst();
+    const v1 = (ctx: SaveCodeContext) => {
+      const r = encodeSaveCode(save, ctx, { version: 1 });
+      if (!r.ok) throw new Error(r.error);
+      return r.code;
+    };
+    expect(v1(withEarlyMission())).not.toBe(v1(context()));
+  });
+
+  it('still reads a version 1 code against the content it was written for', () => {
+    const save = afterFirst();
+    const r = encodeSaveCode(save, context(), { version: 1 });
+    if (!r.ok) throw new Error(r.error);
+    expect(SAVE_CODE_ALPHABET.indexOf(r.code[0]!) >> 1).toBe(1);
+    expect(r.code).not.toBe(encode(save));
+    const back = decodeSaveCode(r.code, context());
+    expect(back.ok && canonicalJson(back.save)).toBe(canonicalJson(save));
+  });
+
+  it('round-trips a campaign that ended on its data, and refuses it as version 1', () => {
+    const campaign = campaignSchema.parse({
+      ...CAMPAIGN,
+      entries: [{ scenario: 'captive', ticks: 40, endIf: { gone: 'hall' } }, ...CAMPAIGN.entries.slice(1)],
+    });
+    const ctx = { ...context(), campaigns: [campaign] };
+    const ended = advanceCampaign(
+      campaign,
+      newCampaignSave({ game: 'captive-game', campaign: 'captive', seed: 7 }),
+      { missions: [], carried: CARRIED, gone: (key) => key === 'hall' },
+    );
+    if (!ended.ok) throw new Error(ended.error);
+    expect(ended.save.ended).toEqual({ entry: 0, reason: { gone: 'hall' } });
+    expect(ended.save.carried).toBeNull();
+    const code = encode(ended.save, ctx);
+    const back = decodeSaveCode(code, ctx);
+    expect(back.ok && canonicalJson(back.save)).toBe(canonicalJson(ended.save));
+    const v1 = encodeSaveCode(ended.save, ctx, { version: 1 });
+    expect(!v1.ok && v1.code).toBe('code_layout');
+  });
+
+  it('refuses to encode with two missions sharing an id code, and validate names them', () => {
+    // Find two ids with the same 12-bit code.
+    const seen = new Map<number, string>();
+    let pair: [string, string] | null = null;
+    for (let i = 0; pair === null; i++) {
+      const id = `m-${i}`;
+      const other = seen.get(saveCodeId(id));
+      if (other !== undefined) pair = [other, id];
+      seen.set(saveCodeId(id), id);
+    }
+    const [a, b] = pair;
+    const ctx = context();
+    const clashing = { ...ctx, missions: [...ctx.missions, { id: a, outcomes: [{ id: 'x' }] }] };
+    const save = {
+      ...afterFirst(),
+      results: [{ entry: 0, missions: [{ mission: a, outcome: 'x', resolution: 'delegated' as const }] }],
+    };
+    const both = { ...clashing, missions: [...clashing.missions, { id: b, outcomes: [{ id: 'x' }] }] };
+    expect(encodeSaveCode(save, clashing).ok).toBe(true);
+    const r = encodeSaveCode(save, both);
+    expect(!r.ok && r.code).toBe('code_collision');
+    const issues = checkMissionCodes([
+      { name: a, value: { id: a } },
+      { name: b, value: { id: b } },
+    ]);
+    expect(issues.map((i) => [i.code, i.path.join('.')])).toEqual([['code_collision', 'id']]);
+  });
+
+  it('gives an id the same code every time (12 bits of its CRC-16)', () => {
+    expect(saveCodeId('sabotage')).toBe(saveCodeId('sabotage'));
+    expect(saveCodeId('sabotage')).toBeLessThan(4096);
+    expect(saveCodeId('sabotage')).not.toBe(saveCodeId('fortify'));
   });
 });

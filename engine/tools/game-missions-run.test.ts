@@ -61,15 +61,25 @@ function missionGame(run: Record<string, unknown>, withMission = true): { cwd: s
         }
         return { code: 'unknown', error: 'not ' + step.action };
       },
-      missionExperience: () => (state.played ? [{ mission: 'raid', ticks: state.spent }] : []),`
+      missionExperience: () => (state.played ? [{ mission: 'raid', ticks: state.spent }] : []),
+      lateRefusals: (since) => late.filter((r) => r.tick >= since),`
     : '';
   writeFileSync(
     join(game, 'headless.mjs'),
     `export function createGame() {
   const state = { tick: 0, log: [], played: false, round: 0, spent: 0 };
+  // Refusals after their step (Engine 0.15 T8, gap M5): the round's end, refused; never in the snapshot.
+  const late = [];
+  let steps = 0;
   return {
     step() {
-      if (state.round > 0) { state.round -= 1; state.spent += 1; return; }
+      steps += 1;
+      if (state.round > 0) {
+        state.round -= 1;
+        state.spent += 1;
+        if (state.round === 0) late.push({ tick: steps, mission: 'raid', action: 'play', code: 'report_over_limit', error: 'over' });
+        return;
+      }
       state.tick += 1;
     },
     snapshot: () => JSON.parse(JSON.stringify(state)),
@@ -89,7 +99,7 @@ const steps = [
 ];
 
 describe('a game run with missions', () => {
-  it('hands each step to the game after its tick, lists refusals and reports experience', async () => {
+  it('hands each step to the game after its tick, lists refusals (late ones too) and reports experience', async () => {
     const { cwd, file } = missionGame({
       missions: steps,
       assertions: [
@@ -114,6 +124,8 @@ describe('a game run with missions', () => {
       missions: 3,
       missionsPlayed: 3,
       refusedMissions: [
+        // The round's end, refused after its step (gap M5), at the tick it came at.
+        { tick: 4, mission: 'raid', action: 'play', code: 'report_over_limit', error: 'over', late: true },
         { tick: 6, mission: 'raid', action: 'play', code: 'mission_resolved', error: 'no do-overs' },
       ],
       experience: [{ mission: 'raid', ticks: 3 }],

@@ -28,6 +28,7 @@ import {
   settleOpportunities,
   takeOpportunity,
 } from './opportunity';
+import { worldKeys } from './keys';
 import { freezeEvent, startExperience, stampCommitment, timeOf, unfreezeEvent, WorldTime } from './time';
 import type { Entity, World } from './world';
 import { worldInternals } from './world';
@@ -122,6 +123,7 @@ export type MissionRefusal =
   | 'unknown_opportunity'
   | 'reopens_self'
   | 'not_playable'
+  | 'report_over_limit'
   | 'stepping';
 
 export type MissionRefused = { ok: false; code: MissionRefusal; error: string };
@@ -263,14 +265,16 @@ export function openMission(world: World, def: unknown, options: OpenOptions = {
           );
         continue;
       }
-      if (typeof effect.entity === 'string') {
-        const ref = options.refs?.[effect.entity];
+      const named = [
+        ...(effect.entity !== undefined ? [effect.entity] : []),
+        ...('entities' in effect ? (effect.entities ?? []) : []),
+      ];
+      for (const name of named) {
+        if (typeof name !== 'string') continue;
+        const ref = options.refs?.[name];
         if (ref === undefined)
-          return refuse(
-            'unknown_ref',
-            `outcome "${outcome.id}" names "${effect.entity}", which is not in refs`,
-          );
-        refs[effect.entity] = ref;
+          return refuse('unknown_ref', `outcome "${outcome.id}" names "${name}", which is not in refs`);
+        refs[name] = ref;
       }
       if (effect.type === 'set' && !world.registered(effect.component))
         return refuse(
@@ -326,6 +330,10 @@ function resolve(
   if (isRefused(picked)) return picked;
   const checked = missionResult(open.def, picked.outcome, picked.report);
   if (!checked.ok) return refuse('unknown_outcome', checked.error);
+  if (picked.report !== undefined) {
+    const over = reportOverLimit(world, open, checked.result.effects, picked.report);
+    if (over !== null) return refuse('report_over_limit', `mission "${id}": ${over}`);
+  }
   const resolved = {
     outcome: picked.outcome,
     resolution: picked.resolution,
@@ -477,7 +485,9 @@ function commitNow(world: World, open: OpenMission): { ok: true; record: Mission
 
 /**
  * Apply one effect; false when it is skipped: its entity is gone, `damage` finds no `Health` (or
- * its `fromReport` stat is 0), or a
+ * its `fromReport` stat is 0), an `inventory` effect's `fromReport` stat is 0, an `each` effect
+ * applies to no entity (Engine 0.15: one per named entity, skipped as a whole only when none took
+ * it), or a
  * `set` would break the component's schema, or an `opportunity` effect finds its opportunity
  * already taken or closed (`applyOpportunityEffect`), or a `fate` cannot be set (`setFate` refuses
  * it: not a named person, a fate that cannot move there such as anything after a death, or a
@@ -490,13 +500,30 @@ function applyEffect(
   report: MissionReport | undefined,
 ): boolean {
   if (effect.type === 'opportunity') return applyOpportunityEffect(world, effect);
-  const id = typeof effect.entity === 'number' ? effect.entity : open.refs[effect.entity];
-  if (id === undefined || !world.alive(id)) return false;
+  if ((effect.type === 'damage' || effect.type === 'destroy') && effect.each !== undefined) {
+    const ids = eachTargets(world, open, effect, report);
+    let applied = false;
+    for (const id of ids) if (applyOne(world, effect, id, report)) applied = true;
+    return applied;
+  }
+  const id = entityOf(world, open, effect.entity as string | number);
+  if (id === undefined) return false;
+  return applyOne(world, effect, id, report);
+}
+
+/** Apply a non-opportunity effect to entity `id`; false when it is skipped. */
+function applyOne(
+  world: World,
+  effect: Exclude<MissionEffect, { type: 'opportunity' }>,
+  id: Entity,
+  report: MissionReport | undefined,
+): boolean {
+  if (!world.alive(id)) return false;
   switch (effect.type) {
     case 'damage': {
       const health = world.get(id, Health);
       if (!health) return false;
-      const amount = damageAmount(effect, report);
+      const amount = effect.each !== undefined ? effect.amount : damageAmount(effect, report);
       if (amount === 0) return false;
       world.add(id, Health, { ...health, hp: Math.max(0, health.hp - amount) });
       return true;
@@ -505,10 +532,12 @@ function applyEffect(
       world.destroy(id);
       return true;
     case 'inventory': {
+      const delta = inventoryDelta(effect, report);
+      if (delta === 0) return false;
       const items: Record<string, number> = {
         ...((world.get(id, 'Inventory') as Record<string, number> | undefined) ?? {}),
       };
-      const count = Math.max(0, (items[effect.item] ?? 0) + effect.add);
+      const count = Math.max(0, (items[effect.item] ?? 0) + delta);
       if (count === 0) delete items[effect.item];
       else items[effect.item] = count;
       const def = worldInternals(world).component('Inventory');
@@ -535,12 +564,107 @@ function applyEffect(
 }
 
 /**
+ * The entity a name stands for (Engine 0.15 T8): an id, a key of the open mission's `refs`, a key
+ * of the world's key table, or an id written as digits (a kit's report names an entity no key
+ * names by its id). Undefined when it names none.
+ */
+function entityOf(world: World, open: OpenMission, name: string | number): Entity | undefined {
+  if (typeof name === 'number') return name;
+  const ref = open.refs[name] ?? worldKeys(world)[name];
+  if (ref !== undefined) return ref;
+  return /^[1-9][0-9]*$/.test(name) ? Number(name) : undefined;
+}
+
+/** A report stat as a whole number at least 0, or null (absent or not one). */
+function wholeStat(report: MissionReport | undefined, stat: string): number | null {
+  const v = report?.stats?.[stat];
+  return typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : null;
+}
+
+/** A report stat as a list of entity names, or null (absent or not a list of names). */
+function listStat(report: MissionReport | undefined, stat: string): (string | number)[] | null {
+  const v = report?.stats?.[stat];
+  if (!Array.isArray(v) || !v.every((n) => typeof n === 'string' || typeof n === 'number')) return null;
+  return v as (string | number)[];
+}
+
+type EachEffect = Extract<MissionEffect, { type: 'damage' | 'destroy' }>;
+
+/**
+ * The entities an `each` effect applies to (lesson D4): those its report stat names when the
+ * mission was played and the report has the list, else its declared `entities` (none: nothing),
+ * in the order given, each once, names that stand for no entity left out.
+ */
+function eachTargets(world: World, open: OpenMission, effect: EachEffect, report: MissionReport | undefined) {
+  const names = listStat(report, effect.each as string) ?? effect.entities ?? [];
+  const ids: Entity[] = [];
+  for (const name of names) {
+    const id = entityOf(world, open, name);
+    if (id !== undefined && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
+}
+
+/**
+ * Why a played round's report goes over a declared limit of the outcome's effects (lessons D3 and
+ * D4), or null: a `fromReport` stat above its `max`, an `each` list longer than its `max`, or (with
+ * `owner`) naming an entity that is not alive or not owned by that faction. Limits are checked,
+ * never clamped: the round is refused and the mission is delegated at its commit. A stat that is
+ * absent or not of its shape is no limit's business (the declared amount applies, as before).
+ */
+function reportOverLimit(
+  world: World,
+  open: OpenMission,
+  effects: readonly MissionEffect[],
+  report: MissionReport,
+): string | null {
+  for (const [i, effect] of effects.entries()) {
+    const at = `effect ${i} (${effect.type})`;
+    if ((effect.type === 'damage' || effect.type === 'destroy') && effect.each !== undefined) {
+      const names = listStat(report, effect.each);
+      if (names === null) continue;
+      if (effect.max !== undefined && names.length > effect.max)
+        return `${at}: the report's "${effect.each}" names ${names.length} entities, more than its max ${effect.max}`;
+      if (effect.owner === undefined) continue;
+      for (const name of names) {
+        const id = entityOf(world, open, name);
+        const owner = id !== undefined && world.alive(id) ? world.get(id, 'Owner') : undefined;
+        const faction = (owner as { faction?: unknown } | undefined)?.faction;
+        if (faction !== effect.owner)
+          return `${at}: the report's "${effect.each}" names "${name}", which is not a living entity of "${effect.owner}"`;
+      }
+      continue;
+    }
+    if ((effect.type === 'damage' || effect.type === 'inventory') && effect.fromReport !== undefined) {
+      const stat = wholeStat(report, effect.fromReport);
+      if (stat !== null && effect.max !== undefined && stat > effect.max)
+        return `${at}: the report's "${effect.fromReport}" is ${stat}, more than its max ${effect.max}`;
+    }
+  }
+  return null;
+}
+
+/**
  * A `damage` effect's amount: with `fromReport`, the played round's report stat of that name when
  * it is a whole number of at least 0 (Engine 0.13, decision 4, item 223); otherwise (delegated,
  * quit, timed out, or a report without that stat) the declared `amount`.
  */
 function damageAmount(effect: Extract<MissionEffect, { type: 'damage' }>, report: MissionReport | undefined) {
   if (effect.fromReport === undefined) return effect.amount;
-  const stat = report?.stats?.[effect.fromReport];
-  return typeof stat === 'number' && Number.isInteger(stat) && stat >= 0 ? stat : effect.amount;
+  return wholeStat(report, effect.fromReport) ?? effect.amount;
+}
+
+/**
+ * An `inventory` effect's change (Engine 0.15 T8, lesson D3): with `fromReport`, the played
+ * round's report stat when it is a whole number of at least 0 (taken away with `negate`; 0 skips
+ * the effect); otherwise (delegated, quit, timed out, or a report without the stat) `add`.
+ */
+function inventoryDelta(
+  effect: Extract<MissionEffect, { type: 'inventory' }>,
+  report: MissionReport | undefined,
+) {
+  if (effect.fromReport === undefined) return effect.add;
+  const stat = wholeStat(report, effect.fromReport);
+  if (stat === null) return effect.add;
+  return effect.negate === true ? -stat : stat;
 }

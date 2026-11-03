@@ -514,17 +514,18 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
     expect(hash(later.play.game.snapshot())).toBe(firstHash('dawn-captured'));
   });
 
-  it('gives no save once the hall has fallen, and starts over on Continue', () => {
+  it('ends the campaign once the hall has fallen (its data, gap M31), and starts over on Continue', () => {
     const p = page();
     toFortify(p);
     p.play.press({ kind: 'delegate' });
     toEnd(p);
     expect(p.play.ended()).toMatchObject({
-      save: null,
-      code: null,
+      save: { position: 1, carried: null, ended: { entry: 0, reason: { gone: 'hall' } } },
+      done: true,
       next: null,
       verdict: 'the hall has fallen',
     });
+    expect(p.play.ended()!.code).not.toBeNull();
     p.play.press({ kind: 'continue' });
     p.step();
     expect(p.play.scenario).toBe('village');

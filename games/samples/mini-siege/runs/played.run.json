@@ -189,7 +189,7 @@
   "invariants": [{ "path": "world.key.hall.alive", "op": "eq", "value": true }],
   "hashEvery": 20,
   "guards": ["enemy-follows-plan"],
-  "codes": [{ "tick": 666, "code": "2H120-1P1T8-0G01J-FJFCJ-2A00" }],
+  "codes": [{ "tick": 666, "code": "5EWCD-P0DGB-90200-69Y9X-J8820-00" }],
   "hashes": [
     { "tick": 0, "hash": "8eb4811aae418350" },
     { "tick": 20, "hash": "c9939cb5864e20e6" },

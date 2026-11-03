@@ -43,6 +43,21 @@ export type CampaignEntryKind = (typeof CAMPAIGN_ENTRY_KINDS)[number];
 /** The `format` of a world scenario file (`engine/sim/scenario.ts`): a campaign's scenario entries name one. */
 export const SCENARIO_FORMAT = 'worlds-within/scenario';
 
+/**
+ * A loss that ends a campaign (Engine 0.15 T8, gap M31; docs/BUILD-LOG.md, Engine 0.15, decision 9):
+ * `{ "gone": "<scenario key>" }`, the keyed entity (the hall) not alive at the entry's end. The game
+ * tells {@link advanceCampaign} which keys are gone; the save records the end (`ended`).
+ */
+export const campaignEndIfSchema = z.strictObject({
+  gone: z
+    .string()
+    .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
+    .describe(
+      "a scenario key of the entry's world: the campaign ends when that entity is not alive at the entry's end",
+    ),
+});
+export type CampaignEndIf = z.infer<typeof campaignEndIfSchema>;
+
 /** One step of a campaign: exactly one of `level`, `mission` and `scenario` (with `ticks`). */
 export const campaignEntrySchema = z
   .strictObject({
@@ -65,6 +80,11 @@ export const campaignEntrySchema = z
       .min(1)
       .exactOptional()
       .describe("one line naming the entry for a page (Engine 0.13 T8), e.g. a scenario's name"),
+    endIf: campaignEndIfSchema
+      .exactOptional()
+      .describe(
+        'with `scenario` only (Engine 0.15, gap M31): the loss that ends the campaign at this entry\'s end, `{ "gone": "<scenario key>" }` (that keyed entity is not alive then)',
+      ),
   })
   .superRefine((e, ctx) => {
     const named = CAMPAIGN_ENTRY_KINDS.filter((k) => e[k] !== undefined);
@@ -72,6 +92,13 @@ export const campaignEntrySchema = z
       ctx.addIssue({
         code: 'custom',
         message: 'give exactly one of "level", "mission" and "scenario"',
+        params: { code: 'bad_entry' },
+      });
+    else if (e.endIf !== undefined && e.scenario === undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['endIf'],
+        message: '"endIf" goes with a "scenario" entry only',
         params: { code: 'bad_entry' },
       });
     else if ((e.scenario === undefined) !== (e.ticks === undefined))
@@ -175,6 +202,24 @@ export interface CampaignScenario {
   name: string;
   /** The scenario it starts from (its `from.scenario`), or null. */
   from: string | null;
+  /** Engine 0.15: every `key` its entities, squads and members give, for an entry's `endIf`. */
+  keys: string[];
+}
+
+/** Every `key` a scenario file's entities, squads and squad members give (read loosely). */
+function scenarioKeyNames(value: unknown): string[] {
+  const keys: string[] = [];
+  const take = (list: unknown) => {
+    for (const item of Array.isArray(list) ? list : []) {
+      const key = (item as { key?: unknown } | null)?.key;
+      if (typeof key === 'string') keys.push(key);
+      take((item as { members?: unknown } | null)?.members);
+    }
+  };
+  const v = value as { entities?: unknown; squads?: unknown };
+  take(v.entities);
+  take(v.squads);
+  return keys;
 }
 
 /**
@@ -188,7 +233,11 @@ export function campaignScenarios(entries: readonly { name: string; value: unkno
     const v = value as { format?: unknown; from?: unknown };
     if (v.format !== SCENARIO_FORMAT) continue;
     const from = v.from as { scenario?: unknown } | undefined;
-    out.push({ name, from: typeof from?.scenario === 'string' ? from.scenario : null });
+    out.push({
+      name,
+      from: typeof from?.scenario === 'string' ? from.scenario : null,
+      keys: scenarioKeyNames(v),
+    });
   }
   return out;
 }
@@ -208,11 +257,19 @@ export function checkCampaigns(
   const names = (kind: string) => new Set(others(kind).map((e) => e.name));
   const scenarios = new Map(campaignScenarios(others(ANY_KIND)).map((s) => [s.name, s]));
   const known = { level: names('level'), mission: names('mission'), scenario: new Set(scenarios.keys()) };
-  const issues: KindIssue[] = [];
+  const issues: KindIssue[] = codeCollisions(entries, 'campaign');
   for (const { name, value } of entries) {
     value.entries.forEach((e, i) => {
       const kind = entryKind(e);
       const id = entryId(e);
+      const gone = e.endIf?.gone;
+      if (gone !== undefined && scenarios.has(id) && !scenarios.get(id)!.keys.includes(gone))
+        issues.push({
+          name,
+          path: ['entries', i, 'endIf', 'gone'],
+          code: 'unknown_key',
+          message: `scenario "${id}" has no entity keyed "${gone}"`,
+        });
       if (known[kind].has(id)) return;
       issues.push({
         name,
@@ -292,8 +349,23 @@ export const campaignSaveSchema = z
         }),
       )
       .describe('one per finished entry, in play order'),
+    ended: z
+      .strictObject({
+        entry: z.int().min(0).describe('the entry the campaign ended at: its index in play order'),
+        reason: campaignEndIfSchema.describe("the entry's `endIf` that held"),
+      })
+      .exactOptional()
+      .describe(
+        "Engine 0.15 (gap M31): the campaign ended on a loss its data declares (an entry's `endIf`); left out while it goes on",
+      ),
   })
   .superRefine((save, ctx) => {
+    if (save.ended !== undefined && save.ended.entry !== save.position - 1)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['ended', 'entry'],
+        message: `must be ${save.position - 1}, the last finished entry`,
+      });
     if (save.results.length !== save.position)
       ctx.addIssue({
         code: 'custom',
@@ -351,9 +423,11 @@ export interface CampaignRunState {
   order: CampaignEntry[];
   /** The entry played now (its index in `order`). */
   position: number;
-  /** The entry played now, or null when the campaign is done. */
+  /** The entry played now, or null when the campaign is done (past its last entry, or `ended`). */
   entry: CampaignEntry | null;
   done: boolean;
+  /** Engine 0.15 (gap M31): the declared loss it ended on (the save's `ended`), or null. */
+  ended: CampaignSave['ended'] | null;
   /**
    * The scenario entry the glue builds the world from for the entry played now: the entry itself
    * for a scenario entry, else the nearest scenario entry before it (a mission entry right after a
@@ -390,12 +464,13 @@ export function scenarioFrom(order: readonly CampaignEntry[], position: number):
 export function campaignRun(campaign: CampaignDef, save?: CampaignSave): CampaignRunState {
   const order = campaignOrder(campaign);
   const position = save?.position ?? 0;
-  const entry = order[position] ?? null;
+  const entry = save?.ended !== undefined ? null : (order[position] ?? null);
   return {
     order,
     position,
     entry,
     done: entry === null,
+    ended: save?.ended ?? null,
     scenario: entry?.scenario ?? scenarioBefore(order, position),
     nextScenario: scenarioFrom(order, position),
     carried: save?.carried ?? null,
@@ -411,6 +486,12 @@ export function campaignRun(campaign: CampaignDef, save?: CampaignSave): Campaig
 export interface CampaignEntryResult {
   missions?: readonly CampaignMissionResult[];
   carried?: CarriedRecord | null;
+  /**
+   * Engine 0.15 (gap M31): whether a scenario key's entity is gone (not alive) at the entry's end,
+   * for the entry's `endIf` (`engine/sim`'s `keyAlive`: `(key) => !keyAlive(world, key)`). Left
+   * out, no `endIf` holds.
+   */
+  gone?: (key: string) => boolean;
 }
 
 /** Why {@link advanceCampaign} refused. */
@@ -424,7 +505,9 @@ export type CampaignAdvance =
  * + 1, the entry's results appended, `carried` replaced when the result gives one. The rules: a
  * `mission` entry commits exactly its own mission (and may rebuild `carried`, as it was played on
  * the scenario's end world); a `level` entry commits no mission and carries nothing; a `scenario`
- * entry commits any missions its world offered. A refusal (`wrong_campaign`: the save is another
+ * entry commits any missions its world offered. Engine 0.15 (gap M31): when the entry's `endIf`
+ * holds (`result.gone` says its key's entity is gone), the save records `ended` and carries
+ * nothing, and the campaign is done (`campaignRun`'s `done`). A refusal (`wrong_campaign`: the save is another
  * campaign's; `campaign_done`: past the last entry; `bad_result`) changes nothing. Pure.
  */
 export function advanceCampaign(
@@ -459,13 +542,88 @@ export function advanceCampaign(
     if (!parsed.success) return bad(`carried: ${parsed.error.issues[0]?.message ?? 'not a carried record'}`);
     carried = parsed.data;
   }
+  const endIf = run.entry.endIf;
+  const ended = endIf !== undefined && result.gone?.(endIf.gone) === true;
   return {
     ok: true,
     save: {
       ...save,
       position: save.position + 1,
-      carried,
+      // A campaign that ended carries nothing on: there is no next entry.
+      carried: ended ? null : carried,
       results: [...save.results, { entry: save.position, missions }],
+      ...(ended ? { ended: { entry: save.position, reason: { ...endIf } } } : {}),
     },
   };
+}
+
+/**
+ * The one entry-end rule (Engine 0.15 T8, gap M35; docs/BUILD-LOG.md, Engine 0.15, decision 9): a
+ * `scenario` entry is over at the first world tick at or after its `ticks` with no mission open (an
+ * open mission commits at a fixed tick, so this is bounded). A game's page and its
+ * `campaignSave()` both read it, so a save code is taken exactly when the page shows the entry's
+ * result. A `level` or `mission` entry ends by its own play (the kit's level end, the mission's
+ * commit): false here.
+ */
+export function entryOver(entry: CampaignEntry, now: { worldTick: number; missionsOpen: number }): boolean {
+  if (entry.scenario === undefined || entry.ticks === undefined) return false;
+  return now.worldTick >= entry.ticks && now.missionsOpen === 0;
+}
+
+/** Bits a save code v2 writes a campaign or mission id in ({@link saveCodeId}). */
+export const SAVE_CODE_ID_BITS = 12;
+
+/**
+ * The stable code of a campaign or mission id in a save code v2 (Engine 0.15 T8, gap M38): the
+ * CRC-16/CCITT (polynomial 0x1021, start 0xFFFF) of its characters, kept to its low
+ * {@link SAVE_CODE_ID_BITS} bits. It depends on the id alone, so a mission file added later never
+ * moves a code; two ids of one kind with the same code are refused by `validate`
+ * (`code_collision`, {@link checkCampaigns} and {@link checkMissionCodes}).
+ */
+export function saveCodeId(id: string): number {
+  let crc = 0xffff;
+  for (let i = 0; i < id.length; i++) {
+    const byte = id.charCodeAt(i) & 0xff;
+    for (let b = 7; b >= 0; b--) {
+      const bit = (byte >> b) & 1;
+      const top = (crc >> 15) & 1;
+      crc = (crc << 1) & 0xffff;
+      if ((top ^ bit) === 1) crc ^= 0x1021;
+    }
+  }
+  return crc & ((1 << SAVE_CODE_ID_BITS) - 1);
+}
+
+/**
+ * Ids of one kind sharing a save code ({@link saveCodeId}): one issue per later id, at its `id`,
+ * naming the earlier one (`code_collision`). Entries are taken in name order.
+ */
+function codeCollisions(entries: readonly { name: string; value: unknown }[], kind: string): KindIssue[] {
+  const seen = new Map<number, string>();
+  const issues: KindIssue[] = [];
+  for (const { name, value } of [...entries].sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+  )) {
+    const id = (value as { id?: unknown } | null)?.id;
+    if (typeof id !== 'string') continue;
+    const code = saveCodeId(id);
+    const other = seen.get(code);
+    if (other !== undefined)
+      issues.push({
+        name,
+        path: ['id'],
+        code: 'code_collision',
+        message: `${kind} "${id}" has the same save code (${code}) as ${kind} "${other}"; rename one`,
+      });
+    else seen.set(code, id);
+  }
+  return issues;
+}
+
+/**
+ * The mission kind's check across the game's content (Engine 0.15 T8, gap M38): two missions whose
+ * ids share a save code v2 id code are `code_collision` at the later one's `id`.
+ */
+export function checkMissionCodes(entries: readonly { name: string; value: unknown }[]): KindIssue[] {
+  return codeCollisions(entries, 'mission');
 }

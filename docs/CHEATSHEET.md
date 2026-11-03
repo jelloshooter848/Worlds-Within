@@ -232,6 +232,22 @@ See the mini siege's `sabotage` and `dawn` (`games/samples/mini-siege/content/`)
   `exclusive` group; a mission with no `play` is a choice, only delegated (`not_playable`); an
   outcome may not reopen its own mission's opportunity (`reopens_self`).
 
+- **Report-driven effects** (Engine 0.15, lessons D3, D4): what a played round reports, within
+  declared limits:
+
+  ```json
+  { "type": "inventory", "entity": "hall", "item": "gold", "add": -40, "fromReport": "spent", "negate": true, "max": 100 }
+  { "type": "destroy", "each": "killed", "entities": ["raider-1", "raider-2"], "owner": "raiders", "max": 4 }
+  { "type": "damage", "each": "fallen", "entities": ["south-wall"], "amount": 40, "owner": "village", "max": 4 }
+  ```
+
+  `each` names a report stat listing entities (keys or ids); without a report the declared
+  `entities` (and `add`, `amount`) apply. A report over a limit (`max`, or an `each` entity not
+  alive and owned by `owner`) is refused `report_over_limit`, never clamped; the mission is then
+  delegated at its commit, and a game run lists the refusal in `refusedMissions` with
+  `late: true`. Experience ticks never enter the world (`experienceTicks` stays 0 for a played
+  round; the run's `experience` has them).
+
 - **A round's hero from the world** (`mission-room` params): `"hero": { "select": { "faction":
 "village", "member": "captain" }, "hpPer": 20 }` starts the room's hero on `ceil(hp / hpPer)`
   half hearts; the report's `heroHpLost` is what the round cost the world unit.
@@ -250,7 +266,11 @@ carried })` builds the second world with it at tick 0 under the cause `carry`. W
 
 - **Campaign scenario entries** (the `campaign` kind): `{ "scenario": "dawn", "ticks": 200,
 "title": "The dawn assault" }` beside `level` and `mission` entries; a scenario with `from`
-  must follow the entry it names (`bad_from`). `campaignRun(def, save?)` says where a run is;
+  must follow the entry it names (`bad_from`). `"endIf": { "gone": "hall" }` (Engine 0.15) ends
+  the campaign at that entry's end when the keyed entity is gone (the save's `ended`;
+  `advanceCampaign`'s `gone`, the sim's `keyAlive`); `entryOver(entry, { worldTick, missionsOpen
+})` is the one rule for when a scenario entry is over (its `ticks`, no mission open). A carried
+  stockpile that is gone carries as zeros. `campaignRun(def, save?)` says where a run is;
   `advanceCampaign(def, save, { missions, carried })` gives the next save. A campaign save
   (`campaignSaveSchema`) is `{ format, version, game, campaign, seed, position, carried, results
 }`; `storeCampaignSave` / `loadCampaignSave` (`@engine/core/save/campaign-store`) keep it under
@@ -258,9 +278,12 @@ carried })` builds the second world with it at tick 0 under the cause `carry`. W
   page's part (store, pack, resume a typed code).
 - **Save codes** (`engine/core/campaign-code.ts`): `encodeSaveCode(save, saveCodeContext(content))`
   and `decodeSaveCode(text, ctx)`; Crockford Base32 in groups of five
-  (`2VFP0-1P1T8-0M32N-PBJFC-J2A70`), case, dashes and spaces ignored, O read as 0 and I, L as 1.
-  Refusals change nothing: `code_empty`, `code_typo` (a bad character or the CRC-16), `code_newer`,
-  `code_layout`, `code_campaign`, `code_position`, `code_record`. In run files: `from: { run }` or
+  (`4DWHD-P0DGB-902GC-APSE9-XJ882-070`), case, dashes and spaces ignored, O read as 0 and I, L as 1.
+  Version 2 (Engine 0.15) writes campaigns and missions by a stable id code (`saveCodeId`), so a
+  mission file added later moves no code; version 1 codes are still read. Refusals change nothing:
+  `code_empty`, `code_typo` (a bad character or the CRC-16), `code_newer`, `code_layout`,
+  `code_campaign`, `code_position`, `code_record`; `code_collision` (two ids sharing a code, also
+  from `validate`). In run files: `from: { run }` or
   `from: { code }` (start at the campaign's next entry, from tick 0) and `codes: [{ tick, code }]`;
   `pnpm -s cli code <run file>` prints a run's code.
 - **Start levels and entries** (Engine 0.14, gap G9): a game run file's `start: { "stage": n }`

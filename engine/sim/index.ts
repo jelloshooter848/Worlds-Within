@@ -256,7 +256,7 @@ export {
   settleMissions,
 } from './mission';
 export { missionPort, roundSeed } from './mission-port';
-export { worldKeys } from './keys';
+export { keyAlive, worldKeys } from './keys';
 export { rtsWorldPort, type RtsPort } from './rts-port';
 export type {
   CommitResult,

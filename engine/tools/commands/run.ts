@@ -189,7 +189,9 @@ export const runCommand = defineCommand({
         `  missions: ${String(result.missionsPlayed)} of ${missions} steps played, ${refusedMissions.length} refused`,
       );
     for (const r of refusedMissions)
-      lines.push(`  tick ${r.tick}: refused: ${r.action} "${r.mission}": ${r.code}: ${r.error}`);
+      lines.push(
+        `  tick ${r.tick}: refused${r.late ? ' late' : ''}: ${r.action} "${r.mission}": ${r.code}: ${r.error}`,
+      );
     for (const e of result.experience as { mission: string; ticks: number }[])
       lines.push(`  experience: "${e.mission}" ${e.ticks} tick(s) inside, the world did not move`);
     if (

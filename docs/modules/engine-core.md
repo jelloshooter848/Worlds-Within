@@ -197,6 +197,15 @@ keys?)` and `playMissionRound`'s `keys`, a mission file's optional `marker` (a s
   `MiniGameUseCheck.scenarios` / `miniGameParamErrors(..., scenarios)` (`GameWorldScenario`: each
   world scenario's tick-0 snapshot, keys and the missions it offers) so `checkUse` checks
   selectors against the worlds a mission opens on.
+- Commit and campaign rules (Engine 0.15 T8, lessons D3, D4, gaps M4, M5, M31, M35, M38;
+  decision 9): the effect schemas' report-driven fields (`inventory`'s `fromReport`, `negate`,
+  `max`; `damage`'s `max`; `damage` and `destroy`'s `each`, `entities`, `owner`, `max`);
+  `HeadlessGame.lateRefusals?(sinceTick)` and `MissionHost.lateRefusals()` (`LateMissionRefusal`:
+  a round's end the world refused, after its step); a campaign entry's `endIf: { gone: key }`, the
+  save's `ended`, `advanceCampaign`'s `gone`, `campaignRun`'s `ended`; `entryOver(entry, {
+worldTick, missionsOpen })`, the one entry-end rule; save code v2 (`SAVE_CODE_VERSION` 2,
+  `saveCodeId(id)`: campaigns and missions by stable 12-bit id code; v1 codes still read;
+  `code_collision` from `validate` and on encoding).
 
 ## Imports allowed
 

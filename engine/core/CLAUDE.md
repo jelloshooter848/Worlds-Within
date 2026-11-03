@@ -80,6 +80,31 @@ opportunities name) and hands each mission's use the ones that offer it. Tested 
 `mission-host.test.ts`, `kits/topdown/mission-room.test.ts`, `kits/towerdefense/mission-defence.test.ts`
 and `engine/tools/mini-game-check.test.ts`.
 
+**Commit and campaign rules** (Engine 0.15 T8, lessons D3, D4, gaps M4, M5, M31, M35, M38;
+docs/BUILD-LOG.md, Engine 0.15, decision 9, item 286). Mission effects may read the played round's
+report within declared limits: `inventory` takes `fromReport` (with `negate`, and `max`, the
+limit on the stat), `damage`'s `fromReport` takes a `max`, and `damage` and `destroy` have a
+per-entity form, `each` (a report stat listing entity names, with `entities` for a mission that was
+not played and the limits `owner` and `max`; exactly one of `entity` and `each`). The sim checks the
+limits when a played result resolves and refuses one over them (`report_over_limit`); a hosted
+round so refused is a **late refusal**: `MissionHost.lateRefusals(sinceTick)` and the optional
+`HeadlessGame.lateRefusals?(sinceTick)` (`LateMissionRefusal { tick, mission, action, code, error
+}`), which the tools add to a run's `refusedMissions` with `late: true` (gap M5). A played round's
+experience ticks stay out of the world (gap M4: `missionExperience()` only). In `campaign.ts`: a
+scenario entry's optional **`endIf: { gone: key }`** (`campaignEndIfSchema`; `unknown_key` when
+the scenario has no such key) ends the campaign at that entry's end when the game's
+`advanceCampaign(..., { gone })` says the key's entity is gone (the save's optional `ended: { entry,
+reason }`, `campaignRun`'s `ended` and `done`; gap M31), and **`entryOver(entry, { worldTick,
+missionsOpen })`** is the one rule for when a scenario entry is over (its `ticks` reached with no
+mission open), read by a game's page and its `campaignSave()` (gap M35). **Save code v2** (gap
+M38; `campaign-code.ts`, `SAVE_CODE_VERSION` 2): the campaign and each mission are written as
+`saveCodeId(id)` (12 bits of a CRC-16 of the id) instead of a sorted index, so a mission file added
+later moves no code, plus one bit for `ended`; version 1 codes are still read
+(`encodeSaveCode(save, ctx, { version: 1 })` still writes one), and two ids of one kind sharing a
+code are `code_collision` (`checkMissionCodes` as the mission kind's `checkAll`, `checkCampaigns`,
+and on encoding). Tested in `campaign.test.ts`, `campaign-code.test.ts`, `mission-host.test.ts`
+and `engine/sim/mission-report.test.ts`.
+
 `state-hash.ts` (Engine 0.14 T8, gap G31) is the state hash, `stateHash(snapshot)`: the first 16
 hex digits of the SHA-256 (`sha256Hex`, written out, synchronous) of `canonicalJson(snapshot)`.
 The tools re-export it (`engine/tools/headless-run.ts`) and the browser shell's step hook

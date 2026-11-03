@@ -90,7 +90,8 @@ function sorted<T>(entries: readonly (readonly [string, T])[]): Record<string, T
  * The carried record of `world` (the first scenario's end world) for a second scenario's `from`,
  * with `keys` the first scenario's entity keys (`scenarioKeys(first)`). Reads only. Throws a
  * `ScenarioError` naming the field when `from` is malformed, a carried key is not a key of the
- * first scenario or not a living named person there, or a carried faction has no stockpile.
+ * first scenario or not a living named person there. A carried faction whose stockpile is gone
+ * (or was never there) carries zeros of every item named (Engine 0.15 T8, gap M31).
  */
 export function carriedRecord(
   world: World,
@@ -128,18 +129,13 @@ export function carriedRecord(
     ];
   });
 
-  const stockpiles = spec.carry.stockpiles.flatMap((s, i): [string, Record<string, number>][] => {
+  const stockpiles = spec.carry.stockpiles.map((s): [string, Record<string, number>] => {
+    // A stockpile that is gone (its hall destroyed) carries as zeros of every item the spec names
+    // (Engine 0.15 T8, gap M31): an empty stockpile is the ordinary reading, not an error.
     const holder = world.registered(Stockpile) ? stockpileOf(world, s.faction) : null;
-    if (holder === null) {
-      at(
-        ['from', 'carry', 'stockpiles', i, 'faction'],
-        `faction "${s.faction}" has no stockpile in the first world`,
-      );
-      return [];
-    }
     const inventory: InventoryData =
-      (world.registered(Inventory) ? world.get(holder, Inventory) : undefined) ?? {};
-    return [[s.faction, sorted(s.items.map((item) => [item, inventory[item] ?? 0] as const))]];
+      (holder !== null && world.registered(Inventory) ? world.get(holder, Inventory) : undefined) ?? {};
+    return [s.faction, sorted(s.items.map((item) => [item, inventory[item] ?? 0] as const))];
   });
 
   if (issues.length > 0) throw new ScenarioError(issues);

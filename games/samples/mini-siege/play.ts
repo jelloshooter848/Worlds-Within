@@ -53,12 +53,13 @@ import type { InterfaceOptions } from './picture';
  * - **The campaign** (Engine 0.13 T8): the game is one entry of the campaign file
  *   (`content/campaigns/siege.campaign.json`: the siege, then the dawn assault). An entry ends at
  *   its `ticks` (260 world ticks for the siege, 200 for the dawn), or the first world tick after
- *   once no mission is open, waiting or being played; then nothing steps and `ended()` is its
+ *   once no mission is open, waiting or being played (the engine's `entryOver`, through
+ *   `MiniSiegeGame.entryOver()`, Engine 0.15 T8, gap M35); then nothing steps and `ended()` is its
  *   result: the outcomes, the village's named people and their fates, the battle's end, and the
  *   engine's `CampaignSession` keeping the campaign save in browser storage and packing its save
  *   code. `press({ kind: 'continue' })` builds the next entry from that save (the dawn from what
- *   the siege carried), or the siege again once the campaign is over or there is no save (the
- *   hall fell, gap M31). `press({ kind: 'code', text })` resumes from a typed save code (a refused
+ *   the siege carried), or the siege again once the campaign is over (the last entry played, or
+ *   the hall fell: the campaign file's `endIf`, gap M31). `press({ kind: 'code', text })` resumes from a typed save code (a refused
  *   code keeps its reason in `message`, nothing changes) and `press({ kind: 'stored' })` from the
  *   save an earlier visit stored. A mission without a round (the dawn's exchange and leave)
  *   is only delegated: `canPlay(mission)` is false and the page offers "Decide".
@@ -251,7 +252,7 @@ export class SiegePlay {
     }
     if (++this.steps % this.stepsPerTick !== 0) return;
     this.step(input);
-    if (this.tick >= this.entryTicks && this.view().missions.open.length === 0) this.endEntry();
+    if (this.game.entryOver()) this.endEntry();
   }
 
   /** One game step, keeping its events (the host's mission events, gap M21) for the frame. */

@@ -462,4 +462,43 @@ describe('MissionHost', () => {
     expect(fake.log.at(-1)).toBe('commit raid@5');
     expect(changes).toBe(4);
   });
+
+  it('keeps a round end the world refuses as a late refusal, at the tick it came (gap M5)', () => {
+    const fake = fakePort();
+    const port: MissionWorldPort = {
+      ...fake.port,
+      play: () => ({ ok: false, code: 'report_over_limit', error: 'the report is over a limit' }),
+    };
+    const h = new MissionHost({ port, missions: [RAID], miniGames: [COUNT], adapters: { count: ADAPTER } });
+    expect(h.lateRefusals()).toEqual([]);
+    h.mission({ mission: 'raid', action: 'open' });
+    const script = { steps: [{ frame: 0, hold: ['attack'] }] };
+    h.mission({ mission: 'raid', action: 'play', input: script as unknown as JsonObject });
+    for (let i = 0; i < 3; i++) h.step(idle);
+    const late = {
+      tick: 3,
+      mission: 'raid',
+      action: 'play',
+      code: 'report_over_limit',
+      error: 'the report is over a limit',
+    };
+    expect(h.lateRefusals()).toEqual([late]);
+    expect(h.lateRefusals(3)).toEqual([late]);
+    expect(h.lateRefusals(4)).toEqual([]);
+    expect(h.snapshot()['missions']).toMatchObject({
+      round: { outcome: null, refused: { code: 'report_over_limit' } },
+    });
+    // Nothing was resolved: the world delegates it at its commit tick.
+    expect(fake.log).toEqual(['open raid@0']);
+  });
+
+  it('keeps experience ticks out of the world: the port is never told them (gap M4)', () => {
+    const { h, log } = host();
+    h.mission({ mission: 'raid', action: 'open' });
+    h.play('raid', { steps: [{ frame: 0, hold: ['attack'] }] } as never);
+    for (let i = 0; i < 3; i++) h.step(idle);
+    expect(h.missionExperience()).toEqual([{ mission: 'raid', ticks: 3 }]);
+    // The port hears only the result, as a world run's play step would give it.
+    expect(log).toEqual(['open raid@0', 'play raid won@0']);
+  });
 });

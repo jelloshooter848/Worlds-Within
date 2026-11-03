@@ -17,6 +17,7 @@ import {
   type HeadlessGame,
   type JsonObject,
   type JsonValue,
+  type LateMissionRefusal,
   type RunStart,
   type WorldEvents,
 } from '@engine/core/headless';
@@ -534,6 +535,7 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     order: (order) => instance.order?.(order) ?? null,
     mission: (step) => instance.mission?.(missionOf(step)) ?? null,
     ...(instance.missionExperience ? { experience: () => [...(instance.missionExperience?.() ?? [])] } : {}),
+    ...(instance.lateRefusals ? { lateRefusals: (since: number) => [...instance.lateRefusals!(since)] } : {}),
     ...(instance.campaignSave ? { campaignSave: () => instance.campaignSave?.() ?? null } : {}),
     ...(instance.worldEvents && instance.timeline
       ? {
@@ -579,6 +581,8 @@ interface Stepper {
    * the result's `experience` instead of the run file's `experienceTicks` (a game run has none).
    */
   experience?(): { mission: string; ticks: number }[];
+  /** Refusals that came after their step, from a game tick on (`HeadlessGame.lateRefusals`). */
+  lateRefusals?(sinceTick: number): LateMissionRefusal[];
   /** The game's campaign save now (`HeadlessGame.campaignSave`). */
   campaignSave?(): CampaignSave | null;
   /** The world's event log from a world tick (`HeadlessGame.worldEvents`, or the world run's). */
@@ -702,6 +706,17 @@ function play(
       }
       stepper.step();
       snapshot = stepper.snapshot();
+      // Refusals that came after their step (gap M5), at the tick they came at.
+      for (const r of stepper.lateRefusals?.(tick) ?? [])
+        if (r.tick === tick)
+          refusedMissions.push({
+            tick,
+            mission: r.mission,
+            action: r.action,
+            code: r.code,
+            error: r.error,
+            late: true,
+          });
     }
     if (sampling) clock.push({ game: tick, world: stepper.worldEvents!(Number.MAX_SAFE_INTEGER).tick });
     opts.onTick?.(tick, snapshot, stepper.keys);

@@ -4,6 +4,8 @@ import {
   CAMPAIGN_SAVE_VERSION,
   campaignOrder,
   campaignSaveSchema,
+  SAVE_CODE_ID_BITS,
+  saveCodeId,
   scenarioFrom,
   SCENARIO_FORMAT,
   type CampaignDef,
@@ -42,6 +44,16 @@ import type { ContentBundle } from './content/bundle';
  * variable-length integer: groups of 4 bits, low group first, each after a "more" bit; a value
  * that may be null is written plus one (0: null).
  *
+ * **Version 2** (Engine 0.15 T8, gap M38; docs/BUILD-LOG.md, Engine 0.15, decision 9), what this
+ * build writes: the campaign and each mission are written as their **stable id code**
+ * (`saveCodeId` in `campaign.ts`: 12 bits of a CRC-16 of the id) instead of their index in a sorted
+ * list, so a mission file added later (whatever its id) moves no code; after the seed one bit says
+ * the campaign `ended` on its entry's `endIf` (gap M31; the reason is read back from the campaign
+ * file). Outcomes stay indexes in the mission file's own order (an outcome appended moves nothing).
+ * Version 1 codes (the layout above) are still read, against the content they were written for;
+ * `encodeSaveCode(save, ctx, { version: 1 })` still writes one (not for a save with `ended`). Two
+ * ids of one kind sharing a code are refused by `validate` (`code_collision`) and by encoding.
+ *
  * Text: Crockford Base32 (`0-9 A-Z` without I, L, O, U), 5 bits a character, in groups of five
  * joined by dashes. Input ignores case, dashes and spaces and reads O as 0 and I and L as 1.
  *
@@ -49,12 +61,20 @@ import type { ContentBundle } from './content/bundle';
  * outside the alphabet or a checksum that does not match: a tampered code is a typo), `code_newer`
  * (a version above this build's), `code_layout` (too short, bits left over, or a field out of
  * range), `code_campaign` (no such campaign in the game), `code_position` (past the campaign's end)
- * and `code_record` (the carried part does not fit the next scenario's carry spec). Integers only,
+ * and `code_record` (the carried part does not fit the next scenario's carry spec), and on encoding
+ * `code_collision` (two ids of one kind share a save code id). Integers only,
  * so a code is the same on every machine. Pure (on `PURE_CORE`).
  */
 
-/** The save code version this build writes and the newest it reads. */
-export const SAVE_CODE_VERSION = 1;
+/**
+ * The save code version this build writes and the newest it reads (Engine 0.15 T8, gap M38: 2,
+ * stable id codes; version 1 codes, campaigns and missions by sorted index, are still read).
+ */
+export const SAVE_CODE_VERSION = 2;
+
+/** The save code versions this build can write (`encodeSaveCode`'s `version`) and read. */
+export const SAVE_CODE_VERSIONS = [1, 2] as const;
+export type SaveCodeVersion = (typeof SAVE_CODE_VERSIONS)[number];
 
 /** Crockford Base32: 32 characters, 5 bits each. */
 export const SAVE_CODE_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
@@ -70,7 +90,8 @@ export type SaveCodeRefusalCode =
   | 'code_layout'
   | 'code_campaign'
   | 'code_position'
-  | 'code_record';
+  | 'code_record'
+  | 'code_collision';
 
 export type SaveCodeRefusal = { ok: false; code: SaveCodeRefusalCode; error: string };
 
@@ -264,7 +285,16 @@ function grouped(chars: string): string {
 
 const refuse = (code: SaveCodeRefusalCode, error: string): SaveCodeRefusal => ({ ok: false, code, error });
 
-/** The game's missions sorted by id (indexes into it are written) and outcomes per mission. */
+/** A refusal when another id of `list` shares `id`'s save code id (`validate` refuses such a game first). */
+function collision(list: readonly { id: string }[], id: string, kind: string): SaveCodeRefusal | null {
+  const code = saveCodeId(id);
+  const other = list.find((x) => x.id !== id && saveCodeId(x.id) === code);
+  return other === undefined
+    ? null
+    : refuse('code_collision', `${kind}s "${id}" and "${other.id}" share the save code id ${code}`);
+}
+
+/** The game's missions sorted by id (version 1 writes indexes into it) and outcomes per mission. */
 function missionTable(ctx: SaveCodeContext) {
   return byId(ctx.missions);
 }
@@ -278,7 +308,9 @@ function missionTable(ctx: SaveCodeContext) {
 export function encodeSaveCode(
   save: CampaignSave,
   ctx: SaveCodeContext,
+  opts: { version?: SaveCodeVersion } = {},
 ): { ok: true; code: string } | SaveCodeRefusal {
+  const version = opts.version ?? SAVE_CODE_VERSION;
   const parsed = campaignSaveSchema.safeParse(save);
   if (!parsed.success)
     return refuse(
@@ -299,9 +331,18 @@ export function encodeSaveCode(
     );
 
   const w = new BitWriter();
-  w.uint(campaignIndex);
+  if (version === 1) {
+    if (save.ended !== undefined)
+      return refuse('code_layout', 'a version 1 code cannot hold a campaign that ended (`ended`)');
+    w.uint(campaignIndex);
+  } else {
+    const clash = collision(ctx.campaigns, campaign.id, 'campaign');
+    if (clash !== null) return clash;
+    w.fixed(saveCodeId(campaign.id), SAVE_CODE_ID_BITS);
+  }
   w.uint(save.position);
   w.int(save.seed);
+  if (version >= 2) w.fixed(save.ended !== undefined ? 1 : 0, 1);
 
   const spec = carrySpecAt(campaign, save.position, ctx);
   if (save.carried === null) w.fixed(0, 1);
@@ -340,7 +381,12 @@ export function encodeSaveCode(
       const outcome = def.outcomes.findIndex((o) => o.id === m.outcome);
       if (outcome === -1)
         return refuse('code_layout', `mission "${m.mission}" has no outcome "${m.outcome}"`);
-      w.uint(index);
+      if (version === 1) w.uint(index);
+      else {
+        const clash = collision(ctx.missions, def.id, 'mission');
+        if (clash !== null) return clash;
+        w.fixed(saveCodeId(def.id), SAVE_CODE_ID_BITS);
+      }
       w.uint(outcome);
       w.fixed(CAMPAIGN_RESOLUTIONS.indexOf(m.resolution), 2);
     }
@@ -349,7 +395,7 @@ export function encodeSaveCode(
   const payload = w.bits;
   while ((4 + 16 + payload.length) % 5 !== 0) payload.push(0);
   const head = new BitWriter();
-  head.fixed(SAVE_CODE_VERSION, 4);
+  head.fixed(version, 4);
   head.fixed(crc16(payload), 16);
   const bits = [...head.bits, ...payload];
   let chars = '';
@@ -394,13 +440,21 @@ export function decodeSaveCode(
   try {
     const r = new BitReader(payload);
     const campaigns = byId(ctx.campaigns);
-    const campaignIndex = r.uint();
-    const campaign = campaigns[campaignIndex];
-    if (campaign === undefined)
-      return refuse(
-        'code_campaign',
-        `campaign ${campaignIndex} is not one of the game's ${campaigns.length}`,
-      );
+    let campaign: CampaignDef | undefined;
+    if (version === 1) {
+      const campaignIndex = r.uint();
+      campaign = campaigns[campaignIndex];
+      if (campaign === undefined)
+        return refuse(
+          'code_campaign',
+          `campaign ${campaignIndex} is not one of the game's ${campaigns.length}`,
+        );
+    } else {
+      const code = r.fixed(SAVE_CODE_ID_BITS);
+      campaign = campaigns.find((c) => saveCodeId(c.id) === code);
+      if (campaign === undefined)
+        return refuse('code_campaign', `no campaign of the game has the save code id ${code}`);
+    }
     const order = campaignOrder(campaign);
     const position = r.uint();
     if (position > order.length)
@@ -409,6 +463,13 @@ export function decodeSaveCode(
         `position ${position} is past the end of campaign "${campaign.id}" (${order.length} entries)`,
       );
     const seed = r.int();
+    let ended: CampaignSave['ended'];
+    if (version >= 2 && r.fixed(1) === 1) {
+      const endIf = order[position - 1]?.endIf;
+      if (endIf === undefined)
+        throw new LayoutError(`the code says the campaign ended, but entry ${position - 1} has no "endIf"`);
+      ended = { entry: position - 1, reason: { ...endIf } };
+    }
 
     let carried: CarriedRecord | null = null;
     if (r.fixed(1) === 1) {
@@ -456,7 +517,12 @@ export function decodeSaveCode(
       if (count > payload.length) throw new LayoutError('too many missions');
       const done: CampaignMissionResult[] = [];
       for (let k = 0; k < count; k++) {
-        const def = missions[r.uint()];
+        let def: (typeof missions)[number] | undefined;
+        if (version === 1) def = missions[r.uint()];
+        else {
+          const code = r.fixed(SAVE_CODE_ID_BITS);
+          def = missions.find((m) => saveCodeId(m.id) === code);
+        }
         if (def === undefined) throw new LayoutError('a mission is out of range');
         const outcome = def.outcomes[r.uint()];
         if (outcome === undefined) throw new LayoutError(`an outcome of "${def.id}" is out of range`);
@@ -478,6 +544,7 @@ export function decodeSaveCode(
       position,
       carried,
       results,
+      ...(ended !== undefined ? { ended } : {}),
     };
     const checked = campaignSaveSchema.safeParse(save);
     if (!checked.success)

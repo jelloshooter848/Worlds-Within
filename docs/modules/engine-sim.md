@@ -234,7 +234,15 @@ n)` and `lossOrder(world, squad)`. Loss order: unnamed first, then regulars, her
   (the save's optional `keys`), never in the snapshot, so no hash moves. `missionPort(world)`
   opens missions with it as `refs` (the open mission's `refs` stay the keys its effects name) and
   hands the whole table to the round (`open`'s `keys`, `keys()`); `missionRecords(world)` is the
-  committed records in commit order.
+  committed records in commit order. `keyAlive(world, key)` (Engine 0.15 T8, gap M31): the key's
+  entity exists and is not dead, for a campaign entry's `endIf`.
+- Commit rules (Engine 0.15 T8, lessons D3, D4, gaps M4, M31; decision 9): `inventory` takes
+  `fromReport` (with `negate`) and `damage` and `destroy` an `each` form (a report stat listing
+  entities, the declared `entities` when not played), each with declared limits (`max`, `owner`)
+  checked when a played result resolves: over one is `report_over_limit`, never clamped, and the
+  mission is delegated at its commit. A played round's experience ticks stay out of the hashed
+  record (`experienceTicks` 0 through `missionPort`). A carried stockpile that is gone carries as
+  zeros. Tests: `mission-report.test.ts`, `carry.test.ts`.
 
 ## Imports allowed
 

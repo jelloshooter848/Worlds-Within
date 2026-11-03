@@ -104,7 +104,10 @@ describe('a run file that starts at a campaign entry', () => {
     const { code, result } = await cli(['run', DAWN_FRESH]);
     expect(code).toBe(EXIT.ok);
     expect(result).toMatchObject({ passed: true, start: { entry: 'dawn' }, from: null, codesChecked: 1 });
-    const saved = await cli(['code', DAWN_FRESH, '--tick', '0']);
+    // The save is there once the entry is over (Engine 0.15 T8, gap M35: its ticks, no mission open).
+    const early = await cli(['code', DAWN_FRESH, '--tick', '0']);
+    expect(early.code).toBe(EXIT.invalidContent);
+    const saved = await cli(['code', DAWN_FRESH]);
     expect(saved.result).toMatchObject({
       start: { entry: 'dawn' },
       save: {

@@ -36,3 +36,17 @@ export function keepKeys(world: World, keys: Readonly<Record<string, Entity>>): 
   }
   tables.set(world, Object.freeze(table));
 }
+
+/**
+ * Whether the entity scenario key `key` names is alive in `world` (Engine 0.15 T8, gap M31): it is
+ * in the key table, the entity exists, and its `Fate` (when it has one) is not `dead`. A campaign
+ * entry's `endIf: { gone: key }` holds when this is false at the entry's end; a game hands it to
+ * `advanceCampaign` as `gone: (key) => !keyAlive(world, key)`. Reads only.
+ */
+export function keyAlive(world: World, key: string): boolean {
+  const id = worldKeys(world)[key];
+  if (id === undefined || !world.alive(id)) return false;
+  if (!world.registered('Fate')) return true;
+  const fate = world.get(id, 'Fate') as { state?: unknown } | undefined;
+  return fate?.state !== 'dead';
+}
