@@ -225,6 +225,14 @@ describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.
     for (const item of skin.hud ?? []) expect(Object.keys(status)).toContain(item.status);
   });
 
+  it("draws the kit's `triforce` item as the sample's own relic frame, not a borrowed symbol", () => {
+    expect(skin.kinds['pickup:triforce']?.frames).toEqual({ idle: 'relic' });
+    expect(skin.kinds['held']?.frames?.triforce).toBe('relic');
+    const sheet = FILES['content/sprites/dungeon.txt']!;
+    expect(sheet).toMatch(/^frame relic$/m);
+    expect(sheet).not.toMatch(/^frame triforce$/m);
+  });
+
   it("plays the skin's sound for an event in the walk-east run (the room change)", () => {
     const world = createWorld(content);
     const input = new ScriptedInput({ steps: [{ frame: 0, hold: ['right'] }] });

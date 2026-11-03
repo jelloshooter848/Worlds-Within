@@ -25,7 +25,7 @@ glue.
    two cold torches, and a cracked east wall (`C` on the border: a doorway that starts shut).
 4. **bat-hall**: reached by bombing the cracked wall (a blast opens both sides); three bats, a
    statue block in the middle, a key (`k`) and a locked east door (`L`).
-5. **crypt**: the goal room (`goal: true`), its chest holding the relic (`triforce`, kept in the
+5. **crypt**: the goal room (`goal: true`), its chest holding the relic (kit item `triforce`, drawn as the original chalice frame `relic`; kept in the
    world's `found`), and two exit tiles (`E`) on its north border: stepping on one sets the world's
    `exited`, the run's win.
 
