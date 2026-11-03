@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 220.** (Last used: 219.)
+**Next unused number: 229.** (Last used: 228.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -839,3 +839,53 @@ mission API`. OK?
 - **219.** The mini siege's bar now shows one launch button per offered mission
   (`#launch-<mission>`) instead of a single `#launch`, since both missions are offered from world
   tick 20 to 30. OK?
+
+**Engine 0.13, decisions before code** (details in `docs/BUILD-LOG.md`, Engine 0.13, Decisions)
+
+- **220.** Fates live in a new `omitWhenEmpty` `Fate` component on `Member` entities only (`state`
+  injured, captured, freed or dead; `by`, `at`, `held`, an append-only `history`), no component
+  meaning active; states only move forward and dead is final. A captured person leaves the map
+  (drops `Position`, `Unit`, the task components and `EventMember`, leaves the squad) and keeps
+  `Member` and `Health`; `deathSystem` keeps a named person killed in battle as a dead record
+  instead of destroying them. Golden hashes moved by this are re-recorded once in their own commit
+  with every run-file assertion unchanged. OK?
+- **221.** One data-only `fate` effect (`injured`, `captured`, `freed` with a cell, `dead`) in the
+  mission contract; a capture opens follow-ups with the existing `opportunity` effects in one
+  exclusive group (rescue, exchange, leave); `play` becomes optional, a mission without it is
+  delegate-only (`not_playable`); a failed rescue may open a different opportunity or none, never
+  itself again (`reopens_self`). OK?
+- **222.** Every mode honours fates through its selectors: the `mission-room` foe and hero
+  selectors and the `td-defence` wall and wave selectors skip `captured` and `dead` by the
+  snapshot's `Fate`, injured people come in at their reduced hp, and the RTS kit's view already
+  shows only units with `Unit` and `Position` (a test proves it). A pure `fateState` helper in
+  `engine/core` is shared by the kits. OK?
+- **223.** M13: `hero: { select, hpPer }` in a `mission-room` mission's params gives the round's
+  hero `ceil(hp / hpPer)` (at least 1) from exactly one selected, living world unit; the report's
+  `heroHpLost` (`heroLost * hpPer`, never more than hp - 1) comes back through a `damage` effect
+  with `fromReport: "heroHpLost"`, and a delegated, quit or timed-out mission uses the declared
+  `amount`. The mini siege's `sabotage` takes the captain as its hero with `hpPer` 20. OK?
+- **224.** A second scenario names the first with an optional `from: { scenario, carry: { people,
+stockpiles }, when }`; `carriedRecord` (in `engine/sim/carry.ts`) builds a plain JSON carried
+  record from the first world's end, and `worldFromScenario(json, { carried })` applies it at tick
+  0 under the cause `carry` (Health, Fate, stockpile items, and opportunities opened by a fate).
+  The scenario format stays at version 1. OK?
+- **225.** The `campaign` kind gains `{ scenario, ticks }` entries; `campaignRun` in
+  `engine/core/campaign.ts` plays entries in order, a mission entry after a scenario opening on
+  its end world; a campaign save (plain JSON: game, campaign, seed, position, carried record,
+  committed results) is kept in browser storage under `ww:<game>:campaign:<id>`. OK?
+- **226.** Save codes after SMBC: version, CRC-16/CCITT, campaign, position, seed, the carried
+  record in carry-spec order and the committed outcomes, in Crockford Base32 groups of five, at
+  most 40 characters for the mini siege; refusals `code_empty`, `code_typo`, `code_newer`,
+  `code_layout`, `code_campaign`, `code_position`, `code_record`. "Restores the same world" means
+  the follow-up's tick-0 world from the code hashes the same as the one from the carried record;
+  a code does not replay the first scenario. OK?
+- **227.** The mini siege follow-up "The dawn assault" (`dawn`): a smaller second assault the next
+  morning, with the sergeant Mara Venn; `sabotage`'s `driven-off` also captures the captain (so
+  only `quit` among the existing runs changes, after its commit); captured, he opens rescue
+  (`ridge-camp` room, Mara as hero; a failure opens a dearer `ransom-window`), exchange (80 gold)
+  and leave; active, he leads the defence at his carried hp. Run files `dawn-held` (from `played`)
+  and `dawn-captured` (from `quit`) differ only in the source run, and their carried records only
+  in the captain. OK to keep this content?
+- **228.** Game run files gain `from: { run }` or `from: { code }` (one level deep, `from_chain`)
+  and `codes: [{ tick, code }]`; `pnpm cli code <run file>` prints a run's save code; a test checks
+  `from: { run }` and `from: { code }` give the same tick-0 hash. OK?

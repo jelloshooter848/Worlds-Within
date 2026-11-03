@@ -7,6 +7,338 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.13
+
+Heroes and consequences in the simulation. Built on branch `engine/build-0.15`; not tagged (no
+tags during the build, owner answer 24). As in 0.9 to 0.12, the open questions were settled in
+writing before any code (T1); the later tasks build against them. The release's goal is the
+roadmap's: **losses that carry forward, supported by the engine so any game can use them**, proved
+on the mini siege by a short second scenario that starts from the first one's results. The base
+commit for the golden-hash and `engine/sim` checks is `6cf2eea265a46c76ede7144c4e7f0c9f9760d912`,
+the head when T1 started: every hash that moves and every `engine/sim` change is measured against
+it (decisions 1 and 2, and "Changes to `engine/sim`" below).
+
+**Gaps assigned to 0.13 from earlier reports:** M13 (a mission round's hero taken from a world
+unit, [docs/reports/mini-siege.md](reports/mini-siege.md), decision 4) and the 0.10 leftover
+**campaign missions are checked, not played in order until 0.13** (Engine 0.10, Outstanding
+issues, and the doc comment of `engine/core/campaign.ts`; decision 6). `grep -n "0\.13"` over
+[docs/reports/stacking-test.md](reports/stacking-test.md) and
+[docs/reports/tower-defense.md](reports/tower-defense.md) finds nothing else for 0.13: the
+stacking test's only hit is G2's note that campaign missions are "checked only until 0.13" (the
+same leftover), and the tower-defense report's hits are its summary line saying no gap moved to
+0.12 and its format's list of releases a status may name. New mini siege gaps found during 0.13
+continue the report's ids at M29 (M29 and M30 were found in T1).
+
+### What was built
+
+- **Decisions before code** (T1, this commit): fates, fate effects and follow-ups, fates in every
+  mode, M13, carry-over, campaigns, save codes, the mini siege follow-up and run-file support,
+  settled in writing (items 220-228, below); M29 and M30 added to the mini siege's gap report. No
+  code changed.
+
+### Decisions
+
+The roadmap's scope for 0.13 leaves open where a named person's fate lives in the world and what
+it does to them, how a mission sets a fate and what a capture opens, how the kits read fates, how
+a round's hero comes from a world unit (M13), how one scenario starts from another's results, how
+a campaign is played and saved, what a save code holds, what the mini siege's follow-up is, and how
+run files and the CLI start from another run. Each is a feedback item (220-228) the owner can
+overrule by number. The 0.10 to 0.12 mission rules (a fixed world-time cost, append-only records,
+fair delegation and no do-overs; items 150-151 and 154) hold unchanged and are the base the fate
+rules build on. Exact file, field and function names are the later tasks', kept to these meanings.
+
+**1. Fates of named individuals in `engine/sim` (item 220).** A new standard component, **`Fate`**,
+`omitWhenEmpty`, held only by entities with `Member` (a named person; the unnamed rank and file of
+a squad has no fate, it is the squad's `strength`). No `Fate` means **active**, so every world
+that never sets one snapshots, saves and hashes exactly as before. Its data, all integers and ids:
+
+```text
+Fate { state: "injured" | "captured" | "freed" | "dead",
+       by: <faction id> | null,    // who captured or killed them (null when not known)
+       at: <world tick>,           // when the state was reached
+       held: { Unit, Owner } | null,   // a captured person's map data, kept to free them
+       history: [{ state, by, at, cause }] }   // every state reached, oldest first
+```
+
+- **States only move forward**: active or freed -> injured; active, freed or injured -> captured;
+  captured -> freed; any living state -> dead; dead is final. Every other write (anything from
+  dead, captured -> injured, injured -> active, a state to itself) is refused (`fate_final`) and
+  changes nothing; from a mission's effect it is skipped and listed in `skipped`, never an error.
+  `history` is append-only, so a fate once reached is never rewritten (a freed person captured
+  again is a second capture in the history, not the first one undone).
+- **Injured** is a label set by data (decision 2), never inferred from hit points: the hp is
+  `Health`, which already carries. Battle damage alone does not injure anyone in 0.13.
+- **Captured**: the person leaves the map. `Position`, `Unit`, `Task`, `Target`, `Cooldown`,
+  `Facing8`, `Worker`, `Gatherer` and `EventMember` are removed; they leave their squad by the
+  existing rule (strength - 1, off `members`, `captain` null when it was them; `Member.squad`
+  null); `Member` and `Health` stay, and `held` keeps their `Unit` and `Owner` data so a later
+  `freed` can put them back on a cell (`Owner` itself stays too, so the view never counts them
+  for either side: everything that counts units needs `Unit` and `Position`).
+- **Killed in battle**: `deathSystem` changes for `Member` entities only. A named person at 0 hp
+  is no longer destroyed: they leave the squad as now, lose the same map components as a capture
+  and get `Fate { state: "dead", by: null, at: tick }` (the attack system does not record who
+  struck, and adding that is not needed for 0.13), under the cause `death`. Units and buildings
+  without `Member` are destroyed exactly as before. A frozen person still does not die until the
+  event unfreezes.
+- Helpers in a new `engine/sim/fate.ts`: `fateOf(world, id)` (`active` when there is no
+  component), `setFate(world, id, state, { by?, at?, cause })` returning `{ ok }` or a refusal
+  (`fate_final`, `not_named`, `bad_id`), `freePerson(world, id, cell, cause)`, and
+  `namedPeople(world)` (every `Member` with its fate, for carry and the glue's `named`).
+- **Golden hashes.** `Fate` is `omitWhenEmpty` and is only written by a death of a named person
+  or a fate effect, so a run moves only from the tick a named person dies. Of the base commit's
+  golden files: the sim fixtures (`village`, `battle`, `siege` and their run files) have no named
+  person who dies (the village squad has no `Unit` and the death system does not run there), so
+  they must not move; the RTS skirmish's `battle` and `hold` runs and the mini siege's runs move
+  only if their hero, the raiders' named guards (Grell, Vosk) or the captain reach 0 hp. **Any
+  moved golden hashes are re-recorded once, in their own commit**, naming each file and the first
+  tick it moved, with **every run-file assertion unchanged**. To keep `named.<key>.alive` true to
+  its meaning, the mini siege glue's `named` reads `alive` as "exists and not dead" and gains
+  `fate` (a captured person is alive with `x` and `y` null); a unit test that expects a dead
+  named unit to be gone (`rts.test.ts`, "heroes leaving their squad on death") is changed to
+  expect the dead record, and that change is listed in T2's commit.
+
+_Why:_ the state of a named person is world data like everything else, so it is saved, hashed and
+carried with no extra machinery; `omitWhenEmpty` keeps every earlier world's hash; dropping the map
+components rather than adding a "hidden" flag means no system, kit or view has to learn to skip
+anyone (they already only see units with `Unit` and `Position`); and keeping the dead as records is
+what lets a later scenario, a save code and the page say who fell.
+
+**2. Fate effects and capture follow-ups (item 221).** One new data-only effect in
+`engine/core/missions.ts`, beside the five there are:
+
+```text
+{ "type": "fate", "entity": <key | id>, "fate": "injured" | "captured" | "freed" | "dead",
+  "by"?: <faction id>, "at"?: { "x": int, "y": int } }   // `at` only (and required) for "freed"
+```
+
+It is applied at the commit under `mission:<id>` like the others, in the outcome's order (so
+`damage` then `fate` hurts and then captures). An entity that is gone, not a `Member`, or whose
+fate cannot move to the one named (decision 1) is skipped and listed in the record's `skipped`.
+`freed` needs a free cell (`at`, enterable) and gives back the held `Unit` there; the person joins
+no squad (a game that wants them back in one says so with a later effect, not in 0.13).
+
+- **Capture opens follow-ups** with the existing `opportunity` effects, nothing new: an outcome that
+  captures someone also opens dormant `relative` opportunities in one `exclusive` group, for
+  example `rescue-window`, `exchange-window` and `leave-window`; taking one closes the others by
+  the 0.10 rule. A rescue's outcome `freed` holds `fate: freed`; an exchange's single outcome holds
+  an `inventory` payment and `fate: freed`; leaving them behind holds no fate effect at all (the
+  capture stands for good, and the choice is in the committed records).
+- **Missions with no round.** An exchange and a leave are choices, not games: `play` becomes
+  optional in the mission schema, and a mission without it is **delegate-only** (`playMission`
+  refuses `not_playable`; the page offers only "Decide", which delegates; its one outcome is
+  certain). This is the only mission-lifecycle change of the release beside decision 4's.
+- **No do-overs**, written into the mission and fate docs: a committed fate never changes back (the
+  forward-only rule above and the append-only `history`); a failed rescue is an ordinary outcome
+  whose effects may open a **different** opportunity (a `ransom-window` with a higher price) or
+  none, never the same rescue again (an `opportunity` effect on one already taken is skipped, as in
+  0.10, and `validate` refuses an outcome that opens its own mission's opportunity,
+  `reopens_self`).
+
+_Why:_ one `fate` effect with a state is smaller than four effect kinds and keeps the forward-only
+rule in one place; follow-ups are already what opportunities are for (0.10 built the failure that
+opens a rescue), so a capture needs no new mechanism; and making `play` optional is the smallest way
+to let a choice be a mission with a record, a fixed world-time cost and a place in a save code.
+
+**3. Every mode honours fates (item 222).** The kits keep reading only the plain snapshot (they
+never import `engine/sim`); the snapshot now carries `Fate`. Rules, checked by each kit's tests over
+a hand-written snapshot and by a fixture world:
+
+- **`kits/topdown` (`mission-room`)**: foe and hero selectors skip any entity whose `Fate.state` is
+  `captured` or `dead` (by the data, not only because those entities lack `EventMember`, so a
+  selector without an event cannot pick them either); an `injured` or `freed` person is selected as
+  normal at their current `Health.hp`, so `hpPer` gives them fewer round hit points.
+- **`kits/towerdefense` (`td-defence`)**: the wall and wave selectors skip `captured` and `dead`
+  the same way; an injured raider joins the wave at its reduced hp.
+- **`kits/rts`**: the snapshot reading already counts and draws only entities with `Unit` (or
+  `Building`) and `Position`, so the captured and the dead vanish from the view and from `sides`;
+  T4 adds a test proving it and lists named people with their fate for the HUD (no drawing rule
+  changes).
+- A small pure helper for the shared test (`fateState(entity)` over a snapshot entity, `active`
+  when there is no `Fate`) goes in `engine/core` (on `PURE_CORE`), so the three kits read it the same
+  way without importing the sim.
+
+_Why:_ "carried into every mode that loads them" means a mode can never bring back someone the world
+has lost; doing it in the selectors (the one place each adapter turns world entities into round
+pieces) is one rule per kit, tested once.
+
+**4. M13: a round's hero taken from a world unit (item 223).** A `mission-room` mission's params gain
+an optional **`hero: { select, hpPer }`**, with `select` the same selector schema the foes use:
+
+- **In**: at the round's start the adapter finds exactly one entity the selector picks (none, two
+  or more, or one `captured` or `dead`: the round does not start and the open is refused, with
+  `checkUse` catching what it can at `validate`); the room's hero gets
+  `max(1, ceil(Health.hp / hpPer))` hit points, replacing the `hp` param (still the default when
+  there is no `hero`). An injured captain at 90 hp with `hpPer` 20 starts on 5.
+- **Back**: the report gains `heroHpLost`, the world hp the round cost: `min(heroLost * hpPer,
+Health.hp - 1)`. The round never kills the world person: death and capture are declared
+  outcomes, never an accident of arithmetic. An outcome's `damage` effect may say where its amount
+  comes from: `{ "type": "damage", "entity": "captain", "amount": 30, "fromReport": "heroHpLost" }`
+  takes the record's report stat when the mission was played (0 skips the effect) and the declared
+  `amount` otherwise.
+- **Delegated** (and quit, and timeout): there is no report, so the commit uses the declared
+  `amount`; delegation still draws only a declared outcome by its weight (item 154), and that
+  outcome's effects are all declared numbers.
+- The mini siege's `sabotage` gets `hero: { select: { faction: "village", member: "captain" },
+hpPer: 20 }`, which gives the captain's 120 hp the round's present 6, so the recorded played round
+  plays the same; each outcome gains a `fromReport` damage to the captain. If the recorded round's
+  hero lost hit points, the `played` run's captain-hp assertions after the commit change: that is
+  a content change made in its own commit with the old and new values, not a hash re-record.
+
+_Why:_ of the three ways to bring the hp back (an amount from the report, an effect the adapter adds,
+or a fixed effect plus stats), only the first keeps every effect declared in the mission file
+(the adapter adding effects would put world rules in the kit) while still sending back what the
+round really cost. It is the first, narrow piece of lesson D3 (effect amounts from a round's
+report, moved to 0.15); 0.15's API review takes it as the model or replaces it.
+
+**5. A scenario that starts from another's results (item 224).** A second scenario file names the
+first with an optional **`from`** (an optional field, so the scenario format stays at version 1,
+as `systems` did in 0.9):
+
+```text
+"from": { "scenario": "village",                     // the first scenario's content id
+          "carry": { "people": ["captain"],         // keys whose Health and Fate carry
+                     "stockpiles": [{ "faction": "village", "items": ["gold"] }] },
+          "when": [{ "key": "captain", "fate": "captured",
+                     "open": ["rescue-window", "exchange-window", "leave-window"] }] }
+```
+
+- **The carried record** is plain JSON built from the first world's end state by
+  `carriedRecord(world, from)` in a new `engine/sim/carry.ts`:
+  `{ format: "worlds-within/carried", version: 1, from, tick, people: { <key>: { fate, by, at,
+hp, max } }, stockpiles: { <faction>: { <item>: n } } }`, every key sorted, integers only.
+  A key the first world does not have, or a person who is not a `Member`, is an error naming the
+  key; a key in `people` must also be a key of the second scenario.
+- **Applying it**: `worldFromScenario(json, { carried })` builds the second world as now, then,
+  under the cause `carry` at tick 0, sets each carried person's `Health` (capped at the second
+  scenario's `max`) and `Fate` (a captured person leaves the map and a dead one is a record, by
+  decision 1's rules; `freed` and `injured` stay on the map), replaces each carried stockpile
+  item, and opens the `when` rules' dormant opportunities whose fate matches. Without `carried`
+  the second scenario starts as written (its own default fates), so it is also playable alone.
+- Only what the spec names carries: buildings, positions, the first world's raiders and its RNG
+  do not. The seed of the second world is its own scenario's (or the run's).
+- It lives in `engine/sim` (a scenario is the sim's format, and building a record reads world
+  components); `engine/core` only carries the record as data.
+
+_Why:_ a carry spec in data, in the file that reads it, says exactly what a sequel depends on, so
+two first-scenario endings that differ only in the captain give records that differ only in the
+captain, which is what the done-when needs; a plain JSON record is small enough to put in a save
+code and to diff in a test.
+
+**6. Campaigns played in order, and campaign saves (item 225).** The `campaign` content kind gains a
+third entry kind, **`{ "scenario": id, "ticks": n }`** (a world scenario by content id and how many
+world ticks it is played; a game may end it sooner by its own win or loss), beside `level` and
+`mission`. Every scenario entry after the first whose scenario has `from` must name, in `from`, the
+scenario entry just before it (`validate`: `bad_from`).
+
+- **Play in order**: a pure `campaignRun(campaign, save?)` in `engine/core/campaign.ts` tracks the
+  position and hands the game glue the next entry; a scenario entry ends at its `ticks`, giving the
+  carried record for the next one. A mission entry right after a scenario entry is opened on that
+  scenario's end world (played or delegated) and its record joins the results before the next
+  scenario is built. A mission entry with no scenario before it keeps its 0.10 meaning (checked by
+  `validate`, played by the kit that plays it), so the platformer campaigns are untouched.
+- **A campaign save** is plain JSON: `{ format: "worlds-within/campaign-save", version: 1, game,
+campaign, seed, position, carried (or null), results: [{ entry, missions: [{ mission, outcome,
+resolution }] }] }`. It is written at each entry's end and kept in browser storage through
+  `engine/core/save/storage.ts` under `ww:<game>:campaign:<id>` (wrapped so a blocked or private
+  storage leaves the game playable without it). Its schema goes in `docs/reference/schemas.md`.
+
+_Why:_ the campaign file already holds the play order as data (0.10, G2), so scenarios join it as a
+third entry kind rather than a second order file; ending a scenario by ticks is the one rule that
+needs no game code; and a save that holds only the carried record and the committed results, never
+a whole world, is what makes a short save code possible.
+
+**7. Save codes (item 226).** SMBC's lesson (`docs/SAVE_CODES.md` in the SMBC REMIX source): **the
+code is the save**, no server and no account. A save code is the campaign save of decision 6,
+packed:
+
+- **Holds**, in order: the code version (4 bits), a CRC-16/CCITT (polynomial 0x1021, start 0xFFFF)
+  over every other bit, the campaign (its index in the game's campaigns sorted by id), the position,
+  the seed (a variable-length integer), the carried record in its carry spec's order (each person's
+  state in 3 bits, `by` as an index into the scenario's factions, `at`, `hp` and each stockpile
+  item as variable-length integers; key names are never written, the spec gives them), and the
+  committed results (per committed mission, in commit order, the outcome's index in the mission
+  file and the resolution in 2 bits), then zero padding to a whole character.
+- **Alphabet**: Crockford Base32 (`0-9 A-Z` without I, L, O, U), groups of five joined by dashes;
+  input ignores case, dashes and spaces, and reads O as 0 and I and L as 1.
+- **Length budget**: at most 40 characters without dashes for the mini siege campaign at any
+  position (about 130 bits at the end of the first scenario: 26 characters), asserted by a test.
+- **Refusals** (`{ ok: false, code, error }`, nothing changed): `code_empty`, `code_typo` (a
+  character outside the alphabet or a CRC mismatch: a tampered code is a typo), `code_newer` (a
+  version above this build's), `code_layout` (bits left over that are not zero, or a field out of
+  range), `code_campaign` (no such campaign in the game), `code_position` (past the campaign's
+  end), `code_record` (the carried part does not fit the next scenario's carry spec).
+- **"Restores the same world (equal hashes)"** means: the follow-up's start world (tick 0) built
+  from a code taken at the end of the first scenario has the same state hash as the one built from
+  the first world's carried record directly. A code does **not** replay the first scenario (its
+  RTS orders are far too many for a short code); the end world of scenario one is the run's, the
+  code holds what carries from it.
+- The codec is pure and lives in `engine/core/campaign-code.ts` (on `PURE_CORE`), so the CLI, the
+  pages and the tests share it.
+
+_Why:_ SMBC shipped this format and found what matters: a checksum over everything so a typo is
+never mistaken for a different save, forgiving input, and a version so old codes keep loading;
+holding the carried record rather than the world is what keeps the code under a line.
+
+**8. The mini siege follow-up (item 227).** Original content: **"The dawn assault"** (scenario id
+`dawn`, `content/maps/dawn.world.json`). The morning after the siege, the raiders who fell back
+regroup on the ridge east of the village and come again with a smaller band and no siege engines;
+the village has its patched walls, its gold and whoever is left to lead it. A named sergeant,
+**Mara Venn**, stands with the defenders in both cases (the rescue's hero, by decision 4).
+
+- **The captain's fate in scenario one**: `sabotage`'s `driven-off` outcome (its quit outcome and
+  one of its delegated draws) becomes `damage captain 30` then `fate captured by raiders`, and opens
+  nothing in scenario one; every other path (`both-burnt`, `ram-burnt`, `catapult-burnt`, played
+  or delegated) keeps him on the map. Of the base commit's run files only `quit` commits
+  `driven-off`: its assertions up to the commit hold (the captain's hp is still 90 at 161, kept
+  by `Health`); one after it (`named.hall.hp` 112 at 261) may move because the captain is off the
+  map. If it does, that is a content change in its own commit, with the old and new value, listed
+  as a decision.
+- **How the fate changes the follow-up**: `dawn`'s `from` carries the captain (fate and hp) and the
+  village's gold. **Active** (or injured): he is on the map at his carried hp and leads the
+  defence. **Captured**: he is not on the map, the raiders hold him in their camp, and three
+  opportunities open at tick 0 in one exclusive group: **rescue** (`rescue-captain`, a
+  `mission-room` round in the camp, `ridge-camp`, with Mara as the hero; `freed` frees him at the
+  hall, `failed` injures Mara and opens `ransom-window`, a dearer exchange, never the rescue
+  again), **exchange** (`exchange-captain`, delegate-only, 80 gold and `fate freed`) and **leave**
+  (`leave-captain`, delegate-only, no effects: he stays captured). **Dead** (if he fell in the
+  first battle): he is a record, nothing opens.
+- **Run files**: `dawn-held.run.json` (`from: { run: "played.run.json" }`) and
+  `dawn-captured.run.json` (`from: { run: "quit.run.json" }`), the same seed, the same orders and no
+  captive mission steps, so the only input difference is the carried record, and a test requires
+  the two records to differ only in the captain's entry (his fate and the hp that goes with it).
+  Their assertions show the follow-up playing differently (the captain fighting or absent, the
+  hall's hp at the end). Separate run files cover `dawn-rescue`, `dawn-rescue-failed`,
+  `dawn-exchange` and `dawn-leave`, and a save-code run (decision 9).
+
+_Why:_ capturing the captain on the outcome that already says he was hurt is the smallest change
+to scenario one and keeps every played success unchanged; a smaller second assault keeps the
+follow-up short; and three captive choices (fight, pay, walk away) are the roadmap's rescue,
+exchange and leaving behind, each a different kind of mission.
+
+**9. Run files and the CLI (item 228).** A game run file gains an optional **`from`**, exactly one
+of `{ "run": "<run file>" }` (the CLI plays that run first and builds the carried record from its
+end world through the campaign's next scenario entry) and `{ "code": "<save code>" }` (decoded,
+refused with decision 7's codes as a content error, exit 3); with `from` the run plays the
+campaign entry after the one the source ended on, from tick 0. And an optional **`codes`**: `[{
+"tick", "code" }]`, the save code the run's campaign save gives at that tick (`pnpm cli run` fails
+on a different one, naming both). `pnpm cli code <run file>` prints the run's save code at its
+last tick. `tests/runs` checks that `from: { run }` and `from: { code }` of the same first run give
+the same tick-0 hash, which is the done-when's "equal hashes". A run file's `from` chain is at most
+one deep in 0.13 (a `from` run that itself has `from` is refused, `from_chain`).
+
+_Why:_ run files are how every claim in this repo is checked by an agent, so "starts from another's
+results" and "a code restores the world" must be checkable from a run file; naming a run (rather
+than a pasted record) keeps the record honest, since it is rebuilt from a real end world each time.
+
+**Changes to `engine/sim` beyond fates and carry.** Three, each needed by a decision above:
+`deathSystem` keeps a named person as a dead record (decision 1, part of fates but the one change
+to an existing system); `playMission` refuses a mission with no `play` (`not_playable`, decision
+2), and the commit takes a `damage` amount from the record's report when `fromReport` names a stat
+(decision 4). Both mission changes are small and data-driven (no kit or game rule enters the sim),
+and both are needed by the roadmap's scope: a capture's exchange and leave are missions without a
+round, and M13's "hp back" needs the round's cost in the world. Each later task checks `git diff
+--stat 6cf2eea -- engine/sim` before committing and lists any other change as a decision.
+
 ## Engine 0.12
 
 The tower-defense kit (the platform test). Built on branch `engine/build-0.15`; not tagged (no
