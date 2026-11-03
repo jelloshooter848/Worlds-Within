@@ -84,6 +84,26 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   `towerdefense:win-on-clear` in the mini siege's `fortify-played`; no other run file and no
   golden hash changed. Tests: `mutants.test.ts` (a stub game on a lenient and a strict test kit),
   `two-kits.test.ts`, `tests/runs/per-kit-rules.test.ts`, `platformer-test.test.ts`.
+- **The world event log and timeline as data** (T7, decisions 2-4): `engine/sim/timeline.ts`,
+  `timelineOf(source)`, a pure reader over a world's plain data (a snapshot or save and its event
+  log) giving the `worlds-within/timeline` record (world tick, `logFrom`, a game run's `clock`,
+  frozen spans, experience per mission, opportunity windows with their status history and causes,
+  missions opened and committed), with `worldTimeline`, `eventsSince`, `logFrom`, `compressClock`,
+  `gameTickOf` and `timelineEntries`; `changeSchema` is now exported from `save.ts`. The
+  `HeadlessGame` hooks are **`worldEvents(sinceTick)`** (named so because a `HostedGame`'s `events`
+  is already its last step's draw events; its result also carries the world tick now, `tick`, so
+  the tools sample the clock per game tick without a hook of their own) and `timeline()`;
+  `MissionHost` has them when its `MissionWorldPort` gives the new optional `events` and
+  `timeline` (`missionPort` does), the mini siege forwards them and the RTS skirmish reads its own
+  world (in the game's glue rather than the kit's `RtsGame`, whose world port is plain data). World
+  runs keep their event log when asked (`loadWorldRun(..., { log: true })`). New commands
+  `events` (filters `--from`/`--to` in world ticks, `--entity`, `--cause`, `--component`) and
+  `timeline` (`--tick`), and `dump --out <file>.json`, a `worlds-within/dump` file
+  (`engine/tools/dump-file.ts`, `dumpFileSchema`, `parseDumpFile`, no Node imports) for the
+  debugger. A game without the hooks is `no_world` at `headless`, exit 3 (the task's code; decision
+  3 had said exit 2). The timeline and dump file schemas are in `docs/reference/schemas.md`. No
+  golden hash moved. Tests: `timeline.test.ts` (siege and captive fixtures), `world-data.test.ts`,
+  `mission-host.test.ts`.
 
 ### Planned tasks
 

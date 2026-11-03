@@ -17,6 +17,7 @@ import {
   loadWorld,
   rtsTypesSchema,
   scenarioSchema,
+  timelineSchema,
   worldFromScenario,
   worldSaveSchema,
 } from '@engine/sim/index';
@@ -25,6 +26,7 @@ import { EXIT, EXIT_MEANINGS, type ExitName } from './exit-codes';
 import { allKits } from './kits';
 import { defaultRegistry } from './main';
 import type { Registry } from './registry';
+import { dumpFileSchema } from './dump-file';
 import { CHECK_OP_MEANINGS, CHECK_OPS, runFileSchema } from './run-file';
 import { fieldRows, type FieldRow } from './schema-doc';
 
@@ -214,6 +216,32 @@ export function defaultDocSources(): DocSources {
       schema: scenarioSchema,
       example: 'world-scenario.json',
       check: checkScenario,
+    },
+    {
+      name: 'timeline',
+      title: 'Timeline record (`timelineOf`)',
+      from: 'engine/sim',
+      where:
+        "read from a world's plain data by `timelineOf` / `worldTimeline` (`engine/sim/timeline.ts`); given by `HeadlessGame.timeline()`, printed by `pnpm cli timeline`, kept in a dump file",
+      forms: '`.json`',
+      description:
+        "A world's time as data (Engine 0.14): the world tick, the world tick per game tick (`clock`, a game run's, run-length), frozen spans, experience per mission, opportunity windows with their status history and causes, and the missions opened and committed",
+      schema: timelineSchema,
+      example: 'timeline.json',
+      check: jsonCheck(timelineSchema),
+    },
+    {
+      name: 'dump-file',
+      title: 'Dump file (`dump --out`)',
+      from: 'engine/tools',
+      where:
+        'wherever `pnpm cli dump <run-file> --tick N --out <file>.json` writes it; the debugger reads it',
+      forms: '`.json`',
+      description:
+        "One tick of a run as a still picture (Engine 0.14): the dump result (state, orders and mission steps applied, hash) with the world's event log and timeline there, paths relative to the file",
+      schema: dumpFileSchema,
+      example: 'dump-file.json',
+      check: jsonCheck(dumpFileSchema),
     },
     {
       name: 'carried-record',
@@ -408,7 +436,16 @@ function subjectSection(subject: DocSubject, example: Example, level: string): s
 
 function schemasPage(root: string, subjects: readonly DocSubject[]): string {
   const files = subjects.filter((s) =>
-    ['manifest', 'run', 'world-save', 'world-scenario', 'carried-record', 'campaign-save'].includes(s.name),
+    [
+      'manifest',
+      'run',
+      'world-save',
+      'world-scenario',
+      'timeline',
+      'dump-file',
+      'carried-record',
+      'campaign-save',
+    ].includes(s.name),
   );
   const params = subjects.filter((s) => s.section === 'params');
   const kinds = subjects.filter((s) => !files.includes(s) && !params.includes(s));
@@ -416,7 +453,7 @@ function schemasPage(root: string, subjects: readonly DocSubject[]): string {
     '# Schema reference',
     '',
     GENERATED_NOTE(
-      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, `engine/sim/scenario.ts`, `engine/sim/carry.ts`, `engine/core/campaign.ts`, each content kind) and `docs/reference/examples/`',
+      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, `engine/sim/scenario.ts`, `engine/sim/timeline.ts`, `engine/tools/dump-file.ts`, `engine/sim/carry.ts`, `engine/core/campaign.ts`, each content kind) and `docs/reference/examples/`',
     ),
     '',
     'One section per file format. Each table lists every field: nested fields are written under their',

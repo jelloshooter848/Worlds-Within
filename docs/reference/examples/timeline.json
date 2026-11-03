@@ -1,0 +1,100 @@
+{
+  "format": "worlds-within/timeline",
+  "version": 1,
+  "worldTick": 60,
+  "logFrom": 0,
+  "clock": [
+    {
+      "game": 0,
+      "world": 0
+    },
+    {
+      "game": 5,
+      "world": 5
+    },
+    {
+      "game": 245,
+      "world": 5
+    },
+    {
+      "game": 300,
+      "world": 60
+    }
+  ],
+  "frozen": [
+    {
+      "event": "siege",
+      "by": "mission:raid",
+      "from": 5,
+      "to": 35
+    }
+  ],
+  "experience": [
+    {
+      "mission": "raid",
+      "from": 5,
+      "ticks": 240
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "night-raid",
+      "mission": "raid",
+      "opens": 0,
+      "closes": 60,
+      "status": "taken",
+      "history": [
+        {
+          "status": "waiting",
+          "by": "scenario",
+          "at": 0
+        },
+        {
+          "status": "offered",
+          "by": "time",
+          "at": 0
+        },
+        {
+          "status": "taken",
+          "by": "mission:raid",
+          "at": 5
+        }
+      ]
+    },
+    {
+      "id": "scout-gap",
+      "mission": "scout",
+      "opens": 0,
+      "closes": 25,
+      "status": "closed",
+      "history": [
+        {
+          "status": "waiting",
+          "by": "scenario",
+          "at": 0
+        },
+        {
+          "status": "offered",
+          "by": "time",
+          "at": 0
+        },
+        {
+          "status": "closed",
+          "by": "time",
+          "at": 25
+        }
+      ]
+    }
+  ],
+  "missions": [
+    {
+      "mission": "raid",
+      "status": "committed",
+      "openTick": 5,
+      "commitTick": 35,
+      "resolution": "played",
+      "outcome": "partial",
+      "experienceTicks": 0
+    }
+  ]
+}

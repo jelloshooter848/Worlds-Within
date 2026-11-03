@@ -1,11 +1,13 @@
 import { parseCommandLine, wantsJson } from './args';
 import { codeCommand } from './commands/code';
 import { dumpCommand } from './commands/dump';
+import { eventsCommand } from './commands/events';
 import { addCommand, getCommand, pasteCommand, removeCommand, setCommand } from './commands/edit';
 import { helpCommand } from './commands/help';
 import { mutantsCommand } from './commands/mutants';
 import { runCommand } from './commands/run';
 import { screenshotCommand } from './commands/screenshot';
+import { timelineCommand } from './commands/timeline';
 import { traceCommand } from './commands/trace';
 import { validateCommand } from './commands/validate';
 import { EXIT, exitName, UsageError, type ExitCode } from './exit-codes';
@@ -39,6 +41,8 @@ export function defaultRegistry(): Registry {
   registry.add(runCommand);
   registry.add(dumpCommand);
   registry.add(traceCommand);
+  registry.add(eventsCommand);
+  registry.add(timelineCommand);
   registry.add(codeCommand);
   registry.add(screenshotCommand);
   registry.add(mutantsCommand);

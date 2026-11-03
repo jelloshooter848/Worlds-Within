@@ -25,8 +25,8 @@ import {
  * World runs: a run file whose `world` names a `*.world.json` scenario (`engine/sim/scenario.ts`)
  * plays that world instead of a game. The world is built with the engine system set its scenario
  * names in `systems` (`SYSTEM_SETS` in `engine/sim/system-sets.ts`: `village`, the 0.8 haul, build
- * and patrol, when it names none; `rts`, the RTS units and economy), with no event log (the log is
- * not part of a snapshot, so it never changes a hash). A step is `world.step()` and the snapshot is
+ * and patrol, when it names none; `rts`, the RTS units and economy), with no event log unless asked (the
+ * log is not part of a snapshot, so it never changes a hash). A step is `world.step()` and the snapshot is
  * `world.snapshot()`, so a world run's hashes are the same as the ones `engine/sim` tests take
  * (`__fixtures__/village.hashes.json`). A world has no input: a run file drives it with `orders`
  * (applied with `applyOrder` between ticks, `headless-run.ts`) and `missions` (Engine 0.10, item
@@ -50,7 +50,9 @@ const fieldPath = (dotted: string): PropertyKey[] =>
 
 /**
  * Builds the world of the scenario at `worldFile` (relative to `cwd`), with `seed` in place of the
- * scenario's own when given, and returns it with the name of its system set. A missing file is a content error at the run file's `world`; a
+ * scenario's own when given, and returns it with the name of its system set. The world keeps no
+ * event log unless `opts.log` asks for one (Engine 0.14 T7: `events`, `timeline`, `dump --out`);
+ * the log is never in a snapshot, so the hashes are the same either way. A missing file is a content error at the run file's `world`; a
  * scenario that does not build gives one content error per bad field of the scenario.
  */
 export function loadWorldRun(
@@ -58,6 +60,7 @@ export function loadWorldRun(
   runFile: string,
   worldFile: string,
   seed: number | undefined,
+  opts: { log?: boolean } = {},
 ):
   | { ok: true; world: World; systems: SystemSetName; keys: Record<string, Entity> }
   | { ok: false; errors: ContentError[] } {
@@ -82,7 +85,7 @@ export function loadWorldRun(
     const world = worldFromScenario(json, {
       components: set.components,
       systems: set.systems,
-      log: { enabled: false },
+      log: { enabled: opts.log === true },
     });
     return { ok: true, world, systems: name, keys: scenarioKeys(json) };
   } catch (error) {

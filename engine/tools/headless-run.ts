@@ -20,13 +20,22 @@ import {
   type JsonObject,
   type JsonValue,
   type RunStart,
+  type WorldEvents,
 } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import type { KitDef } from '@engine/core/kit';
 import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
 import { gameKits, lookupRuleId, qualifiedRuleId, type KitRuleRef } from './kits';
-import { applyOrder, type MissionDef } from '@engine/sim/index';
+import {
+  applyOrder,
+  compressClock,
+  eventsSince,
+  worldTimeline,
+  type ClockEntry,
+  type MissionDef,
+  type Timeline,
+} from '@engine/sim/index';
 import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile, type OrderEntry } from './run-file';
 import {
   applyMissionStep,
@@ -159,6 +168,18 @@ export interface PlayedRun {
   campaignSave?: CampaignSave | null;
   /** The game's save code context (its campaigns, missions and scenarios); null for a world run. */
   codeContext: SaveCodeContext | null;
+  /**
+   * Engine 0.14 T7: the world's whole kept event log at `lastTick` (`HeadlessGame.worldEvents(0)`,
+   * or the world run's log), only when asked (`PlayOptions.withWorld`); null when the game has no
+   * world hooks, undefined when not asked.
+   */
+  worldEvents?: WorldEvents | null;
+  /**
+   * Engine 0.14 T7: the timeline record at `lastTick` (`HeadlessGame.timeline()` with `clock` filled
+   * from the world tick at every game tick played, or the world run's own with `clock` null), only
+   * when asked (`PlayOptions.withWorld`); null when the game has no world hooks.
+   */
+  timeline?: Timeline | null;
 }
 
 export type PlayOutcome = { ok: true; value: PlayedRun } | { ok: false; errors: ContentError[] };
@@ -202,6 +223,14 @@ export interface PlayOptions {
    * loop of its own. It must not change the snapshot.
    */
   onTick?(tick: number, snapshot: JsonObject): void;
+  /**
+   * Engine 0.14 T7: read the world's event log and timeline at the last tick (`PlayedRun.worldEvents`
+   * and `.timeline`). A world run is built with its event log on; a game is asked through its
+   * optional `worldEvents` and `timeline` hooks (`engine/core/headless.ts`), and its world tick is
+   * sampled at every game tick for the timeline's `clock`. No hash changes: the log is never in a
+   * snapshot.
+   */
+  withWorld?: boolean;
 }
 
 /** A content error in the run file at `path`. */
@@ -366,7 +395,9 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   if (loaded.worldFile !== null) {
     if ((opts.disableRules ?? []).length > 0)
       throw new UsageError(`${loaded.file} plays a world, which has no kit rules to switch off`);
-    const built = loadWorldRun(cwd, loaded.file, loaded.worldFile, loaded.run.seed);
+    const built = loadWorldRun(cwd, loaded.file, loaded.worldFile, loaded.run.seed, {
+      log: opts.withWorld === true,
+    });
     if (!built.ok) return built;
     const { world, keys } = built;
     let defs: ReadonlyMap<string, MissionDef> = new Map();
@@ -399,6 +430,8 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
         return applied.ok ? null : applied.error;
       },
       mission: (step) => applyMissionStep(world, step, defs, keys),
+      worldEvents: (sinceTick) => eventsSince(world, sinceTick),
+      timeline: () => worldTimeline(world),
     };
     return { ok: true, value: play(loaded, stepper, world.seed, null, [], {}, opts, null, null, null) };
   }
@@ -482,6 +515,16 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     mission: (step) => instance.mission?.(missionOf(step)) ?? null,
     ...(instance.missionExperience ? { experience: () => [...(instance.missionExperience?.() ?? [])] } : {}),
     ...(instance.campaignSave ? { campaignSave: () => instance.campaignSave?.() ?? null } : {}),
+    ...(instance.worldEvents && instance.timeline
+      ? {
+          worldEvents: (sinceTick: number) => instance.worldEvents!(sinceTick),
+          timeline: (clock?: ClockEntry[]) => ({
+            ...(instance.timeline!() as unknown as Timeline),
+            clock: clock ?? null,
+          }),
+          gameRun: true,
+        }
+      : {}),
   };
   return {
     ok: true,
@@ -515,6 +558,12 @@ interface Stepper {
   experience?(): { mission: string; ticks: number }[];
   /** The game's campaign save now (`HeadlessGame.campaignSave`). */
   campaignSave?(): CampaignSave | null;
+  /** The world's event log from a world tick (`HeadlessGame.worldEvents`, or the world run's). */
+  worldEvents?(sinceTick: number): WorldEvents;
+  /** The timeline record now, with the game run's clock when it has one. */
+  timeline?(clock?: ClockEntry[]): Timeline;
+  /** True for a game run: its world tick is sampled every game tick for the timeline's `clock`. */
+  gameRun?: boolean;
 }
 
 /**
@@ -571,6 +620,9 @@ function play(
   let next = 0; // the next order entry to hand over
   let nextMission = 0; // the next mission step to hand over
   let snapshot = stepper.snapshot();
+  // The world tick at every game tick played (a game run's timeline `clock`, Engine 0.14 T7).
+  const sampling = opts.withWorld === true && stepper.gameRun === true && stepper.worldEvents !== undefined;
+  const clock: ClockEntry[] = [];
 
   for (let tick = 0; ; tick++) {
     if (tick > 0) {
@@ -596,6 +648,7 @@ function play(
       stepper.step();
       snapshot = stepper.snapshot();
     }
+    if (sampling) clock.push({ game: tick, world: stepper.worldEvents!(Number.MAX_SAFE_INTEGER).tick });
     opts.onTick?.(tick, snapshot);
     if (checking) {
       run.invariants.forEach((c, index) => {
@@ -679,6 +732,12 @@ function play(
         codesChecked,
         codeContext,
         ...(opts.withSave && stepper.campaignSave ? { campaignSave: stepper.campaignSave() } : {}),
+        ...(opts.withWorld
+          ? {
+              worldEvents: stepper.worldEvents?.(0) ?? null,
+              timeline: stepper.timeline?.(sampling ? compressClock(clock) : undefined) ?? null,
+            }
+          : {}),
       };
   }
 }

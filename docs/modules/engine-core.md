@@ -28,7 +28,10 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   played rounds' ticks per mission; `HostedGame<W, E>`: a `HeadlessGame` with `world`, `events` and
   `miniGame()`, what the shell's `HostScene` takes as `game`;
   from Engine 0.13 the optional `campaignSave()`, the campaign save if the entry played now ended
-  now;
+  now; from Engine 0.14 (T7, decision 3) the optional read-only `worldEvents(sinceTick)` (the
+  world's event log, `WorldEvents` `{ from, tick, changes }`, never part of the snapshot) and
+  `timeline()` (the world's timeline record, `engine/sim/timeline.ts`), for `pnpm cli events`,
+  `timeline` and `dump --out`;
   `HeadlessEntry`: `createGame(content, seed, opts?)` and the optional `miniGames(content)` (Engine
   0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`
   (the game's own kit's), from Engine 0.14 (gap G12) `disabledRulesByKit` (every kit's, by name;
@@ -114,7 +117,8 @@ port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGam
   itself, with `mission(step)` (a run file's `missions` steps), `launch(id)`, `play(id, script?)`,
   `delegate(id)`, `quit(id)`, `miniGame()` (the round hosted now, for `HostScene`) and
   `missionExperience()`. The world is behind a `MissionWorldPort` (`open`, `delegate`, `play`,
-  `quit`, `settle`, `snapshot`, `step`) the game's glue fills with `missionPort(world, { refs })`
+  `quit`, `settle`, `snapshot`, `step`, and from Engine 0.14 T7 the optional `events` and
+  `timeline`, which give the host its `worldEvents` and `timeline` hooks) the game's glue fills with `missionPort(world, { refs })`
   from `engine/sim`, so core never imports the sim. A step with no round steps the game (or the
   port's world) and settles; while a round is hosted the round steps (through a `RoundInput`, fed
   the `play` step's recorded script or the host's frame) and the world does not, orders and steps

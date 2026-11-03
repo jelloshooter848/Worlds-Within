@@ -19,6 +19,7 @@ import {
   type JsonObject,
   type MissionStepRefusal,
   type RunStart,
+  type WorldEvents,
 } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
@@ -158,6 +159,19 @@ export class MiniSiegeGame implements HeadlessGame {
 
   missionExperience(): { mission: string; ticks: number }[] {
     return this.host.missionExperience();
+  }
+
+  /**
+   * The world's event log from world tick `sinceTick` (`HeadlessGame.worldEvents`, Engine 0.14
+   * T7): the host's, through the sim's `missionPort`. Never part of the snapshot (no hash moves).
+   */
+  worldEvents(sinceTick: number): WorldEvents {
+    return this.host.worldEvents!(sinceTick);
+  }
+
+  /** The world's timeline record now, with the played rounds' experience (`HeadlessGame.timeline`). */
+  timeline(): JsonObject {
+    return this.host.timeline!();
   }
 
   /** The mission round hosted now, or null. */

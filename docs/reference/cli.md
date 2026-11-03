@@ -17,6 +17,8 @@ Commands:
   run         play a run file headless from its seed and check its assertions and invariants
   dump        the whole game or world state at one tick of a run file, as JSON
   trace       a few snapshot paths over a range of ticks of a run file, one row per traced tick
+  events      the world's event log of a run file: every change with its world tick and cause
+  timeline    the world time, opportunities, frozen events and commits of a run file, as data
   code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
@@ -105,6 +107,7 @@ Arguments:
 
 Flags:
   --tick <number>  the tick to show (0 is the start, before any step)
+  --out <string>   also write a dump file for the debugger (state, event log and timeline) to this .json path
 
 Global flags:
   --json                 print exactly one JSON result object on stdout
@@ -127,6 +130,48 @@ Flags:
   --from <number>   the first tick to trace (default 0, the start)
   --to <number>     the last tick to trace (default the run's ticks)
   --every <number>  trace every K-th tick from --from (default 1)
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `events`
+
+```text
+pnpm cli events <runFile> [flags]
+
+  the world's event log of a run file: every change with its world tick and cause
+
+Arguments:
+  <runFile>  the run file, such as games/samples/mini-siege/runs/played.run.json
+
+Flags:
+  --from <number>       the first world tick to list (default 0)
+  --to <number>         the last world tick to list (default the last one)
+  --entity <number>     only changes to this entity id
+  --cause <string>      only changes with this cause, or its sub-causes (mission matches mission:sabotage)
+  --component <string>  only changes to this component (WorldTime, Health...)
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `timeline`
+
+```text
+pnpm cli timeline <runFile> [flags]
+
+  the world time, opportunities, frozen events and commits of a run file, as data
+
+Arguments:
+  <runFile>  the run file, such as games/samples/mini-siege/runs/played.run.json
+
+Flags:
+  --tick <number>  the tick to read the record at (default the run's last)
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

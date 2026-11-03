@@ -10,6 +10,7 @@ import {
   settleMissions,
   type MissionRefused,
 } from './mission';
+import { eventsSince, worldTimeline } from './timeline';
 import type { Entity, World } from './world';
 
 /**
@@ -19,8 +20,8 @@ import type { Entity, World } from './world';
  * with `refs` (the scenario's keys, `scenarioKeys`) and also gives the round's seed,
  * `Rng.derived(world.seed, "round:<id>").next()`, fixed by the seed and the mission id alone (it
  * never draws from `world.rng`); `play` is `playMission` with the result's report; `settle` is
- * `settleMissions` (the ids committed); `snapshot` and `step` are the world's. Refusals keep the
- * sim's codes.
+ * `settleMissions` (the ids committed); `snapshot` and `step` are the world's; `events` and
+ * `timeline` (Engine 0.14 T7) are `eventsSince` and `worldTimeline`. Refusals keep the sim's codes.
  */
 export function missionPort(
   world: World,
@@ -45,6 +46,8 @@ export function missionPort(
     settle: () => settleMissions(world).map((r) => r.mission),
     snapshot: () => missionSnapshot(world) as JsonObject,
     step: () => world.step(),
+    events: (sinceTick) => eventsSince(world, sinceTick),
+    timeline: (experience) => worldTimeline(world, { experience }) as unknown as JsonObject,
   };
 }
 

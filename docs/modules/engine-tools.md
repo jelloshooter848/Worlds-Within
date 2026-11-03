@@ -110,9 +110,24 @@ expected, passed, guarded, failure }], guarded, weak }`; `weak` lists the rules 
   files guard each rule (`rules[].guardedBy`, `unguarded`, per kit `kits[].unguarded`); exit 4 for
   a strict own kit with an unguarded rule (a `uses` kit's unguarded rules are only reported).
   Details: `engine/tools/CLAUDE.md` (Mutant checks).
-- `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state, orders,
+- `pnpm cli dump <run-file> --tick N [--out file.json]`: `{ run, game, world, seed, tick, hash, state, orders,
 missions }`, the whole snapshot (a game's or a world's) at tick N and the recorded orders and
-  mission steps applied before it.
+  mission steps applied before it. `--out` (Engine 0.14 T7) also writes a dump file for the
+  debugger: `{ format: "worlds-within/dump", version: 1, ..., events, timeline }`, paths relative
+  to it, the world's event log and timeline there (null for a game with no world); read it back
+  with `parseDumpFile` / `dumpFileSchema` (`dump-file.ts`, no Node imports).
+- `pnpm cli events <run-file> [--from N] [--to M] [--entity id] [--cause c] [--component name]`
+  (Engine 0.14 T7): the world's event log, every kept change `{ tick, cause, op, entity,
+component?, before?, value? }` in world ticks N to M, filtered by entity, cause (`mission`
+  matches `mission:sabotage`) and component; `events` a top-level array the cap halves.
+- `pnpm cli timeline <run-file> [--tick N]` (Engine 0.14 T7): the world's timeline record
+  (`worlds-within/timeline`, `engine/sim/timeline.ts`): world tick, a game run's `clock` (world
+  tick per game tick, run-length), frozen spans, experience per mission, opportunity windows with
+  their status history, missions opened and committed, plus `entries`, the happenings by world
+  tick with the game tick each fell on. A game run gives its world through the optional
+  `HeadlessGame` hooks `worldEvents(sinceTick)` and `timeline()` (a `MissionHost` has them via
+  `missionPort`); a game without them is exit 3, `no_world` at `headless`. A world run is played
+  with its event log on. No hash moves: the log is never in a snapshot.
 - `pnpm cli trace <run-file> --paths a,b [--from N] [--to M] [--every K]` (Engine 0.14, G8): a
   few snapshot paths over a range of ticks in one call: `{ run, game, world, seed, from, to, every,
 paths, rows: [{ tick, hash, values }], missing, orders, missions }`, played like `dump` (game or
@@ -187,7 +202,7 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 
 Tests sit next to the code and run with `pnpm test`: they call `main` with captured IO and check
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
-test spawns `pnpm -s cli` for real. `trace.test.ts` covers `trace` (rows, `--every`, missing paths, usage errors, the output cap, hashes equal to `run`'s on a world run and a mini siege run), `run.test.ts` covers `run` and `dump` (wrong assertions,
+test spawns `pnpm -s cli` for real. `trace.test.ts` covers `trace` (rows, `--every`, missing paths, usage errors, the output cap, hashes equal to `run`'s on a world run and a mini siege run), `world-data.test.ts` covers `events`, `timeline` and `dump --out` (the mini siege, a world run, the skirmish, filters, `no_world`, a dump file round trip), `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and

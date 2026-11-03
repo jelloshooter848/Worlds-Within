@@ -34,7 +34,8 @@ const Cause = z
   .min(1)
   .refine((s) => s.trim() === s, 'must not start or end with a space');
 
-const ChangeSchema = z
+/** One event log entry (`Change`), as a save and a dump file hold it. */
+export const changeSchema = z
   .strictObject({
     tick: z.int().min(0).describe('the tick the change was made at'),
     cause: Cause.describe('who made it: a system name, `external`, `order:<id>`, `scenario`, ...'),
@@ -92,7 +93,7 @@ export const worldSaveSchema = z.strictObject({
         .min(0)
         .nullable()
         .describe('keep only the last n committed ticks of changes; null keeps everything'),
-      events: z.array(ChangeSchema).describe('the kept changes, oldest first'),
+      events: z.array(changeSchema).describe('the kept changes, oldest first'),
     })
     .describe('the event log and its retention'),
 });

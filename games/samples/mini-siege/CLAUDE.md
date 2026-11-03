@@ -224,6 +224,14 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     entries (`village`, `dawn`) for a run file's `start: { entry }`, and `createGame`'s
     `opts.start` builds that entry fresh (`siegeStartSave`: the engine's `campaignSaveAt`, no
     carried record, nothing committed before it): the dawn as its scenario file is written.
+    Engine 0.14 T7: `worldEvents(sinceTick)` and `timeline()` (the optional `HeadlessGame`
+    hooks) forward the `MissionHost`'s, which the sim's `missionPort` fills: the world's event log
+    (kept whole; it was always on, it is never in the snapshot, so no hash moved) and its timeline
+    record with the played rounds' experience. `pnpm -s cli timeline runs/played.run.json` lists
+    the fortify window (offered 5, closed 30), the sabotage taken and opened at world tick 40 with
+    `siege` frozen, and the unfreeze and `both-burnt` commit at world tick 160 (game tick 566);
+    `pnpm -s cli events runs/played.run.json --from 40 --to 41` that tick's changes with their
+    causes (`mission:sabotage`, `order:<n>`, `construct`).
   - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size, the
     grass colour), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
     `MiniSiegeGame`: the RTS kit's `presentWorld` for `village` with the game's missions (the

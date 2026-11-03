@@ -1,7 +1,7 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type { HeadlessGame, HeadlessOptions, JsonObject } from '@engine/core/headless';
+import type { HeadlessGame, HeadlessOptions, JsonObject, WorldEvents } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import { applyOrder, worldFromScenario, type World } from '@engine/sim/index';
+import { applyOrder, eventsSince, worldFromScenario, worldTimeline, type World } from '@engine/sim/index';
 import { rtsGame, sidesOf, type RtsGame, type SideSummary } from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
 import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
@@ -35,6 +35,8 @@ export class SkirmishGame implements HeadlessGame {
     readonly rts: RtsGame,
     /** The factions `sides` always lists: the player's and the enemy's. */
     readonly factions: readonly string[],
+    /** The sim world the kit plays (for the event log and the timeline, Engine 0.14 T7). */
+    readonly world: World,
   ) {
     this.player = new PlayerInterface(PLAYER, rts.rules);
   }
@@ -51,6 +53,16 @@ export class SkirmishGame implements HeadlessGame {
     const result = this.player.act(this.rts.view(), parsed.data);
     if (result === null || typeof result === 'string') return result;
     return this.rts.issue(result).error;
+  }
+
+  /** The world's event log from world tick `sinceTick` (`HeadlessGame.worldEvents`); never in the snapshot. */
+  worldEvents(sinceTick: number): WorldEvents {
+    return eventsSince(this.world, sinceTick);
+  }
+
+  /** The world's timeline record now (`HeadlessGame.timeline`); a skirmish has no missions. */
+  timeline(): JsonObject {
+    return worldTimeline(this.world) as unknown as JsonObject;
   }
 
   snapshot(): JsonObject {
@@ -84,5 +96,6 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
       disabledRules: opts.disabledRules,
     }),
     [PLAYER, enemy.faction],
+    world,
   );
 }

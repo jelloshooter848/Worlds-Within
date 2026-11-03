@@ -1,0 +1,58 @@
+{
+  "format": "worlds-within/dump",
+  "version": 1,
+  "run": "../games/samples/mini-siege/runs/played.run.json",
+  "game": "../games/samples/mini-siege",
+  "world": null,
+  "seed": 11,
+  "start": null,
+  "tick": 41,
+  "hash": "0123456789abcdef",
+  "state": { "world": { "tick": 40 }, "named": { "ram": { "alive": true, "x": 9, "y": 4, "hp": 30 } } },
+  "orders": [],
+  "missions": [{ "tick": 40, "mission": "sabotage", "action": "open" }],
+  "events": {
+    "from": 0,
+    "tick": 40,
+    "changes": [
+      {
+        "tick": 40,
+        "cause": "mission:sabotage",
+        "op": "set",
+        "entity": 29,
+        "component": "WorldTime",
+        "before": { "frozen": [], "experience": [], "committed": [] },
+        "value": {
+          "frozen": [{ "event": "siege", "by": "mission:sabotage", "since": 40 }],
+          "experience": [],
+          "committed": []
+        }
+      }
+    ]
+  },
+  "timeline": {
+    "format": "worlds-within/timeline",
+    "version": 1,
+    "worldTick": 40,
+    "logFrom": 0,
+    "clock": [
+      { "game": 0, "world": 0 },
+      { "game": 40, "world": 40 },
+      { "game": 41, "world": 40 }
+    ],
+    "frozen": [{ "event": "siege", "by": "mission:sabotage", "from": 40, "to": null }],
+    "experience": [{ "mission": "sabotage", "from": 40, "ticks": 1 }],
+    "opportunities": [],
+    "missions": [
+      {
+        "mission": "sabotage",
+        "status": "open",
+        "openTick": 40,
+        "commitTick": 160,
+        "resolution": null,
+        "outcome": null,
+        "experienceTicks": 0
+      }
+    ]
+  }
+}

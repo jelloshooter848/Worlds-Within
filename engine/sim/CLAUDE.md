@@ -12,7 +12,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `events.ts`: the event log's types (`Change`, `ChangeOp`, `Cause`, `LogOptions`) and
   `EXTERNAL_CAUSE` (see "Event log" below).
 - `save.ts`: `saveWorld(world)` and `loadWorld(json, { components, systems? })`, the save file
-  schema `worldSaveSchema` and `SaveError` (see "Save and load" below).
+  schema `worldSaveSchema`, `changeSchema` (one event log entry, also a dump file's) and
+  `SaveError` (see "Save and load" below).
 - `math.ts`: deterministic integer and fixed-point maths (see "Maths" below).
 - `components.ts`: the standard components (see "Standard components" below), `STANDARD_COMPONENTS`
   and `inventoryAdd`.
@@ -65,11 +66,16 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `openMission`, `delegateMission`, `playMission`, `quitMission`, `commitMission`,
   `settleMissions`, `missionsOf`, `missionSnapshot` (see "Missions" below).
 - `mission-port.ts`: `missionPort(world, { refs? })` (Engine 0.11 T5, item 173), the
-  `MissionWorldPort` an `engine/core` `MissionHost` drives (see "Missions", Live hosting), and
-  `roundSeed(seed, id)`.
+  `MissionWorldPort` an `engine/core` `MissionHost` drives (see "Missions", Live hosting; from
+  Engine 0.14 T7 also `events` and `timeline`, see "Timeline"), and `roundSeed(seed, id)`.
 - `opportunity.ts`: opportunities (Engine 0.10 T5): `Opportunities` (`OPPORTUNITY_COMPONENTS`),
   `addOpportunities`, `settleOpportunities`, `opportunityGate`, `takeOpportunity`,
   `applyOpportunityEffect`, `opportunitiesOf` (see "Opportunities" below).
+- `timeline.ts`: the timeline record (Engine 0.14 T7): `timelineOf(source)` over a world's plain
+  data (a snapshot or save and its event log), `worldTimeline(world, { clock?, experience? })`,
+  `eventsSince(world, sinceTick)`, `logFrom(world)`, `compressClock`, `gameTickOf`,
+  `timelineEntries` and the schema `timelineSchema` (`TIMELINE_FORMAT`, `TIMELINE_VERSION`) (see
+  "Timeline" below).
 - `__fixtures__/village.world.json`: the sample world (see "The sample world"), with its golden
   hashes `village.hashes.json`, and `village-build.run.json`, a CLI run file on it (`pnpm cli run`;
   `engine/tools/CLAUDE.md`, World runs) with its golden `village-build.hashes.json`; and
@@ -399,6 +405,56 @@ closesOthers?, relative? }`, `opens < closes`, world ticks, offered while `opens
   leave-behind changing nothing, skipped fate effects, `unknown_ref` and `reopens_self` at open,
   the same hashes on every run and after save and load at five ticks, and records and fates
   unchanged after save and load).
+
+## Timeline
+
+The timeline record (`timeline.ts`, Engine 0.14 T7; docs/BUILD-LOG.md, Engine 0.14, decisions 3
+and 4, items 249-250): a world's time as plain data, for `pnpm cli timeline`, `dump --out` and the
+debugger's timeline viewer. **A pure reader**: `timelineOf(source)` reads only the plain data it is
+given (`source.world`, a `World.snapshot()` or a world save, and `source.events`, the kept log; a
+save's own log when left out), so it runs the same in Node and in a page and never steps or
+changes a world. It lives here because it reads the sim's components; kits never import it.
+
+```text
+{ format: "worlds-within/timeline", version: 1,
+  worldTick, logFrom,                       // the world tick now; the oldest tick the log keeps (null: no log)
+  clock: [{ game, world }] | null,          // world tick per game tick, run-length (the tools fill it)
+  frozen: [{ event, by, from, to }],        // frozen spans, `to` null while still frozen
+  experience: [{ mission, from, ticks }],   // experience ticks per mission (a game's own count when given)
+  opportunities: [{ id, mission, opens, closes, status, history: [{ status, by, at }] }],
+  missions: [{ mission, status, openTick, commitTick, resolution, outcome, experienceTicks }] }
+```
+
+- **Now** comes from world data: `WorldTime` (spans still frozen, open clocks, commitments),
+  `Opportunities` (each window and status) and `Missions` (committed records in commit order, then
+  open ones by open tick, `status` `open` with `resolution` and `outcome` null until resolved).
+- **The past** comes from the event log: a frozen span that ended is the `before` entry of the
+  `WorldTime` change that dropped it (`to` that change's tick), and an opportunity's `history` is
+  one step per status change in its `Opportunities` changes (`by` the state's cause, the change's
+  when null: `scenario` for the first). A world whose log keeps fewer ticks gives shorter history
+  and says where it starts in `logFrom`; an opportunity's state now is added as its last step when
+  the log no longer holds it. Committed records are world data, so they are always there.
+- `worldTimeline(world, { clock?, experience? })` reads a live world (`snapshot()`, `events()`,
+  `logFrom(world)`): `experience` (a `MissionHost`'s own count of a played round's ticks, which
+  never reach the world) replaces the world's count for those missions; `clock` is a game run's.
+- `eventsSince(world, sinceTick)` is a live world's log as `HeadlessGame.worldEvents` gives it:
+  `{ from, tick, changes }`, `from` the oldest tick kept (0 when everything is kept, `tick - n` with
+  `log: { ticks: n }`, the world tick when the log records nothing: `logFrom(world)` is null then),
+  `tick` the world tick now. Asking for dropped ticks gives what is kept, never an error.
+- `compressClock(samples)` keeps the first and last `{ game, world }` sample and every one where
+  the world's rate changes (a played round holds the world still), so between two entries the
+  world moves at one even rate; `gameTickOf(clock, worldTick)` is the first game tick the world
+  reached that tick at. `timelineEntries(record)` is the record as one list of happenings
+  (`opportunity`, `open`, `freeze`, `unfreeze`, `commit`) by world tick, with that game tick.
+- `missionPort` (`mission-port.ts`) gives a `MissionHost` `events` (`eventsSince`) and `timeline`
+  (`worldTimeline` with the host's experience), so a game on a `MissionHost` has the
+  `HeadlessGame` hooks with no glue of its own. Reading never changes the world: the log is never
+  in a snapshot, so no hash moves.
+- Integers only, no randomness. Tests: `timeline.test.ts` (the siege fixture's raid: its span,
+  commit, outcome and every opportunity's history with causes; an open mission and a span still
+  frozen; a save read the same as the live world and after a load; nothing changed by reading; a
+  short log; a game's experience; the captive fixture's capture, follow-ups and rescue in order;
+  `eventsSince` and `logFrom` with a short and a disabled log; the clock and game ticks).
 
 ## Standard components
 
@@ -850,4 +906,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `sample-world.test.ts`).

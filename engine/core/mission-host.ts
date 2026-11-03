@@ -1,4 +1,11 @@
-import type { HeadlessGame, HostedGame, JsonObject, JsonValue, MissionStepRefusal } from './headless';
+import type {
+  HeadlessGame,
+  HostedGame,
+  JsonObject,
+  JsonValue,
+  MissionStepRefusal,
+  WorldEvents,
+} from './headless';
 import type { InputFrame } from './input/input-manager';
 import { ScriptedInput, type InputScript } from './input/scripted-input';
 import { missionRoundEnd, type MiniGameEnd } from './mission-adapter';
@@ -70,6 +77,16 @@ export interface MissionWorldPort {
   snapshot(): JsonObject;
   /** `World.step()` (used when the host has no game of its own). */
   step(): void;
+  /**
+   * Optional (Engine 0.14 T7): the world's event log from `sinceTick` (`eventsSince` in
+   * `engine/sim`). Reads only.
+   */
+  events?(sinceTick: number): WorldEvents;
+  /**
+   * Optional (Engine 0.14 T7): the world's timeline record (`worldTimeline` in `engine/sim`), the
+   * host's own experience count per played mission given in `experience`. Reads only.
+   */
+  timeline?(experience: readonly { mission: string; ticks: number }[]): JsonObject;
 }
 
 /** What a `MissionHost` is built from. */
@@ -126,6 +143,10 @@ export class MissionHost implements HostedGame<MissionHost> {
   private readonly experience = new Map<string, number>();
   private hosted: HostedRound | null = null;
   private ended: HostedRound | null = null;
+  /** The world's event log (`HeadlessGame.worldEvents`), when the port gives it. Reads only. */
+  readonly worldEvents?: (sinceTick: number) => WorldEvents;
+  /** The world's timeline record with the rounds' experience (`HeadlessGame.timeline`), when the port gives it. */
+  readonly timeline?: () => JsonObject;
 
   constructor(opts: MissionHostOptions) {
     this.opts = opts;
@@ -138,6 +159,9 @@ export class MissionHost implements HostedGame<MissionHost> {
     }
     this.defs = defs;
     this.miniGames = miniGameTable(opts.miniGames);
+    const port = opts.port;
+    if (port.events) this.worldEvents = (sinceTick) => port.events!(sinceTick);
+    if (port.timeline) this.timeline = () => port.timeline!(this.missionExperience());
   }
 
   /** The scene draws the host itself (its game, and its round through `miniGame()`). */

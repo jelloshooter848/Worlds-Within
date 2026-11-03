@@ -349,6 +349,8 @@ describe('help', () => {
       'run',
       'dump',
       'trace',
+      'events',
+      'timeline',
       'code',
       'screenshot',
       'mutants',

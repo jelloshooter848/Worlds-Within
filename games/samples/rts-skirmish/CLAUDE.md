@@ -65,7 +65,9 @@ opts?)`: the kit's `rtsGame` with the world behind its port (`applyOrder`, `step
     `{ world, kit }` plus `sides` (the kit's `sidesOf`, re-exported here; it moved to the kit in
     Engine 0.11 T8: per faction `units`, `unitTypes`, finished
     `buildings` by kind, `sites`, `stock`; red and blue always listed, a beaten side empty) and
-    `ui.selection`.
+    `ui.selection`. Engine 0.14 T7: `SkirmishGame` keeps its `world` and gives the optional
+    `HeadlessGame` hooks `worldEvents(sinceTick)` (`eventsSince`) and `timeline()`
+    (`worldTimeline`) for `pnpm cli events` and `timeline`; the log is never in the snapshot.
   - `actions.ts`: interface actions (`interfaceActionSchema`, `PlayerInterface`): `click`,
     `box` (world px, `additive`), `command` (a world point), `build`, `train`, `stop`, carried
     out by the kit's `Selection`, `commandAt`, `buildCommand`, `trainCommand`, `stopCommand` with

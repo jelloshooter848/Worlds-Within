@@ -74,6 +74,34 @@ export interface HeadlessGame {
    * error).
    */
   campaignSave?(): CampaignSave | null;
+  /**
+   * Optional (Engine 0.14 T7, decision 3, item 249): the game's world event log from world tick
+   * `sinceTick` (`WorldEvents`): the committed changes with `tick >= sinceTick`, oldest first, plain
+   * JSON-safe data. Read beside `snapshot()` and never part of it, so it never changes a state hash.
+   * Must not change the game. A game with no world (a platformer) leaves it out, and the tools say
+   * `no_world` for `events` and `timeline`. Named `worldEvents`, not `events`: a `HostedGame`'s
+   * `events` is its last step's draw events. `MissionHost` has it when its port does.
+   */
+  worldEvents?(sinceTick: number): WorldEvents;
+  /**
+   * Optional (Engine 0.14 T7, decision 4, item 250): the timeline record of the game's world now
+   * (`timelineOf` in `engine/sim/timeline.ts`, `worlds-within/timeline`), with the game's own
+   * experience ticks per played mission and `clock` null (the tools fill it while they play). Must
+   * not change the game. `MissionHost` has it when its port does.
+   */
+  timeline?(): JsonObject;
+}
+
+/**
+ * A world's event log as a game hands it over (`HeadlessGame.worldEvents`, Engine 0.14 T7): `from`
+ * the oldest world tick the log still keeps (asking for older ticks gives what is kept, never an
+ * error), `tick` the world tick now (so the tools can sample world time per game tick), and
+ * `changes` the kept changes from the asked tick on (the sim's `Change`s, plain data).
+ */
+export interface WorldEvents {
+  from: number;
+  tick: number;
+  changes: JsonObject[];
 }
 
 /** Why a game refused a mission step: a short code and a one-line reason. */

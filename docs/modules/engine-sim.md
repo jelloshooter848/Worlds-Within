@@ -42,7 +42,8 @@ From `engine/sim/index.ts`:
   `loadWorld(json, { components, systems? })` -> a `World` in the same state that steps on
   identically. Systems are code: pass the same list (checked by name). A bad save throws
   `SaveError` whose `issues` (and message) name each bad field (`entities.1.components.Health.hp`).
-  `worldSaveSchema` is the file's Zod schema (documented in `docs/reference/schemas.md`).
+  `worldSaveSchema` is the file's Zod schema (documented in `docs/reference/schemas.md`);
+  `changeSchema` is one event log entry's.
 - Scenarios (`scenario.ts`): `worldFromScenario(json, { components?, systems?, log? })` -> the
   `World` a world-start file describes (format `worlds-within/scenario`, version 1: seed, terrain
   as a text grid with a legend and a grid of elevation digits, entities with components, squads
@@ -107,7 +108,8 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   the `MissionWorldPort` an `engine/core` `MissionHost` drives (`open` = `openMission` plus the
   round's seed `roundSeed(seed, id)`, `Rng.derived(seed, "round:<id>").next()`; `delegate`,
   `play` with the result's report, `quit`, `settle` = `settleMissions`, `snapshot`, `step`), so a
-  game's glue fills it with one call. Refusals keep the sim's codes.
+  game's glue fills it with one call. Refusals keep the sim's codes. From Engine 0.14 T7 it also
+  gives `events` (`eventsSince`) and `timeline` (`worldTimeline` with the host's experience).
 - Opportunities (`opportunity.ts`, Engine 0.10 T5): windows of world ticks in which a mission can
   be taken (`OpportunityDef` `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }`
   and `opportunitySchema` from `engine/core/missions.ts`; offered while `opens <= tick < closes`).
@@ -122,6 +124,18 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   one already taken or closed is skipped. Read with `opportunitiesOf(world)` (`all`, `get`,
   `status`, `offered`). The state is the `Opportunities` component (`OPPORTUNITY_COMPONENTS`, on
   the `WorldTime` entity, `omitWhenEmpty`), in snapshots and saves.
+- Timeline (`timeline.ts`, Engine 0.14 T7): `timelineOf({ world, events?, logFrom?, clock?,
+experience? })` -> the timeline record (`worlds-within/timeline`, version 1, `timelineSchema`, in
+  `docs/reference/schemas.md`): the world tick, the oldest tick the log keeps (`logFrom`), a game
+  run's `clock` (world tick per game tick, run-length; `compressClock`, `gameTickOf`), frozen
+  spans `{ event, by, from, to }`, experience per mission, opportunity windows with their status
+  history and causes, and the missions opened and committed (outcome, resolution, open and commit
+  ticks). A pure reader over a world's plain data (a snapshot or save and its event log): it never
+  steps or changes a world. `worldTimeline(world, opts?)` reads a live world;
+  `eventsSince(world, sinceTick)` -> `{ from, tick, changes }` is its log as a game hands it over
+  (`HeadlessGame.worldEvents`); `logFrom(world)`; `timelineEntries(record)` lists the happenings
+  by tick. `missionPort` gives a `MissionHost` both, so `pnpm cli events` and `pnpm cli timeline`
+  read a mission game's world.
 - Walking (`path.ts`): `distanceField(t, goal, near)` and `nextStep(t, field, from)`, 4-way, each
   cell entered costing its type's cost, impassable cells never entered, ties north, east, south,
   west.

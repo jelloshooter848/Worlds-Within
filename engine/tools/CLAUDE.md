@@ -62,9 +62,18 @@ content)`, which imports the game's headless module by path for its optional
   that reads the state per tick (`trace`) uses the one playing loop. A game run's `start` (Engine
   0.14, gap G9) is checked against the game's `starts(content)` and handed to `createGame` as
   `HeadlessOptions.start` (Start levels and entries, below); `PlayedRun.start` is it, or null.
+  `withWorld` (Engine 0.14 T7) reads the world's event log and timeline at the last tick
+  (`PlayedRun.worldEvents`, `.timeline`; World event log and timeline, below).
+- `world-data.ts` (Engine 0.14 T7): `playWorldData(cwd, runFile, untilTick)`, a run's event log
+  and timeline for `events` and `timeline`, or `no_world` (`noWorldError`) for a game without the
+  hooks.
+- `dump-file.ts` (Engine 0.14 T7): dump files, `dumpFileSchema`, `parseDumpFile(text)`,
+  `DUMP_FORMAT` (`worlds-within/dump`) and `DUMP_VERSION`; no Node imports, so the debugger page
+  reads dump files with the same schema.
 - `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
   its scenario with the engine system set the scenario names (`worldSystemSet(json)`:
-  `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log, and returns it
+  `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log unless `{ log: true }`
+  asks for one (Engine 0.14 T7: `events`, `timeline`, `dump --out`), and returns it
   with the set's name and the scenario's keys (`scenarioKeys`) (World runs, below);
   `loadMissionDefs`, `applyMissionStep` and `settleWorld` drive a world run's `missions`
   (Missions in world runs, below).
@@ -91,7 +100,7 @@ content)`, which imports the game's headless module by path for its optional
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add`, `remove` and `paste`).
 
 ## The contract
@@ -156,10 +165,21 @@ experience, hashesChecked, hashMismatch, from, start, codes, codesChecked, repla
 hash, code, save }` (Campaign runs and save codes, below). Exit 0; 3 for a bad run file or
   content, a game that gives no campaign save there (`no_campaign`) or a save the code cannot hold
   (`code_record`, ...); 2 for a world run, a game without `campaignSave`, or a bad `--tick`.
-- `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, start, tick,
+- `dump <runFile> --tick N [--out file.json]`: plays to tick N (no checks) and prints `{ run, game, world, seed, start, tick,
 hash, state, orders, missions }`, the whole snapshot and the recorded orders and mission steps
   applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
-  everything else: a big state gives the envelope plus `fullOutput`.
+  everything else: a big state gives the envelope plus `fullOutput`. `--out` (Engine 0.14 T7)
+  also writes a dump file for the debugger (World event log and timeline, below) and prints the
+  result without `state`, plus `out`, `bytes`, `format`, `events` (the number of changes, or null)
+  and `timeline` (whether there is one); an `--out` not ending in `.json` is a usage error.
+- `events <runFile> [--from N] [--to M] [--entity id] [--cause c] [--component name]` (Engine
+  0.14 T7): the world's event log after the run's last tick (World event log and timeline, below).
+  Result `{ run, game, world, seed, start, tick, worldTick, logFrom, from, to, entity, cause,
+component, count, events }`. Exit 0; 3 for a bad run file or content, or `no_world` at `headless`
+  in `game.json` for a game without the hooks; 2 for `--from` after `--to`.
+- `timeline <runFile> [--tick N]` (Engine 0.14 T7): the timeline record at tick N (default the
+  last). Result `{ run, game, world, seed, start, tick, ticks, worldTick, logFrom, timeline, entries
+}`. Exit 0; 3 as for `events`; 2 for a `--tick` after the run's `ticks`.
 - `trace <runFile> --paths a,b [--from N] [--to M] [--every K]` (Engine 0.14, gap G8, decision 5):
   plays the run like `dump` (no checks; orders, mission steps and `from` applied as `run` does)
   and reads the dotted snapshot paths (as assertions write them) at ticks N, N+K, ... up to M
@@ -764,6 +784,48 @@ hashMismatch }`: `reproduced` is true when the first failure is at the same tick
 - Debugging: `run` the replay, `trace <replay> --paths ...` over the ticks before the failure to
   see when a value went wrong, then `dump <replay> --tick N` at the failing tick, or at the
   mismatch tick and the stored hash tick before it, to see what changed.
+
+## World event log and timeline
+
+Engine 0.14 T7 (docs/BUILD-LOG.md, Engine 0.14, decisions 2-4, items 248-250): the world's event
+log and its timeline as data, for agents now and the in-browser debugger and timeline viewer later.
+
+- **Where it comes from.** A world run is built with its event log on (`loadWorldRun(..., { log:
+true })`) and read directly (`eventsSince`, `worldTimeline` from `engine/sim`). A game run asks
+  its game through the optional read-only `HeadlessGame` hooks `worldEvents(sinceTick)` and
+  `timeline()` (`engine/core/headless.ts`): a `MissionHost` has both when its port does
+  (`missionPort` fills them), so the mini siege only forwards them; the RTS skirmish reads its own
+  world. The log is never in a snapshot, so **no hash moves** (the run files' golden hashes are the
+  same with or without it). A game with neither hook (the platformer and top-down games) is exit 3,
+  **`no_world` at `headless`** in its `game.json`.
+- **World ticks, not game ticks.** A change's `tick` is the world tick, and a played mission round
+  holds the world still while the game ticks on. `events --from/--to` filter world ticks (both
+  included; `--to` defaults to the world tick at the end); the timeline's `clock`, which the tools
+  fill for a game run from the world tick at every game tick played (`compressClock`, run-length),
+  maps them back: `entries[].game` is the game tick a world tick was first reached at.
+- **`events`** plays the run to its last tick and lists every kept `Change` (`{ tick, cause, op,
+entity, component?, before?, value? }`) that passes the filters: `--entity` (an id), `--cause`
+  (exact, or a prefix before `:`: `--cause mission` keeps `mission:sabotage`), `--component`.
+  `events` is a top-level array, so the output cap halves it (whole changes). Text: one line per
+  change, `t40 mission:sabotage set #29 WorldTime`. `logFrom` is the oldest world tick the log
+  keeps; older ticks give what is kept, never an error.
+- **`timeline`** plays to `--tick` (default the last) and prints the record (`timelineSchema`,
+  `engine/sim/timeline.ts`; in `docs/reference/schemas.md`) and `entries`
+  (`timelineEntries`: `{ tick, game, kind, id, by, detail }`, kinds `opportunity`, `open`,
+  `freeze`, `unfreeze`, `commit`), a top-level array. Text: one line per entry. On the mini
+  siege's `played.run.json` it lists the fortify window offered at 5 and closed at 30 by `time`,
+  the sabotage window taken at world tick 40, the sabotage opened and `siege` frozen there, and
+  the unfreeze and commit (`both-burnt`) at world tick 160, game tick 566 (the round held the world
+  still from game tick 40 to 446).
+- **Dump files** (`dump --tick N --out <file>.json`, `dump-file.ts`): `{ format:
+"worlds-within/dump", version: 1, run, game, world, seed, start, tick, hash, state, orders,
+missions, events, timeline }`, `run`, `game` and `world` relative to the dump file, `events` the
+  kept log up to tick N (`{ from, tick, changes }`) and `timeline` the record there, both null for
+  a game with no world. Written as one line of JSON; `parseDumpFile(text)` / `dumpFileSchema`
+  read it back (in `docs/reference/schemas.md`).
+- Tests: `world-data.test.ts` (the mini siege's timeline and events, a world run's, the RTS
+  skirmish's, the filters, the cap, `no_world`, usage errors, a dump file round trip and a dump
+  without a world).
 
 ## Screenshots
 

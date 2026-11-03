@@ -203,4 +203,31 @@ describe('MissionHost', () => {
     expect(h.miniGame()).toBeNull();
     expect(h.delegate('pay')).toBeNull();
   });
+
+  it('gives the world event log and timeline only when its port does (Engine 0.14 T7)', () => {
+    const plain = host().h;
+    expect(plain.worldEvents).toBeUndefined();
+    expect(plain.timeline).toBeUndefined();
+
+    const fake = fakePort();
+    const seen: unknown[] = [];
+    const port: MissionWorldPort = {
+      ...fake.port,
+      events: (since) => ({ from: 0, tick: fake.tick(), changes: [{ since }] }),
+      timeline: (experience) => (seen.push(experience), { worldTick: fake.tick() }),
+    };
+    const h = new MissionHost({ port, missions: [RAID], miniGames: [COUNT], adapters: { count: ADAPTER } });
+    h.mission({ mission: 'raid', action: 'open' });
+    h.mission({ mission: 'raid', action: 'play', input: { steps: [{ frame: 0, hold: ['attack'] }] } });
+    for (let i = 0; i < 4; i++) h.step(idle);
+    expect(h.worldEvents?.(3)).toEqual({ from: 0, tick: 1, changes: [{ since: 3 }] });
+    expect(h.timeline?.()).toEqual({ worldTick: 1 });
+    // The host's own count of the round's ticks goes to the world's timeline.
+    expect(seen).toEqual([[{ mission: 'raid', ticks: 3 }]]);
+    // Reading changes nothing: the snapshot is the same before and after.
+    const before = JSON.stringify(h.snapshot());
+    h.worldEvents?.(0);
+    h.timeline?.();
+    expect(JSON.stringify(h.snapshot())).toBe(before);
+  });
 });

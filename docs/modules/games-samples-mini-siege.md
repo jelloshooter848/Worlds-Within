@@ -78,7 +78,8 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
 - `headless.ts`: `createGame(content, seed, opts?)` (a `MiniSiegeGame`: a `MissionHost` over the
   kit's `rtsGame`, `open` through the kit's `launchMission`; snapshot `{ world, kit, missions?,
 sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `campaignSave()`
-  gives the save if the entry played now ended now), `siegeCampaignPlace`, `miniGames(content)`
+  gives the save if the entry played now ended now; Engine 0.14 T7: `worldEvents(sinceTick)` and
+  `timeline()`, the world's event log and timeline record, for `pnpm cli events` and `timeline`), `siegeCampaignPlace`, `miniGames(content)`
   (`mission-room` and `td-defence`), `ADAPTERS`, `createWorld`.
 - `content.ts`: `loadMiniSiege`, `siegeMap(content, name?)`, `siegeCampaign`, `FIRST_SCENARIO`, `siegeTypes`, `siegeEnemy`, `siegeMissions`,
   `siegeRooms`, `siegeDefenceMaps`, `siegeTowers`, `siegeScenario`.

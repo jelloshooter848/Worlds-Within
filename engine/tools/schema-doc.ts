@@ -24,7 +24,7 @@ export interface FieldRow {
 
 /** The part of a JSON Schema node this walker reads. */
 interface Node {
-  type?: string;
+  type?: string | string[];
   $ref?: string;
   enum?: unknown[];
   const?: unknown;
@@ -66,6 +66,8 @@ function recordValue(node: Node): Node | undefined {
 /** The node's type, short: what a reader writes in the file. */
 export function typeName(node: Node): string {
   if (node.$ref !== undefined) return 'JSON';
+  // A nullable string comes out as `type: ['string', 'null']`.
+  if (Array.isArray(node.type)) return node.type.join(' | ');
   if (node.enum) return node.enum.map((v) => JSON.stringify(v)).join(' | ');
   if (node.const !== undefined) return JSON.stringify(node.const);
   const union = node.anyOf ?? node.oneOf;
