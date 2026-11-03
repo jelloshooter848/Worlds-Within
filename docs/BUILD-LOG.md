@@ -11,12 +11,73 @@ review the choices.
 
 The mini siege (multi-genre sample). Built on branch `engine/build-0.15`; not tagged (no tags
 during the build, owner answer 24). As in 0.9 and 0.10, the open questions were settled in writing
-before any code (T1); the later tasks build against them. The gap report is
-[docs/reports/mini-siege.md](reports/mini-siege.md), started in T1 so every task can log gaps as it
-finds them.
+before any code (T1); the later tasks built against them. The game's rules are in
+`games/samples/mini-siege/CLAUDE.md`, and its agent page is `docs/modules/games-samples-mini-siege.md`.
+The gap report is [docs/reports/mini-siege.md](reports/mini-siege.md), started in T1 so every task
+could log gaps as it found them: 28 gaps, 11 fixed in 0.11 and 17 moved to 0.13, 0.14 and 0.15.
 
 **Stacking-test gaps assigned to 0.11:** G13, G18, G19 (the rest), G27, G28 and G30, from
-`docs/reports/stacking-test.md`. Their answers are decisions 6 to 10 below.
+`docs/reports/stacking-test.md`. Their answers are decisions 6 to 10 below, and all six are fixed
+in 0.11.
+
+### What was built
+
+- **Decisions before code and the gap report skeleton** (T1, `211b65d`): missions in game run
+  files, live hosting, the step-through after a round, the RTS kit's missions, the data-driven
+  adapter, the six stacking-test gaps and the scenario's shape with its checks, settled in writing
+  (items 172-184, below); `docs/reports/mini-siege.md` started.
+- **G18 and the rest of G19** (T2, `525d172`; report `5b7ca67`): `MiniGameDef.inputMap` and
+  `RoundInput` (`engine/core/minigame.ts`), the one wrapper every host steps its round through, so
+  a button held into a round is ignored until released; `MiniGameDef.hostStatus` copies host HUD
+  keys into the round's frame as `host:<key>`. No golden hash moved.
+- **G27 and G28** (T3, `4345818`; report `ede14c6`): `bootBrowserGame`'s `audio` option (the
+  `AudioManager`, unlocked on the first key, tap or click, `onSound` for each display, `music`),
+  and skin event keys `<type>:<value>` / `<type>:<field>=<value>` (`resolveSkinEvent`, both
+  backends, checked by `validate`). The platformer test drops its own audio unlock.
+- **G13 and G30** (T4, `7eebb3d`; report `b9ec82d`): a skin kind entry's `byTag` looks
+  (`resolveSkinKind`, both backends; the 3D scene rebuilds an entity whose look changes) and an
+  optional `look` on a platformer trigger entry (tag `look:<id>`). No golden hash or screenshot
+  moved.
+- **Missions in game runs and live hosting** (T5, `39e6161`; report `84289f7`): a game run's
+  `missions` go to `HeadlessGame.mission?(step)`, a `play` step carrying the round's recorded
+  input; `MissionHost` (`engine/core/mission-host.ts`) over a `MissionWorldPort` that
+  `engine/sim`'s `missionPort(world, { refs })` fills: the round steps while the world waits, its
+  end maps through `missionRoundEnd`, the world then steps on and the result commits at open tick
+  plus `worldTimeCost`. `HostScene` pushes the round like any hosted round. Fixes M3.
+- **Missions in the RTS kit** (T6, `e719108`; report `38ca700`): `readWorld` reads offers, open
+  and committed missions and frozen events; `missionRequest`, `missionButtons` and
+  `launchMission` (a request a `MissionHost` carries out); frames tag frozen units and buildings,
+  mark an offer over its target and show the open mission's countdown; `RtsGame.refresh()`.
+  Fixes M7 and M8.
+- **A data-driven top-down mission adapter** (T7, `7676749`; report `69c14ce`):
+  `kits/topdown/mission-room.ts`, the `mission-room` mini game and the stateless
+  `topdownMissionAdapter`, configured by the mission's params (room, goal and limits, foes by
+  selector into slot cells, ordered outcome rules, stats of what was destroyed and who was hurt);
+  `MiniGameDef.checkUse` lets `validate` check the room, slots and outcome ids; `KitDef.paramsDocs`
+  lists the params in the schema reference. The repo's siege tests hold no hand-written mapping.
+  Fixes M9 and M11.
+- **The mini siege headless** (T8, `d131978`; report `a2a7ac9`): `games/samples/mini-siege/`
+  with the map, the types, the raiders' plan, the `sabotage-window` opportunity, the `sabotage`
+  mission and its room; `headless.ts` joins the sim, the kit's `rtsGame` and a `MissionHost`; run
+  files `played`, `delegated` and `quit` with golden hashes. The `rts-map` kind takes
+  `opportunities` (M14) and `sidesOf` moves into the RTS kit (M15).
+- **Art, music, skins and the playable page** (T9, `a1112b0`; report `35838ea`): original
+  NES-style text sprites and palettes, a Canvas2D skin for the battle and one for the mission
+  room, seven sfx and one short MML song; `view.ts` for `pnpm cli screenshot` (which now passes a
+  run's mission steps, M22); `index.html`, `main.ts` and `play.ts`: pointer input, shell audio, the
+  launch button from the kit's mission command and the play or delegate choice over `HostScene`.
+  The RTS kit tags hurt units `damaged` (M24) and the mission room tags placed foes
+  `foe:<name>` (M23); the page switches its picture itself (M6).
+- **The close-out** (T10): the gap report's summary and glue review (M27 and M28 found there),
+  every gap fixed or moved to a named release and listed in that release's section of
+  `docs/ROADMAP.md`, the stacking test's counts, `tests/browser/mini-siege-page.test.ts` (the page
+  played from its link on both paths in headless Chromium), `llms.txt`, `docs/CHEATSHEET.md` and
+  this log.
+- Agent docs: the 0.11 parts of `engine/core`, `engine/core/content`, `engine/core/present`,
+  `engine/core/shell`, `engine/backends/canvas2d`, `engine/backends/three`,
+  `engine/sim`, `engine/tools`, `kits/rts`, `kits/topdown`, `kits/platformer` and the new game in
+  their `CLAUDE.md` files and module pages, the generated schema and CLI references and
+  `docs/CHEATSHEET.md`.
 
 ### Decisions
 
@@ -249,6 +310,134 @@ with the seed's draw recorded and asserted) assert, in run files and a game test
 with ids `M1`, `M2`, ... (never reused) so they do not mix with the stacking test's `G` ids; each
 task logs what it finds as it goes, and the close-out (T10) fills in the glue review and moves each
 open gap to a named release.
+
+### Choices made
+
+The decisions above are items 172-184. The close-out's choices are items 185-190 ("Engine 0.11,
+close-out" in `FEEDBACK-LOG.md`):
+
+- **How the decisions were built where they moved** (item 185): decision 4's kit rule
+  `launch-needs-offer` and the interface action `{ "ui": "mission" }` were not added (the sim
+  already refuses a mission no opportunity offers, M8, and a game run's `missions` `open` step
+  drives the same `launchMission` path); decision 11's guards are raiders with squad role
+  `regular` (roles are `regular`, `hero`, `captain`; M16) and the round's hero is the kit's, not
+  the captain (M13); T8's tuning has `driven-off` damage the captain by 30 (not 10), and
+  `ram-burnt` and `catapult-burnt` also damage the other engine by 40, so the delegated run's
+  outcome visibly changes the hall's end.
+- **The page steps the world at its normal rate after a round** (item 186): decision 3 said the
+  page would show the step-through after a played round fast (one world tick per loop step);
+  T9's page plays it at the battle's 10 ticks a second, so the player sees the watchtower finish
+  and the result land. Presentation only: the hashes per world tick are the same either way.
+- **The sim's siege fixture keeps its 0.10 mission file** (item 187, M12): moving
+  `raid.mission.json` to `mission-room` re-records seven golden hashes for no new check (the repo
+  tests already play it as a real `mission-room` mission); moved to 0.15 with M20, the other
+  change that moves hashes.
+- **Two gaps go to the release that owns their subject, not the sample set** (item 188): M13 (a
+  world unit as the round's hero) to 0.13, heroes and consequences; M19 (recording a hosted round's
+  input) to 0.14, the creator tools. The rest of the moved gaps stay with 0.15.
+- **The glue review logs two more gaps** (item 189): M27, the sim-to-RTS-kit port bridge written
+  in both RTS samples, and M28, the glue reading the sim's mission records and keyed entities;
+  both moved to 0.15.
+- **Play from a link, checked in a real browser** (item 190): `tests/browser/mini-siege-page.test.ts`
+  builds the repo, finds the game in the launcher, and on two fresh pages clicks Launch at world
+  tick 40, then Delegate, or Play with the recorded round typed on the keyboard; it skips where
+  Chromium is missing, like the other browser tests.
+- The root `package.json` version was left as it was, as in earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm dev                       # then games/samples/mini-siege/ from the launcher (or pnpm build && pnpm preview)
+pnpm -s cli validate games/samples/mini-siege --json
+pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json      # played: both engines burnt
+pnpm -s cli run games/samples/mini-siege/runs/delegated.run.json --json   # delegated: seed 11 draws ram-burnt
+pnpm -s cli run games/samples/mini-siege/runs/quit.run.json --json        # quit at once: driven off
+pnpm -s cli dump games/samples/mini-siege/runs/played.run.json --tick 566 --json   # the commit (world tick 160)
+pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run.json --tick 80 --json   # the held battle
+pnpm -s cli mutants games/samples/mini-siege --json
+pnpm vitest run games/samples/mini-siege tests/browser/mini-siege-page.test.ts
+```
+
+On the page: from world tick 20 to 200 the bar offers **Launch: Burn the siege engines**; the
+siege freezes (blue) and the page asks **Play** or **Delegate**. Play is the raiders' camp at night
+(arrows, X strikes, Backspace gives up); either way the result lands 120 world ticks after the
+launch and the status line names it. A whole game takes two or three minutes.
+
+### Done when
+
+Checked on 2026-11-03 on the tree of the close-out commit (T10, on top of `35838ea`: its docs
+and the new browser test): `pnpm lint && pnpm docs:check && pnpm typecheck && pnpm test && pnpm build`
+pass (152 test files, 1667 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), and every one of the 27 run files in the repo (9 sim fixtures, 1 demo, 6 lab,
+4 stacking-test, 4 skirmish and the 3 new mini siege runs) exits 0 with the same final hash on two
+`pnpm -s cli run` runs in a row.
+
+- **Met: the mini siege can be played from a link in a few minutes, by playing the mission and by
+  delegating it.** `tests/browser/mini-siege-page.test.ts` (headless Chromium, the repo built as
+  `pnpm build` builds it): the launcher links `games/samples/mini-siege/`; on one page the bar's
+  Launch at world tick 40, then Delegate, commits `ram-burnt` at world tick 160; on another, Launch
+  then Play with `played.run.json`'s recorded round typed as keys plays the 406-tick round while
+  the world stays at tick 40, and commits `both-burnt` at 160; no page errors. A whole game is 260
+  world ticks at 10 a second plus the round, two or three minutes. `play.test.ts` plays the same
+  glue headless on both paths and ends on each run file's last hash.
+- **Met: both paths change the battle the way the design says** (decision 12). Each run file and
+  `mini-siege.test.ts` assert: the `siege` event frozen and its units keeping cell and hp at every
+  world tick of the cost (the same in all three runs before the commit); the watchtower rising and
+  finished by world tick 159 while the battle is held; the record at 160 = 40 + 120 however many
+  round ticks were played (406 or 1); exactly the outcome's effects (`both-burnt`: no ram, no
+  catapult; `ram-burnt`: no ram, the catapult at 60; `driven-off`: the captain down 30); and the
+  hall at world tick 260: 400 played, 280 delegated, 112 quit. Decision 3's cross-check is in
+  `mini-siege.test.ts` ("steps the world after the round as a world that resolved the same result
+  at the open tick"): a fresh game given the played round's result through the world's port at
+  the open tick, as a world run's `play` step does, hashes the same as the played game's world at
+  the end, rather than a separate world run file.
+- **Met: run files for both paths pass with the same hashes every time.** `played`
+  (`25d3a40b93c9b076`), `delegated` (`0576a976323b2882`) and `quit` (`28863925b7cb91d1`) each pass
+  with sync hashes every 20 ticks and a golden `<name>.hashes.json`, checked by
+  `tests/runs/run-files.test.ts` and twice in `mini-siege.test.ts`; the close-out ran them, and
+  every other run file, through `pnpm -s cli run` twice with equal final hashes. No earlier
+  run file's golden hash moved in 0.11 (for example `raid-partial` `60557f2e9c5e2245`, `battle` (skirmish)
+  `588fe33bb3ecfcfd`, `level-4` `06201f9a779cc2fc`).
+- **Met: the gap report is committed, and each gap is fixed here or moved to a named later
+  release.** `docs/reports/mini-siege.md`: 28 gaps, 11 fixed in 0.11 with their commits and 17
+  moved (0.13: M13; 0.14: M19; 0.15: the other 15), each listed in that release's section of
+  `docs/ROADMAP.md`; the glue review finds every file content, a skin, thin glue or a test.
+- Scope items, each with its code and tests: the scenario as data (`content/`, `validate`, and
+  `tests/architecture/no-content.test.ts`); one top-down mission loading the real defenders and
+  attackers from the sim through the adapter (`kits/topdown/mission-room.ts`,
+  `mission-room.test.ts`, `tests/kits/mission-adapter.test.ts`); played or delegated, with a
+  structured result (the record's `report.stats.destroyed`) through the mission contract
+  (`engine/core/mission-host.test.ts`, the run files); frozen battle, the building going up and
+  the fixed cost (above); original art and one short song (`content/sprites`, `content/songs`,
+  `tests/browser/mini-siege-shots.test.ts`).
+- **Stacking-test gaps, all fixed in 0.11:** G18 and G19 the rest (`engine/core/minigame.test.ts`,
+  `kits/topdown` and `kits/platformer` round tests), G27 and G28 (`engine/core/shell/shell.test.ts`,
+  the skin event tests in both backends), G13 and G30 (`resolveSkinKind` tests in both backends,
+  the platformer test game's `look:door`). `docs/reports/stacking-test.md` counts 28 fixed and 9
+  moved.
+- **No tag** (owner answer 24).
+
+### Deviations from the roadmap
+
+- **No `{ "ui": "mission" }` interface action and no `launch-needs-offer` kit rule** (item 185,
+  M8): decision 4 named both; the sim's own refusal and the game run's `open` step cover them.
+- **The round's hero is not the captain** (items 185 and 188, M13): decision 11 said the captain
+  plays the room; that needs a world unit as the round's hero, moved to 0.13.
+- **Decision 3's cross-check is in a game test** (above), not against a world run file: the mini
+  siege's world is built by its glue (the types table spawned first), so a world run of the same
+  scenario would need a second copy of that scenario file.
+- **The page does not speed up the step-through** (item 186).
+- **Feedback numbering:** T1's decisions are 172-184; the close-out added 185-190.
+
+### Outstanding issues
+
+- **17 mini siege gaps are open in later releases**: M13 (0.13), M19 (0.14) and 15 in 0.15
+  (`docs/reports/mini-siege.md`), most of them a second copy a second mission game would write.
+- **One mission game so far:** the shared parts of hosting a mission from a page (the battle or
+  round picture, the events, the launch flow) are the mini siege's glue until the sample set's
+  API review (M6, M21, M26).
+- **The sim's siege fixture still plays its raid as `sabotage`** in its own run files (M12, 0.15).
+- **Recorded experience ticks** (0.10, item 166) are still not written by a played round (M4).
+- Open owner decisions: items 172-190 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.10
 

@@ -140,6 +140,9 @@ interface HeadlessGame {
   step(input: InputFrame): void; // one tick
   snapshot(): JsonObject; // the whole state, plain JSON-safe data; must not change the game
   order?(order: JsonObject): string | null; // optional (Engine 0.9): a recorded order; null, or why it was dropped
+  miniGame?(): MiniGame | null; // optional (Engine 0.10): the round hosted now, for HostScene and the tools
+  mission?(step: JsonObject): MissionStepRefusal | null; // optional (Engine 0.11): a run file's mission step
+  missionExperience?(): readonly { mission: string; ticks: number }[]; // optional (Engine 0.11): played rounds' ticks
 }
 export function createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame;
 ```
@@ -153,6 +156,20 @@ export function createGame(content: ContentBundle, seed: number, opts?: Headless
   `guards` says which rules it is meant to guard, and a kit with `strictMutants: true` fails
   `mutants` (exit 4) on a weak rule. `mutants games/<game>` checks that every rule is guarded by
   some run file of the game.
+- Missions in a game (Engine 0.11; see `games/samples/mini-siege/headless.ts`): wrap the kit's
+  game in a `MissionHost` (`@engine/core/mission-host`) with `port: missionPort(world, { refs:
+scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `miniGames` and
+  `adapters: { 'mission-room': topdownMissionAdapter }` (`@kits/topdown`). The host is itself a
+  `HeadlessGame` with `mission(step)` and `miniGame()`: while a round is hosted a step steps the
+  round only (the world, the enemy and orders wait); otherwise it steps the game and commits due
+  missions. An RTS page offers launches with the kit's `missionButtons(view)` and opens one with
+  `launchMission(view, id, host)`; the mission's room, foes and outcome rules are its `params`
+  (`mission-room`, table above), and `validate` checks them.
+- A round may map the host's actions (`MiniGameDef.inputMap`, `{ "jump": "attack" }`) and show
+  host HUD keys (`hostStatus: ['mission']`, drawn as `host:mission`); a button held into a round is
+  ignored until released (Engine 0.11). A skin kind entry's `byTag: [{ tag, frames?, palette?,
+mesh? }]` picks a look by an entity's tag (`frozen`, `damaged`, `site`, `foe:ram`, `look:<id>`),
+  first match wins.
 
 ## Run files
 

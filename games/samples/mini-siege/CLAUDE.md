@@ -146,7 +146,9 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   (the round pushed and popped, `played.run.json`'s recorded round fed as the page's keys,
   `mini-game-end:pass`, `both-burnt` at 160); each path ends at world tick 260 with the run file's
   last state hash. A launch after the window closes is refused `not_offered`.
-- Also: `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
+- Also: `tests/browser/mini-siege-page.test.ts` (the built page played from the launcher's link in
+  headless Chromium: Launch then Delegate, and Launch then Play with the recorded round typed as
+  keys; Engine 0.11 T10), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
   `tests/build/pages.test.ts` (the launcher and the build list the page).
 
 ## Entity ids
@@ -226,7 +228,8 @@ view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is t
 `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs` (golden hashes;
 the backend parity test plays every run through the view's `frame()` and `render`), `pnpm test
 games/samples/mini-siege/play.test.ts` (the page's glue), `pnpm vitest run
-tests/browser/mini-siege-shots.test.ts` (the screenshots).
+tests/browser/mini-siege-shots.test.ts` (the screenshots), `pnpm vitest run
+tests/browser/mini-siege-page.test.ts` (the page played from its link on both paths).
 
 ## Imports
 

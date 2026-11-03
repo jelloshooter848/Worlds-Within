@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 185.** (Last used: 184.)
+**Next unused number: 191.** (Last used: 190.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -696,3 +696,28 @@ and fair delegation (154) are the owner's rules and are not reopened here.
   same outcome tick for tick. OK?
 - **184.** The mini siege's gap report uses ids `M1`, `M2`, ... (never reused), logged by each task
   as found, with the glue review at the close-out. OK?
+  _Done in Engine 0.11 T10: 28 gaps (`M1`-`M28`), 11 fixed in 0.11 and 17 moved; the glue review
+  is in the report._
+
+**Engine 0.11, close-out** (details in `docs/BUILD-LOG.md`, Engine 0.11, Choices made and
+Deviations from the roadmap)
+
+- **185.** Decisions 4 and 11 as built: no kit rule `launch-needs-offer` and no `{ "ui": "mission" }`
+  interface action (the sim refuses a mission no opportunity offers, and a game run's `open` step
+  drives the kit's `launchMission`); the guards are raiders with squad role `regular` (M16); the
+  round's hero is the kit's, not the captain (M13); `driven-off` damages the captain by 30, and
+  `ram-burnt` / `catapult-burnt` also damage the other engine by 40. OK?
+- **186.** After a played round the page steps the world at the battle's normal 10 ticks a second,
+  not fast as decision 3 said, so the player sees the watchtower finish and the result land
+  (presentation only; the hashes are the same). OK?
+- **187.** M12: the sim's siege fixture keeps its 0.10 `raid.mission.json` (`play: "sabotage"`);
+  moving it to `mission-room` re-records seven golden hashes and adds no check, so it moves to
+  0.15 with M20, the other hash-moving change. OK?
+- **188.** M13 (a world unit as the round's hero) moves to 0.13, heroes and consequences, and M19
+  (recording a hosted round's input) to 0.14, the creator tools, instead of 0.15; the other moved
+  gaps stay with the sample set. OK?
+- **189.** The glue review adds M27 (the sim-to-RTS-kit port bridge, the same in both RTS samples)
+  and M28 (the glue reading the sim's mission records and keyed entities), both moved to 0.15. OK?
+- **190.** "Played from a link" is checked by `tests/browser/mini-siege-page.test.ts`: the built
+  site's launcher, then Launch and Delegate, and Launch and Play with the recorded round typed as
+  keys, in headless Chromium (skipped where none is installed). OK?

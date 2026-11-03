@@ -512,7 +512,7 @@ Reasoning in [BUILD-LOG.md](BUILD-LOG.md#decisions-1).)_
 
 ---
 
-## 0.11 The mini siege (multi-genre sample)
+## 0.11 The mini siege (multi-genre sample) (done)
 
 **Goal:** put the multi-genre layer under real pressure early. Engine parts designed without a real
 game driving them tend to miss what games actually need, so the simulation, the RTS kit, the top-down
@@ -548,6 +548,10 @@ kit and the mission contract are joined in one small playable scenario well befo
   it, and both paths change the battle the way the design says.
 - Run files for both paths pass in CI with the same hashes every time.
 - The gap report is committed, and each gap is fixed here or moved to a named later release.
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-011); the gap report is [reports/mini-siege.md](reports/mini-siege.md):
+28 gaps, 11 fixed in 0.11 and 17 moved to 0.13, 0.14 and 0.15, listed in those sections.)_
 
 **Out of scope:** tower defense, heroes who carry over between scenarios, a campaign. Anything from
 Worlds Within (its places, characters, story or art).
@@ -593,6 +597,11 @@ and the `engine/sim` diff for this release is empty (or each change is justified
 - A way for one scenario to start from another's results.
 - Proved on the mini siege: a short second scenario that starts from the first one's results.
 
+**From the mini siege** (gaps moved here; [gap report](reports/mini-siege.md)):
+
+- M13: a mission round's hero taken from a world unit (a `hero: { select, hpPer }` field in a
+  `mission-room` mission's params), so a named defender's hp goes into the round and back.
+
 **Done when:** losing a named defender in the mini siege changes how the follow-up scenario plays,
 shown by two run files whose only difference is that defender's fate. A save code taken at the end of
 the first scenario restores the same world (equal hashes).
@@ -615,6 +624,11 @@ the first scenario restores the same world (equal hashes).
 - G10: region edits and a ruler for text maps.
 - G12: per-kit mutants (each kit's rules and strictness in a game that uses two).
 - G31: replaying a run file in a browser page.
+
+**From the mini siege** (gaps moved here; [gap report](reports/mini-siege.md)):
+
+- M19: recording a hosted round's input for a run file's `play` step (today a throwaway script
+  with the kit's bot).
 
 **Done when:** a new scenario added to the mini siege with data files only can be stepped through in the
 debugger, and a failing replay from the CLI opens at its failing tick.
@@ -646,6 +660,28 @@ debugger, and a failing replay from the CLI opens at its failing tick.
 - G36: a skin `background` colour, so the sky is not a constant in glue.
 - G17: a game with several separate challenge rooms (the top-down kit's kinds without the
   one-dungeon check, chosen by the game).
+
+**From the mini siege** (gaps moved here; [gap report](reports/mini-siege.md)). Most are a second
+copy a second mission game would write; the API review decides where each goes:
+
+- M1: stored player volumes and a mute or volume control on every sample page.
+- M2: a skin's `byTag` matching a tag prefix or value (`progress:<n>`).
+- M4: whether a played round's experience ticks belong in the hashed record (world and game runs).
+- M5: a channel for mission refusals that arrive after their step.
+- M6 (the rest): one round picture for every hosted mission (the battle-or-round frame switch).
+- M10: every scenario key kept in the world, or passed to the adapter.
+- M11 (the rest): a params page per mini game a game defines (the room challenge's).
+- M12: the sim's siege fixture `raid.mission.json` as a real `mission-room` mission (re-records
+  seven golden hashes).
+- M16: free-form squad roles, or a squad selector, in mission params.
+- M17 and M28: run checks by scenario key (`world.key.ram.Health.hp`), and the committed mission
+  records and keyed entities read through the sim or the port, not by the glue.
+- M18: `MissionHost` and the kit's game in one (an `onChange` hook or a kit helper).
+- M20: the scripted enemy skipping frozen units (moves every mini siege hash).
+- M21: `MissionHost` events (`mission-open`, `mini-game-end`, `mission-commit`) for skins.
+- M25: an offer marker named by scenario key in the mission file.
+- M26: a shared mission-launch scene (launch, play or delegate, the round, the outcome).
+- M27: the bridge from a sim world to the RTS kit's `RtsWorldPort`, written once.
 
 **Done when:** every sample plays from a link and passes its run files in CI, `games/platformer-test/`
 and `games/demo/` are gone, and the API review is

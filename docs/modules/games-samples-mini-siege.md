@@ -53,5 +53,6 @@ sides, named }`), `miniGames(content)`, `createWorld`.
 `pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (and `delegated`,
 `quit`), `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs`,
 `pnpm -s cli screenshot games/samples/mini-siege/runs/played.run.json --tick 200 --json` (the
-room; `delegated.run.json --tick 80` the frozen battle), `tests/browser/mini-siege-shots.test.ts`.
+room; `delegated.run.json --tick 80` the frozen battle), `tests/browser/mini-siege-shots.test.ts`; the page played from its link on
+both paths: `tests/browser/mini-siege-page.test.ts`.
 To play: `pnpm dev`, then `games/samples/mini-siege/` from the launcher.

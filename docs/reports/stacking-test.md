@@ -26,13 +26,17 @@ hosted round in the game contract; `scene.ts` is gone from both games), and the 
 in 0.7, 3 more in 0.10) **and 14 open, each moved to a named release**: 0.11 (G13, G18, G27, G28,
 G30), 0.14 (G5, G8, G9, G10, G12, G31) and 0.15 (G17, G33, G36).
 
-**Engine 0.11 (in progress):** G18 fixed in T2 (`525d172`: a round's own input map, and a button
-held into the round ignored until released), and the rest of G19 with it (a round's HUD can show
+**Engine 0.11 is closed: G13, G18, G19 (the rest), G27, G28 and G30 were fixed in 0.11.**
+G18 fixed in T2 (`525d172`: a round's own input map, and a button held into the
+round ignored until released), and the rest of G19 with it (a round's HUD can show
 the host's values; G19 was already counted fixed in 0.7). G27 and G28 fixed in T3 (`4345818`:
 the shell's `audio` option, and skin event keys with a field match such as `mini-game-end:pass`).
 G13 and G30 fixed in T4 (`7eebb3d`: an optional `look` on a level's trigger entry, presented as
-the tag `look:<id>`, and a skin's `byTag` looks). Counts now: 28 fixed and 9 open: 0.14 (G5, G8,
-G9, G10, G12, G31) and 0.15 (G17, G33, G36).
+the tag `look:<id>`, and a skin's `byTag` looks). **Counts now: 28 fixed** (20 in 0.7, 3 more
+in 0.10, 5 more in 0.11: G13, G18, G27, G28, G30; G19 was already counted in 0.7) **and 9 open,
+each moved to a named release**: 0.14 (G5, G8, G9, G10, G12, G31) and 0.15 (G17, G33, G36). The
+mini siege uses G19's host status and G28's result sounds in its skins; its own gaps are in
+[its report](mini-siege.md).
 
 - **Stacking works with the contracts as they were.** A platformer level hosted a top-down room
   through the engine's `MiniGameDef` with no change to the platformer kit (T5), and the round's
