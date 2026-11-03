@@ -1,0 +1,7 @@
+{
+  "id": "road",
+  "title": "The winding road",
+  "start": { "gold": 40, "lives": 5 },
+  "towers": ["arrow", "cannon"],
+  "waves": "road"
+}

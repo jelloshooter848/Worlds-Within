@@ -2,9 +2,10 @@ import { defineRules } from '@engine/core/rules';
 
 /**
  * The tower-defense kit's named rules, for mutant checks (`engine/core/rules.ts`): each one's code
- * in `world.ts` is guarded by `rules.isOn(id)`, so a run can switch it off. The kit does not opt in
- * to strict mutants yet (docs/BUILD-LOG.md, Engine 0.12, decision 1): T4 turns it on once the
- * sample's run files guard every rule.
+ * in `world.ts` is guarded by `rules.isOn(id)`, so a run can switch it off. The kit opts in to
+ * strict mutants (docs/BUILD-LOG.md, Engine 0.12, decision 1): the sample's run files
+ * (`games/samples/tower-defense/runs/`) guard every rule, and `pnpm cli mutants` fails on one they
+ * do not.
  */
 export const TOWERDEFENSE_RULES = defineRules([
   {

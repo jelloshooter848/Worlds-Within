@@ -45,6 +45,16 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   `tdGame` (a `HeadlessGame` on frame input, snapshot `{ round, controls, kit }`), `tdRound` and a
   small deterministic `TdBot`. `TdWorld` gained one read-only helper (`waveLeft`). Lesson D1: taps
   cannot be recorded in a run file. No `engine/core` or `engine/sim` change was needed.
+- **`games/samples/tower-defense` headless** (T4): the standalone sample as data (one 16 x 15
+  `td-map` with its `.map.txt` grid, arrow and cannon towers, three waves with a timer) plus
+  `content.ts` and a one-call `headless.ts` over `tdGame`; four run files (`build`: refusals,
+  buying and selling; `won`: towers placed with the cursor and every wave held; `target`: the
+  cannon shoots the runner that overtook the brute; `leaked`: a thin defence, waves by the timer,
+  the round lost) with assertions on gold, lives, wave and towers, sync hashes and golden files.
+  Together they guard all fourteen kit rules, so the kit now opts in to strict mutants
+  (`tests/runs/tower-defense-mutants.test.ts`). Each run's sync hashes leave out the ticks a
+  guarded rule's mutant reaches with a changed state before a check fails (a hash mismatch is not
+  a failed check). No `view` yet (T5). No `engine/core` or `engine/sim` change was needed.
 
 ### Decisions
 

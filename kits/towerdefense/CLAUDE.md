@@ -34,8 +34,9 @@ snapshot give it (T6) and report what happened. It never imports `engine/sim` an
 - `bot.ts`: `TdBot(plan)`, a deterministic player for tests: `next(game)` gives the actions to
   hold this step (steps `place`, `sell`, `wave`, `wait`, `clear`; one press, then a released frame).
 - `kit.ts`: `kit` (`defineKit`): name `towerdefense`, kinds `td-map`, `td-towers`, `td-waves`,
-  rules `TOWERDEFENSE_RULES`, **no strict mutants yet** (decision 1: T4 turns it on once the sample's
-  run files guard every rule). `engine/tools` finds it through the generated
+  rules `TOWERDEFENSE_RULES`, **strict mutants** (decision 1; on since T4, when the sample's run
+  files came to guard every rule: `pnpm cli mutants games/samples/tower-defense` fails on a rule no
+  run file guards). `engine/tools` finds it through the generated
   `engine/tools/kit-list.ts` (`pnpm docs:gen` after changing it). `index.ts` does not re-export it.
 
 ## Content kinds (`schema.ts`)
@@ -158,7 +159,9 @@ and `tap`. A game's `createGame` is `tdGame({ ...tdRound(content), seed, disable
 `spawn-spacing`, `enemies-walk`, `towers-fire`, `target-first`, `tower-range`, `tower-cooldown`,
 `kill-bounty`, `leak-costs-life`, `win-on-clear`, `lose-at-zero-lives`. Each is one `isOn` check
 where it is decided; `world.test.ts` has one case per rule that changes when it is off (and fails
-when a rule has no case).
+when a rule has no case). The kit is strict: the run files of `games/samples/tower-defense` guard
+every rule (`pnpm cli mutants games/samples/tower-defense`, `tests/runs/tower-defense-mutants.test.ts`),
+so a new rule needs a run there that fails without it.
 
 ## Rules
 

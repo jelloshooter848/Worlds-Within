@@ -29,7 +29,8 @@ wave, and pointer taps through the frame's camera, `cellAtScreen`), `game` (`tdG
 `HeadlessGame` stepped with frame input whose snapshot is `{ round, controls, kit }`; `tdRound`
 reads a round from a game's content) and `bot` (`TdBot`, a deterministic player for tests).
 `kit.ts` exports `kit`, the hook the tools find by the
-name `towerdefense`.
+name `towerdefense`; it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
+`games/samples/tower-defense` came to guard every rule).
 
 ## Imports allowed
 
@@ -46,4 +47,5 @@ waves, targeting, kills, leaks, the end of the round, each rule switched off, th
 the same seed), the presentation tests (schema-valid frozen frames, events), the controls tests
 (actions and taps) and the headless game tests (a bot's round giving the same hashes twice). `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
 `tests/kits/towerdefense-validate.test.ts` also checks that the broken fixture is rejected by file
-and field.
+and field. `pnpm -s cli mutants games/samples/tower-defense` (exit 0) checks that the sample's run
+files guard every kit rule.

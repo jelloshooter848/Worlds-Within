@@ -1,0 +1,13 @@
+{
+  "id": "tower-defense",
+  "title": "Tower defense: hold the winding road against three waves",
+  "kit": "towerdefense",
+  "content": {
+    "td-map": ["content/maps/*.json"],
+    "td-towers": ["content/towers/*.json"],
+    "td-waves": ["content/waves/*.json"]
+  },
+  "start": { "seed": 12 },
+  "screen": { "width": 256, "height": 240 },
+  "headless": "headless.ts"
+}

@@ -55,11 +55,11 @@ const mapErrors = (map: string[], over: Record<string, unknown> = {}) => {
 };
 
 describe('the towerdefense kit hook', () => {
-  it('names the kit, its three kinds and its rules, without strict mutants yet', () => {
+  it('names the kit, its three kinds and its rules, with strict mutants', () => {
     expect(kit.name).toBe('towerdefense');
     expect(kit.kinds().map((k) => k.name)).toEqual(['td-map', 'td-towers', 'td-waves']);
     expect(kit.rules).toBe(TOWERDEFENSE_RULES);
-    expect(kit.strictMutants).toBeUndefined();
+    expect(kit.strictMutants).toBe(true);
   });
 
   it('loads the fixture game as a game would', () => {
