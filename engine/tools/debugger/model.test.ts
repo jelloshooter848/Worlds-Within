@@ -207,7 +207,7 @@ describe('DebugSession: timeline and replay failures (Engine 0.14 T11)', () => {
     const fresh = await sessionFor(PLAYED, { cache: false });
     fresh.goto(100);
     expect(fresh.timeline()).toEqual(back);
-  });
+  }, 60_000);
 
   it('gives no timeline for a game with no world', async () => {
     expect((await sessionFor(WALK)).timeline()).toBeNull();

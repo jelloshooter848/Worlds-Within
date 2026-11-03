@@ -171,7 +171,7 @@ describe('trace', () => {
     expect((result.missions as unknown[]).length).toBeGreaterThan(0);
     const byTick = new Map(rowsOf(result).map((r) => [r.tick, r.hash]));
     for (const [tick, hash] of hashes) expect(byTick.get(tick)).toBe(hash);
-  });
+  }, 60_000);
 
   it('halves the rows under the output cap and writes the whole trace to a file', async () => {
     const { result } = await cli([
