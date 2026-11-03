@@ -1,5 +1,6 @@
 import { parseCommandLine, wantsJson } from './args';
 import { codeCommand } from './commands/code';
+import { debugCommand } from './commands/debug';
 import { dumpCommand } from './commands/dump';
 import { eventsCommand } from './commands/events';
 import { addCommand, getCommand, pasteCommand, removeCommand, setCommand } from './commands/edit';
@@ -46,6 +47,7 @@ export function defaultRegistry(): Registry {
   registry.add(timelineCommand);
   registry.add(codeCommand);
   registry.add(screenshotCommand);
+  registry.add(debugCommand);
   registry.add(mutantsCommand);
   registry.add(recordCommand);
   registry.add(getCommand);

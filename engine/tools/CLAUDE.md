@@ -84,11 +84,19 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
 - `replay.ts`: replay files. `writeReplay(played, cwd, outDir)` writes one for a failed run,
   `replayOf` builds its JSON, `checkReplay` compares a replay's run with its stored failure and
   hashes.
-- `screenshot.ts`: `takeScreenshot(job, gameAbs, viewAbs)` serves the repo with Vite in middleware
-  mode on a free local port, opens the screenshot page in headless Chromium (Playwright) and
+- `screenshot.ts`: `serveRepo({ allow?, port?, handle? })` (Engine 0.14 T10: the repo served with
+  Vite in middleware mode on 127.0.0.1, a free port by default, `handle` answering a request
+  before Vite; the debugger's server uses it too) and `takeScreenshot(job, gameAbs, viewAbs)`, which serves the repo that way, opens the screenshot page in headless Chromium (Playwright) and
   returns the PNG bytes (or the page's `ShotRefusal`); `launchChromium(opts?)` (throws
   `NoBrowserError` with the install command), `chromiumArgs(opts?)` (Chromium's flags per
   backend), `servedPath(abs)`, `pngSize(png)`.
+- `check-values.ts` (Engine 0.14 T10): `CHECK_OPS`, `CheckOp`, `valueAt` and `failsCheck`, the
+  run file's checks as pure functions (no Node imports), so the debugger page makes the same
+  checks; `run-file.ts` re-exports them.
+- `event-filter.ts` (Engine 0.14 T10): `EventFilter`, `filterChanges`, `causeMatches`,
+  `changeLine`: the event log's filters, shared by `events` and the debugger page.
+- `debugger/` (Engine 0.14 T10): the in-browser simulation debugger, its own module with its own
+  `CLAUDE.md` (the page, its pure model, its job and its Node server; The debugger, below).
 - `screenshot/`: the tools-only screenshot page (`index.html`, `page.ts`) and the job it takes
   (`job.ts`). Never in the Pages build: `build/pages.ts` only builds the launcher and game pages.
 - `content-path.ts`: paths for the editing verbs (`parsePath`, dotted or JSON pointer) and the
@@ -104,7 +112,7 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, `record.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `debug.ts`, `mutants.ts`, `record.ts`, and `edit.ts`
   for `get`, `set`, `add`, `remove` and `paste`; `edit.ts`'s `writeValue(file, segments, value)`
   is the checked write `record` uses).
 
@@ -203,6 +211,13 @@ renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matche
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
   `view`, or (`three`) a view without `frame()` or a game without a `three` skin, 2 for a bad
   `--tick`, `--out` or flag, 5 when Chromium is not installed.
+- `debug <file> [--tick N] [--port P] [--check]` (Engine 0.14 T10): the in-browser simulation
+  debugger on a run, replay or dump file (The debugger, below). Result `{ url, file, kind, game,
+ticks, openTick, serving }`; with `--check` also `{ tick, hash, headlessHash, matchesHeadless,
+mismatch, eventCount }`. Exit 0; 4 (`--check`) when the page's hash is not the headless run's or
+  the page found a mismatch; 3 for a run file, dump file or content that breaks its schema; 2 for
+  a file that is not there, a `--tick` past the run (or not a dump's own tick) or a world run; 5
+  when Chromium is not installed (`--check`).
 - `mutants <target>`: mutant checks (below) on a run file or a game folder, over the rules of
   every kit the game uses. Run file result: `{ run, game, kit, strict, kits: [{ kit, strict, rules
 }], baseline: { passed, failure }, guards, rules: [{ id, kit, strict, description, skipped,
@@ -946,6 +961,38 @@ games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --al
 - Chromium: `pnpm exec playwright install --with-deps chromium` (CI does this). Without it the
   command crashes (exit 5) with that line, and the browser tests skip with a message locally; in
   CI (`CI` set) they are required.
+
+## The debugger
+
+Engine 0.14 T10 (docs/BUILD-LOG.md, Engine 0.14, decisions 1 and 2): `pnpm cli debug <file>`
+opens the in-browser simulation debugger, `debugger/` (its own `CLAUDE.md` has the details).
+
+- **What it opens**: a run file, a replay file (a run file with a `replay` block) or a dump file
+  (`dump --out`, `format: "worlds-within/dump"`), told apart by their shape. A run opens at
+  `--tick` (default 0), a replay at its failing tick (`replay.failure.tick`), a dump at its own
+  tick, read-only (its run plays there with Play from here, when it is a game run file that is
+  there). A world run is a usage error (the page steps games; open a world run's dump file).
+- **How**: the command plays the run headless to the open tick (for `headlessHash`), builds the
+  page's job (the game's file texts, seed, input, orders, missions, rules, `from` save, `start`,
+  checks, expected hashes: the golden file, the run's sync `hashes`, a replay's; the headless and
+  view modules' URLs), serves the repo with `serveRepo` and the job on a GET-only route
+  (`/__ww-debugger/job.json`, from memory, never a file read), prints the URL
+  (`.../engine/tools/debugger/index.html?tick=N`) and **stays up until stopped** (Ctrl-C; the
+  process keeps running for the server).
+- **The page** checks the content, imports the headless module (and the view, for the picture),
+  and steps the run as `run` does (orders, then mission steps, then the step); back is a rebuild
+  from tick 0 and a replay forward, with every tick's snapshot and hash cached. Panels: picture,
+  checks at the tick (and each assertion's result), hashes against the expected ones, a state
+  tree with search and the changes since the previous tick, the event log (this step's world
+  ticks, everything kept, or a world-tick span; filters for entity, cause and component, as
+  `events` takes them). The first stored-hash, rewind or view mismatch stops stepping there.
+- **`--check`**: opens the page in headless Chromium, goes to the open tick and returns the page's
+  `tick`, `hash` and `mismatch` and the world's `eventCount` (null for a game with no world) beside
+  `headlessHash` (a dump: the run's at the dump's tick, or null when it cannot be played) and
+  `matchesHeadless`; exit 4 when they differ or the page found a mismatch.
+  `pnpm -s cli debug games/demo/runs/walk-east.run.json --tick 60 --check --json` exits 0.
+- Tests: `debugger/model.test.ts`, `debug.test.ts`, `tests/browser/debugger.test.ts`,
+  `tests/build/pages.test.ts` (the page is not in the Pages build).
 
 ## Generated docs
 

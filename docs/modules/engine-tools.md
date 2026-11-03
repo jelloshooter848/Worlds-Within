@@ -144,6 +144,12 @@ finalHash, hashMismatch, failure }`. `--input` takes what the page's `window.__w
 paths, rows: [{ tick, hash, values }], missing, orders, missions }`, played like `dump` (game or
   world runs). A missing path is null and listed in `missing`; the cap halves `rows`; text mode is
   an aligned table. Bad paths or ticks exit 2, a bad run file or content exit 3.
+- `pnpm cli debug <file> [--tick N] [--port P] [--check]` (Engine 0.14 T10): the in-browser
+  simulation debugger on a run, replay or dump file, a tools-only page with its own module page,
+  [engine/tools/debugger](engine-tools-debugger.md). Serves it and prints `{ url, file, kind, game,
+ticks, openTick, serving }` (staying up until stopped); `--check` opens it in headless Chromium at
+  the tick and adds `{ tick, hash, headlessHash, matchesHeadless, mismatch, eventCount }`, exit 4
+  on a mismatch.
 - `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
 [--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
@@ -191,7 +197,8 @@ firstColumn }`); `get <map> rows.R1.C1:R2.C2` copies a rectangle; `paste <map> r
   the printed one has `truncated: true` and `fullOutput: <path>`.
 - In code: `main(argv, io)` (`engine/tools/main.ts`), `defineCommand` and `Registry`
   (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, the engine's kinds plus `kit`'s and each `uses` kit's, re-exported by `game-loader.ts`),
-  `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`),
+  `serveRepo`, `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`), `valueAt` and
+  `failsCheck` (`check-values.ts`, pure), `filterChanges` (`event-filter.ts`, pure),
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`,
   `parseGridRegion`, `gridRuler` and `pasteBlock` (`content-path.ts`), `playRun` and `stateHash` (core's, `engine/core/state-hash.ts`)
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),

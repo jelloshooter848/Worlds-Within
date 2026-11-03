@@ -414,6 +414,7 @@ these steps in order.
 | `timeline`   | `pnpm cli timeline <runFile> [flags]`        | the world time, opportunities, frozen events and commits of a run file, as data              |
 | `code`       | `pnpm cli code <runFile> [flags]`            | the save code of a game run's campaign save at its last tick (or --tick N)                   |
 | `screenshot` | `pnpm cli screenshot <runFile> [flags]`      | a PNG of one paused, seeded frame of a run file (headless Chromium)                          |
+| `debug`      | `pnpm cli debug <file> [flags]`              | the in-browser simulation debugger on a run, replay or dump file (state, events, stepping)   |
 | `mutants`    | `pnpm cli mutants <target>`                  | play run files once per kit rule switched off and report the rules they don't guard          |
 | `record`     | `pnpm cli record <runFile> [flags]`          | write a hosted round's recorded input into a run file's play step, then run it               |
 | `get`        | `pnpm cli get <file> <path> [flags]`         | read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler |

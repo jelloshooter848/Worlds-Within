@@ -1,4 +1,9 @@
-import { createServer as createHttpServer, type Server } from 'node:http';
+import {
+  createServer as createHttpServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Browser } from 'playwright';
 import { join, relative, resolve } from 'node:path';
@@ -70,8 +75,27 @@ export async function launchChromium(opts: LaunchOptions = {}): Promise<Browser>
   }
 }
 
-/** Starts Vite in middleware mode behind a local HTTP server; returns its base URL and a close. */
-async function serve(gameAbs: string): Promise<{ base: string; close(): Promise<void> }> {
+/** How to serve the repo: extra folders Vite may serve, a fixed port, and routes before Vite's. */
+export interface ServeOptions {
+  /** Folders outside the repo Vite may serve (a game folder in a temp dir). */
+  allow?: readonly string[];
+  /** The local port to listen on (default: a free one). */
+  port?: number;
+  /** Answers a request before Vite does; returns false to let Vite have it. */
+  handle?(req: IncomingMessage, res: ServerResponse): boolean;
+}
+
+/** A served repo: its base URL and how to stop it. */
+export interface ServedRepo {
+  base: string;
+  close(): Promise<void>;
+}
+
+/**
+ * Serves the repo with Vite in middleware mode behind a local HTTP server on 127.0.0.1 (the
+ * screenshot page, and from Engine 0.14 T10 the debugger page); returns its base URL and a close.
+ */
+export async function serveRepo(opts: ServeOptions = {}): Promise<ServedRepo> {
   const vite = await import('vite');
   // Vite's client always opens a websocket. Left alone in middleware mode it dials the fixed port
   // 24678, which another dev server (a second screenshot run, a test) may hold, and fails there with
@@ -90,14 +114,22 @@ async function serve(gameAbs: string): Promise<{ base: string; close(): Promise<
       hmr: false,
       ws: { server: http },
       watch: null,
-      fs: { allow: [REPO_ROOT, gameAbs] },
+      fs: { allow: [REPO_ROOT, ...(opts.allow ?? [])] },
     },
   });
-  http.on('request', server.middlewares);
-  await new Promise<void>((done, fail) => {
-    http.once('error', fail);
-    http.listen(0, '127.0.0.1', () => done());
+  http.on('request', (req: IncomingMessage, res: ServerResponse) => {
+    if (opts.handle?.(req, res)) return;
+    server.middlewares(req, res);
   });
+  try {
+    await new Promise<void>((done, fail) => {
+      http.once('error', fail);
+      http.listen(opts.port ?? 0, '127.0.0.1', () => done());
+    });
+  } catch (error) {
+    await server.close();
+    throw error;
+  }
   const { port } = http.address() as AddressInfo;
   return {
     base: `http://127.0.0.1:${port}`,
@@ -129,9 +161,9 @@ export async function takeScreenshot(
   viewAbs: string,
 ): Promise<Shot | ShotRefusal> {
   const browser = await launchChromium({ backend: job.backend, allowSoftwareGl: job.allowSoftwareGl });
-  let server: Awaited<ReturnType<typeof serve>> | undefined;
+  let server: ServedRepo | undefined;
   try {
-    server = await serve(resolve(gameAbs));
+    server = await serveRepo({ allow: [resolve(gameAbs)] });
     const page = await browser.newPage({
       viewport: { width: job.screen.width, height: job.screen.height },
       deviceScaleFactor: 1,

@@ -105,9 +105,10 @@ describe('game page discovery', () => {
     }
   });
 
-  it('leaves the tools-only screenshot page out of the build', () => {
+  it('leaves the tools-only screenshot and debugger pages out of the build', () => {
     const inputs = Object.values(pageInputs(repoRoot));
     expect(inputs).not.toContain(join(repoRoot, 'engine/tools/screenshot/index.html'));
+    expect(inputs).not.toContain(join(repoRoot, 'engine/tools/debugger/index.html'));
     expect(inputs.filter((path) => path.startsWith(join(repoRoot, 'engine')))).toEqual([]);
   });
 

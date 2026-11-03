@@ -353,6 +353,7 @@ describe('help', () => {
       'timeline',
       'code',
       'screenshot',
+      'debug',
       'mutants',
       'record',
       'get',

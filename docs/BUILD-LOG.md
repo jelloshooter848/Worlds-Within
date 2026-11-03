@@ -125,6 +125,25 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   `mission-host.test.ts`, `debug.test.ts`, `shell.test.ts`, `record.test.ts`, `play.test.ts`,
   `tests/browser/mini-siege-page.test.ts` (a round played on the page with `?record`, written with
   `record`, passing with the golden hashes).
+- **The in-browser simulation debugger** (T10, decisions 1 and 2): a new module,
+  `engine/tools/debugger/` (its own `CLAUDE.md`, `AGENTS.md` and
+  [module page](modules/engine-tools-debugger.md)), a tools-only page never in the Pages build.
+  `pnpm cli debug <file> [--tick N] [--port P] [--check]` opens a run file, a replay file (at its
+  failing tick) or a dump file (read-only at its tick, with Play from here when its run is a game
+  run file), serves the repo with the screenshot command's Vite server (`serveRepo`, now exported
+  with a port and a route hook) and the page's job on a GET-only in-memory route, and prints the
+  URL; `--check` opens the page in headless Chromium at the tick and compares its hash with the
+  headless run's (exit 4 on a mismatch). The page's pure model (`model.ts`, `DebugSession`)
+  steps the run as `run` does and rewinds by re-simulating from tick 0 with every tick's record
+  cached, and checks every hash against the golden file, the run's sync hashes or a replay's
+  (a mismatch stops stepping there); the view game is stepped alongside for the picture and its
+  hash compared. Panels: picture, checks per tick, hashes, a state tree with search and the diff
+  from the previous tick, and the event log with the `events` filters. `window.__wwDebugger` is
+  the hook for tests and agents. The run file's checks (`check-values.ts`) and the event filters
+  (`event-filter.ts`) moved to pure files the page shares with the CLI. World runs are not
+  stepped in the page (it builds games; a world run's dump file opens read-only). No layer arrow
+  and no golden hash changed. Tests: `debugger/model.test.ts`, `debug.test.ts`,
+  `tests/browser/debugger.test.ts`, `tests/build/pages.test.ts`.
 
 ### Planned tasks
 

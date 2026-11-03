@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { formatErrors, type ContentError } from '@engine/core/content/validate';
 import type { Change } from '@engine/sim/index';
+import { causeMatches, changeLine, filterChanges } from '../event-filter';
 import { EXIT, UsageError } from '../exit-codes';
 import { readRunFile } from '../run-file';
 import { defineCommand } from '../registry';
@@ -24,15 +25,7 @@ import { playWorldData } from '../world-data';
  * `--to`. Exit 3 for a bad run file or content.
  */
 
-/** Whether `cause` is `want` or one of its `want:...` causes. */
-export function causeMatches(cause: string, want: string): boolean {
-  return cause === want || cause.startsWith(`${want}:`);
-}
-
-/** One change as a text line: `t40 mission:sabotage set #12 WorldTime`. */
-export function changeLine(c: Change): string {
-  return `t${c.tick} ${c.cause} ${c.op} #${c.entity}${c.component !== undefined ? ` ${c.component}` : ''}`;
-}
+export { causeMatches, changeLine };
 
 export const eventsCommand = defineCommand({
   name: 'events',
@@ -65,14 +58,13 @@ export const eventsCommand = defineCommand({
     const { played, events: log } = data.value;
     const from = flags.from ?? 0;
     const to = flags.to ?? log.tick;
-    const events = (log.changes as Change[]).filter(
-      (c) =>
-        c.tick >= from &&
-        c.tick <= to &&
-        (flags.entity === undefined || c.entity === flags.entity) &&
-        (flags.cause === undefined || causeMatches(c.cause, flags.cause)) &&
-        (flags.component === undefined || c.component === flags.component),
-    );
+    const events = filterChanges(log.changes as Change[], {
+      from,
+      to,
+      ...(flags.entity === undefined ? {} : { entity: flags.entity }),
+      ...(flags.cause === undefined ? {} : { cause: flags.cause }),
+      ...(flags.component === undefined ? {} : { component: flags.component }),
+    });
     return {
       exit: EXIT.ok,
       result: {

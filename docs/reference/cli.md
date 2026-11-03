@@ -21,6 +21,7 @@ Commands:
   timeline    the world time, opportunities, frozen events and commits of a run file, as data
   code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
+  debug       the in-browser simulation debugger on a run, replay or dump file (state, events, stepping)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
   record      write a hosted round's recorded input into a run file's play step, then run it
   get         read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler
@@ -214,6 +215,27 @@ Flags:
   --out <string>              where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
   --backend <canvas2d|three>  what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)
   --allow-software-gl         three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `debug`
+
+```text
+pnpm cli debug <file> [flags]
+
+  the in-browser simulation debugger on a run, replay or dump file (state, events, stepping)
+
+Arguments:
+  <file>  a run file, a replay file or a dump file, such as games/demo/runs/walk-east.run.json
+
+Flags:
+  --tick <number>  the tick to open at (default 0; a replay's failing tick; a dump's own tick)
+  --port <number>  the local port to serve on (default: a free one)
+  --check          open the page in headless Chromium at the tick, compare its hash with the headless run's, and stop
 
 Global flags:
   --json                 print exactly one JSON result object on stdout
