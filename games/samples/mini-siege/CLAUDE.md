@@ -130,8 +130,8 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   `raider-*` units (by key; the guards stay with the engines) as `raider`s with one hp per 10 world
   hp, speed 4, 10 ticks apart; rules in order: no leak and at most 40 spent `held-cheap`, no leak
   `held`, won `held-bloodied`, else `overrun`. Since Engine 0.15 T8 (lessons D3 and D4) its
-  effects are **report-driven**: played, the gold taken from the hall is the round's `spent`
-  (`inventory` with `fromReport: "spent"`, `negate`, `max` 100, the budget's cap), the raiders
+  effects are **report-driven**: played, the gold taken from the hall is the round's `spent`,
+  net of towers sold (the kit's `stats.spent`, which `spentAtMost` reads too) (`inventory` with `fromReport: "spent"`, `negate`, `max` 100, the budget's cap), the raiders
   removed are the round's `killed` (`destroy` with `each: "killed"`, `owner` `raiders`, `max` 4)
   and the walls lost its `fallen` (`each: "fallen"`, `owner` `village`); a report over a limit is
   refused (`report_over_limit`, a late refusal in the run's `refusedMissions`) and the mission is
@@ -328,7 +328,9 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
   (fortify from 5, both at 20; the sabotage refused while fortify holds the siege), and over the
   two fortify runs: the battle (and the walls) frozen from 11 to 39 and the same in both, the
   commit at 40 whatever the round took (116 ticks played), the gold and losses at the commit, the
-  played world equal to a fresh one given the same result at 10, and the same hashes twice.
+  played world equal to a fresh one given the same result at 10, and the same hashes twice; and a
+  round that places and sells archers six times before keeping one (140 paid, 60 back) commits
+  its played `held` and takes only the net 80 gold from the hall.
 - `mini-siege.test.ts`, the dawn (Engine 0.13 T7): the campaign file, the dawn's units against
   their types, the siege's three ends (the captain active at 120 or 110, or captured at 90 by the
   raiders at 160) and their save codes (the ones the run files pin, round trips, at most 40

@@ -406,6 +406,36 @@ describe('the preparation phase: the fortify mission on the walls (Engine 0.12 T
     expect(overrun.named['raider-1']!.alive).toBe(true);
   });
 
+  it('charges the hall only the gold the round kept spent when towers are placed and sold', () => {
+    // Place archers (20) and sell them back (10) six times on the first wall, place them once
+    // more and send the wave: 140 gold paid in all, 60 back, 80 kept spent, within the cap of
+    // 100. The played outcome commits (no `report_over_limit`) and the hall loses only the 80.
+    const hold = [
+      ...Array.from({ length: 6 }, () => [['jump'], [], ['special'], []]).flat(),
+      ['jump'],
+      [],
+      ['start'],
+    ];
+    const steps = hold.map((h, frame) => ({ frame, hold: h }));
+    const game = createGame(content, SEED);
+    const refused: unknown[] = [];
+    let goldAtCommit: number | null = null;
+    while (game.sim.tick <= FORTIFY_COMMIT && game.sim.tick < 1000) {
+      if (game.miniGame() === null && game.sim.tick === FORTIFY_OPEN && refused.length === 0) {
+        expect(game.mission({ mission: 'fortify', action: 'open' })).toBeNull();
+        expect(game.mission({ mission: 'fortify', action: 'play', input: { steps } })).toBeNull();
+        refused.push('opened');
+      }
+      if (game.miniGame() === null && game.sim.tick === FORTIFY_COMMIT && goldAtCommit === null)
+        goldAtCommit = (game.sim.get(game.keys['hall']!, 'Inventory') as { gold: number }).gold;
+      game.step(NO_INPUT);
+    }
+    const record = missionsOf(game.sim).record('fortify')!;
+    expect(record).toMatchObject({ outcome: 'held', resolution: 'played', commitTick: FORTIFY_COMMIT });
+    expect(record.report?.stats).toMatchObject({ spent: 80, leaked: 0, placed: { archers: 7 } });
+    expect(goldAtCommit).toBe(150 - 80);
+  });
+
   it('steps the world after the round as a world that resolved the same result at the open tick (decision 3)', () => {
     const played = play('fortify-played');
     const report = missionsOf(played.sim).record('fortify')!.report!;

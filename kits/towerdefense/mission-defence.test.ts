@@ -313,6 +313,27 @@ describe('the td-defence round', () => {
     expect(map(withParams({ outcomes: tooCheap }))).toBe('breached');
   });
 
+  it('judges and reports the gold spent net of sales, so selling inside the budget is not overcharged', () => {
+    // Place, sell, place, sell, place a cannon (25, sells for 20) inside the 40-gold budget:
+    // 75 gross, 40 back, 35 kept spent, and the one cannon left holds the tiny map.
+    const cannon = { do: 'place', tower: 'cannon', col: 1, row: 1 } as const;
+    const sell = { do: 'sell', col: 1, row: 1 } as const;
+    const { end, report } = play([cannon, sell, cannon, sell, cannon, { do: 'wave' }]);
+    expect(end.result).toBe('pass');
+    expect(report).toMatchObject({ spent: 75, refunded: 40, placed: { cannon: 3 }, leaked: 0 });
+    const rules = [
+      { outcome: 'held-cheap', when: { leaksAtMost: 0, spentAtMost: 35 } },
+      { outcome: 'breached' },
+    ];
+    const mapped = towerdefenseMissionAdapter.outcome(end, withParams({ outcomes: rules }));
+    expect(mapped.outcome).toBe('held-cheap');
+    expect(mapped.stats).toMatchObject({ spent: 35, placed: { cannon: 3 } });
+    const tooCheap = [{ outcome: 'held-cheap', when: { spentAtMost: 34 } }, { outcome: 'breached' }];
+    expect(towerdefenseMissionAdapter.outcome(end, withParams({ outcomes: tooCheap })).outcome).toBe(
+      'breached',
+    );
+  });
+
   it('quits on select, which the round never sees, and sends it to onQuit', () => {
     const { round, end } = play(DEFEND, MISSION, 3);
     expect(end.result).toBe('quit');

@@ -228,7 +228,10 @@ The halves (the kit never imports `engine/sim`; it reads the snapshot with `snap
   takes it as `adapters: { 'td-defence': ... }`): `input` is `tdDefenceInput`, the round's params
   `TdDefenceInput { map, gold?, lives?, timer?, walls (or null), slot?, foes: [{ entity, name,
 kind, hp, speed, spacing, bounty }] }`; `outcome` is `tdDefenceOutcome`, with `stats` `{ placed,
-spent, leaked, livesLeft, killed, escaped, fallen, ticks }`. It throws (the host's
+spent, leaked, livesLeft, killed, escaped, fallen, ticks }`. `stats.spent` and the `spentAtMost`
+  rule read the gold **net** of sales (the report's `spent - refunded`, never below 0; Engine 0.15
+  review), so a round that places and sells inside its budget is judged and charged only for what
+  it kept spent. It throws (the host's
   `bad_mission_input` / `unmappable_report`) on malformed params, a budget faction with no
   stockpile, a wave that selects nothing, a `killed` name not in the wave, or no or a foreign
   report.
@@ -255,7 +258,7 @@ validate` reports them at their field (`bad_mini_game_use`). `create(ctx, seed)`
 
 What the world gets back is the declared outcome's effects only. Since Engine 0.15 T8 (lessons D3,
 D4) those effects may read the report the adapter gives: an `inventory` effect's `fromReport:
-"spent"` (with `negate` and a declared `max`) takes the gold the round spent, and a `damage` or
+"spent"` (with `negate` and a declared `max`) takes the gold the round spent (net of sales), and a `damage` or
 `destroy` effect's `each: "killed"` or `"fallen"` (with the limits `owner` and `max`) acts on every
 raider or wall the round names; the sim checks the limits (`engine/sim/CLAUDE.md`, Missions). The
 kit itself is unchanged: `stats.killed` and `stats.fallen` were already world names.
@@ -301,7 +304,7 @@ repeats, the buttons, a round from `ScriptedInput`, taps through the frame's cam
 two runs, losing, disabled rules, selling, `tdRound`) and `mission-defence.test.ts` (the adapter
 over a hand-written world snapshot: walls, capped budget, wave order and hp, names, refusals; the
 round's map, cells, waves; held, breached and quit rounds with their reports and outcomes; the
-rules in order; the frame's `foe:` tags and host status; the same snapshots twice; the validate
+rules in order; gold spent net of sales for `spentAtMost` and `stats.spent`; the frame's `foe:` tags and host status; the same snapshots twice; the validate
 errors; fates: a captured raider and a dead wall skipped by the data, an injured raider at its hp).
 `tests/kits/hero-mission.test.ts` (Engine 0.13) checks a wave over a real sim world skips a dead
 and a captured named raider. `tests/kits/td-mission.test.ts` plays the mission over a real sim world (played cheap and

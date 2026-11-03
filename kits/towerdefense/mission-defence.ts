@@ -175,7 +175,11 @@ const whenSchema = z.strictObject({
       'how the round ended: every enemy dealt with and lives left (`pass`), or no lives left (`fail`)',
     ),
   leaksAtMost: z.int().min(0).exactOptional().describe('at most this many enemies reached the exit'),
-  spentAtMost: z.int().min(0).exactOptional().describe('at most this much gold spent on towers'),
+  spentAtMost: z
+    .int()
+    .min(0)
+    .exactOptional()
+    .describe('at most this much gold spent on towers, net of what selling gave back'),
   killed: z
     .array(NAME)
     .min(1)
@@ -515,13 +519,22 @@ export function tdDefenceInput(
   return input;
 }
 
+/**
+ * The gold the round really took: spent on towers less what selling gave back, never below 0. The
+ * mission's `spent` stat and `spentAtMost` read this, so a round that places and sells within its
+ * budget is charged (and judged) only for what it kept spent.
+ */
+function netSpent(report: TdDefenceReport): number {
+  return Math.max(0, report.spent - report.refunded);
+}
+
 /** Whether `rule` holds for a round that ended in `result` with this report. */
 function holds(rule: TdDefenceRule, result: MiniGameResult, report: TdDefenceReport): boolean {
   const when = rule.when;
   if (when === undefined) return true;
   if (when.result !== undefined && when.result !== result) return false;
   if (when.leaksAtMost !== undefined && report.leaked > when.leaksAtMost) return false;
-  if (when.spentAtMost !== undefined && report.spent > when.spentAtMost) return false;
+  if (when.spentAtMost !== undefined && netSpent(report) > when.spentAtMost) return false;
   if (when.killed !== undefined) {
     const dead = new Set(report.foes.filter((f) => report.killed.includes(f.name)).flatMap(refNames));
     if (when.killed.some((n) => !dead.has(String(n)))) return false;
@@ -532,7 +545,7 @@ function holds(rule: TdDefenceRule, result: MiniGameResult, report: TdDefenceRep
 /**
  * The mission report for a round's end (`MissionAdapter.outcome`): a quit goes to the mission's
  * `onQuit`; otherwise the first rule that holds names the outcome. `stats`: `placed` (towers by
- * type), `spent`, `leaked`, `livesLeft`, `killed`, `escaped` and `fallen` (world names) and
+ * type), `spent` (net of refunds, {@link netSpent}), `leaked`, `livesLeft`, `killed`, `escaped` and `fallen` (world names) and
  * `ticks`. Throws (refused as `unmappable_report`) on a round with no report or one that is not a
  * `td-defence` report.
  */
@@ -549,7 +562,7 @@ export function tdDefenceOutcome(end: MiniGameEnd, mission: MissionDef): Mission
     outcome: rule.outcome,
     stats: {
       placed: { ...report.placed },
-      spent: report.spent,
+      spent: netSpent(report),
       leaked: report.leaked,
       livesLeft: report.livesLeft,
       killed: [...report.killed],

@@ -1921,7 +1921,7 @@ A mission over a world played as one tower-defense round (Engine 0.12): a `*.mis
 | `outcomes[].when`             | `object`                | no       |         |                                   | what must all hold (left out: always; the last rule must have none)                                          |
 | `outcomes[].when.result`      | `"pass" \| "fail"`      | no       |         |                                   | how the round ended: every enemy dealt with and lives left (`pass`), or no lives left (`fail`)               |
 | `outcomes[].when.leaksAtMost` | `integer`               | no       |         | >= 0                              | at most this many enemies reached the exit                                                                   |
-| `outcomes[].when.spentAtMost` | `integer`               | no       |         | >= 0                              | at most this much gold spent on towers                                                                       |
+| `outcomes[].when.spentAtMost` | `integer`               | no       |         | >= 0                              | at most this much gold spent on towers, net of what selling gave back                                        |
 | `outcomes[].when.killed`      | `(string \| integer)[]` | no       |         | at least 1 item                   | world units (scenario keys or ids) that were all killed in the round                                         |
 
 Example (`docs/reference/examples/td-defence-params.json`):
