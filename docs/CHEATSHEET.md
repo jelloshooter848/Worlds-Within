@@ -156,6 +156,7 @@ interface HeadlessGame {
   miniGame?(): MiniGame | null; // optional (Engine 0.10): the round hosted now, for HostScene and the tools
   mission?(step: JsonObject): MissionStepRefusal | null; // optional (Engine 0.11): a run file's mission step
   missionExperience?(): readonly { mission: string; ticks: number }[]; // optional (Engine 0.11): played rounds' ticks
+  campaignSave?(): CampaignSave | null; // optional (Engine 0.13): the save if the entry played now ended now
 }
 export function createGame(content: ContentBundle, seed: number, opts?: HeadlessOptions): HeadlessGame;
 ```
@@ -187,6 +188,64 @@ scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `mi
   ignored until released (Engine 0.11). A skin kind entry's `byTag: [{ tag, frames?, palette?,
 mesh? }]` picks a look by an entity's tag (`frozen`, `damaged`, `site`, `foe:ram`, `look:<id>`),
   first match wins.
+
+## Fates, carry-over and campaigns (Engine 0.13)
+
+See the mini siege's `sabotage` and `dawn` (`games/samples/mini-siege/content/`) for every piece.
+
+- **Fates** (`engine/sim/fate.ts`): a named person (`Member`) is active (no `Fate` component),
+  `injured`, `captured`, `freed` or `dead`. States only move forward (active or freed -> injured;
+  any living -> captured; captured -> freed; any living -> dead; dead is final), `history` is
+  append-only, and a refused write (`fate_final`, `not_named`, `bad_id`, `bad_cell`, `stepping`)
+  changes nothing. Captured and dead people leave the map and their squad but stay in the world;
+  a named person at 0 hp becomes a dead record. Read with `fateOf(world, id)` / `namedPeople(world)`
+  in the sim, `fateState(entity)` / `isLost(entity)` (`@engine/core/mission-adapter`) over a snapshot in a kit.
+- **Fate effects** (a mission outcome's `effects`, applied at the commit in order):
+
+  ```json
+  { "type": "damage", "entity": "captain", "amount": 30, "fromReport": "heroHpLost" }
+  { "type": "fate", "entity": "captain", "fate": "captured", "by": "raiders" }
+  { "type": "fate", "entity": "captain", "fate": "freed", "at": { "x": 10, "y": 15 } }
+  ```
+
+  `at` is required exactly on `freed` (a free, enterable cell); `fromReport` takes a played round's
+  report stat (0 skips the effect), the declared `amount` when delegated, quit or timed out. An
+  effect that cannot apply is listed in the record's `skipped`, never an error. A capture's
+  follow-ups are `opportunity` effects (or a scenario's `when`) on dormant opportunities in one
+  `exclusive` group; a mission with no `play` is a choice, only delegated (`not_playable`); an
+  outcome may not reopen its own mission's opportunity (`reopens_self`).
+
+- **A round's hero from the world** (`mission-room` params): `"hero": { "select": { "faction":
+"village", "member": "captain" }, "hpPer": 20 }` starts the room's hero on `ceil(hp / hpPer)`
+  half hearts; the report's `heroHpLost` is what the round cost the world unit.
+- **Carry spec** (a world scenario's optional `from`; `engine/sim/carry.ts`):
+
+  ```json
+  "from": { "scenario": "village",
+            "carry": { "people": ["captain"], "stockpiles": [{ "faction": "village", "items": ["gold"] }] },
+            "when": [{ "key": "captain", "fate": "captured", "open": ["rescue-window", "exchange-window", "leave-window"] }] }
+  ```
+
+  `carriedRecord(world, from, scenarioKeys(first))` gives the carried record (each person's
+  `fate`, `by`, `at`, `hp`, `max`; each stockpile item; keys sorted); `worldFromScenario(json, {
+carried })` builds the second world with it at tick 0 under the cause `carry`. Without
+  `carried` the scenario starts as written. Nothing else carries.
+
+- **Campaign scenario entries** (the `campaign` kind): `{ "scenario": "dawn", "ticks": 200,
+"title": "The dawn assault" }` beside `level` and `mission` entries; a scenario with `from`
+  must follow the entry it names (`bad_from`). `campaignRun(def, save?)` says where a run is;
+  `advanceCampaign(def, save, { missions, carried })` gives the next save. A campaign save
+  (`campaignSaveSchema`) is `{ format, version, game, campaign, seed, position, carried, results
+}`; `storeCampaignSave` / `loadCampaignSave` (`@engine/core/save/campaign-store`) keep it under
+  `ww:<game>:campaign:<id>` and never throw; `CampaignSession` (`@engine/core/shell/campaign-session`) does the
+  page's part (store, pack, resume a typed code).
+- **Save codes** (`engine/core/campaign-code.ts`): `encodeSaveCode(save, saveCodeContext(content))`
+  and `decodeSaveCode(text, ctx)`; Crockford Base32 in groups of five
+  (`2VFP0-1P1T8-0M32N-PBJFC-J2A70`), case, dashes and spaces ignored, O read as 0 and I, L as 1.
+  Refusals change nothing: `code_empty`, `code_typo` (a bad character or the CRC-16), `code_newer`,
+  `code_layout`, `code_campaign`, `code_position`, `code_record`. In run files: `from: { run }` or
+  `from: { code }` (start at the campaign's next entry, from tick 0) and `codes: [{ tick, code }]`;
+  `pnpm -s cli code <run file>` prints a run's code.
 
 ## Run files
 

@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { main } from '../../engine/tools/main';
+
+// Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
+// take more than vitest's default 5 s on a busy machine.
+vi.setConfig({ testTimeout: 60_000 });
 
 // Every game's run files (games/**/runs/*.run.json), and the engine's world run files
 // (engine/**/__fixtures__/*.run.json, Engine 0.8), through `pnpm cli run`, as CI sees them: each

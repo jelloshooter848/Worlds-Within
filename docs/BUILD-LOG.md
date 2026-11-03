@@ -31,10 +31,93 @@ continue the report's ids at M29 (M29 and M30 were found in T1).
 
 ### What was built
 
-- **Decisions before code** (T1, this commit): fates, fate effects and follow-ups, fates in every
+- **Decisions before code** (T1, `c3f3038`): fates, fate effects and follow-ups, fates in every
   mode, M13, carry-over, campaigns, save codes, the mini siege follow-up and run-file support,
   settled in writing (items 220-228, below); M29 and M30 added to the mini siege's gap report. No
   code changed.
+- **Fates of named individuals in `engine/sim`** (T2, `69fe9ae` and `c42dc82`): `engine/sim/fate.ts`
+  with the `Fate` component (`omitWhenEmpty`, on `Member` entities only; registered by both system
+  sets), `fateOf`, `namedPeople`, `setFate` and the `injurePerson` / `capturePerson` /
+  `killPerson` / `freePerson` writes: states only move forward, `history` is append-only, and a
+  refusal (`fate_final`, `not_named`, `bad_id`, `bad_cell`, `stepping`) changes nothing. A captured
+  or dead person leaves the map and their squad (the new squad helper `leaveSquad`) but stays in
+  the world; `held` keeps a captive's `Unit` and `Owner` for `freePerson`. `deathSystem` moved to
+  `fate.ts` and, in its own commit, keeps a named person who dies as a dead record (`rts.test.ts`'s
+  "leaves its squad when it dies" now expects the record, as decision 1 listed). **Golden hashes
+  re-recorded once, every assertion unchanged:** the raiders' named guards (Grell, Vosk) die in
+  every mini siege run, so `quit` and `delegated` moved from game tick 180, `played` from 580,
+  `fortify-played` from 200 and `fortify-delegated` from 100; no sim fixture and no skirmish run
+  moved. The mini siege glue's `named` reads `alive` as "exists and not dead" and gains `fate` (M30).
+- **Fate effects and capture follow-ups in the mission contract** (T3, `4e8d6a3`): the `fate`
+  effect (`{ entity, fate, by?, at? }`, `at` required exactly on `freed`), applied at the commit
+  with `setFate` under `mission:<id>`, an effect that cannot apply listed in `skipped`; `play`
+  optional (a mission without it is a choice, only delegated: `not_playable` from `playMission`,
+  `quitMission` and `MissionHost`); `openMission` refuses an outcome reopening its own mission's
+  opportunity (`reopens_self`). The sim fixture `captive.world.json` (an ambush, then rescue,
+  exchange, leave and ransom missions) and four run files with golden hashes (`capture-rescue`,
+  `capture-rescue-failed`, `capture-exchange`, `capture-leave`), `mission-fate.test.ts`.
+- **M13 and fates in every mode** (T4, `8f740e2`; the gap report's row in `cf5b6e8`):
+  `mission-room`'s `hero: { select, hpPer }` (exactly one standing world unit, its round hp
+  `ceil(Health.hp / hpPer)`; a captured, dead, missing or doubled hero refuses the round), the
+  report's `worldHero` and the stats `hero` and `heroHpLost` (never the unit's last hp), and a
+  `damage` effect's `fromReport` (the played report's stat at the commit; 0 skips it; the declared
+  `amount` when delegated, quit or timed out). `engine/core` gained `fateState` and `isLost`; the
+  topdown foe and hero selectors, the tower-defense wall and wave selectors and the RTS snapshot
+  reading skip the captured and the dead by their `Fate`, the injured come in at their hp; the RTS
+  view lists named people with their fate (`named`). `tests/kits/hero-mission.test.ts` plays a
+  fixture world through `MissionHost` (played, played and lost, delegated, quit). No golden hash
+  moved.
+- **A scenario that starts from another's results** (T5, `7e13f73`): `engine/sim/carry.ts`, a
+  scenario's optional `from` (the scenario it follows, a carry spec of named people by key and
+  stockpile items by faction, `when` rules opening dormant opportunities for a carried fate);
+  `carriedRecord(world, from, keys)` builds the plain JSON carried record from the first world's
+  end, and `worldFromScenario(json, { carried })` applies it at tick 0 under the cause `carry`
+  (`startFate`: a captured or dead person starts off the map, an injured one at their hp). Bad
+  data fails with `ScenarioError` lines under `from` or `carried`. Fixture
+  `captive-after.world.json`, `carry.test.ts`. `SCENARIO_VERSION` stays 1.
+- **Campaigns played in order, campaign saves and save codes** (T6, `633cd0c`): campaign entries
+  gain `{ scenario, ticks }` (`validate`: `missing_scenario`, `bad_from`); `campaignRun` and
+  `advanceCampaign` over a plain JSON campaign save, closing the 0.10 leftover "campaign missions
+  are checked, not played in order"; the carried record's schemas moved to
+  `engine/core/carried.ts` (re-exported by `engine/sim/carry.ts`) so core can check a save without
+  the sim; `save/campaign-store.ts` keeps a save under `ww:<game>:campaign:<id>` without ever
+  throwing; `campaign-code.ts` packs a save into a versioned, CRC-16 checked Crockford Base32 code
+  with refusals that change nothing. Run files gain `from` (`{ run }` or `{ code }`) and `codes`,
+  the CLI gains `code <run-file>`, the headless contract gains `campaignSave()` and
+  `HeadlessOptions.campaign`, and `rts-map` accepts `from`.
+- **The mini siege: the captain as the round's hero, captured when driven off** (T7, `c2d6d43`):
+  `sabotage` takes M13's `hero` (the captain, `hpPer` 20: his 120 hp start the round on the 6 half
+  hearts it had), every outcome damages him by `heroHpLost` when played (10 declared for the three
+  successes when delegated, 30 for `driven-off`), and `driven-off` also captures him by the
+  raiders. The three sabotage runs' golden hashes were re-recorded (the opened mission's def is
+  world data, so each moved from world tick 60; the fortify runs did not move); one assertion
+  changed as content: `delegated`'s `named.captain.hp` at 160 is 110, was 120.
+- **The mini siege's dawn follow-up headless** (T7, `f7e6c45`; the gap report in `a7bf8c5`): the
+  campaign file `content/campaigns/siege.campaign.json` (the siege for 260 world ticks, then "The
+  dawn assault" for 200), `content/maps/dawn.world.json` (its `from` carries the captain's fate and
+  hp and the hall's gold), the sergeant Mara Venn, the rescue (a `mission-room` round with her as
+  hero), exchange, ransom and leave missions. Thin glue: `siegeMap` by name, `siegeCampaign`,
+  `siegeCampaignPlace`, `createGame`'s `opts.campaign`, `MiniSiegeGame.campaignSave()`. Run files:
+  the siege's `played`, `delegated` and `quit` pin their save codes and assert the captain's fate
+  (assertions added, none changed, hashes unchanged); `dawn-held` (from `played`) and
+  `dawn-captured` (from `quit`); `dawn-code` (from `quit`'s save code); `dawn-rescue`,
+  `dawn-rescue-failed`, `dawn-exchange` and `dawn-leave`. M29 and M30 fixed, M31-M33 logged.
+- **The mini siege campaign in the browser** (T8, `37c3262`; the gap report in `2cd7560`): the page
+  ends the siege at world tick 260 with a result panel (the outcomes, the captain's fate, the save
+  code, kept in browser storage); Continue plays the dawn (the captive choices in the bar,
+  **Decide** for a choice without a round, the shackle marker in the HUD); a typed save code
+  resumes it, a refused code shows its reason. Shared parts: `CampaignSession` in
+  `engine/core/shell`, the RTS kit's `captive` status, campaign entry `title`s, and screenshots of
+  runs with `from` (M33 fixed). New art and sound: the sergeant, the shackle icon, three outcome
+  sfx. Browser, page-glue and screenshot tests cover both captain fates and a save code; M34-M36
+  logged.
+- **Close-out** (T9, this commit): this log's sections below; the mini siege gap report closed for
+  0.13 (M31, M34 and M35 moved to 0.15, a duplicated M36 row removed); 0.13 marked done in
+  `docs/ROADMAP.md` and M31, M32 and M34-M36 listed in its 0.15 section; `docs/DESIGN.md` (heroes,
+  fates, carry-over and save codes as built); `docs/CHEATSHEET.md` (fate effects, the carry spec,
+  campaign scenario entries, save codes); `llms.txt` and `docs/modules/README.md`; a 60 s test
+  timeout for the three test files that replay a siege before each dawn run (item 233); items
+  229-233.
 
 ### Decisions
 
@@ -338,6 +421,173 @@ to an existing system); `playMission` refuses a mission with no `play` (`not_pla
 and both are needed by the roadmap's scope: a capture's exchange and leave are missions without a
 round, and M13's "hp back" needs the round's cost in the world. Each later task checks `git diff
 --stat 6cf2eea -- engine/sim` before committing and lists any other change as a decision.
+
+### Choices made
+
+The decisions above are items 220-228. The close-out's choices are items 229-233 ("Engine 0.13,
+close-out" in `FEEDBACK-LOG.md`):
+
+- **M31 is moved, not fixed** (item 229): a carried faction whose stockpile is gone at the first
+  scenario's end (the hall fallen, as in both fortify runs) still has no carried record, so
+  `MiniSiegeGame.campaignSave()` gives none and the page offers "Play again". Carrying it as zeros
+  is a small change in `carriedRecord`, but whether a lost hall ends the campaign is the game's
+  rule, and today it would live in the glue either way; the sample set's API review (0.15) decides
+  the carry rule and a campaign's loss rule as data together.
+- **M34 is moved** (item 230): the dawn's captive choices stay offered from world tick 0 to 60 (6
+  seconds on the page); a longer window would move every dawn run's golden hashes for a page
+  concern, and the real fix (an entry held at tick 0 until the player begins it) is page flow that
+  goes to 0.15 with M26 and M36.
+- **M35 is moved** (item 231): the page ends an entry at its `ticks` or the first tick after with
+  no mission open, while `campaignSave()` at a run's last tick leaves an open mission out. No run
+  file or browser test ends with a mission open, so the two agree everywhere they are checked; one
+  rule in `engine/core/campaign.ts` goes to the 0.15 API review.
+- **How "two run files whose only difference is that defender's fate" is checked** (item 232):
+  `dawn-held.run.json` and `dawn-captured.run.json` are the same run file except `from` (`played`
+  or `quit`), so their only input difference is the carried record, and `mini-siege.test.ts`
+  requires the two records to differ only in the captain's entry. The siege runs they start from
+  differ in more than the captain (a played round against a quit one), but nothing of the siege
+  except the carried record reaches the dawn (decision 5).
+- **Longer test timeouts** (item 233): every `dawn-*` run replays its siege first, so on a busy
+  machine (another agent's tests running alongside) seven run-file tests, two dawn tests and one
+  parity test passed their work but went over vitest's default 5 s. `tests/runs/run-files.test.ts`,
+  `tests/runs/backend-parity.test.ts` and `games/samples/mini-siege/mini-siege.test.ts` set
+  `vi.setConfig({ testTimeout: 60_000 })`; no test or expectation changed.
+- **No tag** (owner answer 24), and the root `package.json` version was left as it was, as in
+  earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm dev                       # then games/samples/mini-siege/ from the launcher (or pnpm build && pnpm preview)
+pnpm -s cli validate games/samples/mini-siege --json
+pnpm -s cli run games/samples/mini-siege/runs/quit.run.json --json            # driven off: the captain captured
+pnpm -s cli code games/samples/mini-siege/runs/quit.run.json --json           # its save code: 2VFP0-1P1T8-0M32N-PBJFC-J2A70
+pnpm -s cli run games/samples/mini-siege/runs/dawn-held.run.json --json       # the dawn with the captain leading
+pnpm -s cli run games/samples/mini-siege/runs/dawn-captured.run.json --json   # the dawn with the captain held
+pnpm -s cli run games/samples/mini-siege/runs/dawn-code.run.json --json       # the same dawn from the save code
+pnpm -s cli run games/samples/mini-siege/runs/dawn-rescue-failed.run.json --json   # a failed rescue, then the ransom
+pnpm -s cli run engine/sim/__fixtures__/capture-rescue.run.json --json        # the sim's capture fixture
+pnpm -s cli screenshot games/samples/mini-siege/runs/dawn-captured.run.json --tick 10 --json
+pnpm vitest run engine/sim/fate.test.ts engine/sim/carry.test.ts engine/sim/mission-fate.test.ts engine/core/campaign-code.test.ts engine/tools/campaign-run.test.ts tests/kits/hero-mission.test.ts games/samples/mini-siege
+```
+
+On the page: play the siege as before; at world tick 260 a panel shows its result, Captain Hale's
+fate and the save code. Give up the sabotage (Backspace in the round) to have the captain taken;
+**Continue: The dawn assault** then shows the shackle in the HUD and, for 60 world ticks, the
+choices **Break the captain out** (Play or Delegate, Sergeant Mara Venn as the hero), **Pay for the
+captain** and **Leave the captain behind** (Decide). Type a save code into the box and press Resume
+to start the dawn from it, or **Carry on** to continue the campaign this browser saved.
+
+### Done when
+
+Checked on 2026-11-03 on the tree of the close-out commit (T9, on top of `2cd7560`: docs and three
+test timeouts): `pnpm lint && pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass
+(174 test files, 1955 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), and every one of the **44 run files** in the repo (13 sim fixtures, 1 demo, 6 lab, 4
+stacking-test, 4 skirmish, 12 mini siege and 4 tower-defense runs) exits 0 with the same final
+hash on two `pnpm -s cli run` runs in a row. The browser tests (`tests/browser`: 7 files) ran in
+headless Chromium as part of `pnpm test` and again alone (7 files, 21 tests), none skipped.
+
+- **Met: losing a named defender changes how the follow-up plays, shown by two run files whose
+  only difference is that defender's fate.** `dawn-held.run.json` and `dawn-captured.run.json`
+  differ only in `from` (`played.run.json` or `quit.run.json`); `mini-siege.test.ts` ("carries
+  records from the played and the quit siege that differ only in the captain's entry") requires
+  their carried records to differ only in `people.captain` (`active` at 120 hp, or `captured` by
+  the raiders at world tick 160 with 90 hp), and "plays differently when the only difference is
+  the captain's fate" compares the two runs. Held, the captain is on the map at 120 hp, nothing
+  opens, and the raiders are beaten by world tick 200 (final hash `6e309a2e804edc78`). Taken, he is
+  off the map, the three captive choices are offered from tick 0 and close unused at 60, the
+  village falls by 100 and five raiders stand at 200 (`beb1611ce699c5a0`). Their tick-0 hashes
+  differ too (`94084ad90c496a17` and `4f59cf3f3a4af4f2`). Item 232 records how this is read.
+- **Met: a save code taken at the end of the first scenario restores the same world (equal
+  hashes).** `quit.run.json` pins its code at its last tick (`codes`: `2VFP0-1P1T8-0M32N-PBJFC-J2A70`,
+  25 characters without dashes, under decision 7's budget of 40; `played` and `delegated` pin
+  theirs too); `dawn-code.run.json` starts from that code (`from: { code }`) and has every hash of
+  `dawn-captured.run.json` (`from: { run }`), from tick 0 (`4f59cf3f3a4af4f2`) to the final one
+  (`beb1611ce699c5a0`), golden files included. `engine/tools/campaign-run.test.ts` ("starts from
+  another run and from its save code with the same tick-0 hash") and `mini-siege.test.ts`
+  ("restores the same world from the save code taken at the end of the siege (equal hashes)")
+  check it directly; `engine/core/campaign-code.test.ts` checks round trips at every position, the
+  length budget, forgiving input and every refusal (a tampered character is `code_typo`).
+- **Scope: named individuals can be injured, killed or captured, carried into every mode that
+  loads them.** `engine/sim/fate.ts` and `fate.test.ts` (forward-only states, append-only
+  history, refusals that change nothing, a capture leaving the map and the squad, a named captain
+  killed in battle kept as a dead record); the kits' selectors skip the captured and the dead
+  (`kits/topdown`, `kits/towerdefense` and `kits/rts` tests over hand-written snapshots, and
+  `tests/kits/hero-mission.test.ts` over a fixture world); a carried fate reaches the next
+  scenario (`carry.test.ts`, the dawn runs); the page and the RTS view list named people with
+  their fate.
+- **Scope: capture opens follow-up opportunities (a rescue, an exchange, or leaving them
+  behind).** The `fate` effect and choice missions without `play` (`mission-fate.test.ts`); the
+  sim fixture's `capture-rescue`, `capture-rescue-failed`, `capture-exchange` and `capture-leave`
+  runs; in the mini siege the `when` rule opening `rescue-window`, `exchange-window` and
+  `leave-window` in one exclusive group, and `dawn-rescue`, `dawn-rescue-failed` (the dearer
+  ransom, the rescue refused `not_offered` after it failed), `dawn-exchange` and `dawn-leave`; the
+  page's browser test decides the exchange from the bar.
+- **Scope: campaign saves and save codes.** `engine/core/campaign.ts` (`campaignSaveSchema`,
+  `advanceCampaign`), `save/campaign-store.ts` (`campaign-store.test.ts`: a blocked storage never
+  throws), `campaign-code.ts`, `shell/campaign-session.ts`, the CLI's `code` command and run files'
+  `codes` (`campaign-run.test.ts`: a different code fails naming both);
+  `tests/browser/mini-siege-page.test.ts` reads the save code off the result panel (equal to
+  `delegated`'s and `quit`'s pinned codes), carries on from the stored save in a second page, and
+  resumes the dawn from a typed code after refusing a bad one.
+- **Scope: a way for one scenario to start from another's results.** A scenario's `from`
+  (`engine/sim/carry.ts`, `carry.test.ts`, the fixture `captive-after.world.json`), and run files'
+  `from: { run }` / `from: { code }` (`campaign-run.test.ts`, `from_chain` refused).
+- **Scope: proved on the mini siege, a short second scenario that starts from the first one's
+  results.** "The dawn assault" (`dawn.world.json`, 200 world ticks) after the siege in
+  `siege.campaign.json`; the seven `dawn-*` runs and the browser tests above.
+- **M13 is fixed** (T4, `8f740e2`): `mission-room`'s `hero: { select, hpPer }` and `fromReport`
+  (`kits/topdown` tests, `hero-mission.test.ts`); the mini siege's sabotage plays the captain as
+  its hero (T7, `c2d6d43`) and the rescue the sergeant. The gap report's row says so.
+- **Campaign missions are played in order** (the 0.10 leftover, decision 6): `campaignRun` and
+  `advanceCampaign` (`campaign.test.ts`), the page and the CLI playing the mini siege's campaign
+  entry after entry; a mission entry with no scenario before it keeps its 0.10 meaning, so the
+  platformer campaigns are untouched (their runs did not move).
+- **The mini siege gap report has nothing left for 0.13**: M13 and M29, M30, M33 fixed; M31, M32,
+  M34, M35 and M36 moved to 0.15 and listed there; no row is `open`.
+- **`engine/sim` stays headless and deterministic.** `pnpm lint` (the layer table's purity rules:
+  no `Math.random`, `Date.now` or `performance.now`, and the sim's integer maths rule, on
+  `engine/sim` and on the new pure core files `campaign.ts`, `campaign-code.ts` and `carried.ts`),
+  `tests/architecture/dependency-rule.test.ts` (no import from backends, kits or games) and
+  `tests/architecture/purity.test.ts` are green; a grep finds no such import or call in
+  `engine/sim`. Every fate, carry and campaign step is a write between ticks under a named cause
+  (`death`, `mission:<id>`, `carry`), and the RNG is the world's own (the dawn's seed is the
+  campaign save's, never the first world's RNG state). The `engine/sim` diff against `6cf2eea` is fates (`fate.ts`, the
+  `deathSystem` change), carry (`carry.ts`, `scenario.ts`, `scenario-error.ts`), the two mission
+  changes listed under "Changes to `engine/sim` beyond fates and carry" (`not_playable`,
+  `fromReport`) plus the `fate` effect and `reopens_self` (decision 2), the squad helper
+  `leaveSquad`, and their tests and fixtures: 31 files, no other change.
+- **Golden hashes moved only where the decisions said**: the mini siege runs in T2 (named guards
+  kept as dead records) and the three sabotage runs in T7 (the mission's new def), each in its own
+  commit with every assertion unchanged but `delegated`'s captain hp (a content change, named).
+  The sim fixtures, the skirmish, the platformer games and the tower-defense sample did not move.
+- **No tag** (owner answer 24).
+
+### Deviations from the roadmap
+
+- **None in scope.** Every Scope bullet and the done-when are met as above.
+- **Decision 8's rescue room**: the rescue plays in the sabotage's `engine-camp` room, not a
+  `ridge-camp` room of its own: a second `room` file would be a second dungeon to the topdown
+  kit's one-dungeon check (M32, moved to 0.15).
+- **Decision 5's home for the record's schemas**: the carried record's types and schemas live in
+  `engine/core/carried.ts` (re-exported by `engine/sim/carry.ts`) so the save-code codec in core
+  can check a record without the sim; building and applying a record stay in `engine/sim`.
+- **A fallen hall gives no campaign save** (M31, item 229): the fortify runs, where the hall falls,
+  cannot be carried into the dawn; the campaign starts over.
+- **Feedback numbering:** T1's decisions are 220-228; the close-out added 229-233.
+
+### Outstanding issues
+
+- **Five mini siege gaps from 0.13 wait in 0.15** (M31, M32, M34, M35, M36), with the earlier 15
+  there and the tower-defense lessons: the sample set's API review now has three reports to work
+  through, and campaign page flow joins the launch flow (M26) as glue a second game would copy.
+- **The captive window is short on the page** (M34): 6 seconds to choose.
+- **A save code holds what carries, not the first scenario**: restoring from a code starts the
+  next entry; it cannot show the first scenario's end world (decision 7).
+- **Tests near the default timeout**: the dawn runs replay a siege each; the three files that run
+  them have 60 s (item 233). A cached source run would make them fast if the number of `from`
+  runs grows.
+- Open owner decisions: items 220-233 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.12
 

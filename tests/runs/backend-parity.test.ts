@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,6 +27,10 @@ import { createGame as createLab, type LabGame } from '../../games/platformer-la
 import { threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
 import { labLook3d } from '../../games/platformer-lab/picture3d';
+
+// Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
+// take more than vitest's default 5 s on a busy machine.
+vi.setConfig({ testTimeout: 60_000 });
 
 // Backend parity (docs/ROADMAP.md, 0.4 "Done when"): the same demo run gives the same state hashes
 // whichever backend presents it. From Engine 0.7 every other game with a view is found by itself and

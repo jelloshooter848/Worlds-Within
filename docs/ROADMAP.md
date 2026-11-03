@@ -596,7 +596,7 @@ once, where the code lives, the lessons report and the `engine/sim` check. Reaso
 
 ---
 
-## 0.13 Heroes and consequences in the simulation
+## 0.13 Heroes and consequences in the simulation (done)
 
 **Goal:** losses that carry forward, supported by the engine so any game can use them.
 
@@ -617,6 +617,18 @@ once, where the code lives, the lessons report and the `engine/sim` check. Reaso
 **Done when:** losing a named defender in the mini siege changes how the follow-up scenario plays,
 shown by two run files whose only difference is that defender's fate. A save code taken at the end of
 the first scenario restores the same world (equal hashes).
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-013): `dawn-held` and `dawn-captured` differ only in the
+captain's fate and play differently, and `dawn-code` (from `quit`'s save code) has the same hashes
+as `dawn-captured`. M13 is fixed; the mini siege's new gaps M29-M36 are fixed (M29, M30, M33) or
+moved to 0.15 (M31, M32, M34, M35, M36), listed there ([gap report](reports/mini-siege.md)).)_
+
+_(Decided before code, items 220-228: fates of named people in `engine/sim`, the `fate` effect and
+capture follow-ups as opportunities, fates honoured by every kit, M13's `hero`, a scenario's
+`from` and the carried record, campaigns played in order and campaign saves, save codes, the mini
+siege's dawn assault, and run files that start from another run or a code. Reasoning in
+[BUILD-LOG.md](BUILD-LOG.md#decisions); the close-out's choices are items 229-233.)_
 
 ---
 
@@ -694,6 +706,14 @@ copy a second mission game would write; the API review decides where each goes:
 - M25: an offer marker named by scenario key in the mission file.
 - M26: a shared mission-launch scene (launch, play or delegate, the round, the outcome).
 - M27: the bridge from a sim world to the RTS kit's `RtsWorldPort`, written once.
+- M31: a carried stockpile that is gone at the first scenario's end (carried as zeros or a `lost`
+  flag), and a campaign that ends on a loss said in data, not in the glue's `campaignSave`
+  (found in 0.13).
+- M32: a second `mission-room` round with a room of its own (with G17: rooms that are not one
+  dungeon; found in 0.13).
+- M34, M35 and M36: a campaign page's flow written once (with M26): an entry held at tick 0 until
+  the player begins it, one rule for when a scenario entry is over (an open mission at its
+  `ticks`), and the result panel, save code, Continue and resume (found in 0.13).
 
 **From the tower-defense kit** (lessons moved here; [lessons report](reports/tower-defense.md)). None
 needed `engine/sim` in 0.12; the API review makes or rejects each before the mission API is v1:

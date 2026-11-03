@@ -171,9 +171,11 @@ a name are engine releases.
 ```
 engine/
   core/        loop, scenes, input, audio (MML synth), save, RNG, maths, presentation contract,
-               the mission contract and campaign files as plain JSON (0.10)
+               the mission contract and campaign files as plain JSON (0.10), campaign saves
+               and save codes (0.13)
   backends/    canvas2d (2D sprites), three (2.5D/3D, from 0.6), null (headless)
-  sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8)
+  sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8),
+               fates of named people and carry-over between scenarios (0.13)
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
 kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12), all built
 games/
@@ -213,6 +215,30 @@ docs/
   added with an empty `engine/sim` diff; what the mission API made awkward (fixed effect amounts per
   outcome, world names only for keys the effects name, glue each hosting page copies) is recorded
   in `docs/reports/tower-defense.md` for the API review before 1.0.
+- **Heroes and consequences (0.13, built).** A named person (an entity with a squad `Member`) can
+  be **injured, captured, freed or killed**, held in an `engine/sim` `Fate` component: states only
+  move forward, the history is append-only and dead is final, so a loss is never undone. A
+  captured or dead person leaves the map and their squad but stays in the world as a record (a
+  captive keeps what is needed to be freed); one killed in battle is kept the same way. Missions
+  set fates with one data-only `fate` effect, and a capture's follow-ups (a rescue, an exchange,
+  leaving them behind) are ordinary opportunities in one exclusive group; a choice with no round
+  is a mission without `play`, only delegated. A failed rescue may open a different follow-up,
+  never itself again. Every mode honours fates: the kits' selectors skip the captured and the
+  dead and bring the injured in at their hp, and a `mission-room` round's hero can be a world
+  unit (`hero: { select, hpPer }`), its hp going into the round and coming back through a
+  `damage` effect's `fromReport`.
+- **Carry-over, campaigns and save codes (0.13, built).** A scenario names the one it follows in
+  `from`, with a carry spec (named people by key, stockpile items by faction, and `when` rules
+  opening opportunities for a carried fate). The first world's end gives a small plain JSON
+  carried record; the second world is built from its own file and the record, applied at tick 0.
+  Nothing else carries (not buildings, positions or the RNG). A `campaign` file lists scenario
+  entries with the ticks each is played, beside levels and missions, and is played in order; a
+  campaign save holds the position, the seed, the carried record and the committed results, never
+  a whole world. A **save code** is that save packed, after SMBC: versioned, CRC-16 checked,
+  Crockford Base32 in groups of five, forgiving to type, under 40 characters for the mini siege;
+  a code restores the next scenario's start world with the same hash as the run it came from.
+  The mini siege proves it with "The dawn assault", which plays differently when its captain was
+  taken in the siege.
 
 ## Open questions
 

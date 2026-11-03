@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +23,10 @@ import {
   siegeTypes,
 } from './content';
 import { createGame, miniGames, type MiniSiegeGame, type NamedSummary } from './headless';
+
+// Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
+// take more than vitest's default 5 s on a busy machine.
+vi.setConfig({ testTimeout: 60_000 });
 
 // The mini siege headless (Engine 0.11 T8): the content, the launch through the kit, and the two
 // paths of decision 12 checked across a whole run (the run files check them at chosen ticks).

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 229.** (Last used: 228.)
+**Next unused number: 234.** (Last used: 233.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -889,3 +889,25 @@ stockpiles }, when }`; `carriedRecord` (in `engine/sim/carry.ts`) builds a plain
 - **228.** Game run files gain `from: { run }` or `from: { code }` (one level deep, `from_chain`)
   and `codes: [{ tick, code }]`; `pnpm cli code <run file>` prints a run's save code; a test checks
   `from: { run }` and `from: { code }` give the same tick-0 hash. OK?
+
+**Engine 0.13, close-out** (details in `docs/BUILD-LOG.md`, Engine 0.13, Choices made, and
+`docs/reports/mini-siege.md`)
+
+- **229.** M31 (a carried stockpile that is gone at the first scenario's end) is moved to 0.15, not
+  fixed: a fallen hall still gives no campaign save, so the fortify runs cannot carry into the
+  dawn and the page offers "Play again"; the API review decides the carry rule (zeros or a `lost`
+  flag) and a campaign's loss rule as data together. OK, or fix the carry part now?
+- **230.** M34 (the dawn's captive choices offered for only 60 world ticks, 6 seconds on the page)
+  is moved to 0.15 with M26 and M36 (an entry held at tick 0 until the player begins it); the
+  window stays 60 so no dawn hash moves. OK?
+- **231.** M35 (two rules for when a scenario entry ends with a mission still open: the page's and
+  `campaignSave()`'s) is moved to the 0.15 API review; no run or browser test ends with a mission
+  open today. OK?
+- **232.** The done-when's "two run files whose only difference is that defender's fate" is
+  checked by `dawn-held` and `dawn-captured`, the same run file except `from` (`played` or
+  `quit`), with a test that their carried records differ only in the captain's entry; the siege
+  runs they start from differ in more than the captain. OK?
+- **233.** Three test files that replay a siege before each dawn run (`tests/runs/run-files.test.ts`,
+  `tests/runs/backend-parity.test.ts`, `games/samples/mini-siege/mini-siege.test.ts`) set a 60 s
+  test timeout (`vi.setConfig`), since on a busy machine they passed their work but went over the
+  default 5 s. OK?
