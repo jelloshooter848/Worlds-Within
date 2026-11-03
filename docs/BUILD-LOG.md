@@ -30,6 +30,13 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   kinds, the input model, the sample, the mini siege's preparation mission, its round and outcomes,
   the 0.11 hashes, the lessons report's ids and the `engine/sim` check, settled in writing (items
   197-206, below); `docs/reports/tower-defense.md` started and linked from `llms.txt`.
+- **`kits/towerdefense`: content kinds and round rules headless** (T2): the `td-map` (header plus
+  `.map.txt` grid, one path walk from entry to exit checked with the cell named), `td-towers` and
+  `td-waves` kinds; `TdWorld`, a fixed-order, whole-number round (place and pay, sell, waves by button
+  or timer, spacing with seeded jitter, path walking in sub-cell units, first-along targeting with
+  ranges and cooldowns, bounties, leaks and lives, won or lost); fourteen named rules, each changing
+  a test when off; the kit hook (no strict mutants yet), the generated kit list and schema
+  reference, and agent docs. No `engine/core` or `engine/sim` change was needed.
 
 ### Decisions
 

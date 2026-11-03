@@ -1,0 +1,8 @@
+{
+  "id": "meadow",
+  "title": "The meadow road",
+  "legend": { "W": "build" },
+  "start": { "gold": 50, "lives": 5 },
+  "towers": ["arrow", "cannon"],
+  "waves": "meadow"
+}

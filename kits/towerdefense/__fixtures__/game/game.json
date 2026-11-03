@@ -1,0 +1,12 @@
+{
+  "id": "td-fixture",
+  "title": "The tower-defense kit's test fixture: one tiny map, two tower types, two waves",
+  "kit": "towerdefense",
+  "content": {
+    "td-map": ["content/maps/*.json"],
+    "td-towers": ["content/towers.json"],
+    "td-waves": ["content/waves/*.json"]
+  },
+  "start": { "seed": 1 },
+  "headless": "headless.ts"
+}

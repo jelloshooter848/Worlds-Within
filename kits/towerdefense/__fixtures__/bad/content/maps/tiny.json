@@ -1,0 +1,6 @@
+{
+  "id": "tiny",
+  "start": { "gold": 30, "lives": 0 },
+  "towers": ["arrow", "cannon"],
+  "waves": "tiny"
+}

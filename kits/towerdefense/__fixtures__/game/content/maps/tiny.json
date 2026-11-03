@@ -1,0 +1,7 @@
+{
+  "id": "tiny",
+  "title": "A tiny bent path",
+  "start": { "gold": 30, "lives": 3 },
+  "towers": ["arrow", "cannon"],
+  "waves": "tiny"
+}

@@ -1,0 +1,12 @@
+{
+  "id": "td-fixture-bad",
+  "title": "A broken copy of the fixture, for validate",
+  "kit": "towerdefense",
+  "content": {
+    "td-map": ["content/maps/*.json"],
+    "td-towers": ["content/towers.json"],
+    "td-waves": ["content/waves/*.json"]
+  },
+  "start": { "seed": 1 },
+  "headless": "headless.ts"
+}

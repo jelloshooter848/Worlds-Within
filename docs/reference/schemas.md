@@ -1276,6 +1276,117 @@ With `docs/reference/examples/room.map.txt`:
 ################
 ```
 
+### `td-map`
+
+A tower-defense map: starting gold and lives, the tower types and wave list it plays, with its grid (path from entry to exit, build cells, blocked ground) in a text grid.
+
+- Defined by: kit towerdefense
+- Where: `content/`, claimed in `game.json` under `content.td-map`
+- Read from: `.json` + `.map.txt`
+
+| Field         | Type                                                             | Required | Default | Limits                                                 | Description                                                                                                                              |
+| ------------- | ---------------------------------------------------------------- | -------- | ------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | `string`                                                         | yes      |         | not empty                                              | the map id: its file name                                                                                                                |
+| `title`       | `string`                                                         | no       |         | not empty                                              | one line naming the map, for a page or HUD                                                                                               |
+| `legend`      | `{ <key>: "blocked" \| "path" \| "build" \| "entry" \| "exit" }` | no       | `{}`    |                                                        | the map's own grid characters (one character each, not a kit legend one) by the cell kind they mean: blocked, path, build, entry or exit |
+| `start`       | `object`                                                         | yes      |         |                                                        | what the round starts with                                                                                                               |
+| `start.gold`  | `integer`                                                        | yes      |         | >= 0                                                   | the gold the round starts with, to pay for towers                                                                                        |
+| `start.lives` | `integer`                                                        | yes      |         | >= 1                                                   | the lives the round starts with; a leak costs one                                                                                        |
+| `towers`      | `string[]`                                                       | yes      |         | at least 1 item; items: matches `^[a-z0-9][a-z0-9-]*$` | the tower types that can be placed on this map, by `td-towers` id, in button order                                                       |
+| `waves`       | `string`                                                         | yes      |         | not empty                                              | the wave list the round plays: a `td-waves` file name                                                                                    |
+| `map`         | `string[]`                                                       | yes      |         |                                                        | the grid, top row first, of legend characters; usually in the `.map.txt` file                                                            |
+
+Example (`docs/reference/examples/td-map.json`):
+
+```json
+{
+  "id": "meadow",
+  "title": "The meadow road",
+  "legend": { "W": "build" },
+  "start": { "gold": 50, "lives": 5 },
+  "towers": ["arrow", "cannon"],
+  "waves": "meadow"
+}
+```
+
+With `docs/reference/examples/td-map.map.txt`:
+
+```text
+..B.....
+S#####B.
+.W...#..
+..X###W.
+........
+```
+
+### `td-towers`
+
+Tower-defense tower types: cost, range in cells, damage, cooldown in ticks and sell value.
+
+- Defined by: kit towerdefense
+- Where: `content/`, claimed in `game.json` under `content.td-towers`
+- Read from: `.json`
+
+| Field                   | Type                | Required | Default | Limits                               | Description                                                                                      |
+| ----------------------- | ------------------- | -------- | ------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `towers`                | `{ <key>: object }` | yes      |         | keys: matches `^[a-z0-9][a-z0-9-]*$` | tower types by id                                                                                |
+| `towers.<key>.cost`     | `integer`           | yes      |         | >= 0                                 | the gold placing one costs                                                                       |
+| `towers.<key>.range`    | `integer`           | yes      |         | >= 0                                 | how far it reaches, in cells: an enemy whose cell is within this distance (squared, whole cells) |
+| `towers.<key>.damage`   | `integer`           | yes      |         | >= 1                                 | the hit points one shot takes                                                                    |
+| `towers.<key>.cooldown` | `integer`           | yes      |         | >= 1                                 | ticks from one shot to the next (1: every tick)                                                  |
+| `towers.<key>.sell`     | `integer`           | no       |         | >= 0                                 | the gold selling one gives back; half its cost (rounded down) when left out                      |
+
+Example (`docs/reference/examples/td-towers.json`):
+
+```json
+{
+  "towers": {
+    "arrow": { "cost": 10, "range": 2, "damage": 1, "cooldown": 6 },
+    "cannon": { "cost": 30, "range": 3, "damage": 4, "cooldown": 20, "sell": 20 }
+  }
+}
+```
+
+### `td-waves`
+
+A tower-defense wave list: waves of enemy groups (kind, count, spacing, hp, speed, bounty) and an optional timer.
+
+- Defined by: kit towerdefense
+- Where: `content/`, claimed in `game.json` under `content.td-waves`
+- Read from: `.json`
+
+| Field                      | Type       | Required | Default | Limits                         | Description                                                                                                                                       |
+| -------------------------- | ---------- | -------- | ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `string`   | yes      |         | not empty                      | the wave list id: its file name, which a map names in `waves`                                                                                     |
+| `timer`                    | `integer`  | no       |         | >= 1                           | ticks after the round starts, or after the last wave started, at which the next wave starts by itself; left out, only the start button starts one |
+| `waves`                    | `object[]` | yes      |         | at least 1 item                | the waves, in the order they come                                                                                                                 |
+| `waves[].groups`           | `object[]` | yes      |         | at least 1 item                | the enemy groups, one after another in file order                                                                                                 |
+| `waves[].groups[].kind`    | `string`   | yes      |         | matches `^[a-z0-9][a-z0-9-]*$` | the enemy kind, a name for skins and reports                                                                                                      |
+| `waves[].groups[].count`   | `integer`  | yes      |         | >= 1                           | how many come                                                                                                                                     |
+| `waves[].groups[].spacing` | `integer`  | yes      |         | >= 0                           | ticks from one enemy of the group to the next (0: all at once)                                                                                    |
+| `waves[].groups[].hp`      | `integer`  | yes      |         | >= 1                           | hit points each has                                                                                                                               |
+| `waves[].groups[].speed`   | `integer`  | yes      |         | 1 to 16                        | sub-cell units walked each tick (16 to a cell, so at most one cell a tick)                                                                        |
+| `waves[].groups[].bounty`  | `integer`  | yes      |         | >= 0                           | the gold a kill pays                                                                                                                              |
+| `waves[].groups[].jitter`  | `integer`  | no       |         | >= 0                           | up to this many more ticks (drawn from the round RNG) added to each spacing; 0 when left out                                                      |
+
+Example (`docs/reference/examples/td-waves.json`):
+
+```json
+{
+  "id": "meadow",
+  "timer": 600,
+  "waves": [
+    { "groups": [{ "kind": "scout", "count": 5, "spacing": 30, "hp": 3, "speed": 2, "bounty": 2 }] },
+    {
+      "groups": [
+        { "kind": "scout", "count": 4, "spacing": 20, "hp": 3, "speed": 2, "bounty": 2, "jitter": 10 },
+        { "kind": "brute", "count": 2, "spacing": 60, "hp": 12, "speed": 1, "bounty": 6 }
+      ]
+    }
+  ]
+}
+```
+
 ## Mini game params
 
 The params of a kit's mini games that content names by a fixed id (`KitDef.paramsDocs`);

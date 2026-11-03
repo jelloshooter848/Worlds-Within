@@ -1,0 +1,13 @@
+{
+  "id": "tiny",
+  "timer": 40,
+  "waves": [
+    { "groups": [{ "kind": "runner", "count": 2, "spacing": 4, "hp": 2, "speed": 4, "bounty": 3 }] },
+    {
+      "groups": [
+        { "kind": "brute", "count": 1, "spacing": 0, "hp": 6, "speed": 2, "bounty": 8 },
+        { "kind": "runner", "count": 2, "spacing": 3, "hp": 2, "speed": 4, "bounty": 3, "jitter": 2 }
+      ]
+    }
+  ]
+}

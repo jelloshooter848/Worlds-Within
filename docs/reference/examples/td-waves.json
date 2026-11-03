@@ -1,0 +1,13 @@
+{
+  "id": "meadow",
+  "timer": 600,
+  "waves": [
+    { "groups": [{ "kind": "scout", "count": 5, "spacing": 30, "hp": 3, "speed": 2, "bounty": 2 }] },
+    {
+      "groups": [
+        { "kind": "scout", "count": 4, "spacing": 20, "hp": 3, "speed": 2, "bounty": 2, "jitter": 10 },
+        { "kind": "brute", "count": 2, "spacing": 60, "hp": 12, "speed": 1, "bounty": 6 }
+      ]
+    }
+  ]
+}
