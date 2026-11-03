@@ -664,7 +664,10 @@ pnpm -s cli record games/samples/mini-siege/runs/played.run.json --mission sabot
   world) or of a round that had not ended is a usage error.
 - **`--bot <plan>`** (JSON, or `@file`): the run is played (no checks) with that step's `input`
   left out; while the round it starts is hosted, each tick's frame is what the bot of the kit
-  owning the round's mini game (`missions.round.game` in the snapshot) holds, through
+  owning the round's mini game (`missions.round.game` in the snapshot) holds (only that step's
+  round: the bot starts on the first hosted tick after the step is handed over and stops when its
+  round ends, so earlier and later rounds play as the file says, and the recording kept is that
+  mission's at the step's tick), through
   `KitDef.roundBots` (`engine/core/kit.ts`): the topdown kit's `TopDownBot` for `mission-room`
   (plan: per room id, the plain-data steps `fight`, `goto`, `pickup`, `chest`, `leave`), the
   tower-defense kit's `TdBot` for `td-defence` (plan: its steps). The game records the round

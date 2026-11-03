@@ -105,6 +105,43 @@ describe('record', () => {
     expect(playInput(file)).toEqual(committed);
   }, 60_000);
 
+  it("with two rounds, --bot drives only the target play step's round (fortify played as written, then sabotage)", async () => {
+    const { file, committed } = copyRun('fortify-played', (run) => {
+      const r = run as typeof run & {
+        ticks: number;
+        hashes: { tick: number }[];
+        assertions: { tick: number }[];
+        invariants: unknown[];
+      };
+      // A sabotage round after the walls round; the checks after tick 170 described a world
+      // without it (and the burnt engines break the "alive" invariants), so they go.
+      r.missions.push(
+        { tick: 170, mission: 'sabotage', action: 'open' },
+        { tick: 170, mission: 'sabotage', action: 'play' },
+      );
+      r.ticks = 700;
+      r.hashes = r.hashes.filter((h) => h.tick <= 170);
+      r.assertions = r.assertions.filter((a) => a.tick <= 170);
+      r.invariants = [];
+    });
+    const { code, result } = await cli(['record', file, '--mission', 'sabotage', '--bot', BOT]);
+    expect(code).toBe(EXIT.ok);
+    expect(result).toMatchObject({
+      tick: 170,
+      source: 'bot',
+      path: 'missions.3.input',
+      written: true,
+      verified: true,
+      passed: true,
+      hashMismatch: null,
+    });
+    const missions = (JSON.parse(readFileSync(file, 'utf8')) as { missions: PlayStep[] }).missions;
+    // The walls round keeps its own input; the sabotage round gets the bot's.
+    expect(missions[1]!.input).toEqual(committed);
+    expect(missions[3]!.input).toEqual(result.input);
+    expect((result.input as { steps: unknown[] }).steps.length).toBeGreaterThan(0);
+  }, 60_000);
+
   it('writes a page recording (the list from window.__ww.recordings()) and plays the run', async () => {
     const { dir, file, committed } = copyRun('played', (run) => {
       run.missions.find((m) => m.action === 'play')!.input = { steps: [] };

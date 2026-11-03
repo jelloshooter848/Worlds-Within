@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { formatErrors, type ContentError } from '@engine/core/content/validate';
 import type { HeadlessGame, JsonObject, JsonValue, RoundRecording } from '@engine/core/headless';
 import type { KitRoundBot, KitRoundBotDef } from '@engine/core/kit';
+import type { MiniGame } from '@engine/core/minigame';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { openContentFile } from '../content-file';
 import { EXIT, UsageError } from '../exit-codes';
@@ -27,7 +28,9 @@ import { writeValue } from './edit';
  * - `--bot <plan>` (JSON, or `@file`): plays the run headless with the play step's own `input`
  *   left out, and while that round is hosted feeds it what the bot of the kit whose mini game it is
  *   holds (`KitDef.roundBots`: the topdown kit's `TopDownBot` for `mission-room`, the
- *   tower-defense kit's `TdBot` for `td-defence`); the game records the round
+ *   tower-defense kit's `TdBot` for `td-defence`). Only that step's round is driven: the bot is
+ *   made on the first tick hosted after the step is handed over and dropped when its round ends,
+ *   and every other round in the run plays as the file says. The game records the round
  *   (`HeadlessGame.recordRounds`) and that recording is written.
  *
  * Result: `{ run, mission, play, tick, source, ticks, steps, input, file, path, written, verified,
@@ -104,19 +107,27 @@ function botsOf(manifest: {
   return bots;
 }
 
-/** Plays the run with the bot driving the play step's round, and returns that round's recording. */
+/**
+ * Plays the run with the bot driving the play step's round (entry `index`, played at `tick`) and
+ * returns that round's recording. Every other round the run hosts, before or after it, gets the
+ * scripted frame as before; the bot is made when the target round starts and dropped when it ends.
+ */
 async function botRecording(
   cwd: string,
   runFile: string,
   ticks: number,
   index: number,
   mission: string,
+  tick: number,
   bots: Map<string, KitRoundBotDef>,
   plan: unknown,
 ): Promise<{ ok: true; recording: RoundRecording } | { ok: false; errors: ContentError[] }> {
   let recordings: () => RoundRecording[] = () => [];
   let bot: KitRoundBot | null = null;
-  let started = false;
+  // 'waiting' for the target play step; 'armed' once it is handed over, so the next round hosted
+  // is its round; 'driving' that round (`driven`); 'done' once it has ended.
+  let state: 'waiting' | 'armed' | 'driving' | 'done' = 'waiting';
+  let driven: MiniGame | null = null;
   const frame = new ScriptedInput({ steps: [] });
   const played = await playRun(cwd, runFile, {
     untilTick: ticks,
@@ -130,15 +141,21 @@ async function botRecording(
     },
     missionStep(step, i) {
       if (i !== index) return step;
+      state = 'armed';
       const { input: _input, ...rest } = step as typeof step & { input?: unknown };
       return rest as typeof step;
     },
     frameFor(game, scripted) {
       const round = game.miniGame?.() ?? null;
-      if (round === null) return scripted;
-      if (!started) {
-        // The round the play step started: record it, and find the bot for its mini game.
-        started = true;
+      if (state === 'driving' && round !== driven) {
+        state = 'done';
+        bot = null;
+      }
+      if (round === null || state === 'waiting' || state === 'done') return scripted;
+      if (state === 'armed') {
+        // The round the play step started: find the bot for its mini game.
+        state = 'driving';
+        driven = round;
         const id = (game.snapshot()['missions'] as JsonObject | undefined)?.['round'] as
           JsonObject | undefined;
         const playId = String(id?.['game'] ?? '');
@@ -162,10 +179,10 @@ async function botRecording(
     },
   });
   if (!played.ok) return played;
-  const recording = recordings().find((r) => r.mission === mission);
+  const recording = recordings().find((r) => r.mission === mission && r.tick === tick);
   if (recording === undefined || !recording.done)
     throw new UsageError(
-      `record --bot: the "${mission}" round did not start or did not end within the run's ticks`,
+      `record --bot: the "${mission}" round played at tick ${tick} did not start or did not end within the run's ticks`,
     );
   return { ok: true, recording };
 }
@@ -239,14 +256,11 @@ export const recordCommand = defineCommand({
         run.ticks,
         target.index,
         flags.mission,
+        tick,
         bots,
         readJson(ctx.cwd, flags.bot!, '--bot'),
       );
       if (!made.ok) return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: made.errors } };
-      if (made.recording.tick !== tick)
-        throw new UsageError(
-          `record --bot: the round started at tick ${made.recording.tick}, not at the play step's tick ${tick}`,
-        );
       input = made.recording.input as unknown as JsonValue;
       ticks = made.recording.ticks;
     }
