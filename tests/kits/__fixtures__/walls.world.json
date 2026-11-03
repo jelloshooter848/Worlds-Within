@@ -1,0 +1,112 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 1212,
+  "systems": "rts",
+  "terrain": {
+    "legend": { ".": { "name": "ground", "cost": 1, "passable": true } },
+    "rows": ["............", "............", "............", "............", "............", "............"],
+    "elevation": [
+      "000000000000",
+      "000000000000",
+      "000000000000",
+      "000000000000",
+      "000000000000",
+      "000000000000"
+    ]
+  },
+  "entities": [
+    {
+      "key": "types",
+      "components": {
+        "RtsTypes": {
+          "units": {
+            "raider": {
+              "health": 30,
+              "speed": 2,
+              "attack": 3,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 4,
+              "cost": { "gold": 40 },
+              "trainTicks": 12
+            },
+            "captain": {
+              "health": 60,
+              "speed": 2,
+              "attack": 5,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 5,
+              "cost": { "gold": 90 },
+              "trainTicks": 20
+            }
+          },
+          "buildings": {
+            "hall": { "health": 400, "size": { "w": 2, "h": 2 }, "work": 100, "dropoff": true },
+            "wall": { "health": 80, "size": { "w": 1, "h": 1 }, "work": 20, "cost": { "gold": 10 } }
+          }
+        }
+      }
+    },
+    {
+      "key": "hall",
+      "components": {
+        "Position": { "x": 0, "y": 0 },
+        "Owner": { "faction": "village" },
+        "Building": { "kind": "hall", "w": 2, "h": 2, "dropoff": true },
+        "Health": { "hp": 400, "max": 400 },
+        "Stockpile": { "faction": "village" },
+        "Inventory": { "gold": 60 }
+      }
+    },
+    {
+      "key": "west-wall",
+      "components": {
+        "Position": { "x": 3, "y": 1 },
+        "Owner": { "faction": "village" },
+        "Building": { "kind": "wall", "w": 1, "h": 1, "dropoff": false },
+        "Health": { "hp": 80, "max": 80 }
+      }
+    },
+    {
+      "key": "gate",
+      "components": {
+        "Position": { "x": 4, "y": 1 },
+        "Owner": { "faction": "village" },
+        "Building": { "kind": "wall", "w": 1, "h": 1, "dropoff": false },
+        "Health": { "hp": 80, "max": 80 }
+      }
+    },
+    {
+      "key": "brak",
+      "components": {
+        "Position": { "x": 10, "y": 4 },
+        "Owner": { "faction": "raiders" },
+        "Health": { "hp": 60, "max": 60 },
+        "Unit": { "type": "captain", "speed": 2, "attack": 5, "range": 1, "cooldown": 3, "sight": 5 },
+        "EventMember": { "event": "siege" }
+      }
+    },
+    {
+      "key": "r1",
+      "components": {
+        "Position": { "x": 10, "y": 5 },
+        "Owner": { "faction": "raiders" },
+        "Health": { "hp": 30, "max": 30 },
+        "Unit": { "type": "raider", "speed": 2, "attack": 3, "range": 1, "cooldown": 3, "sight": 4 },
+        "EventMember": { "event": "siege" }
+      }
+    },
+    {
+      "key": "r2",
+      "components": {
+        "Position": { "x": 11, "y": 5 },
+        "Owner": { "faction": "raiders" },
+        "Health": { "hp": 30, "max": 30 },
+        "Unit": { "type": "raider", "speed": 2, "attack": 3, "range": 1, "cooldown": 3, "sight": 4 },
+        "EventMember": { "event": "siege" }
+      }
+    }
+  ]
+}

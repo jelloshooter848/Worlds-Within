@@ -15,3 +15,6 @@ Test-only content (`engine/core/CLAUDE.md`, Fixtures): only tests read these.
 
 `game.ts` (tests only) loads `game/` as a game would (`fixtureContent()`) and gives its round
 (`fixtureRound()`, through `tdRound`), for the presentation, controls and headless game tests.
+`mission-defence.test.ts` and `tests/kits/td-mission.test.ts` play the `td-defence` mission on
+the tiny map (`fixtureRound()`); the world and mission they play it over are in
+`tests/kits/__fixtures__/` (`walls.world.json`, `fortify.mission.json`).

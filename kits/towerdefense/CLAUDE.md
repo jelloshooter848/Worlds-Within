@@ -5,7 +5,7 @@ The tower-defense kit (Engine 0.12, the platform test; docs/BUILD-LOG.md, Engine
 `kits/topdown` and `kits/platformer` it holds its **own deterministic round rules** (whole cells,
 whole sub-cell units and whole ticks; every random draw through the `Rng` it is given), and like
 every kit it holds **no world rules**: over a world it will read only what a mission's params and
-snapshot give it (T6) and report what happened. It never imports `engine/sim` and never draws.
+snapshot give it (`mission-defence.ts`, T6) and report what happened. It never imports `engine/sim` and never draws.
 `index.ts` re-exports the public surface; games import it as `@kits/towerdefense`.
 
 ## Files
@@ -33,8 +33,12 @@ snapshot give it (T6) and report what happened. It never imports `engine/sim` an
   `HeadlessGame`) and `tdRound(content, map?)`, the round from a game's loaded content (below).
 - `bot.ts`: `TdBot(plan)`, a deterministic player for tests: `next(game)` gives the actions to
   hold this step (steps `place`, `sell`, `wave`, `wait`, `clear`; one press, then a released frame).
+- `mission-defence.ts`: the `td-defence` mini game (`tdDefence`, `TD_DEFENCE`,
+  `tdDefenceParamsSchema`, `TdDefenceRound`, `TdDefenceReport`) and the stateless
+  `towerdefenseMissionAdapter` (below).
 - `kit.ts`: `kit` (`defineKit`): name `towerdefense`, kinds `td-map`, `td-towers`, `td-waves`,
-  rules `TOWERDEFENSE_RULES`, **strict mutants** (decision 1; on since T4, when the sample's run
+  rules `TOWERDEFENSE_RULES`, `paramsDocs` (the `td-defence` params, listed by `pnpm docs:gen` in
+  `docs/reference/schemas.md`, "Mini game params"), **strict mutants** (decision 1; on since T4, when the sample's run
   files came to guard every rule: `pnpm cli mutants games/samples/tower-defense` fails on a rule no
   run file guards). `engine/tools` finds it through the generated
   `engine/tools/kit-list.ts` (`pnpm docs:gen` after changing it). `index.ts` does not re-export it.
@@ -153,6 +157,70 @@ tower, held }` and `kit`, a summary for run-file paths: `outcome`, `gold`, `live
 public for a page's frame stream (`new FrameStream(tdFrames(screen, () => game.controls.view()))`)
 and `tap`. A game's `createGame` is `tdGame({ ...tdRound(content), seed, disabledRules })`.
 
+## The td-defence mission (`mission-defence.ts`)
+
+The data-driven tower-defense mission (Engine 0.12 T6; docs/BUILD-LOG.md, Engine 0.12, decisions
+5-6, items 201-202): a mission over an `engine/sim` world played as one tower-defense round, with
+**no adapter code in the game**, in the pattern of the topdown kit's `mission-room`. A mission file
+names it with `"play": "td-defence"` (`TD_DEFENCE`) and says everything in its `params`
+(`tdDefenceParamsSchema`; the field table is in `docs/reference/schemas.md`, example
+`docs/reference/examples/td-defence-params.json`):
+
+- `map`: the id of one of the game's `td-map`s.
+- `build?`: `{ select, slot? }`, the world entities (the walls) that stand on the map's build
+  cells: those `select` picks, ascending id, on the cells of the `slot` character (a build cell's;
+  every build cell when left out) in reading order. Spare slot cells become blocked ground; more
+  walls than cells refuses the round. Left out, the map's own build cells, named `"<col>,<row>"`.
+- `budget?`: `{ faction, item, cap? }`, the round's gold: the `Inventory` item of the entity with
+  that faction's `Stockpile` (0 when it has none of the item), at most `cap`. Left out, the map's
+  `start.gold`. `lives?`: the round's lives (the map's `start.lives` when left out). `timer?`:
+  ticks until the wave starts by itself (left out, only `start` starts it).
+- `wave`: `[{ kind, select?, hpPer?, speed, spacing?, bounty? }]`, the world units that come, as
+  one wave: each entry's units in entry order, then ascending id, an entity going to the first
+  entry that selects it; hp `ceil(Health.hp / hpPer)` (at least 1; `Health.hp` without `hpPer`, 1
+  with no `Health`). Each unit is one group of one, `spacing` ticks after the one before.
+- Selectors (`select`): `event?` (`EventMember`; for `wave` the mission's `event` when left out,
+  for `build` any), `faction?` (`Owner`), `types?` (`Unit.type` or `Building.kind`), `keys?` (world
+  names); only entities with `Position` and, with `Health`, hp above 0.
+- `outcomes`: ordered rules `[{ outcome, when?: { result?, leaksAtMost?, spentAtMost?, killed? }
+}]`; the first that holds names the outcome, only the last may (and must) leave out `when`; a
+  quit goes to `onQuit` without the rules. `killed` names wave units by world name or id (the
+  adapter refuses a name not in the wave).
+- **World names**: the scenario key the open mission's `refs` give an entity (the keys its effects
+  name), else its id as a string (lesson D6).
+
+The halves (the kit never imports `engine/sim`; it reads the snapshot with `snapshotEntities`):
+
+- `towerdefenseMissionAdapter` (`MissionAdapter<JsonObject, MiniGameEnd>`, stateless; `MissionHost`
+  takes it as `adapters: { 'td-defence': ... }`): `input` is `tdDefenceInput`, the round's params
+  `TdDefenceInput { map, gold?, lives?, timer?, walls (or null), slot?, foes: [{ entity, name,
+kind, hp, speed, spacing, bounty }] }`; `outcome` is `tdDefenceOutcome`, with `stats` `{ placed,
+spent, leaked, livesLeft, killed, escaped, fallen, ticks }`. It throws (the host's
+  `bad_mission_input` / `unmappable_report`) on malformed params, a budget faction with no
+  stockpile, a wave that selects nothing, a `killed` name not in the wave, or no or a foreign
+  report.
+- `tdDefence({ maps, towers, title?, hostStatus?, inputMap?, size?, disabledRules? })`, the
+  `MiniGameDef` (title `DEFENCE`, `hostStatus` `['mission']` by default): `paramsSchema` is
+  `tdDefenceParamsSchema`; `checkUse` (`tdDefenceProblems`) checks the map is one of `maps` with a
+  build cell, `build.slot` is a build cell on it and each rule names a declared outcome, so `pnpm cli
+validate` reports them at their field (`bad_mini_game_use`). `create(ctx, seed)` takes the
+  adapter's input, places the walls, gives the map the gold and lives and a one-wave list (with the
+  map's `waves` id) of the world's units, and plays it as a `TdDefenceRound`.
+- `TdDefenceRound` (a `MiniGame`): a `TdGame` (`game`, for a bot) stepped with frame input;
+  **select quits** before the round sees it; `pass` when won, `fail` when lost. `snapshot()` is
+  the game's plus `mission: { ticks, result }`. `report()` (`TdDefenceReport`): `result`, `ticks`,
+  `lives`, `livesLeft`, `leaked`, `spent`, `refunded`, `goldLeft`, `placed` (towers placed by type,
+  sold ones too), `towers` (standing: `cell`, `name`, `type`), `killed` and `escaped` (wave units'
+  world names, ascending enemy id), `fallen`, `cells` (`{ cell, name, entity }`) and `foes`
+  (`{ enemy, entity, name, kind }`, enemy ids from 1 in wave order). **`fallen`** is the report's
+  reading, not a round rule (lesson D5): each leak brings down the build cell nearest the exit
+  (squared distance, ties in reading order) not already fallen. `present()` is `describeWorld`
+  with the cursor and the events since the last frame, each enemy tagged `foe:<name>`, and the host
+  values as `host:<key>`; no stream state (every frame has the full map).
+
+What the world gets back is the declared outcome's effects only: gold spent and losses are fixed
+amounts per outcome (lessons D3, D4).
+
 ## Named rules (`rules.ts`)
 
 `TOWERDEFENSE_RULES`: `build-on-build-cells`, `build-costs-gold`, `sell-refunds`, `wave-timer`,
@@ -189,8 +257,13 @@ problem with its cell, and the fixture round played to its end twice), `present.
 before and during a round, schema-valid and frozen; the ghost's reasons; towers, enemies, shots;
 enemy placement and facings; the same hashes presented or not; a stream's map, its events on a won
 and a lost round, refusals and sales, waves cleared once), `controls.test.ts` (cursor moves and
-repeats, the buttons, a round from `ScriptedInput`, taps through the frame's camera at zoom 1 and 2) and `game.test.ts` (the snapshot and its `kit` summary, the bot winning with the same hashes on
-two runs, losing, disabled rules, selling, `tdRound`). `__fixtures__/game.ts` loads the fixture
+repeats, the buttons, a round from `ScriptedInput`, taps through the frame's camera at zoom 1 and 2), `game.test.ts` (the snapshot and its `kit` summary, the bot winning with the same hashes on
+two runs, losing, disabled rules, selling, `tdRound`) and `mission-defence.test.ts` (the adapter
+over a hand-written world snapshot: walls, capped budget, wave order and hp, names, refusals; the
+round's map, cells, waves; held, breached and quit rounds with their reports and outcomes; the
+rules in order; the frame's `foe:` tags and host status; the same snapshots twice; the validate
+errors). `tests/kits/td-mission.test.ts` plays the mission over a real sim world (played cheap and
+dear, breached, quit, delegated, golden hashes, and live through `MissionHost`). `__fixtures__/game.ts` loads the fixture
 game for them. The fixtures are in
 `__fixtures__/` (see its README). `tests/kits/towerdefense-validate.test.ts` runs `pnpm cli
 validate` on `__fixtures__/game` (passes) and `__fixtures__/bad` (fails at `start.lives` and the

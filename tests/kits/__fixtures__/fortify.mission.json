@@ -1,0 +1,63 @@
+{
+  "id": "fortify",
+  "title": "Man the walls",
+  "event": "siege",
+  "worldTimeCost": 20,
+  "play": "td-defence",
+  "params": {
+    "map": "tiny",
+    "lives": 2,
+    "build": { "select": { "faction": "village", "types": ["wall"] } },
+    "budget": { "faction": "village", "item": "gold", "cap": 40 },
+    "wave": [
+      { "kind": "captain", "select": { "types": ["captain"] }, "hpPer": 10, "speed": 2, "spacing": 6 },
+      {
+        "kind": "raider",
+        "select": { "faction": "raiders" },
+        "hpPer": 10,
+        "speed": 4,
+        "spacing": 8,
+        "bounty": 1
+      }
+    ],
+    "outcomes": [
+      { "outcome": "held-cheap", "when": { "leaksAtMost": 0, "spentAtMost": 25 } },
+      { "outcome": "held", "when": { "leaksAtMost": 0 } },
+      { "outcome": "breached" }
+    ]
+  },
+  "onQuit": "breached",
+  "outcomes": [
+    {
+      "id": "held-cheap",
+      "title": "The walls held, for 25 gold",
+      "weight": 1,
+      "effects": [
+        { "type": "inventory", "entity": "hall", "item": "gold", "add": -25 },
+        { "type": "destroy", "entity": "brak" },
+        { "type": "destroy", "entity": "r1" },
+        { "type": "destroy", "entity": "r2" }
+      ]
+    },
+    {
+      "id": "held",
+      "title": "The walls held, for 40 gold",
+      "weight": 1,
+      "effects": [
+        { "type": "inventory", "entity": "hall", "item": "gold", "add": -40 },
+        { "type": "destroy", "entity": "brak" },
+        { "type": "destroy", "entity": "r1" },
+        { "type": "destroy", "entity": "r2" }
+      ]
+    },
+    {
+      "id": "breached",
+      "title": "The gate breached",
+      "weight": 2,
+      "effects": [
+        { "type": "damage", "entity": "gate", "amount": 50 },
+        { "type": "damage", "entity": "west-wall", "amount": 20 }
+      ]
+    }
+  ]
+}

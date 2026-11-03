@@ -6,3 +6,4 @@ export * from './present';
 export * from './controls';
 export * from './game';
 export * from './bot';
+export * from './mission-defence';

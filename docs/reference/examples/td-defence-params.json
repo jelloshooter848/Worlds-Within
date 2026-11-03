@@ -1,0 +1,23 @@
+{
+  "map": "wall-road",
+  "lives": 3,
+  "timer": 200,
+  "build": { "select": { "faction": "village", "types": ["wall"] }, "slot": "W" },
+  "budget": { "faction": "village", "item": "gold", "cap": 60 },
+  "wave": [
+    {
+      "kind": "raider",
+      "select": { "faction": "raiders", "types": ["raider"] },
+      "hpPer": 10,
+      "speed": 4,
+      "spacing": 8,
+      "bounty": 2
+    }
+  ],
+  "outcomes": [
+    { "outcome": "held-cheap", "when": { "leaksAtMost": 0, "spentAtMost": 20 } },
+    { "outcome": "held", "when": { "leaksAtMost": 0 } },
+    { "outcome": "captain-slain", "when": { "killed": ["captain"] } },
+    { "outcome": "breached" }
+  ]
+}

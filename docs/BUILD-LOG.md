@@ -55,6 +55,19 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   (`tests/runs/tower-defense-mutants.test.ts`). Each run's sync hashes leave out the ticks a
   guarded rule's mutant reaches with a changed state before a check fails (a hash mismatch is not
   a failed check). No `view` yet (T5). No `engine/core` or `engine/sim` change was needed.
+- **The `td-defence` mini game and a data-driven mission adapter** (T6):
+  `kits/towerdefense/mission-defence.ts`, the `td-defence` `MiniGameDef` (`paramsSchema`,
+  `checkUse` for the map, slot and outcome ids, `inputMap`, `hostStatus`, a `report()` of towers by
+  type, gold spent, leaks, raiders killed and walls lost by world name) and the stateless
+  `towerdefenseMissionAdapter`: walls from the world by selector onto the build cells (or the map's
+  own), the gold from a faction's stockpile item (capped), the wave from world units by selector,
+  lives from a param, ordered `when` rules (`result`, `leaksAtMost`, `spentAtMost`, `killed`) to a
+  declared outcome, enemies tagged `foe:<name>`. `paramsDocs` puts the params in the schema
+  reference. Tested over a hand-written snapshot and, in `tests/kits/td-mission.test.ts`, over a
+  fixture sim world played, delegated, quit and live through `MissionHost`. Lessons D3-D8 (fixed
+  per-outcome gold and losses, walls lost as the report's reading, world names, selectors
+  `validate` cannot check, a mission map's wave list). No `engine/core` or `engine/sim` change was
+  needed.
 
 ### Decisions
 

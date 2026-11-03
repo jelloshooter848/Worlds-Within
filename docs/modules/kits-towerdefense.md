@@ -13,7 +13,10 @@ and deterministically: towers placed on free build cells and paid for, sold for 
 started by a button or the timer, enemies walking the path in whole sub-cell units, towers firing
 at the enemy furthest along within range on their cooldowns, bounties on kills, a life lost on a
 leak, and the round won when every wave is cleared or lost at 0 lives. Every rule is named, so a
-run can switch it off. It holds no world rules, never draws and never imports the sim.
+run can switch it off. Over a world (Engine 0.12 T6) it plays a mission as the `td-defence` mini
+game, configured only by the mission's params: walls from the world on the build cells, the gold
+from a faction's stockpile, the wave from the world's units, and ordered rules from the round's
+report to a declared outcome. It holds no world rules, never draws and never imports the sim.
 
 ## Public API entry points
 
@@ -27,7 +30,10 @@ the cursor and a placement ghost tagged `ok` or `blocked`, the HUD and `td-*` ev
 sounds), `controls` (`TdControls`: the shared actions as a cursor, place, cycle, sell and start
 wave, and pointer taps through the frame's camera, `cellAtScreen`), `game` (`tdGame`, a
 `HeadlessGame` stepped with frame input whose snapshot is `{ round, controls, kit }`; `tdRound`
-reads a round from a game's content) and `bot` (`TdBot`, a deterministic player for tests).
+reads a round from a game's content), `bot` (`TdBot`, a deterministic player for tests) and
+`mission-defence` (`tdDefence`, the `td-defence` `MiniGameDef` with `paramsSchema`, `checkUse`
+and a `report()` of towers by type, gold spent, leaks, raiders killed and walls lost by world
+name; `towerdefenseMissionAdapter`, the stateless `MissionAdapter` for `MissionHost`).
 `kit.ts` exports `kit`, the hook the tools find by the
 name `towerdefense`; it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
 `games/samples/tower-defense` came to guard every rule).
@@ -45,7 +51,9 @@ name `towerdefense`; it opts in to strict mutant checks (since Engine 0.12 T4, w
 `pnpm test kits/towerdefense` runs the round and content tests in Node (placement and payment,
 waves, targeting, kills, leaks, the end of the round, each rule switched off, the same hashes from
 the same seed), the presentation tests (schema-valid frozen frames, events), the controls tests
-(actions and taps) and the headless game tests (a bot's round giving the same hashes twice). `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
+(actions and taps), the headless game tests (a bot's round giving the same hashes twice) and the
+`td-defence` tests over a hand-written snapshot; `tests/kits/td-mission.test.ts` plays the mission
+over a real sim world (played, delegated, quit, live through `MissionHost`, golden hashes). `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
 `tests/kits/towerdefense-validate.test.ts` also checks that the broken fixture is rejected by file
 and field. `pnpm -s cli mutants games/samples/tower-defense` (exit 0) checks that the sample's run
 files guard every kit rule.
