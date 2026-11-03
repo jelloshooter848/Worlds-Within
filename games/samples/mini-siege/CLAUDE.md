@@ -38,8 +38,9 @@ the gap report with a named release.
 
 ## Files
 
-- `game.json`: kit `rts`, `uses` `topdown` (the sabotage's room) and `towerdefense` (the walls'
-  map), seed 11, 256x240, `headless.ts`, `view.ts`; content kinds `rts-map`, `rts-types`,
+- `game.json`: kit `rts`, `uses` `topdown` (the mission rooms) and `towerdefense` (the walls'
+  map), `kitOptions: { "topdown": { "rooms": "separate" } }` (Engine 0.15 T11, gap G17: each room
+  file is a mission room of its own, checked alone, not one dungeon), seed 11, 256x240, `headless.ts`, `view.ts`; content kinds `rts-map`, `rts-types`,
   `rts-enemy`, `mission`, `campaign` (Engine 0.13), `room`, `td-map`, `td-towers`, `td-waves`, `palette`, `sprite`, `skin`,
   `sfx`, `song`. `index.html` is its page: the launcher lists it and
   `pnpm build` emits `games/samples/mini-siege/index.html`.
@@ -102,8 +103,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   one `exclusive` group `captive`) when the captain comes in captured; `ransom-window` (also
   `relative`, 0 to 60, not in the group) is opened only by a failed rescue.
 - `content/missions/rescue-captain.mission.json`: "Break the captain out", event `dawn`, cost
-  40, `play` `mission-room` in the `engine-camp` room (reused: a second room file would be a
-  second dungeon, gap M32), `hero` the village's `hero` (the sergeant, `hpPer` 10: 5 half hearts
+  40, `play` `mission-room` in its own room, `stockade` (Engine 0.15 T11, gap M32; it reused the
+  sabotage's `engine-camp` until the kit's `rooms: "separate"` option let a second room stand
+  alone), `hero` the village's `hero` (the sergeant, `hpPer` 10: 5 half hearts
   at 50 hp), the jailers as knights in the `n` cells, `defeat-all`; `freed` when the round passes
   (damage `sergeant` by `heroHpLost`, 10 delegated; `fate` freed the captain at 10,15 by the
   hall), else and on a quit `failed` (damage `sergeant` 20 or `heroHpLost`, `fate` injured,
@@ -112,7 +114,13 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   freed), `ransom-captain` (cost 10, no `play`; `paid`: gold -120, `fate` freed) and
   `leave-captain` (cost 1, no `play`; `left`, no effects: the capture stands).
 - `content/rooms/engine-camp.json` + `.map.txt` (`room`): the raiders' camp at night, one 16x11
-  room with the hero's `@`, two `E` and two `n` slots.
+  room with the hero's `@`, two `E` and two `n` slots: the sabotage's room.
+- `content/rooms/stockade.json` + `.map.txt` (`room`, Engine 0.15 T11, gap M32): the raiders'
+  stockade at dawn where the captain is held, the rescue's room: 16x11, the hero's `@` at (3,4),
+  wall stubs and two posts in the yard (only `#` and `.`, the tiles the mission-room skin draws)
+  and two `n` slots, where the jailers stand. Both rooms sit at cell (0,0), each with its own
+  start, and both draw through the one round picture (`canvas2d-mission-room.json`, the shared
+  frame source of Engine 0.15 T6) since the skin is the mini game's (`mission-room`), not a room's.
 - `content/missions/fortify.mission.json` (`mission`, the preparation phase): "Man the walls",
   event `siege`, `worldTimeCost` 30, `play` `td-defence`, `onQuit` `overrun`. Its `params`
   (checked by `validate` through the towerdefense kit's schema and `checkUse`): map `walls`, 2
@@ -472,8 +480,10 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   and a hash mismatch stops the run without a failed check. The tower-defense kit is strict, but
   a `uses` kit is held only to the rules the run files list in `guards`, so its 13 unguarded rules
   (and the top-down kit's 4) are reported (`kits[].unguarded`) and the command exits 0; they are
-  recorded in `docs/reports/stacking-test.md` (G12). The whole folder takes about four minutes
-  (13 run files, 24 rules).
+  recorded in `docs/reports/stacking-test.md` (G12). `dawn-rescue-played` (Engine 0.15 T11)
+  guards `topdown:walls-block-movement` (its recorded round no longer passes with it off), so 3 of
+  the top-down kit's rules stay unguarded. The whole folder takes about four minutes (14 run
+  files, 24 rules).
 - **Recording the played round** (Engine 0.14 T9, gap M19; no script): `pnpm -s cli record
 games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine-camp": [{"do":
 "fight"}]}' --json` plays the run with the `play` step's input left out, the topdown kit's
@@ -491,6 +501,13 @@ games/samples/mini-siege/runs/fortify-played.run.json --mission fortify --bot '[
 5}, {"do": "wave"}]' --json` (the tower-defense kit's `TdBot`; also unchanged, final hash
   `2b9327daefddd9a1` since Engine 0.15 T9). Since Engine 0.15 (gap D1) a round played by taps on the page records its
   taps too (`input.taps`), which the run file's `play` step replays.
+- **Recording the rescue round** (Engine 0.15 T11, gap M32): `pnpm -s cli record
+games/samples/mini-siege/runs/dawn-rescue-played.run.json --mission rescue-captain --bot
+'{"stockade": [{"do": "fight"}]}' --json` (the plan names the rescue's own room) wrote
+  `dawn-rescue-played`'s `play` input. Giving the rescue its own room moved the sync and golden
+  hashes of `dawn-rescue` and `dawn-rescue-failed` at ticks 20 and 40 only (the open mission's
+  definition is in the world while it is open; their final hashes are unchanged); no other run
+  moved.
 
 ## The dawn assault (Engine 0.13 T7)
 
@@ -510,16 +527,17 @@ read off `sides.<faction>.units` and the named people.
   to the same save. The fortify runs' saves end the campaign (`ended`: the hall falls, the
   campaign file's `endIf`, gap M31).
 
-| run                  | ticks | from               | what happens                                                                                                                                                                                                                                                                              | final hash         |
-| -------------------- | ----- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `dawn-held`          | 200   | `played.run.json`  | the captain on the map at 120 leads the defence: nothing opens; he falls by world tick 100 (a dead record), and the raiders are beaten by 200 (one soldier left)                                                                                                                          | `c5e88a910dfe2710` |
-| `dawn-captured`      | 200   | `quit.run.json`    | the same run file but `from`: the captain is held (off the map, 90 hp), the three captive choices are offered from 0 and close unused at 60; the village falls by 100 and five raiders stand at 200                                                                                       | `d13258df96b4db81` |
-| `dawn-code`          | 200   | `quit`'s save code | `dawn-captured` from the code instead of the run: the same assertions and the same hashes (the done-when's equal hashes)                                                                                                                                                                  | `d13258df96b4db81` |
-| `dawn-rescue`        | 200   | `quit.run.json`    | `rescue-captain` opened at 5 (the other choices close, `dawn` frozen to 45) and delegated: seed 11 draws `freed`; at 45 the captain is back at 10,15 with 90 hp, the sergeant at 40; three raiders stand at 200                                                                           | `1ebfaa6dae0eb6e5` |
-| `dawn-rescue-failed` | 201   | `quit.run.json`    | the rescue played (the sergeant's 50 hp start the round on 5 half hearts) and given up at once: `failed` at world 45 injures her (30 hp) and offers `ransom-window`; reopening the rescue at game tick 50 is refused (`not_offered`); the ransom (120 gold) frees the captain at world 60 | `9d9f5ad86dd28cae` |
-| `dawn-exchange`      | 200   | `quit.run.json`    | `exchange-captain` opened and delegated at 5: 80 gold (70 left) and the captain freed at 15; three raiders stand at 200                                                                                                                                                                   | `3250cd0dccd5925c` |
-| `dawn-leave`         | 200   | `quit.run.json`    | `leave-captain` at 5: no effects, the captain stays captured; five raiders stand at 200, as with no choice at all                                                                                                                                                                         | `86ec1de1cef2d19d` |
-| `dawn-fresh`         | 200   | `start: dawn`      | the dawn started fresh (Engine 0.14, gap G9: no carried record): its scenario file's captain at 120 and 150 gold, so it plays as `dawn-held`; pins the save code at 200                                                                                                                   | `c5e88a910dfe2710` |
+| run                  | ticks | from               | what happens                                                                                                                                                                                                                                                                                                                                                | final hash         |
+| -------------------- | ----- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `dawn-held`          | 200   | `played.run.json`  | the captain on the map at 120 leads the defence: nothing opens; he falls by world tick 100 (a dead record), and the raiders are beaten by 200 (one soldier left)                                                                                                                                                                                            | `c5e88a910dfe2710` |
+| `dawn-captured`      | 200   | `quit.run.json`    | the same run file but `from`: the captain is held (off the map, 90 hp), the three captive choices are offered from 0 and close unused at 60; the village falls by 100 and five raiders stand at 200                                                                                                                                                         | `d13258df96b4db81` |
+| `dawn-code`          | 200   | `quit`'s save code | `dawn-captured` from the code instead of the run: the same assertions and the same hashes (the done-when's equal hashes)                                                                                                                                                                                                                                    | `d13258df96b4db81` |
+| `dawn-rescue`        | 200   | `quit.run.json`    | `rescue-captain` opened at 5 (the other choices close, `dawn` frozen to 45) and delegated: seed 11 draws `freed`; at 45 the captain is back at 10,15 with 90 hp, the sergeant at 40; three raiders stand at 200                                                                                                                                             | `1ebfaa6dae0eb6e5` |
+| `dawn-rescue-played` | 400   | `quit.run.json`    | (Engine 0.15 T11, gap M32) the rescue played in the `stockade` room at 5 (input recorded with the kit's bot, below): the sergeant on 5 half hearts beats both jailers and the round passes at game tick 243 (`freed`, 238 round ticks, world still at 5); it commits `played` at world 45 (game 283): the captain freed at 10,15, the sergeant unhurt at 50 | `ea5896a26067e338` |
+| `dawn-rescue-failed` | 201   | `quit.run.json`    | the rescue played (the sergeant's 50 hp start the round on 5 half hearts) and given up at once: `failed` at world 45 injures her (30 hp) and offers `ransom-window`; reopening the rescue at game tick 50 is refused (`not_offered`); the ransom (120 gold) frees the captain at world 60                                                                   | `9d9f5ad86dd28cae` |
+| `dawn-exchange`      | 200   | `quit.run.json`    | `exchange-captain` opened and delegated at 5: 80 gold (70 left) and the captain freed at 15; three raiders stand at 200                                                                                                                                                                                                                                     | `3250cd0dccd5925c` |
+| `dawn-leave`         | 200   | `quit.run.json`    | `leave-captain` at 5: no effects, the captain stays captured; five raiders stand at 200, as with no choice at all                                                                                                                                                                                                                                           | `86ec1de1cef2d19d` |
+| `dawn-fresh`         | 200   | `start: dawn`      | the dawn started fresh (Engine 0.14, gap G9: no carried record): its scenario file's captain at 120 and 150 gold, so it plays as `dawn-held`; pins the save code at 200                                                                                                                                                                                     | `c5e88a910dfe2710` |
 
 - `dawn-held` and `dawn-captured` differ only in `from`, so the only difference in their input is
   the carried record, and that differs only in the captain's entry (`mini-siege.test.ts`).

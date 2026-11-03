@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import type { ContentKind } from '@engine/core/content/kinds';
 import { defineKit, type KitDef } from '@engine/core/kit';
 import { EXIT } from './exit-codes';
-import { gameKinds } from './game-check';
+import { checkGameTexts, gameKinds } from './game-check';
 import { findKit } from './kits';
 import { main } from './main';
 
@@ -192,5 +192,72 @@ describe('gameKinds with two kits', () => {
         message: expect.stringContaining('the engine'),
       }),
     ]);
+  });
+});
+
+describe('kit options in game.json (Engine 0.15, gap G17)', () => {
+  const manifest = (kit: string, uses: string[], kitOptions: unknown) =>
+    JSON.stringify({ kit, uses, kitOptions });
+
+  it("takes the topdown kit's rooms option and refuses unknown or bad ones", () => {
+    expect(gameKinds(manifest('platformer', ['topdown'], { topdown: { rooms: 'separate' } })).errors).toEqual(
+      [],
+    );
+    expect(gameKinds(manifest('platformer', ['topdown'], { topdown: { rooms: 'dungeon' } })).errors).toEqual(
+      [],
+    );
+    const { errors } = gameKinds(
+      manifest('platformer', ['topdown'], { topdown: { rooms: 'apart', doors: 1 }, rts: {}, platformer: {} }),
+      'games/g/',
+    );
+    expect(errors.map((e) => [e.path, e.code])).toEqual([
+      ['kitOptions.topdown.rooms', 'bad_option'],
+      ['kitOptions.topdown.doors', 'unknown_option'],
+      ['kitOptions.rts', 'unknown_option'],
+      ['kitOptions.platformer', 'unknown_option'],
+    ]);
+    expect(errors[0]!.file).toBe('games/g/game.json');
+  });
+
+  it('checks room files as one dungeon by default and each alone with rooms "separate"', () => {
+    const room = (id: string) => [
+      JSON.stringify({ id, at: [0, 0] }),
+      [
+        '################',
+        ...Array.from({ length: 9 }, (_, i) => (i === 4 ? '#..@...........#' : '#..............#')),
+        '################',
+      ].join('\n'),
+    ];
+    const texts = (kitOptions: unknown) => {
+      const [a, aMap] = room('a');
+      const [b, bMap] = room('b');
+      return {
+        'game.json': JSON.stringify({
+          id: 'g',
+          kit: 'topdown',
+          ...(kitOptions === undefined ? {} : { kitOptions }),
+          content: { room: ['content/rooms/*.json'] },
+          start: { seed: 1 },
+          headless: 'headless.ts',
+        }),
+        'content/rooms/a.json': a!,
+        'content/rooms/a.map.txt': aMap!,
+        'content/rooms/b.json': b!,
+        'content/rooms/b.map.txt': bMap!,
+      } as Record<string, string>;
+    };
+    const dungeon = checkGameTexts(texts(undefined));
+    expect(dungeon.ok).toBe(false);
+    if (!dungeon.ok) expect(dungeon.errors.map((e) => e.code)).toContain('invalid_dungeon');
+    expect(checkGameTexts(texts({ topdown: { rooms: 'separate' } })).ok).toBe(true);
+    // Each room is still a dungeon of its own: one without a start fails alone.
+    const noStart = texts({ topdown: { rooms: 'separate' } });
+    noStart['content/rooms/b.map.txt'] = noStart['content/rooms/b.map.txt']!.replace('@', '.');
+    const alone = checkGameTexts(noStart);
+    expect(alone.ok).toBe(false);
+    if (!alone.ok)
+      expect(alone.errors).toEqual([
+        expect.objectContaining({ file: 'content/rooms/b.map.txt', code: 'invalid_dungeon' }),
+      ]);
   });
 });

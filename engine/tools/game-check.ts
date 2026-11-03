@@ -1,7 +1,7 @@
 import { loadContent, type ContentBundle, type LoadOptions } from '@engine/core/content/bundle';
 import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import type { ContentKinds } from '@engine/core/content/kinds';
-import type { KitDef } from '@engine/core/kit';
+import type { KitDef, KitManifest } from '@engine/core/kit';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, dottedPath, type ContentError } from '@engine/core/content/validate';
 import { findKit, unknownKitMessage } from './kits';
@@ -16,13 +16,13 @@ import { findKit, unknownKitMessage } from './kits';
 export type CheckedContent = { ok: true; value: ContentBundle } | { ok: false; errors: ContentError[] };
 
 /** The manifest's `kit` and `uses`, if `game.json` parses far enough to have them. */
-function kitsOf(text: string | undefined): { kit?: unknown; uses?: unknown } {
+function kitsOf(text: string | undefined): { kit?: unknown; uses?: unknown; kitOptions?: unknown } {
   if (text === undefined) return {};
   try {
     const data = JSON.parse(text) as unknown;
     if (typeof data !== 'object' || data === null) return {};
-    const { kit, uses } = data as { kit?: unknown; uses?: unknown };
-    return { kit, uses };
+    const { kit, uses, kitOptions } = data as { kit?: unknown; uses?: unknown; kitOptions?: unknown };
+    return { kit, uses, kitOptions };
   } catch {
     return {};
   }
@@ -33,7 +33,9 @@ function kitsOf(text: string | undefined): { kit?: unknown; uses?: unknown } {
  * `uses` (each kit's hook, `kits.ts`), by the manifest. Errors are at `game.json` (`root` goes in
  * front of the file name): `unknown_kit` at `kit` or `uses.<i>` for a name no kit has,
  * `duplicate_kit` at `uses.<i>` for a kit already listed, and `kind_clash` at `uses.<i>` when that kit
- * adds a kind another listed kit (or the engine) already has, naming both. The manifest's shape is
+ * adds a kind another listed kit (or the engine) already has, naming both, and (Engine 0.15, gap
+ * G17) `unknown_option` / `bad_option` under `kitOptions` (`kitOptionErrors`); each kit's kinds are
+ * made with the manifest's `kitOptions` (`KitDef.kinds(manifest)`). The manifest's shape is
  * checked elsewhere (`gameManifestSchema`): entries that are not strings are skipped here. `find`
  * looks a kit up by name (`findKit`; tests pass their own).
  */
@@ -48,7 +50,9 @@ export function gameKinds(
   const kinds = engineContentKinds();
   const errors: ContentError[] = [];
   const file = `${root}${MANIFEST_FILE}`;
-  const { kit, uses } = kitsOf(manifestText);
+  const { kit, uses, kitOptions } = kitsOf(manifestText);
+  const options = isRecord(kitOptions) ? kitOptions : {};
+  const manifest: KitManifest = { kitOptions: options as KitManifest['kitOptions'] };
   const listed: { name: string; at: (string | number)[] }[] = [];
   if (typeof kit === 'string') listed.push({ name: kit, at: ['kit'] });
   if (Array.isArray(uses))
@@ -71,7 +75,7 @@ export function gameKinds(
       errors.push(contentError(file, at, 'unknown_kit', unknownKitMessage(name, field)));
       continue;
     }
-    for (const kind of hook.kinds()) {
+    for (const kind of hook.kinds(manifest)) {
       const had = owner.get(kind.name);
       if (had !== undefined) {
         const by = had === 'the engine' ? 'the engine' : `kit "${had}"`;
@@ -89,7 +93,69 @@ export function gameKinds(
       kinds.register(kind);
     }
   }
+  errors.push(...kitOptionErrors(options, listed, file, find));
   return { kinds, errors };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * The problems with a manifest's `kitOptions` (Engine 0.15, gap G17), at `game.json`:
+ * `unknown_option` at `kitOptions.<kit>` for a kit the game does not use or one with no options,
+ * and at `kitOptions.<kit>.<field>` for a field the kit's `options` schema does not have;
+ * `bad_option` at the field for a value its schema refuses. The shape (an object of objects) is
+ * `gameManifestSchema`'s.
+ */
+function kitOptionErrors(
+  options: Record<string, unknown>,
+  listed: readonly { name: string }[],
+  file: string,
+  find: (name: string) => KitDef | undefined,
+): ContentError[] {
+  const errors: ContentError[] = [];
+  const names = listed.map((l) => l.name);
+  for (const [name, value] of Object.entries(options)) {
+    const at = ['kitOptions', name];
+    const hook = names.includes(name) ? find(name) : undefined;
+    if (!hook) {
+      const why = names.includes(name)
+        ? `no kit "${name}"`
+        : `the game uses no kit "${name}" (its kits: ${names.join(', ')})`;
+      errors.push(contentError(file, at, 'unknown_option', `options for kit "${name}": ${why}`));
+      continue;
+    }
+    if (!hook.options) {
+      errors.push(contentError(file, at, 'unknown_option', `kit "${name}" takes no options in game.json`));
+      continue;
+    }
+    if (!isRecord(value)) continue;
+    const parsed = hook.options.safeParse(value);
+    if (parsed.success) continue;
+    for (const issue of parsed.error.issues) {
+      if (issue.code === 'unrecognized_keys') {
+        for (const key of issue.keys)
+          errors.push(
+            contentError(
+              file,
+              [...at, ...issue.path, key],
+              'unknown_option',
+              `kit "${name}" has no option "${key}"`,
+            ),
+          );
+      } else
+        errors.push(
+          contentError(
+            file,
+            [...at, ...issue.path] as (string | number)[],
+            'bad_option',
+            `kit "${name}": ${issue.message}`,
+          ),
+        );
+    }
+  }
+  return errors;
 }
 
 /**

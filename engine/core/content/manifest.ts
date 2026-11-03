@@ -18,6 +18,12 @@ import { DEFAULT_SCREEN, SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
  * platformer game with `"uses": ["topdown"]` can hold `room` files for a top-down mini game. Only
  * the kinds come from them: the rules `run` switches off and `mutants` tries are `kit`'s.
  *
+ * `kitOptions` (optional, Engine 0.15, gap G17) gives a kit options of its own, by kit name: how
+ * the kit checks its kinds for this game, such as `{ "topdown": { "rooms": "separate" } }` (each
+ * room file checked alone, not as one dungeon). Each kit's hook gives the schema of its own
+ * (`KitDef.options`) and reads them in `KitDef.kinds(manifest)`; the tools refuse an option no
+ * kit of the game has (`unknown_option`).
+ *
  * `screen` is the game picture's size in game pixels (optional, 256x240 when left out): the
  * backbuffer, the integer scaling, the touch layout and screenshots all follow it.
  *
@@ -57,6 +63,12 @@ export const gameManifestSchema = z.strictObject({
     .exactOptional()
     .describe(
       "more kits whose content kinds the game also holds (e.g. a mini game's rooms); kinds only: run rules and mutants stay `kit`'s",
+    ),
+  kitOptions: z
+    .record(name('a kit name'), z.record(z.string(), z.unknown()))
+    .exactOptional()
+    .describe(
+      "options for the game's kits, by kit name (`kit` or one in `uses`): each kit's own fields, such as the topdown kit's `rooms`; a kit checks its own",
     ),
   content: z
     .record(

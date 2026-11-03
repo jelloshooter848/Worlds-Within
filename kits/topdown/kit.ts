@@ -1,14 +1,15 @@
 import { z } from 'zod';
 import type { ContentKind } from '@engine/core/content/kinds';
-import { defineKit } from '@engine/core/kit';
+import { defineKit, kitOptionsOf, type KitManifest } from '@engine/core/kit';
 import { TopDownBot, type BotStep } from './bot';
 import type { RoomChallenge } from './challenge';
 import { MISSION_ROOM, missionRoomParamsSchema } from './mission-room';
 import { TOPDOWN_RULES } from './rules';
-import { roomKind } from './schema';
+import { roomKind, topdownOptionsSchema, type RoomMode } from './schema';
 
 /**
- * The top-down kit's hook for the tools (`engine/core/kit.ts`): its content kinds (rooms), its
+ * The top-down kit's hook for the tools (`engine/core/kit.ts`): its content kinds (rooms, checked as
+ * one dungeon or, with the game's `kitOptions.topdown.rooms` `"separate"`, each alone: gap G17), its
  * named rules and, for the schema reference, the params of its `mission-room` mini game. The tools find it by the kit name a `game.json` gives (`engine/tools/kits.ts`).
  * Its round bot (Engine 0.14 T9, gap M19) is `TopDownBot` over the room's world, for `pnpm cli
  * record --bot`: the plan is the bot's plans per room id, with the steps that are plain data.
@@ -27,9 +28,23 @@ export const topdownBotPlanSchema = z.record(
     ]),
   ),
 );
+/**
+ * How a game checks its room files (Engine 0.15, gap G17): its `game.json`'s
+ * `kitOptions.topdown.rooms`, `dungeon` (one dungeon, the default) or `separate` (each room alone).
+ */
+export function roomMode(manifest?: KitManifest): RoomMode {
+  const { rooms } = kitOptionsOf({ name: 'topdown', options: topdownOptionsSchema }, manifest) as {
+    rooms?: RoomMode;
+  };
+  return rooms ?? 'dungeon';
+}
+
 export const kit = defineKit({
   name: 'topdown',
-  kinds: () => [roomKind() as unknown as ContentKind],
+  kinds: (manifest?: KitManifest) => [
+    roomKind({}, 1, { oneDungeon: roomMode(manifest) === 'dungeon' }) as unknown as ContentKind,
+  ],
+  options: topdownOptionsSchema,
   rules: TOPDOWN_RULES,
   paramsDocs: () => [
     {

@@ -1,7 +1,7 @@
 import type { CampaignDef } from '@engine/core/campaign';
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
 import { CAMPAIGN_KIND, MISSION_KIND } from '@engine/core/content/engine-kinds';
-import { kitContentKinds } from '@engine/core/content/game-content';
+import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import type { MissionDef } from '@engine/core/missions';
 import type { RtsTypes } from '@engine/core/rts-types';
@@ -27,7 +27,7 @@ const ROOM = roomKind();
 export function loadMiniSiege(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
   // The kits of `game.json`: `kit` (rts), then `uses` (topdown for the sabotage room,
   // towerdefense for the fortify map).
-  return loadContent(files, kitContentKinds([rts, topdown, towerdefense]), {
+  return loadContent(files, kitContentKinds([rts, topdown, towerdefense], manifestOptions(files)), {
     root: 'games/samples/mini-siege/',
   });
 }

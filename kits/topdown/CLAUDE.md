@@ -13,8 +13,9 @@ mini game (`challenge.ts`) and the data-driven mission room with its mission ada
 ## Kit hook (`kit.ts`)
 
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): its
-name (`topdown`, what a `game.json` gives in `kit`), its content kinds (`roomKind()`) and its named
-rules (`TOPDOWN_RULES`), and (Engine 0.11) `paramsDocs()`, the `mission-room` params schema that
+name (`topdown`, what a `game.json` gives in `kit`), its content kinds (`roomKind()`, checked as
+one dungeon or each room alone by the game's `kitOptions.topdown.rooms`, Engine 0.15 gap G17: its
+`options` schema is `topdownOptionsSchema`) and its named rules (`TOPDOWN_RULES`), and (Engine 0.11) `paramsDocs()`, the `mission-room` params schema that
 `pnpm docs:gen` lists in `docs/reference/schemas.md` ("Mini game params"), and (Engine 0.14 T9,
 gap M19) `roundBots()`: `TopDownBot` over a `mission-room` round's world, its plan
 `topdownBotPlanSchema` (per room id, the steps that are plain data: `fight`, `goto`, `pickup`,
@@ -172,8 +173,20 @@ a facing door and line up, building doors that pair up) are `checkDungeon(defs, 
 `buildDungeon` throws the first. The kind's `checkAll` runs `checkDungeon` over every room file,
 so `validate`, the editing verbs, `run` and `screenshot` report them as `invalid_dungeon` errors
 at the room file (a map row at the `.map.txt` file and line) instead of the game throwing.
-`roomKind(extraLegend, wall, { oneDungeon: false })` leaves that out, for a game whose room files
-make several dungeons.
+`roomKind(extraLegend, wall, { oneDungeon: false })` checks each room file alone instead, as its
+own one-room dungeon (its own player start, its doors only within itself), for a game whose rooms
+are separate challenge or mission rooms (Engine 0.15, gap G17).
+
+**Rooms that are not one dungeon** (Engine 0.15 T11, gap G17; docs/BUILD-LOG.md, Engine 0.15,
+decision 12, item 289). A game chooses with the kit's `game.json` option, `kitOptions.topdown.rooms`
+(`topdownOptionsSchema`, `ROOM_MODES`): `"dungeon"` (the default: every room file one dungeon) or
+`"separate"` (each room checked alone; two rooms may share a cell and each has its own `@`). The
+hook's `kinds(manifest)` reads it (`roomMode(manifest)` in `kit.ts`) and sets `roomKind`'s
+`oneDungeon`; the hook's `options` is the schema, so `validate` refuses an option the kit lacks
+(`unknown_option`) or a bad value (`bad_option`) at `game.json`. A game's page builds the same
+kinds with `kitContentKinds(kits, manifestOptions(files))` (`engine/core/content/game-content.ts`).
+The platformer sample (its `vault` and `cellar` challenge rooms) and the mini siege (its
+`engine-camp` and `stockade` mission rooms) set `"separate"`; the dungeon sample keeps the default.
 
 ## Room challenges as mini games (`challenge.ts`)
 

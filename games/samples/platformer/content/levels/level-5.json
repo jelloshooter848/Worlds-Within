@@ -1,0 +1,14 @@
+{
+  "id": "level-5",
+  "profile": "hopper",
+  "scroll": "right",
+  "triggers": [
+    {
+      "game": "cellar",
+      "params": { "goal": "reach", "ticks": 600, "hp": 6 },
+      "pass": ["coins:3", "open:11:6", "open:11:7", "open:11:8"],
+      "fail": ["respawn"],
+      "look": "door"
+    }
+  ]
+}

@@ -28,6 +28,7 @@ import { defaultRegistry } from './main';
 import type { Registry } from './registry';
 import { dumpFileSchema } from './dump-file';
 import { CHECK_OP_MEANINGS, CHECK_OPS, runFileSchema } from './run-file';
+import { repoMiniGameDocs, type GameMiniGameDoc } from './mini-game-docs';
 import { fieldRows, type FieldRow } from './schema-doc';
 
 /**
@@ -40,6 +41,9 @@ import { fieldRows, type FieldRow } from './schema-doc';
  * - `docs/reference/schemas.md`: one section per file format (the game manifest, run files and
  *   every content kind, the engine's and each kit's), with a field table from the Zod schema
  *   (`schema-doc.ts`) and an example from `docs/reference/examples/`, which must pass the schema.
+ * - `docs/reference/mini-games/<game>-<id>.md` (Engine 0.15, gap M11): one page per mini game a
+ *   game defines (`HeadlessEntry.miniGames`, `mini-game-docs.ts`), its params table from its
+ *   schema, linked from the schema reference's "Mini game params".
  * - `docs/CHEATSHEET.md`: hand-written, except the blocks between `<!-- generated:<name> -->` and
  *   `<!-- /generated:<name> -->`, which are filled from {@link CHEATSHEET_BLOCKS}.
  *
@@ -65,8 +69,11 @@ export interface DocSubject {
   forms: string;
   description: string;
   schema: z.ZodType;
-  /** `params`: a kit mini game's params (`KitDef.paramsDocs`), listed in their own section. */
-  section?: 'params';
+  /**
+   * `params`: a kit mini game's params (`KitDef.paramsDocs`); `options`: a kit's `game.json`
+   * options (`KitDef.options`, gap G17). Each is listed in its own section.
+   */
+  section?: 'params' | 'options';
   /** The example's file name in {@link EXAMPLES_DIR}, and the sibling part files it has. */
   example: string;
   parts?: Readonly<Record<string, string>>;
@@ -78,6 +85,11 @@ export interface DocSubject {
 export interface DocSources {
   registry: Registry;
   subjects: readonly DocSubject[];
+  /**
+   * The mini games games define (Engine 0.15, gap M11), one params page each under
+   * `docs/reference/mini-games/`. Left out, the repo's games' (`repoMiniGameDocs`).
+   */
+  miniGames?: readonly GameMiniGameDoc[];
 }
 
 function jsonCheck(schema: z.ZodType) {
@@ -288,6 +300,19 @@ export function defaultDocSources(): DocSources {
   ];
   for (const kit of [...allKits()].sort((a, b) => a.name.localeCompare(b.name))) {
     for (const kind of kit.kinds()) subjects.push(kindSubject(kind, `kit ${kit.name}`));
+    if (kit.options)
+      subjects.push({
+        name: `${kit.name}-options`,
+        title: `\`${kit.name}\` kit options`,
+        from: `kit ${kit.name}`,
+        where: `\`kitOptions.${kit.name}\` in a game's \`${MANIFEST_FILE}\``,
+        forms: '`.json`',
+        description: `How kit \`${kit.name}\` treats this game (Engine 0.15, gap G17): read by its hook's \`kinds(manifest)\`; an option it does not have is \`unknown_option\`, a bad value \`bad_option\``,
+        schema: kit.options,
+        example: `${kit.name}-options.json`,
+        section: 'options',
+        check: jsonCheck(kit.options),
+      });
     for (const doc of kit.paramsDocs?.() ?? [])
       subjects.push({
         name: `${doc.game}-params`,
@@ -434,7 +459,11 @@ function subjectSection(subject: DocSubject, example: Example, level: string): s
   return out.join('\n');
 }
 
-function schemasPage(root: string, subjects: readonly DocSubject[]): string {
+function schemasPage(
+  root: string,
+  subjects: readonly DocSubject[],
+  miniGames: readonly GameMiniGameDoc[],
+): string {
   const files = subjects.filter((s) =>
     [
       'manifest',
@@ -448,7 +477,8 @@ function schemasPage(root: string, subjects: readonly DocSubject[]): string {
     ].includes(s.name),
   );
   const params = subjects.filter((s) => s.section === 'params');
-  const kinds = subjects.filter((s) => !files.includes(s) && !params.includes(s));
+  const options = subjects.filter((s) => s.section === 'options');
+  const kinds = subjects.filter((s) => !files.includes(s) && !params.includes(s) && !options.includes(s));
   return [
     '# Schema reference',
     '',
@@ -469,7 +499,17 @@ function schemasPage(root: string, subjects: readonly DocSubject[]): string {
     'files for each kind in `game.json`.',
     '',
     ...kinds.flatMap((s) => [subjectSection(s, readExample(root, s), '###'), '']),
-    ...(params.length
+    ...(options.length
+      ? [
+          '## Kit options',
+          '',
+          "A kit's own options, given in `game.json`'s `kitOptions` under the kit's name (gap G17);",
+          '`validate` checks them with the manifest.',
+          '',
+          ...options.flatMap((s) => [subjectSection(s, readExample(root, s), '###'), '']),
+        ]
+      : []),
+    ...(params.length || miniGames.length
       ? [
           '## Mini game params',
           '',
@@ -477,8 +517,43 @@ function schemasPage(root: string, subjects: readonly DocSubject[]): string {
           '`validate` checks them with the content (gap G16).',
           '',
           ...params.flatMap((s) => [subjectSection(s, readExample(root, s), '###'), '']),
+          ...(miniGames.length
+            ? [
+                '### Mini games a game defines',
+                '',
+                "A game's own mini games (`HeadlessEntry.miniGames`, such as a room challenge whose id is",
+                "its room's) each have a params page of their own (gap M11):",
+                '',
+                ...miniGames.map(
+                  (m) =>
+                    `- [\`${m.id}\` (${m.game})](${m.page.replace(/^docs\/reference\//, '')}): ${cell(m.title)}`,
+                ),
+                '',
+              ]
+            : []),
         ]
       : []),
+  ].join('\n');
+}
+
+/** The params page of a mini game a game defines (gap M11). */
+function miniGamePage(m: GameMiniGameDoc): string {
+  return [
+    `# \`${m.id}\` params (${m.game})`,
+    '',
+    GENERATED_NOTE(
+      `the \`paramsSchema\` of mini game \`${m.id}\` in \`${m.gameDir}\`'s \`miniGames(content)\``,
+    ),
+    '',
+    `${cell(m.title)}: a mini game the game \`${m.game}\` defines (\`HeadlessEntry.miniGames\` in`,
+    `\`${m.gameDir}\`), so its id is the game's, not a kit's. Its \`params\` are written where the game's`,
+    'content names it; `pnpm cli validate` checks them with the content. See the',
+    "[schema reference](../schemas.md#mini-game-params) for the kits' own mini games.",
+    '',
+    `- Named in: ${m.uses.length ? m.uses.map((u) => cell(u)).join('; ') : 'nothing in the content yet'}`,
+    '',
+    fieldTable(fieldRows(m.schema)),
+    '',
   ].join('\n');
 }
 
@@ -545,11 +620,13 @@ export async function generateDocs(root: string, sources: DocSources): Promise<R
   const cheatPath = join(root, CHEATSHEET);
   if (!existsSync(cheatPath))
     throw new Error(`no ${CHEATSHEET}: it holds the hand-written part of the cheat sheet`);
+  const miniGames = sources.miniGames ?? (await repoMiniGameDocs());
   const pages: Record<string, string> = {
     [CLI_PAGE]: cliPage(sources.registry),
-    [SCHEMAS_PAGE]: schemasPage(root, sources.subjects),
+    [SCHEMAS_PAGE]: schemasPage(root, sources.subjects, miniGames),
     [CHEATSHEET]: fillCheatsheet(readFileSync(cheatPath, 'utf8'), sources),
   };
+  for (const m of miniGames) pages[m.page] = miniGamePage(m);
   for (const [file, text] of Object.entries(pages)) pages[file] = await prettierMarkdown(root, file, text);
   return pages;
 }

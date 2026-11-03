@@ -55,6 +55,11 @@ by the `kit` name in `game.json`.
   key or id), the world's key table handed to `input(snapshot, mission, keys)` so a squad or rule
   may name any keyed entity (record names unchanged; a foe's other key rides along as `key`), and
   `checkUse` checking the selectors against the world scenarios that offer the mission.
+- Rooms that are not one dungeon (Engine 0.15 T11, gap G17): the kit's `game.json` option
+  `kitOptions.topdown.rooms`, `"dungeon"` (the default) or `"separate"` (each room file checked
+  alone, its own start and doors only within itself), read by the hook's `kinds(manifest)` and
+  checked against its `options` schema (`topdownOptionsSchema`; `unknown_option`, `bad_option`).
+  The platformer sample's challenge rooms and the mini siege's mission rooms are separate.
 
 ## Imports allowed
 

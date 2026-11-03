@@ -16,21 +16,22 @@ Names the game and its kit, the files of each content kind, the start seed and t
 - Where: `games/<game>/game.json`
 - Read from: `.json`
 
-| Field           | Type                  | Required | Default                      | Limits                                                 | Description                                                                                                                  |
-| --------------- | --------------------- | -------- | ---------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `id`            | `string`              | yes      |                              | matches `^[a-z0-9][a-z0-9-]*$`                         | the game's id: its folder name                                                                                               |
-| `title`         | `string`              | no       |                              | not empty                                              | one line saying what the game is                                                                                             |
-| `kit`           | `string`              | yes      |                              | matches `^[a-z0-9][a-z0-9-]*$`                         | the kit the game is built on (a folder under `kits/`)                                                                        |
-| `uses`          | `string[]`            | no       |                              | at least 1 item; items: matches `^[a-z0-9][a-z0-9-]*$` | more kits whose content kinds the game also holds (e.g. a mini game's rooms); kinds only: run rules and mutants stay `kit`'s |
-| `content`       | `{ <key>: string[] }` | yes      |                              | keys: matches `^[a-z0-9][a-z0-9-]*$`                   | content kind -> its files; every file under `content/` must be claimed by one kind                                           |
-| `content.<key>` | `string[]`            | no       |                              | at least 1 item; items: not empty                      | file paths or globs (`*`, `?`, `**`), relative to the game folder                                                            |
-| `start`         | `object`              | yes      |                              |                                                        | how a run starts                                                                                                             |
-| `start.seed`    | `integer`             | yes      |                              | >= 0                                                   | the seed for the world's RNG when nothing else gives one                                                                     |
-| `screen`        | `object`              | no       | `{"width":256,"height":240}` |                                                        | the game picture's size in game px (default 256x240); scaling, the touch layout and screenshots follow it                    |
-| `screen.width`  | `integer`             | yes      |                              | 64 to 1920                                             | the picture width in game px                                                                                                 |
-| `screen.height` | `integer`             | yes      |                              | 64 to 1920                                             | the picture height in game px                                                                                                |
-| `headless`      | `string`              | yes      |                              | not empty                                              | the module that boots the game headless (`createGame`), for `run`                                                            |
-| `view`          | `string`              | no       |                              | not empty                                              | the module that boots the game for drawing (`createView`), for `screenshot`; optional                                        |
+| Field           | Type                        | Required | Default                      | Limits                                                 | Description                                                                                                                                       |
+| --------------- | --------------------------- | -------- | ---------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | `string`                    | yes      |                              | matches `^[a-z0-9][a-z0-9-]*$`                         | the game's id: its folder name                                                                                                                    |
+| `title`         | `string`                    | no       |                              | not empty                                              | one line saying what the game is                                                                                                                  |
+| `kit`           | `string`                    | yes      |                              | matches `^[a-z0-9][a-z0-9-]*$`                         | the kit the game is built on (a folder under `kits/`)                                                                                             |
+| `uses`          | `string[]`                  | no       |                              | at least 1 item; items: matches `^[a-z0-9][a-z0-9-]*$` | more kits whose content kinds the game also holds (e.g. a mini game's rooms); kinds only: run rules and mutants stay `kit`'s                      |
+| `kitOptions`    | `{ <key>: { <key>: any } }` | no       |                              | keys: matches `^[a-z0-9][a-z0-9-]*$`                   | options for the game's kits, by kit name (`kit` or one in `uses`): each kit's own fields, such as the topdown kit's `rooms`; a kit checks its own |
+| `content`       | `{ <key>: string[] }`       | yes      |                              | keys: matches `^[a-z0-9][a-z0-9-]*$`                   | content kind -> its files; every file under `content/` must be claimed by one kind                                                                |
+| `content.<key>` | `string[]`                  | no       |                              | at least 1 item; items: not empty                      | file paths or globs (`*`, `?`, `**`), relative to the game folder                                                                                 |
+| `start`         | `object`                    | yes      |                              |                                                        | how a run starts                                                                                                                                  |
+| `start.seed`    | `integer`                   | yes      |                              | >= 0                                                   | the seed for the world's RNG when nothing else gives one                                                                                          |
+| `screen`        | `object`                    | no       | `{"width":256,"height":240}` |                                                        | the game picture's size in game px (default 256x240); scaling, the touch layout and screenshots follow it                                         |
+| `screen.width`  | `integer`                   | yes      |                              | 64 to 1920                                             | the picture width in game px                                                                                                                      |
+| `screen.height` | `integer`                   | yes      |                              | 64 to 1920                                             | the picture height in game px                                                                                                                     |
+| `headless`      | `string`                    | yes      |                              | not empty                                              | the module that boots the game headless (`createGame`), for `run`                                                                                 |
+| `view`          | `string`                    | no       |                              | not empty                                              | the module that boots the game for drawing (`createView`), for `screenshot`; optional                                                             |
 
 Example (`docs/reference/examples/manifest.json`):
 
@@ -1781,6 +1782,29 @@ Example (`docs/reference/examples/td-waves.json`):
 }
 ```
 
+## Kit options
+
+A kit's own options, given in `game.json`'s `kitOptions` under the kit's name (gap G17);
+`validate` checks them with the manifest.
+
+### `topdown` kit options
+
+How kit `topdown` treats this game (Engine 0.15, gap G17): read by its hook's `kinds(manifest)`; an option it does not have is `unknown_option`, a bad value `bad_option`.
+
+- Defined by: kit topdown
+- Where: `kitOptions.topdown` in a game's `game.json`
+- Read from: `.json`
+
+| Field   | Type                      | Required | Default | Limits | Description                                                                                                                                              |
+| ------- | ------------------------- | -------- | ------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rooms` | `"dungeon" \| "separate"` | no       |         |        | how the room files are checked: `dungeon` (the default) as one dungeon, `separate` each room alone (challenge or mission rooms, each with its own start) |
+
+Example (`docs/reference/examples/topdown-options.json`):
+
+```json
+{ "rooms": "separate" }
+```
+
 ## Mini game params
 
 The params of a kit's mini games that content names by a fixed id (`KitDef.paramsDocs`);
@@ -1927,3 +1951,12 @@ Example (`docs/reference/examples/td-defence-params.json`):
   ]
 }
 ```
+
+### Mini games a game defines
+
+A game's own mini games (`HeadlessEntry.miniGames`, such as a room challenge whose id is
+its room's) each have a params page of their own (gap M11):
+
+- [`cellar` (platformer)](mini-games/platformer-cellar.md): CELLAR
+- [`stop-bar` (platformer-lab)](mini-games/platformer-lab-stop-bar.md): STOP THE BAR
+- [`vault` (platformer)](mini-games/platformer-vault.md): VAULT

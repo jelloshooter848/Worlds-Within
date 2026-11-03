@@ -1,0 +1,543 @@
+{
+  "backend": "three",
+  "meshes": {
+    "wall": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 14,
+          "d": 1
+        },
+        "at": {
+          "x": 1,
+          "y": 1,
+          "z": 8.5
+        },
+        "color": "#7c7c7c"
+      }
+    ],
+    "floor": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": -8
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 1,
+          "h": 16,
+          "d": 2.5
+        },
+        "at": {
+          "x": 15,
+          "y": 0,
+          "z": -8
+        },
+        "color": "#183c5c"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 1,
+          "d": 2.5
+        },
+        "at": {
+          "x": 0,
+          "y": 15,
+          "z": -8
+        },
+        "color": "#183c5c"
+      }
+    ],
+    "statue": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": -8
+        },
+        "color": "#24507c"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 14,
+          "d": 6
+        },
+        "at": {
+          "x": 1,
+          "y": 1,
+          "z": -4
+        },
+        "color": "#3c3c3c"
+      },
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 10,
+          "h": 8,
+          "d": 10
+        },
+        "at": {
+          "x": 3,
+          "y": 4,
+          "z": 0
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 8
+        },
+        "at": {
+          "x": 4,
+          "y": 4,
+          "z": 5
+        }
+      }
+    ],
+    "water": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": -10
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 1,
+          "d": 1
+        },
+        "at": {
+          "x": 2,
+          "y": 4,
+          "z": -8.5
+        },
+        "color": "#3cbcfc"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 1,
+          "d": 1
+        },
+        "at": {
+          "x": 8,
+          "y": 11,
+          "z": -8.5
+        },
+        "color": "#3cbcfc"
+      }
+    ],
+    "hero": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 12,
+          "h": 10,
+          "d": 10
+        },
+        "at": {
+          "x": 2,
+          "y": 6,
+          "z": 0
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 10,
+          "h": 9,
+          "d": 10
+        },
+        "at": {
+          "x": 3,
+          "y": 1,
+          "z": 3
+        },
+        "color": "#fca044"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 10,
+          "h": 4,
+          "d": 8
+        },
+        "at": {
+          "x": 3,
+          "y": 0,
+          "z": 5
+        },
+        "color": "#00a800"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 8,
+          "d": 3
+        },
+        "at": {
+          "x": 0,
+          "y": 6,
+          "z": 4
+        },
+        "color": "#503000"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 3,
+          "d": 6
+        },
+        "at": {
+          "x": 3,
+          "y": 13,
+          "z": 0
+        },
+        "color": "#503000"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 3,
+          "d": 6
+        },
+        "at": {
+          "x": 9,
+          "y": 13,
+          "z": 0
+        },
+        "color": "#503000"
+      }
+    ],
+    "knight": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 12,
+          "d": 10
+        },
+        "at": {
+          "x": 1,
+          "y": 4,
+          "z": 0
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 10,
+          "h": 9,
+          "d": 10
+        },
+        "at": {
+          "x": 3,
+          "y": 0,
+          "z": 3
+        },
+        "color": "#bcbcbc"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 2,
+          "d": 1
+        },
+        "at": {
+          "x": 5,
+          "y": 4,
+          "z": 8
+        },
+        "color": "#000000"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 3,
+          "h": 10,
+          "d": 4
+        },
+        "at": {
+          "x": 12,
+          "y": 3,
+          "z": 4
+        },
+        "color": "#d82800"
+      }
+    ],
+    "poof": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 8
+        },
+        "at": {
+          "x": 4,
+          "y": 4,
+          "z": 2
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 5,
+          "h": 5,
+          "d": 5
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 5,
+          "h": 5,
+          "d": 5
+        },
+        "at": {
+          "x": 11,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 5,
+          "h": 5,
+          "d": 5
+        },
+        "at": {
+          "x": 0,
+          "y": 11,
+          "z": 0
+        }
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 5,
+          "h": 5,
+          "d": 5
+        },
+        "at": {
+          "x": 11,
+          "y": 11,
+          "z": 0
+        }
+      }
+    ],
+    "stairs": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": -8
+        },
+        "color": "#24507c"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 4,
+          "d": 1
+        },
+        "at": {
+          "x": 1,
+          "y": 1,
+          "z": -7
+        },
+        "color": "#bcbcbc"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 12,
+          "h": 4,
+          "d": 1
+        },
+        "at": {
+          "x": 2,
+          "y": 5,
+          "z": -8
+        },
+        "color": "#7c7c7c"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 10,
+          "h": 6,
+          "d": 1
+        },
+        "at": {
+          "x": 3,
+          "y": 9,
+          "z": -9
+        },
+        "color": "#000000"
+      }
+    ]
+  },
+  "kinds": {
+    "hero": {
+      "mesh": "hero",
+      "color": "#00a800"
+    },
+    "sword": {
+      "mesh": "box",
+      "color": "#fcfcfc",
+      "depth": 3
+    },
+    "poof": {
+      "mesh": "poof",
+      "color": "#fcfcfc"
+    },
+    "knight": {
+      "mesh": "knight",
+      "color": "#6844fc"
+    }
+  },
+  "tiles": {
+    "#": {
+      "mesh": "wall",
+      "color": "#3c3c3c"
+    },
+    ".": {
+      "mesh": "floor",
+      "color": "#24507c"
+    },
+    "S": {
+      "mesh": "statue",
+      "color": "#7c7c7c"
+    },
+    "~": {
+      "mesh": "water",
+      "color": "#0058f8"
+    },
+    "E": {
+      "mesh": "stairs",
+      "color": "#3c3c3c"
+    }
+  },
+  "events": {
+    "mini-game": {
+      "sound": "door",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "room": {},
+    "sword": {
+      "sound": "sword"
+    },
+    "hit": {
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "kill": {
+      "sound": "stomp",
+      "effect": {
+        "kind": "shake",
+        "size": 2,
+        "ticks": 6
+      }
+    },
+    "hurt": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "flash",
+        "color": "#d82800",
+        "ticks": 2
+      }
+    },
+    "dying": {
+      "sound": "fail"
+    },
+    "dead": {
+      "effect": {
+        "kind": "tint",
+        "color": "#d82800",
+        "ticks": 10
+      }
+    }
+  },
+  "camera": {
+    "clamp": true
+  },
+  "camera3d": {
+    "fov": 40,
+    "tilt": 8,
+    "layerDepth": 0.25,
+    "lights": {
+      "ambient": 0.6,
+      "directional": 0.75
+    }
+  }
+}

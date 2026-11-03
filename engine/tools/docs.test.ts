@@ -18,6 +18,7 @@ import {
   type DocSources,
 } from './docs-gen';
 import { main } from './main';
+import { gameFolders, MINI_GAMES_DIR, repoMiniGameDocs } from './mini-game-docs';
 import { Registry, type Command } from './registry';
 import { fieldRows, limitsOf, typeName } from './schema-doc';
 
@@ -30,7 +31,15 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 let temp = '';
 function tempRepo(): string {
   temp = mkdtempSync(join(tmpdir(), 'docs-gen-'));
-  for (const path of [EXAMPLES_DIR, CLI_PAGE, SCHEMAS_PAGE, CHEATSHEET, '.prettierrc', '.editorconfig']) {
+  for (const path of [
+    EXAMPLES_DIR,
+    MINI_GAMES_DIR,
+    CLI_PAGE,
+    SCHEMAS_PAGE,
+    CHEATSHEET,
+    '.prettierrc',
+    '.editorconfig',
+  ]) {
     cpSync(join(ROOT, path), join(temp, path), { recursive: true });
   }
   return temp;
@@ -142,6 +151,42 @@ describe('generated docs: the drift check', () => {
   it('summarises a difference by its first line and count', () => {
     expect(diffSummary('a\nb\nc', 'a\nB\nC')).toBe('2 lines differ; first at line 2: has "b", should be "B"');
     expect(diffSummary('a', 'a\nb')).toBe('1 line differs; first at line 2: has (no line), should be "b"');
+  });
+});
+
+describe('generated docs: mini games a game defines (gap M11)', () => {
+  it('has one params page per game-defined mini game, linked from the schema reference', async () => {
+    const docs = await repoMiniGameDocs();
+    expect(docs.map((d) => d.page)).toEqual(
+      expect.arrayContaining([
+        `${MINI_GAMES_DIR}/platformer-vault.md`,
+        `${MINI_GAMES_DIR}/platformer-cellar.md`,
+      ]),
+    );
+    // A kit's fixed-id mini game (the mini siege's mission-room) is the schema reference's own.
+    expect(docs.some((d) => d.id === 'mission-room' || d.id === 'td-defence')).toBe(false);
+    const schemas = readFileSync(join(ROOT, SCHEMAS_PAGE), 'utf8');
+    for (const d of docs) {
+      expect(schemas).toContain(`](${d.page.replace('docs/reference/', '')})`);
+      const page = readFileSync(join(ROOT, d.page), 'utf8');
+      expect(page).toContain('| Field ');
+    }
+    const vault = docs.find((d) => d.id === 'vault')!;
+    expect(vault.uses).toEqual(['games/samples/platformer/content/levels/level-4.json (triggers.0.params)']);
+  });
+
+  it('a page edited by hand is stale', async () => {
+    const root = tempRepo();
+    const page = join(root, MINI_GAMES_DIR, 'platformer-vault.md');
+    writeFileSync(page, readFileSync(page, 'utf8').replace('VAULT', 'VOLT'));
+    const stale = await staleDocs(root, defaultDocSources());
+    expect(stale.map((s) => s.file)).toEqual([`${MINI_GAMES_DIR}/platformer-vault.md`]);
+  });
+
+  it('finds every game folder under games/', () => {
+    const dirs = gameFolders(ROOT);
+    expect(dirs).toContain('games/samples/platformer');
+    expect(dirs).toContain('games/platformer-lab');
   });
 });
 

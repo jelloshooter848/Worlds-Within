@@ -256,6 +256,39 @@ engine/sim/sample-world` needed no update): exactly the files decision 10 predic
   string said Backspace; the step hook's `replay` does not press Begin (the mini siege's runs do
   not replay in its page anyway: its battle steps every sixth loop step). No golden hash moved
   (pages are not hashed); no layer arrow changed.
+- **Rooms that are not one dungeon, a second mission room, params pages per mini game** (T11,
+  decision 12): G17, M32 and M11 (the rest) fixed. **G17:** `game.json` gains an optional
+  `kitOptions` (by kit name); `KitDef.kinds(manifest)` reads the kit's own entry
+  (`kitOptionsOf`, `KitManifest` in `engine/core/kit.ts`) and the optional `KitDef.options` is its
+  schema; the tools' `gameKinds` refuses an option no kit of the game has, or one its schema lacks,
+  as `unknown_option`, and a bad value as `bad_option`, at `game.json`. The topdown kit's first
+  option is `rooms: "dungeon" | "separate"` (`topdownOptionsSchema`); `roomKind`'s `oneDungeon:
+false` now checks each room file alone (its own start, its doors within itself) instead of not at
+  all. Pages get the same kinds with `kitContentKinds(kits, manifestOptions(files))`. The schema
+  reference lists each kit's options ("Kit options", example `topdown-options.json`). The
+  platformer sample sets `"separate"` and has a second challenge room, `cellar` (a `reach` round:
+  walk round a flooded strip to the stairs), behind a second door in a new last level, `level-5`
+  (campaign's fifth entry), with its round skins (`canvas2d-cellar.json`, `three-cellar.json`:
+  the vault's plus a `stairs` tile, frame and mesh) and `level-5-start.run.json` (stage 4: enters
+  the cellar, passes it at 341, clears the level at 485; guards `topdown:walls-block-movement`).
+  **M32:** the mini siege sets `"separate"` too, and `rescue-captain` plays in a room of its own,
+  `stockade` (two jailer slots), drawn through the one round picture (the `mission-room` skin);
+  `dawn-rescue-played.run.json` (new) plays it to `freed`, its input recorded with `pnpm cli
+record --bot '{"stockade": [{"do": "fight"}]}'`. **M11:** `engine/tools/mini-game-docs.ts`
+  finds the mini games the repo's games define (`HeadlessEntry.miniGames`, by importing each
+  game's headless module by path) whose id no kit documents, and `pnpm docs:gen` writes
+  `docs/reference/mini-games/<game>-<id>.md` for each (`platformer-vault`, `platformer-cellar` and
+  the lab's `platformer-lab-stop-bar`), linked from "Mini game params" in `schemas.md`; the docs
+  test keeps them fresh. **Moved (decision 2's named exception), regenerated with the repo's
+  tools** (sync hashes from `pnpm cli run`, then `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`): the
+  two `dawn-*` runs that open the rescue, `dawn-rescue` (delegated) and `dawn-rescue-failed`
+  (played and given up), at ticks 20 and 40 only, while the mission is open (its definition, with
+  the room id, is in the world then); their final hashes are unchanged (`1ebfaa6dae0eb6e5`,
+  `9d9f5ad86dd28cae`). The delegated run moves too because the definition, not the round, holds
+  the room. No other golden hash moved (adding `level-5` after `level-4` moves no platformer run:
+  each ends before the pause after its last level). New runs with new hashes:
+  `level-5-start` (`baff0936d93cd71f`) and `dawn-rescue-played`
+  (`ea5896a26067e338`). No layer arrow changed.
 
 ### Planned tasks
 

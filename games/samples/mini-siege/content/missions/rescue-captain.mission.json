@@ -5,7 +5,7 @@
   "worldTimeCost": 40,
   "play": "mission-room",
   "params": {
-    "room": "engine-camp",
+    "room": "stockade",
     "goal": "defeat-all",
     "ticks": 1500,
     "hero": { "select": { "faction": "village", "member": "hero" }, "hpPer": 10 },

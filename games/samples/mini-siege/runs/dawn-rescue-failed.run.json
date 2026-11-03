@@ -335,8 +335,8 @@
   "guards": ["enemy-follows-plan"],
   "hashes": [
     { "tick": 0, "hash": "2ddfb2dc9d28980b" },
-    { "tick": 20, "hash": "fc8d47ed55891ed4" },
-    { "tick": 40, "hash": "3acdbb7b18617f30" },
+    { "tick": 20, "hash": "8890468ef02d0e05" },
+    { "tick": 40, "hash": "22295c5023dd4f86" },
     { "tick": 60, "hash": "451f5d2ebcaf0f04" },
     { "tick": 80, "hash": "e6b036a56ccd35ea" },
     { "tick": 100, "hash": "04d9fcaca5122015" },

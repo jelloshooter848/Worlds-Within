@@ -136,8 +136,13 @@ several kits (Engine 0.14, gap G12) gets every kit's ids in `HeadlessOptions.dis
 (by kit name; `disabledRules` stays the main kit's) and hands each kit its own list with
 `rulesOffFor(opts, kit)` (`headless.ts`), so each `RuleSwitch` only sees its kit's ids.
 
-`kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants?, miniGameUses?,
-paramsDocs?, roundBots? }` (`roundBots()`, Engine 0.14 T9: `KitRoundBotDef { game, description,
+`kit.ts` is the kit hook: `KitDef { name, kinds(manifest?), options?, rules, strictMutants?, miniGameUses?,
+paramsDocs?, roundBots? }` (Engine 0.15 T11, gap G17: `kinds(manifest)` reads the kit's own entry
+of the game's `game.json` `kitOptions`, `KitManifest`, through `kitOptionsOf(kit, manifest)`,
+which parses it with the kit's `options` schema and gives `{}` when absent or bad; the topdown
+kit's `rooms: "dungeon" | "separate"`; the manifest's `kitOptions` is `gameManifestSchema`'s, and
+`kitContentKinds(kits, manifest?)` with `manifestOptions(files)` in `content/game-content.ts`
+gives a page the same kinds the tools build) (`roundBots()`, Engine 0.14 T9: `KitRoundBotDef { game, description,
 plan, create(plan) }`, a bot for one of the kit's mini games, its plan's Zod schema, and
 `KitRoundBot.next(round)`, the actions to hold on the coming tick, for `pnpm cli record --bot`), what a kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where
 the kit's content names a mini game and its params, such as a platformer level's triggers, for

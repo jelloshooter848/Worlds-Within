@@ -1,5 +1,5 @@
 import { loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { kitContentKinds } from '@engine/core/content/game-content';
+import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import { tdRound, type TdRoundDef } from '@kits/towerdefense';
 import { kit as towerdefense } from '@kits/towerdefense/kit';
@@ -12,7 +12,9 @@ import { kit as towerdefense } from '@kits/towerdefense/kit';
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/tower-defense`. */
 export function loadTowerDefense(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
-  return loadContent(files, kitContentKinds([towerdefense]), { root: 'games/samples/tower-defense/' });
+  return loadContent(files, kitContentKinds([towerdefense], manifestOptions(files)), {
+    root: 'games/samples/tower-defense/',
+  });
 }
 
 /**

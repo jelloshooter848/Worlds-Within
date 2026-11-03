@@ -131,7 +131,7 @@ describe('validate checks mini game params with the content (G16)', () => {
         file: DOOR,
         path: 'triggers.0.game',
         code: 'unknown_mini_game',
-        message: 'unknown mini game "vualt" (the game has: "vault")',
+        message: 'unknown mini game "vualt" (the game has: "cellar", "vault")',
       }),
     ]);
   });

@@ -16,8 +16,21 @@ import { defineRules, type RuleList } from './rules';
 export interface KitDef {
   /** The kit's name: its folder under `kits/`, and what a `game.json` gives in `kit`. */
   readonly name: string;
-  /** The content kinds the kit adds to the engine's own (fresh each call). */
-  kinds(): readonly ContentKind[];
+  /**
+   * The content kinds the kit adds to the engine's own (fresh each call). `manifest` is the
+   * game's (Engine 0.15, gap G17): the kit reads its own entry of `kitOptions` (by its name,
+   * `kitOptionsOf`) to choose how its kinds check the game's files. Left out, or with no options
+   * for the kit, the kinds are the default ones. Options that fail `options` are ignored here (the
+   * tools report them).
+   */
+  kinds(manifest?: KitManifest): readonly ContentKind[];
+  /**
+   * Optional (Engine 0.15, gap G17): the schema of the kit's own `game.json` options (its entry of
+   * `kitOptions`), a strict object, so the tools refuse an option the kit does not have
+   * (`unknown_option`) or a bad value (`bad_option`). A kit without options leaves it out, and any
+   * entry for it is refused.
+   */
+  readonly options?: z.ZodType<Readonly<Record<string, unknown>>>;
   /** The kit's named rules (`rules.ts`), for `disableRules`, `--disable-rule` and `mutants`. */
   readonly rules: RuleList;
   /** Whether the kit opts in to strict mutant checks (Engine 0.5, item 41). Off when left out. */
@@ -67,6 +80,26 @@ export interface KitParamsDoc {
   /** One sentence: what the round is and where its params are written. */
   readonly description: string;
   readonly schema: z.ZodType;
+}
+
+/** The part of a game's manifest a kit's `kinds` reads: the kit options by kit name. */
+export interface KitManifest {
+  readonly kitOptions?: Readonly<Record<string, Readonly<Record<string, unknown>>>> | undefined;
+}
+
+/**
+ * Kit `kit`'s options from a game's manifest, checked with its `options` schema: the parsed
+ * options, or `{}` when the game gives none, the kit has no schema or they fail it (the tools
+ * report a failure; a kit falls back to its defaults). Pure.
+ */
+export function kitOptionsOf(
+  kit: Pick<KitDef, 'name' | 'options'>,
+  manifest?: KitManifest,
+): Readonly<Record<string, unknown>> {
+  const raw = manifest?.kitOptions?.[kit.name];
+  if (raw === undefined || kit.options === undefined) return {};
+  const parsed = kit.options.safeParse(raw);
+  return parsed.success ? parsed.data : {};
 }
 
 /** A kit name: lower-case letters, digits and "-", as in `game.json`. */

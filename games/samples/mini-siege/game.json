@@ -3,6 +3,11 @@
   "title": "The mini siege: a village under attack, a tower-defense stand on its walls and one top-down mission to burn the siege engines",
   "kit": "rts",
   "uses": ["topdown", "towerdefense"],
+  "kitOptions": {
+    "topdown": {
+      "rooms": "separate"
+    }
+  },
   "content": {
     "rts-map": ["content/maps/*.world.json"],
     "rts-types": ["content/types/*.json"],

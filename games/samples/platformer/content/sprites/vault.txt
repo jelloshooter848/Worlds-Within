@@ -93,6 +93,24 @@ bbcbbbbbbbbbbbbb
 bbbbbbbbbbbbbbbb
 bbbbbbbbbbbbbbbb
 
+frame stairs
+DDDDDDDDDDDDDDDD
+DhhhhhhhhhhhhhhD
+DmmmmmmmmmmmmmmD
+DDDDDDDDDDDDDDDD
+DDhhhhhhhhhhhhDD
+DDmmmmmmmmmmmmDD
+DDDDDDDDDDDDDDDD
+DDDmmmmmmmmmmDDD
+DDDDDDDDDDDDDDDD
+DDDDmmmmmmmmDDDD
+DDDDkkkkkkkkDDDD
+DDDDDkkkkkkDDDDD
+DDDDDkkkkkkDDDDD
+DDDDDDkkkkDDDDDD
+DDDDDDkkkkDDDDDD
+DDDDDDDDDDDDDDDD
+
 frame down-0
 .....gggggg.....
 ....gggggggg....

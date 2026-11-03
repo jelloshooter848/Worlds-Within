@@ -1,0 +1,170 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 4
+  },
+  "ticks": 510,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 105,
+        "hold": []
+      },
+      {
+        "frame": 106,
+        "hold": ["down"]
+      },
+      {
+        "frame": 175,
+        "hold": ["right"]
+      },
+      {
+        "frame": 292,
+        "hold": ["up"]
+      },
+      {
+        "frame": 360,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-5"
+    },
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 105,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "cellar",
+        "attempt": 1
+      }
+    },
+    {
+      "tick": 105,
+      "path": "miniGame.game",
+      "op": "eq",
+      "value": "cellar"
+    },
+    {
+      "tick": 105,
+      "path": "miniGame.state.room",
+      "op": "eq",
+      "value": "cellar"
+    },
+    {
+      "tick": 105,
+      "path": "miniGame.state.round.goal",
+      "op": "eq",
+      "value": "reach"
+    },
+    {
+      "tick": 105,
+      "path": "miniGame.state.hero.maxHp",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 105,
+      "path": "miniGame.state.enemies",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 200,
+      "path": "miniGame.state.hero.y",
+      "op": "eq",
+      "value": 144
+    },
+    {
+      "tick": 341,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "cellar",
+        "result": "pass"
+      }
+    },
+    {
+      "tick": 341,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "pass"
+    },
+    {
+      "tick": 341,
+      "path": "endedRound.report.goal",
+      "op": "eq",
+      "value": "reach"
+    },
+    {
+      "tick": 341,
+      "path": "endedRound.state.exited",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 341,
+      "path": "coins",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 341,
+      "path": "tiles",
+      "op": "contains",
+      "value": {
+        "col": 11,
+        "row": 8,
+        "cell": "empty"
+      }
+    },
+    {
+      "tick": 485,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 485,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    }
+  ],
+  "hashEvery": 60,
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "gte",
+      "value": 1
+    },
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 4
+    }
+  ],
+  "guards": ["solid-tiles", "goal-clears-level", "mini-games", "topdown:walls-block-movement"]
+}

@@ -19,7 +19,8 @@ import { checkDungeon, LEGEND, parseRoom, type LegendEntry, type RoomDef } from 
  * row they name when there is one. Checks across rooms (doors that line up, one player start) are
  * `buildDungeon`'s (`checkDungeon`): the kind's `checkAll` runs them over every room file once
  * each passes, as `invalid_dungeon` errors at the room file and field they are about (a map row
- * names the `.map.txt` file and its line).
+ * names the `.map.txt` file and its line). With `oneDungeon: false` (a game's `rooms: "separate"`,
+ * gap G17) each room file is checked alone as its own dungeon.
  */
 
 const cond = z.enum(['clear', 'plates', 'switches', 'torches']);
@@ -110,10 +111,27 @@ export function roomSchema(
 export interface RoomKindOptions {
   /**
    * The room files make one dungeon (the default): `checkAll` runs `buildDungeon`'s checks over
-   * them. Set false for a game whose room files make several dungeons and that checks each itself.
+   * them together (one player start, a map cell each, doors that pair up across rooms). Set false
+   * (Engine 0.15, gap G17: a game's `kitOptions.topdown.rooms` `"separate"`) for a game whose room
+   * files are separate rooms, each its own one-room dungeon (a challenge or mission room): each is
+   * checked alone, with its own start and its doors only within itself.
    */
   oneDungeon?: boolean;
 }
+
+/** How a game's room files are checked (`kitOptions.topdown.rooms` in `game.json`, gap G17). */
+export const ROOM_MODES = ['dungeon', 'separate'] as const;
+export type RoomMode = (typeof ROOM_MODES)[number];
+
+/** The top-down kit's `game.json` options (`kitOptions.topdown`, Engine 0.15, gap G17). */
+export const topdownOptionsSchema = z.strictObject({
+  rooms: z
+    .enum(ROOM_MODES)
+    .exactOptional()
+    .describe(
+      'how the room files are checked: `dungeon` (the default) as one dungeon, `separate` each room alone (challenge or mission rooms, each with its own start)',
+    ),
+});
 
 /** The `room` content kind: JSON with its `map` in a sibling `.map.txt` text grid (or inline). */
 export function roomKind(
@@ -127,22 +145,21 @@ export function roomKind(
     schema: roomSchema(extraLegend, wall),
     gridParts: { map: '.map.txt' },
   };
-  if (opts.oneDungeon === false) return kind;
+  const dungeons = (defs: readonly RoomDef[]): RoomDef[][] =>
+    opts.oneDungeon === false ? defs.map((d) => [d]) : [[...defs]];
   kind.checkAll = (entries) =>
-    checkDungeon(
-      entries.map((e) => e.value),
-      extraLegend,
-      { wall },
-    ).problems.map((p) => {
-      const issue: KindIssue = {
-        name: p.room ?? '',
-        path: p.path,
-        code: 'invalid_dungeon',
-        message: p.message,
-      };
-      if (p.row !== undefined) issue.row = p.row;
-      if (p.col !== undefined) issue.col = p.col;
-      return issue;
-    });
+    dungeons(entries.map((e) => e.value)).flatMap((defs) =>
+      checkDungeon(defs, extraLegend, { wall }).problems.map((p) => {
+        const issue: KindIssue = {
+          name: p.room ?? '',
+          path: p.path,
+          code: 'invalid_dungeon',
+          message: p.message,
+        };
+        if (p.row !== undefined) issue.row = p.row;
+        if (p.col !== undefined) issue.col = p.col;
+        return issue;
+      }),
+    );
   return kind;
 }

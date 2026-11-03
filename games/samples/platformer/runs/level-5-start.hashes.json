@@ -1,0 +1,45 @@
+{
+  "run": "games/samples/platformer/runs/level-5-start.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "2bd7f451af10a205"
+    },
+    {
+      "tick": 60,
+      "hash": "9b75a0f5f824795e"
+    },
+    {
+      "tick": 120,
+      "hash": "02af5143c78de7a9"
+    },
+    {
+      "tick": 180,
+      "hash": "6cc41aff14c5af73"
+    },
+    {
+      "tick": 240,
+      "hash": "9ffbd727374db0a4"
+    },
+    {
+      "tick": 300,
+      "hash": "7f254148901be868"
+    },
+    {
+      "tick": 360,
+      "hash": "860564d04fe41645"
+    },
+    {
+      "tick": 420,
+      "hash": "b09c12d030572ab9"
+    },
+    {
+      "tick": 480,
+      "hash": "71c9f41c75c76a9a"
+    },
+    {
+      "tick": 510,
+      "hash": "baff0936d93cd71f"
+    }
+  ]
+}

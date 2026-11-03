@@ -1,0 +1,184 @@
+{
+  "backend": "canvas2d",
+  "sheets": {
+    "sheet": "vault",
+    "fallbackColor": "#fcfcfc"
+  },
+  "camera": {
+    "clamp": false
+  },
+  "kinds": {
+    "hero": {
+      "frames": {
+        "walk": {
+          "down": {
+            "frames": ["down-0", "down-1"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["up-0", "up-1"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["side-0", "side-1"],
+            "ticks": 8
+          }
+        },
+        "attack": {
+          "down": "attack-down",
+          "up": "attack-up",
+          "right": "attack-side"
+        },
+        "hurt": {
+          "down": "down-0",
+          "up": "up-0",
+          "right": "side-0"
+        },
+        "dying": {
+          "frames": ["down-0", "side-0", "up-0", "side-0"],
+          "ticks": 4
+        },
+        "poof": {
+          "frames": ["poof-0", "poof-1", "poof-2"],
+          "ticks": 8,
+          "loop": false
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#00a800"
+    },
+    "sword": {
+      "frames": {
+        "stab": {
+          "down": "sword-down",
+          "up": "sword-up",
+          "right": "sword-right"
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#fcfcfc"
+    },
+    "poof": {
+      "frames": {
+        "poof": {
+          "frames": ["poof-0", "poof-1", "poof-2"],
+          "ticks": 6,
+          "loop": false
+        }
+      },
+      "fallbackColor": "#fcfcfc"
+    },
+    "knight": {
+      "frames": {
+        "walk": {
+          "down": {
+            "frames": ["knight-down-0", "knight-down-1"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["knight-up-0", "knight-up-1"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["knight-side-0", "knight-side-1"],
+            "ticks": 8
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#6844fc"
+    }
+  },
+  "tiles": {
+    "#": {
+      "frame": "wall",
+      "fallbackColor": "#3c3c3c"
+    },
+    ".": {
+      "frame": "floor",
+      "fallbackColor": "#24507c"
+    },
+    "S": {
+      "frame": "statue",
+      "fallbackColor": "#7c7c7c"
+    },
+    "~": {
+      "frame": "water",
+      "fallbackColor": "#0058f8"
+    },
+    "E": {
+      "frame": "stairs",
+      "fallbackColor": "#3c3c3c"
+    }
+  },
+  "events": {
+    "mini-game": {
+      "sound": "door",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "room": {},
+    "sword": {
+      "sound": "sword"
+    },
+    "hit": {
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "kill": {
+      "sound": "stomp",
+      "effect": {
+        "kind": "shake",
+        "size": 2,
+        "ticks": 6
+      }
+    },
+    "hurt": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "flash",
+        "color": "#d82800",
+        "ticks": 2
+      }
+    },
+    "dying": {
+      "sound": "fail"
+    },
+    "dead": {
+      "effect": {
+        "kind": "tint",
+        "color": "#d82800",
+        "ticks": 10
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "hp",
+      "as": "hearts",
+      "x": 16,
+      "y": 28,
+      "frame": "hp"
+    },
+    {
+      "status": "timeLeft",
+      "as": "icon",
+      "x": 184,
+      "y": 28,
+      "frame": "hourglass"
+    },
+    {
+      "status": "timeLeft",
+      "as": "number",
+      "x": 196,
+      "y": 28,
+      "font": "hopper-font"
+    }
+  ]
+}

@@ -27,7 +27,10 @@ the CLI starts.
   imports a game's code. `texts` keeps every file's text.
 - `game-check.ts`: `checkGameTexts(texts, root)` and `gameKinds(manifestText, root, find?)`, the
   checks on a game's files once they are text. `gameKinds` merges the engine's kinds with those of
-  `kit` and of every kit in `uses` (A game on two kits, below). No Node imports, so the screenshot page uses them in the
+  `kit` and of every kit in `uses` (A game on two kits, below), each made with the manifest's
+  `kitOptions` (`KitDef.kinds(manifest)`, Engine 0.15 T11, gap G17), and checks those options
+  against each kit's `options` schema: `unknown_option` at `kitOptions.<kit>` (a kit the game does
+  not use, or one with no options) or `kitOptions.<kit>.<field>`, `bad_option` at the field. No Node imports, so the screenshot page uses them in the
   browser too (`game-loader.ts` re-exports them).
 - `kits.ts`: the kits by the `kit` (and `uses`) names in `game.json`: `allKits()`, `findKit(name)`,
   `loadKit(name)` (throws `unknownKitMessage(name, field?)` for an unknown kit), `kitKinds(name)`,
@@ -115,6 +118,11 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   through Prettier with the repo's settings, so edits are lint-clean and change little.
 - `schema-doc.ts`: `fieldRows(schema)`, a Zod schema as rows of a field table (path, type,
   required, default, limits, description), walked from Zod's `toJSONSchema` of the input shape.
+- `mini-game-docs.ts` (Engine 0.15 T11, gap M11): `gameMiniGameDocs(root)` /
+  `repoMiniGameDocs()`, the mini games the repo's games define (`gameFolders(root)`: every
+  `games/**` folder with a `game.json`; each game's headless module imported by path for its
+  `miniGames(content)`), one `GameMiniGameDoc` per def with a `paramsSchema` whose id no kit's
+  `paramsDocs` has, for the generated params pages (`MINI_GAMES_DIR`).
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
@@ -1072,7 +1080,7 @@ opens the in-browser simulation debugger, `debugger/` (its own `CLAUDE.md` has t
 
 ## Generated docs
 
-`pnpm docs:gen` writes the kit list (`kit-list.ts`) and three pages from the code's own schemas; `pnpm docs:check` regenerates them
+`pnpm docs:gen` writes the kit list (`kit-list.ts`) and the pages from the code's own schemas; `pnpm docs:check` regenerates them
 in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for each stale one.
 `docs.test.ts` makes the same check, so `pnpm test` fails on stale docs (CI also runs
 `pnpm docs:check`).
@@ -1082,9 +1090,15 @@ in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for 
 - `docs/reference/schemas.md`: one section per format, from `defaultDocSources().subjects`: the
   manifest, run files, the engine's content kinds and each kit's (`allKits()`, from each kit's hook),
   and (Engine 0.11) "Mini game params", each kit's `paramsDocs()` (the topdown kit's
-  `mission-room`, example `mission-room-params.json`). Each has a field
+  `mission-room`, example `mission-room-params.json`), with links to the pages below, and (Engine
+  0.15 T11, gap G17) "Kit options", each kit's `options` schema (example `<kit>-options.json`). Each has a field
   table (`fieldRows`) and an example from `docs/reference/examples/<name>.json|.txt` (plus a
   kind's part files, `room.map.txt`), which must pass the schema or generation fails.
+- `docs/reference/mini-games/<game>-<id>.md` (Engine 0.15 T11, gap M11; docs/BUILD-LOG.md,
+  Engine 0.15, decision 12): one page per mini game a game defines (`mini-game-docs.ts`: the
+  platformer sample's `vault` and `cellar` room challenges, the lab's `stop-bar`), its params
+  table from the def's `paramsSchema` and where the game's content names it. The games are
+  always the repo's (`REPO_ROOT`), whatever root the pages are written under.
 - `docs/CHEATSHEET.md`: hand-written, except the blocks between `<!-- generated:<name> -->` and
   `<!-- /generated:<name> -->` (`CHEATSHEET_BLOCKS`: `files`, `run-file`, `check-ops`, `commands`,
   `exit-codes`). Every block must be there, and every marker must have a generator.

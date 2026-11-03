@@ -8,9 +8,10 @@ The platformer sample: the stacking test's game (Engine 0.7, moved into the
 samples at Engine 0.15): a small original platformer on `kits/platformer`, built
 with the engine as it is to find what is missing; every gap goes into
 [`docs/reports/stacking-test.md`](../reports/stacking-test.md). It holds only content, skins and
-thin glue, and doubles as a worked example and an integration test. Today it plays four short
-levels headless, in order; the fourth is the door level, whose door pushes a one-room top-down
-challenge (`kits/topdown`'s `roomChallenge`) over the level. Since 0.7 T7 it plays in the browser
+thin glue, and doubles as a worked example and an integration test. Today it plays five short
+levels headless, in order; the fourth and fifth are door levels, whose doors push one-room
+top-down challenges (`kits/topdown`'s `roomChallenge`) over the level: two separate challenge
+rooms, `vault` and `cellar` (Engine 0.15 T11, gap G17: `kitOptions.topdown.rooms` `"separate"`). Since 0.7 T7 it plays in the browser
 in 2D (Canvas2D) from the root launcher, with text assets (pixel art, palettes, MML sounds) and a
 skin per frame source (the levels' and the vault round's), and since 0.7 T8 in 3D (Three.js,
 `?backend=three`, the launcher's `3D` link) with low-poly `three` skins written as text (the
@@ -21,15 +22,19 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 
 ## Public API entry points
 
-- `game.json`: the manifest (kit `platformer`, `uses: ["topdown"]`, 256x240, seed 1, `headless.ts`,
+- `game.json`: the manifest (kit `platformer`, `uses: ["topdown"]`, `kitOptions: { "topdown": {
+"rooms": "separate" } }` (each room file its own challenge room, gap G17), 256x240, seed 1, `headless.ts`,
   `view.ts`).
-- `content/`: `levels/level-<n>.json` + `level-<n>.map.txt` (`level-1` to `level-4`, the door level),
-  `campaigns/main.campaign.json` (the play order, `level-1` to `level-4`, Engine 0.10),
-  `profiles/hopper.profile.json`, `rooms/vault.json` + `vault.map.txt` (the door's top-down room),
+- `content/`: `levels/level-<n>.json` + `level-<n>.map.txt` (`level-1` to `level-5`; `level-4`
+  and `level-5` the door levels), `campaigns/main.campaign.json` (the play order, `level-1` to
+  `level-5`, Engine 0.10), `profiles/hopper.profile.json`, `rooms/vault.json` + `vault.map.txt` and
+  `rooms/cellar.json` + `cellar.map.txt` (the doors' top-down rooms),
   `sprites/hopper.txt`, `hopper-font.txt`, `vault.txt` (pixel art) with `palettes/hopper.json` and
   `vault.json`, `sfx/*.json` (MML), `skins/canvas2d.json` (the levels),
-  `skins/canvas2d-vault.json` (the vault round), `skins/three.json` and `skins/three-vault.json`
-  (the same in 3D).
+  `skins/canvas2d-vault.json` and `canvas2d-cellar.json` (the rounds), `skins/three.json`,
+  `three-vault.json` and `three-cellar.json` (the same in 3D). The rounds' params are listed on
+  generated pages, `docs/reference/mini-games/platformer-vault.md` and `platformer-cellar.md`
+  (gap M11).
 - `content.ts`: `loadTest(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
   `testStages(content)` (the kit's `contentStages`: the levels in the campaign file's order),
   `testRooms(content)`, `testSkins(content, backend)` (`{ level, rounds }`: the engine's
@@ -55,7 +60,8 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
   `level-<n>.hashes.json` and `guards`; together they guard every kit rule (`level-4` guards
   `mini-games`: a failed round, then a passed one). From Engine 0.14 (gap G9) `level-2-start`,
   `level-3-start` and `level-4-start` play the same levels from their own tick 0 (`start: {
-"stage": n }`, 0-based; `headless.ts` exports `starts(content)`).
+"stage": n }`, 0-based; `headless.ts` exports `starts(content)`), and `level-5-start` (Engine
+  0.15 T11) plays `level-5`, entering the second challenge room and passing it.
 
 ## Imports allowed
 

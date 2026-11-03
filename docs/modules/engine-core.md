@@ -50,7 +50,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   from a headless game with `world` and `events`, a frame stream and a drawer per renderer.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
-- `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`, and from Engine
+- `kit.ts`: the kit hook (`KitDef`: `name`, `kinds(manifest?)` (Engine 0.15 T11, gap G17: the
+  kit reads its own `game.json` `kitOptions` entry, `kitOptionsOf`, checked by its optional
+  `options` schema), `rules`, `strictMutants?`, and from Engine
   0.14 T9 `roundBots?()`, bots for the kit's mini games that `pnpm cli record --bot` drives a
   round with; `defineKit` checks it). Each kit exports one as `kit` from `kits/<name>/kit.ts`. Pure.
 - `orders.ts`: the RTS order as plain JSON (`orderSchema`: `move`, `attack`, `stop`, `build`,

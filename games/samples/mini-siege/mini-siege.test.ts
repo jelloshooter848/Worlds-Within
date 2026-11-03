@@ -132,7 +132,7 @@ describe('the mini siege content', () => {
         ['sabotage', 'mission-room', 120],
       ]),
     );
-    expect(siegeRooms(content).map((r) => r.id)).toEqual(['engine-camp']);
+    expect(siegeRooms(content).map((r) => r.id)).toEqual(['engine-camp', 'stockade']);
     expect(siegeDefenceMaps(content).map((m) => [m.id, m.towers])).toEqual([
       ['walls', ['archers', 'ballista']],
     ]);

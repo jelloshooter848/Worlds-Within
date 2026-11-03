@@ -92,10 +92,10 @@ describe('a run file that starts at a later level', () => {
   });
 
   it('refuses a stage past the last level, naming start.stage', async () => {
-    const { code, result } = await cli(['run', runFile('games/samples/platformer', { start: { stage: 4 } })]);
+    const { code, result } = await cli(['run', runFile('games/samples/platformer', { start: { stage: 5 } })]);
     expect(code).toBe(EXIT.invalidContent);
     expect(errorsOf(result)).toEqual([['start.stage', 'bad_start']]);
-    expect(JSON.stringify(result.errors)).toContain('level-4');
+    expect(JSON.stringify(result.errors)).toContain('level-5');
   });
 });
 

@@ -1,5 +1,5 @@
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { kitContentKinds } from '@engine/core/content/game-content';
+import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import type { RtsTypes } from '@engine/core/rts-types';
 import { skinSet, type SkinFile } from '@engine/core/present';
@@ -17,7 +17,9 @@ export const PLAYER = 'red';
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/rts-skirmish`. */
 export function loadSkirmish(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
-  return loadContent(files, kitContentKinds([rts]), { root: 'games/samples/rts-skirmish/' });
+  return loadContent(files, kitContentKinds([rts], manifestOptions(files)), {
+    root: 'games/samples/rts-skirmish/',
+  });
 }
 
 /** The one entry of `kind` the game has, or a thrown error naming the folder it belongs in. */

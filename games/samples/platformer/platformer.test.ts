@@ -6,6 +6,7 @@ import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-inp
 import { readGameFiles } from '@engine/core/node/game-files';
 import { NullRenderer } from '@engine/backends/null';
 import type { Renderer } from '@engine/core/gfx/renderer';
+import type { MiniGameDef } from '@engine/core/minigame';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { isFullMap, parseEventKey, resolveSkinEvent, type SkinFile } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
@@ -67,7 +68,7 @@ describe('platformer test content', () => {
 
   it("plays its levels in its campaign file's order, each with its own profile", () => {
     const stages = testStages(content);
-    expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3', 'level-4']);
+    expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3', 'level-4', 'level-5']);
     expect(stages.every((s) => s.profile.id === 'hopper')).toBe(true);
   });
 
@@ -75,10 +76,10 @@ describe('platformer test content', () => {
     const campaign = JSON.parse(FILES[CAMPAIGN]!) as { entries: object[] };
     const reordered = { ...campaign, entries: [...campaign.entries].reverse() };
     const files = { ...FILES, [CAMPAIGN]: JSON.stringify(reordered) };
-    const order = ['level-4', 'level-3', 'level-2', 'level-1'];
+    const order = ['level-5', 'level-4', 'level-3', 'level-2', 'level-1'];
     expect(testStages(mustLoad(loadTest(files))).map((s) => s.level.id)).toEqual(order);
     const game = createGame(mustLoad(loadTest(files)), 1);
-    expect(game.snapshot().level).toBe('level-4');
+    expect(game.snapshot().level).toBe('level-5');
   });
 
   it('names the file and field of a campaign entry naming a missing level', () => {
@@ -86,7 +87,7 @@ describe('platformer test content', () => {
     const broken = { ...campaign, entries: [...campaign.entries, { level: 'level-9' }] };
     const result = loadTest({ ...FILES, [CAMPAIGN]: JSON.stringify(broken) });
     expect(result.errors.map((e) => [e.file, e.path, e.code])).toEqual([
-      ['games/samples/platformer/content/campaigns/main.campaign.json', 'entries.4.level', 'missing_level'],
+      ['games/samples/platformer/content/campaigns/main.campaign.json', 'entries.5.level', 'missing_level'],
     ]);
   });
 
@@ -105,6 +106,7 @@ describe('platformer test content', () => {
       'level-2',
       'level-3',
       'level-4',
+      'level-5',
       'level-9',
       'level-10',
     ]);
@@ -188,14 +190,20 @@ describe('platformer test headless game', () => {
   });
 });
 
+/** The vault's room challenge among the game's mini games. */
+const vaultOf = (defs: readonly MiniGameDef[]): MiniGameDef => defs.find((d) => d.id === 'vault')!;
+
 describe("platformer test's mini games", () => {
   it('builds one room challenge per room file, named by the room id', () => {
-    expect(testRooms(content).map((r) => r.id)).toEqual(['vault']);
-    expect(testMiniGames(content).map((d) => [d.id, d.title])).toEqual([['vault', 'VAULT']]);
+    expect(testRooms(content).map((r) => r.id)).toEqual(['cellar', 'vault']);
+    expect(testMiniGames(content).map((d) => [d.id, d.title])).toEqual([
+      ['cellar', 'CELLAR'],
+      ['vault', 'VAULT'],
+    ]);
   });
 
   it("starts a vault round from the door's params, at the game's screen size", () => {
-    const def = testMiniGames(content)[0]!;
+    const def = vaultOf(testMiniGames(content));
     const round = def.create(
       { params: { goal: 'defeat-all', ticks: 600, hp: 4 }, attempt: 1 },
       5,
@@ -211,9 +219,9 @@ describe("platformer test's mini games", () => {
 
   it("switches a top-down rule off in the vault round only (gap G12: a run's `topdown:<id>`)", () => {
     const params = { params: { goal: 'defeat-all', ticks: 600, hp: 4 }, attempt: 1 };
-    const plain = testMiniGames(content)[0]!.create(params, 5) as RoomChallenge;
+    const plain = vaultOf(testMiniGames(content)).create(params, 5) as RoomChallenge;
     expect(plain.world.rules.disabled()).toEqual([]);
-    const off = testMiniGames(content, ['walls-block-movement'])[0]!.create(params, 5) as RoomChallenge;
+    const off = vaultOf(testMiniGames(content, ['walls-block-movement'])).create(params, 5) as RoomChallenge;
     expect(off.world.rules.disabled()).toEqual(['walls-block-movement']);
     // The game hands `disabledRulesByKit.topdown` to the rounds, never to the levels' worlds.
     const game = createGame(content, 1, { disabledRulesByKit: { topdown: ['walls-block-movement'] } });
@@ -239,8 +247,10 @@ function shownByRuns(): Map<string, Shown> {
     const run = JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as {
       ticks: number;
       input: InputScript;
+      start?: { stage: number };
     };
-    const view = createView(content, 1);
+    // A run that starts at a later level (`level-5-start`, the cellar round) is played from there.
+    const view = createView(content, 1, run.start ? { start: run.start } : {});
     const input = new ScriptedInput(run.input);
     for (let t = 0; t <= run.ticks; t++) {
       if (t > 0) {
@@ -270,9 +280,9 @@ describe('platformer test 2D skins', () => {
   const shown = shownByRuns();
   const skinFor = (source: string): SkinFile => (source === 'level' ? look.skin : look.rounds[source]!);
 
-  it('has a level skin and one round skin, for the vault', () => {
-    expect(Object.keys(look.rounds)).toEqual(['vault']);
-    expect([...shown.keys()].sort()).toEqual(['level', 'vault']);
+  it('has a level skin and one round skin per challenge room, the vault and the cellar', () => {
+    expect(Object.keys(look.rounds).sort()).toEqual(['cellar', 'vault']);
+    expect([...shown.keys()].sort()).toEqual(['cellar', 'level', 'vault']);
   });
 
   it('the level skin maps every tile, kind, state and event the platformer kit presents', () => {
@@ -361,9 +371,10 @@ describe('platformer test 3D skins', () => {
   const look3d = testLook3d(content);
   const shown = shownByRuns();
 
-  it('has a three skin for the levels and one for the vault round', () => {
+  it('has a three skin for the levels and one per round, the vault and the cellar', () => {
     expect(look3d.skin.backend).toBe('three');
-    expect(Object.keys(look3d.rounds)).toEqual(['vault']);
+    expect(Object.keys(look3d.rounds).sort()).toEqual(['cellar', 'vault']);
+    expect(look3d.rounds['cellar']!.backend).toBe('three');
     expect(look3d.rounds['vault']!.backend).toBe('three');
   });
 

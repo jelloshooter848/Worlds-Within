@@ -3,6 +3,11 @@
   "title": "The platformer sample: a small original platformer on the platformer kit",
   "kit": "platformer",
   "uses": ["topdown"],
+  "kitOptions": {
+    "topdown": {
+      "rooms": "separate"
+    }
+  },
   "content": {
     "level": ["content/levels/*.json"],
     "campaign": ["content/campaigns/*.campaign.json"],

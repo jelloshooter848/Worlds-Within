@@ -1,0 +1,243 @@
+{
+  "game": "..",
+  "seed": 11,
+  "ticks": 400,
+  "from": {
+    "run": "quit.run.json"
+  },
+  "missions": [
+    {
+      "tick": 5,
+      "mission": "rescue-captain",
+      "action": "open"
+    },
+    {
+      "tick": 5,
+      "mission": "rescue-captain",
+      "action": "play",
+      "input": {
+        "steps": [
+          {
+            "frame": 0,
+            "hold": ["up"]
+          },
+          {
+            "frame": 22,
+            "hold": ["down"]
+          },
+          {
+            "frame": 23,
+            "hold": ["right"]
+          },
+          {
+            "frame": 110,
+            "hold": ["attack"]
+          },
+          {
+            "frame": 111,
+            "hold": []
+          },
+          {
+            "frame": 125,
+            "hold": ["right"]
+          },
+          {
+            "frame": 136,
+            "hold": ["attack"]
+          },
+          {
+            "frame": 137,
+            "hold": []
+          },
+          {
+            "frame": 151,
+            "hold": ["left"]
+          },
+          {
+            "frame": 153,
+            "hold": ["down"]
+          },
+          {
+            "frame": 196,
+            "hold": ["up"]
+          },
+          {
+            "frame": 197,
+            "hold": ["left"]
+          },
+          {
+            "frame": 220,
+            "hold": ["attack"]
+          },
+          {
+            "frame": 221,
+            "hold": []
+          },
+          {
+            "frame": 236,
+            "hold": ["attack"]
+          },
+          {
+            "frame": 237,
+            "hold": []
+          }
+        ]
+      }
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "world.key.sergeant.Health.hp",
+      "op": "eq",
+      "value": 50
+    },
+    {
+      "tick": 0,
+      "path": "world.key.captain.fate",
+      "op": "eq",
+      "value": "captured"
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.charge.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 6,
+      "path": "missions.round.mission",
+      "op": "eq",
+      "value": "rescue-captain"
+    },
+    {
+      "tick": 6,
+      "path": "missions.round.game",
+      "op": "eq",
+      "value": "mission-room"
+    },
+    {
+      "tick": 6,
+      "path": "missions.round.state.room",
+      "op": "eq",
+      "value": "stockade"
+    },
+    {
+      "tick": 6,
+      "path": "missions.round.state.enemies",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 6,
+      "path": "missions.round.state.hero.maxHp",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 6,
+      "path": "world.tick",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 243,
+      "path": "missions.round.result",
+      "op": "eq",
+      "value": "pass"
+    },
+    {
+      "tick": 243,
+      "path": "missions.round.outcome",
+      "op": "eq",
+      "value": "freed"
+    },
+    {
+      "tick": 243,
+      "path": "missions.round.state.enemies",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 243,
+      "path": "world.tick",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 282,
+      "path": "world.key.captain.fate",
+      "op": "eq",
+      "value": "captured"
+    },
+    {
+      "tick": 283,
+      "path": "world.one.Missions.committed.0.mission",
+      "op": "eq",
+      "value": "rescue-captain"
+    },
+    {
+      "tick": 283,
+      "path": "world.one.Missions.committed.0.outcome",
+      "op": "eq",
+      "value": "freed"
+    },
+    {
+      "tick": 283,
+      "path": "world.one.Missions.committed.0.resolution",
+      "op": "eq",
+      "value": "played"
+    },
+    {
+      "tick": 283,
+      "path": "world.one.Missions.committed.0.commitTick",
+      "op": "eq",
+      "value": 45
+    },
+    {
+      "tick": 283,
+      "path": "world.key.captain.fate",
+      "op": "eq",
+      "value": "freed"
+    },
+    {
+      "tick": 283,
+      "path": "world.key.captain.Position.x",
+      "op": "eq",
+      "value": 10
+    },
+    {
+      "tick": 283,
+      "path": "world.key.captain.Position.y",
+      "op": "eq",
+      "value": 15
+    },
+    {
+      "tick": 283,
+      "path": "world.key.sergeant.Health.hp",
+      "op": "eq",
+      "value": 50
+    },
+    {
+      "tick": 283,
+      "path": "world.one.WorldTime.frozen.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 400,
+      "path": "world.one.Missions.committed.length",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "invariants": [
+    {
+      "path": "world.key.hall.alive",
+      "op": "eq",
+      "value": true
+    }
+  ],
+  "hashEvery": 20,
+  "guards": ["enemy-follows-plan", "topdown:walls-block-movement"]
+}

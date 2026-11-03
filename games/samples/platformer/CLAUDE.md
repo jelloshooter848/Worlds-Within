@@ -21,7 +21,9 @@ release that will).
 
 ## Files
 
-- `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the door level's room),
+- `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the doors' rooms),
+  `kitOptions: { "topdown": { "rooms": "separate" } }` (Engine 0.15, gap G17: each room file is
+  its own challenge room, checked alone),
   256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `campaign`, `profile`,
   `room`, `palette`, `sprite`, `skin` and `sfx`. `index.html` is the page, so the root launcher lists
   `games/samples/platformer/`, and its `ww-alternate` meta tag adds the launcher's `3D` link
@@ -51,10 +53,17 @@ release that will).
     (`respawn`; step off and on again for another round), and `"look": "door"` draws it as a door
     (Engine 0.11, gap G13: presented as the tag `look:door`, picked by the skins' `byTag`; not in
     the snapshot, so no hash moved). Past the wall, the goal.
+  - `level-5` ("the cellar door", Engine 0.15 T11, gap G17), 32x10: one floor coin, then a wall
+    from the top to the ground at column 11 with the second door (`!` at (10,8)): its trigger
+    starts the `cellar` mini game, a second, separate challenge room, with `goal: reach`,
+    `ticks: 600`, `hp: 6`; a `pass` gives 3 coins and opens `open:11:6` to `open:11:8`, a `fail`
+    `respawn`s, `"look": "door"`. Past the wall, the goal. It is played last, after `level-4`
+    (the campaign's fifth entry), so no earlier run moved: `level-4` ends its runs before the
+    pause after it is over.
 - `content/campaigns/main.campaign.json` (Engine 0.10, gap G2): the play order as data, the
   engine's `campaign` kind (`engine/core/campaign.ts`): `level-1`, `level-2`, `level-3`,
   `level-4`, the order the levels were played in by id before, so no run file or golden hash
-  moved. Reorder its `entries` (or set `start`) and the levels play in that order; a level not
+  moved; `level-5` was added last in Engine 0.15 T11. Reorder its `entries` (or set `start`) and the levels play in that order; a level not
   listed is not played, and an entry naming a missing level fails `validate` at
   `entries.<i>.level`.
 - `content/rooms/vault.json` + `vault.map.txt`: the door's top-down room (`kits/topdown` room
@@ -62,6 +71,15 @@ release that will).
   (`n`), the hero's start at (2,5), `"title": "VAULT"` (the mini game's title, gap G15). It is a
   `RoomDef` like any top-down game's; nothing in it says it is a mini game (the level's trigger
   does).
+- `content/rooms/cellar.json` + `cellar.map.txt` (Engine 0.15 T11, gap G17): the second door's
+  room, a separate challenge room: 16x11, two statues, a flooded strip (`~`, columns 11-12, rows
+  2-6) between the hero's start at (2,4) and the stairs out (`E` at (13,4)), no enemies,
+  `"title": "CELLAR"`; its round's goal is `reach` (walk round the water to the stairs). It shares
+  cell (0,0) with `vault` and has its own `@`: `game.json`'s `kitOptions: { "topdown": { "rooms":
+"separate" } }` makes the top-down kind check each room file alone (`kits/topdown/CLAUDE.md`,
+  Room files), where the default would check both as one dungeon (`invalid_dungeon`: two starts,
+  one cell). Its skins `canvas2d-cellar.json` and `three-cellar.json` are the vault round's with
+  the stairs tile (`E`: frame `stairs` in `content/sprites/vault.txt`, mesh `stairs`) added.
 - `content/profiles/hopper.profile.json`: the game's own physics profile (`hopper`): it started
   from the kit's fixture profile and was changed (a little slower walk and run cap, a slower
   walker, 2 hit points, 3 lives, a 6-tick jump buffer, a softer middle jump tier). Its actor
@@ -209,6 +227,7 @@ moves none of them.
 | `level-2-start` | 577   | `level-2` cleared at tick 548  | as `level-2`                                                                                                                                                                                                                                                                                                   |
 | `level-3-start` | 869   | `level-3` cleared at tick 838  | as `level-3`                                                                                                                                                                                                                                                                                                   |
 | `level-4-start` | 1241  | `level-4` cleared at tick 1224 | as `level-4`                                                                                                                                                                                                                                                                                                   |
+| `level-5-start` | 510   | `level-5` cleared at tick 485  | gravity, walk, friction, air-control, solid-tiles, coins-collect, goal-clears-level, mini-games, topdown:walls-block-movement                                                                                                                                                                                  |
 
 - `level-1.run.json` walks right and jumps five times: under the bump block (coin at tick 59),
   over the 2-tile gap, onto the step (standing on it at 210), over the 3-tile gap through the coin
@@ -246,14 +265,23 @@ moves none of them.
   report `ticks` 600 at 2881, round 2's `pass`, the last knight's `kill` in
   `endedRound.state.events`, no enemies left and the report's `defeated` keys at 3144.
   Invariants: at least 1 life, stage 0 to 3.
+- `level-5-start.run.json` (Engine 0.15 T11, gap G17; `start: { "stage": 4 }`, level-5 from its
+  own tick 0): walks right onto the second door (one coin on the way) and the `cellar` round
+  starts (`mini-game`, attempt 1, tick 105: room `cellar`, goal `reach`, 6 half hearts, no
+  enemies); the player lets go, then walks the hero down until the room's bottom wall stops it
+  (`miniGame.state.hero.y` 144 at tick 200: with `topdown:walls-block-movement` off it walks on
+  to 160 and the round no longer passes), right under the flooded strip and up onto the stairs:
+  the round passes at tick 341 (`mini-game-end` `pass`, `endedRound.state.exited`, 4 coins, the
+  wall's bottom tile empty), and the player walks to the goal (`cleared`, 485). Invariants: at
+  least 1 life, stage 4. Its input was found with `pnpm cli trace` a hold at a time.
 - Run one: `pnpm -s cli run games/samples/platformer/runs/level-2.run.json --json`. Its rules:
   `pnpm -s cli mutants games/samples/platformer/runs/level-2.run.json --json` (exit 0 for each run
   file).
 - The whole folder, `pnpm -s cli mutants games/samples/platformer --json`, guards all 32 of the
   kit's rules (`level-4.run.json` guards `mini-games`) and must exit 0 (gap G7). Since Engine 0.14
   (gap G12) it also tries the top-down kit's 4 rules inside the vault round, as
-  `topdown:<id>`: `level-4` and `level-4-start` guard `topdown:walls-block-movement` (with the
-  walls gone the recorded round 2 no longer passes); no check reads a hit the hero takes, and the
+  `topdown:<id>`: `level-4`, `level-4-start` and `level-5-start` guard
+  `topdown:walls-block-movement` (with the walls gone the recorded rounds no longer pass); no check reads a hit the hero takes, and the
   vault is one room with no locked door, so `topdown:damage-reduces-hp`,
   `topdown:doors-change-room` and `topdown:keys-open-locked-doors` stay unguarded (reported, not a
   failure: the top-down kit is not strict; recorded in `docs/reports/stacking-test.md`, G12).
@@ -352,8 +380,8 @@ same through the null backend, Canvas2D and the Three.js scene builder (`tests/r
 ## How to add a level
 
 1. Draw `content/levels/level-5.map.txt` in the kit's `LEGEND` (`kits/platformer/legend.ts`) and
-   write `content/levels/level-5.json` (`id` = the file name, `profile: "hopper"`, `scroll`,
-   any `triggers`), and add `{ "level": "level-5" }` to `content/campaigns/main.campaign.json`
+   write `content/levels/level-6.json` (`id` = the file name, `profile: "hopper"`, `scroll`,
+   any `triggers`), and add `{ "level": "level-6" }` to `content/campaigns/main.campaign.json`
    where it should be played (the campaign decides the order: the kit's `contentStages`; a level
    the campaign does not list is not played). No code changes.
 2. `pnpm -s cli validate games/samples/platformer --json` (exit 0; every error names the file and
@@ -363,8 +391,8 @@ games/samples/platformer/content/profiles/hopper.profile.json actors.<type> '{..
    state the level shows needs entries in both skins (`canvas2d.json`, `three.json`) and frames
    in `content/sprites/hopper.txt`: `platformer.test.ts` and the backend parity test fail
    on a missing one.
-4. A run file `runs/level-5.run.json`: `level-4.run.json`'s input, then the new level's (a run
-   file starts at the first level, gap G9). Find the input a jump at a time with `pnpm -s cli dump
+4. A run file `runs/level-6-start.run.json` with `"start": { "stage": 5 }` (the new level's
+   place in the campaign, 0-based), so it plays the new level alone from its tick 0 (gap G9). Find the input a jump at a time with `pnpm -s cli dump
 <run> --tick N --json`, assert what the rules decide, list the rules it means to guard in
    `guards` and check them with `pnpm -s cli mutants <run> --json`.
 5. Golden hashes: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, then `pnpm test` and commit.
@@ -373,9 +401,9 @@ games/samples/platformer/content/profiles/hopper.profile.json actors.<type> '{..
 
 1. Draw the room as `content/rooms/<id>.json` + `<id>.map.txt` (16x11, the top-down kit's
    `LEGEND`, one hero start, `at: [0, 0]`, a `title`). `minigames.ts` makes a `roomChallenge` per
-   room file by itself. Today the top-down kind checks every room file as one dungeon, so a
-   second room with its own start fails `validate` (gap G17, moved to 0.15): until then a game
-   holds one challenge room.
+   room file by itself. `game.json`'s `kitOptions.topdown.rooms` is `"separate"` (Engine 0.15,
+   gap G17), so each room is checked alone: every room keeps its own start and may share cell
+   (0,0) with the others (`vault` and `cellar` do).
 2. Put a trigger (`!`) in a level and a `triggers` entry naming the room's id in `game`, with its
    `params` (`goal`: `defeat-all` or `reach`, `ticks`, `hp`) and what `pass` and `fail` do
    (`coins`, `open:<col>:<row>`, `respawn`). The params are checked only when a round starts (gap

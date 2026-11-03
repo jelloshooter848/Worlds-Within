@@ -34,7 +34,7 @@ second RTS map whose `from` carries the captain's fate and hp and the hall's gol
 end world. The sabotage's round now takes its hero from the captain (gap M13), and its
 `driven-off` outcome captures him: in the dawn he is then off the map, held by the raiders, and
 three captive choices open at once (one exclusive group): **rescue** (`rescue-captain`, a
-`mission-room` round in the camp with the sergeant Mara Venn as the hero; a failure injures her and
+`mission-room` round in its own room, the raiders' stockade (Engine 0.15 T11, gap M32), with the sergeant Mara Venn as the hero; a failure injures her and
 opens a dearer **ransom**, never the rescue again), **exchange** (`exchange-captain`, 80 gold, a
 choice with no round) and **leave** (`leave-captain`, no effects). With the captain home the dawn
 assault is beaten; without him the village falls. A run file starts the dawn from a siege run's end
@@ -76,7 +76,9 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   then `dawn`), `missions/rescue-captain.mission.json`, `exchange-captain`, `ransom-captain`,
   `leave-captain`, `types/siege.json` (with `wall` and `wall-tower`),
   `enemy/raiders.json`, `missions/sabotage.mission.json` (outcomes, weights, effects, `onQuit`,
-  cost 120, the `mission-room` params), `rooms/engine-camp.json` + `.map.txt`,
+  cost 120, the `mission-room` params), `rooms/engine-camp.json` + `.map.txt` (the sabotage's
+  room) and `rooms/stockade.json` + `.map.txt` (the rescue's, Engine 0.15 T11), two separate
+  mission rooms (`game.json`'s `kitOptions.topdown.rooms` `"separate"`, gap G17),
   `missions/fortify.mission.json` (cost 30, the `td-defence` params: walls, budget, wave and
   rules; outcomes `held-cheap`, `held`, `held-bloodied`, `overrun` with their effects and weights)
   and `defence/` (the walls' `td-map`, `td-towers` `archers` and `ballista`, the map's `td-waves`).
@@ -102,7 +104,9 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   `from`; `dawn-code.run.json` (from `quit`'s save code: the same hashes as `dawn-captured`);
   `dawn-fresh.run.json` (Engine 0.14, gap G9: `start: { "entry": "dawn" }`, the dawn fresh with
   no carried record; `headless.ts` exports `starts(content)`, the campaign's entries);
-  `dawn-rescue`, `dawn-rescue-failed` (the round given up: the ransom opens, the rescue is
+  `dawn-rescue` (delegated), `dawn-rescue-played` (Engine 0.15 T11: the rescue played in the
+  stockade and won, recorded with `--bot '{"stockade": [{"do": "fight"}]}'`),
+  `dawn-rescue-failed` (the round given up: the ransom opens, the rescue is
   refused), `dawn-exchange` and `dawn-leave`. Engine 0.14 T12, the ridge camp (Engine 0.14's Done
   when: a scenario added with **data files only**): `content/maps/ridge.world.json`, the
   delegated-only `stores-raid` mission, the campaign's third entry `ridge` and

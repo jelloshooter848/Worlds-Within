@@ -1,0 +1,89 @@
+{
+  "run": "games/samples/mini-siege/runs/dawn-rescue-played.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "2ddfb2dc9d28980b"
+    },
+    {
+      "tick": 20,
+      "hash": "09648dd1c2432154"
+    },
+    {
+      "tick": 40,
+      "hash": "aa2dd8fd4e55de95"
+    },
+    {
+      "tick": 60,
+      "hash": "e30a6c26858ae1fe"
+    },
+    {
+      "tick": 80,
+      "hash": "3817f626364582a2"
+    },
+    {
+      "tick": 100,
+      "hash": "c6e3ae9d63de24b1"
+    },
+    {
+      "tick": 120,
+      "hash": "67e986a9305da9d9"
+    },
+    {
+      "tick": 140,
+      "hash": "328824310863824b"
+    },
+    {
+      "tick": 160,
+      "hash": "be6ff5f1683e3d47"
+    },
+    {
+      "tick": 180,
+      "hash": "8168f95437bb4703"
+    },
+    {
+      "tick": 200,
+      "hash": "2df1f53cab62005b"
+    },
+    {
+      "tick": 220,
+      "hash": "5ce7fac91ac6acd6"
+    },
+    {
+      "tick": 240,
+      "hash": "10207c8688834359"
+    },
+    {
+      "tick": 260,
+      "hash": "51347d10c865cf0d"
+    },
+    {
+      "tick": 280,
+      "hash": "e34bee341794f58a"
+    },
+    {
+      "tick": 300,
+      "hash": "ed87b872b293275c"
+    },
+    {
+      "tick": 320,
+      "hash": "f3a6fc8783ab46f4"
+    },
+    {
+      "tick": 340,
+      "hash": "e267c264a6edfa09"
+    },
+    {
+      "tick": 360,
+      "hash": "ebb9c5fdf9ce5482"
+    },
+    {
+      "tick": 380,
+      "hash": "05a9cc52135cd2a0"
+    },
+    {
+      "tick": 400,
+      "hash": "ea5896a26067e338"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { kitContentKinds } from '@engine/core/content/game-content';
+import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import { skinSet, type SkinFile } from '@engine/core/present';
 import { contentStages, type LevelStage } from '@kits/platformer';
@@ -21,7 +21,9 @@ const ROOM = roomKind();
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/platformer`. */
 export function loadTest(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
   // The kits of `game.json`: `kit` (platformer), then `uses` (topdown, for the door's room).
-  return loadContent(files, kitContentKinds([platformer, topdown]), { root: 'games/samples/platformer/' });
+  return loadContent(files, kitContentKinds([platformer, topdown], manifestOptions(files)), {
+    root: 'games/samples/platformer/',
+  });
 }
 
 /**

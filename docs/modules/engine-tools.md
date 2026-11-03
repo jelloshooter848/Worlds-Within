@@ -18,7 +18,9 @@ start from another run's end or a save code (`from`) and assert save codes (`cod
 ## Public API entry points
 
 - Generated reference: [CLI reference](../reference/cli.md) (every command's help) and
-  [schema reference](../reference/schemas.md) (every file format), plus the tables in the
+  [schema reference](../reference/schemas.md) (every file format, each kit's `game.json`
+  options, and from Engine 0.15 T11 a params page per mini game a game defines under
+  `docs/reference/mini-games/`, `mini-game-docs.ts`, gap M11), plus the tables in the
   [cheat sheet](../CHEATSHEET.md). `pnpm docs:gen` writes them; `pnpm docs:check` (and `pnpm test`)
   fails when they are out of date.
 - `pnpm cli help [command]`: the commands, global flags and exit codes, generated from the command
@@ -196,7 +198,7 @@ firstColumn }`); `get <map> rows.R1.C1:R2.C2` copies a rectangle; `paste <map> r
 - Output over the cap (32 KiB by default) is cut; the whole result is written under `.ww-out/` and
   the printed one has `truncated: true` and `fullOutput: <path>`.
 - In code: `main(argv, io)` (`engine/tools/main.ts`), `defineCommand` and `Registry`
-  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, the engine's kinds plus `kit`'s and each `uses` kit's, re-exported by `game-loader.ts`),
+  (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, the engine's kinds plus `kit`'s and each `uses` kit's, made with the manifest's `kitOptions` and checked against each kit's `options`, `unknown_option` / `bad_option`, gap G17; re-exported by `game-loader.ts`),
   `serveRepo`, `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`), `valueAt` and
   `failsCheck` (`check-values.ts`, pure), `filterChanges` (`event-filter.ts`, pure),
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`,

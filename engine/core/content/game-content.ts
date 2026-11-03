@@ -1,10 +1,11 @@
 import type { Sfx, Song } from '../audio/mml';
 import type { PaletteTable } from '../gfx/palette';
 import type { SpriteDef } from '../gfx/pixelart';
-import type { KitDef } from '../kit';
+import type { KitDef, KitManifest } from '../kit';
 import { contentOf, type ContentBundle } from './bundle';
 import { engineContentKinds, PALETTE_KIND, SFX_KIND, SONG_KIND, SPRITE_KIND } from './engine-kinds';
 import type { ContentKinds } from './kinds';
+import { MANIFEST_FILE } from './manifest';
 import { formatErrors, type ContentResult } from './validate';
 
 /**
@@ -18,12 +19,33 @@ import { formatErrors, type ContentResult } from './validate';
  * The content kinds a game on `kits` reads: the engine's own plus each kit hook's `kinds()` (the
  * kit's `kit` export, `kits/<name>/kit.ts`), in order: `game.json`'s `kit`, then its `uses`. The
  * same set the tools build from the manifest (`gameKinds` in `engine/tools/game-check.ts`), so a
- * page loads exactly what `validate` checks. Throws when two kits add a kind of the same name.
+ * page loads exactly what `validate` checks. `manifest` (Engine 0.15, gap G17) is the game's
+ * `game.json` (or `manifestOptions(files)`), whose `kitOptions` each kit reads. Throws when two
+ * kits add a kind of the same name.
  */
-export function kitContentKinds(kits: readonly KitDef[]): ContentKinds {
+export function kitContentKinds(kits: readonly KitDef[], manifest?: KitManifest): ContentKinds {
   const kinds = engineContentKinds();
-  for (const kit of kits) for (const kind of kit.kinds()) kinds.register(kind);
+  for (const kit of kits) for (const kind of kit.kinds(manifest)) kinds.register(kind);
   return kinds;
+}
+
+/**
+ * The kit options of a game's `game.json` among its files (`{ path: text }`, as a page's
+ * `virtual:game-files` gives them, `./game.json` or `game.json`), for `kitContentKinds`: `{}` when there is no manifest, it is
+ * not JSON or has no `kitOptions` (`loadContent` reports a broken manifest).
+ */
+export function manifestOptions(files: Readonly<Record<string, string>>): KitManifest {
+  const text = files[MANIFEST_FILE] ?? files[`./${MANIFEST_FILE}`];
+  if (text === undefined) return {};
+  try {
+    const data = JSON.parse(text) as { kitOptions?: unknown } | null;
+    const opts = data?.kitOptions;
+    return typeof opts === 'object' && opts !== null && !Array.isArray(opts)
+      ? { kitOptions: opts as KitManifest['kitOptions'] }
+      : {};
+  } catch {
+    return {};
+  }
 }
 
 /** Sprite sheets by id (the sprite file's name) and palettes by id, for the asset registry. */
