@@ -1,0 +1,30 @@
+{
+  "id": "exchange-captain",
+  "title": "Pay for the captain",
+  "worldTimeCost": 5,
+  "onQuit": "paid",
+  "outcomes": [
+    {
+      "id": "paid",
+      "title": "Eighty gold for the captain",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "inventory",
+          "entity": "hall",
+          "item": "gold",
+          "add": -80
+        },
+        {
+          "type": "fate",
+          "entity": "captain",
+          "fate": "freed",
+          "at": {
+            "x": 1,
+            "y": 1
+          }
+        }
+      ]
+    }
+  ]
+}

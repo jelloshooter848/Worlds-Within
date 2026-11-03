@@ -188,4 +188,19 @@ describe('MissionHost', () => {
     });
     expect(h.miniGame()).toBeNull();
   });
+
+  it('refuses to play a mission with no play (a choice, Engine 0.13), and delegates it', () => {
+    const { play: _play, ...choice } = { ...RAID, id: 'pay' };
+    const fake = fakePort();
+    const h = new MissionHost({
+      port: fake.port,
+      missions: [choice],
+      miniGames: [COUNT],
+      adapters: { count: ADAPTER },
+    });
+    h.launch('pay');
+    expect(h.play('pay')).toMatchObject({ code: 'not_playable' });
+    expect(h.miniGame()).toBeNull();
+    expect(h.delegate('pay')).toBeNull();
+  });
 });

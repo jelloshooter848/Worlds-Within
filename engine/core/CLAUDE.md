@@ -119,11 +119,17 @@ for the same reason: `engine/sim` runs the lifecycle (open, play or delegate, co
 events) and kits play missions, and neither imports the other. `missionSchema` is a mission
 definition and the `mission` content kind (`*.mission.json`, `content/engine-kinds.ts`): `id`,
 `title`, `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
-fixed when it opens), `play` (the mini game or kit round a player plays it with), `params?` (JSON,
+fixed when it opens), `play?` (the mini game or kit round a player plays it with; from Engine 0.13
+optional: a mission without it is a choice with a record, such as paying a ransom, only delegated,
+and `missionMiniGameUses` and `MissionHost` skip it, a host `play` step refused `not_playable`), `params?` (JSON,
 checked by that mini game's `paramsSchema` when `validate` runs: `minigame-params.ts`), `outcomes` (at least one, unique ids, each
 `{ id, title, weight (whole, >= 1, default 1), effects }`), `onQuit` (a declared outcome) and
 `playable?` (a subset). Effects are data only, told apart by `type`: `damage`, `destroy`,
-`inventory`, `set`, `opportunity` (`MISSION_EFFECT_TYPES`). There is no retry: no `attempt`, a
+`inventory`, `set`, `opportunity` and, from Engine 0.13 (decision 2, item 221), `fate`
+(`MISSION_EFFECT_TYPES`): `fateEffectSchema` `{ entity, fate, by?, at? }`, `fate` one of
+`MISSION_FATES` (`injured`, `captured`, `freed`, `dead`), `by` a faction id, `at` a cell
+`{ x, y }` given exactly on `freed` (`bad_effect` at `at` otherwise). The sim applies it with
+`setFate` and skips (never errors on) one that cannot move the fate there. There is no retry: no `attempt`, a
 mission ends in one declared outcome. The types: `MissionReport` (`{ outcome, stats? }`, what a kit
 reports through its adapter), `MissionResult` (`{ mission, outcome, effects, report? }`),
 `MissionRecord` (the committed, append-only record the sim keeps: `resolution`, `openTick`,

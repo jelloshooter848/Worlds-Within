@@ -66,7 +66,7 @@ describe('missions', () => {
     });
     expect(JSON.parse(JSON.stringify(result.mission))).toEqual(result.mission);
     expect(totalWeight(result.mission)).toBe(4);
-    expect(MISSION_EFFECT_TYPES).toEqual(['damage', 'destroy', 'inventory', 'set', 'opportunity']);
+    expect(MISSION_EFFECT_TYPES).toEqual(['damage', 'destroy', 'inventory', 'set', 'opportunity', 'fate']);
     const minimal = {
       id: 'm',
       title: 'M',
@@ -76,6 +76,42 @@ describe('missions', () => {
       outcomes: [{ id: 'a', title: 'A' }],
     };
     expect(parseMission(minimal).ok).toBe(true);
+  });
+
+  it('takes fate effects (Engine 0.13): "at" exactly on "freed", a known fate, a faction id', () => {
+    const withEffects = (effects: unknown[]) => ({
+      ...RAID,
+      outcomes: [{ ...RAID.outcomes[0], effects }, RAID.outcomes[1], RAID.outcomes[2]],
+    });
+    const good = [
+      { type: 'fate', entity: 'captain', fate: 'captured', by: 'raiders' },
+      { type: 'fate', entity: 7, fate: 'injured' },
+      { type: 'fate', entity: 'captain', fate: 'freed', at: { x: 1, y: 2 } },
+      { type: 'fate', entity: 'captain', fate: 'dead' },
+    ];
+    expect(errorsOf(withEffects(good))).toEqual([]);
+    const bad = [
+      { type: 'fate', entity: 'captain', fate: 'freed' },
+      { type: 'fate', entity: 'captain', fate: 'dead', at: { x: 1, y: 2 } },
+      { type: 'fate', entity: 'captain', fate: 'active' },
+      { type: 'fate', entity: 'captain', fate: 'captured', by: '9th' },
+      { type: 'fate', entity: 0, fate: 'dead' },
+      { type: 'fate', entity: 'captain', fate: 'freed', at: { x: 1.5, y: 2 } },
+    ];
+    expect(errorsOf(withEffects(bad)).map((e) => e.path)).toEqual([
+      'outcomes.0.effects.0.at',
+      'outcomes.0.effects.1.at',
+      'outcomes.0.effects.2.fate',
+      'outcomes.0.effects.3.by',
+      'outcomes.0.effects.4.entity',
+      'outcomes.0.effects.5.at.x',
+    ]);
+    expect(errorsOf(withEffects(bad))[0]!.code).toBe('bad_effect');
+  });
+
+  it('makes "play" optional: a mission without it is a choice, only delegated (Engine 0.13)', () => {
+    const { play: _play, params: _params, ...choice } = RAID;
+    expect(parseMission(choice).ok).toBe(true);
   });
 
   it('rejects a mission with no outcomes', () => {

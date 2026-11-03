@@ -1,0 +1,159 @@
+{
+  "world": "captive.world.json",
+  "ticks": 30,
+  "missions": [
+    {
+      "tick": 2,
+      "mission": "ambush",
+      "action": "open"
+    },
+    {
+      "tick": 2,
+      "mission": "ambush",
+      "action": "delegate"
+    },
+    {
+      "tick": 13,
+      "mission": "leave-captain",
+      "action": "open"
+    },
+    {
+      "tick": 13,
+      "mission": "leave-captain",
+      "action": "delegate"
+    },
+    {
+      "tick": 15,
+      "mission": "exchange-captain",
+      "action": "open"
+    },
+    {
+      "tick": 15,
+      "mission": "rescue-captain",
+      "action": "open"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 12,
+      "path": "components.Missions.0.1.committed.0.outcome",
+      "op": "eq",
+      "value": "taken"
+    },
+    {
+      "tick": 12,
+      "path": "components.Missions.0.1.committed.0.resolution",
+      "op": "eq",
+      "value": "delegated"
+    },
+    {
+      "tick": 12,
+      "path": "components.Fate.0.1.state",
+      "op": "eq",
+      "value": "captured"
+    },
+    {
+      "tick": 12,
+      "path": "components.Fate.0.1.by",
+      "op": "eq",
+      "value": "raiders"
+    },
+    {
+      "tick": 12,
+      "path": "components.Health.0.1.hp",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 12,
+      "path": "components.Squad.0.1.captain",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 12,
+      "path": "components.Squad.0.1.strength",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.1.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.2.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.4.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "dormant"
+    },
+    {
+      "tick": 14,
+      "path": "components.Missions.0.1.committed.1.outcome",
+      "op": "eq",
+      "value": "left"
+    },
+    {
+      "tick": 14,
+      "path": "components.Missions.0.1.committed.1.skipped.length",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 14,
+      "path": "components.Opportunities.0.1.list.2.status",
+      "op": "eq",
+      "value": "taken"
+    },
+    {
+      "tick": 14,
+      "path": "components.Opportunities.0.1.list.1.status",
+      "op": "eq",
+      "value": "closed"
+    },
+    {
+      "tick": 14,
+      "path": "components.Opportunities.0.1.list.4.status",
+      "op": "eq",
+      "value": "closed"
+    },
+    {
+      "tick": 30,
+      "path": "components.Fate.0.1.state",
+      "op": "eq",
+      "value": "captured"
+    },
+    {
+      "tick": 30,
+      "path": "components.Fate.0.1.history.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 30,
+      "path": "components.Inventory.0.1.gold",
+      "op": "eq",
+      "value": 200
+    },
+    {
+      "tick": 30,
+      "path": "components.Missions.0.1.committed.length",
+      "op": "eq",
+      "value": 2
+    }
+  ],
+  "hashEvery": 5
+}

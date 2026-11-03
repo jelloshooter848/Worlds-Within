@@ -11,7 +11,8 @@ touch it. From Engine 0.10 it also runs time (world, experience and commitment t
 events), the mission lifecycle (open, delegate or play, commit at a fixed world-time cost, with
 append-only records and no retries) and opportunities (windows that open and close in world time).
 From Engine 0.13 named individuals carry a fate (injured, captured, freed or dead) that survives
-battle, save and load.
+battle, save and load, and a mission's `fate` effect sets it at the commit; a capture opens its
+follow-ups (rescue, exchange, leave behind) with ordinary `opportunity` effects.
 
 ## Public API entry points
 
@@ -77,7 +78,12 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   `quitMission` takes `onQuit`. `commitMission(world, id, result?)` steps the world to the commit
   tick (committing any other mission due on the way), delegates an unresolved mission then
   (`timeout`), and under `mission:<id>` applies the outcome's effects, unfreezes the event, stamps
-  the commitment and appends a frozen `MissionRecord`. `settleMissions(world)` commits whatever is
+  the commitment and appends a frozen `MissionRecord`. A `fate` effect (Engine 0.13) moves a named
+  person's fate with `setFate` under `mission:<id>`; one that cannot apply (the person gone, not
+  named, already dead, or a `freed` cell that cannot be entered) is skipped and listed in the
+  record's `skipped`, never an error. A mission with no `play` is a choice: `playMission` and
+  `quitMission` refuse it (`not_playable`), so it is only delegated. `openMission` refuses an
+  outcome that opens an opportunity for the same mission (`reopens_self`: no do-overs). `settleMissions(world)` commits whatever is
   due by now (commit tick, then id order, the same order `commitMission` uses), for callers that
   step the world themselves; an overdue mission commits on the next settle and can no longer be
   resolved (`mission_overdue`). Retrying, replaying, reopening or
@@ -241,4 +247,11 @@ a save and load. `opportunity.test.ts` checks opportunities: a window opening an
 (logged under `time`), a take closing its rival (logged under `mission:<id>`), a closed or unopened
 opportunity refused, a mission's world-time cost carrying the world past another window's close, a
 failure opening a follow-up rescue, the same hashes on every run and through save and load at five
-ticks, and scenario opportunities.
+ticks, and scenario opportunities. `mission-fate.test.ts` (Engine 0.13) checks fate effects and
+capture follow-ups over `__fixtures__/captive.world.json`: a delegated capture opening the rescue,
+exchange and leave-behind, taking one closing the others, a failed rescue committed as an ordinary
+outcome that opens the ransom and never the rescue again, a rescue freeing the captive with his hp
+kept, skipped fate effects, the refusals at open, the same hashes every run and through save and
+load, and records unchanged after save and load. Its run files (`capture-rescue`,
+`capture-rescue-failed`, `capture-exchange`, `capture-leave`) are checked with golden hashes by
+`tests/runs/missions.test.ts`.

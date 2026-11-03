@@ -19,9 +19,11 @@ import {
 } from '../core/missions';
 import { defineComponent } from './component';
 import { Health } from './components';
+import { setFate } from './fate';
 import {
   applyOpportunityEffect,
   knowsOpportunity,
+  opportunitiesOf,
   opportunityGate,
   settleOpportunities,
   takeOpportunity,
@@ -118,6 +120,8 @@ export type MissionRefusal =
   | 'result_mismatch'
   | 'opportunity_closed'
   | 'unknown_opportunity'
+  | 'reopens_self'
+  | 'not_playable'
   | 'stepping';
 
 export type MissionRefused = { ok: false; code: MissionRefusal; error: string };
@@ -207,8 +211,9 @@ export type OpenResult =
  * Open mission `def` (checked with `missionSchema`) at the current tick: record it with its
  * outcomes and fixed cost, start its experience clock and freeze its event. Refused (nothing
  * changes) when the def is bad, the mission is open or committed, its event is already frozen, an
- * effect names a key not in `refs`, a `set` effect names a component the world lacks, an
- * `opportunity` effect names an opportunity the world does not know (`unknown_opportunity`), or
+ * effect names a key not in `refs` (a `fate` effect's person included), a `set` effect names a
+ * component the world lacks, an `opportunity` effect names an opportunity the world does not know
+ * (`unknown_opportunity`) or opens one for this same mission (`reopens_self`: no do-overs), or
  * opportunities name the mission and none is offered now (`opportunity_closed`). When one is
  * offered, opening takes it (`takeOpportunity`), closing the opportunities it excludes.
  */
@@ -242,6 +247,11 @@ export function openMission(world: World, def: unknown, options: OpenOptions = {
           return refuse(
             'unknown_opportunity',
             `outcome "${outcome.id}" names opportunity "${named}", which the world does not know`,
+          );
+        if (effect.open !== undefined && opportunitiesOf(world).get(named)?.def.mission === id)
+          return refuse(
+            'reopens_self',
+            `outcome "${outcome.id}" opens "${named}", an opportunity for this mission itself; there are no do-overs`,
           );
         continue;
       }
@@ -339,16 +349,27 @@ export function delegateMission(world: World, id: string): ResolveResult {
 /**
  * Play open mission `id`: choose the outcome, by id or as a kit's report. Only a declared (and,
  * with `playable`, playable) outcome is taken; anything else is refused (`unknown_outcome`) and the
- * mission stays open and unresolved.
+ * mission stays open and unresolved. A mission with no `play` is refused (`not_playable`).
  */
 export function playMission(world: World, id: string, played: string | MissionReport): ResolveResult {
   const report: MissionReport = typeof played === 'string' ? { outcome: played } : played;
-  return resolve(world, id, () => ({ outcome: report.outcome, resolution: 'played', report }));
+  return resolve(
+    world,
+    id,
+    (m) => notPlayable(m) ?? { outcome: report.outcome, resolution: 'played', report },
+  );
 }
 
 /** Quit open mission `id` while playing it: it resolves to its `onQuit` outcome. */
 export function quitMission(world: World, id: string): ResolveResult {
-  return resolve(world, id, (m) => ({ outcome: m.def.onQuit, resolution: 'quit' }));
+  return resolve(world, id, (m) => notPlayable(m) ?? { outcome: m.def.onQuit, resolution: 'quit' });
+}
+
+/** A mission with no `play` is a choice: only delegated (Engine 0.13, decision 2). */
+function notPlayable(m: OpenMission): MissionRefused | null {
+  return m.def.play === undefined
+    ? refuse('not_playable', `mission "${m.def.id}" has no "play": it is a choice, only delegated`)
+    : null;
 }
 
 export type CommitResult = { ok: true; record: MissionRecord } | MissionRefused;
@@ -448,7 +469,9 @@ function commitNow(world: World, open: OpenMission): { ok: true; record: Mission
 /**
  * Apply one effect; false when it is skipped: its entity is gone, `damage` finds no `Health`, or a
  * `set` would break the component's schema, or an `opportunity` effect finds its opportunity
- * already taken or closed (`applyOpportunityEffect`).
+ * already taken or closed (`applyOpportunityEffect`), or a `fate` cannot be set (`setFate` refuses
+ * it: not a named person, a fate that cannot move there such as anything after a death, or a
+ * `freed` cell that cannot be entered).
  */
 function applyEffect(world: World, open: OpenMission, effect: MissionEffect): boolean {
   if (effect.type === 'opportunity') return applyOpportunityEffect(world, effect);
@@ -485,5 +508,11 @@ function applyEffect(world: World, open: OpenMission, effect: MissionEffect): bo
       world.add(id, effect.component, merged);
       return true;
     }
+    case 'fate':
+      return setFate(world, id, effect.fate, {
+        cause: world.cause,
+        ...(effect.by !== undefined ? { by: effect.by } : {}),
+        ...(effect.at !== undefined ? { cell: effect.at } : {}),
+      }).ok;
   }
 }

@@ -1,0 +1,46 @@
+{
+  "id": "rescue-captain",
+  "title": "Break the captain out",
+  "worldTimeCost": 15,
+  "play": "breakout",
+  "onQuit": "failed",
+  "outcomes": [
+    {
+      "id": "freed",
+      "title": "The captain is back",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "fate",
+          "entity": "captain",
+          "fate": "freed",
+          "at": {
+            "x": 1,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": "failed",
+      "title": "The guards were ready",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "damage",
+          "entity": "sergeant",
+          "amount": 12
+        },
+        {
+          "type": "fate",
+          "entity": "sergeant",
+          "fate": "injured"
+        },
+        {
+          "type": "opportunity",
+          "open": "ransom-window"
+        }
+      ]
+    }
+  ]
+}

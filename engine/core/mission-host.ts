@@ -183,7 +183,7 @@ export class MissionHost implements HostedGame<MissionHost> {
     const result = round.game.result();
     const shown: JsonObject = {
       mission: round.mission.id,
-      game: round.mission.play,
+      game: round.mission.play ?? null,
       ticks: round.ticks,
       state: round.game.snapshot(),
       result,
@@ -277,6 +277,8 @@ export class MissionHost implements HostedGame<MissionHost> {
         : refusal('mission_not_open', `mission "${id}" is not open`);
     if (open.resolved)
       return refusal('mission_resolved', `mission "${id}" was already resolved; there are no do-overs`);
+    if (def.play === undefined)
+      return refusal('not_playable', `mission "${id}" has no "play": it is a choice, only delegated`);
     const miniGame = this.miniGames.get(def.play);
     if (miniGame === undefined)
       return refusal(

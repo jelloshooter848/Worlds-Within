@@ -1,0 +1,44 @@
+{
+  "id": "ambush",
+  "title": "Meet the raiders at the ford",
+  "worldTimeCost": 10,
+  "play": "skirmish",
+  "onQuit": "taken",
+  "outcomes": [
+    {
+      "id": "taken",
+      "title": "Driven back, the captain taken",
+      "weight": 1,
+      "effects": [
+        {
+          "type": "damage",
+          "entity": "captain",
+          "amount": 10
+        },
+        {
+          "type": "fate",
+          "entity": "captain",
+          "fate": "captured",
+          "by": "raiders"
+        },
+        {
+          "type": "opportunity",
+          "open": "rescue-window"
+        },
+        {
+          "type": "opportunity",
+          "open": "exchange-window"
+        },
+        {
+          "type": "opportunity",
+          "open": "leave-window"
+        }
+      ]
+    },
+    {
+      "id": "held",
+      "title": "The ford held",
+      "weight": 1
+    }
+  ]
+}

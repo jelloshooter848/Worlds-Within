@@ -75,8 +75,19 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `rescue` and `scout` as `*.mission.json`, and the run files `raid-partial`, `raid-failure`,
   `opportunity-closing`, `frozen-construction`, `raid-delegated`, `fixed-cost-few` and
   `fixed-cost-many` with their golden `.hashes.json` (`engine/tools/CLAUDE.md`, Missions in world
-  runs; Engine 0.10's done-when cases, checked by `tests/runs/missions.test.ts`). Fixtures only: no
-  game content anywhere else in the folder.
+  runs; Engine 0.10's done-when cases, checked by `tests/runs/missions.test.ts`); and (Engine 0.13
+  T3) `captive.world.json`, a small `rts` world with the village's stockpile (`hall`, 200 gold) and
+  a squad `guard` whose named captain `captain` (Hale) and hero `sergeant` (Mara) stand on the map,
+  and five opportunities: `ambush-window` (absolute) and the dormant `relative` follow-ups
+  `rescue-window`, `exchange-window` and `leave-window` (one `exclusive` group, `captive`) and
+  `ransom-window`; with the missions `ambush` (cost 10; `taken` damages and captures the captain
+  `by` raiders and opens the three follow-ups; delegated it draws `taken` for the seed),
+  `rescue-captain` (played or delegated; `freed` frees him at (1, 1), `failed` injures the sergeant
+  and opens `ransom-window`), and the choices with no `play` `exchange-captain` (80 gold and
+  `freed`), `leave-captain` (no effects: the capture stands) and `ransom-captain` (150 gold and
+  `freed`); and the run files `capture-rescue`, `capture-rescue-failed`, `capture-exchange` and
+  `capture-leave` with their golden `.hashes.json`, checked by `tests/runs/missions.test.ts`.
+  Fixtures only: no game content anywhere else in the folder.
 - `index.ts`: the public entry point; import from here outside this folder.
 
 ## The world
@@ -254,10 +265,20 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   later), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
   `values` into the component. An effect whose entity is gone, a `damage` on an entity without
   `Health`, or a `set` that would break the component's schema is skipped and listed in
-  `skipped`, never an error. `opportunity` effects open or close opportunities
+  `skipped`, never an error. `fate` (Engine 0.13, decision 2, item 221)
+  `{ entity, fate, by?, at? }` moves a named person's fate with `setFate` ("Fates") under
+  `mission:<id>`, in the outcome's order (so `damage` then `fate` hurts and then captures):
+  `injured`, `captured` (off the map and out of their squad, `Health` kept), `freed` (back on the
+  cell `at`, enterable, with their held `Unit`, in no squad) or `dead`. One that cannot apply (the
+  entity gone or not a `Member`, a fate that cannot move there such as anything after a death or a
+  captive injured, a `freed` cell off the map or impassable) is skipped and listed in `skipped`,
+  never an error. `opportunity` effects open or close opportunities
   ("Opportunities" below); one on an opportunity already taken or closed is skipped. Every
   opportunity an effect names must be known to the world when the mission opens
   (`unknown_opportunity`).
+- **Choices with no round** (Engine 0.13): a mission with no `play` (an exchange, a leave-behind)
+  is only delegated. `playMission` and `quitMission` refuse it (`not_playable`); its outcome is
+  drawn by weight like any delegation (one outcome: certain).
 - **Opportunities gate opening.** A mission named by an opportunity opens only while one of them
   is offered (`opportunity_closed`); opening it takes that opportunity.
 - **Fixed world-time cost.** The world moves exactly `worldTimeCost` ticks between open and
@@ -267,11 +288,16 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   record's `experienceTicks`, and nothing else differs.
 - **No do-overs.** Recommitting, reopening, replaying or delegating a committed mission is refused
   (`mission_committed`), failure included: a failure is an ordinary outcome. Committed records are
-  append-only and stored frozen, and never change after later ticks or a save and load.
+  append-only and stored frozen, and never change after later ticks or a save and load. A
+  committed fate never changes back (fates only move forward and `history` is append-only), and an
+  outcome may open a **different** follow-up but never its own mission's opportunity again:
+  `openMission` refuses an `opportunity` `{ open }` effect naming an opportunity of the same mission
+  (`reopens_self`). A failed rescue opens a ransom, not a second rescue.
 - **Refusals** are `{ ok: false, code, error }` with a one-line `error` (`MissionRefusal`:
   `bad_mission`, `bad_id`, `unknown_ref`, `unknown_component`, `mission_open`,
   `mission_not_open`, `mission_committed`, `mission_resolved`, `mission_overdue`, `event_frozen`,
-  `unknown_outcome`, `result_mismatch`, `opportunity_closed`, `unknown_opportunity`, `stepping`)
+  `unknown_outcome`, `result_mismatch`, `opportunity_closed`, `unknown_opportunity`,
+  `reopens_self`, `not_playable`, `stepping`)
   and change nothing. Everything runs between
   ticks (`stepping` during a step).
 - **World data.** `Missions` `{ open, committed }` lives on the `WorldTime` entity and is
@@ -295,7 +321,9 @@ id)` = `Rng.derived(seed, "round:<id>").next()` (fixed by the seed and the missi
   refused; any declared outcome playable; delegation repeatable from the seed and matching the
   weights over 4,000 seeds and the same at any delegation tick, with `world.rng` untouched; timeout and overdue; skipped effects; a second mission committed on
   the way; the same hash after commit for 0, 1 or 10,000 experience ticks; played at once or
-  ticked through giving the same hash; records unchanged across later ticks and save and load).
+  ticked through giving the same hash; records unchanged across later ticks and save and load),
+  and `mission-fate.test.ts` (Engine 0.13: fate effects and capture follow-ups over the captive
+  fixture; see "Opportunities").
 
 ## Opportunities
 
@@ -330,6 +358,15 @@ closesOthers?, relative? }`, `opens < closes`, world ticks, offered while `opens
   nothing changes. `{ close }` closes a dormant, waiting or offered one. On one already taken or
   closed (or unknown) the effect is skipped (the record's `skipped`). A failure outcome opening a
   rescue is the intended use.
+- **Capture follow-ups** (Engine 0.13, decision 2, item 221) need nothing new: an outcome whose
+  `fate` effect captures someone also opens dormant `relative` opportunities in one `exclusive`
+  group (a rescue, an exchange and a leave-behind; the captive fixture's `rescue-window`,
+  `exchange-window` and `leave-window`), and taking one closes the others by the rule above. A
+  rescue's success holds `fate: freed`, an exchange is a choice with no `play` paying with an
+  `inventory` effect on the stockpile and `fate: freed`, and leaving them behind holds no fate
+  effect (the capture stands, and the choice is in the committed records). A failed rescue is an
+  ordinary outcome that may open a different opportunity (the fixture's dearer `ransom-window`),
+  never the rescue again (`reopens_self`).
 - **World data.** `Opportunities { list }` (sorted by id) lives on the `WorldTime` entity and is
   `omitWhenEmpty`, so a world without opportunities snapshots, saves and hashes as before (the 0.8
   and 0.9 golden hashes do not move). Both system sets register `OPPORTUNITY_COMPONENTS`; load a
@@ -341,7 +378,12 @@ closesOthers?, relative? }`, `opens < closes`, world ticks, offered while `opens
   mission's world-time cost carrying the world past another window's close, a failure opening a
   follow-up rescue and a success leaving it dormant, a close effect and a skipped one, the same
   hashes on every run and after save and load at five ticks, and scenario opportunities and their
-  errors).
+  errors); `mission-fate.test.ts` (a delegated capture opening the three follow-ups, taking each
+  closing its rivals, a failed rescue committed and never retried that opens only the ransom, a
+  rescue freeing the captive with his hp and unit kept, an exchange paid from the stockpile, a
+  leave-behind changing nothing, skipped fate effects, `unknown_ref` and `reopens_self` at open,
+  the same hashes on every run and after save and load at five ticks, and records and fates
+  unchanged after save and load).
 
 ## Standard components
 
@@ -413,6 +455,9 @@ and load, so every mode can read it; the unnamed rank and file have none (they a
   one off the terrain or impassable) or `stepping` (during a step). A bad cause throws. `at`
   (default the world's tick) lets a fate carried from another world keep its tick. `Fate` is
   registered on first use in a world built without it.
+- **From a mission** (Engine 0.13 T3): an outcome's `fate` effect calls `setFate` at the commit
+  under `mission:<id>`; a refusal there is a skipped effect in the record, never an error
+  ("Missions", Effects).
 - **Injured** is a label: `Health` is not changed (battle damage alone injures no one).
 - **Captured**: the person leaves the map and their squad: `MAP_COMPONENTS` (`Position`, `Unit`,
   `Task`, `Target`, `Cooldown`, `Facing8`, `Worker`, `Gatherer`, `EventMember`) are removed and
@@ -734,4 +779,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `opportunity.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `sample-world.test.ts`).

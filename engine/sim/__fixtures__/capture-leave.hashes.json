@@ -1,0 +1,33 @@
+{
+  "run": "engine/sim/__fixtures__/capture-leave.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "007be9d2d30d4075"
+    },
+    {
+      "tick": 5,
+      "hash": "d7b66f715aa29244"
+    },
+    {
+      "tick": 10,
+      "hash": "e3b28c825e29ea76"
+    },
+    {
+      "tick": 15,
+      "hash": "19846517fcd22f4f"
+    },
+    {
+      "tick": 20,
+      "hash": "924c1007c9fe2b6b"
+    },
+    {
+      "tick": 25,
+      "hash": "eb8766c32fc4d527"
+    },
+    {
+      "tick": 30,
+      "hash": "dd53777f06492b38"
+    }
+  ]
+}

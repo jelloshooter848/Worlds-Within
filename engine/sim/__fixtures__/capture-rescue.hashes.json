@@ -1,0 +1,41 @@
+{
+  "run": "engine/sim/__fixtures__/capture-rescue.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "007be9d2d30d4075"
+    },
+    {
+      "tick": 5,
+      "hash": "d7b66f715aa29244"
+    },
+    {
+      "tick": 10,
+      "hash": "e3b28c825e29ea76"
+    },
+    {
+      "tick": 15,
+      "hash": "f42dd011da684d08"
+    },
+    {
+      "tick": 20,
+      "hash": "31a7eae00e2ffc6d"
+    },
+    {
+      "tick": 25,
+      "hash": "ad12c55cebc7049c"
+    },
+    {
+      "tick": 30,
+      "hash": "554a32fb250baffd"
+    },
+    {
+      "tick": 35,
+      "hash": "d8bcb637a6a62067"
+    },
+    {
+      "tick": 40,
+      "hash": "54b6e802c394a671"
+    }
+  ]
+}

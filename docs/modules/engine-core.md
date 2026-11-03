@@ -48,9 +48,12 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   kits. Pure.
 - `missions.ts` (Engine 0.10): the mission contract as plain JSON, shared by `engine/sim` and
   kits: `missionSchema` (the `mission` content kind, `*.mission.json`: `id`, `title`, `event?`,
-  `worldTimeCost` in ticks, `play`, `params?`, declared `outcomes` with `weight` and data-only
-  `effects`, `onQuit`, `playable?`; no retries), `MissionDef`, `MissionEffect`,
-  `MISSION_EFFECT_TYPES`, `MissionReport` (`{ outcome, stats? }`), `MissionResult`
+  `worldTimeCost` in ticks, `play?` (from Engine 0.13 optional: a mission without it is a
+  choice, only delegated), `params?`, declared `outcomes` with `weight` and data-only `effects`,
+  `onQuit`, `playable?`; no retries), `MissionDef`, `MissionEffect` (`damage`, `destroy`,
+  `inventory`, `set`, `opportunity`, and from Engine 0.13 `fate` `{ entity, fate, by?, at? }`:
+  `injured`, `captured`, `freed` (with the cell `at`, required there) or `dead`),
+  `MISSION_EFFECT_TYPES`, `MISSION_FATES`, `MissionReport` (`{ outcome, stats? }`), `MissionResult`
   (`{ mission, outcome, effects, report? }`), `MissionRecord` (the committed, append-only record),
   `MissionAdapter<KitInput, KitReport>` (`input(snapshot, mission)`, `outcome(report, mission)`),
   `totalWeight`, `pickOutcome(mission, n)` (a delegation draw), `missionResult`, `playedResult`,

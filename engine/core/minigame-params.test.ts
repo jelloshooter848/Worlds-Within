@@ -96,7 +96,7 @@ describe("a def's checkUse (Engine 0.11)", () => {
 });
 
 describe('missionMiniGameUses', () => {
-  it("lists each mission's play and params ({} when none)", () => {
+  it("lists each mission's play and params ({} when none), leaving out a mission with no play", () => {
     const content = {
       manifest: {},
       entries: [
@@ -107,6 +107,7 @@ describe('missionMiniGameUses', () => {
           value: { play: 'hold', params: { ticks: 2 } },
         },
         { kind: 'mission', name: 'b', file: 'content/b.mission.json', value: { play: 'free' } },
+        { kind: 'mission', name: 'd', file: 'content/d.mission.json', value: { id: 'd' } },
         { kind: 'level', name: 'c', file: 'content/c.json', value: {} },
       ],
     } as unknown as ContentBundle;

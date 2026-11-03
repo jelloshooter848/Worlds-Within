@@ -1,0 +1,33 @@
+{
+  "run": "engine/sim/__fixtures__/capture-exchange.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "007be9d2d30d4075"
+    },
+    {
+      "tick": 5,
+      "hash": "d7b66f715aa29244"
+    },
+    {
+      "tick": 10,
+      "hash": "e3b28c825e29ea76"
+    },
+    {
+      "tick": 15,
+      "hash": "fdfd4cbf793d36c2"
+    },
+    {
+      "tick": 20,
+      "hash": "ca19e95bead7675d"
+    },
+    {
+      "tick": 25,
+      "hash": "439d63bdd87058c5"
+    },
+    {
+      "tick": 30,
+      "hash": "818bef536c3aee68"
+    }
+  ]
+}

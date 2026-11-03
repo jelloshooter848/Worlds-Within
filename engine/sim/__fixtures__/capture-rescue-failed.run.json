@@ -1,0 +1,210 @@
+{
+  "world": "captive.world.json",
+  "ticks": 45,
+  "missions": [
+    {
+      "tick": 2,
+      "mission": "ambush",
+      "action": "open"
+    },
+    {
+      "tick": 2,
+      "mission": "ambush",
+      "action": "delegate"
+    },
+    {
+      "tick": 14,
+      "mission": "rescue-captain",
+      "action": "open"
+    },
+    {
+      "tick": 14,
+      "mission": "rescue-captain",
+      "action": "delegate"
+    },
+    {
+      "tick": 30,
+      "mission": "rescue-captain",
+      "action": "open"
+    },
+    {
+      "tick": 30,
+      "mission": "rescue-captain",
+      "action": "delegate"
+    },
+    {
+      "tick": 30,
+      "mission": "exchange-captain",
+      "action": "open"
+    },
+    {
+      "tick": 31,
+      "mission": "ransom-captain",
+      "action": "open"
+    },
+    {
+      "tick": 31,
+      "mission": "ransom-captain",
+      "action": "delegate"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 12,
+      "path": "components.Missions.0.1.committed.0.outcome",
+      "op": "eq",
+      "value": "taken"
+    },
+    {
+      "tick": 12,
+      "path": "components.Missions.0.1.committed.0.resolution",
+      "op": "eq",
+      "value": "delegated"
+    },
+    {
+      "tick": 12,
+      "path": "components.Fate.0.1.state",
+      "op": "eq",
+      "value": "captured"
+    },
+    {
+      "tick": 12,
+      "path": "components.Fate.0.1.by",
+      "op": "eq",
+      "value": "raiders"
+    },
+    {
+      "tick": 12,
+      "path": "components.Health.0.1.hp",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 12,
+      "path": "components.Squad.0.1.captain",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 12,
+      "path": "components.Squad.0.1.strength",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.1.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.2.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.4.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 12,
+      "path": "components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "dormant"
+    },
+    {
+      "tick": 29,
+      "path": "components.Missions.0.1.committed.1.outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 29,
+      "path": "components.Missions.0.1.committed.1.resolution",
+      "op": "eq",
+      "value": "delegated"
+    },
+    {
+      "tick": 29,
+      "path": "components.Fate.0.1.state",
+      "op": "eq",
+      "value": "captured"
+    },
+    {
+      "tick": 29,
+      "path": "components.Fate.1.1.state",
+      "op": "eq",
+      "value": "injured"
+    },
+    {
+      "tick": 29,
+      "path": "components.Health.1.1.hp",
+      "op": "eq",
+      "value": 18
+    },
+    {
+      "tick": 29,
+      "path": "components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "offered"
+    },
+    {
+      "tick": 29,
+      "path": "components.Opportunities.0.1.list.3.by",
+      "op": "eq",
+      "value": "mission:rescue-captain"
+    },
+    {
+      "tick": 29,
+      "path": "components.Opportunities.0.1.list.4.status",
+      "op": "eq",
+      "value": "taken"
+    },
+    {
+      "tick": 29,
+      "path": "components.Opportunities.0.1.list.1.status",
+      "op": "eq",
+      "value": "closed"
+    },
+    {
+      "tick": 36,
+      "path": "components.Missions.0.1.committed.2.mission",
+      "op": "eq",
+      "value": "ransom-captain"
+    },
+    {
+      "tick": 36,
+      "path": "components.Missions.0.1.committed.2.outcome",
+      "op": "eq",
+      "value": "paid"
+    },
+    {
+      "tick": 36,
+      "path": "components.Fate.0.1.state",
+      "op": "eq",
+      "value": "freed"
+    },
+    {
+      "tick": 36,
+      "path": "components.Inventory.0.1.gold",
+      "op": "eq",
+      "value": 50
+    },
+    {
+      "tick": 36,
+      "path": "components.Health.0.1.hp",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 45,
+      "path": "components.Missions.0.1.committed.length",
+      "op": "eq",
+      "value": 3
+    }
+  ],
+  "hashEvery": 5
+}

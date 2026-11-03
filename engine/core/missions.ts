@@ -24,7 +24,8 @@ import { dottedPath } from './content/validate';
  * kit's report names (through a {@link MissionAdapter}), a delegated one draws an outcome by weight
  * with the world's RNG ({@link pickOutcome}). Either way the effects are the outcome's declared ones.
  * There are no retries (no `attempt`): a mission ends in one of its outcomes, and quitting a played
- * one commits `onQuit`. Its world-time cost is fixed by `worldTimeCost` when it opens. The
+ * one commits `onQuit`. A mission with no `play` (Engine 0.13, decision 2) is a choice with a
+ * record, such as paying a ransom: it is only delegated (playing or quitting it is refused). Its world-time cost is fixed by `worldTimeCost` when it opens. The
  * lifecycle (open, play or delegate, commit, frozen events) is `engine/sim`'s.
  */
 
@@ -90,6 +91,42 @@ export const opportunityEffectSchema = z
       });
   });
 
+/** The fates a `fate` effect can set (`engine/sim/fate.ts`; a person with no fate is active). */
+export const MISSION_FATES = ['injured', 'captured', 'freed', 'dead'] as const;
+export type MissionFate = (typeof MISSION_FATES)[number];
+
+/**
+ * Move a named person's fate forward (Engine 0.13, decision 2, item 221): `injured`, `captured`,
+ * `freed` (back on the map at `at`, which it needs and only it may have) or `dead`. A person who
+ * is gone, not named, or whose fate cannot move there (a death is final; a captive cannot be
+ * injured) is skipped at the commit, never an error.
+ */
+export const fateEffectSchema = z
+  .strictObject({
+    type: z.literal('fate'),
+    entity: EntityRef.describe('the named person: a scenario key or an entity id'),
+    fate: z.enum(MISSION_FATES).describe('the fate they reach: injured, captured, freed or dead'),
+    by: z
+      .string()
+      .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
+      .exactOptional()
+      .describe('the faction that captured, killed or freed them'),
+    at: z
+      .strictObject({ x: z.int(), y: z.int() })
+      .exactOptional()
+      .describe('for "freed" only (and required then): the cell they are put back on'),
+  })
+  .superRefine((e, ctx) => {
+    if ((e.fate === 'freed') !== (e.at !== undefined))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['at'],
+        message:
+          e.fate === 'freed' ? '"freed" needs a cell, "at"' : `only "freed" takes "at", not "${e.fate}"`,
+        params: { code: 'bad_effect' },
+      });
+  });
+
 /** One world change an outcome makes at the commit, told apart by `type`. */
 export const missionEffectSchema = z.discriminatedUnion('type', [
   damageEffectSchema,
@@ -97,6 +134,7 @@ export const missionEffectSchema = z.discriminatedUnion('type', [
   inventoryEffectSchema,
   setEffectSchema,
   opportunityEffectSchema,
+  fateEffectSchema,
 ]);
 
 /** One declared outcome. */
@@ -112,7 +150,7 @@ export const missionOutcomeSchema = z.strictObject({
     .array(missionEffectSchema)
     .default([])
     .describe(
-      'the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity, amount }`, `destroy` `{ entity }`, `inventory` `{ entity, item, add }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`; `entity` is a scenario key or an entity id',
+      'the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity, amount }`, `destroy` `{ entity }`, `inventory` `{ entity, item, add }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`, `fate` `{ entity, fate, by?, at? }` (`fate` injured, captured, freed or dead; `at`, a cell `{ x, y }`, on freed only and required there); `entity` is a scenario key or an entity id',
     ),
 });
 
@@ -151,7 +189,9 @@ export const missionSchema = z
       .int()
       .min(1)
       .describe('world ticks between opening and the commit, fixed when it opens (whole number, at least 1)'),
-    play: Id.describe('the mini game (or kit round) a player plays it with'),
+    play: Id.exactOptional().describe(
+      'the mini game (or kit round) a player plays it with; left out, the mission is a choice that is only delegated',
+    ),
     params: z
       .record(z.string(), z.json())
       .exactOptional()
@@ -265,6 +305,7 @@ export const MISSION_EFFECT_TYPES: readonly MissionEffectType[] = Object.freeze(
   'inventory',
   'set',
   'opportunity',
+  'fate',
 ]);
 
 /**
@@ -298,7 +339,7 @@ export interface MissionRecord extends MissionResult {
   readonly commitTick: number;
   /** Ticks spent inside the mission while it was played; never moves the world. */
   readonly experienceTicks: number;
-  /** Effects whose entity no longer existed at the commit, skipped (not an error). */
+  /** Effects that could not apply at the commit (their entity gone, a fate that cannot move there...), skipped (not an error). */
   readonly skipped: readonly MissionEffect[];
 }
 

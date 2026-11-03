@@ -10,6 +10,11 @@ import { main } from '../../engine/tools/main';
 // a delegated mission, and the fixed world-time cost (few or many experience ticks, played at once
 // or at the last tick, give the same hashes from the commit tick on). Each passes twice with the
 // same hashes, matching its golden <name>.hashes.json (also checked by run-files.test.ts).
+//
+// Engine 0.13 T3 adds the capture runs on captive.world.json (decision 2, item 221): a delegated
+// `ambush` captures the captain and opens a rescue, an exchange and a leave-behind in one exclusive
+// group; each run takes one (`capture-rescue`, `capture-exchange`, `capture-leave`), and
+// `capture-rescue-failed` commits a failed rescue that opens a dearer ransom, never the rescue again.
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const DIR = 'engine/sim/__fixtures__';
@@ -44,6 +49,10 @@ const RUNS = [
   'raid-delegated',
   'fixed-cost-few',
   'fixed-cost-many',
+  'capture-rescue',
+  'capture-rescue-failed',
+  'capture-exchange',
+  'capture-leave',
 ];
 
 describe('Engine 0.10 done-when: mission run files', () => {
@@ -84,5 +93,38 @@ describe('Engine 0.10 done-when: mission run files', () => {
     expect(from(few, 35).length).toBeGreaterThan(1);
     // ...while the runs differ inside the mission (the outcome was chosen at different ticks).
     expect(before(many)).not.toEqual(before(few));
+  });
+
+  it('a capture: taking one follow-up closes the other two', async () => {
+    const exchange = await run('capture-exchange');
+    expect(exchange.refusedMissions.map((r) => `${r.tick} ${r.action} ${r.mission} ${r.code}`)).toEqual([
+      '13 play exchange-captain not_playable',
+      '13 quit exchange-captain not_playable',
+      '13 open rescue-captain opportunity_closed',
+      '14 open leave-captain opportunity_closed',
+    ]);
+    const leave = await run('capture-leave');
+    expect(leave.refusedMissions.map((r) => `${r.tick} ${r.mission} ${r.code}`)).toEqual([
+      '15 exchange-captain opportunity_closed',
+      '15 rescue-captain opportunity_closed',
+    ]);
+    expect((await run('capture-rescue')).refusedMissions).toEqual([]);
+  });
+
+  it('a failed rescue is committed, never retried, and opens only the ransom it declares', async () => {
+    const { refusedMissions } = await run('capture-rescue-failed');
+    expect(refusedMissions.map((r) => `${r.tick} ${r.action} ${r.mission} ${r.code}`)).toEqual([
+      '30 open rescue-captain mission_committed',
+      '30 delegate rescue-captain mission_committed',
+      '30 open exchange-captain opportunity_closed',
+    ]);
+  });
+
+  it('the capture runs share their hashes up to the first follow-up', async () => {
+    const runs = await Promise.all(
+      ['capture-rescue', 'capture-rescue-failed', 'capture-exchange', 'capture-leave'].map(run),
+    );
+    const upTo = (r: Result) => r.hashes.filter((h) => h.tick <= 10);
+    for (const r of runs) expect(upTo(r)).toEqual(upTo(runs[0] as Result));
   });
 });

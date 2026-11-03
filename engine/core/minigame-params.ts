@@ -34,10 +34,13 @@ export interface MiniGameUse {
   readonly owner?: JsonObject;
 }
 
-/** Every mission's use (`*.mission.json`: `play` names the mini game, `params` its params). */
+/**
+ * Every mission's use (`*.mission.json`: `play` names the mini game, `params` its params). A
+ * mission with no `play` (a choice, only delegated: Engine 0.13) names none and is left out.
+ */
 export function missionMiniGameUses(content: ContentBundle): MiniGameUse[] {
   return content.entries
-    .filter((e) => e.kind === 'mission')
+    .filter((e) => e.kind === 'mission' && typeof (e.value as JsonObject)['play'] === 'string')
     .map((e) => {
       const m = e.value as JsonObject & { play: string; params?: JsonObject };
       return {
