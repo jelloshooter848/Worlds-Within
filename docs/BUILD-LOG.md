@@ -948,7 +948,7 @@ exit 0 through `pnpm -s cli run`; `git tag` lists nothing.
 
 ### Fixes after the close-out
 
-Two commits landed after T17's close-out (`28c7250`); neither moved a run file hash.
+Three commits landed after T17's close-out (`28c7250`); only the third moved run file hashes.
 
 - **The dungeon's relic redrawn** (`fc3120f`): the crypt's relic frame was a gold Triforce,
   Nintendo's Zelda symbol, not original art. It is now an original gold chalice with a red gem
@@ -960,6 +960,13 @@ Two commits landed after T17's close-out (`28c7250`); neither moved a run file h
   places and sells inside its 100-gold budget keeps its played outcome (item 309). New tests in
   the kit's mission tests and the mini siege's. The README now lists the five samples, every kit
   and backend and `games/platformer-lab`.
+- **The relic's item id renamed** (trademark, item 308 resolved): the topdown kit's item id
+  `triforce` is now `relic` (`kits/topdown` `pickupFrame` and `grant`, the dungeon's crypt chest,
+  skin, `escape` run file, tests, `CLAUDE.md` files). The `found` set holds the new id, so the
+  `escape` run's hashes at ticks 960, 1020 and 1060 moved (final `0fe322678bda79c2` ->
+  `cbc0bd507213af9b`), re-recorded with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`. The leftover
+  stash `T4 (G33 3D HUD) uncommitted leftovers` was checked against HEAD (all its code and new
+  files are in T13's `867c454`; only doc wording since revised differs) and dropped.
 
 ### Choices made
 
@@ -1075,12 +1082,10 @@ for a run file's sync `hashes` (the new values read off `run --json`), then
 - **Shared page shapes still copied**: the two RTS pages' scene and camera (A6), the three
   standalone games' end flows (A8), each page's own test hook beside `window.__ww` (A7).
 - **The 3D screenshot on hardware WebGL** is still unchecked (item 75).
-- **The 3D HUD ignores the colour-blind palette modes** (default colours only, item 306), and
-  the dungeon's relic keeps the item id `triforce` though its art is now a chalice (item 308).
+- **The 3D HUD ignores the colour-blind palette modes** (default colours only, item 306). The
+  dungeon's relic item id is now `relic` (item 308, resolved).
 - **The mini siege's folder takes about four minutes under `mutants`**, and three heavy test files
   keep a 60 s timeout (items 233, 277).
-- **A stash** (`T4 (G33 3D HUD) uncommitted leftovers`) is left in the working copy's stash list
-  for the owner; its content is committed.
 - Open owner decisions: items 278-315 in `FEEDBACK-LOG.md`, and the earlier ranges in the owner's
   summary at the top of this file.
 

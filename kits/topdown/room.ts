@@ -92,7 +92,7 @@ export interface RoomDef {
   title?: string;
   /** Free-form flag a game may use (e.g. a darker palette for a boss room). */
   dark?: boolean;
-  /** The room the compass points to (Zelda's Triforce room), marked on the map once it is found. */
+  /** The room the compass points to (the dungeon's goal room), marked on the map once it is found. */
   goal?: boolean;
   /** What each chest (c) holds, in reading order: an item id or a pickup kind (world.ts `grant`). */
   chests?: readonly string[];

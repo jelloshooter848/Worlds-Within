@@ -186,7 +186,7 @@ export function pickupFrame(kind: PickupKind): string {
     case 'heart-container':
     case 'map':
     case 'compass':
-    case 'triforce':
+    case 'relic':
       return kind;
     default:
       return `${kind}-icon`;

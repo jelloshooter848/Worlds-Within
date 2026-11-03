@@ -1227,6 +1227,9 @@ was built and Choices made)
 - **308.** The dungeon's relic was a gold Triforce (Nintendo's symbol, not original art); it was
   redrawn as an original gold chalice after the release's close-out. The kit's item id `triforce`
   is unchanged so no hash moves. Rename the id too, in 1.0?
+  _Resolved by the orchestrator after the 0.15 close-out (trademark): the kit's item id is now
+  `relic` everywhere (kit, dungeon content, skin, run file, tests, docs); the `escape` run's hashes
+  at ticks 960, 1020 and 1060 moved with it and were re-recorded._
 - **309.** A `td-defence` round now counts gold spent net of sales (spent minus refunds, never below
   0), so a fortify round that places and sells within its 100-gold budget keeps its played outcome.
   No run file moved. OK?

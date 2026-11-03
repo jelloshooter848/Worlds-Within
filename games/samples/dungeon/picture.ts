@@ -76,7 +76,7 @@ export class DungeonPicture {
   draw(world: TopDownWorld, events: readonly object[]): DeepReadonly<PresentFrame> {
     const frame = freezeFrame(presentWorld(world, events, { state: this.state, size: this.look.screen }));
     this.presenter.present(frame);
-    drawStatusLines(this.r, frame.status, dungeonEnd(world), world.found.has('triforce'));
+    drawStatusLines(this.r, frame.status, dungeonEnd(world), world.found.has('relic'));
     return frame;
   }
 }

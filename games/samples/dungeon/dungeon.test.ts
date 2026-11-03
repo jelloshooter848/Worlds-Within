@@ -83,7 +83,7 @@ describe('the dungeon sample', () => {
       'store-room',
     ]);
     expect(d.rooms.get('store-room')?.def.chests).toEqual(['bomb']);
-    expect(d.rooms.get('crypt')?.def).toMatchObject({ goal: true, chests: ['triforce'] });
+    expect(d.rooms.get('crypt')?.def).toMatchObject({ goal: true, chests: ['relic'] });
   });
 
   it('runs headless: the hero walks east into the guard room, drawn through the skin', () => {
@@ -225,12 +225,12 @@ describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.
     for (const item of skin.hud ?? []) expect(Object.keys(status)).toContain(item.status);
   });
 
-  it("draws the kit's `triforce` item as the sample's own relic frame, not a borrowed symbol", () => {
-    expect(skin.kinds['pickup:triforce']?.frames).toEqual({ idle: 'relic' });
-    expect(skin.kinds['held']?.frames?.triforce).toBe('relic');
+  it("draws the kit's `relic` item as the sample's own relic frame, not a borrowed symbol", () => {
+    expect(skin.kinds['pickup:relic']?.frames).toEqual({ idle: 'relic' });
+    expect(skin.kinds['held']?.frames?.relic).toBe('relic');
     const sheet = FILES['content/sprites/dungeon.txt']!;
     expect(sheet).toMatch(/^frame relic$/m);
-    expect(sheet).not.toMatch(/^frame triforce$/m);
+    expect(sheet).not.toMatch(/triforce/i);
   });
 
   it("plays the skin's sound for an event in the walk-east run (the room change)", () => {
@@ -334,7 +334,7 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     };
     const escaped = play('escape.run.json');
     expect(dungeonEnd(escaped)).toBe('escaped');
-    expect(escaped.found.has('triforce')).toBe(true);
+    expect(escaped.found.has('relic')).toBe(true);
     expect(dungeonEnd(play('lost-in-the-guard-room.run.json'))).toBe('fallen');
     expect(dungeonEnd(createWorld(content))).toBeNull();
   });

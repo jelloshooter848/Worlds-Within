@@ -2,6 +2,6 @@
   "id": "crypt",
   "at": [2, 0],
   "goal": true,
-  "chests": ["triforce"],
+  "chests": ["relic"],
   "hint": "The crypt. Stairs lead up and out to daylight."
 }

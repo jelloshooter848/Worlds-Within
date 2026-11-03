@@ -25,7 +25,7 @@ glue.
    two cold torches, and a cracked east wall (`C` on the border: a doorway that starts shut).
 4. **bat-hall**: reached by bombing the cracked wall (a blast opens both sides); three bats, a
    statue block in the middle, a key (`k`) and a locked east door (`L`).
-5. **crypt**: the goal room (`goal: true`), its chest holding the relic (kit item `triforce`, drawn as the original chalice frame `relic`; kept in the
+5. **crypt**: the goal room (`goal: true`), its chest holding the relic (kit item `relic`, drawn as the original chalice frame `relic`; kept in the
    world's `found`), and two exit tiles (`E`) on its north border: stepping on one sets the world's
    `exited`, the run's win.
 
@@ -136,7 +136,7 @@ games/samples/dungeon/runs/escape.run.json --json` (exit 0 passed, 4 a failed ch
 - `escape` (1060 ticks, the path to the end): up into the store room and into the chest (the
   bomb), a bomb by the cracked east wall, into the bat hall, the key, the locked door, the crypt's
   chest (the relic) and out through the exit. Asserts each step (room, `inventory.current`,
-  `inventory.ammo.bomb` 3 after the blast, `keys` 1 then 0, `found` has `triforce`, `exited` and
+  `inventory.ammo.bomb` 3 after the blast, `keys` 1 then 0, `found` has `relic`, `exited` and
   the four rooms `visited`) and full hearts throughout; `guards: ["doors-change-room",
 "keys-open-locked-doors"]`.
 - `lost-in-the-guard-room` (1521 ticks, the fail case): left into the courtyard's west wall

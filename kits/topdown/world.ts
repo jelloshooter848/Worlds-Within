@@ -201,7 +201,7 @@ export class TopDownWorld {
   readonly events: TdEvent[] = [];
   frame = 0;
   keys = 0;
-  /** The dungeon's treasures found: its map, its compass (and a game's own, e.g. a Triforce). */
+  /** The dungeon's treasures found: its map, its compass (and a game's own, e.g. a relic). */
   readonly found = new Set<string>();
   transition: Transition | null = null;
   /**
@@ -594,7 +594,7 @@ export class TopDownWorld {
 
   /**
    * Gives the hero something (see PickupKind): a heart, a key, a heart container (one more
-   * heart, all refilled), a refill, the white sword (the beam), the dungeon's map or compass (or a Triforce),
+   * heart, all refilled), a refill, the white sword (the beam), the dungeon's map or compass (or a game's own relic),
    * an item's ammo, or an item. Emits 'pickup'.
    */
   grant(what: string): void {
@@ -618,7 +618,7 @@ export class TopDownWorld {
         break;
       case 'map':
       case 'compass':
-      case 'triforce':
+      case 'relic':
         this.found.add(what);
         break;
       default: {

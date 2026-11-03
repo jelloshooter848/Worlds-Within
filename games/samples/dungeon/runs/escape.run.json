@@ -38,7 +38,7 @@
     { "tick": 700, "path": "keys", "op": "eq", "value": 1 },
     { "tick": 900, "path": "room", "op": "eq", "value": "crypt" },
     { "tick": 900, "path": "keys", "op": "eq", "value": 0 },
-    { "tick": 1000, "path": "found", "op": "contains", "value": "triforce" },
+    { "tick": 1000, "path": "found", "op": "contains", "value": "relic" },
     { "tick": 1060, "path": "exited", "op": "eq", "value": true },
     { "tick": 1060, "path": "visited", "op": "eq", "value": ["bat-hall", "courtyard", "crypt", "store-room"] }
   ],
