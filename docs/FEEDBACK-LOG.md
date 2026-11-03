@@ -1008,6 +1008,17 @@ values, events? }` as a top-level array so the output cap cuts whole rows; a mis
   tower-defense rules (strict) are guarded by `fortify-played` for `towerdefense:win-on-clear`
   only: the others change a sync hash before any check notices. OK, or should a strict `uses`
   kit's unguarded rules fail the game (which would need new run files without sync hashes)?
+  Note (T5 review, finding 1): this reading is looser than decision 8 as written, so
+  `mutants games/samples/mini-siege` exits 0 with 13 of the 14 tower-defense rules unguarded. The
+  code keeps it until this item is answered. Following decision 8 literally needs more than new run
+  files. A copy of `fortify-played` without sync hashes would guard 7 more (`build-costs-gold`,
+  `spawn-spacing`, `enemies-walk`, `towers-fire`, `tower-range`, `tower-cooldown`, `win-on-clear`).
+  New rounds could guard `build-on-build-cells`, `sell-refunds`, `leak-costs-life` and
+  `lose-at-zero-lives`. But three rules do nothing in the fortify round as its data stands: it has
+  no wave `timer` (`wave-timer`), its raiders pay `bounty` 0 (`kill-bounty`), and they are one
+  group at one speed with no jitter, so the enemy furthest along is always the lowest id
+  (`target-first`). Under the literal rule the game would fail until the fortify mission's data
+  changes, and that would move its recorded rounds' hashes.
 
 **Engine 0.14, close-out** (T12; details in `docs/BUILD-LOG.md`, Engine 0.14)
 
