@@ -26,18 +26,18 @@ format that lists the releases a status may name. The close-out (T9) confirms th
 
 ### What was built
 
-- **Decisions before code and the lessons report skeleton** (T1): the kit's shape and content
+- **Decisions before code and the lessons report skeleton** (T1, `f5b62d5`): the kit's shape and content
   kinds, the input model, the sample, the mini siege's preparation mission, its round and outcomes,
   the 0.11 hashes, the lessons report's ids and the `engine/sim` check, settled in writing (items
   197-206, below); `docs/reports/tower-defense.md` started and linked from `llms.txt`.
-- **`kits/towerdefense`: content kinds and round rules headless** (T2): the `td-map` (header plus
+- **`kits/towerdefense`: content kinds and round rules headless** (T2, `6065a22`): the `td-map` (header plus
   `.map.txt` grid, one path walk from entry to exit checked with the cell named), `td-towers` and
   `td-waves` kinds; `TdWorld`, a fixed-order, whole-number round (place and pay, sell, waves by button
   or timer, spacing with seeded jitter, path walking in sub-cell units, first-along targeting with
   ranges and cooldowns, bounties, leaks and lives, won or lost); fourteen named rules, each changing
   a test when off; the kit hook (no strict mutants yet), the generated kit list and schema
   reference, and agent docs. No `engine/core` or `engine/sim` change was needed.
-- **`kits/towerdefense`: controls, presentation frames and the headless game** (T3): `TdControls`
+- **`kits/towerdefense`: controls, presentation frames and the headless game** (T3, `72f7ac8`): `TdControls`
   (the shared actions as a cursor with key repeat, place, cycle the tower type, sell and start the
   wave; pointer taps to cells through the frame's camera), `presentWorld` / `tdFrames` (frozen,
   schema-valid frames: the map, towers by type, enemies sliding along the path with facing and hp,
@@ -45,7 +45,7 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   `tdGame` (a `HeadlessGame` on frame input, snapshot `{ round, controls, kit }`), `tdRound` and a
   small deterministic `TdBot`. `TdWorld` gained one read-only helper (`waveLeft`). Lesson D1: taps
   cannot be recorded in a run file. No `engine/core` or `engine/sim` change was needed.
-- **`games/samples/tower-defense` headless** (T4): the standalone sample as data (one 16 x 15
+- **`games/samples/tower-defense` headless** (T4, `11131c1`): the standalone sample as data (one 16 x 15
   `td-map` with its `.map.txt` grid, arrow and cannon towers, three waves with a timer) plus
   `content.ts` and a one-call `headless.ts` over `tdGame`; four run files (`build`: refusals,
   buying and selling; `won`: towers placed with the cursor and every wave held; `target`: the
@@ -55,7 +55,20 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   (`tests/runs/tower-defense-mutants.test.ts`). Each run's sync hashes leave out the ticks a
   guarded rule's mutant reaches with a changed state before a check fails (a hash mismatch is not
   a failed check). No `view` yet (T5). No `engine/core` or `engine/sim` change was needed.
-- **The `td-defence` mini game and a data-driven mission adapter** (T6):
+- **The tower-defense sample's art, sound, skin and page** (T5, `c50a1e1`): original NES-style
+  text sprites and palettes (`content/sprites/td.txt`: the cells, arrow and cannon towers idle
+  and firing, runners and brutes, shots, the cursor, HUD icons; `td-font.txt`; the ghost's `td-ok`
+  and `td-blocked` and a struck enemy's `td-hit` recolours), a Canvas2D skin keyed on the kit's
+  kinds and tags, one-line MML sfx for the kit's `td-*` events and the song `road`. `view.ts` (the
+  engine's `frameView`) for `pnpm cli screenshot`; `play.ts` (`TdPlay`: keys and the touch pad,
+  taps through `TdGame.tap`, the bar's Wave, Tower and Sell buttons, 30 ticks a second with
+  `TickInput` merging the loop steps' input), `main.ts` and `index.html` over `bootBrowserGame`
+  with the shell's audio; the launcher lists the page (`tests/build/pages.test.ts`).
+  `tests/browser/tower-defense-page.test.ts` plays the built page from the launcher's link by taps
+  and by keys (`won.run.json` typed tick by tick), and `tower-defense-shots.test.ts` takes three
+  deterministic screenshots. Lesson D2 (the page merges the input of the steps between ticks
+  itself). No `engine/core` or `engine/sim` change was needed.
+- **The `td-defence` mini game and a data-driven mission adapter** (T6, `700800b`):
   `kits/towerdefense/mission-defence.ts`, the `td-defence` `MiniGameDef` (`paramsSchema`,
   `checkUse` for the map, slot and outcome ids, `inputMap`, `hostStatus`, a `report()` of towers by
   type, gold spent, leaks, raiders killed and walls lost by world name) and the stateless
@@ -68,7 +81,8 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   per-outcome gold and losses, walls lost as the report's reading, world names, selectors
   `validate` cannot check, a mission map's wave list). No `engine/core` or `engine/sim` change was
   needed.
-- **The mini siege's preparation phase headless** (T7): the walls (`wall` and `wall-tower`
+- **The mini siege's preparation phase headless** (T7, `2cb384e` for the content, the glue and
+  the re-recorded 0.11 hashes, `5a99417` for the run files, tests and docs): the walls (`wall` and `wall-tower`
   building types; `north-wall`, `north-tower`, `south-wall`, `south-tower` in the village map, rows
   9 and 21, off the raiders' road so they are never the engines' nearest building), the walls'
   `td-map` (`content/defence/`, with its towers and the one wave list the kind needs, lesson D8),
@@ -89,7 +103,7 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   glue names the hosted mini game itself), D10 (walls joined to cells by order only) and D11 (two
   missions on one event exclude each other); D3, D4, D6 and D8 confirmed in the real game. No
   `engine/sim` change was needed.
-- **The mini siege's preparation phase in the browser** (T8): original art for the walls' round
+- **The mini siege's preparation phase in the browser** (T8, `4aacf9b`): original art for the walls' round
   (`content/sprites/defence.txt`: the wall cell, the gate, the camp's road, archers and a ballista
   on the wall, idle and firing, shots, the cursor; the raiders, grass and road reused from
   `siege.txt`), three palettes (the ghost's `defence-ok` / `defence-blocked`, a struck raider's
@@ -104,6 +118,12 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   paths; the screenshot test adds the walls' round and the battle after `overrun`. Lessons D12
   (taps into a hosted round are copied page glue) and D13 (the cell-to-client mapping). No
   `engine/core` or `engine/sim` change was needed.
+- **Close-out** (T9, this commit): the `engine/sim` check (empty), the lessons report finished
+  (summary, every lesson moved to 0.15 or 1.0, the glue review and its D14), the lessons listed in
+  `docs/ROADMAP.md`'s 0.15 and Engine 1.0 sections, 0.12 marked done, `docs/DESIGN.md` (the kit and
+  both samples built, the platform test's result), `docs/CHEATSHEET.md` (booting a tower-defense
+  game, a `td-defence` mission in `MissionHost`'s lists), `llms.txt` (the kit, both samples, the
+  report) and `docs/modules/README.md`; this log's sections below; items 207-213.
 
 ### Decisions
 
@@ -239,6 +259,149 @@ this log and the report. **No test is added for it:** a test pinned to a base co
 full history (CI checkouts may be shallow), would mean nothing after 0.12, and the dependency rule
 already stops kits from importing the sim. Each task also checks `git diff --stat -- engine/sim`
 is empty before it commits, so a change is caught when it is made, not at the end.
+
+### Choices made
+
+The decisions above are items 197-206. The close-out's choices are items 207-213 ("Engine 0.12,
+close-out" in `FEEDBACK-LOG.md`):
+
+- **Where each lesson lands** (item 207): the build gave every lesson the status `lesson for the
+1.0 mission API` (decision 9); the close-out names a release for each, as the roadmap asks of
+  every report. Twelve go to **0.15**, the sample set's API review, which is where a kit or module
+  API is last changed before v1 and where the mini siege's M6, M21 and M26 already wait (D1-D4,
+  D6-D10, D12-D14). Two go to **Engine 1.0** as rules written down in the v1 docs, not changes: D5
+  (walls lost are the report's reading) and D11 (one open mission per frozen event, the sim's rule
+  since 0.10). D3 and D4 change how the sim's commit applies effects, so they wait for 0.15,
+  outside the release whose test is an empty sim diff.
+- **The glue review logs one more lesson** (item 208): D14, the round's key hints written as
+  strings in each page's `main.ts` (`ROUND_HINTS` in the mini siege, `HINT` in the sample), moved to
+  0.15 with M26. The rest of both folders is content, skins and thin glue.
+- **The report's status format** (item 209): `lesson for the 1.0 mission API` is replaced by
+  `moved to 0.15` or `moved to 1.0` with the reason, and each row names the task and commit that
+  found it. The ids are unchanged (D1-D13 as logged, D14 new).
+- **Played from a link, checked in a real browser** (item 210): the sample by
+  `tests/browser/tower-defense-page.test.ts` (the launcher's link, then taps and the bar, and
+  `won.run.json` typed on the keyboard tick by tick to `won` at tick 672), the preparation phase by
+  `tests/browser/mini-siege-page.test.ts` (Launch: Man the walls, then Delegate, Play with the
+  recorded round as keys, and Play by taps), each skipped where Chromium is missing.
+- **Smaller build choices for review** (items 211-213): selling is on `special` (C, a right click
+  or a long-press), which decision 3 did not list; the sample's page plays 30 ticks a second with
+  the loop steps' input merged (D2) while a hosted `td-defence` round plays at the loop's 60; and
+  the sample's sync hashes leave out the ticks where a guarded rule's mutant changes the state
+  before a check fails, so `mutants` reports a failed check rather than a hash mismatch.
+- **No tag** (owner answer 24), and the root `package.json` version was left as it was, as in
+  earlier releases of this build.
+
+### How to try it
+
+```sh
+pnpm dev                       # then games/samples/tower-defense/ or games/samples/mini-siege/ from the launcher (or pnpm build && pnpm preview)
+pnpm -s cli validate games/samples/tower-defense --json
+pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json        # every wave held
+pnpm -s cli run games/samples/tower-defense/runs/leaked.run.json --json     # a thin defence, the round lost
+pnpm -s cli mutants games/samples/tower-defense --json                      # strict: every kit rule guarded
+pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick 300 --json
+pnpm -s cli run games/samples/mini-siege/runs/fortify-played.run.json --json     # the walls held for 40 gold: held-cheap
+pnpm -s cli run games/samples/mini-siege/runs/fortify-delegated.run.json --json  # seed 11 draws overrun
+pnpm -s cli screenshot games/samples/mini-siege/runs/fortify-played.run.json --tick 90 --json   # the walls' round
+pnpm vitest run kits/towerdefense tests/kits/td-mission.test.ts games/samples/tower-defense games/samples/mini-siege tests/browser
+git diff --stat d6a102ab66f62c80e906ac979ece026dd781c415 -- engine/sim       # empty
+```
+
+On the sample's page: arrows move the cursor, Z or a second tap builds, X picks the tower, C or a
+right click sells, Enter or the Wave button sends a wave; three waves, a minute or two. On the
+mini siege's page: from world tick 5 to 30 the bar offers **Launch: Man the walls** (and from 20
+the sabotage beside it); the raid freezes and the page asks **Play** or **Delegate**. Played, the
+walls' round is a 16 x 7 map with the village's gold: tap or move to a wall, build archers or a
+ballista, Enter sends the four raiders. Either way the result lands at the launch tick + 30.
+
+### Done when
+
+Checked on 2026-11-03 on the tree of the close-out commit (T9, on top of `4aacf9b`: docs only):
+`pnpm lint && pnpm docs:check && pnpm typecheck && pnpm test && pnpm build` pass (165 test files,
+1806 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), `pnpm docs:gen` leaves
+the generated references unchanged, and every one of the **33 run files** in the repo (9 sim
+fixtures, 1 demo, 6 lab, 4 stacking-test, 4 skirmish, 5 mini siege and the 4 new tower-defense
+runs) exits 0 with the same final hash on two `pnpm -s cli run` runs in a row. The browser tests
+(`pnpm vitest run tests/browser`: 7 files, 18 tests) passed in headless Chromium, none skipped.
+
+- **Met: the `engine/sim` diff for this release is empty** (decision 10). On the close-out's tree:
+
+  ```text
+  $ git diff --stat d6a102ab66f62c80e906ac979ece026dd781c415 -- engine/sim
+  (no output)
+  $ git log --oneline d6a102ab66f62c80e906ac979ece026dd781c415..HEAD -- engine/sim
+  (no output)
+  ```
+
+  So no change needs a justification here. The rest of the engine changed by one line (the kit in
+  `KIT_HOOKS`, `engine/tools/kit-list.ts`) and the content kinds' error-code list
+  (`engine/core/content/CLAUDE.md`); no other kit and no backend changed. Recorded in the
+  [lessons report](reports/tower-defense.md#summary) too.
+
+- **Met: the tower-defense sample plays from a link.** `tests/browser/tower-defense-page.test.ts`
+  (headless Chromium, the repo built as `pnpm build` builds it): the launcher links
+  `games/samples/tower-defense/`; on one page two taps place an arrow tower (gold 30), the Wave
+  button sends wave 1 and the tower kills runners for bounties; on another, `won.run.json`'s input
+  typed on the keyboard tick by tick places the towers and holds every wave (`won` at tick 672,
+  the status line "the road is held!"); no page errors. `play.test.ts` plays the same glue
+  headless and ends on the run file's hashes.
+- **Met: the mini siege offers the preparation phase.** `tests/browser/mini-siege-page.test.ts`:
+  from the launcher's link, the bar's **Launch: Man the walls** at world tick 10, then Delegate
+  (seed 11 draws `overrun` at world tick 40); Play with `fortify-played.run.json`'s recorded round
+  typed as keys (116 round ticks while the world stays at 10, `held-cheap` at 40); and Play by
+  taps (two taps build archers, gold 100 to 80, a right click sells, gold 90, Backspace quits to
+  `overrun` at 40); beside the 0.11 sabotage paths (`ram-burnt` and `both-burnt` at 160); no page
+  errors. The phase uses the real walls, gold and raiders and writes its losses back: the run files
+  assert the hall's gold 150 to 110 and the four raiders destroyed (`held-cheap`), or both walls
+  destroyed and the towers, a soldier and the captain hurt (`overrun`), and the battle frozen from
+  world tick 11 to 39 with the commit at 10 + 30.
+- **Met: every run file is green twice, with equal final hashes.** The new runs:
+  tower-defense `build` (`c0f414299bc01881`), `won` (`9bbdc8413bc8a0e2`), `target`
+  (`c007de2189d310be`), `leaked` (`48e726691354fd14`); mini siege `fortify-played`
+  (`7ca0d45f21cdbf53`) and `fortify-delegated` (`bbbf38c22b5e249a`); each with sync hashes and a
+  golden `<name>.hashes.json` (`tests/runs/run-files.test.ts`). The 0.11 mini siege runs were
+  re-recorded once in T7 (`2cb384e`, decision 7) with every assertion unchanged: `played`
+  `cf041e302c463035`, `delegated` `bfd7dcff687c580a`, `quit` `9f67b4035d3a86ff`. No other golden
+  hash moved (for example `raid-partial` `60557f2e9c5e2245`, `battle` (skirmish)
+  `588fe33bb3ecfcfd`, `level-4` `06201f9a779cc2fc`, as in 0.11). `pnpm -s cli mutants
+games/samples/tower-defense` exits 0 with `strict: true` and every kit rule guarded.
+- **Met: every change the new mode needed is recorded as a lesson for the mission API.**
+  `docs/reports/tower-defense.md`: 14 lessons (D1-D14), none needing `engine/sim`, each moved to
+  0.15 (12) or Engine 1.0 (2) and listed in that section of `docs/ROADMAP.md`; the glue review
+  finds every file of the sample and every new mini siege file content, a skin, thin glue or a
+  test.
+- Scope items, each with its code and tests: `kits/towerdefense` (placing and paying, waves; the
+  kit's tests, `tests/kits/towerdefense-validate.test.ts`, strict mutants); the standalone sample
+  with its own original art (`content/sprites/td.txt`, `tests/browser/tower-defense-shots.test.ts`);
+  the preparation phase on the real walls with real resources and a wave whose losses are written
+  back (`kits/towerdefense/mission-defence.ts`, `tests/kits/td-mission.test.ts`, the fortify run
+  files, `mini-siege.test.ts`). The real Siege's preparation phase stays Worlds Within 0.1.
+- **No earlier gap was assigned to 0.12**: `docs/reports/stacking-test.md` and
+  `docs/reports/mini-siege.md` are unchanged in 0.12.
+- **No tag** (owner answer 24).
+
+### Deviations from the roadmap
+
+- **None in scope.** Each lesson is recorded and moved, not fixed, as the roadmap's test asks
+  ("recorded as a lesson for the mission API before that API is fixed at 1.0").
+- **Decision 3's "replays stay frame input only" holds for keys, not taps** (D1): a round played
+  by tapping cannot be written as a run file yet; the browser tests check taps live.
+- **Decision 5's losses are bucketed** (D3, D4): the world takes the declared outcome's fixed gold
+  and losses, not the round's exact spending and fallen walls, which reach only the record's
+  `stats`.
+- **Selling** (`special`) was added to decision 3's buttons (item 211).
+- **Feedback numbering:** T1's decisions are 197-206; the close-out added 207-213.
+
+### Outstanding issues
+
+- **14 tower-defense lessons are open in later releases**: 12 in 0.15 and 2 written down at 1.0
+  (`docs/reports/tower-defense.md`); with the mini siege's 17 and the stacking test's 9 moved gaps,
+  0.15's API review now has three reports to work through.
+- **Two hosting games' page glue is now copied** (D9, D12, D13, D14, with M6, M21, M26): the
+  sample set is where it moves into the engine or the kits.
+- **Taps are not recorded** (D1): the browser tests are the only check of a tapped round.
+- Open owner decisions: items 197-213 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.11
 

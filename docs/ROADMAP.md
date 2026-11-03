@@ -563,7 +563,7 @@ scenario's shape with checks for both paths. Reasoning in [BUILD-LOG.md](BUILD-L
 
 ---
 
-## 0.12 Tower-defense kit (the platform test)
+## 0.12 Tower-defense kit (the platform test) (done)
 
 **Goal:** prove that a new genre can be added without editing the simulation.
 
@@ -581,6 +581,18 @@ scenario's shape with checks for both paths. Reasoning in [BUILD-LOG.md](BUILD-L
 
 **Done when:** the tower-defense sample plays from a link, the mini siege offers the preparation phase,
 and the `engine/sim` diff for this release is empty (or each change is justified in the release notes).
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-012); the lessons report is
+[reports/tower-defense.md](reports/tower-defense.md): the `engine/sim` diff against the release's base
+is empty, and 14 lessons for the mission API, none needing the sim, are moved to 0.15 (12) and 1.0
+(2), listed in those sections.)_
+
+_(Decided before code, items 197-206: the kit's shape and content kinds, the cursor input model,
+the standalone sample, the `fortify` mission played as the kit's `td-defence` over the real walls,
+gold and raiders, its report, the walls on the one village map with the 0.11 hashes re-recorded
+once, where the code lives, the lessons report and the `engine/sim` check. Reasoning in
+[BUILD-LOG.md](BUILD-LOG.md#decisions).)_
 
 ---
 
@@ -683,6 +695,26 @@ copy a second mission game would write; the API review decides where each goes:
 - M26: a shared mission-launch scene (launch, play or delegate, the round, the outcome).
 - M27: the bridge from a sim world to the RTS kit's `RtsWorldPort`, written once.
 
+**From the tower-defense kit** (lessons moved here; [lessons report](reports/tower-defense.md)). None
+needed `engine/sim` in 0.12; the API review makes or rejects each before the mission API is v1:
+
+- D1: a recorded pointer tap (a command or a pointer track in `ScriptedInput`), so a round played
+  by tapping can be a run file (with M19 in 0.14).
+- D2: a tick rate in the shell (or a merging `InputFrame`) for pages that play slower than the loop.
+- D3 and D4: effect amounts and losses taken from the round's report (the gold spent, each fallen
+  wall or killed raider), checked against declared limits, instead of fixed amounts per outcome.
+  This changes how the sim's commit applies effects.
+- D6: a mission's params naming any world entity by key, not only the keys its effects name (with
+  M10).
+- D7: `validate` checking a mission's selectors against the game's world scenarios.
+- D8: a `td-map` used only by missions without a `td-waves` list (the tower-defense sample).
+- D9: `MissionHost` (or the core) naming the hosted mini game on its frame (with M6 and M21).
+- D10: a selector entry put on a named cell (`slot`), not by id order (with M16).
+- D12: pointer taps forwarded into a hosted round (`MiniGame.tap`) by `HostScene` (with M26).
+- D13: `screenAtCell` in the tower-defense kit and a display `toClient`, for page scripts.
+- D14: a round's key hints from the mini game (or the mission file), not strings in each page (with
+  M26).
+
 **Done when:** every sample plays from a link and passes its run files in CI, `games/platformer-test/`
 and `games/demo/` are gone, and the API review is
 written up with every change it calls for either made or listed for 1.0.
@@ -710,6 +742,16 @@ samples.
   sample, the cheat sheet, and skills for the common jobs (scaffold a game, add a level, add a mission,
   debug a failing run).
 - **Every sample playable from a link,** published on the `engine-v1.0.0` tag.
+
+**From the tower-defense kit** (lessons moved here; [lessons report](reports/tower-defense.md)),
+written down in the v1 docs as the API's rule, not changed:
+
+- D5: in a `td-defence` round, "walls lost" is the report's reading of the leaks (the build cell
+  nearest the exit for each leak), not a kit rule; a wall-damage rule comes with a run file only when
+  a game needs one.
+- D11: two missions on one event exclude each other for the whole of the first one's cost (the sim's
+  frozen-event rule from 0.10); a preparation phase beside a mission on the same battle needs a
+  second event.
 
 **Done when:**
 

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 207.** (Last used: 206.)
+**Next unused number: 214.** (Last used: 213.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -789,3 +789,29 @@ mission API`. OK?
   `git log` of `engine/sim` against `d6a102ab66f62c80e906ac979ece026dd781c415`, the output recorded
   in the build log; each task checks it before committing; no test is added (it would need full
   history in CI and mean nothing after 0.12). OK?
+
+**Engine 0.12, close-out** (details in `docs/BUILD-LOG.md`, Engine 0.12, Choices made, and
+`docs/reports/tower-defense.md`)
+
+- **207.** Where the tower-defense lessons land: twelve (D1-D4, D6-D10, D12-D14) move to 0.15, the
+  sample set's API review, including D3 and D4 (effect amounts and losses from the round's report),
+  which change how the sim's commit applies effects; two (D5, walls lost as the report's reading,
+  and D11, one open mission per frozen event) move to Engine 1.0 as rules written down in the v1
+  docs, not changed. Each is listed in that release's roadmap section. OK?
+- **208.** The glue review adds D14 (the round's key hints are strings in each page's `main.ts`),
+  moved to 0.15 with M26. OK?
+- **209.** The lessons report's status `lesson for the 1.0 mission API` is replaced at the
+  close-out by `moved to 0.15` or `moved to 1.0` with the reason, and each row names the task and
+  commit that found it (a change to item 205's format). OK?
+- **210.** "Plays from a link" and "the mini siege offers the preparation phase" are checked by
+  `tests/browser/tower-defense-page.test.ts` (the launcher, taps, the bar and `won.run.json` typed
+  as keys) and `tests/browser/mini-siege-page.test.ts` (Launch: Man the walls, then Delegate, Play
+  by recorded keys and Play by taps), in headless Chromium (skipped where none is installed). OK?
+- **211.** Selling a tower is on `special` (C, a right click or a long-press), a fourth button
+  decision 3 (item 199) did not list. OK?
+- **212.** The sample's page plays 30 ticks a second, merging the input of the loop steps between
+  two ticks (`TickInput`, lesson D2), while a hosted `td-defence` round in the mini siege plays at
+  the loop's 60. OK?
+- **213.** The tower-defense run files' sync hashes leave out the ticks where a guarded rule's
+  mutant changes the state before a check fails, so `mutants` sees a failed check (a weak rule)
+  rather than a hash mismatch. OK?

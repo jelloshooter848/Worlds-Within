@@ -175,12 +175,12 @@ engine/
   backends/    canvas2d (2D sprites), three (2.5D/3D, from 0.6), null (headless)
   sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8)
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
-kits/          gameplay rules: topdown, platformer (0.5), rts (0.9, built), towerdefense (0.12)
+kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12), all built
 games/
   demo/              the current top-down demo (becomes samples/dungeon at 0.15)
   platformer-test/   the stacking test (0.7; becomes samples/platformer at 0.15)
-  samples/           engine sample games: rts-skirmish (0.9, built), mini-siege (0.11), tower-defense (0.12),
-                     platformer and dungeon (0.15)
+  samples/           engine sample games: rts-skirmish (0.9), mini-siege (0.11), tower-defense (0.12),
+                     all built; platformer and dungeon (0.15)
   worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
 docs/
 ```
@@ -203,6 +203,16 @@ docs/
   and gives orders (plain JSON defined in core); movement, combat, building, training and gathering
   are `engine/sim` systems, and the game's glue applies the orders and steps the world. Recorded
   orders and the seed replay any battle headless to the same state hashes.
+- **A new mode needs no change to the simulation** (the platform test, 0.12, built). The
+  tower-defense kit (`kits/towerdefense`) plays its rounds by its own deterministic rules, and over
+  a world it is one more data-driven mini game with its adapter (`td-defence`,
+  `towerdefenseMissionAdapter`): the mission's params pick the world's walls for the build cells,
+  the gold from a stockpile and the wave from the world's units, and the outcome's data-only
+  effects write the losses back through the sim's existing commit. The standalone sample
+  (`games/samples/tower-defense`, no sim) and the mini siege's preparation phase (`fortify`) were
+  added with an empty `engine/sim` diff; what the mission API made awkward (fixed effect amounts per
+  outcome, world names only for keys the effects name, glue each hosting page copies) is recorded
+  in `docs/reports/tower-defense.md` for the API review before 1.0.
 
 ## Open questions
 

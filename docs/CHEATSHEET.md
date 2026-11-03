@@ -54,6 +54,13 @@ enemy, seed, disabledRules })` (`@kits/rts`), which takes the player's orders an
   scripted enemy (`rts-enemy`). World rules (movement, combat, building, training, gathering) are
   `engine/sim` systems; the kit only reads the world's snapshot and gives orders (`orderSchema`
   in `engine/core/orders.ts`). See `games/samples/rts-skirmish/headless.ts`.
+- A tower-defense game (Engine 0.12, `kit: towerdefense`, no sim): `tdGame({ ...tdRound(content),
+seed, disabledRules })` (`@kits/towerdefense`): `tdRound` picks the `td-map`, its tower types
+  (`td-towers`) and its wave list (`td-waves`). The game's `controls` is the cursor (`TdControls`:
+  arrows move, `jump` places, `attack` cycles the tower type, `special` sells, `start` sends the
+  next wave), `tap(x, y, frame, button, TD_TILE_SIZE)` maps a pointer tap to a cell through the
+  frame's camera (`cameraHint`), and `tdFrames(size, cursor)` gives the frames. See
+  `games/samples/tower-defense/headless.ts` and `play.ts`.
 - Mini games (`engine/core/minigame.ts`, pure): a `MiniGameDef { id, title, create(ctx, seed) }`
   makes a `MiniGame { step, snapshot, result, present? }` that ends `pass`, `fail` or `quit`. The
   game supplies the defs (a kit defines none); a platformer level's `!` triggers start rounds
@@ -168,7 +175,11 @@ scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `mi
   round only (the world, the enemy and orders wait); otherwise it steps the game and commits due
   missions. An RTS page offers launches with the kit's `missionButtons(view)` and opens one with
   `launchMission(view, id, host)`; the mission's room, foes and outcome rules are its `params`
-  (`mission-room`, table above), and `validate` checks them.
+  (`mission-room`, table above), and `validate` checks them. A tower-defense mission (Engine 0.12)
+  is one more entry in both lists: `tdDefence({ maps, towers, size })` in `miniGames` and
+  `[TD_DEFENCE]: towerdefenseMissionAdapter` in `adapters` (`@kits/towerdefense`); its `params`
+  (`td-defence`, table above) pick the walls, the gold, the wave and the outcome rules. See the
+  mini siege's `fortify` mission.
 - A round may map the host's actions (`MiniGameDef.inputMap`, `{ "jump": "attack" }`) and show
   host HUD keys (`hostStatus: ['mission']`, drawn as `host:mission`); a button held into a round is
   ignored until released (Engine 0.11). A skin kind entry's `byTag: [{ tag, frames?, palette?,
