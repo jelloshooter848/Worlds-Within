@@ -44,6 +44,21 @@ describe('game page discovery', () => {
     );
   });
 
+  it('finds the tower-defense sample under games/samples (Engine 0.12 T5)', () => {
+    const td = discoverGames(repoRoot).find((page) => page.dir === 'games/samples/tower-defense');
+    expect(td).toEqual({
+      dir: 'games/samples/tower-defense',
+      name: 'games-samples-tower-defense',
+      title: 'Tower defense',
+    });
+    expect(gameListHtml(td ? [td] : [])).toContain(
+      '<a href="games/samples/tower-defense/">games/samples/tower-defense</a> <span>Tower defense</span>',
+    );
+    expect(pageInputs(repoRoot)['games-samples-tower-defense']).toBe(
+      join(repoRoot, 'games/samples/tower-defense/index.html'),
+    );
+  });
+
   it("reads the platformer lab's 3D link from its ww-alternate meta tag", () => {
     const lab = discoverGames(repoRoot).find((page) => page.dir === 'games/platformer-lab');
     expect(lab?.alternates).toEqual([{ label: '3D', query: '?backend=three' }]);

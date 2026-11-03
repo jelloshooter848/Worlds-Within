@@ -4,8 +4,30 @@ The standalone tower-defense sample (Engine 0.12, the platform test): one map, t
 three waves on `kits/towerdefense`, as data files plus a few lines of glue. Every rule of the round
 (placing and paying, selling, waves by button or timer, walking, targeting, cooldowns, bounties,
 leaks, won and lost) is the kit's; this folder holds only content and the run files that prove the
-kit's rules. It does not use `engine/sim`. From T5 it also gets original art, sound, a skin, a
-`view.ts` and a playable page; until then it is headless only (no `view` in `game.json`).
+kit's rules. It does not use `engine/sim`. Since T5 it has original NES-style art, sound and a
+Canvas2D skin as text files, a `view.ts` for `pnpm cli screenshot` and a playable page
+(`index.html`, listed by the root launcher).
+
+## How to play
+
+`pnpm dev`, then open `games/samples/tower-defense/` from the launcher (or the built page from
+`pnpm build && pnpm preview`). Keep the enemies on the road from reaching the gate at the bottom
+right: build towers on the grey stone pads, then send each wave.
+
+- Keys (and the touch pad on a phone): arrows move the cursor, Z (jump) builds the chosen tower on
+  the cursor's pad, X (attack) picks the next tower type (arrow, cannon), C (special) sells the
+  tower under the cursor for its sell value, Enter (start) sends the next wave (otherwise the timer
+  does, 400 ticks after the last).
+- Pointer: a click or tap moves the cursor to a cell, a second one on the same cell builds there; a
+  right click or long-press sells.
+- The bar under the picture: Wave, Tower and Sell (the same as Enter, X and C), and the status
+  line (the tick, then `the road is held!` or `the road is lost`).
+- The HUD: gold, lives, the wave (`started/total`) and, with the timer running, the ticks to the
+  next wave; at the bottom the chosen tower and its cost. The ghost tower on the cursor is green
+  where it can be built and red where not (a path cell, a taken pad, too little gold).
+
+The page plays 30 game ticks a second (`TICKS_PER_SECOND` in `play.ts`); the tools play the same
+ticks, so a run file's `input` typed one tick at a time plays the same round.
 
 ## How it was built
 
@@ -23,12 +45,15 @@ kit's rules. It does not use `engine/sim`. From T5 it also gets original art, so
    the kit turned on strict mutants (`kits/towerdefense/kit.ts`).
 6. Sync `hashes` were added last (below), then the golden files
    (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).
+7. T5: the art (`content/sprites/`, `content/palettes/`), the skin, the sfx and the song were
+   written as text and checked with `validate`; then `picture.ts` and `view.ts` (checked with
+   `pnpm cli screenshot`), then `play.ts`, `main.ts` and `index.html` over `bootBrowserGame`.
 
 ## Files
 
 - `game.json`: kit `towerdefense`, content `td-map` (`content/maps/*.json`), `td-towers`
-  (`content/towers/*.json`), `td-waves` (`content/waves/*.json`), seed 12, 256x240,
-  `headless.ts`.
+  (`content/towers/*.json`), `td-waves` (`content/waves/*.json`), `palette`, `sprite`, `skin`,
+  `sfx`, `song`, seed 12, 256x240, `headless.ts`, `view.ts`.
 - `content/maps/road.json`: the map's header: 40 gold and 5 lives to start, towers `arrow` and
   `cannon` (in the order `attack` cycles them), the wave list `road`.
 - `content/maps/road.map.txt`: the grid (kit legend: `.` ground, `#` path, `B` build cell, `S`
@@ -39,9 +64,45 @@ kit's rules. It does not use `engine/sim`. From T5 it also gets original art, so
 - `content/waves/road.json`: a timer of 400 ticks and three waves: six runners; a slow brute with
   four fast runners behind it (they overtake it near the entry, with jitter); eight runners and two
   brutes.
+- `content/sprites/td.txt`: the art, original NES-style pixel art as text (palette `td`): the
+  five cells (`ground`, `road`, `pad`, `cave` at the entry, `gate` at the exit), `arrow-idle`,
+  `arrow-fire`, `cannon-idle`, `cannon-fire`, `runner-0/1`, `brute-0/1` (drawn facing right),
+  `shot-arrow`, `shot-cannon`, `cursor-0/1` (16x16) and the HUD icons `icon-gold`, `icon-lives`,
+  `icon-wave`, `icon-timer` (8x8). `content/sprites/td-font.txt`: the HUD font (the mini siege's,
+  with a `/` added for the wave), palette `td`.
+- `content/palettes/`: `td` (the NES colours the art uses) and three recolours with the same
+  letters: `td-ok` (green) and `td-blocked` (red) for the ghost tower, `td-hit` (white) for an enemy
+  shot this step.
+- `content/skins/canvas2d.json`: keyed on the kit's kinds: `tower:arrow`, `tower:cannon` (`idle`,
+  `fire`), `enemy:runner`, `enemy:brute` (`walk`, mirrored when facing left; `byTag` `hit` draws
+  them with `td-hit`), `shot:arrow`, `shot:cannon`, `ghost:arrow`, `ghost:cannon` (the tower's
+  frame; `byTag` `ok` with `td-ok`, `blocked` with `td-blocked`) and `cursor` (blinking). Tiles
+  `.`, `#`, `B`, `S`, `X` (`TD_TILES`). Events: `td-place`, `td-sell`, `td-refused`,
+  `td-wave-start`, `td-shot:tower=cannon` (boom and a shake), `td-shot` (arrow), `td-kill`
+  (particles), `td-leak` (a red tint), `td-wave-clear`, `td-end:won`, `td-end:lost`. HUD: `gold`,
+  `lives`, `wave`, `nextWave`, `tower`, `towerCost`.
+- `content/sfx/`: `place`, `sell`, `refused`, `wave`, `arrow`, `boom`, `kill`, `leak`, `clear`,
+  `won`, `lost` (MML, one short phrase each). `content/songs/road.json`: the looping song (four
+  channels, MML).
+- `picture.ts`: `tdLook(content)` (the skin, sheets, size, the grass `BACKGROUND`),
+  `tdFrameStream(screen, cursor)` (a `FrameStream` over the kit's `tdFrames`), `tdPicture(presenter,
+screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of its own.
+- `view.ts`: `createView(content, seed, opts?)`, the engine's `frameView` over `createGame` and the
+  pictures above (the cursor and ghost shown), for `pnpm cli screenshot` and the backend parity
+  test.
+- `play.ts`: `TdPlay`, the page's `Scene` (no DOM, no clock): keys through the kit's controls,
+  taps through `TdGame.tap` (`tap(x, y, button)`), page buttons (`press(action)`), one game tick
+  every `STEPS_PER_TICK` (2) loop steps, with the steps' input merged by `TickInput` (pressed on
+  any step counts on the tick; docs/reports/tower-defense.md, D2).
+- `main.ts` + `index.html`: the page: `bootBrowserGame` with Canvas2D, the touch pad, `pointer:
+true` and `audio` (the sfx and the song `road`), the bar (Wave, Tower, Sell, status) and
+  `window.wwTd` (`tick()`, `kit()`, `cursor()`, `clientAt(col, row)`) for the browser test.
+- `play.test.ts`: `TdPlay` headless into the null backend: the `won` input typed one tick at a time
+  wins with the run's golden hash at tick 700 and shows every kind of event; a key pressed for one
+  loop step counts; taps move, place and sell; buttons press on the next tick.
 - `content.ts`: `loadTowerDefense(files)` (the checked bundle) and `sampleRound(content)` (the
   kit's `tdRound`).
-- `files.ts`: `TOWER_DEFENSE_FILES`, the data files bundled by Vite for the page (T5).
+- `files.ts`: `TOWER_DEFENSE_FILES`, the data files bundled by Vite for the page.
 - `headless.ts`: `createGame(content, seed, opts?)`, the kit's `TdGame` (snapshot
   `{ round, controls, kit }`; see `kits/towerdefense/CLAUDE.md`), rules switched off in `opts`
   passed to the kit.
@@ -68,9 +129,13 @@ kit's rules. It does not use `engine/sim`. From T5 it also gets original art, so
 - Content only: maps, towers and waves are data files under `content/`; game rules belong in the
   kit (`kits/towerdefense`), never here. `tests/architecture/no-content.test.ts` keeps content out
   of the engine and kits.
-- Imports: relative paths, `@engine/core/*` and `@kits/towerdefense` (and its `kit.ts`). Never
-  `engine/sim` (the sample needs none), other games or other kits. Tests may also use
-  `@engine/backends/null`.
+- Imports: relative paths, `@engine/core/*`, `@engine/backends/canvas2d` (the picture and the
+  page) and `@kits/towerdefense` (and its `kit.ts`). Never `engine/sim` (the sample needs none),
+  other games or other kits. Tests may also use `@engine/backends/null`.
+- Art, sound and the skin are text (`content/`): no binary files. A new kind or tag the kit
+  presents gets a skin entry (or a `byTag` look); `pnpm cli validate` fails a skin naming a frame,
+  palette or sound the game lacks.
+- The page is glue only: `play.ts` has no DOM and no rules; the DOM is `main.ts`.
 - Every kit rule must stay guarded by some run file: the kit is strict, so
   `pnpm -s cli mutants games/samples/tower-defense` exits 4 otherwise
   (`tests/runs/tower-defense-mutants.test.ts`). A new kit rule needs a run here that fails without
@@ -88,4 +153,14 @@ kit's rules. It does not use `engine/sim`. From T5 it also gets original art, so
 `pnpm test games/samples/tower-defense`; `pnpm -s cli validate games/samples/tower-defense`;
 `pnpm -s cli run games/samples/tower-defense/runs/won.run.json` (and `build`, `target`, `leaked`);
 `pnpm -s cli mutants games/samples/tower-defense` (exit 0, strict, 14 rules guarded);
-`pnpm test tests/runs` (golden hashes and the mutants test).
+`pnpm test tests/runs` (golden hashes, the mutants test and backend parity through `view.ts`).
+
+The art and the page: `pnpm -s cli screenshot games/samples/tower-defense/runs/won.run.json --tick
+300` (a PNG in `.ww-out/screenshots/`, the same bytes every time; `--json` gives its sha256 and
+`matchesHeadless`). In headless Chromium (skipped where none is installed):
+`pnpm test tests/browser/tower-defense-page.test.ts` builds the repo, finds the page in the
+launcher, places an arrow with two taps and starts a wave with the Wave button (it kills runners),
+then types the `won` run's input on the keyboard and wins at tick 673 with 5 lives, with no page
+errors; `pnpm test tests/browser/tower-defense-shots.test.ts` takes `build` at tick 40, `won` at
+300 and `leaked` at 1330 twice each (byte-identical, matching the headless hashes, all different).
+`pnpm test tests/build/pages.test.ts` checks the launcher lists it.

@@ -5,9 +5,15 @@
   "content": {
     "td-map": ["content/maps/*.json"],
     "td-towers": ["content/towers/*.json"],
-    "td-waves": ["content/waves/*.json"]
+    "td-waves": ["content/waves/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"],
+    "sfx": ["content/sfx/*.json"],
+    "song": ["content/songs/*.json"]
   },
   "start": { "seed": 12 },
   "screen": { "width": 256, "height": 240 },
-  "headless": "headless.ts"
+  "headless": "headless.ts",
+  "view": "view.ts"
 }

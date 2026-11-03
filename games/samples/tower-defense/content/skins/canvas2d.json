@@ -1,0 +1,292 @@
+{
+  "backend": "canvas2d",
+  "sheets": {
+    "sheet": "td",
+    "fallbackColor": "#ff00ff"
+  },
+  "kinds": {
+    "tower:arrow": {
+      "frames": {
+        "idle": "arrow-idle",
+        "fire": "arrow-fire"
+      },
+      "fallbackColor": "#7c4800"
+    },
+    "tower:cannon": {
+      "frames": {
+        "idle": "cannon-idle",
+        "fire": "cannon-fire"
+      },
+      "fallbackColor": "#7c7c7c"
+    },
+    "enemy:runner": {
+      "frames": {
+        "walk": {
+          "frames": ["runner-0", "runner-1"],
+          "ticks": 8
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#00e800",
+      "byTag": [
+        {
+          "tag": "hit",
+          "palette": "td-hit"
+        }
+      ]
+    },
+    "enemy:brute": {
+      "frames": {
+        "walk": {
+          "frames": ["brute-0", "brute-1"],
+          "ticks": 8
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#6844fc",
+      "byTag": [
+        {
+          "tag": "hit",
+          "palette": "td-hit"
+        }
+      ]
+    },
+    "shot:arrow": {
+      "frames": {
+        "idle": "shot-arrow"
+      },
+      "fallbackColor": "#bcbcbc"
+    },
+    "shot:cannon": {
+      "frames": {
+        "idle": "shot-cannon"
+      },
+      "fallbackColor": "#f8b800"
+    },
+    "ghost:arrow": {
+      "frames": {
+        "idle": "arrow-idle"
+      },
+      "fallbackColor": "#b8f818",
+      "byTag": [
+        {
+          "tag": "ok",
+          "palette": "td-ok"
+        },
+        {
+          "tag": "blocked",
+          "palette": "td-blocked",
+          "fallbackColor": "#f83800"
+        }
+      ]
+    },
+    "ghost:cannon": {
+      "frames": {
+        "idle": "cannon-idle"
+      },
+      "fallbackColor": "#b8f818",
+      "byTag": [
+        {
+          "tag": "ok",
+          "palette": "td-ok"
+        },
+        {
+          "tag": "blocked",
+          "palette": "td-blocked",
+          "fallbackColor": "#f83800"
+        }
+      ]
+    },
+    "cursor": {
+      "frames": {
+        "idle": {
+          "frames": ["cursor-0", "cursor-1"],
+          "ticks": 16
+        }
+      },
+      "fallbackColor": "#fcfcfc"
+    }
+  },
+  "tiles": {
+    ".": {
+      "frame": "ground",
+      "fallbackColor": "#00a800"
+    },
+    "#": {
+      "frame": "road",
+      "fallbackColor": "#c84c0c"
+    },
+    "B": {
+      "frame": "pad",
+      "fallbackColor": "#7c7c7c"
+    },
+    "S": {
+      "frame": "cave",
+      "fallbackColor": "#000000"
+    },
+    "X": {
+      "frame": "gate",
+      "fallbackColor": "#bcbcbc"
+    }
+  },
+  "events": {
+    "td-place": {
+      "sound": "place",
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "td-sell": {
+      "sound": "sell",
+      "effect": {
+        "kind": "particles",
+        "color": "#f8b800",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "td-refused": {
+      "sound": "refused"
+    },
+    "td-wave-start": {
+      "sound": "wave",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "td-shot:tower=cannon": {
+      "sound": "boom",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "td-shot": {
+      "sound": "arrow"
+    },
+    "td-kill": {
+      "sound": "kill",
+      "effect": {
+        "kind": "particles",
+        "color": "#f83800",
+        "count": 8,
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "td-leak": {
+      "sound": "leak",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 8
+      }
+    },
+    "td-wave-clear": {
+      "sound": "clear"
+    },
+    "td-end:won": {
+      "sound": "won",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 20
+      }
+    },
+    "td-end:lost": {
+      "sound": "lost",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 20
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "gold",
+      "as": "icon",
+      "x": 4,
+      "y": 4,
+      "frame": "icon-gold"
+    },
+    {
+      "status": "gold",
+      "as": "number",
+      "x": 14,
+      "y": 4,
+      "font": "td-font"
+    },
+    {
+      "status": "lives",
+      "as": "icon",
+      "x": 48,
+      "y": 4,
+      "frame": "icon-lives"
+    },
+    {
+      "status": "lives",
+      "as": "number",
+      "x": 58,
+      "y": 4,
+      "font": "td-font"
+    },
+    {
+      "status": "wave",
+      "as": "icon",
+      "x": 84,
+      "y": 4,
+      "frame": "icon-wave"
+    },
+    {
+      "status": "wave",
+      "as": "text",
+      "x": 94,
+      "y": 4,
+      "font": "td-font"
+    },
+    {
+      "status": "nextWave",
+      "as": "icon",
+      "x": 132,
+      "y": 4,
+      "frame": "icon-timer"
+    },
+    {
+      "status": "nextWave",
+      "as": "number",
+      "x": 142,
+      "y": 4,
+      "font": "td-font"
+    },
+    {
+      "status": "tower",
+      "as": "text",
+      "x": 4,
+      "y": 228,
+      "font": "td-font"
+    },
+    {
+      "status": "towerCost",
+      "as": "icon",
+      "x": 60,
+      "y": 228,
+      "frame": "icon-gold"
+    },
+    {
+      "status": "towerCost",
+      "as": "number",
+      "x": 70,
+      "y": 228,
+      "font": "td-font"
+    }
+  ]
+}

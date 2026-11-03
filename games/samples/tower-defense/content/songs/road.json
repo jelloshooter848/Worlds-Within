@@ -1,0 +1,9 @@
+{
+  "id": "road",
+  "bpm": 132,
+  "loop": true,
+  "pulse1": "v9 @2 l8 o4 L [e g a > c < b g a e]2 [f a > c d c < a g f]1 [g b > d < b g b > d4]1",
+  "pulse2": "v5 @1 l4 o3 L [c e a e]2 [f a f a]1 [g b g b]1",
+  "triangle": "l8 o2 L [a a > a < a]4 [f f > f < f]2 [g g > g < g]2",
+  "noise": "v4 l8 L [k h s h]8"
+}
