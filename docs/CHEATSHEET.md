@@ -401,20 +401,21 @@ these steps in order.
 
 <!-- generated:commands -->
 
-| Command      | Usage                                   | What it does                                                                              |
-| ------------ | --------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `help`       | `pnpm cli help [command]`               | list the commands, or show one command with its arguments and flags                       |
-| `validate`   | `pnpm cli validate <game>`              | check every content file of a game against its schema (starts nothing)                    |
-| `run`        | `pnpm cli run <runFile> [flags]`        | play a run file headless from its seed and check its assertions and invariants            |
-| `dump`       | `pnpm cli dump <runFile> [flags]`       | the whole game or world state at one tick of a run file, as JSON                          |
-| `trace`      | `pnpm cli trace <runFile> [flags]`      | a few snapshot paths over a range of ticks of a run file, one row per traced tick         |
-| `code`       | `pnpm cli code <runFile> [flags]`       | the save code of a game run's campaign save at its last tick (or --tick N)                |
-| `screenshot` | `pnpm cli screenshot <runFile> [flags]` | a PNG of one paused, seeded frame of a run file (headless Chromium)                       |
-| `mutants`    | `pnpm cli mutants <target>`             | play run files once per kit rule switched off and report the rules they don't guard       |
-| `get`        | `pnpm cli get <file> <path>`            | read one value of a content file (path dotted or a JSON pointer)                          |
-| `set`        | `pnpm cli set <file> <path> <value>`    | replace one value of a content file; checked, written, read back and verified             |
-| `add`        | `pnpm cli add <file> <path> <value>`    | append to an array, insert at an index (- is the end) or add a new key; verified like set |
-| `remove`     | `pnpm cli remove <file> <path>`         | delete a key or an array item of a content file; verified like set                        |
+| Command      | Usage                                        | What it does                                                                                 |
+| ------------ | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `help`       | `pnpm cli help [command]`                    | list the commands, or show one command with its arguments and flags                          |
+| `validate`   | `pnpm cli validate <game>`                   | check every content file of a game against its schema (starts nothing)                       |
+| `run`        | `pnpm cli run <runFile> [flags]`             | play a run file headless from its seed and check its assertions and invariants               |
+| `dump`       | `pnpm cli dump <runFile> [flags]`            | the whole game or world state at one tick of a run file, as JSON                             |
+| `trace`      | `pnpm cli trace <runFile> [flags]`           | a few snapshot paths over a range of ticks of a run file, one row per traced tick            |
+| `code`       | `pnpm cli code <runFile> [flags]`            | the save code of a game run's campaign save at its last tick (or --tick N)                   |
+| `screenshot` | `pnpm cli screenshot <runFile> [flags]`      | a PNG of one paused, seeded frame of a run file (headless Chromium)                          |
+| `mutants`    | `pnpm cli mutants <target>`                  | play run files once per kit rule switched off and report the rules they don't guard          |
+| `get`        | `pnpm cli get <file> <path> [flags]`         | read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler |
+| `set`        | `pnpm cli set <file> <path> <value>`         | replace one value of a content file; checked, written, read back and verified                |
+| `add`        | `pnpm cli add <file> <path> <value>`         | append to an array, insert at an index (- is the end) or add a new key; verified like set    |
+| `remove`     | `pnpm cli remove <file> <path>`              | delete a key or an array item of a content file; verified like set                           |
+| `paste`      | `pnpm cli paste <file> <at> [block] [flags]` | write a block of lines over a text map from one cell; verified like set                      |
 
 <!-- /generated:commands -->
 

@@ -7,7 +7,7 @@ Folder: `engine/tools`. Detailed rules: [`engine/tools/CLAUDE.md`](../../engine/
 The command-line tools for agents and people: `pnpm cli <command> [arguments] [flags]`. Today it
 validates a game's content, plays run files headless (seeded scripted input, tick assertions,
 invariants, state hashes), writes replay files for failing runs, dumps the state at a tick and
-edits content files (`get`, `set`, `add`, `remove`, every write checked and verified) and runs
+edits content files (`get`, `set`, `add`, `remove`, `paste`, every write checked and verified) and runs
 mutant checks (`mutants`: does a run fail when a kit rule is switched off?), and takes
 deterministic screenshots of a run at a tick in headless Chromium (`screenshot`). From Engine 0.10
 a world run file also drives missions (`open`, `delegate`, `play`, `quit`), and `validate` checks
@@ -145,6 +145,12 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
   door pair can be changed one room at a time; they are listed in `crossErrors` and `validate`
   fails on them until the matching edit is made. Details:
   `engine/tools/CLAUDE.md` (Editing content).
+- Text maps (Engine 0.14, gap G10): `pnpm cli get <map> rows --ruler` (or `rows.R1-R2`) shows the
+  rows under a column ruler with row numbers (`--json`: `{ rows, ruler, width, height, firstRow,
+firstColumn }`); `get <map> rows.R1.C1:R2.C2` copies a rectangle; `paste <map> rows.R.C <block>`
+  (`\n`-split lines, `@path` or `--from-file`, optional `--transparent <ch>`) writes one in a single
+  call, through `set`'s schema check, `crossErrors` and read-back. A ragged block or one off the
+  grid is exit 2 with nothing written. Works on rooms, platformer levels and tower-defence maps.
 - Every game's run files, and the engine's world run files (`engine/**/__fixtures__/*.run.json`),
   are checked by `tests/runs/run-files.test.ts` against committed golden
   hashes (`<name>.hashes.json`; regenerate with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`).
@@ -160,8 +166,8 @@ chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
 - In code: `main(argv, io)` (`engine/tools/main.ts`), `defineCommand` and `Registry`
   (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, the engine's kinds plus `kit`'s and each `uses` kit's, re-exported by `game-loader.ts`),
   `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`),
-  `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`
-  (`content-path.ts`), `playRun` and `stateHash`
+  `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`,
+  `parseGridRegion`, `gridRuler` and `pasteBlock` (`content-path.ts`), `playRun` and `stateHash`
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
   `writeReplay` and `checkReplay` (`replay.ts`), `loadWorldRun` and `worldSystemSet`
   (`world-run.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`

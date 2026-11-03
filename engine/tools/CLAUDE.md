@@ -80,7 +80,8 @@ content)`, which imports the game's headless module by path for its optional
   (`job.ts`). Never in the Pages build: `build/pages.ts` only builds the launcher and game pages.
 - `content-path.ts`: paths for the editing verbs (`parsePath`, dotted or JSON pointer) and the
   edits on a parsed file (`getAt`, `setAt`, `addAt`, `removeAt`), plus `parseValue` (JSON, else a
-  string).
+  string). Text maps (Engine 0.14, gap G10): `parseGridRegion` (`rows.R1-R2`,
+  `rows.R1.C1:R2.C2`), `gridRegion`, `gridRuler`, `rulerText`, `blockLines` and `pasteBlock`.
 - `content-file.ts`: `openContentFile(cwd, path)`: what an editable file is (its kind and form),
   how its text becomes a tree and back, and the check a new text must pass before it is written.
 - `json-format.ts`: reads JSON remembering which objects are spread over lines, and writes it back
@@ -91,7 +92,7 @@ content)`, which imports the game's headless module by path for its optional
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
 - `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
-  for `get`, `set`, `add` and `remove`).
+  for `get`, `set`, `add`, `remove` and `paste`).
 
 ## The contract
 
@@ -188,15 +189,19 @@ kits: [{ kit, strict, rules, unguarded }], runs: [{ run, baseline, guards, guard
   fails as it is (its rules are not tried), a weak rule belongs to a strict kit, or the game's own
   strict kit has an unguarded rule (a kit that is not strict only reports them, and a `uses` kit's
   unguarded rules are only reported; Mutant checks, below); 3 for a bad run file or content.
-- `get <file> <path>`: `{ file, kind, path, pointer, value }`. `set <file> <path> <value>`,
-  `add <file> <path> <value>`, `remove <file> <path>`: the editing verbs (below). Result
-  `{ file, kind, path, pointer, written, verified, changed, before, after, crossErrors }`; exit 0
-  written and verified, 3 refused (with `errors`, file untouched), 4 written but the read-back
-  differs, 2 a bad path or a file that cannot be edited.
+- `get <file> <path> [--ruler]`: `{ file, kind, path, pointer, value }`; on a text grid's rows, a
+  range or a rectangle also `{ rows, ruler, width, height, firstRow, firstColumn }` (Text maps,
+  below). `set <file> <path> <value>`, `add <file> <path> <value>`, `remove <file> <path>` and
+  `paste <file> rows.R.C <block> [--from-file path] [--transparent ch]`: the editing verbs
+  (below). Result `{ file, kind, path, pointer, written, verified, changed, before, after,
+crossErrors }` (and `region` for `paste`); exit 0 written and verified, 3 refused (with `errors`,
+  file untouched), 4 written but the read-back differs, 2 a bad path, a bad block or a file that
+  cannot be edited.
 
 ## Editing content
 
-`get / set / add / remove <file> <path> [value]` edit any of a game's files with one verb set.
+`get / set / add / remove <file> <path> [value]` edit any of a game's files with one verb set
+(and `paste` a text map's rectangle: Text maps, below).
 
 - Files: `game.json` (kind `manifest`), the content files `game.json` claims (JSON, or a kind's
   `.txt` form when the kind has a `writeText`: sprites do), text-grid part files such as
@@ -234,6 +239,52 @@ kits: [{ kit, strict, rules, unguarded }], runs: [{ run, baseline, guards, guard
 - After writing, the file is read back from disk and parsed; `verified: true` says the text and
   the parsed content are exactly what was meant. `before` and `after` are the value at the edited
   place (`path`; for an `add` to an array, the new item), null when absent.
+
+### Text maps: a ruler, regions and paste
+
+Engine 0.14 (gap G10; docs/BUILD-LOG.md, Engine 0.14, decision 7, item 253). Every text-grid part
+file (top-down rooms, platformer levels, tower-defence maps: `*.map.txt`) has two more paths and
+one more verb, so moving one thing in a 60-column level is one call, not a `sed` or a `set` per
+cell:
+
+- **`get <grid> rows --ruler`** (or a range, **`rows.R1-R2`**, both rows included) prints the rows
+  under a column ruler (a tens line and a units line) with each row's number before it:
+
+  ```text
+     0         1
+     0123456789012345
+   4 #......h.......#
+   5 #......@.......O
+  ```
+
+  `--json` gives `{ rows, ruler: [tens, units], width, height, firstRow, firstColumn }` (`value`
+  is `rows` too; `pointer` is null: a range has no JSON pointer). `--ruler` on any other path, or
+  on a file that is not a text grid, is a usage error.
+
+- **`get <grid> rows.R1.C1:R2.C2`** copies a rectangle (corners included): `value`/`rows` are its
+  lines, `firstRow`/`firstColumn` its top-left cell. Text mode prints the bare lines, ready to
+  save to a file and paste. A range alone prints bare lines too; add `--ruler` for the ruler (its
+  columns start at `firstColumn`). Corners out of order or past the grid are usage errors.
+- **`paste <grid> rows.R.C <block>`** writes the block over the grid from row R, column C, one
+  block line per row. The block is lines of **equal width** split by `\n` (typed as two
+  characters, or a real line break), or read from a file: `@path` or `--from-file <path>`
+  (relative to the working folder; taken as it is, one final line break dropped). A typed block
+  that starts with a real `@` (a player start) is written `\@...`. A block cell equal to
+  **`--transparent <ch>`** leaves the cell under it alone (default: none, so a space is written as
+  a space and the result is what was typed).
+- A ragged block, an empty one, a block that runs past the grid's last row or a row's last column
+  (`out_of_bounds: ...`), a path that is not one cell (`rows.R.C`), or both or neither of `<block>`
+  and `--from-file` is a **usage error (exit 2), nothing written**: a paste never changes the
+  grid's size or a row's width.
+- Otherwise the paste goes through `set`'s pipeline: the whole file is checked against its kind's
+  schema (the room's legend and size, one player start; a level's legend) and the game for new
+  errors, refused with exit 3 and `errors` (file untouched); cross-file problems come back in
+  `crossErrors`; the file is read back (`verified`). `before` and `after` are the rectangle's lines
+  before and as read back, `region` is `{ row, col, height, width }`, and `changed: false` says the
+  file already held the block. To move the demo's courtyard boulder at (2, 3) one cell down and
+  left: `pnpm -s cli paste games/demo/content/rooms/courtyard.map.txt rows.2.2 '..\nB.' --json`.
+- Tests: `edit.test.ts` (Text maps), on the demo's rooms, the tower-defense sample's map and a
+  platformer-test level.
 
 ## A game on two kits
 

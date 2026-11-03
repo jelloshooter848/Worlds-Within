@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { check, resolveConfig } from 'prettier';
-import { parsePath } from './content-path';
+import { blockLines, gridRuler, parseGridRegion, parsePath, pasteBlock } from './content-path';
 import { EXIT } from './exit-codes';
 import { main } from './main';
 
@@ -37,6 +37,23 @@ const ROOM = 'games/demo/content/rooms/guard-room.json';
 const MAP = 'games/demo/content/rooms/guard-room.map.txt';
 const SPRITE = 'games/demo/content/sprites/demo-hero.txt';
 const RUN = 'games/demo/runs/walk-east.run.json';
+
+/** A temp folder holding a copy of one game folder (repo path) and the repo's Prettier settings. */
+function gameCopy(game: string): string {
+  const dir = mkdtempSync(join(tmpdir(), 'ww-edit-'));
+  temps.push(dir);
+  cpSync(join(ROOT, game), join(dir, game), { recursive: true });
+  cpSync(join(ROOT, '.prettierrc'), join(dir, '.prettierrc'));
+  return dir;
+}
+
+/** The text mode: what a person sees on stdout. */
+async function cliText(cwd: string, ...argv: string[]): Promise<{ code: number; out: string }> {
+  let stdout = '';
+  const io = { stdout: (t: string) => void (stdout += t), stderr: () => {}, cwd, outDir: '.ww-out' };
+  const code = await main(argv, io);
+  return { code, out: stdout };
+}
 
 const read = (cwd: string, file: string) => readFileSync(join(cwd, file), 'utf8');
 
@@ -274,6 +291,214 @@ describe('get, set, add, remove', () => {
     const run = await cli(cwd, 'run', RUN);
     expect(run.code).toBe(EXIT.invalidContent);
     expect(run.out.errors).toEqual([expect.objectContaining(error)]);
+  });
+});
+
+describe('text maps: ruler, regions and paste (G10)', () => {
+  const COURTYARD = 'games/demo/content/rooms/courtyard.map.txt';
+
+  it('get rows --ruler gives the rows, a column ruler, the width, height and first row', async () => {
+    const cwd = demoCopy();
+    const all = await cli(cwd, 'get', COURTYARD, 'rows', '--ruler');
+    expect(all.code).toBe(EXIT.ok);
+    expect(all.out).toMatchObject({
+      path: 'rows',
+      ruler: ['0         1', '0123456789012345'],
+      width: 16,
+      height: 11,
+      firstRow: 0,
+      firstColumn: 0,
+    });
+    expect((all.out.rows as string[])[0]).toBe('#######OO#######');
+    const range = await cli(cwd, 'get', COURTYARD, 'rows.4-5', '--ruler');
+    expect(range.out).toMatchObject({
+      rows: ['#......h.......#', '#......@.......O'],
+      width: 16,
+      height: 2,
+      firstRow: 4,
+    });
+    const text = await cliText(cwd, 'get', COURTYARD, 'rows.4-5', '--ruler');
+    expect(text.out).toBe(
+      ['  0         1', '  0123456789012345', '4 #......h.......#', '5 #......@.......O', ''].join('\n'),
+    );
+    // Wide row numbers are padded so the ruler stays over the cells.
+    const full = await cliText(cwd, 'get', COURTYARD, 'rows', '--ruler');
+    expect(full.out.split('\n').slice(0, 3)).toEqual([
+      '   0         1',
+      '   0123456789012345',
+      ' 0 #######OO#######',
+    ]);
+    // --ruler needs rows, and only text grids have them.
+    expect((await cli(cwd, 'get', COURTYARD, 'rows.2', '--ruler')).code).toBe(EXIT.usage);
+    expect((await cli(cwd, 'get', SONG, 'bpm', '--ruler')).code).toBe(EXIT.usage);
+  });
+
+  it('get of a rectangle copies it, and bad corners are usage errors', async () => {
+    const cwd = demoCopy();
+    const rect = await cli(cwd, 'get', COURTYARD, 'rows.4.6:5.8');
+    expect(rect.code).toBe(EXIT.ok);
+    expect(rect.out).toMatchObject({
+      value: ['.h.', '.@.'],
+      width: 3,
+      height: 2,
+      firstRow: 4,
+      firstColumn: 6,
+    });
+    expect((await cliText(cwd, 'get', COURTYARD, 'rows.4.6:5.8')).out).toBe('.h.\n.@.\n');
+    for (const bad of [
+      'rows.5.6:4.8',
+      'rows.4.8:5.6',
+      'rows.4.6:11.8',
+      'rows.4.6:5.16',
+      'rows.3-2',
+      'rows.0-11',
+    ]) {
+      expect((await cli(cwd, 'get', COURTYARD, bad)).code, bad).toBe(EXIT.usage);
+    }
+  });
+
+  it('paste moves a block in one call, verified, and the same paste again changes nothing', async () => {
+    const cwd = demoCopy();
+    // Move the top-left boulder (row 2, col 3) one cell down and left: one 2x2 paste.
+    const moved = await cli(cwd, 'paste', COURTYARD, 'rows.2.2', '..\\nB.');
+    expect(moved.code).toBe(EXIT.ok);
+    expect(moved.out).toMatchObject({
+      kind: 'room',
+      path: 'rows.2.2',
+      pointer: '/rows/2/2',
+      region: { row: 2, col: 2, height: 2, width: 2 },
+      written: true,
+      verified: true,
+      changed: true,
+      before: ['.B', '..'],
+      after: ['..', 'B.'],
+      crossErrors: [],
+    });
+    expect(read(cwd, COURTYARD).split('\n').slice(2, 4)).toEqual(['#...........B..#', '#.B............#']);
+    const again = await cli(cwd, 'paste', COURTYARD, 'rows.2.2', '..\\nB.');
+    expect(again.out).toMatchObject({ verified: true, changed: false });
+    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+    const text = await cliText(cwd, 'paste', COURTYARD, 'rows.2.2', '..\\nB.');
+    expect(text.out).toContain('pasted 2 line(s) of 2 (verified, unchanged)');
+  });
+
+  it('a block off the grid or of ragged width is a usage error and leaves the file untouched', async () => {
+    const cwd = demoCopy();
+    const before = read(cwd, COURTYARD);
+    for (const [at, block] of [
+      ['rows.10.0', '#\\n#'], // past the last row
+      ['rows.0.15', '##'], // past the last column
+      ['rows.20.0', '#'],
+      ['rows.2.2', '..\\nB..'], // ragged
+      ['rows.2', '..'], // not a cell
+    ]) {
+      const out = await cli(cwd, 'paste', COURTYARD, at!, block!);
+      expect(out.code, `${at} ${block}`).toBe(EXIT.usage);
+    }
+    expect((await cli(cwd, 'paste', COURTYARD, 'rows.10.0', '#\\n#')).out.error).toMatchObject({
+      message: expect.stringContaining('out_of_bounds') as unknown,
+    });
+    expect(read(cwd, COURTYARD)).toBe(before);
+  });
+
+  it("a block breaking the room's schema is refused with exit 3 and the file is untouched", async () => {
+    const cwd = demoCopy();
+    const before = read(cwd, COURTYARD);
+    const bad = await cli(cwd, 'paste', COURTYARD, 'rows.2.2', 'QQ');
+    expect(bad.code).toBe(EXIT.invalidContent);
+    expect(bad.out).toMatchObject({ written: false, verified: false, region: { row: 2, col: 2 } });
+    expect(bad.out.errors).toEqual([
+      expect.objectContaining({ code: 'unknown_char', file: COURTYARD }),
+      expect.objectContaining({ code: 'unknown_char', file: COURTYARD }),
+    ]);
+    // Two player starts in one room break it too.
+    // (A block starting with a real `@` is typed `\@`: `@path` names a block file.)
+    const start = await cli(cwd, 'paste', COURTYARD, 'rows.1.1', '\\@');
+    expect(start.code).toBe(EXIT.invalidContent);
+    expect(start.out.before).toEqual(['.']);
+    expect(start.out.after).toEqual(['@']);
+    expect(read(cwd, COURTYARD)).toBe(before);
+  });
+
+  it('cross-file problems come back in crossErrors, as with set', async () => {
+    const cwd = demoCopy();
+    const out = await cli(cwd, 'paste', COURTYARD, 'rows.5.15', '#');
+    expect(out.code).toBe(EXIT.ok);
+    expect(out.out.verified).toBe(true);
+    expect(out.out.crossErrors).toEqual([expect.objectContaining({ code: 'invalid_dungeon' })]);
+  });
+
+  it('takes the block from a file (@path or --from-file) and leaves --transparent cells as they are', async () => {
+    const cwd = demoCopy();
+    writeFileSync(join(cwd, 'block.txt'), 'B.B\n...\n');
+    const at = await cli(cwd, 'paste', COURTYARD, 'rows.6.2', '@block.txt');
+    expect(at.out).toMatchObject({ verified: true, after: ['B.B', '...'] });
+    writeFileSync(join(cwd, 'block.txt'), 'xBx\nB\\B\n');
+    const transparent = await cli(
+      cwd,
+      'paste',
+      COURTYARD,
+      'rows.6.2',
+      '--from-file',
+      'block.txt',
+      '--transparent',
+      'x',
+    );
+    // The block's backslash is a cell, not an escape: a block from a file is taken as it is.
+    expect(transparent.code).toBe(EXIT.invalidContent);
+    writeFileSync(join(cwd, 'block.txt'), 'x.x\nBxB\n');
+    const ok = await cli(
+      cwd,
+      'paste',
+      COURTYARD,
+      'rows.6.2',
+      '--from-file',
+      'block.txt',
+      '--transparent',
+      'x',
+    );
+    expect(ok.out).toMatchObject({ verified: true, before: ['B.B', '...'], after: ['B.B', 'B.B'] });
+    // Exactly one block, a file that is there, and only text grids.
+    expect((await cli(cwd, 'paste', COURTYARD, 'rows.6.2')).code).toBe(EXIT.usage);
+    expect((await cli(cwd, 'paste', COURTYARD, 'rows.6.2', '.', '--from-file', 'block.txt')).code).toBe(
+      EXIT.usage,
+    );
+    expect((await cli(cwd, 'paste', COURTYARD, 'rows.6.2', '@nothing.txt')).code).toBe(EXIT.usage);
+    expect((await cli(cwd, 'paste', SONG, 'rows.0.0', 'x')).code).toBe(EXIT.usage);
+  });
+
+  it('works on a tower-defence map and a platformer level', async () => {
+    const td = gameCopy('games/samples/tower-defense');
+    const ROAD = 'games/samples/tower-defense/content/maps/road.map.txt';
+    const ruler = await cli(td, 'get', ROAD, 'rows.0-1', '--ruler');
+    expect(ruler.out).toMatchObject({ rows: ['................', 'S#######........'], width: 16 });
+    const build = await cli(td, 'paste', ROAD, 'rows.0.10', 'BB');
+    expect(build.out).toMatchObject({ verified: true, changed: true, after: ['BB'] });
+    expect((await cli(td, 'validate', 'games/samples/tower-defense')).code).toBe(EXIT.ok);
+
+    const pf = gameCopy('games/platformer-test');
+    const LEVEL = 'games/platformer-test/content/levels/level-1.map.txt';
+    const rows = (await cli(pf, 'get', LEVEL, 'rows', '--ruler')).out;
+    expect(rows.height).toBe((rows.rows as string[]).length);
+    const same = await cli(pf, 'paste', LEVEL, 'rows.0.0', (rows.rows as string[]).slice(0, 2).join('\\n'));
+    expect(same.out).toMatchObject({ verified: true, changed: false });
+  });
+});
+
+describe('grid helpers', () => {
+  it('rulers, regions, blocks and pastes', () => {
+    expect(gridRuler(12)).toEqual(['0         1', '012345678901']);
+    expect(gridRuler(4, 8)).toEqual(['0 1', '8901']);
+    const rows = ['abcd', 'efgh', 'ijkl'];
+    expect(parseGridRegion('rows.1', rows)).toBeNull();
+    expect(parseGridRegion('rows.0-2', rows)).toEqual({ row: 0, col: 0, height: 3, width: 4 });
+    expect(parseGridRegion('rows.1.1:2.2', rows)).toEqual({ row: 1, col: 1, height: 2, width: 2 });
+    expect(blockLines('ab\\ncd', true)).toEqual(['ab', 'cd']);
+    expect(blockLines('a\\b\r\n', false)).toEqual(['a\\b']);
+    expect(() => blockLines('', true)).toThrow(/empty/);
+    expect(pasteBlock(rows, 1, 1, ['XY', 'Z.'], '.').rows).toEqual(['abcd', 'eXYh', 'iZkl']);
+    expect(() => pasteBlock(rows, 2, 0, ['X', 'Y'])).toThrow(/out_of_bounds/);
+    expect(() => pasteBlock(rows, 0, 3, ['XY'])).toThrow(/out_of_bounds/);
   });
 });
 

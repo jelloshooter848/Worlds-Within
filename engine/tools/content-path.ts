@@ -256,3 +256,122 @@ export function parseValue(text: string): JsonValue {
     return text;
   }
 }
+
+/**
+ * A rectangle of a text grid's rows (Engine 0.14, gap G10): `row` and `col` are its top-left
+ * cell, `height` and `width` its size in rows and characters.
+ */
+export interface GridRect {
+  row: number;
+  col: number;
+  height: number;
+  width: number;
+}
+
+/**
+ * The part of a text grid a path names when it is not an ordinary path: `rows.R1-R2` (rows R1 to
+ * R2, both included) or `rows.R1.C1:R2.C2` (the rectangle with those corners, both included).
+ * Null for any other path. Corners out of order, or past the grid, are usage errors.
+ */
+export function parseGridRegion(path: string, rows: readonly string[]): GridRect | null {
+  const range = /^rows\.(\d+)-(\d+)$/.exec(path);
+  const rect = /^rows\.(\d+)\.(\d+):(\d+)\.(\d+)$/.exec(path);
+  if (!range && !rect) return null;
+  const [r1, c1, r2, c2] = range
+    ? [Number(range[1]), 0, Number(range[2]), null]
+    : [Number(rect![1]), Number(rect![2]), Number(rect![3]), Number(rect![4])];
+  if (r2 < r1) throw new UsageError(`bad region ${path}: the last row (${r2}) is before the first (${r1})`);
+  if (r2 >= rows.length)
+    throw new UsageError(`bad region ${path}: the grid has rows 0 to ${rows.length - 1}`);
+  const shown = rows.slice(r1, r2 + 1).map((r) => [...r].length);
+  if (c2 === null) return { row: r1, col: 0, height: r2 - r1 + 1, width: Math.max(...shown) };
+  if (c2 < c1)
+    throw new UsageError(`bad region ${path}: the last column (${c2}) is before the first (${c1})`);
+  const narrowest = Math.min(...shown);
+  if (c2 >= narrowest)
+    throw new UsageError(`bad region ${path}: rows ${r1} to ${r2} have columns 0 to ${narrowest - 1}`);
+  return { row: r1, col: c1, height: r2 - r1 + 1, width: c2 - c1 + 1 };
+}
+
+/** The lines of `rows` inside `rect` (a range's rows whole, as they are). */
+export function gridRegion(rows: readonly string[], rect: GridRect): string[] {
+  return rows
+    .slice(rect.row, rect.row + rect.height)
+    .map((r) => [...r].slice(rect.col, rect.col + rect.width).join(''));
+}
+
+/**
+ * A column ruler for `width` columns from column `firstCol`: a tens line (the tens digit at each
+ * multiple of ten, and at the first column) and a units line.
+ */
+export function gridRuler(width: number, firstCol = 0): [string, string] {
+  let tens = '';
+  let units = '';
+  for (let c = firstCol; c < firstCol + width; c++) {
+    tens += c % 10 === 0 || c === firstCol ? String(Math.floor(c / 10) % 10) : ' ';
+    units += String(c % 10);
+  }
+  return [tens.trimEnd(), units];
+}
+
+/** The rows with the ruler above them and each row's number before it, for people. */
+export function rulerText(lines: readonly string[], firstRow: number, firstCol = 0): string {
+  const width = Math.max(0, ...lines.map((l) => [...l].length));
+  const label = String(firstRow + lines.length - 1).length;
+  const pad = ' '.repeat(label + 1);
+  const [tens, units] = gridRuler(width, firstCol);
+  const body = lines.map((l, i) => `${String(firstRow + i).padStart(label)} ${l}`);
+  return [`${pad}${tens}`.trimEnd(), `${pad}${units}`, ...body].join('\n');
+}
+
+/**
+ * The lines of a block for `paste`: a line break splits them, and so does `\n` typed as two
+ * characters when `typed` (a block given on the command line; a block read from a file is taken
+ * as it is). One final line break is dropped. Lines of different widths are a usage error.
+ */
+export function blockLines(text: string, typed: boolean): string[] {
+  const unix = text.replaceAll('\r\n', '\n');
+  const lines = (typed ? unix.replaceAll('\\n', '\n') : unix).replace(/\n$/, '').split('\n');
+  if (lines.length === 1 && lines[0] === '') throw new UsageError('the block is empty');
+  const width = [...lines[0]!].length;
+  lines.forEach((line, i) => {
+    const w = [...line].length;
+    if (w !== width)
+      throw new UsageError(
+        `ragged block: line ${i} is ${w} character(s) wide and line 0 is ${width}; every line must be as wide`,
+      );
+  });
+  return lines;
+}
+
+/**
+ * `paste`: writes `block` (equal-width lines) over the grid's rows from cell (row, col), one block
+ * line per row; a block cell equal to `transparent` leaves the cell under it as it is. A block that
+ * runs past the grid is a usage error (`out_of_bounds`), so the grid keeps its size and width.
+ */
+export function pasteBlock(
+  rows: readonly string[],
+  row: number,
+  col: number,
+  block: readonly string[],
+  transparent?: string,
+): { rows: string[]; rect: GridRect } {
+  const rect = { row, col, height: block.length, width: [...block[0]!].length };
+  if (row + rect.height > rows.length)
+    throw new UsageError(
+      `out_of_bounds: a ${rect.height}-line block at row ${row} runs past the grid's last row (${rows.length - 1})`,
+    );
+  const out = [...rows];
+  block.forEach((line, i) => {
+    const cells = [...out[row + i]!];
+    if (col + rect.width > cells.length)
+      throw new UsageError(
+        `out_of_bounds: a ${rect.width}-wide block at column ${col} runs past row ${row + i}'s last column (${cells.length - 1})`,
+      );
+    [...line].forEach((ch, j) => {
+      if (ch !== transparent) cells[col + j] = ch;
+    });
+    out[row + i] = cells.join('');
+  });
+  return { rows: out, rect };
+}

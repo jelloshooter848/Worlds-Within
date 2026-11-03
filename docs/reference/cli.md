@@ -20,10 +20,11 @@ Commands:
   code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
-  get         read one value of a content file (path dotted or a JSON pointer)
+  get         read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler
   set         replace one value of a content file; checked, written, read back and verified
   add         append to an array, insert at an index (- is the end) or add a new key; verified like set
   remove      delete a key or an array item of a content file; verified like set
+  paste       write a block of lines over a text map from one cell; verified like set
 
 Global flags:
   --json                 print exactly one JSON result object on stdout
@@ -193,13 +194,16 @@ Global flags:
 ## `get`
 
 ```text
-pnpm cli get <file> <path>
+pnpm cli get <file> <path> [flags]
 
-  read one value of a content file (path dotted or a JSON pointer)
+  read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler
 
 Arguments:
   <file>  the file: game.json, a content file, a text-grid part (.map.txt) or a run file
-  <path>  where in the file: dotted (frames.idle.2, legend["#"]) or a JSON pointer (/frames/idle/2); "" or . is the whole file
+  <path>  where in the file: dotted (frames.idle.2, legend["#"]) or a JSON pointer (/frames/idle/2); "" or . is the whole file; in a text grid also rows.R1-R2 (rows R1 to R2) and rows.R1.C1:R2.C2 (a rectangle, corners included)
+
+Flags:
+  --ruler  text grids: show the rows (rows, rows.R1-R2 or a rectangle) under a column ruler, each with its row number
 
 Global flags:
   --json                 print exactly one JSON result object on stdout
@@ -253,6 +257,28 @@ pnpm cli remove <file> <path>
 Arguments:
   <file>  the file: game.json, a content file, a text-grid part (.map.txt) or a run file
   <path>  where in the file: dotted (frames.idle.2, legend["#"]) or a JSON pointer (/frames/idle/2); "" or . is the whole file
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `paste`
+
+```text
+pnpm cli paste <file> <at> [block] [flags]
+
+  write a block of lines over a text map from one cell; verified like set
+
+Arguments:
+  <file>   the text-grid part file (.map.txt)
+  <at>     the block's top-left cell, rows.R.C (row R, column C)
+  [block]  the block: lines of equal width split by \n (typed as two characters) or line breaks, or @path for a file holding them (\@ for a block starting with a real @)
+
+Flags:
+  --from-file <string>    read the block from this file instead of the <block> argument
+  --transparent <string>  a block character that leaves the cell under it as it is (default: none, every cell is written)
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

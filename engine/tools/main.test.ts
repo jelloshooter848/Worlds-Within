@@ -356,6 +356,7 @@ describe('help', () => {
       'set',
       'add',
       'remove',
+      'paste',
     ]);
     expect(result.exitCodes).toContainEqual(expect.objectContaining({ code: 3, name: 'invalidContent' }));
   });
