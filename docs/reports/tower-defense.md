@@ -16,7 +16,7 @@ notes. The close-out records the empty `git diff` of `engine/sim` against the re
 commit, `d6a102ab66f62c80e906ac979ece026dd781c415` (item 206).
 
 The decisions this release is built against (items 197-206) are in
-[BUILD-LOG.md, Engine 0.12, Decisions](../BUILD-LOG.md#decisions-1).
+[BUILD-LOG.md, Engine 0.12, Decisions](../BUILD-LOG.md#decisions-2).
 
 **No earlier gap is assigned to 0.12.** Neither the [stacking-test report](stacking-test.md) nor
 the [mini-siege report](mini-siege.md) moves any gap to 0.12: every `G` and `M` gap is fixed or

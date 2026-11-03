@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 247.** (Last used: 246.)
+**Next unused number: 257.** (Last used: 256.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -950,3 +950,50 @@ stockpiles }, when }`; `carriedRecord` (in `engine/sim/carry.ts`) builds a plain
   the close-out). OK?
 - **246.** The sergeant's look comes from the skin's `hero` tag, listed before `frozen`, so a
   frozen sergeant keeps her colours (the known one-look-per-tag gap M2). OK?
+
+**Engine 0.14, decisions before code** (details in `docs/BUILD-LOG.md`, Engine 0.14, Decisions)
+
+- **247.** The debugger is a tools-only page, `engine/tools/debugger/` (like
+  `engine/tools/screenshot/`, never in the Pages build), started by a new `pnpm cli debug <file>`
+  that serves it and prints its URL, with its own agent docs (`CLAUDE.md`, `AGENTS.md`,
+  `docs/modules/engine-tools-debugger.md` linked from `llms.txt`). OK?
+- **248.** The debugger reads run files, replay files (`.ww-out/replays/*.run.json`) and dump
+  files (`dump --out`, a `format: 'worlds-within/dump'` envelope with the state, event log and
+  timeline at one tick); it steps and rewinds by deterministic re-simulation in the page from tick
+  0 (rewind to N = replay to N, with optional exact world-save rebuild points), every shown state
+  checked against the run's headless hashes and stopped on a mismatch. OK?
+- **249.** Game runs give the tools the event log and world time through two optional,
+  read-only `HeadlessGame` hooks, `events(sinceTick)` (with the oldest kept tick) and
+  `timeline()`, filled by `MissionHost` through its port and by the RTS kit's game; not a hook
+  returning the sim's `World` and not `state.world` (which has no event log). The event log is
+  never part of the hashed snapshot, so no golden hash moves. OK?
+- **250.** The timeline record (`worlds-within/timeline` v1: world tick, a run-length world tick
+  per game tick `clock` filled by the tools, frozen spans, experience, opportunity windows with
+  status and open/close history, committed missions with open and commit ticks) is read by a pure
+  `timelineOf` in `engine/sim/timeline.ts` over a world's plain snapshot and event log; `pnpm cli
+timeline` prints it. OK?
+- **251.** G8: `trace <run> --paths a,b [--from N] [--to M] [--every K] [--events]`, rows `{ tick,
+values, events? }` as a top-level array so the output cap cuts whole rows; a missing path is
+  `null`; no `dump --ticks`. OK?
+- **252.** G9: a game run file's optional `start` is `{ stage }` (the platformer kit's level
+  sequence, 0-based) or `{ entry }` (a campaign entry, fresh, no carried record), handed over as
+  `HeadlessOptions.start`; it and `from` are mutually exclusive (a schema error); existing level-2
+  and level-3 run files keep replaying the earlier levels, new start-level run files are added
+  beside them. OK?
+- **253.** G10: `get <grid> rows --ruler` prints a column ruler and row numbers (text form), and a
+  new `paste <file> rows.R.C <block>` verb (or `--from-file`) writes a multi-line region, spaces
+  written as spaces, refused `out_of_bounds` past the grid and schema-checked like every edit.
+  `set` keeps its one-cell meaning. OK?
+- **254.** G12: rule ids may be qualified `kit:id` in `disableRules`, `guards`, `--disable-rule`
+  and `mutants`' output; unqualified ids keep meaning `kit`'s rules (every run file stays valid);
+  `HeadlessOptions.disabledRulesByKit` beside the flat `disabledRules`; `mutants` tries every
+  used kit's rules, each judged by its own kit's `strictMutants`. OK?
+- **255.** G31: `bootBrowserGame` gains a manual-loop mode (`?debug=step` or the debugger) with a
+  `window.__ww` debug API (`step(n)`, `tick`, `hash()`, `snapshot()`), and pages take
+  `?replay=<run file>` in dev and the debugger only (ignored in the Pages build); normal play is
+  unchanged. OK?
+- **256.** M19: a pure input recorder in `engine/core` (held actions per frame to `ScriptedInput`
+  steps), the shell recording a hosted round (frame 0 the round's first tick) for copying out, and
+  `pnpm cli record <run> --mission <id> [--input <file> | --bot]` writing it into that mission's
+  `play.input` and verifying by playing (unchanged file and exit 4 when the asserted outcome is not
+  reached). Frame input only; taps stay D1's (0.15). OK?

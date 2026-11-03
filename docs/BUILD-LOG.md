@@ -7,6 +7,242 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Engine 0.14
+
+Creator tools v1. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
+answer 24). As in 0.9 to 0.13, the open questions were settled in writing before any code (T1);
+the later tasks build against them. The release's goal is the roadmap's: **tools for people (not
+just the CLI) to inspect a world**: an in-browser simulation debugger (the world state, the event
+log, stepping and rewinding through a replay, reading the same dumps and replay files the CLI
+writes) and a timeline viewer (world time, opportunities and when results were committed), with
+the creator-tool gaps of the earlier reports. Editing stays out of scope (the visual editor comes
+after Engine 1.0). The base commit for the golden-hash and `engine/sim` checks is
+`b1e21cf6b8987ec45604182fde641daabdbf3b15` (`b1e21cf`), the head when T1 started: every hash that
+moves and every `engine/sim` change is measured against it. The plan is that **no golden hash
+moves** in 0.14 (decisions 3 and 4); a task that finds it must move one says why in its commit.
+
+**Gaps assigned to 0.14 from earlier reports:** from
+[docs/reports/stacking-test.md](reports/stacking-test.md), **G5** (a Vite plugin
+`virtual:game-files`, so `files.ts` goes away), **G8** (a `trace` command for tuning run files,
+decision 5), **G9** (a start level in run files, decision 6), **G10** (region edits and a ruler
+for text maps, decision 7), **G12** (per-kit rules and mutants, decision 8) and **G31** (replaying
+a run file in a browser page, decision 9); from [docs/reports/mini-siege.md](reports/mini-siege.md),
+**M19** (recording a hosted round's input for a run file's `play` step, decision 10).
+`grep -n "0\.14"` over [docs/reports/tower-defense.md](reports/tower-defense.md) finds no gap
+moved to 0.14: its hits are the summary line naming the releases the mini siege's gaps moved to,
+its format's list of releases a status may name, D1's status and the `files.ts` row's note on G5.
+D1 (a tap is not frame input, so a round played by tapping cannot be recorded) only
+cross-references M19; its status stays **moved to 0.15** (the API review: a recorded command or a
+pointer track in `ScriptedInput`), so 0.14's recorder (decision 10) records frame input (keys and
+pads) only. A new gap found during 0.14 is logged in the report of the game it was seen in,
+continuing that report's ids (the mini siege's from M37).
+
+### What was built
+
+- **Decisions before code** (T1, this commit): where the debugger lives and what it reads,
+  stepping and rewinding, how the event log and world time reach the tools, the timeline record,
+  G8, G9, G10, G12, G31 and M19, settled in writing (items 247-256, below), and the planned task
+  list. No code changed.
+
+### Planned tasks
+
+1. **T1** Decisions before code (docs only; this section).
+2. **T2** G5: a Vite plugin `virtual:game-files`; every game's `files.ts` goes away.
+3. **T3** G8: the `trace` command for tuning run files (decision 5).
+4. **T4** G9: a start level or entry in run files (decision 6).
+5. **T5** G12: per-kit rules and mutants for games on several kits (decision 8).
+6. **T6** G10: region edits and a ruler for text maps (decision 7).
+7. **T7** The world event log and timeline as data: the `events` and `timeline` commands and
+   `dump --out` (decisions 2-4).
+8. **T8** G31: the page-side step hook and replaying a run file in the real page (decision 9).
+9. **T9** M19: recording a hosted round's input for a run file's `play` step (decision 10).
+10. **T10** The in-browser simulation debugger: state, event log, stepping and rewinding
+    (decisions 1-3).
+11. **T11** The timeline viewer, and opening a failing replay at its failing tick (decisions 2
+    and 4).
+12. **T12** The done-when proof and close-out: a data-only mini siege scenario stepped through in
+    the debugger, the gap reports, roadmap, design and cheat sheet.
+
+### Decisions
+
+The roadmap's scope for 0.14 leaves open where the debugger lives and what it reads, how it steps
+and rewinds, how a game's event log and world time reach the tools, what the timeline is as data,
+and the shapes of the six creator-tool gaps (G8, G9, G10, G12, G31, M19). G5 needs no decision of
+its own: the stacking test's row already names the fix (a `virtual:game-files` module per page,
+build tooling in `build/`, the page's `files.ts` replaced by one import). Each decision is a
+feedback item (247-256) the owner can overrule by number. The rules every earlier release kept
+hold unchanged: every run is repeatable from a seed, the simulation stays headless and
+deterministic, kits never draw and never import the sim, and the tools only read and replay (they
+never change a world by hand). Exact file, field and function names are the later tasks', kept to
+these meanings.
+
+**1. Where the debugger lives (item 247).** The debugger is a **tools-only page**,
+`engine/tools/debugger/` (an `index.html` and its scripts), built like `engine/tools/screenshot/`:
+it is served by the tools and is **never part of the Pages build** (`build/pages.ts` finds pages
+only under `games/` and `games/samples/`, which is why the screenshot page never ships either; a
+test proves the built site has no debugger page). A new command, **`pnpm cli debug <file> [--port N] [--no-open]`**, starts a Vite dev server
+for the page with the file's path and contents handed over (a query parameter naming a file the
+server reads back through a small read-only endpoint limited to the repo, never a write), prints
+the URL as its result (`{ url, file, kind }`, so an agent can drive the page with Playwright) and
+stays up until it is stopped. It is a new engine module, so it gets its own agent docs:
+`engine/tools/debugger/CLAUDE.md` (and the one-line `AGENTS.md`) and
+`docs/modules/engine-tools-debugger.md`, linked from `llms.txt`. The page imports only what
+`engine/tools` may import (core, sim, the backends to draw the picture, and a game's headless and
+view modules loaded by path, as `screenshot` does), so no layer arrow changes. Rejected: a debug
+panel inside each game's page (it would ship to players and every game would carry it) and a
+separate app outside `engine/` (the layer table has no place for it).
+
+**2. What the debugger reads, and how it steps and rewinds (item 248).** It reads three kinds of
+file, told apart by their shape: a **run file** (`*.run.json`, a game's or a world's), a **replay
+file** (`.ww-out/replays/*.run.json`, which is a run file plus its `replay` block: `source`, the
+`failure` and its `tick`, the `hashes`), and a **dump file**: what the new `dump --out <file>`
+writes, the dump command's result in an envelope `{ format: 'worlds-within/dump', version: 1, run,
+game, world, seed, tick, hash, state, orders, missions, events, timeline }`, `run` the run file
+it came from (relative to the dump file), `events` the event log up to `tick` and `timeline` the
+timeline record (decision 4). A dump file is a still picture: the page shows it without playing,
+and offers **Play from here** only by replaying its `run` to its `tick`. **Stepping and rewinding
+are deterministic re-simulation in the page from tick 0**: the page builds the game (or the world)
+from the content and seed the file names, applies the same input, orders, missions, `from` and
+disabled rules as `pnpm cli run`, one step per tick, and keeps no history of states. **Step**
+plays one tick, **step n** plays n, and **rewind to N** (any N, including back) rebuilds from tick
+0 and replays to N; to keep long rewinds fast, the page may keep a few rebuild points as world
+saves (`engine/sim/save.ts`, a plain JSON save is exact) or replay again, never a snapshot it
+cannot rebuild from. **Every state the page shows is checked against the headless run:** the page
+hashes its snapshot with the same `canonicalJson` and hash the tools use and compares it with the
+run file's golden hashes (and a replay's `hashes`) at every hashed tick; a mismatch is shown at
+once (the tick, both hashes) and stops stepping, since the page would be showing a different run.
+A browser test (skipping cleanly without Chromium) checks the page's hashes against `pnpm cli run`
+for one run file per kit.
+
+**3. How the event log and world time reach the tools for game runs (item 249).** A world run's
+tools hold the `World` and read `world.events(sinceTick)` and its `WorldTime` directly. A game
+run's tools see only the `HeadlessGame` contract, so it gains two **optional hooks**, both plain
+JSON-safe data and both "must not change the game", like `campaignSave()`:
+
+```text
+events?(sinceTick: number): { from: number; changes: JsonObject[] }   // the world's committed
+                                     // event log entries with tick >= sinceTick, oldest first;
+                                     // `from` the oldest tick the world still keeps (log retention)
+timeline?(): JsonObject              // the timeline record (decision 4) of the world now
+```
+
+`MissionHost` gets both through its `MissionWorldPort` (two new port methods `missionPort` fills
+from the world), so the mini siege needs no glue; the RTS kit's `RtsGame` implements them over its
+world; a game with no world (the platformer and top-down samples) leaves them out and the tools
+say `no_world` (exit 2, a usage error) for `events` and `timeline`, while the debugger simply hides
+those panes. Rejected: a `world()` hook returning the sim's `World` (core cannot name the sim's
+types without importing it, and the tools would then reach past the contract into a live world they
+could change), and reading `state.world` from the snapshot (it has the world's components and
+`WorldTime` now, but **not the event log**, which is never in a snapshot, and no past frozen spans).
+**The event log is never part of the hashed snapshot**: the hooks are read beside `snapshot()`,
+the hash stays the hash of `snapshot()` alone, and a world's log retention (`WorldOptions.log`) is
+unchanged, so **no golden hash moves**. A tool asking for ticks the world has dropped gets what is
+kept and the `from` it starts at, never an error.
+
+**4. The timeline record and its reader (item 250).** The timeline is plain data. Its world part
+comes from a **pure function in `engine/sim`**, a new `engine/sim/timeline.ts`, `timelineOf(save)`,
+over a world's plain data only (its `World.snapshot()` and its event log, as in a world save), so
+it runs the same in Node and the page and never steps or changes a world; it is on the sim's side
+because it reads the sim's components (`WorldTime`, `Opportunity`, `Missions`), and kits never
+import it. The record:
+
+```text
+Timeline { format: "worlds-within/timeline", version: 1,
+  worldTick,                                     // the world tick now
+  clock: [{ game, world }] | null,               // world tick per game tick, run-length: one entry
+                                                 // per game tick where the rate changed (filled by
+                                                 // the tools for a game run; null for a world run)
+  frozen: [{ event, by, from, to | null }],      // frozen spans in world ticks, `to` null while frozen
+  experience: [{ mission, from, ticks }],        // experience time per played mission (game ticks
+                                                 // inside, the world standing still)
+  opportunities: [{ id, mission, opens, closes,  // windows in world ticks (null while dormant)
+                    status, history: [{ status, by, at }] }],   // open/close changes with their causes
+  missions: [{ mission, openTick, commitTick,    // the committed records (`MissionRecord`, `WorldTime`'s
+               resolution, outcome, experienceTicks }] }        // `committed`), in commit order
+```
+
+Statuses are the sim's own (`dormant`, `waiting`, `offered`, `taken`, `closed`); spans and the
+opportunity history are read from the event log (`set` changes of `WorldTime` and `Opportunity`
+with their causes), so a world whose log keeps fewer ticks gives shorter history and says so with
+the log's `from`. The `clock` is the one part the world cannot know (a game tick is not in the
+world): the tools fill it from the `worldTick` of each game tick's snapshot while they play.
+`pnpm cli timeline <run> [--tick N]` prints the record; `dump --out` includes it; the viewer
+(T11) draws it. Its schema is in `docs/reference/schemas.md`.
+
+**5. G8: the `trace` command (item 251).** `pnpm cli trace <run-file> --paths a,b [--from N]
+[--to M] [--every K] [--events]` plays the run (no checks, like `dump`) and prints one row per
+traced tick: `{ run, paths, from, to, every, rows: [...] }` where each row is `{ tick, values: {
+"<path>": value } }` and, with `--events`, `events` (that tick's event-log changes for a world, or
+the game's own snapshot `events` field when it has one). Paths are dotted snapshot paths as `get`
+and assertions write them (`player.x`, `world.entities.12.Health.hp`); a path missing at a tick
+gives `null`, not an error. `--from` defaults to 0, `--to` to the run's `ticks`, `--every` to 1;
+`from > to`, `every < 1` or an unknown flag is a usage error (exit 2). **The rows are a top-level
+array in the result**, so the output cap (`--max-output`) cuts whole rows (with `--json`, top-level
+arrays are halved until the result fits, with `truncated`, `fullOutput` and `omitted`), never
+through one row, and the whole trace is in the full-output file. The text
+form is a table (a column per path). `dump --ticks` is not added: `trace` covers it.
+
+**6. G9: a start level or entry in run files (item 252).** A game run file gains an optional
+**`start`**, exactly one of **`{ "stage": n }`** (the platformer kit's level sequence: start at
+level n, 0-based like the snapshot's `stage`, from tick 0 with a fresh level) and **`{ "entry":
+"<id>" }`** (a campaign entry by id: start that entry fresh, at its own start, with no carried
+record). It reaches the game as **`HeadlessOptions.start`** (the same union); a game that cannot
+honour it refuses it with a usage error before the first step (the tools check it against the game:
+the level sequence's length, the campaign's entries). `start` and `from` are **mutually
+exclusive** (`from` already names where a run starts; both is a schema error at `start`). The
+platformer test's `level-2` and `level-3` run files keep replaying the earlier levels (their
+hashes stay); T4 adds short start-level run files beside them, so a change to `level-1` moves no
+later level's new run file. A replay file of a run with `start` keeps it.
+
+**7. G10: a ruler and region writes for text maps (item 253).** `get <text-grid file> rows
+--ruler` (also on a range `rows.R1-R2`) prints the rows with a column ruler above them (tens and
+units lines) and the row number before each row, in the text form only (the JSON result keeps
+`rows` as strings plus `ruler: true`). A **region write** is a new verb, **`paste <file> rows.R.C
+<block>`**, whose block is several lines (from the argument with `\n` lines, or `--from-file
+<path>`); it overwrites the cells from row R, column C, one block line per row, and a space in the
+block is written as a space (no transparency, so the result is what was asked). A block that runs
+past the grid's width or height is refused (`out_of_bounds`, nothing written), and **the file is
+schema-checked after the write like every edit** (the kind's own checks: a level's legend, a
+room's tiles), refused with the same errors and left unchanged. `set` keeps its one-cell meaning.
+
+**8. G12: per-kit rule ids (item 254).** A rule id may be **qualified, `kit:id`** (such as
+`topdown:enemy-chase`), in a run file's `disableRules` and `guards`, in `--disable-rule`, and in
+`mutants`' output; an **unqualified id keeps meaning the rule of the game's `kit`**, so every
+existing run file stays valid and its hashes stay. A qualified id must name a kit in the game's
+`kit` or `uses` and one of that kit's rules (`unknown_rule` otherwise, naming the kit's ids).
+`HeadlessOptions` gains **`disabledRules` per kit**: `disabledRulesByKit?: Record<kit,
+readonly string[]>` beside the existing flat `disabledRules` (still the main kit's, so games that
+pass it on today are unchanged); a game routes each kit's list to that kit's `RuleSwitch` (the
+platformer test's vault round already takes `disabledRules` through `roomChallenge`).
+**`mutants` tries every rule of every kit the game uses**, and judges each kit's rules with **that
+kit's own strictness** (`strictMutants` of the kit the rule belongs to): a weak rule of a strict
+kit fails the command, a weak rule of a lenient kit is reported only.
+
+**9. G31: a page-side step hook and `?replay=` (item 255).** `bootBrowserGame` gains a
+**manual-loop mode**, chosen by the page's URL (`?debug=step`) or by the debugger: the fixed loop
+does not run on `requestAnimationFrame`; instead the page exposes a small `window.__ww` debug API:
+`step(n = 1)` (n fixed steps, then one draw), `tick` (the game ticks played), `hash()` (the
+snapshot's hash, the tools' hash) and `snapshot()`; input comes from the replayed script, not the
+keyboard, while it is set. A page also takes **`?replay=<run file path>`** (in dev and in the
+debugger only; never in the Pages build, where the parameter is ignored): it loads the run file,
+plays its input (and missions) through the real page step by step in manual-loop mode, so a
+browser test or a person can replay a run file in the page and compare hashes with the headless
+run. `tests/browser/platformer-test.test.ts` switches from replacing `requestAnimationFrame` to
+the hook. Normal play is unchanged: without the parameter the loop runs as before.
+
+**10. M19: recording a hosted round's input (item 256).** An **input recorder in `engine/core`**
+(`input/recorder.ts`, pure): fed each frame's held actions, it writes `ScriptedInput` steps (one
+step per change of the held set, `{ frame, hold }`), so playing the recording back gives the same
+frames. The browser shell records a **hosted round** (the round `HostScene` pushes): from the
+round's first tick to its end, frame 0 the round's first tick, as a `play` step's `input` is
+written; the page offers it as text (copied out of the page with `window.__ww`, never stored by
+itself). A new **`pnpm cli record <run-file> --mission <id> [--input <file> | --bot]`** writes a
+recording into the run file's `missions` `play` step for that mission (its `input`), from a file
+the page recorded or, with `--bot`, by stepping the hosted round with the kit's bot (what today's
+throwaway script does), and then **verifies it by playing** the run file: the round must end in
+the outcome the run file asserts; when it does not, the run file is left unchanged and the command
+fails (exit 4). Recordings are frame input only (keys and pads); pointer taps stay D1's (0.15).
+
 ## Engine 0.13
 
 Heroes and consequences in the simulation. Built on branch `engine/build-0.15`; not tagged (no
