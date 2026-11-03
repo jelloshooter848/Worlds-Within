@@ -182,7 +182,7 @@ firstColumn }`); `get <map> rows.R1.C1:R2.C2` copies a rectangle; `paste <map> r
   (`registry.ts`), `loadGame(cwd, dir)`, `checkGameTexts` and `gameKinds` (`game-check.ts`, the engine's kinds plus `kit`'s and each `uses` kit's, re-exported by `game-loader.ts`),
   `takeScreenshot`, `launchChromium` and `pngSize` (`screenshot.ts`),
   `openContentFile` (`content-file.ts`), `parsePath`, `getAt`, `setAt`, `addAt`, `removeAt`,
-  `parseGridRegion`, `gridRuler` and `pasteBlock` (`content-path.ts`), `playRun` and `stateHash`
+  `parseGridRegion`, `gridRuler` and `pasteBlock` (`content-path.ts`), `playRun` and `stateHash` (core's, `engine/core/state-hash.ts`)
   (`headless-run.ts`), `runFileSchema`, `replaySchema` and `readRunFile` (`run-file.ts`),
   `writeReplay` and `checkReplay` (`replay.ts`), `loadWorldRun` and `worldSystemSet`
   (`world-run.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`

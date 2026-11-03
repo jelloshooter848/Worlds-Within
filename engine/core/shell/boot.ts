@@ -11,6 +11,7 @@ import { layoutScreen } from '../input/touch-layout';
 import { FixedLoop } from '../loop';
 import { SceneStack, type Scene } from '../scene';
 import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
+import { PageDebugHook, type PageDebug } from './debug';
 import type { BrowserDisplay, DisplayResult } from './display';
 
 /**
@@ -21,8 +22,22 @@ import type { BrowserDisplay, DisplayResult } from './display';
  * comes from a display factory per backend the game hands in, so the core imports no backend and
  * a game can `import()` Three.js only in 3D. With `audio` (Engine 0.11, gap G27) it also makes the
  * game's `AudioManager`, unlocked on the first key, tap or click, and hands the displays its
- * `onSound`. Browser only (DOM, clock): not on `PURE_CORE`.
+ * `onSound`. With `manual` or `?debug=step` (Engine 0.14 T8, gap G31) the loop does not run by
+ * itself and `window.__ww` steps it (`debug.ts`). Browser only (DOM, clock): not on `PURE_CORE`.
  */
+
+/** The query value that boots a page in manual-loop mode: `?debug=step`. */
+export const DEBUG_STEP_QUERY = 'debug=step';
+
+/** True when a page URL's query (`location.search`) asks for manual-loop mode (`?debug=step`). */
+export function manualFromQuery(search: string): boolean {
+  return new URLSearchParams(search).get('debug') === 'step';
+}
+
+/** The page's step hook, on `window` in manual-loop mode. */
+export interface DebugWindow {
+  __ww?: PageDebug;
+}
 
 /** What the shell gives a display factory besides the canvas. */
 export interface DisplayShell {
@@ -88,6 +103,13 @@ export interface BrowserBootOptions {
    * the page is silent, as before.
    */
   audio?: BootAudio;
+  /**
+   * Manual-loop mode (Engine 0.14 T8, gap G31): the `FixedLoop` never runs on
+   * `requestAnimationFrame`, and `window.__ww` (`PageDebug`, `debug.ts`) steps it exactly n 60 Hz
+   * steps, reads the game's snapshot and state hash, and replays a run file. Also on when the
+   * page's query has `debug=step`. Off by default: the page plays as before.
+   */
+  manual?: boolean;
 }
 
 /** The page's inputs beyond the `InputFrame`, for a game's scenes. */
@@ -105,6 +127,8 @@ export interface BootedGame extends BootPage {
   loop: FixedLoop;
   /** The page's audio (change volumes, play another song), or null without the `audio` option. */
   audio: AudioManager | null;
+  /** The step hook (also `window.__ww`) in manual-loop mode, else null. */
+  debug: PageDebug | null;
 }
 
 /**
@@ -116,7 +140,9 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const canvas = document.getElementById(opts.canvasId ?? 'screen') as HTMLCanvasElement | null;
   if (!canvas) throw new Error(`#${opts.canvasId ?? 'screen'} canvas missing`);
 
-  const asked = backendFromQuery(opts.search ?? window.location.search);
+  const search = opts.search ?? window.location.search;
+  const asked = backendFromQuery(search);
+  const manual = opts.manual === true || manualFromQuery(search);
   const backend: PageBackend = asked === 'three' && opts.displays.three ? 'three' : 'canvas2d';
   showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend');
   const make = backend === 'three' ? opts.displays.three! : opts.displays.canvas2d;
@@ -168,20 +194,36 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const scenes = new SceneStack();
   scenes.push(opts.scene(scenes, display, { pointer }));
 
-  const loop = new FixedLoop({
-    step() {
-      input.beginFrame();
-      pointer?.beginFrame(performance.now());
-      scenes.update([input.player(0)]);
+  // In manual-loop mode the clock is the steps taken (a pointer's long press counts game steps).
+  let hook: PageDebugHook | null = null;
+  const loop: FixedLoop = new FixedLoop(
+    {
+      step() {
+        input.beginFrame();
+        pointer?.beginFrame(manual ? loop.steps * loop.stepMs : performance.now());
+        const frame = input.player(0);
+        scenes.update([hook ? hook.frame(frame) : frame]);
+      },
+      render() {
+        scenes.render(display.renderer);
+        display.present();
+      },
     },
-    render() {
-      scenes.render(display.renderer);
-      display.present();
-    },
-  });
-  loop.start();
+    60,
+    4,
+    { manual },
+  );
+  if (manual) {
+    hook = new PageDebugHook({
+      advance: (n) => loop.advance(n),
+      steps: () => loop.steps,
+      game: () => scenes.find((s) => (s.headless?.() ?? null) !== null)?.headless?.() ?? null,
+    });
+    (window as DebugWindow).__ww = hook.api;
+    loop.advance(0); // the first picture, before any step
+  } else loop.start();
   document.body.dataset.backend = backend;
-  return { backend, display, scenes, input, loop, pointer, audio };
+  return { backend, display, scenes, input, loop, pointer, audio, debug: hook?.api ?? null };
 }
 
 /** The boot's `AudioManager`: the songs and sfx registered, the volumes set, the music waiting. */

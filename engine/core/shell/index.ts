@@ -1,4 +1,4 @@
-/** The browser shell games share (Engine 0.7): backend choice, the host scene, displays and the boot. */
+/** The browser shell games share (Engine 0.7): backend choice, the host scene, displays, the boot and its step hook. */
 export {
   backendFromQuery,
   otherBackendLink,
@@ -17,15 +17,19 @@ export {
 export {
   AUDIO_UNLOCK_EVENTS,
   bootBrowserGame,
+  DEBUG_STEP_QUERY,
+  manualFromQuery,
   showBackendToggle,
   showDisplayMessage,
   type BootAudio,
   type BootedGame,
   type BootPage,
   type BrowserBootOptions,
+  type DebugWindow,
   type DisplayFactory,
   type DisplayShell,
 } from './boot';
+export { PageDebugHook, type PageDebug, type PageDebugTarget, type ReplayRefusal } from './debug';
 export {
   CampaignSession,
   type CampaignEntryEnd,

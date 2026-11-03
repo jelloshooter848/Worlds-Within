@@ -173,6 +173,8 @@ export const PURE_CORE = [
   'engine/core/mission-adapter.ts',
   'engine/core/shell/backend-choice.ts',
   'engine/core/shell/host-scene.ts',
+  'engine/core/shell/debug.ts',
+  'engine/core/state-hash.ts',
   'engine/core/math/**',
   'engine/core/scene.ts',
   'engine/core/input/actions.ts',

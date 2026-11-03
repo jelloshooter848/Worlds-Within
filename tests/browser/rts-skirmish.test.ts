@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import type { CDPSession, Page } from 'playwright';
+import type { DebugWindow } from '@engine/core/shell';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The RTS skirmish's page in a browser (docs/ROADMAP.md, 0.9 "done when": build a barracks, train
@@ -14,7 +15,7 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // a click to place it, a right click to gather, a touch tap on the barracks, three Train soldier
 // clicks, a touch box and a touch long-press to send the builders to gather, a middle-drag pan, a
 // wheel zoom out, a box and a Shift+click for the army and a right click on a raider. The page's
-// clock is the test's (one loop step per call, as in platformer-test.test.ts), so the battle is the
+// loop is the test's (`?debug=step`, one loop step per `window.__ww.step(1)`), so the battle is the
 // same every time. It then exports the recording (`window.wwSkirmish.exportRun`) and replays it
 // headless with `pnpm -s cli run`, which must pass with every sync hash equal. Where things are on
 // the page comes from the hook (`clientAt`, `units`), never from fixed pixels, so the camera can
@@ -100,30 +101,12 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       await page.goto(server.url);
       expect(await page.locator(`#games a[href="${GAME}"]`).count()).toBe(1);
 
-      // The page's clock is the test's: each `__frames` call runs one loop step (see
-      // platformer-test.test.ts).
-      await page.addInitScript(() => {
-        const queue: FrameRequestCallback[] = [];
-        const w = window as unknown as { __frames(n: number): void };
-        window.requestAnimationFrame = (cb) => queue.push(cb);
-        window.cancelAnimationFrame = () => {};
-        let now = 0;
-        let started = false;
-        performance.now = () => now;
-        w.__frames = (n) => {
-          for (let i = 0; i < n; i++) {
-            if (started) now += 1000 / 60 + 0.001;
-            started = true;
-            for (const cb of queue.splice(0)) cb(now);
-          }
-        };
-      });
-      await page.goto(`${server.url}${GAME}`);
+      // The page in manual-loop mode (`?debug=step`): `window.__ww.step(n)` takes n loop steps
+      // (see platformer-test.test.ts).
+      await page.goto(`${server.url}${GAME}?debug=step`);
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
       expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
-      const frames = (n: number) =>
-        page.evaluate((n) => (window as unknown as { __frames(n: number): void }).__frames(n), n);
-      await frames(1); // the loop's first frame: no step
+      const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
       const tick = () => hook(page, 'tick');
       const sides = () => hook(page, 'sides');
       const units = () => hook(page, 'units');

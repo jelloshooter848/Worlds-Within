@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import type { InputScript } from '@engine/core/input/scripted-input';
+import type { DebugWindow } from '@engine/core/shell';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The mini siege played from a link (docs/ROADMAP.md, 0.11 "done when": played from a link in a
@@ -14,7 +15,7 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // draws `ram-burnt`) or Play (the recorded round of `played.run.json` typed on the keyboard, which
 // burns both engines). On both paths the battle holds still while the choice waits, the result
 // commits at world tick 160 (40 + the mission's cost of 120) and the hall ends as the run files
-// say. The page's clock is the test's (one loop step per call, as in rts-skirmish.test.ts), so the
+// say. The page runs in manual-loop mode (`?debug=step`; one loop step per `window.__ww.step(1)`), so the
 // game is the same every time. Skipped where Chromium is not installed (never in CI).
 //
 // Engine 0.12 T8 (the preparation phase, docs/ROADMAP.md 0.12 "done when": the mini siege offers
@@ -108,7 +109,7 @@ interface Launch {
 const SABOTAGE: Launch = { mission: 'sabotage', tick: 40, title: 'Burn the siege engines' };
 const FORTIFY: Launch = { mission: 'fortify', tick: 10, title: 'Man the walls' };
 
-/** A fresh page of the game with the test's clock (a new browser context unless one is given). */
+/** A fresh page of the game in manual-loop mode (a new browser context unless one is given). */
 async function opened(browser: Browser, url: string, errors: string[], context?: BrowserContext) {
   context ??= await browser.newContext({ viewport: { width: 640, height: 520 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
@@ -117,28 +118,10 @@ async function opened(browser: Browser, url: string, errors: string[], context?:
     if (msg.type() === 'error') errors.push(`console: ${msg.text()} (${msg.location().url})`);
   });
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
-  await page.addInitScript(() => {
-    const queue: FrameRequestCallback[] = [];
-    const w = window as unknown as { __frames(n: number): void };
-    window.requestAnimationFrame = (cb) => queue.push(cb);
-    window.cancelAnimationFrame = () => {};
-    let now = 0;
-    let started = false;
-    performance.now = () => now;
-    w.__frames = (n) => {
-      for (let i = 0; i < n; i++) {
-        if (started) now += 1000 / 60 + 0.001;
-        started = true;
-        for (const cb of queue.splice(0)) cb(now);
-      }
-    };
-  });
-  await page.goto(`${url}${GAME}`);
+  await page.goto(`${url}${GAME}?debug=step`); // manual-loop mode: `window.__ww.step(n)`
   await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
   expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
-  const frames = (n: number) =>
-    page.evaluate((n) => (window as unknown as { __frames(n: number): void }).__frames(n), n);
-  await frames(1); // the loop's first frame: no step
+  const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
   return { page, frames, context };
 }
 

@@ -1,5 +1,5 @@
 import type { Renderer } from '../gfx/renderer';
-import type { HostedGame } from '../headless';
+import type { HeadlessGame, HostedGame } from '../headless';
 import type { InputFrame } from '../input/input-manager';
 import type { MiniGame } from '../minigame';
 import { miniGameScene } from '../minigame-scene';
@@ -61,6 +61,7 @@ export class HostScene<W extends object, E> implements Scene {
   private readonly opts: HostSceneAccessorOptions<W, E>;
   private readonly pending: PendingEvents<W, E>;
   private drawer: HostDrawer<W, E> | null = null;
+  private readonly game: HostedGame<W, E> | null;
 
   /**
    * `new HostScene({ stack, game, picture })` with the game itself, or
@@ -68,6 +69,7 @@ export class HostScene<W extends object, E> implements Scene {
    */
   constructor(opts: HostSceneOptions<W, E>) {
     this.opts = 'game' in opts ? hostAccessors(opts) : opts;
+    this.game = 'game' in opts ? opts.game : null;
     this.pending = new PendingEvents(this.opts.world());
   }
 
@@ -85,6 +87,11 @@ export class HostScene<W extends object, E> implements Scene {
           translucent: this.opts.translucentMiniGame ?? false,
         }),
       );
+  }
+
+  /** The game itself when the scene was given one (for the page's step hook), else null. */
+  headless(): HeadlessGame | null {
+    return this.game;
   }
 
   render(r: Renderer): void {

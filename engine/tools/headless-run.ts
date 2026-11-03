@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -14,7 +13,6 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, type ContentError } from '@engine/core/content/validate';
 import {
-  canonicalJson,
   type HeadlessEntry,
   type HeadlessGame,
   type JsonObject,
@@ -23,6 +21,7 @@ import {
   type WorldEvents,
 } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
+import { stateHash } from '@engine/core/state-hash';
 import type { KitDef } from '@engine/core/kit';
 import { UsageError } from './exit-codes';
 import { loadGame } from './game-loader';
@@ -67,10 +66,10 @@ export type { RefusedMission } from './world-run';
 /**
  * The state hash: the first 16 hex digits (64 bits) of the SHA-256 of the snapshot's canonical
  * JSON (`canonicalJson` in `engine/core/headless.ts`). Same state, same hash, on every machine.
+ * It lives in core (`engine/core/state-hash.ts`, Engine 0.14 T8) so a browser page's step hook
+ * hashes with the same code; re-exported here for the tools.
  */
-export function stateHash(snapshot: JsonObject): string {
-  return createHash('sha256').update(canonicalJson(snapshot)).digest('hex').slice(0, 16);
-}
+export { stateHash };
 
 /** A check that failed: which one, at which tick, and what the snapshot held. */
 export interface FailedCheck {

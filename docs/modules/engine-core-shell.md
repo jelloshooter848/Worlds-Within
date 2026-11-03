@@ -9,7 +9,7 @@ The browser shell every game page shares (Engine 0.7): choosing the backend from
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
 display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
-campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back). A game's `main.ts` and scene are then a few lines of glue.
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), and (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it. A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -38,6 +38,31 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   it), plays `music` once unlocked and hands each display factory `{ onSound }` as its second
   argument (`canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound })`).
   Without it the page is silent and `onSound` does nothing.
+  Engine 0.14 (gap G31): `manual: true`, or `?debug=step` in the page's URL
+  (`manualFromQuery`), is manual-loop mode: the `FixedLoop` never runs on `requestAnimationFrame`
+  and `window.__ww` (`booted.debug`, a `PageDebug` from `debug.ts`) steps the page. Off by
+  default (no `__ww`, the loop as before).
+- `debug.ts` (Engine 0.14 T8): the step hook, `window.__ww` in manual-loop mode:
+  - `tick`: the 60 Hz steps taken;
+  - `step(n = 1)`: exactly n steps, then one draw; returns `tick`;
+  - `snapshot()`, `hash()`: the page's game's headless snapshot (the topmost scene's
+    `Scene.headless()`, which `HostScene` with a `game` gives) and its state hash
+    (`engine/core/state-hash.ts`, the hash in a run's `.hashes.json`), or null;
+  - `replay(runFileJson)`: from tick 0, the run's `input` through a `ScriptedInput` in place of the
+    keyboard, and its `orders` and `missions` handed to the game before the step from their tick
+    (refusals in `refused`); throws on a run with `world`, `from`, `start` or `disableRules`, or
+    with orders or missions for a game that takes none; `replaying`.
+
+  Replaying a run file in a browser test:
+
+      await page.goto(`${url}games/platformer-test/?debug=step`);
+      const hashes = await page.evaluate((run) => {
+        const ww = (window as DebugWindow).__ww!;
+        ww.replay(run);
+        ww.step(60);
+        return ww.hash(); // = the run's .hashes.json entry for tick 60
+      }, runJson);
+
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)` (a game's
   `saveCodeContext(content)` and campaign): `end(save)` stores an entry's campaign save in browser
   storage and packs its save code (`{ save, code, codeError, stored, done }`), `resume(text)` reads
@@ -64,10 +89,13 @@ Example (`games/platformer-lab/main.ts`):
 ## Imports allowed
 
 - `engine/core` only; never backends, the sim, tools, kits or games. Kits may not import it
-  (`FORBIDDEN_CORE`). `backend-choice.ts` and `host-scene.ts` are on `PURE_CORE`.
+  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts` and `debug.ts` are on `PURE_CORE`.
 
 ## How to test
 
 `engine/core/shell/shell.test.ts` with `pnpm test` (Node, a fake page for the DOM helpers, and a
-full boot with a fake audio context for the `audio` option);
-`tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists.
+full boot with a fake audio context for the `audio` option, and one in manual-loop mode) and
+`debug.test.ts` (the step hook and replay);
+`tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists, and
+`tests/browser/platformer-test.test.ts` replays the stacking test's run files through the page
+with `window.__ww` and checks the golden hashes.

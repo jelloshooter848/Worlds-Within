@@ -9,7 +9,15 @@ import { ScriptedInput } from '../input/scripted-input';
 import type { MiniGame, MiniGameResult } from '../minigame';
 import { SceneStack } from '../scene';
 import { backendFromQuery, otherBackendLink, THREE_QUERY } from './backend-choice';
-import { AUDIO_UNLOCK_EVENTS, bootBrowserGame, showBackendToggle, showDisplayMessage } from './boot';
+import {
+  AUDIO_UNLOCK_EVENTS,
+  bootBrowserGame,
+  manualFromQuery,
+  showBackendToggle,
+  showDisplayMessage,
+  type DebugWindow,
+} from './boot';
+import { stateHash } from '../state-hash';
 import { MissionHost, type MissionWorldPort } from '../mission-host';
 import type { MissionDef } from '../missions';
 import { HostScene } from './host-scene';
@@ -480,5 +488,58 @@ describe('bootBrowserGame with audio (G27)', () => {
     for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click'])
       expect(listeners.has(ev), ev).toBe(false);
     expect(() => onSound!('beep')).not.toThrow();
+  });
+});
+
+describe('bootBrowserGame in manual-loop mode (G31)', () => {
+  it('with ?debug=step: no requestAnimationFrame, window.__ww steps the scenes and hashes the game', async () => {
+    fakeBootPage();
+    const raf = vi.fn(() => 0);
+    vi.stubGlobal('requestAnimationFrame', raf);
+    const win = globalThis.window as unknown as DebugWindow & { location: { search: string } };
+    win.location.search = '?debug=step';
+    let ticks = 0;
+    const game = {
+      step: () => void ticks++,
+      snapshot: () => ({ ticks }),
+      world: {},
+      events: [],
+      miniGame: () => null,
+    };
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      displays: { canvas2d: () => display() },
+      scene: (stack) => new HostScene({ stack, game, picture: () => ({ draw() {} }) }),
+    });
+    expect(raf).not.toHaveBeenCalled();
+    expect(booted?.loop.manual).toBe(true);
+    expect(win.__ww).toBe(booted?.debug);
+    expect(win.__ww!.step(3)).toBe(3);
+    expect(ticks).toBe(3);
+    expect(win.__ww!.hash()).toBe(stateHash({ ticks: 3 }));
+  });
+
+  it('is off by default: the loop runs on requestAnimationFrame and there is no window.__ww', async () => {
+    fakeBootPage();
+    const raf = vi.fn(() => 0);
+    vi.stubGlobal('requestAnimationFrame', raf);
+    vi.stubGlobal('performance', { now: () => 0 });
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      displays: { canvas2d: () => display() },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    expect(raf).toHaveBeenCalledTimes(1);
+    expect(booted?.debug).toBeNull();
+    expect((globalThis.window as unknown as DebugWindow).__ww).toBeUndefined();
+  });
+
+  it('reads the mode from the query', () => {
+    expect(manualFromQuery('?debug=step')).toBe(true);
+    expect(manualFromQuery('?backend=three&debug=step')).toBe(true);
+    expect(manualFromQuery('')).toBe(false);
+    expect(manualFromQuery('?debug=1')).toBe(false);
   });
 });

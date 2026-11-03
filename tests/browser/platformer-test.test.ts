@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { InputScript } from '@engine/core/input/scripted-input';
+import type { DebugWindow } from '@engine/core/shell';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The stacking test's page in a browser, in 2D and in 3D (docs/ROADMAP.md, 0.7: "playable from a
@@ -12,9 +13,9 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // `runs/level-4.run.json` (all four levels, the door's round failed and then passed) through the
 // real page: keyboard, input manager, scene stack, `HostScene`, mini game scene and Canvas2D, or
 // the Three.js backend with the `three` and `three-vault` skins (WebGL 2; SwiftShader here: this
-// checks that 3D plays, not that it is hardware-backed). The page's `requestAnimationFrame` is
-// replaced by one the test calls with exactly one 60 Hz step each time, so tick N of the page is
-// tick N of the run file. It reads the picture at ticks where the run file says what is on screen
+// checks that 3D plays, not that it is hardware-backed). The page runs in manual-loop mode
+// (`?debug=step`) and the test steps it with the shell's step hook, `window.__ww.step(1)`: exactly
+// one 60 Hz step each time, so tick N of the page is tick N of the run file. It reads the picture at ticks where the run file says what is on screen
 // (a level under the sky; the vault round in black: under its HUD band in 2D, above the room
 // centred in the picture in 3D, which draws no HUD) and checks the page logged no errors. Skipped
 // where Chromium is not installed (never in CI).
@@ -91,34 +92,14 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
         await page.goto(server.url);
         expect(await page.locator(`#games a[href="${GAME}${query}"]`).count()).toBe(1);
 
-        // The page's clock is the test's: `performance.now()` stands still between calls (so the
-        // loop's start reads the same time as its first frame, however long the page took to load
-        // or the test took to send keys), and each call runs one frame 1/60 s (and a hair) after
-        // the last: exactly one step of the loop. The first call runs a frame at the start time:
-        // no step. A real clock here let the loop catch up steps before tick 1 when the page was
-        // slow to start (often in 3D, after the async Three.js import), shifting the run.
-        await page.addInitScript(() => {
-          const queue: FrameRequestCallback[] = [];
-          const w = window as unknown as { __frames(n: number): void };
-          window.requestAnimationFrame = (cb) => queue.push(cb);
-          window.cancelAnimationFrame = () => {};
-          let now = 0;
-          let started = false;
-          performance.now = () => now;
-          w.__frames = (n) => {
-            for (let i = 0; i < n; i++) {
-              if (started) now += 1000 / 60 + 0.001;
-              started = true;
-              for (const cb of queue.splice(0)) cb(now);
-            }
-          };
-        });
-        await page.goto(`${server.url}${GAME}${query}`);
+        // The page in manual-loop mode (`?debug=step`, Engine 0.14 T8, gap G31): its loop never
+        // runs by itself, and `window.__ww.step(n)` takes exactly n 60 Hz steps, so tick N of the
+        // page is tick N of the run file however long the page took to load (often in 3D, after
+        // the async Three.js import) or the test takes to send keys.
+        await page.goto(`${server.url}${GAME}${query === '' ? '?' : `${query}&`}debug=step`);
         await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
         expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe(backend);
-        const frames = (n: number) =>
-          page.evaluate((n) => (window as unknown as { __frames(n: number): void }).__frames(n), n);
-        await frames(1); // the loop's first frame: no step (see the clock above)
+        const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
         // The page's canvas copied onto a 2D one (a WebGL canvas keeps its buffer for this:
         // `preserveDrawingBuffer`), then one pixel read at (128, row) of the picture.
         const band = () =>
@@ -152,4 +133,77 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
     },
     300_000,
   );
+
+  // The step hook's replay (gap G31): each run file that plays from the game's own start is fed
+  // through the real page (`window.__ww.replay`, the run's input through a `ScriptedInput` in
+  // place of the keyboard), and the page's state hash at every golden tick is the one in the
+  // run's `.hashes.json`, which `pnpm cli run` checks headless.
+  it.each(['level-1', 'level-2', 'level-3', 'level-4'])(
+    'replays %s.run.json through the page with the golden hashes',
+    async (name) => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const page = await browser.newPage({ viewport: { width: 512, height: 480 }, deviceScaleFactor: 1 });
+        const errors: string[] = [];
+        page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+        page.on('console', (msg) => {
+          if (msg.type() === 'error') errors.push(`console: ${msg.text()} (${msg.location().url})`);
+        });
+        await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
+        await page.goto(`${server.url}${GAME}?debug=step`);
+        await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+        const run = JSON.parse(readFileSync(join(ROOT, GAME, `runs/${name}.run.json`), 'utf8')) as unknown;
+        const golden = JSON.parse(readFileSync(join(ROOT, GAME, `runs/${name}.hashes.json`), 'utf8')) as {
+          hashes: { tick: number; hash: string }[];
+        };
+        const seen = await page.evaluate(
+          ({ run, ticks }) => {
+            const ww = (window as DebugWindow).__ww!;
+            const hashes: { tick: number; hash: string | null }[] = [];
+            ww.replay(run);
+            for (const tick of ticks) {
+              ww.step(tick - ww.tick);
+              hashes.push({ tick: ww.tick, hash: ww.hash() });
+            }
+            return { hashes, replaying: ww.replaying, refused: ww.refused.length };
+          },
+          { run, ticks: golden.hashes.map((h) => h.tick) },
+        );
+        expect(golden.hashes.length).toBeGreaterThan(1);
+        expect(seen).toEqual({ hashes: golden.hashes, replaying: true, refused: 0 });
+        expect(errors).toEqual([]);
+      } finally {
+        await browser.close();
+      }
+    },
+    300_000,
+  );
+
+  it('refuses a run file that starts elsewhere, and is not on the page without ?debug=step', async () => {
+    const server = await serve();
+    const browser = await launch();
+    try {
+      const page = await browser.newPage({ viewport: { width: 512, height: 480 }, deviceScaleFactor: 1 });
+      await page.goto(`${server.url}${GAME}`);
+      await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      expect(await page.evaluate(() => (window as DebugWindow).__ww === undefined)).toBe(true);
+      await page.goto(`${server.url}${GAME}?debug=step`);
+      await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      const run = JSON.parse(
+        readFileSync(join(ROOT, GAME, 'runs/level-2-start.run.json'), 'utf8'),
+      ) as unknown;
+      const error = await page.evaluate((run) => {
+        try {
+          (window as DebugWindow).__ww!.replay(run);
+          return null;
+        } catch (e) {
+          return (e as Error).message;
+        }
+      }, run);
+      expect(error).toMatch(/"start"/);
+    } finally {
+      await browser.close();
+    }
+  }, 120_000);
 });

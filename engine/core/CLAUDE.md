@@ -1,6 +1,7 @@
 # engine/core
 
-The engine's core: the fixed-step loop (`loop.ts`), scenes (`scene.ts`), input (`input/`), chiptune
+The engine's core: the fixed-step loop (`loop.ts`; from Engine 0.14 T8 `{ manual: true }` makes it
+step only through `advance(n)`, never on `requestAnimationFrame`: the shell's step hook), scenes (`scene.ts`), input (`input/`), chiptune
 audio and MML (`audio/`), save and settings (`save/`), the seeded RNG (`rng.ts`), maths (`math/`),
 asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.ts`), graphics
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
@@ -30,6 +31,13 @@ for the run's `experience` (`MissionHost` has both). From Engine 0.13 (decision 
 `new HostScene({ stack, game, picture })` instead of writing accessors. `canonicalJson(value)`
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
+
+`state-hash.ts` (Engine 0.14 T8, gap G31) is the state hash, `stateHash(snapshot)`: the first 16
+hex digits of the SHA-256 (`sha256Hex`, written out, synchronous) of `canonicalJson(snapshot)`.
+The tools re-export it (`engine/tools/headless-run.ts`) and the browser shell's step hook
+(`shell/debug.ts`) uses it, so a page and `pnpm cli run` hash a state the same way. A `Scene` may
+report the headless game it plays (`Scene.headless()`, `scene.ts`; `HostScene` does), which the hook
+snapshots and hashes. Pure (on `PURE_CORE`); tested in `state-hash.test.ts` against Node's crypto.
 
 `view.ts` is the view contract: `ViewGame` (a `HeadlessGame` plus `screen`, the picture size it
 draws, taken from `content.manifest.screen`, `render(r)`, and the optional `frame()`) and
@@ -353,7 +361,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

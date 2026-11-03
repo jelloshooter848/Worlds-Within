@@ -56,7 +56,8 @@ content)`, which imports the game's headless module by path for its optional
   result's `disabledRulesByKit` lists every kit), plays the ticks and
   makes the checks, hands recorded `orders` over at their ticks and compares the run file's sync
   `hashes` (Recorded orders, below); for a world run it builds the world instead (`world-run.ts`).
-  `stateHash(snapshot)`, `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
+  `stateHash(snapshot)` (re-exported from `engine/core/state-hash.ts` since Engine 0.14 T8, so a
+  browser page's step hook hashes with the same code), `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
   game run from its `from` and checks its `codes` (Campaign runs and save codes, below).
   `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
   that reads the state per tick (`trace`) uses the one playing loop. A game run's `start` (Engine

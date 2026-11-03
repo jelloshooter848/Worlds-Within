@@ -1,3 +1,4 @@
+import type { HeadlessGame } from './headless';
 import type { InputFrame } from './input/input-manager';
 import type { Renderer } from './gfx/renderer';
 import type { TouchLabels } from './input/touch';
@@ -31,6 +32,12 @@ export interface Scene {
    * boxes, MenuScene.pushedOver).
    */
   pushedOver?(below: Scene | undefined): void;
+  /**
+   * The headless game this scene plays (Engine 0.14 T8, gap G31), or null: the page's step hook
+   * (`shell/debug.ts`) hashes, snapshots and replays a run file through the topmost scene that
+   * reports one. `HostScene` given a `game` does; leave it out otherwise.
+   */
+  headless?(): HeadlessGame | null;
 }
 
 export class SceneStack {
