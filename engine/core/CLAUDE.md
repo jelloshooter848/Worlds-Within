@@ -51,9 +51,11 @@ sequence), keeping the events between draws in a `PendingEvents` (dropped on a n
 switches off (`HeadlessOptions.disabledRules`, passed by `createGame(content, seed, opts)`); its
 code guards each rule with `isOn(id)`. Unknown ids throw. It is pure (on `PURE_CORE`).
 
-`kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants?, miniGameUses? }`, what a
-kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where the kit's content
-names a mini game and its params, such as a platformer level's triggers, for `validate`), and `defineKit(def)`, which checks the name (lower-case letters, digits and
+`kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants?, miniGameUses?,
+paramsDocs? }`, what a kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where
+the kit's content names a mini game and its params, such as a platformer level's triggers, for
+`validate`; `paramsDocs()`, Engine 0.11: `KitParamsDoc { game, description, schema }` for the
+params of its own fixed-id mini games, listed by `pnpm docs:gen` in `docs/reference/schemas.md`), and `defineKit(def)`, which checks the name (lower-case letters, digits and
 "-") and the rule list (`defineRules`) and throws on a bad one. Each kit exports one as `kit` from
 `kits/<name>/kit.ts`. Pure (on `PURE_CORE`).
 
@@ -63,7 +65,9 @@ names a mini game and its params, such as a platformer level's triggers, for `va
 ends, `present?()` a `PresentFrame`, and from Engine 0.10 the optional `report?()`, a structured
 JSON-safe report read once the round has ended, which a mission's adapter turns into an outcome),
 `MiniGameDef` (`id`, `title`, the optional `paramsSchema` (Zod, Engine 0.10: the shape of the
-round's `params`, for `validate`, gap G16), the optional `inputMap` and `hostStatus` (Engine 0.11,
+round's `params`, for `validate`, gap G16), the optional `checkUse({ params, owner })` (Engine
+0.11, item 176: what the schema cannot see, such as a rule naming an outcome the mission, `owner`,
+does not declare; it returns `MiniGameUseProblem { path, message }`s), the optional `inputMap` and `hostStatus` (Engine 0.11,
 below), `create(ctx, seed)`: everything random from `seed`) and `miniGameTable(defs)` (the defs by id; throws on a bad id or one given
 twice). A host (a kit's world) steps the round headless while it pauses itself and puts the
 round's snapshot in its own, so hashes cover it. **Round input and host HUD (Engine 0.11, gaps G18
@@ -89,7 +93,9 @@ names a mini game (a level trigger, a mission's `play`) and hands it params;
 gives its own (`KitDef.miniGameUses`); `miniGameParamErrors(uses, defs, root?)` returns a
 `ContentError` per problem, in the uses' order: `unknown_mini_game` at the id (naming the ids
 there are) when no def has it, else each issue of the def's `paramsSchema` (when it has one) at its
-field under the params (`triggers.0.params.goal`), with Zod's codes. It builds no round. Pure (on
+field under the params (`triggers.0.params.goal`), with Zod's codes, and once they pass, each
+problem of the def's `checkUse` as `bad_mini_game_use` at its field (`params.outcomes.0.outcome`;
+a mission's use carries the mission as its `owner`, a level trigger's none). It builds no round. Pure (on
 `PURE_CORE`); tested in `minigame-params.test.ts`; `engine/tools/mini-game-check.ts` runs it.
 `minigame-scene.ts` is the browser side for games' glue: `miniGameScene({ game,
 step?, render, done, translucent? })`, a `Scene` to push over the level that steps the same
@@ -163,13 +169,14 @@ outcome) or `unknown_outcome` (an undeclared outcome, or one outside `playable`)
 nothing. A round that ends in `quit` is not a played result: it skips the adapter and the
 `playable` check and returns `{ ok: true, quit: true, result }` with the mission's `onQuit` (no
 report); the caller resolves it with `quitMission(world, id)` and then commits, so the record's
-resolution is `quit`. Every other success has `quit: false`. The adapter itself (which entities become what, which report means which outcome) is per
-game and kit pairing; `tests/kits/mission-adapter.test.ts` has one for the topdown kit's room
-challenge over the siege fixture. `missionRoundEnd(mission, adapter, end)` (Engine 0.11, item 173)
+resolution is `quit`. Every other success has `quit: false`. The adapter itself (which entities become what, which report means which outcome) belongs
+to the kit, driven by the mission's data: the topdown kit's `topdownMissionAdapter` and
+`mission-room` mini game (`kits/topdown/mission-room.ts`, Engine 0.11 T7), played over the siege
+fixture in `tests/kits/mission-adapter.test.ts`. `missionRoundEnd(mission, adapter, end)` (Engine 0.11, item 173)
 is the end-mapping half of `playMissionRound` on its own (quit to `onQuit`, else the adapter and
 `playedResult`, refused as `unmappable_report` or `unknown_outcome`), for a host that steps the
-round tick by tick. Pure in practice; not on `PURE_CORE` yet because no kit or sim
-file imports it at run time (add it there when one does). Tested in `mission-adapter.test.ts`.
+round tick by tick. Pure, and on `PURE_CORE` since Engine 0.11 T7 (the topdown kit's mission
+room imports `snapshotEntities`). Tested in `mission-adapter.test.ts`.
 
 `mission-host.ts` (Engine 0.11 T5; docs/BUILD-LOG.md, Engine 0.11, decisions 1-3, items 172-174)
 is live mission hosting. `MissionHost({ game?, port, missions, miniGames, adapters, hostStatus? })`
@@ -207,7 +214,7 @@ state, result, outcome, refused } }` only while a round is hosted and on the tic
 - The round's `hostStatus` gets `mission` (the mission's title) and the option's values.
 
 Tested in `mission-host.test.ts` (a fake port) and, over the siege fixture with the real sim, the
-RTS kit and the topdown kit's room challenge, `tests/kits/mission-host.test.ts` (outside the
+RTS kit and the topdown kit's mission room (Engine 0.11 T7), `tests/kits/mission-host.test.ts` (outside the
 layers, like `mission-adapter.test.ts`). Pure in practice; not on `PURE_CORE` (no kit or sim file
 imports it at run time; `engine/sim` imports only its types).
 
@@ -266,7 +273,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

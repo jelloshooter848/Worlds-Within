@@ -1274,3 +1274,65 @@ With `docs/reference/examples/room.map.txt`:
 #..............#
 ################
 ```
+
+## Mini game params
+
+The params of a kit's mini games that content names by a fixed id (`KitDef.paramsDocs`);
+`validate` checks them with the content (gap G16).
+
+### `mission-room` params
+
+A mission over a world played as one top-down room (Engine 0.11): a `*.mission.json`'s `params` when its `play` is `mission-room`. Which world entities become which foes in the room's slot cells, the round's goal and limits, and ordered rules from the round's report to the mission's declared outcomes.
+
+- Defined by: kit topdown
+- Where: the `params` of a `*.mission.json` whose `play` is `mission-room`
+- Read from: `.json`
+
+| Field                          | Type                               | Required | Default | Limits                            | Description                                                                                   |
+| ------------------------------ | ---------------------------------- | -------- | ------- | --------------------------------- | --------------------------------------------------------------------------------------------- |
+| `room`                         | `string`                           | yes      |         | not empty                         | the id of the game's `room` file the round is played in                                       |
+| `goal`                         | `"defeat-all" \| "reach"`          | yes      |         |                                   | what the round asks: every foe beaten, or an exit tile reached                                |
+| `ticks`                        | `integer`                          | no       |         | >= 1                              | the round's time limit in ticks (1800 when left out)                                          |
+| `hp`                           | `integer`                          | no       |         | >= 1                              | the hero's hit points in half hearts (the kit's default when left out)                        |
+| `foes`                         | `object[]`                         | yes      |         | at least 1 item                   | which world entities become which foes, in which slots                                        |
+| `foes[].slot`                  | `string`                           | yes      |         | not empty; length &lt;= 1         | the room's map character whose cells, in reading order, these foes stand on                   |
+| `foes[].kind`                  | `string`                           | yes      |         | not empty                         | the enemy kind they are in the room (`knight`, or a game spawn kind)                          |
+| `foes[].select`                | `object`                           | no       | `{}`    |                                   | which world entities become these foes                                                        |
+| `foes[].select.event`          | `string`                           | no       |         | not empty                         | members of this event (`EventMember`); the mission's `event` when left out                    |
+| `foes[].select.faction`        | `string`                           | no       |         | not empty                         | only entities of this faction (`Owner`)                                                       |
+| `foes[].select.types`          | `string[]`                         | no       |         | at least 1 item; items: not empty | only units of these types (`Unit.type`)                                                       |
+| `foes[].select.member`         | `"regular" \| "hero" \| "captain"` | no       |         |                                   | only named squad members with this role (`Member.role`)                                       |
+| `foes[].hpPer`                 | `integer`                          | no       |         | >= 1                              | world hit points per room hit point (rounded up, at least 1); the kind's own hp when left out |
+| `outcomes`                     | `object[]`                         | yes      |         | at least 1 item                   | rules from the round to a declared outcome, tried in order; the first that holds wins         |
+| `outcomes[].outcome`           | `string`                           | yes      |         | not empty                         | the mission's declared outcome this rule gives                                                |
+| `outcomes[].when`              | `object`                           | no       |         |                                   | what must all hold (left out: always; the last rule must have none)                           |
+| `outcomes[].when.result`       | `"pass" \| "fail"`                 | no       |         |                                   | how the round ended: its goal met (`pass`) or not (`fail`)                                    |
+| `outcomes[].when.destroyed`    | `(string \| integer)[]`            | no       |         | at least 1 item                   | world entities (scenario keys or ids) that were all destroyed in the round                    |
+| `outcomes[].when.spared`       | `(string \| integer)[]`            | no       |         | at least 1 item                   | world entities (scenario keys or ids) none of which was destroyed                             |
+| `outcomes[].when.minDestroyed` | `integer`                          | no       |         | >= 0                              | at least this many foes destroyed                                                             |
+
+Example (`docs/reference/examples/mission-room-params.json`):
+
+```json
+{
+  "room": "siege-camp",
+  "goal": "defeat-all",
+  "ticks": 1800,
+  "hp": 6,
+  "foes": [
+    {
+      "slot": "E",
+      "kind": "knight",
+      "select": { "faction": "raiders", "types": ["ram", "catapult"] },
+      "hpPer": 20
+    },
+    { "slot": "n", "kind": "bat", "select": { "faction": "raiders", "member": "regular" } }
+  ],
+  "outcomes": [
+    { "outcome": "both-burnt", "when": { "destroyed": ["ram", "catapult"] } },
+    { "outcome": "ram-burnt", "when": { "destroyed": ["ram"] } },
+    { "outcome": "catapult-burnt", "when": { "destroyed": ["catapult"] } },
+    { "outcome": "driven-off" }
+  ]
+}
+```

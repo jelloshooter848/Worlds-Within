@@ -55,6 +55,46 @@ describe('miniGameParamErrors', () => {
   });
 });
 
+describe("a def's checkUse (Engine 0.11)", () => {
+  const OUTCOME: MiniGameDef = {
+    ...HOLD,
+    id: 'outcome',
+    paramsSchema: z.strictObject({ ticks: z.int().min(1), win: z.string() }),
+    checkUse: ({ params, owner }) => {
+      const declared = (owner?.['outcomes'] as { id: string }[] | undefined)?.map((o) => o.id) ?? [];
+      return declared.includes(params['win'] as string)
+        ? []
+        : [{ path: ['win'], message: `"${String(params['win'])}" is not an outcome of the mission` }];
+    },
+  };
+  const mission = (win: string): MiniGameUse => ({
+    ...use('outcome', { ticks: 1, win }),
+    paramsAt: ['params'],
+    owner: { outcomes: [{ id: 'won' }] },
+  });
+
+  it('reports what the schema cannot see at its field, with the owner it was named in', () => {
+    expect(miniGameParamErrors([mission('won')], [OUTCOME])).toEqual([]);
+    expect(miniGameParamErrors([mission('lost')], [OUTCOME])).toEqual([
+      expect.objectContaining({
+        path: 'params.win',
+        code: 'bad_mini_game_use',
+        message: '"lost" is not an outcome of the mission',
+      }),
+    ]);
+  });
+
+  it('runs only once the params pass the schema, and gets null without an owner', () => {
+    expect(miniGameParamErrors([{ ...mission('lost'), params: { win: 'lost' } }], [OUTCOME])).toEqual([
+      expect.objectContaining({ path: 'params.ticks', code: 'invalid_type' }),
+    ]);
+    const seen: unknown[] = [];
+    const spy: MiniGameDef = { ...HOLD, checkUse: ({ owner }) => (seen.push(owner), []) };
+    miniGameParamErrors([use('hold', { ticks: 1 })], [spy]);
+    expect(seen).toEqual([null]);
+  });
+});
+
 describe('missionMiniGameUses', () => {
   it("lists each mission's play and params ({} when none)", () => {
     const content = {
@@ -77,8 +117,16 @@ describe('missionMiniGameUses', () => {
         gameAt: ['play'],
         params: { ticks: 2 },
         paramsAt: ['params'],
+        owner: { play: 'hold', params: { ticks: 2 } },
       },
-      { file: 'content/b.mission.json', game: 'free', gameAt: ['play'], params: {}, paramsAt: ['params'] },
+      {
+        file: 'content/b.mission.json',
+        game: 'free',
+        gameAt: ['play'],
+        params: {},
+        paramsAt: ['params'],
+        owner: { play: 'free' },
+      },
     ]);
   });
 });

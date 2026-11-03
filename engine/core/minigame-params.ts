@@ -27,6 +27,11 @@ export interface MiniGameUse {
   readonly params: JsonObject;
   /** Where the params are in the file (`['triggers', 0, 'params']`, `['params']`). */
   readonly paramsAt: FieldPath;
+  /**
+   * The content entry that names the mini game, for the def's `checkUse` (Engine 0.11): a
+   * mission's whole definition. Left out (a level trigger), `checkUse` gets null.
+   */
+  readonly owner?: JsonObject;
 }
 
 /** Every mission's use (`*.mission.json`: `play` names the mini game, `params` its params). */
@@ -34,8 +39,15 @@ export function missionMiniGameUses(content: ContentBundle): MiniGameUse[] {
   return content.entries
     .filter((e) => e.kind === 'mission')
     .map((e) => {
-      const m = e.value as { play: string; params?: JsonObject };
-      return { file: e.file, game: m.play, gameAt: ['play'], params: m.params ?? {}, paramsAt: ['params'] };
+      const m = e.value as JsonObject & { play: string; params?: JsonObject };
+      return {
+        file: e.file,
+        game: m.play,
+        gameAt: ['play'],
+        params: m.params ?? {},
+        paramsAt: ['params'],
+        owner: m,
+      };
     });
 }
 
@@ -43,7 +55,8 @@ export function missionMiniGameUses(content: ContentBundle): MiniGameUse[] {
  * The errors of `uses` against the game's mini games `defs`, in the uses' order: `unknown_mini_game`
  * at the id when no def has it (naming the ids there are), else each issue of the def's
  * `paramsSchema` (when it has one) at its field under the params (`triggers.0.params.goal`), with
- * Zod's codes. `root` goes in front of each file name, as in `loadContent`.
+ * Zod's codes, and, once the params pass it, each problem of the def's `checkUse` (Engine 0.11) as
+ * `bad_mini_game_use` at its field. `root` goes in front of each file name, as in `loadContent`.
  */
 export function miniGameParamErrors(
   uses: readonly MiniGameUse[],
@@ -61,11 +74,18 @@ export function miniGameParamErrors(
       errors.push(contentError(file, use.gameAt, 'unknown_mini_game', message));
       continue;
     }
-    if (!def.paramsSchema) continue;
-    const parsed = def.paramsSchema.safeParse(use.params);
-    if (parsed.success) continue;
-    const issues = parsed.error.issues.map((i) => ({ ...i, path: [...use.paramsAt, ...i.path] }));
-    errors.push(...issuesToErrors(file, issues));
+    if (def.paramsSchema) {
+      const parsed = def.paramsSchema.safeParse(use.params);
+      if (!parsed.success) {
+        const issues = parsed.error.issues.map((i) => ({ ...i, path: [...use.paramsAt, ...i.path] }));
+        errors.push(...issuesToErrors(file, issues));
+        continue;
+      }
+    }
+    for (const problem of def.checkUse?.({ params: use.params, owner: use.owner ?? null }) ?? [])
+      errors.push(
+        contentError(file, [...use.paramsAt, ...problem.path], 'bad_mini_game_use', problem.message),
+      );
   }
   return errors;
 }

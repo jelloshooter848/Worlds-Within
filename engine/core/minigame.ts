@@ -73,6 +73,19 @@ export interface MiniGame {
   report?(): JsonObject;
 }
 
+/** What `MiniGameDef.checkUse` is handed: the params and the content entry that names the game. */
+export interface MiniGameUseCheck {
+  readonly params: JsonObject;
+  /** The content entry naming the mini game (a mission's definition), or null when it has none. */
+  readonly owner: JsonObject | null;
+}
+
+/** One problem `checkUse` found: where, under the params, and a one-line message. */
+export interface MiniGameUseProblem {
+  readonly path: readonly (string | number)[];
+  readonly message: string;
+}
+
 /** A mini game a game supplies by id: its title and how to start a round. */
 export interface MiniGameDef {
   /** Lower-case letters, digits and "-": what level data names it by. */
@@ -84,6 +97,14 @@ export interface MiniGameDef {
    * given, `validate` checks the content's params against it (gap G16), not only the round.
    */
   readonly paramsSchema?: z.ZodType;
+  /**
+   * Checks one use of the mini game against what its schema cannot see (Engine 0.11, item 176):
+   * the use's `params` (already passing `paramsSchema`) and its `owner`, the content entry naming
+   * it (a mission's whole definition; null for a level trigger), e.g. that a rule names one of the
+   * mission's outcomes or a room the game has. Optional; `validate` reports each problem at its
+   * `path` under the params (`minigame-params.ts`).
+   */
+  checkUse?(use: MiniGameUseCheck): readonly MiniGameUseProblem[];
   /**
    * The round's own controls (gap G18): applied by `RoundInput` to every frame before the round
    * sees it (`{ jump: 'attack' }` makes the host's jump the round's attack). Left out, the round

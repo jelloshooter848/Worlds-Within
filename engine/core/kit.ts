@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import type { ContentBundle } from './content/bundle';
 import type { ContentKind } from './content/kinds';
 import type { MiniGameUse } from './minigame-params';
@@ -25,6 +26,21 @@ export interface KitDef {
    * against the game's mini games (`minigame-params.ts`). Kits whose content names none leave it out.
    */
   miniGameUses?(content: ContentBundle): readonly MiniGameUse[];
+  /**
+   * Optional (Engine 0.11): the params schemas of the kit's own mini games that content names by a
+   * fixed id (the topdown kit's `mission-room`, whose params a mission file holds), for the
+   * generated schema reference (`docs/reference/schemas.md`, "Mini game params").
+   */
+  paramsDocs?(): readonly KitParamsDoc[];
+}
+
+/** One mini game's params for the schema reference: its id, what it is and its schema. */
+export interface KitParamsDoc {
+  /** The mini game id content names (`mission-room`); its example is `<game>-params.json`. */
+  readonly game: string;
+  /** One sentence: what the round is and where its params are written. */
+  readonly description: string;
+  readonly schema: z.ZodType;
 }
 
 /** A kit name: lower-case letters, digits and "-", as in `game.json`. */

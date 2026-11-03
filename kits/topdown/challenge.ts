@@ -124,6 +124,12 @@ export interface RoomChallengeOptions {
   hostStatus?: readonly string[];
   /** The round's own controls (gap G18): the def's `inputMap`, applied by the host's `RoundInput`. */
   inputMap?: MiniGameInputMap;
+  /**
+   * Hit points for some of the room's enemies, by room key (`"<col>,<row>"`), set when the round
+   * starts instead of the kind's own (Engine 0.11: a mission room's foes take the world's health,
+   * `mission-room.ts`). Left out, every enemy has its kind's hp.
+   */
+  foeHp?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -196,6 +202,10 @@ export class RoomChallenge implements MiniGame {
         `room challenge "${opts.id}": goal defeat-all, but room "${opts.room.id}" has no enemies`,
       );
     this.last = this.world.events.splice(0);
+    for (const enemy of this.world.enemies()) {
+      const hp = enemy.key === null ? undefined : opts.foeHp?.[enemy.key];
+      if (hp !== undefined) enemy.hp = hp;
+    }
     this.foes = this.world.enemies().map((enemy) => ({ enemy, key: enemy.key ?? '', startHp: enemy.hp }));
     this.heroStartHp = this.world.hero.hp;
   }

@@ -5,15 +5,17 @@ grid (`room.ts`), the world with tile collision, doors, room slides and conditio
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
 such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
 `person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), tile-sheet frame helpers (`frames.ts`), the room
-file schema (`schema.ts`) and the one-room challenge adapter that hosts the kit as another kit's
-mini game (`challenge.ts`).
+file schema (`schema.ts`), the one-room challenge adapter that hosts the kit as another kit's
+mini game (`challenge.ts`) and the data-driven mission room with its mission adapter
+(`mission-room.ts`).
 `index.ts` re-exports the public surface; games import it as `@kits/topdown`.
 
 ## Kit hook (`kit.ts`)
 
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): its
 name (`topdown`, what a `game.json` gives in `kit`), its content kinds (`roomKind()`) and its named
-rules (`TOPDOWN_RULES`). `engine/tools` finds it by name through the generated
+rules (`TOPDOWN_RULES`), and (Engine 0.11) `paramsDocs()`, the `mission-room` params schema that
+`pnpm docs:gen` lists in `docs/reference/schemas.md` ("Mini game params"). `engine/tools` finds it by name through the generated
 `engine/tools/kit-list.ts`; no engine table names the kit. When the kit gets a new content kind or
 names a rule, change the hook (and `rules.ts`), nothing in `engine/tools`. `index.ts` does not
 re-export it.
@@ -208,9 +210,8 @@ top?, hostStatus?, inputMap? })` returns a `MiniGameDef`. **The room is the game
   round, `dead`), `foes` (every enemy the room started with, in room-text order: `key` its
   `"<col>,<row>"` cell, `kind`, `hp`, `startHp`, `defeated`), and by key `defeated` (what was
   destroyed) and `hurt` (hit but standing). It only reads the round: snapshots, results and every
-  hash are the same whether or not it is called (tested). The kit never maps it to an outcome
-  itself; the adapter that does lives outside the kit (`engine/core/mission-adapter.ts` and, for
-  the siege fixture, `tests/kits/mission-adapter.test.ts`).
+  hash are the same whether or not it is called (tested). The challenge itself never maps it to
+  an outcome; from Engine 0.11 the kit's mission room does, from the mission's data (below).
 - `present()` is the kit's `presentWorld` frame of the round at the options' `size` (and `top`),
   with `status.goal` and `status.timeLeft` added, and (Engine 0.11, gap G19) each host value the
   round was given in `ctx.hostStatus` as `status['host:<key>']`, for the round's skin to draw like
@@ -218,6 +219,9 @@ top?, hostStatus?, inputMap? })` returns a `MiniGameDef`. **The room is the game
   def's) names the keys a host hands it (`hostStatusFor`); a round given none presents exactly as
   before, and the host status never reaches the snapshot or the report. It keeps no stream state: every frame carries
   the full map and ids of things the room text did not place count from 1 per frame.
+- `foeHp` (Engine 0.11, optional): hit points by room key (`"<col>,<row>"`), set on those enemies
+  when the round starts (before `report()`'s `startHp`); the mission room gives its foes their
+  world hp this way. Left out, every enemy has its kind's hp.
 - `world` (read-only use) is the round's world, for a test bot (`TopDownBot`) or a tracer.
 - Rules: `disabledRules` switches kit rules off in every round. The tools do not route a run's
   switched-off rules to a kit a game `uses` yet (gap G12 in `docs/reports/stacking-test.md`).
@@ -227,6 +231,63 @@ fail on the hero's death and on time-out, a quit on select (which the world neve
 same snapshots from the same seed (and others from another), the presented frame (and the host
 status in it, gap G19), the report
 (beaten, hurt, the hero's loss; unchanged snapshots with it read) and the param and room checks. Its room is built inline in the test.
+
+## The mission room (`mission-room.ts`)
+
+The data-driven top-down mission (Engine 0.11 T7; docs/BUILD-LOG.md, Engine 0.11, decision 5, item
+176): a mission over an `engine/sim` world played as one top-down room, with **no adapter code in
+the game**. A mission file names it with `"play": "mission-room"` (`MISSION_ROOM`) and says
+everything in its `params` (`missionRoomParamsSchema`; the field table is in
+`docs/reference/schemas.md`, "Mini game params"):
+
+- `room` (the id of one of the game's `room` files), `goal`, `ticks` (1800 when left out) and `hp`,
+  as `roomChallenge` takes them.
+- `foes`: `[{ slot, kind, select?: { event?, faction?, types?, member? }, hpPer? }]`. Each entry
+  picks world entities: members of the mission's `event` (or `select.event`), then by `Owner`
+  faction, `Unit` type and squad `Member` role; only entities with `Position` and, if they have
+  `Health`, hp above 0; ascending id; an entity goes to the first entry that selects it. They are
+  placed, as enemies of `kind` (the first legend character, the kit's then the game's
+  `extraLegend`, that spawns it on floor), in the room's cells holding the `slot` character, in
+  reading order. Spare slot cells become floor; more foes than cells refuses the round before it
+  starts. A slot is any one map character (the room file must still pass the room kind, so use a
+  legend character such as `n` or `E`, or one the game's `extraLegend` adds). Room hp is
+  `ceil(Health.hp / hpPer)` (at least 1), or the kind's own hp without `hpPer`.
+- `outcomes`: ordered rules `[{ outcome, when?: { result?, destroyed?, spared?, minDestroyed? } }]`.
+  `destroyed` and `spared` name world entities by scenario key or id; `minDestroyed` counts the
+  round's destroyed foes. The first rule that holds names the outcome; only the last may (and must)
+  leave out `when`, so every report maps. A quit goes to the mission's `onQuit` without the rules.
+- **World names.** An entity's name is the scenario key the open mission's `refs` give it (the
+  snapshot's `Missions` component holds them: the keys the outcomes' effects name), else its id as
+  a string. The adapter refuses a rule naming an entity that is not one of the round's foes.
+
+The two halves, both plain data (the kit never imports `engine/sim`; it reads the snapshot with
+`engine/core`'s `snapshotEntities`):
+
+- `topdownMissionAdapter`, a stateless `MissionAdapter<JsonObject, MiniGameEnd>` (one serves every
+  round; `MissionHost` takes it by mini game id, `adapters: { 'mission-room': ... }`):
+  `input(snapshot, mission)` is `missionRoomInput`, the round's params `MissionRoomInput { room,
+goal, ticks, hp?, slots, foes: [{ slot, kind, entity, name, hp? }] }`; `outcome(end, mission)`
+  is `missionRoomOutcome`: the report's `defeated` and `hurt` cells mapped back to world names
+  through its `placed` list, the first rule that holds, and `stats` `{ destroyed, hurt, heroLost,
+ticks }` (names in room-text order). It throws (the host's `bad_mission_input` or
+  `unmappable_report`) on malformed params, a rule naming no foe, no report, or a cell no world
+  entity stood on.
+- `missionRoom({ rooms, title?, hostStatus?, extraLegend?, wall?, spawners?, items?,
+disabledRules?, size?, top?, inputMap? })`, the `MiniGameDef` (id `mission-room`, title
+  `MISSION`, `hostStatus` `['mission']` by default). Its `paramsSchema` is
+  `missionRoomParamsSchema` (a mission's params) and its `checkUse` (`missionRoomProblems`) checks
+  what the schema cannot see: the room is one of `rooms`, each slot character is in it, each rule
+  names an outcome the mission declares; so `pnpm cli validate` reports all of them at their field
+  (`params.outcomes.0.outcome`, `bad_mini_game_use`) when the game's `miniGames(content)` gives it.
+  `create(ctx, seed)` takes the adapter's `MissionRoomInput` (not the mission's params), places the
+  foes and plays the room as a `MissionRoomRound`, a `RoomChallenge` whose `report()` adds
+  `placed: [{ cell, entity, name }]` (snapshots are the challenge's, unchanged).
+
+`mission-room.test.ts` covers the selection (event, faction, types, role, dead entities, first
+entry first, `hpPer`), names from `refs` and ids, every rule kind and their order, quit, the
+refusals, the placed room and the validate errors (shape, room, slot, undeclared outcome) over a
+hand-written snapshot; `tests/kits/mission-adapter.test.ts` plays the siege fixture's raid through
+it with the real sim (clean, partial, repelled, quit, delegated, golden hashes).
 
 ## Imports
 
@@ -241,5 +302,5 @@ status in it, gap G19), the report
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
 `beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`,
-`present-entities.test.ts`, `challenge.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

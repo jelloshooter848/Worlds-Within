@@ -5,10 +5,9 @@ import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import type { Action } from '@engine/core/input/actions';
 import type { InputScript } from '@engine/core/input/scripted-input';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { playMissionRound, snapshotEntities, type MiniGameEnd } from '@engine/core/mission-adapter';
+import { playMissionRound } from '@engine/core/mission-adapter';
 import { MissionHost } from '@engine/core/mission-host';
-import type { MiniGameDef } from '@engine/core/minigame';
-import type { MissionAdapter, MissionDef } from '@engine/core/missions';
+import type { MissionDef } from '@engine/core/missions';
 import {
   applyOrder,
   missionPort,
@@ -18,13 +17,20 @@ import {
   type World,
 } from '@engine/sim/index';
 import { rtsGame } from '@kits/rts';
-import { roomChallenge, type ChallengeReport, type RoomChallenge, type RoomDef } from '@kits/topdown';
+import {
+  MISSION_ROOM,
+  missionRoom,
+  topdownMissionAdapter,
+  type RoomChallenge,
+  type RoomDef,
+} from '@kits/topdown';
 import { TopDownBot } from '@kits/topdown/bot';
 
 // Live mission hosting (Engine 0.11 T5, items 172-174): a test-only host over the siege fixture.
 // Kits may not import engine/sim, so this lives here, outside every layer, like
 // mission-adapter.test.ts: the RTS kit's game over a siege world, a `MissionHost` over it with the
-// sim's `missionPort`, and the topdown kit's room challenge as the raid's round. The played path
+// sim's `missionPort`, and the topdown kit's data-driven mission room (and its adapter) as the
+// raid's round. The played path
 // goes through the real round with a recorded script, the delegated path through the world's draw;
 // both commit at the open tick plus the raid's worldTimeCost (30 world ticks).
 
@@ -33,68 +39,27 @@ const fixture = (name: string): unknown =>
     readFileSync(new URL(`../../engine/sim/__fixtures__/${name}`, import.meta.url), 'utf8'),
   ) as unknown;
 
+const kitFixture = (name: string): unknown =>
+  JSON.parse(readFileSync(new URL(`./__fixtures__/${name}`, import.meta.url), 'utf8')) as unknown;
+
 const SCENARIO = fixture('siege.world.json');
-const RAID = fixture('raid.mission.json') as MissionDef;
+/**
+ * The sim fixture's raid played as the kit's `mission-room`, with the params and room in
+ * `tests/kits/__fixtures__/` (the sim fixture keeps its own, so the world run hashes stay).
+ */
+const RAID: MissionDef = {
+  ...(fixture('raid.mission.json') as MissionDef),
+  play: MISSION_ROOM,
+  params: kitFixture('raid.params.json') as JsonObject,
+};
+const CAMP = kitFixture('siege-camp.room.json') as RoomDef;
 const REFS = scenarioKeys(SCENARIO);
 const OPEN_TICK = 3;
 const COMMIT_TICK = OPEN_TICK + RAID.worldTimeCost;
 
-/** The raid's round: a one-room challenge whose room the adapter builds (params `room`, `round`). */
-const SABOTAGE: MiniGameDef = {
-  id: 'sabotage',
-  title: 'SABOTAGE',
-  hostStatus: ['mission'],
-  create: (ctx, seed) =>
-    roomChallenge({
-      id: 'sabotage',
-      title: 'SABOTAGE',
-      room: ctx.params['room'] as unknown as RoomDef,
-    }).create({ ...ctx, params: ctx.params['round'] as JsonObject }, seed),
-};
-
-/**
- * The raid's adapter: the mission event's blue engines become knights laid out as they stand in
- * the world; destroyed engines map back to scenario keys, all three `clean`, some `partial`, none
- * `repelled`.
- */
-function raidAdapter(): MissionAdapter<JsonObject, MiniGameEnd> {
-  const keyOf = new Map(Object.entries(REFS).map(([key, id]) => [id, key]));
-  const places = new Map<string, string>();
-  return {
-    input(snapshot, mission) {
-      const engines = snapshotEntities(snapshot, 'EventMember', 'Owner', 'Position', 'Unit').filter(
-        (e) =>
-          (e.components['EventMember'] as { event: string }).event === mission.event &&
-          (e.components['Owner'] as { faction: string }).faction === 'blue',
-      );
-      const at = (e: (typeof engines)[number]) => e.components['Position'] as { x: number; y: number };
-      const minX = Math.min(...engines.map((e) => at(e).x));
-      const minY = Math.min(...engines.map((e) => at(e).y));
-      const rows = Array.from({ length: 11 }, (_, r) =>
-        r === 0 || r === 10 ? '#'.repeat(16) : `#${'.'.repeat(14)}#`,
-      ).map((row) => row.split(''));
-      rows[8]![12] = '@';
-      places.clear();
-      for (const e of engines) {
-        const col = 3 + (at(e).x - minX) * 3;
-        const row = 3 + (at(e).y - minY) * 3;
-        rows[row]![col] = 'n';
-        places.set(`${col},${row}`, keyOf.get(e.id) ?? String(e.id));
-      }
-      return {
-        room: { id: 'siege-camp', at: [0, 0], map: rows.map((r) => r.join('')) },
-        round: { goal: 'defeat-all', ticks: 1200, hp: 6 },
-      };
-    },
-    outcome(end) {
-      const report = end.report as ChallengeReport;
-      const destroyed = report.defeated.map((cell) => places.get(cell) ?? cell);
-      const outcome =
-        destroyed.length === places.size ? 'clean' : destroyed.length > 0 ? 'partial' : 'repelled';
-      return { outcome, stats: { destroyed, ticks: end.ticks } };
-    },
-  };
-}
+/** The raid's round and adapter: the topdown kit's data-driven mission room (Engine 0.11 T7). */
+const SABOTAGE = missionRoom({ rooms: [CAMP] });
+const raidAdapter = () => topdownMissionAdapter;
 
 /** A siege world with the RTS kit's game over it (no enemy plan) and a mission host over both. */
 function siegeHost(): { world: World; host: MissionHost } {
@@ -112,7 +77,7 @@ function siegeHost(): { world: World; host: MissionHost } {
     port: missionPort(world, { refs: REFS }),
     missions: [RAID],
     miniGames: [SABOTAGE],
-    adapters: { sabotage: raidAdapter() },
+    adapters: { [MISSION_ROOM]: raidAdapter() },
   });
   return { world, host };
 }
@@ -204,7 +169,7 @@ describe('MissionHost over the siege fixture (live mission hosting)', () => {
       openTick: OPEN_TICK,
       commitTick: COMMIT_TICK,
     });
-    expect(record?.report?.stats?.['destroyed']).toEqual(['ram', 'catapult', 'tower']);
+    expect(record?.report?.stats?.['destroyed']).toEqual(['ram', 'tower', 'catapult']);
     for (const key of ['ram', 'tower', 'catapult']) expect(run.world.alive(REFS[key]!)).toBe(false);
     // The round's ticks are game ticks the world did not move in.
     const roundTicks = run.host.missionExperience()[0]!.ticks;
@@ -310,5 +275,9 @@ describe('MissionHost over the siege fixture (live mission hosting)', () => {
   });
 });
 
-/** The world's hash two ticks after the commit, each path (pinned so a change is seen). */
-const GOLDEN = { played: '16a272c049f63c93', delegated: 'a88e232b24518276' };
+/**
+ * The world's hash two ticks after the commit, each path (pinned so a change is seen). `played`
+ * was re-recorded in 0.11 T7: the kit's adapter lists the engines in slot order and adds `hurt`
+ * and `heroLost` to the record's stats.
+ */
+const GOLDEN = { played: 'a2d5fd445923bc7e', delegated: 'a88e232b24518276' };

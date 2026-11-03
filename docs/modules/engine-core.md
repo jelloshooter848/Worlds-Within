@@ -64,7 +64,7 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   named level and mission must be a `level` or `mission` file of the game (`missing_level`,
   `missing_mission`, at `entries.<i>.level` / `.mission`). Kits read the entries they can play (the
   platformer's `contentStages`); missions in a campaign are checked only until 0.13. Pure.
-- `mission-adapter.ts` (Engine 0.10 T7): playing a mission through a kit's mini game with plain
+- `mission-adapter.ts` (Engine 0.10 T7; on `PURE_CORE` from 0.11 T7, a kit imports it): playing a mission through a kit's mini game with plain
   data only. `snapshotEntities(snapshot, ...components)` reads a plain world snapshot's entities
   (ascending id, every component); `playMissionRound({ mission, snapshot, adapter, start, input,
 maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round to its result,
@@ -94,7 +94,9 @@ port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGam
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
-  0.10), `create(ctx, seed)`; `miniGameTable`). No scenes, so kits host mini games headless. From
+  0.10), `checkUse?` (Engine 0.11: problems beyond the shape, given the params and the content
+  entry naming the game, such as a mission's undeclared outcome), `create(ctx, seed)`;
+  `miniGameTable`). No scenes, so kits host mini games headless. From
   Engine 0.11 (gaps G18, G19): `MiniGameDef.inputMap?` (host action to round action, null drops
   it) and `RoundInput`, which every host steps its round through (`round.step(roundInput.advance(
 frame))`): a button held into the round (held, not pressed, on its first tick) is ignored until
@@ -103,7 +105,10 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
 - `minigame-params.ts` (Engine 0.10, gap G16): `MiniGameUse` (a place in the content naming a mini
   game and its params), `missionMiniGameUses(content)` and `miniGameParamErrors(uses, defs, root?)`:
   `unknown_mini_game` at the id, or the def's `paramsSchema` issues at their field
-  (`triggers.0.params.goal`). A kit lists its own uses with `KitDef.miniGameUses`. Pure.
+  (`triggers.0.params.goal`), then (Engine 0.11) the def's `checkUse` problems as
+  `bad_mini_game_use` (a mission's use carries the mission as `owner`). A kit lists its own uses
+  with `KitDef.miniGameUses`, and from Engine 0.11 its fixed-id mini games' params schemas for the
+  schema reference with `KitDef.paramsDocs`. Pure.
 - `minigame-scene.ts`: `miniGameScene(opts)`, the `Scene` a game's glue pushes over a level to
   drive the same `MiniGame` and pop it on its result; stepping the round itself it uses a
   `RoundInput` (`inputMap?` option), while a host's `step` gets the raw frame. Games only (kits may not import it); `HostScene`
@@ -143,7 +148,8 @@ Tests sit next to the code as `*.test.ts` and run in Node with `pnpm test`, usin
 audio and DOM. `missions.test.ts` covers mission definitions (valid, no outcomes, duplicate outcome ids, a bad
 `worldTimeCost`), delegation draws and the adapter; `mission-adapter.test.ts` the snapshot reader and every
 `playMissionRound` path. `tests/kits/mission-adapter.test.ts` plays the siege fixture's `raid`
-mission through the topdown kit (and delegates it), outside every layer. `mission-host.test.ts`
+mission through the topdown kit's data-driven `mission-room` adapter (and delegates it), outside
+every layer. `mission-host.test.ts`
 covers `MissionHost` over a fake port; `tests/kits/mission-host.test.ts` hosts the siege fixture's
 `raid` live over the real sim and the RTS kit (played through a scripted topdown round and
 delegated, both committing at open + cost, the battle frozen, the barracks going up, the same

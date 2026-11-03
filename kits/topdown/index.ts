@@ -21,3 +21,4 @@ export * from './snapshot';
 export * from './present';
 export * from './rules';
 export * from './challenge';
+export * from './mission-room';

@@ -1,0 +1,21 @@
+{
+  "room": "siege-camp",
+  "goal": "defeat-all",
+  "ticks": 1800,
+  "hp": 6,
+  "foes": [
+    {
+      "slot": "E",
+      "kind": "knight",
+      "select": { "faction": "raiders", "types": ["ram", "catapult"] },
+      "hpPer": 20
+    },
+    { "slot": "n", "kind": "bat", "select": { "faction": "raiders", "member": "regular" } }
+  ],
+  "outcomes": [
+    { "outcome": "both-burnt", "when": { "destroyed": ["ram", "catapult"] } },
+    { "outcome": "ram-burnt", "when": { "destroyed": ["ram"] } },
+    { "outcome": "catapult-burnt", "when": { "destroyed": ["catapult"] } },
+    { "outcome": "driven-off" }
+  ]
+}

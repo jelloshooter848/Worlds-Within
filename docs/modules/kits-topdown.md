@@ -31,9 +31,18 @@ the host's values a round is given, `ctx.hostStatus`, as `host:<key>` status for
 G19; the options' `hostStatus` and `inputMap` become the def's), and from Engine 0.10
 `report()` the round's structured report as plain JSON, `ChallengeReport`: result, ticks, the
 hero's `hp`/`lost`/`dead`, every starting enemy by its room cell and which were `defeated` or
-`hurt`, which a mission's adapter maps to a declared outcome; reading it changes no hash). `bot.ts` (the scripted test bot) is imported directly by tests.
+`hurt`, which a mission's adapter maps to a declared outcome; reading it changes no hash) and `mission-room` (Engine 0.11 T7: the data-driven mission room;
+a mission file with `"play": "mission-room"` says in its `params` which room, which world
+entities become which foes in which slot cells (`foes[].select` by event, faction, unit type and
+squad role; `hpPer`), the round's goal and limits, and ordered `outcomes` rules from the report to
+the mission's declared outcomes; `topdownMissionAdapter` is the stateless `MissionAdapter` that
+reads the plain world snapshot through `engine/core`'s `snapshotEntities`, and `missionRoom({ rooms
+})` the `MiniGameDef` whose `paramsSchema` and `checkUse` let `validate` check the params, the room,
+the slots and the outcome ids; the record's `stats` name what was destroyed and who was hurt).
+`bot.ts` (the scripted test bot) is imported directly by tests.
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`: the
-name `topdown`, `kinds()` with the room kind, and `TOPDOWN_RULES`); `engine/tools/kits.ts` finds it
+name `topdown`, `kinds()` with the room kind, `TOPDOWN_RULES` and, from Engine 0.11,
+`paramsDocs()` with the `mission-room` params schema for the schema reference); `engine/tools/kits.ts` finds it
 by the `kit` name in `game.json`.
 
 ## Imports allowed
@@ -50,7 +59,8 @@ by the `kit` name in `game.json`.
 ## How to test
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed. `tests/kits/mission-adapter.test.ts` plays an `engine/sim` mission (the siege fixture's
-`raid`) through `roomChallenge` with the core's `playMissionRound`, outside every layer, since the
-kit never imports the sim.
+`raid`, played as the kit's `mission-room` with the params in `tests/kits/__fixtures__/`) through
+`topdownMissionAdapter` with the core's `playMissionRound`, outside every layer, since the kit
+never imports the sim; it holds no mapping of its own.

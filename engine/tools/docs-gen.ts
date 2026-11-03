@@ -61,6 +61,8 @@ export interface DocSubject {
   forms: string;
   description: string;
   schema: z.ZodType;
+  /** `params`: a kit mini game's params (`KitDef.paramsDocs`), listed in their own section. */
+  section?: 'params';
   /** The example's file name in {@link EXAMPLES_DIR}, and the sibling part files it has. */
   example: string;
   parts?: Readonly<Record<string, string>>;
@@ -230,6 +232,19 @@ export function defaultDocSources(): DocSources {
   ];
   for (const kit of [...allKits()].sort((a, b) => a.name.localeCompare(b.name))) {
     for (const kind of kit.kinds()) subjects.push(kindSubject(kind, `kit ${kit.name}`));
+    for (const doc of kit.paramsDocs?.() ?? [])
+      subjects.push({
+        name: `${doc.game}-params`,
+        title: `\`${doc.game}\` params`,
+        from: `kit ${kit.name}`,
+        where: `the \`params\` of a \`*.mission.json\` whose \`play\` is \`${doc.game}\``,
+        forms: '`.json`',
+        description: doc.description,
+        schema: doc.schema,
+        example: `${doc.game}-params.json`,
+        section: 'params',
+        check: jsonCheck(doc.schema),
+      });
   }
   return { registry: defaultRegistry(), subjects };
 }
@@ -365,7 +380,8 @@ function subjectSection(subject: DocSubject, example: Example, level: string): s
 
 function schemasPage(root: string, subjects: readonly DocSubject[]): string {
   const files = subjects.filter((s) => ['manifest', 'run', 'world-save', 'world-scenario'].includes(s.name));
-  const kinds = subjects.filter((s) => !files.includes(s));
+  const params = subjects.filter((s) => s.section === 'params');
+  const kinds = subjects.filter((s) => !files.includes(s) && !params.includes(s));
   return [
     '# Schema reference',
     '',
@@ -386,6 +402,16 @@ function schemasPage(root: string, subjects: readonly DocSubject[]): string {
     'files for each kind in `game.json`.',
     '',
     ...kinds.flatMap((s) => [subjectSection(s, readExample(root, s), '###'), '']),
+    ...(params.length
+      ? [
+          '## Mini game params',
+          '',
+          "The params of a kit's mini games that content names by a fixed id (`KitDef.paramsDocs`);",
+          '`validate` checks them with the content (gap G16).',
+          '',
+          ...params.flatMap((s) => [subjectSection(s, readExample(root, s), '###'), '']),
+        ]
+      : []),
   ].join('\n');
 }
 

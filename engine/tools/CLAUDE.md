@@ -109,8 +109,10 @@ content)`, which imports the game's headless module by path for its optional
   defs, and every level trigger's `game` and `params` and every mission's `play` and `params` are
   checked against them: an id no def has is `unknown_mini_game` at that field
   (`triggers.0.game`, `play`), a param the def's `paramsSchema` rejects is an error at its field
-  (`triggers.0.params.goal`, `params.goal`) with Zod's code. A game without the export is checked
-  as before. Result:
+  (`triggers.0.params.goal`, `params.goal`) with Zod's code, and (Engine 0.11) a problem the def's
+  `checkUse` finds beyond the shape (the topdown kit's `mission-room`: an unknown room, a slot the
+  room lacks, a rule naming an outcome the mission does not declare) is `bad_mini_game_use` at its
+  field (`params.outcomes.0.outcome`). A game without the export is checked as before. Result:
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
   is a usage error. Its own content codes: `unknown_kit` (at `kit` or `uses.<i>` in `game.json`),
@@ -632,7 +634,9 @@ in memory and exits 4 with `<file>: <n> lines differ; first at line N: ...` for 
 - `docs/reference/cli.md`: `help` and `help <command>` for every command, the text `helpText`
   (`commands/help.ts`) prints, so the page and `pnpm cli help` are the same text.
 - `docs/reference/schemas.md`: one section per format, from `defaultDocSources().subjects`: the
-  manifest, run files, the engine's content kinds and each kit's (`allKits()`, from each kit's hook). Each has a field
+  manifest, run files, the engine's content kinds and each kit's (`allKits()`, from each kit's hook),
+  and (Engine 0.11) "Mini game params", each kit's `paramsDocs()` (the topdown kit's
+  `mission-room`, example `mission-room-params.json`). Each has a field
   table (`fieldRows`) and an example from `docs/reference/examples/<name>.json|.txt` (plus a
   kind's part files, `room.map.txt`), which must pass the schema or generation fails.
 - `docs/CHEATSHEET.md`: hand-written, except the blocks between `<!-- generated:<name> -->` and
