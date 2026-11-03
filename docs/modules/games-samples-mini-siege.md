@@ -22,21 +22,27 @@ cells) paid with the hall's real gold against the four real raiders, played or d
 siege is frozen while it is open (30 world ticks); at the commit the matching outcome's effects
 write the gold spent and the losses back to the world (gold, walls destroyed or damaged, defenders
 hurt, raiders destroyed). It is the platform test: no `engine/sim` change; lessons in
-`docs/reports/tower-defense.md`. The page draws the walls' round from Engine 0.12 T8.
+`docs/reports/tower-defense.md`. Since Engine 0.12 T8 the page offers it too: the bar's
+`Launch: Man the walls` button (one launch button per offered mission, from the RTS kit's
+`missionButtons`), the same Play-or-Delegate choice, and while the round is played the picture is
+the walls' round in its own skin (`canvas2d-td-defence.json`, picked by `skinSet` from the mini
+game id), keys or pointer taps placing towers.
 
 ## Public API entry points
 
 - `game.json`: kit `rts`, uses `topdown` and `towerdefense`, seed 11, `headless.ts`, `view.ts`.
-- Art and sound: `content/sprites/` (`siege.txt`, `camp.txt`, `siege-font.txt`),
-  `content/palettes/` (`siege`, `siege-held` for the frozen siege, `camp` at night),
-  `content/skins/canvas2d.json` (the battle, looks by tag `damaged`, `site`, `frozen`) and
-  `canvas2d-mission-room.json` (the room, looks by tag `foe:ram`, `foe:catapult`),
-  `content/sfx/`, `content/songs/siege.json`.
+- Art and sound: `content/sprites/` (`siege.txt`, `camp.txt`, `siege-font.txt`, `defence.txt`
+  for the walls' round), `content/palettes/` (`siege`, `siege-held` for the frozen siege, `camp`
+  at night, `defence-ok` / `defence-blocked` for the ghost tower, `defence-hit` for a struck
+  raider), `content/skins/canvas2d.json` (the battle, looks by tag `damaged`, `site`, `frozen`;
+  commit sounds per outcome), `canvas2d-mission-room.json` (the room, looks by tag `foe:ram`,
+  `foe:catapult`) and `canvas2d-td-defence.json` (the walls' round: towers, raiders, shots,
+  cursor, ghost, tiles, `td-*` sounds), `content/sfx/`, `content/songs/siege.json`.
 - `picture.ts`: `siegeLook`, `siegeFrames` / `siegePicture` / `siegeCanvasPicture` (the battle's
   frames or the hosted round's, with `mission-open`, `mini-game-end` and `mission-commit` events).
 - `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`.
-- `play.ts`: `SiegePlay` (launch button, play or delegate choice, the battle at 10 ticks a second,
-  the round at 60) and its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`,
+- `play.ts`: `SiegePlay` (launch buttons, play or delegate choice, the battle at 10 ticks a second,
+  the round at 60, taps in the walls' round through `roundTap`) and its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`,
   pointer, shell audio, `window.wwSiege`).
 - `content/`: `maps/village.world.json` (`rts-map`, with the walls and the `fortify-window` and
   `sabotage-window` opportunities), `types/siege.json` (with `wall` and `wall-tower`),
@@ -69,6 +75,7 @@ sides, named }`), `miniGames(content)` (`mission-room` and `td-defence`), `ADAPT
 `pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (and `delegated`,
 `quit`, `fortify-played`, `fortify-delegated`), `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs`,
 `pnpm -s cli screenshot games/samples/mini-siege/runs/played.run.json --tick 200 --json` (the
-room; `delegated.run.json --tick 80` the frozen battle), `tests/browser/mini-siege-shots.test.ts`; the page played from its link on
-both paths: `tests/browser/mini-siege-page.test.ts`.
+room; `delegated.run.json --tick 80` the frozen battle; `fortify-played.run.json --tick 90` the
+walls' round), `tests/browser/mini-siege-shots.test.ts`; the page played from its link, both
+missions on both paths (and the walls' round by taps): `tests/browser/mini-siege-page.test.ts`.
 To play: `pnpm dev`, then `games/samples/mini-siege/` from the launcher.

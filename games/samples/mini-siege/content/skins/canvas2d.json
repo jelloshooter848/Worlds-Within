@@ -559,6 +559,38 @@
         "ticks": 8
       }
     },
+    "mission-commit:outcome=held-cheap": {
+      "sound": "hold",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=held": {
+      "sound": "hold",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=held-bloodied": {
+      "sound": "hold",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=overrun": {
+      "sound": "breach",
+      "effect": {
+        "kind": "shake",
+        "size": 2,
+        "ticks": 12
+      }
+    },
     "mission-commit": {
       "sound": "commit",
       "effect": {

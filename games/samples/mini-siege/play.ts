@@ -15,6 +15,7 @@ import {
   type RtsView,
   type SideSummary,
 } from '@kits/rts';
+import { cameraHint, TD_TILE_SIZE, TdDefenceRound } from '@kits/towerdefense';
 import { PLAYER, siegeMissions } from './content';
 import { createGame, type MiniSiegeGame } from './headless';
 import type { InterfaceOptions } from './picture';
@@ -38,6 +39,12 @@ import type { InterfaceOptions } from './picture';
  *   it, the scene pushes the core `miniGameScene`, whose steps come back here and step the host one
  *   round tick each (60 a second; the world waits, as headless). It pops itself on the round's end;
  *   from then the world steps again and the result commits at its fixed tick, either path.
+ * - **Taps in the walls' round** (Engine 0.12 T8): while the hosted round is the towerdefense
+ *   kit's `TdDefenceRound` (the `fortify` mission), a pointer tap goes to its `TdGame.tap` through
+ *   the round's camera (`roundTap`): a tap moves the cursor there, a second tap on the cursor's
+ *   cell places the chosen tower, a right click or long-press sells. The other gestures, and every
+ *   gesture in the sabotage's room, are dropped (the room has keys and the touch pad only). The
+ *   same lines as the sample's `TdPlay.tap`: gap D12 in docs/reports/tower-defense.md.
  */
 
 /** World ticks the page plays per second while no round is hosted (the loop steps 60 a second). */
@@ -112,7 +119,29 @@ export class SiegePlay {
     return sidesOf(this.view(), this.game.factions);
   }
 
-  /** The missions the launch button offers now: none while one waits for its choice or a round runs. */
+  /** The hosted round when it is the walls' tower-defense round (`fortify`), else null. */
+  defenceRound(): TdDefenceRound | null {
+    const round = this.game.miniGame();
+    return round instanceof TdDefenceRound ? round : null;
+  }
+
+  /**
+   * A pointer tap at picture point (x, y) in the walls' round (see the file comment), through the
+   * frame the round presents (the picture size and the kit's `cameraHint`). False when no such
+   * round is hosted.
+   */
+  roundTap(x: number, y: number, button: 'primary' | 'secondary' = 'primary'): boolean {
+    const round = this.defenceRound();
+    if (round === null) return false;
+    const frame = {
+      size: this.opts.content.manifest.screen,
+      camera: cameraHint(round.game.world, TD_TILE_SIZE),
+    };
+    round.game.tap(x, y, frame, button, TD_TILE_SIZE);
+    return true;
+  }
+
+  /** The missions the launch buttons offer now: none while one waits for its choice or a round runs. */
   launchButtons(): string[] {
     if (this.waiting !== null || this.game.miniGame() !== null) return [];
     return missionButtons(this.view());
@@ -148,6 +177,7 @@ export class SiegePlay {
     for (const b of this.pressed.splice(0)) this.button(b);
     const gestures = this.opts.pointer?.gestures() ?? [];
     if (this.game.miniGame() !== null) {
+      for (const g of gestures) if (g.type === 'tap') this.roundTap(g.x, g.y, g.button);
       this.game.step(input);
       return;
     }

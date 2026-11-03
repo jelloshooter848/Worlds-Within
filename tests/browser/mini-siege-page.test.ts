@@ -16,6 +16,14 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // commits at world tick 160 (40 + the mission's cost of 120) and the hall ends as the run files
 // say. The page's clock is the test's (one loop step per call, as in rts-skirmish.test.ts), so the
 // game is the same every time. Skipped where Chromium is not installed (never in CI).
+//
+// Engine 0.12 T8 (the preparation phase, docs/ROADMAP.md 0.12 "done when": the mini siege offers
+// it): on three more fresh pages the bar's `Launch: Man the walls` button (offered from world tick
+// 5) is clicked at tick 10, then Delegate (seed 11 draws `overrun`), or Play with the recorded
+// round of `fortify-played.run.json` typed on the keyboard (archers on two walls, then the wave:
+// `held-cheap`, the gold down 40), or Play with two taps on a wall placing archers, a right click
+// selling them and Backspace giving up (`overrun`, the mission's onQuit). Each commits at world
+// tick 40 (10 + the mission's cost of 30).
 
 const GAME = 'games/samples/mini-siege/';
 /** Loop steps per world tick (`STEPS_PER_TICK` in play.ts). */
@@ -27,6 +35,10 @@ const KEYS: Record<string, string> = {
   left: 'ArrowLeft',
   right: 'ArrowRight',
   attack: 'KeyX',
+  jump: 'KeyZ',
+  special: 'KeyC',
+  start: 'Enter',
+  select: 'Backspace',
 };
 
 interface Hook {
@@ -34,11 +46,14 @@ interface Hook {
   choice(): string | null;
   playing(): boolean;
   outcomes(): string[];
+  miniGame(): string;
+  round(): Record<string, unknown> | null;
+  clientAt(col: number, row: number): { x: number; y: number };
 }
 
-const recordedRound = (): InputScript =>
+const recordedRound = (run = 'played'): InputScript =>
   (
-    JSON.parse(readFileSync(join(ROOT, GAME, 'runs/played.run.json'), 'utf8')) as {
+    JSON.parse(readFileSync(join(ROOT, GAME, `runs/${run}.run.json`), 'utf8')) as {
       missions: { action: string; input?: InputScript }[];
     }
   ).missions.find((m) => m.action === 'play')!.input!;
@@ -49,16 +64,32 @@ if (missing) console.warn(`skipping the mini siege page test: ${missing}`);
 const temp = mkdtempSync(join(tmpdir(), 'ww-mini-siege-page-'));
 afterAll(() => rmSync(temp, { recursive: true, force: true }));
 
-/** Calls `window.wwSiege[name]()` on the page. */
-function hook<K extends keyof Hook>(page: Page, name: K): Promise<ReturnType<Hook[K]>> {
+/** Calls `window.wwSiege[name](...args)` on the page. */
+function hook<K extends keyof Hook>(
+  page: Page,
+  name: K,
+  ...args: Parameters<Hook[K]>
+): Promise<ReturnType<Hook[K]>> {
   return page.evaluate(
-    (name) => (window as unknown as { wwSiege: Record<string, () => unknown> }).wwSiege[name]!(),
-    name,
+    ([name, args]) =>
+      (window as unknown as { wwSiege: Record<string, (...a: unknown[]) => unknown> }).wwSiege[name]!(
+        ...args,
+      ),
+    [name, args] as const,
   ) as Promise<ReturnType<Hook[K]>>;
 }
 
-/** A fresh page of the game with the test's clock, stepped to world tick 40 and launched. */
-async function launched(browser: Browser, url: string, errors: string[]) {
+/** What to launch, when, and the button's title. */
+interface Launch {
+  mission: string;
+  tick: number;
+  title: string;
+}
+const SABOTAGE: Launch = { mission: 'sabotage', tick: 40, title: 'Burn the siege engines' };
+const FORTIFY: Launch = { mission: 'fortify', tick: 10, title: 'Man the walls' };
+
+/** A fresh page of the game with the test's clock, stepped to the launch tick and launched. */
+async function launched(browser: Browser, url: string, errors: string[], at: Launch = SABOTAGE) {
   const context = await browser.newContext({ viewport: { width: 640, height: 520 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
@@ -89,15 +120,18 @@ async function launched(browser: Browser, url: string, errors: string[]) {
     page.evaluate((n) => (window as unknown as { __frames(n: number): void }).__frames(n), n);
   await frames(1); // the loop's first frame: no step
 
-  for (let i = 0; i < 400 && (await hook(page, 'tick')) < 40; i++) await frames(1);
-  expect(await hook(page, 'tick')).toBe(40);
-  expect(await page.locator('#launch').textContent()).toBe('Launch: Burn the siege engines');
-  await page.click('#launch');
+  for (let i = 0; i < 400 && (await hook(page, 'tick')) < at.tick; i++) await frames(1);
+  expect(await hook(page, 'tick')).toBe(at.tick);
+  // One button per offered mission (the RTS kit's missionButtons): at 10 and at 40 only one.
+  expect(await page.locator('#launches button').count()).toBe(1);
+  expect(await page.locator(`#launch-${at.mission}`).textContent()).toBe(`Launch: ${at.title}`);
+  await page.click(`#launch-${at.mission}`);
   await frames(1);
-  expect(await hook(page, 'choice')).toBe('sabotage');
+  expect(await hook(page, 'choice')).toBe(at.mission);
+  expect(await page.locator('#launches button').count()).toBe(0);
   // Nothing moves while the choice waits.
   await frames(STEPS_PER_TICK * 5);
-  expect(await hook(page, 'tick')).toBe(40);
+  expect(await hook(page, 'tick')).toBe(at.tick);
   expect(await page.locator('#play').isVisible()).toBe(true);
   expect(await page.locator('#delegate').isVisible()).toBe(true);
   return { page, frames };
@@ -109,8 +143,40 @@ async function toCommit(page: Page, frames: (n: number) => Promise<void>): Promi
   return hook(page, 'tick');
 }
 
+/**
+ * Types a recorded round on the keyboard, one loop step (one round tick) per frame, until the
+ * round ends; returns the round's ticks. The round is `game` from its first tick.
+ */
+async function typeRound(
+  page: Page,
+  frames: (n: number) => Promise<void>,
+  round: InputScript,
+  game: string,
+): Promise<number> {
+  const steps = round.steps;
+  let held: string[] = [];
+  let next = 0;
+  let ticks = 0;
+  for (; ticks < 2000; ticks++) {
+    while (next < steps.length && steps[next]!.frame <= ticks) {
+      const hold = steps[next]!.hold.map((a) => KEYS[a]!);
+      for (const k of held) if (!hold.includes(k)) await page.keyboard.up(k);
+      for (const k of hold) if (!held.includes(k)) await page.keyboard.down(k);
+      held = hold;
+      next++;
+    }
+    await frames(1);
+    if (ticks === 0) {
+      expect(await hook(page, 'playing')).toBe(true);
+      expect(await hook(page, 'miniGame')).toBe(game);
+    } else if (!(await hook(page, 'playing'))) break;
+  }
+  for (const k of held) await page.keyboard.up(k);
+  return ticks + 1;
+}
+
 describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () => {
-  it('is in the launcher, and plays the mission both ways from its link', async () => {
+  it('is in the launcher, and plays both missions both ways from its link', async () => {
     const dist = join(temp, 'dist');
     const server = await serveBuilt('/', dist);
     const browser = await launch();
@@ -136,33 +202,63 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
       // Played: the recorded round typed on the keyboard burns both engines; the world waits.
       {
         const { page, frames } = await launched(browser, server.url, errors);
-        const steps = recordedRound().steps;
         await page.click('#play');
-        let held: string[] = [];
-        let next = 0;
-        let ticks = 0;
-        for (; ticks < 2000; ticks++) {
-          while (next < steps.length && steps[next]!.frame <= ticks) {
-            const hold = steps[next]!.hold.map((a) => KEYS[a]!);
-            for (const k of held) if (!hold.includes(k)) await page.keyboard.up(k);
-            for (const k of hold) if (!held.includes(k)) await page.keyboard.down(k);
-            held = hold;
-            next++;
-          }
-          await frames(1);
-          if (ticks === 0) expect(await hook(page, 'playing')).toBe(true);
-          else if (!(await hook(page, 'playing'))) break;
-        }
-        for (const k of held) await page.keyboard.up(k);
-        expect(ticks + 1).toBe(406);
+        expect(await typeRound(page, frames, recordedRound(), 'mission-room')).toBe(406);
         expect(await hook(page, 'tick')).toBe(40);
         expect(await toCommit(page, frames)).toBe(160);
         expect(await hook(page, 'outcomes')).toEqual(['both-burnt']);
+      }
+
+      // The preparation phase, delegated: seed 11 draws overrun at world tick 40.
+      {
+        const { page, frames } = await launched(browser, server.url, errors, FORTIFY);
+        await page.click('#delegate');
+        await frames(1);
+        expect(await hook(page, 'playing')).toBe(false);
+        expect(await toCommit(page, frames)).toBe(40);
+        expect(await hook(page, 'outcomes')).toEqual(['overrun']);
+        expect(await page.locator('#status').textContent()).toContain('tick 40');
+      }
+
+      // The preparation phase, played: the recorded round typed on the keyboard holds the walls.
+      {
+        const { page, frames } = await launched(browser, server.url, errors, FORTIFY);
+        await page.click('#play');
+        expect(await typeRound(page, frames, recordedRound('fortify-played'), 'td-defence')).toBe(116);
+        expect(await hook(page, 'tick')).toBe(10);
+        expect(await toCommit(page, frames)).toBe(40);
+        expect(await hook(page, 'outcomes')).toEqual(['held-cheap']);
+      }
+
+      // The preparation phase by taps: two taps on the north tower's wall place archers, a right
+      // click sells them, then Backspace gives up (the mission's onQuit, overrun).
+      {
+        const { page, frames } = await launched(browser, server.url, errors, FORTIFY);
+        await page.click('#play');
+        await frames(1);
+        expect(await hook(page, 'miniGame')).toBe('td-defence');
+        expect(await page.locator('#status').textContent()).toContain('a tap');
+        expect(await hook(page, 'round')).toMatchObject({ gold: 100, towers: 0 });
+        const at = await hook(page, 'clientAt', 11, 1);
+        await page.mouse.click(at.x, at.y);
+        await frames(1);
+        await page.mouse.click(at.x, at.y);
+        await frames(1);
+        expect(await hook(page, 'round')).toMatchObject({ gold: 80, towers: 1 });
+        await page.mouse.click(at.x, at.y, { button: 'right' });
+        await frames(1);
+        expect(await hook(page, 'round')).toMatchObject({ gold: 90, towers: 0 });
+        await page.keyboard.down('Backspace');
+        await frames(1);
+        await page.keyboard.up('Backspace');
+        expect(await hook(page, 'playing')).toBe(false);
+        expect(await toCommit(page, frames)).toBe(40);
+        expect(await hook(page, 'outcomes')).toEqual(['overrun']);
       }
       expect(errors).toEqual([]);
     } finally {
       await browser.close();
       await server.close();
     }
-  }, 300_000);
+  }, 600_000);
 });

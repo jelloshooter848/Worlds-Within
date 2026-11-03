@@ -41,13 +41,18 @@ export function createWorld(content: ContentBundle, seed: number): World {
 
 /**
  * The game's mini games (`HeadlessEntry.miniGames`): the topdown kit's mission room over the rooms
- * and the towerdefense kit's `td-defence` over the walls' maps and towers. `validate` checks each
+ * and the towerdefense kit's `td-defence` over the walls' maps and towers (its frames at the game's
+ * picture size, which the page's taps read through). `validate` checks each
  * mission's params with the one its `play` names.
  */
 export function miniGames(content: ContentBundle): readonly MiniGameDef[] {
   return [
     missionRoom({ rooms: siegeRooms(content) }),
-    tdDefence({ maps: siegeDefenceMaps(content), towers: siegeTowers(content) }),
+    tdDefence({
+      maps: siegeDefenceMaps(content),
+      towers: siegeTowers(content),
+      size: content.manifest.screen,
+    }),
   ];
 }
 

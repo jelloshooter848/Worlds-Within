@@ -31,7 +31,7 @@ import type { MiniSiegeGame } from './headless';
  * title) with `status.miniGame` set to the mini game the mission plays (`mission-room`,
  * `td-defence`). The backend's `skinSetCanvasPresenter` sends each frame to its skin:
  * `canvas2d.json` for the battle, `canvas2d-mission-room.json` for the room (gap M6: the page's
- * picture switches itself); the walls' skin is Engine 0.12 T8's.
+ * picture switches itself) and `canvas2d-td-defence.json` for the walls' round (Engine 0.12 T8).
  *
  * The sim's snapshot carries no events, so the stream makes the three the battle's skin plays
  * sounds for from what changed between two frames (gap M21): `mission-open` (a mission opened),

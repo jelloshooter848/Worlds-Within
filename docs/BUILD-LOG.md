@@ -89,6 +89,21 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   glue names the hosted mini game itself), D10 (walls joined to cells by order only) and D11 (two
   missions on one event exclude each other); D3, D4, D6 and D8 confirmed in the real game. No
   `engine/sim` change was needed.
+- **The mini siege's preparation phase in the browser** (T8): original art for the walls' round
+  (`content/sprites/defence.txt`: the wall cell, the gate, the camp's road, archers and a ballista
+  on the wall, idle and firing, shots, the cursor; the raiders, grass and road reused from
+  `siege.txt`), three palettes (the ghost's `defence-ok` / `defence-blocked`, a struck raider's
+  `defence-hit`), the round's skin `canvas2d-td-defence.json` (picked by `skinSet` from the mini
+  game id), sounds for the `td-*` events and for each fortify outcome's commit
+  (`mission-commit:outcome=...` in the battle's skin), and seven one-line MML sfx. The page's bar
+  shows one launch button per offered mission (the RTS kit's `missionButtons`, opened through
+  `launchMission`), so `Launch: Man the walls` from world tick 5 to 30; the Play-or-Delegate choice
+  and `HostScene` are reused; pointer taps in the walls' round place and sell towers
+  (`SiegePlay.roundTap`). `tests/browser/mini-siege-page.test.ts` plays fortify from the link
+  delegated, by the recorded keys and by taps (each committing at 40) beside the 0.11 sabotage
+  paths; the screenshot test adds the walls' round and the battle after `overrun`. Lessons D12
+  (taps into a hosted round are copied page glue) and D13 (the cell-to-client mapping). No
+  `engine/core` or `engine/sim` change was needed.
 
 ### Decisions
 

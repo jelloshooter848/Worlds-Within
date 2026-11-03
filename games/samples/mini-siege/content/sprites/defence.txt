@@ -1,0 +1,238 @@
+; The mini siege's art for the walls' round (Engine 0.12 T8): original NES-style pixel art, one
+; string per row, one character per pixel, in the battle's palette (content/palettes/siege.json,
+; the same letters as siege.txt). The skin canvas2d-td-defence.json draws the round with it and
+; reuses siege.txt's grass, road and raiders (and heart): `wall-cell` is a build cell (a stretch of
+; the village's stone wall), `gate` the hall's gate the raiders run for, `camp` the road out of the
+; raiders' camp (a war banner); the two towers stand on the wall, each idle and firing: `archers`
+; (a villager in blue with a bow) and `ballista` (a wooden bolt thrower); the shots `shot-arrow` and
+; `shot-bolt`; the cursor (`cursor-0`/`-1`, it blinks) and the HUD icon `icon-wall`. Cells, towers,
+; shots and the cursor are 16x16, the icon 8x8. The skin draws the ghost tower with defence-ok or
+; defence-blocked and a struck raider with defence-hit (the same letters, other colours).
+palette siege
+legend . clear
+legend k 0
+legend w 1
+legend s 2
+legend o 3
+legend O 4
+legend g 5
+legend G 6
+legend d 7
+legend D 8
+legend r 9
+legend R 10
+legend b 11
+legend B 12
+legend t 13
+legend T 14
+legend y 15
+legend Y 16
+legend e 17
+
+frame wall-cell
+gkkkggkkkggkkkgg
+gkRrkgkRrkgkRrkg
+gkrrkkkrrkkkrrkg
+kkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrkk
+krrrkrrrrkrrrrDk
+kkkkkkkkkkkkkkkk
+kRrrrkRRrrkRRrrk
+krrrrkrrrrkrrrDk
+kkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrkk
+krrrkrrrDkrrrrDk
+kkkkkkkkkkkkkkkk
+kRrrrkRRrrkRRrrk
+kDrrDkrrrDkrrDDk
+kkkkkkkkkkkkkkkk
+
+frame gate
+rrkkkkkkkkkkkkrr
+rkkDDDDDDDDDDkkr
+rkDdddDddDdddDkr
+kDdddDdddDdddDDk
+kDdddDdddDdddDDk
+kDDDDDDDDDDDDDDk
+kDdddDdddDdddDDk
+kDdddDdddDydddDk
+kDdddDdddDydddDk
+kDDDDDDDDDDDDDDk
+kDdddDdddDdddDDk
+kDdddDdddDdddDDk
+kDDDDDDDDDDDDDDk
+kDdddDdddDdddDDk
+kDdddDdddDdddDDk
+kkkkkkkkkkkkkkkk
+
+frame camp
+ddddddddddddkkdd
+ddDdddddddddktTk
+ddddddddddddktTT
+dddddddDddddktTk
+dDddddddddddkkdd
+ddddddddddddkddd
+ddddddddddddkdDd
+ddddDdddddddkddd
+dddddddddddkkkdd
+dddddddddddddddd
+ddDddddddddddddd
+dddddddddddDdddd
+dddddddddddddddd
+dddddDdddddddddd
+dddddddddddddDdd
+dDdddddddddddddd
+
+frame archers-idle
+gggggkkkkkkggggg
+ggggkbbbbbbkgggg
+ggggkssssssk.Dgg
+ggggksksskskkDgg
+gggggkssssk.kDgg
+gggkkbbbbbbkkDgg
+ggkskbbbbbbksDgg
+gkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrkk
+krrrkrrrrkrrrrDk
+kkkkkkkkkkkkkkkk
+kRrrrkRRrrkRRrrk
+krrrrkrrrrkrrrDk
+kkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrDk
+kkkkkkkkkkkkkkkk
+
+frame archers-fire
+gggggkkkkkkggggg
+ggggkbbbbbbkgDgg
+ggggkssssssk.gDg
+ggggksksskskwwww
+gggggkssssk.gwDg
+gggkkbbbbbbkkDgg
+ggkskbbbbbbksggg
+gkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrkk
+krrrkrrrrkrrrrDk
+kkkkkkkkkkkkkkkk
+kRrrrkRRrrkRRrrk
+krrrrkrrrrkrrrDk
+kkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrDk
+kkkkkkkkkkkkkkkk
+
+frame ballista-idle
+gggggggggggggggg
+ggDDggggggggDDgg
+gggDDggggggDDggg
+ggggDDkkkkDDgggg
+gggggDdddddDgggg
+ggggkkdRRRdkkggg
+gggkdddddddddkgg
+gkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrkk
+krrrkrrrrkrrrrDk
+kkkkkkkkkkkkkkkk
+kRrrrkRRrrkRRrrk
+krrrrkrrrrkrrrDk
+kkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrDk
+kkkkkkkkkkkkkkkk
+
+frame ballista-fire
+gggggggwwwgggggg
+gDDgggggwgggggDD
+ggDDDggggggggDDg
+ggggDDkkkkkDDggg
+gggggDdddddDgggg
+ggggkkdddddkkggg
+gggkdddddddddkgg
+gkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrkk
+krrrkrrrrkrrrrDk
+kkkkkkkkkkkkkkkk
+kRrrrkRRrrkRRrrk
+krrrrkrrrrkrrrDk
+kkkkkkkkkkkkkkkk
+kRRrkRRrrkRRrrDk
+kkkkkkkkkkkkkkkk
+
+frame shot-arrow
+................
+................
+................
+................
+................
+.....w..........
+......w.........
+.......D........
+........D.......
+.........D......
+..........R.....
+..........RR....
+................
+................
+................
+................
+
+frame shot-bolt
+................
+................
+................
+................
+....ww..........
+....wwD.........
+.....DDD........
+......DDD.......
+.......DDD......
+........DDD.....
+.........DRR....
+..........RRR...
+...........RR...
+................
+................
+................
+
+frame cursor-0
+yyyy........yyyy
+yk............ky
+y..............y
+y..............y
+................
+................
+................
+................
+................
+................
+................
+................
+y..............y
+y..............y
+yk............ky
+yyyy........yyyy
+
+frame cursor-1
+................
+.yyy........yyy.
+.y............y.
+.y............y.
+................
+................
+................
+................
+................
+................
+................
+................
+.y............y.
+.y............y.
+.yyy........yyy.
+................
+
+frame icon-wall
+k.k.k...
+kkkkkk..
+kRrkRk..
+kkkkkk..
+kRkRrk..
+kkkkkk..
+........
+........

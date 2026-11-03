@@ -1,0 +1,288 @@
+{
+  "backend": "canvas2d",
+  "sheets": {
+    "sheet": "defence",
+    "fallbackColor": "#ff00ff"
+  },
+  "kinds": {
+    "tower:archers": {
+      "frames": {
+        "idle": "archers-idle",
+        "fire": "archers-fire"
+      },
+      "fallbackColor": "#7c7c7c"
+    },
+    "tower:ballista": {
+      "frames": {
+        "idle": "ballista-idle",
+        "fire": "ballista-fire"
+      },
+      "fallbackColor": "#7c7c7c"
+    },
+    "enemy:raider": {
+      "sheet": "siege",
+      "frames": {
+        "walk": {
+          "down": {
+            "frames": ["raider-down-0", "raider-down-1"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["raider-up-0", "raider-up-1"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["raider-right-0", "raider-right-1"],
+            "ticks": 8
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#a80020",
+      "byTag": [
+        {
+          "tag": "hit",
+          "palette": "defence-hit"
+        }
+      ]
+    },
+    "shot:archers": {
+      "frames": {
+        "idle": "shot-arrow"
+      },
+      "fallbackColor": "#fcfcfc"
+    },
+    "shot:ballista": {
+      "frames": {
+        "idle": "shot-bolt"
+      },
+      "fallbackColor": "#ac7c00"
+    },
+    "ghost:archers": {
+      "frames": {
+        "idle": "archers-idle"
+      },
+      "fallbackColor": "#b8f818",
+      "byTag": [
+        {
+          "tag": "ok",
+          "palette": "defence-ok"
+        },
+        {
+          "tag": "blocked",
+          "palette": "defence-blocked",
+          "fallbackColor": "#f83800"
+        }
+      ]
+    },
+    "ghost:ballista": {
+      "frames": {
+        "idle": "ballista-idle"
+      },
+      "fallbackColor": "#b8f818",
+      "byTag": [
+        {
+          "tag": "ok",
+          "palette": "defence-ok"
+        },
+        {
+          "tag": "blocked",
+          "palette": "defence-blocked",
+          "fallbackColor": "#f83800"
+        }
+      ]
+    },
+    "cursor": {
+      "frames": {
+        "idle": {
+          "frames": ["cursor-0", "cursor-1"],
+          "ticks": 16
+        }
+      },
+      "fallbackColor": "#f8b800"
+    }
+  },
+  "tiles": {
+    ".": {
+      "sheet": "siege",
+      "frame": "grass",
+      "fallbackColor": "#00a800"
+    },
+    "#": {
+      "sheet": "siege",
+      "frame": "road",
+      "fallbackColor": "#ac7c00"
+    },
+    "B": {
+      "frame": "wall-cell",
+      "fallbackColor": "#7c7c7c"
+    },
+    "S": {
+      "frame": "camp",
+      "fallbackColor": "#ac7c00"
+    },
+    "X": {
+      "frame": "gate",
+      "fallbackColor": "#503000"
+    }
+  },
+  "events": {
+    "td-place": {
+      "sound": "place",
+      "effect": {
+        "kind": "particles",
+        "color": "#bcbcbc",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "td-sell": {
+      "sound": "place",
+      "effect": {
+        "kind": "particles",
+        "color": "#f8b800",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "td-refused": {
+      "sound": "refused"
+    },
+    "td-wave-start": {
+      "sound": "launch",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "td-shot:tower=ballista": {
+      "sound": "bolt",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "td-shot": {
+      "sound": "arrow"
+    },
+    "td-kill": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "particles",
+        "color": "#f83800",
+        "count": 8,
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "td-leak": {
+      "sound": "leak",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 8
+      }
+    },
+    "td-end:won": {
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 20
+      }
+    },
+    "td-end:lost": {
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 20
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "host:mission",
+      "as": "text",
+      "x": 16,
+      "y": 12,
+      "font": "siege-font"
+    },
+    {
+      "status": "gold",
+      "as": "icon",
+      "x": 16,
+      "y": 32,
+      "sheet": "siege",
+      "frame": "icon-gold"
+    },
+    {
+      "status": "gold",
+      "as": "number",
+      "x": 26,
+      "y": 32,
+      "font": "siege-font"
+    },
+    {
+      "status": "lives",
+      "as": "icon",
+      "x": 72,
+      "y": 32,
+      "sheet": "siege",
+      "frame": "heart"
+    },
+    {
+      "status": "lives",
+      "as": "number",
+      "x": 82,
+      "y": 32,
+      "font": "siege-font"
+    },
+    {
+      "status": "enemies",
+      "as": "icon",
+      "x": 112,
+      "y": 32,
+      "sheet": "siege",
+      "frame": "icon-enemy"
+    },
+    {
+      "status": "enemies",
+      "as": "number",
+      "x": 122,
+      "y": 32,
+      "font": "siege-font"
+    },
+    {
+      "status": "tower",
+      "as": "icon",
+      "x": 16,
+      "y": 200,
+      "frame": "icon-wall"
+    },
+    {
+      "status": "tower",
+      "as": "text",
+      "x": 26,
+      "y": 200,
+      "font": "siege-font"
+    },
+    {
+      "status": "towerCost",
+      "as": "icon",
+      "x": 112,
+      "y": 200,
+      "sheet": "siege",
+      "frame": "icon-gold"
+    },
+    {
+      "status": "towerCost",
+      "as": "number",
+      "x": 122,
+      "y": 200,
+      "font": "siege-font"
+    }
+  ]
+}

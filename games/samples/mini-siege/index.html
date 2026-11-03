@@ -57,9 +57,17 @@
         color: #fff;
         font: inherit;
       }
-      #bar button#launch {
+      #bar button.launch {
         background: #a80020;
         border-color: #f83800;
+      }
+      #launches {
+        flex: none;
+        display: flex;
+        gap: 6px;
+      }
+      #launches:empty {
+        display: none;
       }
       #bar button[hidden] {
         display: none;
@@ -89,9 +97,9 @@
   </head>
   <body>
     <canvas id="screen"></canvas>
-    <!-- The bar: the mission's launch button while it is offered, then Play or Delegate. -->
+    <!-- The bar: a launch button per offered mission (main.ts adds them), then Play or Delegate. -->
     <div id="bar">
-      <button id="launch" type="button" hidden>Launch</button>
+      <span id="launches"></span>
       <button id="play" type="button" hidden title="Play the mission yourself">Play</button>
       <button id="delegate" type="button" hidden title="Let the captain's people do it">Delegate</button>
       <span id="status"></span>

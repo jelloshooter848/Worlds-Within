@@ -10,8 +10,9 @@ It joins the world simulation (`engine/sim`), the RTS kit (`kits/rts`), the top-
 against the real raiders (`kits/towerdefense`, its data-driven `td-defence`), played or
 delegated, whose outcome writes the gold spent and the losses back to the world (docs/BUILD-LOG.md,
 Engine 0.12, decisions 5-8). It is **the platform test**: the mode needed no `engine/sim` change;
-what it did need is logged in `docs/reports/tower-defense.md` (ids `D1`, ...). The page does not
-draw the walls' round yet (Engine 0.12 T8). The shape is decision 11 and the checks decision 12 of `docs/BUILD-LOG.md`,
+what it did need is logged in `docs/reports/tower-defense.md` (ids `D1`, ...). Since Engine 0.12
+T8 the page offers it as well (its own art, skin and sounds; played by keys or pointer taps, or
+delegated). The shape is decision 11 and the checks decision 12 of `docs/BUILD-LOG.md`,
 Engine 0.11. Since T8 it plays headless (`pnpm cli run`); since T9 it has original NES-style art,
 two skins, sounds and one song, a view for `pnpm cli screenshot`, and a page (`index.html`,
 launcher link `games/samples/mini-siege/`) where the mission is launched and then played or
@@ -106,6 +107,15 @@ the gap report with a named release.
     `hero-<down|up|side>-<0|1>`, `hero-attack-<dir>`), `sword-up`/`-down`/`-right`,
     `poof-0`..`2`, the guards (`guard-<dir>-<0|1>`, raiders with axes), the engines (`ram-0/1`,
     `catapult-0/1`), `heart` and `hourglass`.
+  - `content/sprites/defence.txt` (Engine 0.12 T8, palette `siege`, the same letters): the walls'
+    round: `wall-cell` (a build cell, a stretch of stone wall), `gate` (the hall's gate, `X`),
+    `camp` (the road out of the raiders' camp with a war banner, `S`), the towers on the wall,
+    each idle and firing (`archers-idle`/`-fire`, a villager in blue with a bow;
+    `ballista-idle`/`-fire`, a wooden bolt thrower), `shot-arrow`, `shot-bolt`, `cursor-0`/`-1`
+    and the HUD icon `icon-wall`. The round reuses `siege.txt`'s `grass`, `road`, the raiders'
+    walking frames, `heart`, `icon-gold` and `icon-enemy`. `content/palettes/defence-ok.json` and
+    `defence-blocked.json` (the ghost tower: green where it may be built, red where not) and
+    `defence-hit.json` (a struck raider flashes white) are the same letters in other colours.
   - `content/sprites/siege-font.txt`: an 8x8 font (digits, capitals, small letters, `'`, `,`,
     `.`, `-`, `:`), white with a black drop shadow, for the HUD's numbers and the mission title.
 - Skins: `content/skins/canvas2d.json` (the battle): every kind the RTS kit presents here
@@ -123,9 +133,21 @@ the gap report with a named release.
   tag `foe:ram` and `foe:catapult` (the topdown kit tags each placed foe with its world name);
   tiles `#` and `.`; the camera unclamped (the room under its HUD band); HUD the host's
   `host:mission` title (G19), hearts, the time left; sounds for `sword`, `kill` (`burn`), `hurt`,
-  `dying`.
-- Sound: `content/sfx/` (`sword`, `hurt`, `burn`, `pass`, `fail`, `launch`, `commit`, one line of
-  MML each) and `content/songs/siege.json`, one short original loop in D minor (six bars at 120
+  `dying`. `content/skins/canvas2d-td-defence.json` (Engine 0.12 T8, the walls' round, mini game
+  `td-defence`, sheet `defence` with `siege` per entry): `tower:archers`, `tower:ballista` (`idle`,
+  `fire`), `enemy:raider` (the raiders' `walk` in three facings, mirrored for left; `hit` in
+  `defence-hit`), `shot:archers`, `shot:ballista`, `ghost:<type>` (`ok` / `blocked` palettes) and
+  `cursor`; tiles `.` grass, `#` road, `B` the wall cell, `S` the camp, `X` the gate (the 16x7 map
+  centred on the picture, black above and below); HUD the host's `host:mission` title, `gold`,
+  `lives`, `enemies` and at the bottom the chosen `tower` and its `towerCost`; sounds `td-place`
+  and `td-sell` (`place`), `td-refused` (`refused`), `td-wave-start` (`launch`),
+  `td-shot:tower=ballista` (`bolt`) and `td-shot` (`arrow`), `td-kill` (`hurt`), `td-leak`
+  (`leak`); `td-end:won` / `:lost` only tint (the battle's `mini-game-end` sounds the end). The
+  battle's skin sounds the fortify commit: `mission-commit:outcome=held-cheap` / `held` /
+  `held-bloodied` (`hold`, a gold tint) and `overrun` (`breach`, a shake).
+- Sound: `content/sfx/` (`sword`, `hurt`, `burn`, `pass`, `fail`, `launch`, `commit`; since
+  Engine 0.12 T8 `place`, `arrow`, `bolt`, `leak`, `refused`, `hold`, `breach`; one line of MML
+  each) and `content/songs/siege.json`, one short original loop in D minor (six bars at 120
   bpm, two pulses, triangle and noise), played by the page once the first gesture unlocks sound.
 - TypeScript is glue:
   - `content.ts`: `loadMiniSiege(files)` (the kinds of `rts`, `topdown` and `towerdefense`),
@@ -164,16 +186,24 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     `launchButtons()` (the kit's `missionButtons`, none while a choice waits or a round runs),
     `press({ kind: 'launch', mission })` (the game's `open` step, through the kit's
     `launchMission`), then `choice()` and `press({ kind: 'play' | 'delegate' })`; nothing steps
-    while the choice waits. `update(input)`: the battle one world tick every `STEPS_PER_TICK` (6:
+    while the choice waits. `defenceRound()` (the hosted round when it is the walls'
+    `TdDefenceRound`) and `roundTap(x, y, button?)` (Engine 0.12 T8): a pointer tap in the walls'
+    round goes to its `TdGame.tap` through the round's frame (the picture size, the kit's
+    `cameraHint`): a tap moves the cursor, a second tap on it places, a right click or long-press
+    sells (gap D12: the same lines as the sample's `TdPlay.tap`). `update(input)`: the battle one world tick every `STEPS_PER_TICK` (6:
     `TICKS_PER_SECOND` 10), a hosted round one tick per loop step (60 a second, the world
     waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors), which
     pushes the core `miniGameScene` when the round starts and pops it on its end. `records()`,
     `title(mission)`, `outcomeTitle(mission, outcome)`, `sides()`, `message` (the last refusal).
   - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins and the
     shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone), `audio`
-    (`contentSfx`, `contentSongs`, music `siege`); the bar (`#launch`, `#play`, `#delegate`,
-    `#status`: the tick, the choice, the last outcome's title, the hall fallen or the raiders
-    beaten, a refusal) and `window.wwSiege` (`tick`, `choice`, `playing`, `outcomes`).
+    (`contentSfx`, `contentSongs`, music `siege`); the bar (`#launches`, one `#launch-<mission>`
+    button per offered mission from `launchButtons()`, so from world tick 20 to 30 both;
+    `#play`, `#delegate`, `#status`: the tick, the choice, the last outcome's title, the hall
+    fallen or the raiders beaten, a refusal; while a round is hosted, its mini game's key hint)
+    and `window.wwSiege` (`tick`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the walls'
+    round's `kit` summary) and `clientAt(col, row)` (a walls' cell in client px, for the browser
+    test's taps; gap D13)).
 - `mini-siege.test.ts`: the content, the units against their types, the params checks
   (`bad_mini_game_use` at `params.room` and `params.outcomes.0.outcome`), the launch refusals,
   orders refused while the round is hosted, and over whole runs: the battle frozen at every
@@ -194,10 +224,16 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   phase the same way: `fortify` launched at world tick 10, delegated (`overrun` at 40) or played
   (`fortify-played.run.json`'s recorded round as keys, `status.miniGame` `td-defence`, the host's
   title `Man the walls`, `mini-game-end` for `td-defence`, `held-cheap` at 40), ending with the
-  fortify run files' last hashes.
+  fortify run files' last hashes. Engine 0.12 T8: taps in the walls' round (picture (184, 88), the
+  centre of cell 11,1 with the map at picture y 64) move the cursor, place archers (gold 80), a
+  tap off the map does nothing, a secondary tap sells (gold 90), select quits to `overrun` at 40;
+  and the played round's frames: every kind, tile and the main sounds in
+  `canvas2d-td-defence.json`, a commit sound for every fortify outcome in the battle's skin.
 - Also: `tests/browser/mini-siege-page.test.ts` (the built page played from the launcher's link in
   headless Chromium: Launch then Delegate, and Launch then Play with the recorded round typed as
-  keys; Engine 0.11 T10), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
+  keys; Engine 0.11 T10; since Engine 0.12 T8 the same for `fortify` at world tick 10, delegated
+  (`overrun`), played by the recorded keys (`held-cheap`) and played by taps then given up
+  (`overrun`), each committing at 40, with no page errors), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
   `tests/build/pages.test.ts` (the launcher and the build list the page).
 
 ## Entity ids
@@ -280,6 +316,13 @@ the target): pressing it freezes the siege (the held units turn blue, the countd
   what you burnt decides the outcome. The battle then resumes and the result lands at the commit
   tick, 120 world ticks after the launch.
 - **Delegate**: the world draws an outcome by the mission's weights; it lands at the same tick.
+- **The preparation phase** (Engine 0.12 T8): from world tick 5 to 30 the bar also shows
+  **Launch: Man the walls** (from 20 to 30 next to the sabotage's button). Play it: the road
+  between the village's walls, the hall's gold (up to 100) and two lives; arrows (or a tap) pick a
+  wall, Z (or a second tap) builds the chosen tower there, X switches archers and ballista, C (or
+  a right click, long-press) sells, Enter sends the raiders, Backspace gives up (`overrun`). Keep
+  every raider off the gate for little gold to hold the walls cheaply. The result lands 30 world
+  ticks after the launch, whether played or delegated; the sabotage can be launched after it.
 - Afterwards the status line names the outcome; watch whether the hall holds. A whole game takes
   two or three minutes.
 
@@ -289,8 +332,11 @@ the target): pressing it freezes the siege (the held units turn blue, the countd
 battle held, the siege in blue), `played.run.json --tick 200` (the mission room mid-round),
 `delegated.run.json --tick 200` and `played.run.json --tick 600` (the battle after each commit:
 the burnt catapult, or both engines gone). The page plays the run's mission steps through the
-view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is the same every run;
-`tests/browser/mini-siege-shots.test.ts` checks all four (skipped where Chromium is missing).
+view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is the same every run.
+The preparation phase (Engine 0.12 T8): `fortify-played.run.json --tick 90` (the walls' round
+mid-wave in its own skin) and `fortify-delegated.run.json --tick 60` (the battle after `overrun`,
+two walls gone). `tests/browser/mini-siege-shots.test.ts` checks all six (skipped where Chromium is
+missing).
 
 ## How to test
 
@@ -302,7 +348,8 @@ view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is t
 the backend parity test plays every run through the view's `frame()` and `render`), `pnpm test
 games/samples/mini-siege/play.test.ts` (the page's glue), `pnpm vitest run
 tests/browser/mini-siege-shots.test.ts` (the screenshots), `pnpm vitest run
-tests/browser/mini-siege-page.test.ts` (the page played from its link on both paths).
+tests/browser/mini-siege-page.test.ts` (the page played from its link, both missions on both
+paths).
 
 ## Imports
 

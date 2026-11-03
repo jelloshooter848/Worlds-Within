@@ -8,10 +8,11 @@ import { canonicalJson } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { MINI_GAME_STATUS, type PresentFrame } from '@engine/core/present';
+import { isFullMap, MINI_GAME_STATUS, skinSet, type PresentFrame } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
 import type { Renderer } from '@engine/core/gfx/renderer';
-import { loadMiniSiege } from './content';
+import type { PointerGesture } from '@engine/core/input/pointer-logic';
+import { loadMiniSiege, siegeMissions } from './content';
 import { siegePicture } from './picture';
 import { SiegePlay } from './play';
 
@@ -21,7 +22,8 @@ import { SiegePlay } from './play';
 // result, and with the launch at world tick 40, as in the run files, the same state hash at world
 // tick 260 as the run file's last one: the page plays the game the tools play. Engine 0.12 T7:
 // the same for the preparation phase, `fortify` launched at world tick 10 and played (the recorded
-// round of `fortify-played.run.json`) or delegated.
+// round of `fortify-played.run.json`) or delegated. Engine 0.12 T8: pointer taps in the walls' round
+// place and sell towers through the round's camera, and the round's frames go to its own skin.
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const content = mustLoad(loadMiniSiege(readGameFiles(ROOT)));
@@ -40,9 +42,20 @@ const recordedRound = (name = 'played') =>
     }
   ).missions.find((m) => m.action === 'play')!.input!;
 
+/** The page's pointer in tests: the gestures queued since the last step. */
+class Taps {
+  readonly queued: PointerGesture[] = [];
+  tap(x: number, y: number, button: 'primary' | 'secondary' = 'primary'): void {
+    this.queued.push({ type: 'tap', button, x, y, kind: 'mouse' });
+  }
+  gestures(): readonly PointerGesture[] {
+    return this.queued.splice(0);
+  }
+}
+
 /** The page: the scene stack with `SiegePlay`'s scene, drawing every step into the null backend. */
-function page() {
-  const play = new SiegePlay({ content, seed: content.manifest.start.seed, pointer: null, stepsPerTick: 1 });
+function page(pointer: Taps | null = null) {
+  const play = new SiegePlay({ content, seed: content.manifest.start.seed, pointer, stepsPerTick: 1 });
   const stack = new SceneStack();
   const presenter = new NullPresenter({ validate: true, freeze: true });
   stack.push(play.scene(stack, () => siegePicture(presenter, content, play.ui)));
@@ -203,5 +216,84 @@ describe('the page glue, headless', () => {
     });
     toEnd(p);
     expect(hash(p.play.game.snapshot())).toBe(lastHash('fortify-played'));
+  });
+
+  it('places and sells towers in the walls round by pointer taps, then quits to overrun', () => {
+    const taps = new Taps();
+    const p = page(taps);
+    toFortify(p);
+    p.play.press({ kind: 'play' });
+    p.step();
+    const round = p.play.defenceRound()!;
+    expect(round).not.toBeNull();
+    const kit = () => round.game.snapshot()['kit'] as Record<string, unknown>;
+    expect(kit()).toMatchObject({ gold: 100, towers: 0 });
+    // The 16x7 map is centred on the 256x240 picture: its top-left at picture (0, 64). The north
+    // tower's cell (11, 1) has its centre at picture (184, 88).
+    taps.tap(184, 88);
+    p.step();
+    expect(round.game.controls.view()).toMatchObject({ col: 11, row: 1 });
+    expect(kit()['towers']).toBe(0);
+    taps.tap(184, 88);
+    p.step();
+    expect(kit()).toMatchObject({ gold: 80, towers: 1 });
+    const tower = p.frames.at(-1)!.entities.find((e) => e.kind === 'tower:archers');
+    expect(tower).toMatchObject({ x: 176, y: 16 });
+    expect(p.frames.at(-1)!.status[MINI_GAME_STATUS]).toBe('td-defence');
+    // A tap off the map does nothing; a secondary tap sells (half the cost back).
+    taps.tap(10, 10);
+    p.step();
+    expect(kit()['towers']).toBe(1);
+    taps.tap(184, 88, 'secondary');
+    p.step();
+    expect(kit()).toMatchObject({ gold: 90, towers: 0 });
+    // Select gives up: the mission's onQuit outcome lands at the commit tick.
+    const quit = new ScriptedInput({ steps: [{ frame: 0, hold: ['select'] }] });
+    quit.next();
+    p.step(quit);
+    expect(p.play.game.miniGame()).toBeNull();
+    while (p.play.records().length === 0) p.step();
+    expect(p.play.tick).toBe(40);
+    expect(p.play.records()[0]).toMatchObject({ mission: 'fortify', outcome: 'overrun', resolution: 'quit' });
+  });
+
+  it('ignores taps while no walls round is hosted', () => {
+    const p = page();
+    expect(p.play.roundTap(184, 88)).toBe(false);
+  });
+
+  it('draws the walls round with its own skin: every kind, tile and sound the round shows', () => {
+    const p = page();
+    toFortify(p);
+    const keys = new ScriptedInput(recordedRound('fortify-played'));
+    p.play.press({ kind: 'play' });
+    do {
+      keys.next();
+      p.step(keys);
+    } while (p.play.game.miniGame() !== null);
+    const { main, rounds } = skinSet(content, 'canvas2d');
+    const skin = rounds['td-defence']!;
+    expect(skin).toBeDefined();
+    const round = p.frames.filter((f) => f.status[MINI_GAME_STATUS] === 'td-defence');
+    // 116 round ticks: the last one ends the round, and its frame is the battle's again.
+    expect(round.length).toBe(115);
+    const kinds = new Set(round.flatMap((f) => f.entities.map((e) => e.kind)));
+    expect([...kinds].sort()).toEqual([
+      'cursor',
+      'enemy:raider',
+      'ghost:archers',
+      'shot:archers',
+      'tower:archers',
+    ]);
+    for (const k of kinds) expect(skin.kinds[k], k).toBeDefined();
+    const tiles = new Set(round.flatMap((f) => (f.map && isFullMap(f.map) ? f.map.tiles.join('') : '')));
+    expect(tiles.size).toBeGreaterThan(0);
+    for (const t of [...tiles].join('')) expect(skin.tiles?.[t], `tile ${t}`).toBeDefined();
+    const events = new Set(round.flatMap((f) => f.events.map((e) => e.type)));
+    for (const e of ['td-place', 'td-wave-start', 'td-shot', 'td-kill']) expect(events.has(e), e).toBe(true);
+    // The battle's skin sounds every fortify outcome's commit.
+    const fortify = siegeMissions(content).find((m) => m.id === 'fortify')!;
+    for (const o of fortify.outcomes)
+      expect(main!.events?.[`mission-commit:outcome=${o.id}`], o.id).toBeDefined();
   });
 });

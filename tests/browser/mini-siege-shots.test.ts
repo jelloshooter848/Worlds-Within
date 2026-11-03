@@ -12,7 +12,10 @@ import { launchChromium, NoBrowserError } from '../../engine/tools/screenshot';
 // held during the freeze (delegated, world tick 80), the mission room mid-round (played, game tick
 // 200), and the battle after the commit (delegated at 200, played at 600: world tick 194). Each
 // picture must match the headless run's state hashes and be byte-identical on a second run, and
-// the room and the battle must differ. Skipped where Chromium is not installed (never in CI).
+// the room and the battle must differ. Engine 0.12 T8 adds the preparation phase: the walls'
+// tower-defense round mid-wave (fortify-played, game tick 90, its own skin) and the battle after a
+// delegated fortify committed `overrun` (fortify-delegated, world tick 60: two walls gone).
+// Skipped where Chromium is not installed (never in CI).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const RUNS = 'games/samples/mini-siege/runs';
@@ -59,6 +62,8 @@ describe.skipIf(missing !== null)('the mini siege through pnpm cli screenshot', 
     ['played', 200, 'the mission room'],
     ['delegated', 200, 'the battle after a delegated commit'],
     ['played', 600, 'the battle after a played commit'],
+    ['fortify-played', 90, "the walls' round"],
+    ['fortify-delegated', 60, 'the battle after the walls were overrun'],
   ] as [string, number, string][])(
     '%s at tick %i (%s) is deterministic',
     async (run, tick) => {
@@ -71,6 +76,6 @@ describe.skipIf(missing !== null)('the mini siege through pnpm cli screenshot', 
   );
 
   it('shows different pictures at each', () => {
-    expect(new Set(Object.values(sha)).size).toBe(4);
+    expect(new Set(Object.values(sha)).size).toBe(6);
   });
 });
