@@ -2,6 +2,14 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { campaignRun, type CampaignSave } from '@engine/core/campaign';
+import {
+  decodeSaveCode,
+  encodeSaveCode,
+  normalizeSaveCode,
+  saveCodeContext,
+  type SaveCodeContext,
+} from '@engine/core/campaign-code';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, type ContentError } from '@engine/core/content/validate';
@@ -55,8 +63,9 @@ export function stateHash(snapshot: JsonObject): string {
 /** A check that failed: which one, at which tick, and what the snapshot held. */
 export interface FailedCheck {
   tick: number;
-  kind: 'assertion' | 'invariant';
-  /** Its index in the run file's `assertions` or `invariants`. */
+  /** `code`: a save code in the run file's `codes` (Engine 0.13), `path` being `codes.<index>`. */
+  kind: 'assertion' | 'invariant' | 'code';
+  /** Its index in the run file's `assertions`, `invariants` or `codes`. */
   index: number;
   path: string;
   op: CheckOp;
@@ -122,6 +131,21 @@ export interface PlayedRun {
   hashesChecked: number;
   /** The first sync hash that differed (the run stops there), or null. */
   hashMismatch: HashMismatch | null;
+  /**
+   * Engine 0.13: the campaign save the run started from (its `from`: another run's end or a save
+   * code), or null.
+   */
+  startSave: CampaignSave | null;
+  /** How many of the run file's `codes` were compared. */
+  codesChecked: number;
+  /**
+   * The game's campaign save at `lastTick` (`HeadlessGame.campaignSave`), only when asked for
+   * (`PlayOptions.withSave`): null when the game plays no campaign, undefined when not asked or the
+   * game has no `campaignSave`.
+   */
+  campaignSave?: CampaignSave | null;
+  /** The game's save code context (its campaigns, missions and scenarios); null for a world run. */
+  codeContext: SaveCodeContext | null;
 }
 
 export type PlayOutcome = { ok: true; value: PlayedRun } | { ok: false; errors: ContentError[] };
@@ -157,6 +181,76 @@ export interface PlayOptions {
    * An id that is not one of the kit's rules is a usage error.
    */
   disableRules?: readonly string[];
+  /** Read the game's campaign save at the last tick (`PlayedRun.campaignSave`; Engine 0.13). */
+  withSave?: boolean;
+}
+
+/** A content error in the run file at `path`. */
+const runError = (loaded: LoadedRunFile, path: (string | number)[], code: string, message: string) => ({
+  ok: false as const,
+  errors: [contentError(loaded.file, path, code, message)],
+});
+
+/**
+ * The campaign save a game run's `from` starts at (Engine 0.13, decision 9): the save code
+ * decoded against the game's content, or the `from.run` file played to its last tick and its
+ * game's campaign save read there. Errors name the run file's `from` field: a code's refusal code
+ * (`code_typo`, ...), `from_chain` (the source run has a `from` itself; one step deep in 0.13),
+ * `from_game` (another game's run), `no_campaign` (its game plays no campaign there), or
+ * `campaign_done` (the save is past the campaign's last entry).
+ */
+async function startSave(
+  cwd: string,
+  loaded: LoadedRunFile,
+  ctx: SaveCodeContext,
+): Promise<{ ok: true; save: CampaignSave } | { ok: false; errors: ContentError[] }> {
+  const from = loaded.run.from;
+  let save: CampaignSave;
+  if (from?.code !== undefined) {
+    const decoded = decodeSaveCode(from.code, ctx);
+    if (!decoded.ok) return runError(loaded, ['from', 'code'], decoded.code, decoded.error);
+    save = decoded.save;
+  } else {
+    const source = readRunFile(cwd, loaded.fromRun as string);
+    if (!source.ok) return source;
+    const at = ['from', 'run'];
+    if (source.value.run.from !== undefined)
+      return runError(
+        loaded,
+        at,
+        'from_chain',
+        `${source.value.file} starts from another run itself: a run's "from" is one step deep`,
+      );
+    if (source.value.gameDir !== loaded.gameDir)
+      return runError(
+        loaded,
+        at,
+        'from_game',
+        `${source.value.file} plays ${source.value.gameDir ?? source.value.worldFile ?? '?'}, not ${loaded.gameDir ?? '?'}`,
+      );
+    const played = await playRun(cwd, source.value.file, {
+      untilTick: source.value.run.ticks,
+      withSave: true,
+    });
+    if (!played.ok) return played;
+    if (played.value.campaignSave === null || played.value.campaignSave === undefined)
+      return runError(
+        loaded,
+        at,
+        'no_campaign',
+        `${source.value.file}'s game gives no campaign save at its last tick (${source.value.run.ticks})`,
+      );
+    save = played.value.campaignSave;
+  }
+  const campaign = ctx.campaigns.find((c) => c.id === save.campaign);
+  if (campaign === undefined || campaignRun(campaign, save).done)
+    return runError(
+      loaded,
+      ['from'],
+      'campaign_done',
+      `campaign "${save.campaign}" has no entry at position ${save.position} to start from`,
+    );
+  return { ok: true, save };
 }
 
 /**
@@ -206,7 +300,7 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       },
       mission: (step) => applyMissionStep(world, step, defs, keys),
     };
-    return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts) };
+    return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts, null, null) };
   }
   const { run } = loaded;
   const game = loadGame(cwd, loaded.gameDir ?? '.');
@@ -246,7 +340,22 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   const disabledRules = rules.filter((r) => off.has(r.id)).map((r) => r.id);
 
   const seed = run.seed ?? content.manifest.start.seed;
-  const instance: HeadlessGame = imported.entry.createGame(content, seed, { disabledRules });
+  const codeContext = saveCodeContext(content);
+  let start: CampaignSave | null = null;
+  if (run.from !== undefined) {
+    const got = await startSave(cwd, loaded, codeContext);
+    if (!got.ok) return got;
+    start = got.save;
+  }
+  const instance: HeadlessGame = imported.entry.createGame(
+    content,
+    seed,
+    start === null ? { disabledRules } : { disabledRules, campaign: start },
+  );
+  if ((run.from !== undefined || run.codes !== undefined) && typeof instance.campaignSave !== 'function')
+    throw new UsageError(
+      `${loaded.file} has ${run.from !== undefined ? '"from"' : '"codes"'}, but the game's headless module (${content.manifest.headless}) plays no campaign: its game has no campaignSave() method (engine/core/headless.ts)`,
+    );
   if (run.missions.length > 0 && typeof instance.mission !== 'function')
     throw new UsageError(
       `${loaded.file} has missions, but the game's headless module (${content.manifest.headless}) takes none: its game has no mission(step) method (engine/core/headless.ts)`,
@@ -265,8 +374,12 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     order: (order) => instance.order?.(order) ?? null,
     mission: (step) => instance.mission?.(missionOf(step)) ?? null,
     ...(instance.missionExperience ? { experience: () => [...(instance.missionExperience?.() ?? [])] } : {}),
+    ...(instance.campaignSave ? { campaignSave: () => instance.campaignSave?.() ?? null } : {}),
   };
-  return { ok: true, value: play(loaded, stepper, seed, content.manifest.kit, disabledRules, opts) };
+  return {
+    ok: true,
+    value: play(loaded, stepper, seed, content.manifest.kit, disabledRules, opts, start, codeContext),
+  };
 }
 
 /** What `play` needs of a game or a world: one step, the snapshot after it, and taking an order. */
@@ -282,6 +395,21 @@ interface Stepper {
    * the result's `experience` instead of the run file's `experienceTicks` (a game run has none).
    */
   experience?(): { mission: string; ticks: number }[];
+  /** The game's campaign save now (`HeadlessGame.campaignSave`). */
+  campaignSave?(): CampaignSave | null;
+}
+
+/**
+ * The save code the game's campaign save gives now, or why there is none (a game with no
+ * campaign there, or a save the code cannot hold).
+ */
+export function saveCodeNow(
+  save: CampaignSave | null | undefined,
+  ctx: SaveCodeContext,
+): { ok: true; code: string } | { ok: false; code: string; error: string } {
+  if (save === null || save === undefined)
+    return { ok: false, code: 'no_campaign', error: 'the game gives no campaign save here' };
+  return encodeSaveCode(save, ctx);
 }
 
 /** A game run's mission step as the game takes it: the entry without its `tick`. */
@@ -304,6 +432,8 @@ function play(
   kit: string | null,
   disabledRules: string[],
   opts: PlayOptions,
+  startSave: CampaignSave | null,
+  codeContext: SaveCodeContext | null,
 ): PlayedRun {
   const { run } = loaded;
   const checking = opts.untilTick === undefined;
@@ -315,6 +445,7 @@ function play(
   const experience = new Map<string, number>();
   const stored = new Map((checking ? (run.hashes ?? []) : []).map((h) => [h.tick, h.hash]));
   let hashesChecked = 0;
+  let codesChecked = 0;
   let hashMismatch: HashMismatch | null = null;
   let lastMatch: number | null = null;
   let next = 0; // the next order entry to hand over
@@ -373,6 +504,25 @@ function play(
             ...failed,
           });
       });
+      (run.codes ?? []).forEach((c, index) => {
+        if (c.tick !== tick || codeContext === null) return;
+        codesChecked++;
+        const now = saveCodeNow(stepper.campaignSave?.(), codeContext);
+        const actual = now.ok ? now.code : null;
+        if (actual !== null && normalizeSaveCode(actual) === normalizeSaveCode(c.code)) return;
+        failures.push({
+          tick,
+          kind: 'code',
+          index,
+          path: `codes.${index}`,
+          op: 'eq',
+          expected: c.code,
+          actual,
+          message: now.ok
+            ? `the save code at tick ${tick} is ${now.code}, expected ${c.code}`
+            : `no save code at tick ${tick} (${now.code}: ${now.error}), expected ${c.code}`,
+        });
+      });
     }
     const want = stored.get(tick);
     let hash: string | null = null;
@@ -402,6 +552,10 @@ function play(
         experience: stepper.experience?.() ?? [...experience].map(([mission, ticks]) => ({ mission, ticks })),
         hashesChecked,
         hashMismatch,
+        startSave,
+        codesChecked,
+        codeContext,
+        ...(opts.withSave && stepper.campaignSave ? { campaignSave: stepper.campaignSave() } : {}),
       };
   }
 }

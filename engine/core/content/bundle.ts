@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import {
+  ANY_KIND,
   inPart,
   partFileName,
   parseContent,
@@ -235,7 +236,7 @@ function checkAcross(
   at: (path: string) => string,
 ): ContentError[] {
   const errors: ContentError[] = [];
-  const others = (kind: string) => entries.filter((e) => e.kind === kind);
+  const others = (kind: string) => (kind === ANY_KIND ? entries : entries.filter((e) => e.kind === kind));
   for (const kindName of Object.keys(manifest.content)) {
     const kind = kinds.get(kindName);
     if (!kind?.checkAll) continue;

@@ -23,7 +23,7 @@ an error). Games without orders leave it out and are unchanged; a run file with 
 without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). From Engine 0.11 (item 172) the optional `mission(step)` takes one run file `missions` step the same way (`{ mission,
 action, input? }`, after the tick's orders) and returns null or a `MissionStepRefusal` `{ code,
 error }`; the optional `missionExperience()` gives the ticks its played rounds took per mission,
-for the run's `experience` (`MissionHost` has both). `HostedGame<W, E>`
+for the run's `experience` (`MissionHost` has both). From Engine 0.13 (decision 9, item 228) the optional `campaignSave()` gives the campaign save (`campaign.ts`) the game's campaign would have if the entry played now ended at this tick (null when it plays no campaign), for a run file's `codes`, `pnpm cli code` and a later run's `from`; `HeadlessOptions.campaign` hands `createGame` a campaign save to start at (its `position`'s entry, from tick 0, with its carried record). `HostedGame<W, E>`
 (Engine 0.10, gap G37) is a `HeadlessGame` the browser shell's `HostScene` can play by itself:
 `world` (the world now; a new object on a new level), `events` (the last step's) and a required
 `miniGame()`; the platformer kit's `LevelSequence` is one (and so is `MissionHost`), so a game's page passes the game to
@@ -146,19 +146,78 @@ window `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }` wi
 closes`; `engine/sim/opportunity.ts` runs it) and `parseOpportunity(json)`. Pure (on `PURE_CORE`); tested in
 `missions.test.ts`; in `docs/reference/schemas.md`.
 
-`campaign.ts` (Engine 0.10 T10, gap G2, item 160) is the order a game plays its levels or
-missions in, written in data: `campaignSchema` is the `campaign` content kind
-(`*.campaign.json`, `content/engine-kinds.ts`): `version` (1), `id`, `title?`, `entries` (at least
-one; each exactly one of `{ "level": id }` and `{ "mission": id }`, `bad_entry`; none twice,
-`duplicate_entry`) and `start?` (the id of the entry played first, `unknown_entry` when there is
-none, `ambiguous_start` when a level and a mission share it). Its `checkAll`, `checkCampaigns`,
-fails each entry naming a level or mission the game's content lacks (`missing_level`,
-`missing_mission`, at `entries.<i>.level` or `.mission`), so `pnpm cli validate` names the file and
-field. `campaignOrder(campaign)` is the entries from `start` and then round to the ones before it
-(a looping sequence's order); `campaignLevels(campaign)` the level ids in that order; `entryKind`,
-`entryId`. A kit reads the entries it can play: the platformer kit's `contentStages` plays the
-level entries. Missions listed in a campaign are checked by `validate` only; playing them in order
-comes at 0.13. Pure (on `PURE_CORE`); tested in `campaign.test.ts`; in `docs/reference/schemas.md`.
+`campaign.ts` (Engine 0.10 T10, gap G2, item 160; Engine 0.13 T6, decision 6, item 225) is the
+order a game plays its levels, missions and world scenarios in, written in data, and the campaign
+run: `campaignSchema` is the `campaign` content kind (`*.campaign.json`, `content/engine-kinds.ts`):
+`version` (1), `id`, `title?`, `entries` (at least one; each exactly one of `{ "level": id }`,
+`{ "mission": id }` and, from Engine 0.13, `{ "scenario": id, "ticks": n }` (a world scenario,
+any content file in the `worlds-within/scenario` format such as an `rts-map`, and the world ticks
+it is played; `ticks` on another entry or missing on a scenario is `bad_entry` at `ticks`),
+`bad_entry`; none twice, `duplicate_entry`) and `start?` (the id of the entry played first,
+`unknown_entry` when there is none, `ambiguous_start` when entries of two kinds share it). Its
+`checkAll`, `checkCampaigns`, fails each entry naming a level, mission or scenario the game's
+content lacks (`missing_level`, `missing_mission`, `missing_scenario`, at `entries.<i>.level`,
+`.mission` or `.scenario`; scenarios are found by shape through `others(ANY_KIND)`,
+`campaignScenarios`), and a scenario entry whose scenario has a `from` naming anything but the
+scenario entry just before it in play order (`bad_from`; the first scenario entry may have a `from`
+and then starts as written), so `pnpm cli validate` names the file and field.
+`campaignOrder(campaign)` is the entries from `start` and then round to the ones before it;
+`campaignLevels(campaign)` the level ids in that order; `entryKind`, `entryId`. The platformer
+kit's `contentStages` plays the level entries.
+
+**Played in order** (Engine 0.13, closing the 0.10 leftover): a campaign run's state is its
+**campaign save**, plain JSON (`campaignSaveSchema`, `CampaignSave`; in
+`docs/reference/schemas.md`): `{ format: "worlds-within/campaign-save", version: 1, game,
+campaign, seed, position, carried, results: [{ entry, missions: [{ mission, outcome, resolution
+}] }] }`, `position` the entry played now (its index in play order), `carried` the carried record
+(`carried.ts`) the next scenario entry starts from, or null, and one `results` entry per finished
+entry, in play order. `newCampaignSave({ game, campaign, seed })` starts one;
+`campaignRun(campaign, save?)` reads it (`{ order, position, entry, done, scenario,
+nextScenario, carried }`: `scenario` the scenario entry the world is built from, the entry itself
+or for a mission entry the scenario before it, whose end world it is opened on); and
+`advanceCampaign(campaign, save, { missions?, carried? })` finishes the entry played now: position
+
+- 1, its results appended and `carried` replaced when given (a mission entry commits exactly its
+  own mission; a level entry commits nothing and carries nothing; a scenario entry commits whatever
+  its world offered). Refusals (`wrong_campaign`, `campaign_done`, `bad_result`) change nothing.
+  Pure and deterministic: the same save and result give the same next save. A game's glue builds
+  the worlds (`worldFromScenario(json, { carried })` in `engine/sim`) and reports what was
+  committed. Pure (on `PURE_CORE`); tested in `campaign.test.ts`; in `docs/reference/schemas.md`.
+
+`carried.ts` (Engine 0.13 T6) holds the carried record and carry spec schemas
+(`carriedRecordSchema`, `carryFromSchema`, `carrySpecSchema`, `CARRIED_FATES`, `CARRIED_FORMAT`,
+`CARRIED_VERSION`), moved here from `engine/sim/carry.ts` (which re-exports them and builds and
+applies records) so the campaign save and save codes share them without importing the sim; the
+RTS kit's `rts-map` checks its `from` with `carryFromSchema`. Pure (on `PURE_CORE`).
+
+`campaign-code.ts` (Engine 0.13 T6, decision 7, item 226) is **save codes**: SMBC's "the code is
+the save". `saveCodeContext(content)` reads a game's campaigns, missions and scenarios (any
+`worlds-within/scenario` file, with its `from` and the factions its `Owner` and `Stockpile`
+components name); `encodeSaveCode(save, ctx)` packs a campaign save and `decodeSaveCode(text, ctx)`
+reads it back, the same save on every machine. Layout: version (4 bits), CRC-16/CCITT (0x1021,
+start 0xFFFF) over every later bit, then the campaign's index (campaigns by id), the position, the
+seed (zig-zag), the carried record (a present bit, the tick, per person of the next scenario
+entry's carry spec the fate in 3 bits and `by` (an index into the two scenarios' factions), `at`,
+`hp`, `max`, then the stockpile items; key names never written) and the results (per finished
+entry the mission count, per mission its index (missions by id), the outcome's index in its file
+and the resolution in 2 bits), zero-padded; numbers are 4-bit groups with a "more" bit, a nullable
+one written plus one. Text: Crockford Base32, groups of five joined by dashes;
+`normalizeSaveCode` ignores case, dashes and spaces and reads O as 0, I and L as 1. Refusals
+`{ ok: false, code, error }`: `code_empty`, `code_typo` (a bad character or checksum: any tampered
+character), `code_newer`, `code_layout` (too short, leftover bits, a field out of range),
+`code_campaign`, `code_position` (past the end), `code_record` (the carried part does not fit the
+next scenario's carry spec, `carriedMismatch`); encoding a save that does not fit the game is
+refused with the same codes. A code does not replay the first scenario: a code taken at its end
+restores what carries, so the follow-up's start world built from it has the same hash as one built
+from the end world's carried record (`engine/tools/save-code.test.ts`). Pure (on `PURE_CORE`);
+tested in `campaign-code.test.ts` (round trips at every position, every tampered character refused,
+each refusal, CRC check value, the 40-character budget).
+
+`save/campaign-store.ts` (Engine 0.13 T6) keeps a campaign save in browser storage through
+`save/storage.ts` under `campaignSaveKey(game, campaign)` = `ww:<game>:campaign:<id>`:
+`loadCampaignSave` (null when there is none, storage is blocked or the stored data is not a save of
+that game and campaign), `storeCampaignSave` (false when storage refused) and `clearCampaignSave`;
+none throws, so a game stays playable without storage (`campaign-store.test.ts`).
 
 `mission-adapter.ts` (Engine 0.10 T7) is the reusable half of a `MissionAdapter`: playing a
 mission through a kit's mini game with plain data only, so the kit never imports `engine/sim`.
@@ -285,7 +344,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
 and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

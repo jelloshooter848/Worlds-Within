@@ -25,7 +25,11 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  *
  * Result: `{ run, game, world, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
  * failure, failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders,
- * missions, missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch }`. `orders` counts the run file's recorded orders, `ordersPlayed`
+ * missions, missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, from, codes,
+ * codesChecked }`. From Engine 0.13 (decision 9) `from` is the campaign save the run started from
+ * (`{ run, code, position, campaign }`: the run file or code it names, the entry and campaign) or
+ * null, `codes` counts the run file's expected save codes and `codesChecked` those compared (a
+ * different one fails the run like an assertion, kind `code`). `orders` counts the run file's recorded orders, `ordersPlayed`
  * those handed over before `lastTick` and `refusedOrders` (`{ tick, id, error }`) those the world
  * or game dropped (not a failure). `missions`, `missionsPlayed` and `refusedMissions` (`{ tick,
  * mission, action, code, error }`) are the same for mission steps (a world run's, or from Engine
@@ -70,7 +74,7 @@ export const runCommand = defineCommand({
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
     const { loaded, seed, disabledRules, lastTick, hashes, failures } = played.value;
     const { ordersPlayed, refusedOrders, hashesChecked, hashMismatch } = played.value;
-    const { missionsPlayed, refusedMissions, experience } = played.value;
+    const { missionsPlayed, refusedMissions, experience, startSave, codesChecked } = played.value;
     const stored = loaded.run.replay;
     const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
     const passed = failures.length === 0 && !replay?.hashMismatch && hashMismatch === null;
@@ -100,6 +104,17 @@ export const runCommand = defineCommand({
         experience,
         hashesChecked,
         hashMismatch,
+        from:
+          startSave === null
+            ? null
+            : {
+                run: loaded.fromRun,
+                code: loaded.run.from?.code ?? null,
+                campaign: startSave.campaign,
+                position: startSave.position,
+              },
+        codes: loaded.run.codes?.length ?? 0,
+        codesChecked,
         replayFile,
         replay,
       },
@@ -111,6 +126,16 @@ export const runCommand = defineCommand({
     const lines = [
       `${String(result.run)}: ${result.passed ? 'passed' : 'FAILED'} (seed ${String(result.seed)}, ${String(result.lastTick)}/${String(result.ticks)} ticks)`,
     ];
+    const from = result.from as {
+      run: string | null;
+      code: string | null;
+      campaign: string;
+      position: number;
+    } | null;
+    if (from)
+      lines.push(
+        `  from ${from.run ?? `code ${String(from.code)}`}: campaign "${from.campaign}" at entry ${from.position}`,
+      );
     const off = result.disabledRules as string[];
     if (off.length > 0) lines.push(`  rules off: ${off.join(', ')}`);
     for (const f of result.failures as FailedCheck[])
@@ -132,6 +157,11 @@ export const runCommand = defineCommand({
       lines.push(`  tick ${r.tick}: refused: ${r.action} "${r.mission}": ${r.code}: ${r.error}`);
     for (const e of result.experience as { mission: string; ticks: number }[])
       lines.push(`  experience: "${e.mission}" ${e.ticks} tick(s) inside, the world did not move`);
+    if (
+      (result.codesChecked as number) > 0 &&
+      !(result.failures as FailedCheck[]).some((f) => f.kind === 'code')
+    )
+      lines.push(`  ${String(result.codesChecked)} save code(s) match`);
     const mismatch = result.hashMismatch as HashMismatch | null;
     if (mismatch)
       lines.push(

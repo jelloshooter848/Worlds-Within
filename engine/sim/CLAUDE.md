@@ -45,8 +45,9 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   world (carry-over).
 - `carry.ts`: carry-over (Engine 0.13 T5): `carriedRecord(world, from, keys)`, the schemas
   `carryFromSchema` (a scenario's `from`), `carrySpecSchema` and `carriedRecordSchema`,
-  `CARRIED_FORMAT`, `CARRIED_VERSION`, `CARRY_CAUSE` (`carry`), and the checks and apply step
-  `worldFromScenario` uses (see "Carry" below).
+  `CARRIED_FATES`, `CARRIED_FORMAT`, `CARRIED_VERSION` (since T6 defined in `engine/core/carried.ts`
+  and re-exported here, so the core's campaign save and save codes share them), `CARRY_CAUSE`
+  (`carry`), and the checks and apply step `worldFromScenario` uses (see "Carry" below).
 - `scenario-error.ts`: `ScenarioError` and `ScenarioIssue` (re-exported by `scenario.ts`), in a file
   of their own so `carry.ts` and `scenario.ts` do not import each other.
 - `system-sets.ts`: named system sets (Engine 0.9 T9, items 118 and 132): `SYSTEM_SETS`

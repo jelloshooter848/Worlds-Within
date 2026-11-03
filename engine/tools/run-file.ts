@@ -44,6 +44,11 @@ import { UsageError } from './exit-codes';
  * action, input? }`, handed to the game's `mission` method (a `play` starts the real kit round,
  * with `input` its recorded script). A refused step is reported, as a refused order is.
  *
+ * Campaigns (Engine 0.13, item 228): a game run's `from` starts it from another run's end (`run`,
+ * played first) or a save code (`code`), at the campaign's next entry from tick 0, and `codes`
+ * lists `{ tick, code }` save codes the game's campaign save must give (see "Campaign runs and save
+ * codes" in this folder's CLAUDE.md). World runs take neither.
+ *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
  * is the input of the step from tick `f` to tick `f + 1`.
@@ -113,7 +118,9 @@ export const replaySchema = z.strictObject({
   failure: z
     .strictObject({
       tick: z.number().int().min(0).describe('the first failing tick'),
-      kind: z.enum(['assertion', 'invariant']).describe('which list the failed check is in'),
+      kind: z
+        .enum(['assertion', 'invariant', 'code'])
+        .describe('which list the failed check is in (`code`: a save code in `codes`)'),
       path: checkFields.path,
       op: checkFields.op,
       expected: z.json().describe("the check's value"),
@@ -201,6 +208,37 @@ export const missionEntrySchema = z.strictObject({
     ),
 });
 
+/**
+ * Where a game run starts (Engine 0.13, decision 9, item 228): exactly one of another run's end
+ * (`run`, a run file relative to this one, played first) and a save code (`code`).
+ */
+export const runFromSchema = z
+  .strictObject({
+    run: z
+      .string()
+      .min(1)
+      .regex(/\.run\.json$/, 'a run file ends in .run.json')
+      .exactOptional()
+      .describe(
+        "a run file of the same game, relative to this one: it is played first, and this run starts from its campaign save at its last tick (the campaign's next entry)",
+      ),
+    code: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe('a save code (`pnpm cli code`): this run starts from the campaign save it packs'),
+  })
+  .superRefine((from, ctx) => {
+    if ((from.run === undefined) === (from.code === undefined))
+      ctx.addIssue({ code: 'custom', path: [], message: 'give exactly one of "run" and "code"' });
+  });
+
+/** A save code a game run's campaign save must give at a tick (Engine 0.13, decision 9). */
+export const codeEntrySchema = z.strictObject({
+  tick: z.number().int().min(0).describe('the tick the save code is taken at'),
+  code: z.string().min(1).describe('the save code expected there (case, dashes and spaces do not matter)'),
+});
+
 export const runFileSchema = z
   .strictObject({
     game: z
@@ -260,6 +298,17 @@ export const runFileSchema = z
       .describe(
         'sync hashes the run must give, in tick order: `run` fails at the first tick whose state hash differs',
       ),
+    from: runFromSchema
+      .exactOptional()
+      .describe(
+        "game runs (Engine 0.13): start from another run's end or a save code, at the campaign's next entry, from tick 0",
+      ),
+    codes: z
+      .array(codeEntrySchema)
+      .exactOptional()
+      .describe(
+        "game runs (Engine 0.13): save codes the game's campaign save must give, `{ tick, code }` in tick order; `run` fails at the first that differs",
+      ),
     replay: replaySchema
       .exactOptional()
       .describe('only in replay files: the source run, its failing check and its hashes'),
@@ -298,6 +347,13 @@ export const runFileSchema = z
           path: ['guards'],
           message: 'a world run has no kit rules to guard: leave "guards" out',
         });
+      for (const field of ['from', 'codes'] as const)
+        if (run[field] !== undefined)
+          ctx.addIssue({
+            code: 'custom',
+            path: [field],
+            message: `a world run plays no campaign: "${field}" is for game runs`,
+          });
     }
     run.disableRules.forEach((id, i) => {
       if (run.disableRules.indexOf(id) !== i)
@@ -327,6 +383,20 @@ export const runFileSchema = z
     });
     checkOrders(run, ctx);
     checkMissions(run, ctx);
+    run.codes?.forEach((c, i, codes) => {
+      if (c.tick > run.ticks)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['codes', i, 'tick'],
+          message: `tick ${c.tick} is after the run's last tick (${run.ticks})`,
+        });
+      else if (i > 0 && c.tick <= codes[i - 1]!.tick)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['codes', i, 'tick'],
+          message: `codes must be in tick order, one per tick (tick ${c.tick} after ${codes[i - 1]!.tick})`,
+        });
+    });
     run.hashes?.forEach((h, i, hashes) => {
       if (h.tick > run.ticks)
         ctx.addIssue({
@@ -458,6 +528,8 @@ export interface LoadedRunFile {
   gameDir: string | null;
   /** The world scenario, relative to the working folder, with `/` (null for a game run). */
   worldFile: string | null;
+  /** The run file `from.run` names, relative to the working folder, with `/` (null without one). */
+  fromRun: string | null;
   run: RunFile;
 }
 
@@ -485,7 +557,8 @@ export function readRunFile(
     path === undefined ? null : relative(cwd, resolve(dirname(abs), path)).replaceAll('\\', '/') || '.';
   const gameDir = fromCwd(result.value.game);
   const worldFile = fromCwd(result.value.world);
-  return { ok: true, value: { file, gameDir, worldFile, run: result.value } };
+  const fromRun = fromCwd(result.value.from?.run);
+  return { ok: true, value: { file, gameDir, worldFile, fromRun, run: result.value } };
 }
 
 /** The value at a dotted path (`hero.hp`, `entities.0.kind`, `entities.length`), or `undefined`. */

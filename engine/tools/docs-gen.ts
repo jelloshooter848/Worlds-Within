@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { format, resolveConfig } from 'prettier';
 import type { z } from 'zod';
+import { campaignSaveSchema } from '@engine/core/campaign';
 import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import { partFileName, parseContent, type ContentKind, type ContentPart } from '@engine/core/content/kinds';
 import { gameManifestSchema, MANIFEST_FILE } from '@engine/core/content/manifest';
@@ -228,6 +229,19 @@ export function defaultDocSources(): DocSources {
       check: jsonCheck(carriedRecordSchema),
     },
     {
+      name: 'campaign-save',
+      title: 'Campaign save (`campaignSaveSchema`)',
+      from: 'engine/core',
+      where:
+        "a game's campaign run state: kept in browser storage under `ww:<game>:campaign:<id>` (`engine/core/save/campaign-store.ts`), packed into a save code by `encodeSaveCode` (`engine/core/campaign-code.ts`), given by `HeadlessGame.campaignSave()`",
+      forms: '`.json`',
+      description:
+        'Where a campaign run is and what it carries (Engine 0.13): the entry played now, the carried record the next scenario starts from, and the missions committed in every finished entry; never a whole world',
+      schema: campaignSaveSchema,
+      example: 'campaign-save.json',
+      check: jsonCheck(campaignSaveSchema),
+    },
+    {
       name: 'rts-types',
       title: 'RTS unit and building types (`rtsTypesSchema`)',
       from: 'engine/core',
@@ -394,7 +408,7 @@ function subjectSection(subject: DocSubject, example: Example, level: string): s
 
 function schemasPage(root: string, subjects: readonly DocSubject[]): string {
   const files = subjects.filter((s) =>
-    ['manifest', 'run', 'world-save', 'world-scenario', 'carried-record'].includes(s.name),
+    ['manifest', 'run', 'world-save', 'world-scenario', 'carried-record', 'campaign-save'].includes(s.name),
   );
   const params = subjects.filter((s) => s.section === 'params');
   const kinds = subjects.filter((s) => !files.includes(s) && !params.includes(s));
@@ -402,7 +416,7 @@ function schemasPage(root: string, subjects: readonly DocSubject[]): string {
     '# Schema reference',
     '',
     GENERATED_NOTE(
-      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, `engine/sim/scenario.ts`, `engine/sim/carry.ts`, each content kind) and `docs/reference/examples/`',
+      'the Zod schemas (`engine/core/content/manifest.ts`, `engine/tools/run-file.ts`, `engine/sim/save.ts`, `engine/sim/scenario.ts`, `engine/sim/carry.ts`, `engine/core/campaign.ts`, each content kind) and `docs/reference/examples/`',
     ),
     '',
     'One section per file format. Each table lists every field: nested fields are written under their',

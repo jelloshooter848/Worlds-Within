@@ -59,6 +59,17 @@ export function replayOf(played: PlayedRun, cwd: string, replayDir: string): Rec
     ...(run.missions.some((m) => m.tick < tick)
       ? { missions: run.missions.filter((m) => m.tick < tick) }
       : {}),
+    // Engine 0.13: where the run started (another run, relative to the replay, or a save code) and
+    // the save codes it checks up to the failing tick.
+    ...(run.from !== undefined
+      ? {
+          from:
+            played.loaded.fromRun !== null
+              ? { run: fromReplay(played.loaded.fromRun) }
+              : { code: run.from.code },
+        }
+      : {}),
+    ...(run.codes?.some((c) => c.tick <= tick) ? { codes: run.codes.filter((c) => c.tick <= tick) } : {}),
     // The rules that were off (the run file's and any `--disable-rule`), so the replay fails alike.
     ...(played.disabledRules.length > 0 ? { disableRules: played.disabledRules } : {}),
     replay,

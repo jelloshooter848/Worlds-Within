@@ -27,7 +27,9 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   takes those parts' texts, and an error in the field names the part file and its line.
   `checkAll(entries)` checks across every file of the kind (the top-down rooms' doors and player
   start, a skin's sheets and sounds): its second argument, `others(kind)`, gives the game's
-  checked entries of any other kind, for references across kinds. It returns `KindIssue`s (`{ name, path, code, message, row?, col? }`, `name` being the
+  checked entries of any other kind, for references across kinds (`others(ANY_KIND)`, Engine 0.13:
+  every entry of every kind, for a check that finds content by its shape, such as a campaign's
+  world scenarios). It returns `KindIssue`s (`{ name, path, code, message, row?, col? }`, `name` being the
   entry's file name), and `loadContent` runs it only when the game has no other error, turning
   each into a `ContentError` at that entry's file, or its part file and line (`checkAll: false`
   in `loadContent`'s options leaves it out; the editing verbs report those problems apart).
@@ -88,9 +90,11 @@ file formats are described at the top of that file).
   outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
   is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
   `open` and `close`) (`missions.ts`); the campaign's `bad_entry` (an entry without exactly one of
-  `level` and `mission`), `duplicate_entry`, `unknown_entry` and `ambiguous_start` (a `start` that
-  names no entry, or both a level and a mission), and from its `checkAll` `missing_level` and
-  `missing_mission` (`campaign.ts`); and `unknown_mini_game` (a level trigger's `game` or a
+  `level`, `mission` and `scenario`, or `ticks` on anything but a scenario entry or missing on one),
+  `duplicate_entry`, `unknown_entry` and `ambiguous_start` (a `start` that names no entry, or
+  entries of two kinds), and from its `checkAll` `missing_level`, `missing_mission`,
+  `missing_scenario` and `bad_from` (a follow-up scenario whose `from` is not the scenario entry
+  before it) (`campaign.ts`, Engine 0.13 for the scenario codes); and `unknown_mini_game` (a level trigger's `game` or a
   mission's `play` that names no mini game the game's headless entry exports;
   `engine/core/minigame-params.ts`, run by `validate`).
 - Games add kinds for their own content (rooms, missions) with `ContentKinds.register`; the

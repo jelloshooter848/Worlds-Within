@@ -50,7 +50,8 @@ content)`, which imports the game's headless module by path for its optional
   checks the run file's `disableRules` and `guards` against the kit's rules, plays the ticks and
   makes the checks, hands recorded `orders` over at their ticks and compares the run file's sync
   `hashes` (Recorded orders, below); for a world run it builds the world instead (`world-run.ts`).
-  `stateHash(snapshot)`, `orderOf(entry)`.
+  `stateHash(snapshot)`, `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
+  game run from its `from` and checks its `codes` (Campaign runs and save codes, below).
 - `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
   its scenario with the engine system set the scenario names (`worldSystemSet(json)`:
   `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log, and returns it
@@ -79,7 +80,7 @@ content)`, which imports the game's headless module by path for its optional
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add` and `remove`).
 
 ## The contract
@@ -124,7 +125,7 @@ content)`, which imports the game's headless module by path for its optional
   `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
 hash }], finalHash, orders, ordersPlayed, refusedOrders, missions, missionsPlayed, refusedMissions,
-experience, hashesChecked, hashMismatch, replayFile, replay }`.
+experience, hashesChecked, hashMismatch, from, codes, codesChecked, replayFile, replay }`.
   `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
   that failed at that tick. The run stops at the first failing tick and then writes a replay file
@@ -137,6 +138,11 @@ experience, hashesChecked, hashMismatch, replayFile, replay }`.
   for a game without an `order` method, 3 (with `errors`) when the run file or the game's content breaks its schema (or the
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
+- `code <runFile> [--tick N]` (Engine 0.13): plays a game run file (no checks) to its last tick or
+  tick N and prints the save code of the game's campaign save there: `{ run, game, seed, tick,
+hash, code, save }` (Campaign runs and save codes, below). Exit 0; 3 for a bad run file or
+  content, a game that gives no campaign save there (`no_campaign`) or a save the code cannot hold
+  (`code_record`, ...); 2 for a world run, a game without `campaignSave`, or a bad `--tick`.
 - `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, tick,
 hash, state, orders, missions }`, the whole snapshot and the recorded orders and mission steps
   applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
@@ -488,6 +494,49 @@ same `missions` list, and the game plays them live. The game is a `MissionHost`
 - `dump` and replay files keep the steps as for a world run. `game-missions-run.test.ts` covers
   steps, refusals, experience, hashes, dump, replay and the usage error with a plain-JS game;
   `missions-run.test.ts` the field errors of each kind of run.
+
+## Campaign runs and save codes
+
+Engine 0.13 (docs/BUILD-LOG.md, Engine 0.13, decisions 6, 7 and 9, items 225, 226 and 228): a
+game's campaign (`engine/core/campaign.ts`) plays its entries in order, and what carries from one
+scenario to the next is a campaign save, packed into a short save code
+(`engine/core/campaign-code.ts`). A game run file can start from one and check one:
+
+```json
+{
+  "game": "..",
+  "ticks": 300,
+  "from": { "run": "played.run.json" },
+  "codes": [{ "tick": 300, "code": "2B4K9-..." }]
+}
+```
+
+- **`from`** (game runs only; on a world run a schema error at `from`): exactly one of
+  `{ "run": "<run file>" }`, relative to this run file, and `{ "code": "<save code>" }`. With
+  `run`, the tools play that run to its last tick (no checks) and read its game's campaign save
+  there (`HeadlessGame.campaignSave()`: the entry it played ended, its carried record built from
+  the world then). With `code`, they decode it against the game's content (`saveCodeContext`:
+  its campaigns, missions and `worlds-within/scenario` files). Either way the game is created with
+  `HeadlessOptions.campaign` set to that save and plays the campaign's next entry from tick 0.
+  Errors (exit 3, in the run file): a code's refusal code at `from.code` (`code_empty`,
+  `code_typo`, `code_newer`, `code_layout`, `code_campaign`, `code_position`, `code_record`);
+  at `from.run` `from_chain` (the source run has a `from` itself: one step deep in 0.13),
+  `from_game` (it plays another game) and `no_campaign` (its game gives no campaign save there);
+  `campaign_done` at `from` (the save is past the campaign's last entry). The result's `from` is
+  `{ run, code, campaign, position }` (null without one). A run from a run and a run from that
+  run's code give the same hashes (`campaign-run.test.ts`).
+- **`codes`** (game runs only): `[{ tick, code }]` in tick order, each at most `ticks`. At that
+  tick the game's campaign save is packed and compared with `code` (case, dashes and spaces do not
+  matter); a different one, or none, fails the run like an assertion (`failure.kind` `code`,
+  `path` `codes.<i>`, `expected` the file's code, `actual` the run's), so a run file can pin the
+  save code its end gives. `codes` counts them in the result, `codesChecked` those compared.
+- A game without `campaignSave()` cannot take `from` or `codes` (exit 2), as with `orders`.
+- Replay files keep `from` (a `run` rewritten relative to the replay) and the `codes` up to the
+  failing tick.
+- `pnpm -s cli code <run-file> --json` prints the code at the run's last tick (`--tick N` for
+  another). Tests: `campaign-run.test.ts` (a plain-JS game in a temp folder on two RTS maps and a
+  campaign), and `save-code.test.ts` (the sim's captive fixtures: a code taken at the end of the
+  first scenario restores the follow-up's start world with equal hashes).
 
 ## Mutant checks
 

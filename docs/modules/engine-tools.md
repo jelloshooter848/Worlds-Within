@@ -11,7 +11,9 @@ edits content files (`get`, `set`, `add`, `remove`, every write checked and veri
 mutant checks (`mutants`: does a run fail when a kit rule is switched off?), and takes
 deterministic screenshots of a run at a tick in headless Chromium (`screenshot`). From Engine 0.10
 a world run file also drives missions (`open`, `delegate`, `play`, `quit`), and `validate` checks
-mini game params and `campaign` files against the content.
+mini game params and `campaign` files against the content. From Engine 0.13 a game run file may
+start from another run's end or a save code (`from`) and assert save codes (`codes`), and
+`pnpm cli code <run-file>` prints a run's save code.
 
 ## Public API entry points
 
@@ -34,8 +36,15 @@ mini game params and `campaign` files against the content.
   scripted input, checking invariants every tick and assertions at their tick. `--json` result:
   `{ ok, command: 'run', exitCode, run, game, world, seed, ticks, lastTick, passed, checks, failure,
 failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders, missions,
-missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
+missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, from, codes, codesChecked, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
   and `actual`. Exit 0 passed, 4 failed check or sync hash, 3 invalid run file or content.
+- Campaign runs and save codes (Engine 0.13, decision 9): a game run file's `from` is
+  `{ "run": "<run file>" }` (played first; this run starts from its game's campaign save at its
+  last tick) or `{ "code": "<save code>" }` (decoded, refused with its code at `from.code`), and
+  `codes: [{ tick, code }]` the save codes the game's campaign save must give (a different one fails
+  like an assertion, kind `code`). `pnpm cli code <run-file> [--tick N]` prints
+  `{ run, game, seed, tick, hash, code, save }`. The game implements `HeadlessGame.campaignSave()`
+  and reads `HeadlessOptions.campaign`.
 - Recorded orders and sync hashes (Engine 0.9, lockstep replay): a run file's `orders` lists
   `{ tick, ...order }` entries in tick order (same tick: ascending `id`), each applied after its
   tick's state and before the step from it (a world: `applyOrder`; a game: its

@@ -103,7 +103,10 @@ docs:gen` after changing it). `index.ts` does not re-export it.
   `"systems": "rts"`. The kit checks the shape and the grids (rows of legend characters, elevation
   digits of the same size); components are `z.json()` here and are checked by the sim when the
   glue builds the world (`worldFromScenario`). Its optional `opportunities` (Engine 0.11 T8,
-  gap M14) are the scenario's mission windows, likewise checked by the sim.
+  gap M14) are the scenario's mission windows, likewise checked by the sim. Its optional `from`
+  (Engine 0.13 T6) is a follow-up map's carry spec, checked here with `carryFromSchema` from
+  `engine/core/carried.ts` and against the map by the sim; a campaign's `scenario` entries name
+  `rts-map` files.
 - `rts-types`: `rtsTypesSchema` from `engine/core/rts-types.ts`, for a game that keeps its unit
   and building types in their own file.
 - `rts-enemy`: `enemyPlanSchema`. `checkAll` reports a unit or building type a plan names that no

@@ -9,7 +9,8 @@ chiptune audio and MML, save and settings, the seeded RNG, maths, asset packs, a
 platform detection and graphics data (palettes, sprite sheets, text pixel art, animation, screen
 size and fit maths). From Engine 0.10 it also holds the mission contract as plain JSON (mission
 definitions, outcomes, effects, opportunities, reports, records and the `MissionAdapter`) and the
-`campaign` content kind, shared by the sim, kits and tools. It holds no game rules and no game
+`campaign` content kind, shared by the sim, kits and tools; from Engine 0.13 campaigns played in
+order, campaign saves and save codes. It holds no game rules and no game
 content.
 
 ## Public API entry points
@@ -26,8 +27,11 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   returning null or a `MissionStepRefusal` `{ code, error }`, and `missionExperience()`, the
   played rounds' ticks per mission; `HostedGame<W, E>`: a `HeadlessGame` with `world`, `events` and
   `miniGame()`, what the shell's `HostScene` takes as `game`;
+  from Engine 0.13 the optional `campaignSave()`, the campaign save if the entry played now ended
+  now;
   `HeadlessEntry`: `createGame(content, seed, opts?)` and the optional `miniGames(content)` (Engine
-  0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`),
+  0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`
+  and, from Engine 0.13, `campaign`, a campaign save to start at),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
 - `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `screen`, the
   picture size from the manifest, `render(r)`, and optional `frame()`: the frozen
@@ -60,15 +64,31 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   `MissionAdapter<KitInput, KitReport>` (`input(snapshot, mission)`, `outcome(report, mission)`),
   `totalWeight`, `pickOutcome(mission, n)` (a delegation draw), `missionResult`, `playedResult`,
   `parseMission`. Pure.
-- `campaign.ts` (Engine 0.10 T10, gap G2, item 160): the order a game plays its levels or
-  missions in, as data. `campaignSchema` is the `campaign` content kind (`*.campaign.json`:
-  `version: 1`, `id`, `title?`, `entries` (each exactly one of `{ level }` and `{ mission }`, none
-  twice), `start?` (an entry's id; the first entry when left out)); `campaignOrder(campaign)` (the
-  entries from `start`, then round to the ones before it), `campaignLevels(campaign)` (the level
-  ids in that order), `entryKind`, `entryId`, and `checkCampaigns`, the kind's `checkAll`: every
-  named level and mission must be a `level` or `mission` file of the game (`missing_level`,
-  `missing_mission`, at `entries.<i>.level` / `.mission`). Kits read the entries they can play (the
-  platformer's `contentStages`); missions in a campaign are checked only until 0.13. Pure.
+- `campaign.ts` (Engine 0.10 T10, gap G2, item 160; Engine 0.13 T6, decision 6, item 225): the
+  order a game plays its levels, missions and world scenarios in, as data, and the campaign run.
+  `campaignSchema` is the `campaign` content kind (`*.campaign.json`: `version: 1`, `id`,
+  `title?`, `entries` (each exactly one of `{ level }`, `{ mission }` and, from 0.13,
+  `{ scenario, ticks }`, none twice), `start?`); `campaignOrder(campaign)`, `campaignLevels`,
+  `entryKind`, `entryId`, `campaignScenarios(entries)` (the content's `worlds-within/scenario`
+  files and their `from`), and `checkCampaigns`, the kind's `checkAll`: every named level, mission
+  and scenario must be in the game (`missing_level`, `missing_mission`, `missing_scenario`), and a
+  scenario that starts from another's results must follow that scenario's entry (`bad_from`).
+  **Played in order**: `CampaignSave` (`campaignSaveSchema`: `{ format, version, game, campaign,
+seed, position, carried, results }`), `newCampaignSave`, `campaignRun(campaign, save?)` (the entry
+  played now, the scenario it is built from, the carried record) and `advanceCampaign(campaign,
+save, result)` (position + 1, results appended, `carried` replaced; refusals `wrong_campaign`,
+  `campaign_done`, `bad_result` change nothing). Pure.
+- `carried.ts` (Engine 0.13 T6): the carried record and carry spec schemas
+  (`carriedRecordSchema`, `carryFromSchema`, `carrySpecSchema`, `CARRIED_FATES`), shared by
+  `engine/sim/carry.ts` (which re-exports them), the campaign save and save codes. Pure.
+- `campaign-code.ts` (Engine 0.13 T6, decision 7, item 226): save codes, "the code is the save".
+  `saveCodeContext(content)`, `encodeSaveCode(save, ctx)` and `decodeSaveCode(text, ctx)` (a
+  versioned CRC-16 bit layout in Crockford Base32, groups of five; refusals `code_empty`,
+  `code_typo`, `code_newer`, `code_layout`, `code_campaign`, `code_position`, `code_record`),
+  `normalizeSaveCode`, `carriedMismatch`, `crc16`. Pure.
+- `save/campaign-store.ts` (Engine 0.13 T6): `loadCampaignSave`, `storeCampaignSave`,
+  `clearCampaignSave` and `campaignSaveKey` (`ww:<game>:campaign:<id>`), through `storage.ts`, so
+  blocked storage never throws.
 - `mission-adapter.ts` (Engine 0.10 T7; on `PURE_CORE` from 0.11 T7, a kit imports it): playing a mission through a kit's mini game with plain
   data only. `snapshotEntities(snapshot, ...components)` reads a plain world snapshot's entities
   (ascending id, every component); `fateState(entity)` (Engine 0.13) is a snapshot entity's

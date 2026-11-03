@@ -1,0 +1,27 @@
+{
+  "format": "worlds-within/campaign-save",
+  "version": 1,
+  "game": "mini-siege",
+  "campaign": "siege",
+  "seed": 11,
+  "position": 1,
+  "carried": {
+    "format": "worlds-within/carried",
+    "version": 1,
+    "from": "village",
+    "tick": 400,
+    "people": {
+      "captain": { "fate": "captured", "by": "raiders", "at": 161, "hp": 90, "max": 120 }
+    },
+    "stockpiles": { "village": { "gold": 70 } }
+  },
+  "results": [
+    {
+      "entry": 0,
+      "missions": [
+        { "mission": "fortify", "outcome": "held", "resolution": "delegated" },
+        { "mission": "sabotage", "outcome": "driven-off", "resolution": "quit" }
+      ]
+    }
+  ]
+}

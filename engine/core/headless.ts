@@ -1,3 +1,4 @@
+import type { CampaignSave } from './campaign';
 import type { ContentBundle } from './content/bundle';
 import type { InputFrame } from './input/input-manager';
 import type { MiniGame, MiniGameDef } from './minigame';
@@ -63,6 +64,16 @@ export interface HeadlessGame {
    * host no rounds leave it out.
    */
   miniGame?(): MiniGame | null;
+  /**
+   * Optional (Engine 0.13, decision 9, item 228): the campaign save the game's campaign would have
+   * if the entry played now ended at this tick (`campaign.ts`): position + 1, the carried record
+   * built from the world now for the next scenario entry, and the missions committed so far in this
+   * entry added to the results; null when the game plays no campaign. Must not change the game. The
+   * tools pack it into a save code (`campaign-code.ts`) for a run file's `codes`, `pnpm cli code`
+   * and a later run's `from`. A game without it cannot take a run file's `from` or `codes` (a usage
+   * error).
+   */
+  campaignSave?(): CampaignSave | null;
 }
 
 /** Why a game refused a mission step: a short code and a one-line reason. */
@@ -90,6 +101,14 @@ export interface HeadlessOptions {
    * passes them to its kit; the tools have already checked the ids against the kit's list.
    */
   disabledRules?: readonly string[];
+  /**
+   * Optional (Engine 0.13, decision 9): start the game at this campaign save (from a run file's
+   * `from`: another run's end, or a save code), at the entry its `position` names, from tick 0 and
+   * with its carried record (`worldFromScenario(json, { carried })` for a scenario entry). Left
+   * out, the game starts as it always does. A game that has no `campaignSave` ignores it (the tools
+   * refuse such a run first).
+   */
+  campaign?: CampaignSave;
 }
 
 /** What a game's headless module (named by `headless` in `game.json`) exports. */

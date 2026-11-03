@@ -45,13 +45,14 @@ export const MISSION_KIND = {
 } satisfies ContentKind;
 
 /**
- * A campaign (`campaign.ts`), `*.campaign.json`: the order a game's levels or missions are played
- * in (Engine 0.10, item 160, gap G2). Its `checkAll` checks every named level and mission exists.
+ * A campaign (`campaign.ts`), `*.campaign.json`: the order a game's levels, missions and (Engine
+ * 0.13) world scenarios are played in (Engine 0.10, item 160, gap G2). Its `checkAll` checks every
+ * named level, mission and scenario exists and each follow-up scenario follows its `from`.
  */
 export const CAMPAIGN_KIND = {
   name: 'campaign',
   description:
-    'A campaign: the order a game plays its levels or missions in, as a list of level and mission ids, with an optional entry to start at',
+    'A campaign: the order a game plays its levels, missions and world scenarios in, as a list of level, mission and scenario ids (a scenario with the ticks it is played), with an optional entry to start at',
   schema: campaignSchema,
   checkAll: checkCampaigns,
 } satisfies ContentKind<typeof campaignSchema>;

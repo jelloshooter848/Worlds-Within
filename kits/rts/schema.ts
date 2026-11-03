@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { carryFromSchema } from '@engine/core/carried';
 import type { ContentKind, ContentLookup, KindIssue } from '@engine/core/content/kinds';
 import { addGridIssues } from '@engine/core/content/text-grid';
 import { rtsTypesSchema, type RtsTypes } from '@engine/core/rts-types';
@@ -73,6 +74,11 @@ export const rtsMapSchema = z
       .exactOptional()
       .describe(
         'mission opportunities offered in the world (Engine 0.10), as in a world scenario: checked by the simulation when the world is built',
+      ),
+    from: carryFromSchema
+      .exactOptional()
+      .describe(
+        "the scenario this map follows (Engine 0.13), as in a world scenario: what carries from that scenario's end world (people, stockpile items) and what a carried fate opens; checked against the map by the simulation when the world is built",
       ),
   })
   .superRefine((map, ctx) => {

@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { MissionDef } from '../core/missions';
-import { CARRIED_FORMAT, carriedRecord, type CarriedRecord } from './carry';
+import { CARRIED_FATES, CARRIED_FORMAT, carriedRecord, type CarriedRecord } from './carry';
 import { Health, Inventory, Position, Squad } from './components';
-import { Fate, fateOf } from './fate';
+import { FATE_STATES, Fate, fateOf } from './fate';
 import { commitMission, delegateMission, openMission, playMission } from './mission';
 import { Opportunities, opportunitiesOf } from './opportunity';
 import { Unit } from './rts';
@@ -81,6 +81,10 @@ function differing(a: World, b: World): Entity[] {
 }
 
 describe('carriedRecord', () => {
+  it("reads the same fates as engine/core's carried record schema (Engine 0.13 T6)", () => {
+    expect(CARRIED_FATES).toEqual(['active', ...FATE_STATES]);
+  });
+
   it('holds only what the spec names, from the end world, keys sorted', () => {
     const record = recordOf(firstEnd('delegated'));
     expect(record).toEqual({

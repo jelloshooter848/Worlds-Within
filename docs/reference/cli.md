@@ -16,6 +16,7 @@ Commands:
   validate    check every content file of a game against its schema (starts nothing)
   run         play a run file headless from its seed and check its assertions and invariants
   dump        the whole game or world state at one tick of a run file, as JSON
+  code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
   get         read one value of a content file (path dotted or a JSON pointer)
@@ -102,6 +103,25 @@ Arguments:
 
 Flags:
   --tick <number>  the tick to show (0 is the start, before any step)
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `code`
+
+```text
+pnpm cli code <runFile> [flags]
+
+  the save code of a game run's campaign save at its last tick (or --tick N)
+
+Arguments:
+  <runFile>  a game run file, such as games/samples/mini-siege/runs/played.run.json
+
+Flags:
+  --tick <number>  the tick to take the code at; the run's last tick when left out
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

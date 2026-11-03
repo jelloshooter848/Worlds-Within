@@ -71,9 +71,13 @@ export interface ContentKind<S extends z.ZodType = z.ZodType> {
 /**
  * The game's other checked content, for a kind's `checkAll` that checks references across kinds
  * (a skin naming sprites and sounds): `others('sprite')` is every sprite entry, by file name. A
- * kind the game does not claim gives none.
+ * kind the game does not claim gives none. `others(ANY_KIND)` (Engine 0.13) is every entry of
+ * every kind, for a check that looks for content by its shape (a campaign's world scenarios).
  */
 export type ContentLookup = (kind: string) => readonly { name: string; value: unknown }[];
+
+/** The kind name a {@link ContentLookup} reads as "every kind". */
+export const ANY_KIND = '*';
 
 /** A sibling file holding one field of a content file (see {@link ContentKind.gridParts}). */
 export interface ContentPart {
