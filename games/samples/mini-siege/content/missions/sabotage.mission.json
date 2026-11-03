@@ -8,7 +8,7 @@
     "room": "engine-camp",
     "goal": "defeat-all",
     "ticks": 1500,
-    "hp": 6,
+    "hero": { "select": { "faction": "village", "member": "captain" }, "hpPer": 20 },
     "foes": [
       {
         "slot": "E",
@@ -33,7 +33,8 @@
       "weight": 1,
       "effects": [
         { "type": "destroy", "entity": "ram" },
-        { "type": "destroy", "entity": "catapult" }
+        { "type": "destroy", "entity": "catapult" },
+        { "type": "damage", "entity": "captain", "amount": 10, "fromReport": "heroHpLost" }
       ]
     },
     {
@@ -42,7 +43,8 @@
       "weight": 2,
       "effects": [
         { "type": "destroy", "entity": "ram" },
-        { "type": "damage", "entity": "catapult", "amount": 40 }
+        { "type": "damage", "entity": "catapult", "amount": 40 },
+        { "type": "damage", "entity": "captain", "amount": 10, "fromReport": "heroHpLost" }
       ]
     },
     {
@@ -51,14 +53,18 @@
       "weight": 1,
       "effects": [
         { "type": "destroy", "entity": "catapult" },
-        { "type": "damage", "entity": "ram", "amount": 40 }
+        { "type": "damage", "entity": "ram", "amount": 40 },
+        { "type": "damage", "entity": "captain", "amount": 10, "fromReport": "heroHpLost" }
       ]
     },
     {
       "id": "driven-off",
-      "title": "Driven off, the captain wounded",
+      "title": "Driven off, the captain wounded and taken",
       "weight": 2,
-      "effects": [{ "type": "damage", "entity": "captain", "amount": 30 }]
+      "effects": [
+        { "type": "damage", "entity": "captain", "amount": 30, "fromReport": "heroHpLost" },
+        { "type": "fate", "entity": "captain", "fate": "captured", "by": "raiders" }
+      ]
     }
   ]
 }

@@ -63,12 +63,16 @@ the gap report with a named release.
 - `content/missions/sabotage.mission.json` (`mission`): "Burn the siege engines", event
   `siege`, `worldTimeCost` 120, `play` `mission-room`, `onQuit` `driven-off`. Outcomes (weight,
   effects): `both-burnt` (1: destroy `ram` and `catapult`), `ram-burnt` (2: destroy `ram`,
-  damage `catapult` 40), `catapult-burnt` (1: destroy `catapult`, damage `ram` 40),
-  `driven-off` (2: damage `captain` 30). Its `params` (checked by `validate` through the kit's
-  schema and `checkUse`): room `engine-camp`, goal `defeat-all`, 1500 ticks, 6 half hearts; the
-  engines (raiders of type `ram` or `catapult`) as knights in the `E` cells with one room hp per
-  40 world hp, the guards (raiders with squad role `regular`) as knights in the `n` cells; rules
-  in order: both destroyed, the ram, the catapult, else driven off.
+  damage `catapult` 40), `catapult-burnt` (1: destroy `catapult`, damage `ram` 40), each also
+  damaging `captain` by the round's `heroHpLost` when played (`fromReport`; 10 when delegated),
+  and `driven-off` (2: damage `captain` 30, or `heroHpLost` when played, then `fate` captured by
+  `raiders`: since Engine 0.13 T7 the captain is taken, which the follow-up `dawn` reads). Its
+  `params` (checked by `validate` through the kit's schema and `checkUse`): room `engine-camp`,
+  goal `defeat-all`, 1500 ticks; the room's hero is the captain (`hero`: `{ faction: "village",
+member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts; Engine 0.13
+  T7, gap M13); the engines (raiders of type `ram` or `catapult`) as knights in the `E` cells
+  with one room hp per 40 world hp, the guards (raiders with squad role `regular`) as knights in
+  the `n` cells; rules in order: both destroyed, the ram, the catapult, else driven off.
 - `content/rooms/engine-camp.json` + `.map.txt` (`room`): the raiders' camp at night, one 16x11
   room with the hero's `@`, two `E` and two `n` slots.
 - `content/missions/fortify.mission.json` (`mission`, the preparation phase): "Man the walls",
@@ -253,9 +257,9 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
 
 | run                 | ticks | what happens                                                                                                                                                                                                                                                                                                                      | final hash         |
 | ------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `af2d3a6597bac8fb` |
-| `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt`; the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                                            | `955d09a86c76fbf2` |
-| `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30; both engines reach the hall, which ends at 112                                                                                                                                                                                             | `d58b3df54e444718` |
+| `played`            | 666   | played: a recorded 406-tick round (the kit's bot fighting) burns both engines (`both-burnt`); the world resumes at game tick 446; the hall ends at 400                                                                                                                                                                            | `cf2a262208819d24` |
+| `delegated`         | 260   | delegated at once: seed 11 draws `ram-burnt` (the captain down 10); the catapult (60 hp) reaches the hall, which ends at 280                                                                                                                                                                                                      | `766ad9dde830f2bc` |
+| `quit`              | 261   | played and quit on the round's first tick (select): `driven-off`, the captain down 30 and captured (off the map); both engines reach the hall, which ends at 112                                                                                                                                                                  | `f5282bcd8d9c7bdd` |
 | `fortify-played`    | 376   | the preparation phase played: a recorded 116-tick round (the kit's `TdBot`: archers on `north-tower` and `south-wall`, then the wave) holds with no leak for 40 gold (`held-cheap`); the world resumes at game tick 127; at 40 the hall's gold is 110 and the four raiders are gone; the engines still bring the hall down by 200 | `0b43372f77faea35` |
 | `fortify-delegated` | 260   | delegated at once: seed 11 draws `overrun`; at 40 `north-wall` and `south-wall` are gone, the towers at 60, `soldier-1` at 20, the captain at 90, the gold untouched; the raiders kill all but one soldier; the hall falls by 200                                                                                                 | `302436d18dc3917d` |
 
@@ -270,6 +274,13 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   dead records (`Fate` dead, off the map) instead of destroyed, so the hashes move from the first
   sync hash after their deaths (world ticks 170 and 178 in the sabotage runs, 80 and 86 or 88 in
   the fortify runs); none of the assertions changed.
+- The three sabotage runs' golden hashes were re-recorded again in Engine 0.13 T7: the mission's
+  def (stored in the world when it opens) gained `hero` and the captain's `fromReport` damages,
+  and `driven-off` captures the captain, so they move from the first sync hash after the open
+  (world tick 60). One assertion changed, as a content change: `delegated`'s `named.captain.hp`
+  at 160 is 110 (was 120), the declared 10 of `ram-burnt`. `played`'s recorded round loses no
+  half heart, so its captain keeps 120; `quit`'s captain keeps 90 (`Health` stays with a captive)
+  and the hall still ends at 112. The fortify runs never open the sabotage and did not move.
 - The fortify runs assert: the walls and the gold at tick 0; the mission open at world tick 11
   with commit tick 40 and `siege` frozen by `mission:fortify`; the ram, a raider, the captain, a
   soldier, the gold and the raiders' count unchanged at world ticks 11, 25 and 39 (the watchtower

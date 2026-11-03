@@ -97,7 +97,7 @@
     { "tick": 160, "path": "named.ram.alive", "op": "eq", "value": false },
     { "tick": 160, "path": "named.catapult.alive", "op": "eq", "value": true },
     { "tick": 160, "path": "named.catapult.hp", "op": "eq", "value": 60 },
-    { "tick": 160, "path": "named.captain.hp", "op": "eq", "value": 120 },
+    { "tick": 160, "path": "named.captain.hp", "op": "eq", "value": 110 },
     { "tick": 260, "path": "world.tick", "op": "eq", "value": 260 },
     { "tick": 260, "path": "named.hall.hp", "op": "eq", "value": 280 },
     { "tick": 260, "path": "named.hall.hp", "op": "gt", "value": 112 }
@@ -109,16 +109,16 @@
     { "tick": 0, "hash": "8eb4811aae418350" },
     { "tick": 20, "hash": "c9939cb5864e20e6" },
     { "tick": 40, "hash": "f7d73869dc68eac1" },
-    { "tick": 60, "hash": "4bc7f96c8afec114" },
-    { "tick": 80, "hash": "8170960b78888b21" },
-    { "tick": 100, "hash": "a1ca2a3f53753ef8" },
-    { "tick": 120, "hash": "40d3d6f73277823e" },
-    { "tick": 140, "hash": "c700db6ab28bb1f7" },
-    { "tick": 160, "hash": "7db8750225e20320" },
-    { "tick": 180, "hash": "3cfae82db1d8d4fd" },
-    { "tick": 200, "hash": "6f1f256b503c673b" },
-    { "tick": 220, "hash": "4f8ecd67baa1453d" },
-    { "tick": 240, "hash": "5d223aad3ad10933" },
-    { "tick": 260, "hash": "955d09a86c76fbf2" }
+    { "tick": 60, "hash": "74d3cd8bc65bdd09" },
+    { "tick": 80, "hash": "118f7963df1133b7" },
+    { "tick": 100, "hash": "6636d2cf7a17449d" },
+    { "tick": 120, "hash": "ea176a6e3dae52c7" },
+    { "tick": 140, "hash": "776b3ca0b0de1150" },
+    { "tick": 160, "hash": "3ca1928ab963d1ab" },
+    { "tick": 180, "hash": "20de118b3e0c114a" },
+    { "tick": 200, "hash": "99a212088d45ffbe" },
+    { "tick": 220, "hash": "2bd957629ef59d75" },
+    { "tick": 240, "hash": "88a3423342b72c1c" },
+    { "tick": 260, "hash": "766ad9dde830f2bc" }
   ]
 }
