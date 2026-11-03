@@ -342,6 +342,13 @@ close-out" in `FEEDBACK-LOG.md`):
   builds the repo, finds the game in the launcher, and on two fresh pages clicks Launch at world
   tick 40, then Delegate, or Play with the recorded round typed on the keyboard; it skips where
   Chromium is missing, like the other browser tests.
+- **Smaller build choices for review** (items 191-196, "Engine 0.11, smaller build choices" in
+  `FEEDBACK-LOG.md`): what "held into the round" means and where the drop applies (four platformer
+  mini-game unit tests let go for one tick); a look's frames replace the kind's whole, and
+  platformer-test's new `switch` frame and brick bounce; the burnt engine drawn through a new RTS
+  `damaged` tag and the frozen siege as a palette swap; the mini siege's balance numbers; the page
+  pausing during the Play-or-Delegate choice and keeping the touch pad; the shell's `wake()` calls
+  and lasting unlock listeners.
 - The root `package.json` version was left as it was, as in earlier releases of this build.
 
 ### How to try it
@@ -369,7 +376,8 @@ Checked on 2026-11-03 on the tree of the close-out commit (T10, on top of `35838
 and the new browser test): `pnpm lint && pnpm docs:check && pnpm typecheck && pnpm test && pnpm build`
 pass (152 test files, 1667 tests passed and 1 skipped: the opt-in every-tick save check of 0.8), and every one of the 27 run files in the repo (9 sim fixtures, 1 demo, 6 lab,
 4 stacking-test, 4 skirmish and the 3 new mini siege runs) exits 0 with the same final hash on two
-`pnpm -s cli run` runs in a row.
+`pnpm -s cli run` runs in a row. Rechecked at the finalize step (same date, on `6faa771`): all checks
+and all 27 run files green again, and the browser test passed in headless Chromium.
 
 - **Met: the mini siege can be played from a link in a few minutes, by playing the mission and by
   delegating it.** `tests/browser/mini-siege-page.test.ts` (headless Chromium, the repo built as

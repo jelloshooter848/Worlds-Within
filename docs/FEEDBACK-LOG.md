@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 191.** (Last used: 190.)
+**Next unused number: 197.** (Last used: 196.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -721,3 +721,28 @@ Deviations from the roadmap)
 - **190.** "Played from a link" is checked by `tests/browser/mini-siege-page.test.ts`: the built
   site's launcher, then Launch and Delegate, and Launch and Play with the recorded round typed as
   keys, in headless Chromium (skipped where none is installed). OK?
+
+**Engine 0.11, smaller build choices** (details in `docs/BUILD-LOG.md`, Engine 0.11, Choices made)
+
+- **191.** G18 as built: a button counts as "held into the round" only when it is held but not
+  newly pressed on the round's first tick (a press on that tick counts, matching "a play script
+  starts with nothing held"). The drop is applied to the host's actions before the input map. Four
+  platformer mini-game unit tests that held attack through the trigger now let go for one tick, so
+  their pass comes one tick later; no golden hash or run file changed. OK?
+- **192.** A skin look's `frames` replace the kind's frames whole (not merged state by state), and
+  a look may also set `fallbackColor` (2D) and `color` (3D). In platformer-test a trigger with no
+  look is now a new `switch` frame and the door is drawn through `look:door`; a bumped brick
+  bounces as a brick (seen only in live play; screenshots unchanged). OK?
+- **193.** A destroyed siege engine leaves the sim, so the "burnt" look is the skin's look for a new
+  RTS kit tag `damaged` (units and finished buildings below full hp), and the frozen siege is a
+  palette swap (`siege-held`) rather than separate frames. OK?
+- **194.** Mini siege balance: soldiers 50 hp / attack 6, captain 120 hp / attack 10, defenders on
+  the road with the captain behind; both engines burnt keeps the hall at its full 400 hp (112 when
+  the round is quit). The delegated run's seed 11 draws `ram-burnt`. OK to keep these numbers?
+- **195.** The mini siege page pauses the world while the Play-or-Delegate choice is shown (so a
+  slow answer cannot pass the commit tick) and keeps the touch pad on so the round can be played on
+  a phone, unlike the RTS skirmish. OK?
+- **196.** The shell also calls `AudioManager.wake()` on `pageshow` and `visibilitychange`, and
+  the unlock listeners stay on after the first gesture (cheap, and they recover a context the
+  browser suspended). Only the player's volumes are applied; storing settings and a mute control
+  are M1, moved to 0.15. OK?
