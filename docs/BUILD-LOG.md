@@ -107,7 +107,7 @@ for the platformer and the lab). Each game's `CLAUDE.md` lists its run files and
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 303** (next unused 304). Awaiting the owner's answer, by release (an answer by number is
+used is 315** (next unused 316). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -116,8 +116,8 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.6: **65-75**. Engine 0.7: **76-98** (81 answered by 158, 84 by 157).
 - Engine 0.8: **99-120**. Engine 0.9: **121-149**. Engine 0.10: **150-171**.
 - Engine 0.11: **172-196**. Engine 0.12: **197-219**. Engine 0.13: **220-246**.
-- Engine 0.14: **247-277**. Engine 0.15: **278-303** (278-291 the decisions before code, 292-303
-  the smaller build choices).
+- Engine 0.14: **247-277**. Engine 0.15: **278-315** (278-291 the decisions before code, 292-303
+  the smaller build choices, 304-315 more choices added by the last finalize pass).
 
 ### Items not met, and where they went
 
@@ -897,7 +897,11 @@ its golden file. The browser tests (`tests/browser`: 12 files) ran in headless C
 skipped. T17 checked it all again on the release's last tree (on top of `911d041`, docs
 only): the four checks pass with the same 203 files and 2320 tests (1 skipped), `docs:check` is
 up to date, `validate` passes for all six games and all 56 run files exit 0; `git tag` lists
-nothing.
+nothing. The last finalize pass checked it all once more on `a617cac` (after the two fixes
+below): the four checks pass with 203 test files and 2323 tests (1 skipped, the same opt-in
+check), the browser tests ran in Chromium with none skipped, `docs:check` is up to date,
+`validate` passes for all six games and all 56 run files (43 under `games/`, 13 sim fixtures)
+exit 0 through `pnpm -s cli run`; `git tag` lists nothing.
 
 - **Met: every sample plays from a link.** `tests/browser/games-index.test.ts` (new in T16)
   builds the repo as the Pages workflow does (Vite with this `vite.config.ts`, under the sub-path
@@ -942,6 +946,21 @@ nothing.
   are green; no layer arrow changed in 0.15.
 - **No tag** (owner answer 24).
 
+### Fixes after the close-out
+
+Two commits landed after T17's close-out (`28c7250`); neither moved a run file hash.
+
+- **The dungeon's relic redrawn** (`fc3120f`): the crypt's relic frame was a gold Triforce,
+  Nintendo's Zelda symbol, not original art. It is now an original gold chalice with a red gem
+  (`relic` in the dungeon sheet; the skin's `pickup:triforce` and held `triforce` frames point at
+  it). The kit's item id `triforce` is unchanged, so no hash moved (item 308). A test holds the skin
+  and sheet to the new frame.
+- **`td-defence` rounds charged net gold** (`a617cac`): the adapter's `stats.spent` and
+  `spentAtMost` read gold spent net of sales (never below 0), so a mini siege fortify round that
+  places and sells inside its 100-gold budget keeps its played outcome (item 309). New tests in
+  the kit's mission tests and the mini siege's. The README now lists the five samples, every kit
+  and backend and `games/platformer-lab`.
+
 ### Choices made
 
 The decisions above are items 278-291 (T1). The builders' smaller choices are items 292-303
@@ -971,6 +990,13 @@ entry above:
 - **302** (T16): "plays from a link" proved on a Pages-style local build, nothing published.
 - **303** (T17): the owner's summary's reading of which items are open; no version bump without a
   tag.
+- **304-315** (the last finalize pass): choices recorded in the task entries above that 292-303
+  did not cover: the samples' names, `level-5` for the second challenge room, the 3D HUD's
+  default-colour-only pixel sheets, the vault 3D camera's clamp, the relic's item id, net gold
+  for `td-defence`, `missionPort` opening with the world's key table, `MiniSiegeGame` extending
+  `MissionHost`, the extra schema parts (`KitDef.options`, entry `text`, `min > max`), the
+  grass colour in the skins, the barracks' construction frame and the 3D test's ignored WebGL
+  console noise.
 - **No tag** (owner answer 24), and the root `package.json` version was left at `0.0.0`.
 
 ### How to try it
@@ -1039,7 +1065,7 @@ for a run file's sync `hashes` (the new values read off `run --json`), then
 - **Smaller departures from the written decisions** (each an item): `build.cells` for `slot`
   (294), a test for M21's event check (293), `train` skipping frozen buildings (296).
 - **Feedback numbering:** T1's decisions are 278-291; the finalize pass added the smaller build
-  choices, 292-303.
+  choices, 292-303, and the last finalize pass 304-315.
 
 ### Outstanding issues
 
@@ -1049,11 +1075,13 @@ for a run file's sync `hashes` (the new values read off `run --json`), then
 - **Shared page shapes still copied**: the two RTS pages' scene and camera (A6), the three
   standalone games' end flows (A8), each page's own test hook beside `window.__ww` (A7).
 - **The 3D screenshot on hardware WebGL** is still unchecked (item 75).
+- **The 3D HUD ignores the colour-blind palette modes** (default colours only, item 306), and
+  the dungeon's relic keeps the item id `triforce` though its art is now a chalice (item 308).
 - **The mini siege's folder takes about four minutes under `mutants`**, and three heavy test files
   keep a 60 s timeout (items 233, 277).
 - **A stash** (`T4 (G33 3D HUD) uncommitted leftovers`) is left in the working copy's stash list
   for the owner; its content is committed.
-- Open owner decisions: items 278-303 in `FEEDBACK-LOG.md`, and the earlier ranges in the owner's
+- Open owner decisions: items 278-315 in `FEEDBACK-LOG.md`, and the earlier ranges in the owner's
   summary at the top of this file.
 
 ## Engine 0.14

@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 304.** (Last used: 303.)
+**Next unused number: 316.** (Last used: 315.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -1210,3 +1210,39 @@ was built and Choices made)
   from 25 to 303 as awaiting an answer except those already answered by a later item (48 by 128,
   81 by 158, 84 by 157); the root `package.json` version stays `0.0.0` (no release bump without a
   tag). OK?
+
+**Engine 0.15, more build choices** (the finalize pass; choices from the task entries in
+`docs/BUILD-LOG.md`, Engine 0.15, not yet covered by 278-303)
+
+- **304.** The samples' names: "The Old Crypt" (dungeon), "Hopper's Way" (platformer), "The River
+  Ford" (RTS skirmish) and "The Winding Road" (tower defense). The mini siege's index line stays
+  "The mini siege". Keep these names?
+- **305.** The platformer's second challenge room is in a new last level, `level-5`, not behind a
+  second door in `level-4`, so no existing run's hashes move. OK?
+- **306.** The 3D HUD's pixel art comes from a new core helper, `contentPixelSheets`, in the default
+  colour mode only: the 3D HUD does not follow the colour-blind palette modes the 2D one does. Fix
+  in 1.0, or accept?
+- **307.** The three-vault 3D skin's camera clamp changed from on to off, so the room does not
+  overlap the new 3D HUD; 2D and 3D vault cameras now match. Only the picture changed. OK?
+- **308.** The dungeon's relic was a gold Triforce (Nintendo's symbol, not original art); it was
+  redrawn as an original gold chalice after the release's close-out. The kit's item id `triforce`
+  is unchanged so no hash moves. Rename the id too, in 1.0?
+- **309.** A `td-defence` round now counts gold spent net of sales (spent minus refunds, never below
+  0), so a fortify round that places and sells within its 100-gold budget keeps its played outcome.
+  No run file moved. OK?
+- **310.** `missionPort(world)` now always opens missions with the world's key table (a mission's
+  `refs` layered on top), so a keyed effect that used to fail as `unknown_ref` now resolves. OK?
+- **311.** `MiniSiegeGame` now extends `MissionHost` instead of wrapping it, and its sim world is
+  renamed `sim` (the host's `world` must stay the host for the shell). OK?
+- **312.** New optional schema parts beyond the decisions: `KitDef.options` (so tools refuse unknown
+  kit options), a `text` briefing on campaign entries, and `min > max` refused as `bad_tag_look`.
+  `roomKind(..., { oneDungeon: false })` now checks each room alone instead of skipping the check.
+  OK?
+- **313.** The grass colour of the RTS skirmish, tower defense and mini siege moved into their skins'
+  `background` (pixels unchanged); the renderer's own `background` option stays as an override that
+  no game uses. OK?
+- **314.** The RTS skirmish's barracks shows construction progress with one new original frame,
+  `site-2x2-half`, from `progress:50`; the town centre and the mini siege's watchtower are
+  unchanged. OK?
+- **315.** The 3D platformer browser check ignores console errors that mention a GPU stall or WebGL
+  (Chromium software-rendering noise); every other error still fails the test. OK?
