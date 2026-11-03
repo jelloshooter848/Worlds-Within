@@ -714,6 +714,8 @@ copy a second mission game would write; the API review decides where each goes:
 - M34, M35 and M36: a campaign page's flow written once (with M26): an entry held at tick 0 until
   the player begins it, one rule for when a scenario entry is over (an open mission at its
   `ticks`), and the result panel, save code, Continue and resume (found in 0.13).
+- M38: save codes that a mission file added later does not move (a stable mission index or a code
+  format v2; today missions are indexed by sorted id; found in 0.14).
 
 **From the tower-defense kit** (lessons moved here; [lessons report](reports/tower-defense.md)). None
 needed `engine/sim` in 0.12; the API review makes or rejects each before the mission API is v1:

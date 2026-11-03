@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 258.** (Last used: 257.)
+**Next unused number: 260.** (Last used: 259.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -1008,3 +1008,17 @@ values, events? }` as a top-level array so the output cap cuts whole rows; a mis
   tower-defense rules (strict) are guarded by `fortify-played` for `towerdefense:win-on-clear`
   only: the others change a sync hash before any check notices. OK, or should a strict `uses`
   kit's unguarded rules fail the game (which would need new run files without sync hashes)?
+
+**Engine 0.14, close-out** (T12; details in `docs/BUILD-LOG.md`, Engine 0.14)
+
+- **258.** The Done when's data-only scenario is the mini siege's third campaign entry, **the
+  ridge camp** (`ridge.world.json`, the `stores-raid` mission, `ridge-raid.run.json` started with
+  `start: { entry: "ridge" }`), with no `from` (it starts as written) and played on the page after
+  the dawn. Its commit touches no `.ts` file; the game's tests that pinned the campaign to two
+  entries were loosened in a commit before it (gap M37, a test fix, no glue change). OK, or should
+  the ridge camp carry the dawn's results (a `from`) or stay out of the page's campaign?
+- **259.** M38 (save codes index missions by sorted id, so a mission file added with an id that
+  sorts earlier moves every pinned code and misreads old codes) is moved to 0.15's API review
+  rather than fixed in the close-out: a stable index changes the code format (v2) and every pinned
+  code. Until then a new mission's id must sort after the existing ones (the ridge camp's is
+  `stores-raid`). OK?

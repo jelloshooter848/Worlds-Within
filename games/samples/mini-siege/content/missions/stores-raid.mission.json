@@ -1,0 +1,20 @@
+{
+  "id": "stores-raid",
+  "title": "Raid the raiders' stores on the ridge",
+  "worldTimeCost": 20,
+  "onQuit": "stores-taken",
+  "outcomes": [
+    {
+      "id": "stores-taken",
+      "title": "The stores carried home: sixty gold",
+      "weight": 2,
+      "effects": [{ "type": "inventory", "entity": "hall", "item": "gold", "add": 60 }]
+    },
+    {
+      "id": "ram-burnt",
+      "title": "The new ram burnt where it stood",
+      "weight": 1,
+      "effects": [{ "type": "destroy", "entity": "ram" }]
+    }
+  ]
+}

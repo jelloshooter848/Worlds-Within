@@ -81,9 +81,10 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   with one room hp per 40 world hp, the guards (raiders with squad role `regular`) as knights in
   the `n` cells; rules in order: both destroyed, the ram, the catapult, else driven off.
 - `content/campaigns/siege.campaign.json` (`campaign`, Engine 0.13 T7): `village` for 260 world
-  ticks, then `dawn` for 200; since T8 each entry has the `title` the page shows (`The siege`,
-  `The dawn assault`). The glue builds the entry a campaign save names (`siegeCampaignPlace`);
-  the order is never in code (gap M29).
+  ticks, then `dawn` for 200, then (Engine 0.14 T12) `ridge` for 160; since T8 each entry has the
+  `title` the page shows (`The siege`, `The dawn assault`, `The ridge camp`). The glue builds the
+  entry a campaign save names (`siegeCampaignPlace`); the order is never in code (gap M29), and
+  the tests read every entry after the dawn from this file (gap M37).
 - `content/maps/dawn.world.json` (`rts-map`, Engine 0.13 T7): "The dawn assault", the morning
   after: the village's terrain, the hall patched to 300 of 400 hp (150 gold, replaced by the
   carried gold), two soldiers (13,14 and 13,17), in the squad `defenders` the `captain` (Captain
@@ -485,6 +486,33 @@ games/samples/mini-siege/runs/quit.run.json` prints it. The fortify runs give no
   `world.components.Missions.0.1.committed.<i>.*`.
 - After a change to the siege that moves its end world (or its save codes), re-record the dawn
   runs too: they replay their `from` run first.
+
+## The ridge camp (Engine 0.14 T12, data files only)
+
+Engine 0.14's Done when: a scenario added with **data files only** (no `.ts` change in this
+folder) that the debugger steps through. Its files:
+
+- `content/maps/ridge.world.json` (`rts-map`): "The ridge camp", the village's terrain with a rock
+  ridge east of the road's end; the hall (340 of 400 hp, 120 gold), three soldiers (15,14-18) and
+  the squad `defenders` (`captain` 14,15, `sergeant` 14,16); the raiders' camp: three raiders
+  (37,13-17), a new `ram` (40,16) and the squad `ridge-band` with the chief `chief` (Varga, role
+  `regular`, 41,15). No `from` (it starts as written; the dawn's save carries nothing into it)
+  and no `EventMember`; one opportunity, `stores-window`, offering `stores-raid` from world tick
+  10 to 90.
+- `content/missions/stores-raid.mission.json`: "Raid the raiders' stores on the ridge", cost 20,
+  no `play` (only delegated), `onQuit` `stores-taken`; outcomes `stores-taken` (2: gold +60) and
+  `ram-burnt` (1: destroy `ram`). Its id sorts after `sabotage` on purpose: the save codes index
+  missions by sorted id, so an id sorting earlier would have moved every pinned code (gap M38).
+- The campaign's third entry, `ridge` (above).
+- `runs/ridge-raid.run.json` (+ `.hashes.json`): `start: { entry: "ridge" }`, 160 ticks, hashes
+  every 40; the raid opened and delegated at tick 10: seed 11 draws `ram-burnt` at world 30; the
+  village wins (no raider left at 80, the chief among them), the hall untouched at 340, four
+  village units at 160. Final hash `91b8badf8fc51139`.
+  `tests/browser/debugger-done-when.test.ts` steps it forward and back in the debugger against the
+  golden hashes and reads its timeline, and opens a deliberately failing copy's replay at its
+  failing tick.
+
+On the page the ridge camp follows the dawn: Continue: The ridge camp, then the campaign is over.
 
 ## Playing in the browser
 

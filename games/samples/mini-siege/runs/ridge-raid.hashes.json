@@ -1,0 +1,25 @@
+{
+  "run": "games/samples/mini-siege/runs/ridge-raid.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "75b17974984687cd"
+    },
+    {
+      "tick": 40,
+      "hash": "971efb8b2ba489b4"
+    },
+    {
+      "tick": 80,
+      "hash": "c8d6c70dc1a87df0"
+    },
+    {
+      "tick": 120,
+      "hash": "f5538d3ec2336bed"
+    },
+    {
+      "tick": 160,
+      "hash": "91b8badf8fc51139"
+    }
+  ]
+}

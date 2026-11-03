@@ -1,0 +1,114 @@
+{
+  "game": "..",
+  "seed": 11,
+  "start": {
+    "entry": "ridge"
+  },
+  "ticks": 160,
+  "missions": [
+    {
+      "tick": 10,
+      "mission": "stores-raid",
+      "action": "open"
+    },
+    {
+      "tick": 10,
+      "mission": "stores-raid",
+      "action": "delegate"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "world.tick",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 0,
+      "path": "sides.raiders.units",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.stock.gold",
+      "op": "eq",
+      "value": 120
+    },
+    {
+      "tick": 0,
+      "path": "named.hall.hp",
+      "op": "eq",
+      "value": 340
+    },
+    {
+      "tick": 0,
+      "path": "named.ram.alive",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 29,
+      "path": "named.ram.alive",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 30,
+      "path": "named.ram.alive",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 30,
+      "path": "sides.village.stock.gold",
+      "op": "eq",
+      "value": 120
+    },
+    {
+      "tick": 80,
+      "path": "named.chief.alive",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 80,
+      "path": "sides.raiders.units",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 160,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 160,
+      "path": "named.hall.hp",
+      "op": "eq",
+      "value": 340
+    },
+    {
+      "tick": 160,
+      "path": "named.captain.hp",
+      "op": "eq",
+      "value": 120
+    }
+  ],
+  "hashEvery": 40,
+  "invariants": [
+    {
+      "path": "named.hall.alive",
+      "op": "eq",
+      "value": true
+    }
+  ]
+}

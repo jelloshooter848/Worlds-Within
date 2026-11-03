@@ -1,9 +1,10 @@
 {
   "version": 1,
   "id": "siege",
-  "title": "The siege and the dawn assault",
+  "title": "The siege, the dawn assault and the ridge camp",
   "entries": [
     { "scenario": "village", "ticks": 260, "title": "The siege" },
-    { "scenario": "dawn", "ticks": 200, "title": "The dawn assault" }
+    { "scenario": "dawn", "ticks": 200, "title": "The dawn assault" },
+    { "scenario": "ridge", "ticks": 160, "title": "The ridge camp" }
   ]
 }
