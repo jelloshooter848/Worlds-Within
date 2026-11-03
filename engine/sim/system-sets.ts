@@ -4,6 +4,7 @@ import { SYSTEM_COMPONENTS, buildSystem, haulSystem, patrolSystem } from './syst
 import { Terrain } from './terrain';
 import { MISSION_COMPONENTS } from './mission';
 import { OPPORTUNITY_COMPONENTS } from './opportunity';
+import { FATE_COMPONENTS } from './fate';
 import { TIME_COMPONENTS } from './time';
 import type { AnyComponent, System } from './world';
 
@@ -19,6 +20,7 @@ import type { AnyComponent, System } from './world';
  *
  * Both also register `TIME_COMPONENTS`, `MISSION_COMPONENTS` and `OPPORTUNITY_COMPONENTS` (Engine 0.10), which stay out of
  * snapshots until used, so a scenario may tag event members and the hashes of worlds that do not are unchanged.
+ * Both register `FATE_COMPONENTS` (Engine 0.13; `rts` through `RTS_COMPONENTS`), also left out until used.
  */
 
 /** The set names a scenario may give in `systems`. */
@@ -40,6 +42,7 @@ export const SYSTEM_SETS: Readonly<Record<SystemSetName, SystemSet>> = Object.fr
       ...STANDARD_COMPONENTS,
       Terrain,
       ...SYSTEM_COMPONENTS,
+      ...FATE_COMPONENTS,
       ...TIME_COMPONENTS,
       ...MISSION_COMPONENTS,
       ...OPPORTUNITY_COMPONENTS,

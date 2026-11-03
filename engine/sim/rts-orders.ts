@@ -7,14 +7,8 @@ import {
   trainSystem,
   writeEconomyOrder,
 } from './economy';
-import {
-  UNIT_COMPONENTS,
-  attackSystem,
-  deathSystem,
-  moveSystem,
-  unitOrderRefusal,
-  writeUnitOrder,
-} from './rts';
+import { UNIT_COMPONENTS, attackSystem, moveSystem, unitOrderRefusal, writeUnitOrder } from './rts';
+import { FATE_COMPONENTS, deathSystem } from './fate';
 import type { System, World } from './world';
 
 /**
@@ -29,8 +23,11 @@ import type { System, World } from './world';
  *   world.step();
  */
 
-/** The components the RTS systems use beyond the standard ones and `Terrain`. */
-export const RTS_COMPONENTS = Object.freeze([...UNIT_COMPONENTS, ...ECONOMY_COMPONENTS]);
+/**
+ * The components the RTS systems use beyond the standard ones and `Terrain`: the unit and economy
+ * components and `FATE_COMPONENTS` (`deathSystem` keeps a named person who dies as a dead record).
+ */
+export const RTS_COMPONENTS = Object.freeze([...UNIT_COMPONENTS, ...ECONOMY_COMPONENTS, ...FATE_COMPONENTS]);
 
 /**
  * The RTS systems in their run order: the economy first (gather, construct, train), then the

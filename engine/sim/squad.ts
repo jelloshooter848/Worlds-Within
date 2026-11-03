@@ -106,6 +106,27 @@ export function applyLosses(world: World, squad: Entity, n: number): Entity[] {
   return leaving;
 }
 
+/**
+ * Take one named person out of their squad: its strength drops by one, they leave `members` (and
+ * `captain` when it was them) and their `Member.squad` becomes null. A person in no squad is left
+ * as they are; a person whose squad entity is gone only has `squad` cleared. Returns whether a
+ * squad lost them. Used when a named person dies or is captured (`fate.ts`).
+ */
+export function leaveSquad(world: World, person: Entity): boolean {
+  const m = memberOf(world, person);
+  if (m.squad === null) return false;
+  const s = world.alive(m.squad) ? world.get(m.squad, Squad) : undefined;
+  if (s && s.members.includes(person)) {
+    world.add(m.squad, Squad, {
+      strength: Math.max(0, s.strength - 1),
+      captain: s.captain === person ? null : s.captain,
+      members: s.members.filter((id) => id !== person),
+    });
+  }
+  world.add(person, Member, { ...m, squad: null });
+  return s !== undefined && s.members.includes(person);
+}
+
 /** The squad's named people in the order losses take them: regulars, heroes, captain; newest first. */
 export function lossOrder(world: World, squad: Entity): Entity[] {
   const s = squadOf(world, squad);

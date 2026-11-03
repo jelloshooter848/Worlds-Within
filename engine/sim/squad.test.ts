@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { Rng } from '../core/rng';
 import { Member, STANDARD_COMPONENTS, Squad, type Role } from './components';
-import { applyLosses, joinSquad, lossOrder, pickMembers, squadMembers, squadStrength } from './squad';
+import {
+  applyLosses,
+  joinSquad,
+  leaveSquad,
+  lossOrder,
+  pickMembers,
+  squadMembers,
+  squadStrength,
+} from './squad';
 import { createWorld, type Entity, type World } from './world';
 
 /** A squad of `strength` with named people (name, role) added in order. */
@@ -85,5 +93,30 @@ describe('squads', () => {
     expect(() => applyLosses(world, squad, -1)).toThrow(/whole number/);
     expect(() => pickMembers(world, squad, 1.5, new Rng(1))).toThrow(/whole number/);
     expect(() => squadStrength(world, ids[0] as Entity)).toThrow(/not a squad/);
+  });
+});
+
+describe('leaveSquad', () => {
+  it('takes one named person out: strength - 1, off members and captain, squad null', () => {
+    const { world, squad, ids } = squadWorld(20, PEOPLE);
+    const captain = ids[1] as Entity;
+    expect(leaveSquad(world, captain)).toBe(true);
+    expect(world.get(squad, Squad)).toEqual({
+      strength: 19,
+      captain: null,
+      members: ids.filter((id) => id !== captain),
+    });
+    expect(world.get(captain, Member)?.squad).toBeNull();
+    // A person in no squad is left as they are.
+    const before = world.canonical();
+    expect(leaveSquad(world, captain)).toBe(false);
+    expect(world.canonical()).toBe(before);
+  });
+
+  it('only clears the squad of a person whose squad is gone', () => {
+    const { world, squad, ids } = squadWorld(5, PEOPLE.slice(0, 2));
+    world.destroy(squad);
+    expect(leaveSquad(world, ids[0] as Entity)).toBe(false);
+    expect(world.get(ids[0] as Entity, Member)?.squad).toBeNull();
   });
 });

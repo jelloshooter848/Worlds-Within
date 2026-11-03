@@ -27,22 +27,28 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `systems.ts`: the `Walk` and `Hauler` components (`SYSTEM_COMPONENTS`), `walkToward`, `addWork`
   and the systems `haulSystem`, `buildSystem` and `patrolSystem` (see "Systems").
 - `rts.ts`: RTS units (Engine 0.9): the components `Unit`, `Facing8`, `Task`, `Target` and
-  `Cooldown` (`UNIT_COMPONENTS`), the unit order checks and writes, and the systems `moveSystem`,
-  `attackSystem` and `deathSystem` (see "RTS units").
+  `Cooldown` (`UNIT_COMPONENTS`), the unit order checks and writes, and the systems `moveSystem`
+  and `attackSystem` (see "RTS units").
 - `economy.ts`: the RTS economy (Engine 0.9 T8): the components `RtsTypes`, `Stockpile`,
   `Resource`, `Producer` and `Gatherer` (`ECONOMY_COMPONENTS`, with `Building`), `spawnUnit`,
   `placeBuilding`, the economy order checks and writes, and the systems `gatherSystem`,
   `constructSystem` and `trainSystem` (see "RTS economy").
 - `footprint.ts`: the `Building` component and footprint helpers (`footprintOf`, `inReach`,
   `inRect`, `rectsOverlap`, `ringAround`), shared by the two above.
-- `rts-orders.ts`: `applyOrder` for every order type, `RTS_COMPONENTS` and `RTS_SYSTEMS` (the
-  economy's systems, then the units', in that order).
+- `rts-orders.ts`: `applyOrder` for every order type, `RTS_COMPONENTS` (the unit, economy and
+  fate components) and `RTS_SYSTEMS` (the economy's systems, then the units', in that order).
+- `fate.ts`: fates of named individuals (Engine 0.13 T2): the `Fate` component
+  (`FATE_COMPONENTS`, `omitWhenEmpty`), `FATE_STATES`, `MAP_COMPONENTS`, `fateOf`, `namedPeople`,
+  `setFate` and its helpers `injurePerson`, `capturePerson`, `killPerson`, `freePerson`, and
+  `deathSystem` (moved here from `rts.ts`: it keeps a named person who dies as a dead record) (see
+  "Fates" below).
 - `system-sets.ts`: named system sets (Engine 0.9 T9, items 118 and 132): `SYSTEM_SETS`
   (`village`: `[...STANDARD_COMPONENTS, Terrain, ...SYSTEM_COMPONENTS]` with `haulSystem`,
   `buildSystem`, `patrolSystem`; `rts`: `[...STANDARD_COMPONENTS, Terrain, ...RTS_COMPONENTS]` with
   `RTS_SYSTEMS`), `SYSTEM_SET_NAMES` and `DEFAULT_SYSTEM_SET` (`village`). A scenario names one in
   `systems` (Scenarios, below). Both sets also register `TIME_COMPONENTS`, `MISSION_COMPONENTS` and `OPPORTUNITY_COMPONENTS` (Engine 0.10), which
-  stay out of snapshots until used.
+  stay out of snapshots until used, and `FATE_COMPONENTS` (Engine 0.13; `rts` through
+  `RTS_COMPONENTS`), also left out until used.
 - `time.ts`: the time service and frozen events (Engine 0.10 T3): `EventMember`, `WorldTime`
   (`TIME_COMPONENTS`), `timeOf`, `freezeEvent`/`unfreezeEvent`, `joinEvent`/`leaveEvent`,
   `eventMembers`, `frozenCheck`, `startExperience`, `addExperience`, `stampCommitment` (see
@@ -373,6 +379,57 @@ never more than the strength; `captain` is one of them or null. The rest are unn
   heroes, the captain last, and within a role the highest id (newest) first (`lossOrder`). No
   randomness. People who leave stay in the world with `squad: null`; their fate is the caller's
   rule. Returns their ids in leaving order.
+- `leaveSquad(world, person)` (Engine 0.13): one named person leaves: strength - 1, off
+  `members` (and `captain`), `Member.squad` null; returns whether a squad lost them (a person in
+  no squad is left as they are). The fate writes and `deathSystem` use it, so a squad's strength
+  and members stay consistent when a named person is captured or dies ("Fates").
+
+## Fates
+
+Fates of named individuals (`fate.ts`, Engine 0.13 T2; docs/BUILD-LOG.md, Engine 0.13, decision
+1, item 220). A named person (an entity with `Member`) carries a fate that survives battle, save
+and load, so every mode can read it; the unnamed rank and file have none (they are a squad's
+`strength`).
+
+- **`Fate`** `{ state, by, at, held, history }`, `omitWhenEmpty`: `state` is `injured`,
+  `captured`, `freed` or `dead` (`FATE_STATES`); `by` the faction that captured or killed them
+  (or null); `at` the world tick it was reached; `held` (only while captured) the `{ unit, owner }`
+  data kept to free them; `history` every state reached, oldest first, each
+  `{ state, by, at, cause }`, append-only (its last entry is the current state). **No `Fate`
+  means active**, so a world where no fate is ever set snapshots, saves and hashes as before.
+- **States only move forward**: active or freed -> injured; active, freed or injured ->
+  captured; captured -> freed; any living state -> dead; dead is final. Anything else (from dead,
+  captured -> injured, a state to itself) is refused `fate_final`. A freed person captured again
+  is a second capture in `history`, not the first one undone.
+- **Reading**: `fateOf(world, id)` -> `{ state, by, at, history }` (`state` `active` with no
+  history when there is no `Fate`), or null when `id` is not a living entity with `Member`.
+  `namedPeople(world)`: every `Member` ascending by id as `{ id, name, role, squad, fate }`.
+- **Writing**, between ticks, logged under the cause given (also kept in `history`):
+  `setFate(world, id, state, { cause, by?, at?, cell? })` and the helpers
+  `injurePerson(world, id, { cause, by? })`, `capturePerson`, `killPerson` and
+  `freePerson(world, id, cell, cause, by?)`. Each returns `{ ok: true, fate }` or
+  `{ ok: false, code, error }` with nothing changed: `bad_id` (no such entity, or a bad faction id
+  or tick), `not_named` (no `Member`), `fate_final`, `bad_cell` (a `freed` without a cell, or onto
+  one off the terrain or impassable) or `stepping` (during a step). A bad cause throws. `at`
+  (default the world's tick) lets a fate carried from another world keep its tick. `Fate` is
+  registered on first use in a world built without it.
+- **Injured** is a label: `Health` is not changed (battle damage alone injures no one).
+- **Captured**: the person leaves the map and their squad: `MAP_COMPONENTS` (`Position`, `Unit`,
+  `Task`, `Target`, `Cooldown`, `Facing8`, `Worker`, `Gatherer`, `EventMember`) are removed and
+  `leaveSquad` runs; `Member`, `Health` and `Owner` stay, and `held` keeps their `Unit` and
+  `Owner`. No system, kit or view has to skip them: everything that counts or fights needs `Unit`
+  and `Position`.
+- **Freed**: back on the given cell (enterable; `z` from the terrain) with the held `Unit`, in no
+  squad (a game that wants them in one says so with a later write).
+- **Dead**: off the map and out of their squad like a capture, `Health.hp` set to 0, `held` null;
+  the entity stays as a record. In battle, `deathSystem` does this for a named person at 0 hp
+  (`by` null: the attack system does not record who struck; cause `death`); everyone else at 0 hp
+  is destroyed as before.
+- Integers only, no randomness. Tests: `fate.test.ts` (each fate, every refusal leaving the world
+  as it was, `stepping`, registration on first use, both system sets, a battle where the named
+  captain dies and the hero is captured then freed, the same hashes on every run, and save and load
+  at six ticks giving the uninterrupted hashes), `squad.test.ts` (`leaveSquad`), `rts.test.ts`
+  (a named hero killed in battle kept as dead; an unnamed unit destroyed).
 
 ## Terrain
 
@@ -542,14 +599,16 @@ components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_CO
   it, and starts its cooldown. A unit with no task keeps a target only while it is in range and
   otherwise picks the nearest enemy within range (another faction's living entity with `Owner`;
   nearest by squared distance, ties to the lowest id). Hits land at once, in id order.
-- `deathSystem` (`death`): every `Unit` or `Building` at 0 hp is destroyed (each removal and the
-  destroy are logged under `death`); a named squad member first leaves its squad (strength - 1,
-  off `members`, not captain).
+- `deathSystem` (`death`, in `fate.ts` since Engine 0.13): every `Unit` or `Building` at 0 hp
+  without `Member` is destroyed (each removal and the destroy are logged under `death`). A named
+  person (`Member`) at 0 hp is kept as a dead record instead: they leave their squad
+  (`leaveSquad`: strength - 1, off `members`, not captain) and the map (`MAP_COMPONENTS`) and get
+  `Fate { state: "dead", by: null }` (see "Fates").
 - **Heroes** (item 121) are ordinary units with a `Member` role `hero`; an order can name one
   alone. Nothing in the orders or systems tells them apart.
 - Tests: `rts.test.ts` (move around a wall, speed and cell cost, a flow-field group, stop, no way;
   attack closes to range and kills, chasing, idle units fighting back, heroes ordered alone and
-  leaving their squad on death; every refusal changes nothing; a two-sided battle gives the same
+  leaving their squad on death as a dead record (Engine 0.13), an unnamed unit still destroyed; every refusal changes nothing; a two-sided battle gives the same
   hashes and log twice, causes only `order:<n>` or a system's name, and a save and load at seven
   ticks mid-battle steps on to the uninterrupted hashes). `engine/core/orders.test.ts` checks the
   order schema.

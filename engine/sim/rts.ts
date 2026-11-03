@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import type { Order } from '../core/orders';
 import { defineComponent } from './component';
-import { Health, Member, Owner, Position, Squad, Worker } from './components';
+import { Health, Owner, Position, Worker } from './components';
 import { FLOW_GROUP_SIZE, STEPS_8, STRAIGHT_COST, findPath, flowField, flowStep, stepCost } from './astar';
-import { Building, footprintOf, inReach } from './footprint';
+import { footprintOf, inReach } from './footprint';
 import { distSq, idiv } from './math';
 import type { Cell } from './path';
 import { heightAt, moveCost, terrainOf, type TerrainData } from './terrain';
@@ -18,8 +18,8 @@ import type { Entity, System, World } from './world';
  * them against the world and writes intent (`Task`, `Target`) under the cause `order:<id>`; this
  * file checks and writes the unit orders (`move`, `attack`, `stop`), `economy.ts` the others. The
  * systems here carry them out on later ticks: `moveSystem` (`move`, which also walks builders and
- * gatherers up to their target), `attackSystem` (`attack`), `deathSystem` (`death`), run after the
- * economy's in `RTS_SYSTEMS`. Every number they use (speed, damage, range, cooldown,
+ * gatherers up to their target), `attackSystem` (`attack`), and `deathSystem` (`death`, in `fate.ts`, which keeps a
+ * named person as a dead record), run after the economy's in `RTS_SYSTEMS`. Every number they use (speed, damage, range, cooldown,
  * sight, cell costs) is component data; none is a genre rule in code. All integer, no randomness,
  * entities visited in id order.
  *
@@ -437,36 +437,6 @@ export const attackSystem: System = {
       setFacing(world, id, facingOf(at.x - pos.x, at.y - pos.y));
       cool = world.get(id, Cooldown);
       if (unit.cooldown > 1) setCooldown(world, id, { move: cool?.move ?? 0, attack: unit.cooldown - 1 });
-    }
-  },
-};
-
-/**
- * `death`: every `Unit` or `Building` whose `Health.hp` is 0, in id order, is destroyed (each
- * removal and the destroy are in the log under `death`). A named squad member that dies leaves its
- * squad first: the squad's strength drops by one and it is taken off `members` (and `captain`).
- * A member of a frozen event does not die until it unfreezes.
- */
-export const deathSystem: System = {
-  name: 'death',
-  run(world) {
-    const frozen = frozenCheck(world);
-    for (const id of world.query(Health)) {
-      if (!world.has(id, Unit) && !world.has(id, Building)) continue;
-      if (frozen(id)) continue;
-      if ((world.get(id, Health) as { hp: number }).hp > 0) continue;
-      const member = world.get(id, Member);
-      if (member && member.squad !== null && world.alive(member.squad)) {
-        const s = world.get(member.squad, Squad);
-        if (s) {
-          world.add(member.squad, Squad, {
-            strength: s.strength - 1,
-            captain: s.captain === id ? null : s.captain,
-            members: s.members.filter((m) => m !== id),
-          });
-        }
-      }
-      world.destroy(id);
     }
   },
 };

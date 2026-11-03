@@ -10,6 +10,8 @@ systems give the same world on every run. Games that need a living world use it;
 touch it. From Engine 0.10 it also runs time (world, experience and commitment time, and frozen
 events), the mission lifecycle (open, delegate or play, commit at a fixed world-time cost, with
 append-only records and no retries) and opportunities (windows that open and close in world time).
+From Engine 0.13 named individuals carry a fate (injured, captured, freed or dead) that survives
+battle, save and load.
 
 ## Public API entry points
 
@@ -129,7 +131,8 @@ carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, `addWor
   `moveSystem` (8-way A*, or a shared flow field for a group of 4 or more; speed in ticks per
   cell; builders and gatherers walk up next to their target), `attackSystem` (range in integer
   distance, `inRange`; cooldown; nearest enemy for idle units, ties to the lowest id) and
-  `deathSystem` (dead units and buildings destroyed, units leaving their squad). `facingOf`.
+  `deathSystem` (in `fate.ts`: dead units and buildings destroyed; a named person who dies leaves
+  their squad and the map and is kept as a dead record). `facingOf`.
   Heroes are ordinary units an order can name alone.
 - RTS economy (`economy.ts`, `footprint.ts`, Engine 0.9): unit and building types as data, the
   world's `RtsTypes` component (schema `rtsTypesSchema` from `engine/core/rts-types.ts`: stats,
@@ -146,6 +149,18 @@ carry, rest, restOdds, restTicks }` (`SYSTEM_COMPONENTS`), `walkToward`, `addWor
   raise its health) and `trainSystem` (the first queued unit appears next to the building after
   its ticks). `RTS_COMPONENTS` (both sets) and `RTS_SYSTEMS` (gather, construct, train, move,
   attack, death, in that order) are in `rts-orders.ts`.
+- Fates (`fate.ts`, Engine 0.13): the `Fate` component `{ state, by, at, held, history }`
+  (`FATE_COMPONENTS`, `omitWhenEmpty`, registered by both system sets; no `Fate` means active) on
+  a named person (`Member`). States only move forward (active or freed -> injured; -> captured;
+  captured -> freed; any living state -> dead, which is final); `history` is append-only.
+  `fateOf(world, id)` and `namedPeople(world)` read; `setFate(world, id, state, { cause, by?, at?,
+cell? })`, `injurePerson`, `capturePerson`, `killPerson` and `freePerson(world, id, cell, cause,
+by?)` write between ticks under the cause given and return `{ ok: true, fate }` or a refusal
+  (`bad_id`, `not_named`, `fate_final`, `bad_cell`, `stepping`) that changes nothing. A captured
+  or dead person loses `MAP_COMPONENTS` (`Position`, `Unit`, `Task`, `Target`, `Cooldown`,
+  `Facing8`, `Worker`, `Gatherer`, `EventMember`) and leaves their squad (`leaveSquad`, in
+  `squad.ts`: strength - 1, off `members` and `captain`) but stays in the world; a captured
+  person's `Unit` and `Owner` are kept in `held` so `freePerson` can put them back on a cell.
 - The sample world: `engine/sim/__fixtures__/village.world.json`, run by
   `pnpm test engine/sim/sample-world`: 10,000 ticks, the same hashes twice and as the golden file
   `village.hashes.json`, and a save and load at 83 ticks matching the uninterrupted run.
@@ -206,7 +221,9 @@ squads, errors naming the field), `path.test.ts` walking costs and tie order, `a
 (cheapest paths, no rock or corner cutting, null with no way, same ties every run), a group on a
 flow field and the A* vs flow field measurement, `systems.test.ts` hauling, building and
 patrols, `rts.test.ts` orders, movement, combat and deaths (refused orders change nothing, a battle
-repeats its hashes and survives a save and load mid-battle), `economy.test.ts` building (paid,
+repeats its hashes and survives a save and load mid-battle, a named hero who dies is kept as a dead
+record), `fate.test.ts` each fate, refusals changing nothing, a battle with a named death and a
+capture and release giving the same hashes every run and through save and load at six ticks, `economy.test.ts` building (paid,
 placed, finished after its work ticks; refused for cost or blocked placement, changing nothing),
 training (after the type's ticks, cost charged), gathering (the stockpile rises) and an economy
 scenario with the same hashes twice and through a save and load mid-construction and

@@ -6,6 +6,7 @@ import { MissionHost } from '@engine/core/mission-host';
 import type { MissionRecord } from '@engine/core/missions';
 import {
   applyOrder,
+  fateOf,
   missionPort,
   Missions,
   scenarioKeys,
@@ -62,12 +63,18 @@ export const ADAPTERS = {
   [TD_DEFENCE]: towerdefenseMissionAdapter,
 } as const;
 
-/** One scenario entity at a glance, for run-file checks: alive, where, how hurt. */
+/**
+ * One scenario entity at a glance, for run-file checks: alive (it exists and its fate is not
+ * `dead`), where (null off the map: gone, captured or dead), how hurt, and `fate` (only for a named
+ * person whose fate was set: `injured`, `captured`, `freed` or `dead`; left out while active, so
+ * runs where no fate is set hash as before).
+ */
 export interface NamedSummary {
   alive: boolean;
   x: number | null;
   y: number | null;
   hp: number | null;
+  fate?: string;
 }
 
 /**
@@ -125,10 +132,20 @@ export class MiniSiegeGame implements HeadlessGame {
   named(): Record<string, NamedSummary> {
     const named: Record<string, NamedSummary> = {};
     for (const [key, id] of Object.entries(this.keys)) {
-      const alive = this.world.alive(id);
-      const at = alive ? (this.world.get(id, 'Position') as { x: number; y: number } | undefined) : undefined;
-      const health = alive ? (this.world.get(id, 'Health') as { hp: number } | undefined) : undefined;
-      named[key] = { alive, x: at?.x ?? null, y: at?.y ?? null, hp: health?.hp ?? null };
+      const exists = this.world.alive(id);
+      const fate = exists ? fateOf(this.world, id) : null;
+      const at = exists
+        ? (this.world.get(id, 'Position') as { x: number; y: number } | undefined)
+        : undefined;
+      const health = exists ? (this.world.get(id, 'Health') as { hp: number } | undefined) : undefined;
+      const summary: NamedSummary = {
+        alive: exists && fate?.state !== 'dead',
+        x: at?.x ?? null,
+        y: at?.y ?? null,
+        hp: health?.hp ?? null,
+      };
+      if (fate && fate.state !== 'active') summary.fate = fate.state;
+      named[key] = summary;
     }
     return named;
   }

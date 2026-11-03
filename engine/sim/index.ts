@@ -37,13 +37,39 @@ export {
   UNIT_COMPONENTS,
   Unit,
   attackSystem,
-  deathSystem,
   facingOf,
   inRange,
   moveSystem,
 } from './rts';
 export type { CooldownData, Facing8Data, TargetData, TaskData, UnitData } from './rts';
 export { RTS_COMPONENTS, RTS_SYSTEMS, applyOrder } from './rts-orders';
+export {
+  FATE_COMPONENTS,
+  FATE_STATES,
+  Fate,
+  MAP_COMPONENTS,
+  capturePerson,
+  deathSystem,
+  fateOf,
+  fateStepSchema,
+  freePerson,
+  injurePerson,
+  killPerson,
+  namedPeople,
+  setFate,
+} from './fate';
+export type {
+  FateData,
+  FateOptions,
+  FateReading,
+  FateRefusal,
+  FateResult,
+  FateState,
+  FateStep,
+  FateView,
+  FateWriteOptions,
+  NamedPerson,
+} from './fate';
 export type { OrderResult } from './rts-orders';
 export {
   ECONOMY_COMPONENTS,
@@ -139,7 +165,15 @@ export type {
   SquadData,
   WorkerData,
 } from './components';
-export { applyLosses, joinSquad, lossOrder, pickMembers, squadMembers, squadStrength } from './squad';
+export {
+  applyLosses,
+  joinSquad,
+  leaveSquad,
+  lossOrder,
+  pickMembers,
+  squadMembers,
+  squadStrength,
+} from './squad';
 export type { SquadMember } from './squad';
 export {
   GROUND,
