@@ -1,5 +1,6 @@
 {
   "backend": "canvas2d",
+  "background": "#00a800",
   "sheets": {
     "sheet": "siege",
     "fallbackColor": "#ff00ff"

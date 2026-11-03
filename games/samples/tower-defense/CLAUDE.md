@@ -84,7 +84,8 @@ ticks, so a run file's `input` typed one tick at a time plays the same round.
 - `content/sfx/`: `place`, `sell`, `refused`, `wave`, `arrow`, `boom`, `kill`, `leak`, `clear`,
   `won`, `lost` (MML, one short phrase each). `content/songs/road.json`: the looping song (four
   channels, MML).
-- `picture.ts`: `tdLook(content)` (the skin, sheets, size, the grass `BACKGROUND`),
+- `picture.ts`: `tdLook(content)` (the skin, sheets, size; the grass colour is the skin's
+  `background`, Engine 0.15 gap G36),
   `tdFrameStream(screen, cursor)` (a `FrameStream` over the kit's `tdFrames`), `tdPicture(presenter,
 screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of its own.
 - `view.ts`: `createView(content, seed, opts?)`, the engine's `frameView` over `createGame` and the

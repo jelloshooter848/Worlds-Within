@@ -44,6 +44,7 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
   `right`; the skin mirrors `right` for `left`, and a diagonal uses its horizontal part, the
   four-way choice the task allows) with two walking steps each, `town-centre` (48x48),
   `barracks` (32x32), `site-3x3` and `site-2x2` (scaffolds for a building under construction),
+  `site-2x2-half` (a barracks half built: its walls under the scaffold, Engine 0.15),
   `ghost-2x2` (placing), `gold`/`gold-empty`, `ring` (selection), `hp-0`..`hp-8` and
   `p-0`..`p-8` (bars), `box` and the HUD icons. `content/palettes/skirmish-blue.json` is the same
   palette with the team colours blue (the enemy). `content/sprites/skirmish-font.txt`: the HUD
@@ -52,7 +53,11 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
   with `idle`, `train`, `site`, `resource:gold`, `selection-ring`, `health-bar`,
   `progress-bar`, `ghost:barracks`, `selection-box`) and the enemy's `unit:<type>:enemy` /
   `building:<kind>:enemy` in the blue palette; unit states `idle`, `walk`, `attack`, `build`,
-  `gather`; tiles `0`-`3`; HUD gold, own units and enemy units (icon and number).
+  `gather`; tiles `0`-`3`; HUD gold, own units and enemy units (icon and number). Its
+  `background` (`#00a800`, the grass) is what the backend clears to (gap G36). The barracks (both
+  sides) have a `byTag` look `{ "prefix": "progress:", "min": 50 }` (gap M2): a site at
+  construction progress 50 or more draws `site-2x2-half`, below that the scaffold
+  (`skirmish.test.ts` checks both over the `commands` run).
 - TypeScript is glue:
   - `content.ts`: `loadSkirmish(files)`, `skirmishMap`, `skirmishTypes`, `skirmishEnemy`,
     `skirmishScenario(content, seed)` (the map with the run's seed and the types table spawned
@@ -75,8 +80,8 @@ opts?)`: the kit's `rtsGame` with the world behind its port (`applyOrder`, `step
     recorded orders; the order one gives is stamped with the next id like a page command. They
     exist so a run can drive the game as the page does and the kit's interface rules can be
     mutant-checked headless.
-  - `picture.ts`: `skirmishLook(content)` (skin, the engine's `contentSheets`, size, grass
-    background), `sideKinds(frame)` (enemy units and buildings get the kind `<kind>:enemy`: a
+  - `picture.ts`: `skirmishLook(content)` (skin, the engine's `contentSheets`, size; the grass
+    colour is the skin's `background`, Engine 0.15 gap G36), `sideKinds(frame)` (enemy units and buildings get the kind `<kind>:enemy`: a
     skin picks frames by kind only, and the kit tells sides apart by tag), `skirmishFrames(screen,
 ui?)` (the engine's `FrameStream` over the kit's `presentWorld` for red; `ui` adds the
     page's selection, box, placing and camera), `skirmishPicture`, `skirmishCanvasPicture`.

@@ -25,18 +25,17 @@ import {
  * `blocked` tag, and an enemy shot this step with `td-hit` by its `hit` tag.
  */
 
-/** What drawing the game needs: the skin, the sprite sheets, the picture size and the colour behind it. */
+/**
+ * What drawing the game needs: the skin, the sprite sheets and the picture size. The colour behind
+ * the map (the grass) is the skin's `background` (gap G36), which the backend clears to.
+ */
 export interface TdLook {
   skin: SkinFile;
   sheet: SheetLookup;
   screen: ScreenSize;
-  background: string;
 }
 
-/** The colour behind the map (the grass). */
-export const BACKGROUND = '#00a800';
-
-/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files), size and colour. */
+/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files) and size. */
 export function tdLook(content: ContentBundle): TdLook {
   const { main } = skinSet(content, 'canvas2d');
   if (!main) throw new Error('the tower-defense sample has no canvas2d skin (content/skins/canvas2d.json)');
@@ -44,7 +43,6 @@ export function tdLook(content: ContentBundle): TdLook {
     skin: main,
     sheet: contentSheets(content),
     screen: content.manifest.screen,
-    background: BACKGROUND,
   };
 }
 
@@ -76,7 +74,6 @@ export function tdCanvasPicture(
 ): TdPicture {
   const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
     size: look.screen,
-    background: look.background,
     ...(onSound && { onSound }),
   });
   return tdPicture(presenter, look.screen, cursor);

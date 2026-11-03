@@ -31,6 +31,5 @@ export function createView(
       picture.p.draw(game.rts, []);
     },
     frame: () => frames.next(game.rts, []),
-    background: look.background,
   };
 }

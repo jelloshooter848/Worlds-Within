@@ -27,24 +27,22 @@ import { PLAYER, skirmishSkin } from './content';
  * palette (`content/palettes/skirmish-blue.json`).
  */
 
-/** What drawing the game needs: the skin, the sheets, the picture size and the colour behind it. */
+/**
+ * What drawing the game needs: the skin, the sheets and the picture size. The colour behind the
+ * map (the grass) is the skin's `background` (gap G36), which the backend clears to.
+ */
 export interface SkirmishLook {
   skin: SkinFile;
   sheet: SheetLookup;
   screen: ScreenSize;
-  background: string;
 }
 
-/** The colour behind the map (the grass). */
-export const BACKGROUND = '#00a800';
-
-/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files), size and colour. */
+/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files) and size. */
 export function skirmishLook(content: ContentBundle): SkirmishLook {
   return {
     skin: skirmishSkin(content, 'canvas2d'),
     sheet: contentSheets(content),
     screen: content.manifest.screen,
-    background: BACKGROUND,
   };
 }
 
@@ -105,7 +103,6 @@ export function skirmishCanvasPicture(
 ): SkirmishPicture {
   const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
     size: look.screen,
-    background: look.background,
   });
   return skirmishPicture(presenter, look.screen, ui);
 }

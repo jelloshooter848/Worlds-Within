@@ -40,10 +40,17 @@ Import from `@engine/core/present` (`index.ts`).
   flip, fallback colour) from the entity's kind, animation state and tick, and facing (a
   diagonal with no frame uses its horizontal part; `flipFacing` mirrors right-hand frames for the
   left-hand facings). A kind's `byTag` list (Engine 0.11, gaps G13 and G30) gives looks by
-  entity tag, `{ tag, sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`: the first whose
-  tag the entity has replaces those fields of the kind's (`resolveSkinKind(skin, entity)`, used by
-  both backends; `skinTagIndex`), else the kind is used as it is, so a skin without it draws as
-  before. An `events` key may also match a field (Engine 0.11, gap G28):
+  entity tag, `{ tag | prefix, min?, max?, sheet?, palette?, frames?, fallbackColor?, mesh?,
+color? }`: `tag` matches one whole tag; `prefix` (Engine 0.15, gap M2) any tag starting with
+  it, and with `min`/`max` only one whose rest is a whole number in that inclusive range
+  (`{ "prefix": "progress:", "min": 50 }`; `skinTagMatches(look, tag)`). Order rule: the first
+  look in file order that matches any of the entity's tags replaces those fields of the kind's
+  (`resolveSkinKind(skin, entity)`, used by both backends; `skinTagIndex`), so a skin lists its
+  looks from the most specific; else the kind is used as it is, so a skin without it draws as
+  before. A look with both or neither of `tag` and `prefix`, or `min`/`max` without `prefix`, is
+  `bad_tag_look`. A skin's optional `background` (Engine 0.15, gap G36) is the colour both
+  backends clear to before each frame drawn with it (`skinBackground(skin)`, else
+  `DEFAULT_BACKGROUND`, black); each skin of a skin set clears to its own. An `events` key may also match a field (Engine 0.11, gap G28):
   `mini-game-end:pass` (the event's `result`) or `type:field=value`; `resolveSkinEvent(events,
 event)` gives the entry, the first matching field key in file order, else the bare type's. Field
   reference: `docs/reference/schemas.md`, section `skin`.

@@ -191,7 +191,9 @@ scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `mi
   host HUD keys (`hostStatus: ['mission']`, drawn as `host:mission`); a button held into a round is
   ignored until released (Engine 0.11). A skin kind entry's `byTag: [{ tag, frames?, palette?,
 mesh? }]` picks a look by an entity's tag (`frozen`, `damaged`, `site`, `foe:ram`, `look:<id>`),
-  first match wins.
+  or `{ prefix: "progress:", min?, max? }` by a tag's prefix and whole-number value (Engine 0.15);
+  the first match in file order wins, so list the most specific first. A skin's `background` is the
+  colour both backends clear to (black when left out).
 
 ## Fates, carry-over and campaigns (Engine 0.13)
 

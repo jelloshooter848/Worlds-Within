@@ -77,21 +77,21 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     input, then starts the next level (after the last, `tiny` again) or the failed one afresh,
     each a new `PlatformerWorld`. The snapshot is the kit's (`snapshotWorld`) plus `stage` (the
     level's place in the order) and `pause`;
-  - `picture.ts`: `labLook(content)` (the skin, its sheets, the picture size and the `SKY`
-    background: what `canvasDisplay` takes), `labFrames(screen)` (the engine's `FrameStream` over
+  - `picture.ts`: `labLook(content)` (the skin, its sheets and the picture size: what
+    `canvasDisplay` takes; the sky is the skin's `background`, `#5c94fc`, Engine 0.15 gap G36), `labFrames(screen)` (the engine's `FrameStream` over
     the kit's `platformerFrames`: frozen frames, a fresh present state per world: the one stream
     of frames every backend gets), `labPicture(presenter, screen)` (a `FramePicture`:
     `draw(world, events)` presents a `labFrames` frame on any presenter and returns it) and
     `labCanvasPicture(r, look)` (the same onto a `SkinnedCanvasPresenter` on `r`);
-  - `picture3d.ts`: `labLook3d(content)` (the `three` skin, picture size and `SKY`, as the 3D
+  - `picture3d.ts`: `labLook3d(content)` (the `three` skin, whose `background` is the sky, and picture size, as the 3D
     backend's `threeDisplay` and `threeScenePresenter` take them). No Three.js import: the 2D page
     bundles none;
   - `view.ts`: `createView` for `pnpm cli screenshot`, the engine's `frameView`
     (`@engine/core/view`, Engine 0.7 T7, gap G26): `render(r)` draws through
     `labCanvasPicture`, `frame()` (the view contract's frame hook) returns the `labFrames` frame,
     both with the events since the last draw (the engine's `PendingEvents`: dropped when the level
-    changes, as the scene does), and `background` is the sky (`SKY`) for `pnpm cli screenshot
---backend three`;
+    changes, as the scene does);
+    `pnpm cli screenshot --backend three` clears to the `three` skin's `background`;
   - `main.ts`: the page, a dozen lines: the engine's `bootBrowserGame` (keyboard, gamepad, the
     touch pad, the scene stack, the fixed loop, the `?backend=` choice and the 2D/3D toggle) with
     `canvasDisplay(canvas, labLook(content))` (`@engine/backends/canvas2d`) and, only for

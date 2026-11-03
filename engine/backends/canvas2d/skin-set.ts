@@ -12,7 +12,10 @@ export interface CanvasSkinSetOptions {
   rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
   sheet: SheetLookup;
   screen: ScreenSize;
-  /** The colour behind the game's own frames (default `#000`); rounds are drawn on black. */
+  /**
+   * The colour behind the game's own frames when it is not its skin's (default the skin's
+   * `background`, else `#000`); each round clears to its own skin's `background` (black by default).
+   */
   background?: string;
   /** Called for each event whose skin entry names a sound. */
   onSound?: (id: string) => void;

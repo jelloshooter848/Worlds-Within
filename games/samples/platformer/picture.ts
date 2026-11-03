@@ -25,21 +25,18 @@ import { testSkins } from './content';
  */
 
 /**
- * What drawing the game needs: the level skin, a skin per mini game, the sheets, size and sky (as
- * the backend's `canvasDisplay` and `skinSetCanvasPresenter` take them).
+ * What drawing the game needs: the level skin, a skin per mini game, the sheets and size (as the
+ * backend's `canvasDisplay` and `skinSetCanvasPresenter` take them). The sky is the level skin's
+ * `background` (gap G36): the backend clears to it, so no colour lives in the glue.
  */
 export interface TestLook {
   skin: SkinFile;
   rounds: Record<string, SkinFile>;
   sheet: SheetLookup;
   screen: ScreenSize;
-  background: string;
 }
 
-/** The sky behind the levels (the colour of the skin's `.` tile). */
-export const SKY = '#5c94fc';
-
-/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files), size and sky. */
+/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files) and size. */
 export function testLook(content: ContentBundle): TestLook {
   const skins = testSkins(content, 'canvas2d');
   return {
@@ -47,7 +44,6 @@ export function testLook(content: ContentBundle): TestLook {
     rounds: skins.rounds,
     sheet: contentSheets(content),
     screen: content.manifest.screen,
-    background: SKY,
   };
 }
 

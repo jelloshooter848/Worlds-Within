@@ -20,6 +20,5 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
     screen: look.screen,
     frames: tdFrameStream(look.screen, cursor),
     picture: (r) => tdCanvasPicture(r, look, cursor),
-    background: look.background,
   });
 }

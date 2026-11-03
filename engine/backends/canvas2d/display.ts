@@ -12,11 +12,12 @@ export interface CanvasDisplayOptions {
   skin: DeepReadonly<SkinFile>;
   /**
    * A skin per mini game, by its id (a `SkinSet`'s `rounds`): frames whose `status.miniGame`
-   * names one are drawn through it on the same renderer, on black (Engine 0.7 T9, as `threeDisplay`).
+   * names one are drawn through it on the same renderer, on its own skin's `background` (black by
+   * default; Engine 0.7 T9, as `threeDisplay`).
    */
   rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
   sheet: SheetLookup;
-  /** The colour behind the picture (default `#000`). */
+  /** The colour behind the game's own frames when it is not its skin's `background` (default that, else `#000`). */
   background?: string;
   /** Whole-number scaling only (default false: stretch to fit, letterboxed). */
   integerScale?: boolean;

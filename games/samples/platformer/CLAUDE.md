@@ -132,12 +132,13 @@ release that will).
 backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backend has no
     skin). Art (`contentArt`), sounds (`contentSfx`) and `mustLoad` are the engine's (gap G4);
   - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets from the engine's
-    `contentSheets`, size and `SKY`, the sky colour: gap G36), `testFrames(screen)` (the engine's
+    `contentSheets` and size; the sky, `#5c94fc`, is each level skin's `background`,
+    gap G36, fixed in 0.15, so no colour lives in the glue), `testFrames(screen)` (the engine's
     `FrameStream` over the kit's `platformerFrames`; while the round runs, its own frame),
     `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the backend's
     `skinSetCanvasPresenter`: the level skin or the round's, per frame);
-  - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, screen, background }`: the
-    `three` skins, picture size and `SKY`, as the 3D backend's `threeDisplay` and
+  - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, screen }`: the
+    `three` skins, whose level skin's `background` is the sky, and picture size, as the 3D backend's `threeDisplay` and
     `threeScenePresenter` take them). No Three.js import, so the 2D page bundles none;
   - `view.ts`: `createView` for `pnpm cli screenshot`: the engine's `frameView` with
     `testCanvasPicture` for `render` and `testFrames` for `frame()` (`--backend three` shows

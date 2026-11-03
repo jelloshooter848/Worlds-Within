@@ -20,7 +20,8 @@ in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebG
 `new ThreeScene(skin, opts?)` builds a scene graph; it needs no WebGL and runs in Node. A renderer
 (the WebGL `ThreePresenter`, Engine 0.6 T4) only draws `scene` with `camera`.
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
-`onSound?(id)`, `background?` (`#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`.
+`onSound?(id)`, `background?` (the scene's background; default the skin's `background`, else
+`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`.
 `sync(frame)` brings `scene` and `camera` up to the frame. Read-outs for tests and the presenter:
 `entity(id)` (an entity's root `Group`), `entityIds()`, `map` (the built map `Group`, or null),
 `mapBuilds`, `view` (the world box, px with y down, framed on the z = 0 plane, without shake),
@@ -37,8 +38,10 @@ camera.
   tiles and still under the entities).
 - Entities: one root `Group` per entity id, made on first sight, updated each frame, removed when
   the id is gone, rebuilt when its kind, box size or tag look changes. The entry is
-  `resolveSkinKind(skin, entity)`: the kind's, with the first `byTag` look whose tag the entity
-  has laid over it (Engine 0.11, gap G30). The root is the box's bottom centre
+  `resolveSkinKind(skin, entity)`: the kind's, with the first `byTag` look that matches one of the
+  entity's tags laid over it (Engine 0.11, gap G30; a `prefix` look with a `min`/`max` range from
+  Engine 0.15, gap M2, so a `progress:<n>` tag rebuilds the entity only when it crosses into
+  another look). The root is the box's bottom centre
   (`x + w/2`, `-(y + h)`) at z = `layer` * `camera3d.layerDepth`; its children are the skin's mesh
   parts. Facing left mirrors x (scale -1); a diagonal maps to its horizontal cardinal
   (`cardinalFacing`), so `up-left` and `down-left` mirror too (`facesLeft`) and the right-hand
@@ -74,16 +77,16 @@ object UUIDs use randomness internally, which is fine: they never reach a state 
 its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `WebGLRenderer` on
 `canvas` (an `HTMLCanvasElement` or `OffscreenCanvas`); `resize(size)` changes the picture size.
 Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
-`onSound?(id)`, `background?` (`#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`; they are passed on to
+`onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`; they are passed on to
 the scene. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
-pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background`. The drawing buffer
+pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background` (the option, else the skin's, else black). The drawing buffer
 is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
 reads the context's renderer (below); `dispose()` frees the scene and the renderer.
 `withSkin(skin, opts?)` (Engine 0.7 T8) is another `Presenter` on the same canvas and renderer
 with a `ThreeScene` of its own (`.scene`; `opts` as above but `size`, which is this presenter's):
 for a second frame source in one stream, such as a stacked mini game's frames in another kit's
-skin. Each draws its own scene with the one WebGL context; `dispose()` frees them all.
+skin. Each scene clears to its own skin's `background` (black by default). Each draws its own scene with the one WebGL context; `dispose()` frees them all.
 
 ## Renderer check (`renderer-info.ts`, pure)
 
@@ -121,7 +124,8 @@ it cannot start: `webgl2Available()` is false (no WebGL 2), or `ThreePresenter` 
 message names the error). Its `presenter` is a `ThreePresenter` with the game's `three` skin on
 the page's canvas; with `rounds` (a skin per mini game id, the core `skinSet`'s `rounds`: the
 game's `three-<id>.json`, Engine 0.7 T8) it is the core `presenterBySkinSet` over that and one
-`withSkin` presenter per round skin (black background), so a frame whose `status.miniGame` names
+`withSkin` presenter per round skin (each on its own skin's `background`, black by default;
+`background` overrides the game's own skin only), so a frame whose `status.miniGame` names
 one is drawn through its skin; `fit(layout)` places the canvas with `fitCanvas` + `applyCanvasBox` from the
 layout's `fit`; its `renderer` draws nothing (scenes show frames through the presenter) and
 `present()` does nothing. A game reaches it with `await import('@engine/backends/three')` so its
@@ -129,7 +133,7 @@ layout's `fit`; its `renderer` draws nothing (scenes show frames through the pre
 `threeScenePresenter(skin, { screen, background?, rounds? })` is a `Presenter` over the Node-side
 `ThreeScene` (`present` is `sync`; `.scene` for read-outs): what tests use to check what 3D shows
 (backend parity) with no WebGL. With `rounds`, a mini game's frames go to a scene of their own
-(`.rounds[id]`), as on the page; `.shown` is the scene the last frame went to.
+(`.rounds[id]`, each clearing to its skin's `background`), as on the page; `.shown` is the scene the last frame went to.
 
 ## Imports
 
@@ -146,7 +150,9 @@ layout's `fit`; its `renderer` draws nothing (scenes show frames through the pre
 (never import a kit or a game's skin). It covers tiles becoming instanced blocks, the map built
 only on a new id or version, map layers' depth, entities added, moved and removed by id, mesh
 parts placed from the box, layer to z, the facing mirror (left-hand diagonals too), squash about the bottom centre, rotate
-and alpha, the fallback box, a skin's tag look (built for the tag, rebuilt when the look changes), the camera framing the same world box as `CameraFollower` (corners
+and alpha, the fallback box, a skin's tag look (built for the tag, rebuilt when the look changes; a `prefix` look with a range
+rebuilt only when a `progress:` value crosses into it, M2), the scene's background (the skin's,
+black without one, the option first; G36), the camera framing the same world box as `CameraFollower` (corners
 projected to the picture's corners), hint framing, zoom, tilt and shake, lights, sounds once per
 event (by the event's `result` field, falling back to the bare type), the flash overlay, frozen frames and skin never changed, and repeatable builds.
 `renderer-info.test.ts` checks `isSoftwareRenderer` on software strings (SwiftShader, ANGLE on

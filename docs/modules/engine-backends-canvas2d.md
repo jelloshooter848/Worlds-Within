@@ -19,8 +19,10 @@ for and holds no game rules.
 - `Viewport`, `ViewportOptions` (`viewport.ts`): owns the backbuffer and presents it.
 - `SkinnedCanvasPresenter`, `SkinnedPresenterOptions`, `MapSurface` (`presenter.ts`):
   `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
-  is a `Presenter`. It caches the map per id and version, draws entities by layer then list order with
-  skin frames (`resolveSkinFrame`, a kind's tag look first; flipped by facing, a fallback box when art is missing, squash through
+  is a `Presenter`. It clears each frame to the skin's `background` (Engine 0.15, gap G36; black
+  without one; a `background` option overrides it), caches the map per id and version, draws entities by layer then list order with
+  skin frames (`resolveSkinFrame`, a kind's tag look first, by whole tag or, from Engine 0.15, tag prefix
+  and whole-number range (gap M2); flipped by facing, a fallback box when art is missing, squash through
   `transformed()`), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
@@ -37,7 +39,7 @@ for and holds no game rules.
   the screen layout.
 - `skinSetCanvasPresenter`, `CanvasSkinSetOptions` (`skin-set.ts`, Engine 0.7 T9): one presenter
   over a game's skin and a skin per mini game, picked per frame by `status.miniGame`; each skin's
-  `camera.clamp` says how it frames its map.
+  `camera.clamp` says how it frames its map and its `background` what it clears to.
 
 ## Imports allowed
 

@@ -43,7 +43,8 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   picture size from the manifest, `render(r)`, and optional `frame()`: the frozen
   `PresentFrame` for the state now with the events since the last call, for any presenter, used
   instead of `render` and never both in one run, and optional `background`, the colour a
-  presenter of `frame()` clears to;
+  presenter of `frame()` clears to when it is not the skin's (from Engine 0.15 the skin's
+  `background` is the default, so games leave it out);
   `ViewEntry`: `createView(content, seed, opts?)`), named by `view` in `game.json`.
   `frameView({ game, screen, frames, picture, background? })` (Engine 0.7) builds a `ViewGame`
   from a headless game with `world` and `events`, a frame stream and a drawer per renderer.

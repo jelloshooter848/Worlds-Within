@@ -42,6 +42,18 @@ from D15), or in a new report for a sample that has none.
 - **Decisions before code** (T1, this commit): the folder moves, which tasks may move golden
   hashes, and the shapes of all 38 gaps, settled in writing (items 278-291, below), and the
   planned task list. No code changed.
+- **Skin background and tag prefix looks** (T3, decision 3): G36 and M2 fixed. Skins gain an
+  optional `background` (`skinBackground`, `DEFAULT_BACKGROUND` black); `SkinnedCanvasPresenter`,
+  `ThreeScene` and `ThreePresenter` clear to it (a `background` option still overrides, kept for
+  callers that need it), so each skin of a skin set clears to its own and hosted rounds stay black.
+  The `SKY` constants left the platformer sample and the lab (`#5c94fc` in their `canvas2d` and
+  `three` skins), and the same was done for the RTS skirmish, tower-defense and mini siege grass
+  (`#00a800` in their main skins; no `BACKGROUND` constant or look `background` field left). A
+  `byTag` look matches by `tag` or `prefix` with optional inclusive `min`/`max` (`skinTagMatches`;
+  `bad_tag_look` for both, neither, a range without a prefix or `min` above `max`); first match in
+  file order wins. The RTS skirmish's barracks draw a new `site-2x2-half` frame from
+  `progress:50`. No golden hash moved; no screenshot changed except a barracks site past half
+  way, which no committed screenshot shows.
 
 ### Planned tasks
 

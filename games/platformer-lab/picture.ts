@@ -22,24 +22,22 @@ import { labSkin } from './content';
  * tests, so a screenshot is what a player sees.
  */
 
-/** What drawing the lab needs from its content: the skin, its sheets, the picture size and sky. */
+/**
+ * What drawing the lab needs from its content: the skin, its sheets and the picture size. The sky
+ * is the skin's `background` (gap G36), which the backend clears to.
+ */
 export interface LabLook {
   skin: SkinFile;
   sheet: SheetLookup;
   screen: ScreenSize;
-  background: string;
 }
 
-/** The sky behind the levels (the colour of the skin's `.` tile, so the map's edges do not show). */
-export const SKY = '#5c94fc';
-
-/** The lab's skin, its sprite sheets (from the sprite and palette files), picture size and sky. */
+/** The lab's skin, its sprite sheets (from the sprite and palette files) and picture size. */
 export function labLook(content: ContentBundle): LabLook {
   return {
     skin: labSkin(content),
     sheet: contentSheets(content),
     screen: content.manifest.screen,
-    background: SKY,
   };
 }
 
@@ -61,9 +59,6 @@ export function labPicture(presenter: Presenter, screen: ScreenSize): LabPicture
 
 /** One stream of lab frames onto `r` through the Canvas2D backend and the lab's skin. */
 export function labCanvasPicture(r: Renderer, look: LabLook): LabPicture {
-  const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
-    size: look.screen,
-    background: look.background,
-  });
+  const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, { size: look.screen });
   return labPicture(presenter, look.screen);
 }

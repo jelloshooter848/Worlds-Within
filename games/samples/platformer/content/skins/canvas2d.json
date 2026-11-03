@@ -1,5 +1,6 @@
 {
   "backend": "canvas2d",
+  "background": "#5c94fc",
   "sheets": { "sheet": "hopper", "fallbackColor": "#fcfcfc" },
   "kinds": {
     "runner": {

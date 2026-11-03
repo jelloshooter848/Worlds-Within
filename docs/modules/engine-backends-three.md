@@ -18,8 +18,10 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   `sync(frame)` keeps `scene` and `camera` up to date. Map tiles become instanced blocks built once
   per map id and version (layers behind at their own depth); entities become meshes by id
   (bottom-centre roots, `layer` to z through `camera3d.layerDepth`, facing-left mirror (the left-hand diagonals mirror too), squash,
-  rotate and alpha, a fallback box for unlisted kinds, a skin's tag look by `resolveSkinKind`,
-  rebuilt when the look changes); the `PerspectiveCamera` is framed by the
+  rotate and alpha, a fallback box for unlisted kinds, a skin's tag look by `resolveSkinKind` (whole
+  tag, or from Engine 0.15 a prefix with a whole-number range, gap M2), rebuilt when the look
+  changes); the scene's background is the skin's `background` (Engine 0.15, gap G36; black without
+  one, a `background` option first); the `PerspectiveCamera` is framed by the
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
   directional light; `onSound(id)` once per event (by `resolveSkinEvent`); flash and tint as a full-screen overlay. The HUD
@@ -28,7 +30,7 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing })`
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
   `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
-  `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour `background`, buffer at
+  `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour (the `background` option, else the skin's, else black), buffer at
   the picture size); `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
   (Engine 0.7): another presenter on the same canvas and renderer with its own skin and scene (a
   stacked mini game's frames).

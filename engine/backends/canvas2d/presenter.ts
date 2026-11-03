@@ -10,6 +10,7 @@ import {
   isFullMap,
   resolveSkinEvent,
   resolveSkinFrame,
+  skinBackground,
   type DeepReadonly,
   type PresentEntity,
   type PresentFrame,
@@ -37,7 +38,10 @@ export interface SkinnedPresenterOptions {
   size?: ScreenSize;
   /** Called once for each event this frame whose skin entry names a sound (wire it to the audio). */
   onSound?: (id: string) => void;
-  /** The background colour, filled first each frame (default `#000`). */
+  /**
+   * The background colour, filled first each frame, when it is not the skin's (default the skin's
+   * `background`, else `#000`: `skinBackground`, gap G36).
+   */
   background?: string;
   /** The bitmap font for HUD numbers and text when an item names none (default `font`). */
   font?: string;
@@ -103,7 +107,7 @@ function defaultMapSurface(width: number, height: number): MapSurface | null {
 
 /**
  * The Canvas2D backend's `Presenter`: draws any `PresentFrame` through a skin. Each frame it fills
- * the background, frames the camera, copies the map (drawn once per map id and version), draws the
+ * the background (the skin's `background`, unless the `background` option overrides it), frames the camera, copies the map (drawn once per map id and version), draws the
  * entities by `layer`, then list order, starts and draws event effects, and draws the HUD
  * from `frame.status`. Sounds go to `onSound`; nothing here plays audio or knows a game or kit.
  * It never changes the frame or the skin.
@@ -144,7 +148,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.updateMap(frame);
     const view = this.cameraView(frame, size);
 
-    r.clear(this.opts.background ?? '#000');
+    r.clear(this.opts.background ?? skinBackground(this.skin));
     this.drawMap(view);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view);
     this.drawEffects(frame.frame, view, size);

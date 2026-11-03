@@ -41,19 +41,19 @@ import type { MiniSiegeGame } from './headless';
  * so a screenshot is what a player sees.
  */
 
-/** What drawing the game needs: the battle's skin, a skin per mini game, the sheets, size and colour. */
+/**
+ * What drawing the game needs: the battle's skin, a skin per mini game, the sheets and size. The
+ * colour behind the map (the grass) is the battle skin's `background` (gap G36); the rounds' skins
+ * give none, so they clear to black.
+ */
 export interface SiegeLook {
   skin: SkinFile;
   rounds: Record<string, SkinFile>;
   sheet: SheetLookup;
   screen: ScreenSize;
-  background: string;
 }
 
-/** The colour behind the map (the grass). */
-export const BACKGROUND = '#00a800';
-
-/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files), size and colour. */
+/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files), size. */
 export function siegeLook(content: ContentBundle): SiegeLook {
   const { main, rounds } = skinSet(content, 'canvas2d');
   if (!main) throw new Error('the mini siege has no canvas2d skin (content/skins/canvas2d.json)');
@@ -62,7 +62,6 @@ export function siegeLook(content: ContentBundle): SiegeLook {
     rounds,
     sheet: contentSheets(content),
     screen: content.manifest.screen,
-    background: BACKGROUND,
   };
 }
 

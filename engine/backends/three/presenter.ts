@@ -1,6 +1,12 @@
 import { Color, SRGBColorSpace, WebGLRenderer } from 'three';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import type { DeepReadonly, PresentFrame, Presenter, SkinFile } from '@engine/core/present';
+import {
+  skinBackground,
+  type DeepReadonly,
+  type PresentFrame,
+  type Presenter,
+  type SkinFile,
+} from '@engine/core/present';
 import { webglRendererInfo, type WebglRendererInfo } from './renderer-info';
 import { ThreeScene } from './scene';
 
@@ -12,7 +18,7 @@ export interface ThreePresenterOptions {
   size?: ScreenSize;
   /** Called once for each event this frame whose skin entry names a sound (wire it to the audio). */
   onSound?: (id: string) => void;
-  /** The clear and background colour (default `#000`). */
+  /** The clear and background colour when it is not the skin's (default the skin's `background`, else `#000`). */
   background?: string;
   /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
@@ -38,7 +44,7 @@ export class ThreePresenter implements Presenter {
   private readonly others: ThreeScene[] = [];
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, skin: Skin, opts: ThreePresenterOptions = {}) {
-    const background = opts.background ?? '#000';
+    const background = opts.background ?? skinBackground(skin);
     this.size = opts.size;
     this.scene = new ThreeScene(skin, {
       background,

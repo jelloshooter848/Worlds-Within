@@ -189,6 +189,24 @@ describe('the skirmish picture', () => {
     for (const t of tiles) expect(skin.tiles?.[t]?.frame).toBeDefined();
   });
 
+  it('draws a barracks site as scaffold, then half built from progress 50 (a byTag prefix look, M2)', () => {
+    const { skin } = skirmishLook(content);
+    const frames = skirmishFrames(content.manifest.screen);
+    const seen = new Map<string, number[]>();
+    play('commands', (g) => {
+      for (const e of frames.next(g.rts, []).entities) {
+        const progress = e.tags.find((t) => t.startsWith('progress:'));
+        if (!e.kind.startsWith('building:barracks') || progress === undefined) continue;
+        const { frame } = resolveSkinFrame(skin, e);
+        const at = Number(progress.slice('progress:'.length));
+        seen.set(String(frame), [...(seen.get(String(frame)) ?? []), at]);
+      }
+    });
+    expect([...seen.keys()].sort()).toEqual(['site-2x2', 'site-2x2-half']);
+    expect(Math.max(...seen.get('site-2x2')!)).toBeLessThan(50);
+    expect(Math.min(...seen.get('site-2x2-half')!)).toBeGreaterThanOrEqual(50);
+  });
+
   it('takes the same orders as the headless game, and draws without changing it', () => {
     const view = createView(content, 9);
     const game = createGame(content, 9);

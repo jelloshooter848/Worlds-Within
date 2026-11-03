@@ -5,6 +5,7 @@ import { engineContentKinds } from '../content/engine-kinds';
 import { validate } from '../content/validate';
 import type { Facing } from './types';
 import {
+  DEFAULT_BACKGROUND,
   DEFAULT_CAMERA3D,
   DEFAULT_FALLBACK_COLOR,
   resolveCamera3d,
@@ -13,8 +14,10 @@ import {
   resolveSkinEvent,
   resolveSkinFrame,
   resolveSkinKind,
+  skinBackground,
   skinSchema,
   skinTagIndex,
+  skinTagMatches,
   type SkinFile,
 } from './skin';
 
@@ -453,6 +456,89 @@ describe('frames by tag (G13, G30)', () => {
       ['kinds.coin.byTag.0.mesh', 'missing_ref'],
       ['kinds.coin.byTag.1.frames', 'wrong_backend_field'],
     ]);
+  });
+});
+
+describe('looks by tag prefix and value (M2)', () => {
+  /** A building with construction looks: nearly built, half built, any other progress, a site. */
+  function staged(): SkinFile {
+    const s = fixture();
+    s.kinds['bat']!.byTag = [
+      { prefix: 'progress:', min: 75, frames: { fly: 'hurt' } },
+      { prefix: 'progress:', min: 50, max: 74, frames: { fly: 'down-0' } },
+      { prefix: 'progress:', palette: 'hero', frames: { fly: 'up-0' } },
+      { tag: 'site', frames: { fly: 'side-0' } },
+    ];
+    return s;
+  }
+  const bat = (tags: string[]) => ({
+    kind: 'bat',
+    facing: 'down' as Facing,
+    anim: { state: 'fly', t: 0 },
+    tags,
+  });
+
+  it('matches a whole tag, a prefix, and a prefix with a whole-number range', () => {
+    expect(skinTagMatches({ tag: 'site' }, 'site')).toBe(true);
+    expect(skinTagMatches({ tag: 'site' }, 'sites')).toBe(false);
+    expect(skinTagMatches({ prefix: 'progress:' }, 'progress:12')).toBe(true);
+    expect(skinTagMatches({ prefix: 'progress:' }, 'progress:half')).toBe(true);
+    expect(skinTagMatches({ prefix: 'progress:' }, 'training:worker')).toBe(false);
+    const half = { prefix: 'progress:', min: 50, max: 74 };
+    expect(
+      ['progress:49', 'progress:50', 'progress:74', 'progress:75'].map((t) => skinTagMatches(half, t)),
+    ).toEqual([false, true, true, false]);
+    // With a range, the rest must be a whole number.
+    for (const t of ['progress:', 'progress:half', 'progress:5.5', 'progress:60x'])
+      expect(skinTagMatches(half, t)).toBe(false);
+    expect(skinTagMatches({ prefix: 'hp:', max: 0 }, 'hp:-3')).toBe(true);
+  });
+
+  it('draws the first matching look in file order, so a skin lists its stages from the most specific', () => {
+    const s = staged();
+    expect(resolveSkinFrame(s, bat(['site', 'progress:90']))).toMatchObject({ frame: 'hurt' });
+    expect(resolveSkinFrame(s, bat(['site', 'progress:75']))).toMatchObject({ frame: 'hurt' });
+    expect(resolveSkinFrame(s, bat(['site', 'progress:60']))).toMatchObject({ frame: 'down-0' });
+    expect(resolveSkinFrame(s, bat(['site', 'progress:10']))).toMatchObject({
+      frame: 'up-0',
+      palette: 'hero',
+    });
+    expect(resolveSkinFrame(s, bat(['site']))).toMatchObject({ frame: 'side-0' });
+    expect(resolveSkinFrame(s, bat(['armed']))).toMatchObject({ frame: 'a' });
+    expect(skinTagIndex(s.kinds['bat'], ['progress:50'])).toBe(1);
+    // The merged entry carries the look's fields, not how it matches.
+    const entry = resolveSkinKind(s, { kind: 'bat', tags: ['progress:80'] })!;
+    for (const field of ['tag', 'prefix', 'min', 'max']) expect(entry).not.toHaveProperty(field);
+    expect(entry).toMatchObject({ sheet: 'bat', frames: { fly: 'hurt' } });
+  });
+
+  it('refuses a look with both tag and prefix, neither, or a range without a prefix', () => {
+    expect(errorsOf(staged())).toEqual([]);
+    const s = staged() as unknown as { kinds: { bat: { byTag: Record<string, unknown>[] } } };
+    s.kinds.bat.byTag[0]!['tag'] = 'site';
+    delete s.kinds.bat.byTag[3]!['tag'];
+    s.kinds.bat.byTag.push({ tag: 'x', min: 1 }, { prefix: 'p:', min: 5, max: 4 });
+    expect(errorsOf(s)).toEqual([
+      ['kinds.bat.byTag.0.prefix', 'bad_tag_look'],
+      ['kinds.bat.byTag.3.tag', 'bad_tag_look'],
+      ['kinds.bat.byTag.4.min', 'bad_tag_look'],
+      ['kinds.bat.byTag.5.max', 'bad_tag_look'],
+    ]);
+  });
+});
+
+describe('skin background (G36)', () => {
+  it('is an optional colour, black when left out', () => {
+    const s = fixture();
+    expect(skinBackground(s)).toBe(DEFAULT_BACKGROUND);
+    expect(DEFAULT_BACKGROUND).toBe('#000');
+    s.background = '#5c94fc';
+    expect(errorsOf(s)).toEqual([]);
+    expect(skinBackground(s)).toBe('#5c94fc');
+    const t = threeFixture();
+    t.background = '#5c94fc';
+    expect(errorsOf(t)).toEqual([]);
+    expect(errorsOf({ ...s, background: 'sky' })).toEqual([['background', 'invalid_format']]);
   });
 });
 

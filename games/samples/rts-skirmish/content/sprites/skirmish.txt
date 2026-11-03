@@ -2,7 +2,8 @@
 ; row, one character per pixel. Tiles and units are 16x16, drawn in three facings (down, up, right;
 ; the skin mirrors right for left, and a diagonal uses its horizontal part) with two walking steps;
 ; buildings fill their footprint (town centre 48x48, barracks 32x32) with a scaffold frame for a
-; site; bars are 16x2 eighths; HUD icons 8x8. Palette content/palettes/skirmish.json; the enemy
+; site (and a half-built barracks, walls under the scaffold, the skin's look from progress 50);
+; bars are 16x2 eighths; HUD icons 8x8. Palette content/palettes/skirmish.json; the enemy
 ; side is drawn with content/palettes/skirmish-blue.json (the team colours swapped).
 palette skirmish
 legend . clear
@@ -626,6 +627,40 @@ kdodddddodddddodddddodddddoddddk
 kddddddddddddddddddddddddddddddk
 kddddddddddddddddddddddddddddddk
 .kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.
+
+frame site-2x2-half
+................................
+................................
+................................
+..kkkkkkkkkkkkkkkkkkkkkkkkkkkk..
+.kooooooooooooooooooooooooooook.
+.kokkkkkokkkkkokkkkkokkkkkokkk..
+.kok...kok...kok...kok...kok....
+.kok...kok...kok...kok...kok....
+.kok...kok...kok...kok...kok....
+.kokkkkkokkkkkokkkkkokkkkkokkk..
+.kooooooooooooooooooooooooooook.
+.kokkkkkokkkkkokkkkkokkkkkokkk..
+.kok...kok...kok...kok...kok....
+.kok...kok...kok...kok...kok....
+.kok...kok...kok...kok...kok....
+.kokkkkkokkkkkokkkkkokkkkkokkk..
+kDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDk
+.kooooooooooooooooooooooooooook.
+.kooooooooooooooooooooooooooook.
+.kooooooooooooooooooooooooooook.
+.kDDRRRRDDDDDDDDDDDDDDDDRRRRDDk.
+.kooRRRRooooooooooooooooRRRRook.
+.kooooooooooooooooooooooooooook.
+.koooooooooookkkkkkoooooooooook.
+.kDDDDDDDDDDDkkkkkkDDDDDDDDDDDk.
+.koooooooooookkkkkkoooooooooook.
+.koooooooooookkkkkkoooooooooook.
+.koooooooooookkkkkkoooooooooook.
+.kDDDDDDDDDDDkkkkkkDDDDDDDDDDDk.
+.koooooooooookkkkkkoooooooooook.
+..kkkkkkkkkkk......kkkkkkkkkkk..
+................................
 
 frame ghost-2x2
 e.e.e.e.e.e.e.e.e.e.e.e.e.e.e.ee

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { BoxGeometry, InstancedMesh, Matrix4, Mesh, Vector3, type MeshLambertMaterial } from 'three';
+import { BoxGeometry, Color, InstancedMesh, Matrix4, Mesh, Vector3, type MeshLambertMaterial } from 'three';
 import {
   CameraFollower,
   DEFAULT_FALLBACK_COLOR,
@@ -112,6 +112,16 @@ function colorOf(mesh: Mesh): string {
 describe('ThreeScene: the fixture skin', () => {
   it('is a valid three skin', () => {
     expect(skinSchema.safeParse(SKIN).success).toBe(true);
+  });
+});
+
+describe('ThreeScene: background (G36)', () => {
+  it("clears to the skin's background, black without one, the option first", () => {
+    expect(new ThreeScene(SKIN).scene.background).toEqual(new Color('#000'));
+    expect(new ThreeScene({ ...SKIN, background: '#5c94fc' }).scene.background).toEqual(new Color('#5c94fc'));
+    expect(
+      new ThreeScene({ ...SKIN, background: '#5c94fc' }, { background: '#fff' }).scene.background,
+    ).toEqual(new Color('#fff'));
   });
 });
 
@@ -311,6 +321,34 @@ describe('ThreeScene: entities', () => {
     expect((burnt!.geometry as BoxGeometry).parameters).toMatchObject({ width: 8, height: 8, depth: 4 });
     s.sync(frame({ frame: 3, entities: [coin([])] }));
     expect(meshesOf(s, 'c1')[0]!.geometry.type).toBe('CylinderGeometry');
+  });
+
+  it('builds a prefix look for a tag in its range, and rebuilds only when the look changes (M2)', () => {
+    const skin: SkinFile = {
+      ...SKIN,
+      kinds: {
+        ...SKIN.kinds,
+        coin: {
+          ...SKIN.kinds['coin']!,
+          byTag: [
+            { prefix: 'progress:', min: 50, mesh: 'box', color: '#000000' },
+            { prefix: 'progress:', color: '#7c7c7c' },
+          ],
+        },
+      },
+    };
+    const s = new ThreeScene(skin);
+    const coin = (tags: string[], f: number) =>
+      frame({ frame: f, entities: [hero({ id: 'c1', kind: 'coin', w: 8, h: 8, tags })] });
+    s.sync(coin(['progress:10'], 0));
+    const early = s.entity('c1');
+    expect(meshesOf(s, 'c1')[0]!.geometry.type).toBe('CylinderGeometry');
+    expect(colorOf(meshesOf(s, 'c1')[0]!)).toBe('#7c7c7c');
+    s.sync(coin(['progress:49'], 1));
+    expect(s.entity('c1')).toBe(early);
+    s.sync(coin(['progress:50'], 2));
+    expect(s.entity('c1')).not.toBe(early);
+    expect(meshesOf(s, 'c1')[0]!.geometry).toBeInstanceOf(BoxGeometry);
   });
 });
 

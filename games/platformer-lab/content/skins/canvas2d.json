@@ -1,5 +1,6 @@
 {
   "backend": "canvas2d",
+  "background": "#5c94fc",
   "sheets": { "sheet": "lab-placeholders", "fallbackColor": "#fcfcfc" },
   "kinds": {
     "runner": {

@@ -235,8 +235,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     `siege` frozen, and the unfreeze and `both-burnt` commit at world tick 160 (game tick 566);
     `pnpm -s cli events runs/played.run.json --from 40 --to 41` that tick's changes with their
     causes (`mission:sabotage`, `order:<n>`, `construct`).
-  - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size, the
-    grass colour), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
+  - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size; the
+    grass colour is the battle skin's `background`, Engine 0.15 gap G36, the rounds' skins clear to black), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
     `MiniSiegeGame`: the RTS kit's `presentWorld` for `village` with the game's missions (the
     offer marker, the mission HUD) while no round is hosted, else the round's `present()` with
     `status.miniGame` the mini game the hosted mission plays (`MissionHost.playing.play`:

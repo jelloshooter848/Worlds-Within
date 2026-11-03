@@ -1,5 +1,6 @@
 {
   "backend": "three",
+  "background": "#5c94fc",
   "meshes": {
     "runner": [
       {

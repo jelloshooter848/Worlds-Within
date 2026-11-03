@@ -598,4 +598,24 @@ describe('skinSetCanvasPresenter (gap G34)', () => {
     const heroes = calls.filter((c) => c.startsWith('sprite hero:'));
     expect(heroes.map((c) => c.split(' ')[1])).toEqual(['hero:down-0', 'hero:side-0']);
   });
+
+  it("clears each skin's frames to that skin's background, black without one, the option first (G36)", () => {
+    const { r, calls } = recorder();
+    const p = skinSetCanvasPresenter(r, {
+      skin: { ...SKIN, background: '#5c94fc' },
+      rounds: { vault: { ...SKIN, background: '#123' }, plain: SKIN },
+      sheet: lookup,
+      screen: { width: 48, height: 32 },
+    });
+    p.present(frame({ noMap: true }));
+    p.present(frame({ frame: 1, noMap: true, status: { miniGame: 'vault' } }));
+    p.present(frame({ frame: 2, noMap: true, status: { miniGame: 'plain' } }));
+    expect(calls.filter((c) => c.startsWith('clear'))).toEqual(['clear #5c94fc', 'clear #123', 'clear #000']);
+    const over = recorder();
+    const q = new SkinnedCanvasPresenter(over.r, { ...SKIN, background: '#5c94fc' }, lookup, {
+      background: '#fff',
+    });
+    q.present(frame({ noMap: true }));
+    expect(over.calls[0]).toBe('clear #fff');
+  });
 });

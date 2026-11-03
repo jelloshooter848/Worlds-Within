@@ -255,7 +255,8 @@ rrrrrrr.
 ```
 
 `content/skins/canvas2d.json` (a state the kit presents but the skin leaves out falls back to
-`idle`; a kind or tile the skin leaves out is drawn as a magenta box, so a gap is easy to spot):
+`idle`; a kind or tile the skin leaves out is drawn as a magenta box, so a gap is easy to spot; an
+optional `"background": "#5c94fc"` is the colour the backend clears to, black when left out):
 
 ```json
 {
@@ -562,7 +563,7 @@ these differences; `games/platformer-lab/` is a complete working example of ever
 - `view.ts` and the picture: one call to the engine's `frameView` (`@engine/core/view`, Engine
   0.7): `frameView({ game: createGame(...), screen, frames: new FrameStream(platformerFrames(screen)),
   picture: (r) => new FramePicture(new FrameStream(platformerFrames(screen)), new
-  SkinnedCanvasPresenter(r, skin, sheet, { size: screen, background })), background })` (see
+  SkinnedCanvasPresenter(r, skin, sheet, { size: screen })) })` (see
   `games/platformer-lab/view.ts` and `picture.ts`). No `clamp: false`: the kit's camera hint and
   the map keep the view inside the level.
 - Mini games from another kit (Engine 0.7): give each round its own skin
@@ -576,7 +577,7 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   `miniGame()`), so there is no `scene.ts` (it pushes `miniGameScene` while a trigger runs a
   round), drawing `new FramePicture(new FrameStream(platformerFrames(screen)), presenter)`
   (`@engine/core/present`, the kit's `platformerFrames`); `main.ts` is `bootBrowserGame({ screen,
-  displays: { canvas2d: (canvas) => canvasDisplay(canvas, { screen, skin, sheet, background }) },
+  displays: { canvas2d: (canvas) => canvasDisplay(canvas, { screen, skin, sheet }) },
   scene: (stack, display) => new HostScene({ stack, game, picture: () => ...display.presenter... }) })`
   (see `games/platformer-lab/main.ts`).
 - Showing the game in 3D (optional, Engine 0.6; the lab does all of this):
@@ -585,10 +586,11 @@ these differences; `games/platformer-lab/` is a complete working example of ever
      every solid tile (`.` is open air: no entry), the 2D skin's `camera`, and `camera3d`
      (`fov`, `tilt`, `layerDepth`). Copy `games/platformer-lab/content/skins/three.json`.
   2. The frames are the same stream as in 2D; only the presenter differs. In Node tests use
-     `threeScenePresenter(skin, { screen, background })` from `@engine/backends/three` (a
+     `threeScenePresenter(skin, { screen })` from `@engine/backends/three` (a
      `ThreeScene`, no WebGL). Keep `three` imports out of the 2D page's static imports.
   3. `main.ts`: add `three: async (canvas) => (await import('@engine/backends/three')).threeDisplay(canvas,
-     { screen, skin: skin3d, background })` to `displays`. `bootBrowserGame` reads `?backend=three`,
+     { screen, skin: skin3d })` to `displays`. The sky is each skin's `background` (both backends
+     clear to it; never a colour constant in glue). `bootBrowserGame` reads `?backend=three`,
      loads it only then (its own chunk), places the WebGL canvas from the screen layout, and
      shows a message with a link back to 2D when WebGL 2 is missing, never a blank page.
   4. In `index.html`, add a toggle link (`<a id="backend">`, set by `bootBrowserGame`) and

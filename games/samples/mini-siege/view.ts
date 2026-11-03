@@ -31,6 +31,5 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
       picture.p.draw(game, []);
     },
     frame: () => frames.next(game, []),
-    background: look.background,
   };
 }

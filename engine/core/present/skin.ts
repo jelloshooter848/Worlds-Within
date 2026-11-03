@@ -88,6 +88,9 @@ export const DEFAULT_CAMERA3D = {
 /** The colour a backend draws a box in when a kind has no skin entry and the skin gives none. */
 export const DEFAULT_FALLBACK_COLOR = '#ff00ff';
 
+/** The colour a backend clears to when the skin gives no `background` (gap G36). */
+export const DEFAULT_BACKGROUND = '#000';
+
 /** Ticks a frame of a cycle shows when the cycle gives no `ticks`. */
 export const DEFAULT_FRAME_TICKS = 8;
 
@@ -238,20 +241,69 @@ const camera3d = z.strictObject({
  * One look of a kind for entities with a tag (Engine 0.11, gaps G13 and G30, item 181): the fields
  * it gives replace the kind's own, the rest come from the kind.
  */
-const tagEntry = z.strictObject({
-  tag: id.describe('the entity tag it is for (`used`, `look:door`, `site`)'),
-  sheet: id.exactOptional().describe("2D: the sprite file (default the kind's)"),
-  palette: id.exactOptional().describe("2D: a palette to draw with (default the kind's)"),
-  frames: z
-    .record(id, stateFrames)
-    .exactOptional()
-    .describe("2D: the frames by animation state, as the kind's `frames`, used instead of them"),
-  fallbackColor: color
-    .exactOptional()
-    .describe("2D: the box colour when a frame is missing (default the kind's)"),
-  mesh: meshRef.exactOptional(),
-  color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
-});
+const tagEntry = z
+  .strictObject({
+    tag: id
+      .exactOptional()
+      .describe('the whole entity tag it is for (`used`, `look:door`, `site`); or give `prefix`'),
+    prefix: id
+      .exactOptional()
+      .describe(
+        'instead of `tag`: any entity tag that starts with it (`progress:`); `min` and `max` read the rest',
+      ),
+    min: z
+      .number()
+      .int()
+      .exactOptional()
+      .describe('with `prefix`: the rest of the tag read as a whole number is at least this'),
+    max: z
+      .number()
+      .int()
+      .exactOptional()
+      .describe('with `prefix`: the rest of the tag read as a whole number is at most this'),
+    sheet: id.exactOptional().describe("2D: the sprite file (default the kind's)"),
+    palette: id.exactOptional().describe("2D: a palette to draw with (default the kind's)"),
+    frames: z
+      .record(id, stateFrames)
+      .exactOptional()
+      .describe("2D: the frames by animation state, as the kind's `frames`, used instead of them"),
+    fallbackColor: color
+      .exactOptional()
+      .describe("2D: the box colour when a frame is missing (default the kind's)"),
+    mesh: meshRef.exactOptional(),
+    color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
+  })
+  .superRefine((v, ctx) => {
+    if ((v.tag === undefined) === (v.prefix === undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [v.tag === undefined ? 'tag' : 'prefix'],
+        message: 'give exactly one of "tag" (the whole tag) and "prefix"',
+        params: { code: 'bad_tag_look' },
+      });
+    }
+    for (const field of ['min', 'max'] as const) {
+      if (v[field] !== undefined && v.prefix === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `"${field}" needs "prefix" (it reads the rest of a prefixed tag)`,
+          params: { code: 'bad_tag_look' },
+        });
+      }
+    }
+    if (v.min !== undefined && v.max !== undefined && v.min > v.max) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['max'],
+        message: `"max" ${v.max} is below "min" ${v.min}`,
+        params: { code: 'bad_tag_look' },
+      });
+    }
+  });
+
+/** The fields of a tag entry that say which tag it matches, not how it looks. */
+const TAG_MATCH_FIELDS = ['tag', 'prefix', 'min', 'max'] as const;
 
 /** The fields a tag entry may give, of each shape. */
 const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
@@ -294,7 +346,7 @@ const kindEntry = z.strictObject({
     .array(tagEntry)
     .exactOptional()
     .describe(
-      "looks by entity tag, `{ tag, sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`: the first entry whose tag the entity has replaces those fields of the kind's; the state and facing are then picked as usual",
+      "looks by entity tag, `{ tag | prefix, min?, max?, sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`: the first entry in file order that matches one of the entity's tags (`tag`: the whole tag; `prefix`: any tag starting with it, and with `min`/`max` only one whose rest is a whole number in that inclusive range, such as `progress:` 50-99) replaces those fields of the kind's; the state and facing are then picked as usual",
     ),
 });
 
@@ -482,6 +534,11 @@ function isPrimitive(name: string): name is MeshPrimitive {
 export const skinSchema = z
   .strictObject({
     backend: id.describe('the backend it is for: `canvas2d`, `three` (meshes) or another backend name'),
+    background: color
+      .exactOptional()
+      .describe(
+        `the colour the backend clears to before each frame it draws with this skin (default \`${DEFAULT_BACKGROUND}\`)`,
+      ),
     sheets: sheets.exactOptional().describe('defaults for entries that leave a field out'),
     kinds: z.record(id, kindEntry).describe('entity kind -> how it looks'),
     tiles: z.record(id, tileEntry).exactOptional().describe('map tile character or id -> how it looks'),
@@ -679,23 +736,55 @@ export type SkinEntityInput = Pick<DeepReadonly<PresentEntity>, 'kind'> & {
 };
 
 /**
- * The index in `entry.byTag` of the look an entity with `tags` takes: the first entry whose tag
- * it has, or -1 (gaps G13 and G30). Pure.
+ * The colour a backend clears to before drawing a frame with `skin` (Engine 0.15, gap G36): the
+ * skin's `background`, else {@link DEFAULT_BACKGROUND} (black). Both backends clear through it,
+ * each skin of a skin set to its own (a hosted round keeps its skin's, black by default). Pure.
+ */
+export function skinBackground(skin: DeepReadonly<Pick<SkinFile, 'background'>>): string {
+  return skin.background ?? DEFAULT_BACKGROUND;
+}
+
+/** A whole number written as text (`"42"`, `"-3"`), or null for anything else. */
+function wholeNumber(text: string): number | null {
+  return /^-?\d+$/.test(text) ? Number(text) : null;
+}
+
+/**
+ * Whether a `byTag` look matches one tag (Engine 0.15, gap M2): a look with `tag` matches that
+ * whole tag; one with `prefix` any tag that starts with it, and with `min` or `max` only one whose
+ * rest is a whole number in that inclusive range (`{ prefix: "progress:", min: 50 }` matches
+ * `progress:50` and `progress:99`, not `progress:49` or `progress:half`). Pure.
+ */
+export function skinTagMatches(look: DeepReadonly<SkinTagEntry>, tag: string): boolean {
+  if (look.tag !== undefined) return tag === look.tag;
+  if (look.prefix === undefined || !tag.startsWith(look.prefix)) return false;
+  if (look.min === undefined && look.max === undefined) return true;
+  const n = wholeNumber(tag.slice(look.prefix.length));
+  if (n === null) return false;
+  return (look.min === undefined || n >= look.min) && (look.max === undefined || n <= look.max);
+}
+
+/**
+ * The index in `entry.byTag` of the look an entity with `tags` takes: the first look in file
+ * order that matches any of its tags ({@link skinTagMatches}), or -1 (gaps G13, G30 and M2). The
+ * list order is the only priority: a skin lists its looks from the most specific (a `progress:`
+ * range before a plain `site`). Pure.
  */
 export function skinTagIndex(
   entry: DeepReadonly<SkinKindEntry> | undefined,
   tags: readonly string[] | undefined,
 ): number {
   if (entry?.byTag === undefined || tags === undefined || tags.length === 0) return -1;
-  return entry.byTag.findIndex((look) => tags.includes(look.tag));
+  return entry.byTag.findIndex((look) => tags.some((tag) => skinTagMatches(look, tag)));
 }
 
 /**
- * The kind entry a skin draws `entity` with (Engine 0.11, gaps G13 and G30): its kind's entry
- * with the fields of the first `byTag` look whose tag the entity has laid over it (`frames`
- * replace the kind's frames whole), or the kind's entry as it is when no look matches; undefined
- * for a kind the skin does not list. Both backends pick through it, so a skin without `byTag`
- * draws as before. Pure.
+ * The kind entry a skin draws `entity` with (Engine 0.11, gaps G13 and G30; prefixes and values
+ * Engine 0.15, gap M2): its kind's entry with the fields of the first `byTag` look that matches
+ * one of the entity's tags laid over it (`frames` replace the kind's frames whole; the look's
+ * `tag`, `prefix`, `min` and `max` are not carried), or the kind's entry as it is when no look
+ * matches; undefined for a kind the skin does not list. Both backends pick through it, so a skin
+ * without `byTag` draws as before. Pure.
  */
 export function resolveSkinKind(
   skin: DeepReadonly<SkinFile>,
@@ -704,8 +793,9 @@ export function resolveSkinKind(
   const entry = Object.hasOwn(skin.kinds, entity.kind) ? skin.kinds[entity.kind] : undefined;
   const i = skinTagIndex(entry, entity.tags);
   if (entry === undefined || i < 0) return entry;
-  const { tag: _tag, ...look } = entry.byTag![i]!;
-  return { ...entry, ...look };
+  const look: Record<string, unknown> = { ...entry.byTag![i]! };
+  for (const field of TAG_MATCH_FIELDS) delete look[field];
+  return { ...entry, ...look } as DeepReadonly<SkinKindEntry>;
 }
 
 /** What to draw for one entity: a sprite frame, or (when `frame` is null) a box of `fallbackColor`. */

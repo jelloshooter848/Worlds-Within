@@ -59,7 +59,8 @@ draws, taken from `content.manifest.screen`, `render(r)`, and the optional `fram
 through any `Presenter` (the Three.js backend) instead of drawing it with `render(r)`; a run uses
 one or the other, never both (each keeps its own stream of frames). Like `render`, it must not
 change the game. The optional `background` (a CSS hex colour) is the colour a presenter of
-`frame()` clears to (`screenshot --backend three`; black when left out). `frameView({ game,
+`frame()` clears to (`screenshot --backend three`) when it is not the skin's: left out, the skin's
+`background` is used, else black (Engine 0.15, gap G36; no game sets it now). `frameView({ game,
 screen, frames, picture, background? })` (Engine 0.7, gap G26) is the one helper there: a
 `ViewGame` over a headless game that shows `world` and its last step's `events` (a kit's level
 sequence), keeping the events between draws in a `PendingEvents` (dropped on a new world), with

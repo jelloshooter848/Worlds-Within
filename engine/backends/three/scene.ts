@@ -27,6 +27,7 @@ import {
   resolveCamera3d,
   resolveMeshParts,
   resolveSkinKind,
+  skinBackground,
   skinTagIndex,
   resolveSkinEvent,
   type DeepReadonly,
@@ -50,7 +51,7 @@ export interface ThreeSceneOptions {
   size?: ScreenSize;
   /** Called once for each event this frame whose skin entry names a sound (wire it to the audio). */
   onSound?: (id: string) => void;
-  /** The scene's background colour (default `#000`). */
+  /** The scene's background colour when it is not the skin's (default the skin's `background`, else `#000`). */
   background?: string;
   /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
@@ -152,7 +153,7 @@ export class ThreeScene {
     this.size = opts.size;
     this.cam3d = resolveCamera3d(skin);
     this.follower = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
-    this.scene.background = new Color(opts.background ?? '#000');
+    this.scene.background = new Color(opts.background ?? skinBackground(skin));
 
     this.ambient = new AmbientLight(0xffffff, this.cam3d.lights.ambient);
     this.sun = new DirectionalLight(0xffffff, this.cam3d.lights.directional);

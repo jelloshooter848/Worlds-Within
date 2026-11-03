@@ -1,5 +1,6 @@
 {
   "backend": "canvas2d",
+  "background": "#00a800",
   "sheets": {
     "sheet": "skirmish",
     "fallbackColor": "#ff00ff"
@@ -433,7 +434,14 @@
         "train": "barracks",
         "site": "site-2x2"
       },
-      "fallbackColor": "#883c00"
+      "fallbackColor": "#883c00",
+      "byTag": [
+        {
+          "prefix": "progress:",
+          "min": 50,
+          "frames": { "idle": "site-2x2-half", "site": "site-2x2-half" }
+        }
+      ]
     },
     "building:barracks:enemy": {
       "frames": {
@@ -442,7 +450,14 @@
         "site": "site-2x2"
       },
       "fallbackColor": "#883c00",
-      "palette": "skirmish-blue"
+      "palette": "skirmish-blue",
+      "byTag": [
+        {
+          "prefix": "progress:",
+          "min": 50,
+          "frames": { "idle": "site-2x2-half", "site": "site-2x2-half" }
+        }
+      ]
     },
     "resource:gold": {
       "frames": {

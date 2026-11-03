@@ -12,10 +12,11 @@ export interface ThreeDisplayOptions {
   skin: DeepReadonly<SkinFile>;
   /**
    * A skin per mini game, by its id (a `SkinSet`'s `rounds`): frames whose `status.miniGame`
-   * names one are drawn through it, on the same canvas, with a black background (Engine 0.7 T8).
+   * names one are drawn through it, on the same canvas, on its own skin's `background` (black by
+   * default; Engine 0.7 T8).
    */
   rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
-  /** The clear colour behind the picture (default `#000`). */
+  /** The clear colour behind the game's own frames when it is not its skin's `background` (default that, else `#000`). */
   background?: string;
   /** Whole-number scaling only (default false: stretch to fit, letterboxed). */
   integerScale?: boolean;
@@ -92,7 +93,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
  * A `Presenter` over the Node-side `ThreeScene` (no WebGL): `present` is `scene.sync`. For tests
  * and tools that check what 3D would show (backend parity); `.scene` for read-outs. With
  * `rounds` (as `threeDisplay`'s), frames of a mini game with a skin go to a scene of their own
- * (`.rounds[id]`, black background), as on the page; `.shown` is the scene the last frame went to.
+ * (`.rounds[id]`, on that skin's `background`), as on the page; `.shown` is the scene the last frame went to.
  */
 export function threeScenePresenter(
   skin: DeepReadonly<SkinFile>,

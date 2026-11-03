@@ -36,8 +36,14 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
   checks finite numbers, that a full map's tiles (and layers) are `rows` x `cols`, and that event
   fields are JSON-safe. Unknown fields are errors everywhere except on events.
 - `skin.ts`: skin files, the engine's `skin` content kind (`SKIN_KIND`, registered in
-  `content/engine-kinds.ts`). One JSON file per backend: `{ backend, sheets?, kinds, tiles?,
-events?, hud?, camera?, meshes?, camera3d? }`. `sheets` gives defaults (`sheet`, `palette`, `fallbackColor`) for
+  `content/engine-kinds.ts`). One JSON file per backend: `{ backend, background?, sheets?, kinds,
+tiles?, events?, hud?, camera?, meshes?, camera3d? }`. `background` (Engine 0.15, gap G36,
+  decision 3) is the colour (`#rgb` or `#rrggbb`) the backend clears to before each frame it draws
+  with that skin: `skinBackground(skin)` gives it, else `DEFAULT_BACKGROUND` (`#000`, the black
+  every skin had before). Both backends clear through it (a presenter's own `background` option
+  still wins, for a caller that must override it), and each skin of a skin set clears to its own,
+  so a hosted round keeps its skin's (black by default). The platformer games' sky and the RTS,
+  tower-defense and mini siege grass are their skins' `background`, no constant in glue. `sheets` gives defaults (`sheet`, `palette`, `fallbackColor`) for
   entries that leave them out. A kind entry is 2D (`sheet`, `palette?`, `frames`, `flipFacing?`,
   `size?`, `fallbackColor`, `offset?`) or 3D (`mesh`, `color`, `scale?`, `depth?`, `z?`,
   `offset?`), either with an optional `byTag` list (below); a tile entry 2D (`sheet?`, `frame`, `fallbackColor`) or 3D (`mesh`, `color`,
@@ -78,9 +84,19 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
     and a skin with bare keys only reads as before. `parseEventKey(key)` reads a key
     (`{ type, match: { field, value } | null }`, null for a bad one). Both backends' presenters
     play sounds and start effects through it.
-  - Looks by tag (Engine 0.11, gaps G13 and G30, item 181): a kind entry's `byTag` is a list of
-    `{ tag, sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`. For an entity with tags,
-    the first entry in file order whose `tag` it has lays its fields over the kind's (`frames`
+  - Looks by tag (Engine 0.11, gaps G13 and G30, item 181; prefixes and values Engine 0.15, gap
+    M2, decision 3, item 280): a kind entry's `byTag` is a list of `{ tag | prefix, min?, max?,
+sheet?, palette?, frames?, fallbackColor?, mesh?, color? }`. A look matches by exactly one of
+    `tag` (the whole tag) or `prefix` (any tag starting with it, `progress:`), and with `min`
+    and/or `max` (inclusive whole numbers, only with `prefix`) only a tag whose rest reads as a
+    whole number (`-?\d+`) in that range: `progress:half` never matches a look with a range.
+    `skinTagMatches(look, tag)` is that test. Both `tag` and `prefix`, neither, `min`/`max`
+    without `prefix`, or `min` above `max` are `bad_tag_look`. **Order rules** for
+    `resolveSkinKind`: looks are tried in file order and the first that matches any of the
+    entity's tags wins (the entity's tag order does not matter), so a skin lists its stages from
+    the most specific (`progress:` 75 and up, then 50-74, then plain `site`); a look for two tags
+    at once is not built (moved to 1.0). For an entity with tags, the winning look lays its fields
+    (never `tag`, `prefix`, `min` or `max`) over the kind's (`frames`
     replace the kind's frames whole; the fields it leaves out, `flipFacing`, `size`, `offset`,
     `depth`, `scale`, `z`, come from the kind); the state and facing are then picked inside it as
     usual. No match (or no tags) uses the kind as it is, so a skin without `byTag` draws as
@@ -91,7 +107,8 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
     `missing_ref`, and its sheet, palette and frames are checked across files like the kind's.
     A tag is any of the entity's tags: `used`, `brick` (a bumped block), `look:<id>` (a platformer
     trigger's `look`), `site` (the RTS kit's building under construction); the mini siege uses it
-    for its construction site and its burnt or damaged siege engines.
+    for its construction site and its burnt or damaged siege engines; the RTS skirmish's
+    barracks site takes a half-built look from `progress:50` (a `prefix` look with `min`).
   - `resolveSkinFrame(skin, entity)` (pure, for backends): the `SkinFrame` `{ sheet, frame, flipX,
 palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, if any),
     `anim.state` (else `idle`,
@@ -172,7 +189,10 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
 `present.test.ts`: a fixture frame using every field passes the schema, wrong fields are reported
 at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the map on the first
 frame and on a version (or id) change only. `present.test.ts` also checks all eight facings pass the schema and the facing helpers.
-`skin.test.ts`: a fixture skin passes, bad fields
+`skin.test.ts`: its `looks by tag prefix and value (M2)` block covers `skinTagMatches` (whole
+tag, prefix, ranges, non-numbers), file order picking the most specific stage first, the merged
+entry without match fields, and the `bad_tag_look` refusals; `skin background (G36)` covers
+`skinBackground` and the schema. A fixture skin passes, bad fields
 are reported at their path (inside unions too), 2D and 3D fields are kept apart, missing sheets,
 palettes, sounds and frames are cross-file errors (sounds of field-matched event keys too), event
 keys are read and bad ones rejected, `resolveSkinEvent` tries field keys in file order then the

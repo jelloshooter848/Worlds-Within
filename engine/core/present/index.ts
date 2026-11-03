@@ -36,6 +36,7 @@ export { presentFrameSchema } from './schema';
 export { presenterByStatus } from './switch';
 export {
   checkSkinRefs,
+  DEFAULT_BACKGROUND,
   DEFAULT_CAMERA3D,
   DEFAULT_FALLBACK_COLOR,
   DEFAULT_FRAME_TICKS,
@@ -49,7 +50,9 @@ export {
   resolveSkinEvent,
   resolveSkinFrame,
   resolveSkinKind,
+  skinBackground,
   skinTagIndex,
+  skinTagMatches,
   SKIN_KIND,
   skinSchema,
   type EventKey,

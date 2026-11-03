@@ -16,7 +16,8 @@ layout needs it too. Never hard-code a picture size here: take it from the size 
 `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheets, opts?)` implements `Presenter`.
 `sheets` is a `SheetLookup` (`sheetLookup(assets)` from `@engine/core/assets/sheet-lookup`).
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
-`onSound?(id)`, `background?` (`#000`), `font?` (HUD font, default `font`), `clamp?` (the
+`onSound?(id)`, `background?` (default the skin's `background`, else `#000`: `skinBackground`,
+gap G36), `font?` (HUD font, default `font`), `clamp?` (the
 skin's `camera.clamp`, else true),
 `reduceFlashing?`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
 canvas, none in Node). Each `present(frame)`, in order:
@@ -55,7 +56,8 @@ canvas, none in Node). Each `present(frame)`, in order:
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`.
 - Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip
   (all eight facings: a diagonal without a frame uses its horizontal one), from the kind's first
-  `byTag` look whose tag the entity has, else the kind's own frames (Engine 0.11, gap G30);
+  `byTag` look that matches one of the entity's tags (a whole `tag`, or from Engine 0.15 a `prefix`
+  with an optional `min`/`max` range, gap M2), else the kind's own frames (Engine 0.11, gap G30);
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.
@@ -68,7 +70,9 @@ It never changes the frame or the skin (tested with frozen ones) and knows no ga
 
 `skinSetCanvasPresenter(r, { skin, rounds?, sheet, screen, background?, onSound?, main? })`: one
 `Presenter` for a game that stacks kits: a `SkinnedCanvasPresenter` with the game's skin (or
-`main`) and one per mini game skin in `rounds` (on black), picked per frame by `status.miniGame`
+`main`) and one per mini game skin in `rounds` (each
+clearing to its own skin's `background`, black by default; the `background` option overrides the
+game's own skin only, gap G36), picked per frame by `status.miniGame`
 (`presenterBySkinSet` from `@engine/core/present`). Each skin frames its map as its own `camera`
 says (`clamp: false` keeps a top-down room under its HUD band; gaps G29 and G34 in
 `docs/reports/stacking-test.md`), so games pass no per-round options.
@@ -110,7 +114,8 @@ zoom are drawn.
 `*.test.ts` here run in Node against a fake 2D context that records calls and maps points through
 the transform (see `renderer.test.ts`). `presenter.test.ts` uses a recording `Renderer`, fixture
 frames and a fixture skin written inline (never import a kit or a game's skin; a `byTag` look is
-drawn for an entity with its tag, the kind's frame otherwise); its `camera`
+drawn for an entity with its tag, the kind's frame otherwise; the skin set block checks each skin
+clearing to its own `background`, black without one, the option first, G36); its `camera`
 block reads the camera's top-left off the recorded map copy. The recorder writes a sprite's
 `scale` as ` xN` when it is not 1; the `zoom` block checks the map copy, tiles, sprites, boxes
 and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses the zoomed

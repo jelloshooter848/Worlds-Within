@@ -2,7 +2,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessOptions } from '@engine/core/headless';
 import { frameView, type ViewGame } from '@engine/core/view';
 import { createGame } from './headless';
-import { SKY, testCanvasPicture, testFrames, testLook } from './picture';
+import { testCanvasPicture, testFrames, testLook } from './picture';
 
 /**
  * The view entry (named by `view` in `game.json`), for `pnpm cli screenshot`: the engine's
@@ -18,6 +18,5 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
     screen: look.screen,
     frames: testFrames(look.screen),
     picture: (r) => testCanvasPicture(r, look),
-    background: SKY,
   });
 }
