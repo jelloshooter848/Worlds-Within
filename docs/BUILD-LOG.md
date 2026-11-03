@@ -7,6 +7,140 @@ What each engine release built and the choices made along the way, newest first.
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
 review the choices.
 
+## Summary for the owner
+
+**The build is finished: Engine 0.2 to 0.15 are all done** on branch `engine/build-0.15`, every
+Done when met (one only on software WebGL, below). Nothing is merged to `master`, no tag exists
+(`git tag` is empty) and nothing was published (owner answer 24). The root `package.json` version
+is still `0.0.0`: the tag and the version bump for each release wait for the owner. What is left
+for **Engine 1.0** is in the roadmap's Engine 1.0 section: the v1 API docs and the eleven items
+the API review listed (`1.0-1` to `1.0-11`).
+
+### State of each release
+
+- **0.2 Restructure and the dependency rule: done.** The `engine/` (core, backends, sim, tools),
+  `kits/`, `games/` layout; the layer table `config/layers.js` checked by ESLint and
+  `tests/architecture/dependency-rule.test.ts`; purity rules for the core and kits. Not met:
+  nothing. (The Pages workflow has never run: no tag.)
+- **0.3 LLM tooling: done.** `pnpm cli` (validate, run, dump, screenshot, get/set/add/remove,
+  mutants, help) with one JSON result and grouped exit codes; run files with golden hashes and
+  replay files; generated CLI and schema docs; `llms.txt`, module pages, the cheat sheet and the
+  scaffold-game skill. Not met: nothing (the hand check was run once, as the roadmap asks).
+- **0.4 Renderer and presentation contract: done.** Kits stopped drawing: the read-only
+  `PresentFrame`, skins as text, `SkinnedCanvasPresenter`, the null backend; the demo's hashes
+  unchanged. Not met: nothing (a few looks a skin could not express were dropped: blinking, turning
+  stun stars).
+- **0.5 Platformer kit: done.** `kits/platformer` from SMBC's rules in integer physics, golden
+  traces against SMBC, strict mutants, `games/platformer-lab`. Not met: nothing in the Done when;
+  SMBC's character moves, swimming and power states were left out (no test level needs them; not
+  scheduled).
+- **0.6 Basic 3D backend: done.** `engine/backends/three` (`ThreeScene`, `threeDisplay`) with
+  text-defined low-poly meshes, `screenshot --backend three`, three-backend hash parity. Not met
+  in full: Done when item 3 (a 3D screenshot on hardware WebGL) was checked only on software WebGL
+  behind `--allow-software-gl` (item 75: no GPU in the build container); the missing 3D HUD and
+  particles were fixed in 0.15 (G33).
+- **0.7 The stacking test: done.** A small original platformer in 2D and 3D with a top-down
+  round behind a door (now `games/samples/platformer`), and the gap report: 37 gaps, 20 fixed in
+  0.7, the rest moved and since fixed (0.10, 0.11, 0.14, 0.15). Not met: nothing.
+- **0.8 World simulation: done.** `engine/sim`: our own small ECS, event log with causes, save and
+  load, scenarios as data, the sample village (10,000 ticks, same hashes every run). Not met:
+  nothing ("at any tick" save and load is sampled at 83 ticks on CI; every tick is opt-in).
+- **0.9 RTS kit and view: done.** 8-way A\* and flow fields, the RTS systems in the sim,
+  `kits/rts`, the RTS skirmish sample, recorded orders with sync hashes, the rendering benchmark.
+  Not met: nothing; the conditional PixiJS backend was not needed (item 133).
+- **0.10 Time and the mission contract: done.** World, experience and commitment time, frozen
+  events, missions (open, delegate, play, commit at a fixed cost, no retries), opportunities,
+  `MissionAdapter`, the `campaign` file. Not met: nothing; flashback missions are deferred until
+  after 1.0 (item 156).
+- **0.11 The mini siege: done.** `games/samples/mini-siege`: an RTS siege launching a top-down
+  mission played or delegated, `MissionHost`, the `mission-room` mini game, 28 gaps. Not met:
+  nothing; the captain as the round's hero moved to 0.13 and was built there (M13).
+- **0.12 Tower-defense kit: done.** `kits/towerdefense`, the tower-defense sample, the mini
+  siege's `fortify` preparation phase, all with an empty `engine/sim` diff; 14 lessons (12 built
+  in 0.15, D5 and D11 written down at 1.0 as `1.0-1` and `1.0-2`). Not met: nothing.
+- **0.13 Heroes and consequences: done.** Fates of named people, carry-over between scenarios,
+  campaigns, save codes, the dawn assault. Not met: nothing; the rescue's own room moved to 0.15
+  and was built there (M32).
+- **0.14 Creator tools v1: done.** The in-browser simulation debugger and timeline viewer,
+  `trace`, run-file `start`, map rulers and region edits, per-kit mutants, the round recorder,
+  the ridge camp added with data files only. Not met: nothing in scope; `trace --events` (item 265) and a `?replay=` URL (item 269) were not built, and world runs open read-only in the
+  debugger (item 273).
+- **0.15 The sample set: done.** The five samples finished (below), the demo and the stacking
+  test moved into `games/samples/` (old folders gone, hashes identical), all 38 assigned gaps
+  fixed, the API review written (`docs/reports/api-review.md`). Not met: nothing; M2's look for
+  two tags at once and the review's findings A4-A8 are listed for 1.0 (`1.0-3`, `1.0-5` to
+  `1.0-9`).
+
+### How to try each sample
+
+Install once with `pnpm install`. In the browser: `pnpm dev`, then open
+`http://localhost:5173/` (the games index) or a page directly (with `pnpm build && pnpm preview`
+the same paths are served from `dist/`; each page takes `?debug=step` for the step hook):
+
+| Game                          | `pnpm dev` path                                     | Controls                                                                         |
+| ----------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------- |
+| The Old Crypt (dungeon)       | `/games/samples/dungeon/`                           | arrows move, X or Z the sword, C the item; Z or X after the end starts a new run |
+| Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`) | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs               |
+| The River Ford (RTS)          | `/games/samples/rts-skirmish/`                      | mouse or touch: click selects, drag boxes, right click commands, wheel zooms     |
+| The Winding Road (TD)         | `/games/samples/tower-defense/`                     | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends     |
+| The mini siege                | `/games/samples/mini-siege/`                        | Begin, then Launch, Play or Delegate in the bar; rounds by keys or taps          |
+| Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)     | arrows move, Z jumps, X runs                                                     |
+
+Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
+
+```sh
+pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json          # also walk-east, lost-in-the-guard-room
+pnpm -s cli run games/samples/platformer/runs/level-4.run.json --json      # also level-1..3, level-2..5-start
+pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json     # also commands, economy, hold, lost
+pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
+pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
+pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
+for f in games/samples/*/runs/*.run.json games/platformer-lab/runs/*.run.json; do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
+pnpm -s cli validate games/samples/mini-siege --json                         # any game folder
+pnpm -s cli mutants games/samples/dungeon --json                             # which kit rules the runs guard
+pnpm cli debug games/samples/mini-siege/runs/ridge-raid.run.json             # the debugger page; open the URL it prints
+```
+
+`pnpm -s cli screenshot <run file> --tick <n> --json` draws a run at a tick (`--backend three`
+for the platformer and the lab). Each game's `CLAUDE.md` lists its run files and what each checks.
+
+### Open feedback items
+
+Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
+used is 303** (next unused 304). Awaiting the owner's answer, by release (an answer by number is
+enough; silence so far has meant the build kept its default):
+
+- Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
+- Engine 0.2: **25-31**. Engine 0.3: **32-44**. Engine 0.4: **45-51** (48 answered by 128).
+- Engine 0.5: **52-64** (and the orchestrator's defaults for 41, 44 and 51 noted there).
+- Engine 0.6: **65-75**. Engine 0.7: **76-98** (81 answered by 158, 84 by 157).
+- Engine 0.8: **99-120**. Engine 0.9: **121-149**. Engine 0.10: **150-171**.
+- Engine 0.11: **172-196**. Engine 0.12: **197-219**. Engine 0.13: **220-246**.
+- Engine 0.14: **247-277**. Engine 0.15: **278-303** (278-291 the decisions before code, 292-303
+  the smaller build choices).
+
+### Items not met, and where they went
+
+No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as written:
+
+- **0.6, Done when item 3** (a 3D screenshot on hardware WebGL): checked on software WebGL only,
+  behind `--allow-software-gl` (item 75); a check on a machine with a GPU is still to be made.
+- **0.5, SMBC's full behaviour** (character moves, swimming, power states): left out, not
+  scheduled; a game that needs them adds them to the kit.
+- **0.9, the PixiJS backend**: conditional, not needed (item 133); not scheduled.
+- **0.10, flashback missions**: deferred until after Engine 1.0 (item 156, roadmap "Later").
+- **0.11 M13, the captain as the round's hero**: moved to 0.13, built there.
+- **0.12 D5 and D11** (walls lost as the report's reading; two missions on one event): moved to
+  Engine 1.0 as written rules (`1.0-1`, `1.0-2`), no code change.
+- **0.13 M32, the rescue's own room**: moved to 0.15, built there (T11).
+- **0.14 items 265, 269, 273** (`trace --events`, a `?replay=` URL, stepping world runs in the
+  debugger): not built, not scheduled; the owner may move them.
+- **0.15 M2's two-tag look**: moved to Engine 1.0 (`1.0-3`). **API review findings A4-A8**:
+  moved to Engine 1.0 (`1.0-5` to `1.0-9`), with the v1 docs work (`1.0-4`, `1.0-10`,
+  `1.0-11`).
+- **Publishing**: every "plays from a link" item was checked on a local build (the games index
+  over a Pages-style build in 0.15); nothing is published until the owner tags a release.
+
 ## Engine 0.15
 
 The sample set. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
@@ -42,6 +176,12 @@ from D15), or in a new report for a sample that has none.
 - **Decisions before code** (T1, this commit): the folder moves, which tasks may move golden
   hashes, and the shapes of all 38 gaps, settled in writing (items 278-291, below), and the
   planned task list. No code changed.
+- **The folder moves** (T2, decision 1, `da71a50`): `games/demo/` is `games/samples/dungeon/`
+  and `games/platformer-test/` is `games/samples/platformer/` (`git mv`, ids `dungeon` and
+  `platformer`), with their content, run files, golden hashes, pages, tests, module pages
+  (`games-samples-dungeon.md`, `games-samples-platformer.md`), `llms.txt`, the skills and the
+  cheat sheet following. Every run file passed before and after the move with the same final
+  hashes; only each `.hashes.json`'s `run` path field changed. `games/platformer-lab/` stays.
 - **Skin background and tag prefix looks** (T3, decision 3): G36 and M2 fixed. Skins gain an
   optional `background` (`skinBackground`, `DEFAULT_BACKGROUND` black); `SkinnedCanvasPresenter`,
   `ThreeScene` and `ThreePresenter` clear to it (a `background` option still overrides, kept for
@@ -379,6 +519,26 @@ type-names.ts`) writes the kit's class names out (the same names, so no hash mov
   games would write it), and the mini siege was not moved onto it (it keeps its host events, decision
   13 does not re-finish it); the tower-defense sample keeps its status-line end (its skin already
   tints and plays `td-end:won` / `lost`) rather than a new banner. No layer arrow changed.
+- **The API review** (T15, decision 14, `6d607b2`): `docs/reports/api-review.md` reviews every
+  module's exported entry points against what the five samples used (each kept, changed in 0.15
+  with its commit, or listed for 1.0), lists every 0.15 gap with where it landed, and adds ten
+  findings: **A1-A3, A9 and A10 fixed in its commit** (`mustSkinSet` in `engine/core/present`;
+  the dungeon loading through `kitContentKinds` with the engine's song and sfx lists; the
+  platformer glue's `test*` names renamed `hopper*`; the skirmish's recorder on the core
+  `stateHash`; the RTS kit's `rtsScenario` for both RTS samples) and **A4-A8 listed for 1.0**.
+  Its eleven `1.0-n` items went into the roadmap's Engine 1.0 section, and the three gap reports
+  note the cross-check (no row left on 0.15). No golden hash moved; no layer arrow changed.
+- **The Done when's proof and the games index** (T16, `911d041`):
+  `tests/browser/games-index.test.ts` builds the site as the Pages workflow would and follows the
+  games index's link to each sample (Done when, below); `tests/build/pages.test.ts`,
+  `pages-workflow.test.ts` and `run-files.test.ts` check the same without a browser (the five
+  samples in the index and the build, the old folders gone, run files for every sample, CI and
+  Pages running them). No golden hash moved.
+- **Finalize** (T17, this commit): the roadmap marks 0.15 done; `DESIGN.md`, the cheat sheet,
+  `docs/modules/README.md` and `llms.txt` describe the finished samples and the 0.15 APIs; the
+  stacking-test report says where its game now lives; this section's close-out below and the
+  owner's summary at the top of this file; the smaller build choices are feedback items 292-303.
+  Docs only: no code, run file or hash changed.
 
 ### Planned tasks
 
@@ -734,7 +894,10 @@ platformer lab), and every one of the **56 run files** in the repo (13 sim fixtu
 8 platformer, 5 RTS skirmish, 5 tower-defense, 15 mini siege and 7 lab runs) exits 0 through
 `pnpm -s cli run`; `tests/runs/run-files.test.ts` runs each twice with the same hashes against
 its golden file. The browser tests (`tests/browser`: 12 files) ran in headless Chromium, none
-skipped. T17 checks it all again on the release's last tree.
+skipped. T17 checked it all again on the release's last tree (on top of `911d041`, docs
+only): the four checks pass with the same 203 files and 2320 tests (1 skipped), `docs:check` is
+up to date, `validate` passes for all six games and all 56 run files exit 0; `git tag` lists
+nothing.
 
 - **Met: every sample plays from a link.** `tests/browser/games-index.test.ts` (new in T16)
   builds the repo as the Pages workflow does (Vite with this `vite.config.ts`, under the sub-path
@@ -778,6 +941,120 @@ skipped. T17 checks it all again on the release's last tree.
   against `config/layers.js`), `eslint-deps.test.ts`, `purity.test.ts` and `agent-docs.test.ts`
   are green; no layer arrow changed in 0.15.
 - **No tag** (owner answer 24).
+
+### Choices made
+
+The decisions above are items 278-291 (T1). The builders' smaller choices are items 292-303
+("Engine 0.15, smaller build choices" in `FEEDBACK-LOG.md`), each also described in its task's
+entry above:
+
+- **292** (T5): the mini siege keeps its own battle step counter rather than the shell's
+  `tickRate`, and the 3D `toClient` is the boot's fallback.
+- **293** (T6): M21's event check is a test through the tools' run loop, not a run-file path;
+  `canOpen` runs before the host's checks; `onChange` also fires when a round's end resolves.
+- **294** (T7): D10's field is `build.cells`; `world.id` and `world.one` beside `world.key`;
+  `no_waves` judged by the missions that name a map.
+- **295** (T8): how `each` reads without a report or with a name that is no entity, when limits
+  are checked, `endIf` on the siege only, id codes for campaigns and missions only, codes about
+  three characters longer, `dawn-code` kept on a v1 code.
+- **296** (T9): the scripted enemy's `train` also skips a frozen building.
+- **297** (T10): every campaign entry held by default; codes usable while held; hints from the
+  first keyboard binding ("RIGHT SHIFT" for give up); the step hook's `replay` does not press
+  Begin.
+- **298** (T12): the dungeon page on `bootBrowserGame` with the headless game's hashes, and the
+  kit's written-out type names (`typeNameOf`).
+- **299** (T13): T4's HUD committed from a stash; "replace placeholders" read as removing fallback
+  colours; one song; no new platformer run file.
+- **300** (T14): the skirmish's end rule in the sample; `RtsEventTracker` in the kit, the mini
+  siege not moved onto it; the tower defense's status-line end.
+- **301** (T15): A1-A3, A9, A10 fixed in the review's commit, A4-A8 listed for 1.0.
+- **302** (T16): "plays from a link" proved on a Pages-style local build, nothing published.
+- **303** (T17): the owner's summary's reading of which items are open; no version bump without a
+  tag.
+- **No tag** (owner answer 24), and the root `package.json` version was left at `0.0.0`.
+
+### How to try it
+
+```sh
+pnpm dev     # then open http://localhost:5173/ (the games index) and follow a sample's link
+pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json               # The Old Crypt, the way out
+pnpm -s cli run games/samples/platformer/runs/level-5-start.run.json --json     # Hopper's Way, the cellar room
+pnpm -s cli run games/samples/rts-skirmish/runs/lost.run.json --json            # The River Ford, a loss
+pnpm -s cli run games/samples/tower-defense/runs/tapped.run.json --json         # The Winding Road, won by taps
+pnpm -s cli run games/samples/mini-siege/runs/dawn-rescue-played.run.json --json  # the rescue in its own room
+pnpm -s cli run games/samples/mini-siege/runs/fortify-played.run.json --json    # report-driven effects
+pnpm -s cli code games/samples/mini-siege/runs/quit.run.json                     # a version 2 save code
+pnpm -s cli mutants games/samples/dungeon --json                                 # all four top-down rules guarded
+pnpm vitest run tests/browser/games-index.test.ts                                # every sample from the index's link
+```
+
+The page paths and every sample's run files are in the owner's summary at the top of this file.
+
+### Golden hashes moved in 0.15
+
+Audit: `git diff 235899c --name-status -M -- '*.hashes.json'`. Every move is in a task decision
+2 allowed, regenerated with the repo's tools, never by hand: `pnpm cli remove`, `run` and `add`
+for a run file's sync `hashes` (the new values read off `run --json`), then
+`WW_UPDATE_GOLDEN=1 pnpm test tests/runs` for the `.hashes.json` golden files; `pnpm cli code` and
+`pnpm cli set` for pinned save codes; `pnpm cli record --bot` for the one new recorded round
+(`dawn-rescue-played`). `WW_UPDATE_GOLDEN=1 pnpm test engine/sim/sample-world` was not needed:
+`engine/sim/__fixtures__/village.hashes.json` did not move. No assertion changed in any moved run.
+
+- **T8 (D3, D4; `77700b6`)**: `fortify-played` (final `0b43372f77faea35` to `c758b3283ab59e88`)
+  and `fortify-delegated` (`302436d18dc3917d` to `bd8f76744d63c45e`), from tick 20: `fortify`'s
+  definition gained the report-driven effects. Pinned save codes (M38, version 2): `played`,
+  `delegated`, `quit` and `dawn-fresh`.
+- **T9 (M12, M20, with `named` removed and `marker` adopted; `be063b2`)**: the seven siege-fixture
+  world runs in `engine/sim/__fixtures__/` (`raid-partial`, `raid-failure`, `raid-delegated`,
+  `fixed-cost-few`, `fixed-cost-many`, `frozen-construction`, `opportunity-closing`; only while
+  the raid is open, every final hash unchanged), and every mini siege run (final hashes:
+  `played` `4cb20d9d684a4849`, `delegated` `eeba3b08975e07e1`, `quit` `b3cb42a0c0409b65`,
+  `fortify-played` `2b9327daefddd9a1`, `fortify-delegated` `830abca417810eaa`, `ridge-raid`
+  `4670bab2df97d5f4`, `dawn-fresh` and `dawn-held` `c5e88a910dfe2710`, `dawn-captured` and
+  `dawn-code` `d13258df96b4db81`, `dawn-exchange` `3250cd0dccd5925c`, `dawn-leave`
+  `86ec1de1cef2d19d`, `dawn-rescue` `1ebfaa6dae0eb6e5`, `dawn-rescue-failed` `9d9f5ad86dd28cae`;
+  the old values are in T9's entry above). The hashes written elsewhere moved with them
+  (`engine/tools/record.test.ts`, the mini siege's `CLAUDE.md` tables).
+- **T11 (M32; `4ba96c5`)**: `dawn-rescue` and `dawn-rescue-failed` at ticks 20 and 40 only (the
+  open rescue's definition names its new room); final hashes unchanged.
+- **New run files, new hashes** (nothing moved): `escape` (`0fe322678bda79c2`) and
+  `lost-in-the-guard-room` (`4f9c907fe8c1fe9b`) in the dungeon, `level-5-start`
+  (`baff0936d93cd71f`) in the platformer, `lost` (`2cc7b6a08b67cdfd`) in the RTS skirmish,
+  `tapped` (`9bbdc8413bc8a0e2`, equal to `won`'s end) in the tower defense and `dawn-rescue-played` (`ea5896a26067e338`) in the mini siege.
+- **Moved files, same hashes** (T2): the dungeon's `walk-east` and the platformer's seven runs,
+  whose `.hashes.json` changed only in the `run` path field.
+- **Not moved**: the RTS skirmish's four existing runs, the tower defense's four existing runs,
+  the platformer lab, the sim's sample world and its other world runs (`battle`, `village-build`,
+  the four `capture-*`).
+
+### Deviations from the roadmap
+
+- **None in scope.** The Done when and every Scope bullet are met; all 38 gaps assigned to 0.15
+  are fixed.
+- **T4 was committed in T13**: T4's 3D HUD was left uncommitted in a stash by its task and
+  committed with the platformer sample (item 299); the stash is left in place.
+- **One smaller extra moved to 1.0**: M2's look for two tags at once (`1.0-3`, decision 3).
+- **API review findings A4-A8 moved to 1.0** (`1.0-5` to `1.0-9`, item 301): each is a
+  rename or a shared shape across several games, larger than the review's commit.
+- **Smaller departures from the written decisions** (each an item): `build.cells` for `slot`
+  (294), a test for M21's event check (293), `train` skipping frozen buildings (296).
+- **Feedback numbering:** T1's decisions are 278-291; the finalize pass added the smaller build
+  choices, 292-303.
+
+### Outstanding issues
+
+- **Engine 1.0's work**: the v1 API docs from the module pages (`1.0-10`, `1.0-11`), the eleven
+  listed items (`1.0-1` to `1.0-11`), the skills the roadmap names (add a level, add a mission)
+  and the hand check of a new game made from the docs alone.
+- **Shared page shapes still copied**: the two RTS pages' scene and camera (A6), the three
+  standalone games' end flows (A8), each page's own test hook beside `window.__ww` (A7).
+- **The 3D screenshot on hardware WebGL** is still unchecked (item 75).
+- **The mini siege's folder takes about four minutes under `mutants`**, and three heavy test files
+  keep a 60 s timeout (items 233, 277).
+- **A stash** (`T4 (G33 3D HUD) uncommitted leftovers`) is left in the working copy's stash list
+  for the owner; its content is committed.
+- Open owner decisions: items 278-303 in `FEEDBACK-LOG.md`, and the earlier ranges in the owner's
+  summary at the top of this file.
 
 ## Engine 0.14
 

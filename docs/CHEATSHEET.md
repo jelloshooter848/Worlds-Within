@@ -87,7 +87,14 @@ seed, disabledRules })` (`@kits/towerdefense`): `tdRound` picks the `td-map`, it
   imported `threeDisplay`; see `games/platformer-lab/main.ts`), and
   `screenshot --backend three` uses `frame()`; it refuses software WebGL (exit 4) unless
   `--allow-software-gl`. Only `engine/backends/three` may import `three` (`PACKAGES` in
-  `config/layers.js`).
+  `config/layers.js`). From 0.15 a `three` skin carries the 2D skin's `hud` and `particles`: pass
+  `sheets: contentPixelSheets(content)` (`@engine/core/assets/content-sheets`) to `threeDisplay` /
+  `ThreePresenter` and the 3D picture draws the same HUD as 2D (`layoutHud`, one layout for both
+  backends; see `games/samples/platformer/picture3d.ts`).
+- Kit options (0.15): `game.json`'s `kitOptions: { "<kit>": { ... } }` is read by the kit's
+  `kinds(manifest)` and checked against its `options` schema (`unknown_option`, `bad_option`);
+  the top-down kit's `rooms: "separate"` checks each room file alone, for a game with several
+  challenge rooms rather than one dungeon (the platformer sample and the mini siege).
 - Browser (`main.ts`), from 0.7 for a game on a kit world: `bootBrowserGame` (`@engine/core/shell`)
   with `canvasDisplay` / `threeDisplay` and a `HostScene` drawing a `FramePicture` (see
   `games/platformer-lab/main.ts`). From 0.9, `pointer: true` adds mouse and touch gestures (tap,
@@ -187,9 +194,16 @@ export function createGame(content: ContentBundle, seed: number, opts?: Headless
   `mutants games/<game>` checks that every rule of the game's kit is guarded by some run file of
   the game, and lists a `uses` kit's unguarded rules.
 - Missions in a game (Engine 0.11; see `games/samples/mini-siege/headless.ts`): wrap the kit's
-  game in a `MissionHost` (`@engine/core/mission-host`) with `port: missionPort(world, { refs:
-scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `miniGames` and
-  `adapters: { 'mission-room': topdownMissionAdapter }` (`@kits/topdown`). The host is itself a
+  game in a `MissionHost` (`@engine/core/mission-host`) with `port: missionPort(world)`
+  (`@engine/sim/index`; since 0.15 it takes the world's own key table, `worldKeys`, and hands it
+  to the round, so params may name any keyed entity), the game's `missions`, its `miniGames` and
+  `adapters: { 'mission-room': topdownMissionAdapter }` (`@kits/topdown`). Since 0.15 a game may
+  extend `MissionHost` itself (the mini siege's `MiniSiegeGame`), an RTS game passes the kit's
+  `rtsMissionHooks(rts)` (`canOpen`, `onChange`) and builds its `RtsGame` on the sim's
+  `rtsWorldPort(world)`, the host puts `mission-open`, `mini-game-end` and `mission-commit` on its
+  `events` (`missionHostEvents` picks them out for a skin's sounds), `roundFrame()` names the
+  hosted mini game in `status.miniGame`, and `hostedSource(main, { round })`
+  (`@engine/core/present`) is the one picture that switches between the world and the round. The host is itself a
   `HeadlessGame` with `mission(step)` and `miniGame()`: while a round is hosted a step steps the
   round only (the world, the enemy and orders wait); otherwise it steps the game and commits due
   missions. An RTS page offers launches with the kit's `missionButtons(view)` and opens one with

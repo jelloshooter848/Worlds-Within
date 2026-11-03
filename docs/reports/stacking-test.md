@@ -1,5 +1,7 @@
 # The stacking test: gap report
 
+_Since Engine 0.15 the stacking test's game lives at `games/samples/platformer/` (Hopper's Way, the platformer kit's sample); this report keeps the old path `games/platformer-test/` where it describes the past._
+
 The stacking test ([ROADMAP, 0.7 The stacking test](../ROADMAP.md#07-the-stacking-test-done)) builds a
 small original platformer, `games/platformer-test/`, on the engine as it is, and shows it through
 both backends (2D sprites and 3D), with one level whose door pushes a top-down mini game over the

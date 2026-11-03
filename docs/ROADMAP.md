@@ -48,8 +48,8 @@ Within keeps its own version in its own folder.
    down.
 5. **The multi-genre layer** (0.8 to 0.13): the world simulation, the RTS kit, time and the mission
    contract, a mini siege that puts them together, the tower-defense kit, and heroes and consequences.
-6. **Tools and samples** (0.14 to 0.15): creator tools, and a finished sample game for every kit. At
-   0.15 the demo and the stacking-test game become samples, and their old folders go away.
+6. **Tools and samples** (0.14 to 0.15, done): creator tools, and a finished sample game for every
+   kit. At 0.15 the demo and the stacking-test game became samples, and their old folders went away.
 7. **Engine 1.0**: documented internal APIs (v1), complete agent docs, and every sample playable from
    a link.
 
@@ -61,7 +61,7 @@ release publishes each game in `games/` to GitHub Pages, so it can be played fro
 
 **Every release must keep the old ones working.** The demo, every test game and every sample stay
 playable, and their run files stay green, from the release that adds them onwards. When the demo and
-the stacking-test game become samples at 0.15, their run files move with them and must stay green.
+the stacking-test game became samples at 0.15, their run files moved with them and stayed green.
 
 ### Sample games
 
@@ -79,7 +79,8 @@ and never borrow its content. They have three jobs:
 Engine 1.0 requires five samples, all of them: a platformer level, a top-down dungeon, an RTS
 skirmish, a tower-defense map, and a **mini siege** that joins several genres through the world
 simulation (see 0.11). The platformer sample grows out of the stacking-test game (0.7) and the dungeon
-sample out of the demo; both move into `games/samples/` at 0.15.
+sample out of the demo; both moved into `games/samples/` at 0.15 (`games/samples/platformer/` and
+`games/samples/dungeon/`), so all five are there.
 
 Samples are games: they live under `games/`, and the dependency rule applies to them like any other
 game. The engine never imports from them.
@@ -676,7 +677,7 @@ mutants for a strict `uses` kit; the close-out's choices are items 258-259; the 
 
 ---
 
-## 0.15 The sample set
+## 0.15 The sample set (done)
 
 **Goal:** every gameplay kit has a small, finished sample game, ready for 1.0.
 
@@ -757,6 +758,25 @@ and `games/demo/` are gone, and the API review is
 written up with every change it calls for either made or listed for 1.0.
 
 **Out of scope:** new kits.
+
+_(Done. What was built, the choices made and how each item was checked are in
+[BUILD-LOG.md](BUILD-LOG.md#engine-015), with a summary of the whole 0.2-0.15 build for the owner
+at its top: the five samples (`games/samples/dungeon`, The Old Crypt; `platformer`, Hopper's Way,
+in 2D and 3D; `rts-skirmish`, The River Ford; `tower-defense`, The Winding Road; and the
+`mini-siege`) each play from the games index's link (`tests/browser/games-index.test.ts`, over a
+Pages-style build; nothing was published) and pass their run files in CI; `games/platformer-test/`
+and `games/demo/` are gone (moved in T2 with identical hashes); and the API review is
+[reports/api-review.md](reports/api-review.md): every 0.15 gap fixed with its commit, ten new
+findings A1-A10 (A1-A3, A9, A10 fixed in 0.15), and eleven items listed for 1.0 (`1.0-1` to
+`1.0-11`, in the Engine 1.0 section below). All 38 gaps assigned here are fixed
+([stacking test](reports/stacking-test.md), [mini siege](reports/mini-siege.md),
+[tower defense](reports/tower-defense.md)); the one smaller extra not built, M2's look for two
+tags at once, is `1.0-3`. Golden hashes moved only where decision 2 allowed (T8, T9, T11), each
+regenerated with the repo's tools and listed in the log.)_
+
+_(Decided before code, items 278-291: the folder moves, which tasks may move golden hashes, the
+shapes of all 38 gaps, what "finished" means for a sample, and the API review's form. Reasoning in
+[BUILD-LOG.md](BUILD-LOG.md#decisions); the smaller build choices are items 292-303.)_
 
 ---
 

@@ -87,8 +87,8 @@ result when it ends.
 - The engine ships no game content, only tiny fixtures for its own tests.
 - Each test game and sample game is also a worked example for LLM users and an integration test.
   Engine 1.0 requires a small sample game for every kit, plus a multi-genre sample (the mini siege),
-  in `games/samples/`. The first, `games/samples/rts-skirmish` (the RTS kit's, Engine 0.9), is
-  there; the rest arrive with their kits and at 0.15. The 1.0 API is documented as v1 for our own games only; a public API with a
+  in `games/samples/`. Since Engine 0.15 all five are there and finished: `dungeon` (top-down),
+  `platformer` (platformer, in 2D and 3D), `rts-skirmish`, `tower-defense` and `mini-siege`. The 1.0 API is documented as v1 for our own games only; a public API with a
   promise to outside developers comes later. Samples are games like any other: the engine never imports from them.
 
 ### 5. The dependency rule
@@ -179,9 +179,10 @@ engine/
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
 kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12), all built
 games/
-  samples/           engine sample games: rts-skirmish (0.9), mini-siege (0.11), tower-defense (0.12),
-                     dungeon (the old demo) and platformer (the 0.7 stacking test), both moved
-                     here in 0.15
+  samples/           engine sample games, all finished in 0.15: rts-skirmish (0.9), mini-siege
+                     (0.11), tower-defense (0.12), dungeon (the old demo) and platformer (the 0.7
+                     stacking test), both moved here in 0.15
+  platformer-lab/    the platformer kit's test lab (not a sample)
   worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
 docs/
 ```
@@ -238,6 +239,18 @@ docs/
   a code restores the next scenario's start world with the same hash as the run it came from.
   The mini siege proves it with "The dawn assault", which plays differently when its captain was
   taken in the siege.
+- **The sample set and the API review (0.15, built).** A finished sample per kit, each the
+  worked example an agent copies: original text art, MML music, run files in CI covering a win
+  and a loss, a browser test and a line in the games index. What the samples had copied moved
+  into the engine and kits: hosting a mission from a page (`MissionHost` events, one round
+  picture, the shell's `MissionLaunch` and mission bar for launch, play or delegate, the
+  campaign's briefing, result and save code), scenario keys kept beside the world (outside the
+  hashed snapshot) for mission params and keyed run checks, effects driven by a played round's
+  report within declared limits (refused, never clamped, when over), save codes by stable id,
+  frame taps as recorded input, a scene tick rate, stored volumes with the shell's volume
+  control, a skin's `background`, the HUD in 3D and `game.json` kit options. The review
+  (`docs/reports/api-review.md`) lists every module's entry points as kept, changed in 0.15 or
+  listed for 1.0, which is where the v1 API docs start.
 
 ## Open questions
 

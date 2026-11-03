@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 292.** (Last used: 291.)
+**Next unused number: 304.** (Last used: 303.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -1155,3 +1155,58 @@ built and Choices made)
 - **291.** The API review is `docs/reports/api-review.md`: every module's exported entry points,
   each kept, changed in 0.15 (with the commit) or listed for 1.0, every 0.15 gap with where it
   landed; D5 and D11 stay 1.0 documentation, listed as rules with no code change. OK?
+
+**Engine 0.15, smaller build choices** (T17; details in `docs/BUILD-LOG.md`, Engine 0.15, What
+was built and Choices made)
+
+- **292.** T5: the mini siege keeps its own battle step counter (`STEPS_PER_TICK`) rather than the
+  shell's scene `tickRate` (D2), because a scene stepped only on its ticks would drop the pointer
+  gestures of the loop steps between; the 3D display's `toClient` is the boot's canvas-box
+  fallback rather than a change in `threeDisplay`. OK? (The shared shape is listed for 1.0 as
+  `1.0-7`.)
+- **293.** T6: the "run file check of an event" (M21) is a test, `tests/runs/mission-events.test.ts`,
+  which plays `played` and `delegated` through the tools' run loop and checks the host's events on
+  the asserted game ticks, rather than a new run-file path into data that is never in the
+  snapshot; `canOpen` is asked before the host's own checks (a direct `open` of a committed rescue
+  is now `not_offered`); `onChange` is also called when a round's end resolves its mission. OK?
+- **294.** T7: D10's field is `build.cells: [{ entity, cell }]`, not `slot` (`build.slot` already
+  names the slot character); `world.id.<n>` and `world.one.<Kind>` were added beside
+  `world.key.<key>` for entities with no scenario key (trained units, the world-level
+  components); `no_waves` is judged by whether a `td-defence` mission names the map. OK?
+- **295.** T8: an `each` effect without a report applies its declared `entities` (none: nothing);
+  an `each` name that stands for no entity is left out unless `owner` is given (then it is over
+  the limit); limits are checked when the played result resolves, not at the commit; `endIf` is
+  on the siege's entry only (the dawn's hall falling still moves on to the ridge); only campaigns
+  and missions get stable id codes; save codes grew by about three characters (still under 40);
+  `dawn-code` keeps a version 1 code as the proof that v1 codes still read. OK?
+- **296.** T9: besides skipping frozen units (M20), the scripted enemy's `train` skips a frozen
+  building, so a plan gives no order at all to a held event (no sample trains at a frozen
+  building, so no hash depends on it). OK?
+- **297.** T10: the hold at tick 0 is on by default for every campaign entry (`hold: false` turns
+  it off); while held, a typed code or the stored save may still be used; a round's key hint uses
+  each action's first keyboard binding, so "give up" reads RIGHT SHIFT where the old string said
+  Backspace; the step hook's `replay` does not press Begin. OK?
+- **298.** T12: the dungeon's page boots through the shell's `bootBrowserGame` and its scene
+  reports the headless game, so the page's hashes are the run files'; the top-down snapshot's
+  type names are written out (`typeNameOf`) because the minified page build renamed
+  `constructor.name` (same names, no hash moved). OK?
+- **299.** T13: T4's 3D HUD was found uncommitted in a stash and committed with T13 (the stash is
+  left as it was, not dropped); for the platformer "replace placeholder art" meant removing every
+  fallback colour (the art was already original text pixel art and low-poly meshes from 0.7);
+  one song for the whole page (no round music); no new run file (the existing eight cover clears,
+  deaths and a failed round). OK?
+- **300.** T14: the RTS skirmish's win and loss rule is the sample's (it reads the view), not the
+  kit's; the event reader `RtsEventTracker` is a kit helper (two RTS games would write it), and
+  the mini siege was not moved onto it (it keeps its host events); the tower-defense sample keeps
+  its status-line end rather than a new banner (a shared end flow is `1.0-9`). OK?
+- **301.** T15: the review fixed A1-A3, A9 and A10 in its own commit (`mustSkinSet`, the dungeon
+  through `kitContentKinds`, the platformer glue's `test*` names renamed `hopper*`, the
+  skirmish's recorder on the core `stateHash`, `rtsScenario` in the RTS kit) and listed A4-A8
+  for 1.0 (`1.0-5` to `1.0-9`) as too large for the review's commit. OK?
+- **302.** T16: the "plays from a link" proof is a browser test over a real Pages-style build
+  (`VITE_BASE=/Worlds-Within/`, served as static files), following the games index's own links,
+  since nothing may be published during the build (answer 24). OK?
+- **303.** T17: the owner's summary at the top of `docs/BUILD-LOG.md` lists every feedback item
+  from 25 to 303 as awaiting an answer except those already answered by a later item (48 by 128,
+  81 by 158, 84 by 157); the root `package.json` version stays `0.0.0` (no release bump without a
+  tag). OK?
