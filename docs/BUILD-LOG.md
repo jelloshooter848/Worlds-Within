@@ -405,7 +405,8 @@ fails (exit 4). Recordings are frame input only (keys and pads); pointer taps st
 ### Choices made
 
 The decisions above are items 247-256; item 257 settled decision 8 for a strict `uses` kit (T5).
-The close-out's choices are items 258-259 ("Engine 0.14, close-out" in `FEEDBACK-LOG.md`):
+The builders' smaller choices are items 260-277 ("Engine 0.14, smaller build choices" in
+`FEEDBACK-LOG.md`). The close-out's choices are items 258-259 ("Engine 0.14, close-out"):
 
 - **The data-only scenario is the ridge camp** (item 258): a third entry of the mini siege's
   campaign rather than a scenario outside it, because a run file reaches a scenario only through
@@ -444,8 +445,10 @@ debugger at the failing tick with the failed check, the tick before and the time
 
 ### Done when
 
-Checked on 2026-11-03 on the tree of the close-out commit (on top of `909e239`): `pnpm lint &&
-pnpm typecheck && pnpm test && pnpm build` pass (189 test files, 2126 tests passed and 1 skipped:
+Checked on 2026-11-03 on the tree of the close-out commit (on top of `909e239`), and checked
+again in the finalize pass on top of `111a0d3` (2127 tests passed after the record fix's new
+test; every run file, `validate`, `docs:check` and both Done when proofs below as before):
+`pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass (189 test files, 2126 tests passed and 1 skipped:
 the opt-in every-tick save check of 0.8), `pnpm docs:check` says the generated docs are up to
 date, `pnpm -s cli validate` passes for all six games, and every one of the **50 run files** in
 the repo (13 sim fixtures, 1 demo, 7 lab, 7 platformer-test, 4 skirmish, 14 mini siege and 4
@@ -500,6 +503,21 @@ ran in headless Chromium, none skipped.
   `dawn-fresh`, `ridge-raid`); no pinned save code moved.
 - **No tag** (owner answer 24).
 
+### Fixes after the first close-out
+
+- `9172c8b`: item 257 now records why decision 8's literal reading (fail on every unguarded rule
+  of a strict `uses` kit) cannot pass yet: three tower-defense rules do nothing in the fortify
+  round as its data stands. The code keeps item 257's reading until the owner answers.
+- `c569365`: the debugger's `model.test.ts` timeline test and `trace.test.ts` get a 60 s timeout
+  (item 277); both replay the mini siege in full and timed out under a loaded full run.
+- `111a0d3`: `record --bot` drove the first round hosted in the run, so with an earlier round
+  (fortify's walls before sabotage) the plan was checked against the wrong bot. It now starts on
+  the first hosted tick after the target `play` step and stops when that round ends; a two-round
+  case is in `record.test.ts`.
+- The finalize pass: the checks, all 50 run files, `validate` for all six games and both Done when
+  proofs rerun green (`debug .../ridge-raid.run.json --tick 160 --check --json`: hash
+  `91b8badf8fc51139`, `matchesHeadless: true`); the smaller build choices are items 260-277.
+
 ### Deviations from the roadmap
 
 - **None in scope.** Both Done when items and both Scope bullets are met as above.
@@ -508,7 +526,12 @@ ran in headless Chromium, none skipped.
 - **Decision 3's exit code for `no_world`** is 3 (T7, as the task asked), not 2.
 - **Decision 6's `start: { stage }` is 0-based** as decided; the mini siege takes only
   `{ entry }` (no level sequence), refused `bad_start` otherwise.
-- **Feedback numbering:** T1's decisions are 247-256; T5 added 257; the close-out added 258-259.
+- **Feedback numbering:** T1's decisions are 247-256; T5 added 257; the close-out added 258-259;
+  the finalize pass added the smaller build choices, 260-277.
+- **Smaller departures from the written decisions** (each an item): the hook is `worldEvents`
+  (260), the RTS hooks live in the game's glue (262), `trace` has no `--events` yet (265), a bad
+  `start` is exit 3 (266), `?replay=` was not built (`__ww.replay(json)` instead, 269), and world
+  runs are not stepped in the debugger (273).
 
 ### Outstanding issues
 
@@ -521,7 +544,8 @@ ran in headless Chromium, none skipped.
   long rewinds re-simulate from tick 0 with every tick's record cached in the page.
 - **Mini siege gaps waiting in 0.15**: M31, M32, M34-M36, M38 and the 15 from 0.11, with the
   stacking test's G17, G33, G36 and the tower-defense lessons, for the sample set's API review.
-- Open owner decisions: items 247-259 in `FEEDBACK-LOG.md`.
+- **`trace --events`** (item 265) and a `?replay=` URL loader (item 269) are not built.
+- Open owner decisions: items 247-277 in `FEEDBACK-LOG.md`.
 
 ## Engine 0.13
 

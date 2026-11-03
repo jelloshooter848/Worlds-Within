@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 260.** (Last used: 259.)
+**Next unused number: 278.** (Last used: 277.)
 
 | #   | Item                                                  | Answer                                                                          |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
@@ -1033,3 +1033,69 @@ values, events? }` as a top-level array so the output cap cuts whole rows; a mis
   rather than fixed in the close-out: a stable index changes the code format (v2) and every pinned
   code. Until then a new mission's id must sort after the existing ones (the ridge camp's is
   `stores-raid`). OK?
+
+**Engine 0.14, smaller build choices** (details in `docs/BUILD-LOG.md`, Engine 0.14, What was
+built and Choices made)
+
+- **260.** The event-log hook is `worldEvents(sinceTick)`, not item 249's `events`, because a
+  hosted game already has an `events` field (its last step's draw events). Its result also carries
+  the world tick now, which the tools use to fill the timeline's clock. OK?
+- **261.** A game with no world hooks is `no_world`, exit 3 (a content error), not exit 2 as
+  decision 3 said. OK?
+- **262.** The RTS skirmish's world hooks are in the game's glue, not the kit's `RtsGame` as
+  decision 3 said, because the kit's world port is plain data and cannot reach the sim. OK?
+- **263.** The timeline also lists open missions (outcome null until committed) and the oldest
+  tick the log keeps (`logFrom`); frozen spans use decision 4's names `{ event, by, from, to }`.
+  OK?
+- **264.** G5: `virtual:game-files` is one default export (`import files from
+'virtual:game-files'`); the per-game names (`DEMO_FILES`, `LAB_FILES`, ...) are gone. The plugin
+  in `build/` walks folders with Node built-ins rather than importing the engine's reader (a test
+  checks both list the same files), and `config/layers.js` is unchanged: the virtual id counts as
+  an outside package no layer owns. OK?
+- **265.** G8: `trace` was built without item 251's `--events` (the event log was T7's work; it
+  can still be added). A missing path is listed as `{ path, firstTick, ticks }`, so a path that
+  disappears mid-run shows when. Rows are only the `--every` grid ticks; `to` is not added as an
+  extra row. OK, or add `--events` to `trace` in 0.15?
+- **266.** G9: a start the game cannot honour is a content error (exit 3, `no_start` /
+  `bad_start`), not a usage error as decision 6 said. Games list what they can start at with a new
+  optional `starts(content)` on the headless module. A fresh campaign entry is a save at that
+  entry with every earlier entry finished and nothing carried. OK?
+- **267.** G10: both `--from-file <path>` and `@path` work, with an optional `--transparent` (off
+  by default, so every cell is written as typed). A block starting with a real `@` is written
+  `\@`. `ruler` in JSON is the two ruler lines, not `true`. Ranges, rectangles, `--ruler` and
+  `paste` work only on `*.map.txt` grids (not sprite frames). OK?
+- **268.** `stateHash` moved to `engine/core` as a synchronous SHA-256 written in code (no
+  `node:crypto`), so the page and the CLI share one implementation. No hash moved and tests are
+  no slower. OK?
+- **269.** G31: item 255's `?replay=<run file>` URL parameter was not built (the page fetches no
+  files); a caller passes the run file's JSON to `window.__ww.replay(json)` instead. Replay works
+  only from tick 0 and refuses run files with `world`, `from`, `start` or disabled rules. OK, or
+  add the URL loader?
+- **270.** G31: on the RTS pages `__ww.tick` counts loop steps, not world ticks, so RTS run files
+  can be stepped through the hook but not replayed tick for tick. Pages whose scene wraps a
+  `HostScene` report a hash only where they forward `headless()` (the mini siege does, from M19).
+  OK?
+- **271.** M19: recording lives in `MissionHost`, so only mission rounds are recorded (rounds
+  hosted by the platformer kit's world are not). `record` refuses a recording made at a different
+  tick (exit 2), and `?record` also puts `window.__ww` on a normally running page so a person can
+  play and copy the recording. OK?
+- **272.** M19: `record --bot` takes the bot's plan as JSON (or `@file`) checked against a schema
+  the kit gives (new optional `KitDef.roundBots`); the top-down plan allows only plain-data steps
+  (fight, goto, pickup, chest, leave). `playRun` gained three optional hooks for it. OK?
+- **273.** The debugger does not step world runs (`debug` on one is a usage error pointing to
+  `dump --out`; its dump file opens read-only), narrowing decision 1's "a game's or a world's"
+  run files. OK, or should world runs be stepped in 0.15?
+- **274.** The debugger's job (files, seed, input, expected hashes) is built by the CLI and served
+  from memory on a GET-only route, instead of decision 1's file-reading endpoint; the page reads
+  no files. Rewind re-simulates from tick 0 and caches every tick's snapshot (memory grows with
+  run length). OK?
+- **275.** `debug --check` exits 4 when a replay does not reproduce its failure, or when a stored
+  hash differs before the failing tick (the page stops at the first mismatch). Passing `--tick`
+  other than a dump's own tick is a usage error. OK?
+- **276.** The timeline viewer's axis is game ticks (what the debugger steps); a world tick past
+  the recorded clock (a later window close, an open mission's commit) is drawn faint as
+  `projected`, as if the world moves one tick per game tick. It shows the record at the tick
+  shown, not the run's end. OK?
+- **277.** Three heavy test files set a 60 s test timeout (`world-data.test.ts`, the debugger's
+  `model.test.ts`, `trace.test.ts`), as in item 233: they replay the mini siege several times and
+  went over the 5 s default only under a loaded full run. OK?

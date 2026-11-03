@@ -672,7 +672,7 @@ _(Decided before code, items 247-256: where the debugger lives and what it reads
 rewinding by re-simulation, the event log and timeline hooks, the timeline record, `trace`, a
 run file's `start`, map rulers and region writes, per-kit rule ids, the page-side step hook and
 the round recorder. Reasoning in [BUILD-LOG.md](BUILD-LOG.md#decisions); item 257 settled per-kit
-mutants for a strict `uses` kit; the close-out's choices are items 258-259.)_
+mutants for a strict `uses` kit; the close-out's choices are items 258-259; the smaller build choices are items 260-277.)_
 
 ---
 
