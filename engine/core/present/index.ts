@@ -31,6 +31,7 @@ export {
 export { freezeFrame } from './freeze';
 export { RTS_MAX_ZOOM, RTS_MIN_ZOOM, RtsCamera, type RtsCameraOptions } from './rts-camera';
 export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
+export { hostedSource, type HostedPresentState, type HostedSourceOptions } from './hosted';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';
 export { presenterByStatus } from './switch';

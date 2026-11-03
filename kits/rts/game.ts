@@ -1,9 +1,9 @@
-import type { HeadlessGame, JsonObject } from '@engine/core/headless';
+import type { HeadlessGame, JsonObject, MissionStepRefusal } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { parseOrder, type Order } from '@engine/core/orders';
 import { Rng } from '@engine/core/rng';
 import { RuleSwitch } from '@engine/core/rules';
-import { stampOrder, type OrderDraft } from './commands';
+import { missionRequest, stampOrder, type OrderDraft } from './commands';
 import { ScriptedEnemy, type EnemyPlan } from './enemy';
 import { RTS_RULES } from './rules';
 import { readWorld, type RtsView } from './snapshot';
@@ -15,10 +15,10 @@ import { readWorld, type RtsView } from './snapshot';
  *
  *   // games/<game>/headless.ts (glue)
  *   const world = worldFromScenario(map);
- *   const game = rtsGame({
- *     world: { snapshot: () => world.snapshot(), applyOrder: (o) => applyOrder(world, o), step: () => world.step() },
- *     enemy: plan, seed, disabledRules: opts?.disabledRules,
- *   });
+ *   const game = rtsGame({ world: rtsWorldPort(world), enemy: plan, seed, disabledRules: opts?.disabledRules });
+ *
+ * (`rtsWorldPort` is `engine/sim`'s, Engine 0.15 T6, gap M27: the one bridge from a sim world to
+ * this port, typed by shape on the sim's side.)
  *
  * `RtsGame` is a `HeadlessGame` (`engine/core/headless.ts`), so `pnpm cli run` plays it:
  *
@@ -171,4 +171,30 @@ export class RtsGame implements HeadlessGame {
 /** A new {@link RtsGame} (see the file comment). */
 export function rtsGame(opts: RtsGameOptions): RtsGame {
   return new RtsGame(opts);
+}
+
+/** What `rtsMissionHooks` gives a mission host: its `MissionHostOptions.canOpen` and `onChange`. */
+export interface RtsMissionHooks {
+  canOpen(id: string): MissionStepRefusal | null;
+  onChange(): void;
+}
+
+/**
+ * The RTS kit's side of a `MissionHost` over an {@link RtsGame} (Engine 0.15 T6, gap M18): spread
+ * into the host's options, so the host and the kit's game are one object with no glue class.
+ * `canOpen` is the launch command's check (`missionRequest`): a mission the world gates behind
+ * opportunities, none of them offered now, is refused `not_offered` before the host asks the
+ * world. `onChange` is `game.refresh()`, so the kit's view reads the world again after a mission
+ * step changed it (an opportunity taken, an event frozen, a commit).
+ *
+ *   new MissionHost({ game: rts, port, missions, miniGames, adapters, ...rtsMissionHooks(rts) });
+ */
+export function rtsMissionHooks(game: RtsGame): RtsMissionHooks {
+  return {
+    canOpen: (id) =>
+      missionRequest(game.view(), id) === null
+        ? { code: 'not_offered', error: `mission "${id}" is not offered now` }
+        : null,
+    onChange: () => game.refresh(),
+  };
 }

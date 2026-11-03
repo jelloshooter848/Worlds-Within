@@ -29,7 +29,9 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 `controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders),
 `game` (`rtsGame`, `RtsGame`, a `HeadlessGame` with `order`, `issue`, `recorded`, `log` and
 `refresh`;
-`RtsWorldPort`), `rules` (`RTS_RULES`) and `schema` (the `rts-map`, `rts-types` and `rts-enemy`
+`RtsWorldPort`, filled by `engine/sim`'s `rtsWorldPort(world)`; and from Engine 0.15 T6, gap M18,
+`rtsMissionHooks(game)`, the `canOpen` (`not_offered`) and `onChange` (`refresh()`) a
+`MissionHost` over the game takes, so no glue wraps the two), `rules` (`RTS_RULES`) and `schema` (the `rts-map`, `rts-types` and `rts-enemy`
 content kinds). `kit.ts` exports `kit`, the hook the tools find by the name `rts`.
 
 ## Imports allowed

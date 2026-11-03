@@ -255,6 +255,7 @@ export {
   settleMissions,
 } from './mission';
 export { missionPort, roundSeed } from './mission-port';
+export { rtsWorldPort, type RtsPort } from './rts-port';
 export type {
   CommitResult,
   MissionRefusal,

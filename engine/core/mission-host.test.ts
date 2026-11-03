@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { HeadlessGame, JsonObject } from './headless';
 import { ScriptedInput } from './input/scripted-input';
 import type { MiniGameEnd } from './mission-adapter';
-import { MissionHost, type MissionWorldPort } from './mission-host';
+import { MissionHost, missionHostEvents, type MissionWorldPort } from './mission-host';
 import type { MiniGame, MiniGameDef } from './minigame';
-import type { MissionAdapter, MissionDef, MissionResult } from './missions';
+import type { MissionAdapter, MissionDef, MissionRecord, MissionResult } from './missions';
+import type { PresentFrame } from './present/types';
 
 // MissionHost (Engine 0.11 T5, items 172-174) over a fake port and a counting round: what it calls
 // on the port, when the game steps, and what the snapshot shows. The siege fixture over the real
@@ -40,6 +41,13 @@ const COUNT: MiniGameDef = {
       snapshot: () => ({ held, host: (ctx.hostStatus?.['mission'] as string) ?? null }),
       result: () => result,
       report: () => ({ held }),
+      present: (): PresentFrame => ({
+        frame: held,
+        size: { width: 16, height: 16 },
+        entities: [],
+        events: [],
+        status: { held },
+      }),
     };
   },
 };
@@ -297,5 +305,122 @@ describe('MissionHost', () => {
     });
     while (h.miniGame() !== null) h.step(idle);
     expect(h.roundRecordings()).toEqual([]);
+  });
+
+  it("adds its own events after the game's, per step, a step between steps shown with the next (gap M21)", () => {
+    const fake = fakePort();
+    const game: HeadlessGame & { events: unknown[] } = {
+      events: [{ type: 'kit-thing' }],
+      step: () => fake.port.step(),
+      snapshot: () => ({}),
+    };
+    const records: MissionRecord[] = [];
+    const port: MissionWorldPort = {
+      ...fake.port,
+      settle() {
+        const due = fake.port.settle();
+        for (const mission of due)
+          records.push({
+            mission,
+            outcome: 'won',
+            effects: [],
+            resolution: 'played',
+            openTick: 0,
+            commitTick: 5,
+            experienceTicks: 3,
+            skipped: [],
+          });
+        return due;
+      },
+      records: () => records,
+    };
+    const h = new MissionHost({
+      game,
+      port,
+      missions: [RAID],
+      miniGames: [COUNT],
+      adapters: { count: ADAPTER },
+    });
+    expect(h.events).toEqual([{ type: 'kit-thing' }]);
+    h.mission({ mission: 'raid', action: 'open' });
+    h.mission({ mission: 'raid', action: 'play', input: { steps: [{ frame: 0, hold: ['attack'] }] } });
+    expect(h.events).toEqual([{ type: 'kit-thing' }]);
+    h.step(idle);
+    expect(h.events).toEqual([
+      { type: 'kit-thing' },
+      { type: 'mission-open', mission: 'raid', play: 'count' },
+    ]);
+    h.step(idle);
+    expect(h.events).toEqual([{ type: 'kit-thing' }]);
+    h.step(idle);
+    expect(h.events).toEqual([
+      { type: 'kit-thing' },
+      { type: 'mini-game-end', mission: 'raid', game: 'count', result: 'pass' },
+    ]);
+    const seen: unknown[] = [];
+    for (let i = 0; i < 5; i++) {
+      h.step(idle);
+      seen.push(...h.events);
+    }
+    expect(missionHostEvents(seen)).toEqual([
+      { type: 'mission-commit', mission: 'raid', outcome: 'won', resolution: 'played' },
+    ]);
+    // Events are draw data: never in the snapshot.
+    expect(JSON.stringify(h.snapshot())).not.toContain('mission-commit');
+  });
+
+  it('commits without records when the port gives none: outcome and resolution null', () => {
+    const { h } = host();
+    h.launch('raid');
+    h.delegate('raid');
+    const seen: unknown[] = [];
+    for (let i = 0; i < 5; i++) {
+      h.step(idle);
+      seen.push(...h.events);
+    }
+    expect(seen).toEqual([
+      { type: 'mission-open', mission: 'raid', play: 'count' },
+      { type: 'mission-commit', mission: 'raid', outcome: null, resolution: null },
+    ]);
+    expect(missionHostEvents([{ type: 'kit-thing' }, null, 3, ...seen])).toEqual(seen);
+  });
+
+  it("names the hosted mini game on the round's frame, and has none without a round (gap D9)", () => {
+    const { h } = host();
+    expect(h.roundFrame()).toBeNull();
+    h.launch('raid');
+    h.play('raid');
+    expect(h.roundFrame()).toMatchObject({ frame: 0, status: { held: 0, miniGame: 'count' } });
+    for (let i = 0; i < 30 && h.miniGame() !== null; i++) h.step(idle);
+  });
+
+  it('asks canOpen first and calls onChange after every mission step and commit (gap M18)', () => {
+    const fake = fakePort();
+    let offered = false;
+    let changes = 0;
+    const h = new MissionHost({
+      port: fake.port,
+      missions: [RAID],
+      miniGames: [COUNT],
+      adapters: { count: ADAPTER },
+      canOpen: (id) =>
+        offered ? null : { code: 'not_offered', error: `mission "${id}" is not offered now` },
+      onChange: () => void changes++,
+    });
+    expect(h.mission({ mission: 'raid', action: 'open' })).toEqual({
+      code: 'not_offered',
+      error: 'mission "raid" is not offered now',
+    });
+    expect(fake.log).toEqual([]);
+    expect(changes).toBe(1);
+    offered = true;
+    expect(h.launch('raid')).toBeNull();
+    expect(h.delegate('raid')).toBeNull();
+    expect(changes).toBe(3);
+    for (let i = 0; i < 4; i++) h.step(idle);
+    expect(changes).toBe(3);
+    h.step(idle);
+    expect(fake.log.at(-1)).toBe('commit raid@5');
+    expect(changes).toBe(4);
   });
 });

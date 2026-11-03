@@ -19,7 +19,9 @@ import {
   type MiniGameDef,
   type MiniGameResult,
 } from './minigame';
-import type { MissionAdapter, MissionDef, MissionResult } from './missions';
+import type { MissionAdapter, MissionDef, MissionRecord, MissionResult } from './missions';
+import { MINI_GAME_STATUS } from './present/skin-set';
+import type { PresentEvent, PresentFrame } from './present/types';
 
 /**
  * Live mission hosting (Engine 0.11, items 172-174; docs/BUILD-LOG.md, Engine 0.11, decisions 1-3):
@@ -55,6 +57,18 @@ import type { MissionAdapter, MissionDef, MissionResult } from './missions';
  *   `round` is `{ mission, game, ticks, state, result, outcome, refused }`.
  * - Experience ticks (the round's own) are counted per mission (`missionExperience()`), never
  *   written to the world, as in world runs, so a played run's world matches a world run's.
+ * - **Events** (Engine 0.15 T6, gap M21): `events` is the hosted game's last step's events, then
+ *   the host's own for that step ({@link MissionHostEvent}: `mission-open`, `mini-game-end`,
+ *   `mission-commit`), plain objects a skin matches like a kit's (`mission-commit:outcome=both-burnt`).
+ *   One taken between steps (a mission opened by a run file's step or a page button) is in the
+ *   next step's events. Never in the snapshot: no hash moves.
+ * - **The round's frame** (gap D9): `roundFrame()` is the hosted round's own frame with
+ *   `status.miniGame` set to the mini game it is, so a skin set picks the round's skin; the core's
+ *   `hostedSource` (`present/hosted.ts`, gap M6) switches a game's picture to it.
+ * - **The kit's game in one** (gap M18): the options `canOpen(id)` (a refusal before the port
+ *   opens it: the RTS kit's `not_offered`) and `onChange()` (after every mission step and every
+ *   step that commits), which the RTS kit's `rtsMissionHooks(game)` gives for an `RtsGame`, so no
+ *   glue wraps the host and the kit's game in a class of its own.
  */
 
 /** A port call refused by the world: the sim's code and a one-line reason. */
@@ -89,6 +103,11 @@ export interface MissionWorldPort {
    * host's own experience count per played mission given in `experience`. Reads only.
    */
   timeline?(experience: readonly { mission: string; ticks: number }[]): JsonObject;
+  /**
+   * Optional (Engine 0.15 T6): the world's committed mission records in commit order (`missionsOf
+   * (world).committed()` in `engine/sim`), for the host's `mission-commit` events. Reads only.
+   */
+  records?(): readonly MissionRecord[];
 }
 
 /** What a `MissionHost` is built from. */
@@ -107,6 +126,48 @@ export interface MissionHostOptions {
    * starts; `mission` (the mission's title) is always there.
    */
   hostStatus?(): Readonly<Record<string, unknown>>;
+  /**
+   * Optional (Engine 0.15 T6, gap M18): asked first when a mission is opened (a `launch`, a run
+   * file's `open`), before the host's own checks; a refusal stops it there (the RTS kit's `not_offered` while no
+   * opportunity offers it: `rtsMissionHooks`).
+   */
+  canOpen?(id: string): MissionStepRefusal | null;
+  /**
+   * Optional (Engine 0.15 T6, gap M18): called after every mission step (taken or refused) and
+   * after every step that committed a mission, when the world changed outside the hosted game's
+   * own step (the RTS kit's `RtsGame.refresh()`: `rtsMissionHooks`).
+   */
+  onChange?(): void;
+}
+
+/** The host's own events (gap M21): plain objects, matched by skins like a kit's events. */
+export type MissionHostEvent =
+  | { type: typeof MISSION_OPEN; mission: string; play: string | null }
+  | { type: typeof MINI_GAME_END; mission: string; game: string; result: MiniGameResult }
+  | { type: typeof MISSION_COMMIT; mission: string; outcome: string | null; resolution: string | null };
+
+/** A mission was opened: `{ mission, play }` (`play` null for a choice with no round). */
+export const MISSION_OPEN = 'mission-open';
+/** A hosted round ended: `{ mission, game, result }` (`result` `pass`, `fail` or `quit`). */
+export const MINI_GAME_END = 'mini-game-end';
+/** A mission committed: `{ mission, outcome, resolution }` (both null when the port gives no records). */
+export const MISSION_COMMIT = 'mission-commit';
+
+const HOST_EVENT_TYPES: readonly string[] = [MISSION_OPEN, MINI_GAME_END, MISSION_COMMIT];
+
+/**
+ * The host's own events among a step's events (`MissionHost.events` also holds the hosted game's),
+ * as present events for a frame: what `hostedSource`'s `events` option takes for a mission host.
+ */
+export function missionHostEvents(events: readonly unknown[]): PresentEvent[] {
+  return events
+    .filter(
+      (e): e is MissionHostEvent =>
+        e !== null &&
+        typeof e === 'object' &&
+        HOST_EVENT_TYPES.includes((e as { type?: unknown }).type as string),
+    )
+    .map((e) => ({ ...e }));
 }
 
 /** The refusal of a step taken while a round is being played. */
@@ -151,6 +212,9 @@ export class MissionHost implements HostedGame<MissionHost> {
   private steps = 0;
   private recording = false;
   private readonly recorded: { mission: string; tick: number; round: HostedRound }[] = [];
+  /** The host's events of the last step, and those taken since (shown with the next step). */
+  private stepEvents: MissionHostEvent[] = [];
+  private nextEvents: MissionHostEvent[] = [];
   /** The world's event log (`HeadlessGame.worldEvents`), when the port gives it. Reads only. */
   readonly worldEvents?: (sinceTick: number) => WorldEvents;
   /** The world's timeline record with the rounds' experience (`HeadlessGame.timeline`), when the port gives it. */
@@ -177,10 +241,27 @@ export class MissionHost implements HostedGame<MissionHost> {
     return this;
   }
 
-  /** The hosted game's last step's events (`[]` when it keeps none). */
+  /**
+   * The last step's events: the hosted game's (none when it keeps none), then the host's own
+   * ({@link MissionHostEvent}), oldest first.
+   */
   get events(): readonly unknown[] {
     const events = (this.game as { events?: unknown } | null)?.events;
-    return Array.isArray(events) ? (events as unknown[]) : [];
+    const game = Array.isArray(events) ? (events as unknown[]) : [];
+    return this.stepEvents.length === 0 ? game : [...game, ...this.stepEvents];
+  }
+
+  /**
+   * The hosted round's frame (gap D9): its own `present()` with `status.miniGame` set to the mini
+   * game it is (the open mission's `play`), or null while no round is hosted or the round does not
+   * present.
+   */
+  roundFrame(): PresentFrame | null {
+    const round = this.hosted;
+    if (round === null || round.game.present === undefined) return null;
+    const frame = round.game.present();
+    frame.status[MINI_GAME_STATUS] = round.mission.play ?? '';
+    return frame;
   }
 
   /** The round hosted now, or null (the shell's `HostScene` pushes its scene). */
@@ -196,6 +277,8 @@ export class MissionHost implements HostedGame<MissionHost> {
   step(input: InputFrame): void {
     this.steps++;
     this.ended = null;
+    this.stepEvents = this.nextEvents;
+    this.nextEvents = [];
     const round = this.hosted;
     if (round !== null) {
       this.stepRound(round, input);
@@ -203,10 +286,21 @@ export class MissionHost implements HostedGame<MissionHost> {
     }
     if (this.game !== null) this.game.step(input);
     else this.port.step();
-    for (const id of this.port.settle()) {
+    const committed = this.port.settle();
+    if (committed.length === 0) return;
+    const records = this.port.records?.() ?? [];
+    for (const id of committed) {
       this.opened.delete(id);
       this.committed.add(id);
+      const record = records.find((r) => r.mission === id);
+      this.stepEvents.push({
+        type: MISSION_COMMIT,
+        mission: id,
+        outcome: record?.outcome ?? null,
+        resolution: record?.resolution ?? null,
+      });
     }
+    this.opts.onChange?.();
   }
 
   snapshot(): JsonObject {
@@ -260,33 +354,48 @@ export class MissionHost implements HostedGame<MissionHost> {
     }
   }
 
-  /** Opens mission `id` now (the live path's launch, and a run file's `open`). */
+  /**
+   * Opens mission `id` now (the live path's launch, and a run file's `open`), once the option
+   * `canOpen` lets it.
+   */
   launch(id: string): MissionStepRefusal | null {
+    return this.changed(this.open(id));
+  }
+
+  private open(id: string): MissionStepRefusal | null {
+    // The kit's check comes first, as the kit's launch command made it before (`not_offered`).
+    const refused = this.opts.canOpen?.(id) ?? null;
+    if (refused !== null) return refused;
     if (this.hosted !== null) return this.roundHosted();
     const def = this.defs.get(id);
     if (def === undefined) return this.unknown(id);
     const opened = this.port.open(def);
     if (!opened.ok) return refusal(opened.code, opened.error);
     this.opened.set(id, { def, snapshot: opened.snapshot, seed: opened.seed, resolved: false });
+    this.nextEvents.push({ type: MISSION_OPEN, mission: id, play: def.play ?? null });
     return null;
+  }
+
+  /** Calls the option `onChange` after a mission step; returns the step's answer. */
+  private changed(answer: MissionStepRefusal | null): MissionStepRefusal | null {
+    this.opts.onChange?.();
+    return answer;
   }
 
   /** Delegates open mission `id`: the world draws its outcome; it commits at its commit tick. */
   delegate(id: string): MissionStepRefusal | null {
-    if (this.hosted !== null) return this.roundHosted();
-    if (!this.defs.has(id)) return this.unknown(id);
-    const done = this.port.delegate(id);
-    if (!done.ok) return refusal(done.code, done.error);
-    const open = this.opened.get(id);
-    if (open) open.resolved = true;
-    return null;
+    return this.changed(this.resolveBy('delegate', id));
   }
 
   /** Quits open mission `id` without playing a round: its `onQuit` outcome. */
   quit(id: string): MissionStepRefusal | null {
+    return this.changed(this.resolveBy('quit', id));
+  }
+
+  private resolveBy(how: 'delegate' | 'quit', id: string): MissionStepRefusal | null {
     if (this.hosted !== null) return this.roundHosted();
     if (!this.defs.has(id)) return this.unknown(id);
-    const done = this.port.quit(id);
+    const done = how === 'delegate' ? this.port.delegate(id) : this.port.quit(id);
     if (!done.ok) return refusal(done.code, done.error);
     const open = this.opened.get(id);
     if (open) open.resolved = true;
@@ -300,6 +409,10 @@ export class MissionHost implements HostedGame<MissionHost> {
    * host's frames.
    */
   play(id: string, script?: InputScript): MissionStepRefusal | null {
+    return this.changed(this.start(id, script));
+  }
+
+  private start(id: string, script?: InputScript): MissionStepRefusal | null {
     if (this.hosted !== null) return this.roundHosted();
     const def = this.defs.get(id);
     if (def === undefined) return this.unknown(id);
@@ -395,6 +508,7 @@ export class MissionHost implements HostedGame<MissionHost> {
     this.hosted = null;
     this.ended = round;
     const id = round.mission.id;
+    this.stepEvents.push({ type: MINI_GAME_END, mission: id, game: round.mission.play ?? '', result });
     const end: MiniGameEnd = {
       result,
       report: round.game.report ? round.game.report() : null,
@@ -413,6 +527,7 @@ export class MissionHost implements HostedGame<MissionHost> {
     round.outcome = mapped.result.outcome;
     const open = this.opened.get(id);
     if (open) open.resolved = true;
+    this.opts.onChange?.();
   }
 
   private roundHosted(): MissionStepRefusal {

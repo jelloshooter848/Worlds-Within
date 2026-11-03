@@ -58,7 +58,9 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   `foe:catapult`) and `canvas2d-td-defence.json` (the walls' round: towers, raiders, shots,
   cursor, ghost, tiles, `td-*` sounds), `content/sfx/`, `content/songs/siege.json`.
 - `picture.ts`: `siegeLook`, `siegeFrames` / `siegePicture` / `siegeCanvasPicture` (the battle's
-  frames or the hosted round's, with `mission-open`, `mini-game-end` and `mission-commit` events).
+  frames or the hosted round's through the core's `hostedSource` and the host's `roundFrame()`,
+  with the host's `mission-open`, `mini-game-end` and `mission-commit` events; Engine 0.15 T6,
+  gaps M6, M21 and D9).
 - `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`.
 - `play.ts`: `SiegePlay` (launch buttons, play or delegate choice, the battle at 10 ticks a second,
   the round at 60, taps in the walls' round as frame input the round reads itself (Engine 0.15,
@@ -77,8 +79,10 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   `missions/fortify.mission.json` (cost 30, the `td-defence` params: walls, budget, wave and
   rules; outcomes `held-cheap`, `held`, `held-bloodied`, `overrun` with their effects and weights)
   and `defence/` (the walls' `td-map`, `td-towers` `archers` and `ballista`, the map's `td-waves`).
-- `headless.ts`: `createGame(content, seed, opts?)` (a `MiniSiegeGame`: a `MissionHost` over the
-  kit's `rtsGame`, `open` through the kit's `launchMission`; snapshot `{ world, kit, missions?,
+- `headless.ts`: `createGame(content, seed, opts?)` (a `MiniSiegeGame`: since Engine 0.15 T6 a
+  `MissionHost` itself (it extends it, gap M18) over the kit's `rtsGame` on the sim's
+  `rtsWorldPort` (gap M27), with the kit's `rtsMissionHooks` (`open` refused `not_offered`, the
+  view refreshed); the sim world is `sim`; snapshot `{ world, kit, missions?,
 sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `campaignSave()`
   gives the save if the entry played now ended now; Engine 0.14 T7: `worldEvents(sinceTick)` and
   `timeline()`, the world's event log and timeline record, for `pnpm cli events` and `timeline`), `siegeCampaignPlace`, `miniGames(content)`

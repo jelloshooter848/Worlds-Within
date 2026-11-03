@@ -18,8 +18,14 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
   const look = siegeLook(content);
   const frames = siegeFrames(content);
   let picture: { r: Parameters<ViewGame['render']>[0]; p: SiegePicture } | null = null;
+  // The host's events since the last draw (its mission events, gap M21), for the skins' sounds.
+  const events: unknown[] = [];
+  const take = () => events.splice(0);
   return {
-    step: (input) => game.step(input),
+    step: (input) => {
+      game.step(input);
+      events.push(...game.events);
+    },
     snapshot: () => game.snapshot(),
     order: (order) => game.order(order),
     mission: (step) => game.mission(step),
@@ -28,8 +34,8 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
     screen: look.screen,
     render(r) {
       if (picture?.r !== r) picture = { r, p: siegeCanvasPicture(r, content, look) };
-      picture.p.draw(game, []);
+      picture.p.draw(game, take());
     },
-    frame: () => frames.next(game, []),
+    frame: () => frames.next(game, take()),
   };
 }

@@ -32,6 +32,10 @@ Import from `@engine/core/present` (`index.ts`).
 - `MapTracker`: `next(map)` gives the full map on the first frame and when its id or version
   changes, else `{ id, version }`; `reset()`. `isFullMap(map)` tells the two apart.
 - `presentFrameSchema`: Zod schema for a frame, for tests and tools.
+- `hostedSource(main, { round, events? })` (`hosted.ts`, Engine 0.15 T6, gap M6): one round
+  picture for any game hosting rounds: the game's own source's frames (`status.miniGame` '') or,
+  while `round(world)` gives one, the hosted round's frame (`MissionHost.roundFrame()`, named by
+  the host, gap D9), with the host's events added (`missionHostEvents`, gap M21).
 - Skins (`skin.ts`): `skinSchema` and the `skin` content kind (`SKIN_KIND`, one of the engine's
   kinds), a per-backend JSON file mapping each entity kind to a sprite (2D) or mesh (3D), each tile
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file

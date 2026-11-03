@@ -3,6 +3,7 @@ import type { MissionWorldPort } from '../core/mission-host';
 import { Rng } from '../core/rng';
 import {
   delegateMission,
+  missionsOf,
   missionSnapshot,
   openMission,
   playMission,
@@ -21,7 +22,8 @@ import type { Entity, World } from './world';
  * `Rng.derived(world.seed, "round:<id>").next()`, fixed by the seed and the mission id alone (it
  * never draws from `world.rng`); `play` is `playMission` with the result's report; `settle` is
  * `settleMissions` (the ids committed); `snapshot` and `step` are the world's; `events` and
- * `timeline` (Engine 0.14 T7) are `eventsSince` and `worldTimeline`. Refusals keep the sim's codes.
+ * `timeline` (Engine 0.14 T7) are `eventsSince` and `worldTimeline`; `records` (Engine 0.15 T6) is
+ * `missionsOf(world).committed()`, read by the host for its `mission-commit` events. Refusals keep the sim's codes.
  */
 export function missionPort(
   world: World,
@@ -48,6 +50,7 @@ export function missionPort(
     step: () => world.step(),
     events: (sinceTick) => eventsSince(world, sinceTick),
     timeline: (experience) => worldTimeline(world, { experience }) as unknown as JsonObject,
+    records: () => missionsOf(world).committed(),
   };
 }
 

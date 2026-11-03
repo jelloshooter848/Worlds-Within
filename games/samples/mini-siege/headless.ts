@@ -13,31 +13,26 @@ import type { CarriedRecord, CarryFrom } from '@engine/core/carried';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import {
   rulesOffFor,
-  type HeadlessGame,
   type HeadlessOptions,
   type HeadlessStarts,
   type JsonObject,
-  type MissionStepRefusal,
-  type RoundRecording,
   type RunStart,
-  type WorldEvents,
 } from '@engine/core/headless';
-import type { InputFrame } from '@engine/core/input/input-manager';
-import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
-import { MissionHost } from '@engine/core/mission-host';
+import type { MiniGameDef } from '@engine/core/minigame';
+import { MissionHost, type MissionHostOptions } from '@engine/core/mission-host';
 import type { MissionRecord } from '@engine/core/missions';
 import {
-  applyOrder,
   carriedRecord,
   fateOf,
   missionPort,
   Missions,
+  rtsWorldPort,
   scenarioKeys,
   stockpileOf,
   worldFromScenario,
   type World,
 } from '@engine/sim/index';
-import { launchMission, rtsGame, sidesOf, type RtsGame } from '@kits/rts';
+import { rtsGame, rtsMissionHooks, sidesOf, type RtsGame } from '@kits/rts';
 import { MISSION_ROOM, missionRoom, topdownMissionAdapter } from '@kits/topdown';
 import { TD_DEFENCE, tdDefence, towerdefenseMissionAdapter } from '@kits/towerdefense';
 import {
@@ -55,9 +50,9 @@ import {
 
 /**
  * The mini siege's headless entry (named by `headless` in `game.json`): thin glue joining an
- * `engine/sim` world built from the map, the RTS kit's `rtsGame` (the raiders' plan), and the
- * engine's `MissionHost` with the sim's `missionPort` and two data-driven mini games with their
- * adapters: the topdown kit's mission room (`mission-room`, the sabotage) and the towerdefense
+ * `engine/sim` world built from the map, the RTS kit's `rtsGame` (the raiders' plan; its world the
+ * sim's `rtsWorldPort`, gap M27), and the engine's `MissionHost` with the sim's `missionPort`, the
+ * kit's `rtsMissionHooks` (gap M18) and two data-driven mini games with their adapters: the topdown kit's mission room (`mission-room`, the sabotage) and the towerdefense
  * kit's `td-defence` (the fortify mission on the walls). No rules here: the battle is the sim's, the plan and the
  * mission are data, the round and its mapping are the kits'.
  */
@@ -120,83 +115,50 @@ export interface NamedSummary {
   fate?: string;
 }
 
+/** What the mini siege keeps beside its mission host: the world, the kit's game, keys and campaign. */
+export interface MiniSiegeParts {
+  /** The `engine/sim` world (the host's `world` is the host itself, for the shell). */
+  readonly sim: World;
+  readonly rts: RtsGame;
+  /** The scenario's keys and their entity ids. */
+  readonly keys: Readonly<Record<string, number>>;
+  /** The factions `sides` always lists: the player's and the raiders'. */
+  readonly factions: readonly string[];
+  /** Where the game is in its campaign (Engine 0.13 T7). */
+  readonly campaign: SiegeCampaignPlace;
+}
+
 /**
- * The game the tools play: the `MissionHost` over the kit's `RtsGame`. A run file's `open` goes
- * through the kit's launch command (`launchMission`: refused `not_offered` while no opportunity
- * offers it), the other mission steps and orders straight to the host. The snapshot is the host's
- * (`{ world, kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named`: every keyed
- * scenario entity with `alive`, `x`, `y` and `hp`, so a run file can check `named.ram.alive`.
+ * The game the tools play: the engine's `MissionHost` over the kit's `RtsGame` (Engine 0.15 T6,
+ * gap M18: the host itself, no wrapper). Its options carry the RTS kit's `rtsMissionHooks`, so a
+ * run file's `open` (and the page's launch) is refused `not_offered` while no opportunity offers
+ * the mission, and the kit's view is refreshed after every mission step and commit. The host gives
+ * every `HeadlessGame` hook (orders, mission steps, experience, the world's events and timeline,
+ * recorded rounds) and its mission events (gap M21); this class adds only what reads the mini
+ * siege's world: the snapshot is the host's (`{ world, kit, missions? }`) plus `sides` (the kit's
+ * `sidesOf`) and `named` (every keyed scenario entity with `alive`, `x`, `y` and `hp`, so a run
+ * file can check `named.ram.alive`), and the campaign save.
  */
-export class MiniSiegeGame implements HeadlessGame {
-  constructor(
-    readonly world: World,
-    readonly rts: RtsGame,
-    readonly host: MissionHost,
-    /** The scenario's keys and their entity ids. */
-    readonly keys: Readonly<Record<string, number>>,
-    /** The factions `sides` always lists: the player's and the raiders'. */
-    readonly factions: readonly string[],
-    /** Where the game is in its campaign (Engine 0.13 T7). */
-    readonly campaign: SiegeCampaignPlace,
-  ) {}
+export class MiniSiegeGame extends MissionHost {
+  readonly sim: World;
+  readonly rts: RtsGame;
+  readonly keys: Readonly<Record<string, number>>;
+  readonly factions: readonly string[];
+  readonly campaign: SiegeCampaignPlace;
 
-  step(input: InputFrame): void {
-    this.host.step(input);
-  }
-
-  order(order: JsonObject): string | null {
-    return this.host.order(order);
-  }
-
-  mission(step: JsonObject): MissionStepRefusal | null {
-    let refused: MissionStepRefusal | null;
-    if (step['action'] === 'open' && typeof step['mission'] === 'string') {
-      const launched = launchMission(this.rts.view(), step['mission'], this.host);
-      refused = launched.ok ? null : { code: launched.code, error: launched.error };
-    } else refused = this.host.mission(step);
-    this.rts.refresh();
-    return refused;
-  }
-
-  missionExperience(): { mission: string; ticks: number }[] {
-    return this.host.missionExperience();
-  }
-
-  /**
-   * The world's event log from world tick `sinceTick` (`HeadlessGame.worldEvents`, Engine 0.14
-   * T7): the host's, through the sim's `missionPort`. Never part of the snapshot (no hash moves).
-   */
-  worldEvents(sinceTick: number): WorldEvents {
-    return this.host.worldEvents!(sinceTick);
-  }
-
-  /** The world's timeline record now, with the played rounds' experience (`HeadlessGame.timeline`). */
-  timeline(): JsonObject {
-    return this.host.timeline!();
-  }
-
-  /**
-   * Records every mission round's input from now on (`HeadlessGame.recordRounds`, Engine 0.14 T9,
-   * gap M19): the host's. The page's `?record` and `pnpm cli record --bot` use it.
-   */
-  recordRounds(on: boolean): void {
-    this.host.recordRounds(on);
-  }
-
-  /** The rounds recorded so far (`HeadlessGame.roundRecordings`): the host's. */
-  roundRecordings(): RoundRecording[] {
-    return this.host.roundRecordings();
-  }
-
-  /** The mission round hosted now, or null. */
-  miniGame(): MiniGame | null {
-    return this.host.miniGame();
+  constructor(parts: MiniSiegeParts, host: MissionHostOptions) {
+    super(host);
+    this.sim = parts.sim;
+    this.rts = parts.rts;
+    this.keys = parts.keys;
+    this.factions = parts.factions;
+    this.campaign = parts.campaign;
   }
 
   /** The world's committed mission records, in commit order (the page's commit sound reads them). */
   records(): readonly MissionRecord[] {
-    const holder = this.world.query(Missions)[0];
-    return holder === undefined ? [] : (this.world.get(holder, Missions)?.committed ?? []);
+    const holder = this.sim.query(Missions)[0];
+    return holder === undefined ? [] : (this.sim.get(holder, Missions)?.committed ?? []);
   }
 
   /**
@@ -218,8 +180,8 @@ export class MiniSiegeGame implements HeadlessGame {
     if (next !== null) {
       // A carried faction with no stockpile left (the hall fell, as in the fortify runs) cannot
       // be carried: the engine refuses the record, so there is no save here (gap M31).
-      if (next.carry.stockpiles.some((s) => stockpileOf(this.world, s.faction) === null)) return null;
-      carried = carriedRecord(this.world, next, this.keys);
+      if (next.carry.stockpiles.some((s) => stockpileOf(this.sim, s.faction) === null)) return null;
+      carried = carriedRecord(this.sim, next, this.keys);
     }
     const advanced = advanceCampaign(def, save, { missions, carried });
     if (!advanced.ok) throw new Error(`the mini siege's campaign save: ${advanced.error}`);
@@ -230,12 +192,10 @@ export class MiniSiegeGame implements HeadlessGame {
   named(): Record<string, NamedSummary> {
     const named: Record<string, NamedSummary> = {};
     for (const [key, id] of Object.entries(this.keys)) {
-      const exists = this.world.alive(id);
-      const fate = exists ? fateOf(this.world, id) : null;
-      const at = exists
-        ? (this.world.get(id, 'Position') as { x: number; y: number } | undefined)
-        : undefined;
-      const health = exists ? (this.world.get(id, 'Health') as { hp: number } | undefined) : undefined;
+      const exists = this.sim.alive(id);
+      const fate = exists ? fateOf(this.sim, id) : null;
+      const at = exists ? (this.sim.get(id, 'Position') as { x: number; y: number } | undefined) : undefined;
+      const health = exists ? (this.sim.get(id, 'Health') as { hp: number } | undefined) : undefined;
       const summary: NamedSummary = {
         alive: exists && fate?.state !== 'dead',
         x: at?.x ?? null,
@@ -248,9 +208,9 @@ export class MiniSiegeGame implements HeadlessGame {
     return named;
   }
 
-  snapshot(): JsonObject {
+  override snapshot(): JsonObject {
     return {
-      ...this.host.snapshot(),
+      ...super.snapshot(),
       sides: sidesOf(this.rts.view(), this.factions) as unknown as JsonObject,
       named: this.named() as unknown as JsonObject,
     };
@@ -319,25 +279,16 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
   );
   const keys = scenarioKeys(scenario);
   const enemy = siegeEnemy(content);
-  const rts = rtsGame({
-    world: {
-      snapshot: () => world.snapshot(),
-      applyOrder: (o) => {
-        const r = applyOrder(world, o);
-        return r.ok ? { ok: true } : { ok: false, error: r.error };
-      },
-      step: () => world.step(),
+  const rts = rtsGame({ world: rtsWorldPort(world), enemy, seed, disabledRules: opts.disabledRules });
+  return new MiniSiegeGame(
+    { sim: world, rts, keys, factions: [PLAYER, enemy.faction], campaign: place },
+    {
+      game: rts,
+      port: missionPort(world, { refs: keys }),
+      missions: siegeMissions(content),
+      miniGames: miniGames(content, opts),
+      adapters: ADAPTERS,
+      ...rtsMissionHooks(rts),
     },
-    enemy,
-    seed,
-    disabledRules: opts.disabledRules,
-  });
-  const host = new MissionHost({
-    game: rts,
-    port: missionPort(world, { refs: keys }),
-    missions: siegeMissions(content),
-    miniGames: miniGames(content, opts),
-    adapters: ADAPTERS,
-  });
-  return new MiniSiegeGame(world, rts, host, keys, [PLAYER, enemy.faction], place);
+  );
 }

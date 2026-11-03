@@ -109,7 +109,12 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   round's seed `roundSeed(seed, id)`, `Rng.derived(seed, "round:<id>").next()`; `delegate`,
   `play` with the result's report, `quit`, `settle` = `settleMissions`, `snapshot`, `step`), so a
   game's glue fills it with one call. Refusals keep the sim's codes. From Engine 0.14 T7 it also
-  gives `events` (`eventsSince`) and `timeline` (`worldTimeline` with the host's experience).
+  gives `events` (`eventsSince`) and `timeline` (`worldTimeline` with the host's experience), and
+  from Engine 0.15 T6 `records` (the committed records, for the host's `mission-commit` events).
+- The RTS kit's port (`rts-port.ts`, Engine 0.15 T6, gap M27): `rtsWorldPort(world)` is the
+  kit's `RtsWorldPort` over a world (`snapshot`, `applyOrder` keeping only the refusal's `error`,
+  `step`), typed by shape (`RtsPort`) since the sim may not import the kit:
+  `rtsGame({ world: rtsWorldPort(world), enemy, seed })`.
 - Opportunities (`opportunity.ts`, Engine 0.10 T5): windows of world ticks in which a mission can
   be taken (`OpportunityDef` `{ id, mission, opens, closes, exclusive?, closesOthers?, relative? }`
   and `opportunitySchema` from `engine/core/missions.ts`; offered while `opens <= tick < closes`).

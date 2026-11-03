@@ -9,7 +9,7 @@ import { playMissionRound } from '@engine/core/mission-adapter';
 import { MissionHost } from '@engine/core/mission-host';
 import type { MissionDef } from '@engine/core/missions';
 import {
-  applyOrder,
+  rtsWorldPort,
   missionPort,
   missionsOf,
   scenarioKeys,
@@ -65,11 +65,7 @@ const raidAdapter = () => topdownMissionAdapter;
 function siegeHost(): { world: World; host: MissionHost } {
   const world = worldFromScenario(SCENARIO);
   const game = rtsGame({
-    world: {
-      snapshot: () => world.snapshot(),
-      applyOrder: (order) => applyOrder(world, order),
-      step: () => world.step(),
-    },
+    world: rtsWorldPort(world),
     seed: 7,
   });
   const host = new MissionHost({

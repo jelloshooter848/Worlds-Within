@@ -160,6 +160,7 @@ describe('the page glue, headless', () => {
     expect(p.frames.at(-1)!.status[MINI_GAME_STATUS]).toBe('');
     expect(p.frames.at(-1)!.events).toContainEqual({
       type: 'mini-game-end',
+      mission: 'sabotage',
       game: 'mission-room',
       result: 'pass',
     });
@@ -224,6 +225,7 @@ describe('the page glue, headless', () => {
     expect(p.stack.depth).toBe(1);
     expect(p.frames.at(-1)!.events).toContainEqual({
       type: 'mini-game-end',
+      mission: 'fortify',
       game: 'td-defence',
       result: 'pass',
     });

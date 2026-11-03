@@ -1,7 +1,7 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessGame, HeadlessOptions, JsonObject, WorldEvents } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import { applyOrder, eventsSince, worldFromScenario, worldTimeline, type World } from '@engine/sim/index';
+import { eventsSince, rtsWorldPort, worldFromScenario, worldTimeline, type World } from '@engine/sim/index';
 import { rtsGame, sidesOf, type RtsGame, type SideSummary } from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
 import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
@@ -83,14 +83,7 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
   const enemy = skirmishEnemy(content);
   return new SkirmishGame(
     rtsGame({
-      world: {
-        snapshot: () => world.snapshot(),
-        applyOrder: (o) => {
-          const r = applyOrder(world, o);
-          return r.ok ? { ok: true } : { ok: false, error: r.error };
-        },
-        step: () => world.step(),
-      },
+      world: rtsWorldPort(world),
       enemy,
       seed,
       disabledRules: opts.disabledRules,

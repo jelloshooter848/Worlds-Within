@@ -341,10 +341,31 @@ state, result, outcome, refused } }` only while a round is hosted and on the tic
   written to the world, as in world runs, so the world after a played round is the world a run
   that resolved the same result at the open tick has (tested).
 - The round's `hostStatus` gets `mission` (the mission's title) and the option's values.
+- **Events** (Engine 0.15 T6, gap M21; docs/BUILD-LOG.md, Engine 0.15, decision 7, item 284):
+  `events` is the hosted game's last step's events, then the host's own for that step
+  (`MissionHostEvent`, plain objects): `mission-open` `{ mission, play }` (`play` null for a
+  choice), `mini-game-end` `{ mission, game, result }` and `mission-commit` `{ mission, outcome,
+resolution }` (read from the port's optional `records()`, which `missionPort` fills; both null
+  without it), matched by skins like a kit's (`mini-game-end:pass`,
+  `mission-commit:outcome=both-burnt`). A mission opened between steps (a run file's step, a
+  page button) is in the next step's events. `missionHostEvents(events)` picks them out as present
+  events. Never in the snapshot, so no hash moves.
+- **The round's frame** (gap D9): `roundFrame()` is the hosted round's `present()` with
+  `status.miniGame` (`MINI_GAME_STATUS`) set to the mission's `play`, or null; the core's
+  `present/hosted.ts` `hostedSource` (gap M6) shows it in place of the game's own frame, so no
+  page reads `playing` for the picture (the getter stays, for tools and key hints).
+- **The kit's game in one** (gap M18): the options `canOpen(id)` (asked first when a mission is
+  opened; its refusal is the step's) and `onChange()` (after every mission step, taken or
+  refused, after a round's end resolves and after every step that commits). The RTS kit's
+  `rtsMissionHooks(game)` gives both for an `RtsGame` (`not_offered`, `refresh()`), so a game
+  extends or builds a `MissionHost` without a wrapper class (the mini siege's `MiniSiegeGame`
+  extends it).
 
 Tested in `mission-host.test.ts` (a fake port) and, over the siege fixture with the real sim, the
 RTS kit and the topdown kit's mission room (Engine 0.11 T7), `tests/kits/mission-host.test.ts` (outside the
-layers, like `mission-adapter.test.ts`). Pure in practice; not on `PURE_CORE` (no kit or sim file
+layers, like `mission-adapter.test.ts`); Engine 0.15 T6's events, round frame, `canOpen` and
+`onChange` in `mission-host.test.ts`, and the mini siege's events played through the tools' run
+loop in `tests/runs/mission-events.test.ts`. Pure in practice; not on `PURE_CORE` (no kit or sim file
 imports it at run time; `engine/sim` imports only its types).
 
 `rts-types.ts` (Engine 0.9 T8, item 131) is the RTS unit and building type table as plain JSON

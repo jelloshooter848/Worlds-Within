@@ -64,8 +64,8 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
     first: entity 1 is the terrain, 2 the types, then the map's entities in file order),
     `skirmishSkin`, `PLAYER` (`red`).
   - `headless.ts`: `createWorld(content, seed)` (`worldFromScenario`), `createGame(content, seed,
-opts?)`: the kit's `rtsGame` with the world behind its port (`applyOrder`, `step`,
-    `snapshot`), the enemy plan and the switched-off rules, wrapped in `SkirmishGame`. Its
+opts?)`: the kit's `rtsGame` with the world behind its port (`engine/sim`'s
+    `rtsWorldPort(world)`, the one bridge since Engine 0.15 T6, gap M27), the enemy plan and the switched-off rules, wrapped in `SkirmishGame`. Its
     `order` takes a recorded order or an interface action (below); its snapshot is the kit's
     `{ world, kit }` plus `sides` (the kit's `sidesOf`, re-exported here; it moved to the kit in
     Engine 0.11 T8: per faction `units`, `unitTypes`, finished

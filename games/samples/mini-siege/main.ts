@@ -115,7 +115,7 @@ if (booted && play) {
     choice: () => scene.choice(),
     playing: () => scene.game.miniGame() !== null,
     outcomes: () => scene.records().map((r) => r.outcome),
-    miniGame: () => (scene.game.miniGame() === null ? '' : (scene.game.host.playing?.play ?? '')),
+    miniGame: () => (scene.game.miniGame() === null ? '' : (scene.game.playing?.play ?? '')),
     round: () => (scene.game.miniGame()?.snapshot()['kit'] as JsonObject | undefined) ?? null,
     scenario: () => scene.scenario,
     ended: () => scene.ended(),
@@ -194,7 +194,7 @@ const ROUND_HINTS: Record<string, string> = {
 };
 
 function statusText(scene: SiegePlay): string {
-  if (scene.game.miniGame() !== null) return ROUND_HINTS[scene.game.host.playing?.play ?? ''] ?? '';
+  if (scene.game.miniGame() !== null) return ROUND_HINTS[scene.game.playing?.play ?? ''] ?? '';
   const sides = scene.sides();
   const record = scene.records().at(-1);
   const hall = scene.game.named()['hall'];

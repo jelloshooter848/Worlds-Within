@@ -78,7 +78,13 @@ event?, marker? }`; a `MissionDef` fits).
   bar's mission button, `launchMission` above), `placing(view)` (sized from the world's
   types) and `presentOptions(view)` (`selection`, `box`, `placing`, `camera` for `presentWorld`).
 - `game.ts`: the headless adapter. `RtsWorldPort { snapshot(), applyOrder(order), step() }` is
-  what the game's glue fills with an `engine/sim` world (the kit never imports the sim).
+  what the game's glue fills with an `engine/sim` world (the kit never imports the sim): since
+  Engine 0.15 T6 (gap M27) with `engine/sim`'s `rtsWorldPort(world)`, the one bridge, typed by
+  shape on the sim's side (`tests/kits/rts-sim.test.ts` checks the two fit).
+  `rtsMissionHooks(game)` (Engine 0.15 T6, gap M18) gives a `MissionHost`'s options `canOpen`
+  (`missionRequest`: `not_offered` while no opportunity offers the mission) and `onChange`
+  (`refresh()`), so a host over an `RtsGame` needs no wrapper (the mini siege spreads them into
+  its host's options).
   `rtsGame({ world, enemy?, seed, disabledRules? })` gives an `RtsGame`, a `HeadlessGame`:
   `order(json)` (a recorded order, applied at once), `issue(draft)` (the player's command, stamped
   with the next id), `step()` (the enemy thinks and its orders are applied, then the world
@@ -88,7 +94,8 @@ event?, marker? }`; a `MissionDef` fits).
   refusal). Ids count up across both sides in the order applied; a recorded order keeps its id
   and moves the counter past it, so replaying the player's orders gives the enemy the same ids.
   The view is cached until the next order or step: after a `MissionHost` launch (or any change
-  made outside the port between steps) the glue calls `refresh()` before reading `view()` again.
+  made outside the port between steps) `refresh()` is called before reading `view()` again (by
+  the host's `onChange`, through `rtsMissionHooks`).
 - `schema.ts`: the content kinds (below). `rules.ts`: `RTS_RULES`. `kit.ts`: the hook.
 
 ## Kit hook (`kit.ts`)

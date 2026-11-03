@@ -72,6 +72,28 @@ from D15), or in a new report for a sample that has none.
   the pointer gestures of the steps between (its rounds already step every loop step); the 3D
   display's `toClient` is the boot's fallback rather than a change in `threeDisplay`. No golden
   hash moved.
+- **The mission hosting API** (T6, decision 7): M6, M18, M21, D9 and M27 fixed. `MissionHost`
+  puts its own events after the hosted game's on `events`, per step (`mission-open`,
+  `mini-game-end` with `mission`, `game` and `result`, `mission-commit` with `outcome` and
+  `resolution` from the port's new optional `records()`, which `missionPort` fills; a step taken
+  between steps is in the next step's events; `missionHostEvents` picks them out), and
+  `roundFrame()` is the hosted round's frame with `status.miniGame` set (D9).
+  `engine/core/present/hosted.ts`'s `hostedSource(main, { round, events? })` is the one round
+  picture (M6). `MissionHostOptions` gains `canOpen(id)` and `onChange()`, and the RTS kit's
+  `rtsMissionHooks(game)` gives both for an `RtsGame` (M18). `engine/sim`'s `rtsWorldPort(world)`
+  (`rts-port.ts`, typed by shape as `RtsPort`; `tests/kits/rts-sim.test.ts` checks it against the
+  kit's `RtsWorldPort` both ways) replaces the copies in both samples and the kit tests (M27).
+  The mini siege's `MiniSiegeGame` now extends `MissionHost` (its world is `sim`), its frame diff
+  and battle-or-round switch are gone (`siegeSource` is `hostedSource` over the kit's
+  `presentWorld`), and its page and view hand the host's events to the picture. Choices: the
+  "run file check of an event" is `tests/runs/mission-events.test.ts`, which plays `played` and
+  `delegated` through the tools' run loop (`playRun` with `prepare` and `onTick`) and checks the
+  events' game ticks with the golden hashes, rather than a new run-file path into data that is
+  never in the snapshot; `canOpen` is asked before the host's own checks, so every refusal code
+  the old wrapper gave stays the same (a direct `open` of a committed rescue is now `not_offered`,
+  and the test reads the sim's `mission_committed` through the port); `onChange` is also called
+  when a round's end resolves its mission; `MissionHost.playing` stays for the page's key hints
+  (D14 is T10's). No layer arrow changed and no golden hash moved.
 
 ### Planned tasks
 

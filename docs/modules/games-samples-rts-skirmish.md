@@ -18,7 +18,8 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes.
 - `content/`: `maps/skirmish.world.json` (`rts-map`), `types/skirmish.json` (`rts-types`),
   `enemy/raiders.json` (`rts-enemy`), `sprites/skirmish.txt` and `skirmish-font.txt`,
   `palettes/skirmish.json` and `skirmish-blue.json`, `skins/canvas2d.json`.
-- `headless.ts`: `createGame(content, seed, opts?)` (a `SkirmishGame`: the kit's `rtsGame`, taking
+- `headless.ts`: `createGame(content, seed, opts?)` (a `SkirmishGame`: the kit's `rtsGame` on
+  the sim's `rtsWorldPort(world)` (Engine 0.15 T6, gap M27), taking
   recorded orders and interface actions; snapshot `{ world, kit, sides, ui }`; Engine 0.14 T7:
   `worldEvents(sinceTick)` and `timeline()` over its world), `createWorld`,
   `sidesOf` (the kit's, re-exported).

@@ -7,7 +7,14 @@ import { presentFrameSchema } from '@engine/core/present';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { MissionHost } from '@engine/core/mission-host';
 import type { MissionDef } from '@engine/core/missions';
-import { applyOrder, missionPort, missionsOf, scenarioKeys, worldFromScenario } from '@engine/sim/index';
+import {
+  missionPort,
+  missionsOf,
+  rtsWorldPort,
+  scenarioKeys,
+  worldFromScenario,
+  type RtsPort,
+} from '@engine/sim/index';
 import {
   commandAt,
   enemyPlanSchema,
@@ -19,6 +26,7 @@ import {
   Selection,
   trainCommand,
   type RtsGame,
+  type RtsWorldPort,
 } from '@kits/rts';
 
 // The RTS kit driven over a real engine/sim world, as a game's glue will drive it (Engine 0.9 T10).
@@ -47,14 +55,7 @@ const PLAN = enemyPlanSchema.parse({
 function game(seed: number): RtsGame {
   const world = worldFromScenario(SCENARIO);
   return rtsGame({
-    world: {
-      snapshot: () => world.snapshot(),
-      applyOrder: (o) => {
-        const r = applyOrder(world, o);
-        return r.ok ? { ok: true } : { ok: false, error: r.error };
-      },
-      step: () => world.step(),
-    },
+    world: rtsWorldPort(world),
     enemy: PLAN,
     seed,
   });
@@ -62,6 +63,22 @@ function game(seed: number): RtsGame {
 
 const hash = (g: RtsGame) =>
   createHash('sha256').update(canonicalJson(g.snapshot())).digest('hex').slice(0, 16);
+
+describe("engine/sim's rtsWorldPort (gap M27)", () => {
+  it("is the RTS kit's RtsWorldPort by shape, both ways, and carries out orders, refusals and steps", () => {
+    const world = worldFromScenario(SCENARIO);
+    // The sim may not import the kit (nor the kit the sim): the two types meet only here.
+    const port: RtsWorldPort = rtsWorldPort(world);
+    const back: RtsPort = port;
+    expect(back.snapshot()).toEqual(world.snapshot());
+    expect(port.applyOrder({ id: 1, faction: 'red', type: 'stop', units: [5] })).toEqual({ ok: true });
+    const refused = port.applyOrder({ id: 2, faction: 'red', type: 'stop', units: [999] });
+    expect(refused.ok).toBe(false);
+    expect(refused.ok ? '' : refused.error).toMatch(/^order 2:/);
+    port.step();
+    expect(world.tick).toBe(1);
+  });
+});
 
 describe('kits/rts over an engine/sim world', () => {
   it('plays a battle from commands and the scripted enemy, presents every tick, and replays to the same hashes', () => {
@@ -133,14 +150,7 @@ const NO_INPUT = new ScriptedInput({ steps: [] });
 function siege() {
   const world = worldFromScenario(SIEGE);
   const rts = rtsGame({
-    world: {
-      snapshot: () => world.snapshot(),
-      applyOrder: (o) => {
-        const r = applyOrder(world, o);
-        return r.ok ? { ok: true } : { ok: false, error: r.error };
-      },
-      step: () => world.step(),
-    },
+    world: rtsWorldPort(world),
     seed: 7,
   });
   const host = new MissionHost({

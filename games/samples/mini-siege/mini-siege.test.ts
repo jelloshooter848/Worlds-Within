@@ -97,8 +97,8 @@ function play(
 function battleByWorldTick(name: string, until = COMMIT): Map<number, Record<string, NamedSummary>> {
   const out = new Map<number, Record<string, NamedSummary>>();
   play(name, (game) => {
-    if (game.miniGame() !== null || game.world.tick > until) return;
-    out.set(game.world.tick, game.named());
+    if (game.miniGame() !== null || game.sim.tick > until) return;
+    out.set(game.sim.tick, game.named());
   });
   return out;
 }
@@ -225,7 +225,7 @@ describe('launching the mission', () => {
   it('is refused by the kit until the opportunity is offered, and by the sim once it is open', () => {
     const game = createGame(content, SEED);
     expect(game.mission({ mission: 'sabotage', action: 'open' })).toMatchObject({ code: 'not_offered' });
-    while (game.world.tick < 20) game.step(NO_INPUT);
+    while (game.sim.tick < 20) game.step(NO_INPUT);
     expect(game.rts.view().missions.offered.map((o) => o.mission)).toEqual(['fortify', 'sabotage']);
     expect(game.mission({ mission: 'sabotage', action: 'open' })).toBeNull();
     expect(game.rts.view().missions.frozen).toEqual(['siege']);
@@ -236,7 +236,7 @@ describe('launching the mission', () => {
 
   it('refuses orders while the round is played', () => {
     const game = createGame(content, SEED);
-    while (game.world.tick < OPEN) game.step(NO_INPUT);
+    while (game.sim.tick < OPEN) game.step(NO_INPUT);
     game.mission({ mission: 'sabotage', action: 'open' });
     game.mission({ mission: 'sabotage', action: 'play' });
     expect(game.miniGame()).not.toBeNull();
@@ -279,16 +279,16 @@ describe('the two paths (decision 12)', () => {
     expect(quit.missionExperience()).toEqual([{ mission: 'sabotage', ticks: 1 }]);
     expect(delegated.missionExperience()).toEqual([]);
     for (const game of [played, quit, delegated])
-      expect(missionsOf(game.world).record('sabotage')).toMatchObject({ openTick: OPEN, commitTick: COMMIT });
-    expect(missionsOf(played.world).record('sabotage')).toMatchObject({
+      expect(missionsOf(game.sim).record('sabotage')).toMatchObject({ openTick: OPEN, commitTick: COMMIT });
+    expect(missionsOf(played.sim).record('sabotage')).toMatchObject({
       outcome: 'both-burnt',
       resolution: 'played',
     });
-    expect(missionsOf(delegated.world).record('sabotage')).toMatchObject({
+    expect(missionsOf(delegated.sim).record('sabotage')).toMatchObject({
       outcome: 'ram-burnt',
       resolution: 'delegated',
     });
-    expect(missionsOf(quit.world).record('sabotage')).toMatchObject({
+    expect(missionsOf(quit.sim).record('sabotage')).toMatchObject({
       outcome: 'driven-off',
       resolution: 'quit',
     });
@@ -301,19 +301,19 @@ describe('the two paths (decision 12)', () => {
 
   it('steps the world after the round as a world that resolved the same result at the open tick (decision 3)', () => {
     const played = play('played');
-    const report = missionsOf(played.world).record('sabotage')!.report!;
+    const report = missionsOf(played.sim).record('sabotage')!.report!;
     // A fresh game given the played round's result through the world's port at the open tick,
     // with no round in between: the raiders' plan reads only the world, so from there the two
     // worlds must step alike to the end.
     const fresh = createGame(content, SEED);
-    while (fresh.world.tick < OPEN) fresh.step(NO_INPUT);
+    while (fresh.sim.tick < OPEN) fresh.step(NO_INPUT);
     expect(fresh.mission({ mission: 'sabotage', action: 'open' })).toBeNull();
-    const port = missionPort(fresh.world, { refs: fresh.keys });
+    const port = missionPort(fresh.sim, { refs: fresh.keys });
     expect(
       port.play('sabotage', { mission: 'sabotage', outcome: report.outcome, effects: [], report }).ok,
     ).toBe(true);
-    while (fresh.world.tick < played.world.tick) fresh.step(NO_INPUT);
-    expect(hash(fresh.world.snapshot())).toBe(hash(played.world.snapshot()));
+    while (fresh.sim.tick < played.sim.tick) fresh.step(NO_INPUT);
+    expect(hash(fresh.sim.snapshot())).toBe(hash(played.sim.snapshot()));
   });
 
   it('gives the same hashes on every run', () => {
@@ -328,15 +328,15 @@ describe('the two paths (decision 12)', () => {
 describe('the preparation phase: the fortify mission on the walls (Engine 0.12 T7)', () => {
   it('is offered before the raid, and while it is open the siege is held for the sabotage too', () => {
     const game = createGame(content, SEED);
-    while (game.world.tick < 5) game.step(NO_INPUT);
+    while (game.sim.tick < 5) game.step(NO_INPUT);
     expect(game.rts.view().missions.offered.map((o) => o.mission)).toEqual(['fortify']);
     expect(game.mission({ mission: 'fortify', action: 'open' })).toBeNull();
     expect(game.rts.view().missions.frozen).toEqual(['siege']);
-    while (game.world.tick < 30) game.step(NO_INPUT);
+    while (game.sim.tick < 30) game.step(NO_INPUT);
     // The siege is the fortify mission's: the sabotage cannot open on it until fortify commits.
     expect(game.mission({ mission: 'sabotage', action: 'open' })).not.toBeNull();
     expect(game.mission({ mission: 'fortify', action: 'delegate' })).toBeNull();
-    while (game.world.tick < 36) game.step(NO_INPUT);
+    while (game.sim.tick < 36) game.step(NO_INPUT);
     expect(game.rts.view().missions.offered.map((o) => o.mission)).toEqual(['sabotage']);
     expect(game.mission({ mission: 'sabotage', action: 'open' })).toBeNull();
   });
@@ -368,7 +368,7 @@ describe('the preparation phase: the fortify mission on the walls (Engine 0.12 T
     const delegated = play('fortify-delegated');
     expect(played.missionExperience()).toEqual([{ mission: 'fortify', ticks: 116 }]);
     expect(delegated.missionExperience()).toEqual([]);
-    const played40 = missionsOf(played.world).record('fortify')!;
+    const played40 = missionsOf(played.sim).record('fortify')!;
     expect(played40).toMatchObject({
       outcome: 'held-cheap',
       resolution: 'played',
@@ -377,7 +377,7 @@ describe('the preparation phase: the fortify mission on the walls (Engine 0.12 T
     });
     // The round spent 40 on two archers; `held-cheap` declares 40, so the world loses the same.
     expect(played40.report?.stats).toMatchObject({ spent: 40, leaked: 0, placed: { archers: 2 } });
-    expect(missionsOf(delegated.world).record('fortify')).toMatchObject({
+    expect(missionsOf(delegated.sim).record('fortify')).toMatchObject({
       outcome: 'overrun',
       resolution: 'delegated',
       openTick: FORTIFY_OPEN,
@@ -387,8 +387,8 @@ describe('the preparation phase: the fortify mission on the walls (Engine 0.12 T
     const atCommit = (name: string) => {
       let seen: { gold: number; named: Record<string, NamedSummary> } | null = null;
       play(name, (game) => {
-        if (seen !== null || game.miniGame() !== null || game.world.tick !== FORTIFY_COMMIT) return;
-        const stock = game.world.get(game.keys['hall']!, 'Inventory') as { gold: number };
+        if (seen !== null || game.miniGame() !== null || game.sim.tick !== FORTIFY_COMMIT) return;
+        const stock = game.sim.get(game.keys['hall']!, 'Inventory') as { gold: number };
         seen = { gold: stock.gold, named: game.named() };
       });
       return seen!;
@@ -408,16 +408,16 @@ describe('the preparation phase: the fortify mission on the walls (Engine 0.12 T
 
   it('steps the world after the round as a world that resolved the same result at the open tick (decision 3)', () => {
     const played = play('fortify-played');
-    const report = missionsOf(played.world).record('fortify')!.report!;
+    const report = missionsOf(played.sim).record('fortify')!.report!;
     const fresh = createGame(content, SEED);
-    while (fresh.world.tick < FORTIFY_OPEN) fresh.step(NO_INPUT);
+    while (fresh.sim.tick < FORTIFY_OPEN) fresh.step(NO_INPUT);
     expect(fresh.mission({ mission: 'fortify', action: 'open' })).toBeNull();
-    const port = missionPort(fresh.world, { refs: fresh.keys });
+    const port = missionPort(fresh.sim, { refs: fresh.keys });
     expect(
       port.play('fortify', { mission: 'fortify', outcome: report.outcome, effects: [], report }).ok,
     ).toBe(true);
-    while (fresh.world.tick < played.world.tick) fresh.step(NO_INPUT);
-    expect(hash(fresh.world.snapshot())).toBe(hash(played.world.snapshot()));
+    while (fresh.sim.tick < played.sim.tick) fresh.step(NO_INPUT);
+    expect(hash(fresh.sim.snapshot())).toBe(hash(played.sim.snapshot()));
   });
 
   it('gives the same hashes on every run', () => {
@@ -436,7 +436,7 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
   const OPP = (game: MiniSiegeGame) =>
     Object.fromEntries(
       (
-        game.world.snapshot().components['Opportunities']![0]![1] as {
+        game.sim.snapshot().components['Opportunities']![0]![1] as {
           list: { def: { id: string }; status: string }[];
         }
       ).list.map((o) => [o.def.id, o.status]),
@@ -580,12 +580,12 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     const rescue = play('dawn-rescue');
     const exchange = play('dawn-exchange');
     const leave = play('dawn-leave');
-    expect(missionsOf(rescue.world).record('rescue-captain')).toMatchObject({
+    expect(missionsOf(rescue.sim).record('rescue-captain')).toMatchObject({
       outcome: 'freed',
       resolution: 'delegated',
     });
-    expect(missionsOf(exchange.world).record('exchange-captain')).toMatchObject({ outcome: 'paid' });
-    expect(missionsOf(leave.world).record('leave-captain')).toMatchObject({ outcome: 'left', effects: [] });
+    expect(missionsOf(exchange.sim).record('exchange-captain')).toMatchObject({ outcome: 'paid' });
+    expect(missionsOf(leave.sim).record('leave-captain')).toMatchObject({ outcome: 'left', effects: [] });
     expect(OPP(rescue)).toMatchObject({
       'rescue-window': 'taken',
       'exchange-window': 'closed',
@@ -611,13 +611,13 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     const game = play(
       'dawn-rescue-failed',
       (g) => {
-        if (atCommit === null && missionsOf(g.world).status('rescue-captain') === 'committed')
-          atCommit = canonicalJson(missionsOf(g.world).record('rescue-captain') as unknown as JsonObject);
+        if (atCommit === null && missionsOf(g.sim).status('rescue-captain') === 'committed')
+          atCommit = canonicalJson(missionsOf(g.sim).record('rescue-captain') as unknown as JsonObject);
       },
       refused,
     );
     // Played and given up at once (the run file checks the round started the sergeant on 5 half hearts).
-    expect(missionsOf(game.world).record('rescue-captain')).toMatchObject({
+    expect(missionsOf(game.sim).record('rescue-captain')).toMatchObject({
       outcome: 'failed',
       resolution: 'quit',
     });
@@ -626,7 +626,7 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     ]);
     expect(OPP(game)).toMatchObject({ 'rescue-window': 'taken', 'ransom-window': 'taken' });
     expect(
-      missionsOf(game.world)
+      missionsOf(game.sim)
         .committed()
         .map((r) => [r.mission, r.outcome]),
     ).toEqual([
@@ -634,10 +634,15 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
       ['ransom-captain', 'paid'],
     ]);
     // The committed record never changed after its commit, and the sim refuses a second go too.
-    expect(canonicalJson(missionsOf(game.world).record('rescue-captain') as unknown as JsonObject)).toBe(
+    expect(canonicalJson(missionsOf(game.sim).record('rescue-captain') as unknown as JsonObject)).toBe(
       atCommit,
     );
-    expect(game.host.mission({ mission: 'rescue-captain', action: 'open' })).toMatchObject({
+    expect(game.mission({ mission: 'rescue-captain', action: 'open' })).toMatchObject({
+      code: 'not_offered',
+    });
+    const rescue = siegeMissions(content).find((m) => m.id === 'rescue-captain')!;
+    expect(missionPort(game.sim, { refs: game.keys }).open(rescue)).toMatchObject({
+      ok: false,
       code: 'mission_committed',
     });
     expect(game.named()['sergeant']).toMatchObject({ fate: 'dead' });

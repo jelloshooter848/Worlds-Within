@@ -131,7 +131,13 @@ port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGam
   `roundRecordings()` (optional `HeadlessGame` hooks) record each round started from then on:
   `{ mission, tick, ticks, done, input }`, `input` the round's held keys from frame 0
   (`RoundInput.source()` through an `InputRecorder`), `tick` its `play` step's game tick, so the
-  recording is a run file's `play` input (`pnpm cli record`).
+  recording is a run file's `play` input (`pnpm cli record`). From Engine 0.15 T6 (decision 7):
+  its own events after the game's on `events`, per step (`mission-open` `{ mission, play }`,
+  `mini-game-end` `{ mission, game, result }`, `mission-commit` `{ mission, outcome, resolution }`,
+  the last read from the port's optional `records()`; never in the snapshot; `missionHostEvents`
+  picks them out; gap M21), `roundFrame()` (the hosted round's frame with `status.miniGame` set,
+  gap D9; `present/hosted.ts`'s `hostedSource` shows it, gap M6), and the options `canOpen(id)`
+  and `onChange()` (gap M18; the RTS kit's `rtsMissionHooks(game)` gives both for an `RtsGame`).
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine

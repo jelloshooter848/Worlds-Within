@@ -123,6 +123,8 @@ export class SiegePlay {
   private waiting: string | null = null;
   private steps = 0;
   private result: SiegeEntryResult | null = null;
+  /** The host's events of the game step this loop step took (none when it took none). */
+  private stepped: readonly unknown[] = [];
 
   constructor(private readonly opts: SiegePlayOptions) {
     this.session = new CampaignSession(saveCodeContext(opts.content), siegeCampaign(opts.content));
@@ -233,12 +235,13 @@ export class SiegePlay {
 
   /** One loop step (`HostScene` calls it, and so does the round's scene while it is on top). */
   update(input: InputFrame): void {
+    this.stepped = [];
     const playing = this.game;
     for (const b of this.pressed.splice(0)) this.button(b);
     if (this.game !== playing) return; // a new entry starts at its tick 0 on the next step
     const gestures = this.opts.pointer?.gestures() ?? [];
     if (this.game.miniGame() !== null) {
-      this.game.step(input); // the round reads the frame's keys and taps
+      this.step(input); // the round reads the frame's keys and taps
       return;
     }
     if (this.waiting !== null || this.result !== null) return;
@@ -247,8 +250,14 @@ export class SiegePlay {
       if (draft !== null) this.message = this.game.rts.issue(draft).error ?? '';
     }
     if (++this.steps % this.stepsPerTick !== 0) return;
-    this.game.step(input);
+    this.step(input);
     if (this.tick >= this.entryTicks && this.view().missions.open.length === 0) this.endEntry();
+  }
+
+  /** One game step, keeping its events (the host's mission events, gap M21) for the frame. */
+  private step(input: InputFrame): void {
+    this.game.step(input);
+    this.stepped = this.game.events;
   }
 
   /** The entry played now ends: its result, its save stored and its code packed. */
@@ -300,13 +309,14 @@ export class SiegePlay {
    */
   scene(
     stack: SceneStack,
-    picture: (r: Renderer) => HostDrawer<MiniSiegeGame, never>,
-  ): HostScene<MiniSiegeGame, never> {
-    return new HostScene<MiniSiegeGame, never>({
+    picture: (r: Renderer) => HostDrawer<MiniSiegeGame, unknown>,
+  ): HostScene<MiniSiegeGame, unknown> {
+    return new HostScene<MiniSiegeGame, unknown>({
       stack,
       step: (input) => this.update(input),
       world: () => this.game,
-      events: () => [],
+      // Only a loop step that stepped the game has events: the battle steps every few loop steps.
+      events: () => this.stepped,
       miniGame: () => this.game.miniGame(),
       headless: () => this.game,
       picture,

@@ -67,7 +67,13 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `settleMissions`, `missionsOf`, `missionSnapshot` (see "Missions" below).
 - `mission-port.ts`: `missionPort(world, { refs? })` (Engine 0.11 T5, item 173), the
   `MissionWorldPort` an `engine/core` `MissionHost` drives (see "Missions", Live hosting; from
-  Engine 0.14 T7 also `events` and `timeline`, see "Timeline"), and `roundSeed(seed, id)`.
+  Engine 0.14 T7 also `events` and `timeline`, see "Timeline"; from Engine 0.15 T6 `records`,
+  the committed records, for the host's `mission-commit` events), and `roundSeed(seed, id)`.
+- `rts-port.ts` (Engine 0.15 T6, gap M27, decision 7): `rtsWorldPort(world)`, the one bridge
+  from a world to the RTS kit's `RtsWorldPort` (`snapshot`, `applyOrder` with only the refusal's
+  `error` kept, `step`), typed by shape as `RtsPort` because the sim may not import the kit;
+  `tests/kits/rts-sim.test.ts` checks the two types fit each other both ways. The mini siege, the
+  RTS skirmish and the kit tests use it: `rtsGame({ world: rtsWorldPort(world), ... })`.
 - `opportunity.ts`: opportunities (Engine 0.10 T5): `Opportunities` (`OPPORTUNITY_COMPONENTS`),
   `addOpportunities`, `settleOpportunities`, `opportunityGate`, `takeOpportunity`,
   `applyOpportunityEffect`, `opportunitiesOf` (see "Opportunities" below).

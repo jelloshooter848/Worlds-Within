@@ -164,6 +164,16 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   of its own keys (a string), else to `otherwise`; `resize` goes to all. A game that stacks kits
   gives each frame source its own presenter (own skin, camera and map cache): the platformer
   kit's `status.miniGame` is the running round's id, '' on the level.
+- `hosted.ts` (Engine 0.15 T6, gap M6, decision 7, item 284): one round picture for every hosted
+  mission. `hostedSource(main, { round, events? })` is a `FrameSource` over a game's own source
+  (`main`): while `round(world)` gives a frame (`MissionHost.roundFrame()`: the hosted round's own
+  frame, `status.miniGame` already set by the host, gap D9) it is shown, its map through a
+  `MapTracker` of its own that is reset when the round ends; otherwise `main`'s frame with
+  `status.miniGame` set to ''. `events(events)` picks the host's events to add to whichever frame
+  is shown (`missionHostEvents` for a `MissionHost`'s `mission-open`, `mini-game-end` and
+  `mission-commit`, gap M21); left out, none. With a skin set (`presenterBySkinSet`) a page writes
+  this one call instead of the battle-or-round switch. `HostedPresentState<S>` is its stream
+  state (`main`, `roundMaps`, `inRound`).
 - `skin-set.ts` (Engine 0.7 T8, gap G32): `skinSet(content, backend)` gives one backend's skins
   for a game by file name: `main` (`content/skins/<backend>.json`, else the first skin of that
   backend that is not a mini game's; null when none) and `rounds` (`<backend>-<id>.json`, by the
@@ -216,5 +226,6 @@ clamping at zoom 0.5, 1 and 2 (no stored overshoot), a small area centred, zoom 
 about a point, slow pans and pinches adding up, `apply`, round trips screen -> world -> screen at
 zoom 0.5, 1, 1.5 and 2, boxes, and that `CameraFollower` frames its `hint()` to exactly its
 `topLeft()` despite a skin deadzone and lerp. The agreement with the Canvas2D presenter's drawing
-is checked in `engine/backends/canvas2d/rts-camera.test.ts`. Run with
+is checked in `engine/backends/canvas2d/rts-camera.test.ts`. `hosted.test.ts` covers `hostedSource` (the main frame with
+`miniGame` '', the round's frame, its map sent once per round, the host's events added or none). Run with
 `pnpm test`.

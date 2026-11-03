@@ -206,13 +206,18 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     switched-off rules, `rulesOffFor(opts, 'topdown')` and `rulesOffFor(opts, 'towerdefense')`, a
     run file's `topdown:<id>` and `towerdefense:<id>`, Engine 0.14 gap G12), `ADAPTERS` (`{ 'mission-room':
 topdownMissionAdapter, 'td-defence': towerdefenseMissionAdapter }`), `createGame(content,
-seed, opts?)`: the sim world, the kit's `rtsGame` (the plan, the switched-off rules), and a
-    `MissionHost` with `missionPort(world, { refs: scenarioKeys })`, the missions, both mini
-    games and `ADAPTERS`, wrapped in `MiniSiegeGame`. Its `mission(step)` sends `open`
-    through the kit's `launchMission` (refused `not_offered` while no opportunity offers it) and
-    the rest to the host, then calls `RtsGame.refresh()` (gap M7); `order`, `step`,
-    `miniGame()` and `missionExperience()` are the host's; `records()` (T9) is the world's
-    committed mission records, for the page. Its snapshot is the host's (`{ world,
+seed, opts?)`: the sim world, the kit's `rtsGame` on the sim's `rtsWorldPort(world)` (the
+    plan, the switched-off rules; Engine 0.15 T6, gap M27: the one bridge, no copy here), and
+    `MiniSiegeGame`, which since Engine 0.15 T6 (gap M18) **is** the engine's `MissionHost` (it
+    extends it; no wrapper) with `missionPort(world, { refs: scenarioKeys })`, the missions, both
+    mini games, `ADAPTERS` and the kit's `rtsMissionHooks(rts)`: an `open` (a run file's step or
+    the page's launch) is refused `not_offered` while no opportunity offers the mission, and the
+    kit's view is refreshed after every mission step and commit (gap M7). Every `HeadlessGame` hook
+    (`order`, `step`, `mission`, `miniGame()`, `missionExperience()`, `worldEvents`, `timeline`,
+    `recordRounds`, `roundRecordings`) and the mission events on `events` (gap M21) are the
+    host's; the class keeps `sim` (the world; the host's `world` is the host itself, for the
+    shell), `rts`, `keys`, `factions` and `campaign`, and adds `records()` (T9: the world's
+    committed mission records, for the page), `named()` and `campaignSave()`. Its snapshot is the host's (`{ world,
 kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenario key:
     `{ alive, x, y, hp, fate? }`; since Engine 0.13 `alive` is "exists and its fate is not
     `dead`", and `fate` is listed only for a named person whose fate was set). Since Engine 0.13
@@ -225,10 +230,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     entries (`village`, `dawn`) for a run file's `start: { entry }`, and `createGame`'s
     `opts.start` builds that entry fresh (`siegeStartSave`: the engine's `campaignSaveAt`, no
     carried record, nothing committed before it): the dawn as its scenario file is written.
-    Engine 0.14 T9 (gap M19): `recordRounds(on)` and `roundRecordings()` forward the host's (the
+    Engine 0.14 T9 (gap M19): `recordRounds(on)` and `roundRecordings()` are the host's (the
     page's `?record` and `pnpm cli record --bot` use them).
     Engine 0.14 T7: `worldEvents(sinceTick)` and `timeline()` (the optional `HeadlessGame`
-    hooks) forward the `MissionHost`'s, which the sim's `missionPort` fills: the world's event log
+    hooks) are the `MissionHost`'s, which the sim's `missionPort` fills: the world's event log
     (kept whole; it was always on, it is never in the snapshot, so no hash moved) and its timeline
     record with the played rounds' experience. `pnpm -s cli timeline runs/played.run.json` lists
     the fortify window (offered 5, closed 30), the sabotage taken and opened at world tick 40 with
@@ -237,23 +242,25 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     causes (`mission:sabotage`, `order:<n>`, `construct`).
   - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size; the
     grass colour is the battle skin's `background`, Engine 0.15 gap G36, the rounds' skins clear to black), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
-    `MiniSiegeGame`: the RTS kit's `presentWorld` for `village` with the game's missions (the
-    offer marker, the mission HUD) while no round is hosted, else the round's `present()` with
-    `status.miniGame` the mini game the hosted mission plays (`MissionHost.playing.play`:
-    `mission-room` or `td-defence`; its map through a `MapTracker`); plus the events the sim does
-    not give (gap M21), made from what changed between two frames: `mission-open`,
-    `mini-game-end` (the round's mini game and `result`), `mission-commit` (`outcome`, `resolution`, read from
-    `MiniSiegeGame.records()`). `siegePicture(presenter, content, ui?)`,
+    `MiniSiegeGame`, the core's `hostedSource` (Engine 0.15 T6, gap M6): the RTS kit's
+    `presentWorld` for `village` with the game's missions (the offer marker, the mission HUD)
+    while no round is hosted, else the host's `roundFrame()` (the round's `present()` with
+    `status.miniGame` set by the host to the mini game the mission plays, `mission-room` or
+    `td-defence`, gap D9; its map through the source's own `MapTracker`); plus the host's events
+    handed in with each draw (gap M21, `missionHostEvents`): `mission-open`, `mini-game-end` (the
+    round's mission, mini game and `result`), `mission-commit` (`outcome`, `resolution`). The
+    glue no longer diffs frames or switches the picture itself. `siegePicture(presenter, content, ui?)`,
     `siegeCanvasPicture(r, content, look, ui?, onSound?)` (the backend's `skinSetCanvasPresenter`:
     each frame to its skin).
   - `view.ts`: `createView` for `pnpm cli screenshot` and the backend parity test: `render`,
-    `frame()`, `order` and `mission` (a run file's mission steps), the camera at the map's centre.
+    `frame()`, `order` and `mission` (a run file's mission steps), the camera at the map's centre;
+    the host's events of the steps since the last draw go to the frame (Engine 0.15 T6).
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
   - `play.ts`: `SiegePlay`, the page's glue without DOM or clock: the `MiniSiegeGame`, an
     `RtsCamera` starting east of the hall, the kit's `RtsControls` (pointer gestures to orders).
     `launchButtons()` (the kit's `missionButtons`, none while a choice waits or a round runs),
-    `press({ kind: 'launch', mission })` (the game's `open` step, through the kit's
-    `launchMission`), then `choice()` and `press({ kind: 'play' | 'delegate' })`; nothing steps
+    `press({ kind: 'launch', mission })` (the game's `open` step, checked by the kit's
+    `rtsMissionHooks`), then `choice()` and `press({ kind: 'play' | 'delegate' })`; nothing steps
     while the choice waits. Taps in the walls' round (Engine 0.12 T8) are frame input since
     Engine 0.15 (gaps D1, D12): the shell puts them on the frame, `MissionHost`'s `RoundInput`
     passes them to the round and the kit's `TdDefenceRound` maps them through its own camera (a
@@ -261,7 +268,9 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     `defenceRound()` and `roundTap` are gone. `update(input)`: the battle one world tick every
     `STEPS_PER_TICK` (6: `TICKS_PER_SECOND` 10; kept here rather than the shell's scene
     `tickRate`, gap D2, because the battle reads the pointer's gestures every loop step), a hosted
-    round one tick per loop step (60 a second, the world waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors), which
+    round one tick per loop step (60 a second, the world waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors; its
+    `events` are the host's events of the loop step that stepped the game, none otherwise, since
+    the battle steps every sixth loop step), which
     pushes the core `miniGameScene` when the round starts and pops it on its end. `records()`,
     `title(mission)`, `outcomeTitle(mission, outcome)`, `sides()`, `message` (the last refusal).
     **The campaign** (Engine 0.13 T8): `game` is the entry played now (replaced when the campaign
@@ -343,7 +352,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   `dawn-exchange`'s last hash; a bad code refused (`code_typo`, twice) and `quit`'s code (lower
   case) resuming at `dawn-captured`'s tick-0 hash and ending on `dawn-leave`'s; the stored save
   carried on from; and no save once the hall has fallen (`fortify` delegated).
-- Also: `tests/browser/mini-siege-page.test.ts` (the built page played from the launcher's link in
+- Also: `tests/runs/mission-events.test.ts` (Engine 0.15 T6, gap M21: `played` and `delegated`
+  played through the tools' run loop, the host's `mission-open`, `mini-game-end` and
+  `mission-commit` events on the game ticks their assertions name, the golden hashes unchanged),
+  `tests/browser/mini-siege-page.test.ts` (the built page played from the launcher's link in
   headless Chromium: Launch then Delegate, and Launch then Play with the recorded round typed as
   keys; Engine 0.11 T10; since Engine 0.12 T8 the same for `fortify` at world tick 10, delegated
   (`overrun`), played by the recorded keys (`held-cheap`) and played by taps then given up
