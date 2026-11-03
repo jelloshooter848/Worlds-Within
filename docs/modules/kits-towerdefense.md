@@ -21,7 +21,14 @@ run can switch it off. It holds no world rules, never draws and never imports th
 `schema` (`tdMapSchema`, `tdTowersSchema`, `tdWavesSchema`, the `td-map`, `td-towers` and
 `td-waves` kinds, `towerTable`, `CELL_SUB`), `rules` (`TOWERDEFENSE_RULES`) and `world`
 (`TdWorld` with `command`/`place`/`sell`/`startWave`, `step()`, `placeRefusal`, `targetOf` and
-`snapshot()`; `TdEvent`, `TdSnapshot`). `kit.ts` exports `kit`, the hook the tools find by the
+`snapshot()`; `TdEvent`, `TdSnapshot`), `present` (`presentWorld`, `describeWorld`, `tdFrames`,
+`TdPresentState`, `presentStatus`, `TD_EVENT_TYPES`: frames with the map, towers, enemies, shots,
+the cursor and a placement ghost tagged `ok` or `blocked`, the HUD and `td-*` events for skin
+sounds), `controls` (`TdControls`: the shared actions as a cursor, place, cycle, sell and start
+wave, and pointer taps through the frame's camera, `cellAtScreen`), `game` (`tdGame`, a
+`HeadlessGame` stepped with frame input whose snapshot is `{ round, controls, kit }`; `tdRound`
+reads a round from a game's content) and `bot` (`TdBot`, a deterministic player for tests).
+`kit.ts` exports `kit`, the hook the tools find by the
 name `towerdefense`.
 
 ## Imports allowed
@@ -36,6 +43,7 @@ name `towerdefense`.
 
 `pnpm test kits/towerdefense` runs the round and content tests in Node (placement and payment,
 waves, targeting, kills, leaks, the end of the round, each rule switched off, the same hashes from
-the same seed). `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
+the same seed), the presentation tests (schema-valid frozen frames, events), the controls tests
+(actions and taps) and the headless game tests (a bot's round giving the same hashes twice). `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
 `tests/kits/towerdefense-validate.test.ts` also checks that the broken fixture is rejected by file
 and field.

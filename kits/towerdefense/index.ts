@@ -2,3 +2,7 @@ export * from './map';
 export * from './schema';
 export * from './rules';
 export * from './world';
+export * from './present';
+export * from './controls';
+export * from './game';
+export * from './bot';

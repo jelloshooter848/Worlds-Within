@@ -237,6 +237,13 @@ export class TdWorld {
     return null;
   }
 
+  /** The enemies of wave `wave` (1-based) still to come or on the path: 0 once it is cleared. */
+  waveLeft(wave: number): number {
+    return (
+      this.pending.filter((p) => p.wave === wave).length + this.enemies.filter((e) => e.wave === wave).length
+    );
+  }
+
   /** The path's last progress: an enemy at or past it has reached the exit. */
   get pathEnd(): number {
     return (this.path.length - 1) * CELL_SUB;

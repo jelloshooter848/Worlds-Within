@@ -37,6 +37,14 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   ranges and cooldowns, bounties, leaks and lives, won or lost); fourteen named rules, each changing
   a test when off; the kit hook (no strict mutants yet), the generated kit list and schema
   reference, and agent docs. No `engine/core` or `engine/sim` change was needed.
+- **`kits/towerdefense`: controls, presentation frames and the headless game** (T3): `TdControls`
+  (the shared actions as a cursor with key repeat, place, cycle the tower type, sell and start the
+  wave; pointer taps to cells through the frame's camera), `presentWorld` / `tdFrames` (frozen,
+  schema-valid frames: the map, towers by type, enemies sliding along the path with facing and hp,
+  shots, the cursor and an `ok` or `blocked` ghost, the HUD, and `td-*` events for skin sounds),
+  `tdGame` (a `HeadlessGame` on frame input, snapshot `{ round, controls, kit }`), `tdRound` and a
+  small deterministic `TdBot`. `TdWorld` gained one read-only helper (`waveLeft`). Lesson D1: taps
+  cannot be recorded in a run file. No `engine/core` or `engine/sim` change was needed.
 
 ### Decisions
 

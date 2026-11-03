@@ -12,3 +12,6 @@ Test-only content (`engine/core/CLAUDE.md`, Fixtures): only tests read these.
   path stops short of the exit (`path_broken` in `tiny.map.txt`, row 2).
 
 `tests/kits/towerdefense-validate.test.ts` runs `pnpm cli validate` on both.
+
+`game.ts` (tests only) loads `game/` as a game would (`fixtureContent()`) and gives its round
+(`fixtureRound()`, through `tdRound`), for the presentation, controls and headless game tests.

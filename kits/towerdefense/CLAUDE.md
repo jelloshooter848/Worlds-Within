@@ -22,6 +22,17 @@ snapshot give it (T6) and report what happened. It never imports `engine/sim` an
 - `world.ts`: `TdWorld({ map, towers, waves }, { rng?, seed?, disabledRules? })`, one round (below);
   `TdCommand`, `TdEvent`, `TdRefusal`, `TdSnapshot`, `sellValue(type)`. It throws on content that
   does not fit (a bad map, a tower type the table lacks, a wave list the map does not name).
+- `present.ts`: `presentWorld(world, opts)` (frozen) / `describeWorld` (not frozen), the round as a
+  `PresentFrame`; `tdFrames(size, cursor?, opts?)`, the kit's `FrameSource`; `TdPresentState`,
+  `presentMap`, `presentStatus`, `cameraHint`, `enemyPlace`, `facingToward`, `TD_DEPTH`,
+  `TD_TILES`, `TD_TILE_SIZE`, `TD_EVENT_TYPES` (below).
+- `controls.ts`: `TdControls(grid)` (the cursor and chosen tower, `input(frame)` and `tap(...)`
+  giving `TdCommand`s), `gridOf(world)`, `cellAtScreen(x, y, frame, grid, tileSize?)`,
+  `REPEAT_DELAY`, `REPEAT_EVERY` (below).
+- `game.ts`: `tdGame({ map, towers, waves, seed, disabledRules? })` (`TdGame`, an `engine/core`
+  `HeadlessGame`) and `tdRound(content, map?)`, the round from a game's loaded content (below).
+- `bot.ts`: `TdBot(plan)`, a deterministic player for tests: `next(game)` gives the actions to
+  hold this step (steps `place`, `sell`, `wave`, `wait`, `clear`; one press, then a released frame).
 - `kit.ts`: `kit` (`defineKit`): name `towerdefense`, kinds `td-map`, `td-towers`, `td-waves`,
   rules `TOWERDEFENSE_RULES`, **no strict mutants yet** (decision 1: T4 turns it on once the sample's
   run files guard every rule). `engine/tools` finds it through the generated
@@ -83,6 +94,64 @@ Events (`TdEvent`): `placed`, `sold`, `refused`, `wave` (`wave` 1-based, `by` `b
 `enemies` (with `progress` and their `col`/`row`), `stats` (`spent`, `refunded`, `earned`,
 `killed`, `leaked`) and `events` (the last step's), so `canonicalJson` hashes it.
 
+`waveLeft(wave)` is the enemies of a wave still to come or on the path (0 once it is cleared).
+
+## Controls (`controls.ts`; decision 3, item 199)
+
+A cursor over the grid, starting on the first build cell in reading order, with the chosen tower
+type (the map's `towers`, in order). `input(frame)` reads one step's shared `Actions` and returns
+the commands, which `TdGame` queues for the round's next step:
+
+- `left`/`right`/`up`/`down`: one cell on the press, then, held, every `REPEAT_EVERY` (4) ticks after
+  `REPEAT_DELAY` (10); clamped to the map;
+- `attack` cycles the tower type; `jump` places it on the cursor's cell; `special` sells the tower
+  there; `start` starts the next wave (the shell does not take `start` from a round).
+
+`tap(x, y, frame, button?, tileSize?)`: picture point to cell through the frame's camera
+(`cellAtScreen`, the presenters' framing: the hint's centre and zoom clamped to its `bounds`); a
+primary tap moves the cursor there, or on the cursor's own cell places; a secondary one moves
+there and sells; off the map nothing. Taps are page input, not in run files (lesson D1).
+
+## Presentation (`present.ts`)
+
+Pure reading: no RNG draws, nothing the snapshot holds changes, so hashes are the same presented or
+not (tested). World px, cell (col, row) at `col * tileSize` (default 16). The map is `td:<map
+id>`, version 1, rows of `TD_TILES` (`.`, `#`, `B`, `S`, `X`; a header's own characters show as
+their kind), sent once per stream (`MapTracker`). Entities, by depth (`TD_DEPTH`):
+
+- `tower-<id>`, kind `tower:<type>`: anim `fire` on a step it fired, else `idle`; facing (eight
+  ways, `facingToward`) toward the enemy it fired at or would target; tags `type:<type>`, `ready` or
+  `cooling`;
+- `enemy-<id>`, kind `enemy:<kind>`: its box slid along the path by progress (`enemyPlace`, whole
+  px), facing the way it walks (cardinal), anim `walk`; tags `hp:<hp>`, `wave:<n>`, `hit` (and
+  `fx.tint` `hit`) on a step it was shot;
+- `shot-<tower id>`, kind `shot:<type>`, over the target on the step a tower fired; tags
+  `from:tower-<id>`, `target:enemy-<id>`;
+- with a cursor: `ghost` (kind `ghost:<type>`, anim and tag `ok` or `blocked` with `why:<refusal>`,
+  from `placeRefusal`; not once the round is over) and `cursor` (tag `cell:<kind>`).
+
+Status (`presentStatus`): `gold`, `lives`, `wave` (`n/m`), `waveNumber`, `waveCount`, `enemies`,
+`outcome`, `nextWave` (ticks to the timer's next wave, only with a timer and waves left) and, with
+a cursor, `tower` and `towerCost`. Camera: the map's centre, `bounds` the map, `zoom` if given.
+
+Events (`TD_EVENT_TYPES`, for skin sounds): `td-place` (`tower`, `cost`), `td-sell` (`refund`),
+`td-refused` (`command`, `code`), `td-wave-start` (`wave`, `by`, `waves`), `td-spawn`, `td-shot`
+(at the target; `from`, `fromX`/`fromY`, `tower`, `damage`, `hp`), `td-kill` (`kind`, `bounty`; a
+gone enemy placed by the last frame's box), `td-leak` (at the exit; `lives`), `td-wave-clear`
+(`wave`, `waves`; once per wave per stream, so only with a `TdPresentState`, and never for a wave
+cleared before the stream started) and `td-end` (`result` `won` or `lost`: skin keys
+`td-end:won`, `td-end:lost`). `entity` names the tower or enemy.
+
+## The headless game (`game.ts`)
+
+`TdGame`: `step(input)` queues the taps since the last step and the controls' commands, then
+steps the round (`events` is that step's); no `order(json)` (decision 3: frame input only).
+`snapshot()` is `{ round, controls, kit }`: the round's `TdSnapshot`, the controls' `{ col, row,
+tower, held }` and `kit`, a summary for run-file paths: `outcome`, `gold`, `lives`, `wave`,
+`waves`, `towers`, `enemies`, `killed`, `leaked`, `spent`, `earned`. `world` and `controls` are
+public for a page's frame stream (`new FrameStream(tdFrames(screen, () => game.controls.view()))`)
+and `tap`. A game's `createGame` is `tdGame({ ...tdRound(content), seed, disabledRules })`.
+
 ## Named rules (`rules.ts`)
 
 `TOWERDEFENSE_RULES`: `build-on-build-cells`, `build-costs-gold`, `sell-refunds`, `wave-timer`,
@@ -113,7 +182,13 @@ button, spacing and queueing, the timer, jitter through the given RNG, targeting
 cooldown, kills and bounty, leaks and lives, won and lost, one case per rule switched off, the same
 snapshots from the same seed twice and whole numbers only) and `kit.test.ts` (the hook, the
 fixture game through `loadContent`, errors naming file and field, cross-file checks, every path
-problem with its cell, and the fixture round played to its end twice). The fixtures are in
+problem with its cell, and the fixture round played to its end twice), `present.test.ts` (frames
+before and during a round, schema-valid and frozen; the ghost's reasons; towers, enemies, shots;
+enemy placement and facings; the same hashes presented or not; a stream's map, its events on a won
+and a lost round, refusals and sales, waves cleared once), `controls.test.ts` (cursor moves and
+repeats, the buttons, a round from `ScriptedInput`, taps through the frame's camera at zoom 1 and 2) and `game.test.ts` (the snapshot and its `kit` summary, the bot winning with the same hashes on
+two runs, losing, disabled rules, selling, `tdRound`). `__fixtures__/game.ts` loads the fixture
+game for them. The fixtures are in
 `__fixtures__/` (see its README). `tests/kits/towerdefense-validate.test.ts` runs `pnpm cli
 validate` on `__fixtures__/game` (passes) and `__fixtures__/bad` (fails at `start.lives` and the
 `.map.txt` row). By hand: `pnpm cli validate kits/towerdefense/__fixtures__/game`.
