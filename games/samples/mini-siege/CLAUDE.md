@@ -17,6 +17,11 @@ Engine 0.11. Since T8 it plays headless (`pnpm cli run`); since T9 it has origin
 two skins, sounds and one song, a view for `pnpm cli screenshot`, and a page (`index.html`,
 launcher link `games/samples/mini-siege/`) where the mission is launched and then played or
 delegated. Every gap found is logged in `docs/reports/mini-siege.md` (ids `M1`, `M2`, ...).
+Since Engine 0.13 T7 it is a **campaign of two scenarios**: the siege, then **the dawn assault**,
+a short second RTS scenario that starts from the siege's results (the captain's fate and hp, the
+hall's gold), where whether the captain was taken changes how it plays ("The dawn assault",
+below; docs/BUILD-LOG.md, Engine 0.13, decision 8). Headless in T7; the page plays the siege only
+until T8.
 
 ## The rule
 
@@ -33,7 +38,7 @@ the gap report with a named release.
 
 - `game.json`: kit `rts`, `uses` `topdown` (the sabotage's room) and `towerdefense` (the walls'
   map), seed 11, 256x240, `headless.ts`, `view.ts`; content kinds `rts-map`, `rts-types`,
-  `rts-enemy`, `mission`, `room`, `td-map`, `td-towers`, `td-waves`, `palette`, `sprite`, `skin`,
+  `rts-enemy`, `mission`, `campaign` (Engine 0.13), `room`, `td-map`, `td-towers`, `td-waves`, `palette`, `sprite`, `skin`,
   `sfx`, `song`. `index.html` is its page: the launcher lists it and
   `pnpm build` emits `games/samples/mini-siege/index.html`.
 - `content/maps/village.world.json` (`rts-map`): 48x32 cells of 16 px: grass (`.`), a road (`,`)
@@ -73,6 +78,31 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   T7, gap M13); the engines (raiders of type `ram` or `catapult`) as knights in the `E` cells
   with one room hp per 40 world hp, the guards (raiders with squad role `regular`) as knights in
   the `n` cells; rules in order: both destroyed, the ram, the catapult, else driven off.
+- `content/campaigns/siege.campaign.json` (`campaign`, Engine 0.13 T7): `village` for 260 world
+  ticks, then `dawn` for 200. The glue builds the entry a campaign save names (`siegeCampaignPlace`);
+  the order is never in code (gap M29).
+- `content/maps/dawn.world.json` (`rts-map`, Engine 0.13 T7): "The dawn assault", the morning
+  after: the village's terrain, the hall patched to 300 of 400 hp (150 gold, replaced by the
+  carried gold), two soldiers (13,14 and 13,17), in the squad `defenders` the `captain` (Captain
+  Hale, 12,15) and the `sergeant` (Sergeant Mara Venn, role `hero`, a soldier's numbers, 12,16);
+  the raiders' smaller band with no engines: four raiders (39,12-19) and the squad `ridge-band`
+  with the jailers `jailer-1` (Dask) and `jailer-2` (Orrin) (role `regular`, 43,15-16). Everyone
+  but the hall is an `EventMember` of `dawn`. The same raiders' plan plays it (`batter` and
+  `bombard` never fire: there are no engines). Its `from` names `village` and carries the
+  `captain` (Health and fate) and the village's gold; its `when` rule opens `rescue-window`,
+  `exchange-window` and `leave-window` (all `relative`, offered from the start to world tick 60,
+  one `exclusive` group `captive`) when the captain comes in captured; `ransom-window` (also
+  `relative`, 0 to 60, not in the group) is opened only by a failed rescue.
+- `content/missions/rescue-captain.mission.json`: "Break the captain out", event `dawn`, cost
+  40, `play` `mission-room` in the `engine-camp` room (reused: a second room file would be a
+  second dungeon, gap M32), `hero` the village's `hero` (the sergeant, `hpPer` 10: 5 half hearts
+  at 50 hp), the jailers as knights in the `n` cells, `defeat-all`; `freed` when the round passes
+  (damage `sergeant` by `heroHpLost`, 10 delegated; `fate` freed the captain at 10,15 by the
+  hall), else and on a quit `failed` (damage `sergeant` 20 or `heroHpLost`, `fate` injured,
+  `opportunity` open `ransom-window`: a different follow-up, never the rescue again).
+  `exchange-captain` (cost 10, no `play`: a choice, only delegated; `paid`: gold -80, `fate`
+  freed), `ransom-captain` (cost 10, no `play`; `paid`: gold -120, `fate` freed) and
+  `leave-captain` (cost 1, no `play`; `left`, no effects: the capture stands).
 - `content/rooms/engine-camp.json` + `.map.txt` (`room`): the raiders' camp at night, one 16x11
   room with the hero's `@`, two `E` and two `n` slots.
 - `content/missions/fortify.mission.json` (`mission`, the preparation phase): "Man the walls",
@@ -155,10 +185,13 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   bpm, two pulses, triangle and noise), played by the page once the first gesture unlocks sound.
 - TypeScript is glue:
   - `content.ts`: `loadMiniSiege(files)` (the kinds of `rts`, `topdown` and `towerdefense`),
-    `siegeMap`, `siegeTypes`, `siegeEnemy`, `siegeMissions`, `siegeRooms`, `siegeDefenceMaps`,
-    `siegeTowers`, `siegeScenario(content, seed)` (the types table spawned first,
+    `siegeMap(content, name?)` (a map by name, `FIRST_SCENARIO` `village` when left out),
+    `siegeCampaign`, `siegeTypes`, `siegeEnemy`, `siegeMissions`, `siegeRooms`, `siegeDefenceMaps`,
+    `siegeTowers`, `siegeScenario(content, seed, name?)` (the types table spawned first,
     entity 2), `PLAYER` (`village`).
-  - `headless.ts`: `createWorld`, `miniGames(content)` (the topdown kit's `missionRoom` over the
+  - `headless.ts`: `createWorld(content, seed, name?)`, `siegeCampaignPlace(content, seed, save?)`
+    (Engine 0.13 T7: the campaign, the save, the scenario entry to build and the next scenario's
+    carry spec), `miniGames(content)` (the topdown kit's `missionRoom` over the
     rooms and the towerdefense kit's `tdDefence` over the walls' maps and towers; `validate`
     checks each mission's params with the one its `play` names), `ADAPTERS` (`{ 'mission-room':
 topdownMissionAdapter, 'td-defence': towerdefenseMissionAdapter }`), `createGame(content,
@@ -171,7 +204,13 @@ seed, opts?)`: the sim world, the kit's `rtsGame` (the plan, the switched-off ru
     committed mission records, for the page. Its snapshot is the host's (`{ world,
 kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenario key:
     `{ alive, x, y, hp, fate? }`; since Engine 0.13 `alive` is "exists and its fate is not
-    `dead`", and `fate` is listed only for a named person whose fate was set).
+    `dead`", and `fate` is listed only for a named person whose fate was set). Since Engine 0.13
+    T7 `createGame`'s `opts.campaign` (a run file's `from`) picks the campaign entry: the dawn is
+    built with the save's carried record (`worldFromScenario(json, { carried })`), the siege when
+    left out; `MiniSiegeGame.campaignSave()` is the save if the entry played now ended now
+    (`advanceCampaign` with the world's committed missions and, in the siege, `carriedRecord`
+    for the dawn's `from`), null once the campaign is done or while the hall (the carried
+    stockpile) is gone (gap M31).
   - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size, the
     grass colour), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
     `MiniSiegeGame`: the RTS kit's `presentWorld` for `village` with the game's missions (the
@@ -221,6 +260,17 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   two fortify runs: the battle (and the walls) frozen from 11 to 39 and the same in both, the
   commit at 40 whatever the round took (116 ticks played), the gold and losses at the commit, the
   played world equal to a fresh one given the same result at 10, and the same hashes twice.
+- `mini-siege.test.ts`, the dawn (Engine 0.13 T7): the campaign file, the dawn's units against
+  their types, the siege's three ends (the captain active at 120 or 110, or captured at 90 by the
+  raiders at 160) and their save codes (the ones the run files pin, round trips, at most 40
+  characters), the played and quit sieges' carried records differing only in the captain, the
+  two follow-ups (the same run file but `from`; the start worlds differing only in the captain
+  and the opportunities his capture opens; the end: the raiders beaten or the village fallen),
+  the save code restoring the dawn's start world with an equal hash (and `dawn-code`'s golden
+  hashes equal to `dawn-captured`'s), the rescue, exchange and leave each closing the other
+  choices, a failed rescue committed for good (unchanged record, the rescue refused
+  `not_offered` by the kit and `mission_committed` by the sim, the ransom paid), a dead captain
+  carried in as a record opening nothing, and no campaign save once the hall has fallen.
 - `play.test.ts`: the page's glue on a real `SceneStack`, drawing every step into the null
   backend: launch at world tick 40, then delegate (`ram-burnt` at 160, the commit's event) or play
   (the round pushed and popped, `played.run.json`'s recorded round fed as the page's keys,
@@ -248,6 +298,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
 `south-tower`, 24 squad `defenders`, 25 the captain, 26 squad `escort`, 27-28 the guards, 29 the
 world-level entity (`WorldTime`, `Opportunities`, `Missions`). (Before Engine 0.12 T7, without the
 walls, the squads started at 20.)
+
+The dawn (`dawn.world.json`): 1 terrain, 2 types, 3 hall, 4-5 soldiers, 6-9 raiders, 10 squad
+`defenders`, 11 the captain, 12 the sergeant, 13 squad `ridge-band`, 14-15 the jailers, 16 the
+world-level entity (spawned by its opportunities).
 
 ## Run files
 
@@ -319,6 +373,40 @@ tests/runs`.
 'place', tower: 'archers', col: 4, row: 5 }, { do: 'wave' }])` holds for the round's game
   (`(game.miniGame() as TdDefenceRound).game`), recording each change as `{ frame, hold }`.
 
+## The dawn assault (Engine 0.13 T7)
+
+The follow-up, run headless from a siege run's end or its save code (`from` in a run file;
+`engine/tools/CLAUDE.md`, Campaign runs and save codes). Every dawn run has seed 11, 200 world
+ticks, the guard `enemy-follows-plan` (the raiders' `charge` fires at tick 1) and the invariant
+`named.hall.alive`; the raiders never attack buildings, so the hall stays at 300 and the fight is
+read off `sides.<faction>.units` and the named people.
+
+- **The siege's ends pin their save codes** (`codes` at the last tick): `played`
+  `2H120-1P1T8-0G01J-FJFCJ-2A00` (the captain active at 120), `delegated`
+  `3YEP0-1P1T8-0G01Y-DJFCJ-2A2G` (active at 110) and `quit` `2VFP0-1P1T8-0M32N-PBJFC-J2A70`
+  (captured by the raiders at 160, 90 hp); each records 150 gold. `pnpm -s cli code
+games/samples/mini-siege/runs/quit.run.json` prints it. The fortify runs give no save (the hall
+  falls, gap M31).
+
+| run                  | ticks | from               | what happens                                                                                                                                                                                                                                                                              | final hash         |
+| -------------------- | ----- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `dawn-held`          | 200   | `played.run.json`  | the captain on the map at 120 leads the defence: nothing opens; he falls by world tick 100 (a dead record), and the raiders are beaten by 200 (one soldier left)                                                                                                                          | `6e309a2e804edc78` |
+| `dawn-captured`      | 200   | `quit.run.json`    | the same run file but `from`: the captain is held (off the map, 90 hp), the three captive choices are offered from 0 and close unused at 60; the village falls by 100 and five raiders stand at 200                                                                                       | `beb1611ce699c5a0` |
+| `dawn-code`          | 200   | `quit`'s save code | `dawn-captured` from the code instead of the run: the same assertions and the same hashes (the done-when's equal hashes)                                                                                                                                                                  | `beb1611ce699c5a0` |
+| `dawn-rescue`        | 200   | `quit.run.json`    | `rescue-captain` opened at 5 (the other choices close, `dawn` frozen to 45) and delegated: seed 11 draws `freed`; at 45 the captain is back at 10,15 with 90 hp, the sergeant at 40; three raiders stand at 200                                                                           | `c4401c51749ac409` |
+| `dawn-rescue-failed` | 201   | `quit.run.json`    | the rescue played (the sergeant's 50 hp start the round on 5 half hearts) and given up at once: `failed` at world 45 injures her (30 hp) and offers `ransom-window`; reopening the rescue at game tick 50 is refused (`not_offered`); the ransom (120 gold) frees the captain at world 60 | `41809d9356d8ed03` |
+| `dawn-exchange`      | 200   | `quit.run.json`    | `exchange-captain` opened and delegated at 5: 80 gold (70 left) and the captain freed at 15; three raiders stand at 200                                                                                                                                                                   | `a1516bdf0b2ba853` |
+| `dawn-leave`         | 200   | `quit.run.json`    | `leave-captain` at 5: no effects, the captain stays captured; five raiders stand at 200, as with no choice at all                                                                                                                                                                         | `facb7083b39bcf95` |
+
+- `dawn-held` and `dawn-captured` differ only in `from`, so the only difference in their input is
+  the carried record, and that differs only in the captain's entry (`mini-siege.test.ts`).
+- Paths as in the siege's runs, plus `named.<key>.fate`, the opportunities at
+  `world.components.Opportunities.0.1.list.<i>.status` (sorted by id: 0 `exchange-window`, 1
+  `leave-window`, 2 `ransom-window`, 3 `rescue-window`) and the records at
+  `world.components.Missions.0.1.committed.<i>.*`.
+- After a change to the siege that moves its end world (or its save codes), re-record the dawn
+  runs too: they replay their `from` run first.
+
 ## Playing in the browser
 
 `pnpm dev`, then `games/samples/mini-siege/` from the launcher (or `pnpm build && pnpm preview`).
@@ -353,12 +441,15 @@ view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is t
 The preparation phase (Engine 0.12 T8): `fortify-played.run.json --tick 90` (the walls' round
 mid-wave in its own skin) and `fortify-delegated.run.json --tick 60` (the battle after `overrun`,
 two walls gone). `tests/browser/mini-siege-shots.test.ts` checks all six (skipped where Chromium is
-missing).
+missing). The `dawn-*` runs have no screenshots yet: `screenshot` ignores a run's `from` and
+would draw the siege (gap M33, T8); the backend parity test does start them at their save.
 
 ## How to test
 
 `pnpm test games/samples/mini-siege`, `pnpm -s cli validate games/samples/mini-siege --json`,
-`pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (any run file;
+`pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (any run file; the
+`dawn-*` runs for the follow-up; `pnpm -s cli code games/samples/mini-siege/runs/quit.run.json`
+for the siege's save code;
 `fortify-played.run.json` and `fortify-delegated.run.json` for the preparation phase),
 `pnpm -s cli dump games/samples/mini-siege/runs/played.run.json --tick 566 --json` (the commit),
 `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs` (golden hashes;

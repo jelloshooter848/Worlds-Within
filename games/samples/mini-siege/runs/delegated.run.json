@@ -100,11 +100,15 @@
     { "tick": 160, "path": "named.captain.hp", "op": "eq", "value": 110 },
     { "tick": 260, "path": "world.tick", "op": "eq", "value": 260 },
     { "tick": 260, "path": "named.hall.hp", "op": "eq", "value": 280 },
-    { "tick": 260, "path": "named.hall.hp", "op": "gt", "value": 112 }
+    { "tick": 260, "path": "named.hall.hp", "op": "gt", "value": 112 },
+    { "tick": 260, "path": "named.captain.alive", "op": "eq", "value": true },
+    { "tick": 260, "path": "named.captain.hp", "op": "eq", "value": 110 },
+    { "tick": 260, "path": "sides.village.unitTypes.captain", "op": "eq", "value": 1 }
   ],
   "invariants": [{ "path": "named.hall.alive", "op": "eq", "value": true }],
   "hashEvery": 20,
   "guards": ["enemy-follows-plan"],
+  "codes": [{ "tick": 260, "code": "3YEP0-1P1T8-0G01Y-DJFCJ-2A2G" }],
   "hashes": [
     { "tick": 0, "hash": "8eb4811aae418350" },
     { "tick": 20, "hash": "c9939cb5864e20e6" },

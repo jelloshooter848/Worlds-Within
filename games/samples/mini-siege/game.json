@@ -8,6 +8,7 @@
     "rts-types": ["content/types/*.json"],
     "rts-enemy": ["content/enemy/*.json"],
     "mission": ["content/missions/*.mission.json"],
+    "campaign": ["content/campaigns/*.campaign.json"],
     "room": ["content/rooms/*.json"],
     "td-map": ["content/defence/maps/*.json"],
     "td-towers": ["content/defence/towers.json"],

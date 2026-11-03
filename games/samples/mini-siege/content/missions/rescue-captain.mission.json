@@ -1,0 +1,37 @@
+{
+  "id": "rescue-captain",
+  "title": "Break the captain out",
+  "event": "dawn",
+  "worldTimeCost": 40,
+  "play": "mission-room",
+  "params": {
+    "room": "engine-camp",
+    "goal": "defeat-all",
+    "ticks": 1500,
+    "hero": { "select": { "faction": "village", "member": "hero" }, "hpPer": 10 },
+    "foes": [{ "slot": "n", "kind": "knight", "select": { "faction": "raiders", "member": "regular" } }],
+    "outcomes": [{ "outcome": "freed", "when": { "result": "pass" } }, { "outcome": "failed" }]
+  },
+  "onQuit": "failed",
+  "outcomes": [
+    {
+      "id": "freed",
+      "title": "The captain is back at the hall",
+      "weight": 1,
+      "effects": [
+        { "type": "damage", "entity": "sergeant", "amount": 10, "fromReport": "heroHpLost" },
+        { "type": "fate", "entity": "captain", "fate": "freed", "at": { "x": 10, "y": 15 } }
+      ]
+    },
+    {
+      "id": "failed",
+      "title": "The guards were ready: Mara hurt, the raiders raise their price",
+      "weight": 1,
+      "effects": [
+        { "type": "damage", "entity": "sergeant", "amount": 20, "fromReport": "heroHpLost" },
+        { "type": "fate", "entity": "sergeant", "fate": "injured", "by": "raiders" },
+        { "type": "opportunity", "open": "ransom-window" }
+      ]
+    }
+  ]
+}

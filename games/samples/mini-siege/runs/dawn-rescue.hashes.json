@@ -1,0 +1,49 @@
+{
+  "run": "games/samples/mini-siege/runs/dawn-rescue.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "4f59cf3f3a4af4f2"
+    },
+    {
+      "tick": 20,
+      "hash": "5613108dabc60a1a"
+    },
+    {
+      "tick": 40,
+      "hash": "69708749404eaefd"
+    },
+    {
+      "tick": 60,
+      "hash": "5742daaa3ac3f945"
+    },
+    {
+      "tick": 80,
+      "hash": "400f08f309752fef"
+    },
+    {
+      "tick": 100,
+      "hash": "b25c385705b69bed"
+    },
+    {
+      "tick": 120,
+      "hash": "a7318c5aa673c73d"
+    },
+    {
+      "tick": 140,
+      "hash": "ab032689a39fc6bb"
+    },
+    {
+      "tick": 160,
+      "hash": "46a2fee0fac91dcd"
+    },
+    {
+      "tick": 180,
+      "hash": "f520a42c505a09aa"
+    },
+    {
+      "tick": 200,
+      "hash": "c4401c51749ac409"
+    }
+  ]
+}

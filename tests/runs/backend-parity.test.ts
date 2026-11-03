@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NullPresenter } from '@engine/backends/null';
+import type { CampaignSave } from '@engine/core/campaign';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { JsonObject } from '@engine/core/headless';
 import type { Renderer } from '@engine/core/gfx/renderer';
@@ -18,7 +19,7 @@ import {
 } from '@kits/platformer';
 import { presentWorld, snapshotWorld, TdPresentState, type TopDownWorld } from '@kits/topdown';
 import { loadGame } from '../../engine/tools/game-loader';
-import { missionOf, orderOf, stateHash, type TickHash } from '../../engine/tools/headless-run';
+import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { readRunFile, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/demo/headless';
 import { DemoPicture, demoLook } from '../../games/demo/picture';
@@ -302,8 +303,19 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     const dir = file.slice(0, file.indexOf('/runs/'));
     const manifest = JSON.parse(readFileSync(join(ROOT, dir, 'game.json'), 'utf8')) as { view: string };
     const entry = (await import(join(ROOT, dir, manifest.view))) as ViewEntry;
+    // A run that starts from another run's end or a save code (Engine 0.13, `from`): the view
+    // starts at the campaign save `pnpm cli run` starts it from.
+    let campaign: CampaignSave | null = null;
+    if (run.from !== undefined) {
+      const started = await playRun(ROOT, file, { untilTick: 0 });
+      if (!started.ok) throw new Error(JSON.stringify(started.errors));
+      campaign = started.value.startSave;
+    }
     const make = () =>
-      entry.createView(content, run.seed ?? content.manifest.start.seed, { disabledRules: run.disableRules });
+      entry.createView(content, run.seed ?? content.manifest.start.seed, {
+        disabledRules: run.disableRules,
+        ...(campaign === null ? {} : { campaign }),
+      });
 
     const nullPresenter = new NullPresenter({ validate: true, freeze: true });
     const viaNull = playView(make(), run, (view) => nullPresenter.present(view.frame!()));

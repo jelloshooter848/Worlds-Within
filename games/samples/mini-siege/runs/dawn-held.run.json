@@ -1,0 +1,164 @@
+{
+  "game": "..",
+  "seed": 11,
+  "ticks": 200,
+  "from": {
+    "run": "played.run.json"
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "world.tick",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 0,
+      "path": "named.hall.hp",
+      "op": "eq",
+      "value": 300
+    },
+    {
+      "tick": 0,
+      "path": "named.sergeant.hp",
+      "op": "eq",
+      "value": 50
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.stock.gold",
+      "op": "eq",
+      "value": 150
+    },
+    {
+      "tick": 0,
+      "path": "named.captain.alive",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 0,
+      "path": "named.captain.hp",
+      "op": "eq",
+      "value": 120
+    },
+    {
+      "tick": 0,
+      "path": "named.captain.x",
+      "op": "eq",
+      "value": 12
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.unitTypes.captain",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 0,
+      "path": "sides.raiders.units",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 0,
+      "path": "world.components.Opportunities.0.1.list.0.status",
+      "op": "eq",
+      "value": "dormant"
+    },
+    {
+      "tick": 0,
+      "path": "world.components.Opportunities.0.1.list.1.status",
+      "op": "eq",
+      "value": "dormant"
+    },
+    {
+      "tick": 0,
+      "path": "world.components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "dormant"
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.charge.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.batter.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 100,
+      "path": "named.captain.fate",
+      "op": "eq",
+      "value": "dead"
+    },
+    {
+      "tick": 100,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 100,
+      "path": "sides.raiders.units",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 200,
+      "path": "sides.raiders.units",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 200,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 200,
+      "path": "named.hall.hp",
+      "op": "eq",
+      "value": 300
+    },
+    {
+      "tick": 200,
+      "path": "world.components.Opportunities.0.1.list.3.status",
+      "op": "eq",
+      "value": "dormant"
+    }
+  ],
+  "invariants": [
+    {
+      "path": "named.hall.alive",
+      "op": "eq",
+      "value": true
+    }
+  ],
+  "hashEvery": 20,
+  "guards": ["enemy-follows-plan"],
+  "hashes": [
+    { "tick": 0, "hash": "94084ad90c496a17" },
+    { "tick": 20, "hash": "0ed08c2dc0b3927f" },
+    { "tick": 40, "hash": "a5940d8f4a05b81d" },
+    { "tick": 60, "hash": "f427f56587bb1180" },
+    { "tick": 80, "hash": "7f490b7b6a9d4a0d" },
+    { "tick": 100, "hash": "10de73a0f6a3e638" },
+    { "tick": 120, "hash": "acdfe776adab86bc" },
+    { "tick": 140, "hash": "59fedb5643fca368" },
+    { "tick": 160, "hash": "c50f298b7d0bc2c7" },
+    { "tick": 180, "hash": "e82ca504b5655aba" },
+    { "tick": 200, "hash": "6e309a2e804edc78" }
+  ]
+}

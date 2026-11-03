@@ -28,6 +28,19 @@ hurt, raiders destroyed). It is the platform test: no `engine/sim` change; lesso
 the walls' round in its own skin (`canvas2d-td-defence.json`, picked by `skinSet` from the mini
 game id), keys or pointer taps placing towers.
 
+Since Engine 0.13 T7 it is a **campaign of two scenarios** (`content/campaigns/siege.campaign.json`):
+the siege (`village`, 260 world ticks), then **the dawn assault** (`dawn`, 200 world ticks), a
+second RTS map whose `from` carries the captain's fate and hp and the hall's gold from the siege's
+end world. The sabotage's round now takes its hero from the captain (gap M13), and its
+`driven-off` outcome captures him: in the dawn he is then off the map, held by the raiders, and
+three captive choices open at once (one exclusive group): **rescue** (`rescue-captain`, a
+`mission-room` round in the camp with the sergeant Mara Venn as the hero; a failure injures her and
+opens a dearer **ransom**, never the rescue again), **exchange** (`exchange-captain`, 80 gold, a
+choice with no round) and **leave** (`leave-captain`, no effects). With the captain home the dawn
+assault is beaten; without him the village falls. A run file starts the dawn from a siege run's end
+or from its save code (`from`), and the siege's runs pin their save codes (`codes`). Headless only
+in T7; the page plays the siege alone until T8.
+
 ## Public API entry points
 
 - `game.json`: kit `rts`, uses `topdown` and `towerdefense`, seed 11, `headless.ts`, `view.ts`.
@@ -45,7 +58,10 @@ game id), keys or pointer taps placing towers.
   the round at 60, taps in the walls' round through `roundTap`) and its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`,
   pointer, shell audio, `window.wwSiege`).
 - `content/`: `maps/village.world.json` (`rts-map`, with the walls and the `fortify-window` and
-  `sabotage-window` opportunities), `types/siege.json` (with `wall` and `wall-tower`),
+  `sabotage-window` opportunities), `maps/dawn.world.json` (the follow-up: its `from`, the
+  captive choices' four `relative` opportunities), `campaigns/siege.campaign.json` (`village`
+  then `dawn`), `missions/rescue-captain.mission.json`, `exchange-captain`, `ransom-captain`,
+  `leave-captain`, `types/siege.json` (with `wall` and `wall-tower`),
   `enemy/raiders.json`, `missions/sabotage.mission.json` (outcomes, weights, effects, `onQuit`,
   cost 120, the `mission-room` params), `rooms/engine-camp.json` + `.map.txt`,
   `missions/fortify.mission.json` (cost 30, the `td-defence` params: walls, budget, wave and
@@ -53,15 +69,20 @@ game id), keys or pointer taps placing towers.
   and `defence/` (the walls' `td-map`, `td-towers` `archers` and `ballista`, the map's `td-waves`).
 - `headless.ts`: `createGame(content, seed, opts?)` (a `MiniSiegeGame`: a `MissionHost` over the
   kit's `rtsGame`, `open` through the kit's `launchMission`; snapshot `{ world, kit, missions?,
-sides, named }`), `miniGames(content)` (`mission-room` and `td-defence`), `ADAPTERS`,
-  `createWorld`.
-- `content.ts`: `loadMiniSiege`, `siegeMap`, `siegeTypes`, `siegeEnemy`, `siegeMissions`,
+sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `campaignSave()`
+  gives the save if the entry played now ended now), `siegeCampaignPlace`, `miniGames(content)`
+  (`mission-room` and `td-defence`), `ADAPTERS`, `createWorld`.
+- `content.ts`: `loadMiniSiege`, `siegeMap(content, name?)`, `siegeCampaign`, `FIRST_SCENARIO`, `siegeTypes`, `siegeEnemy`, `siegeMissions`,
   `siegeRooms`, `siegeDefenceMaps`, `siegeTowers`, `siegeScenario`.
 - `runs/played.run.json` (a recorded round burns both engines), `delegated.run.json` (the world
   draws `ram-burnt`), `quit.run.json` (the round quit: `driven-off`), `fortify-played.run.json`
   (the preparation phase: a recorded tower-defense round holds for 40 gold, `held-cheap`) and
   `fortify-delegated.run.json` (the world draws `overrun`), each with sync `hashes` and golden
-  `<name>.hashes.json`.
+  `<name>.hashes.json`. Engine 0.13 T7, the dawn: `dawn-held.run.json` (from `played`, the
+  captain home) and `dawn-captured.run.json` (from `quit`, the captain taken), the same in all but
+  `from`; `dawn-code.run.json` (from `quit`'s save code: the same hashes as `dawn-captured`);
+  `dawn-rescue`, `dawn-rescue-failed` (the round given up: the ransom opens, the rescue is
+  refused), `dawn-exchange` and `dawn-leave`.
 
 ## Imports allowed
 
@@ -73,7 +94,8 @@ sides, named }`), `miniGames(content)` (`mission-room` and `td-defence`), `ADAPT
 
 `pnpm test games/samples/mini-siege`, `pnpm -s cli validate games/samples/mini-siege --json`,
 `pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (and `delegated`,
-`quit`, `fortify-played`, `fortify-delegated`), `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs`,
+`quit`, `fortify-played`, `fortify-delegated`, the `dawn-*` runs), `pnpm -s cli code
+games/samples/mini-siege/runs/quit.run.json` (the save code at the siege's end), `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs`,
 `pnpm -s cli screenshot games/samples/mini-siege/runs/played.run.json --tick 200 --json` (the
 room; `delegated.run.json --tick 80` the frozen battle; `fortify-played.run.json --tick 90` the
 walls' round), `tests/browser/mini-siege-shots.test.ts`; the page played from its link, both

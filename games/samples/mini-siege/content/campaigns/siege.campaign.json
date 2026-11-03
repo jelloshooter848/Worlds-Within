@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "id": "siege",
+  "title": "The siege and the dawn assault",
+  "entries": [
+    { "scenario": "village", "ticks": 260 },
+    { "scenario": "dawn", "ticks": 200 }
+  ]
+}

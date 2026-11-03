@@ -1,0 +1,49 @@
+{
+  "run": "games/samples/mini-siege/runs/dawn-exchange.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "4f59cf3f3a4af4f2"
+    },
+    {
+      "tick": 20,
+      "hash": "74b3dbaf2cde48c6"
+    },
+    {
+      "tick": 40,
+      "hash": "990cf8c9e1c36172"
+    },
+    {
+      "tick": 60,
+      "hash": "1f6c2e5157b1896a"
+    },
+    {
+      "tick": 80,
+      "hash": "73efcd9a2bcb26f7"
+    },
+    {
+      "tick": 100,
+      "hash": "5cd3b8d0242e642a"
+    },
+    {
+      "tick": 120,
+      "hash": "b3f5f2d05988726f"
+    },
+    {
+      "tick": 140,
+      "hash": "0a49c661a41d01d4"
+    },
+    {
+      "tick": 160,
+      "hash": "8b7af10a45be4837"
+    },
+    {
+      "tick": 180,
+      "hash": "20dfa7bbcbe5f28e"
+    },
+    {
+      "tick": 200,
+      "hash": "a1516bdf0b2ba853"
+    }
+  ]
+}

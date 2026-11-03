@@ -1,5 +1,6 @@
+import type { CampaignDef } from '@engine/core/campaign';
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { MISSION_KIND } from '@engine/core/content/engine-kinds';
+import { CAMPAIGN_KIND, MISSION_KIND } from '@engine/core/content/engine-kinds';
 import { kitContentKinds } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import type { MissionDef } from '@engine/core/missions';
@@ -38,9 +39,24 @@ function only<T>(entries: readonly { value: T }[], what: string): T {
   return entries[0]!.value;
 }
 
-/** The map (`content/maps/village.world.json`), a world scenario without its types table. */
-export function siegeMap(content: ContentBundle): RtsMap {
-  return only(contentOf(content, rtsMapKind()), 'map (content/maps/*.world.json)');
+/** The scenario the game starts with when no campaign save says otherwise (the siege itself). */
+export const FIRST_SCENARIO = 'village';
+
+/**
+ * A map (`content/maps/<name>.world.json`), a world scenario without its types table: `village`,
+ * the siege, or (Engine 0.13 T7) `dawn`, the follow-up that starts from the siege's results. Which
+ * one is played comes from the campaign (`siegeCampaign`), never from code.
+ */
+export function siegeMap(content: ContentBundle, name: string = FIRST_SCENARIO): RtsMap {
+  const map = contentOf(content, rtsMapKind()).find((e) => e.name === name);
+  if (map === undefined)
+    throw new Error(`the mini siege has no map "${name}" (content/maps/${name}.world.json)`);
+  return map.value;
+}
+
+/** The campaign (`content/campaigns/siege.campaign.json`): the siege, then the dawn assault. */
+export function siegeCampaign(content: ContentBundle): CampaignDef {
+  return only(contentOf(content, CAMPAIGN_KIND), 'campaign (content/campaigns/*.campaign.json)');
 }
 
 /** The unit and building types (`content/types/siege.json`). */
@@ -74,11 +90,12 @@ export function siegeTowers(content: ContentBundle): TowerTable {
 }
 
 /**
- * The scenario the world is built from: the map with `seed` as the world's seed and the types
- * table spawned first (entity 2, after the terrain), so the map keeps no copy of it.
+ * The scenario the world is built from: the map `name` (the siege when left out) with `seed` as
+ * the world's seed and the types table spawned first (entity 2, after the terrain), so the map
+ * keeps no copy of it.
  */
-export function siegeScenario(content: ContentBundle, seed: number): RtsMap {
-  const map = siegeMap(content);
+export function siegeScenario(content: ContentBundle, seed: number, name: string = FIRST_SCENARIO): RtsMap {
+  const map = siegeMap(content, name);
   const types = { key: 'types', components: { RtsTypes: siegeTypes(content) } };
   return { ...map, seed, entities: [types, ...map.entities] } as RtsMap;
 }

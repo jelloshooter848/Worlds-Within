@@ -112,11 +112,18 @@
     { "tick": 161, "path": "named.captain.hp", "op": "eq", "value": 90 },
     { "tick": 261, "path": "world.tick", "op": "eq", "value": 260 },
     { "tick": 261, "path": "named.hall.hp", "op": "eq", "value": 112 },
-    { "tick": 261, "path": "named.hall.hp", "op": "lt", "value": 400 }
+    { "tick": 261, "path": "named.hall.hp", "op": "lt", "value": 400 },
+    { "tick": 161, "path": "named.captain.fate", "op": "eq", "value": "captured" },
+    { "tick": 161, "path": "named.captain.x", "op": "eq", "value": null },
+    { "tick": 161, "path": "named.captain.alive", "op": "eq", "value": true },
+    { "tick": 261, "path": "named.captain.fate", "op": "eq", "value": "captured" },
+    { "tick": 261, "path": "named.captain.hp", "op": "eq", "value": 90 },
+    { "tick": 261, "path": "sides.village.stock.gold", "op": "eq", "value": 150 }
   ],
   "invariants": [{ "path": "named.hall.alive", "op": "eq", "value": true }],
   "hashEvery": 20,
   "guards": ["enemy-follows-plan"],
+  "codes": [{ "tick": 261, "code": "2VFP0-1P1T8-0M32N-PBJFC-J2A70" }],
   "hashes": [
     { "tick": 0, "hash": "8eb4811aae418350" },
     { "tick": 20, "hash": "c9939cb5864e20e6" },

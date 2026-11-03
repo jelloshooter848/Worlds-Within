@@ -180,11 +180,16 @@
     { "tick": 566, "path": "named.captain.hp", "op": "eq", "value": 120 },
     { "tick": 666, "path": "world.tick", "op": "eq", "value": 260 },
     { "tick": 666, "path": "named.hall.hp", "op": "eq", "value": 400 },
-    { "tick": 666, "path": "sides.raiders.units", "op": "eq", "value": 0 }
+    { "tick": 666, "path": "sides.raiders.units", "op": "eq", "value": 0 },
+    { "tick": 666, "path": "named.captain.alive", "op": "eq", "value": true },
+    { "tick": 666, "path": "named.captain.hp", "op": "eq", "value": 120 },
+    { "tick": 666, "path": "sides.village.unitTypes.captain", "op": "eq", "value": 1 },
+    { "tick": 666, "path": "sides.village.stock.gold", "op": "eq", "value": 150 }
   ],
   "invariants": [{ "path": "named.hall.alive", "op": "eq", "value": true }],
   "hashEvery": 20,
   "guards": ["enemy-follows-plan"],
+  "codes": [{ "tick": 666, "code": "2H120-1P1T8-0G01J-FJFCJ-2A00" }],
   "hashes": [
     { "tick": 0, "hash": "8eb4811aae418350" },
     { "tick": 20, "hash": "c9939cb5864e20e6" },

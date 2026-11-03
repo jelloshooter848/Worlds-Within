@@ -1,0 +1,53 @@
+{
+  "run": "games/samples/mini-siege/runs/dawn-rescue-failed.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "4f59cf3f3a4af4f2"
+    },
+    {
+      "tick": 20,
+      "hash": "3c30e56442758bd0"
+    },
+    {
+      "tick": 40,
+      "hash": "33ca450da7e457dc"
+    },
+    {
+      "tick": 60,
+      "hash": "5a8ab8e3f46b3c4e"
+    },
+    {
+      "tick": 80,
+      "hash": "09a3ede75f5cd230"
+    },
+    {
+      "tick": 100,
+      "hash": "832b14786be035b4"
+    },
+    {
+      "tick": 120,
+      "hash": "c7cfc5426262a966"
+    },
+    {
+      "tick": 140,
+      "hash": "b7fd3aa7336b0873"
+    },
+    {
+      "tick": 160,
+      "hash": "4a9212201d5f0d1d"
+    },
+    {
+      "tick": 180,
+      "hash": "0962a0e2af8d9980"
+    },
+    {
+      "tick": 200,
+      "hash": "b080a9ab1bc51643"
+    },
+    {
+      "tick": 201,
+      "hash": "41809d9356d8ed03"
+    }
+  ]
+}

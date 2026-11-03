@@ -1,0 +1,49 @@
+{
+  "run": "games/samples/mini-siege/runs/dawn-leave.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "4f59cf3f3a4af4f2"
+    },
+    {
+      "tick": 20,
+      "hash": "06c239f6ed0ffce3"
+    },
+    {
+      "tick": 40,
+      "hash": "b153663c9a6c17c4"
+    },
+    {
+      "tick": 60,
+      "hash": "f0c1051b2de9ac38"
+    },
+    {
+      "tick": 80,
+      "hash": "e6ce8f300c911630"
+    },
+    {
+      "tick": 100,
+      "hash": "65c91e6342b8cec6"
+    },
+    {
+      "tick": 120,
+      "hash": "0b8b6c7f7be6032a"
+    },
+    {
+      "tick": 140,
+      "hash": "1c5e0f74be535111"
+    },
+    {
+      "tick": 160,
+      "hash": "2bb2408667384759"
+    },
+    {
+      "tick": 180,
+      "hash": "c2abdd17b3cec659"
+    },
+    {
+      "tick": 200,
+      "hash": "facb7083b39bcf95"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "ransom-captain",
+  "title": "Pay the raiders' new price",
+  "worldTimeCost": 10,
+  "onQuit": "paid",
+  "outcomes": [
+    {
+      "id": "paid",
+      "title": "A hundred and twenty gold for the captain",
+      "weight": 1,
+      "effects": [
+        { "type": "inventory", "entity": "hall", "item": "gold", "add": -120 },
+        { "type": "fate", "entity": "captain", "fate": "freed", "at": { "x": 10, "y": 15 } }
+      ]
+    }
+  ]
+}
