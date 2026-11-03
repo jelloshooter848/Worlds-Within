@@ -51,11 +51,14 @@ record --bot`), **strict mutants** (decision 1; on since T4, when the sample's r
 - `td-map` (`maps/<id>.json` + `maps/<id>.map.txt`): `id`, `title?`, `legend` (the map's own
   characters, each one a cell kind: `{ "W": "build" }`; not a kit character), `start` (`{ gold,
 lives }`, lives at least 1), `towers` (the tower type ids placeable here, at least one, none twice)
-  and `waves` (a `td-waves` file name), with `map` in the grid. Schema codes at the `.map.txt`
+  and `waves` (a `td-waves` file name; since Engine 0.15 T7, lesson D8, optional: a map only
+  `td-defence` missions play needs none, their wave is the world's units), with `map` in the grid. Schema codes at the `.map.txt`
   line, with row and col: `unknown_char`, `ragged_row`, `empty_grid`, `no_entry`, `two_entries`,
   `no_exit`, `two_exits`, `path_broken` (the walk stops before the exit), `path_branch`,
   `path_off_walk` (a path cell the walk never reaches); and `bad_legend_char`, `duplicate_tower`.
-  `checkAll`: `unknown_tower` at `towers.<i>`, `unknown_waves` at `waves`.
+  `checkAll`: `unknown_tower` at `towers.<i>`, `unknown_waves` at `waves`, and `no_waves` at
+  `waves` for a map without one that no `td-defence` mission names (it could only be played
+  standalone); `tdRound` refuses a map without `waves` too (the mini siege's `walls`).
 - `td-towers`: `{ towers: { <id>: { cost, range (cells), damage, cooldown (ticks, >= 1), sell? } } }`;
   `sell` left out is half the cost, rounded down. `checkAll`: `duplicate_tower` for a type in two files.
 - `td-waves` (`waves/<id>.json`): `id`, `timer?` (ticks), `waves` (at least one, each `{ groups }`,
@@ -181,7 +184,11 @@ names it with `"play": "td-defence"` (`TD_DEFENCE`) and says everything in its `
 - `map`: the id of one of the game's `td-map`s.
 - `build?`: `{ select, slot? }`, the world entities (the walls) that stand on the map's build
   cells: those `select` picks, ascending id, on the cells of the `slot` character (a build cell's;
-  every build cell when left out) in reading order. Spare slot cells become blocked ground; more
+  every build cell when left out) in reading order. Since Engine 0.15 T7 (lesson D10)
+  `build.cells: [{ entity, cell: { x, y } }]` puts a named wall (by key or id; one `select` picks)
+  on a named build cell, and the rest fill the remaining cells in the old order; a cell given
+  twice, a wall given twice, a cell that is no build cell (`checkUse`) or a wall `select` does not
+  pick is refused. Spare slot cells become blocked ground; more
   walls than cells refuses the round. Left out, the map's own build cells, named `"<col>,<row>"`.
 - `budget?`: `{ faction, item, cap? }`, the round's gold: the `Inventory` item of the entity with
   that faction's `Stockpile` (0 when it has none of the item), at most `cap`. Left out, the map's
@@ -201,7 +208,14 @@ names it with `"play": "td-defence"` (`TD_DEFENCE`) and says everything in its `
   quit goes to `onQuit` without the rules. `killed` names wave units by world name or id (the
   adapter refuses a name not in the wave).
 - **World names**: the scenario key the open mission's `refs` give an entity (the keys its effects
-  name), else its id as a string (lesson D6).
+  name), else its id as a string. Since Engine 0.15 T7 (lesson D6) the adapter also gets the
+  world's whole key table (`input(snapshot, mission, keys)`), so `keys` selectors, `build.cells`
+  and `killed` may name **any** keyed entity; the name in the report and record stays the ref or
+  the id (no record changed), the table key riding along as `key`.
+- **Selectors against the world** (Engine 0.15 T7, lesson D7): `checkUse` is handed the game's
+  world scenarios that offer the mission and reports, per scenario, a `build` or `wave` selector
+  that picks nothing, a `keys`, `build.cells` or `killed` name that is no key of it, a budget
+  faction with no `Stockpile`, and more walls than build cells.
 
 The halves (the kit never imports `engine/sim`; it reads the snapshot with `snapshotEntities`):
 

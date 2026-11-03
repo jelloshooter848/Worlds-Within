@@ -4,6 +4,7 @@ import type { JsonObject, JsonValue } from '../core/headless';
 import { canonicalJson } from '../core/headless';
 import type { Change } from './events';
 import type { AnyComponent, Entity, RestoredState, System, World } from './world';
+import { keepKeys, worldKeys } from './keys';
 import { makeWorld, worldInternals } from './world';
 
 /**
@@ -96,6 +97,12 @@ export const worldSaveSchema = z.strictObject({
       events: z.array(changeSchema).describe('the kept changes, oldest first'),
     })
     .describe('the event log and its retention'),
+  keys: z
+    .record(z.string().min(1), EntityId)
+    .optional()
+    .describe(
+      "the world's key table (Engine 0.15): each scenario key and its entity id, sorted; left out when the world has none",
+    ),
 });
 
 export type WorldSave = z.infer<typeof worldSaveSchema>;
@@ -150,6 +157,8 @@ export function saveWorld(world: World): JsonObject {
       events: events.map((c) => structuredClone(c)),
     },
   };
+  const keys = worldKeys(world);
+  if (Object.keys(keys).length > 0) save.keys = { ...keys };
   return save as JsonObject;
 }
 
@@ -215,6 +224,9 @@ export function loadWorld(json: unknown, options: LoadOptions): World {
     }
   });
 
+  for (const [key, id] of Object.entries(save.keys ?? {}))
+    if (id >= save.nextId) at(['keys', key], `must be below nextId (${save.nextId})`);
+
   const { log } = save;
   if (!log.enabled && log.events.length > 0) at(['log', 'events'], 'must be empty when the log is disabled');
   log.events.forEach((change, i) => {
@@ -238,7 +250,7 @@ export function loadWorld(json: unknown, options: LoadOptions): World {
     data,
     log: log.events as Change[],
   };
-  return makeWorld(
+  const world = makeWorld(
     save.seed,
     {
       components: options.components,
@@ -247,4 +259,6 @@ export function loadWorld(json: unknown, options: LoadOptions): World {
     },
     restored,
   );
+  if (save.keys !== undefined) keepKeys(world, save.keys);
+  return world;
 }

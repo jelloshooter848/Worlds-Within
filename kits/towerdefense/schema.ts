@@ -27,7 +27,10 @@ import { CELL_KINDS, cellKinds, LEGEND, tracePath, type CellKind } from './map';
  * `two_entries`, `no_exit`, `two_exits`, `path_broken`, `path_branch`, `path_off_walk`) are schema
  * errors at the `.map.txt` line with the row and col. Across files (`checkAll`), a map naming a
  * tower type no `td-towers` file has is `unknown_tower` at `towers.<i>`, and one naming a wave list
- * there is no `td-waves` file for is `unknown_waves` at `waves`.
+ * there is no `td-waves` file for is `unknown_waves` at `waves`. Since Engine 0.15 (lesson D8) a
+ * map may leave `waves` out when only `td-defence` missions play it (their wave is the world's
+ * units); one no mission names is `no_waves` at `waves` (it could only be played standalone, which
+ * needs a wave list).
  */
 
 /** Whole sub-cell units in one cell: an enemy's `progress` along the path and its `speed`. */
@@ -57,7 +60,13 @@ export const tdMapSchema = z
       .array(Id)
       .min(1)
       .describe('the tower types that can be placed on this map, by `td-towers` id, in button order'),
-    waves: z.string().min(1).describe('the wave list the round plays: a `td-waves` file name'),
+    waves: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        "the wave list a standalone round plays: a `td-waves` file name; left out only on a map used by `td-defence` missions alone, whose wave is the world's units (Engine 0.15)",
+      ),
     map: z
       .array(z.string())
       .describe('the grid, top row first, of legend characters; usually in the `.map.txt` file'),
@@ -180,6 +189,21 @@ export function mapReferenceIssues(name: string, map: TdMap, others: ContentLook
       });
     }
   });
+  if (map.waves === undefined) {
+    // Lesson D8: no wave list is fine for a map only `td-defence` missions play.
+    const named = others('mission').some((m) => {
+      const v = m.value as { play?: unknown; params?: { map?: unknown } } | null;
+      return v?.play === 'td-defence' && v.params?.map === map.id;
+    });
+    if (!named)
+      issues.push({
+        name,
+        path: ['waves'],
+        code: 'no_waves',
+        message: `td-map "${map.id}" has no "waves" and no td-defence mission plays it: a standalone round needs a td-waves list`,
+      });
+    return issues;
+  }
   const waves = others('td-waves').map((e) => e.name);
   if (!waves.includes(map.waves))
     issues.push({

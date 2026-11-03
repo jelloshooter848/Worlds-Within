@@ -36,6 +36,7 @@ import {
   type MissionDef,
   type Timeline,
 } from '@engine/sim/index';
+import { unknownKeyAt, type WorldKeys } from './check-values';
 import { failsCheck, readRunFile, type CheckOp, type LoadedRunFile, type OrderEntry } from './run-file';
 import {
   applyMissionStep,
@@ -222,7 +223,7 @@ export interface PlayOptions {
    * mission steps and step and before its checks: how `trace` reads a few paths per tick without a
    * loop of its own. It must not change the snapshot.
    */
-  onTick?(tick: number, snapshot: JsonObject): void;
+  onTick?(tick: number, snapshot: JsonObject, keys: WorldKeys): void;
   /**
    * Engine 0.14 T7: read the world's event log and timeline at the last tick (`PlayedRun.worldEvents`
    * and `.timeline`). A world run is built with its event log on; a game is asked through its
@@ -447,7 +448,10 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       mission: (step) => applyMissionStep(world, step, defs, keys),
       worldEvents: (sinceTick) => eventsSince(world, sinceTick),
       timeline: () => worldTimeline(world),
+      keys,
     };
+    const noKey = unknownKeys(loaded, stepper);
+    if (noKey !== null) return noKey;
     return { ok: true, value: play(loaded, stepper, world.seed, null, [], {}, opts, null, null, null) };
   }
   const { run } = loaded;
@@ -541,7 +545,10 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
           gameRun: true,
         }
       : {}),
+    keys: instance.worldKeys?.() ?? {},
   };
+  const noKey = unknownKeys(loaded, stepper);
+  if (noKey !== null) return noKey;
   return {
     ok: true,
     value: play(
@@ -580,6 +587,38 @@ interface Stepper {
   timeline?(clock?: ClockEntry[]): Timeline;
   /** True for a game run: its world tick is sampled every game tick for the timeline's `clock`. */
   gameRun?: boolean;
+  /**
+   * The world's key table (Engine 0.15 T7, gap M17: a world run's scenario keys, a game's
+   * `worldKeys()`), for `world.key.<key>` paths; `{}` for a game without a world.
+   */
+  keys: WorldKeys;
+}
+
+/**
+ * The run file's checks whose path names a scenario key the world's key table lacks (read on the
+ * tick-0 snapshot): `no_key` at the check's `path` (Engine 0.15 T7, decision 8), or null.
+ */
+function unknownKeys(loaded: LoadedRunFile, stepper: Stepper): { ok: false; errors: ContentError[] } | null {
+  const snapshot = stepper.snapshot();
+  const errors: ContentError[] = [];
+  const lists = [
+    ['assertions', loaded.run.assertions],
+    ['invariants', loaded.run.invariants],
+  ] as const;
+  for (const [field, checks] of lists)
+    checks.forEach((c, i) => {
+      const key = unknownKeyAt(snapshot, c.path, stepper.keys);
+      if (key !== null)
+        errors.push(
+          contentError(
+            loaded.file,
+            [field, i, 'path'],
+            'no_key',
+            `"${c.path}" names the key "${key}", which the world's key table does not hold (${Object.keys(stepper.keys).join(', ') || 'no keys'})`,
+          ),
+        );
+    });
+  return errors.length > 0 ? { ok: false, errors } : null;
 }
 
 /**
@@ -665,10 +704,10 @@ function play(
       snapshot = stepper.snapshot();
     }
     if (sampling) clock.push({ game: tick, world: stepper.worldEvents!(Number.MAX_SAFE_INTEGER).tick });
-    opts.onTick?.(tick, snapshot);
+    opts.onTick?.(tick, snapshot, stepper.keys);
     if (checking) {
       run.invariants.forEach((c, index) => {
-        const failed = failsCheck(snapshot, c);
+        const failed = failsCheck(snapshot, c, stepper.keys);
         if (failed)
           failures.push({
             tick,
@@ -682,7 +721,7 @@ function play(
       });
       run.assertions.forEach((c, index) => {
         if (c.tick !== tick) return;
-        const failed = failsCheck(snapshot, c);
+        const failed = failsCheck(snapshot, c, stepper.keys);
         if (failed)
           failures.push({
             tick,

@@ -1,7 +1,7 @@
 import type { ContentBundle } from './content/bundle';
 import { contentError, issuesToErrors, type ContentError, type FieldPath } from './content/validate';
 import type { JsonObject } from './headless';
-import type { MiniGameDef } from './minigame';
+import type { MiniGameDef, MiniGameWorldScenario } from './minigame';
 
 /**
  * Checking the content's mini game params with the content (Engine 0.10, gap G16, item 157): every
@@ -55,16 +55,28 @@ export function missionMiniGameUses(content: ContentBundle): MiniGameUse[] {
 }
 
 /**
+ * A world scenario of the game, as the tools build it for `validate` (Engine 0.15 T7, lesson D7):
+ * what `checkUse` sees (`MiniGameWorldScenario`) plus the missions its opportunities offer.
+ */
+export interface GameWorldScenario extends MiniGameWorldScenario {
+  /** The mission ids the scenario's `opportunities` name. */
+  readonly offers: readonly string[];
+}
+
+/**
  * The errors of `uses` against the game's mini games `defs`, in the uses' order: `unknown_mini_game`
  * at the id when no def has it (naming the ids there are), else each issue of the def's
  * `paramsSchema` (when it has one) at its field under the params (`triggers.0.params.goal`), with
  * Zod's codes, and, once the params pass it, each problem of the def's `checkUse` (Engine 0.11) as
  * `bad_mini_game_use` at its field. `root` goes in front of each file name, as in `loadContent`.
+ * `scenarios` (Engine 0.15 T7, lesson D7): the game's world scenarios; a mission's `checkUse` is
+ * handed the ones whose opportunities offer it, so its selectors are checked against those worlds.
  */
 export function miniGameParamErrors(
   uses: readonly MiniGameUse[],
   defs: readonly MiniGameDef[],
   root = '',
+  scenarios: readonly GameWorldScenario[] = [],
 ): ContentError[] {
   const byId = new Map(defs.map((d) => [d.id, d] as const));
   const known = defs.map((d) => `"${d.id}"`).join(', ') || 'none';
@@ -85,7 +97,12 @@ export function miniGameParamErrors(
         continue;
       }
     }
-    for (const problem of def.checkUse?.({ params: use.params, owner: use.owner ?? null }) ?? [])
+    const id = use.owner?.['id'];
+    const offered = scenarios
+      .filter((sc) => typeof id === 'string' && sc.offers.includes(id))
+      .map(({ file, snapshot, keys }) => ({ file: `${root}${file}`, snapshot, keys }));
+    const check = { params: use.params, owner: use.owner ?? null, scenarios: offered };
+    for (const problem of def.checkUse?.(check) ?? [])
       errors.push(
         contentError(file, [...use.paramsAt, ...problem.path], 'bad_mini_game_use', problem.message),
       );

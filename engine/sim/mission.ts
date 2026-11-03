@@ -193,6 +193,14 @@ export function missionsOf(world: World): MissionsView {
   };
 }
 
+/**
+ * The world's committed mission records, in commit order (Engine 0.15 T7, gap M28): what a page or
+ * a game's glue reads instead of the `Missions` component itself. Frozen data; reads only.
+ */
+export function missionRecords(world: World): MissionRecord[] {
+  return missionsOf(world).committed();
+}
+
 /** What a mission plays from: the plain world snapshot (a kit's adapter reads it). */
 export function missionSnapshot(world: World): JsonObject {
   return world.snapshot() as unknown as JsonObject;

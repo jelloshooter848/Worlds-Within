@@ -15,6 +15,7 @@ import {
   type TdTowers,
   type TdWaves,
 } from './schema';
+import { tdRound } from './game';
 import { TdWorld } from './world';
 
 const FIXTURE = '__fixtures__/game/';
@@ -92,6 +93,34 @@ describe('the towerdefense kit hook', () => {
       { file: 'games/td/content/maps/tiny.json', path: 'towers.1', code: 'unknown_tower' },
       { file: 'games/td/content/maps/tiny.json', path: 'waves', code: 'unknown_waves' },
     ]);
+  });
+
+  it('takes a map without a wave list only when a td-defence mission plays it (D8)', () => {
+    const { waves: _waves, ...map } = JSON.parse(read('content/maps/tiny.json')) as Record<string, unknown>;
+    const alone = load({ 'content/maps/tiny.json': JSON.stringify(map) });
+    expect(alone.ok ? [] : brief(alone.errors)).toEqual([
+      { file: 'games/td/content/maps/tiny.json', path: 'waves', code: 'no_waves' },
+    ]);
+    const manifest = JSON.parse(read('game.json')) as { content: Record<string, string[]> };
+    manifest.content['mission'] = ['content/hold.mission.json'];
+    const mission = {
+      id: 'hold',
+      title: 'Hold',
+      worldTimeCost: 5,
+      play: 'td-defence',
+      params: { map: 'tiny', wave: [{ kind: 'raider', speed: 4 }], outcomes: [{ outcome: 'held' }] },
+      onQuit: 'held',
+      outcomes: [{ id: 'held', title: 'Held', effects: [] }],
+    };
+    const used = load({
+      'game.json': JSON.stringify(manifest),
+      'content/maps/tiny.json': JSON.stringify(map),
+      'content/hold.mission.json': JSON.stringify(mission),
+    });
+    expect(used.ok ? [] : brief(used.errors)).toEqual([]);
+    // A standalone round of it is refused, naming why.
+    if (used.ok)
+      expect(() => tdRound(used.value)).toThrow(/has no "waves": it is a map for td-defence missions only/);
   });
 
   it('refuses a tower type given in two files', () => {

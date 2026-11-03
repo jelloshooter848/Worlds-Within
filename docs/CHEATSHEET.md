@@ -292,6 +292,14 @@ world run has no `input`, `disableRules` or `guards`; its paths read the world s
 `dump`, hashes and replays work on it; `mutants` and `screenshot` refuse it. Sample:
 `engine/sim/__fixtures__/village-build.run.json`.
 
+Keyed paths (Engine 0.15): inside a world snapshot name an entity by scenario key, not by its
+place in a component list, which moves when an entity is added. `world.key.ram.Health.hp`,
+`world.key.captain.alive` / `.fate`, `world.key.captain.Position` (null off the map),
+`world.id.16.Producer.queue.length` (an entity made in play), `world.one.Missions.committed.0.outcome`
+(the world-level component); on a world run drop `world.` (`key.ram.alive`). The keys are the
+game's `worldKeys()` (a `MissionHost` has it) or the scenario's; a key it lacks is `no_key`
+(exit 3). Sample runs use only these (`games/samples/mini-siege/runs/`).
+
 Recorded orders and sync hashes (Engine 0.9): `"orders": [{ "tick": 40, "id": 1, "faction": "red",
 "type": "move", "units": [7], "target": { "x": 9, "y": 6 } }]` are applied after that tick's state
 and before the step from it (a world run applies them through `engine/sim`, which needs a scenario

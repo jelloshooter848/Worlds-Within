@@ -60,7 +60,7 @@ import { UsageError } from './exit-codes';
  * is the input of the step from tick `f` to tick `f + 1`.
  */
 
-export { CHECK_OPS, failsCheck, valueAt, type CheckOp } from './check-values';
+export { CHECK_OPS, failsCheck, unknownKeyAt, valueAt, type CheckOp, type WorldKeys } from './check-values';
 
 /** What each op means, one line each, for help and docs. */
 export const CHECK_OP_MEANINGS: Readonly<Record<CheckOp, string>> = {

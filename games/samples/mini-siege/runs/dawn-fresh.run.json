@@ -14,13 +14,13 @@
     },
     {
       "tick": 0,
-      "path": "named.captain.alive",
+      "path": "world.key.captain.alive",
       "op": "eq",
       "value": true
     },
     {
       "tick": 0,
-      "path": "named.captain.hp",
+      "path": "world.key.captain.Health.hp",
       "op": "eq",
       "value": 120
     },
@@ -44,7 +44,7 @@
     },
     {
       "tick": 100,
-      "path": "named.captain.alive",
+      "path": "world.key.captain.alive",
       "op": "eq",
       "value": false
     },
@@ -62,14 +62,14 @@
     },
     {
       "tick": 200,
-      "path": "named.hall.hp",
+      "path": "world.key.hall.Health.hp",
       "op": "eq",
       "value": 300
     }
   ],
   "invariants": [
     {
-      "path": "named.hall.alive",
+      "path": "world.key.hall.alive",
       "op": "eq",
       "value": true
     }

@@ -62,6 +62,24 @@ start?)`, `storeVolumes`; never throws, never read by a headless run) for the sh
 control (M1, `shell/volume-control.ts`). Tested in `input/merged-input.test.ts`,
 `input/input-recorder.test.ts`, `minigame.test.ts` and `shell/shell.test.ts`.
 
+**Mission data by scenario key** (Engine 0.15 T7, gaps M10, D6, M17, M28, M25, D7;
+docs/BUILD-LOG.md, Engine 0.15, decision 8, item 285). The optional `HeadlessGame.worldKeys()` is
+the game's world key table (scenario key to entity id; `engine/sim`'s `worldKeys`), never in
+`snapshot()`, for the tools' `world.key.<key>` run checks; `MissionHost.worldKeys()` gives the
+port's optional `keys()` (`{}` without it) and `MissionHost.records()` the port's committed
+records (gap M28: a page reads the host, not the sim's components). `MissionWorldPort.open` may
+return `keys` beside the snapshot, and `MissionAdapter.input(snapshot, mission, keys?)` (and
+`playMissionRound`'s `keys` option) hands that whole table to the kit's adapter, so a mission's
+params and rules may name any keyed entity, not only the ones its effects name. A mission file's
+optional `marker` (`missionSchema`) is the scenario key the RTS kit's offer marker stands over (gap
+M25). `MiniGameUseCheck.scenarios` (`MiniGameWorldScenario { file, snapshot, keys }`) is the
+game's world scenarios that offer the mission, built at tick 0 by the tools, so a kit's `checkUse`
+checks its selectors against them (lesson D7); `miniGameParamErrors(uses, defs, root?,
+scenarios?)` takes them as `GameWorldScenario` (the same plus `offers`, the mission ids its
+opportunities name) and hands each mission's use the ones that offer it. Tested in
+`mission-host.test.ts`, `kits/topdown/mission-room.test.ts`, `kits/towerdefense/mission-defence.test.ts`
+and `engine/tools/mini-game-check.test.ts`.
+
 `state-hash.ts` (Engine 0.14 T8, gap G31) is the state hash, `stateHash(snapshot)`: the first 16
 hex digits of the SHA-256 (`sha256Hex`, written out, synchronous) of `canonicalJson(snapshot)`.
 The tools re-export it (`engine/tools/headless-run.ts`) and the browser shell's step hook
@@ -307,10 +325,12 @@ run it and the shell's `HostScene` plays it.
 - **The port.** It never imports `engine/sim`: the world is behind a `MissionWorldPort` with
   `open(def)` (`{ ok, snapshot, commitTick, seed }`: the plain snapshot the mission opened with and
   the round's seed), `delegate(id)`, `play(id, result)`, `quit(id)`, `settle()` (the ids
-  committed), `snapshot()` and `step()`. `missionPort(world, { refs })` in `engine/sim` fills it,
-  so the game's glue is one call. With no `game`, the host steps the port's world itself.
+  committed), `snapshot()` and `step()`, and optionally (Engine 0.15 T7) `keys` on `open`'s answer
+  and `keys()`, the world's key table. `missionPort(world)` in `engine/sim` fills it, so the
+  game's glue is one call. With no `game`, the host steps the port's world itself.
 - **Adapters** are keyed by mini game id (a mission's `play`): `MissionAdapter<JsonObject,
-MiniGameEnd>`, whose `input(snapshot, mission)` gives the round's `params`; `outcome` maps its end.
+MiniGameEnd>`, whose `input(snapshot, mission, keys)` gives the round's `params` (`keys`: the
+  world's key table the port's `open` gave, `{}` without one); `outcome` maps its end.
 - **Steps.** `mission(step)` (`{ mission, action, input? }`), or the live calls `launch(id)`
   (open), `play(id, script?)`, `delegate(id)`, `quit(id)`, each null or a refusal: the port's
   (the sim's codes), `unknown_mission`, `mission_not_open` / `mission_committed` /

@@ -260,9 +260,10 @@ round cannot start`), so the host refuses the round (`bad_mission_input`). The h
   `damage` effect with `"fromReport": "heroHpLost"` takes that amount when the mission was played
   (0 skips it) and its declared `amount` when delegated, quit or timed out (`engine/sim` applies
   it), so the round's cost comes back while every effect stays declared.
-- `foes`: `[{ slot, kind, select?: { event?, faction?, types?, member? }, hpPer? }]`. Each entry
+- `foes`: `[{ slot, kind, select?: { event?, faction?, types?, member?, squad? }, hpPer? }]`. Each entry
   picks world entities: members of the mission's `event` (or `select.event`), then by `Owner`
-  faction, `Unit` type and squad `Member` role; only entities with `Position` and, if they have
+  faction, `Unit` type, squad `Member` role and (Engine 0.15 T7, gap M16) `squad` (the squad's
+  scenario key or entity id: `"squad": "escort"`; roles stay the three `ROLES`); only entities with `Position` and, if they have
   `Health`, hp above 0, and never one whose `Fate` (Engine 0.13, decision 3) is `captured` or
   `dead` (read with `engine/core`'s `isLost`, by the data, not only because the sim takes them off
   the map); an `injured` or `freed` person is picked at their current hp; ascending id; an entity goes to the first entry that selects it. They are
@@ -279,6 +280,16 @@ round cannot start`), so the host refuses the round (`bad_mission_input`). The h
 - **World names.** An entity's name is the scenario key the open mission's `refs` give it (the
   snapshot's `Missions` component holds them: the keys the outcomes' effects name), else its id as
   a string. The adapter refuses a rule naming an entity that is not one of the round's foes.
+  Since Engine 0.15 T7 (gaps M10, D6) the adapter also gets the world's whole key table
+  (`input(snapshot, mission, keys)`): a `squad` and a rule's `destroyed`/`spared` may name **any**
+  keyed entity. The name a foe goes by in the report and the record stays the ref, else the id
+  (so no record changed); its table key, when another, rides along as the foe's and the placed
+  entry's `key`, and a rule naming it holds.
+- **Selectors against the world** (Engine 0.15 T7, lesson D7): `checkUse` is handed the game's
+  world scenarios that offer the mission (`validate` builds them) and reports, per scenario, a
+  `foes` entry or `hero` that picks no standing entity (`foes.0.select: picks no standing world
+entity in <file>`), a `squad` or rule name that is no key of it, and anything else
+  `missionRoomInput` would refuse the round for there.
 
 The two halves, both plain data (the kit never imports `engine/sim`; it reads the snapshot with
 `engine/core`'s `snapshotEntities`):

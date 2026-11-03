@@ -37,6 +37,8 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes.
   `hashes` and golden `<name>.hashes.json`; together they guard all five kit rules, with no run weak
   (`tests/runs/rts-skirmish-mutants.test.ts`; the kit is not strict, so `mutants` alone would not
   fail).
+- Engine 0.15 T7: `SkirmishGame.worldKeys()`, so `commands` checks `world.key.worker-3.Gatherer.node`
+  and, for entities made in play, `world.id.<n>...` (no positional component path).
 
 ## Imports allowed
 

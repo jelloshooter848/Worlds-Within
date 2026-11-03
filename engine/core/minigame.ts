@@ -73,11 +73,28 @@ export interface MiniGame {
   report?(): JsonObject;
 }
 
+/**
+ * One of the game's world scenarios as `checkUse` sees it (Engine 0.15 T7, lesson D7;
+ * docs/BUILD-LOG.md, Engine 0.15, decision 8): its content file, the plain world snapshot it starts
+ * as (tick 0, built by the tools with `engine/sim`) and its key table (scenario key to entity id).
+ */
+export interface MiniGameWorldScenario {
+  readonly file: string;
+  readonly snapshot: JsonObject;
+  readonly keys: Readonly<Record<string, number>>;
+}
+
 /** What `MiniGameDef.checkUse` is handed: the params and the content entry that names the game. */
 export interface MiniGameUseCheck {
   readonly params: JsonObject;
   /** The content entry naming the mini game (a mission's definition), or null when it has none. */
   readonly owner: JsonObject | null;
+  /**
+   * Optional (Engine 0.15 T7, lesson D7): the game's world scenarios whose opportunities offer the
+   * owning mission, so a mission's selectors can be checked against the worlds it opens on (a
+   * selector that picks nothing, a key or squad no scenario has). Empty or left out: no world check.
+   */
+  readonly scenarios?: readonly MiniGameWorldScenario[];
 }
 
 /** One problem `checkUse` found: where, under the params, and a one-line message. */

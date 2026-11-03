@@ -7,7 +7,13 @@ import {
   type MiniGameEnd,
   type SnapshotEntity,
 } from '@engine/core/mission-adapter';
-import type { MiniGameContext, MiniGameDef, MiniGameResult, MiniGameUseProblem } from '@engine/core/minigame';
+import type {
+  MiniGameContext,
+  MiniGameDef,
+  MiniGameResult,
+  MiniGameUseProblem,
+  MiniGameWorldScenario,
+} from '@engine/core/minigame';
 import type { MissionAdapter, MissionDef, MissionReport } from '@engine/core/missions';
 import type { PresentFrame } from '@engine/core/present';
 import { CHALLENGE_TICKS, RoomChallenge, type ChallengeReport, type RoomChallengeOptions } from './challenge';
@@ -74,6 +80,9 @@ const selectSchema = z.strictObject({
     .exactOptional()
     .describe('only units of these types (`Unit.type`)'),
   member: ROLE.exactOptional().describe('only named squad members with this role (`Member.role`)'),
+  squad: NAME.exactOptional().describe(
+    'only named members of this squad (`Member.squad`), named by its scenario key or entity id (Engine 0.15)',
+  ),
 });
 
 const foeSchema = z.strictObject({
@@ -100,7 +109,7 @@ const foeSchema = z.strictObject({
 const heroSchema = z.strictObject({
   select: selectSchema
     .refine((s) => Object.keys(s).length > 0, {
-      message: 'name an event, faction, types or member: the hero is exactly one world unit',
+      message: 'name an event, faction, types, member or squad: the hero is exactly one world unit',
     })
     .describe(
       "which world unit the hero is: exactly one living one, never captured or dead (`event` is any event when left out, not the mission's)",
@@ -217,6 +226,11 @@ export interface MissionRoomFoe extends JsonObject {
   entity: number;
   name: string;
   hp?: number;
+  /**
+   * The entity's scenario key from the world's key table when it differs from `name` (Engine 0.15
+   * T7): a rule may name the foe by it. Never in a snapshot or a record.
+   */
+  key?: string;
 }
 
 /**
@@ -264,6 +278,7 @@ const roundInputSchema = z.strictObject({
       entity: z.int(),
       name: z.string().min(1),
       hp: z.int().min(1).exactOptional(),
+      key: z.string().min(1).exactOptional(),
     }),
   ),
 });
@@ -273,6 +288,8 @@ export interface MissionRoomPlaced extends JsonObject {
   cell: string;
   entity: number;
   name: string;
+  /** The foe's scenario key when it differs from `name` (Engine 0.15 T7). */
+  key?: string;
 }
 
 /**
@@ -322,6 +339,23 @@ const field = (e: SnapshotEntity, component: string, key: string): JsonValue | u
 
 type Select = MissionRoomParams['foes'][number]['select'];
 
+/** A world's key table (scenario key to entity id; `{}` when the host has none). */
+type Keys = Readonly<Record<string, number>>;
+
+/** The entity a world name stands for: a key in `keys`, or an id (a number or its digits). */
+function entityNamed(name: string | number, keys: Keys): number | undefined {
+  if (typeof name === 'number') return name;
+  if (Object.hasOwn(keys, name)) return keys[name];
+  return /^[1-9][0-9]*$/.test(name) ? Number(name) : undefined;
+}
+
+/** Each entity's first scenario key (sorted), from the key table. */
+function keyByEntity(keys: Keys): Map<number, string> {
+  const out = new Map<number, string>();
+  for (const key of Object.keys(keys).sort()) if (!out.has(keys[key]!)) out.set(keys[key]!, key);
+  return out;
+}
+
 /**
  * Whether entity `e` stands in the world to be picked: on the map (`Position`), not captured or
  * dead (`Fate`, by the data: decision 3), and, with `Health`, above 0 hp.
@@ -333,17 +367,21 @@ function standing(e: SnapshotEntity): boolean {
 }
 
 /** Whether entity `e` is one `select` picks (`event` already resolved), standing or not. */
-function matches(e: SnapshotEntity, select: Select, event?: string) {
+function matches(e: SnapshotEntity, select: Select, event: string | undefined, keys: Keys) {
   if (event !== undefined && field(e, 'EventMember', 'event') !== event) return false;
   if (select.faction !== undefined && field(e, 'Owner', 'faction') !== select.faction) return false;
   if (select.types !== undefined && !select.types.includes(field(e, 'Unit', 'type') as string)) return false;
   if (select.member !== undefined && field(e, 'Member', 'role') !== select.member) return false;
+  if (select.squad !== undefined) {
+    const squad = entityNamed(select.squad, keys);
+    if (squad === undefined || field(e, 'Member', 'squad') !== squad) return false;
+  }
   return true;
 }
 
 /** Whether entity `e` is one `select` picks: standing and matching it. */
-function selects(e: SnapshotEntity, select: Select, event?: string) {
-  return standing(e) && matches(e, select, event);
+function selects(e: SnapshotEntity, select: Select, event: string | undefined, keys: Keys) {
+  return standing(e) && matches(e, select, event, keys);
 }
 
 /**
@@ -355,8 +393,9 @@ function pickHero(
   entities: readonly SnapshotEntity[],
   hero: NonNullable<MissionRoomParams['hero']>,
   nameOf: (e: SnapshotEntity) => string,
+  keys: Keys,
 ): MissionRoomHero {
-  const picked = entities.filter((e) => matches(e, hero.select, hero.select.event));
+  const picked = entities.filter((e) => matches(e, hero.select, hero.select.event, keys));
   const living = picked.filter(standing);
   if (living.length > 1)
     throw new Error(
@@ -378,20 +417,30 @@ function pickHero(
  * The round's params from the plain world snapshot (`MissionAdapter.input`). Throws (the host
  * refuses the round as `bad_mission_input`) on malformed params, or when a rule names a world
  * entity that is not one of the round's foes (it could never be destroyed in the round).
+ *
+ * `keys` (Engine 0.15 T7, gaps M10 and D6) is the world's key table: a `squad` selector and the
+ * rules' `destroyed` and `spared` may name any keyed entity, not only those the mission's effects
+ * name. A foe's name (in the report and the record) stays the open mission's `refs` key, else its
+ * id; its table key, when another, rides along as `key`, so no record changes.
  */
-export function missionRoomInput(snapshot: JsonObject, mission: MissionDef): MissionRoomInput {
+export function missionRoomInput(
+  snapshot: JsonObject,
+  mission: Pick<MissionDef, 'id' | 'params' | 'event'>,
+  keys: Keys = {},
+): MissionRoomInput {
   const params = missionRoomParams(mission.params);
   const names = namesOf(snapshot, mission.id);
+  const tableKeys = keyByEntity(keys);
   const entities = snapshotEntities(snapshot);
   const nameOf = (e: SnapshotEntity) => names.get(e.id) ?? String(e.id);
-  const hero = params.hero === undefined ? null : pickHero(entities, params.hero, nameOf);
+  const hero = params.hero === undefined ? null : pickHero(entities, params.hero, nameOf, keys);
   // The hero is never also one of the foes.
   const taken = new Set<number>(hero === null ? [] : [hero.entity]);
   const foes: MissionRoomFoe[] = [];
   for (const entry of params.foes) {
     const event = entry.select.event ?? mission.event;
     for (const e of entities) {
-      if (taken.has(e.id) || !selects(e, entry.select, event)) continue;
+      if (taken.has(e.id) || !selects(e, entry.select, event, keys)) continue;
       taken.add(e.id);
       const foe: MissionRoomFoe = {
         slot: entry.slot,
@@ -399,13 +448,15 @@ export function missionRoomInput(snapshot: JsonObject, mission: MissionDef): Mis
         entity: e.id,
         name: nameOf(e),
       };
+      const key = tableKeys.get(e.id);
+      if (key !== undefined && key !== foe.name) foe.key = key;
       const hp = field(e, 'Health', 'hp');
       if (entry.hpPer !== undefined && typeof hp === 'number')
         foe.hp = Math.max(1, Math.ceil(hp / entry.hpPer));
       foes.push(foe);
     }
   }
-  const known = new Set(foes.flatMap((f) => [f.name, String(f.entity)]));
+  const known = new Set(foes.flatMap(foeNames));
   params.outcomes.forEach((rule, i) => {
     for (const key of ['destroyed', 'spared'] as const)
       for (const name of rule.when?.[key] ?? [])
@@ -428,6 +479,10 @@ export function missionRoomInput(snapshot: JsonObject, mission: MissionDef): Mis
   }
   return input;
 }
+
+/** Every world name a foe answers to: its name, its id and its table key. */
+const foeNames = (f: { name: string; entity: number; key?: string }): string[] =>
+  f.key === undefined ? [f.name, String(f.entity)] : [f.name, String(f.entity), f.key];
 
 /**
  * Whether `rule` holds for a round that ended in `result`, `destroyed` holding the destroyed
@@ -475,7 +530,7 @@ export function missionRoomOutcome(end: MiniGameEnd, mission: MissionDef): Missi
   const gone = named(report.defeated);
   const destroyed = gone.map((p) => p.name);
   const hurt = named(report.hurt).map((p) => p.name);
-  const done = new Set(gone.flatMap((p) => [p.name, String(p.entity)]));
+  const done = new Set(gone.flatMap(foeNames));
   const rule = params.outcomes.find((r) => holds(r, end.result, done, gone.length));
   if (rule === undefined) throw new Error('no outcome rule holds for the round');
   const stats: JsonObject = { destroyed, hurt, heroLost: report.hero.lost, ticks: end.ticks };
@@ -493,7 +548,7 @@ export function missionRoomOutcome(end: MiniGameEnd, mission: MissionDef): Missi
  * every round.
  */
 export const topdownMissionAdapter: MissionAdapter<JsonObject, MiniGameEnd> = {
-  input: (snapshot, mission) => missionRoomInput(snapshot, mission),
+  input: (snapshot, mission, keys) => missionRoomInput(snapshot, mission, keys),
   outcome: (end, mission) => missionRoomOutcome(end, mission),
 };
 
@@ -580,7 +635,7 @@ function placeFoes(
         const foe = queue.shift();
         if (foe === undefined) return '.';
         const cell = `${col},${row}`;
-        placed.push({ cell, entity: foe.entity, name: foe.name });
+        placed.push({ cell, entity: foe.entity, name: foe.name, ...(foe.key ? { key: foe.key } : {}) });
         if (foe.hp !== undefined) foeHp[cell] = foe.hp;
         return spawnChar(foe.kind, legend);
       })
@@ -594,13 +649,77 @@ function placeFoes(
   return { room: { ...room, map }, placed, foeHp };
 }
 
-/** Problems with a mission's params that need the rooms or the mission ({@link missionRoom}'s `checkUse`). */
+/**
+ * Problems with a mission's selectors in one world scenario it is offered in (Engine 0.15 T7,
+ * lesson D7): a `foes` entry or the `hero` picking no standing entity there, a `squad` or a rule's
+ * name that is no key of the scenario, and anything else the adapter would refuse the round for.
+ */
+function scenarioProblems(
+  params: MissionRoomParams,
+  mission: JsonObject,
+  scenario: MiniGameWorldScenario,
+): MiniGameUseProblem[] {
+  const problems: MiniGameUseProblem[] = [];
+  const { file, keys } = scenario;
+  const entities = snapshotEntities(scenario.snapshot);
+  const event = typeof mission['event'] === 'string' ? mission['event'] : undefined;
+  const unknownName = (name: string | number) =>
+    typeof name === 'string' && entityNamed(name, keys) === undefined;
+  params.foes.forEach((entry, i) => {
+    const squad = entry.select.squad;
+    if (squad !== undefined && unknownName(squad))
+      problems.push({ path: ['foes', i, 'select', 'squad'], message: `"${squad}" is no key of ${file}` });
+    else if (!entities.some((e) => selects(e, entry.select, entry.select.event ?? event, keys)))
+      problems.push({ path: ['foes', i, 'select'], message: `picks no standing world entity in ${file}` });
+  });
+  if (params.hero !== undefined) {
+    const squad = params.hero.select.squad;
+    if (squad !== undefined && unknownName(squad))
+      problems.push({ path: ['hero', 'select', 'squad'], message: `"${squad}" is no key of ${file}` });
+    else
+      try {
+        pickHero(entities, params.hero, (e) => String(e.id), keys);
+      } catch (err) {
+        problems.push({ path: ['hero', 'select'], message: `${(err as Error).message} in ${file}` });
+      }
+  }
+  params.outcomes.forEach((rule, i) => {
+    for (const field of ['destroyed', 'spared'] as const)
+      (rule.when?.[field] ?? []).forEach((name, j) => {
+        if (unknownName(name))
+          problems.push({
+            path: ['outcomes', i, 'when', field, j],
+            message: `"${name}" is no key of ${file}`,
+          });
+      });
+  });
+  if (problems.length > 0) return problems;
+  try {
+    const id = typeof mission['id'] === 'string' ? mission['id'] : '';
+    missionRoomInput(
+      scenario.snapshot,
+      { id, params: params as JsonObject, ...(event !== undefined ? { event } : {}) },
+      keys,
+    );
+  } catch (err) {
+    problems.push({ path: [], message: `in ${file}: ${(err as Error).message}` });
+  }
+  return problems;
+}
+
+/**
+ * Problems with a mission's params that need the rooms or the mission ({@link missionRoom}'s
+ * `checkUse`), and (Engine 0.15 T7, lesson D7) with its selectors in each world scenario that
+ * offers it (`scenarios`, from `validate`).
+ */
 export function missionRoomProblems(
   params: MissionRoomParams,
   rooms: readonly RoomDef[],
   mission: JsonObject | null,
+  scenarios: readonly MiniGameWorldScenario[] = [],
 ): MiniGameUseProblem[] {
   const problems: MiniGameUseProblem[] = [];
+  if (mission !== null) for (const sc of scenarios) problems.push(...scenarioProblems(params, mission, sc));
   const room = rooms.find((r) => r.id === params.room);
   if (room === undefined)
     problems.push({
@@ -661,7 +780,8 @@ export function missionRoom(opts: MissionRoomOptions): MiniGameDef {
     id: MISSION_ROOM,
     title: title ?? 'MISSION',
     paramsSchema: missionRoomParamsSchema,
-    checkUse: ({ params, owner }) => missionRoomProblems(missionRoomParamsSchema.parse(params), rooms, owner),
+    checkUse: ({ params, owner, scenarios }) =>
+      missionRoomProblems(missionRoomParamsSchema.parse(params), rooms, owner, scenarios),
     hostStatus: hostStatus ?? ['mission'],
     ...(opts.inputMap ? { inputMap: opts.inputMap } : {}),
     create: (ctx, seed) => {

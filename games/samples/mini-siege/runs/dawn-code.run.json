@@ -14,13 +14,13 @@
     },
     {
       "tick": 0,
-      "path": "named.hall.hp",
+      "path": "world.key.hall.Health.hp",
       "op": "eq",
       "value": 300
     },
     {
       "tick": 0,
-      "path": "named.sergeant.hp",
+      "path": "world.key.sergeant.Health.hp",
       "op": "eq",
       "value": 50
     },
@@ -32,25 +32,25 @@
     },
     {
       "tick": 0,
-      "path": "named.captain.fate",
+      "path": "world.key.captain.fate",
       "op": "eq",
       "value": "captured"
     },
     {
       "tick": 0,
-      "path": "named.captain.alive",
+      "path": "world.key.captain.alive",
       "op": "eq",
       "value": true
     },
     {
       "tick": 0,
-      "path": "named.captain.x",
+      "path": "world.key.captain.Position",
       "op": "eq",
       "value": null
     },
     {
       "tick": 0,
-      "path": "named.captain.hp",
+      "path": "world.key.captain.Health.hp",
       "op": "eq",
       "value": 90
     },
@@ -68,25 +68,25 @@
     },
     {
       "tick": 0,
-      "path": "world.components.Opportunities.0.1.list.0.status",
+      "path": "world.one.Opportunities.list.0.status",
       "op": "eq",
       "value": "offered"
     },
     {
       "tick": 0,
-      "path": "world.components.Opportunities.0.1.list.1.status",
+      "path": "world.one.Opportunities.list.1.status",
       "op": "eq",
       "value": "offered"
     },
     {
       "tick": 0,
-      "path": "world.components.Opportunities.0.1.list.2.status",
+      "path": "world.one.Opportunities.list.2.status",
       "op": "eq",
       "value": "dormant"
     },
     {
       "tick": 0,
-      "path": "world.components.Opportunities.0.1.list.3.status",
+      "path": "world.one.Opportunities.list.3.status",
       "op": "eq",
       "value": "offered"
     },
@@ -104,19 +104,19 @@
     },
     {
       "tick": 60,
-      "path": "world.components.Opportunities.0.1.list.3.status",
+      "path": "world.one.Opportunities.list.3.status",
       "op": "eq",
       "value": "closed"
     },
     {
       "tick": 60,
-      "path": "world.components.Opportunities.0.1.list.0.status",
+      "path": "world.one.Opportunities.list.0.status",
       "op": "eq",
       "value": "closed"
     },
     {
       "tick": 60,
-      "path": "world.components.Opportunities.0.1.list.1.status",
+      "path": "world.one.Opportunities.list.1.status",
       "op": "eq",
       "value": "closed"
     },
@@ -134,13 +134,13 @@
     },
     {
       "tick": 200,
-      "path": "named.captain.fate",
+      "path": "world.key.captain.fate",
       "op": "eq",
       "value": "captured"
     },
     {
       "tick": 200,
-      "path": "named.captain.hp",
+      "path": "world.key.captain.Health.hp",
       "op": "eq",
       "value": 90
     },
@@ -158,14 +158,14 @@
     },
     {
       "tick": 200,
-      "path": "named.hall.hp",
+      "path": "world.key.hall.Health.hp",
       "op": "eq",
       "value": 300
     }
   ],
   "invariants": [
     {
-      "path": "named.hall.alive",
+      "path": "world.key.hall.alive",
       "op": "eq",
       "value": true
     }

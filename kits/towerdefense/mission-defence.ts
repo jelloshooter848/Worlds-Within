@@ -15,6 +15,7 @@ import type {
   MiniGameInputMap,
   MiniGameResult,
   MiniGameUseProblem,
+  MiniGameWorldScenario,
 } from '@engine/core/minigame';
 import type { MissionAdapter, MissionDef, MissionReport } from '@engine/core/missions';
 import type { PresentFrame } from '@engine/core/present';
@@ -99,16 +100,51 @@ const selectSchema = z.strictObject({
 
 type Select = z.infer<typeof selectSchema>;
 
-const buildSchema = z.strictObject({
-  select: selectSchema.describe('which world entities (the walls) stand on the build cells'),
-  slot: z
-    .string()
-    .length(1)
-    .exactOptional()
-    .describe(
-      "the map character (a build cell's) whose cells the walls stand on; every build cell when left out",
-    ),
+const cellSchema = z.strictObject({
+  x: z.int().min(0).describe("the build cell's column on the map"),
+  y: z.int().min(0).describe("the build cell's row on the map"),
 });
+
+const buildSchema = z
+  .strictObject({
+    select: selectSchema.describe('which world entities (the walls) stand on the build cells'),
+    slot: z
+      .string()
+      .length(1)
+      .exactOptional()
+      .describe(
+        "the map character (a build cell's) whose cells the walls stand on; every build cell when left out",
+      ),
+    cells: z
+      .array(
+        z.strictObject({
+          entity: NAME.describe('the wall, by world name (scenario key) or id; one `select` picks'),
+          cell: cellSchema.describe('the build cell it stands on'),
+        }),
+      )
+      .min(1)
+      .exactOptional()
+      .describe(
+        'walls put on named build cells (Engine 0.15, lesson D10); the rest fill the remaining cells in the old order',
+      ),
+  })
+  .superRefine((build, ctx) => {
+    const seenCells = new Set<string>();
+    const seenWalls = new Set<string>();
+    (build.cells ?? []).forEach((c, i) => {
+      const cell = `${c.cell.x},${c.cell.y}`;
+      if (seenCells.has(cell))
+        ctx.addIssue({ code: 'custom', path: ['cells', i, 'cell'], message: `cell ${cell} is given twice` });
+      if (seenWalls.has(String(c.entity)))
+        ctx.addIssue({
+          code: 'custom',
+          path: ['cells', i, 'entity'],
+          message: `"${c.entity}" is given twice`,
+        });
+      seenCells.add(cell);
+      seenWalls.add(String(c.entity));
+    });
+  });
 
 const budgetSchema = z.strictObject({
   faction: z.string().min(1).describe('the faction whose stockpile pays (the entity with its `Stockpile`)'),
@@ -218,6 +254,16 @@ export function tdDefenceParams(raw: JsonObject | undefined): TdDefenceParams {
 export interface TdWorldRef extends JsonObject {
   entity: number;
   name: string;
+  /**
+   * The entity's scenario key from the world's key table when it differs from `name` (Engine 0.15
+   * T7): a rule may name it by it. Never in a snapshot or a record.
+   */
+  key?: string;
+}
+
+/** A wall the adapter picked, with the build cell `build.cells` puts it on (`"<col>,<row>"`). */
+export interface TdWall extends TdWorldRef {
+  cell?: string;
 }
 
 /** One enemy of the wave: its kind and numbers, and the world unit it is. */
@@ -238,19 +284,32 @@ export interface TdDefenceInput extends JsonObject {
   lives?: number;
   timer?: number;
   /** The walls in order, or null for the map's own build cells. */
-  walls: TdWorldRef[] | null;
+  walls: TdWall[] | null;
   /** With `walls`: the map character whose cells they stand on (every build cell when left out). */
   slot?: string;
   foes: TdDefenceFoe[];
 }
 
-const refSchema = z.strictObject({ entity: z.int(), name: z.string().min(1) });
+const refSchema = z.strictObject({
+  entity: z.int(),
+  name: z.string().min(1),
+  key: z.string().min(1).exactOptional(),
+});
 const roundInputSchema = z.strictObject({
   map: z.string().min(1),
   gold: z.int().min(0).exactOptional(),
   lives: z.int().min(1).exactOptional(),
   timer: z.int().min(1).exactOptional(),
-  walls: z.array(refSchema).nullable(),
+  walls: z
+    .array(
+      refSchema.extend({
+        cell: z
+          .string()
+          .regex(/^\d+,\d+$/)
+          .exactOptional(),
+      }),
+    )
+    .nullable(),
   slot: z.string().length(1).exactOptional(),
   foes: z
     .array(
@@ -293,7 +352,7 @@ export interface TdDefenceReport extends JsonObject {
   escaped: string[];
   fallen: string[];
   cells: TdDefenceCell[];
-  foes: { enemy: number; entity: number; name: string; kind: string }[];
+  foes: { enemy: number; entity: number; name: string; kind: string; key?: string }[];
 }
 
 // ---- The adapter ----
@@ -322,8 +381,39 @@ function namesOf(snapshot: JsonObject, missionId: string): Map<number, string> {
 const field = (e: SnapshotEntity, component: string, key: string): JsonValue | undefined =>
   record(e.components[component])?.[key];
 
-/** Whether `select` picks entity `e` (named `name`; `event` already resolved): standing ones only. */
-function selects(e: SnapshotEntity, name: string, select: Select, event: string | undefined): boolean {
+/** A world's key table (scenario key to entity id; `{}` when the host has none). */
+type Keys = Readonly<Record<string, number>>;
+
+/** The entity a world name stands for: a key in `keys`, or an id (a number or its digits). */
+function entityNamed(name: string | number, keys: Keys): number | undefined {
+  if (typeof name === 'number') return name;
+  if (Object.hasOwn(keys, name)) return keys[name];
+  return /^[1-9][0-9]*$/.test(name) ? Number(name) : undefined;
+}
+
+/** Each entity's first scenario key (sorted), from the key table. */
+function keyByEntity(keys: Keys): Map<number, string> {
+  const out = new Map<number, string>();
+  for (const key of Object.keys(keys).sort()) if (!out.has(keys[key]!)) out.set(keys[key]!, key);
+  return out;
+}
+
+/** Every world name a picked entity answers to: its name, its id and its table key. */
+const refNames = (r: { name: string; entity: number; key?: string }): string[] =>
+  r.key === undefined ? [r.name, String(r.entity)] : [r.name, String(r.entity), r.key];
+
+/**
+ * Whether `select` picks entity `e` (named `name`; `event` already resolved): standing ones only.
+ * A `keys` name matches the entity's name, its id, or (Engine 0.15 T7) any key the world's key
+ * table gives it.
+ */
+function selects(
+  e: SnapshotEntity,
+  name: string,
+  select: Select,
+  event: string | undefined,
+  keys: Keys,
+): boolean {
   // Never someone captured or dead (by the data: Engine 0.13, decision 3); the injured come at
   // their current hp.
   if (!('Position' in e.components) || isLost(e)) return false;
@@ -335,7 +425,11 @@ function selects(e: SnapshotEntity, name: string, select: Select, event: string 
     const type = field(e, 'Unit', 'type') ?? field(e, 'Building', 'kind');
     if (!select.types.includes(type as string)) return false;
   }
-  if (select.keys !== undefined && !select.keys.some((k) => String(k) === name || k === e.id)) return false;
+  if (
+    select.keys !== undefined &&
+    !select.keys.some((k) => String(k) === name || entityNamed(k, keys) === e.id)
+  )
+    return false;
   return true;
 }
 
@@ -354,30 +448,46 @@ function budgetOf(entities: readonly SnapshotEntity[], budget: NonNullable<TdDef
  * `bad_mission_input`) on malformed params, a wave that selects no unit, or a rule naming a world
  * unit that is not in the wave.
  */
-export function tdDefenceInput(snapshot: JsonObject, mission: MissionDef): TdDefenceInput {
+export function tdDefenceInput(
+  snapshot: JsonObject,
+  mission: Pick<MissionDef, 'id' | 'params' | 'event'>,
+  keys: Keys = {},
+): TdDefenceInput {
   const params = tdDefenceParams(mission.params);
   const names = namesOf(snapshot, mission.id);
+  const tableKeys = keyByEntity(keys);
   const entities = snapshotEntities(snapshot);
   const nameOf = (e: SnapshotEntity) => names.get(e.id) ?? String(e.id);
-  let walls: TdWorldRef[] | null = null;
+  const refOf = (e: SnapshotEntity): TdWorldRef => {
+    const ref: TdWorldRef = { entity: e.id, name: nameOf(e) };
+    const key = tableKeys.get(e.id);
+    if (key !== undefined && key !== ref.name) ref.key = key;
+    return ref;
+  };
+  let walls: TdWall[] | null = null;
   if (params.build) {
     const select = params.build.select;
-    walls = entities
-      .filter((e) => selects(e, nameOf(e), select, select.event))
-      .map((e) => ({ entity: e.id, name: nameOf(e) }));
+    walls = entities.filter((e) => selects(e, nameOf(e), select, select.event, keys)).map(refOf);
+    // Lesson D10: a wall named in `cells` stands on that build cell.
+    (params.build.cells ?? []).forEach((c, i) => {
+      const id = entityNamed(c.entity, keys);
+      const wall = walls!.find((w) => w.entity === id);
+      if (wall === undefined)
+        throw new Error(`build.cells.${i} names "${c.entity}", which build.select does not pick`);
+      wall.cell = `${c.cell.x},${c.cell.y}`;
+    });
   }
   const taken = new Set<number>();
   const foes: TdDefenceFoe[] = [];
   for (const entry of params.wave) {
     const event = entry.select.event ?? mission.event;
     for (const e of entities) {
-      if (taken.has(e.id) || !selects(e, nameOf(e), entry.select, event)) continue;
+      if (taken.has(e.id) || !selects(e, nameOf(e), entry.select, event, keys)) continue;
       taken.add(e.id);
       const hp = field(e, 'Health', 'hp');
       const worldHp = typeof hp === 'number' ? hp : 1;
       foes.push({
-        entity: e.id,
-        name: nameOf(e),
+        ...refOf(e),
         kind: entry.kind,
         hp: Math.max(1, Math.ceil(worldHp / (entry.hpPer ?? 1))),
         speed: entry.speed,
@@ -387,7 +497,7 @@ export function tdDefenceInput(snapshot: JsonObject, mission: MissionDef): TdDef
     }
   }
   if (foes.length === 0) throw new Error('the wave selects no world unit');
-  const known = new Set(foes.flatMap((f) => [f.name, String(f.entity)]));
+  const known = new Set(foes.flatMap(refNames));
   params.outcomes.forEach((rule, i) => {
     for (const name of rule.when?.killed ?? [])
       if (!known.has(String(name)))
@@ -411,9 +521,7 @@ function holds(rule: TdDefenceRule, result: MiniGameResult, report: TdDefenceRep
   if (when.leaksAtMost !== undefined && report.leaked > when.leaksAtMost) return false;
   if (when.spentAtMost !== undefined && report.spent > when.spentAtMost) return false;
   if (when.killed !== undefined) {
-    const dead = new Set(
-      report.foes.filter((f) => report.killed.includes(f.name)).flatMap((f) => [f.name, String(f.entity)]),
-    );
+    const dead = new Set(report.foes.filter((f) => report.killed.includes(f.name)).flatMap(refNames));
     if (when.killed.some((n) => !dead.has(String(n)))) return false;
   }
   return true;
@@ -456,7 +564,7 @@ export function tdDefenceOutcome(end: MiniGameEnd, mission: MissionDef): Mission
  * {@link tdDefenceOutcome}. It keeps no state, so one serves every round.
  */
 export const towerdefenseMissionAdapter: MissionAdapter<JsonObject, MiniGameEnd> = {
-  input: (snapshot, mission) => tdDefenceInput(snapshot, mission),
+  input: (snapshot, mission, keys) => tdDefenceInput(snapshot, mission, keys),
   outcome: (end, mission) => tdDefenceOutcome(end, mission),
 };
 
@@ -482,16 +590,33 @@ export interface TdDefenceOptions {
 
 const cellKey = (c: Cell) => `${c.col},${c.row}`;
 
-/** The map with the walls on its slot cells, and every build cell's name, in reading order. */
+/**
+ * The map with the walls on its slot cells, and every build cell's name, in reading order. A wall
+ * with a `cell` (lesson D10) stands there (it must be a build cell); the others fill the remaining
+ * slot cells in reading order, as before.
+ */
 function placeWalls(map: TdMap, input: z.infer<typeof roundInputSchema>) {
   const kinds = cellKinds(map.map, map.legend);
-  const queue = input.walls === null ? null : [...input.walls];
+  const fixed = new Map<string, TdWall>();
+  for (const wall of input.walls ?? []) {
+    if (wall.cell === undefined) continue;
+    const [col, row] = wall.cell.split(',').map(Number) as [number, number];
+    if (kinds[row]?.[col] !== 'build')
+      throw new Error(`td-map "${map.id}" has no build cell at ${wall.cell} for "${wall.name}"`);
+    fixed.set(wall.cell, wall);
+  }
+  const queue = input.walls === null ? null : input.walls.filter((w) => w.cell === undefined);
   const cells: TdDefenceCell[] = [];
   const rows = map.map.map((line, row) =>
     [...line]
       .map((char, col) => {
         if (kinds[row]![col] !== 'build') return char;
         const cell = `${col},${row}`;
+        const at = fixed.get(cell);
+        if (at !== undefined) {
+          cells.push({ cell, name: at.name, entity: at.entity });
+          return char;
+        }
         const isSlot = queue !== null && (input.slot === undefined || input.slot === char);
         if (!isSlot) {
           cells.push({ cell, name: cell, entity: null });
@@ -599,7 +724,13 @@ export class TdDefenceRound implements MiniGame {
       escaped: ids(this.escapedIds),
       fallen: this.fallen(),
       cells: this.cells.map((c) => ({ ...c })),
-      foes: this.foes.map((f, i) => ({ enemy: i + 1, entity: f.entity, name: f.name, kind: f.kind })),
+      foes: this.foes.map((f, i) => ({
+        enemy: i + 1,
+        entity: f.entity,
+        name: f.name,
+        kind: f.kind,
+        ...(f.key !== undefined ? { key: f.key } : {}),
+      })),
     };
   }
 
@@ -624,14 +755,81 @@ export class TdDefenceRound implements MiniGame {
   }
 }
 
-/** Problems with a mission's params that need the maps or the mission ({@link tdDefence}'s `checkUse`). */
+/**
+ * Problems with a mission's selectors in one world scenario it is offered in (Engine 0.15 T7,
+ * lesson D7): a `build` or `wave` selector picking nothing there, a `keys`, `build.cells` or
+ * `killed` name that is no key of the scenario, a budget faction with no `Stockpile`, and (with
+ * the map) more walls than build cells or anything else the round would be refused for.
+ */
+function scenarioProblems(
+  params: TdDefenceParams,
+  map: TdMap | undefined,
+  mission: JsonObject,
+  scenario: MiniGameWorldScenario,
+): MiniGameUseProblem[] {
+  const problems: MiniGameUseProblem[] = [];
+  const { file, keys } = scenario;
+  const entities = snapshotEntities(scenario.snapshot);
+  const event = typeof mission['event'] === 'string' ? mission['event'] : undefined;
+  const id = typeof mission['id'] === 'string' ? mission['id'] : '';
+  const names = namesOf(scenario.snapshot, id);
+  const nameOf = (e: SnapshotEntity) => names.get(e.id) ?? String(e.id);
+  const noKey = (path: (string | number)[], name: string | number) => {
+    if (typeof name === 'string' && entityNamed(name, keys) === undefined)
+      problems.push({ path, message: `"${name}" is no key of ${file}` });
+  };
+  const picks = (select: Select, ev: string | undefined) =>
+    entities.some((e) => selects(e, nameOf(e), select, ev, keys));
+  const checkSelect = (path: (string | number)[], select: Select, ev: string | undefined) => {
+    const before = problems.length;
+    (select.keys ?? []).forEach((k, j) => noKey([...path, 'keys', j], k));
+    if (problems.length === before && !picks(select, ev))
+      problems.push({ path, message: `picks no standing world entity in ${file}` });
+  };
+  if (params.build) {
+    checkSelect(['build', 'select'], params.build.select, params.build.select.event);
+    (params.build.cells ?? []).forEach((c, i) => noKey(['build', 'cells', i, 'entity'], c.entity));
+  }
+  params.wave.forEach((entry, i) =>
+    checkSelect(['wave', i, 'select'], entry.select, entry.select.event ?? event),
+  );
+  if (params.budget && !entities.some((e) => field(e, 'Stockpile', 'faction') === params.budget!.faction))
+    problems.push({
+      path: ['budget', 'faction'],
+      message: `no entity holds faction "${params.budget.faction}"'s Stockpile in ${file}`,
+    });
+  params.outcomes.forEach((rule, i) =>
+    (rule.when?.killed ?? []).forEach((name, j) => noKey(['outcomes', i, 'when', 'killed', j], name)),
+  );
+  if (problems.length > 0) return problems;
+  try {
+    const input = tdDefenceInput(
+      scenario.snapshot,
+      { id, params: params as JsonObject, ...(event !== undefined ? { event } : {}) },
+      keys,
+    );
+    if (map !== undefined) placeWalls(map, roundInputSchema.parse(input));
+  } catch (err) {
+    problems.push({ path: [], message: `in ${file}: ${(err as Error).message}` });
+  }
+  return problems;
+}
+
+/**
+ * Problems with a mission's params that need the maps or the mission ({@link tdDefence}'s
+ * `checkUse`), and (Engine 0.15 T7, lesson D7) with its selectors in each world scenario that
+ * offers it (`scenarios`, from `validate`).
+ */
 export function tdDefenceProblems(
   params: TdDefenceParams,
   maps: readonly TdMap[],
   mission: JsonObject | null,
+  scenarios: readonly MiniGameWorldScenario[] = [],
 ): MiniGameUseProblem[] {
   const problems: MiniGameUseProblem[] = [];
   const map = maps.find((m) => m.id === params.map);
+  if (mission !== null)
+    for (const sc of scenarios) problems.push(...scenarioProblems(params, map, mission, sc));
   if (map === undefined)
     problems.push({
       path: ['map'],
@@ -652,6 +850,13 @@ export function tdDefenceProblems(
           message: `"${slot}" is a ${kind ?? 'blocked'} cell on td-map "${map.id}", not a build cell`,
         });
     }
+    (params.build?.cells ?? []).forEach((c, i) => {
+      if (kinds[c.cell.y]?.[c.cell.x] !== 'build')
+        problems.push({
+          path: ['build', 'cells', i, 'cell'],
+          message: `(${c.cell.x}, ${c.cell.y}) is not a build cell on td-map "${map.id}"`,
+        });
+    });
   }
   const outcomes = mission?.['outcomes'];
   if (Array.isArray(outcomes)) {
@@ -683,7 +888,8 @@ export function tdDefence(opts: TdDefenceOptions): MiniGameDef {
     id: TD_DEFENCE,
     title: opts.title ?? 'DEFENCE',
     paramsSchema: tdDefenceParamsSchema,
-    checkUse: ({ params, owner }) => tdDefenceProblems(tdDefenceParamsSchema.parse(params), maps, owner),
+    checkUse: ({ params, owner, scenarios }) =>
+      tdDefenceProblems(tdDefenceParamsSchema.parse(params), maps, owner, scenarios),
     hostStatus: opts.hostStatus ?? ['mission'],
     ...(opts.inputMap ? { inputMap: opts.inputMap } : {}),
     create: (ctx, seed) => {
@@ -699,7 +905,7 @@ export function tdDefence(opts: TdDefenceOptions): MiniGameDef {
       const start = { gold: input.gold ?? base.start.gold, lives: input.lives ?? base.start.lives };
       const map: TdMap = { ...base, map: rows, start };
       const waves: TdWaves = {
-        id: base.waves,
+        id: base.waves ?? base.id,
         waves: [
           {
             groups: input.foes.map((f) => ({

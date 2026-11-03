@@ -387,3 +387,125 @@ describe('the td-defence params in validate', () => {
     ]);
   });
 });
+
+describe('the td-defence mission by scenario key (Engine 0.15 T7: D6, D10, D7, D8)', () => {
+  // The world's key table: `gate` and `brak` are also the mission's refs; `west-wall` (3) and
+  // `scout` (7) are keyed in the scenario only.
+  const KEYS = { 'west-wall': 3, gate: 4, scout: 7, brak: 8, hall: 2 };
+
+  it('lets `keys` selectors and `killed` rules name any keyed entity, records keep ref or id (D6)', () => {
+    const mission = withParams({
+      wave: [{ kind: 'raider', select: { keys: ['scout'] }, speed: 4 }],
+      outcomes: [{ outcome: 'held', when: { killed: ['scout'] } }, { outcome: 'breached' }],
+    });
+    expect(() => towerdefenseMissionAdapter.input(SNAPSHOT, mission)).toThrow(
+      'the wave selects no world unit',
+    );
+    const got = towerdefenseMissionAdapter.input(SNAPSHOT, mission, KEYS) as TdDefenceInput;
+    expect(got.foes.map((f) => [f.entity, f.name, f.key])).toEqual([[7, '7', 'scout']]);
+    expect(got.walls).toEqual([
+      { entity: 3, name: '3', key: 'west-wall' },
+      { entity: 4, name: 'gate' },
+    ]);
+    const report = {
+      killed: ['7'],
+      foes: [{ enemy: 1, entity: 7, name: '7', kind: 'raider', key: 'scout' }],
+      escaped: [],
+      fallen: [],
+      placed: {},
+      cells: [],
+      leaked: 0,
+      livesLeft: 2,
+      spent: 0,
+    } as unknown as TdDefenceReport;
+    expect(towerdefenseMissionAdapter.outcome({ result: 'pass', report, ticks: 3 }, mission).outcome).toBe(
+      'held',
+    );
+  });
+
+  it('puts a wall named in `build.cells` on its cell, the rest in the old order (D10)', () => {
+    const mission = withParams({
+      build: {
+        select: { faction: 'village', types: ['wall'] },
+        cells: [{ entity: 'west-wall', cell: { x: 2, y: 3 } }],
+      },
+    });
+    const params = towerdefenseMissionAdapter.input(SNAPSHOT, mission, KEYS) as TdDefenceInput;
+    expect(params.walls).toEqual([
+      { entity: 3, name: '3', key: 'west-wall', cell: '2,3' },
+      { entity: 4, name: 'gate' },
+    ]);
+    const round = DEF.create({ params, attempt: 1 }, 5) as TdDefenceRound;
+    expect(round.cells).toEqual([
+      { cell: '1,1', name: 'gate', entity: 4 },
+      { cell: '2,3', name: '3', entity: 3 },
+    ]);
+    expect(round.game.world.map.map).toEqual(['S##...', '.B#...', '..###X', '..B...']);
+    // A named wall the selector does not pick, a cell that is no build cell, a cell given twice.
+    const bad = (cells: unknown[]) => withParams({ build: { select: { types: ['wall'] }, cells } });
+    expect(() =>
+      towerdefenseMissionAdapter.input(SNAPSHOT, bad([{ entity: 'hall', cell: { x: 1, y: 1 } }]), KEYS),
+    ).toThrow('build.cells.0 names "hall", which build.select does not pick');
+    expect(() =>
+      DEF.create({ params: { ...params, walls: [{ entity: 3, name: '3', cell: '0,0' }] }, attempt: 1 }, 5),
+    ).toThrow('td-map "tiny" has no build cell at 0,0 for "3"');
+    expect(() =>
+      tdDefenceParams(
+        bad([
+          { entity: 3, cell: { x: 1, y: 1 } },
+          { entity: 4, cell: { x: 1, y: 1 } },
+        ]).params,
+      ),
+    ).toThrow('cell 1,1 is given twice');
+    const use = (p: object) =>
+      DEF.checkUse!({ params: { ...PARAMS, ...p } as JsonObject, owner: MISSION as unknown as JsonObject });
+    expect(
+      use({ build: { select: { types: ['wall'] }, cells: [{ entity: 3, cell: { x: 0, y: 0 } }] } }),
+    ).toEqual([
+      { path: ['build', 'cells', 0, 'cell'], message: '(0, 0) is not a build cell on td-map "tiny"' },
+    ]);
+  });
+
+  it('checks the selectors against the world scenarios that offer the mission (D7)', () => {
+    const scenario = { file: 'maps/walls.world.json', snapshot: SNAPSHOT, keys: KEYS };
+    const problems = (p: object) =>
+      DEF.checkUse!({
+        params: { ...PARAMS, ...p } as JsonObject,
+        owner: MISSION as unknown as JsonObject,
+        scenarios: [scenario],
+      });
+    expect(problems({})).toEqual([]);
+    expect(
+      problems({
+        build: { select: { types: ['tower'] } },
+        budget: { faction: 'raiders', item: 'gold' },
+        wave: [{ kind: 'raider', select: { keys: ['ghost'] }, speed: 4 }],
+        outcomes: [{ outcome: 'held', when: { killed: ['nobody'] } }, { outcome: 'breached' }],
+      }),
+    ).toEqual([
+      { path: ['build', 'select'], message: 'picks no standing world entity in maps/walls.world.json' },
+      { path: ['wave', 0, 'select', 'keys', 0], message: '"ghost" is no key of maps/walls.world.json' },
+      {
+        path: ['budget', 'faction'],
+        message: 'no entity holds faction "raiders"\'s Stockpile in maps/walls.world.json',
+      },
+      { path: ['outcomes', 0, 'when', 'killed', 0], message: '"nobody" is no key of maps/walls.world.json' },
+    ]);
+    // Every standing entity as a wall: more walls than the map's three build cells.
+    expect(problems({ build: { select: {} } })).toEqual([
+      {
+        path: [],
+        message:
+          'in maps/walls.world.json: td-map "tiny" has too few build cells: 3 more wall(s) (5, 7, brak)',
+      },
+    ]);
+  });
+
+  it('plays a mission round on a map with no wave list of its own (D8)', () => {
+    const { waves: _waves, ...noWaves } = TINY.map;
+    const def = tdDefence({ maps: [noWaves], towers: TINY.towers });
+    const round = def.create({ params: input(), attempt: 1 }, 5) as TdDefenceRound;
+    expect(round.game.world.waves.id).toBe('tiny');
+    expect(round.game.world.waves.waves[0]!.groups).toHaveLength(3);
+  });
+});

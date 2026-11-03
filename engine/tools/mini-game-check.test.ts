@@ -182,3 +182,37 @@ describe('validate checks mini game params with the content (G16)', () => {
     expect(await validate(cwd, TEST)).toEqual({ code: EXIT.ok, errors: [] });
   });
 });
+
+describe("validate checks a mission's selectors against the world scenarios that offer it (D7)", () => {
+  const SIEGE = 'games/samples/mini-siege';
+  const SABOTAGE = `${SIEGE}/content/missions/sabotage.mission.json`;
+  const FORTIFY = `${SIEGE}/content/missions/fortify.mission.json`;
+  type Params = { foes: { select: Record<string, unknown> }[]; wave: { select: Record<string, unknown> }[] };
+
+  it('passes the mini siege as it is, and names a selector that picks nothing in the village', async () => {
+    const cwd = copy(SIEGE);
+    expect(await validate(cwd, SIEGE)).toEqual({ code: EXIT.ok, errors: [] });
+    editJson(join(cwd, SABOTAGE), (m) => {
+      (m.params as Params).foes[0]!.select = { faction: 'raiders', types: ['dragon'] };
+    });
+    editJson(join(cwd, FORTIFY), (m) => {
+      (m.params as Params).wave[0]!.select = { keys: ['raider-9'] };
+    });
+    const run = await validate(cwd, SIEGE);
+    expect(run.code).toBe(EXIT.invalidContent);
+    expect(run.errors).toEqual([
+      expect.objectContaining({
+        file: FORTIFY,
+        path: 'params.wave.0.select.keys.0',
+        code: 'bad_mini_game_use',
+        message: `"raider-9" is no key of ${SIEGE}/content/maps/village.world.json`,
+      }),
+      expect.objectContaining({
+        file: SABOTAGE,
+        path: 'params.foes.0.select',
+        code: 'bad_mini_game_use',
+        message: `picks no standing world entity in ${SIEGE}/content/maps/village.world.json`,
+      }),
+    ]);
+  });
+});

@@ -4,6 +4,7 @@ import type { JsonValue } from '../core/headless';
 import { opportunitySchema } from '../core/missions';
 import { applyCarried, carriedIssues, carryFromSchema, fromIssues, type CarriedRecord } from './carry';
 import { Member, STANDARD_COMPONENTS, Squad, type Role } from './components';
+import { keepKeys } from './keys';
 import type { LogOptions } from './events';
 import { addOpportunities } from './opportunity';
 import { SYSTEM_SETS, SYSTEM_SET_NAMES } from './system-sets';
@@ -278,6 +279,8 @@ export function worldFromScenario(json: unknown, options: ScenarioOptions = {}):
     if (!added.ok) throw new ScenarioError([{ path: 'opportunities', message: added.error }]);
   }
   if (carried !== null && sc.from !== undefined) applyCarried(world, sc.from, carried, ids);
+  // The key table stays with the world, outside its snapshot (Engine 0.15 T7, gaps M10 and D6).
+  keepKeys(world, Object.fromEntries(ids));
   return world;
 }
 

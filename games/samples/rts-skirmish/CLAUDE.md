@@ -73,6 +73,7 @@ opts?)`: the kit's `rtsGame` with the world behind its port (`engine/sim`'s
     `ui.selection`. Engine 0.14 T7: `SkirmishGame` keeps its `world` and gives the optional
     `HeadlessGame` hooks `worldEvents(sinceTick)` (`eventsSince`) and `timeline()`
     (`worldTimeline`) for `pnpm cli events` and `timeline`; the log is never in the snapshot.
+    Engine 0.15 T7: `worldKeys()` (the sim's `worldKeys`), for `world.key.<key>` run checks.
   - `actions.ts`: interface actions (`interfaceActionSchema`, `PlayerInterface`): `click`,
     `box` (world px, `additive`), `command` (a world point), `build`, `train`, `stop`, carried
     out by the kit's `Selection`, `commandAt`, `buildCommand`, `trainCommand`, `stopCommand` with
@@ -138,7 +139,10 @@ changes the ids of everything after it: re-record the run files (below).
   `dcf2c02f2cb6d266`, `economy` `34bf04d6b067075d`.
 - Checks read `sides.<faction>.*` (`sides.blue.units`, `sides.red.unitTypes.soldier`,
   `sides.red.buildings.barracks`), `kit.enemy.<step>.fired` / `.last` (the plan's progress),
-  `kit.nextOrder` and `ui.selection`; `dump` shows the rest (`world.components.<Kind>.<i>.1`).
+  `kit.nextOrder` and `ui.selection`; `dump` shows the rest. A world entity is read by scenario
+  key (`world.key.worker-3.Gatherer.node`, through the game's `worldKeys()`, Engine 0.15 T7, gap
+  M17) or, for one made in play, by id (`world.id.16.Producer.queue.length`), never by its place
+  in a component list (`engine/tools/CLAUDE.md`, Keyed paths).
 - `pnpm -s cli mutants games/samples/rts-skirmish --json` exits 0 with every kit rule guarded
   and no run weak (`unguarded` and every `runs[].weak` empty). The kit is not strict, so
   `tests/runs/rts-skirmish-mutants.test.ts` holds the sample to that. A switched-off rule usually
@@ -146,9 +150,9 @@ changes the ids of everything after it: re-record the run files (below).
   check, so every guard needs an assertion or invariant that fails before the first changed hash
   (tick 20): `kit.enemy.raid.fired` 0 at tick 1 or as an invariant (`enemy-waits-for-trigger`),
   `kit.enemy.camp.fired` 1 at tick 1 (`enemy-follows-plan`), and in `commands` worker 9 gathering
-  node 5 at tick 1 and workers 7 and 8 node 4 at tick 31 (`world.components.Gatherer.<i>.1.node`,
-  `command-gathers-resources`) and the hero's `Target` on raider 10 at tick 101
-  (`world.components.Target.4`, `command-attacks-enemies`).
+  node 5 at tick 1 and workers 7 and 8 node 4 at tick 31 (`world.key.worker-3.Gatherer.node`,
+  `world.key.worker-1.Gatherer.node`, `command-gathers-resources`) and the hero's `Target` on
+  raider 10 at tick 101 (`world.id.15.Target.entity`, `command-attacks-enemies`).
 - Recording a battle: play it with the kit's commands in a throwaway script (`createGame`, then
   `game.rts.issue(draft)` or `game.order({ ui: ... })` at the ticks wanted, `game.step`), print
   `game.rts.recorded()` into the run file's `orders`, read the assertions off `dump`, copy the

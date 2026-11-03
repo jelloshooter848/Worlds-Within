@@ -107,6 +107,10 @@ sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `cam
   delegated-only `stores-raid` mission, the campaign's third entry `ridge` and
   `ridge-raid.run.json` (`start: { "entry": "ridge" }`; the raid draws `ram-burnt` at world 30),
   stepped and rewound in the debugger by `tests/browser/debugger-done-when.test.ts`.
+- Engine 0.15 T7: the run files check the world by scenario key (`world.key.<key>...`,
+  `world.one.Missions...`; no `named.` or positional component path is read), the host's
+  `records()` and `worldKeys()` come from the sim's port, and the walls' `td-map` has no wave list
+  (only `fortify` plays it; lesson D8).
 
 ## Imports allowed
 

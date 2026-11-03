@@ -97,6 +97,13 @@ export interface HeadlessGame {
    * part of `snapshot()`, so no hash moves.
    */
   recordRounds?(on: boolean): void;
+  /**
+   * Optional (Engine 0.15 T7, gap M17; docs/BUILD-LOG.md, Engine 0.15, decision 8): the key table
+   * of the game's world, scenario key to entity id (`worldKeys` in `engine/sim`), so a run file's
+   * checks can name an entity by key (`world.key.ram.Health.hp`). Fixed for the run; never part of
+   * `snapshot()`, so no hash moves. `MissionHost` has it (empty when its port gives no keys).
+   */
+  worldKeys?(): Readonly<Record<string, number>>;
   /** Optional (Engine 0.14 T9): the rounds recorded so far, in play order, as plain JSON. */
   roundRecordings?(): RoundRecording[];
 }

@@ -51,6 +51,11 @@ T9 `roundBots()`, `TopDownBot` for a `mission-room` round, which `pnpm cli recor
 and records); `engine/tools/kits.ts` finds it
 by the `kit` name in `game.json`.
 
+- Mission room by scenario key (Engine 0.15 T7, gaps M10, D6, M16, D7): `select.squad` (a squad's
+  key or id), the world's key table handed to `input(snapshot, mission, keys)` so a squad or rule
+  may name any keyed entity (record names unchanged; a foe's other key rides along as `key`), and
+  `checkUse` checking the selectors against the world scenarios that offer the mission.
+
 ## Imports allowed
 
 - `@engine/core/*` except its drawing and output side (`FORBIDDEN_CORE` in `config/layers.js`:

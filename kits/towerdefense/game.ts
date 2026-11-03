@@ -121,6 +121,10 @@ export function tdRound(content: ContentBundle, map?: string): TdRoundDef {
     throw new Error(
       `the content has ${maps.length} td-maps: name one (${maps.map((m) => m.name).join(', ')})`,
     );
+  if (entry.value.waves === undefined)
+    throw new Error(
+      `td-map "${entry.name}" has no "waves": it is a map for td-defence missions only (no_waves), not a standalone round`,
+    );
   const waves = contentNamed(content, tdWavesKind(), entry.value.waves);
   if (waves === undefined) throw new Error(`td-map "${entry.name}": no td-waves "${entry.value.waves}"`);
   return {

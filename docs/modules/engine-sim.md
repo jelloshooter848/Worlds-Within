@@ -229,6 +229,12 @@ n)` and `lossOrder(world, squad)`. Loss order: unnamed first, then regulars, her
   held by one entity; `flatTerrain`, `terrainOf`, `terrainEntity`, `heightAt(t, x, y)` (integer
   elevation), `typeAt`, `moveCost` (null when impassable or off the grid), `passable`, `inBounds`,
   `cellIndex`, `cellAt`. Height is data only (0.8, and still in 0.9); line of sight comes later.
+- The key table (`keys.ts`, Engine 0.15 T7, gaps M10, D6, M28): `worldKeys(world)` is every
+  scenario key and its entity id, kept beside the world by `worldFromScenario` and `loadWorld`
+  (the save's optional `keys`), never in the snapshot, so no hash moves. `missionPort(world)`
+  opens missions with it as `refs` (the open mission's `refs` stay the keys its effects name) and
+  hands the whole table to the round (`open`'s `keys`, `keys()`); `missionRecords(world)` is the
+  committed records in commit order.
 
 ## Imports allowed
 

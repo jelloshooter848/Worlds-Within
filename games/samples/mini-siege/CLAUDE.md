@@ -126,10 +126,10 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
 - `content/defence/` (the towerdefense kit's kinds): `maps/walls.json` + `.map.txt` (`td-map`,
   16x7: the road from the raiders' entry `S` on the east, bending down and back up to the hall's
   gate `X` on the west, `W` the four wall cells, legend `W` = build; `start` 0 gold, 2 lives, both
-  replaced by the mission's params), `towers.json` (`td-towers`: `archers` 20 gold, range 2,
-  damage 1, cooldown 3; `ballista` 40, range 3, damage 2, cooldown 6) and `waves/walls.json`
-  (`td-waves`: the one wave list the `td-map` kind makes a map name, never played: the mission's
-  wave is the world's raiders; lesson D8).
+  replaced by the mission's params; since Engine 0.15 T7 no `waves`: only the `fortify` mission
+  plays it, and its wave is the world's raiders, lesson D8) and `towers.json` (`td-towers`:
+  `archers` 20 gold, range 2, damage 1, cooldown 3; `ballista` 40, range 3, damage 2, cooldown 6).
+  The unplayed `waves/walls.json` and the `td-waves` kind are gone (Engine 0.15 T7).
 - Art, all original text (T9; generated once from a throwaway script, then kept as text):
   - `content/sprites/siege.txt` (palette `content/palettes/siege.json`): tiles `grass`, `road`,
     `rock`; `worker`, `soldier`, `captain` (gold helmet and trim) and `raider` in three facings
@@ -209,15 +209,18 @@ topdownMissionAdapter, 'td-defence': towerdefenseMissionAdapter }`), `createGame
 seed, opts?)`: the sim world, the kit's `rtsGame` on the sim's `rtsWorldPort(world)` (the
     plan, the switched-off rules; Engine 0.15 T6, gap M27: the one bridge, no copy here), and
     `MiniSiegeGame`, which since Engine 0.15 T6 (gap M18) **is** the engine's `MissionHost` (it
-    extends it; no wrapper) with `missionPort(world, { refs: scenarioKeys })`, the missions, both
+    extends it; no wrapper) with `missionPort(world)` (since Engine 0.15 T7 the port takes the
+    world's own key table, `worldKeys`, and hands it to the rounds), the missions, both
     mini games, `ADAPTERS` and the kit's `rtsMissionHooks(rts)`: an `open` (a run file's step or
     the page's launch) is refused `not_offered` while no opportunity offers the mission, and the
     kit's view is refreshed after every mission step and commit (gap M7). Every `HeadlessGame` hook
     (`order`, `step`, `mission`, `miniGame()`, `missionExperience()`, `worldEvents`, `timeline`,
     `recordRounds`, `roundRecordings`) and the mission events on `events` (gap M21) are the
     host's; the class keeps `sim` (the world; the host's `world` is the host itself, for the
-    shell), `rts`, `keys`, `factions` and `campaign`, and adds `records()` (T9: the world's
-    committed mission records, for the page), `named()` and `campaignSave()`. Its snapshot is the host's (`{ world,
+    shell), `rts`, `keys` (the world's key table, for `carriedRecord`), `factions` and `campaign`,
+    and adds `named()` and `campaignSave()`; `records()` (the committed records, for the page) and
+    `worldKeys()` (for `world.key` run checks) are the host's since Engine 0.15 T7 (gaps M28,
+    M17), read through the sim's port. Its snapshot is the host's (`{ world,
 kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenario key:
     `{ alive, x, y, hp, fate? }`; since Engine 0.13 `alive` is "exists and its fate is not
     `dead`", and `fate` is listed only for a named person whose fate was set). Since Engine 0.13
@@ -431,13 +434,17 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   rising by world tick 60 and the site finished (`sides.village.sites` 0,
   `sides.village.buildings.watchtower` 1) by 159; at 160 the record (`outcome`, `resolution`
   `played` / `delegated` / `quit`, `openTick` 40, `commitTick` 160), nothing frozen and that
-  outcome's effects (`named.ram.alive`, `named.catapult.hp`, `named.captain.hp`; the played
+  outcome's effects (`world.key.ram.alive`, `world.key.catapult.Health.hp`,
+  `world.key.captain.Health.hp`; the played
   record's `report.stats.destroyed`); and the hall's hp at 260. `played` also checks the round in
   the snapshot (`missions.round`: its ticks, `pass`, `both-burnt`) and the world tick standing
   still through it.
-- Paths: `named.<key>.*`, `sides.<faction>.*`, `kit.enemy.<step>.fired`,
-  `world.components.Missions.0.1.(open|committed).<i>.*` and
-  `world.components.WorldTime.0.1.frozen` (one world-level entity, so index 0).
+- Paths (Engine 0.15 T7, gap M17: by scenario key, never by place in a component list):
+  `world.key.<key>.alive`, `.fate`, `.Health.hp`, `.Position.x`/`.y` (`.Position` null off the
+  map), `sides.<faction>.*`, `kit.enemy.<step>.fired`,
+  `world.one.Missions.(open|committed).<i>.*` and `world.one.WorldTime.frozen` (the world-level
+  component; `engine/tools/CLAUDE.md`, Keyed paths). The snapshot's `named` summary is still
+  there until T9 removes it (decision 2: the hashes move once), but no run file reads it.
 - Every run file has sync `hashes` (every 20 ticks) and a golden `<name>.hashes.json`; each
   guards `enemy-follows-plan` (`pnpm -s cli mutants games/samples/mini-siege --json`).
 - **Every kit's rules** (Engine 0.14, gap G12; docs/BUILD-LOG.md, Engine 0.14, decision 8 and
@@ -474,7 +481,7 @@ games/samples/mini-siege/runs/fortify-played.run.json --mission fortify --bot '[
 The follow-up, run headless from a siege run's end or its save code (`from` in a run file;
 `engine/tools/CLAUDE.md`, Campaign runs and save codes). Every dawn run has seed 11, 200 world
 ticks, the guard `enemy-follows-plan` (the raiders' `charge` fires at tick 1) and the invariant
-`named.hall.alive`; the raiders never attack buildings, so the hall stays at 300 and the fight is
+`world.key.hall.alive`; the raiders never attack buildings, so the hall stays at 300 and the fight is
 read off `sides.<faction>.units` and the named people.
 
 - **The siege's ends pin their save codes** (`codes` at the last tick): `played`
@@ -497,10 +504,10 @@ games/samples/mini-siege/runs/quit.run.json` prints it. The fortify runs give no
 
 - `dawn-held` and `dawn-captured` differ only in `from`, so the only difference in their input is
   the carried record, and that differs only in the captain's entry (`mini-siege.test.ts`).
-- Paths as in the siege's runs, plus `named.<key>.fate`, the opportunities at
-  `world.components.Opportunities.0.1.list.<i>.status` (sorted by id: 0 `exchange-window`, 1
+- Paths as in the siege's runs, plus `world.key.<key>.fate`, the opportunities at
+  `world.one.Opportunities.list.<i>.status` (sorted by id: 0 `exchange-window`, 1
   `leave-window`, 2 `ransom-window`, 3 `rescue-window`) and the records at
-  `world.components.Missions.0.1.committed.<i>.*`.
+  `world.one.Missions.committed.<i>.*`.
 - After a change to the siege that moves its end world (or its save codes), re-record the dawn
   runs too: they replay their `from` run first.
 

@@ -4,7 +4,14 @@ import { pathToFileURL } from 'node:url';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { ContentError } from '@engine/core/content/validate';
 import type { HeadlessEntry } from '@engine/core/headless';
-import { miniGameParamErrors, missionMiniGameUses, type MiniGameUse } from '@engine/core/minigame-params';
+import type { JsonObject } from '@engine/core/headless';
+import {
+  miniGameParamErrors,
+  missionMiniGameUses,
+  type GameWorldScenario,
+  type MiniGameUse,
+} from '@engine/core/minigame-params';
+import { SCENARIO_FORMAT, worldFromScenario, worldKeys } from '@engine/sim/index';
 import { findKit } from './kits';
 
 /**
@@ -27,6 +34,39 @@ export function miniGameUses(content: ContentBundle): MiniGameUse[] {
   return uses;
 }
 
+/**
+ * The game's world scenarios (any content file in the `worlds-within/scenario` format, whatever
+ * its kind: the RTS kit's `rts-map`), each built at tick 0 with `engine/sim` (Engine 0.15 T7,
+ * lesson D7): its plain snapshot, key table and the missions its opportunities offer. A scenario
+ * that does not build is left out (its own kind's checks report it). Builds worlds only: nothing
+ * steps.
+ */
+export function worldScenarios(content: ContentBundle): GameWorldScenario[] {
+  const out: GameWorldScenario[] = [];
+  for (const entry of content.entries) {
+    const value = entry.value as JsonObject | null;
+    if (value === null || typeof value !== 'object' || value['format'] !== SCENARIO_FORMAT) continue;
+    let world;
+    try {
+      world = worldFromScenario(value);
+    } catch {
+      continue;
+    }
+    const opportunities = Array.isArray(value['opportunities']) ? value['opportunities'] : [];
+    const offers = opportunities.flatMap((o) => {
+      const mission = (o as JsonObject | null)?.['mission'];
+      return typeof mission === 'string' ? [mission] : [];
+    });
+    out.push({
+      file: entry.file,
+      snapshot: world.snapshot() as unknown as JsonObject,
+      keys: { ...worldKeys(world) },
+      offers,
+    });
+  }
+  return out;
+}
+
 /** The mini game errors of the checked game in `gameDir` (relative to `cwd`), naming repo paths. */
 export async function miniGameErrors(
   cwd: string,
@@ -38,5 +78,5 @@ export async function miniGameErrors(
   const mod = (await import(pathToFileURL(abs).href)) as Partial<HeadlessEntry>;
   if (typeof mod.miniGames !== 'function') return [];
   const root = gameDir === '.' ? '' : `${gameDir}/`;
-  return miniGameParamErrors(miniGameUses(content), mod.miniGames(content), root);
+  return miniGameParamErrors(miniGameUses(content), mod.miniGames(content), root, worldScenarios(content));
 }

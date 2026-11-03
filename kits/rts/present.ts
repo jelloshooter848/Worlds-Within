@@ -76,14 +76,25 @@ export interface RtsPlacing {
 
 /**
  * What the presentation needs of a mission (a `MissionDef` from the game's content fits): its
- * title for the HUD, its event to find the offer marker's target, and an optional `marker`
- * entity id that overrides it.
+ * title for the HUD, its event to find the offer marker's target, and an optional `marker` that
+ * overrides it: an entity id, or (Engine 0.15 T7, gap M25) a scenario key, the mission file's
+ * `marker`, resolved through the options' `keys`.
  */
 export interface RtsMissionInfo {
   readonly id: string;
   readonly title: string;
   readonly event?: string;
-  readonly marker?: number;
+  readonly marker?: number | string;
+}
+
+/** A mission definition as the RTS presentation reads it: id, title, event and `marker` (gap M25). */
+export function rtsMissionInfo(def: RtsMissionInfo): RtsMissionInfo {
+  return {
+    id: def.id,
+    title: def.title,
+    ...(def.event !== undefined && { event: def.event }),
+    ...(def.marker !== undefined && { marker: def.marker }),
+  };
 }
 
 export interface RtsPresentOptions {
@@ -103,6 +114,11 @@ export interface RtsPresentOptions {
   camera?: CameraHint;
   /** The game's missions (titles, events, marker targets) for the offer markers and the HUD. */
   missions?: readonly RtsMissionInfo[];
+  /**
+   * The world's key table (scenario key to entity id; Engine 0.15 T7, gap M25), for a mission's
+   * `marker` given as a key. Left out, a key marker is ignored.
+   */
+  keys?: Readonly<Record<string, number>>;
   /** This frame's events, passed through. */
   events?: PresentEvent[];
   /** The stream's state (map tracker, animation starts); without it the map is always sent and `t` is the tick. */
@@ -287,7 +303,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
 
   for (const offer of view.missions.offered) {
     const info = opts.missions?.find((m) => m.id === offer.mission);
-    const target = info === undefined ? null : offerTarget(view, info, player);
+    const target = info === undefined ? null : offerTarget(view, info, player, opts.keys);
     if (target === null) continue;
     const id = `offer-${offer.opportunity}`;
     entities.push({
@@ -348,20 +364,28 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
 }
 
 /**
- * Where an offered mission's marker goes: the `marker` entity when it is in the view, else the
- * lowest-id enemy unit in the mission's event, else its lowest-id member (unit, then building);
- * null when there is none (a mission without an event or marker gets no marker).
+ * Where an offered mission's marker goes: the `marker` entity (an id, or a key `keys` gives an id,
+ * gap M25) when it is in the view, else the lowest-id enemy unit in the mission's
+ * event, else its lowest-id member (unit, then building); null when there is none (a mission
+ * without an event or marker gets no marker).
  */
 export function offerTarget(
   view: RtsView,
   info: RtsMissionInfo,
   player: string,
+  keys: Readonly<Record<string, number>> = {},
 ): { id: number; x: number; y: number; w: number; h: number } | null {
   const unit = (u: RtsUnitView) => ({ id: u.id, x: u.x, y: u.y, w: 1, h: 1 });
-  if (info.marker !== undefined) {
-    const u = view.units.find((x) => x.id === info.marker);
+  const marker =
+    typeof info.marker === 'string'
+      ? Object.hasOwn(keys, info.marker)
+        ? keys[info.marker]
+        : undefined
+      : info.marker;
+  if (marker !== undefined) {
+    const u = view.units.find((x) => x.id === marker);
     if (u) return unit(u);
-    const b = view.buildings.find((x) => x.id === info.marker);
+    const b = view.buildings.find((x) => x.id === marker);
     if (b) return { id: b.id, x: b.x, y: b.y, w: b.w, h: b.h };
   }
   if (info.event === undefined) return null;

@@ -44,25 +44,25 @@
     },
     {
       "tick": 0,
-      "path": "named.hall.hp",
+      "path": "world.key.hall.Health.hp",
       "op": "eq",
       "value": 340
     },
     {
       "tick": 0,
-      "path": "named.ram.alive",
+      "path": "world.key.ram.alive",
       "op": "eq",
       "value": true
     },
     {
       "tick": 29,
-      "path": "named.ram.alive",
+      "path": "world.key.ram.alive",
       "op": "eq",
       "value": true
     },
     {
       "tick": 30,
-      "path": "named.ram.alive",
+      "path": "world.key.ram.alive",
       "op": "eq",
       "value": false
     },
@@ -74,7 +74,7 @@
     },
     {
       "tick": 80,
-      "path": "named.chief.alive",
+      "path": "world.key.chief.alive",
       "op": "eq",
       "value": false
     },
@@ -92,13 +92,13 @@
     },
     {
       "tick": 160,
-      "path": "named.hall.hp",
+      "path": "world.key.hall.Health.hp",
       "op": "eq",
       "value": 340
     },
     {
       "tick": 160,
-      "path": "named.captain.hp",
+      "path": "world.key.captain.Health.hp",
       "op": "eq",
       "value": 120
     }
@@ -106,7 +106,7 @@
   "hashEvery": 40,
   "invariants": [
     {
-      "path": "named.hall.alive",
+      "path": "world.key.hall.alive",
       "op": "eq",
       "value": true
     }

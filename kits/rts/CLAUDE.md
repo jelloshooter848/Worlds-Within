@@ -67,8 +67,10 @@ false, request, code, error }` with `not_offered` (the kit's, without asking the
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
 camera?, missions?, events?, state? })`, below. `RtsPresentState` (map tracker, animation starts),
   `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`,
-  `offerTarget`, `unitAnim`. `missions` is the game's `RtsMissionInfo` list (`{ id, title,
-event?, marker? }`; a `MissionDef` fits).
+  `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
+  (`{ id, title, event?, marker? }`; a `MissionDef` fits). `marker` is an entity id or (Engine
+  0.15 T7, gap M25) a scenario key, the mission file's `marker`, resolved through the options'
+  `keys` (the world's key table: `MissionHost.worldKeys()`); a key the table lacks is ignored.
 - `controls.ts`: `RtsControls(faction, camera, tileSize, rules?)`, the pointer glue a page uses:
   `gesture(g, view, additive?)` takes `PointerGesture`s (`engine/core/input/pointer-logic.ts`):
   pan and zoom move the `RtsCamera`, a primary tap selects (or places the building being placed),

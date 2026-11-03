@@ -1,9 +1,10 @@
 import type { JsonObject } from '../core/headless';
 import type { MissionWorldPort } from '../core/mission-host';
 import { Rng } from '../core/rng';
+import { worldKeys } from './keys';
 import {
   delegateMission,
-  missionsOf,
+  missionRecords,
   missionSnapshot,
   openMission,
   playMission,
@@ -23,7 +24,13 @@ import type { Entity, World } from './world';
  * never draws from `world.rng`); `play` is `playMission` with the result's report; `settle` is
  * `settleMissions` (the ids committed); `snapshot` and `step` are the world's; `events` and
  * `timeline` (Engine 0.14 T7) are `eventsSince` and `worldTimeline`; `records` (Engine 0.15 T6) is
- * `missionsOf(world).committed()`, read by the host for its `mission-commit` events. Refusals keep the sim's codes.
+ * `missionRecords(world)`, read by the host for its `mission-commit` events. Refusals keep the sim's codes.
+ *
+ * Keys (Engine 0.15 T7, gaps M10 and D6): the port's key table is the world's own (`worldKeys`)
+ * with `opts.refs` over it (a game that builds its world some other way can still name keys).
+ * `open` takes its `refs` from that table and hands the whole table to the round beside the
+ * snapshot (`keys`), so a mission's params may name any keyed entity, not only the ones its
+ * effects name; `keys()` gives it to the tools (`world.key.<key>` run checks).
  */
 export function missionPort(
   world: World,
@@ -31,15 +38,19 @@ export function missionPort(
 ): MissionWorldPort {
   const refused = (r: MissionRefused) => ({ ok: false as const, code: r.code, error: r.error });
   const done = (r: { ok: true } | MissionRefused) => (r.ok ? { ok: true as const } : refused(r));
+  const keys = (): Readonly<Record<string, Entity>> =>
+    opts.refs === undefined ? worldKeys(world) : { ...worldKeys(world), ...opts.refs };
   return {
     open(def) {
-      const opened = openMission(world, def, opts.refs ? { refs: opts.refs } : {});
+      const table = keys();
+      const opened = openMission(world, def, { refs: table });
       if (!opened.ok) return refused(opened);
       return {
         ok: true,
         snapshot: opened.snapshot,
         commitTick: opened.commitTick,
         seed: roundSeed(world.seed, opened.mission.id),
+        keys: { ...table },
       };
     },
     delegate: (id) => done(delegateMission(world, id)),
@@ -50,7 +61,8 @@ export function missionPort(
     step: () => world.step(),
     events: (sinceTick) => eventsSince(world, sinceTick),
     timeline: (experience) => worldTimeline(world, { experience }) as unknown as JsonObject,
-    records: () => missionsOf(world).committed(),
+    records: () => missionRecords(world),
+    keys: () => ({ ...keys() }),
   };
 }
 

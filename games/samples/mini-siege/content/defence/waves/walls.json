@@ -1,4 +1,0 @@
-{
-  "id": "walls",
-  "waves": [{ "groups": [{ "kind": "raider", "count": 4, "spacing": 10, "hp": 3, "speed": 4, "bounty": 0 }] }]
-}

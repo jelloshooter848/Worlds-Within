@@ -210,6 +210,14 @@ Example: `pnpm -s cli validate games/samples/dungeon --json` prints
 `{"ok":true,"command":"validate","exitCode":0,"game":"games/samples/dungeon","fileCount":10,"errorCount":0,...}`
 and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 
+- Keyed paths (Engine 0.15 T7, gap M17): in a world snapshot, `key.<key>` (through the game's
+  `worldKeys()` or a world run's scenario keys), `id.<n>` and `one.<Kind>` name an entity or the
+  world-level component without its place in a component list (`world.key.ram.Health.hp`,
+  `world.one.Missions.committed.0.outcome`); `valueAt` / `failsCheck` take the table, and a key
+  the table lacks is `no_key` at the check's path (exit 3, `unknownKeyAt`). `validate` builds the
+  game's world scenarios (`worldScenarios`) and checks each mission's selectors against the ones
+  that offer it (lesson D7).
+
 ## Imports allowed
 
 - Anything in `engine/` and `kits/`.

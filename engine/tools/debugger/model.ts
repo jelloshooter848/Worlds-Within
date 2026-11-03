@@ -9,7 +9,7 @@ import {
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { stateHash } from '@engine/core/state-hash';
 import { compressClock, type Change, type ClockEntry, type Timeline } from '@engine/sim/index';
-import { failsCheck, valueAt } from '../check-values';
+import { failsCheck, valueAt, type WorldKeys } from '../check-values';
 import { filterChanges, type EventFilter } from '../event-filter';
 import type { DebugCheck, DebugRunJob, ExpectedHash, StoredFailure } from './job';
 
@@ -357,7 +357,7 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
       return { ...base, actual: failed.actual, pageMessage: failed.message, reproduced: true };
     // Passed there: read the value it saw from the record, when that tick's record is kept.
     const state = this.recordAt(f.tick)?.state;
-    const value = state === undefined ? null : valueOrNull(state, f.path);
+    const value = state === undefined ? null : valueOrNull(state, f.path, this.game.worldKeys?.() ?? {});
     return { ...base, actual: value, pageMessage: null, reproduced: false };
   }
 
@@ -436,7 +436,7 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
     return this.job.checks
       .filter((c) => c.kind === 'invariant' || c.tick === tick)
       .map((c) => {
-        const failed = failsCheck(state, c);
+        const failed = failsCheck(state, c, this.game.worldKeys?.() ?? {});
         return failed === null
           ? { ...c, passed: true, actual: null, message: null }
           : { ...c, passed: false, actual: failed.actual, message: failed.message };
@@ -461,8 +461,8 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
 }
 
 /** The value at a dotted path, or null when it is not there. */
-function valueOrNull(state: JsonObject, path: string): JsonValue | null {
-  const v = valueAt(state, path);
+function valueOrNull(state: JsonObject, path: string, keys: WorldKeys): JsonValue | null {
+  const v = valueAt(state, path, keys);
   return v === undefined ? null : v;
 }
 

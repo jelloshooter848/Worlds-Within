@@ -94,6 +94,41 @@ from D15), or in a new report for a sample that has none.
   and the test reads the sim's `mission_committed` through the port); `onChange` is also called
   when a round's end resolves its mission; `MissionHost.playing` stays for the page's key hints
   (D14 is T10's). No layer arrow changed and no golden hash moved.
+- **Mission data by scenario key** (T7, decision 8): M10, D6, M17, M28, M25, M16, D10, D7 and D8
+  fixed. `engine/sim/keys.ts`: `worldKeys(world)`, every scenario key and its entity id, kept
+  beside the world by `worldFromScenario` and `loadWorld` (the save's optional `keys`; an old save
+  loads with none), never in the snapshot. `missionPort(world)` opens missions with the table as
+  `refs` (the open mission's hashed `refs` stay the keys its effects name) and hands the whole
+  table to the round (`open`'s `keys`, `keys()`); `MissionAdapter.input(snapshot, mission, keys?)`
+  takes it (M10, D6), and `missionRecords(world)`, `MissionHost.records()` and
+  `MissionHost.worldKeys()` read the world through the sim and the port (M28; the mini siege's own
+  `records()` is gone). Run checks name entities by key (M17): `world.key.<key>...`,
+  `world.id.<n>...` and `world.one.<Kind>...` inside any world snapshot (`check-values.ts`, through
+  the optional `HeadlessGame.worldKeys()`, which `MissionHost` and `SkirmishGame` give, or a world
+  run's scenario keys), a key the table lacks being `no_key` at the check's path (exit 3); every
+  mini siege run file and the RTS skirmish's `commands` were rewritten to them (no `named.` or
+  `world.components.<Kind>.<i>` path is left in `games/samples/**/runs`; `engine/sim`'s fixtures
+  keep theirs). A mission file's optional `marker` is a scenario key the RTS kit resolves through
+  `presentWorld`'s `keys` (`RtsMissionInfo.marker` takes an id or a key; `rtsMissionInfo`), and
+  the mini siege's picture passes the host's `worldKeys()` (M25; its `sabotage` adopts `marker` in
+  T9). `mission-room` gains `select.squad` (a squad's key or id; M16), and `td-defence`
+  `build.cells: [{ entity, cell: { x, y } }]` (D10). `validate` builds the game's world scenarios
+  (`worldScenarios`, every `worlds-within/scenario` content file at tick 0) and hands each
+  mission's `checkUse` the ones whose opportunities offer it (`MiniGameUseCheck.scenarios`), so
+  both kits report a selector that picks nothing, a key, squad or rule name the scenario lacks, a
+  budget with no stockpile and more walls than cells at the mission's field (D7). A `td-map`'s
+  `waves` is optional for a map only `td-defence` missions play (`no_waves` for one no mission
+  names; `tdRound` refuses it), and the mini siege's walls map dropped its unplayed wave list and
+  the `td-waves` kind (D8). Choices: the field D10 calls `slot` is `build.cells`, because
+  `build.slot` already names the slot character; a record's names stay the open mission's ref or
+  the id (a foe's or wall's other table key rides along as `key` in the round's input and report,
+  never in a record or snapshot), so the keys widen what params may name without moving a record;
+  `world.one` and `world.id` were added beside `world.key` because the world-level `Missions`,
+  `WorldTime` and `Opportunities` and the skirmish's trained units have no scenario key; `no_waves`
+  is judged by whether a `td-defence` mission names the map, since a kind's `checkAll` cannot see
+  the manifest's `kit`; a mission no scenario's opportunities offer gets no world check. **No
+  golden hash moved** (every run file passes with its golden hashes; keeping the table moves no
+  snapshot), and no layer arrow changed.
 
 ### Planned tasks
 

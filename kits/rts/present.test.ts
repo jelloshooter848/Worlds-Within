@@ -8,7 +8,7 @@ import {
   type PresentFrame,
 } from '@engine/core/present';
 import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
-import { presentWorld, RTS_DEPTH, RtsPresentState, unitAnim } from './present';
+import { presentWorld, RTS_DEPTH, RtsPresentState, rtsMissionInfo, unitAnim } from './present';
 import { readWorld } from './snapshot';
 
 const SIZE = { width: 320, height: 240 };
@@ -199,6 +199,21 @@ describe('presentWorld: missions (Engine 0.11)', () => {
     const bare = presentWorld(view, { faction: 'red', size: SIZE });
     expect(bare.entities.some((e) => e.kind === 'mission-offer')).toBe(false);
     expect(bare.status['offer']).toBe('raid'); // the id without a title
+  });
+
+  it('puts the marker on the entity a scenario key names, through the key table (gap M25)', () => {
+    const view = readWorld(siegeSnapshot());
+    const on = (marker: string, keys?: Record<string, number>) =>
+      presentWorld(view, {
+        faction: 'red',
+        size: SIZE,
+        missions: [rtsMissionInfo({ ...RAID, marker })],
+        ...(keys ? { keys } : {}),
+      }).entities.find((e) => e.kind === 'mission-offer');
+    expect(on('works', { works: 8 })?.tags).toContain('target:8');
+    // A key the table lacks, or no table: the marker is where it would be without one.
+    expect(on('works', { other: 8 })?.tags).toContain('target:9');
+    expect(on('works')?.tags).toContain('target:9');
   });
 
   it("tags the frozen event's units and buildings and shows the open mission's commit tick", () => {

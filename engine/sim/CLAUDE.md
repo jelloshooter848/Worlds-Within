@@ -22,6 +22,10 @@ need a living world use it; simple games never touch it. The ECS is our own smal
 - `scenario.ts`: `worldFromScenario(json, { components?, systems?, log? })`, the world-start file
   schema `scenarioSchema`, `ScenarioError` and `scenarioKeys(json)` (each `key`'s entity id, for a
   mission's `refs`) (see "Scenarios" below).
+- `keys.ts` (Engine 0.15 T7, gaps M10, D6; docs/BUILD-LOG.md, Engine 0.15, decision 8):
+  `worldKeys(world)`, the world's **key table** (every scenario key to its entity id, frozen;
+  `{}` for a world with none), kept beside the world by `worldFromScenario` and `loadWorld`
+  (`keepKeys`, internal), **never in the snapshot**, so no hash moves (see "Key table" below).
 - `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
 - `astar.ts`: RTS pathfinding, `findPath` (A*) for one unit and `flowField`/`flowStep` for a
   group, 4-way or 8-way (see "Walking").
@@ -64,11 +68,13 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   "Time" below).
 - `mission.ts`: the mission lifecycle (Engine 0.10 T4): `Missions` (`MISSION_COMPONENTS`),
   `openMission`, `delegateMission`, `playMission`, `quitMission`, `commitMission`,
-  `settleMissions`, `missionsOf`, `missionSnapshot` (see "Missions" below).
+  `settleMissions`, `missionsOf`, `missionSnapshot` and (Engine 0.15 T7, gap M28)
+  `missionRecords(world)`, the committed records in commit order (see "Missions" below).
 - `mission-port.ts`: `missionPort(world, { refs? })` (Engine 0.11 T5, item 173), the
   `MissionWorldPort` an `engine/core` `MissionHost` drives (see "Missions", Live hosting; from
   Engine 0.14 T7 also `events` and `timeline`, see "Timeline"; from Engine 0.15 T6 `records`,
-  the committed records, for the host's `mission-commit` events), and `roundSeed(seed, id)`.
+  the committed records, for the host's `mission-commit` events; from T7 `keys()` and `open`'s
+  `keys`, the world's key table, see "Key table"), and `roundSeed(seed, id)`.
 - `rts-port.ts` (Engine 0.15 T6, gap M27, decision 7): `rtsWorldPort(world)`, the one bridge
   from a world to the RTS kit's `RtsWorldPort` (`snapshot`, `applyOrder` with only the refusal's
   `error` kept, `step`), typed by shape as `RtsPort` because the sim may not import the kit;
@@ -166,6 +172,29 @@ changes they lead to (the RNG state is in every snapshot).
   each commit: after reaching tick T, changes with `tick < T - n` go), or `log: { enabled: false }`
   to record nothing. The log is not part of `snapshot()`, so it never changes a state hash.
 
+## Key table
+
+Engine 0.15 T7 (gaps M10, D6, M17, M28; docs/BUILD-LOG.md, Engine 0.15, decision 8, item 285).
+
+- **What**: every scenario `key` and the entity id it was given (`scenarioKeys` of the file),
+  fixed when `worldFromScenario` builds the world; `worldKeys(world)` reads it (frozen, keys
+  sorted). A key keeps its id after its entity is gone: the table says who it was.
+- **Outside the snapshot**: the table is kept in a `WeakMap` beside the world, never in
+  `snapshot()` or `canonical()`, so no hash moved when it came in (a world with a table and one
+  without hash the same).
+- **Saved**: `saveWorld` writes it as the save's optional `keys` field (left out when empty), and
+  `loadWorld` restores it; an older save without `keys` loads with an empty table (the format
+  stays at version 1). A key naming an id at or past `nextId` is a `SaveError` (`keys.<key>`).
+- **Missions**: `missionPort(world, { refs? })` takes the table (with `refs` over it, for a world
+  built another way) as the `refs` it opens a mission with, so the open mission's `refs` stay what
+  they were (the keys its effects name: the hashed def and refs do not change), and hands the
+  **whole** table to the round beside the snapshot (`open` returns `keys`; `keys()` gives it
+  to the host), so a kit's adapter may name any keyed entity in params and rules.
+- **Run checks**: the tools resolve `world.key.<key>...` through it (`engine/tools/CLAUDE.md`,
+  Keyed paths); `missionRecords(world)` is the committed records, read through the sim.
+- Tests: `keys.test.ts` (the table equal to `scenarioKeys`, outside the snapshot, saved and
+  loaded, an old save without it, the port's `open` and `keys`, refs unchanged, `missionRecords`).
+
 ## Save and load
 
 `saveWorld(world)` returns the whole world as JSON-safe data; write it as text with
@@ -178,7 +207,8 @@ would. `canonicalJson(saveWorld(loadWorld(save)))` is the same text as the save 
   components: ["Health", ...],          // registered kinds, sorted
   systems: ["move", ...],               // names in run order
   entities: [{ id, components: { Position: {...}, ... } }],   // ascending id
-  log: { enabled, ticks /* or null */, events: [Change, ...] } }
+  log: { enabled, ticks /* or null */, events: [Change, ...] },
+  keys? }                                // Engine 0.15: the key table, when the world has one
 ```
 
 - **Systems are code**, never saved. `loadWorld` takes the same list in the same order and refuses
@@ -335,7 +365,8 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   `status(id)` (`open`, `committed` or null).
 - **Live hosting** (`mission-port.ts`, Engine 0.11, item 173): `missionPort(world, { refs? })`
   fills `engine/core`'s `MissionWorldPort` so a game's glue gives a `MissionHost` the world in one
-  call: `open` is `openMission` with `refs` and also returns the round's seed, `roundSeed(seed,
+  call: `open` is `openMission` with `refs` (since Engine 0.15 T7 the world's key table, `refs`
+  over it, and the whole table returned as `keys`: "Key table") and also returns the round's seed, `roundSeed(seed,
 id)` = `Rng.derived(seed, "round:<id>").next()` (fixed by the seed and the mission id alone,
   never `world.rng`); `delegate`, `play` (`playMission` with the result's report), `quit`,
   `settle` (`settleMissions`, the ids committed), `snapshot` and `step` are the world's. Refusals
@@ -912,4 +943,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `keys.test.ts`, `sample-world.test.ts`).

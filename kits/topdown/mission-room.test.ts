@@ -474,3 +474,90 @@ describe('the mission room: a hero from a world unit (M13) and fates', () => {
     });
   });
 });
+
+describe('the mission room by scenario key (Engine 0.15 T7: M10, D6, M16, D7)', () => {
+  // The world's key table: `ram` is also the mission's ref; `scout` (5) and the squad `band` (9)
+  // are keyed in the scenario only, which no effect names.
+  const KEYS = { ram: 4, scout: 5, band: 9, brak: 7 };
+
+  it('selects by squad, named by its scenario key or its id (M16)', () => {
+    const bySquad = (squad: string | number) =>
+      topdownMissionAdapter.input(
+        SNAPSHOT,
+        withParams({
+          foes: [{ slot: 'n', kind: 'bat', select: { event: 'camp', squad } }],
+          outcomes: [{ outcome: 'lost' }],
+        }),
+        KEYS,
+      ) as MissionRoomInput;
+    expect(bySquad('band').foes.map((f) => f.entity)).toEqual([7]);
+    expect(bySquad(9).foes.map((f) => f.entity)).toEqual([7]);
+    expect(bySquad('nobody').foes).toEqual([]);
+  });
+
+  it('lets a rule name any keyed foe, keeping its record name the ref or the id (M10, D6)', () => {
+    const mission = withParams({
+      outcomes: [{ outcome: 'burnt', when: { destroyed: ['scout'] } }, { outcome: 'lost' }],
+    });
+    // Without the key table, `scout` names no foe.
+    expect(() => topdownMissionAdapter.input(SNAPSHOT, mission)).toThrow(/"scout", which is not one of/);
+    const got = topdownMissionAdapter.input(SNAPSHOT, mission, KEYS) as MissionRoomInput;
+    expect(got.foes).toEqual([
+      { slot: 'E', kind: 'knight', entity: 4, name: 'ram', hp: 4 },
+      { slot: 'n', kind: 'bat', entity: 5, name: '5', key: 'scout' },
+    ]);
+    const placed = [
+      { cell: '3,2', entity: 4, name: 'ram' },
+      { cell: '8,2', entity: 5, name: '5', key: 'scout' },
+    ];
+    const report = { defeated: ['8,2'], hurt: [], hero: { lost: 0 }, placed } as unknown as MissionRoomReport;
+    const out = topdownMissionAdapter.outcome({ result: 'pass', report, ticks: 9 }, mission);
+    expect(out).toEqual({ outcome: 'burnt', stats: { destroyed: ['5'], hurt: [], heroLost: 0, ticks: 9 } });
+  });
+
+  it('checks the selectors against the world scenarios that offer the mission (D7)', () => {
+    const scenario = { file: 'maps/camp.world.json', snapshot: SNAPSHOT, keys: KEYS };
+    const problems = (params: object) =>
+      DEF.checkUse!({
+        params: { ...PARAMS, ...params } as JsonObject,
+        owner: MISSION as unknown as JsonObject,
+        scenarios: [scenario],
+      });
+    expect(problems({})).toEqual([]);
+    expect(
+      problems({
+        foes: [
+          { slot: 'E', kind: 'knight', select: { types: ['dragon'] } },
+          { slot: 'n', kind: 'bat', select: { squad: 'nobody' } },
+        ],
+        outcomes: [{ outcome: 'burnt', when: { destroyed: ['ghost'] } }, { outcome: 'lost' }],
+      }),
+    ).toEqual([
+      { path: ['foes', 0, 'select'], message: 'picks no standing world entity in maps/camp.world.json' },
+      { path: ['foes', 1, 'select', 'squad'], message: '"nobody" is no key of maps/camp.world.json' },
+      { path: ['outcomes', 0, 'when', 'destroyed', 0], message: '"ghost" is no key of maps/camp.world.json' },
+    ]);
+    expect(problems({ hero: { select: { faction: 'green' }, hpPer: 10 } })).toEqual([
+      { path: ['hero', 'select'], message: 'hero.select picks no living world unit in maps/camp.world.json' },
+    ]);
+    // A keyed name that is in the world but not a foe: the adapter's refusal, named by scenario.
+    expect(
+      problems({ outcomes: [{ outcome: 'burnt', when: { destroyed: ['brak'] } }, { outcome: 'lost' }] }),
+    ).toEqual([
+      {
+        path: [],
+        message: expect.stringMatching(/^in maps\/camp.world.json: outcomes.0.when.destroyed names "brak"/),
+      },
+    ]);
+    // No scenario offers it: no world check.
+    expect(
+      DEF.checkUse!({
+        params: {
+          ...PARAMS,
+          foes: [{ slot: 'E', kind: 'knight', select: { types: ['dragon'] } }],
+        } as JsonObject,
+        owner: MISSION as unknown as JsonObject,
+      }),
+    ).toEqual([]);
+  });
+});

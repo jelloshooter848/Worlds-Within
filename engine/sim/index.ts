@@ -247,6 +247,7 @@ export {
   missionCause,
   missionRecordSchema,
   missionSnapshot,
+  missionRecords,
   missionsOf,
   openMission,
   openMissionSchema,
@@ -255,6 +256,7 @@ export {
   settleMissions,
 } from './mission';
 export { missionPort, roundSeed } from './mission-port';
+export { worldKeys } from './keys';
 export { rtsWorldPort, type RtsPort } from './rts-port';
 export type {
   CommitResult,

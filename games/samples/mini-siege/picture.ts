@@ -14,7 +14,13 @@ import {
 } from '@engine/core/present';
 import { hostedSource, type HostedPresentState } from '@engine/core/present/hosted';
 import { skinSetCanvasPresenter } from '@engine/backends/canvas2d';
-import { presentWorld, RtsPresentState, type RtsMissionInfo, type RtsPresentOptions } from '@kits/rts';
+import {
+  presentWorld,
+  rtsMissionInfo,
+  RtsPresentState,
+  type RtsMissionInfo,
+  type RtsPresentOptions,
+} from '@kits/rts';
 import { PLAYER, siegeMissions } from './content';
 import type { MiniSiegeGame } from './headless';
 
@@ -79,18 +85,21 @@ export function siegeSource(
   const battle: FrameSource<MiniSiegeGame, unknown, RtsPresentState> = {
     start: () => new RtsPresentState(),
     present: (game, _events, state) =>
-      presentWorld(game.rts.view(), { ...ui(), faction: PLAYER, size: screen, missions, state }),
+      presentWorld(game.rts.view(), {
+        ...ui(),
+        faction: PLAYER,
+        size: screen,
+        missions,
+        keys: game.worldKeys(),
+        state,
+      }),
   };
   return hostedSource(battle, { round: (game) => game.roundFrame(), events: missionHostEvents });
 }
 
-/** The game's missions as the RTS presentation reads them (titles, events). */
+/** The game's missions as the RTS presentation reads them (titles, events, `marker` keys: gap M25). */
 export function siegeMissionInfo(content: ContentBundle): RtsMissionInfo[] {
-  return siegeMissions(content).map((m) => ({
-    id: m.id,
-    title: m.title,
-    ...(m.event !== undefined && { event: m.event }),
-  }));
+  return siegeMissions(content).map(rtsMissionInfo);
 }
 
 /** One stream of frames for any presenter. */

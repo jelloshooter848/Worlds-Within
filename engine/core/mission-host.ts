@@ -80,7 +80,19 @@ export interface MissionWorldPort {
    * `openMission(world, def, { refs })`: opens it now, returning the plain world snapshot it
    * opened with, its commit tick and the round's seed (`Rng.derived(world seed, "round:<id>")`).
    */
-  open(def: MissionDef): { ok: true; snapshot: JsonObject; commitTick: number; seed: number } | PortRefusal;
+  open(def: MissionDef):
+    | {
+        ok: true;
+        snapshot: JsonObject;
+        commitTick: number;
+        seed: number;
+        /**
+         * Optional (Engine 0.15 T7, gaps M10 and D6): the world's whole key table (scenario key to
+         * entity id) beside the snapshot, handed to the adapter so params may name any keyed entity.
+         */
+        keys?: Readonly<Record<string, number>>;
+      }
+    | PortRefusal;
   /** `delegateMission`: one outcome drawn by weight. */
   delegate(id: string): { ok: true } | PortRefusal;
   /** `playMission` with the result's report (or outcome). */
@@ -108,6 +120,11 @@ export interface MissionWorldPort {
    * (world).committed()` in `engine/sim`), for the host's `mission-commit` events. Reads only.
    */
   records?(): readonly MissionRecord[];
+  /**
+   * Optional (Engine 0.15 T7, gap M17): the world's key table (scenario key to entity id; `worldKeys`
+   * in `engine/sim`), for the tools' `world.key.<key>` run checks. Reads only; never in a snapshot.
+   */
+  keys?(): Readonly<Record<string, number>>;
 }
 
 /** What a `MissionHost` is built from. */
@@ -191,6 +208,7 @@ interface HostedRound {
 interface Opened {
   readonly def: MissionDef;
   readonly snapshot: JsonObject;
+  readonly keys: Readonly<Record<string, number>>;
   readonly seed: number;
   resolved: boolean;
 }
@@ -234,6 +252,23 @@ export class MissionHost implements HostedGame<MissionHost> {
     const port = opts.port;
     if (port.events) this.worldEvents = (sinceTick) => port.events!(sinceTick);
     if (port.timeline) this.timeline = () => port.timeline!(this.missionExperience());
+  }
+
+  /**
+   * The world's committed mission records in commit order (Engine 0.15 T7, gap M28): the port's
+   * `records()` (`missionRecords` in `engine/sim`), empty when the port gives none. Reads only, for
+   * a page's status line and commit sounds.
+   */
+  records(): readonly MissionRecord[] {
+    return this.port.records?.() ?? [];
+  }
+
+  /**
+   * The world's key table (`HeadlessGame.worldKeys`, Engine 0.15 T7, gap M17): the port's
+   * `keys()`, empty when it gives none. Reads only; the tools resolve `world.key.<key>` with it.
+   */
+  worldKeys(): Readonly<Record<string, number>> {
+    return this.port.keys?.() ?? {};
   }
 
   /** The scene draws the host itself (its game, and its round through `miniGame()`). */
@@ -288,7 +323,7 @@ export class MissionHost implements HostedGame<MissionHost> {
     else this.port.step();
     const committed = this.port.settle();
     if (committed.length === 0) return;
-    const records = this.port.records?.() ?? [];
+    const records = this.records();
     for (const id of committed) {
       this.opened.delete(id);
       this.committed.add(id);
@@ -371,7 +406,13 @@ export class MissionHost implements HostedGame<MissionHost> {
     if (def === undefined) return this.unknown(id);
     const opened = this.port.open(def);
     if (!opened.ok) return refusal(opened.code, opened.error);
-    this.opened.set(id, { def, snapshot: opened.snapshot, seed: opened.seed, resolved: false });
+    this.opened.set(id, {
+      def,
+      snapshot: opened.snapshot,
+      keys: opened.keys ?? {},
+      seed: opened.seed,
+      resolved: false,
+    });
     this.nextEvents.push({ type: MISSION_OPEN, mission: id, play: def.play ?? null });
     return null;
   }
@@ -436,7 +477,7 @@ export class MissionHost implements HostedGame<MissionHost> {
       return refusal('no_adapter', `mission "${id}" plays "${def.play}", which has no mission adapter`);
     let game: MiniGame;
     try {
-      const params = adapter.input(open.snapshot, def);
+      const params = adapter.input(open.snapshot, def, open.keys);
       const hostStatus = hostStatusFor(miniGame, { ...this.opts.hostStatus?.(), mission: def.title });
       game = miniGame.create({ params, attempt: 1, ...(hostStatus ? { hostStatus } : {}) }, open.seed);
     } catch (err) {

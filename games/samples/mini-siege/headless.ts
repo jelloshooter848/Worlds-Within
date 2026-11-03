@@ -20,16 +20,14 @@ import {
 } from '@engine/core/headless';
 import type { MiniGameDef } from '@engine/core/minigame';
 import { MissionHost, type MissionHostOptions } from '@engine/core/mission-host';
-import type { MissionRecord } from '@engine/core/missions';
 import {
   carriedRecord,
   fateOf,
   missionPort,
-  Missions,
   rtsWorldPort,
-  scenarioKeys,
   stockpileOf,
   worldFromScenario,
+  worldKeys,
   type World,
 } from '@engine/sim/index';
 import { rtsGame, rtsMissionHooks, sidesOf, type RtsGame } from '@kits/rts';
@@ -155,12 +153,6 @@ export class MiniSiegeGame extends MissionHost {
     this.campaign = parts.campaign;
   }
 
-  /** The world's committed mission records, in commit order (the page's commit sound reads them). */
-  records(): readonly MissionRecord[] {
-    const holder = this.sim.query(Missions)[0];
-    return holder === undefined ? [] : (this.sim.get(holder, Missions)?.committed ?? []);
-  }
-
   /**
    * The campaign save if the entry played now ended at this tick (`HeadlessGame.campaignSave`,
    * Engine 0.13 T7): the next position, the missions committed in this world added to the
@@ -277,14 +269,14 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
     scenario,
     scenario.from !== undefined && carried !== null ? { carried } : {},
   );
-  const keys = scenarioKeys(scenario);
+  const keys = worldKeys(world);
   const enemy = siegeEnemy(content);
   const rts = rtsGame({ world: rtsWorldPort(world), enemy, seed, disabledRules: opts.disabledRules });
   return new MiniSiegeGame(
     { sim: world, rts, keys, factions: [PLAYER, enemy.faction], campaign: place },
     {
       game: rts,
-      port: missionPort(world, { refs: keys }),
+      port: missionPort(world),
       missions: siegeMissions(content),
       miniGames: miniGames(content, opts),
       adapters: ADAPTERS,

@@ -182,7 +182,7 @@ export class TdWorld {
     if (!checked.success) throw new Error(`td map "${def.map.id}": ${checked.error.issues[0]!.message}`);
     for (const t of def.map.towers)
       if (!Object.hasOwn(def.towers, t)) throw new Error(`td map "${def.map.id}": no tower type "${t}"`);
-    if (def.waves.id !== def.map.waves)
+    if (def.map.waves !== undefined && def.waves.id !== def.map.waves)
       throw new Error(`td map "${def.map.id}" plays waves "${def.map.waves}", given "${def.waves.id}"`);
     this.map = def.map;
     this.towerTypes = def.towers;

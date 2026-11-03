@@ -109,6 +109,8 @@ export interface MissionRoundOptions<KitInput> {
   readonly mission: MissionDef;
   /** The plain world snapshot the mission opened with. */
   readonly snapshot: JsonObject;
+  /** The world's key table (Engine 0.15 T7), handed to `adapter.input`; `{}` when left out. */
+  readonly keys?: Readonly<Record<string, number>>;
   readonly adapter: MissionAdapter<KitInput, MiniGameEnd>;
   /** Starts the kit's round from the adapter's input (e.g. a `MiniGameDef`'s `create`). */
   start(input: KitInput): MiniGame;
@@ -151,7 +153,7 @@ export const MISSION_ROUND_MAX_TICKS = 100_000;
  * own seed, so the same snapshot, seed and input give the same result.
  */
 export function playMissionRound<KitInput>(opts: MissionRoundOptions<KitInput>): MissionRoundResult {
-  const round = opts.start(opts.adapter.input(opts.snapshot, opts.mission));
+  const round = opts.start(opts.adapter.input(opts.snapshot, opts.mission, opts.keys ?? {}));
   const max = opts.maxTicks ?? MISSION_ROUND_MAX_TICKS;
   const roundInput = new RoundInput(opts.inputMap);
   let ticks = 0;

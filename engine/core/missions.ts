@@ -200,6 +200,13 @@ export const missionSchema = z
     event: Id.exactOptional().describe(
       'the event it belongs to, held frozen while it is open; none freezes nothing',
     ),
+    marker: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        "the scenario key of the entity the offer marker stands over (Engine 0.15); left out, the kit's own choice (the RTS kit: a unit of the mission's event)",
+      ),
     worldTimeCost: z
       .int()
       .min(1)
@@ -364,8 +371,12 @@ export interface MissionRecord extends MissionResult {
  * snapshot), so a kit never imports `engine/sim`.
  */
 export interface MissionAdapter<KitInput, KitReport> {
-  /** What the kit plays from: built from the plain world snapshot when the mission is played. */
-  input(snapshot: JsonObject, mission: MissionDef): KitInput;
+  /**
+   * What the kit plays from: built from the plain world snapshot when the mission is played.
+   * `keys` (Engine 0.15 T7, gaps M10 and D6) is the world's key table (scenario key to entity id)
+   * when the host has one, so params may name any keyed entity; `{}` or left out when there is none.
+   */
+  input(snapshot: JsonObject, mission: MissionDef, keys?: Readonly<Record<string, number>>): KitInput;
   /** The declared outcome the kit's report reached (checked by {@link playedResult}). */
   outcome(report: KitReport, mission: MissionDef): MissionReport;
 }

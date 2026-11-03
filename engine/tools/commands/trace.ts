@@ -105,11 +105,11 @@ export const traceCommand = defineCommand({
     const missing = new Map<string, MissingPath>();
     const played = await playRun(ctx.cwd, args.runFile, {
       untilTick: to,
-      onTick(tick, snapshot) {
+      onTick(tick, snapshot, keys) {
         if (tick < from || (tick - from) % every !== 0) return;
         const values: Record<string, JsonValue | null> = {};
         for (const path of paths) {
-          const value = valueAt(snapshot, path);
+          const value = valueAt(snapshot, path, keys);
           values[path] = value ?? null;
           if (value !== undefined) continue;
           const seen = missing.get(path);

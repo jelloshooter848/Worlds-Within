@@ -43,6 +43,12 @@ name `towerdefense` (from Engine 0.14 T9 with `roundBots()`: `TdBot` for a `td-d
 `pnpm cli record --bot`); it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
 `games/samples/tower-defense` came to guard every rule).
 
+- Engine 0.15 T7 (lessons D6, D7, D8, D10): the adapter takes the world's key table (`keys`
+  selectors, `build.cells` and `killed` may name any keyed entity), `build.cells` puts a named wall
+  on a named build cell, `checkUse` checks the selectors against the world scenarios that offer
+  the mission, and a `td-map`'s `waves` is optional for a map only `td-defence` missions play
+  (`no_waves` for one no mission names; `tdRound` refuses it).
+
 ## Imports allowed
 
 - `@engine/core/*` except its drawing and output side (`FORBIDDEN_CORE` in `config/layers.js`),

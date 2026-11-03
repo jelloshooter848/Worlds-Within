@@ -189,6 +189,14 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
 - `save/`, `a11y/`, `math/`, `platform.ts`. `save/settings.ts` (Engine 0.15 T5, gap M1): the
   player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`, `volumesKey(game)`,
   `readVolumes`, `loadVolumes`, `storeVolumes`; never read headless).
+- Mission data by scenario key (Engine 0.15 T7, gaps M10, D6, M17, M25, M28, D7):
+  `HeadlessGame.worldKeys?()` (the world's key table, for `world.key` run checks; never in the
+  snapshot), `MissionHost.worldKeys()` and `records()` (from the port's optional `keys()` and
+  `records()`), `MissionWorldPort.open`'s optional `keys`, `MissionAdapter.input(snapshot, mission,
+keys?)` and `playMissionRound`'s `keys`, a mission file's optional `marker` (a scenario key), and
+  `MiniGameUseCheck.scenarios` / `miniGameParamErrors(..., scenarios)` (`GameWorldScenario`: each
+  world scenario's tick-0 snapshot, keys and the missions it offers) so `checkUse` checks
+  selectors against the worlds a mission opens on.
 
 ## Imports allowed
 

@@ -12,7 +12,6 @@
     "room": ["content/rooms/*.json"],
     "td-map": ["content/defence/maps/*.json"],
     "td-towers": ["content/defence/towers.json"],
-    "td-waves": ["content/defence/waves/*.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],

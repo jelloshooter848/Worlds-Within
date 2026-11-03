@@ -1,7 +1,14 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessGame, HeadlessOptions, JsonObject, WorldEvents } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import { eventsSince, rtsWorldPort, worldFromScenario, worldTimeline, type World } from '@engine/sim/index';
+import {
+  eventsSince,
+  rtsWorldPort,
+  worldFromScenario,
+  worldKeys,
+  worldTimeline,
+  type World,
+} from '@engine/sim/index';
 import { rtsGame, sidesOf, type RtsGame, type SideSummary } from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
 import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
@@ -58,6 +65,11 @@ export class SkirmishGame implements HeadlessGame {
   /** The world's event log from world tick `sinceTick` (`HeadlessGame.worldEvents`); never in the snapshot. */
   worldEvents(sinceTick: number): WorldEvents {
     return eventsSince(this.world, sinceTick);
+  }
+
+  /** The world's key table (`HeadlessGame.worldKeys`, Engine 0.15 T7): `world.key.<key>` run checks. */
+  worldKeys(): Readonly<Record<string, number>> {
+    return worldKeys(this.world);
   }
 
   /** The world's timeline record now (`HeadlessGame.timeline`); a skirmish has no missions. */

@@ -45,6 +45,10 @@ the CLI starts.
 content)`, which imports the game's headless module by path for its optional
   `miniGames(content)` and checks every use with `miniGameParamErrors`
   (`engine/core/minigame-params.ts`). No `miniGames` export (or no headless file): no errors.
+  `worldScenarios(content)` (Engine 0.15 T7, lesson D7): every `worlds-within/scenario` content
+  file built at tick 0 with `engine/sim` (its snapshot, key table and the missions its
+  opportunities offer), handed to `miniGameParamErrors` so a mission's `checkUse` checks its
+  selectors against the worlds it is offered in.
 - `run-file.ts`: the run-file schema (`runFileSchema`, with `orderEntrySchema` for recorded
   orders and `missionEntrySchema`/`MISSION_ACTIONS` for mission steps), `readRunFile(cwd, path)`, the check ops (`CHECK_OPS`, `CHECK_OP_MEANINGS`),
   `valueAt(state, path)` and `failsCheck(state, check)`.
@@ -92,7 +96,9 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   backend), `servedPath(abs)`, `pngSize(png)`.
 - `check-values.ts` (Engine 0.14 T10): `CHECK_OPS`, `CheckOp`, `valueAt` and `failsCheck`, the
   run file's checks as pure functions (no Node imports), so the debugger page makes the same
-  checks; `run-file.ts` re-exports them.
+  checks; `run-file.ts` re-exports them. Since Engine 0.15 T7 both take the world's key table
+  (`WorldKeys`) for keyed paths, and `unknownKeyAt(state, path, keys)` finds a key the table lacks
+  (Keyed paths, below).
 - `event-filter.ts` (Engine 0.14 T10): `EventFilter`, `filterChanges`, `causeMatches`,
   `changeLine`: the event log's filters, shared by `events` and the debugger page.
 - `debugger/` (Engine 0.14 T10): the in-browser simulation debugger, its own module with its own
@@ -146,7 +152,12 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   (`triggers.0.params.goal`, `params.goal`) with Zod's code, and (Engine 0.11) a problem the def's
   `checkUse` finds beyond the shape (the topdown kit's `mission-room`: an unknown room, a slot the
   room lacks, a rule naming an outcome the mission does not declare) is `bad_mini_game_use` at its
-  field (`params.outcomes.0.outcome`). A game without the export is checked as before. Result:
+  field (`params.outcomes.0.outcome`). Since Engine 0.15 T7 (lesson D7) each mission is also
+  checked against the game's world scenarios whose opportunities offer it (any
+  `worlds-within/scenario` content file, built at tick 0): a selector that picks nothing there
+  (`params.foes.0.select: picks no standing world entity in .../village.world.json`), a key,
+  squad or rule name the scenario does not have, a budget faction with no `Stockpile`, more walls
+  than build cells; a mission no scenario offers gets no world check. A game without the export is checked as before. Result:
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
   is a usage error. Its own content codes: `unknown_kit` (at `kit` or `uses.<i>` in `game.json`),
@@ -420,7 +431,8 @@ opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` onl
   entry (exit 3, naming the run file and `guards`); an id twice, or one the run's `disableRules`
   switches off, is a schema error.
 - `path`: dotted, into the game's snapshot (`hero.hp`, `entities.0.kind`, `entities.length`). A path
-  that is not in the snapshot always fails. The top-down kit's paths are listed in
+  that is not in the snapshot always fails. Inside a world snapshot an entity is named by
+  scenario key, id or kind, not by its place in a list (Keyed paths, below). The top-down kit's paths are listed in
   `kits/topdown/CLAUDE.md` (Snapshots); `dump` shows them all.
 - `op`: `eq`, `ne` (deep equality), `lt`, `lte`, `gt`, `gte` (numbers), `in`, `nin` (value is an
   array), `contains` (an array has an item equal to value, or a string contains it).
@@ -442,6 +454,34 @@ opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` onl
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`
   returning a `HeadlessGame` (`engine/core/headless.ts`); it passes `opts.disabledRules` to its
   kit and, on several kits, `rulesOffFor(opts, '<kit>')` to each `uses` kit's rounds.
+
+## Keyed paths
+
+Engine 0.15 T7 (gap M17; docs/BUILD-LOG.md, Engine 0.15, decision 8, item 285). A path that
+names a world entity by its place in a component list (`world.components.Health.7.1.hp`) moves
+whenever an entity is added; inside a world snapshot (an object with `entities` and
+`components`: a game's `world`, or a world run's whole snapshot) three segments name it instead:
+
+- **`key.<key>`**: the entity a scenario key names, through the world's key table (a game's
+  `HeadlessGame.worldKeys()`, which `MissionHost` and the RTS skirmish give; a world run's
+  scenario keys): `world.key.ram.Health.hp`, `world.key.captain.fate`; on a world run
+  `key.ram.alive`.
+- **`id.<n>`**: the entity with that id, for one the scenario did not key (a trained unit, a
+  building placed in play): `world.id.16.Producer.queue.length`.
+- **`one.<Kind>`**: the world-level component, the lowest-id entity holding it:
+  `world.one.Missions.committed.0.outcome`, `world.one.WorldTime.frozen.length`,
+  `world.one.Opportunities.list.0.status`. Null when the kind is listed and no entity holds it.
+
+An entity reads as `{ id, alive, fate, <Kind>... }`: `alive` (it exists and its `Fate` is not
+`dead`), `fate` (`Fate.state`, `active` without one, null once it is gone), and every component
+kind the snapshot lists, its data or **null when the entity lacks it** (a captive's
+`world.key.captain.Position` is null; a destroyed ram's `Health` is null). A kind the snapshot
+does not list has no value, so a typo still fails. **A key the table lacks** is refused before the
+run plays: `no_key` at the check's `path` (`assertions.3.path`), exit 3, naming the keys there
+are. `run`, `trace`, replay files and the debugger's checks all read them the same way;
+nothing is added to the snapshot, so no hash moves. The samples' run files use only these (no
+positional component path is left in `games/samples/**/runs`); `engine/sim`'s fixtures keep their
+`components.<Kind>.<i>.1` paths. Tests: `check-values.test.ts`.
 
 ## World runs
 

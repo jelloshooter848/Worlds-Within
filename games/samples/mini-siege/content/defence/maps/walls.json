@@ -3,6 +3,5 @@
   "title": "The road to the hall, between the walls",
   "legend": { "W": "build" },
   "start": { "gold": 0, "lives": 2 },
-  "towers": ["archers", "ballista"],
-  "waves": "walls"
+  "towers": ["archers", "ballista"]
 }

@@ -239,6 +239,45 @@ describe('MissionHost', () => {
     expect(JSON.stringify(h.snapshot())).toBe(before);
   });
 
+  it("hands the adapter the world's key table and gives keys and records from the port (Engine 0.15 T7)", () => {
+    const plain = host().h;
+    expect(plain.worldKeys()).toEqual({});
+    expect(plain.records()).toEqual([]);
+
+    const fake = fakePort();
+    const keys = { ram: 4, hall: 2 };
+    const seen: unknown[] = [];
+    const record: MissionRecord = {
+      mission: 'raid',
+      outcome: 'won',
+      effects: [],
+      resolution: 'played',
+      openTick: 0,
+      commitTick: 5,
+      experienceTicks: 0,
+      skipped: [],
+    };
+    const port: MissionWorldPort = {
+      ...fake.port,
+      open: (def) => {
+        const opened = fake.port.open(def);
+        return opened.ok ? { ...opened, keys } : opened;
+      },
+      keys: () => keys,
+      records: () => [record],
+    };
+    const adapter: MissionAdapter<JsonObject, MiniGameEnd> = {
+      ...ADAPTER,
+      input: (snapshot, mission, given) => (seen.push(given), ADAPTER.input(snapshot, mission)),
+    };
+    const h = new MissionHost({ port, missions: [RAID], miniGames: [COUNT], adapters: { count: adapter } });
+    expect(h.worldKeys()).toEqual(keys);
+    expect(h.records()).toEqual([record]);
+    expect(h.mission({ mission: 'raid', action: 'open' })).toBeNull();
+    expect(h.mission({ mission: 'raid', action: 'play' })).toBeNull();
+    expect(seen).toEqual([keys]);
+  });
+
   it('records a hosted round from its frame 0 when recording is on, and the recording replays it (Engine 0.14 T9)', () => {
     const { h } = host();
     expect(h.roundRecordings()).toEqual([]);
