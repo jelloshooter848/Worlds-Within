@@ -6,10 +6,10 @@ perspective, in the style of New Super Mario Bros. It reads the same snapshot as
 backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), the WebGL
 `ThreePresenter` (`presenter.ts`), the renderer check (`renderer-info.ts`), the canvas fit helper
 (`fit.ts`), the page's display (`display.ts`: `threeDisplay`, `threeScenePresenter`,
-`webgl2Available`) and the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
-`GeometryCache`).
+`webgl2Available`), the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
+`GeometryCache`), the HUD pass (`hud.ts`: `HudLayer`, `HudQuad`) and `PARTICLE_POOL`.
 
-Node vs browser: `scene.ts`, `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
+Node vs browser: `scene.ts`, `hud.ts` (no canvas: its textures are `DataTexture`s), `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
 in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebGLRenderer`) and
 `applyCanvasBox` (it sets CSS) are browser only: Node has no WebGL, so they only typecheck in
 `pnpm test` and are exercised in Playwright Chromium (the 3D play page and
@@ -21,11 +21,14 @@ in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebG
 (the WebGL `ThreePresenter`, Engine 0.6 T4) only draws `scene` with `camera`.
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
 `onSound?(id)`, `background?` (the scene's background; default the skin's `background`, else
-`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`.
-`sync(frame)` brings `scene` and `camera` up to the frame. Read-outs for tests and the presenter:
+`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`,
+`sheets?` (a `PixelSheetLookup` from `@engine/core/assets/content-sheets`, the game's sprite files
+as decoded RGBA pixels, `contentPixelSheets(content)`: what the HUD draws; Engine 0.15, gap G33).
+`sync(frame)` brings `scene`, `camera`, `particles` and the HUD pass (`hud`) up to the frame. Read-outs for tests and the presenter:
 `entity(id)` (an entity's root `Group`), `entityIds()`, `map` (the built map `Group`, or null),
 `mapBuilds`, `view` (the world box, px with y down, framed on the z = 0 plane, without shake),
-`ambient`, `sun`, `overlay`; `dispose()` frees geometries and materials.
+`ambient`, `sun`, `overlay`, `particles` (the particle boxes' `Group`), `hud` (the `HudLayer`:
+`scene`, `camera`, `quads()`); `dispose()` frees geometries, materials and textures.
 
 Axes: world px, x right, y flipped (Three's y is up, so a world `y` becomes `-y`), z toward the
 camera.
@@ -65,7 +68,24 @@ camera.
   `mini-game-end:pass` first, then the bare type; gap G28) calls `onSound(sound)` once; a frame with the same
   `frame` number as the last one does not replay them. Effects: `flash` (skipped with
   `reduceFlashing`) and `tint` (fading from 0.4) show on `overlay`, a full-screen plane on the
-  camera drawn last; `shake` moves the camera; `particles` are not drawn.
+  camera drawn last; `shake` moves the camera; `particles` (Engine 0.15, gap G33) start at the
+  event's `x`/`y` or its `entity`'s box centre and, as in 2D, `count` boxes `size` px on a side
+  fly out evenly round it 1 px a tick for `ticks`, unlit (`MeshBasicMaterial`, one per colour) in
+  the effect's colour, `size` px in front of the z = 0 plane. They come from a pool (the
+  `particles` group's children, hidden when free) of at most `PARTICLE_POOL` (256) boxes; more at
+  once are not drawn.
+- HUD (Engine 0.15, gap G33, decision 4, item 281): `hud` is a `HudLayer`, a second scene with an
+  `OrthographicCamera` spanning the picture in picture pixels (0 to `width`, y down as negative
+  y). Each `sync` lays the HUD out with the core `layoutHud(skin, frame.status, ...)` (the one
+  layout the Canvas2D presenter draws too; change it there, not here), splits text into font
+  glyphs (`hudGlyphs`) and places one quad per item, in order (`renderOrder`), from a pool:
+  a sprite frame is a `DataTexture` of the frame's pixels (cut from the sheet's decoded pixels,
+  rows flipped for GL, nearest-neighbour, sRGB, `alphaTest` 0.5), cached per sheet, palette and
+  frame; a heart or icon whose frame is missing is a flat box in `sheets.fallbackColor`. A glyph
+  the font lacks draws nothing (as `Renderer.text`). Without `sheets` every heart and icon is a box
+  and text draws nothing. `hud.quads()` lists the quads shown (`HudQuad`: kind, box, sheet,
+  palette, frame or colour) for tests. A skin with no `hud` (or a frame with none of its status
+  keys) shows no quads.
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit. No
 `Math.random`, `Date.now` or `performance.now` in this folder's code (a test checks); Three's own
@@ -77,8 +97,9 @@ object UUIDs use randomness internally, which is fine: they never reach a state 
 its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `WebGLRenderer` on
 `canvas` (an `HTMLCanvasElement` or `OffscreenCanvas`); `resize(size)` changes the picture size.
 Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
-`onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`; they are passed on to
-the scene. So a paused frame draws the same every time on one machine, the renderer is fixed:
+`onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `sheets?`; they are passed on to
+the scene. Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
+with `autoClear` off and the depth cleared. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
 pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background` (the option, else the skin's, else black). The drawing buffer
 is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
@@ -109,16 +130,14 @@ places the canvas absolutely in its (positioned) container with `image-rendering
 `canvasToScreen(box, rect, clientX, clientY, dpr?)` maps a client point to game px, as
 `Viewport.toScreen`. The WebGL buffer never changes with the window; only CSS scales it.
 
-### Known gaps (Engine 0.6)
+### Known gaps
 
-- HUD: `skin.hud` and `frame.status` are not drawn in 3D (feedback item 66; decided in Engine 0.7
-  T8: moved to 0.15, gap G33 in `docs/reports/stacking-test.md`).
-- `particles` effects are not drawn (the same: moved to 0.15, G33).
 - Same-layer entities are not ordered by list order (they share a depth plane).
+- The HUD and particles (gap G33) are drawn from Engine 0.15 (above).
 
 ## The page's display (`display.ts`, Engine 0.7)
 
-`threeDisplay(canvas, { screen, skin, rounds?, background?, integerScale?, onSound? })` is the 3D
+`threeDisplay(canvas, { screen, skin, rounds?, background?, integerScale?, onSound?, sheets? })` is the 3D
 `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`, or a sentence saying why
 it cannot start: `webgl2Available()` is false (no WebGL 2), or `ThreePresenter` threw (the
 message names the error). Its `presenter` is a `ThreePresenter` with the game's `three` skin on
@@ -130,7 +149,8 @@ one is drawn through its skin; `fit(layout)` places the canvas with `fitCanvas` 
 layout's `fit`; its `renderer` draws nothing (scenes show frames through the presenter) and
 `present()` does nothing. A game reaches it with `await import('@engine/backends/three')` so its
 2D page loads no Three.js (moved from `games/platformer-lab/main3d.ts`).
-`threeScenePresenter(skin, { screen, background?, rounds? })` is a `Presenter` over the Node-side
+`sheets` (gap G33) goes to the game's scene and every round's, for their HUD.
+`threeScenePresenter(skin, { screen, background?, rounds?, sheets? })` is a `Presenter` over the Node-side
 `ThreeScene` (`present` is `sync`; `.scene` for read-outs): what tests use to check what 3D shows
 (backend parity) with no WebGL. With `rounds`, a mini game's frames go to a scene of their own
 (`.rounds[id]`, each clearing to its skin's `background`), as on the page; `.shown` is the scene the last frame went to.
@@ -160,4 +180,9 @@ SwiftShader, llvmpipe, softpipe, Microsoft Basic Render) and typical hardware on
 NVIDIA, AMD, Intel and Apple, Mesa, Adreno), and `webglRendererInfo` with a fake context with and
 without the debug extension. `fit.test.ts` checks `fitCanvas` against `fitGame` and
 `canvasToScreen`. `display.test.ts` checks `threeScenePresenter` (with and without round skins)
-and the no-WebGL 2 message. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
+and the no-WebGL 2 message. `hud.test.ts` (gap G33) checks the HUD pass against an inline sheet
+lookup: one quad per item of `frame.status` where the 2D layout puts it (hearts, an icon, font
+glyphs, a missing frame's box), the orthographic camera, a texture cut from the sheet with its
+rows flipped, quads following the status each frame, boxes without sheets, `threeScenePresenter`
+handing `sheets` to the round scenes, and particles (flying out for their ticks from a point or an
+entity's centre, the pool capped at `PARTICLE_POOL`). WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.

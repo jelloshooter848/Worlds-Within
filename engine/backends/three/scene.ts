@@ -1,5 +1,6 @@
 import {
   AmbientLight,
+  BoxGeometry,
   Color,
   DirectionalLight,
   Group,
@@ -15,6 +16,7 @@ import {
   Vector3,
   type Material,
 } from 'three';
+import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   cameraShake,
@@ -40,6 +42,7 @@ import {
   type SkinFile,
 } from '@engine/core/present';
 import { GeometryCache } from './geometry';
+import { HudLayer } from './hud';
 
 type Skin = DeepReadonly<SkinFile>;
 type Frame = DeepReadonly<PresentFrame>;
@@ -57,6 +60,11 @@ export interface ThreeSceneOptions {
   clamp?: boolean;
   /** Skip `flash` effects (the player's reduced-flashing setting). */
   reduceFlashing?: boolean;
+  /**
+   * The game's sprite sheets as decoded pixels (`contentPixelSheets`), for the HUD's sprite frames
+   * and font glyphs (gap G33). Without it a heart or icon is a flat box and text draws nothing.
+   */
+  sheets?: PixelSheetLookup;
 }
 
 /** Ticks an effect lasts when the skin gives none (the same as the Canvas2D presenter). */
@@ -68,9 +76,14 @@ const SUN_FROM = new Vector3(-1, 2, 3);
 /** Draw order of the full-screen effect overlay: after everything else. */
 const OVERLAY_ORDER = 1_000_000;
 
-/** One event effect still showing and the frame it began on. */
+/** The most particle boxes shown at once (the pool's size); later ones are not drawn. */
+export const PARTICLE_POOL = 256;
+
+/** One event effect still showing: where it is (world px, y down) and the frame it began on. */
 interface ActiveEffect {
   effect: DeepReadonly<Effect>;
+  x: number;
+  y: number;
   start: number;
 }
 
@@ -119,8 +132,10 @@ interface ShownMap {
  * - Lights: one ambient and one directional light (`camera3d.lights`), no shadows.
  * - Events: each listed event calls `onSound(sound)` once (a frame shown twice does not replay).
  *   Effects: `flash` and `tint` show as a full-screen overlay in front of the camera, `shake`
- *   wobbles the camera, `particles` are not drawn (a known gap).
- * - HUD: not drawn in Engine 0.6 (a known gap).
+ *   wobbles the camera, `particles` are small unlit boxes from a pool (`particles`, at most
+ *   `PARTICLE_POOL`), flying out from the event as the 2D ones do (Engine 0.15, gap G33).
+ * - HUD (Engine 0.15, gap G33): `hud`, a `HudLayer` (the core `layoutHud` drawn as an orthographic
+ *   pass of textured quads, picture pixels), which the presenter draws after `scene`.
  *
  * It never changes the frame or the skin, and uses no clock or unseeded randomness (Three's own
  * object UUIDs never reach any state).
@@ -132,6 +147,10 @@ export class ThreeScene {
   readonly sun: DirectionalLight;
   /** The full-screen flash and tint overlay, a child of the camera; hidden when no effect shows. */
   readonly overlay: Mesh<PlaneGeometry, MeshBasicMaterial>;
+  /** The HUD pass: its own `scene` and orthographic `camera`, drawn over this one. */
+  readonly hud: HudLayer;
+  /** The particle boxes (a pool; hidden ones are free). */
+  readonly particles = new Group();
 
   private readonly skin: Skin;
   private readonly opts: ThreeSceneOptions;
@@ -146,6 +165,8 @@ export class ThreeScene {
   private effects: ActiveEffect[] = [];
   private lastEvents: number | null = null;
   private framed: PresentBox | null = null;
+  private readonly particleBox = new BoxGeometry(1, 1, 1);
+  private readonly particleMaterials = new Map<string, MeshBasicMaterial>();
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
@@ -168,6 +189,9 @@ export class ThreeScene {
     this.overlay.visible = false;
     this.camera.add(this.overlay);
     this.scene.add(this.camera);
+    this.particles.name = 'particles';
+    this.scene.add(this.particles);
+    this.hud = new HudLayer(skin, opts.sheets);
   }
 
   /** The picture size changed. */
@@ -183,6 +207,8 @@ export class ThreeScene {
     this.updateEntities(frame);
     this.updateCamera(frame, size);
     this.updateOverlay(frame.frame);
+    this.updateParticles(frame.frame);
+    this.hud.sync(frame, size);
   }
 
   // ---- What tests and the presenter read ----
@@ -221,6 +247,10 @@ export class ThreeScene {
     this.geometries.dispose();
     this.overlay.geometry.dispose();
     this.overlay.material.dispose();
+    this.particleBox.dispose();
+    for (const m of this.particleMaterials.values()) m.dispose();
+    this.particleMaterials.clear();
+    this.hud.dispose();
   }
 
   // ---- Events ----
@@ -236,8 +266,50 @@ export class ThreeScene {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
-      if (entry.effect !== undefined) this.effects.push({ effect: entry.effect, start: frame.frame });
+      if (entry.effect === undefined) continue;
+      const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
+      const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
+      const y = ev.y ?? (at ? at.y + at.h / 2 : 0);
+      this.effects.push({ effect: entry.effect, x, y, start: frame.frame });
     }
+  }
+
+  /**
+   * `particles` effects as boxes `size` px on a side, `count` of them flying out evenly round the
+   * event's point 1 px a tick (the Canvas2D presenter's pattern), unlit in the effect's colour,
+   * just in front of the z = 0 plane. Boxes come from a pool of at most `PARTICLE_POOL`.
+   */
+  private updateParticles(tick: number): void {
+    const pool = this.particles.children as Mesh<BoxGeometry, MeshBasicMaterial>[];
+    let used = 0;
+    for (const a of this.effects) {
+      const { effect } = a;
+      if (effect.kind !== 'particles') continue;
+      const count = effect.count ?? 6;
+      const side = Math.max(1, Math.round(effect.size ?? 2));
+      const age = tick - a.start;
+      const material = this.particleMaterial(effect.color ?? '#fcfcfc');
+      for (let i = 0; i < count && used < PARTICLE_POOL; i++, used++) {
+        let box = pool[used];
+        if (!box) {
+          box = new Mesh(this.particleBox, material);
+          box.name = 'particle';
+          this.particles.add(box);
+        }
+        const angle = (i / count) * Math.PI * 2;
+        box.material = material;
+        box.visible = true;
+        box.scale.set(side, side, side);
+        box.position.set(a.x + Math.cos(angle) * age, -(a.y + Math.sin(angle) * age), side);
+      }
+    }
+    for (let i = used; i < pool.length; i++) pool[i]!.visible = false;
+  }
+
+  private particleMaterial(color: string): MeshBasicMaterial {
+    let m = this.particleMaterials.get(color);
+    if (!m) this.particleMaterials.set(color, (m = new MeshBasicMaterial({ color })));
+    return m;
   }
 
   /** Flash and tint as a full-screen overlay; the last one listed wins. */

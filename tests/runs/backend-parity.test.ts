@@ -22,6 +22,7 @@ import { loadGame } from '../../engine/tools/game-loader';
 import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { readRunFile, runStartOf, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/samples/dungeon/headless';
+import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import { DungeonPicture, dungeonLook } from '../../games/samples/dungeon/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
 import { threeScenePresenter } from '@engine/backends/three';
@@ -352,10 +353,13 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     const presenter3d = threeScenePresenter(skins3d.main, {
       screen: content.manifest.screen,
       rounds: skins3d.rounds,
+      sheets: contentPixelSheets(content),
       ...(background !== undefined && { background }),
     });
     const fallbacks: string[] = [];
     const noBlock = new Set<string>();
+    const noHud = new Set<string>();
+    const hudShown = new Set<string>();
     const sources = new Set<string>();
     let synced = 0;
     const viaThree = playView(make(), run, (view) => {
@@ -374,6 +378,13 @@ describe('backend parity: every other game with a view, through null, canvas2d a
             if (skin.tiles?.[tile]?.mesh === undefined) noBlock.add(`${round ? id : 'main'} ${tile}`);
           }
       const scene = presenter3d.shown;
+      // The HUD (gap G33): a skin with a `hud` showing a status value draws quads, never a
+      // missing frame's box.
+      const quads = scene.hud.quads();
+      if ((skin.hud ?? []).some((item) => Object.hasOwn(frame.status, item.status)) && quads.length === 0)
+        noHud.add(round ? id : 'main');
+      for (const q of quads) if (q.kind === 'box') noHud.add(`${round ? id : 'main'} box at ${q.x},${q.y}`);
+      if (quads.length > 0) hudShown.add(round ? id : 'main');
       for (const eid of scene.entityIds()) {
         const root = scene.entity(eid)!;
         if (root.userData['fallback'] === true)
@@ -386,8 +397,11 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     expect(synced).toBe(run.ticks + 1);
     expect(fallbacks.slice(0, 5), 'entities drawn as fallback boxes (kinds without a mesh)').toEqual([]);
     expect([...noBlock].sort(), 'tiles without a three skin entry').toEqual([]);
-    if (file.endsWith('samples/platformer/runs/level-4.run.json'))
+    expect([...noHud].sort(), 'HUD values the 3D scene drew nothing (or a box) for').toEqual([]);
+    if (file.endsWith('samples/platformer/runs/level-4.run.json')) {
       expect([...sources].sort()).toEqual(['main', 'vault']);
+      expect([...hudShown].sort()).toEqual(['main', 'vault']);
+    }
     expect(viaThree).toEqual(golden);
   });
 });

@@ -1,23 +1,114 @@
 # games/samples/platformer
 
-The stacking test's game (Engine 0.7, `docs/ROADMAP.md`, "0.7 The stacking test"): a small
-original platformer built on `kits/platformer` with the engine as it is, to find out what is
-missing. Every gap found while building it goes into `docs/reports/stacking-test.md` at once.
-It is also a worked example for LLM users: this file says how it was built, step by step, and
-how to add a level or a mini game room. Engine 0.7 is done (T9): every gap is fixed or moved to a
-named release, and the glue review (the report's "Glue review") found this folder holds only
-content, skins and thin glue.
-At Engine 0.15 (T2) it moved from its own `platformer-test` folder to `games/samples/platformer/` as the
-platformer kit's sample (its run files moved with it and kept their golden hashes); 0.15 finishes
-it as a sample.
+**Hopper's Way**, the platformer kit's sample game: five short side-scrolling levels, two of them
+with a door that pushes a one-room top-down challenge over the level, played in 2D (Canvas2D) and
+3D (Three.js) with original NES-style pixel art, low-poly meshes, an MML song and sound effects,
+all as text. This file is a worked example: it says how the sample was built, so an agent can
+build the next platformer (or the next game that stacks two kits) the same way. It began as the
+stacking test's game (Engine 0.7, its own `platformer-test` folder: built with the engine as it
+was, to find what was missing; every gap is in `docs/reports/stacking-test.md`), moved here at
+Engine 0.15 T2 with its run files and golden hashes unchanged, got its second challenge room in
+T11 and was finished as a sample in T13. It is content, not engine: the kits hold the rules, this
+folder holds levels, rooms, art, sound, skins and thin glue.
+
+## The game
+
+```
+level-1 -> level-2 -> level-3 -> level-4 --door (!)--> vault round  (top-down: defeat-all, 600 ticks)
+                                 level-5 --door (!)--> cellar round (top-down: reach the stairs)
+```
+
+1. **level-1**: the basics: a bump block, coins, gaps, a step, one stompable `walker`, the goal.
+2. **level-2** ("bricks and shells"): bricks, a one-way platform, a walker in a trench and a
+   `shell-walker` whose shell, kicked, defeats it; a long gap that wants a running jump.
+3. **level-3** ("spikes, pits and lives"): spikes, pits, two walkers and a `ledge-walker`: the
+   level where a learner loses lives.
+4. **level-4** ("the door"): a wall with a door; the **vault** round (two knights, `goal:
+defeat-all`, 600 ticks, 4 half hearts) opens it on a pass, puts the player back on the door on a
+   fail.
+5. **level-5** ("the cellar door"): a second wall and door; the **cellar** round (no enemies, a
+   flooded strip, `goal: reach` the stairs, 6 half hearts), a separate challenge room.
+
+A level is **cleared** at its goal (the kit's `cleared` event); the next starts `LEVEL_PAUSE` (60)
+ticks later. A death costs a life and restarts the level (the failure state `level-3.run.json`
+plays three times); a round's `fail` puts the player back on the door. All of it is world state,
+so run files assert it.
+
+## How it was built (the worked example)
+
+The shape of it: **two kits** (`kits/platformer` plays the levels, `kits/topdown` the rooms behind
+the doors, through the engine's mini game contract), **two skins per frame source** (`canvas2d`
+and `three`, so the same frames play in 2D and 3D), and **two challenge rooms** (`vault` and
+`cellar`, each its own room file, checked alone). Each step names the files it made; the
+engine's history behind each one is in "Build history" below.
+
+1. **The manifest.** `game.json`: `kit: "platformer"`, `uses: ["topdown"]` (the second kit, for
+   the doors' rooms), `kitOptions: { "topdown": { "rooms": "separate" } }` (each room file its own
+   challenge room, gap G17; the default would check every room file as one dungeon), the content
+   globs by kind (`level`, `campaign`, `profile`, `room`, `palette`, `sprite`, `skin`, `sfx`,
+   `song`), seed, screen and the `headless` and `view` entries. Start from the scaffold skill's
+   platformer section (`.claude/skills/scaffold-game/SKILL.md`).
+2. **A physics profile as data.** `content/profiles/hopper.profile.json`: the kit's fixture
+   numbers changed to the game's own (walk and run caps, lives, hit points, jump buffer), and its
+   actor types (`walker`, `ledge-walker`, `shell-walker`, `shell`), added with `pnpm -s cli add`.
+3. **Levels as text.** `content/levels/<id>.json` (`id`, `profile`, `scroll`, `triggers`) plus
+   `<id>.map.txt` in the kit's `LEGEND` (`kits/platformer/legend.ts`), each around a few kit rules;
+   `content/campaigns/main.campaign.json` says the play order. `pnpm -s cli validate
+games/samples/platformer --json` names any file, field, row and column that is wrong.
+4. **The second kit: rooms behind doors.** `content/rooms/<id>.json` + `<id>.map.txt` (the
+   top-down kit's room format, 16x11, one hero start, a `title`); `minigames.ts` makes one
+   `roomChallenge` per room file; a level's `!` cell and its `triggers` entry name the room as
+   `game`, with `params` (`goal`, `ticks`, `hp`) and what `pass` and `fail` do (`coins`,
+   `open:<col>:<row>`, `respawn`, `look: "door"`). The second room (`cellar`) is a second file and
+   a second door: no code. `validate` checks the params (`headless.ts` exports `miniGames`).
+5. **Run files, one level at a time.** Play the level headless and add input a jump or hold at a
+   time (`pnpm -s cli trace <run> --paths player.x,player.y`, `pnpm -s cli dump <run> --tick N`),
+   assert what the rules decide, list the rules the run guards and check them with `pnpm -s cli
+mutants`; a round's input can be found with the top-down kit's `TopDownBot` in a throwaway
+   script and written into the run file as plain steps. A level after the first gets a
+   `level-<n>-start` run (`start: { "stage": n }`). Golden hashes with `WW_UPDATE_GOLDEN=1 pnpm
+test tests/runs` (never by hand).
+6. **Art as text.** Palettes (`content/palettes/<id>.json`, NES colours) and sprite sheets
+   (`content/sprites/<sheet>.txt`: a palette line, a legend, then `frame <name>` and its rows, one
+   character per pixel): `hopper` (the levels: tiles, the runner, the actors, coin, goal, door and
+   the HUD icons), `hopper-font` (the HUD digits) and `vault` (the rounds: room tiles, the hero,
+   his sword, the knight, poofs, stairs and the round's HUD icons). All original; the SMBC REMIX
+   source was read for technique only.
+7. **Sound as text.** MML sound effects (`content/sfx/*.json`) for the main events and one MML
+   song, `meadow` (`content/songs/meadow.json`: four channels of the same length, looping),
+   which the page plays from the first key, tap or click (`PLATFORMER_MUSIC` in `content.ts`,
+   handed to the shell's `audio.music`). The shell draws the mute button and volume slider
+   (`#ww-volume`) and keeps the player's volumes.
+8. **Two skins per frame source.** The levels' frames and each round's frames clash (both kits
+   use `#` and `.`), so each source gets its own skin, picked by file name: `canvas2d.json` and
+   `three.json` for the levels, `<backend>-<room id>.json` for each round (`canvas2d-vault.json`,
+   `three-vault.json`, `canvas2d-cellar.json`, `three-cellar.json`). A 2D skin maps every kind,
+   state, tile and event to frames of the sheets, with no per-kind fallback colour (the sheets'
+   `fallbackColor` is a loud `#ff00ff` that no run ever draws: `platformer.test.ts` checks every
+   tick); a 3D skin maps the same kinds and tiles to low-poly meshes written as text (boxes,
+   spheres, cylinders and cones), with the 2D skin's events, particles, camera and **HUD**
+   (`hud`, drawn by the 3D backend from the same sheets: `sheets.sheet` in the skin, the decoded
+   pixels from `picture3d.ts`). Both level skins clear to the sky (`background`).
+9. **Thin glue.** `content.ts` (load, play order, rooms, skin sets), `headless.ts` (the kit's
+   `LevelSequence` with the mini games), `minigames.ts`, `picture.ts` and `picture3d.ts` (the
+   looks), `view.ts` (the engine's `frameView`, for `screenshot`) and `main.ts` + `index.html` (the
+   shell's `bootBrowserGame`, the engine's `HostScene` over the headless game, a display per
+   backend). Each is a few calls into the engine and kits; anything another game would write the
+   same way belongs in the engine.
+10. **Check it.** `pnpm test games/samples/platformer` (content, skins covering every frame of
+    every run in both backends, no fallback drawn, the song, text-only assets), `pnpm test
+tests/runs` (golden hashes, the same through null, Canvas2D and the Three.js scene builder, with
+    a 3D HUD wherever the skin has one), `pnpm -s cli screenshot <run> --tick N [--backend three
+--allow-software-gl] --json`, and `pnpm test tests/browser` (the games index's 2D and 3D links,
+    played in headless Chromium).
 
 ## The rule
 
 This folder holds **only content, skins and thin glue** (DESIGN.md's rule of thumb: if two games
 could use it, it is engine; if it is content, it is the game). Game rules go in data files
-(levels, profiles), never in code here. Anything this game has to write that another game would
-write too is a gap: log it in the report, and move it into the engine or the kit (or name the
-release that will).
+(levels, profiles, rooms, triggers), never in code here. Anything this game has to write that
+another game would write too is a gap: log it in `docs/reports/stacking-test.md` (from G37), and
+move it into the engine or the kit (or name the release that will).
 
 ## Files
 
@@ -100,7 +191,9 @@ release that will).
     (two frames each way) and the HUD's `hp` heart and `hourglass`.
   - `content/sfx/*.json`: MML sound effects: `jump`, `coin`, `stomp` (also a brick, a kick and a
     knight beaten), `door` (the round starts and ends), `pass` (a level cleared), `fail` (a death,
-    the hero's spin), `hurt`, `sword`. No song (optional in the task; none needed yet).
+    the hero's spin), `hurt`, `sword`.
+  - `content/songs/meadow.json` (Engine 0.15 T13): the page's MML song, four channels (two
+    pulses, triangle bass, noise drums) of 1536 ticks each, looping from the start (`L`).
   - `content/skins/canvas2d.json`: the levels' skin (format: `engine/core/present/skin.ts`):
     every `PRESENT_TILES` character, `runner` (every `RUNNER_ANIMS` state, mirrored for left),
     every actor type of the profile (every `ACTOR_ANIMS` state), `coin` (`idle`, `pop`), `goal`,
@@ -128,19 +221,20 @@ release that will).
     box), `bump-block` a plain box (a `brick` mesh for the tag `brick`); tiles: every `PRESENT_TILES` character
     but `.` (open air is the sky, no block): `#` a block with a lighter top course, `B` a brick
     with mortar lines, `?` a block with a mark on its face, `u` a plain box, `=` a thin slab, `^`
-    two rows of cones on a base. `events` are the 2D skin's sounds, flashes, tints and shakes
-    (particles are not drawn in 3D); `camera` the 2D skin's; `camera3d` `fov` 40, `tilt` 4,
-    `layerDepth` 0.25 (the lab's framing).
+    two rows of cones on a base. `events` are the 2D skin's sounds, flashes, tints, shakes and
+    (Engine 0.15, gap G33) particles; `hud` is the 2D skin's (hearts, coins and lives), drawn from
+    `sheets.sheet` `hopper` and `hopper-font` by the 3D backend's HUD pass; `camera` the 2D skin's;
+    `camera3d` `fov` 40, `tilt` 4, `layerDepth` 0.25 (the lab's framing).
   - `content/skins/three-vault.json` (0.7 T8): the vault round's 3D skin. The room is **laid flat
     facing the camera**: a top-down room seen from the front, exactly as the 2D picture shows it,
     so the 3D backend needed no change of axes. Walls (`#`) and statues (`S`, a pillar on a
     plinth) stand forward as blocks; the floor (`.`) is a thin slab sunk 8 px behind them and the
     water (`~`) 2 px deeper, so the hero (tunic, cap and face toward the camera, a shield), the
     knights and the poofs stand out of the floor; the sword is a thin box filling its blade's
-    box. `camera3d` `tilt` 8 (a little of the walls' tops shows). `camera` `{ "clamp": true }`:
-    the round's frames carry the top-down kit's hint, and the 3D round presenter clamps, so the
-    16x11 room is centred in the picture; 2D keeps it under its HUD band (`clamp: false`), but 3D
-    draws no HUD (gap G33), so there is no band to keep clear. The difference is skin data.
+    box. `camera3d` `tilt` 8 (a little of the walls' tops shows). `hud` is the 2D round skin's
+    (hearts and the time left, from `sheets.sheet` `vault` and `hopper-font`) and `camera`
+    `{ "clamp": false }` as in 2D, so the room stays under the HUD band (Engine 0.15, gap G33;
+    before it the 3D round drew no HUD and clamped, centring the room).
 - TypeScript is glue only (each file a few calls into the engine and kits; the glue review in
   `docs/reports/stacking-test.md` lists what each holds):
   - `content.ts`: `loadTest(files)` (the content kinds of the game's two kits,
@@ -155,8 +249,9 @@ backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backen
     `FrameStream` over the kit's `platformerFrames`; while the round runs, its own frame),
     `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the backend's
     `skinSetCanvasPresenter`: the level skin or the round's, per frame);
-  - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, screen }`: the
-    `three` skins, whose level skin's `background` is the sky, and picture size, as the 3D backend's `threeDisplay` and
+  - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, sheets, screen }`: the
+    `three` skins, whose level skin's `background` is the sky, the sprite sheets as decoded pixels
+    for their HUD (`contentPixelSheets`, gap G33) and picture size, as the 3D backend's `threeDisplay` and
     `threeScenePresenter` take them). No Three.js import, so the 2D page bundles none;
   - `view.ts`: `createView` for `pnpm cli screenshot`: the engine's `frameView` with
     `testCanvasPicture` for `render` and `testFrames` for `frame()` (`--backend three` shows
@@ -194,7 +289,12 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
   round and pops it.
 - `platformer.test.ts` (0.7 T8 part): the `three` skins: a level skin and a vault one, each
   with a mesh for every kind and tile its 2D skin maps (but the level's `.`), the 2D skin's
-  events, sounds and camera, and a mesh for every kind and tile the runs show in its frames.
+  events, sounds, camera, HUD and particle effects (Engine 0.15, gap G33), and a mesh for every
+  kind and tile the runs show in its frames.
+- `platformer.test.ts` (Engine 0.15 T13 part): one song, the page's, compiling with four
+  channels of one length; no kind, tag look or tile of a 2D skin with its own fallback colour;
+  every tick of every run file drawn in 2D through the view with sprites and never a `#ff00ff`
+  fallback box; the 2D and 3D skin checks cover the cellar round too.
 - `platformer.test.ts` (earlier parts): content loads, a broken field is named by file and field, the level
   order (the campaign's; a reversed campaign file plays `level-4` first; a campaign entry naming a
   missing level names the file and field; without a campaign, `level-10` after `level-9`), the start state, the first three levels cleared in
@@ -294,7 +394,7 @@ topdown:walls-block-movement` switches it off in the round only (`headless.ts` h
   later level's: re-find them with `pnpm -s cli dump <run> --tick N --json` and keep the
   assertions on what the rules decide.
 
-## How it was built, step by step
+## Build history (step by step)
 
 1. (0.7 T1) `game.json` copied in shape from the lab (kit, screen, seed, `headless`), with only
    the `level` and `profile` content globs.
@@ -363,23 +463,42 @@ topdown:walls-block-movement` switches it off in the round only (`headless.ts` h
     screenshot PNGs at the same ticks (byte-identical before and after) and the browser test.
     What could not move is in the report with a named release (G5, G27, G36, G37).
 
+20. (0.15 T4, gap G33; committed with T13) The 3D HUD: the engine got one HUD layout both backends draw
+    (`layoutHud`) and a HUD pass and particles in the 3D backend first; then `three.json` and
+    `three-vault.json` took their 2D skins' `hud`, a `sheets.sheet` and the particle effects, the
+    vault's `camera.clamp` became `false` as in 2D, and `picture3d.ts` hands the display the
+    sheets as decoded pixels. Checked with `screenshot --backend three` at a level tick and a
+    round tick and by the browser test's HUD check; no hash moved.
+
+21. (0.15 T13) Finished as a sample, Hopper's Way: the `meadow` MML song (`content/songs/`, the
+    `song` glob, `PLATFORMER_MUSIC` handed to the shell's `audio`), the 2D skins' per-kind and
+    per-tile fallback colours removed (the sheets' `fallbackColor` a loud `#ff00ff` no run draws:
+    a test renders every tick of every run), the cellar round's 3D skin given the HUD (`clamp:
+false`, as the vault's in T4), the page titled for the games index and the browser test
+    following the index's 2D and 3D links. The glue keeps its `test*` names (they are in the gap
+    report and the docs). No snapshot changed, so no golden hash moved, and no run file was added
+    (no new level or room).
+
 ## Files to run
 
-| File                    | Ends at                                                     | Command                                                                 |
-| ----------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `runs/level-1.run.json` | `level-1` cleared, tick 493                                 | `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json` |
-| `runs/level-2.run.json` | `level-2` cleared, tick 1101                                | `pnpm -s cli run games/samples/platformer/runs/level-2.run.json --json` |
-| `runs/level-3.run.json` | `level-3` cleared, tick 1999                                | `pnpm -s cli run games/samples/platformer/runs/level-3.run.json --json` |
-| `runs/level-4.run.json` | the round failed, then passed; `level-4` cleared, tick 3283 | `pnpm -s cli run games/samples/platformer/runs/level-4.run.json --json` |
-| the whole folder        | every kit rule guarded                                      | `pnpm -s cli mutants games/samples/platformer --json`                   |
+| File                            | Ends at                                                     | Command                                                                       |
+| ------------------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `runs/level-1.run.json`         | `level-1` cleared, tick 493                                 | `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json`       |
+| `runs/level-2.run.json`         | `level-2` cleared, tick 1101                                | `pnpm -s cli run games/samples/platformer/runs/level-2.run.json --json`       |
+| `runs/level-3.run.json`         | `level-3` cleared, tick 1999                                | `pnpm -s cli run games/samples/platformer/runs/level-3.run.json --json`       |
+| `runs/level-4.run.json`         | the round failed, then passed; `level-4` cleared, tick 3283 | `pnpm -s cli run games/samples/platformer/runs/level-4.run.json --json`       |
+| `runs/level-5-start.run.json`   | the cellar round passed; `level-5` cleared, tick 485        | `pnpm -s cli run games/samples/platformer/runs/level-5-start.run.json --json` |
+| `runs/level-<n>-start.run.json` | as `level-<n>`, from that level's tick 0                    | `pnpm -s cli run games/samples/platformer/runs/level-2-start.run.json --json` |
+| the whole folder                | every kit rule guarded                                      | `pnpm -s cli mutants games/samples/platformer --json`                         |
 
 Each run's final state hash (`finalHash`): `level-1` `2e94bc209e1a168d`, `level-2`
-`26456b7489d5bd3d`, `level-3` `3d737aadfabe54b6`, `level-4` `06201f9a779cc2fc`; every hash is the
+`26456b7489d5bd3d`, `level-3` `3d737aadfabe54b6`, `level-4` `06201f9a779cc2fc` (each `-start`
+run ends on its full run's hash), `level-5-start` `baff0936d93cd71f`; every hash is the
 same through the null backend, Canvas2D and the Three.js scene builder (`tests/runs`).
 
 ## How to add a level
 
-1. Draw `content/levels/level-5.map.txt` in the kit's `LEGEND` (`kits/platformer/legend.ts`) and
+1. Draw `content/levels/level-6.map.txt` in the kit's `LEGEND` (`kits/platformer/legend.ts`) and
    write `content/levels/level-6.json` (`id` = the file name, `profile: "hopper"`, `scroll`,
    any `triggers`), and add `{ "level": "level-6" }` to `content/campaigns/main.campaign.json`
    where it should be played (the campaign decides the order: the kit's `contentStages`; a level
@@ -426,16 +545,18 @@ and a block for every tile shown), `pnpm -s cli screenshot games/samples/platfor
 --json` (a tick inside the round; `matchesHeadless` true; add `--backend three
 --allow-software-gl` for 3D where there is no GPU), `pnpm test tests/browser` (the built page
 plays `level-4.run.json` in 2D and in 3D: the launcher lists the game and its `3D` link, both
-rounds show the vault and the level comes back, no page errors; skipped without Chromium).
+rounds show the vault and the level comes back, the HUD is drawn on the level and in the round in
+both backends, no page errors; skipped without Chromium).
 
 ## How to play (2D and 3D)
 
 `pnpm dev` and open `/games/samples/platformer/` (or `pnpm build && pnpm preview` and the root
 launcher's `games/samples/platformer/` link); in 3D, `/games/samples/platformer/?backend=three` (the
 launcher's `3D` link, or the `3D` link at the page's top left; without WebGL 2 the page says so
-and links to 2D; the 3D picture has no HUD yet, gap G33): arrows (or the touch pad) move, Z jumps, X runs; in
-the vault round arrows walk the hero and X stabs. The levels come in order; the door is in
-`level-4`.
+and links to 2D; the 3D picture shows the same HUD as 2D since Engine 0.15, gap G33): arrows (or the touch pad) move, Z jumps, X runs; in
+the rounds arrows walk the hero and X stabs. The levels come in order; the doors are in
+`level-4` and `level-5`. The `meadow` song starts on the first key, tap or click; the volume
+control is at the page's top right.
 
 ## Imports
 

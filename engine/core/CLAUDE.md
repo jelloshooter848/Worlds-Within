@@ -491,7 +491,10 @@ that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in 
 browser input sources, `save/`, `assets/` (except `sheet-lookup.ts`, `sheetLookup(assets)`: a sheet getter that
 returns null, never throws, for a missing sheet or palette) and the backends.
 `assets/content-sheets.ts` (`contentSheets(content)`, Engine 0.7 T9) is a game's sprite and palette
-files as a `SheetLookup`, for the glue that hands a backend its sheets.
+files as a `SheetLookup`, for the glue that hands a backend its sheets. `contentPixelSheets(content)`
+(Engine 0.15, gap G33) is the same files as decoded RGBA pixels (`PixelSheetLookup`: `(id,
+palette?)` to `rasterizeToBuffer`'s `Rasterized`, or null; each decoded once, default colour mode,
+never throws, needs no canvas), what the 3D backend's HUD uploads as textures.
 
 ## Fixtures
 

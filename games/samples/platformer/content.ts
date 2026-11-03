@@ -8,7 +8,7 @@ import { roomKind, type RoomDef } from '@kits/topdown';
 import { kit as topdown } from '@kits/topdown/kit';
 
 /**
- * Glue between the stacking test's data files (`game.json` and `content/`) and the engine: which
+ * Glue between the platformer sample's data files (`game.json` and `content/`) and the engine: which
  * kits' content it reads, and the loaded bundle as the levels in play order, the rooms and the
  * skins. No content lives here, and nothing another game would write the same way: the kinds,
  * art, sounds and `mustLoad` are the engine's (`@engine/core/content/game-content`), the level
@@ -17,6 +17,9 @@ import { kit as topdown } from '@kits/topdown/kit';
  */
 
 const ROOM = roomKind();
+
+/** The song the page plays from the first key, tap or click on (`content/songs/meadow.json`). */
+export const PLATFORMER_MUSIC = 'meadow';
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/platformer`. */
 export function loadTest(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
@@ -32,7 +35,7 @@ export function loadTest(files: Readonly<Record<string, string>>): ContentResult
  * each with the profile it names: the kit's `contentStages`.
  */
 export function testStages(content: ContentBundle): LevelStage[] {
-  return contentStages(content, { who: 'the stacking test' });
+  return contentStages(content, { who: 'the platformer sample' });
 }
 
 /** The top-down rooms (`content/rooms/`), each one a mini game's room, by id. */
@@ -52,6 +55,6 @@ export function testSkins(
   backend: string,
 ): { level: SkinFile; rounds: Record<string, SkinFile> } {
   const { main, rounds } = skinSet(content, backend);
-  if (!main) throw new Error(`the stacking test has no ${backend} skin (content/skins/${backend}.json)`);
+  if (!main) throw new Error(`the platformer sample has no ${backend} skin (content/skins/${backend}.json)`);
   return { level: main, rounds };
 }

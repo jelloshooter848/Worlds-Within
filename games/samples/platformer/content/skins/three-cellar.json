@@ -1,5 +1,6 @@
 {
   "backend": "three",
+  "sheets": { "sheet": "vault" },
   "meshes": {
     "wall": [
       {
@@ -528,8 +529,13 @@
       }
     }
   },
+  "hud": [
+    { "status": "hp", "as": "hearts", "x": 16, "y": 28, "frame": "hp" },
+    { "status": "timeLeft", "as": "icon", "x": 184, "y": 28, "frame": "hourglass" },
+    { "status": "timeLeft", "as": "number", "x": 196, "y": 28, "font": "hopper-font" }
+  ],
   "camera": {
-    "clamp": true
+    "clamp": false
   },
   "camera3d": {
     "fov": 40,

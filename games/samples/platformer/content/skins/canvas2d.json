@@ -1,7 +1,7 @@
 {
   "backend": "canvas2d",
   "background": "#5c94fc",
-  "sheets": { "sheet": "hopper", "fallbackColor": "#fcfcfc" },
+  "sheets": { "sheet": "hopper", "fallbackColor": "#ff00ff" },
   "kinds": {
     "runner": {
       "frames": {
@@ -14,8 +14,7 @@
         "hurt": { "right": { "frames": ["runner-hurt", "runner-idle"], "ticks": 2 } },
         "dead": "runner-dead"
       },
-      "flipFacing": true,
-      "fallbackColor": "#d82800"
+      "flipFacing": true
     },
     "walker": {
       "frames": {
@@ -25,8 +24,7 @@
         "fall": "walker-0",
         "stomped": "walker-flat",
         "dead": "walker-dead"
-      },
-      "fallbackColor": "#883c00"
+      }
     },
     "ledge-walker": {
       "frames": {
@@ -36,8 +34,7 @@
         "fall": "ledge-walker-0",
         "stomped": "ledge-walker-flat",
         "dead": "ledge-walker-dead"
-      },
-      "fallbackColor": "#9878f8"
+      }
     },
     "shell-walker": {
       "frames": {
@@ -48,8 +45,7 @@
         "stomped": "shell-walker-0",
         "dead": "shell-walker-dead"
       },
-      "flipFacing": true,
-      "fallbackColor": "#00a800"
+      "flipFacing": true
     },
     "shell": {
       "frames": {
@@ -59,36 +55,32 @@
         "fall": "shell",
         "stomped": "shell",
         "dead": "shell-dead"
-      },
-      "fallbackColor": "#00a800"
+      }
     },
     "coin": {
       "frames": {
         "idle": { "frames": ["coin", "coin", "coin-turn"], "ticks": 10 },
         "pop": { "frames": ["coin", "coin-turn"], "ticks": 3 }
-      },
-      "fallbackColor": "#f8d800"
+      }
     },
-    "goal": { "frames": { "idle": "goal" }, "fallbackColor": "#00a800" },
+    "goal": { "frames": { "idle": "goal" } },
     "trigger": {
       "frames": { "idle": "switch" },
-      "fallbackColor": "#9878f8",
-      "byTag": [{ "tag": "look:door", "frames": { "idle": "door" }, "fallbackColor": "#883c00" }]
+      "byTag": [{ "tag": "look:door", "frames": { "idle": "door" } }]
     },
     "bump-block": {
       "frames": { "bump": "used" },
-      "fallbackColor": "#883c00",
-      "byTag": [{ "tag": "brick", "frames": { "bump": "brick" }, "fallbackColor": "#c84c0c" }]
+      "byTag": [{ "tag": "brick", "frames": { "bump": "brick" } }]
     }
   },
   "tiles": {
-    ".": { "frame": "sky", "fallbackColor": "#5c94fc" },
-    "#": { "frame": "ground", "fallbackColor": "#c84c0c" },
-    "B": { "frame": "brick", "fallbackColor": "#c84c0c" },
-    "?": { "frame": "bump", "fallbackColor": "#f8d800" },
-    "u": { "frame": "used", "fallbackColor": "#883c00" },
-    "=": { "frame": "one-way", "fallbackColor": "#00a800" },
-    "^": { "frame": "hazard", "fallbackColor": "#bcbcbc" }
+    ".": { "frame": "sky" },
+    "#": { "frame": "ground" },
+    "B": { "frame": "brick" },
+    "?": { "frame": "bump" },
+    "u": { "frame": "used" },
+    "=": { "frame": "one-way" },
+    "^": { "frame": "hazard" }
   },
   "events": {
     "jump": { "sound": "jump" },

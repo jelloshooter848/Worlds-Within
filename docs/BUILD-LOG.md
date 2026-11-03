@@ -314,6 +314,34 @@ record --bot '{"stockade": [{"do": "fight"}]}'`. **M11:** `engine/tools/mini-gam
   from `pnpm cli run` as soon as such a thing was in the room; `typeNameOf` (`kits/topdown/
 type-names.ts`) writes the kit's class names out (the same names, so no hash moved). No layer
   arrow changed, no existing golden hash moved.
+- **The platformer sample finished, with the 3D HUD** (T13, decisions 4 and 13): G33 fixed.
+  **T4's work was found uncommitted** (left in the stash `T4 (G33 3D HUD) uncommitted leftovers`,
+  which earlier tasks kept untouched) and T13 needs it ("both backends play with a HUD"), so it
+  was applied onto T12's head, its three conflicts resolved (docs and an import), and committed
+  here; the stash itself is left as it was. **The 3D HUD:** the HUD layout is one pure core
+  function, `layoutHud` (`engine/core/present/hud.ts`, with `hudGlyphs`), that the Canvas2D
+  presenter now draws and the 3D backend's `HudLayer` (`engine/backends/three/hud.ts`) draws as an
+  orthographic pass of nearest-neighbour `DataTexture` quads cut from the sprite sheets' decoded
+  pixels (`contentPixelSheets` in `engine/core/assets`, no canvas, so it runs in Node);
+  `ThreePresenter` renders it after the scene, and `ThreeScene` draws `particles` effects as
+  pooled unlit boxes (`PARTICLE_POOL`). `threeDisplay`, `threeScenePresenter`, `ThreePresenter`
+  and `ThreeScene` take `sheets`; the screenshot tool passes them. **The sample, Hopper's Way:**
+  all three `three` skins carry their 2D skins' `hud` and particles (the rounds `clamp: false` as
+  in 2D; the cellar's 3D skin, added in T11 after the stash, was brought in line); an original
+  MML song, `meadow` (the `song` glob, `PLATFORMER_MUSIC`, the shell's `audio.music`); every
+  per-kind, tag-look and per-tile `fallbackColor` removed from the 2D skins (the sheets' fallback
+  is a loud `#ff00ff`, and a test draws every tick of every run file in 2D and finds it never
+  used; the backend parity test already finds no 3D fallback mesh and now no missing 3D HUD); the
+  page titled for the games index; the browser test follows the index's 2D and 3D links, checks
+  the volume control and the HUD in both, and plays `level-4.run.json`; `CLAUDE.md` rewritten as
+  the worked example (two kits, two skins, two challenge rooms), module page and `llms.txt`
+  updated. Choices: the art was already original text pixel art and low-poly meshes from 0.7, so
+  "replace placeholder art" meant removing the fallback colours, not redrawing; one song for the
+  whole page (no round music: the page has no hook to switch songs on a round without new glue);
+  no new run file (no new level or room: the existing runs already cover clears, three deaths and
+  a failed round); the glue keeps its `test*` names (they are in the gap report and docs). **No
+  golden hash moved** (no snapshot changed: every platformer run passes with its hashes,
+  `level-4` final `06201f9a779cc2fc`, `level-5-start` `baff0936d93cd71f`); no layer arrow changed.
 
 ### Planned tasks
 

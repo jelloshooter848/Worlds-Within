@@ -62,7 +62,10 @@ canvas, none in Node). Each `present(frame)`, in order:
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.
 - HUD from `skin.hud` and `frame.status`: `hearts` (one frame per whole point), `icon` (when
-  truthy), `number`/`text` (`Renderer.text` with the font). A missing status draws nothing.
+  truthy), `number`/`text` (`Renderer.text` with the font). A missing status draws nothing. The
+  layout is the core `layoutHud` (`@engine/core/present`, Engine 0.15, gap G33), shared with the
+  3D backend's HUD pass: change it there; this presenter only draws its items (`sprite`, `text`,
+  a missing frame's `box`).
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 

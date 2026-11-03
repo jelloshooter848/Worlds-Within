@@ -1,6 +1,6 @@
 {
   "id": "platformer",
-  "title": "The platformer sample: a small original platformer on the platformer kit",
+  "title": "The platformer sample: Hopper's Way, five levels and two doors on the platformer kit, in 2D and 3D",
   "kit": "platformer",
   "uses": ["topdown"],
   "kitOptions": {
@@ -16,7 +16,8 @@
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],
-    "sfx": ["content/sfx/*.json"]
+    "sfx": ["content/sfx/*.json"],
+    "song": ["content/songs/*.json"]
   },
   "start": {
     "seed": 1

@@ -1,6 +1,7 @@
 {
   "backend": "three",
   "background": "#5c94fc",
+  "sheets": { "sheet": "hopper" },
   "meshes": {
     "runner": [
       {
@@ -326,24 +327,40 @@
   },
   "events": {
     "jump": { "sound": "jump" },
-    "land": {},
+    "land": { "effect": { "kind": "particles", "color": "#fcbcb0", "count": 3, "size": 1, "ticks": 6 } },
     "bump": { "effect": { "kind": "shake", "size": 1, "ticks": 4 } },
-    "block": {},
-    "break": { "sound": "stomp" },
-    "coin": { "sound": "coin" },
-    "spawn": {},
-    "stomp": { "sound": "stomp" },
-    "kick": { "sound": "stomp" },
-    "defeat": {},
+    "block": { "effect": { "kind": "particles", "color": "#f8d800", "count": 4, "size": 1 } },
+    "break": {
+      "sound": "stomp",
+      "effect": { "kind": "particles", "color": "#c84c0c", "count": 8, "size": 2, "ticks": 16 }
+    },
+    "coin": { "sound": "coin", "effect": { "kind": "particles", "color": "#f8d800", "count": 5, "size": 1 } },
+    "spawn": { "effect": { "kind": "particles", "color": "#fcfcfc", "count": 4, "size": 1 } },
+    "stomp": {
+      "sound": "stomp",
+      "effect": { "kind": "particles", "color": "#fcfcfc", "count": 6, "size": 1 }
+    },
+    "kick": {
+      "sound": "stomp",
+      "effect": { "kind": "particles", "color": "#fcfcfc", "count": 3, "size": 1 }
+    },
+    "defeat": { "effect": { "kind": "particles", "color": "#d82800", "count": 6, "size": 1 } },
     "hurt": { "sound": "hurt", "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
     "died": { "sound": "fail", "effect": { "kind": "shake", "size": 3, "ticks": 12 } },
-    "respawn": {},
+    "respawn": { "effect": { "kind": "particles", "color": "#fcfcfc", "count": 8, "size": 1 } },
     "cleared": { "sound": "pass", "effect": { "kind": "tint", "color": "#f8d800", "ticks": 20 } },
     "mini-game": { "sound": "door", "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
     "mini-game-end:pass": { "sound": "pass", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } },
     "mini-game-end:fail": { "sound": "fail", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } },
     "mini-game-end": { "sound": "door", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } }
   },
+  "hud": [
+    { "status": "hp", "as": "hearts", "x": 8, "y": 8, "frame": "heart" },
+    { "status": "coins", "as": "icon", "x": 40, "y": 8, "frame": "hud-coin" },
+    { "status": "coins", "as": "number", "x": 50, "y": 8, "font": "hopper-font" },
+    { "status": "lives", "as": "icon", "x": 80, "y": 8, "frame": "hud-life" },
+    { "status": "lives", "as": "number", "x": 90, "y": 8, "font": "hopper-font" }
+  ],
   "camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 },
   "camera3d": { "fov": 40, "tilt": 4, "layerDepth": 0.25, "lights": { "ambient": 0.65, "directional": 0.7 } }
 }

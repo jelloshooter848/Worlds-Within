@@ -2,7 +2,7 @@
   "backend": "canvas2d",
   "sheets": {
     "sheet": "vault",
-    "fallbackColor": "#fcfcfc"
+    "fallbackColor": "#ff00ff"
   },
   "camera": {
     "clamp": false
@@ -44,8 +44,7 @@
           "loop": false
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#00a800"
+      "flipFacing": true
     },
     "sword": {
       "frames": {
@@ -55,8 +54,7 @@
           "right": "sword-right"
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#fcfcfc"
+      "flipFacing": true
     },
     "poof": {
       "frames": {
@@ -65,8 +63,7 @@
           "ticks": 6,
           "loop": false
         }
-      },
-      "fallbackColor": "#fcfcfc"
+      }
     },
     "knight": {
       "frames": {
@@ -85,30 +82,24 @@
           }
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#6844fc"
+      "flipFacing": true
     }
   },
   "tiles": {
     "#": {
-      "frame": "wall",
-      "fallbackColor": "#3c3c3c"
+      "frame": "wall"
     },
     ".": {
-      "frame": "floor",
-      "fallbackColor": "#24507c"
+      "frame": "floor"
     },
     "S": {
-      "frame": "statue",
-      "fallbackColor": "#7c7c7c"
+      "frame": "statue"
     },
     "~": {
-      "frame": "water",
-      "fallbackColor": "#0058f8"
+      "frame": "water"
     },
     "E": {
-      "frame": "stairs",
-      "fallbackColor": "#3c3c3c"
+      "frame": "stairs"
     }
   },
   "events": {

@@ -4,21 +4,16 @@ Folder: `games/samples/platformer`. Detailed rules: [`games/samples/platformer/C
 
 ## Purpose
 
-The platformer sample: the stacking test's game (Engine 0.7, moved into the
-samples at Engine 0.15): a small original platformer on `kits/platformer`, built
-with the engine as it is to find what is missing; every gap goes into
-[`docs/reports/stacking-test.md`](../reports/stacking-test.md). It holds only content, skins and
-thin glue, and doubles as a worked example and an integration test. Today it plays five short
-levels headless, in order; the fourth and fifth are door levels, whose doors push one-room
-top-down challenges (`kits/topdown`'s `roomChallenge`) over the level: two separate challenge
-rooms, `vault` and `cellar` (Engine 0.15 T11, gap G17: `kitOptions.topdown.rooms` `"separate"`). Since 0.7 T7 it plays in the browser
-in 2D (Canvas2D) from the root launcher, with text assets (pixel art, palettes, MML sounds) and a
-skin per frame source (the levels' and the vault round's), and since 0.7 T8 in 3D (Three.js,
-`?backend=three`, the launcher's `3D` link) with low-poly `three` skins written as text (the
-vault room laid flat facing the camera). 0.7 T9 reviewed its glue against DESIGN.md's rule of
-thumb and moved what another game would write too into the engine and kits (gaps G2, G4, G15,
-G29, G34, G35). Since 0.10 T8 its headless entry also exports `miniGames(content)`, so `validate`
-checks the door's params with the content (gap G16). At 0.15 it becomes `games/samples/platformer/`.
+The platformer kit's sample, **Hopper's Way**: five short levels on `kits/platformer`, two of them
+with a door that pushes a one-room top-down challenge (`kits/topdown`'s `roomChallenge`) over the
+level: two separate challenge rooms, `vault` and `cellar` (gap G17: `kitOptions.topdown.rooms`
+`"separate"`). It plays in 2D (Canvas2D) and 3D (Three.js, `?backend=three`) from the games index,
+with original text assets: NES-style pixel art and palettes, low-poly meshes, an MML song
+(`meadow`) and MML sfx, a skin per backend and frame source, and the same HUD in both backends
+(gap G33). Its `CLAUDE.md` is the worked example of a game on two kits with two skins and two
+challenge rooms. It began as the Engine 0.7 stacking test (every gap it found is in
+[`docs/reports/stacking-test.md`](../reports/stacking-test.md)), moved into the samples in Engine
+0.15 T2 and was finished in T13. It holds only content, skins and thin glue.
 
 ## Public API entry points
 
@@ -32,7 +27,8 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
   `sprites/hopper.txt`, `hopper-font.txt`, `vault.txt` (pixel art) with `palettes/hopper.json` and
   `vault.json`, `sfx/*.json` (MML), `skins/canvas2d.json` (the levels),
   `skins/canvas2d-vault.json` and `canvas2d-cellar.json` (the rounds), `skins/three.json`,
-  `three-vault.json` and `three-cellar.json` (the same in 3D). The rounds' params are listed on
+  `three-vault.json` and `three-cellar.json` (the same in 3D, with the same HUD and particles,
+  gap G33), `songs/meadow.json` (the page's MML song). The rounds' params are listed on
   generated pages, `docs/reference/mini-games/platformer-vault.md` and `platformer-cellar.md`
   (gap M11).
 - `content.ts`: `loadTest(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
@@ -40,8 +36,10 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
   `testRooms(content)`, `testSkins(content, backend)` (`{ level, rounds }`: the engine's
   `skinSet`, the skin named after the backend and one per mini game from `<backend>-<id>`). Art,
   sounds and `mustLoad` are the engine's (`@engine/core/content/game-content`).
-- `picture3d.ts`: `testLook3d(content)` (the `three` skins, size and sky for `threeDisplay` and
-  `threeScenePresenter`; no Three.js import).
+- `picture3d.ts`: `testLook3d(content)` (the `three` skins, the sprite sheets as decoded pixels
+  for their HUD (`contentPixelSheets`) and the size, for `threeDisplay` and `threeScenePresenter`;
+  no Three.js import).
+- `PLATFORMER_MUSIC` (`content.ts`): the song the page plays (`meadow`).
 - `picture.ts`: `testLook(content)` (skins, the engine's `contentSheets`, size, sky),
   `testFrames(screen)`, `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the
   backend's `skinSetCanvasPresenter`: the level skin, or the round's, per frame; each skin's
@@ -49,7 +47,8 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 - `view.ts`: `createView` (the engine's `frameView`), for `pnpm cli screenshot`.
 - `main.ts` and `index.html`: the page (`bootBrowserGame` with the engine's `HostScene` over
   `createGame` itself (no `scene.ts` since Engine 0.10, gap G37), `canvasDisplay`, and `threeDisplay` from a lazily
-  imported chunk for `?backend=three`; sound through the shell's `audio` option, gap G27).
+  imported chunk for `?backend=three`; the song and sfx through the shell's `audio` option, gap
+  G27, with the shell's volume control, M1).
 - `minigames.ts`: `testMiniGames(content)`, one `roomChallenge` per room file (id = room id,
   title = the room's `title`).
 - `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
@@ -71,15 +70,17 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 
 ## How to test
 
-`pnpm test games/samples/platformer` (`platformer.test.ts`: content, level order, the four
-levels cleared in order, the door's round failed then passed, determinism, level restart, the mini
-games, the 2D and 3D skins covering everything every run shows, text-only assets, the page scene
-pushing and popping the round). `pnpm -s cli validate games/samples/platformer --json`,
+`pnpm test games/samples/platformer` (`platformer.test.ts`: content, level order, the levels
+cleared in order, the door's round failed then passed, determinism, level restart, the mini
+games, the 2D and 3D skins covering everything every run shows, text-only assets, the song, no
+fallback look and no fallback box drawn on any tick of any run, the page scene pushing and popping
+the round). `pnpm -s cli validate games/samples/platformer --json`,
 `pnpm -s cli run games/samples/platformer/runs/level-3.run.json --json` (any run file),
 `pnpm -s cli mutants games/samples/platformer --json` (exit 0: every kit rule guarded), `pnpm test tests/runs` (golden hashes,
 and backend parity through null, Canvas2D and the Three.js scene builder), `pnpm -s cli screenshot
 games/samples/platformer/runs/level-4.run.json --tick 3050 --json` (inside the round;
 `matchesHeadless` true; `--backend three --allow-software-gl` for 3D without a GPU), `pnpm test
-tests/browser` (the page plays `level-4.run.json` in headless Chromium, in 2D and in 3D). Play it:
+tests/browser` (follows the games index's 2D and 3D links and plays `level-4.run.json` in
+headless Chromium, with the HUD and the volume control in both). Play it:
 `pnpm dev`, open `/games/samples/platformer/` or `/games/samples/platformer/?backend=three` (arrows, Z
 jumps, X runs and stabs in the round).

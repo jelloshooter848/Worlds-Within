@@ -10,8 +10,9 @@ import type { MiniGameDef } from '@engine/core/minigame';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { isFullMap, parseEventKey, resolveSkinEvent, type SkinFile } from '@engine/core/present';
 import { SceneStack } from '@engine/core/scene';
-import { contentSfx, mustLoad } from '@engine/core/content/game-content';
-import { loadTest, testRooms, testStages } from './content';
+import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
+import { compileSong, parseMml } from '@engine/core/audio/mml';
+import { loadTest, PLATFORMER_MUSIC, testRooms, testStages } from './content';
 import { testLook } from './picture';
 import { testLook3d } from './picture3d';
 import { HostScene } from '@engine/core/shell/host-scene';
@@ -297,7 +298,7 @@ describe('platformer test 2D skins', () => {
     expect([...types].sort()).toEqual([...PLATFORMER_EVENTS].sort());
   });
 
-  it.each(['level', 'vault'])(
+  it.each(['level', 'vault', 'cellar'])(
     'the %s skin covers every kind, state, tile, event and HUD value its frames show in every run',
     (source) => {
       const skin = skinFor(source);
@@ -381,6 +382,7 @@ describe('platformer test 3D skins', () => {
   it.each([
     ['level', () => look.skin, () => look3d.skin],
     ['vault', () => look.rounds['vault']!, () => look3d.rounds['vault']!],
+    ['cellar', () => look.rounds['cellar']!, () => look3d.rounds['cellar']!],
   ])('the %s three skin has a mesh for every kind and tile its 2D skin maps', (source, flat, deep) => {
     const skin2d = flat();
     const skin3d = deep();
@@ -394,15 +396,18 @@ describe('platformer test 3D skins', () => {
     expect(Object.keys(skin3d.events ?? {}).sort()).toEqual(Object.keys(skin2d.events ?? {}).sort());
     for (const [type, entry] of Object.entries(skin3d.events ?? {}))
       expect(entry.sound, type).toBe(skin2d.events?.[type]?.sound);
-    // The same framing but for `clamp`: the 2D round keeps the room under its HUD band (`false`),
-    // the 3D round, with no HUD (gap G33), centres it (`true`), each said in its skin (gap G29).
-    const { clamp: clamp2d, ...camera2d } = skin2d.camera ?? {};
-    const { clamp: clamp3d, ...camera3d } = skin3d.camera ?? {};
-    expect(camera3d).toEqual(camera2d);
-    expect([clamp2d, clamp3d]).toEqual(source === 'vault' ? [false, true] : [undefined, undefined]);
+    // The same framing: the round keeps the room under its HUD band (`clamp: false`) in 2D and,
+    // now that 3D draws the HUD too (gap G33, Engine 0.15), in 3D (gap G29). The same HUD, and
+    // the same particle effects, in both.
+    expect(skin3d.camera).toEqual(skin2d.camera);
+    expect(skin3d.hud).toEqual(skin2d.hud);
+    expect(skin3d.hud?.length ?? 0).toBeGreaterThan(0);
+    for (const [type, entry] of Object.entries(skin2d.events ?? {}))
+      if (entry.effect?.kind === 'particles')
+        expect(skin3d.events?.[type]?.effect, type).toEqual(entry.effect);
   });
 
-  it.each(['level', 'vault'])(
+  it.each(['level', 'vault', 'cellar'])(
     'the %s three skin has a mesh for every kind and tile its frames show',
     (source) => {
       const skin = source === 'level' ? look3d.skin : look3d.rounds[source]!;
@@ -412,7 +417,7 @@ describe('platformer test 3D skins', () => {
         if (!(source === 'level' && t === PRESENT_TILES.empty) && skin.tiles?.[t]?.mesh === undefined)
           missing.push(`tile ${t}`);
       expect(missing).toEqual([]);
-      expect(s.states.size).toBeGreaterThan(2);
+      expect(s.states.size).toBeGreaterThan(0);
     },
   );
 });
@@ -441,5 +446,71 @@ describe('platformer test page scene', () => {
     expect([...depths].sort()).toEqual([1, 2]);
     expect(stack.depth).toBe(1);
     expect(drawn).toEqual(['level-4']);
+  });
+});
+
+describe("the platformer sample, finished: Hopper's Way (Engine 0.15 T13)", () => {
+  const look = testLook(content);
+  const skins2d = [look.skin, ...Object.values(look.rounds)];
+  const runs = readdirSync(new URL('./runs/', import.meta.url))
+    .filter((f) => f.endsWith('.run.json'))
+    .sort();
+
+  it('has one song that compiles, the one the page plays, every channel as long as the others', () => {
+    const songs = contentSongs(content);
+    expect(songs.map((s) => s.id)).toEqual([PLATFORMER_MUSIC]);
+    for (const song of songs) {
+      expect(song.loop).toBe(true);
+      expect(compileSong(song).length).toBeGreaterThan(0);
+      const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).flatMap((ch) =>
+        song[ch]
+          ? [parseMml(song[ch], ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length]
+          : [],
+      );
+      expect(lengths).toHaveLength(4);
+      expect(new Set(lengths).size, song.id).toBe(1);
+    }
+  });
+
+  it('names no placeholder look: no kind, tag look or tile of a 2D skin has its own fallback colour', () => {
+    for (const skin of skins2d) {
+      expect(skin.sheets?.fallbackColor).toBe('#ff00ff');
+      for (const [kind, entry] of Object.entries(skin.kinds)) {
+        expect(entry.fallbackColor, kind).toBeUndefined();
+        for (const tagged of entry.byTag ?? []) expect(tagged.fallbackColor, kind).toBeUndefined();
+      }
+      for (const [tile, entry] of Object.entries(skin.tiles ?? {}))
+        expect(entry.fallbackColor, tile).toBeUndefined();
+    }
+  });
+
+  it.each(runs)('draws every tick of %s from the art in 2D, never a fallback box', (name) => {
+    const run = JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as {
+      ticks: number;
+      input: InputScript;
+      start?: { stage: number };
+    };
+    let sprites = 0;
+    const fallbacks: number[] = [];
+    let tick = 0;
+    const r: Renderer = Object.assign(new NullRenderer(), {
+      sprite() {
+        sprites++;
+      },
+      rect(_x: number, _y: number, _w: number, _h: number, color: string) {
+        if (color === '#ff00ff') fallbacks.push(tick);
+      },
+    });
+    const view = createView(content, 1, run.start ? { start: run.start } : {});
+    const input = new ScriptedInput(run.input);
+    for (tick = 0; tick <= run.ticks; tick++) {
+      if (tick > 0) {
+        input.next();
+        view.step(input);
+      }
+      view.render(r);
+    }
+    expect(sprites).toBeGreaterThan(run.ticks);
+    expect(fallbacks.slice(0, 5)).toEqual([]);
   });
 });

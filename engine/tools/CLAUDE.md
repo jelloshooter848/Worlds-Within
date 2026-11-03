@@ -1014,7 +1014,8 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   `three.json` for the game and `three-<id>.json` for the frames of mini game `<id>` (a scene of
   their own on the same canvas, `withSkin`, picked by `status.miniGame`). The page makes a WebGL
   canvas of the `screen` size and a `ThreePresenter` with the main skin (clear colour: the view's
-  `background` when it gives one, else the skin's `background`, else black; gap G36), reads the
+  `background` when it gives one, else the skin's `background`, else black; gap G36; and the
+  game's sprite files as decoded pixels, `contentPixelSheets`, for every skin's HUD, gap G33), reads the
   renderer string (`webglRendererInfo`) first, then steps exactly as for canvas2d, syncing the
   scene with every tick's `frame()` (so the camera's lerp is the one play shows) and rendering
   once at tick N; the PNG is `toDataURL` of the WebGL canvas (`preserveDrawingBuffer`). The result's

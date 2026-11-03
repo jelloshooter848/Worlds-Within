@@ -1,4 +1,5 @@
 import { Color, SRGBColorSpace, WebGLRenderer } from 'three';
+import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   skinBackground,
@@ -24,6 +25,8 @@ export interface ThreePresenterOptions {
   clamp?: boolean;
   /** Skip `flash` effects (the player's reduced-flashing setting). */
   reduceFlashing?: boolean;
+  /** The game's sprite sheets as decoded pixels, for the HUD (`contentPixelSheets`; gap G33). */
+  sheets?: PixelSheetLookup;
 }
 
 /**
@@ -52,6 +55,7 @@ export class ThreePresenter implements Presenter {
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
       ...(opts.clamp !== undefined && { clamp: opts.clamp }),
       ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+      ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
     this.renderer = new WebGLRenderer({
       canvas,
@@ -90,6 +94,7 @@ export class ThreePresenter implements Presenter {
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
       ...(opts.clamp !== undefined && { clamp: opts.clamp }),
       ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+      ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
     this.others.push(scene);
     return {
@@ -111,11 +116,23 @@ export class ThreePresenter implements Presenter {
     this.renderer.dispose();
   }
 
-  /** Syncs `scene` with `frame` and draws it on this presenter's canvas. */
+  /**
+   * Syncs `scene` with `frame` and draws it on this presenter's canvas: the 3D picture, then the
+   * HUD pass (`scene.hud`, gap G33) over it without clearing, when it shows anything.
+   */
   private draw(scene: ThreeScene, frame: Frame): void {
     this.setBuffer(this.size ?? frame.size);
     scene.sync(frame);
-    this.renderer.render(scene.scene, scene.camera);
+    const r = this.renderer;
+    r.render(scene.scene, scene.camera);
+    if (scene.hud.quads().length === 0) return;
+    r.autoClear = false;
+    try {
+      r.clearDepth();
+      r.render(scene.hud.scene, scene.hud.camera);
+    } finally {
+      r.autoClear = true;
+    }
   }
 
   /** Sizes the drawing buffer to the picture (CSS size untouched: the page letterboxes it). */

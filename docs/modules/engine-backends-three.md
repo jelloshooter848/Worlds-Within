@@ -24,14 +24,19 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   one, a `background` option first); the `PerspectiveCamera` is framed by the
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
-  directional light; `onSound(id)` once per event (by `resolveSkinEvent`); flash and tint as a full-screen overlay. The HUD
-  and particles are not drawn (known gaps; moved to 0.15, gap G33 of the stacking test).
+  directional light; `onSound(id)` once per event (by `resolveSkinEvent`); flash and tint as a full-screen overlay;
+  `particles` as pooled unlit boxes (`particles`, at most `PARTICLE_POOL`). The HUD (Engine 0.15,
+  gap G33): `hud`, a `HudLayer` (`hud.ts`) that draws the core `layoutHud` items for
+  `frame.status` through the skin's `hud` as an orthographic pass of textured quads in picture
+  pixels (`DataTexture`s cut from the decoded pixel art the `sheets` option gives, a
+  `PixelSheetLookup` such as `contentPixelSheets(content)`; nearest-neighbour; no canvas, so it
+  runs in Node); `hud.quads()` lists what it shows.
 - `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
-  `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing })`
+  `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing, sheets })`
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
   `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
   `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour (the `background` option, else the skin's, else black), buffer at
-  the picture size); `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
+  the picture size), then the scene's HUD pass over it; `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
   (Engine 0.7): another presenter on the same canvas and renderer with its own skin and scene (a
   stacked mini game's frames).
 - `webglRendererInfo`, `isSoftwareRenderer`, `GlInfoSource`, `WebglRendererInfo`
@@ -48,7 +53,10 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   (`display.ts`, Engine 0.7): the page's 3D `BrowserDisplay` for `bootBrowserGame`
   (`@engine/core/shell`), or why it cannot start (no WebGL 2), and a Node-side `Presenter` over
   `ThreeScene` for tests. Both take `rounds` (a skin per mini game id, the core `skinSet`'s), so
-  a stacked mini game's frames are drawn through their own skin.
+  a stacked mini game's frames are drawn through their own skin, and `sheets` (the decoded pixel
+  art every skin's HUD draws from).
+- `HudLayer`, `HudQuad` (`hud.ts`) and `PARTICLE_POOL` (`scene.ts`): the HUD pass and the
+  particle pool's size (Engine 0.15, gap G33).
 
 ## Imports allowed
 
@@ -62,7 +70,10 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
 reads the built scene graph and projects points through the camera), `renderer-info.test.ts`
 (software and hardware renderer strings, a fake WebGL context with and without the debug
 extension), `fit.test.ts` (`fitCanvas` against `fitGame`) and `display.test.ts`
-(`threeScenePresenter`, the no-WebGL 2 message). `ThreePresenter` and
+(`threeScenePresenter`, the no-WebGL 2 message) and `hud.test.ts` (the HUD pass's quads for a
+frame's status, textures cut and flipped from a sheet, the round skins' HUD through
+`threeScenePresenter`, particles and their pool). `ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
-browser is installed.
+browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is
+drawn at `?backend=three`.

@@ -8,10 +8,12 @@ import {
   cameraZoom,
   CameraFollower,
   isFullMap,
+  layoutHud,
   resolveSkinEvent,
   resolveSkinFrame,
   skinBackground,
   type DeepReadonly,
+  type HudFrameSize,
   type PresentEntity,
   type PresentFrame,
   type PresentMap,
@@ -332,32 +334,17 @@ export class SkinnedCanvasPresenter implements Presenter {
 
   // ---- HUD ----
 
+  /** The HUD from `layoutHud` (`@engine/core/present`, shared with the 3D backend), in picture pixels. */
   private drawHud(frame: Frame): void {
     const r = this.r;
-    const defaults = this.skin.sheets;
-    for (const item of this.skin.hud ?? []) {
-      if (!Object.hasOwn(frame.status, item.status)) continue;
-      const value = frame.status[item.status]!;
-      if (item.as === 'number' || item.as === 'text') {
-        const font = this.sheet(item.font ?? this.opts.font ?? 'font') ?? EMPTY_FONT;
-        r.text(font, String(value), item.x, item.y);
-        continue;
-      }
-      const count =
-        item.as === 'hearts'
-          ? typeof value === 'number'
-            ? Math.max(0, Math.floor(value))
-            : 0
-          : value
-            ? 1
-            : 0;
-      const sheetId = item.sheet ?? defaults?.sheet;
-      const sheet = sheetId === undefined ? null : this.sheet(sheetId, defaults?.palette);
-      const rect = item.frame === undefined ? undefined : sheet?.frames.get(item.frame);
-      const step = (rect?.w ?? 8) + 1;
-      for (let i = 0; i < count; i++) {
-        if (rect && sheet) r.sprite(sheet, item.frame!, item.x + i * step, item.y);
-        else r.rect(item.x + i * step, item.y, 8, 8, defaults?.fallbackColor ?? '#ff00ff');
+    const frameSize: HudFrameSize = (id, palette, name) => this.sheet(id, palette)?.frames.get(name) ?? null;
+    const font = this.opts.font;
+    for (const d of layoutHud(this.skin, frame.status, frameSize, font !== undefined ? { font } : {})) {
+      if (d.kind === 'text') r.text(this.sheet(d.font) ?? EMPTY_FONT, d.text, d.x, d.y);
+      else if (d.kind === 'box') r.rect(d.x, d.y, d.w, d.h, d.color);
+      else {
+        const sheet = this.sheet(d.sheet, d.palette);
+        if (sheet) r.sprite(sheet, d.frame, d.x, d.y);
       }
     }
   }

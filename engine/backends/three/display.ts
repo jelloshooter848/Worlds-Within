@@ -1,3 +1,4 @@
+import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { presenterBySkinSet, type DeepReadonly, type Presenter, type SkinFile } from '@engine/core/present';
@@ -22,6 +23,11 @@ export interface ThreeDisplayOptions {
   integerScale?: boolean;
   /** Called for each event whose skin entry names a sound. */
   onSound?: (id: string) => void;
+  /**
+   * The game's sprite sheets as decoded pixels (`contentPixelSheets(content)`), for every skin's
+   * HUD (gap G33); without it HUD frames are flat boxes and HUD text draws nothing.
+   */
+  sheets?: PixelSheetLookup;
 }
 
 /** Whether this browser gives a WebGL 2 context (Three.js needs WebGL 2). Browser only. */
@@ -60,6 +66,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       size: opts.screen,
       ...(opts.background !== undefined && { background: opts.background }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+      ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
@@ -67,7 +74,10 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
   }
   const rounds: Record<string, Presenter> = {};
   for (const [id, skin] of Object.entries(opts.rounds ?? {}))
-    rounds[id] = presenter.withSkin(skin, opts.onSound !== undefined ? { onSound: opts.onSound } : {});
+    rounds[id] = presenter.withSkin(skin, {
+      ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+      ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+    });
   return {
     renderer: NO_DRAW,
     presenter: Object.keys(rounds).length > 0 ? presenterBySkinSet(presenter, rounds) : presenter,
@@ -101,18 +111,23 @@ export function threeScenePresenter(
     screen: ScreenSize;
     background?: string;
     rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
+    sheets?: PixelSheetLookup;
   },
 ): Presenter & { scene: ThreeScene; rounds: Record<string, ThreeScene>; readonly shown: ThreeScene } {
   const scene = new ThreeScene(skin, {
     size: opts.screen,
     ...(opts.background !== undefined && { background: opts.background }),
+    ...(opts.sheets !== undefined && { sheets: opts.sheets }),
   });
   let shown = scene;
   const show = (s: ThreeScene): Presenter => ({ present: (frame) => (shown = s).sync(frame) });
   const rounds: Record<string, ThreeScene> = {};
   const roundPresenters: Record<string, Presenter> = {};
   for (const [id, roundSkin] of Object.entries(opts.rounds ?? {})) {
-    rounds[id] = new ThreeScene(roundSkin, { size: opts.screen });
+    rounds[id] = new ThreeScene(roundSkin, {
+      size: opts.screen,
+      ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+    });
     roundPresenters[id] = show(rounds[id]);
   }
   const picked = presenterBySkinSet(show(scene), roundPresenters);

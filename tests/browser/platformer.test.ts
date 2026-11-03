@@ -16,8 +16,9 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // checks that 3D plays, not that it is hardware-backed). The page runs in manual-loop mode
 // (`?debug=step`) and the test steps it with the shell's step hook, `window.__ww.step(1)`: exactly
 // one 60 Hz step each time, so tick N of the page is tick N of the run file. It reads the picture at ticks where the run file says what is on screen
-// (a level under the sky; the vault round in black: under its HUD band in 2D, above the room
-// centred in the picture in 3D, which draws no HUD) and checks the page logged no errors. Skipped
+// (a level under the sky; the vault round in black above the room, its HUD band) and that the HUD
+// is drawn in both backends (Engine 0.15, gap G33: the level's hearts, coins and lives on the sky,
+// the round's hearts and time on black), and checks the page logged no errors. Skipped
 // where Chromium is not installed (never in CI).
 
 const GAME = 'games/samples/platformer/';
@@ -39,7 +40,8 @@ const KEYS: Record<string, string> = {
 
 /**
  * Ticks to look at, and what one pixel of the picture shows then: in 2D the middle of row 40 (the
- * round's HUD band), in 3D the middle of row 12 (above the room, which 3D centres; `ROW`).
+ * round's HUD band), in 3D the middle of row 12 (above the room, whose wall tops a tilted 3D camera
+ * shows a little higher; `ROW`).
  */
 const SKY = '92,148,252';
 const BLACK = '0,0,0';
@@ -51,6 +53,16 @@ const LOOKS: Record<number, string> = {
   2900: SKY, // back on the level after the failed round
   3100: BLACK, // round 2 (2965 to 3144)
   3200: SKY, // the passed round opened the wall
+};
+
+/**
+ * Where the HUD is at a tick, and the background it is drawn over: the level skins' hearts, coin
+ * and life icons and numbers (x 8 to 120, y 8 to 16) and the vault skins' hearts, hourglass and
+ * time (x 16 to 240, y 28 to 36). The same in 2D and 3D (the skins' `hud`).
+ */
+const HUDS: Record<number, { x: number; y: number; w: number; h: number; under: string }> = {
+  100: { x: 8, y: 8, w: 112, h: 8, under: SKY },
+  2400: { x: 16, y: 28, w: 224, h: 8, under: BLACK },
 };
 
 const missing = await browserMissing();
@@ -90,7 +102,17 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
 
         const query = backend === 'three' ? '?backend=three' : '';
         await page.goto(server.url);
-        expect(await page.locator(`#games a[href="${GAME}${query}"]`).count()).toBe(1);
+        // The games index lists the sample by its page title, with its 2D link and its `3D` link;
+        // the test follows the backend's own link from there (Engine 0.15 T13, decision 13).
+        const link = page.locator(`#games a[href="${GAME}${query}"]`);
+        expect(await link.count()).toBe(1);
+        expect(await page.locator(`#games a[href="${GAME}"]`).locator('xpath=..').textContent()).toContain(
+          "Hopper's Way",
+        );
+        await link.click();
+        await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+        expect(new URL(page.url()).pathname).toBe(`/${GAME}`);
+        expect(new URL(page.url()).search).toBe(query);
 
         // The page in manual-loop mode (`?debug=step`, Engine 0.14 T8, gap G31): its loop never
         // runs by itself, and `window.__ww.step(n)` takes exactly n 60 Hz steps, so tick N of the
@@ -99,6 +121,8 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
         await page.goto(`${server.url}${GAME}${query === '' ? '?' : `${query}&`}debug=step`);
         await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
         expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe(backend);
+        // The shell's mute button and volume slider (Engine 0.15 T5, M1).
+        expect(await page.locator('#ww-volume').count()).toBe(1);
         const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
         // The page's canvas copied onto a 2D one (a WebGL canvas keeps its buffer for this:
         // `preserveDrawingBuffer`), then one pixel read at (128, row) of the picture.
@@ -115,8 +139,28 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
             return `${px[0]},${px[1]},${px[2]}`;
           }, ROW[backend]!);
 
+        // How many pixels of a picture box are not its background: the HUD's ink.
+        const ink = (box: { x: number; y: number; w: number; h: number; under: string }) =>
+          page.evaluate((box) => {
+            const canvas = document.getElementById('screen') as HTMLCanvasElement;
+            const s = canvas.width / 256;
+            const copy = document.createElement('canvas');
+            copy.width = canvas.width;
+            copy.height = canvas.height;
+            const ctx = copy.getContext('2d')!;
+            ctx.drawImage(canvas, 0, 0);
+            let count = 0;
+            for (let y = box.y; y < box.y + box.h; y++)
+              for (let x = box.x; x < box.x + box.w; x++) {
+                const px = ctx.getImageData(Math.floor((x + 0.5) * s), Math.floor((y + 0.5) * s), 1, 1).data;
+                if (`${px[0]},${px[1]},${px[2]}` !== box.under) count++;
+              }
+            return count;
+          }, box);
+
         let held = new Set<string>();
         const seen: Record<number, string> = {};
+        const hud: Record<number, number> = {};
         for (let tick = 1; tick <= RUN.ticks; tick++) {
           const want = new Set(holdAt(tick - 1).map((a) => KEYS[a]!));
           for (const key of held) if (!want.has(key)) await page.keyboard.up(key);
@@ -124,8 +168,11 @@ describe.skipIf(missing !== null)('the platformer test page (headless Chromium)'
           held = want;
           await frames(1);
           if (tick in LOOKS) seen[tick] = await band();
+          if (tick in HUDS) hud[tick] = await ink(HUDS[tick]!);
         }
         expect(seen).toEqual(LOOKS);
+        for (const [tick, count] of Object.entries(hud))
+          expect(count, `HUD pixels at tick ${tick} in ${backend}`).toBeGreaterThan(40);
         expect(errors).toEqual([]);
       } finally {
         await browser.close();

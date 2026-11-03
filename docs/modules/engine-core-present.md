@@ -36,6 +36,10 @@ Import from `@engine/core/present` (`index.ts`).
   picture for any game hosting rounds: the game's own source's frames (`status.miniGame` '') or,
   while `round(world)` gives one, the hosted round's frame (`MissionHost.roundFrame()`, named by
   the host, gap D9), with the host's events added (`missionHostEvents`, gap M21).
+- The HUD layout (`hud.ts`, Engine 0.15, gap G33): `layoutHud(skin, status, frameSize, { font? })`
+  turns a skin's `hud` and a frame's `status` into `HudDraw` items (a sprite frame, bitmap-font
+  text or a missing frame's box at a picture pixel, in order), and `hudGlyphs(text)` splits text
+  into font glyphs; both backends draw these, so the HUD sits in the same place in 2D and 3D.
 - Skins (`skin.ts`): `skinSchema` and the `skin` content kind (`SKIN_KIND`, one of the engine's
   kinds), a per-backend JSON file mapping each entity kind to a sprite (2D) or mesh (3D), each tile
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file

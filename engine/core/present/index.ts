@@ -71,3 +71,15 @@ export {
   type SkinTileEntry,
 } from './skin';
 export { MINI_GAME_STATUS, presenterBySkinSet, skinSet, type SkinSet } from './skin-set';
+export {
+  DEFAULT_HUD_FONT,
+  HUD_FALLBACK_COLOR,
+  HUD_FALLBACK_SIZE,
+  HUD_GLYPH_ADVANCE,
+  hudGlyphs,
+  layoutHud,
+  type HudDraw,
+  type HudFrameSize,
+  type HudSprite,
+  type HudText,
+} from './hud';

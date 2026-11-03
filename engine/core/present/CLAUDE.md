@@ -180,6 +180,18 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   mini game id `<id>`). `MINI_GAME_STATUS` (`miniGame`) is the status a host kit sets to the
   running mini game's id; `presenterBySkinSet(main, rounds)` is `presenterByStatus` on it. The
   page, the view and `pnpm cli screenshot --backend three` all read the same set.
+- `hud.ts` (Engine 0.15, gap G33, decision 4, item 281): the HUD laid out once for every backend.
+  `layoutHud(skin, status, frameSize, { font? })` gives `HudDraw` items in picture pixels, in the
+  skin's `hud` order: `{ kind: 'sprite', sheet, palette?, frame, x, y }` (hearts, one per whole
+  point, each the frame's width plus 1 px right of the last; an icon once when truthy; from the
+  item's `sheet`, else `sheets.sheet`, in `sheets.palette`), `{ kind: 'text', font, text, x, y }`
+  (`number` and `text`; the item's font, else the option, else `DEFAULT_HUD_FONT` `font`) and
+  `{ kind: 'box', x, y, w: 8, h: 8, color }` where the frame is missing (`frameSize` gives null;
+  `sheets.fallbackColor`, else `HUD_FALLBACK_COLOR`, 9 px apart). A status key the frame lacks
+  draws nothing. `frameSize(sheet, palette, frame)` is the backend's own lookup. `hudGlyphs(text)`
+  splits a text item into one sprite per character, `HUD_GLYPH_ADVANCE` (8) px apart, spaces
+  skipped (what `Renderer.text` draws). The Canvas2D presenter draws the items with its renderer
+  and the 3D backend as textured quads, so the HUD sits in the same place in both.
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
@@ -217,7 +229,9 @@ on the wrong backend, the demo and platformer-lab canvas2d skins still validatin
 `resolveMeshParts` (primitive, compound, scale) and `resolveCamera3d`. `stream.test.ts` covers `FrameStream`
 (state per world, frozen frames), `PendingEvents` (kept across steps, dropped on a new world) and
 `FramePicture`. `switch.test.ts` covers `presenterByStatus` (picking by value, inherited keys
-ignored, resize to all). `skin-set.test.ts` covers `skinSet` (main and rounds by file name, the
+ignored, resize to all). `hud.test.ts` covers `layoutHud` (hearts, icons, numbers and text where the Canvas2D presenter drew
+them, a missing frame's boxes, missing and false values, the font option, the default colour) and
+`hudGlyphs`. `skin-set.test.ts` covers `skinSet` (main and rounds by file name, the
 fallbacks) and `presenterBySkinSet`. `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
 small-area centring, the zoomed view at 0.5 and 2, snap on a new map id, repeated frames,

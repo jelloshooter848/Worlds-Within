@@ -1,4 +1,5 @@
 import { CanvasRenderer } from '@engine/backends/canvas2d';
+import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
@@ -135,10 +136,13 @@ async function shootThree(
   if (!skins.main) throw new Error(`the game has no skin with backend "three"`);
   const { ThreePresenter, isSoftwareRenderer } = await import('@engine/backends/three');
   const canvas = newCanvas(job);
+  // The sprite sheets as decoded pixels, for every skin's HUD (gap G33).
+  const sheets = contentPixelSheets(content);
   let presenter: InstanceType<typeof ThreePresenter>;
   try {
     presenter = new ThreePresenter(canvas, skins.main, {
       size: job.screen,
+      sheets,
       ...(game.background !== undefined && { background: game.background }),
     });
   } catch (error) {
@@ -155,7 +159,7 @@ async function shootThree(
   const draws: Record<string, Presenter> = {};
   const syncs: Record<string, Presenter> = {};
   for (const [id, skin] of Object.entries(skins.rounds)) {
-    const round = presenter.withSkin(skin);
+    const round = presenter.withSkin(skin, { sheets });
     draws[id] = round;
     syncs[id] = { present: (f) => round.scene.sync(f) };
   }

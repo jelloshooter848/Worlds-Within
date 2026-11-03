@@ -12,7 +12,7 @@ import { testMiniGames } from './minigames';
 export { testMiniGames as miniGames };
 
 /**
- * The stacking test's headless entry (named by `headless` in `game.json`): the platformer kit's
+ * The platformer sample's headless entry (named by `headless` in `game.json`): the platformer kit's
  * `LevelSequence` on the game's levels, played in order (`testStages`), with its mini games (the
  * door level's top-down room challenge, `testMiniGames`). The level flow (the pause
  * between levels, next or same level, a new world per level) is the kit's. No browser, no drawing.

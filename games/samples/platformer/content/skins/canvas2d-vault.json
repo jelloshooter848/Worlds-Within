@@ -1,6 +1,6 @@
 {
   "backend": "canvas2d",
-  "sheets": { "sheet": "vault", "fallbackColor": "#fcfcfc" },
+  "sheets": { "sheet": "vault", "fallbackColor": "#ff00ff" },
   "camera": { "clamp": false },
   "kinds": {
     "hero": {
@@ -15,17 +15,14 @@
         "dying": { "frames": ["down-0", "side-0", "up-0", "side-0"], "ticks": 4 },
         "poof": { "frames": ["poof-0", "poof-1", "poof-2"], "ticks": 8, "loop": false }
       },
-      "flipFacing": true,
-      "fallbackColor": "#00a800"
+      "flipFacing": true
     },
     "sword": {
       "frames": { "stab": { "down": "sword-down", "up": "sword-up", "right": "sword-right" } },
-      "flipFacing": true,
-      "fallbackColor": "#fcfcfc"
+      "flipFacing": true
     },
     "poof": {
-      "frames": { "poof": { "frames": ["poof-0", "poof-1", "poof-2"], "ticks": 6, "loop": false } },
-      "fallbackColor": "#fcfcfc"
+      "frames": { "poof": { "frames": ["poof-0", "poof-1", "poof-2"], "ticks": 6, "loop": false } }
     },
     "knight": {
       "frames": {
@@ -35,15 +32,14 @@
           "right": { "frames": ["knight-side-0", "knight-side-1"], "ticks": 8 }
         }
       },
-      "flipFacing": true,
-      "fallbackColor": "#6844fc"
+      "flipFacing": true
     }
   },
   "tiles": {
-    "#": { "frame": "wall", "fallbackColor": "#3c3c3c" },
-    ".": { "frame": "floor", "fallbackColor": "#24507c" },
-    "S": { "frame": "statue", "fallbackColor": "#7c7c7c" },
-    "~": { "frame": "water", "fallbackColor": "#0058f8" }
+    "#": { "frame": "wall" },
+    ".": { "frame": "floor" },
+    "S": { "frame": "statue" },
+    "~": { "frame": "water" }
   },
   "events": {
     "mini-game": { "sound": "door", "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
