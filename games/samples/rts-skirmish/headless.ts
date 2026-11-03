@@ -2,7 +2,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import type { HeadlessGame, HeadlessOptions, JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import { applyOrder, worldFromScenario, type World } from '@engine/sim/index';
-import { isFinished, rtsGame, type RtsGame, type RtsView } from '@kits/rts';
+import { rtsGame, sidesOf, type RtsGame, type SideSummary } from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
 import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
 
@@ -18,44 +18,8 @@ export function createWorld(content: ContentBundle, seed: number): World {
   return worldFromScenario(skirmishScenario(content, seed));
 }
 
-/** One side at a glance, for run-file checks: its units, finished buildings, sites and stock. */
-export interface SideSummary {
-  /** Living units. */
-  units: number;
-  /** Living units by type. */
-  unitTypes: Record<string, number>;
-  /** Finished buildings by kind. */
-  buildings: Record<string, number>;
-  /** Buildings still under construction. */
-  sites: number;
-  /** The side's stockpile, by item. */
-  stock: Record<string, number>;
-}
-
-/**
- * Every side by faction: `factions` always (an empty side once beaten), then any other faction
- * with units, buildings or a stockpile.
- */
-export function sidesOf(view: RtsView, factions: readonly string[] = []): Record<string, SideSummary> {
-  const sides: Record<string, SideSummary> = {};
-  const side = (f: string) =>
-    (sides[f] ??= { units: 0, unitTypes: {}, buildings: {}, sites: 0, stock: { ...(view.stock[f] ?? {}) } });
-  for (const f of [...factions, ...Object.keys(view.stock)]) side(f);
-  for (const u of view.units) {
-    if (u.faction === null) continue;
-    const s = side(u.faction);
-    s.units++;
-    const type = u.type ?? 'unit';
-    s.unitTypes[type] = (s.unitTypes[type] ?? 0) + 1;
-  }
-  for (const b of view.buildings) {
-    if (b.faction === null) continue;
-    const s = side(b.faction);
-    if (isFinished(b)) s.buildings[b.kind] = (s.buildings[b.kind] ?? 0) + 1;
-    else s.sites++;
-  }
-  return sides;
-}
+/** Every side at a glance (the kit's `sidesOf`), re-exported for the page and the tests. */
+export { sidesOf, type SideSummary };
 
 /**
  * The game the tools play: the kit's `RtsGame` over the world and the player's interface

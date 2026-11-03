@@ -68,6 +68,12 @@ export const rtsMapSchema = z
       .array(z.record(z.string(), z.json()))
       .default([])
       .describe('squads with their named members (heroes), as in a world scenario'),
+    opportunities: z
+      .array(z.record(z.string(), z.json()))
+      .exactOptional()
+      .describe(
+        'mission opportunities offered in the world (Engine 0.10), as in a world scenario: checked by the simulation when the world is built',
+      ),
   })
   .superRefine((map, ctx) => {
     const legend = new Set(Object.keys(map.terrain.legend));

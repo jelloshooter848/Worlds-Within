@@ -1,0 +1,92 @@
+{
+  "units": {
+    "worker": {
+      "health": 20,
+      "speed": 2,
+      "attack": 1,
+      "range": 1,
+      "cooldown": 4,
+      "sight": 4,
+      "cost": {
+        "gold": 50
+      },
+      "trainTicks": 25,
+      "work": 2,
+      "gather": {
+        "capacity": 5,
+        "ticks": 2
+      }
+    },
+    "soldier": {
+      "health": 50,
+      "speed": 2,
+      "attack": 6,
+      "range": 1,
+      "cooldown": 3,
+      "sight": 5,
+      "cost": {
+        "gold": 50
+      },
+      "trainTicks": 20
+    },
+    "captain": {
+      "health": 120,
+      "speed": 2,
+      "attack": 10,
+      "range": 1,
+      "cooldown": 3,
+      "sight": 6,
+      "trainTicks": 1
+    },
+    "raider": {
+      "health": 30,
+      "speed": 2,
+      "attack": 4,
+      "range": 1,
+      "cooldown": 3,
+      "sight": 5,
+      "trainTicks": 20
+    },
+    "ram": {
+      "health": 120,
+      "speed": 3,
+      "attack": 12,
+      "range": 1,
+      "cooldown": 4,
+      "sight": 3,
+      "trainTicks": 60
+    },
+    "catapult": {
+      "health": 100,
+      "speed": 3,
+      "attack": 10,
+      "range": 3,
+      "cooldown": 5,
+      "sight": 6,
+      "trainTicks": 60
+    }
+  },
+  "buildings": {
+    "hall": {
+      "health": 400,
+      "size": {
+        "w": 3,
+        "h": 3
+      },
+      "work": 200,
+      "dropoff": true,
+      "trains": ["worker"]
+    },
+    "watchtower": {
+      "health": 200,
+      "size": {
+        "w": 2,
+        "h": 2
+      },
+      "work": 480,
+      "cost": {
+        "gold": 80
+      }
+    }
+  }
+}

@@ -20,7 +20,8 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 ## Public API entry points
 
 `index.ts`, imported as `@kits/rts`: `snapshot` (`readWorld`, `RtsView`, `thingAt`,
-`facingOfDir`), `selection` (`Selection`), `commands` (`commandAt`, `buildCommand`,
+`facingOfDir`), `sides` (`sidesOf`, `SideSummary`: every side at a glance), `selection`
+(`Selection`), `commands` (`commandAt`, `buildCommand`,
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`
 (`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`),

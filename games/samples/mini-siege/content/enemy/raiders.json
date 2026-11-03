@@ -1,0 +1,20 @@
+{
+  "faction": "raiders",
+  "steps": [
+    {
+      "id": "batter",
+      "repeat": { "every": 20, "times": null },
+      "order": { "type": "attack", "units": { "type": "ram" }, "target": "nearest-building" }
+    },
+    {
+      "id": "bombard",
+      "repeat": { "every": 20, "times": null },
+      "order": { "type": "attack", "units": { "type": "catapult" }, "target": "nearest-building" }
+    },
+    {
+      "id": "charge",
+      "repeat": { "every": 20, "times": null },
+      "order": { "type": "attack", "units": { "type": "raider" }, "target": "nearest-enemy" }
+    }
+  ]
+}

@@ -70,6 +70,12 @@ describe('the rts kit hook', () => {
     expect(kit.strictMutants).toBeUndefined();
   });
 
+  it('takes a map with mission opportunities (checked by the sim when the world is built)', () => {
+    const opportunities = [{ id: 'window', mission: 'raid', opens: 0, closes: 10 }];
+    const loaded = load({ 'content/maps/field.world.json': { ...MAP, opportunities } });
+    expect(loaded.ok ? [] : brief(loaded.errors)).toEqual([]);
+  });
+
   it('loads a map, a types table and an enemy plan as a game would', () => {
     expect(load().errors).toEqual([]);
   });

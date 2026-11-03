@@ -1,0 +1,16 @@
+{
+  "id": "mini-siege",
+  "title": "The mini siege: a village under attack, and one top-down mission to burn the siege engines",
+  "kit": "rts",
+  "uses": ["topdown"],
+  "content": {
+    "rts-map": ["content/maps/*.world.json"],
+    "rts-types": ["content/types/*.json"],
+    "rts-enemy": ["content/enemy/*.json"],
+    "mission": ["content/missions/*.mission.json"],
+    "room": ["content/rooms/*.json"]
+  },
+  "start": { "seed": 11 },
+  "screen": { "width": 256, "height": 240 },
+  "headless": "headless.ts"
+}

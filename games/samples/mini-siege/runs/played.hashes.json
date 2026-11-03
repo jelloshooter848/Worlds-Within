@@ -1,0 +1,145 @@
+{
+  "run": "games/samples/mini-siege/runs/played.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "824dd792dc4a7d24"
+    },
+    {
+      "tick": 20,
+      "hash": "802fee22e52495b2"
+    },
+    {
+      "tick": 40,
+      "hash": "80e169eed72dedbe"
+    },
+    {
+      "tick": 60,
+      "hash": "e7eb09721cdb15d5"
+    },
+    {
+      "tick": 80,
+      "hash": "1976c10916019e0b"
+    },
+    {
+      "tick": 100,
+      "hash": "05899abb8e7e5a89"
+    },
+    {
+      "tick": 120,
+      "hash": "f56a0dd46ace33c5"
+    },
+    {
+      "tick": 140,
+      "hash": "3057b6aaa443642a"
+    },
+    {
+      "tick": 160,
+      "hash": "c8bbb17c998e7f54"
+    },
+    {
+      "tick": 180,
+      "hash": "fec37f97dd10136b"
+    },
+    {
+      "tick": 200,
+      "hash": "d0a452d722c21c43"
+    },
+    {
+      "tick": 220,
+      "hash": "16da6ecf079b5413"
+    },
+    {
+      "tick": 240,
+      "hash": "9f30903aa900c900"
+    },
+    {
+      "tick": 260,
+      "hash": "876278a6957d8368"
+    },
+    {
+      "tick": 280,
+      "hash": "f97f021b8f56b586"
+    },
+    {
+      "tick": 300,
+      "hash": "234c56c6b50f5e02"
+    },
+    {
+      "tick": 320,
+      "hash": "7c00ffbdc23effa8"
+    },
+    {
+      "tick": 340,
+      "hash": "ea0c1929c04a6ab4"
+    },
+    {
+      "tick": 360,
+      "hash": "5e4c9123f71deafc"
+    },
+    {
+      "tick": 380,
+      "hash": "da62c8c3db3d7a4e"
+    },
+    {
+      "tick": 400,
+      "hash": "e6dff1e3c8292776"
+    },
+    {
+      "tick": 420,
+      "hash": "1739a9c183d88032"
+    },
+    {
+      "tick": 440,
+      "hash": "62427f49b2393844"
+    },
+    {
+      "tick": 460,
+      "hash": "30ccd0e3946bf3ce"
+    },
+    {
+      "tick": 480,
+      "hash": "2e056f7c6cb4ac1c"
+    },
+    {
+      "tick": 500,
+      "hash": "983869e442c60c2e"
+    },
+    {
+      "tick": 520,
+      "hash": "09f01b7e0cbf75ca"
+    },
+    {
+      "tick": 540,
+      "hash": "0cdc93bccecaa44e"
+    },
+    {
+      "tick": 560,
+      "hash": "1676de4a142522cd"
+    },
+    {
+      "tick": 580,
+      "hash": "22bb99b95cf9c229"
+    },
+    {
+      "tick": 600,
+      "hash": "ecb3c761dd1767e3"
+    },
+    {
+      "tick": 620,
+      "hash": "c73ff9691c6a3f06"
+    },
+    {
+      "tick": 640,
+      "hash": "9af8815af1ee16a5"
+    },
+    {
+      "tick": 660,
+      "hash": "cb7d475dfa48b03d"
+    },
+    {
+      "tick": 666,
+      "hash": "25d3a40b93c9b076"
+    }
+  ]
+}

@@ -20,7 +20,7 @@ exports as a run file that `pnpm -s cli run` replays to the same state hashes.
   `palettes/skirmish.json` and `skirmish-blue.json`, `skins/canvas2d.json`.
 - `headless.ts`: `createGame(content, seed, opts?)` (a `SkirmishGame`: the kit's `rtsGame`, taking
   recorded orders and interface actions; snapshot `{ world, kit, sides, ui }`), `createWorld`,
-  `sidesOf`.
+  `sidesOf` (the kit's, re-exported).
 - `actions.ts`: interface actions (`click`, `box`, `command`, `build`, `train`, `stop`) through
   the kit's selection and command mapper.
 - `index.html`, `main.ts` (the page: `bootBrowserGame`, the button bar, Export, the

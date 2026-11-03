@@ -1,0 +1,64 @@
+{
+  "id": "sabotage",
+  "title": "Burn the siege engines",
+  "event": "siege",
+  "worldTimeCost": 120,
+  "play": "mission-room",
+  "params": {
+    "room": "engine-camp",
+    "goal": "defeat-all",
+    "ticks": 1500,
+    "hp": 6,
+    "foes": [
+      {
+        "slot": "E",
+        "kind": "knight",
+        "select": { "faction": "raiders", "types": ["ram", "catapult"] },
+        "hpPer": 40
+      },
+      { "slot": "n", "kind": "knight", "select": { "faction": "raiders", "member": "regular" } }
+    ],
+    "outcomes": [
+      { "outcome": "both-burnt", "when": { "destroyed": ["ram", "catapult"] } },
+      { "outcome": "ram-burnt", "when": { "destroyed": ["ram"] } },
+      { "outcome": "catapult-burnt", "when": { "destroyed": ["catapult"] } },
+      { "outcome": "driven-off" }
+    ]
+  },
+  "onQuit": "driven-off",
+  "outcomes": [
+    {
+      "id": "both-burnt",
+      "title": "The ram and the catapult burnt",
+      "weight": 1,
+      "effects": [
+        { "type": "destroy", "entity": "ram" },
+        { "type": "destroy", "entity": "catapult" }
+      ]
+    },
+    {
+      "id": "ram-burnt",
+      "title": "The ram burnt, the catapult saved by its crew",
+      "weight": 2,
+      "effects": [
+        { "type": "destroy", "entity": "ram" },
+        { "type": "damage", "entity": "catapult", "amount": 40 }
+      ]
+    },
+    {
+      "id": "catapult-burnt",
+      "title": "The catapult burnt, the ram scorched",
+      "weight": 1,
+      "effects": [
+        { "type": "destroy", "entity": "catapult" },
+        { "type": "damage", "entity": "ram", "amount": 40 }
+      ]
+    },
+    {
+      "id": "driven-off",
+      "title": "Driven off, the captain wounded",
+      "weight": 2,
+      "effects": [{ "type": "damage", "entity": "captain", "amount": 30 }]
+    }
+  ]
+}

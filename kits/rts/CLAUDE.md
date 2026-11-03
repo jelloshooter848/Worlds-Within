@@ -21,6 +21,10 @@ frozen: [event ids] }` (from `Opportunities`, `Missions` and `WorldTime.frozen`,
   (`Facing8.dir` 0 north ... 7 north-west to the eight presentation facings) and
   `thingAt(view, x, y, faction?)` (a unit, own first then lowest id; else a building whose
   footprint covers the cell; else a resource node).
+- `sides.ts` (Engine 0.11 T8, gap M15; it was the RTS skirmish's glue): `sidesOf(view,
+factions?)`, every side at a glance (`SideSummary`: `units`, `unitTypes`, finished `buildings`
+  by kind, `sites`, `stock`), `factions` always listed (empty once beaten), for run-file checks
+  and a page's status line.
 - `selection.ts`: `Selection(faction, rules?)`: ids kept ascending. `click(view, point, tileSize,
 additive?)` selects one thing (own unit first, else any unit, else a building; empty ground
   clears); a hero is selected alone like any unit (item 121). `box(view, worldBox, tileSize,
@@ -92,7 +96,8 @@ docs:gen` after changing it). `index.ts` does not re-export it.
 - `rts-map`: the map, a world scenario (`*.world.json`, the `engine/sim` format) with
   `"systems": "rts"`. The kit checks the shape and the grids (rows of legend characters, elevation
   digits of the same size); components are `z.json()` here and are checked by the sim when the
-  glue builds the world (`worldFromScenario`).
+  glue builds the world (`worldFromScenario`). Its optional `opportunities` (Engine 0.11 T8,
+  gap M14) are the scenario's mission windows, likewise checked by the sim.
 - `rts-types`: `rtsTypesSchema` from `engine/core/rts-types.ts`, for a game that keeps its unit
   and building types in their own file.
 - `rts-enemy`: `enemyPlanSchema`. `checkAll` reports a unit or building type a plan names that no
@@ -158,7 +163,7 @@ and no run file could guard it. A game's headless `createGame` passes `opts.disa
 
 ## Testing
 
-`pnpm test kits/rts`: `snapshot.test.ts`, `selection.test.ts` (click, box, hero alone, the rule
+`pnpm test kits/rts`: `snapshot.test.ts`, `sides.test.ts`, `selection.test.ts` (click, box, hero alone, the rule
 off), `commands.test.ts` (each command to its order, checked by `parseOrder`), `enemy.test.ts`
 (same seed and snapshots give the same orders, ticks, repeats, triggers, the rules off),
 `present.test.ts` (frames pass `presentFrameSchema`), `controls.test.ts`, `game.test.ts` (ids

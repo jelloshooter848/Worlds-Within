@@ -1,0 +1,707 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 11,
+  "systems": "rts",
+  "terrain": {
+    "legend": {
+      "#": {
+        "name": "rock",
+        "cost": 1,
+        "passable": false
+      },
+      ",": {
+        "name": "road",
+        "cost": 1,
+        "passable": true
+      },
+      ".": {
+        "name": "grass",
+        "cost": 1,
+        "passable": true
+      }
+    },
+    "rows": [
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "....................##..........................",
+      ".....................#..................##......",
+      "................................................",
+      "................................................",
+      "..........................#.....................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      ".........,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,...",
+      ".........,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,...",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "..............................##................",
+      "............#..................#................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................",
+      "................................................"
+    ],
+    "elevation": [
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000",
+      "000000000000000000000000000000000000000000000000"
+    ]
+  },
+  "entities": [
+    {
+      "key": "hall",
+      "components": {
+        "Position": {
+          "x": 6,
+          "y": 13
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Building": {
+          "kind": "hall",
+          "w": 3,
+          "h": 3,
+          "dropoff": true
+        },
+        "Health": {
+          "hp": 400,
+          "max": 400
+        },
+        "Producer": {
+          "trains": ["worker"],
+          "queue": [],
+          "progress": 0
+        },
+        "Stockpile": {
+          "faction": "village"
+        },
+        "Inventory": {
+          "gold": 150
+        }
+      }
+    },
+    {
+      "key": "gold-north",
+      "components": {
+        "Position": {
+          "x": 3,
+          "y": 8
+        },
+        "Resource": {
+          "item": "gold"
+        },
+        "Inventory": {
+          "gold": 300
+        }
+      }
+    },
+    {
+      "key": "gold-south",
+      "components": {
+        "Position": {
+          "x": 3,
+          "y": 21
+        },
+        "Resource": {
+          "item": "gold"
+        },
+        "Inventory": {
+          "gold": 300
+        }
+      }
+    },
+    {
+      "key": "watchtower",
+      "components": {
+        "Position": {
+          "x": 2,
+          "y": 13
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Building": {
+          "kind": "watchtower",
+          "w": 2,
+          "h": 2,
+          "dropoff": false
+        },
+        "Health": {
+          "hp": 1,
+          "max": 200
+        },
+        "Construction": {
+          "kind": "watchtower",
+          "progress": 0,
+          "work": 480,
+          "done": false
+        }
+      }
+    },
+    {
+      "key": "worker-1",
+      "components": {
+        "Position": {
+          "x": 4,
+          "y": 13
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "worker",
+          "speed": 2,
+          "attack": 1,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 4
+        },
+        "Worker": {
+          "job": {
+            "$ref": "watchtower"
+          },
+          "rate": 2
+        },
+        "Gatherer": {
+          "capacity": 5,
+          "ticks": 2,
+          "node": null,
+          "item": null,
+          "carry": 0,
+          "progress": 0
+        },
+        "Task": {
+          "order": 1,
+          "kind": "build",
+          "goal": null,
+          "target": {
+            "$ref": "watchtower"
+          },
+          "path": [],
+          "flow": true
+        }
+      }
+    },
+    {
+      "key": "worker-2",
+      "components": {
+        "Position": {
+          "x": 4,
+          "y": 14
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "worker",
+          "speed": 2,
+          "attack": 1,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 4
+        },
+        "Worker": {
+          "job": {
+            "$ref": "watchtower"
+          },
+          "rate": 2
+        },
+        "Gatherer": {
+          "capacity": 5,
+          "ticks": 2,
+          "node": null,
+          "item": null,
+          "carry": 0,
+          "progress": 0
+        },
+        "Task": {
+          "order": 1,
+          "kind": "build",
+          "goal": null,
+          "target": {
+            "$ref": "watchtower"
+          },
+          "path": [],
+          "flow": true
+        }
+      }
+    },
+    {
+      "key": "worker-3",
+      "components": {
+        "Position": {
+          "x": 2,
+          "y": 15
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 20,
+          "max": 20
+        },
+        "Unit": {
+          "type": "worker",
+          "speed": 2,
+          "attack": 1,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 4
+        },
+        "Worker": {
+          "job": {
+            "$ref": "watchtower"
+          },
+          "rate": 2
+        },
+        "Gatherer": {
+          "capacity": 5,
+          "ticks": 2,
+          "node": null,
+          "item": null,
+          "carry": 0,
+          "progress": 0
+        },
+        "Task": {
+          "order": 1,
+          "kind": "build",
+          "goal": null,
+          "target": {
+            "$ref": "watchtower"
+          },
+          "path": [],
+          "flow": true
+        }
+      }
+    },
+    {
+      "key": "soldier-1",
+      "components": {
+        "Position": {
+          "x": 13,
+          "y": 14
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 50,
+          "max": 50
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "soldier-2",
+      "components": {
+        "Position": {
+          "x": 13,
+          "y": 15
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 50,
+          "max": 50
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "soldier-3",
+      "components": {
+        "Position": {
+          "x": 13,
+          "y": 16
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 50,
+          "max": 50
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "soldier-4",
+      "components": {
+        "Position": {
+          "x": 13,
+          "y": 17
+        },
+        "Owner": {
+          "faction": "village"
+        },
+        "Health": {
+          "hp": 50,
+          "max": 50
+        },
+        "Unit": {
+          "type": "soldier",
+          "speed": 2,
+          "attack": 6,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "raider-1",
+      "components": {
+        "Position": {
+          "x": 39,
+          "y": 12
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 30,
+          "max": 30
+        },
+        "Unit": {
+          "type": "raider",
+          "speed": 2,
+          "attack": 4,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "raider-2",
+      "components": {
+        "Position": {
+          "x": 39,
+          "y": 14
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 30,
+          "max": 30
+        },
+        "Unit": {
+          "type": "raider",
+          "speed": 2,
+          "attack": 4,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "raider-3",
+      "components": {
+        "Position": {
+          "x": 39,
+          "y": 17
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 30,
+          "max": 30
+        },
+        "Unit": {
+          "type": "raider",
+          "speed": 2,
+          "attack": 4,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "raider-4",
+      "components": {
+        "Position": {
+          "x": 39,
+          "y": 19
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 30,
+          "max": 30
+        },
+        "Unit": {
+          "type": "raider",
+          "speed": 2,
+          "attack": 4,
+          "range": 1,
+          "cooldown": 3,
+          "sight": 5
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "ram",
+      "components": {
+        "Position": {
+          "x": 36,
+          "y": 15
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 120,
+          "max": 120
+        },
+        "Unit": {
+          "type": "ram",
+          "speed": 3,
+          "attack": 12,
+          "range": 1,
+          "cooldown": 4,
+          "sight": 3
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    },
+    {
+      "key": "catapult",
+      "components": {
+        "Position": {
+          "x": 36,
+          "y": 17
+        },
+        "Owner": {
+          "faction": "raiders"
+        },
+        "Health": {
+          "hp": 100,
+          "max": 100
+        },
+        "Unit": {
+          "type": "catapult",
+          "speed": 3,
+          "attack": 10,
+          "range": 3,
+          "cooldown": 5,
+          "sight": 6
+        },
+        "EventMember": {
+          "event": "siege"
+        }
+      }
+    }
+  ],
+  "squads": [
+    {
+      "key": "defenders",
+      "members": [
+        {
+          "key": "captain",
+          "name": "Captain Hale",
+          "role": "captain",
+          "components": {
+            "Position": {
+              "x": 12,
+              "y": 15
+            },
+            "Owner": {
+              "faction": "village"
+            },
+            "Health": {
+              "hp": 120,
+              "max": 120
+            },
+            "Unit": {
+              "type": "captain",
+              "speed": 2,
+              "attack": 10,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 6
+            },
+            "EventMember": {
+              "event": "siege"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "key": "escort",
+      "members": [
+        {
+          "key": "guard-1",
+          "name": "Grell",
+          "role": "regular",
+          "components": {
+            "Position": {
+              "x": 37,
+              "y": 14
+            },
+            "Owner": {
+              "faction": "raiders"
+            },
+            "Health": {
+              "hp": 30,
+              "max": 30
+            },
+            "Unit": {
+              "type": "raider",
+              "speed": 2,
+              "attack": 4,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 5
+            },
+            "EventMember": {
+              "event": "siege"
+            }
+          }
+        },
+        {
+          "key": "guard-2",
+          "name": "Vosk",
+          "role": "regular",
+          "components": {
+            "Position": {
+              "x": 37,
+              "y": 18
+            },
+            "Owner": {
+              "faction": "raiders"
+            },
+            "Health": {
+              "hp": 30,
+              "max": 30
+            },
+            "Unit": {
+              "type": "raider",
+              "speed": 2,
+              "attack": 4,
+              "range": 1,
+              "cooldown": 3,
+              "sight": 5
+            },
+            "EventMember": {
+              "event": "siege"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "sabotage-window",
+      "mission": "sabotage",
+      "opens": 20,
+      "closes": 200
+    }
+  ]
+}

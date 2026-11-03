@@ -1,4 +1,5 @@
 export * from './snapshot';
+export * from './sides';
 export * from './selection';
 export * from './commands';
 export * from './enemy';

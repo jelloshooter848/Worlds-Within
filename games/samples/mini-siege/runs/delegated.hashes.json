@@ -1,0 +1,61 @@
+{
+  "run": "games/samples/mini-siege/runs/delegated.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "824dd792dc4a7d24"
+    },
+    {
+      "tick": 20,
+      "hash": "802fee22e52495b2"
+    },
+    {
+      "tick": 40,
+      "hash": "80e169eed72dedbe"
+    },
+    {
+      "tick": 60,
+      "hash": "f3c7053144a0340d"
+    },
+    {
+      "tick": 80,
+      "hash": "494c837194f51794"
+    },
+    {
+      "tick": 100,
+      "hash": "52da3c4e827275d8"
+    },
+    {
+      "tick": 120,
+      "hash": "c07b6b23ccc130c5"
+    },
+    {
+      "tick": 140,
+      "hash": "ca2a7a94111f9d98"
+    },
+    {
+      "tick": 160,
+      "hash": "6820c5f7566938dc"
+    },
+    {
+      "tick": 180,
+      "hash": "be96a65582c1cc35"
+    },
+    {
+      "tick": 200,
+      "hash": "612630c6224c2ab7"
+    },
+    {
+      "tick": 220,
+      "hash": "e222f2d20175b3d4"
+    },
+    {
+      "tick": 240,
+      "hash": "255057e244048d2f"
+    },
+    {
+      "tick": 260,
+      "hash": "0576a976323b2882"
+    }
+  ]
+}
