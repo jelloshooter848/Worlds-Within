@@ -1,0 +1,202 @@
+{
+  "backend": "canvas2d",
+  "sheets": {
+    "sheet": "camp",
+    "fallbackColor": "#fcfcfc"
+  },
+  "camera": {
+    "clamp": false
+  },
+  "kinds": {
+    "hero": {
+      "frames": {
+        "walk": {
+          "down": {
+            "frames": ["hero-down-0", "hero-down-1"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["hero-up-0", "hero-up-1"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["hero-side-0", "hero-side-1"],
+            "ticks": 8
+          }
+        },
+        "attack": {
+          "down": "hero-attack-down",
+          "up": "hero-attack-up",
+          "right": "hero-attack-side"
+        },
+        "hurt": {
+          "down": "hero-down-0",
+          "up": "hero-up-0",
+          "right": "hero-side-0"
+        },
+        "dying": {
+          "frames": ["hero-down-0", "hero-side-0", "hero-up-0", "hero-side-0"],
+          "ticks": 4
+        },
+        "poof": {
+          "frames": ["poof-0", "poof-1", "poof-2"],
+          "ticks": 8,
+          "loop": false
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#0058f8"
+    },
+    "sword": {
+      "frames": {
+        "stab": {
+          "down": "sword-down",
+          "up": "sword-up",
+          "right": "sword-right"
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#fcfcfc"
+    },
+    "poof": {
+      "frames": {
+        "poof": {
+          "frames": ["poof-0", "poof-1", "poof-2"],
+          "ticks": 6,
+          "loop": false
+        }
+      },
+      "fallbackColor": "#f83800"
+    },
+    "knight": {
+      "frames": {
+        "walk": {
+          "down": {
+            "frames": ["guard-down-0", "guard-down-1"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["guard-up-0", "guard-up-1"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["guard-side-0", "guard-side-1"],
+            "ticks": 8
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#a80020",
+      "byTag": [
+        {
+          "tag": "foe:ram",
+          "frames": {
+            "walk": {
+              "right": {
+                "frames": ["ram-0", "ram-1"],
+                "ticks": 8
+              }
+            }
+          }
+        },
+        {
+          "tag": "foe:catapult",
+          "frames": {
+            "walk": {
+              "right": {
+                "frames": ["catapult-0", "catapult-1"],
+                "ticks": 8
+              }
+            }
+          }
+        }
+      ]
+    },
+    "pickup:heart": {
+      "frames": {
+        "idle": "heart"
+      },
+      "fallbackColor": "#f83800"
+    }
+  },
+  "tiles": {
+    "#": {
+      "frame": "wall",
+      "fallbackColor": "#503000"
+    },
+    ".": {
+      "frame": "floor",
+      "fallbackColor": "#3c1c00"
+    }
+  },
+  "events": {
+    "sword": {
+      "sound": "sword"
+    },
+    "hit": {
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "kill": {
+      "sound": "burn",
+      "effect": {
+        "kind": "particles",
+        "color": "#f83800",
+        "count": 6,
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "hurt": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "flash",
+        "color": "#a80020",
+        "ticks": 2
+      }
+    },
+    "dying": {
+      "sound": "fail"
+    },
+    "dead": {
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 10
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "host:mission",
+      "as": "text",
+      "x": 16,
+      "y": 12,
+      "font": "siege-font"
+    },
+    {
+      "status": "hp",
+      "as": "hearts",
+      "x": 16,
+      "y": 32,
+      "frame": "heart"
+    },
+    {
+      "status": "timeLeft",
+      "as": "icon",
+      "x": 184,
+      "y": 32,
+      "frame": "hourglass"
+    },
+    {
+      "status": "timeLeft",
+      "as": "number",
+      "x": 196,
+      "y": 32,
+      "font": "siege-font"
+    }
+  ]
+}

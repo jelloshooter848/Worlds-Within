@@ -1,0 +1,660 @@
+{
+  "backend": "canvas2d",
+  "sheets": {
+    "sheet": "siege",
+    "fallbackColor": "#ff00ff"
+  },
+  "kinds": {
+    "unit:worker": {
+      "frames": {
+        "idle": {
+          "down": "worker-down-0",
+          "up": "worker-up-0",
+          "right": "worker-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["worker-down-0", "worker-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["worker-up-0", "worker-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["worker-right-0", "worker-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#c84c0c",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "unit:soldier": {
+      "frames": {
+        "idle": {
+          "down": "soldier-down-0",
+          "up": "soldier-up-0",
+          "right": "soldier-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["soldier-down-0", "soldier-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["soldier-up-0", "soldier-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["soldier-right-0", "soldier-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#0058f8",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "unit:captain": {
+      "frames": {
+        "idle": {
+          "down": "captain-down-0",
+          "up": "captain-up-0",
+          "right": "captain-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["captain-down-0", "captain-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["captain-up-0", "captain-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["captain-right-0", "captain-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["captain-down-0", "captain-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["captain-up-0", "captain-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["captain-right-0", "captain-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["captain-down-0", "captain-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["captain-up-0", "captain-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["captain-right-0", "captain-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["captain-down-0", "captain-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["captain-up-0", "captain-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["captain-right-0", "captain-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#f8b800",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "unit:raider": {
+      "frames": {
+        "idle": {
+          "down": "raider-down-0",
+          "up": "raider-up-0",
+          "right": "raider-right-0"
+        },
+        "walk": {
+          "down": {
+            "frames": ["raider-down-0", "raider-down-1"],
+            "ticks": 4
+          },
+          "up": {
+            "frames": ["raider-up-0", "raider-up-1"],
+            "ticks": 4
+          },
+          "right": {
+            "frames": ["raider-right-0", "raider-right-1"],
+            "ticks": 4
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["raider-down-0", "raider-down-1"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["raider-up-0", "raider-up-1"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["raider-right-0", "raider-right-1"],
+            "ticks": 3
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["raider-down-0", "raider-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["raider-up-0", "raider-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["raider-right-0", "raider-right-1"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["raider-down-0", "raider-down-1"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["raider-up-0", "raider-up-1"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["raider-right-0", "raider-right-1"],
+            "ticks": 6
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#a80020",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "unit:ram": {
+      "frames": {
+        "idle": {
+          "right": "ram-0"
+        },
+        "walk": {
+          "right": {
+            "frames": ["ram-0", "ram-1"],
+            "ticks": 8
+          }
+        },
+        "attack": {
+          "right": {
+            "frames": ["ram-0", "ram-1"],
+            "ticks": 4
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#7c0800",
+      "byTag": [
+        {
+          "tag": "damaged",
+          "frames": {
+            "idle": {
+              "right": {
+                "frames": ["ram-burnt-0", "ram-burnt-1"],
+                "ticks": 6
+              }
+            },
+            "walk": {
+              "right": {
+                "frames": ["ram-burnt-0", "ram-burnt-1"],
+                "ticks": 6
+              }
+            },
+            "attack": {
+              "right": {
+                "frames": ["ram-burnt-0", "ram-burnt-1"],
+                "ticks": 6
+              }
+            }
+          }
+        },
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "unit:catapult": {
+      "frames": {
+        "idle": {
+          "right": "catapult-0"
+        },
+        "walk": {
+          "right": {
+            "frames": ["catapult-0", "catapult-1"],
+            "ticks": 8
+          }
+        },
+        "attack": {
+          "right": {
+            "frames": ["catapult-0", "catapult-1"],
+            "ticks": 4
+          }
+        }
+      },
+      "flipFacing": true,
+      "fallbackColor": "#7c0800",
+      "byTag": [
+        {
+          "tag": "damaged",
+          "frames": {
+            "idle": {
+              "right": {
+                "frames": ["catapult-burnt-0", "catapult-burnt-1"],
+                "ticks": 6
+              }
+            },
+            "walk": {
+              "right": {
+                "frames": ["catapult-burnt-0", "catapult-burnt-1"],
+                "ticks": 6
+              }
+            },
+            "attack": {
+              "right": {
+                "frames": ["catapult-burnt-0", "catapult-burnt-1"],
+                "ticks": 6
+              }
+            }
+          }
+        },
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "building:hall": {
+      "frames": {
+        "idle": "hall",
+        "train": "hall",
+        "site": "hall"
+      },
+      "fallbackColor": "#a80020",
+      "byTag": [
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "building:watchtower": {
+      "frames": {
+        "idle": "watchtower",
+        "train": "watchtower"
+      },
+      "fallbackColor": "#7c7c7c",
+      "byTag": [
+        {
+          "tag": "site",
+          "frames": {
+            "site": "site-2x2",
+            "idle": "site-2x2"
+          }
+        },
+        {
+          "tag": "frozen",
+          "palette": "siege-held"
+        }
+      ]
+    },
+    "resource:gold": {
+      "frames": {
+        "idle": "gold",
+        "empty": "gold-empty"
+      },
+      "fallbackColor": "#f8b800"
+    },
+    "selection-ring": {
+      "frames": {
+        "idle": "ring"
+      },
+      "fallbackColor": "#00e800"
+    },
+    "health-bar": {
+      "frames": {
+        "hp-0": "hp-0",
+        "hp-1": "hp-1",
+        "hp-2": "hp-2",
+        "hp-3": "hp-3",
+        "hp-4": "hp-4",
+        "hp-5": "hp-5",
+        "hp-6": "hp-6",
+        "hp-7": "hp-7",
+        "hp-8": "hp-8"
+      },
+      "fallbackColor": "#00e800"
+    },
+    "progress-bar": {
+      "frames": {
+        "p-0": "p-0",
+        "p-1": "p-1",
+        "p-2": "p-2",
+        "p-3": "p-3",
+        "p-4": "p-4",
+        "p-5": "p-5",
+        "p-6": "p-6",
+        "p-7": "p-7",
+        "p-8": "p-8"
+      },
+      "fallbackColor": "#f8b800"
+    },
+    "mission-offer": {
+      "frames": {
+        "idle": {
+          "frames": ["offer-0", "offer-1"],
+          "ticks": 8
+        }
+      },
+      "fallbackColor": "#f83800"
+    },
+    "selection-box": {
+      "frames": {
+        "idle": "box"
+      },
+      "fallbackColor": "#fcfcfc"
+    }
+  },
+  "tiles": {
+    "0": {
+      "frame": "rock",
+      "fallbackColor": "#7c7c7c"
+    },
+    "1": {
+      "frame": "road",
+      "fallbackColor": "#ac7c00"
+    },
+    "2": {
+      "frame": "grass",
+      "fallbackColor": "#00a800"
+    }
+  },
+  "events": {
+    "mission-open": {
+      "sound": "launch",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "mini-game-end:pass": {
+      "sound": "pass",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mini-game-end:fail": {
+      "sound": "fail",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 10
+      }
+    },
+    "mini-game-end": {
+      "sound": "fail",
+      "effect": {
+        "kind": "tint",
+        "color": "#7c7c7c",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=both-burnt": {
+      "sound": "burn",
+      "effect": {
+        "kind": "shake",
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "mission-commit:outcome=ram-burnt": {
+      "sound": "burn",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=catapult-burnt": {
+      "sound": "burn",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "mission-commit": {
+      "sound": "commit",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 8
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "stock.gold",
+      "as": "icon",
+      "x": 4,
+      "y": 4,
+      "frame": "icon-gold"
+    },
+    {
+      "status": "stock.gold",
+      "as": "number",
+      "x": 14,
+      "y": 4,
+      "font": "siege-font"
+    },
+    {
+      "status": "units",
+      "as": "icon",
+      "x": 52,
+      "y": 4,
+      "frame": "icon-units"
+    },
+    {
+      "status": "units",
+      "as": "number",
+      "x": 62,
+      "y": 4,
+      "font": "siege-font"
+    },
+    {
+      "status": "enemyUnits",
+      "as": "icon",
+      "x": 88,
+      "y": 4,
+      "frame": "icon-enemy"
+    },
+    {
+      "status": "enemyUnits",
+      "as": "number",
+      "x": 98,
+      "y": 4,
+      "font": "siege-font"
+    },
+    {
+      "status": "missionLeft",
+      "as": "icon",
+      "x": 124,
+      "y": 4,
+      "frame": "icon-time"
+    },
+    {
+      "status": "missionLeft",
+      "as": "number",
+      "x": 134,
+      "y": 4,
+      "font": "siege-font"
+    },
+    {
+      "status": "offer",
+      "as": "icon",
+      "x": 4,
+      "y": 228,
+      "frame": "icon-torch"
+    },
+    {
+      "status": "offer",
+      "as": "text",
+      "x": 14,
+      "y": 228,
+      "font": "siege-font"
+    },
+    {
+      "status": "mission",
+      "as": "icon",
+      "x": 4,
+      "y": 228,
+      "frame": "icon-time"
+    },
+    {
+      "status": "mission",
+      "as": "text",
+      "x": 14,
+      "y": 228,
+      "font": "siege-font"
+    }
+  ],
+  "camera": {
+    "zoom": 1
+  }
+}

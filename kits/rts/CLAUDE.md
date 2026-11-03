@@ -116,12 +116,14 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
 - **Entities** (`layer` from `RTS_DEPTH`): `resource-<id>` (`resource:<item>`, `idle` or
   `empty`, tag `amount:<n>`, 5); `building-<id>` (`building:<kind>`, `site` while under
   construction, `train` while it has a queue, else `idle`; tags `own`/`enemy`/`neutral`,
-  `faction:<f>`, `site`, `progress:<0-100>`, `training:<unit>`, `selected`, `frozen`; 8);
+  `faction:<f>`, `site`, `progress:<0-100>`, `training:<unit>`, `selected`, `damaged` (finished and
+  below its full hp), `frozen`; 8);
   `<id>/ring` (`selection-ring` for each selected unit or building, tags its side and `hero` or
   `building`; 9); `unit-<id>` (`unit:<type>`, facing from `Facing8` in eight directions, `down`
   before any move; `anim.state` `walk` (stepping with a task, or on a move), `attack` (has a target), `build`,
-  `gather`, `idle`; tags side, `faction:<f>`, `hero`/`captain`, `carrying`, `selected`, `frozen`
-  (a member of a frozen event: the battle is held while a mission is open); 10);
+  `gather`, `idle`; tags side, `faction:<f>`, `hero`/`captain`, `carrying`, `selected`, `damaged`
+  (below its full hp, Engine 0.11 T9: a skin's `byTag` look, the mini siege's burnt engines),
+  `frozen` (a member of a frozen event: the battle is held while a mission is open); 10);
   `<id>/hp` (`health-bar`, `hp-0`..`hp-8` eighths, for the hurt and the selected; 20) and
   `building-<id>/progress` (`progress-bar`, `p-0`..`p-8`, for a site, frozen or not: the sim
   keeps building it; 20); `offer-<opportunity>` (`mission-offer`, `idle`, tags `mission:<id>`,

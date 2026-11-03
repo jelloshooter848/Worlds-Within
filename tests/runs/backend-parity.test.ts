@@ -18,7 +18,7 @@ import {
 } from '@kits/platformer';
 import { presentWorld, snapshotWorld, TdPresentState, type TopDownWorld } from '@kits/topdown';
 import { loadGame } from '../../engine/tools/game-loader';
-import { orderOf, stateHash, type TickHash } from '../../engine/tools/headless-run';
+import { missionOf, orderOf, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { readRunFile, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/demo/headless';
 import { DemoPicture, demoLook } from '../../games/demo/picture';
@@ -259,7 +259,8 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
 /**
  * Plays `run` through a game's view as `pnpm cli run` plays its headless game, calling `show` each
  * tick. Recorded orders (Engine 0.9) go to the view's `order` after the tick's state is shown and
- * hashed, before the step from it, as `run` hands them to the headless game.
+ * hashed, before the step from it, as `run` hands them to the headless game; a game run's mission
+ * steps (Engine 0.11) follow them.
  */
 function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void): TickHash[] {
   const input = new ScriptedInput(run.input);
@@ -278,6 +279,13 @@ function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void):
       if (takesOrders.order === undefined)
         throw new Error(`the view takes no orders, ${run.orders.length} given`);
       takesOrders.order(orderOf(entry));
+    }
+    // Mission steps (Engine 0.11) after the tick's orders, as `run` hands them to the game.
+    for (const step of run.missions) {
+      if (step.tick !== tick) continue;
+      if (view.mission === undefined)
+        throw new Error(`the view takes no missions, ${run.missions.length} given`);
+      view.mission(missionOf(step));
     }
   }
   return hashes;

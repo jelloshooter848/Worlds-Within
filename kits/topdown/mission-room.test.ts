@@ -219,6 +219,12 @@ describe('the mission room round', () => {
       { cell: '8,2', entity: 5, name: '5' },
     ]);
     expect(report.foes.map((f) => f.startHp)).toEqual([4, 1]);
+    // Its frames tag each placed foe with its world name, for a skin's look by tag.
+    const foes = round.present().entities.filter((e) => e.tags.some((t) => t.startsWith('foe:')));
+    expect(foes.map((e) => [e.kind, e.tags])).toEqual([
+      ['knight', ['foe:ram']],
+      ['bat', ['foe:5']],
+    ]);
     expect(DEF).toMatchObject({ id: 'mission-room', title: 'MISSION', hostStatus: ['mission'] });
   });
 

@@ -30,6 +30,12 @@ export interface ShotJob {
    * view's `order` after its tick's state and before the step from it, as `run` does.
    */
   orders: OrderEntryJson[];
+  /**
+   * The run file's mission steps (`{ tick, mission, action, input? }`, in tick order; Engine 0.11
+   * T9), each handed to the view's `mission` (`HeadlessGame.mission`) after its tick's orders, as
+   * `run` does. Empty for a run without missions.
+   */
+  missions: OrderEntryJson[];
   disabledRules: string[];
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
   screen: ScreenSize;

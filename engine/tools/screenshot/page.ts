@@ -49,7 +49,7 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
   return job.backend === 'three' ? shootThree(job, game, content.value) : shootCanvas(job, game);
 }
 
-/** Plays the job's input and recorded orders on `game`, calling `show(tick)` at every tick (tick 0 included). */
+/** Plays the job's input, recorded orders and mission steps on `game`, calling `show(tick)` at every tick (tick 0 included). */
 async function play(
   job: ShotJob,
   game: ViewGame,
@@ -59,6 +59,7 @@ async function play(
   const hashes: ShotResult['hashes'] = [];
   let snapshot = '';
   let next = 0; // the next recorded order to hand over
+  let nextMission = 0; // the next mission step to hand over
   for (let tick = 0; ; tick++) {
     if (tick > 0) {
       for (; next < job.orders.length && job.orders[next]!.tick === tick - 1; next++) {
@@ -66,6 +67,17 @@ async function play(
           throw new Error(`${job.viewUrl}: the run has orders, but the view has no order(order) method`);
         const { tick: _tick, ...order } = job.orders[next]!;
         game.order(order as JsonObject);
+      }
+      // Then that tick's mission steps, in file order (a refusal is the run's to report, not the page's).
+      for (
+        ;
+        nextMission < job.missions.length && job.missions[nextMission]!.tick === tick - 1;
+        nextMission++
+      ) {
+        if (!game.mission)
+          throw new Error(`${job.viewUrl}: the run has missions, but the view has no mission(step) method`);
+        const { tick: _tick, ...step } = job.missions[nextMission]!;
+        game.mission(step as JsonObject);
       }
       input.next();
       game.step(input);

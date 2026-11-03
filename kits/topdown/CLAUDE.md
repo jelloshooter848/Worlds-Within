@@ -281,7 +281,10 @@ disabledRules?, size?, top?, inputMap? })`, the `MiniGameDef` (id `mission-room`
   (`params.outcomes.0.outcome`, `bad_mini_game_use`) when the game's `miniGames(content)` gives it.
   `create(ctx, seed)` takes the adapter's `MissionRoomInput` (not the mission's params), places the
   foes and plays the room as a `MissionRoomRound`, a `RoomChallenge` whose `report()` adds
-  `placed: [{ cell, entity, name }]` (snapshots are the challenge's, unchanged).
+  `placed: [{ cell, entity, name }]` (snapshots are the challenge's, unchanged), and whose
+  `present()` (Engine 0.11 T9) tags each placed foe's entity (found by its presented id
+  `<room>/<kind>@<cell>`, which keeps its start cell) `foe:<name>`, so a skin draws a world entity
+  its own way by tag (the mini siege's ram and catapult) though the round spawns one kind.
 
 `mission-room.test.ts` covers the selection (event, faction, types, role, dead entities, first
 entry first, `hpPer`), names from `refs` and ids, every rule kind and their order, quit, the

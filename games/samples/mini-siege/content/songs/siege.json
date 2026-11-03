@@ -1,0 +1,9 @@
+{
+  "id": "siege",
+  "bpm": 120,
+  "loop": true,
+  "pulse1": "v10 @2 l8 o4 L [d f a > d < c a f c]2 [< b- > d f b- a f d < a]2 [g b- > d g f d < b- g]1 a4 > c+4 e4 r4",
+  "pulse2": "v6 @1 l4 o3 L [d a f a]2 [b- f d f]2 [g d b- d]1 a2 e2",
+  "triangle": "l8 o2 L [d d > d < d]4 [b- b- > b- < b-]4 [g g > g < g]2 a4 a4 a4 r4",
+  "noise": "v5 l8 L [k h s h]11 k k s s"
+}

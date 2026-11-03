@@ -82,6 +82,9 @@ describe('presentWorld', () => {
     // a hurt unit shows its health bar
     expect(e('unit-7/hp')).toMatchObject({ kind: 'health-bar', anim: { state: 'hp-4' } });
     expect(frame.entities.find((x) => x.id === 'unit-6/hp')).toBeUndefined();
+    // and the tag `damaged`, for a skin's look by tag; a unit at full hp has none
+    expect(e('unit-7').tags).toContain('damaged');
+    expect(e('unit-6').tags).not.toContain('damaged');
   });
 
   it('presents buildings, construction progress and resource nodes', () => {

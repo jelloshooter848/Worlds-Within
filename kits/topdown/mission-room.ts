@@ -3,6 +3,7 @@ import type { JsonObject, JsonValue } from '@engine/core/headless';
 import { snapshotEntities, type MiniGameEnd, type SnapshotEntity } from '@engine/core/mission-adapter';
 import type { MiniGameContext, MiniGameDef, MiniGameResult, MiniGameUseProblem } from '@engine/core/minigame';
 import type { MissionAdapter, MissionDef, MissionReport } from '@engine/core/missions';
+import type { PresentFrame } from '@engine/core/present';
 import { CHALLENGE_TICKS, RoomChallenge, type ChallengeReport, type RoomChallengeOptions } from './challenge';
 import { buildDungeon, LEGEND, type Dungeon, type LegendEntry, type RoomDef } from './room';
 
@@ -398,6 +399,25 @@ export class MissionRoomRound extends RoomChallenge {
 
   override report(): MissionRoomReport {
     return { ...super.report(), placed: this.placed.map((p) => ({ ...p })) };
+  }
+
+  /**
+   * The challenge's frame with each placed foe tagged `foe:<name>` (Engine 0.11 T9), its world name
+   * (`ram`, or an id such as `23`), so a skin can draw a world entity its own way by tag (the mini
+   * siege's ram and catapult in the room) while the kit spawns them all as one kind. A foe is found
+   * by its presented id, `<room>/<kind>@<cell>`, which keeps its start cell as it moves; its parts
+   * (`<id>/stun`) are left as they are.
+   */
+  override present(): PresentFrame {
+    const frame = super.present();
+    const names = new Map(this.placed.map((p) => [p.cell, p.name]));
+    for (const e of frame.entities) {
+      const at = e.id.lastIndexOf('@');
+      if (at < 0 || e.id.includes('/', at)) continue;
+      const name = names.get(e.id.slice(at + 1));
+      if (name !== undefined) e.tags.push(`foe:${name}`);
+    }
+    return frame;
   }
 }
 

@@ -27,7 +27,9 @@ import { facingOfDir, isFinished, type RtsUnitView, type RtsView } from './snaps
  * Missions (Engine 0.11, decision 4, item 175): members of a frozen event get the tag `frozen`; an
  * offered mission gets a `mission-offer` marker over its target; the HUD shows the offer and the
  * open mission (`offer`, `offers`, `mission`, `missionCommit`, `missionLeft`), each key only while
- * there is one, so a world without missions gives the same frames as before.
+ * there is one, so a world without missions gives the same frames as before. A unit or finished
+ * building below its full hp gets the tag `damaged` (Engine 0.11 T9), for a skin's `byTag` look
+ * (the mini siege's burnt siege engines).
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
@@ -239,6 +241,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     }
     if (queue[0] !== undefined) tags.push(`training:${queue[0].unit}`);
     if (selected.has(b.id)) tags.push('selected');
+    if (built && b.hp < b.maxHp) tags.push('damaged');
     if (b.frozen) tags.push('frozen');
     const where = box(b.x, b.y, b.w, b.h);
     if (selected.has(b.id)) ring(`${id}/ring`, [s, 'building'], where);
@@ -266,6 +269,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (u.role !== null && u.role !== 'regular') tags.push(u.role);
     if (u.carry > 0) tags.push('carrying');
     if (selected.has(u.id)) tags.push('selected');
+    if (u.hp < u.maxHp) tags.push('damaged');
     if (u.frozen) tags.push('frozen');
     const where = box(u.x, u.y, 1, 1);
     if (selected.has(u.id)) ring(`${id}/ring`, [s, ...(u.role === 'hero' ? ['hero'] : [])], where);

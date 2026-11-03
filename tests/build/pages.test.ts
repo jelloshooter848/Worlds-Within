@@ -29,6 +29,21 @@ describe('game page discovery', () => {
     );
   });
 
+  it('finds the mini siege sample under games/samples (Engine 0.11 T9)', () => {
+    const siege = discoverGames(repoRoot).find((page) => page.dir === 'games/samples/mini-siege');
+    expect(siege).toEqual({
+      dir: 'games/samples/mini-siege',
+      name: 'games-samples-mini-siege',
+      title: 'The mini siege',
+    });
+    expect(gameListHtml(siege ? [siege] : [])).toContain(
+      '<a href="games/samples/mini-siege/">games/samples/mini-siege</a> <span>The mini siege</span>',
+    );
+    expect(pageInputs(repoRoot)['games-samples-mini-siege']).toBe(
+      join(repoRoot, 'games/samples/mini-siege/index.html'),
+    );
+  });
+
   it("reads the platformer lab's 3D link from its ww-alternate meta tag", () => {
     const lab = discoverGames(repoRoot).find((page) => page.dir === 'games/platformer-lab');
     expect(lab?.alternates).toEqual([{ label: '3D', query: '?backend=three' }]);

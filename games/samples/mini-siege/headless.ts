@@ -3,7 +3,15 @@ import type { HeadlessGame, HeadlessOptions, JsonObject, MissionStepRefusal } fr
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
 import { MissionHost } from '@engine/core/mission-host';
-import { applyOrder, missionPort, scenarioKeys, worldFromScenario, type World } from '@engine/sim/index';
+import type { MissionRecord } from '@engine/core/missions';
+import {
+  applyOrder,
+  missionPort,
+  Missions,
+  scenarioKeys,
+  worldFromScenario,
+  type World,
+} from '@engine/sim/index';
 import { launchMission, rtsGame, sidesOf, type RtsGame } from '@kits/rts';
 import { MISSION_ROOM, missionRoom, topdownMissionAdapter } from '@kits/topdown';
 import { PLAYER, siegeEnemy, siegeMissions, siegeRooms, siegeScenario } from './content';
@@ -77,6 +85,12 @@ export class MiniSiegeGame implements HeadlessGame {
   /** The mission round hosted now, or null. */
   miniGame(): MiniGame | null {
     return this.host.miniGame();
+  }
+
+  /** The world's committed mission records, in commit order (the page's commit sound reads them). */
+  records(): readonly MissionRecord[] {
+    const holder = this.world.query(Missions)[0];
+    return holder === undefined ? [] : (this.world.get(holder, Missions)?.committed ?? []);
   }
 
   /** Every keyed scenario entity at a glance (the snapshot's `named`). */

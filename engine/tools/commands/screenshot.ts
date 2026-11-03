@@ -32,6 +32,9 @@ import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
  * 3 (`invalidContent`) for a bad run file or content or a game with no view module, 2 for a bad
  * tick or `--out`, 5 when Chromium is not installed (`pnpm exec playwright install chromium`).
  *
+ * A game run's `missions` (Engine 0.11 T9) are handed to the view's `mission` after each tick's
+ * orders, as `run` hands them to the headless game, so a screenshot can show a mission's round.
+ *
  * `--backend three` shows the view's `frame()` through the Three.js backend and the game's `three`
  * skin instead (Chromium with the GPU on), syncing every tick and rendering once at tick N. A view
  * without `frame()` is exit 3 (`no_frame_hook` at `view`), a game without a `three` skin exit 3
@@ -122,6 +125,7 @@ export const screenshotCommand = defineCommand({
         hashEvery: loaded.run.hashEvery,
         input: loaded.run.input,
         orders: loaded.run.orders,
+        missions: loaded.run.missions,
         disabledRules,
         screen,
         backend: flags.backend,
