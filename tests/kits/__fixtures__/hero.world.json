@@ -1,0 +1,106 @@
+{
+  "format": "worlds-within/scenario",
+  "version": 1,
+  "seed": 4113,
+  "systems": "rts",
+  "terrain": {
+    "legend": {
+      ".": { "name": "ground", "cost": 1, "passable": true }
+    },
+    "rows": ["..........", "..........", "..........", "..........", "..........", ".........."],
+    "elevation": ["0000000000", "0000000000", "0000000000", "0000000000", "0000000000", "0000000000"]
+  },
+  "entities": [
+    {
+      "key": "hall",
+      "components": {
+        "Position": { "x": 0, "y": 0 },
+        "Owner": { "faction": "village" },
+        "Stockpile": { "faction": "village" },
+        "Inventory": { "gold": 50 }
+      }
+    },
+    {
+      "key": "r1",
+      "components": {
+        "Position": { "x": 8, "y": 1 },
+        "Owner": { "faction": "raiders" },
+        "Health": { "hp": 20, "max": 20 },
+        "Unit": { "type": "raider", "speed": 2, "attack": 3, "range": 1, "cooldown": 3, "sight": 5 },
+        "EventMember": { "event": "gate" }
+      }
+    },
+    {
+      "key": "r2",
+      "components": {
+        "Position": { "x": 8, "y": 2 },
+        "Owner": { "faction": "raiders" },
+        "Health": { "hp": 12, "max": 20 },
+        "Unit": { "type": "raider", "speed": 2, "attack": 3, "range": 1, "cooldown": 3, "sight": 5 },
+        "EventMember": { "event": "gate" }
+      }
+    }
+  ],
+  "squads": [
+    {
+      "key": "guard",
+      "strength": 4,
+      "components": { "Owner": { "faction": "village" } },
+      "members": [
+        {
+          "key": "captain",
+          "name": "Hale",
+          "role": "captain",
+          "components": {
+            "Position": { "x": 2, "y": 3 },
+            "Owner": { "faction": "village" },
+            "Health": { "hp": 90, "max": 120 },
+            "Unit": { "type": "soldier", "speed": 2, "attack": 4, "range": 1, "cooldown": 3, "sight": 5 }
+          }
+        },
+        {
+          "key": "sergeant",
+          "name": "Mara",
+          "role": "hero",
+          "components": {
+            "Position": { "x": 3, "y": 3 },
+            "Owner": { "faction": "village" },
+            "Health": { "hp": 40, "max": 40 },
+            "Unit": { "type": "soldier", "speed": 2, "attack": 4, "range": 1, "cooldown": 3, "sight": 5 }
+          }
+        }
+      ]
+    },
+    {
+      "key": "band",
+      "strength": 2,
+      "components": { "Owner": { "faction": "raiders" } },
+      "members": [
+        {
+          "key": "grell",
+          "name": "Grell",
+          "role": "captain",
+          "components": {
+            "Position": { "x": 9, "y": 1 },
+            "Owner": { "faction": "raiders" },
+            "Health": { "hp": 30, "max": 30 },
+            "Unit": { "type": "raider", "speed": 2, "attack": 3, "range": 1, "cooldown": 3, "sight": 5 },
+            "EventMember": { "event": "gate" }
+          }
+        },
+        {
+          "key": "vosk",
+          "name": "Vosk",
+          "role": "regular",
+          "components": {
+            "Position": { "x": 9, "y": 2 },
+            "Owner": { "faction": "raiders" },
+            "Health": { "hp": 30, "max": 30 },
+            "Unit": { "type": "raider", "speed": 2, "attack": 3, "range": 1, "cooldown": 3, "sight": 5 },
+            "EventMember": { "event": "gate" }
+          }
+        }
+      ]
+    }
+  ]
+}

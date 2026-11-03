@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Facing } from '@engine/core/present';
+import { fateState, type SnapshotFate } from '@engine/core/mission-adapter';
 import { rtsTypesSchema, type RtsTypes } from '@engine/core/rts-types';
 
 /**
@@ -17,6 +18,11 @@ import { rtsTypesSchema, type RtsTypes } from '@engine/core/rts-types';
  * (`Missions`), frozen events (`WorldTime.frozen`) and each entity's `EventMember`, into
  * `view.missions` and each unit's and building's `event` / `frozen`. A snapshot without them (a
  * 0.9 world) reads as before, with no missions and nothing frozen.
+ *
+ * Since Engine 0.13 (decision 3, item 222) it reads fates (`Fate`, through `engine/core`'s
+ * `fateState`, as every kit does): a captured or dead person is never a unit of the view (the sim
+ * takes them off the map, and the kit skips them by the data too), and `view.named` lists every
+ * named person (`Member`) with their fate and current hp, on the map or not, for a HUD.
  *
  * Bad data (a component of the wrong shape, a snapshot that is not one) throws, naming the field:
  * a snapshot comes from the sim, so a bad one is a bug, not a player mistake.
@@ -140,6 +146,23 @@ export interface RtsMissionsView {
   frozen: string[];
 }
 
+/**
+ * A named person (`Member`) as the view lists them for a HUD (Engine 0.13): their fate, their hp
+ * now (an injured person's reduced hp) and their cell, or null when they are off the map (captured
+ * or dead).
+ */
+export interface RtsNamedView {
+  id: number;
+  name: string;
+  role: 'regular' | 'hero' | 'captain';
+  faction: string | null;
+  fate: SnapshotFate;
+  hp: number;
+  maxHp: number;
+  x: number | null;
+  y: number | null;
+}
+
 /** The world as the RTS kit reads it. Lists are in ascending id order. */
 export interface RtsView {
   tick: number;
@@ -153,6 +176,8 @@ export interface RtsView {
   types: RtsTypes | null;
   /** Offered opportunities, open missions and frozen events. */
   missions: RtsMissionsView;
+  /** Every named person with their fate (Engine 0.13), on the map or not. */
+  named: RtsNamedView[];
 }
 
 const Id = z.int().min(1);
@@ -180,7 +205,11 @@ const snapshotSchema = z.looseObject({
     Cooldown: rows(z.looseObject({ move: z.int(), attack: z.int() })),
     Worker: rows(z.looseObject({})),
     Gatherer: rows(z.looseObject({ carry: z.int() })),
-    Member: rows(z.looseObject({ role: z.enum(['regular', 'hero', 'captain']) })),
+    Member: rows(
+      z.looseObject({ name: z.string().default(''), role: z.enum(['regular', 'hero', 'captain']) }),
+    ),
+    // Fates (Engine 0.13): left out of a snapshot until someone's fate moves.
+    Fate: rows(z.looseObject({ state: z.enum(['injured', 'captured', 'freed', 'dead']) })),
     Building: rows(z.looseObject({ kind: z.string(), w: z.int(), h: z.int(), dropoff: z.boolean() })),
     Construction: rows(z.looseObject({ progress: z.int(), work: z.int(), done: z.boolean() })),
     Producer: rows(
@@ -251,6 +280,12 @@ export function readWorld(json: unknown): RtsView {
   const producer = byId(c.Producer);
   const inventory = byId(c.Inventory);
   const eventOf = byId(c.EventMember);
+  const fates = byId(c.Fate);
+  const fateOf = (id: number): SnapshotFate => {
+    const fate = fates.get(id);
+    return fate === undefined ? 'active' : fateState({ id, components: { Fate: { state: fate.state } } });
+  };
+  const lost = (id: number) => fateOf(id) === 'captured' || fateOf(id) === 'dead';
   const missions = readMissions(c.WorldTime, c.Missions, c.Opportunities);
   const frozenEvents = new Set(missions.frozen);
   const membership = (id: number) => {
@@ -271,7 +306,7 @@ export function readWorld(json: unknown): RtsView {
   const units: RtsUnitView[] = [];
   for (const [id, unit] of c.Unit) {
     const p = pos.get(id);
-    if (!p) continue;
+    if (!p || lost(id)) continue;
     const h = health.get(id);
     const cd = cooldown.get(id);
     units.push({
@@ -298,7 +333,7 @@ export function readWorld(json: unknown): RtsView {
   const buildings: RtsBuildingView[] = [];
   for (const [id, b] of c.Building) {
     const p = pos.get(id);
-    if (!p) continue;
+    if (!p || lost(id)) continue;
     const h = health.get(id);
     const k = construction.get(id);
     const pr = producer.get(id);
@@ -338,6 +373,22 @@ export function readWorld(json: unknown): RtsView {
     stock[s.faction] = { ...(inventory.get(id) ?? {}) };
   }
 
+  const named: RtsNamedView[] = c.Member.map(([id, m]) => {
+    const p = lost(id) ? undefined : pos.get(id);
+    const h = health.get(id);
+    return {
+      id,
+      name: m.name,
+      role: m.role,
+      faction: owner.get(id)?.faction ?? null,
+      fate: fateOf(id),
+      hp: h?.hp ?? 1,
+      maxHp: h?.max ?? 1,
+      x: p?.x ?? null,
+      y: p?.y ?? null,
+    };
+  });
+
   return {
     tick: parsed.data.tick,
     terrain,
@@ -347,6 +398,7 @@ export function readWorld(json: unknown): RtsView {
     stock,
     types: c.RtsTypes[0]?.[1] ?? null,
     missions,
+    named,
   };
 }
 

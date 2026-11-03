@@ -308,3 +308,47 @@ describe('repeatable and saved', () => {
     expect(canonicalJson(back.snapshot().components['Fate'] as never)).toBe(fates);
   });
 });
+
+describe('a damage amount taken from the played report (Engine 0.13, decision 4)', () => {
+  /** A mission on the captive world that hurts the sergeant by the report's `heroHpLost`. */
+  const BRAWL: MissionDef = {
+    id: 'brawl',
+    title: 'A brawl',
+    worldTimeCost: 3,
+    play: 'brawl-room',
+    onQuit: 'over',
+    outcomes: [
+      {
+        id: 'over',
+        title: 'Over',
+        weight: 1,
+        effects: [{ type: 'damage', entity: 'sergeant', amount: 7, fromReport: 'heroHpLost' }],
+      },
+    ],
+  };
+
+  /** The sergeant's hp and the record's skipped effects after resolving the brawl by `how`. */
+  function brawl(how: (world: World) => void) {
+    const { world, refs } = captive();
+    const opened = openMission(world, BRAWL, { refs });
+    if (!opened.ok) throw new Error(opened.error);
+    how(world);
+    const done = commitMission(world, 'brawl');
+    if (!done.ok) throw new Error(done.error);
+    return { hp: world.get(refs['sergeant'] as Entity, Health)?.hp, skipped: done.record.skipped };
+  }
+
+  it("takes a played round's stat, skips a 0, and uses the declared amount otherwise", () => {
+    const played = (stats: Record<string, unknown>) => (world: World) =>
+      expect(playMission(world, 'brawl', { outcome: 'over', stats: stats as never }).ok).toBe(true);
+    expect(brawl(played({ heroHpLost: 12 }))).toEqual({ hp: 18, skipped: [] });
+    expect(brawl(played({ heroHpLost: 0 }))).toEqual({ hp: 30, skipped: [BRAWL.outcomes[0]!.effects[0]] });
+    // A report without the stat, or not a whole number, falls back to the declared amount.
+    expect(brawl(played({})).hp).toBe(23);
+    expect(brawl(played({ heroHpLost: 2.5 })).hp).toBe(23);
+    // Delegated, quit and timed out: no report, the declared amount.
+    expect(brawl((world) => expect(delegateMission(world, 'brawl').ok).toBe(true)).hp).toBe(23);
+    expect(brawl((world) => expect(quitMission(world, 'brawl').ok).toBe(true)).hp).toBe(23);
+    expect(brawl(() => undefined).hp).toBe(23);
+  });
+});

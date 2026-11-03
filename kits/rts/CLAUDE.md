@@ -17,7 +17,13 @@ presents frames. `index.ts` re-exports the public surface; games import it as `@
 openTick, commitTick, resolved }], committed: [id], gated: [mission ids some opportunity names],
 frozen: [event ids] }` (from `Opportunities`, `Missions` and `WorldTime.frozen`, lists sorted by
   id), and each unit and building has `event` (`EventMember.event` or null) and `frozen` (its
-  event is frozen). Helpers: `isFinished(building)`, `DIR_FACINGS` / `facingOfDir(dir)`
+  event is frozen). Since Engine 0.13 (decision 3, item 222) it reads `Fate` (through
+  `engine/core`'s `fateState`, as the other kits do) and `Member.name`: a captured or dead person
+  is never in `units` or `buildings` (the sim takes them off the map; the kit also skips them by
+  the data), so they vanish from the view, `thingAt` and `sidesOf`, and an injured one stays at
+  their current hp; `view.named` lists every named person ascending by id as `RtsNamedView { id,
+name, role, faction, fate (active, injured, captured, freed or dead), hp, maxHp, x, y }` (`x`/`y`
+  null off the map) for a HUD. Drawing rules are unchanged. Helpers: `isFinished(building)`, `DIR_FACINGS` / `facingOfDir(dir)`
   (`Facing8.dir` 0 north ... 7 north-west to the eight presentation facings) and
   `thingAt(view, x, y, faction?)` (a unit, own first then lowest id; else a building whose
   footprint covers the cell; else a resource node).
@@ -172,7 +178,10 @@ off), `commands.test.ts` (each command to its order, checked by `parseOrder`), `
 across sides, a replay of the recorded orders gives the same snapshots) and `kit.test.ts` (the
 kinds through `loadContent`), on the tiny fixture `__fixtures__/world.ts` (`battleSnapshot`, and
 `siegeSnapshot` with an offered or open mission and its frozen event, for the mission tests in
-`snapshot`, `commands`, `controls`, `present` and `game`).
+`snapshot`, `commands`, `controls`, `present` and `game`; `snapshot.test.ts` adds fates to the
+battle: the captured and the dead left out, the injured at their hp, `named`).
+`tests/kits/hero-mission.test.ts` (Engine 0.13) reads a real world after a capture: the captain
+gone from `units` and listed in `named` as captured.
 `tests/kits/rts-sim.test.ts` drives the kit over a real `engine/sim` world (the battle fixture),
 as a game's glue would, and checks a replay of the recorded player orders gives the same hashes;
 its mission tests use the siege fixture (`engine/sim/__fixtures__/siege.world.json`) with a

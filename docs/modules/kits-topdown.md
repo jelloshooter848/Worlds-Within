@@ -38,7 +38,11 @@ squad role; `hpPer`), the round's goal and limits, and ordered `outcomes` rules 
 the mission's declared outcomes; `topdownMissionAdapter` is the stateless `MissionAdapter` that
 reads the plain world snapshot through `engine/core`'s `snapshotEntities`, and `missionRoom({ rooms
 })` the `MiniGameDef` whose `paramsSchema` and `checkUse` let `validate` check the params, the room,
-the slots and the outcome ids; the record's `stats` name what was destroyed and who was hurt).
+the slots and the outcome ids; the record's `stats` name what was destroyed and who was hurt;
+from Engine 0.13 (M13) an optional `hero: { select, hpPer }` makes the room's hero one world unit,
+starting on `ceil(Health.hp / hpPer)` half hearts and reporting `heroHpLost`, the world hp the round
+cost it (never its last), which an outcome's `damage` effect takes with `fromReport`; a captured or
+dead hero refuses the round, and no selector ever picks someone captured or dead, by their `Fate`).
 `bot.ts` (the scripted test bot) is imported directly by tests.
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`: the
 name `topdown`, `kinds()` with the room kind, `TOPDOWN_RULES` and, from Engine 0.11,
@@ -63,4 +67,6 @@ by the `kit` name in `game.json`.
 seed. `tests/kits/mission-adapter.test.ts` plays an `engine/sim` mission (the siege fixture's
 `raid`, played as the kit's `mission-room` with the params in `tests/kits/__fixtures__/`) through
 `topdownMissionAdapter` with the core's `playMissionRound`, outside every layer, since the kit
-never imports the sim; it holds no mapping of its own.
+never imports the sim; it holds no mapping of its own. `tests/kits/hero-mission.test.ts` (Engine
+0.13) plays a mission whose hero is a world unit through `MissionHost` (played, played and lost,
+delegated, quit) and shows the hp going in and back and the fates honoured by every kit.

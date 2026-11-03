@@ -262,10 +262,12 @@ effects, report?, resolution, openTick, commitTick, experienceTicks, skipped }`.
   refused (`mission_overdue`), and the next `settleMissions` or `commitMission` commits it then,
   without stepping, recorded at its commit tick.
 - **Effects** (data only): `damage` lowers `Health.hp` (not below 0; the death system removes it
-  later), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
+  later; with `fromReport` (Engine 0.13, decision 4, M13) the amount is that stat of the played
+  record's report when it is a whole number, a 0 skipping the effect, and the declared `amount`
+  when the mission was delegated, quit or timed out or the report lacks it), `destroy` removes the entity, `inventory` adds or takes (not below 0), `set` merges
   `values` into the component. An effect whose entity is gone, a `damage` on an entity without
   `Health`, or a `set` that would break the component's schema is skipped and listed in
-  `skipped`, never an error. `fate` (Engine 0.13, decision 2, item 221)
+  `skipped`, never an error (so is a `fromReport` damage of 0). `fate` (Engine 0.13, decision 2, item 221)
   `{ entity, fate, by?, at? }` moves a named person's fate with `setFate` ("Fates") under
   `mission:<id>`, in the outcome's order (so `damage` then `fate` hurts and then captures):
   `injured`, `captured` (off the map and out of their squad, `Health` kept), `freed` (back on the
@@ -323,7 +325,8 @@ id)` = `Rng.derived(seed, "round:<id>").next()` (fixed by the seed and the missi
   the way; the same hash after commit for 0, 1 or 10,000 experience ticks; played at once or
   ticked through giving the same hash; records unchanged across later ticks and save and load),
   and `mission-fate.test.ts` (Engine 0.13: fate effects and capture follow-ups over the captive
-  fixture; see "Opportunities").
+  fixture, see "Opportunities"; and a `fromReport` damage played, played at 0, without the stat,
+  delegated, quit and timed out).
 
 ## Opportunities
 

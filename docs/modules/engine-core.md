@@ -52,7 +52,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   choice, only delegated), `params?`, declared `outcomes` with `weight` and data-only `effects`,
   `onQuit`, `playable?`; no retries), `MissionDef`, `MissionEffect` (`damage`, `destroy`,
   `inventory`, `set`, `opportunity`, and from Engine 0.13 `fate` `{ entity, fate, by?, at? }`:
-  `injured`, `captured`, `freed` (with the cell `at`, required there) or `dead`),
+  `injured`, `captured`, `freed` (with the cell `at`, required there) or `dead`; a `damage`
+  effect's optional `fromReport` (Engine 0.13, M13) names a played round's report stat its amount
+  comes from, the declared `amount` when not played),
   `MISSION_EFFECT_TYPES`, `MISSION_FATES`, `MissionReport` (`{ outcome, stats? }`), `MissionResult`
   (`{ mission, outcome, effects, report? }`), `MissionRecord` (the committed, append-only record),
   `MissionAdapter<KitInput, KitReport>` (`input(snapshot, mission)`, `outcome(report, mission)`),
@@ -69,7 +71,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   platformer's `contentStages`); missions in a campaign are checked only until 0.13. Pure.
 - `mission-adapter.ts` (Engine 0.10 T7; on `PURE_CORE` from 0.11 T7, a kit imports it): playing a mission through a kit's mini game with plain
   data only. `snapshotEntities(snapshot, ...components)` reads a plain world snapshot's entities
-  (ascending id, every component); `playMissionRound({ mission, snapshot, adapter, start, input,
+  (ascending id, every component); `fateState(entity)` (Engine 0.13) is a snapshot entity's
+  `Fate.state` (`active` without one) and `isLost(entity)` whether it is captured or dead, so every
+  kit skips the same people; `playMissionRound({ mission, snapshot, adapter, start, input,
 maxTicks? })` builds the kit's input with the `MissionAdapter`, steps the round to its result,
   maps its end (`MiniGameEnd`: `result`, the kit's `report()` or null, `ticks`) to a declared
   outcome and returns `{ ok, result }` to commit, or refuses `unfinished`, `unmappable_report`

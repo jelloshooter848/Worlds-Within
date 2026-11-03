@@ -1,0 +1,33 @@
+{
+  "id": "hold-gate",
+  "title": "Hold the gate",
+  "event": "gate",
+  "worldTimeCost": 10,
+  "play": "mission-room",
+  "params": {
+    "room": "gate",
+    "goal": "defeat-all",
+    "ticks": 1500,
+    "hero": { "select": { "faction": "village", "member": "captain" }, "hpPer": 20 },
+    "foes": [{ "slot": "n", "kind": "knight", "select": { "faction": "raiders" }, "hpPer": 4 }],
+    "outcomes": [{ "outcome": "held", "when": { "result": "pass" } }, { "outcome": "fell" }]
+  },
+  "onQuit": "fell",
+  "outcomes": [
+    {
+      "id": "held",
+      "title": "The gate held",
+      "weight": 1,
+      "effects": [{ "type": "damage", "entity": "captain", "amount": 20, "fromReport": "heroHpLost" }]
+    },
+    {
+      "id": "fell",
+      "title": "The captain was taken",
+      "weight": 1,
+      "effects": [
+        { "type": "damage", "entity": "captain", "amount": 30, "fromReport": "heroHpLost" },
+        { "type": "fate", "entity": "captain", "fate": "captured", "by": "raiders" }
+      ]
+    }
+  ]
+}

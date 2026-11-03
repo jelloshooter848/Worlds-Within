@@ -129,7 +129,10 @@ checked by that mini game's `paramsSchema` when `validate` runs: `minigame-param
 (`MISSION_EFFECT_TYPES`): `fateEffectSchema` `{ entity, fate, by?, at? }`, `fate` one of
 `MISSION_FATES` (`injured`, `captured`, `freed`, `dead`), `by` a faction id, `at` a cell
 `{ x, y }` given exactly on `freed` (`bad_effect` at `at` otherwise). The sim applies it with
-`setFate` and skips (never errors on) one that cannot move the fate there. There is no retry: no `attempt`, a
+`setFate` and skips (never errors on) one that cannot move the fate there. A `damage` effect's
+optional `fromReport` (Engine 0.13, decision 4, item 223, M13) names a stat of the played round's
+report (`heroHpLost` from the topdown kit's mission room) whose whole number is the amount (0 skips
+it); delegated, quit and timed-out missions have no report and take the declared `amount`. There is no retry: no `attempt`, a
 mission ends in one declared outcome. The types: `MissionReport` (`{ outcome, stats? }`, what a kit
 reports through its adapter), `MissionResult` (`{ mission, outcome, effects, report? }`),
 `MissionRecord` (the committed, append-only record the sim keeps: `resolution`, `openTick`,
@@ -161,7 +164,10 @@ comes at 0.13. Pure (on `PURE_CORE`); tested in `campaign.test.ts`; in `docs/ref
 mission through a kit's mini game with plain data only, so the kit never imports `engine/sim`.
 `snapshotEntities(snapshot, ...components)` lists a plain world snapshot's entities (`{ id,
 components }`, ascending id, with every component) that have all the named components; it throws
-on a snapshot not of the world's shape. `playMissionRound({ mission, snapshot, adapter, start,
+on a snapshot not of the world's shape. `fateState(entity)` (Engine 0.13, decision 3, item 222) is
+a snapshot entity's `Fate.state` (`SnapshotFate`: `active` when it has no `Fate`; an unknown state
+throws) and `isLost(entity)` whether it is `captured` or `dead`: the topdown, tower-defense and RTS
+kits read fates through them, so no mode picks or shows someone the world has lost. `playMissionRound({ mission, snapshot, adapter, start,
 input, inputMap?, maxTicks? })` calls `adapter.input(snapshot, mission)`, starts the round with `start`
 (usually a `MiniGameDef`'s `create`), steps it with `input(tick, round)` through a `RoundInput`
 (Engine 0.11, gap G18: a button already held, not pressed, on tick 0 is ignored until released;

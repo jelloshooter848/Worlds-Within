@@ -33,7 +33,9 @@ wave, and pointer taps through the frame's camera, `cellAtScreen`), `game` (`tdG
 reads a round from a game's content), `bot` (`TdBot`, a deterministic player for tests) and
 `mission-defence` (`tdDefence`, the `td-defence` `MiniGameDef` with `paramsSchema`, `checkUse`
 and a `report()` of towers by type, gold spent, leaks, raiders killed and walls lost by world
-name; `towerdefenseMissionAdapter`, the stateless `MissionAdapter` for `MissionHost`).
+name; `towerdefenseMissionAdapter`, the stateless `MissionAdapter` for `MissionHost`; from
+Engine 0.13 its wall and wave selectors never pick someone captured or dead, by their `Fate`, and an
+injured raider comes at its current hp).
 `kit.ts` exports `kit`, the hook the tools find by the
 name `towerdefense`; it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
 `games/samples/tower-defense` came to guard every rule).
@@ -53,7 +55,8 @@ waves, targeting, kills, leaks, the end of the round, each rule switched off, th
 the same seed), the presentation tests (schema-valid frozen frames, events), the controls tests
 (actions and taps), the headless game tests (a bot's round giving the same hashes twice) and the
 `td-defence` tests over a hand-written snapshot; `tests/kits/td-mission.test.ts` plays the mission
-over a real sim world (played, delegated, quit, live through `MissionHost`, golden hashes). `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
+over a real sim world (played, delegated, quit, live through `MissionHost`, golden hashes), and
+`tests/kits/hero-mission.test.ts` a wave over a world with a dead and a captured raider. `pnpm cli validate kits/towerdefense/__fixtures__/game` checks the fixture game;
 `tests/kits/towerdefense-validate.test.ts` also checks that the broken fixture is rejected by file
 and field. `pnpm -s cli mutants games/samples/tower-defense` (exit 0) checks that the sample's run
 files guard every kit rule.

@@ -181,7 +181,9 @@ names it with `"play": "td-defence"` (`TD_DEFENCE`) and says everything in its `
   with no `Health`). Each unit is one group of one, `spacing` ticks after the one before.
 - Selectors (`select`): `event?` (`EventMember`; for `wave` the mission's `event` when left out,
   for `build` any), `faction?` (`Owner`), `types?` (`Unit.type` or `Building.kind`), `keys?` (world
-  names); only entities with `Position` and, with `Health`, hp above 0.
+  names); only entities with `Position` and, with `Health`, hp above 0, and never one whose
+  `Fate` (Engine 0.13, decision 3) is `captured` or `dead` (`engine/core`'s `isLost`, by the data);
+  an `injured` raider joins the wave at its current, reduced hp.
 - `outcomes`: ordered rules `[{ outcome, when?: { result?, leaksAtMost?, spentAtMost?, killed? }
 }]`; the first that holds names the outcome, only the last may (and must) leave out `when`; a
   quit goes to `onQuit` without the rules. `killed` names wave units by world name or id (the
@@ -262,7 +264,9 @@ two runs, losing, disabled rules, selling, `tdRound`) and `mission-defence.test.
 over a hand-written world snapshot: walls, capped budget, wave order and hp, names, refusals; the
 round's map, cells, waves; held, breached and quit rounds with their reports and outcomes; the
 rules in order; the frame's `foe:` tags and host status; the same snapshots twice; the validate
-errors). `tests/kits/td-mission.test.ts` plays the mission over a real sim world (played cheap and
+errors; fates: a captured raider and a dead wall skipped by the data, an injured raider at its hp).
+`tests/kits/hero-mission.test.ts` (Engine 0.13) checks a wave over a real sim world skips a dead
+and a captured named raider. `tests/kits/td-mission.test.ts` plays the mission over a real sim world (played cheap and
 dear, breached, quit, delegated, golden hashes, and live through `MissionHost`). `__fixtures__/game.ts` loads the fixture
 game for them. The fixtures are in
 `__fixtures__/` (see its README). `tests/kits/towerdefense-validate.test.ts` runs `pnpm cli

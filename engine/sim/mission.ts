@@ -445,7 +445,8 @@ function commitNow(world: World, open: OpenMission): { ok: true; record: Mission
     } else resolution = resolved.resolution;
     const outcome = open.def.outcomes.find((o) => o.id === resolved.outcome);
     if (!outcome) throw new Error(`mission "${id}" resolved to undeclared outcome "${resolved.outcome}"`);
-    const skipped = outcome.effects.filter((effect) => !applyEffect(world, open, effect));
+    const report = resolved.report;
+    const skipped = outcome.effects.filter((effect) => !applyEffect(world, open, effect, report));
     if (open.def.event !== undefined) unfreezeEvent(world, open.def.event, cause);
     const experienceTicks = timeOf(world).experience(id) ?? 0;
     stampCommitment(world, id, cause, open.commitTick);
@@ -467,13 +468,19 @@ function commitNow(world: World, open: OpenMission): { ok: true; record: Mission
 }
 
 /**
- * Apply one effect; false when it is skipped: its entity is gone, `damage` finds no `Health`, or a
+ * Apply one effect; false when it is skipped: its entity is gone, `damage` finds no `Health` (or
+ * its `fromReport` stat is 0), or a
  * `set` would break the component's schema, or an `opportunity` effect finds its opportunity
  * already taken or closed (`applyOpportunityEffect`), or a `fate` cannot be set (`setFate` refuses
  * it: not a named person, a fate that cannot move there such as anything after a death, or a
  * `freed` cell that cannot be entered).
  */
-function applyEffect(world: World, open: OpenMission, effect: MissionEffect): boolean {
+function applyEffect(
+  world: World,
+  open: OpenMission,
+  effect: MissionEffect,
+  report: MissionReport | undefined,
+): boolean {
   if (effect.type === 'opportunity') return applyOpportunityEffect(world, effect);
   const id = typeof effect.entity === 'number' ? effect.entity : open.refs[effect.entity];
   if (id === undefined || !world.alive(id)) return false;
@@ -481,7 +488,9 @@ function applyEffect(world: World, open: OpenMission, effect: MissionEffect): bo
     case 'damage': {
       const health = world.get(id, Health);
       if (!health) return false;
-      world.add(id, Health, { ...health, hp: Math.max(0, health.hp - effect.amount) });
+      const amount = damageAmount(effect, report);
+      if (amount === 0) return false;
+      world.add(id, Health, { ...health, hp: Math.max(0, health.hp - amount) });
       return true;
     }
     case 'destroy':
@@ -515,4 +524,15 @@ function applyEffect(world: World, open: OpenMission, effect: MissionEffect): bo
         ...(effect.at !== undefined ? { cell: effect.at } : {}),
       }).ok;
   }
+}
+
+/**
+ * A `damage` effect's amount: with `fromReport`, the played round's report stat of that name when
+ * it is a whole number of at least 0 (Engine 0.13, decision 4, item 223); otherwise (delegated,
+ * quit, timed out, or a report without that stat) the declared `amount`.
+ */
+function damageAmount(effect: Extract<MissionEffect, { type: 'damage' }>, report: MissionReport | undefined) {
+  if (effect.fromReport === undefined) return effect.amount;
+  const stat = report?.stats?.[effect.fromReport];
+  return typeof stat === 'number' && Number.isInteger(stat) && stat >= 0 ? stat : effect.amount;
 }

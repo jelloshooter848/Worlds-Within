@@ -109,6 +109,23 @@ describe('missions', () => {
     expect(errorsOf(withEffects(bad))[0]!.code).toBe('bad_effect');
   });
 
+  it('takes a damage amount from a played report stat with "fromReport" (Engine 0.13, M13)', () => {
+    const withEffects = (effects: unknown[]) => ({
+      ...RAID,
+      outcomes: [{ ...RAID.outcomes[0], effects }, RAID.outcomes[1], RAID.outcomes[2]],
+    });
+    const damage = { type: 'damage', entity: 'captain', amount: 30 };
+    expect(errorsOf(withEffects([{ ...damage, fromReport: 'heroHpLost' }]))).toEqual([]);
+    expect(
+      errorsOf(
+        withEffects([
+          { ...damage, fromReport: '' },
+          { type: 'damage', entity: 'captain', fromReport: 'x' },
+        ]),
+      ).map((e) => e.path),
+    ).toEqual(['outcomes.0.effects.0.fromReport', 'outcomes.0.effects.1.amount']);
+  });
+
   it('makes "play" optional: a mission without it is a choice, only delegated (Engine 0.13)', () => {
     const { play: _play, params: _params, ...choice } = RAID;
     expect(parseMission(choice).ok).toBe(true);

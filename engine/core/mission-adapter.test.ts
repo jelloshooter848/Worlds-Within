@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { JsonObject } from './headless';
 import { ScriptedInput } from './input/scripted-input';
-import { playMissionRound, snapshotEntities, type MiniGameEnd } from './mission-adapter';
+import { fateState, isLost, playMissionRound, snapshotEntities, type MiniGameEnd } from './mission-adapter';
 import type { Action } from './input/actions';
 import type { MiniGame, MiniGameInputMap, MiniGameResult } from './minigame';
 import { parseMission, type MissionAdapter, type MissionDef } from './missions';
@@ -79,6 +79,29 @@ describe('snapshotEntities', () => {
   it('throws on a snapshot that is not a world snapshot', () => {
     expect(() => snapshotEntities({ frame: 1 })).toThrow(/no "components"/);
     expect(() => snapshotEntities({ components: { Health: [[1]] } })).toThrow(/\[id, data\]/);
+  });
+});
+
+describe('fateState and isLost (Engine 0.13)', () => {
+  const e = (Fate?: unknown) => ({ id: 3, components: Fate === undefined ? {} : { Fate: Fate as never } });
+  it('reads a Fate, active without one, and says who is lost to every mode', () => {
+    expect(fateState(e())).toBe('active');
+    expect(['injured', 'captured', 'freed', 'dead'].map((state) => fateState(e({ state })))).toEqual([
+      'injured',
+      'captured',
+      'freed',
+      'dead',
+    ]);
+    expect(['injured', 'captured', 'freed', 'dead'].map((state) => isLost(e({ state })))).toEqual([
+      false,
+      true,
+      false,
+      true,
+    ]);
+    expect(isLost(e())).toBe(false);
+    expect(() => fateState(e({ state: 'missing' }))).toThrow(
+      'entity 3\'s Fate has no known state ("missing")',
+    );
   });
 });
 

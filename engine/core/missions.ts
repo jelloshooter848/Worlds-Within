@@ -40,11 +40,26 @@ const ComponentName = z
   .string()
   .regex(/^[A-Za-z][A-Za-z0-9_]*$/, 'must be a letter followed by letters, digits or _');
 
-/** Lower `Health.hp` by `amount` (never below 0). */
+/**
+ * Lower `Health.hp` by `amount` (never below 0). With `fromReport` (Engine 0.13, decision 4, item
+ * 223) a played mission takes the amount from that stat of its record's report instead (a whole
+ * number; 0 skips the effect), so a round's real cost comes back to the world while every effect
+ * stays declared; delegated, quit and timed-out missions have no report and use `amount`.
+ */
 export const damageEffectSchema = z.strictObject({
   type: z.literal('damage'),
   entity: EntityRef.describe('the entity hit: a scenario key or an entity id'),
-  amount: z.int().min(1).describe('hit points taken off'),
+  amount: z
+    .int()
+    .min(1)
+    .describe('hit points taken off (with `fromReport`, only when the mission was not played)'),
+  fromReport: z
+    .string()
+    .regex(/^[A-Za-z][A-Za-z0-9_-]*$/, 'must be a letter followed by letters, digits, _ or -')
+    .exactOptional()
+    .describe(
+      "a stat of the played round's report (e.g. `heroHpLost`) the amount is taken from when the mission was played (0 skips the effect); `amount` when it was delegated, quit or timed out",
+    ),
 });
 
 /** Remove an entity from the world. */
@@ -150,7 +165,7 @@ export const missionOutcomeSchema = z.strictObject({
     .array(missionEffectSchema)
     .default([])
     .describe(
-      'the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity, amount }`, `destroy` `{ entity }`, `inventory` `{ entity, item, add }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`, `fate` `{ entity, fate, by?, at? }` (`fate` injured, captured, freed or dead; `at`, a cell `{ x, y }`, on freed only and required there); `entity` is a scenario key or an entity id',
+      'the world changes it makes at the commit, in this order, each told apart by `type`: `damage` `{ entity, amount, fromReport? }`, `destroy` `{ entity }`, `inventory` `{ entity, item, add }`, `set` `{ entity, component, values }`, `opportunity` `{ open }` or `{ close }`, `fate` `{ entity, fate, by?, at? }` (`fate` injured, captured, freed or dead; `at`, a cell `{ x, y }`, on freed only and required there); `entity` is a scenario key or an entity id',
     ),
 });
 

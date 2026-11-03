@@ -241,11 +241,27 @@ everything in its `params` (`missionRoomParamsSchema`; the field table is in
 `docs/reference/schemas.md`, "Mini game params"):
 
 - `room` (the id of one of the game's `room` files), `goal`, `ticks` (1800 when left out) and `hp`,
-  as `roomChallenge` takes them.
+  as `roomChallenge` takes them (`hp` not with `hero`).
+- `hero` (Engine 0.13, M13; docs/BUILD-LOG.md, Engine 0.13, decision 4, item 223): `{ select,
+hpPer }` makes the room's hero one world unit. `select` is the foes' selector (it must name at
+  least one field), but its `event` is any event when left out, not the mission's. At the round's
+  start it must pick exactly one standing unit (with `Position`, above 0 hp, not captured or dead);
+  none, two or more, or only someone captured or dead throws (`the hero "captain" is captured: the
+round cannot start`), so the host refuses the round (`bad_mission_input`). The hero starts on
+  `max(1, ceil(Health.hp / hpPer))` half hearts (an injured captain at 90 hp with `hpPer` 20 starts
+  on 5), the hero is never also a foe, and the input carries `hero: { entity, name, worldHp, hpPer }`.
+  The round's report adds `worldHero` (that and `hpLost`), and the outcome's stats add `hero` (its
+  world name) and `heroHpLost` = `heroHpLost(hero, lost)` = `min(lost * hpPer, worldHp - 1)`: the
+  round never kills the world person (death and capture are declared outcomes). An outcome's
+  `damage` effect with `"fromReport": "heroHpLost"` takes that amount when the mission was played
+  (0 skips it) and its declared `amount` when delegated, quit or timed out (`engine/sim` applies
+  it), so the round's cost comes back while every effect stays declared.
 - `foes`: `[{ slot, kind, select?: { event?, faction?, types?, member? }, hpPer? }]`. Each entry
   picks world entities: members of the mission's `event` (or `select.event`), then by `Owner`
   faction, `Unit` type and squad `Member` role; only entities with `Position` and, if they have
-  `Health`, hp above 0; ascending id; an entity goes to the first entry that selects it. They are
+  `Health`, hp above 0, and never one whose `Fate` (Engine 0.13, decision 3) is `captured` or
+  `dead` (read with `engine/core`'s `isLost`, by the data, not only because the sim takes them off
+  the map); an `injured` or `freed` person is picked at their current hp; ascending id; an entity goes to the first entry that selects it. They are
   placed, as enemies of `kind` (the first legend character, the kit's then the game's
   `extraLegend`, that spawns it on floor), in the room's cells holding the `slot` character, in
   reading order. Spare slot cells become floor; more foes than cells refuses the round before it
@@ -277,7 +293,8 @@ disabledRules?, size?, top?, inputMap? })`, the `MiniGameDef` (id `mission-room`
   `MISSION`, `hostStatus` `['mission']` by default). Its `paramsSchema` is
   `missionRoomParamsSchema` (a mission's params) and its `checkUse` (`missionRoomProblems`) checks
   what the schema cannot see: the room is one of `rooms`, each slot character is in it, each rule
-  names an outcome the mission declares; so `pnpm cli validate` reports all of them at their field
+  names an outcome the mission declares, each `damage` effect's `fromReport` names a number the
+  round reports (`heroLost`, `ticks`, and `heroHpLost` only with `hero`); so `pnpm cli validate` reports all of them at their field
   (`params.outcomes.0.outcome`, `bad_mini_game_use`) when the game's `miniGames(content)` gives it.
   `create(ctx, seed)` takes the adapter's `MissionRoomInput` (not the mission's params), places the
   foes and plays the room as a `MissionRoomRound`, a `RoomChallenge` whose `report()` adds
@@ -289,8 +306,16 @@ disabledRules?, size?, top?, inputMap? })`, the `MiniGameDef` (id `mission-room`
 `mission-room.test.ts` covers the selection (event, faction, types, role, dead entities, first
 entry first, `hpPer`), names from `refs` and ids, every rule kind and their order, quit, the
 refusals, the placed room and the validate errors (shape, room, slot, undeclared outcome) over a
-hand-written snapshot; `tests/kits/mission-adapter.test.ts` plays the siege fixture's raid through
-it with the real sim (clean, partial, repelled, quit, delegated, golden hashes).
+hand-written snapshot, and (Engine 0.13) the world hero (its hp from an injured unit, the
+refusals for a captured, dead, missing or doubled hero, `worldHero` and `heroHpLost` with its cap,
+fates skipped by the data, and the `hero` validate errors); `tests/kits/mission-adapter.test.ts`
+plays the siege fixture's raid through it with the real sim (clean, partial, repelled, quit,
+delegated, golden hashes), and `tests/kits/hero-mission.test.ts` plays `hold-gate` (fixtures
+`hero.world.json`, `hold-gate.mission.json`, `gate.room.json` in `tests/kits/__fixtures__/`), whose
+hero is the injured captain, through `MissionHost`: played (20 world hp back), played and lost (60
+back, then captured), delegated and quit (the declared amounts), a later round with the captured
+captain refused, and the RTS view and a tower-defense wave over the same world skipping the dead
+and the captured.
 
 ## Imports
 

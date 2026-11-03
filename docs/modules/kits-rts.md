@@ -20,7 +20,8 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 ## Public API entry points
 
 `index.ts`, imported as `@kits/rts`: `snapshot` (`readWorld`, `RtsView`, `thingAt`,
-`facingOfDir`), `sides` (`sidesOf`, `SideSummary`: every side at a glance), `selection`
+`facingOfDir`; from Engine 0.13 the captured and the dead are never units of the view, by their
+`Fate`, and `view.named` lists every named person with their fate and hp, `RtsNamedView`), `sides` (`sidesOf`, `SideSummary`: every side at a glance), `selection`
 (`Selection`), `commands` (`commandAt`, `buildCommand`,
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`

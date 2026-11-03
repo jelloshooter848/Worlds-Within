@@ -81,7 +81,9 @@ snapshot }` (the plain world snapshot a kit's adapter reads). `delegateMission(w
   the commitment and appends a frozen `MissionRecord`. A `fate` effect (Engine 0.13) moves a named
   person's fate with `setFate` under `mission:<id>`; one that cannot apply (the person gone, not
   named, already dead, or a `freed` cell that cannot be entered) is skipped and listed in the
-  record's `skipped`, never an error. A mission with no `play` is a choice: `playMission` and
+  record's `skipped`, never an error. A `damage` effect with `fromReport` (Engine 0.13, M13) takes
+  its amount from that stat of the played round's report (0 skips it; the declared `amount` when
+  delegated, quit or timed out), so a round's hero brings its world hp loss back. A mission with no `play` is a choice: `playMission` and
   `quitMission` refuse it (`not_playable`), so it is only delegated. `openMission` refuses an
   outcome that opens an opportunity for the same mission (`reopens_self`: no do-overs). `settleMissions(world)` commits whatever is
   due by now (commit tick, then id order, the same order `commitMission` uses), for callers that

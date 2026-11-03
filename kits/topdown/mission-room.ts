@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import type { JsonObject, JsonValue } from '@engine/core/headless';
-import { snapshotEntities, type MiniGameEnd, type SnapshotEntity } from '@engine/core/mission-adapter';
+import {
+  fateState,
+  isLost,
+  snapshotEntities,
+  type MiniGameEnd,
+  type SnapshotEntity,
+} from '@engine/core/mission-adapter';
 import type { MiniGameContext, MiniGameDef, MiniGameResult, MiniGameUseProblem } from '@engine/core/minigame';
 import type { MissionAdapter, MissionDef, MissionReport } from '@engine/core/missions';
 import type { PresentFrame } from '@engine/core/present';
@@ -14,7 +20,8 @@ import { buildDungeon, LEGEND, type Dungeon, type LegendEntry, type RoomDef } fr
  *
  *   "play": "mission-room",
  *   "params": {
- *     "room": "siege-camp", "goal": "defeat-all", "ticks": 1200, "hp": 6,
+ *     "room": "siege-camp", "goal": "defeat-all", "ticks": 1200,
+ *     "hero": { "select": { "faction": "village", "member": "captain" }, "hpPer": 20 },
  *     "foes": [{ "slot": "n", "kind": "knight", "select": { "faction": "blue" } }],
  *     "outcomes": [
  *       { "outcome": "clean", "when": { "destroyed": ["ram", "tower", "catapult"] } },
@@ -28,10 +35,13 @@ import { buildDungeon, LEGEND, type Dungeon, type LegendEntry, type RoomDef } fr
  * - {@link topdownMissionAdapter}, the `MissionAdapter`: `input(snapshot, mission)` reads the plain
  *   world snapshot the mission opened with (`snapshotEntities`) and picks the world entities each
  *   `foes` entry selects (members of the mission's `event` unless the entry names another, then by
- *   `Owner` faction, `Unit` type and squad `Member` role, living ones only, ascending id; an entity
- *   goes to the first entry that selects it), giving the round's params ({@link MissionRoomInput}).
- *   `outcome(end, mission)` maps the round's report back to world names and walks the `outcomes`
- *   rules in order: the first that holds names the outcome (a quit goes to `onQuit`).
+ *   `Owner` faction, `Unit` type and squad `Member` role, living ones only, never one captured or
+ *   dead, ascending id; an entity goes to the first entry that selects it), and, with `hero`
+ *   (Engine 0.13, M13), the one world unit the room's hero is, its round hp from its `Health`,
+ *   giving the round's params ({@link MissionRoomInput}). `outcome(end, mission)` maps the round's
+ *   report back to world names and walks the `outcomes` rules in order: the first that holds names
+ *   the outcome (a quit goes to `onQuit`); with a hero its stats say the world hp the round cost
+ *   (`heroHpLost`), which an outcome's `damage` effect takes with `fromReport`.
  * - {@link missionRoom}, the `MiniGameDef` (id `mission-room`): its round is the room file named by
  *   `room` with each foe in the next cell of its `slot` character in reading order (spare slot cells
  *   become floor; more foes than cells refuses the round), played as a `RoomChallenge`. Its report
@@ -82,6 +92,27 @@ const foeSchema = z.strictObject({
     ),
 });
 
+/**
+ * The world unit the room's hero is (Engine 0.13, M13; docs/BUILD-LOG.md, Engine 0.13, decision 4,
+ * item 223). Its `select` is the foes' selector, except that `event` is not the mission's when
+ * left out (a defender is seldom in the battle's event): any entity it picks.
+ */
+const heroSchema = z.strictObject({
+  select: selectSchema
+    .refine((s) => Object.keys(s).length > 0, {
+      message: 'name an event, faction, types or member: the hero is exactly one world unit',
+    })
+    .describe(
+      "which world unit the hero is: exactly one living one, never captured or dead (`event` is any event when left out, not the mission's)",
+    ),
+  hpPer: z
+    .int()
+    .min(1)
+    .describe(
+      'world hit points per half heart: the hero starts on `Health.hp / hpPer` (rounded up, at least 1), and each half heart lost costs `hpPer` world hp (never the last one)',
+    ),
+});
+
 const whenSchema = z.strictObject({
   result: z
     .enum(['pass', 'fail'])
@@ -128,7 +159,10 @@ export const missionRoomParamsSchema = z
       .int()
       .min(1)
       .exactOptional()
-      .describe("the hero's hit points in half hearts (the kit's default when left out)"),
+      .describe("the hero's hit points in half hearts (the kit's default when left out); not with `hero`"),
+    hero: heroSchema
+      .exactOptional()
+      .describe("the world unit the room's hero is, whose hp goes into the round and back (Engine 0.13)"),
     foes: z.array(foeSchema).min(1).describe('which world entities become which foes, in which slots'),
     outcomes: z
       .array(ruleSchema)
@@ -136,6 +170,12 @@ export const missionRoomParamsSchema = z
       .describe('rules from the round to a declared outcome, tried in order; the first that holds wins'),
   })
   .superRefine((params, ctx) => {
+    if (params.hero !== undefined && params.hp !== undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['hp'],
+        message: "leave out `hp` with `hero`: the hero's hp comes from its world unit",
+      });
     params.outcomes.forEach((rule, i) => {
       const last = i === params.outcomes.length - 1;
       if (last && rule.when !== undefined)
@@ -179,12 +219,25 @@ export interface MissionRoomFoe extends JsonObject {
   hp?: number;
 }
 
+/**
+ * The world unit the room's hero is (with `hero`): its id and name, its `Health.hp` when the round
+ * started and the mission's `hpPer`, so the round's report can say what it cost the world.
+ */
+export interface MissionRoomHero extends JsonObject {
+  entity: number;
+  name: string;
+  worldHp: number;
+  hpPer: number;
+}
+
 /** What the adapter gives the round: the room, goal and limits, and the picked foes in order. */
 export interface MissionRoomInput extends JsonObject {
   room: string;
   goal: 'defeat-all' | 'reach';
   ticks: number;
   hp?: number;
+  /** The world unit the hero is (with the params' `hero`); `hp` is then its round hp. */
+  hero?: MissionRoomHero;
   /** Every slot character the mission names, so spare cells of each become floor. */
   slots: string[];
   foes: MissionRoomFoe[];
@@ -195,6 +248,14 @@ const roundInputSchema = z.strictObject({
   goal: z.enum(['defeat-all', 'reach']),
   ticks: z.int().min(1),
   hp: z.int().min(1).exactOptional(),
+  hero: z
+    .strictObject({
+      entity: z.int(),
+      name: z.string().min(1),
+      worldHp: z.int().min(1),
+      hpPer: z.int().min(1),
+    })
+    .exactOptional(),
   slots: z.array(z.string().length(1)),
   foes: z.array(
     z.strictObject({
@@ -214,9 +275,22 @@ export interface MissionRoomPlaced extends JsonObject {
   name: string;
 }
 
-/** The round's report: the room challenge's, plus where each world entity stood. */
+/**
+ * The round's report: the room challenge's, plus where each world entity stood and (with a world
+ * hero) which world unit the hero was, its world hp at the start and the world hp the round cost.
+ */
 export interface MissionRoomReport extends ChallengeReport {
   placed: MissionRoomPlaced[];
+  worldHero?: MissionRoomHero & { hpLost: number };
+}
+
+/**
+ * The world hp a round cost its hero (decision 4): `lost` half hearts times `hpPer`, but never the
+ * world unit's last hit point. The round never kills the world person: death and capture are
+ * declared outcomes, never an accident of arithmetic.
+ */
+export function heroHpLost(hero: MissionRoomHero, lost: number): number {
+  return Math.max(0, Math.min(lost * hero.hpPer, hero.worldHp - 1));
 }
 
 // ---- The adapter ----
@@ -246,16 +320,58 @@ function namesOf(snapshot: JsonObject, missionId: string): Map<number, string> {
 const field = (e: SnapshotEntity, component: string, key: string): JsonValue | undefined =>
   record(e.components[component])?.[key];
 
-/** Whether entity `e` is one `select` picks (`event` already resolved). */
-function selects(e: SnapshotEntity, select: MissionRoomParams['foes'][number]['select'], event?: string) {
-  if (!('Position' in e.components)) return false;
+type Select = MissionRoomParams['foes'][number]['select'];
+
+/**
+ * Whether entity `e` stands in the world to be picked: on the map (`Position`), not captured or
+ * dead (`Fate`, by the data: decision 3), and, with `Health`, above 0 hp.
+ */
+function standing(e: SnapshotEntity): boolean {
+  if (!('Position' in e.components) || isLost(e)) return false;
   const hp = field(e, 'Health', 'hp');
-  if (typeof hp === 'number' && hp <= 0) return false;
+  return !(typeof hp === 'number' && hp <= 0);
+}
+
+/** Whether entity `e` is one `select` picks (`event` already resolved), standing or not. */
+function matches(e: SnapshotEntity, select: Select, event?: string) {
   if (event !== undefined && field(e, 'EventMember', 'event') !== event) return false;
   if (select.faction !== undefined && field(e, 'Owner', 'faction') !== select.faction) return false;
   if (select.types !== undefined && !select.types.includes(field(e, 'Unit', 'type') as string)) return false;
   if (select.member !== undefined && field(e, 'Member', 'role') !== select.member) return false;
   return true;
+}
+
+/** Whether entity `e` is one `select` picks: standing and matching it. */
+function selects(e: SnapshotEntity, select: Select, event?: string) {
+  return standing(e) && matches(e, select, event);
+}
+
+/**
+ * The one world unit the params' `hero` picks, with its round hp. Throws (the round does not
+ * start) when it picks none, more than one, or only someone captured or dead, or one without
+ * `Health`.
+ */
+function pickHero(
+  entities: readonly SnapshotEntity[],
+  hero: NonNullable<MissionRoomParams['hero']>,
+  nameOf: (e: SnapshotEntity) => string,
+): MissionRoomHero {
+  const picked = entities.filter((e) => matches(e, hero.select, hero.select.event));
+  const living = picked.filter(standing);
+  if (living.length > 1)
+    throw new Error(
+      `hero.select picks ${living.length} world units (${living.map(nameOf).join(', ')}); it must pick exactly one`,
+    );
+  const e = living[0];
+  if (e === undefined) {
+    const lost = picked.find(isLost);
+    if (lost !== undefined)
+      throw new Error(`the hero "${nameOf(lost)}" is ${fateState(lost)}: the round cannot start`);
+    throw new Error('hero.select picks no living world unit');
+  }
+  const hp = field(e, 'Health', 'hp');
+  if (typeof hp !== 'number') throw new Error(`the hero "${nameOf(e)}" has no Health`);
+  return { entity: e.id, name: nameOf(e), worldHp: hp, hpPer: hero.hpPer };
 }
 
 /**
@@ -267,7 +383,10 @@ export function missionRoomInput(snapshot: JsonObject, mission: MissionDef): Mis
   const params = missionRoomParams(mission.params);
   const names = namesOf(snapshot, mission.id);
   const entities = snapshotEntities(snapshot);
-  const taken = new Set<number>();
+  const nameOf = (e: SnapshotEntity) => names.get(e.id) ?? String(e.id);
+  const hero = params.hero === undefined ? null : pickHero(entities, params.hero, nameOf);
+  // The hero is never also one of the foes.
+  const taken = new Set<number>(hero === null ? [] : [hero.entity]);
   const foes: MissionRoomFoe[] = [];
   for (const entry of params.foes) {
     const event = entry.select.event ?? mission.event;
@@ -278,7 +397,7 @@ export function missionRoomInput(snapshot: JsonObject, mission: MissionDef): Mis
         slot: entry.slot,
         kind: entry.kind,
         entity: e.id,
-        name: names.get(e.id) ?? String(e.id),
+        name: nameOf(e),
       };
       const hp = field(e, 'Health', 'hp');
       if (entry.hpPer !== undefined && typeof hp === 'number')
@@ -303,6 +422,10 @@ export function missionRoomInput(snapshot: JsonObject, mission: MissionDef): Mis
     foes,
   };
   if (params.hp !== undefined) input.hp = params.hp;
+  if (hero !== null) {
+    input.hero = hero;
+    input.hp = Math.max(1, Math.ceil(hero.worldHp / hero.hpPer));
+  }
   return input;
 }
 
@@ -329,7 +452,9 @@ function holds(
  * The mission report for a round's end (`MissionAdapter.outcome`): a quit goes to the mission's
  * `onQuit`; otherwise the report's destroyed and hurt room keys are mapped back to world names
  * and the first rule that holds names the outcome. `stats`: `destroyed` and `hurt` (world names,
- * in room-text order), `heroLost` (half hearts) and `ticks`. Throws (refused as
+ * in room-text order), `heroLost` (half hearts) and `ticks`, and with a world hero (Engine 0.13)
+ * `hero` (its world name) and `heroHpLost` (the world hp the round cost it, {@link heroHpLost}).
+ * Throws (refused as
  * `unmappable_report`) on a round with no report or one naming a cell no world entity stood on.
  */
 export function missionRoomOutcome(end: MiniGameEnd, mission: MissionDef): MissionReport {
@@ -353,10 +478,12 @@ export function missionRoomOutcome(end: MiniGameEnd, mission: MissionDef): Missi
   const done = new Set(gone.flatMap((p) => [p.name, String(p.entity)]));
   const rule = params.outcomes.find((r) => holds(r, end.result, done, gone.length));
   if (rule === undefined) throw new Error('no outcome rule holds for the round');
-  return {
-    outcome: rule.outcome,
-    stats: { destroyed, hurt, heroLost: report.hero.lost, ticks: end.ticks },
-  };
+  const stats: JsonObject = { destroyed, hurt, heroLost: report.hero.lost, ticks: end.ticks };
+  if (report.worldHero !== undefined) {
+    stats['hero'] = report.worldHero.name;
+    stats['heroHpLost'] = report.worldHero.hpLost;
+  }
+  return { outcome: rule.outcome, stats };
 }
 
 /**
@@ -393,12 +520,17 @@ export class MissionRoomRound extends RoomChallenge {
     ctx: MiniGameContext,
     seed: number,
     private readonly placed: readonly MissionRoomPlaced[],
+    private readonly hero: MissionRoomHero | null = null,
   ) {
     super(dungeon, opts, ctx, seed);
   }
 
   override report(): MissionRoomReport {
-    return { ...super.report(), placed: this.placed.map((p) => ({ ...p })) };
+    const base = super.report();
+    const report: MissionRoomReport = { ...base, placed: this.placed.map((p) => ({ ...p })) };
+    if (this.hero !== null)
+      report.worldHero = { ...this.hero, hpLost: heroHpLost(this.hero, base.hero.lost) };
+    return report;
   }
 
   /**
@@ -482,6 +614,22 @@ export function missionRoomProblems(
     });
   const outcomes = mission?.['outcomes'];
   if (Array.isArray(outcomes)) {
+    // A `damage` effect taking its amount from the report must name a number the round reports.
+    const stats = params.hero === undefined ? ['heroLost', 'ticks'] : ['heroLost', 'heroHpLost', 'ticks'];
+    for (const o of outcomes) {
+      const effects = record(o)?.['effects'];
+      for (const effect of Array.isArray(effects) ? effects : []) {
+        const from = record(effect)?.['fromReport'];
+        if (typeof from !== 'string' || stats.includes(from)) continue;
+        problems.push({
+          path: from === 'heroHpLost' ? ['hero'] : [],
+          message:
+            from === 'heroHpLost'
+              ? `outcome "${String(record(o)?.['id'])}" takes damage from "heroHpLost", which only a round with \`hero\` reports`
+              : `outcome "${String(record(o)?.['id'])}" takes damage from "${from}", which a mission room never reports (it has ${stats.map((n) => `"${n}"`).join(', ')})`,
+        });
+      }
+    }
     const declared = outcomes.map((o) => record(o)?.['id']);
     params.outcomes.forEach((rule, i) => {
       if (!declared.includes(rule.outcome))
@@ -497,10 +645,13 @@ export function missionRoomProblems(
 /**
  * The `mission-room` mini game over the game's rooms. Its `paramsSchema` is
  * `missionRoomParamsSchema` (a mission's params, checked by `validate`), and its `checkUse` checks
- * that the room is one of `rooms`, each slot character is in it and each rule names an outcome the
- * mission declares. A round (`create`) takes the adapter's {@link MissionRoomInput}, not the
+ * that the room is one of `rooms`, each slot character is in it, each rule names an outcome the
+ * mission declares and each `damage` effect's `fromReport` names a number the round reports
+ * (`heroHpLost` only with `hero`). Which world unit the hero is can only be checked when the round
+ * starts. A round (`create`) takes the adapter's {@link MissionRoomInput}, not the
  * mission's params: it places the foes, then plays the room as a `RoomChallenge` with the room's
- * foes at their world hp (`hpPer`). Throws (no round starts) on an unknown room, a kind no legend
+ * foes at their world hp (`hpPer`) and, with a world hero, the hero at its round hp and the report's
+ * `worldHero`. Throws (no round starts) on an unknown room, a kind no legend
  * character spawns or more foes than slot cells.
  */
 export function missionRoom(opts: MissionRoomOptions): MiniGameDef {
@@ -532,6 +683,7 @@ export function missionRoom(opts: MissionRoomOptions): MiniGameDef {
         { ...ctx, params: round },
         seed,
         placed,
+        input.hero ?? null,
       );
     },
   };

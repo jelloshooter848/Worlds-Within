@@ -2,7 +2,12 @@ import { z } from 'zod';
 import { DEFAULT_SCREEN, type ScreenSize } from '@engine/core/gfx/screen';
 import type { JsonObject, JsonValue } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
-import { snapshotEntities, type MiniGameEnd, type SnapshotEntity } from '@engine/core/mission-adapter';
+import {
+  isLost,
+  snapshotEntities,
+  type MiniGameEnd,
+  type SnapshotEntity,
+} from '@engine/core/mission-adapter';
 import type {
   MiniGame,
   MiniGameContext,
@@ -317,9 +322,11 @@ function namesOf(snapshot: JsonObject, missionId: string): Map<number, string> {
 const field = (e: SnapshotEntity, component: string, key: string): JsonValue | undefined =>
   record(e.components[component])?.[key];
 
-/** Whether `select` picks entity `e` (named `name`; `event` already resolved). */
+/** Whether `select` picks entity `e` (named `name`; `event` already resolved): standing ones only. */
 function selects(e: SnapshotEntity, name: string, select: Select, event: string | undefined): boolean {
-  if (!('Position' in e.components)) return false;
+  // Never someone captured or dead (by the data: Engine 0.13, decision 3); the injured come at
+  // their current hp.
+  if (!('Position' in e.components) || isLost(e)) return false;
   const hp = field(e, 'Health', 'hp');
   if (typeof hp === 'number' && hp <= 0) return false;
   if (event !== undefined && field(e, 'EventMember', 'event') !== event) return false;

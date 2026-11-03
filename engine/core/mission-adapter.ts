@@ -66,6 +66,35 @@ export function snapshotEntities(snapshot: JsonObject, ...having: string[]): Sna
     .map(([id, components]) => ({ id, components }));
 }
 
+/** A named person's fate as a snapshot entity carries it: `active` when it has no `Fate`. */
+export type SnapshotFate = 'active' | 'injured' | 'captured' | 'freed' | 'dead';
+
+const SNAPSHOT_FATES: readonly SnapshotFate[] = ['injured', 'captured', 'freed', 'dead'];
+
+/**
+ * The fate of a snapshot entity (Engine 0.13, decision 3, item 222): its `Fate.state`, or `active`
+ * when it has no `Fate` (the sim writes one only for a named person whose fate moved). A `Fate` of
+ * an unknown shape throws: a snapshot comes from the sim, so a bad one is a bug. Kits read fates
+ * through this, so all of them skip the same people.
+ */
+export function fateState(entity: SnapshotEntity): SnapshotFate {
+  const fate = entity.components['Fate'];
+  if (fate === undefined) return 'active';
+  const state = typeof fate === 'object' && fate !== null && !Array.isArray(fate) ? fate['state'] : undefined;
+  if (!SNAPSHOT_FATES.includes(state as SnapshotFate))
+    throw new Error(`entity ${entity.id}'s Fate has no known state (${JSON.stringify(state)})`);
+  return state as SnapshotFate;
+}
+
+/**
+ * Whether a snapshot entity is lost to the world (`captured` or `dead`): no mode may pick or show
+ * one (decision 3). An `injured` or `freed` person is not lost and plays at their current hp.
+ */
+export function isLost(entity: SnapshotEntity): boolean {
+  const state = fateState(entity);
+  return state === 'captured' || state === 'dead';
+}
+
 /** How a mini game round ended, as an adapter reads it: the result and the kit's report. */
 export interface MiniGameEnd {
   readonly result: MiniGameResult;

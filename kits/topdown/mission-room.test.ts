@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type { JsonObject } from '@engine/core/headless';
+import type { JsonObject, JsonValue } from '@engine/core/headless';
 import type { MiniGameEnd } from '@engine/core/mission-adapter';
 import { miniGameParamErrors, missionMiniGameUses } from '@engine/core/minigame-params';
 import type { MissionDef } from '@engine/core/missions';
 import type { RoomChallenge } from './challenge';
 import {
+  heroHpLost,
   MISSION_ROOM,
   missionRoom,
   missionRoomParams,
@@ -308,5 +309,168 @@ describe('validate checks a mission room mission (G16)', () => {
       { path: 'params.foes.0.slot', code: 'bad_mini_game_use' },
       { path: 'params.outcomes.0.outcome', code: 'bad_mini_game_use' },
     ]);
+  });
+});
+
+// ---- Engine 0.13: a round's hero taken from a world unit (M13), and fates honoured ----
+
+const fate = (state: string) => ({ state, by: null, at: 0, held: null, history: [] });
+
+/**
+ * The snapshot above with named village people and fates: the captain (20) injured at 90 of 120 hp,
+ * the sergeant (21) captured (off the map), a guard (22) dead, and a raider of the siege (8) whose
+ * `Fate` says captured though it still has `Position` and `EventMember` (skipped by the data).
+ */
+const add = (name: string, rows: JsonValue[]): JsonValue[] => {
+  const c = SNAPSHOT['components'] as Record<string, JsonValue[]>;
+  return [...(c[name] ?? []), ...rows];
+};
+const FATES: JsonObject = {
+  tick: 0,
+  components: {
+    ...(SNAPSHOT['components'] as JsonObject),
+    Position: add('Position', [
+      [8, { x: 6, y: 1 }],
+      [20, { x: 7, y: 1 }],
+    ]),
+    Owner: add('Owner', [
+      [8, { faction: 'blue' }],
+      [20, { faction: 'village' }],
+      [21, { faction: 'village' }],
+      [22, { faction: 'village' }],
+    ]),
+    Health: add('Health', [
+      [8, { hp: 20, max: 20 }],
+      [20, { hp: 90, max: 120 }],
+      [21, { hp: 30, max: 30 }],
+      [22, { hp: 0, max: 30 }],
+    ]),
+    Unit: add('Unit', [
+      [8, { type: 'raider' }],
+      [20, { type: 'soldier' }],
+    ]),
+    Member: add('Member', [
+      [20, { name: 'Hale', squad: null, role: 'captain' }],
+      [21, { name: 'Mara', squad: null, role: 'hero' }],
+      [22, { name: 'Tam', squad: null, role: 'regular' }],
+    ]),
+    EventMember: add('EventMember', [[8, { event: 'siege' }]]),
+    Fate: [
+      [8, fate('captured')],
+      [20, fate('injured')],
+      [21, fate('captured')],
+      [22, fate('dead')],
+    ],
+    Missions: [[10, { open: [{ def: { id: 'raid' }, refs: { ram: 4, captain: 20 } }], committed: [] }]],
+  },
+};
+
+const HERO = { select: { faction: 'village', member: 'captain' }, hpPer: 20 };
+const heroInput = (changes: object = {}) =>
+  topdownMissionAdapter.input(FATES, withParams({ hero: HERO, ...changes })) as MissionRoomInput;
+
+describe('the mission room: a hero from a world unit (M13) and fates', () => {
+  it("takes the hero's round hp from its world Health (hpPer, rounded up), an injured one at its hp now", () => {
+    const got = heroInput();
+    // 90 / 20 = 4.5, rounded up: 5 half hearts (the injured captain starts weaker than at 120).
+    expect(got.hp).toBe(5);
+    expect(got.hero).toEqual({ entity: 20, name: 'captain', worldHp: 90, hpPer: 20 });
+  });
+
+  it('never picks someone captured or dead as a foe, by their Fate, nor the hero', () => {
+    // Raider 8 still has Position and the event but is captured; 5 is the only raider left.
+    expect(heroInput().foes.map((f) => f.entity)).toEqual([4, 5]);
+    expect(input().foes.map((f) => f.entity)).toEqual([4, 5]);
+    const foes = [{ slot: 'n', kind: 'bat', select: { event: 'none', faction: 'village' } }];
+    const everyone = [{ slot: 'n', kind: 'bat', select: { faction: 'village' } }];
+    // The village's only standing person is the captain: as the hero, he is no foe.
+    expect(() => heroInput({ foes: everyone, outcomes: [{ outcome: 'lost' }] })).not.toThrow();
+    expect(heroInput({ foes: everyone, outcomes: [{ outcome: 'lost' }] }).foes).toEqual([]);
+    expect(heroInput({ foes, outcomes: [{ outcome: 'lost' }] }).foes).toEqual([]);
+  });
+
+  it('refuses a hero who is captured or dead, none, or more than one', () => {
+    expect(() => heroInput({ hero: { select: { member: 'hero' }, hpPer: 10 } })).toThrow(
+      'the hero "21" is captured: the round cannot start',
+    );
+    expect(() => heroInput({ hero: { select: { member: 'regular' }, hpPer: 10 } })).toThrow(
+      'the hero "22" is dead: the round cannot start',
+    );
+    expect(() => heroInput({ hero: { select: { faction: 'green' }, hpPer: 10 } })).toThrow(
+      'hero.select picks no living world unit',
+    );
+    expect(() => heroInput({ hero: { select: { faction: 'blue' }, hpPer: 10 } })).toThrow(
+      'hero.select picks 3 world units (ram, 5, 7); it must pick exactly one',
+    );
+  });
+
+  it('plays the round with that hero and reports the world hp it cost, never the last one', () => {
+    const round = DEF.create({ params: heroInput(), attempt: 1 }, 5) as RoomChallenge;
+    expect(round.world.hero.hp).toBe(5);
+    const report = round.report() as MissionRoomReport;
+    expect(report.worldHero).toEqual({ entity: 20, name: 'captain', worldHp: 90, hpPer: 20, hpLost: 0 });
+    // Through the adapter: 2 half hearts lost cost 40 world hp; 5 lost would be 100, capped at 89.
+    const withHero = (lost: number): MiniGameEnd => {
+      const base = end('fail', []).report as unknown as MissionRoomReport;
+      const hero = { entity: 20, name: 'captain', worldHp: 90, hpPer: 20 };
+      return {
+        result: 'fail',
+        ticks: 9,
+        report: { ...base, hero: { lost }, worldHero: { ...hero, hpLost: Math.min(lost * 20, 89) } },
+      } as unknown as MiniGameEnd;
+    };
+    const mission = withParams({ hero: HERO });
+    expect(topdownMissionAdapter.outcome(withHero(2), mission).stats).toMatchObject({
+      hero: 'captain',
+      heroLost: 2,
+      heroHpLost: 40,
+    });
+    expect(topdownMissionAdapter.outcome(withHero(5), mission).stats?.['heroHpLost']).toBe(89);
+    const hero = { entity: 20, name: 'captain', worldHp: 90, hpPer: 20 };
+    expect([0, 2, 4, 5, 9].map((lost) => heroHpLost(hero, lost))).toEqual([0, 40, 80, 89, 89]);
+    expect(heroHpLost({ ...hero, worldHp: 1 }, 3)).toBe(0);
+    // Without a world hero the stats are as before.
+    expect(topdownMissionAdapter.outcome(end('fail', []), MISSION).stats).not.toHaveProperty('heroHpLost');
+  });
+
+  it('validate: hero with hp, an empty hero selector, and heroHpLost damage without a hero', () => {
+    const mission = (
+      params: object,
+      effects: MissionDef['outcomes'][number]['effects'] = [],
+    ): MissionDef => ({
+      ...withParams(params),
+      outcomes: ['burnt', 'some', 'scorched', 'lost'].map((id) => ({ id, title: id, weight: 1, effects })),
+    });
+    const content = (m: MissionDef) =>
+      ({
+        manifest: {},
+        entries: [{ kind: 'mission', name: 'raid', file: 'content/raid.mission.json', value: m }],
+      }) as unknown as ContentBundle;
+    const errors = (m: MissionDef) =>
+      miniGameParamErrors(missionMiniGameUses(content(m)), [DEF]).map((e) => ({
+        path: e.path,
+        code: e.code,
+      }));
+    const damage = (fromReport: string) => ({
+      type: 'damage' as const,
+      entity: 'captain',
+      amount: 30,
+      fromReport,
+    });
+    expect(errors(mission({ hero: HERO }, [damage('heroHpLost')]))).toEqual([]);
+    expect(errors(mission({ hero: HERO, hp: 6 }))).toEqual([{ path: 'params.hp', code: 'custom' }]);
+    expect(errors(mission({ hero: { select: {}, hpPer: 20 } }))).toEqual([
+      { path: 'params.hero.select', code: 'custom' },
+    ]);
+    expect(errors(mission({ hero: { select: { member: 'captain' } } }))).toEqual([
+      { path: 'params.hero.hpPer', code: 'invalid_type' },
+    ]);
+    expect(errors(mission({}, [damage('heroHpLost')]))).toEqual(
+      Array(4).fill({ path: 'params.hero', code: 'bad_mini_game_use' }),
+    );
+    expect(errors(mission({ hero: HERO }, [damage('gold')]))[0]).toEqual({
+      path: 'params',
+      code: 'bad_mini_game_use',
+    });
   });
 });

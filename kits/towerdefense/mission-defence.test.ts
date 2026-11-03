@@ -164,6 +164,34 @@ describe('the td-defence adapter: world to round', () => {
     });
   });
 
+  it('honours fates (Engine 0.13): never a captured or dead one, the injured at their hp now', () => {
+    const c = SNAPSHOT['components'] as Record<string, unknown[]>;
+    const fate = (state: string) => ({ state, by: null, at: 0, held: null, history: [] });
+    // By the data alone: raider 5 is captured and wall 3 "dead" though both still stand on the map;
+    // the captain (8) is injured at 40 of 60 hp and comes at that hp.
+    const snapshot: JsonObject = {
+      ...SNAPSHOT,
+      components: {
+        ...(SNAPSHOT['components'] as JsonObject),
+        Health: (c['Health'] ?? []).map((row) => {
+          const [id, h] = row as [number, JsonObject];
+          return id === 8 ? [8, { hp: 40, max: 60 }] : [id, h];
+        }),
+        Fate: [
+          [3, fate('dead')],
+          [5, fate('captured')],
+          [8, fate('injured')],
+        ],
+      } as JsonObject,
+    };
+    const got = towerdefenseMissionAdapter.input(snapshot, MISSION) as TdDefenceInput;
+    expect(got.walls).toEqual([{ entity: 4, name: 'gate' }]);
+    expect(got.foes.map((f) => [f.name, f.hp])).toEqual([
+      ['brak', 4],
+      ['7', 3],
+    ]);
+  });
+
   it("leaves out what the map gives, and picks walls by key and the map's slot character", () => {
     const params = { ...PARAMS } as Record<string, unknown>;
     delete params['budget'];
