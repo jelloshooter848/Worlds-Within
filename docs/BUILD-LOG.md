@@ -80,7 +80,15 @@ format that lists the releases a status may name. The close-out (T9) confirms th
   village map gained four wall entities and a second opportunity, so every world snapshot moved
   from tick 0 (the squads' and the world-level entity's ids moved up by four). Every assertion of
   those three run files holds unchanged, the recorded sabotage round included, so only `hashes`
-  and the `.hashes.json` files changed. No `engine/sim` change was needed.
+  and the `.hashes.json` files changed. Two new run files with golden hashes: `fortify-played`
+  (a recorded 116-tick round, the kit's `TdBot` placing two archers, held for 40 gold:
+  `held-cheap`, the hall's gold 150 to 110 and the four raiders destroyed at world tick 40) and
+  `fortify-delegated` (seed 11 draws `overrun`: two walls destroyed, the towers, a soldier and the
+  captain hurt), each asserting the battle frozen from 11 to 39, the commit at 10 + 30 and the
+  battle afterwards; `mini-siege.test.ts` and `play.test.ts` cover both paths. Lessons D9 (the
+  glue names the hosted mini game itself), D10 (walls joined to cells by order only) and D11 (two
+  missions on one event exclude each other); D3, D4, D6 and D8 confirmed in the real game. No
+  `engine/sim` change was needed.
 
 ### Decisions
 

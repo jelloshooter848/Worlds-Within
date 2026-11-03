@@ -1,0 +1,61 @@
+{
+  "run": "games/samples/mini-siege/runs/fortify-delegated.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "8eb4811aae418350"
+    },
+    {
+      "tick": 20,
+      "hash": "15e5404bbe1b98cc"
+    },
+    {
+      "tick": 40,
+      "hash": "7d8dd27183939fed"
+    },
+    {
+      "tick": 60,
+      "hash": "3d7d4cbbd3ba827d"
+    },
+    {
+      "tick": 80,
+      "hash": "337208c0cd6d806d"
+    },
+    {
+      "tick": 100,
+      "hash": "43069db34403339b"
+    },
+    {
+      "tick": 120,
+      "hash": "d7a931446316613d"
+    },
+    {
+      "tick": 140,
+      "hash": "d47990237cf924cd"
+    },
+    {
+      "tick": 160,
+      "hash": "55d1a23448d13c4d"
+    },
+    {
+      "tick": 180,
+      "hash": "8883608d258ce451"
+    },
+    {
+      "tick": 200,
+      "hash": "b9a64615b915f0d0"
+    },
+    {
+      "tick": 220,
+      "hash": "9e5295af03babb36"
+    },
+    {
+      "tick": 240,
+      "hash": "106a9de50d72d988"
+    },
+    {
+      "tick": 260,
+      "hash": "bbbf38c22b5e249a"
+    }
+  ]
+}

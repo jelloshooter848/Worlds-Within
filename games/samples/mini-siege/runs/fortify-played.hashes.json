@@ -1,0 +1,85 @@
+{
+  "run": "games/samples/mini-siege/runs/fortify-played.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "8eb4811aae418350"
+    },
+    {
+      "tick": 20,
+      "hash": "462384d9750f6ace"
+    },
+    {
+      "tick": 40,
+      "hash": "d86b9ffb42a1e72c"
+    },
+    {
+      "tick": 60,
+      "hash": "4aa9075107cb0acd"
+    },
+    {
+      "tick": 80,
+      "hash": "cd5f24df34a702e4"
+    },
+    {
+      "tick": 100,
+      "hash": "c26c6b2e09491187"
+    },
+    {
+      "tick": 120,
+      "hash": "43637d211dbd25b0"
+    },
+    {
+      "tick": 140,
+      "hash": "4355989c92c2af49"
+    },
+    {
+      "tick": 160,
+      "hash": "f8b9027d989f1a60"
+    },
+    {
+      "tick": 180,
+      "hash": "b839f6f3210c6872"
+    },
+    {
+      "tick": 200,
+      "hash": "e66289402766fe2e"
+    },
+    {
+      "tick": 220,
+      "hash": "5011df795e1097d9"
+    },
+    {
+      "tick": 240,
+      "hash": "83dfd50dc1dbcc28"
+    },
+    {
+      "tick": 260,
+      "hash": "8027f014a0f82ac3"
+    },
+    {
+      "tick": 280,
+      "hash": "1e3681701da4d350"
+    },
+    {
+      "tick": 300,
+      "hash": "8f7b24e838c6916c"
+    },
+    {
+      "tick": 320,
+      "hash": "64fe5af26e102942"
+    },
+    {
+      "tick": 340,
+      "hash": "7f31c630e4af6b9d"
+    },
+    {
+      "tick": 360,
+      "hash": "a1134cb31614b4ab"
+    },
+    {
+      "tick": 376,
+      "hash": "7ca0d45f21cdbf53"
+    }
+  ]
+}
