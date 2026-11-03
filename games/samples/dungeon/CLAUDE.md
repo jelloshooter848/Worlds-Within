@@ -86,9 +86,11 @@ games/samples/dungeon --json` to see every kit rule guarded.
   `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`, `unlock`.
 - `content/palettes/`: `hero`, `dungeon`. `content/sprites/`: `hero.txt`, `dungeon.txt`.
 - `content/skins/canvas2d.json`: the skin (above).
-- `content.ts`: the content kinds (`dungeonKinds`), `loadDungeon(files)`, `mustLoad`, and
-  `dungeonRooms`, `dungeonSongs`, `dungeonSfx`, `dungeonSkin` over the loaded bundle;
-  `DUNGEON_MUSIC` and `ESCAPE_MUSIC` (song ids).
+- `content.ts`: `loadDungeon(files)` (the kit hook's kinds, `kitContentKinds([topdown],
+manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the engine's
+  `mustSkinSet`) over the loaded bundle; `DUNGEON_MUSIC` and `ESCAPE_MUSIC` (song ids). The
+  songs and sfx are the engine's `contentSongs` and `contentSfx` (Engine 0.15 T15, the API review
+  removed the sample's own `dungeonKinds`, `dungeonSongs` and `dungeonSfx` copies).
 - `headless.ts`: `createWorld(content, seed?, disabledRules?)` and `createGame(content, seed,
 opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
 - `picture.ts`: `dungeonLook(content)` (skin, sheets, picture size), `DungeonPicture`

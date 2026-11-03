@@ -70,7 +70,14 @@ export {
   type SkinStateFrames,
   type SkinTileEntry,
 } from './skin';
-export { MINI_GAME_STATUS, presenterBySkinSet, skinSet, type SkinSet } from './skin-set';
+export {
+  MINI_GAME_STATUS,
+  mustSkinSet,
+  presenterBySkinSet,
+  skinSet,
+  type FoundSkinSet,
+  type SkinSet,
+} from './skin-set';
 export {
   DEFAULT_HUD_FONT,
   HUD_FALLBACK_COLOR,

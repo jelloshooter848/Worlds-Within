@@ -210,7 +210,7 @@ move it into the engine or the kit (or name the release that will).
     hourglass and the ticks left); `camera` `{ "clamp": false }`, so the 16x11 room stays under
     the HUD band where the kit's camera hint puts it (gap G29). The two kits' tiles (`#`, `.`, `B`, `=`) and their camera and HUD
     clash, so a round's frames get their own skin: a skin named `<backend>-<mini game id>` is
-    that round's (`testSkins`, over the engine's `skinSet`), and the page and the view hand each
+    that round's (`hopperSkins`, over the engine's `skinSet`), and the page and the view hand each
     frame to the presenter its `status.miniGame` names (the backend's `skinSetCanvasPresenter`,
     over the engine's `presenterBySkinSet`; gaps G14 and G34).
   - `content/skins/three.json` (0.7 T8): the levels' 3D skin, low-poly meshes written as text
@@ -237,45 +237,45 @@ move it into the engine or the kit (or name the release that will).
     before it the 3D round drew no HUD and clamped, centring the room).
 - TypeScript is glue only (each file a few calls into the engine and kits; the glue review in
   `docs/reports/stacking-test.md` lists what each holds):
-  - `content.ts`: `loadTest(files)` (the content kinds of the game's two kits,
+  - `content.ts`: `loadHopper(files)` (the content kinds of the game's two kits,
     `kitContentKinds([platformer, topdown])` from `@engine/core/content/game-content`, over the
-    kits' hooks), `testStages(content)` (the kit's `contentStages`: the levels in the campaign
-    file's order, each with its profile), `testRooms(content)`, `testSkins(content,
+    kits' hooks), `hopperStages(content)` (the kit's `contentStages`: the levels in the campaign
+    file's order, each with its profile), `hopperRooms(content)`, `hopperSkins(content,
 backend)` (`{ level, rounds }`: the engine's `skinSet`, throwing when the backend has no
     skin). Art (`contentArt`), sounds (`contentSfx`) and `mustLoad` are the engine's (gap G4);
-  - `picture.ts`: `testLook(content)` (the `canvas2d` skins, the sheets from the engine's
+  - `picture.ts`: `hopperLook(content)` (the `canvas2d` skins, the sheets from the engine's
     `contentSheets` and size; the sky, `#5c94fc`, is each level skin's `background`,
-    gap G36, fixed in 0.15, so no colour lives in the glue), `testFrames(screen)` (the engine's
+    gap G36, fixed in 0.15, so no colour lives in the glue), `hopperFrames(screen)` (the engine's
     `FrameStream` over the kit's `platformerFrames`; while the round runs, its own frame),
-    `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the backend's
+    `hopperPicture(presenter, screen)` and `hopperCanvasPicture(r, look)` (the backend's
     `skinSetCanvasPresenter`: the level skin or the round's, per frame);
-  - `picture3d.ts` (0.7 T8): `testLook3d(content)` (`{ skin, rounds, sheets, screen }`: the
+  - `picture3d.ts` (0.7 T8): `hopperLook3d(content)` (`{ skin, rounds, sheets, screen }`: the
     `three` skins, whose level skin's `background` is the sky, the sprite sheets as decoded pixels
     for their HUD (`contentPixelSheets`, gap G33) and picture size, as the 3D backend's `threeDisplay` and
     `threeScenePresenter` take them). No Three.js import, so the 2D page bundles none;
   - `view.ts`: `createView` for `pnpm cli screenshot`: the engine's `frameView` with
-    `testCanvasPicture` for `render` and `testFrames` for `frame()` (`--backend three` shows
+    `hopperCanvasPicture` for `render` and `hopperFrames` for `frame()` (`--backend three` shows
     `frame()` through the `three` skins: the screenshot page reads them with `skinSet` too);
   - `main.ts` + `index.html`: the page: `bootBrowserGame` with a scene that is
     `new HostScene({ stack, game: createGame(content, seed), picture })`, the engine's scene over
     the game itself (it pushes the core `miniGameScene` while the door's round runs and pops it on
     the result; `scene.ts` and its five accessors went away in Engine 0.10, gap G37), with `canvasDisplay(canvas, { ...look,
-onSound })` (the `onSound` the shell hands the factory) and, only for `?backend=three`, `threeDisplay(canvas, { ...testLook3d(content),
+onSound })` (the `onSound` the shell hands the factory) and, only for `?backend=three`, `threeDisplay(canvas, { ...hopperLook3d(content),
 onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk with Three.js).
     Both displays take the round skins (`rounds`) and pick one per frame, so the scene draws
-    `testPicture(display.presenter)` either way (gap G34). The `#backend` link toggles 2D and 3D.
+    `hopperPicture(display.presenter)` either way (gap G34). The `#backend` link toggles 2D and 3D.
     Sound is the shell's: `audio: { sfx: contentSfx(content) }` makes the `AudioManager`, unlocks
     it on the first key, tap or click and hands each display factory its `onSound` (gap G27,
     fixed in Engine 0.11); the page has no audio code of its own;
   - `headless.ts`: `createGame(content, seed, opts?)`, the headless contract, a few lines: the
-    kit's `LevelSequence` over `testStages(content)` with the run's seed, switched-off rules and
-    `testMiniGames(content)` (`TestGame` and `TestSnapshot` are the kit's `LevelSequence` and
-    `SequenceSnapshot`); it also exports `testMiniGames` as `miniGames`, so `validate` checks the
+    kit's `LevelSequence` over `hopperStages(content)` with the run's seed, switched-off rules and
+    `hopperMiniGames(content)` (`HopperGame` and `HopperSnapshot` are the kit's `LevelSequence` and
+    `SequenceSnapshot`); it also exports `hopperMiniGames` as `miniGames`, so `validate` checks the
     door's `game` and `params` with the content (Engine 0.10, gap G16: `"goal": "defeat-al"`
     fails `validate` at `triggers.0.params.goal`). The level flow is the kit's (`kits/platformer/CLAUDE.md`, Level
     sequences): `LEVEL_PAUSE` (60) ticks after a level ends, then the next level or the failed
     one afresh; the snapshot is the kit's plus `stage` and `pause`;
-  - `minigames.ts`: `testMiniGames(content, disabledRules?)`: one `roomChallenge`
+  - `minigames.ts`: `hopperMiniGames(content, disabledRules?)`: one `roomChallenge`
     (`kits/topdown/challenge.ts`) per room file, its id the room's id and its title the room's
     `title`, at the manifest's `screen` size, with the top-down rules a run switches off
     (`topdown:<id>`, Engine 0.14 gap G12). What the round asks and what its result does are level data, not code;
@@ -387,7 +387,7 @@ moves none of them.
   failure: the top-down kit is not strict; recorded in `docs/reports/stacking-test.md`, G12).
   `pnpm -s cli run games/samples/platformer/runs/level-4-start.run.json --disable-rule
 topdown:walls-block-movement` switches it off in the round only (`headless.ts` hands
-  `rulesOffFor(opts, 'topdown')` to `testMiniGames`; the levels' worlds get `opts.disabledRules`).
+  `rulesOffFor(opts, 'topdown')` to `hopperMiniGames`; the levels' worlds get `opts.disabledRules`).
 - `runs/level-<n>.hashes.json` are the golden hashes (`tests/runs/run-files.test.ts`). After a
   change meant to change the state: `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`, and commit them.
 - Changing a level or the profile moves every later tick, in this level's run file and in every

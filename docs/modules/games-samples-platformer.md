@@ -31,17 +31,17 @@ challenge rooms. It began as the Engine 0.7 stacking test (every gap it found is
   gap G33), `songs/meadow.json` (the page's MML song). The rounds' params are listed on
   generated pages, `docs/reference/mini-games/platformer-vault.md` and `platformer-cellar.md`
   (gap M11).
-- `content.ts`: `loadTest(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
-  `testStages(content)` (the kit's `contentStages`: the levels in the campaign file's order),
-  `testRooms(content)`, `testSkins(content, backend)` (`{ level, rounds }`: the engine's
+- `content.ts`: `loadHopper(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
+  `hopperStages(content)` (the kit's `contentStages`: the levels in the campaign file's order),
+  `hopperRooms(content)`, `hopperSkins(content, backend)` (`{ level, rounds }`: the engine's
   `skinSet`, the skin named after the backend and one per mini game from `<backend>-<id>`). Art,
   sounds and `mustLoad` are the engine's (`@engine/core/content/game-content`).
-- `picture3d.ts`: `testLook3d(content)` (the `three` skins, the sprite sheets as decoded pixels
+- `picture3d.ts`: `hopperLook3d(content)` (the `three` skins, the sprite sheets as decoded pixels
   for their HUD (`contentPixelSheets`) and the size, for `threeDisplay` and `threeScenePresenter`;
   no Three.js import).
 - `PLATFORMER_MUSIC` (`content.ts`): the song the page plays (`meadow`).
-- `picture.ts`: `testLook(content)` (skins, the engine's `contentSheets`, size, sky),
-  `testFrames(screen)`, `testPicture(presenter, screen)` and `testCanvasPicture(r, look)` (the
+- `picture.ts`: `hopperLook(content)` (skins, the engine's `contentSheets`, size, sky),
+  `hopperFrames(screen)`, `hopperPicture(presenter, screen)` and `hopperCanvasPicture(r, look)` (the
   backend's `skinSetCanvasPresenter`: the level skin, or the round's, per frame; each skin's
   `camera.clamp` frames its map).
 - `view.ts`: `createView` (the engine's `frameView`), for `pnpm cli screenshot`.
@@ -49,10 +49,10 @@ challenge rooms. It began as the Engine 0.7 stacking test (every gap it found is
   `createGame` itself (no `scene.ts` since Engine 0.10, gap G37), `canvasDisplay`, and `threeDisplay` from a lazily
   imported chunk for `?backend=three`; the song and sfx through the shell's `audio` option, gap
   G27, with the shell's volume control, M1).
-- `minigames.ts`: `testMiniGames(content)`, one `roomChallenge` per room file (id = room id,
+- `minigames.ts`: `hopperMiniGames(content)`, one `roomChallenge` per room file (id = room id,
   title = the room's `title`).
 - `headless.ts`: `createGame(content, seed, opts?)` (the `HeadlessGame` contract): the kit's
-  `LevelSequence` over the levels (`TestGame`) with the mini games, `LEVEL_PAUSE` ticks between them; the kit's
+  `LevelSequence` over the levels (`HopperGame`) with the mini games, `LEVEL_PAUSE` ticks between them; the kit's
   `SequenceSnapshot` (the world's plus `stage` and `pause`).
 - `main.ts` gets the data files from `virtual:game-files` (`build/game-files.ts`; no `files.ts`).
 - `runs/level-<n>.run.json` (one per level, each played from the first level on) with golden

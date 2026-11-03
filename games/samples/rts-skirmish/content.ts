@@ -2,8 +2,8 @@ import { contentOf, loadContent, type ContentBundle } from '@engine/core/content
 import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
 import type { RtsTypes } from '@engine/core/rts-types';
-import { skinSet, type SkinFile } from '@engine/core/present';
-import { rtsEnemyKind, rtsMapKind, rtsTypesKind, type EnemyPlan, type RtsMap } from '@kits/rts';
+import { mustSkinSet, type SkinFile } from '@engine/core/present';
+import { rtsEnemyKind, rtsMapKind, rtsScenario, rtsTypesKind, type EnemyPlan, type RtsMap } from '@kits/rts';
 import { kit as rts } from '@kits/rts/kit';
 
 /**
@@ -52,14 +52,10 @@ export function skirmishEnemy(content: ContentBundle): EnemyPlan {
  * table spawned first (entity 2, after the terrain), so the map keeps no copy of it.
  */
 export function skirmishScenario(content: ContentBundle, seed: number): RtsMap {
-  const map = skirmishMap(content);
-  const types = { key: 'types', components: { RtsTypes: skirmishTypes(content) } };
-  return { ...map, seed, entities: [types, ...map.entities] } as RtsMap;
+  return rtsScenario(skirmishMap(content), skirmishTypes(content), seed);
 }
 
 /** The skin one backend draws the game with (`content/skins/<backend>.json`). */
 export function skirmishSkin(content: ContentBundle, backend: string): SkinFile {
-  const { main } = skinSet(content, backend);
-  if (!main) throw new Error(`the skirmish has no ${backend} skin (content/skins/${backend}.json)`);
-  return main;
+  return mustSkinSet(content, backend, 'the skirmish').main;
 }

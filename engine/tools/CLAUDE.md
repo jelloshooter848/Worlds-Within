@@ -385,8 +385,8 @@ platformer game whose door pushes a top-down mini game holds `room` files):
   naming the game's kits or the kit's rules. The game is created with `HeadlessOptions.disabledRules`
   (the main kit's ids, as before) and `disabledRulesByKit` (every kit's ids by kit name), and the
   game routes each kit's list to that kit's rule switch: `rulesOffFor(opts, kit)`
-  (`engine/core/headless.ts`) into the round's `disabledRules` (the platformer test's
-  `testMiniGames(content, rulesOffFor(opts, 'topdown'))`, the mini siege's `miniGames(content,
+  (`engine/core/headless.ts`) into the round's `disabledRules` (the platformer sample's
+  `hopperMiniGames(content, rulesOffFor(opts, 'topdown'))`, the mini siege's `miniGames(content,
 opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` only sees its own
   ids. `mutants` tries every kit's rules, each judged by its own kit's strictness (Mutant checks,
   below).

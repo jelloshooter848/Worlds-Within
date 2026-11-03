@@ -1,7 +1,7 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { MiniGameDef } from '@engine/core/minigame';
 import { roomChallenge } from '@kits/topdown';
-import { testRooms } from './content';
+import { hopperRooms } from './content';
 
 /**
  * The game's mini games: one top-down room challenge (`kits/topdown/challenge.ts`) per room file
@@ -10,9 +10,12 @@ import { testRooms } from './content';
  * level's trigger data (`content/levels/level-4.json`), not code. `disabledRules` are the top-down
  * kit's rules switched off in every round (a run file's `topdown:<id>`, Engine 0.14 gap G12).
  */
-export function testMiniGames(content: ContentBundle, disabledRules: readonly string[] = []): MiniGameDef[] {
+export function hopperMiniGames(
+  content: ContentBundle,
+  disabledRules: readonly string[] = [],
+): MiniGameDef[] {
   const size = content.manifest.screen;
-  return testRooms(content).map((room) =>
+  return hopperRooms(content).map((room) =>
     roomChallenge({ id: room.id, room, ...(size ? { size } : {}), disabledRules }),
   );
 }

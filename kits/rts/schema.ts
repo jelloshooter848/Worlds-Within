@@ -103,6 +103,17 @@ export const rtsMapSchema = z
   });
 export type RtsMap = z.infer<typeof rtsMapSchema>;
 
+/**
+ * The scenario a game builds its world from (Engine 0.15 T15, the API review: both RTS samples
+ * wrote it): the map with `seed` as the world's seed and the types table spawned first, as the
+ * entity keyed `types` (entity 2, after the terrain), so the map keeps no copy of it. Plain data
+ * for `engine/sim`'s `worldFromScenario`; the map is not changed.
+ */
+export function rtsScenario(map: RtsMap, types: RtsTypes, seed: number): RtsMap {
+  const table = { key: 'types', components: { RtsTypes: types } };
+  return { ...map, seed, entities: [table, ...map.entities] } as RtsMap;
+}
+
 /** The unit and building types a game has: its `rts-types` files and its maps' `RtsTypes`. */
 function gameTypes(others: ContentLookup, types: readonly { value: RtsTypes }[] = []): RtsTypes[] {
   const out = types.map((t) => t.value);

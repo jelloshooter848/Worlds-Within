@@ -7,7 +7,7 @@ import { missionHostEvents } from '@engine/core/mission-host';
 import {
   FramePicture,
   FrameStream,
-  skinSet,
+  mustSkinSet,
   type FrameSource,
   type Presenter,
   type SkinFile,
@@ -58,8 +58,7 @@ export interface SiegeLook {
 
 /** The `canvas2d` skins, the sprite sheets (from the sprite and palette files), size. */
 export function siegeLook(content: ContentBundle): SiegeLook {
-  const { main, rounds } = skinSet(content, 'canvas2d');
-  if (!main) throw new Error('the mini siege has no canvas2d skin (content/skins/canvas2d.json)');
+  const { main, rounds } = mustSkinSet(content, 'canvas2d', 'the mini siege');
   return {
     skin: main,
     rounds,

@@ -12,19 +12,19 @@ import { isFullMap, parseEventKey, resolveSkinEvent, type SkinFile } from '@engi
 import { SceneStack } from '@engine/core/scene';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { compileSong, parseMml } from '@engine/core/audio/mml';
-import { loadTest, PLATFORMER_MUSIC, testRooms, testStages } from './content';
-import { testLook } from './picture';
-import { testLook3d } from './picture3d';
+import { loadHopper, PLATFORMER_MUSIC, hopperRooms, hopperStages } from './content';
+import { hopperLook } from './picture';
+import { hopperLook3d } from './picture3d';
 import { HostScene } from '@engine/core/shell/host-scene';
 import { createView } from './view';
-import { testMiniGames } from './minigames';
+import { hopperMiniGames } from './minigames';
 import { ACTOR_ANIMS, LEVEL_PAUSE, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
-import { createGame, type TestSnapshot } from './headless';
+import { createGame, type HopperSnapshot } from './headless';
 import type { RoomChallenge } from '@kits/topdown';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
-const content = mustLoad(loadTest(FILES));
+const content = mustLoad(loadHopper(FILES));
 const CAMPAIGN = 'content/campaigns/main.campaign.json';
 
 /** Every `PlatformerEvent` type (`kits/platformer/world.ts`). */
@@ -62,13 +62,13 @@ function play(ticks: number): string[] {
 
 describe('platformer test content', () => {
   it('loads every file with no errors', () => {
-    const result = loadTest(FILES);
+    const result = loadHopper(FILES);
     expect(result.errors).toEqual([]);
     expect(Object.keys(FILES)).toContain('content/levels/level-1.map.txt');
   });
 
   it("plays its levels in its campaign file's order, each with its own profile", () => {
-    const stages = testStages(content);
+    const stages = hopperStages(content);
     expect(stages.map((s) => s.level.id)).toEqual(['level-1', 'level-2', 'level-3', 'level-4', 'level-5']);
     expect(stages.every((s) => s.profile.id === 'hopper')).toBe(true);
   });
@@ -78,15 +78,15 @@ describe('platformer test content', () => {
     const reordered = { ...campaign, entries: [...campaign.entries].reverse() };
     const files = { ...FILES, [CAMPAIGN]: JSON.stringify(reordered) };
     const order = ['level-5', 'level-4', 'level-3', 'level-2', 'level-1'];
-    expect(testStages(mustLoad(loadTest(files))).map((s) => s.level.id)).toEqual(order);
-    const game = createGame(mustLoad(loadTest(files)), 1);
+    expect(hopperStages(mustLoad(loadHopper(files))).map((s) => s.level.id)).toEqual(order);
+    const game = createGame(mustLoad(loadHopper(files)), 1);
     expect(game.snapshot().level).toBe('level-5');
   });
 
   it('names the file and field of a campaign entry naming a missing level', () => {
     const campaign = JSON.parse(FILES[CAMPAIGN]!) as { entries: object[] };
     const broken = { ...campaign, entries: [...campaign.entries, { level: 'level-9' }] };
-    const result = loadTest({ ...FILES, [CAMPAIGN]: JSON.stringify(broken) });
+    const result = loadHopper({ ...FILES, [CAMPAIGN]: JSON.stringify(broken) });
     expect(result.errors.map((e) => [e.file, e.path, e.code])).toEqual([
       ['games/samples/platformer/content/campaigns/main.campaign.json', 'entries.5.level', 'missing_level'],
     ]);
@@ -101,8 +101,8 @@ describe('platformer test content', () => {
     const manifest = JSON.parse(FILES['game.json']!) as { content: Record<string, string[]> };
     delete manifest.content['campaign'];
     const files = { ...withoutCampaign, 'game.json': JSON.stringify(manifest) };
-    const more = mustLoad(loadTest({ ...files, ...extra('level-10'), ...extra('level-9') }));
-    expect(testStages(more).map((s) => s.level.id)).toEqual([
+    const more = mustLoad(loadHopper({ ...files, ...extra('level-10'), ...extra('level-9') }));
+    expect(hopperStages(more).map((s) => s.level.id)).toEqual([
       'level-1',
       'level-2',
       'level-3',
@@ -116,7 +116,7 @@ describe('platformer test content', () => {
   it('reports a broken level field with the file and the field', () => {
     const header = JSON.parse(FILES['content/levels/level-1.json']!) as Record<string, unknown>;
     header['scroll'] = 'sideways';
-    const result = loadTest({ ...FILES, 'content/levels/level-1.json': JSON.stringify(header) });
+    const result = loadHopper({ ...FILES, 'content/levels/level-1.json': JSON.stringify(header) });
     expect(result.ok).toBe(false);
     expect(result.errors.map((e) => [e.file, e.path])).toContainEqual([
       'games/samples/platformer/content/levels/level-1.json',
@@ -127,7 +127,7 @@ describe('platformer test content', () => {
 
 describe('platformer test headless game', () => {
   it("starts on level-1, stage 0, with the profile's lives and hit points", () => {
-    const s = createGame(content, 1).snapshot() as TestSnapshot;
+    const s = createGame(content, 1).snapshot() as HopperSnapshot;
     expect(s).toMatchObject({ level: 'level-1', stage: 0, pause: 0, outcome: 'playing', lives: 3 });
     expect(s.player.hp).toBe(2);
   });
@@ -196,15 +196,15 @@ const vaultOf = (defs: readonly MiniGameDef[]): MiniGameDef => defs.find((d) => 
 
 describe("platformer test's mini games", () => {
   it('builds one room challenge per room file, named by the room id', () => {
-    expect(testRooms(content).map((r) => r.id)).toEqual(['cellar', 'vault']);
-    expect(testMiniGames(content).map((d) => [d.id, d.title])).toEqual([
+    expect(hopperRooms(content).map((r) => r.id)).toEqual(['cellar', 'vault']);
+    expect(hopperMiniGames(content).map((d) => [d.id, d.title])).toEqual([
       ['cellar', 'CELLAR'],
       ['vault', 'VAULT'],
     ]);
   });
 
   it("starts a vault round from the door's params, at the game's screen size", () => {
-    const def = vaultOf(testMiniGames(content));
+    const def = vaultOf(hopperMiniGames(content));
     const round = def.create(
       { params: { goal: 'defeat-all', ticks: 600, hp: 4 }, attempt: 1 },
       5,
@@ -220,9 +220,12 @@ describe("platformer test's mini games", () => {
 
   it("switches a top-down rule off in the vault round only (gap G12: a run's `topdown:<id>`)", () => {
     const params = { params: { goal: 'defeat-all', ticks: 600, hp: 4 }, attempt: 1 };
-    const plain = vaultOf(testMiniGames(content)).create(params, 5) as RoomChallenge;
+    const plain = vaultOf(hopperMiniGames(content)).create(params, 5) as RoomChallenge;
     expect(plain.world.rules.disabled()).toEqual([]);
-    const off = vaultOf(testMiniGames(content, ['walls-block-movement'])).create(params, 5) as RoomChallenge;
+    const off = vaultOf(hopperMiniGames(content, ['walls-block-movement'])).create(
+      params,
+      5,
+    ) as RoomChallenge;
     expect(off.world.rules.disabled()).toEqual(['walls-block-movement']);
     // The game hands `disabledRulesByKit.topdown` to the rounds, never to the levels' worlds.
     const game = createGame(content, 1, { disabledRulesByKit: { topdown: ['walls-block-movement'] } });
@@ -277,7 +280,7 @@ function shownByRuns(): Map<string, Shown> {
 }
 
 describe('platformer test 2D skins', () => {
-  const look = testLook(content);
+  const look = hopperLook(content);
   const shown = shownByRuns();
   const skinFor = (source: string): SkinFile => (source === 'level' ? look.skin : look.rounds[source]!);
 
@@ -291,7 +294,7 @@ describe('platformer test 2D skins', () => {
     const states = (kind: string) => Object.keys(skin.kinds[kind]?.frames ?? {}).sort();
     expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(Object.values(PRESENT_TILES).sort());
     expect(states('runner')).toEqual([...RUNNER_ANIMS].sort());
-    for (const type of Object.keys(testStages(content)[0]!.profile.actors))
+    for (const type of Object.keys(hopperStages(content)[0]!.profile.actors))
       expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
     // A field key (`mini-game-end:pass`, gap G28) is still its type's entry.
     const types = new Set(Object.keys(skin.events ?? {}).map((k) => parseEventKey(k)?.type));
@@ -329,7 +332,7 @@ describe('platformer test 2D skins', () => {
   });
 
   it("gives the round's end a sound per result in both level skins, the door for a quit (G28)", () => {
-    for (const skin of [look.skin, testLook3d(content).skin]) {
+    for (const skin of [look.skin, hopperLook3d(content).skin]) {
       const sound = (result: string) =>
         resolveSkinEvent(skin.events, { type: 'mini-game-end', result })?.sound;
       expect(['pass', 'fail', 'quit'].map(sound)).toEqual(['pass', 'fail', 'door']);
@@ -368,8 +371,8 @@ describe('platformer test 2D skins', () => {
 });
 
 describe('platformer test 3D skins', () => {
-  const look = testLook(content);
-  const look3d = testLook3d(content);
+  const look = hopperLook(content);
+  const look3d = hopperLook3d(content);
   const shown = shownByRuns();
 
   it('has a three skin for the levels and one per round, the vault and the cellar', () => {
@@ -450,7 +453,7 @@ describe('platformer test page scene', () => {
 });
 
 describe("the platformer sample, finished: Hopper's Way (Engine 0.15 T13)", () => {
-  const look = testLook(content);
+  const look = hopperLook(content);
   const skins2d = [look.skin, ...Object.values(look.rounds)];
   const runs = readdirSync(new URL('./runs/', import.meta.url))
     .filter((f) => f.endsWith('.run.json'))

@@ -13,7 +13,8 @@ import { loadSkirmish } from './content';
 import { createGame } from './headless';
 import { skirmishPicture } from './picture';
 import { SkirmishPlay, STEPS_PER_TICK, TICKS_PER_SECOND } from './play';
-import { BattleRecorder, stateHashOf, type RecordedRun } from './recording';
+import { stateHash } from '@engine/core/state-hash';
+import { BattleRecorder, type RecordedRun } from './recording';
 
 // The page's side of the skirmish without a browser (Engine 0.9 T12): the recorder hashes as `run`
 // does, and `SkirmishPlay` driven by scripted pointer gestures and buttons records orders whose
@@ -90,8 +91,8 @@ function box(play: SkirmishPlay, x0: number, y0: number, x1: number, y1: number)
 
 describe('the recorder', () => {
   it('hashes the snapshot as `run` does', async () => {
-    const json = canonicalJson(createGame(content, 9).snapshot());
-    expect(await stateHashOf(json)).toBe(toolsHash(json));
+    const snapshot = createGame(content, 9).snapshot();
+    expect(stateHash(snapshot)).toBe(toolsHash(canonicalJson(snapshot)));
   });
 
   it("gives battle.run.json's hashes for its orders, and a run file of them", async () => {

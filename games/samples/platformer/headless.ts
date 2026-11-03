@@ -1,28 +1,28 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { rulesOffFor, type HeadlessOptions, type HeadlessStarts } from '@engine/core/headless';
 import { LevelSequence, stageStarts, startStage, type SequenceSnapshot } from '@kits/platformer';
-import { testStages } from './content';
-import { testMiniGames } from './minigames';
+import { hopperStages } from './content';
+import { hopperMiniGames } from './minigames';
 
 /**
  * The game's mini games (`HeadlessEntry.miniGames`, Engine 0.10 gap G16): the room challenges
  * `createGame` hands its levels, so `pnpm cli validate` checks the door's `game` and `params`
  * (`challengeParamsSchema`) with the content.
  */
-export { testMiniGames as miniGames };
+export { hopperMiniGames as miniGames };
 
 /**
  * The platformer sample's headless entry (named by `headless` in `game.json`): the platformer kit's
- * `LevelSequence` on the game's levels, played in order (`testStages`), with its mini games (the
- * door level's top-down room challenge, `testMiniGames`). The level flow (the pause
+ * `LevelSequence` on the game's levels, played in order (`hopperStages`), with its mini games (the
+ * door level's top-down room challenge, `hopperMiniGames`). The level flow (the pause
  * between levels, next or same level, a new world per level) is the kit's. No browser, no drawing.
  */
 
 /** The game being played: the kit's level sequence. */
-export type TestGame = LevelSequence;
+export type HopperGame = LevelSequence;
 
 /** The snapshot: the kit's `SequenceSnapshot` (the world's plus `stage` and `pause`). */
-export type TestSnapshot = SequenceSnapshot;
+export type HopperSnapshot = SequenceSnapshot;
 
 /**
  * The headless game contract (`engine/core/headless.ts`), for `pnpm cli run`, `dump` and
@@ -30,12 +30,12 @@ export type TestSnapshot = SequenceSnapshot;
  * (`opts.disabledRulesByKit.topdown`, a run file's `topdown:<id>`, gap G12) to every vault round, and a run file's
  * `start: { stage }` (`opts.start`, gap G9) is the level the sequence starts at.
  */
-export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): TestGame {
+export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): HopperGame {
   const start = startStage(opts.start);
-  return new LevelSequence(testStages(content), {
+  return new LevelSequence(hopperStages(content), {
     seed,
     disabledRules: opts.disabledRules ?? [],
-    miniGames: testMiniGames(content, rulesOffFor(opts, 'topdown')),
+    miniGames: hopperMiniGames(content, rulesOffFor(opts, 'topdown')),
     ...(start === undefined ? {} : { start }),
   });
 }
@@ -45,5 +45,5 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
  * level, in play order (`level-1` is stage 0).
  */
 export function starts(content: ContentBundle): HeadlessStarts {
-  return stageStarts(testStages(content));
+  return stageStarts(hopperStages(content));
 }

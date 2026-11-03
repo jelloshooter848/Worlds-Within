@@ -103,6 +103,13 @@ round's report, checked against declared limits).
 **Engine 0.15:** **D14 is fixed** in T10 (`b490bfc`: a round's key hint from the mini game's
 controls or the mission file, written with the player's keys).
 
+**Engine 0.15 T15** (the [API review](api-review.md)): every lesson row checked again. D1-D4,
+D6-D10 and D12-D14 read fixed in 0.15 with their commits; D5 and D11 stay moved to 1.0, now listed
+in the roadmap's Engine 1.0 section as the review's `1.0-1` and `1.0-2`. None is left assigned to
+0.15. The review's own findings across samples (`A1`-`A10`) are in its page; for this sample, A1
+(`mustSkinSet`) was fixed and A7 (its `window.wwTd` hook beside `window.__ww`) and A8 (the end of
+a standalone game) are listed for 1.0.
+
 ## Lessons
 
 | Id  | What                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Where                                                                                                                                   | Sim | Status                                                                                                                                                                                                                                                                                                                                                                                               |

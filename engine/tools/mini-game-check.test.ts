@@ -174,7 +174,7 @@ describe('validate checks mini game params with the content (G16)', () => {
     const headless = join(cwd, TEST, 'headless.ts');
     writeFileSync(
       headless,
-      readFileSync(headless, 'utf8').replace(/export \{ testMiniGames as miniGames \};/, ''),
+      readFileSync(headless, 'utf8').replace(/export \{ hopperMiniGames as miniGames \};/, ''),
     );
     editJson(join(cwd, DOOR), (level) => {
       (level.triggers as Trigger[])[0]!.params.goal = 'defeat-al';

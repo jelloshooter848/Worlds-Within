@@ -1,9 +1,9 @@
-import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
-import { engineContentKinds, SKIN_KIND } from '@engine/core/content/engine-kinds';
+import { loadContent, type ContentBundle } from '@engine/core/content/bundle';
+import { engineContentKinds } from '@engine/core/content/engine-kinds';
 import { mustLoad as mustLoadContent } from '@engine/core/content/game-content';
 import type { ContentKinds } from '@engine/core/content/kinds';
 import type { ContentResult } from '@engine/core/content/validate';
-import type { SkinFile } from '@engine/core/present';
+import { mustSkinSet, type SkinFile } from '@engine/core/present';
 import { contentStages, levelKind, profileKind, type LevelStage } from '@kits/platformer';
 
 /**
@@ -58,9 +58,7 @@ export function labSkin3d(content: ContentBundle): SkinFile {
 }
 
 function skinFor(content: ContentBundle, backend: string): SkinFile {
-  const skin = contentOf(content, SKIN_KIND).find((e) => e.value.backend === backend);
-  if (!skin) throw new Error(`the lab has no ${backend} skin (content/skins/${backend}.json)`);
-  return skin.value;
+  return mustSkinSet(content, backend, 'the lab').main;
 }
 
 /** Throws with every error, one per line: the engine's `mustLoad`, naming the lab. */

@@ -106,6 +106,14 @@ room of its own, `stockade`, with the topdown kit's `rooms: "separate"` option, 
 **Engine 0.15:** **M2 is fixed** in T3 (`ae9c4f1`: `byTag` prefix and value looks; its two-tag
 look moved to 1.0 by decision 3).
 
+**Engine 0.15 T15** (the [API review](api-review.md)): every gap row checked again; each of the 21
+moved to 0.15 (and M6's and M11's rests) reads fixed in 0.15 with its commit, so none is left
+assigned to 0.15. The two-tag look of M2 and the meaning of M4's `experienceTicks` are listed in
+the roadmap's Engine 1.0 section (`1.0-3`, `1.0-4`). The review's findings across samples
+(`A1`-`A10`) are in its page; for this sample A1 (`mustSkinSet`) and A10 (the RTS kit's
+`rtsScenario` in place of the glue's types-first scenario) were fixed, and A5 (its view), A6 (the
+RTS page scene it shares with the skirmish) and A7 (`window.wwSiege`) are listed for 1.0.
+
 ## Format
 
 Each gap has one row, in the order found; ids are `M1`, `M2`, ... and are never reused or

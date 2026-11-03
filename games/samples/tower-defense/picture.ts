@@ -3,7 +3,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import { FramePicture, FrameStream, skinSet, type Presenter, type SkinFile } from '@engine/core/present';
+import { FramePicture, FrameStream, mustSkinSet, type Presenter, type SkinFile } from '@engine/core/present';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import {
   tdFrames,
@@ -37,10 +37,8 @@ export interface TdLook {
 
 /** The `canvas2d` skin, the sprite sheets (from the sprite and palette files) and size. */
 export function tdLook(content: ContentBundle): TdLook {
-  const { main } = skinSet(content, 'canvas2d');
-  if (!main) throw new Error('the tower-defense sample has no canvas2d skin (content/skins/canvas2d.json)');
   return {
-    skin: main,
+    skin: mustSkinSet(content, 'canvas2d', 'the tower-defense sample').main,
     sheet: contentSheets(content),
     screen: content.manifest.screen,
   };

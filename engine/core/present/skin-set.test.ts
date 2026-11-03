@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { ContentBundle, ContentEntry } from '../content/bundle';
-import { MINI_GAME_STATUS, presenterBySkinSet, skinSet } from './skin-set';
+import { MINI_GAME_STATUS, mustSkinSet, presenterBySkinSet, skinSet } from './skin-set';
 import type { SkinFile } from './skin';
 import type { DeepReadonly, PresentFrame } from './types';
 
@@ -37,6 +37,17 @@ describe('skinSet', () => {
     expect(set.main).toBeNull();
     expect(Object.keys(set.rounds)).toEqual(['vault']);
     expect(skinSet(bundle({}), 'three')).toEqual({ main: null, rounds: {} });
+  });
+});
+
+describe('mustSkinSet', () => {
+  it("gives the set when the game's skin is there, else throws naming the game and the file", () => {
+    const main = skin('canvas2d', '#111111');
+    expect(mustSkinSet(bundle({ canvas2d: main }), 'canvas2d', 'the crypt')).toEqual({ main, rounds: {} });
+    expect(() =>
+      mustSkinSet(bundle({ 'three-vault': skin('three', '#222222') }), 'three', 'the crypt'),
+    ).toThrow('the crypt has no three skin (content/skins/three.json)');
+    expect(() => mustSkinSet(bundle({}), 'canvas2d')).toThrow('the game has no canvas2d skin');
   });
 });
 

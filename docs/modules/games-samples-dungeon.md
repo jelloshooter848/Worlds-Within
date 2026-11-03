@@ -21,8 +21,9 @@ building a top-down game on the engine.
 - `content/`: `rooms/*.json` + `*.map.txt` (five rooms), `songs/` (`crypt`, `daylight`), `sfx/`,
   `palettes/` (`hero`, `dungeon`), `sprites/` (`hero.txt`, `dungeon.txt`), `skins/canvas2d.json`
   (every kind, tile, event and HUD value the kit presents, a `background`, no per-kind fallback).
-- `content.ts`: `dungeonKinds`, `loadDungeon(files)`, `dungeonRooms`, `dungeonSongs`,
-  `dungeonSfx`, `dungeonSkin`, `mustLoad`, `DUNGEON_MUSIC`, `ESCAPE_MUSIC`.
+- `content.ts`: `loadDungeon(files)` (the kit hook's kinds), `dungeonRooms`, `dungeonSkin`
+  (the engine's `mustSkinSet`), `mustLoad`, `DUNGEON_MUSIC`, `ESCAPE_MUSIC`; songs and sfx are the
+  engine's `contentSongs` and `contentSfx`.
 - `picture.ts`: `dungeonLook(content)`, `DungeonPicture` (`draw(world, events)`), `dungeonEnd(world)`
   (`escaped`, `fallen` or null) and `drawStatusLines`.
 - `headless.ts`: `createWorld(content, seed?)` and `createGame(content, seed)` (the engine's

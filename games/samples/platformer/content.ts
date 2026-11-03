@@ -1,7 +1,7 @@
 import { contentOf, loadContent, type ContentBundle } from '@engine/core/content/bundle';
 import { kitContentKinds, manifestOptions } from '@engine/core/content/game-content';
 import type { ContentResult } from '@engine/core/content/validate';
-import { skinSet, type SkinFile } from '@engine/core/present';
+import { mustSkinSet, type SkinFile } from '@engine/core/present';
 import { contentStages, type LevelStage } from '@kits/platformer';
 import { kit as platformer } from '@kits/platformer/kit';
 import { roomKind, type RoomDef } from '@kits/topdown';
@@ -22,7 +22,7 @@ const ROOM = roomKind();
 export const PLATFORMER_MUSIC = 'meadow';
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/platformer`. */
-export function loadTest(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
+export function loadHopper(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
   // The kits of `game.json`: `kit` (platformer), then `uses` (topdown, for the door's room).
   return loadContent(files, kitContentKinds([platformer, topdown], manifestOptions(files)), {
     root: 'games/samples/platformer/',
@@ -34,12 +34,12 @@ export function loadTest(files: Readonly<Record<string, string>>): ContentResult
  * (`content/campaigns/main.campaign.json`; without one, by id with numbers compared as numbers),
  * each with the profile it names: the kit's `contentStages`.
  */
-export function testStages(content: ContentBundle): LevelStage[] {
+export function hopperStages(content: ContentBundle): LevelStage[] {
   return contentStages(content, { who: 'the platformer sample' });
 }
 
 /** The top-down rooms (`content/rooms/`), each one a mini game's room, by id. */
-export function testRooms(content: ContentBundle): RoomDef[] {
+export function hopperRooms(content: ContentBundle): RoomDef[] {
   return contentOf(content, ROOM).map((e) => e.value);
 }
 
@@ -50,11 +50,10 @@ export function testRooms(content: ContentBundle): RoomDef[] {
  * kits' tiles and kinds clash, so a round's frames get their own skin (gap G14). Throws when the
  * backend has no skin.
  */
-export function testSkins(
+export function hopperSkins(
   content: ContentBundle,
   backend: string,
 ): { level: SkinFile; rounds: Record<string, SkinFile> } {
-  const { main, rounds } = skinSet(content, backend);
-  if (!main) throw new Error(`the platformer sample has no ${backend} skin (content/skins/${backend}.json)`);
+  const { main, rounds } = mustSkinSet(content, backend, 'the platformer sample');
   return { level: main, rounds };
 }

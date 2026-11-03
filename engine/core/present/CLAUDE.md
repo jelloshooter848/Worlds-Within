@@ -180,6 +180,9 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   mini game id `<id>`). `MINI_GAME_STATUS` (`miniGame`) is the status a host kit sets to the
   running mini game's id; `presenterBySkinSet(main, rounds)` is `presenterByStatus` on it. The
   page, the view and `pnpm cli screenshot --backend three` all read the same set.
+  `mustSkinSet(content, backend, who?)` (Engine 0.15 T15, the API review: every sample wrote the
+  check) gives the set with `main` required (`FoundSkinSet`), or throws `<who> has no <backend>
+skin (content/skins/<backend>.json)`.
 - `hud.ts` (Engine 0.15, gap G33, decision 4, item 281): the HUD laid out once for every backend.
   `layoutHud(skin, status, frameSize, { font? })` gives `HudDraw` items in picture pixels, in the
   skin's `hud` order: `{ kind: 'sprite', sheet, palette?, frame, x, y }` (hearts, one per whole

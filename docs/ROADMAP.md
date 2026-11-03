@@ -790,6 +790,31 @@ written down in the v1 docs as the API's rule, not changed:
   frozen-event rule from 0.10); a preparation phase beside a mission on the same battle needs a
   second event.
 
+**From the API review** ([api-review.md](reports/api-review.md), Engine 0.15 T15): every change
+the review calls for that was not made in 0.15. Ids `1.0-n` are the review's.
+
+- 1.0-1 and 1.0-2: D5 and D11 above, written down in the v1 docs.
+- 1.0-3: M2's two-tag look (decision 3 of 0.15): a skin look matching two tags at once, when a game
+  needs it.
+- 1.0-4: M4's rule in the v1 docs: a played mission's `experienceTicks` is 0 through `missionPort`;
+  the round's ticks are `missionExperience()`, the run's `experience` and the timeline's.
+- 1.0-5 (A4): the topdown kit's `Td*` exports renamed `TopDown*`, so no name is shared with the
+  towerdefense kit (`TdEvent`, `TdPresentState`), with every game, test and skill that names them.
+- 1.0-6 (A5): `frameView` takes the frame source and the events as options, so the dungeon,
+  RTS skirmish and mini siege views are one call each.
+- 1.0-7 (A6): a scene that reads input every loop step and steps its game at a rate, and an RTS
+  page helper in the kit (camera over the map from a home point, controls, buttons), used by both
+  RTS samples.
+- 1.0-8 (A7): `window.__ww` documented as a page's hook for scripts; a page's own hook keeps only
+  page state.
+- 1.0-9 (A8): a standalone game's end in the shell (end banner, Play again with a new seed, a song
+  switch) and text items in a skin's HUD, used by the dungeon, the RTS skirmish and the tower
+  defense.
+- 1.0-10: the module pages' "Public API entry points" become the v1 API docs, checked against the
+  review's appendix: what games use is v1, the rest is marked internal.
+- 1.0-11: `engine/sim`'s exports split in the v1 docs into what a game's glue calls and what the
+  systems and tools use.
+
 **Done when:**
 
 - All of the above is true, and `pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass with every

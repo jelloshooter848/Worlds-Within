@@ -110,7 +110,10 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   The view is cached until the next order or step: after a `MissionHost` launch (or any change
   made outside the port between steps) `refresh()` is called before reading `view()` again (by
   the host's `onChange`, through `rtsMissionHooks`).
-- `schema.ts`: the content kinds (below). `rules.ts`: `RTS_RULES`. `kit.ts`: the hook.
+- `schema.ts`: the content kinds (below) and `rtsScenario(map, types, seed)` (Engine 0.15 T15,
+  the API review: both RTS samples wrote it): the map with the run's seed and the types table
+  spawned first as the entity keyed `types`, the scenario a game hands `worldFromScenario`.
+  `rules.ts`: `RTS_RULES`. `kit.ts`: the hook.
 
 ## Kit hook (`kit.ts`)
 

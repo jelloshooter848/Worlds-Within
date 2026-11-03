@@ -11,7 +11,7 @@ import {
   type PlatformerPresentState,
   type PlatformerWorld,
 } from '@kits/platformer';
-import { testSkins } from './content';
+import { hopperSkins } from './content';
 
 /**
  * Glue between the kits' frames and the Canvas2D backend: no drawing of its own. One stream of
@@ -29,7 +29,7 @@ import { testSkins } from './content';
  * backend's `canvasDisplay` and `skinSetCanvasPresenter` take them). The sky is the level skin's
  * `background` (gap G36): the backend clears to it, so no colour lives in the glue.
  */
-export interface TestLook {
+export interface HopperLook {
   skin: SkinFile;
   rounds: Record<string, SkinFile>;
   sheet: SheetLookup;
@@ -37,8 +37,8 @@ export interface TestLook {
 }
 
 /** The `canvas2d` skins, the sprite sheets (from the sprite and palette files) and size. */
-export function testLook(content: ContentBundle): TestLook {
-  const skins = testSkins(content, 'canvas2d');
+export function hopperLook(content: ContentBundle): HopperLook {
+  const skins = hopperSkins(content, 'canvas2d');
   return {
     skin: skins.level,
     rounds: skins.rounds,
@@ -48,22 +48,22 @@ export function testLook(content: ContentBundle): TestLook {
 }
 
 /** One stream of frames for any presenter: one per picture (a new level starts afresh). */
-export type TestFrames = FrameStream<PlatformerWorld, PlatformerEvent, PlatformerPresentState>;
+export type HopperFrames = FrameStream<PlatformerWorld, PlatformerEvent, PlatformerPresentState>;
 
 /** A new stream of frames at the picture size. */
-export function testFrames(screen: ScreenSize): TestFrames {
+export function hopperFrames(screen: ScreenSize): HopperFrames {
   return new FrameStream(platformerFrames(screen));
 }
 
 /** The game drawn onto a presenter: `draw(world, events)` presents one frame and returns it. */
-export type TestPicture = FramePicture<PlatformerWorld, PlatformerEvent>;
+export type HopperPicture = FramePicture<PlatformerWorld, PlatformerEvent>;
 
 /** One stream of frames onto any presenter. */
-export function testPicture(presenter: Presenter, screen: ScreenSize): TestPicture {
-  return new FramePicture(testFrames(screen), presenter);
+export function hopperPicture(presenter: Presenter, screen: ScreenSize): HopperPicture {
+  return new FramePicture(hopperFrames(screen), presenter);
 }
 
 /** One stream of frames onto `r` through the Canvas2D backend and the game's skins. */
-export function testCanvasPicture(r: Renderer, look: TestLook): TestPicture {
-  return testPicture(skinSetCanvasPresenter(r, look), look.screen);
+export function hopperCanvasPicture(r: Renderer, look: HopperLook): HopperPicture {
+  return hopperPicture(skinSetCanvasPresenter(r, look), look.screen);
 }

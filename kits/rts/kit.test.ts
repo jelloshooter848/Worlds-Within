@@ -5,6 +5,7 @@ import type { ContentError } from '@engine/core/content/validate';
 import { TYPES } from './__fixtures__/world';
 import { kit } from './kit';
 import { RTS_RULES } from './rules';
+import { rtsScenario, type RtsMap } from './schema';
 
 const MANIFEST = JSON.stringify({
   id: 'skirmish',
@@ -132,5 +133,23 @@ describe('the rts kit hook', () => {
     expect(brief(r.errors)).toEqual([
       { file: 'content/e.json', path: 'steps.0.order.units.type', code: 'unknown_type' },
     ]);
+  });
+});
+
+describe('rtsScenario', () => {
+  it('puts the types table first, keyed `types`, with the seed, and leaves the map as it was', () => {
+    const map = {
+      format: 'worlds-within/scenario',
+      version: 1,
+      seed: 1,
+      systems: 'rts',
+      entities: [{ key: 'a', components: {} }],
+    } as unknown as RtsMap;
+    const before = JSON.stringify(map);
+    const s = rtsScenario(map, TYPES, 7);
+    expect(s.seed).toBe(7);
+    expect(s.entities.map((e) => e.key)).toEqual(['types', 'a']);
+    expect(s.entities[0]!.components).toEqual({ RtsTypes: TYPES });
+    expect(JSON.stringify(map)).toBe(before);
   });
 });

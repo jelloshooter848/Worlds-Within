@@ -13,7 +13,8 @@ import { canonicalJson } from '@engine/core/headless';
 import { validate } from '@engine/core/content/validate';
 import { isFullMap, presentFrameSchema } from '@engine/core/present';
 import { PRESENT_TILES, presentWorld, TdPresentState, topdownGame } from '@kits/topdown';
-import { dungeonRooms, dungeonSfx, dungeonSkin, dungeonSongs, loadDungeon, mustLoad } from './content';
+import { contentSfx, contentSongs } from '@engine/core/content/game-content';
+import { dungeonRooms, dungeonSkin, loadDungeon, mustLoad } from './content';
 import { createGame, createWorld } from './headless';
 import { DungeonPicture, dungeonEnd, dungeonLook } from './picture';
 import { DungeonScene, END_HOLD } from './scene';
@@ -102,7 +103,7 @@ describe('the dungeon sample', () => {
   });
 
   it('has songs that compile, every channel of a song as long as the others', () => {
-    const songs = dungeonSongs(content);
+    const songs = contentSongs(content);
     expect(songs.map((s) => s.id)).toEqual(['crypt', 'daylight']);
     for (const song of songs) {
       expect(compileSong(song).length).toBeGreaterThan(0);
@@ -116,7 +117,7 @@ describe('the dungeon sample', () => {
   });
 
   it('has a sound effect for every sound its skin names', () => {
-    const sfx = new Set(dungeonSfx(content).map((s) => s.id));
+    const sfx = new Set(contentSfx(content).map((s) => s.id));
     const sounds = Object.values(dungeonSkin(content).events ?? {}).flatMap((e) =>
       e.sound ? [e.sound] : [],
     );

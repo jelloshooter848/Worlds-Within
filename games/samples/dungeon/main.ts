@@ -1,7 +1,8 @@
 import type { AudioManager } from '@engine/core/audio/audio-manager';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { bootBrowserGame } from '@engine/core/shell';
-import { DUNGEON_MUSIC, dungeonSfx, dungeonSongs, loadDungeon, mustLoad } from './content';
+import { contentSfx, contentSongs } from '@engine/core/content/game-content';
+import { DUNGEON_MUSIC, loadDungeon, mustLoad } from './content';
 import { dungeonLook } from './picture';
 import { DungeonScene } from './scene';
 import gameFiles from 'virtual:game-files';
@@ -21,7 +22,7 @@ let audio: AudioManager | null = null;
 void bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
-  audio: { songs: dungeonSongs(content), sfx: dungeonSfx(content), music: DUNGEON_MUSIC },
+  audio: { songs: contentSongs(content), sfx: contentSfx(content), music: DUNGEON_MUSIC },
   displays: {
     canvas2d: (canvas, shell) => {
       onSound = (id) => shell.onSound(id);

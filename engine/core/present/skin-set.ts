@@ -35,6 +35,21 @@ export function skinSet(content: ContentBundle, backend: string): SkinSet {
   return { main: main?.value ?? null, rounds };
 }
 
+/** A {@link SkinSet} whose game skin is there. */
+export interface FoundSkinSet extends SkinSet {
+  main: SkinFile;
+}
+
+/**
+ * {@link skinSet}, or a thrown error naming the game (`who`) and the file it lacks when the backend
+ * has no skin of the game's own (Engine 0.15 T15, the API review: every sample wrote this check).
+ */
+export function mustSkinSet(content: ContentBundle, backend: string, who = 'the game'): FoundSkinSet {
+  const set = skinSet(content, backend);
+  if (!set.main) throw new Error(`${who} has no ${backend} skin (content/skins/${backend}.json)`);
+  return { main: set.main, rounds: set.rounds };
+}
+
 /**
  * One presenter over a set of presenters: each frame goes to `rounds[status.miniGame]` while a
  * mini game with a presenter of its own runs, else to `main` (`presenterByStatus` on

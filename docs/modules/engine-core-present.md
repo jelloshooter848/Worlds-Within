@@ -96,7 +96,8 @@ maxZoom?, centre? })`: position and zoom (0.5 to 2 by default) clamped to the ma
 - `skinSet(content, backend)`, `MINI_GAME_STATUS`, `presenterBySkinSet(main, rounds)`
   (`skin-set.ts`, Engine 0.7 T8): one backend's skins by file name (`<backend>.json` for the
   game, `<backend>-<id>.json` for mini game `<id>`'s frames), shared by pages, views and the
-  screenshot tool.
+  screenshot tool; `mustSkinSet(content, backend, who?)` (Engine 0.15 T15, the API review) is the
+  same set or an error naming the game and the missing `content/skins/<backend>.json`.
 
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs

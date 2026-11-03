@@ -156,8 +156,9 @@ look, ui?, onSound?)`. Since Engine 0.15 T14 each stream's state is a `SkirmishP
     every step, and at tick 0: a hash tick's snapshot is taken before that tick's orders, where
     `run` hashes it), `runFile(recorded, game = '..')` (the battle as a run file `{ game, seed,
 ticks, orders, hashEvery, hashes }`, ending at the last hash tick, with the orders applied
-    before it; null before tick 20). `stateHashOf(json)` is the tools' state hash through Web
-    Crypto (`crypto.subtle`, so the page needs no Node).
+    before it; null before tick 20). Each hash is the core's `stateHash`
+    (`engine/core/state-hash.ts`, synchronous, the tools' and the step hook's; Engine 0.15 T15 removed
+    the sample's own Web Crypto copy, `stateHashOf`), so the page needs no Node.
   - `play.ts`: `SkirmishPlay`, the page's `Scene` (no DOM, no clock): the `SkirmishGame`, an
     `RtsCamera` over the whole map starting on the player's base, the kit's `RtsControls`
     (sharing the game's rule switch) and the recorder. Each loop step it carries out the bar's

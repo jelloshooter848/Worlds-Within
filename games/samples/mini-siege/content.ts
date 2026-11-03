@@ -5,7 +5,7 @@ import { kitContentKinds, manifestOptions } from '@engine/core/content/game-cont
 import type { ContentResult } from '@engine/core/content/validate';
 import type { MissionDef } from '@engine/core/missions';
 import type { RtsTypes } from '@engine/core/rts-types';
-import { rtsEnemyKind, rtsMapKind, rtsTypesKind, type EnemyPlan, type RtsMap } from '@kits/rts';
+import { rtsEnemyKind, rtsMapKind, rtsScenario, rtsTypesKind, type EnemyPlan, type RtsMap } from '@kits/rts';
 import { kit as rts } from '@kits/rts/kit';
 import { roomKind, type RoomDef } from '@kits/topdown';
 import { kit as topdown } from '@kits/topdown/kit';
@@ -95,7 +95,5 @@ export function siegeTowers(content: ContentBundle): TowerTable {
  * keeps no copy of it.
  */
 export function siegeScenario(content: ContentBundle, seed: number, name: string = FIRST_SCENARIO): RtsMap {
-  const map = siegeMap(content, name);
-  const types = { key: 'types', components: { RtsTypes: siegeTypes(content) } };
-  return { ...map, seed, entities: [types, ...map.entities] } as RtsMap;
+  return rtsScenario(siegeMap(content, name), siegeTypes(content), seed);
 }
