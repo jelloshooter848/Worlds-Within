@@ -13,6 +13,7 @@ import {
   AUDIO_UNLOCK_EVENTS,
   bootBrowserGame,
   manualFromQuery,
+  recordFromQuery,
   showBackendToggle,
   showDisplayMessage,
   type DebugWindow,
@@ -536,7 +537,44 @@ describe('bootBrowserGame in manual-loop mode (G31)', () => {
     expect((globalThis.window as unknown as DebugWindow).__ww).toBeUndefined();
   });
 
+  it('with ?record (Engine 0.14 T9): the loop runs on requestAnimationFrame, window.__ww records the game', async () => {
+    fakeBootPage();
+    const raf = vi.fn(() => 0);
+    vi.stubGlobal('requestAnimationFrame', raf);
+    vi.stubGlobal('performance', { now: () => 0 });
+    const win = globalThis.window as unknown as DebugWindow & { location: { search: string } };
+    win.location.search = '?record';
+    const asked: boolean[] = [];
+    const game = {
+      step: () => {},
+      snapshot: () => ({}),
+      world: {},
+      events: [],
+      miniGame: () => null,
+      recordRounds: (on: boolean) => void asked.push(on),
+      roundRecordings: () => [{ mission: 'm', tick: 1, ticks: 2, done: true, input: { steps: [] } }],
+    };
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      displays: { canvas2d: () => display() },
+      scene: (stack) => new HostScene({ stack, game, picture: () => ({ draw() {} }) }),
+    });
+    expect(raf).toHaveBeenCalledTimes(1);
+    expect(booted?.loop.manual).toBe(false);
+    expect(win.__ww).toBe(booted?.debug);
+    expect(win.__ww!.recording).toBe(true);
+    expect(asked).toEqual([true]);
+    expect(win.__ww!.recordings()).toEqual([
+      { mission: 'm', tick: 1, ticks: 2, done: true, input: { steps: [] } },
+    ]);
+  });
+
   it('reads the mode from the query', () => {
+    expect(recordFromQuery('?record')).toBe(true);
+    expect(recordFromQuery('?debug=step&record=1')).toBe(true);
+    expect(recordFromQuery('?record=0')).toBe(false);
+    expect(recordFromQuery('')).toBe(false);
     expect(manualFromQuery('?debug=step')).toBe(true);
     expect(manualFromQuery('?backend=three&debug=step')).toBe(true);
     expect(manualFromQuery('')).toBe(false);

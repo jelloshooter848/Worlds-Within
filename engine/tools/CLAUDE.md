@@ -64,7 +64,10 @@ content)`, which imports the game's headless module by path for its optional
   0.14, gap G9) is checked against the game's `starts(content)` and handed to `createGame` as
   `HeadlessOptions.start` (Start levels and entries, below); `PlayedRun.start` is it, or null.
   `withWorld` (Engine 0.14 T7) reads the world's event log and timeline at the last tick
-  (`PlayedRun.worldEvents`, `.timeline`; World event log and timeline, below).
+  (`PlayedRun.worldEvents`, `.timeline`; World event log and timeline, below). Engine 0.14 T9
+  (`record --bot`): `prepare(game)` sees a game run's game once it is created, `frameFor(game,
+scripted)` picks the frame each step reads, and `missionStep(step, index)` hands over a
+  mission step in place of the file's entry.
 - `world-data.ts` (Engine 0.14 T7): `playWorldData(cwd, runFile, untilTick)`, a run's event log
   and timeline for `events` and `timeline`, or `no_world` (`noWorldError`) for a game without the
   hooks.
@@ -101,8 +104,9 @@ content)`, which imports the game's headless module by path for its optional
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
-  for `get`, `set`, `add`, `remove` and `paste`).
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, `record.ts`, and `edit.ts`
+  for `get`, `set`, `add`, `remove` and `paste`; `edit.ts`'s `writeValue(file, segments, value)`
+  is the checked write `record` uses).
 
 ## The contract
 
@@ -210,6 +214,15 @@ kits: [{ kit, strict, rules, unguarded }], runs: [{ run, baseline, guards, guard
   fails as it is (its rules are not tried), a weak rule belongs to a strict kit, or the game's own
   strict kit has an unguarded rule (a kit that is not strict only reports them, and a `uses` kit's
   unguarded rules are only reported; Mutant checks, below); 3 for a bad run file or content.
+- `record <runFile> --mission <id> (--input <recording.json> | --bot <plan>) [--play N]` (Engine
+  0.14 T9, gap M19): writes a hosted round's input into a run file's `play` step (Recording a
+  round, below). Result `{ run, mission, play, tick, source, ticks, steps, input, file, kind, path,
+pointer, written, verified, changed, restored, passed, finalHash, hashMismatch, failure,
+crossErrors }`. Exit 0 written, verified and the run passes; 4 the run fails with it (the file is
+  put back, `restored: true`) or the read-back differs; 3 a run file or recording that breaks the
+  schema (`errors`, the file untouched); 2 no `play` step for that mission (or `--play N` past
+  them), no or both sources, a recording of another mission or of another tick, an unfinished
+  round, a bad bot plan, no bot for the round's mini game, or a game that cannot record.
 - `get <file> <path> [--ruler]`: `{ file, kind, path, pointer, value }`; on a text grid's rows, a
   range or a rectangle also `{ rows, ruler, width, height, firstRow, firstColumn }` (Text maps,
   below). `set <file> <path> <value>`, `add <file> <path> <value>`, `remove <file> <path>` and
@@ -607,6 +620,49 @@ same `missions` list, and the game plays them live. The game is a `MissionHost`
 - `dump` and replay files keep the steps as for a world run. `game-missions-run.test.ts` covers
   steps, refusals, experience, hashes, dump, replay and the usage error with a plain-JS game;
   `missions-run.test.ts` the field errors of each kind of run.
+
+## Recording a round
+
+Engine 0.14 T9 (gap M19; docs/BUILD-LOG.md, Engine 0.14, decision 10, item 256): a game run
+file's `play` step carries its round's input (`input`, `ScriptedInput` steps from the round's
+frame 0). `record` writes one there with tools, from the page or from a kit's bot:
+
+```text
+# from the page: play the round with ?record, then in the console
+#   copy(JSON.stringify(window.__ww.recordings()))   -> recording.json
+pnpm -s cli record games/samples/mini-siege/runs/played.run.json --mission sabotage --input recording.json --json
+# headless, the kit's bot plays the round
+pnpm -s cli record games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine-camp": [{"do": "fight"}]}' --json
+```
+
+- **Which step**: the run file's first `missions` entry with that `mission` and `action: "play"`
+  (`--play N` for the N-th, 0-based); none is a usage error naming the play steps there are.
+- **`--input <file>`**: `window.__ww.recordings()`'s list (`engine/core/shell/CLAUDE.md`), one
+  entry of it, or a bare `{ steps }`. From a list, the entry of that mission at the step's tick
+  (else its only one); a recording made at another tick (the round would start from another
+  world) or of a round that had not ended is a usage error.
+- **`--bot <plan>`** (JSON, or `@file`): the run is played (no checks) with that step's `input`
+  left out; while the round it starts is hosted, each tick's frame is what the bot of the kit
+  owning the round's mini game (`missions.round.game` in the snapshot) holds, through
+  `KitDef.roundBots` (`engine/core/kit.ts`): the topdown kit's `TopDownBot` for `mission-room`
+  (plan: per room id, the plain-data steps `fight`, `goto`, `pickup`, `chest`, `leave`), the
+  tower-defense kit's `TdBot` for `td-defence` (plan: its steps). The game records the round
+  (`HeadlessGame.recordRounds`, which `MissionHost` has) and that recording is written. A plan
+  that does not fit the bot's schema is a usage error naming the field.
+- **Writing** goes through the editing verbs' path (`writeValue`): the whole run file checked
+  against its schema (a hold that is not an action is exit 3, `errors` at
+  `missions.<i>.input.steps.<j>.hold.<k>`, the file untouched), written with the repo's Prettier
+  settings, read back and verified. Then the run is played with its checks and sync hashes:
+  `passed`, `finalHash`, `hashMismatch`, `failure`. A recording the run fails with is not kept:
+  the file is put back as it was (`restored: true`, exit 4). A round that changes on purpose
+  moves the sync hashes: drop them from the run file, record, then copy the run's new hashes in
+  and `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`.
+- Keys only: pointer taps (the walls' round's tower taps) are not input frames and are not
+  recorded (gap D1, Engine 0.15).
+- The mini siege's `played` and `fortify-played` rounds were recorded this way (their
+  `CLAUDE.md`): re-recording either with its kit's bot writes the committed input unchanged.
+  Tests: `record.test.ts`, and `tests/browser/mini-siege-page.test.ts` (a round played on the
+  page with `?record`, written with `record`, passing with the golden hashes).
 
 ## Campaign runs and save codes
 

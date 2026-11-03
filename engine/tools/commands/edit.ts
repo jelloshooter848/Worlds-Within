@@ -91,6 +91,29 @@ function writeAt(verb: Verb, file: OpenFile, segments: Segment[], valueText?: st
   });
 }
 
+/**
+ * Writes `value` at `segments` of an open file through the same checks as `set` (Engine 0.14 T9:
+ * `record` writes a round's input this way): `set` when the place is there, else `add` (a new
+ * key). Returns `set`'s outcome and result: exit 3 with `errors` and the file untouched when the
+ * edited file breaks its schema.
+ */
+export function writeValue(file: OpenFile, segments: Segment[], value: JsonValue): Promise<Outcome> {
+  const holder = { root: file.doc };
+  let there = true;
+  try {
+    getAt(file.doc, segments);
+  } catch {
+    there = false;
+  }
+  const edit = there ? setAt(holder, segments, value) : addAt(holder, segments, value);
+  return writeChange(file, {
+    holder,
+    edit,
+    where: spell(edit.at, holder.root),
+    afterOf: (onDisk) => getAt(onDisk, edit.at),
+  });
+}
+
 /** Checks a changed file, writes it and reads it back. */
 async function writeChange(file: OpenFile, change: Change): Promise<Outcome> {
   const { holder, edit, extra } = change;

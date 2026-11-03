@@ -22,6 +22,7 @@ Commands:
   code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
+  record      write a hosted round's recorded input into a run file's play step, then run it
   get         read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler
   set         replace one value of a content file; checked, written, read back and verified
   add         append to an array, insert at an index (- is the end) or add a new key; verified like set
@@ -229,6 +230,28 @@ pnpm cli mutants <target>
 
 Arguments:
   <target>  a run file (games/demo/runs/walk-east.run.json), or a game folder (games/demo) for every run file of the game
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `record`
+
+```text
+pnpm cli record <runFile> [flags]
+
+  write a hosted round's recorded input into a run file's play step, then run it
+
+Arguments:
+  <runFile>  the run file, such as games/samples/mini-siege/runs/played.run.json
+
+Flags:
+  --mission <string>  the mission whose play step takes the recording
+  --input <string>    a recording file: window.__ww.recordings() from the page (the list or one entry) or a bare { steps } script
+  --bot <string>      play the round headless with the kit's bot and record it: the bot's plan as JSON, or @file ({"engine-camp": [{"do": "fight"}]} for mission-room)
+  --play <number>     which of the mission's play steps, 0-based (default 0, the first)
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

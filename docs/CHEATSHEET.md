@@ -415,6 +415,7 @@ these steps in order.
 | `code`       | `pnpm cli code <runFile> [flags]`            | the save code of a game run's campaign save at its last tick (or --tick N)                   |
 | `screenshot` | `pnpm cli screenshot <runFile> [flags]`      | a PNG of one paused, seeded frame of a run file (headless Chromium)                          |
 | `mutants`    | `pnpm cli mutants <target>`                  | play run files once per kit rule switched off and report the rules they don't guard          |
+| `record`     | `pnpm cli record <runFile> [flags]`          | write a hosted round's recorded input into a run file's play step, then run it               |
 | `get`        | `pnpm cli get <file> <path> [flags]`         | read one value of a content file (path dotted or a JSON pointer); text-map rows with a ruler |
 | `set`        | `pnpm cli set <file> <path> <value>`         | replace one value of a content file; checked, written, read back and verified                |
 | `add`        | `pnpm cli add <file> <path> <value>`         | append to an array, insert at an index (- is the end) or add a new key; verified like set    |

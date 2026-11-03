@@ -37,7 +37,8 @@ name; `towerdefenseMissionAdapter`, the stateless `MissionAdapter` for `MissionH
 Engine 0.13 its wall and wave selectors never pick someone captured or dead, by their `Fate`, and an
 injured raider comes at its current hp).
 `kit.ts` exports `kit`, the hook the tools find by the
-name `towerdefense`; it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
+name `towerdefense` (from Engine 0.14 T9 with `roundBots()`: `TdBot` for a `td-defence` round, for
+`pnpm cli record --bot`); it opts in to strict mutant checks (since Engine 0.12 T4, when the run files of
 `games/samples/tower-defense` came to guard every rule).
 
 ## Imports allowed

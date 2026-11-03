@@ -1,5 +1,8 @@
+import { z } from 'zod';
 import type { ContentKind } from '@engine/core/content/kinds';
 import { defineKit } from '@engine/core/kit';
+import { TopDownBot, type BotStep } from './bot';
+import type { RoomChallenge } from './challenge';
 import { MISSION_ROOM, missionRoomParamsSchema } from './mission-room';
 import { TOPDOWN_RULES } from './rules';
 import { roomKind } from './schema';
@@ -7,7 +10,23 @@ import { roomKind } from './schema';
 /**
  * The top-down kit's hook for the tools (`engine/core/kit.ts`): its content kinds (rooms), its
  * named rules and, for the schema reference, the params of its `mission-room` mini game. The tools find it by the kit name a `game.json` gives (`engine/tools/kits.ts`).
+ * Its round bot (Engine 0.14 T9, gap M19) is `TopDownBot` over the room's world, for `pnpm cli
+ * record --bot`: the plan is the bot's plans per room id, with the steps that are plain data.
  */
+
+/** A `TopDownBot` plan as JSON: per room id, the steps that need no function (`fight`, `goto`, ...). */
+export const topdownBotPlanSchema = z.record(
+  z.string(),
+  z.array(
+    z.discriminatedUnion('do', [
+      z.strictObject({ do: z.literal('fight') }),
+      z.strictObject({ do: z.literal('goto'), x: z.number(), y: z.number() }),
+      z.strictObject({ do: z.literal('pickup') }),
+      z.strictObject({ do: z.literal('chest') }),
+      z.strictObject({ do: z.literal('leave'), side: z.enum(['n', 'e', 's', 'w']) }),
+    ]),
+  ),
+);
 export const kit = defineKit({
   name: 'topdown',
   kinds: () => [roomKind() as unknown as ContentKind],
@@ -18,6 +37,18 @@ export const kit = defineKit({
       description:
         "A mission over a world played as one top-down room (Engine 0.11): a `*.mission.json`'s `params` when its `play` is `mission-room`. Which world entities become which foes in the room's slot cells, the round's goal and limits, and ordered rules from the round's report to the mission's declared outcomes",
       schema: missionRoomParamsSchema,
+    },
+  ],
+  roundBots: () => [
+    {
+      game: MISSION_ROOM,
+      description:
+        'TopDownBot over the room\'s world: per room id a list of steps (fight, goto, pickup, chest, leave), such as {"engine-camp": [{"do": "fight"}]}',
+      plan: topdownBotPlanSchema,
+      create(plan) {
+        const bot = new TopDownBot(plan as Record<string, BotStep[]>);
+        return { next: (round) => bot.next((round as RoomChallenge).world) };
+      },
     },
   ],
 });

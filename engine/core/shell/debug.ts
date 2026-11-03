@@ -1,4 +1,4 @@
-import type { HeadlessGame, JsonObject, JsonValue } from '../headless';
+import type { HeadlessGame, JsonObject, JsonValue, RoundRecording } from '../headless';
 import type { Action } from '../input/actions';
 import type { InputFrame } from '../input/input-manager';
 import { ScriptedInput, type InputScript } from '../input/scripted-input';
@@ -42,6 +42,22 @@ export interface PageDebug {
    * naming the problem; returns the run's `ticks`.
    */
   replay(run: unknown): { ticks: number };
+  /**
+   * Recording (Engine 0.14 T9, gap M19): `record()` (or `record(true)`; the page's URL with
+   * `?record` does it at boot) makes the game record the input of every hosted round that starts
+   * from the next step on (`HeadlessGame.recordRounds`; `MissionHost` has it), `record(false)`
+   * stops. Returns whether the game can record (false for a page with no headless game or one
+   * without the hook; the request stays on and reaches a game that comes later).
+   */
+  record(on?: boolean): boolean;
+  /** True while recording is on. */
+  readonly recording: boolean;
+  /**
+   * The rounds recorded so far, `{ mission, tick, ticks, done, input }` each, as plain JSON: copy
+   * one (or the list) into a file and `pnpm cli record <runFile> --mission <id> --input <file>`
+   * writes its `input` into the run file's `play` step. `[]` with nothing recorded.
+   */
+  recordings(): RoundRecording[];
 }
 
 /** An order or mission step the game refused during a replay. */
@@ -80,11 +96,13 @@ const SETUP_FIELDS = ['world', 'from', 'start'] as const;
  */
 export class PageDebugHook {
   private replaying: Replay | null = null;
+  private recordingOn = false;
   private readonly refusals: ReplayRefusal[] = [];
   readonly api: PageDebug;
 
   constructor(private readonly target: PageDebugTarget) {
     const isReplaying = () => this.replaying !== null;
+    const isRecording = () => this.recordingOn;
     const refused = () => this.refusals;
     this.api = {
       get tick() {
@@ -110,11 +128,27 @@ export class PageDebugHook {
         return target.game()?.snapshot() ?? null;
       },
       replay: (run) => this.start(run),
+      get recording() {
+        return isRecording();
+      },
+      record: (on = true) => this.record(on),
+      recordings: () =>
+        JSON.parse(JSON.stringify(target.game()?.roundRecordings?.() ?? [])) as RoundRecording[],
     };
+  }
+
+  /** Turns recording on or off on the game now, and on any game the page plays later. */
+  private record(on: boolean): boolean {
+    this.recordingOn = on;
+    const game = this.target.game();
+    game?.recordRounds?.(on);
+    return game?.recordRounds !== undefined;
   }
 
   /** The frame the step reads: the live one, or the replay's next frame after this tick's entries. */
   frame(live: InputFrame): InputFrame {
+    // Recording reaches the game the page plays now (a new campaign entry is a new game).
+    if (this.recordingOn) this.target.game()?.recordRounds?.(true);
     const replay = this.replaying;
     if (replay === null) return live;
     const tick = this.target.steps();

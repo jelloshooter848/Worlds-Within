@@ -46,7 +46,9 @@ dead hero refuses the round, and no selector ever picks someone captured or dead
 `bot.ts` (the scripted test bot) is imported directly by tests.
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`: the
 name `topdown`, `kinds()` with the room kind, `TOPDOWN_RULES` and, from Engine 0.11,
-`paramsDocs()` with the `mission-room` params schema for the schema reference); `engine/tools/kits.ts` finds it
+`paramsDocs()` with the `mission-room` params schema for the schema reference, and from Engine 0.14
+T9 `roundBots()`, `TopDownBot` for a `mission-room` round, which `pnpm cli record --bot` drives
+and records); `engine/tools/kits.ts` finds it
 by the `kit` name in `game.json`.
 
 ## Imports allowed

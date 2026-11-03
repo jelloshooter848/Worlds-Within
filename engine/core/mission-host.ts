@@ -4,9 +4,11 @@ import type {
   JsonObject,
   JsonValue,
   MissionStepRefusal,
+  RoundRecording,
   WorldEvents,
 } from './headless';
 import type { InputFrame } from './input/input-manager';
+import { InputRecorder } from './input/input-recorder';
 import { ScriptedInput, type InputScript } from './input/scripted-input';
 import { missionRoundEnd, type MiniGameEnd } from './mission-adapter';
 import {
@@ -117,6 +119,8 @@ interface HostedRound {
   readonly adapter: MissionAdapter<JsonObject, MiniGameEnd>;
   readonly input: RoundInput;
   readonly script: ScriptedInput | null;
+  /** The round's input being recorded (`recordRounds`), or null. */
+  readonly recorder: InputRecorder | null;
   ticks: number;
   outcome: string | null;
   refused: MissionStepRefusal | null;
@@ -143,6 +147,10 @@ export class MissionHost implements HostedGame<MissionHost> {
   private readonly experience = new Map<string, number>();
   private hosted: HostedRound | null = null;
   private ended: HostedRound | null = null;
+  /** Steps taken (a run file's tick), for a recording's `tick`. */
+  private steps = 0;
+  private recording = false;
+  private readonly recorded: { mission: string; tick: number; round: HostedRound }[] = [];
   /** The world's event log (`HeadlessGame.worldEvents`), when the port gives it. Reads only. */
   readonly worldEvents?: (sinceTick: number) => WorldEvents;
   /** The world's timeline record with the rounds' experience (`HeadlessGame.timeline`), when the port gives it. */
@@ -186,6 +194,7 @@ export class MissionHost implements HostedGame<MissionHost> {
   }
 
   step(input: InputFrame): void {
+    this.steps++;
     this.ended = null;
     const round = this.hosted;
     if (round !== null) {
@@ -329,12 +338,36 @@ export class MissionHost implements HostedGame<MissionHost> {
       adapter,
       input: new RoundInput(miniGame.inputMap),
       script: script === undefined ? null : new ScriptedInput(script),
+      recorder: this.recording ? new InputRecorder() : null,
       ticks: 0,
       outcome: null,
       refused: null,
     };
+    if (this.hosted.recorder !== null)
+      this.recorded.push({ mission: id, tick: this.steps, round: this.hosted });
     if (!this.experience.has(id)) this.experience.set(id, 0);
     return null;
+  }
+
+  /**
+   * Records the input of every round started from now on (`on` true), or stops for rounds started
+   * later (Engine 0.14 T9, gap M19). A round records the host actions its `RoundInput` let through
+   * each tick (`RoundInput.source()`, before the def's `inputMap`), from its frame 0: fed back as
+   * its `play` step's `input`, the round plays the same. Never in the snapshot: no hash moves.
+   */
+  recordRounds(on: boolean): void {
+    this.recording = on;
+  }
+
+  /** The rounds recorded so far, in play order (`{ mission, tick, ticks, done, input }`). */
+  roundRecordings(): RoundRecording[] {
+    return this.recorded.map(({ mission, tick, round }) => ({
+      mission,
+      tick,
+      ticks: round.ticks,
+      done: round !== this.hosted,
+      input: round.recorder!.script(),
+    }));
   }
 
   /** The ticks each mission's rounds took, in first-play order. */
@@ -349,6 +382,7 @@ export class MissionHost implements HostedGame<MissionHost> {
       frame = round.script;
     }
     round.game.step(round.input.advance(frame));
+    round.recorder?.record(round.input.source());
     round.ticks++;
     const id = round.mission.id;
     this.experience.set(id, (this.experience.get(id) ?? 0) + 1);

@@ -23,7 +23,9 @@ import type { BrowserDisplay, DisplayResult } from './display';
  * a game can `import()` Three.js only in 3D. With `audio` (Engine 0.11, gap G27) it also makes the
  * game's `AudioManager`, unlocked on the first key, tap or click, and hands the displays its
  * `onSound`. With `manual` or `?debug=step` (Engine 0.14 T8, gap G31) the loop does not run by
- * itself and `window.__ww` steps it (`debug.ts`). Browser only (DOM, clock): not on `PURE_CORE`.
+ * itself and `window.__ww` steps it (`debug.ts`); with `?record` (Engine 0.14 T9, gap M19)
+ * `window.__ww` is there too, recording every hosted round's input (the loop runs as usual unless
+ * `debug=step` is also asked). Browser only (DOM, clock): not on `PURE_CORE`.
  */
 
 /** The query value that boots a page in manual-loop mode: `?debug=step`. */
@@ -34,7 +36,16 @@ export function manualFromQuery(search: string): boolean {
   return new URLSearchParams(search).get('debug') === 'step';
 }
 
-/** The page's step hook, on `window` in manual-loop mode. */
+/** The query flag that boots a page recording its hosted rounds' input: `?record`. */
+export const RECORD_QUERY = 'record';
+
+/** True when a page URL's query asks for recording (`?record`, any value but `0`). */
+export function recordFromQuery(search: string): boolean {
+  const value = new URLSearchParams(search).get(RECORD_QUERY);
+  return value !== null && value !== '0';
+}
+
+/** The page's step hook, on `window` in manual-loop mode or when recording. */
 export interface DebugWindow {
   __ww?: PageDebug;
 }
@@ -127,7 +138,7 @@ export interface BootedGame extends BootPage {
   loop: FixedLoop;
   /** The page's audio (change volumes, play another song), or null without the `audio` option. */
   audio: AudioManager | null;
-  /** The step hook (also `window.__ww`) in manual-loop mode, else null. */
+  /** The step hook (also `window.__ww`) in manual-loop mode or with `?record`, else null. */
   debug: PageDebug | null;
 }
 
@@ -143,6 +154,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const search = opts.search ?? window.location.search;
   const asked = backendFromQuery(search);
   const manual = opts.manual === true || manualFromQuery(search);
+  const record = recordFromQuery(search);
   const backend: PageBackend = asked === 'three' && opts.displays.three ? 'three' : 'canvas2d';
   showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend');
   const make = backend === 'three' ? opts.displays.three! : opts.displays.canvas2d;
@@ -213,15 +225,18 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     4,
     { manual },
   );
-  if (manual) {
+  if (manual || record) {
     hook = new PageDebugHook({
       advance: (n) => loop.advance(n),
       steps: () => loop.steps,
       game: () => scenes.find((s) => (s.headless?.() ?? null) !== null)?.headless?.() ?? null,
     });
+    if (record) hook.api.record(true);
     (window as DebugWindow).__ww = hook.api;
+  }
+  if (manual)
     loop.advance(0); // the first picture, before any step
-  } else loop.start();
+  else loop.start();
   document.body.dataset.backend = backend;
   return { backend, display, scenes, input, loop, pointer, audio, debug: hook?.api ?? null };
 }

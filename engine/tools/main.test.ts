@@ -354,6 +354,7 @@ describe('help', () => {
       'code',
       'screenshot',
       'mutants',
+      'record',
       'get',
       'set',
       'add',

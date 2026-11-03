@@ -138,6 +138,8 @@ describe('the page glue, headless', () => {
     const p = page();
     toLaunch(p);
     const keys = new ScriptedInput(recordedRound());
+    // Engine 0.14 T9 (gap M19): the round is recorded as the page plays it (`?record` on the page).
+    p.play.game.recordRounds(true);
     p.play.press({ kind: 'play' });
     let roundTicks = 0;
     do {
@@ -152,6 +154,10 @@ describe('the page glue, headless', () => {
     } while (p.play.game.miniGame() !== null);
     expect(roundTicks).toBe(406);
     expect(p.play.tick).toBe(40);
+    // The recorder gives back the run file's committed input, at the run file's play tick.
+    expect(p.play.game.roundRecordings()).toEqual([
+      { mission: 'sabotage', tick: 40, ticks: 406, done: true, input: recordedRound() },
+    ]);
     // The round's scene popped itself on the tick it ended: that frame is the battle's again.
     expect(p.stack.depth).toBe(1);
     expect(p.frames.at(-1)!.status[MINI_GAME_STATUS]).toBe('');
@@ -200,6 +206,7 @@ describe('the page glue, headless', () => {
     const p = page();
     toFortify(p);
     const keys = new ScriptedInput(recordedRound('fortify-played'));
+    p.play.game.recordRounds(true);
     p.play.press({ kind: 'play' });
     let roundTicks = 0;
     do {
@@ -214,6 +221,9 @@ describe('the page glue, headless', () => {
     } while (p.play.game.miniGame() !== null);
     expect(roundTicks).toBe(116);
     expect(p.play.tick).toBe(10);
+    expect(p.play.game.roundRecordings()).toEqual([
+      { mission: 'fortify', tick: 10, ticks: 116, done: true, input: recordedRound('fortify-played') },
+    ]);
     expect(p.stack.depth).toBe(1);
     expect(p.frames.at(-1)!.events).toContainEqual({
       type: 'mini-game-end',

@@ -5,6 +5,7 @@ import { eventsCommand } from './commands/events';
 import { addCommand, getCommand, pasteCommand, removeCommand, setCommand } from './commands/edit';
 import { helpCommand } from './commands/help';
 import { mutantsCommand } from './commands/mutants';
+import { recordCommand } from './commands/record';
 import { runCommand } from './commands/run';
 import { screenshotCommand } from './commands/screenshot';
 import { timelineCommand } from './commands/timeline';
@@ -46,6 +47,7 @@ export function defaultRegistry(): Registry {
   registry.add(codeCommand);
   registry.add(screenshotCommand);
   registry.add(mutantsCommand);
+  registry.add(recordCommand);
   registry.add(getCommand);
   registry.add(setCommand);
   registry.add(addCommand);

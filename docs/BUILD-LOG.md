@@ -104,6 +104,27 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   3 had said exit 2). The timeline and dump file schemas are in `docs/reference/schemas.md`. No
   golden hash moved. Tests: `timeline.test.ts` (siege and captive fixtures), `world-data.test.ts`,
   `mission-host.test.ts`.
+- **M19: recording a hosted round's input** (T9, decision 10): `engine/core/input/input-recorder.ts`
+  (`InputRecorder`, pure: held actions per frame in, the shortest `ScriptedInput` script out; the
+  decision's `input/recorder.ts`, named after the class). `MissionHost.recordRounds(on)` and
+  `roundRecordings()` (optional `HeadlessGame` hooks) record every round started while on, from
+  its frame 0, as the host actions its `RoundInput` let through (`RoundInput.source()`), so a
+  recording replays as the round played; each is `{ mission, tick, ticks, done, input }`, `tick`
+  the `play` step's game tick. The page's step hook gains `record(on)`, `recording` and
+  `recordings()`, and `?record` puts `window.__ww` on a page with recording on while its loop runs
+  as usual (so a person can play and copy the recording); `HostScene`'s accessors take an
+  optional `headless()`, so the mini siege's page reports its game to the hook. New command
+  `pnpm cli record <runFile> --mission <id> (--input <file> | --bot <plan>)`: the recording (from
+  the page, or from the kit's bot, `KitDef.roundBots`: `TopDownBot` for `mission-room`, `TdBot`
+  for `td-defence`) written into the `play` step's `input` through the editing verbs' checked
+  write, then the run played; a recording the run fails with is put back (exit 4), one that breaks
+  the schema is exit 3 with the file untouched, a mission with no play step exit 2. Re-recording
+  the mini siege's `played` and `fortify-played` rounds with their bots writes the committed
+  inputs unchanged (final hashes `cf2a262208819d24`, `0b43372f77faea35`), so the 0.11 script is
+  gone. Keys only (D1's taps stay 0.15). No golden hash moved. Tests: `input-recorder.test.ts`,
+  `mission-host.test.ts`, `debug.test.ts`, `shell.test.ts`, `record.test.ts`, `play.test.ts`,
+  `tests/browser/mini-siege-page.test.ts` (a round played on the page with `?record`, written with
+  `record`, passing with the golden hashes).
 
 ### Planned tasks
 

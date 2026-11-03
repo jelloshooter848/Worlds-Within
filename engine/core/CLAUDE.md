@@ -32,6 +32,18 @@ for the run's `experience` (`MissionHost` has both). From Engine 0.13 (decision 
 writes a snapshot with sorted keys and throws on anything not JSON-safe (`undefined`, `NaN`,
 `Map`...), naming the path; the tools hash that text. It is pure (on `PURE_CORE`).
 
+**Recording rounds** (Engine 0.14 T9, gap M19; docs/BUILD-LOG.md, Engine 0.14, decision 10, item
+256): two more optional `HeadlessGame` hooks, `recordRounds(on)` (from now on record the input of
+every hosted round that starts) and `roundRecordings()` (`RoundRecording { mission, tick, ticks,
+done, input }`: the mission, the game tick of its `play` step, the round's ticks so far, whether it
+ended, and its input from frame 0 as `ScriptedInput` steps, what a run file's `play` step takes).
+`MissionHost` has both; never in `snapshot()`, so no hash moves. `input/input-recorder.ts`
+(pure, on `PURE_CORE`) is `InputRecorder`: `record(held)` (or `recordFrame(frame)`) once per frame,
+`script()` the shortest `InputScript` that replays it (one step per change of the held set, holds
+in `Actions` order, no step before the first held frame), and `heldActions(frame)`; tested in
+`input/input-recorder.test.ts` (recorded then replayed through `ScriptedInput`: the same held
+actions at every frame, on seeded random holds). Keys only: pointer taps stay D1's (0.15).
+
 `state-hash.ts` (Engine 0.14 T8, gap G31) is the state hash, `stateHash(snapshot)`: the first 16
 hex digits of the SHA-256 (`sha256Hex`, written out, synchronous) of `canonicalJson(snapshot)`.
 The tools re-export it (`engine/tools/headless-run.ts`) and the browser shell's step hook
@@ -63,7 +75,9 @@ several kits (Engine 0.14, gap G12) gets every kit's ids in `HeadlessOptions.dis
 `rulesOffFor(opts, kit)` (`headless.ts`), so each `RuleSwitch` only sees its kit's ids.
 
 `kit.ts` is the kit hook: `KitDef { name, kinds(), rules, strictMutants?, miniGameUses?,
-paramsDocs? }`, what a kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where
+paramsDocs?, roundBots? }` (`roundBots()`, Engine 0.14 T9: `KitRoundBotDef { game, description,
+plan, create(plan) }`, a bot for one of the kit's mini games, its plan's Zod schema, and
+`KitRoundBot.next(round)`, the actions to hold on the coming tick, for `pnpm cli record --bot`), what a kit tells the tools about itself (`miniGameUses(content)`, Engine 0.10: where
 the kit's content names a mini game and its params, such as a platformer level's triggers, for
 `validate`; `paramsDocs()`, Engine 0.11: `KitParamsDoc { game, description, schema }` for the
 params of its own fixed-id mini games, listed by `pnpm docs:gen` in `docs/reference/schemas.md`), and `defineKit(def)`, which checks the name (lower-case letters, digits and
@@ -92,6 +106,9 @@ buffer are the round's own (a jump before the round never counts). A script whos
 holds a button (a run file's `play` script) counts it as pressed, so it plays as written. The hosts
 are the platformer kit's world, `miniGameScene` when it steps the game itself, `playMissionRound`
 and `MissionHost`; `HostScene` steps the host, which does it, so no game writes it.
+`RoundInput.source()` (Engine 0.14 T9) is the host actions the last `advance` let through (held,
+not masked, before the map): what `MissionHost` records, so the recording fed back as the host
+frame (its first frame pressed, nothing masked) steps the round exactly the same.
 `MiniGameDef.hostStatus?` lists the host HUD status keys a round shows; the host passes their
 values as `MiniGameContext.hostStatus?` (plain JSON, `HostStatus`), picked with
 `hostStatusFor(def, status)` (undefined when none, so the context leaves it out and the round is
@@ -296,6 +313,11 @@ state, result, outcome, refused } }` only while a round is hosted and on the tic
   `timeline(experience)` (`missionPort` fills both) give the host the `HeadlessGame` hooks
   `worldEvents` and `timeline` (the latter with the host's own experience count); a port without
   them leaves the host without them.
+- **Recording** (Engine 0.14 T9, gap M19): `recordRounds(on)` makes every round started from
+  then on keep an `InputRecorder` of its `RoundInput.source()` per tick, from frame 0 (a played
+  round's script or the host's frames, whichever drives it); `roundRecordings()` lists them in
+  play order with the host's step count at the `play` (the run file's tick). The page's
+  `?record` (`shell/`) and `pnpm cli record --bot` turn it on.
 - **Experience** (the round's ticks) is counted per mission (`missionExperience()`) and never
   written to the world, as in world runs, so the world after a played round is the world a run
   that resolved the same result at the open tick has (tested).
@@ -361,8 +383,8 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager
-and scripted input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
+scripted input and input recorder, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make

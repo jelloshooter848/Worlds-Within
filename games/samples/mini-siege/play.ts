@@ -329,6 +329,7 @@ export class SiegePlay {
       world: () => this.game,
       events: () => [],
       miniGame: () => this.game.miniGame(),
+      headless: () => this.game,
       picture,
     });
   }

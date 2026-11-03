@@ -146,3 +146,49 @@ describe('the page step hook (window.__ww)', () => {
     expect(ww.replaying).toBe(false);
   });
 });
+
+describe('recording through the hook (Engine 0.14 T9, gap M19)', () => {
+  /** A game that keeps whether recording was asked, and gives one recording. */
+  class RecordingGame extends FakeGame {
+    asked: boolean[] = [];
+    recordRounds(on: boolean): void {
+      this.asked.push(on);
+    }
+    roundRecordings() {
+      return [
+        {
+          mission: 'raid',
+          tick: 2,
+          ticks: 3,
+          done: true,
+          input: { steps: [{ frame: 0, hold: ['attack' as const] }] },
+        },
+      ];
+    }
+  }
+
+  it('turns recording on in the game now and before every step, and copies its recordings', () => {
+    const game = new RecordingGame();
+    const { ww } = page(game);
+    expect(ww.recording).toBe(false);
+    expect(ww.record()).toBe(true);
+    expect(ww.recording).toBe(true);
+    ww.step(2);
+    expect(game.asked).toEqual([true, true, true]);
+    const got = ww.recordings();
+    expect(got).toEqual(game.roundRecordings());
+    got[0]!.input.steps.length = 0; // a copy: the game's is untouched
+    expect(game.roundRecordings()[0]!.input.steps).toHaveLength(1);
+    expect(ww.record(false)).toBe(true);
+    ww.step(1);
+    expect(game.asked).toEqual([true, true, true, false]);
+  });
+
+  it('says false for a game that cannot record, and gives no recordings', () => {
+    const { ww } = page(new FakeGame());
+    expect(ww.record()).toBe(false);
+    expect(ww.recording).toBe(true);
+    expect(ww.recordings()).toEqual([]);
+    expect(page(null).ww.recordings()).toEqual([]);
+  });
+});

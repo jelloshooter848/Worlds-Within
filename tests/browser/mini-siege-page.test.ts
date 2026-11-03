@@ -1,10 +1,11 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import type { Browser, BrowserContext, Page } from 'playwright';
 import type { InputScript } from '@engine/core/input/scripted-input';
-import type { DebugWindow } from '@engine/core/shell';
+import type { DebugWindow, RoundRecording } from '@engine/core/shell';
+import { main } from '@engine/tools/main';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The mini siege played from a link (docs/ROADMAP.md, 0.11 "done when": played from a link in a
@@ -33,6 +34,11 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // with the three captive choices in the bar (the exchange decided: no Play, only Decide). A page
 // in the same browser carries on from the stored save; a fresh page refuses a bad code with its
 // reason and resumes the dawn from the quit siege's code.
+//
+// Engine 0.14 T9 (gap M19): the played sabotage page also has `?record`: the round typed on the
+// keyboard is recorded by the page (`window.__ww.recordings()`), equals the run file's committed
+// input, and written with `pnpm cli record` into a copy of `played.run.json` whose play step has
+// no input makes that run pass with the golden hashes.
 
 const GAME = 'games/samples/mini-siege/';
 /** Loop steps per world tick (`STEPS_PER_TICK` in play.ts). */
@@ -110,7 +116,13 @@ const SABOTAGE: Launch = { mission: 'sabotage', tick: 40, title: 'Burn the siege
 const FORTIFY: Launch = { mission: 'fortify', tick: 10, title: 'Man the walls' };
 
 /** A fresh page of the game in manual-loop mode (a new browser context unless one is given). */
-async function opened(browser: Browser, url: string, errors: string[], context?: BrowserContext) {
+async function opened(
+  browser: Browser,
+  url: string,
+  errors: string[],
+  context?: BrowserContext,
+  query = '?debug=step',
+) {
   context ??= await browser.newContext({ viewport: { width: 640, height: 520 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
@@ -118,7 +130,7 @@ async function opened(browser: Browser, url: string, errors: string[], context?:
     if (msg.type() === 'error') errors.push(`console: ${msg.text()} (${msg.location().url})`);
   });
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
-  await page.goto(`${url}${GAME}?debug=step`); // manual-loop mode: `window.__ww.step(n)`
+  await page.goto(`${url}${GAME}${query}`); // manual-loop mode: `window.__ww.step(n)`
   await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
   expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
   const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
@@ -126,8 +138,14 @@ async function opened(browser: Browser, url: string, errors: string[], context?:
 }
 
 /** A fresh page of the game, stepped to the launch tick and launched. */
-async function launched(browser: Browser, url: string, errors: string[], at: Launch = SABOTAGE) {
-  const { page, frames, context } = await opened(browser, url, errors);
+async function launched(
+  browser: Browser,
+  url: string,
+  errors: string[],
+  at: Launch = SABOTAGE,
+  query?: string,
+) {
+  const { page, frames, context } = await opened(browser, url, errors, undefined, query);
   for (let i = 0; i < 400 && (await hook(page, 'tick')) < at.tick; i++) await frames(1);
   expect(await hook(page, 'tick')).toBe(at.tick);
   // One button per offered mission (the RTS kit's missionButtons): at 10 and at 40 only one.
@@ -183,6 +201,38 @@ async function typeRound(
   return ticks + 1;
 }
 
+/**
+ * Writes the page's recordings into a copy of `played.run.json` whose sabotage play step has no
+ * input, with `pnpm cli record --json`, and checks the run passes with the golden hashes.
+ */
+async function recordInto(recordings: RoundRecording[]): Promise<void> {
+  const dir = mkdtempSync(join(temp, 'record-'));
+  const run = JSON.parse(readFileSync(join(ROOT, GAME, 'runs/played.run.json'), 'utf8')) as {
+    game: string;
+    missions: { action: string; input?: InputScript }[];
+  };
+  run.game = relative(dir, join(ROOT, GAME));
+  delete run.missions.find((m) => m.action === 'play')!.input;
+  const file = join(dir, 'played.run.json');
+  writeFileSync(file, `${JSON.stringify(run, null, 2)}\n`);
+  const recording = join(dir, 'recording.json');
+  writeFileSync(recording, JSON.stringify(recordings));
+  let stdout = '';
+  const code = await main(['record', file, '--mission', 'sabotage', '--input', recording, '--json'], {
+    stdout: (t) => void (stdout += t),
+    stderr: () => {},
+    cwd: ROOT,
+    outDir: join(dir, 'out'),
+  });
+  const result = JSON.parse(stdout) as Record<string, unknown>;
+  expect(code, stdout.slice(0, 2000)).toBe(0);
+  expect(result).toMatchObject({ written: true, verified: true, passed: true, hashMismatch: null });
+  const golden = JSON.parse(readFileSync(join(ROOT, GAME, 'runs/played.hashes.json'), 'utf8')) as {
+    hashes: { hash: string }[];
+  };
+  expect(result.finalHash).toBe(golden.hashes.at(-1)!.hash);
+}
+
 /** Steps until the campaign entry played now ends; returns the world tick it ended at. */
 async function toEntryEnd(page: Page, frames: (n: number) => Promise<void>): Promise<number> {
   for (let i = 0; i < 100 && (await hook(page, 'ended')) === null; i++) await frames(STEPS_PER_TICK * 5);
@@ -224,12 +274,19 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await page.locator('#status').textContent()).toContain('tick 160');
       }
 
-      // Played: the recorded round typed on the keyboard burns both engines; the world waits.
+      // Played: the recorded round typed on the keyboard burns both engines; the world waits. The
+      // page records it (`?record`), and `pnpm cli record` writes that into a run file that passes.
       {
-        const { page, frames } = await launched(browser, server.url, errors);
+        const { page, frames } = await launched(browser, server.url, errors, SABOTAGE, '?debug=step&record');
+        expect(await page.evaluate(() => (window as DebugWindow).__ww!.recording)).toBe(true);
         await page.click('#play');
         expect(await typeRound(page, frames, recordedRound(), 'mission-room')).toBe(406);
         expect(await hook(page, 'tick')).toBe(40);
+        const recordings = await page.evaluate(() => (window as DebugWindow).__ww!.recordings());
+        expect(recordings).toEqual([
+          { mission: 'sabotage', tick: 40, ticks: 406, done: true, input: recordedRound() },
+        ]);
+        await recordInto(recordings);
         expect(await toCommit(page, frames)).toBe(160);
         expect(await hook(page, 'outcomes')).toEqual(['both-burnt']);
       }

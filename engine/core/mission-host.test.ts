@@ -230,4 +230,72 @@ describe('MissionHost', () => {
     h.timeline?.();
     expect(JSON.stringify(h.snapshot())).toBe(before);
   });
+
+  it('records a hosted round from its frame 0 when recording is on, and the recording replays it (Engine 0.14 T9)', () => {
+    const { h } = host();
+    expect(h.roundRecordings()).toEqual([]);
+    h.recordRounds(true);
+    h.step(idle);
+    h.step(idle);
+    h.mission({ mission: 'raid', action: 'open' });
+    h.mission({ mission: 'raid', action: 'play' });
+    // The host's frames: attack held from before the round (masked until released), then
+    // released, then held again for three ticks, with a stray "left" on the way.
+    const live = new ScriptedInput({
+      steps: [
+        { frame: 0, hold: ['attack'] },
+        { frame: 2, hold: [] },
+        { frame: 3, hold: ['attack', 'left'] },
+        { frame: 4, hold: ['attack'] },
+      ],
+    });
+    live.next(); // attack is already down before the round's first tick
+    let ticks = 0;
+    while (h.miniGame() !== null) {
+      live.next();
+      h.step(live);
+      ticks++;
+      if (ticks === 2) expect(h.roundRecordings()[0]).toMatchObject({ ticks: 2, done: false });
+    }
+    const [rec] = h.roundRecordings();
+    // The masked attack is not recorded: the round never saw it.
+    expect(rec).toEqual({
+      mission: 'raid',
+      tick: 2,
+      ticks,
+      done: true,
+      input: {
+        steps: [
+          { frame: 2, hold: ['left', 'attack'] },
+          { frame: 3, hold: ['attack'] },
+        ],
+      },
+    });
+    // Played again from the recording as its play step's input: the same round, tick for tick.
+    const again = host();
+    again.h.step(idle);
+    again.h.step(idle);
+    again.h.mission({ mission: 'raid', action: 'open' });
+    again.h.mission({ mission: 'raid', action: 'play', input: rec!.input as unknown as JsonObject });
+    let replayed = 0;
+    while (again.h.miniGame() !== null) {
+      again.h.step(idle);
+      replayed++;
+    }
+    expect(replayed).toBe(ticks);
+    expect(again.log).toEqual(['open raid@2', 'play raid won@2']);
+    expect(again.h.roundRecordings()).toEqual([]);
+  });
+
+  it('records nothing while recording is off', () => {
+    const { h } = host();
+    h.mission({ mission: 'raid', action: 'open' });
+    h.mission({
+      mission: 'raid',
+      action: 'play',
+      input: { steps: [{ frame: 0, hold: ['attack'] }] } as unknown as JsonObject,
+    });
+    while (h.miniGame() !== null) h.step(idle);
+    expect(h.roundRecordings()).toEqual([]);
+  });
 });

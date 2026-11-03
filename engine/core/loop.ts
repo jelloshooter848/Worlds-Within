@@ -29,7 +29,7 @@ export class FixedLoop {
   readonly stepMs: number;
   /** True when the loop only steps through `advance(n)` (`FixedLoopOptions.manual`). */
   readonly manual: boolean;
-  /** Steps taken through `advance` (manual mode's clock: `steps * stepMs` ms). */
+  /** Steps taken, through `advance` or on `requestAnimationFrame` (manual mode's clock: `steps * stepMs` ms). */
   steps = 0;
 
   constructor(
@@ -83,7 +83,10 @@ export class FixedLoop {
     while (this.acc >= this.stepMs && steps < this.maxCatchUp) {
       this.acc -= this.stepMs;
       this.frameCounter++;
-      if (this.frameCounter % this.stepDivider === 0) this.target.step();
+      if (this.frameCounter % this.stepDivider === 0) {
+        this.target.step();
+        this.steps++;
+      }
       steps++;
     }
     if (steps === this.maxCatchUp) this.acc = 0;

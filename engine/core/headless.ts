@@ -1,6 +1,7 @@
 import type { CampaignSave } from './campaign';
 import type { ContentBundle } from './content/bundle';
 import type { InputFrame } from './input/input-manager';
+import type { InputScript } from './input/scripted-input';
 import type { MiniGame, MiniGameDef } from './minigame';
 
 /**
@@ -90,6 +91,29 @@ export interface HeadlessGame {
    * not change the game. `MissionHost` has it when its port does.
    */
   timeline?(): JsonObject;
+  /**
+   * Optional (Engine 0.14 T9, gap M19): from now on (`on` true) record the input of every hosted
+   * round that starts, or stop (`on` false; what was recorded is kept). `MissionHost` has it. Never
+   * part of `snapshot()`, so no hash moves.
+   */
+  recordRounds?(on: boolean): void;
+  /** Optional (Engine 0.14 T9): the rounds recorded so far, in play order, as plain JSON. */
+  roundRecordings?(): RoundRecording[];
+}
+
+/**
+ * One hosted round's recorded input (Engine 0.14 T9, gap M19): the mission it played, the game
+ * tick its `play` step was taken at (the run file's `missions[].tick`) and its input from the
+ * round's frame 0, the shortest `ScriptedInput` script (`input/input-recorder.ts`): what a run
+ * file's `play` step takes as `input`. `ticks` is the round's length so far and `done` whether it
+ * has ended.
+ */
+export interface RoundRecording {
+  mission: string;
+  tick: number;
+  ticks: number;
+  done: boolean;
+  input: InputScript;
 }
 
 /**

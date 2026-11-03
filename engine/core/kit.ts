@@ -1,6 +1,8 @@
 import type { z } from 'zod';
 import type { ContentBundle } from './content/bundle';
 import type { ContentKind } from './content/kinds';
+import type { Action } from './input/actions';
+import type { MiniGame } from './minigame';
 import type { MiniGameUse } from './minigame-params';
 import { defineRules, type RuleList } from './rules';
 
@@ -32,6 +34,30 @@ export interface KitDef {
    * generated schema reference (`docs/reference/schemas.md`, "Mini game params").
    */
   paramsDocs?(): readonly KitParamsDoc[];
+  /**
+   * Optional (Engine 0.14 T9, gap M19): bots that play the kit's own mini games headless, for
+   * `pnpm cli record --bot <plan>` (the topdown kit's `TopDownBot` for `mission-room`, the
+   * tower-defense kit's `TdBot` for `td-defence`). The tools record what a bot holds, so its round
+   * becomes a run file's `play` input.
+   */
+  roundBots?(): readonly KitRoundBotDef[];
+}
+
+/** A bot for one of the kit's mini games: the plan it takes and how to make it. */
+export interface KitRoundBotDef {
+  /** The mini game id it plays (`mission-room`). */
+  readonly game: string;
+  /** One sentence: how it plays and what its plan says. */
+  readonly description: string;
+  /** The plan's shape (plain JSON: `--bot` takes it as JSON text). */
+  readonly plan: z.ZodType;
+  /** A fresh bot for one round, from a plan that passed `plan`. */
+  create(plan: unknown): KitRoundBot;
+}
+
+/** A bot playing one round: the actions to hold on the round's coming tick, from the round now. */
+export interface KitRoundBot {
+  next(round: MiniGame): Action[];
 }
 
 /** One mini game's params for the schema reference: its id, what it is and its schema. */

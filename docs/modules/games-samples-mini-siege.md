@@ -83,7 +83,10 @@ sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `cam
   (`mission-room` and `td-defence`), `ADAPTERS`, `createWorld`.
 - `content.ts`: `loadMiniSiege`, `siegeMap(content, name?)`, `siegeCampaign`, `FIRST_SCENARIO`, `siegeTypes`, `siegeEnemy`, `siegeMissions`,
   `siegeRooms`, `siegeDefenceMaps`, `siegeTowers`, `siegeScenario`.
-- `runs/played.run.json` (a recorded round burns both engines), `delegated.run.json` (the world
+- `runs/played.run.json` (a recorded round burns both engines; since Engine 0.14 T9 its round is
+  recorded with `pnpm -s cli record runs/played.run.json --mission sabotage --bot '{"engine-camp":
+[{"do": "fight"}]}'`, or played on the page with `?record` and written with `--input`, no
+  script), `delegated.run.json` (the world
   draws `ram-burnt`), `quit.run.json` (the round quit: `driven-off`), `fortify-played.run.json`
   (the preparation phase: a recorded tower-defense round holds for 40 gold, `held-cheap`) and
   `fortify-delegated.run.json` (the world draws `overrun`), each with sync `hashes` and golden

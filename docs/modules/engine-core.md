@@ -49,8 +49,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   from a headless game with `world` and `events`, a frame stream and a drawer per renderer.
 - `rules.ts`: named rules for mutant checks (`defineRules`, `RuleSwitch` with `isOn(id)`,
   `unknownRules`). Pure.
-- `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`; `defineKit`
-  checks it). Each kit exports one as `kit` from `kits/<name>/kit.ts`. Pure.
+- `kit.ts`: the kit hook (`KitDef`: `name`, `kinds()`, `rules`, `strictMutants?`, and from Engine
+  0.14 T9 `roundBots?()`, bots for the kit's mini games that `pnpm cli record --bot` drives a
+  round with; `defineKit` checks it). Each kit exports one as `kit` from `kits/<name>/kit.ts`. Pure.
 - `orders.ts`: the RTS order as plain JSON (`orderSchema`: `move`, `attack`, `stop`, `build`,
   `train`, `gather`; `Order`, `ORDER_TYPES`, `parseOrder`), shared by `engine/sim` and kits.
 - `rts-types.ts`: the RTS unit and building type table as plain JSON (`rtsTypesSchema`: stats,
@@ -125,7 +126,11 @@ port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGam
   are refused (`round_hosted`), and the round's end is mapped with `missionRoundEnd` and resolved
   through the port on that tick; the world then steps on one tick per game tick and the result
   commits at the fixed commit tick. The snapshot adds `missions: { round }` only while a round is
-  hosted and on the tick it ends.
+  hosted and on the tick it ends. From Engine 0.14 T9 (gap M19) `recordRounds(on)` and
+  `roundRecordings()` (optional `HeadlessGame` hooks) record each round started from then on:
+  `{ mission, tick, ticks, done, input }`, `input` the round's held keys from frame 0
+  (`RoundInput.source()` through an `InputRecorder`), `tick` its `play` step's game tick, so the
+  recording is a run file's `play` input (`pnpm cli record`).
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
@@ -153,7 +158,8 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
   `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable
-  runs) and the browser sources (keyboard, gamepad, touch). Pointer input (Engine 0.9):
+  runs), `input-recorder.ts` (Engine 0.14 T9: `InputRecorder`, held actions per frame in, the
+  shortest `ScriptedInput` script out, `{ frame, hold }` per change; pure) and the browser sources (keyboard, gamepad, touch). Pointer input (Engine 0.9):
   `pointer-logic.ts` (`PointerGestures`: samples in, `tap` / `box` / `pan` / `zoom` gestures out,
   for mouse, pen and touch, with long-press, edge scroll, wheel and pinch; pure) and `pointer.ts`
   (`PointerSource`, its DOM side on the canvas, read per game step with `gestures()`).

@@ -38,7 +38,8 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   it), plays `music` once unlocked and hands each display factory `{ onSound }` as its second
   argument (`canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound })`).
   Without it the page is silent and `onSound` does nothing.
-  Engine 0.14 (gap G31): `manual: true`, or `?debug=step` in the page's URL
+  Engine 0.14 (gap G31): `manual: true`, or `?debug=step` in the page's URL (and, T9,
+  `?record`, which adds `__ww` with recording on but leaves the loop running)
   (`manualFromQuery`), is manual-loop mode: the `FixedLoop` never runs on `requestAnimationFrame`
   and `window.__ww` (`booted.debug`, a `PageDebug` from `debug.ts`) steps the page. Off by
   default (no `__ww`, the loop as before).
@@ -62,6 +63,14 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
         ww.step(60);
         return ww.hash(); // = the run's .hashes.json entry for tick 60
       }, runJson);
+
+  Recording (Engine 0.14 T9, gap M19): `record(on = true)` makes the page's game record the input
+  of every hosted round that starts (`HeadlessGame.recordRounds`; `MissionHost` has it),
+  `recording` says it is on, and `recordings()` gives `[{ mission, tick, ticks, done, input }]`
+  as plain JSON, `input` the round's held keys from its frame 0 as `ScriptedInput` steps and
+  `tick` its `play` step's game tick. `?record` in the page's URL puts `__ww` on the page with
+  recording on while the loop runs as usual (`?debug=step&record` to step it). Copy the list to a
+  file and `pnpm cli record <runFile> --mission <id> --input <file>` writes it into the run file.
 
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)` (a game's
   `saveCodeContext(content)` and campaign): `end(save)` stores an entry's campaign save in browser

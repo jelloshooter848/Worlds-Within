@@ -20,6 +20,7 @@ import {
   type RunStart,
   type WorldEvents,
 } from '@engine/core/headless';
+import type { InputFrame } from '@engine/core/input/input-manager';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { stateHash } from '@engine/core/state-hash';
 import type { KitDef } from '@engine/core/kit';
@@ -230,6 +231,21 @@ export interface PlayOptions {
    * snapshot.
    */
   withWorld?: boolean;
+  /**
+   * Engine 0.14 T9 (`record --bot`): called once with a game run's game right after it is created
+   * (a world run has none), so a tool can turn on its round recording.
+   */
+  prepare?(game: HeadlessGame): void;
+  /**
+   * Engine 0.14 T9: the frame a game run's step reads, given the run's scripted frame (already
+   * advanced to this tick); by default that frame. `record --bot` hands the hosted round a bot's.
+   */
+  frameFor?(game: HeadlessGame, scripted: InputFrame): InputFrame;
+  /**
+   * Engine 0.14 T9: the mission step handed over in place of the run file's entry `index` (by
+   * default the entry). `record --bot` drops the recorded `input` of the `play` step it re-records.
+   */
+  missionStep?(step: MissionStep, index: number): MissionStep;
 }
 
 /** A content error in the run file at `path`. */
@@ -503,11 +519,12 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
     throw new UsageError(
       `${loaded.file} has orders, but the game's headless module (${content.manifest.headless}) takes none: its game has no order(order) method (engine/core/headless.ts)`,
     );
+  opts.prepare?.(instance);
   const input = new ScriptedInput(run.input);
   const stepper: Stepper = {
     step: () => {
       input.next();
-      instance.step(input);
+      instance.step(opts.frameFor ? opts.frameFor(instance, input) : input);
     },
     snapshot: () => instance.snapshot(),
     order: (order) => instance.order?.(order) ?? null,
@@ -638,7 +655,7 @@ function play(
         nextMission++
       ) {
         const step = run.missions[nextMission]!;
-        const refused = stepper.mission?.(step) ?? null;
+        const refused = stepper.mission?.(opts.missionStep?.(step, nextMission) ?? step) ?? null;
         if (refused !== null)
           refusedMissions.push({ tick: step.tick, mission: step.mission, action: step.action, ...refused });
         else if (step.experienceTicks !== undefined)

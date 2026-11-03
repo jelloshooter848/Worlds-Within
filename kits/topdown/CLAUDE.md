@@ -15,7 +15,10 @@ mini game (`challenge.ts`) and the data-driven mission room with its mission ada
 `kit.ts` exports `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): its
 name (`topdown`, what a `game.json` gives in `kit`), its content kinds (`roomKind()`) and its named
 rules (`TOPDOWN_RULES`), and (Engine 0.11) `paramsDocs()`, the `mission-room` params schema that
-`pnpm docs:gen` lists in `docs/reference/schemas.md` ("Mini game params"). `engine/tools` finds it by name through the generated
+`pnpm docs:gen` lists in `docs/reference/schemas.md` ("Mini game params"), and (Engine 0.14 T9,
+gap M19) `roundBots()`: `TopDownBot` over a `mission-room` round's world, its plan
+`topdownBotPlanSchema` (per room id, the steps that are plain data: `fight`, `goto`, `pickup`,
+`chest`, `leave`), for `pnpm cli record --bot` (`engine/tools/CLAUDE.md`, Recording a round). `engine/tools` finds it by name through the generated
 `engine/tools/kit-list.ts`; no engine table names the kit. When the kit gets a new content kind or
 names a rule, change the hook (and `rules.ts`), nothing in `engine/tools`. `index.ts` does not
 re-export it.

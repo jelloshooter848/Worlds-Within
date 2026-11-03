@@ -38,7 +38,9 @@ snapshot give it (`mission-defence.ts`, T6) and report what happened. It never i
   `towerdefenseMissionAdapter` (below).
 - `kit.ts`: `kit` (`defineKit`): name `towerdefense`, kinds `td-map`, `td-towers`, `td-waves`,
   rules `TOWERDEFENSE_RULES`, `paramsDocs` (the `td-defence` params, listed by `pnpm docs:gen` in
-  `docs/reference/schemas.md`, "Mini game params"), **strict mutants** (decision 1; on since T4, when the sample's run
+  `docs/reference/schemas.md`, "Mini game params"), `roundBots()` (Engine 0.14 T9, gap M19:
+  `TdBot` over a `td-defence` round's game, plan `tdBotPlanSchema`, its steps, for `pnpm cli
+record --bot`), **strict mutants** (decision 1; on since T4, when the sample's run
   files came to guard every rule: `pnpm cli mutants games/samples/tower-defense` fails on a rule no
   run file guards). `engine/tools` finds it through the generated
   `engine/tools/kit-list.ts` (`pnpm docs:gen` after changing it). `index.ts` does not re-export it.

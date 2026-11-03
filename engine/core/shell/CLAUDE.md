@@ -25,7 +25,9 @@ HostScene({ stack, game, picture, translucentMiniGame? })` with the game itself,
   `LevelSequence` is one; Engine 0.10, gap G37), or `new HostScene({ stack, step, world, events,
 miniGame, picture, translucentMiniGame? })` with accessors (one tick; the world now; the last
   step's events; the mini game the world runs, or null) for a game that is not one
-  (`HostSceneGameOptions` | `HostSceneAccessorOptions`). After a step that starts a round it pushes the core `miniGameScene` over itself
+  (`HostSceneGameOptions` | `HostSceneAccessorOptions`; the accessors' optional `headless()`,
+  Engine 0.14 T9, is the headless game the glue steps, which the scene's `headless()` reports to
+  the step hook: the mini siege's `SiegePlay`). After a step that starts a round it pushes the core `miniGameScene` over itself
   with `step` as the round's step (the host steps the round and applies its outcome, as headless)
   and pops it on the result. A mission round is pushed the same way (Engine 0.11, item 173): pass a
   `MissionHost` (`../mission-host.ts`, a `HostedGame` whose `miniGame()` is the round it hosts) as
@@ -93,6 +95,18 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
     stepped the same way (`step(STEPS_PER_TICK)` per game tick); its run files replay in the page
     only when one loop step is one game tick. The page does not load a run file by URL (decision
     9's `?replay=`): the caller hands `replay` the JSON (a browser test reads it from disk).
+  - **Recording** (Engine 0.14 T9, gap M19; decision 10, item 256): `record(on = true)` makes the
+    game record the input of every hosted round that starts from then on
+    (`HeadlessGame.recordRounds`, re-applied before every step, so a campaign's next entry records
+    too; it returns whether the game can), `recording` says it is on, and `recordings()` is the
+    rounds recorded so far, `RoundRecording { mission, tick, ticks, done, input }` (copied, plain
+    JSON: `copy(JSON.stringify(__ww.recordings()))` in the console, then `pnpm cli record
+<runFile> --mission <id> --input <file>`, `engine/tools/CLAUDE.md`). `tick` is the game tick
+    of the round's `play` step (a run file's `missions[].tick`), `input` the round's held keys
+    from its frame 0 (`MissionHost` records them; keys only, pointer taps stay D1's, 0.15). The
+    page's URL with **`?record`** (`recordFromQuery`, `RECORD_QUERY`) puts `__ww` on the page with
+    recording on and the loop running as usual, so a person plays and copies the recording; with
+    `?debug=step&record` a test steps it. Without either there is no `__ww`.
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)`, a campaign as a
   page plays it, with no DOM: `end(save)` keeps an entry's save in browser storage
   (`../save/campaign-store.ts`) and packs its save code (`../campaign-code.ts`), giving
@@ -134,14 +148,19 @@ before a gesture, `onSound` reaching the manager's `sfx`, the first key making o
 playing the song once, later gestures reusing it; without it, no manager and no listeners.
 A boot on a fake page in manual mode (Engine 0.14 T8): `?debug=step` calls no
 `requestAnimationFrame`, puts `window.__ww` there, steps the `HostScene`'s game and hashes it;
-without it the loop starts on `requestAnimationFrame` and there is no `__ww`. `debug.test.ts`:
+without it the loop starts on `requestAnimationFrame` and there is no `__ww`; with `?record` the
+loop runs on `requestAnimationFrame` and `__ww` records (Engine 0.14 T9). `debug.test.ts`:
 `FixedLoop.advance` (n steps, one render, no rAF), the hook's step, snapshot and hash, a replay's
 input in place of the live frame (frame 0 first), a tick's orders then missions before its step
-with refusals kept, and each refused run file. In the browser, `tests/browser/platformer-test.test.ts`
+with refusals kept, each refused run file, and recording (on in the game now and before every
+step, the recordings copied; false for a game that cannot record). In the browser, `tests/browser/platformer-test.test.ts`
 replays `level-1` to `level-4.run.json` through the built page with `window.__ww.replay` and
 compares the page's hash at every golden tick with `runs/<name>.hashes.json`, refuses a `start`
 run, and finds no `__ww` without `?debug=step`; every browser test that steps a page uses the hook
-(none replaces `requestAnimationFrame`).
+(none replaces `requestAnimationFrame`). `tests/browser/mini-siege-page.test.ts` plays the
+sabotage round on the keyboard with `?debug=step&record`, reads `__ww.recordings()` (the run
+file's committed input, at tick 40) and writes it with `record` into a copy of `played.run.json`
+that then passes with the golden hashes.
 `campaign-session.test.ts` (Engine 0.13 T8): an entry's save stored and its code packed and read
 back (in lower case), a bad code (`code_empty`, `code_typo`) and a finished campaign's
 (`campaign_done`) refused, a null save storing nothing, and blocked storage throwing nothing. The full boot

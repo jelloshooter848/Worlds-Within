@@ -19,6 +19,8 @@ export {
   bootBrowserGame,
   DEBUG_STEP_QUERY,
   manualFromQuery,
+  RECORD_QUERY,
+  recordFromQuery,
   showBackendToggle,
   showDisplayMessage,
   type BootAudio,
@@ -30,6 +32,7 @@ export {
   type DisplayShell,
 } from './boot';
 export { PageDebugHook, type PageDebug, type PageDebugTarget, type ReplayRefusal } from './debug';
+export type { RoundRecording } from '../headless';
 export {
   CampaignSession,
   type CampaignEntryEnd,

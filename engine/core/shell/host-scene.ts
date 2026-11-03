@@ -52,6 +52,11 @@ export interface HostSceneAccessorOptions<W extends object, E> extends HostScene
   events(): readonly E[];
   /** The mini game the world is running, or null. */
   miniGame(): MiniGame | null;
+  /**
+   * Optional (Engine 0.14 T9): the headless game the page plays now, for the page's step hook
+   * (`headless()`), when the scene steps glue around one (the mini siege's `SiegePlay`).
+   */
+  headless?(): HeadlessGame | null;
 }
 
 export type HostSceneOptions<W extends object, E> =
@@ -89,9 +94,12 @@ export class HostScene<W extends object, E> implements Scene {
       );
   }
 
-  /** The game itself when the scene was given one (for the page's step hook), else null. */
+  /**
+   * The game itself when the scene was given one, else the accessors' `headless()`, else null (for
+   * the page's step hook).
+   */
   headless(): HeadlessGame | null {
-    return this.game;
+    return this.game ?? this.opts.headless?.() ?? null;
   }
 
   render(r: Renderer): void {

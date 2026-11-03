@@ -84,6 +84,8 @@ const booted = await bootBrowserGame({
     const host = scene.scene(stack, () => siegePicture(display.presenter, content, scene.ui));
     return {
       update: (input) => host.update(input),
+      // The game the page plays now, for the shell's `window.__ww` (`?debug=step`, `?record`).
+      headless: () => host.headless(),
       render: (r) => {
         host.render(r);
         showBar(scene);

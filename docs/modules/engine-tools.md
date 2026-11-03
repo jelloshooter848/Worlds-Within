@@ -128,6 +128,17 @@ component?, before?, value? }` in world ticks N to M, filtered by entity, cause 
   `HeadlessGame` hooks `worldEvents(sinceTick)` and `timeline()` (a `MissionHost` has them via
   `missionPort`); a game without them is exit 3, `no_world` at `headless`. A world run is played
   with its event log on. No hash moves: the log is never in a snapshot.
+- `pnpm cli record <run-file> --mission <id> (--input <recording.json> | --bot <plan>) [--play N]`
+  (Engine 0.14 T9, gap M19): writes a hosted round's recorded input into the run file's `play`
+  step for that mission through the editing verbs' checked path, then plays the run: `{ run,
+mission, play, tick, source, ticks, steps, input, written, verified, changed, restored, passed,
+finalHash, hashMismatch, failure }`. `--input` takes what the page's `window.__ww.recordings()`
+  gives (the list or one entry) or a bare `{ steps }` script; `--bot` plays the round headless
+  with the kit's bot (`KitDef.roundBots`: `TopDownBot` for `mission-room`, `TdBot` for
+  `td-defence`; the plan as JSON or `@file`) and records it. Exit 0 written and passing; 4 the
+  run fails with it (the file is put back, `restored: true`); 3 a recording that breaks the
+  schema (file untouched); 2 a mission with no play step, another mission's or tick's recording,
+  a bad plan.
 - `pnpm cli trace <run-file> --paths a,b [--from N] [--to M] [--every K]` (Engine 0.14, G8): a
   few snapshot paths over a range of ticks in one call: `{ run, game, world, seed, from, to, every,
 paths, rows: [{ tick, hash, values }], missing, orders, missions }`, played like `dump` (game or
@@ -202,7 +213,7 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 
 Tests sit next to the code and run with `pnpm test`: they call `main` with captured IO and check
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
-test spawns `pnpm -s cli` for real. `trace.test.ts` covers `trace` (rows, `--every`, missing paths, usage errors, the output cap, hashes equal to `run`'s on a world run and a mini siege run), `world-data.test.ts` covers `events`, `timeline` and `dump --out` (the mini siege, a world run, the skirmish, filters, `no_world`, a dump file round trip), `run.test.ts` covers `run` and `dump` (wrong assertions,
+test spawns `pnpm -s cli` for real. `record.test.ts` covers `record` (the mini siege's sabotage and walls rounds re-recorded with the kits' bots giving the committed inputs and golden hashes, a page recording list, a round that moves the hashes put back with exit 4, a bad mission id exit 2, a schema-breaking recording exit 3 with the file untouched), `trace.test.ts` covers `trace` (rows, `--every`, missing paths, usage errors, the output cap, hashes equal to `run`'s on a world run and a mini siege run), `world-data.test.ts` covers `events`, `timeline` and `dump --out` (the mini siege, a world run, the skirmish, filters, `no_world`, a dump file round trip), `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and

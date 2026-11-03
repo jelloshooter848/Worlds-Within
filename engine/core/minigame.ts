@@ -188,6 +188,7 @@ export class RoundInput implements InputFrame {
   private cur = new Set<Action>();
   private prev = new Set<Action>();
   private readonly masked = new Set<Action>();
+  private passed: Action[] = [];
   private started = false;
   private frame = 0;
   private jumpAt = -1000;
@@ -202,16 +203,29 @@ export class RoundInput implements InputFrame {
       for (const a of Actions) if (host.held(a) && !host.pressed(a)) this.masked.add(a);
     }
     const next = new Set<Action>();
+    const passed: Action[] = [];
     for (const a of Actions) {
       if (!host.held(a) || this.masked.has(a)) continue;
+      passed.push(a);
       const to = a in this.map ? this.map[a] : a;
       if (to) next.add(to);
     }
     this.prev = this.cur;
     this.cur = next;
+    this.passed = passed;
     this.frame++;
     if (this.pressed('jump')) this.jumpAt = this.frame;
     return this;
+  }
+
+  /**
+   * The host actions this tick let through (held and not masked), before the map, in `Actions`
+   * order (Engine 0.14 T9, gap M19): what a recorder writes, so that a `ScriptedInput` of them as
+   * the host frame (its first frame counts every hold as pressed, so nothing is masked) steps the
+   * round exactly as this tick did.
+   */
+  source(): readonly Action[] {
+    return this.passed;
   }
 
   held(a: Action): boolean {

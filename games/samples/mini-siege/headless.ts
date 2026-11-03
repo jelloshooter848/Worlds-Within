@@ -18,6 +18,7 @@ import {
   type HeadlessStarts,
   type JsonObject,
   type MissionStepRefusal,
+  type RoundRecording,
   type RunStart,
   type WorldEvents,
 } from '@engine/core/headless';
@@ -172,6 +173,19 @@ export class MiniSiegeGame implements HeadlessGame {
   /** The world's timeline record now, with the played rounds' experience (`HeadlessGame.timeline`). */
   timeline(): JsonObject {
     return this.host.timeline!();
+  }
+
+  /**
+   * Records every mission round's input from now on (`HeadlessGame.recordRounds`, Engine 0.14 T9,
+   * gap M19): the host's. The page's `?record` and `pnpm cli record --bot` use it.
+   */
+  recordRounds(on: boolean): void {
+    this.host.recordRounds(on);
+  }
+
+  /** The rounds recorded so far (`HeadlessGame.roundRecordings`): the host's. */
+  roundRecordings(): RoundRecording[] {
+    return this.host.roundRecordings();
   }
 
   /** The mission round hosted now, or null. */

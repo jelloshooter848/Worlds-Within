@@ -224,6 +224,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     entries (`village`, `dawn`) for a run file's `start: { entry }`, and `createGame`'s
     `opts.start` builds that entry fresh (`siegeStartSave`: the engine's `campaignSaveAt`, no
     carried record, nothing committed before it): the dawn as its scenario file is written.
+    Engine 0.14 T9 (gap M19): `recordRounds(on)` and `roundRecordings()` forward the host's (the
+    page's `?record` and `pnpm cli record --bot` use them).
     Engine 0.14 T7: `worldEvents(sinceTick)` and `timeline()` (the optional `HeadlessGame`
     hooks) forward the `MissionHost`'s, which the sim's `missionPort` fills: the world's event log
     (kept whole; it was always on, it is never in the snapshot, so no hash moved) and its timeline
@@ -271,7 +273,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     entry from the save (`createGame(content, save.seed, { campaign })`), or the siege again;
     `press({ kind: 'code', text })` resumes from a typed code (`CampaignSession.resume`; a refusal
     goes to `message` as `<code>: <reason>`, nothing changes) and `press({ kind: 'stored' })` from
-    `storedSave()`. A step that starts an entry does not step it, so the new world starts at tick 0. `canPlay(mission)` is false for a choice without a round (the dawn's exchange, ransom, leave).
+    `storedSave()`. A step that starts an entry does not step it, so the new world starts at tick 0.
+    The scene's `headless()` (Engine 0.14 T9) is the entry's game, so the page's `window.__ww`
+    (`?debug=step`, `?record`) snapshots, hashes and records it; `main.ts`'s wrapping scene
+    forwards it. `canPlay(mission)` is false for a choice without a round (the dawn's exchange, ransom, leave).
   - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins and the
     shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone), `audio`
     (`contentSfx`, `contentSongs`, music `siege`); the bar (`#launches`, one `#launch-<mission>`
@@ -311,7 +316,9 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   carried in as a record opening nothing, and no campaign save once the hall has fallen.
 - `play.test.ts`: the page's glue on a real `SceneStack`, drawing every step into the null
   backend: launch at world tick 40, then delegate (`ram-burnt` at 160, the commit's event) or play
-  (the round pushed and popped, `played.run.json`'s recorded round fed as the page's keys,
+  (the round pushed and popped, `played.run.json`'s recorded round fed as the page's keys and
+  recorded back by the game (Engine 0.14 T9: `roundRecordings()` equal to the committed input at
+  tick 40, and `fortify-played`'s at tick 10),
   `mini-game-end:pass`, `both-burnt` at 160); each path ends at world tick 260 with the run file's
   last state hash. A launch after the window closes is refused `not_offered`. The preparation
   phase the same way: `fortify` launched at world tick 10, delegated (`overrun` at 40) or played
@@ -335,7 +342,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
   headless Chromium: Launch then Delegate, and Launch then Play with the recorded round typed as
   keys; Engine 0.11 T10; since Engine 0.12 T8 the same for `fortify` at world tick 10, delegated
   (`overrun`), played by the recorded keys (`held-cheap`) and played by taps then given up
-  (`overrun`), each committing at 40, with no page errors; since Engine 0.13 T8 the campaign: the
+  (`overrun`), each committing at 40, with no page errors; since Engine 0.14 T9 the played
+  sabotage page has `?record`: `window.__ww.recordings()` is the committed input, and written with
+  `pnpm cli record` into a copy of `played.run.json` without it the run passes with the golden
+  hashes; since Engine 0.13 T8 the campaign: the
   siege to its end at 260 along both captain fates (Delegate, and Play then Backspace), the result
   panel's save code equal to `delegated`'s and `quit`'s pinned codes, Continue to the dawn (the
   captain on the map to its end at 200, "Play again"; or held: the three choice buttons, the
@@ -424,18 +434,22 @@ All with seed 11 and checked until world tick 260. The sabotage runs open `sabot
   (and the top-down kit's 4) are reported (`kits[].unguarded`) and the command exits 0; they are
   recorded in `docs/reports/stacking-test.md` (G12). The whole folder takes about four minutes
   (13 run files, 24 rules).
-- **Recording the played round:** in a throwaway script, `createGame`, step to tick 40, `open`
-  and `play` without input, then each tick give the host a `ScriptedInput` holding what
-  `TopDownBot({ 'engine-camp': [{ do: 'fight' }] })` holds for the round's world
-  (`(game.miniGame() as RoomChallenge).world`), recording each change as `{ frame, hold }` (frame
-  0 the round's first tick), until `miniGame()` is null; that list is the `play` step's `input`.
-  Changing the map, the types, the room or the mission's params changes the round: re-record,
-  read the new values off `dump`, copy the hashes in and run `WW_UPDATE_GOLDEN=1 pnpm test
-tests/runs`.
-- **Recording the fortify round** the same way: step to tick 10, `open` and `play` `fortify`,
-  then each tick hold what `new TdBot([{ do: 'place', tower: 'archers', col: 11, row: 1 }, { do:
-'place', tower: 'archers', col: 4, row: 5 }, { do: 'wave' }])` holds for the round's game
-  (`(game.miniGame() as TdDefenceRound).game`), recording each change as `{ frame, hold }`.
+- **Recording the played round** (Engine 0.14 T9, gap M19; no script): `pnpm -s cli record
+games/samples/mini-siege/runs/played.run.json --mission sabotage --bot '{"engine-camp": [{"do":
+"fight"}]}' --json` plays the run with the `play` step's input left out, the topdown kit's
+  `TopDownBot` fighting in the round, records the round (`MiniSiegeGame.recordRounds`, the
+  host's) and writes it into the `play` step's `input` through the checked edit path, then runs
+  the file. It writes the committed input unchanged (`changed: false`, `passed: true`, final hash
+  `cf2a262208819d24`), so the 0.11 script's recording is what the tool records. Or play it on the
+  page with `?record` and write `window.__ww.recordings()` with `--input` (`engine/tools/CLAUDE.md`,
+  Recording a round). Changing the map, the types, the room or the mission's params changes the
+  round: remove the run file's `hashes`, re-record, read the new values off `dump`, copy the hashes
+  in and run `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`.
+- **Recording the fortify round** the same way: `pnpm -s cli record
+games/samples/mini-siege/runs/fortify-played.run.json --mission fortify --bot '[{"do": "place",
+"tower": "archers", "col": 11, "row": 1}, {"do": "place", "tower": "archers", "col": 4, "row":
+5}, {"do": "wave"}]' --json` (the tower-defense kit's `TdBot`; also unchanged, final hash
+  `0b43372f77faea35`). Taps are not recorded (keys only, gap D1).
 
 ## The dawn assault (Engine 0.13 T7)
 
