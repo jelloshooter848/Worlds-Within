@@ -2,7 +2,7 @@ import { CanvasRenderer } from '@engine/backends/canvas2d';
 import type { HeadlessEntry, JsonObject, JsonValue } from '@engine/core/headless';
 import { stateHash } from '@engine/core/state-hash';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
-import type { Change } from '@engine/sim/index';
+import type { Change, Timeline } from '@engine/sim/index';
 import { changeLine, filterChanges, type EventFilter } from '../event-filter';
 import { checkGameTexts } from '../game-check';
 import {
@@ -13,7 +13,15 @@ import {
   type DebuggerApi,
   type DebugRunJob,
 } from './job';
-import { DebugSession, headlessOptions, searchState, type CheckResult, type StateDiff } from './model';
+import {
+  DebugSession,
+  headlessOptions,
+  searchState,
+  type CheckResult,
+  type FailureReading,
+  type StateDiff,
+} from './model';
+import { timelineLayout, timelineText, type TimelineLayout, type TimelineMarks } from './timeline';
 
 /**
  * The debugger page (browser only, tools only; Engine 0.14 T10). `pnpm cli debug <file>` serves
@@ -25,6 +33,12 @@ import { DebugSession, headlessOptions, searchState, type CheckResult, type Stat
  * since the previous tick, and the world's event log with filters. A dump file opens read-only at
  * its tick (Play from here plays its run there). `window.__wwDebugger` (`DebuggerApi`) is the
  * same for tests and the console. `?tick=N` opens at tick N.
+ *
+ * Engine 0.14 T11: the timeline panel draws the world's timeline record at the tick shown
+ * (`timeline.ts`: rows on one axis of game ticks; clicking a marker goes to its tick), and a
+ * replay opens at its failing tick with the failed check shown (path, op, expected against the
+ * actual value there), buttons for that tick and the tick before, and the first stored-hash
+ * mismatch marked.
  */
 
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
@@ -66,6 +80,10 @@ interface Source {
     actual: string | null;
     matches: boolean | null;
   }[];
+  /** The timeline record at the tick shown, or null for a game with no world. */
+  timeline(): Timeline | null;
+  /** A replay's failed check as the page found it, or null. */
+  failure(): FailureReading | null;
   readOnly: boolean;
 }
 
@@ -99,6 +117,8 @@ function sessionSource(s: DebugSession<ViewGame>, kind: DebugKind): Source {
     diff: () => s.diff(),
     mismatch: () => s.mismatch,
     hashRows: () => s.hashRows(),
+    timeline: () => s.timeline(),
+    failure: () => s.failure(),
     readOnly: false,
   };
 }
@@ -124,6 +144,8 @@ function dumpSource(job: DebugDumpJob): Source {
     hashRows: () => [
       { tick: dump.tick, hash: dump.hash, source: 'dump', actual: hash, matches: hash === dump.hash },
     ],
+    timeline: () => dump.timeline,
+    failure: () => null,
     readOnly: true,
   };
 }
@@ -160,7 +182,7 @@ async function startRun(job: DebugRunJob, tick: number): Promise<void> {
   $('to').setAttribute('max', String(job.ticks));
   const title = job.kind === 'replay' ? `Replay ${job.file}` : `Run ${job.file}`;
   $('title').textContent = title;
-  const failure = job.failure === null ? '' : ` · failed at tick ${job.failure.tick}: ${job.failure.message}`;
+  const failure = job.failure === null ? '' : ` · failed at tick ${job.failure.tick}`;
   $('summary').textContent = `${job.game} · seed ${job.seed} · ${job.ticks} ticks${failure}`;
   $('play').hidden = true;
 }
@@ -186,13 +208,108 @@ function renderAll(): void {
   const m = s.mismatch();
   const banner = $('banner');
   banner.hidden = m === null;
+  $('mismatch-at').hidden = m === null || s.readOnly;
   if (m !== null)
-    banner.textContent = `Not the run: at tick ${m.tick} the ${m.kind === 'view' ? "view's" : "page's"} hash is ${m.actual}, expected ${m.expected}${m.kind === 'stored' ? ` (${m.source ?? 'stored'})` : m.kind === 'rewind' ? ' (the first time there)' : ' (the headless game)'}. Stepping stops there.`;
+    $('banner-text').textContent =
+      `Not the run: at tick ${m.tick} the ${m.kind === 'view' ? "view's" : "page's"} hash is ${m.actual}, expected ${m.expected}${m.kind === 'stored' ? ` (${m.source ?? 'stored'})` : m.kind === 'rewind' ? ' (the first time there)' : ' (the headless game)'}. Stepping stops there.`;
   if (session !== null && picture !== null) picture(session);
+  renderFailure(s);
+  renderTimeline(s);
   renderChecks(s);
   renderHashes(s);
   renderTree(s);
   renderEvents(s);
+}
+
+/** A replay's failed check: what was expected, what the page finds at its tick, where to go. */
+function renderFailure(s: Source): void {
+  const box = $('failure');
+  const f = s.failure();
+  box.hidden = f === null;
+  if (f === null) return;
+  const found = !f.reached
+    ? `not reached yet (the page is at tick ${s.tick})`
+    : f.reproduced === true
+      ? `actual ${show(f.actual)}: reproduced`
+      : f.reproduced === false
+        ? `NOT reproduced: the check ${f.actual === null ? 'was not failed' : `saw ${show(f.actual)}`} at that tick`
+        : 'a save code check, which the page does not make';
+  $('failure-text').textContent =
+    `Failed ${f.kind} at tick ${f.tick}: ${f.path} ${f.op} ${show(f.expected)} (expected), ${found}. ${f.message}`;
+  box.classList.toggle('here', s.tick === f.tick);
+  $<HTMLButtonElement>('fail-at').textContent = `Failing tick (${f.tick})`;
+  const before = $<HTMLButtonElement>('fail-before');
+  before.hidden = f.tickBefore === null;
+  before.textContent = `Tick before (${f.tickBefore ?? ''})`;
+}
+
+/** The marks the run adds to the timeline: a replay's failing tick and the first stored mismatch. */
+function runMarks(s: Source): TimelineMarks {
+  const f = s.failure();
+  const m = s.mismatch();
+  return {
+    failure:
+      f === null ? null : { tick: f.tick, label: `failed ${f.kind} ${f.path} ${f.op} ${show(f.expected)}` },
+    mismatch:
+      m === null || m.kind !== 'stored'
+        ? null
+        : {
+            tick: m.tick,
+            label: `first stored hash mismatch (${m.source ?? 'stored'}): ${m.expected} != ${m.actual}`,
+          },
+  };
+}
+
+function layoutOf(s: Source): TimelineLayout | null {
+  const record = s.timeline();
+  return record === null ? null : timelineLayout(record, { gameTick: s.tick, ticks: s.ticks }, runMarks(s));
+}
+
+/** The timeline panel: one track per row, spans and markers placed by game tick. */
+function renderTimeline(s: Source): void {
+  const box = $('timeline');
+  const head = $('timeline-head');
+  box.replaceChildren();
+  const layout = layoutOf(s);
+  if (layout === null) {
+    head.textContent = 'This game has no world, so no timeline.';
+    return;
+  }
+  head.textContent = `game ticks 0-${layout.ticks} · world tick ${layout.worldTick} at game tick ${layout.gameTick}${layout.logFrom === null ? '' : ` · log from world tick ${layout.logFrom}`} · click a marker to go to its tick`;
+  const span = Math.max(layout.ticks, 1);
+  const pct = (game: number) => `${(Math.max(0, Math.min(game, span)) / span) * 100}%`;
+  for (const row of layout.rows) {
+    const line = el('div', undefined, `tl-row tl-${row.kind}`);
+    line.dataset.row = row.id;
+    line.append(el('div', row.label, 'tl-label'));
+    const track = el('div', undefined, 'tl-track');
+    for (const sp of row.spans) {
+      const bar = el('div', undefined, `tl-span tl-${sp.kind}${sp.projected ? ' tl-projected' : ''}`);
+      bar.style.left = pct(sp.from);
+      bar.style.width = `max(2px, calc(${pct(sp.to)} - ${pct(sp.from)}))`;
+      bar.title = `${sp.label} (game ${sp.from}-${sp.to}${sp.worldFrom === null ? '' : `, world ${sp.worldFrom}-${sp.worldTo ?? ''}`})`;
+      track.append(bar);
+    }
+    for (const m of row.markers) {
+      const dot = el('button', undefined, `tl-marker tl-m-${m.kind}${m.projected ? ' tl-projected' : ''}`);
+      dot.style.left = pct(m.game ?? 0);
+      dot.title = `${m.label} (game ${m.game ?? '?'}${m.world === null ? '' : `, world ${m.world}`})`;
+      dot.setAttribute('aria-label', dot.title);
+      dot.dataset.game = String(m.game ?? '');
+      dot.dataset.kind = m.kind;
+      dot.disabled = s.readOnly || m.game === null || m.kind === 'now';
+      if (m.game !== null) {
+        const game = m.game;
+        dot.onclick = () => move((x) => x.goto(game));
+      }
+      track.append(dot);
+    }
+    const cursor = el('div', undefined, 'tl-now');
+    cursor.style.left = pct(layout.gameTick);
+    track.append(cursor);
+    line.append(track);
+    box.append(line);
+  }
 }
 
 function renderChecks(s: Source): void {
@@ -403,6 +520,9 @@ function wire(): void {
   $('goto').onclick = () => move((s) => s.goto(nOf('to', s.tick)));
   $('last').onclick = () => move((s) => s.goto(s.ticks));
   $('play').onclick = () => void api.playFromHere();
+  $('fail-at').onclick = () => move((s) => s.goto(s.failure()?.tick ?? s.tick));
+  $('fail-before').onclick = () => move((s) => s.goto(s.failure()?.tickBefore ?? s.tick));
+  $('mismatch-at').onclick = () => move((s) => s.goto(s.mismatch?.tick ?? s.tick));
   for (const id of ['search', 'ev-from', 'ev-to', 'ev-entity', 'ev-cause', 'ev-component'])
     $(id).addEventListener('input', () => source && renderAll());
   $('range').addEventListener('change', () => source && renderAll());
@@ -444,6 +564,12 @@ const api: DebuggerApi = {
   checks: () => need().checks(),
   diff: () => need().diff(),
   mismatch: () => need().mismatch(),
+  failure: () => need().failure(),
+  timeline: () => {
+    const layout = layoutOf(need());
+    return layout === null ? null : timelineText(layout);
+  },
+  timelineLayout: () => layoutOf(need()),
   async playFromHere() {
     if (dumpJob === null || dumpJob.run === null)
       throw new Error('only a dump of a game run can be played from');

@@ -6,7 +6,8 @@ import type { CheckOp } from '../check-values';
 import type { Change } from '@engine/sim/index';
 import type { DumpFile } from '../dump-file';
 import type { EventFilter } from '../event-filter';
-import type { CheckResult, DebugMismatch, StateDiff } from './model';
+import type { CheckResult, DebugMismatch, FailureReading, StateDiff } from './model';
+import type { TimelineLayout } from './timeline';
 
 /**
  * What the CLI's `debug` command hands the debugger page (Engine 0.14 T10; docs/BUILD-LOG.md,
@@ -48,6 +49,17 @@ export interface DebugCheck {
   value: JsonValue;
 }
 
+/** A replay file's failed check as the source run stored it (`replay.failure`). */
+export interface StoredFailure {
+  tick: number;
+  /** `assertion`, `invariant` or `code` (a save code check, which the page does not make). */
+  kind: string;
+  path: string;
+  op: string;
+  expected: JsonValue;
+  message: string;
+}
+
 /** A run or replay file (a game run), ready to step. */
 export interface DebugRunJob {
   kind: 'run' | 'replay';
@@ -87,7 +99,7 @@ export interface DebugRunJob {
   /** The hashes the run must give: the golden file's, the run file's sync hashes, a replay's. */
   expected: ExpectedHash[];
   /** A replay file's stored failure (`replay.failure`), or null. */
-  failure: { tick: number; kind: string; path: string; message: string } | null;
+  failure: StoredFailure | null;
   /** The tick the page opens at. */
   openTick: number;
 }
@@ -138,6 +150,18 @@ export interface DebuggerApi {
   diff(): StateDiff[];
   /** The first mismatch found (stored hash, rewind, view), or null. */
   mismatch(): DebugMismatch | null;
+  /**
+   * A replay's failed check (Engine 0.14 T11): the stored failure with what the page found at its
+   * tick (`actual`, `reproduced`), or null for a run or dump that is not a replay.
+   */
+  failure(): FailureReading | null;
+  /**
+   * The timeline at the tick shown as text (`timelineText`: one block per row, one line per
+   * marker), or null for a game with no world.
+   */
+  timeline(): string | null;
+  /** The same timeline as layout rows (`timelineLayout`), or null for a game with no world. */
+  timelineLayout(): TimelineLayout | null;
   /** A dump only: play its run to the dump's tick and step from there. */
   playFromHere(): Promise<void>;
 }

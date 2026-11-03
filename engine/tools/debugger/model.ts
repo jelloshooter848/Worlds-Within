@@ -1,16 +1,17 @@
-import type {
-  HeadlessGame,
-  HeadlessOptions,
-  JsonObject,
-  JsonValue,
-  WorldEvents,
+import {
+  canonicalJson,
+  type HeadlessGame,
+  type HeadlessOptions,
+  type JsonObject,
+  type JsonValue,
+  type WorldEvents,
 } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { stateHash } from '@engine/core/state-hash';
-import type { Change } from '@engine/sim/index';
-import { failsCheck } from '../check-values';
+import { compressClock, type Change, type ClockEntry, type Timeline } from '@engine/sim/index';
+import { failsCheck, valueAt } from '../check-values';
 import { filterChanges, type EventFilter } from '../event-filter';
-import type { DebugCheck, DebugRunJob, ExpectedHash } from './job';
+import type { DebugCheck, DebugRunJob, ExpectedHash, StoredFailure } from './job';
 
 /**
  * The debugger's model (Engine 0.14 T10; docs/BUILD-LOG.md, Engine 0.14, decision 2): loading a
@@ -95,6 +96,22 @@ export interface StateDiff {
   after?: JsonValue;
 }
 
+/**
+ * A replay's stored failure as the session found it (Engine 0.14 T11): `reached` once the session
+ * has played to its tick; then `actual` is the value at its path there and `reproduced` whether
+ * the same check (kind, path, op, expected) failed at that tick. `reproduced` is null before the
+ * tick is reached and for a `code` check (a save code, which the page does not check).
+ */
+export interface FailureReading extends StoredFailure {
+  reached: boolean;
+  actual: JsonValue | null;
+  /** The page's message for the check at that tick (null when it passed or was not made). */
+  pageMessage: string | null;
+  reproduced: boolean | null;
+  /** The tick before the failure (to step from), or null for a failure at tick 0. */
+  tickBefore: number | null;
+}
+
 export interface SessionOptions<V extends HeadlessGame> {
   /** Keep every tick's record (default true). */
   cache?: boolean;
@@ -138,6 +155,10 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
   private readonly seenHashes = new Map<number, string>();
   private firstMismatch: DebugMismatch | null = null;
   private readonly cache: boolean;
+  /** The world tick at every game tick reached (the timeline's clock), kept with the cache off too. */
+  private readonly worldTicks: number[] = [];
+  /** The furthest tick reached so far. */
+  private furthest = 0;
 
   constructor(
     readonly job: DebugRunJob,
@@ -291,6 +312,55 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
     return this.events({ ...filter, from, to: now })?.changes ?? [];
   }
 
+  /**
+   * The timeline record at the tick shown (the game's `timeline()` hook, Engine 0.14 T7) with its
+   * `clock` filled from the world tick at every game tick from 0 to the tick shown, as the tools
+   * fill it (`compressClock`); null for a game with no world hooks.
+   */
+  timeline(): Timeline | null {
+    const raw = this.game.timeline?.();
+    if (raw === undefined) return null;
+    const samples: ClockEntry[] = [];
+    for (let game = 0; game <= this.at; game++) {
+      const world = this.worldTicks[game];
+      if (world === undefined) return { ...(raw as unknown as Timeline), clock: null };
+      samples.push({ game, world });
+    }
+    return { ...(raw as unknown as Timeline), clock: compressClock(samples) };
+  }
+
+  /** A replay's stored failure as this session found it, or null for a job with none. */
+  failure(): FailureReading | null {
+    const f = this.job.failure;
+    if (f === null) return null;
+    const reached = this.furthest >= f.tick;
+    const base = { ...f, reached, tickBefore: f.tick > 0 ? f.tick - 1 : null };
+    const check = this.job.checks.find(
+      (c) =>
+        c.kind === f.kind &&
+        c.path === f.path &&
+        c.op === f.op &&
+        canonicalJson(c.value) === canonicalJson(f.expected) &&
+        (c.kind === 'invariant' || c.tick === f.tick),
+    );
+    if (!reached || check === undefined)
+      return {
+        ...base,
+        actual: null,
+        pageMessage: null,
+        reproduced: reached && f.kind !== 'code' ? false : null,
+      };
+    const failed = (this.failedAt.get(f.tick) ?? []).find(
+      (c) => c.kind === check.kind && c.index === check.index,
+    );
+    if (failed !== undefined)
+      return { ...base, actual: failed.actual, pageMessage: failed.message, reproduced: true };
+    // Passed there: read the value it saw from the record, when that tick's record is kept.
+    const state = this.recordAt(f.tick)?.state;
+    const value = state === undefined ? null : valueOrNull(state, f.path);
+    return { ...base, actual: value, pageMessage: null, reproduced: false };
+  }
+
   /** The differences between the tick shown and the tick before it (empty at tick 0). */
   diff(limit = 500): StateDiff[] {
     if (this.before === null || this.before.tick !== this.at - 1) return [];
@@ -345,6 +415,8 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
     else this.failedAt.delete(this.at);
     const log = this.worldLog(Number.MAX_SAFE_INTEGER);
     const record: TickRecord = { tick: this.at, hash, state, worldTick: log?.tick ?? null, failed };
+    if (log !== null) this.worldTicks[this.at] = log.tick;
+    this.furthest = Math.max(this.furthest, this.at);
     for (const e of this.expectedAt.get(this.at) ?? []) {
       this.seenHashes.set(this.at, hash);
       if (e.hash !== hash)
@@ -386,6 +458,12 @@ export class DebugSession<V extends HeadlessGame = HeadlessGame> {
   private noteMismatch(m: DebugMismatch): void {
     if (this.firstMismatch === null || m.tick < this.firstMismatch.tick) this.firstMismatch = m;
   }
+}
+
+/** The value at a dotted path, or null when it is not there. */
+function valueOrNull(state: JsonObject, path: string): JsonValue | null {
+  const v = valueAt(state, path);
+  return v === undefined ? null : v;
 }
 
 const isObject = (v: JsonValue | undefined): v is JsonObject =>

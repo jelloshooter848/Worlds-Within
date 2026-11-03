@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { dirname, relative, resolve } from 'node:path';
-import type { JsonObject } from '@engine/core/headless';
+import type { JsonObject, JsonValue } from '@engine/core/headless';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, type ContentError } from '@engine/core/content/validate';
 import { DUMP_FORMAT, parseDumpFile } from '../dump-file';
@@ -19,6 +19,7 @@ import {
   type DebugRunJob,
   type ExpectedHash,
 } from './job';
+import type { FailureReading } from './model';
 
 /**
  * The debugger's Node side (Engine 0.14 T10): reading the file `pnpm cli debug` is given into a
@@ -145,7 +146,14 @@ async function buildRunJob(
     failure:
       failure === undefined
         ? null
-        : { tick: failure.tick, kind: failure.kind, path: failure.path, message: failure.message },
+        : {
+            tick: failure.tick,
+            kind: failure.kind,
+            path: failure.path,
+            op: failure.op,
+            expected: failure.expected as JsonValue,
+            message: failure.message,
+          },
     openTick: tick,
   };
   return { ok: true, job, headlessHash: stateHash(snapshot), allow: [gameAbs] };
@@ -265,9 +273,11 @@ export interface PageReading {
   tick: number;
   hash: string;
   /** The page's first mismatch (a stored hash, a rewind, the view), or null. */
-  mismatch: { tick: number; kind: string; expected: string; actual: string } | null;
+  mismatch: { tick: number; kind: string; expected: string; actual: string; source?: string } | null;
   /** The world's kept changes at that tick, or null for a game with no world. */
   eventCount: number | null;
+  /** A replay's failed check as the page found it at its tick (Engine 0.14 T11), or null. */
+  failure: FailureReading | null;
 }
 
 /**
@@ -307,6 +317,7 @@ export async function checkInBrowser(
         hash: api.hash(),
         mismatch: api.mismatch(),
         eventCount: api.eventCount(),
+        failure: api.failure(),
       };
     }, built.job.openTick);
     if ('error' in reading) throw new Error(`the debugger page failed: ${String(reading.error)}`);

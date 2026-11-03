@@ -160,12 +160,16 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   game's own kit and `kit:id` for another. Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
 hash }], finalHash, orders, ordersPlayed, refusedOrders, missions, missionsPlayed, refusedMissions,
-experience, hashesChecked, hashMismatch, from, start, codes, codesChecked, replayFile, replay }`.
+experience, hashesChecked, hashMismatch, from, start, codes, codesChecked, replayFile, replay, debug }`.
   `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
   that failed at that tick. The run stops at the first failing tick and then writes a replay file
   (below) whose path is `replayFile` (null when the run passed, and for replays). `replay` is the
-  replay check on a replay file (null otherwise). `orders`, `ordersPlayed`, `refusedOrders`,
+  replay check on a replay file (null otherwise). `debug` (Engine 0.14 T11) is the line that
+  opens a failed game run in the debugger at its failing tick, `pnpm cli debug <replayFile>` (the
+  run file itself for a replay that failed again, with `--tick` at a sync hash mismatch), also
+  printed in the text form (`open it in the debugger: ...`); null when the run passed and for a
+  world run. `orders`, `ordersPlayed`, `refusedOrders`,
   `hashesChecked` and `hashMismatch` are about recorded orders and sync hashes (Recorded orders,
   below); `missions`, `missionsPlayed`, `refusedMissions` and `experience` about mission steps
   (Missions in world runs and Missions in game runs, below; a run file with `missions` for a game
@@ -213,9 +217,11 @@ renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matche
   `--tick`, `--out` or flag, 5 when Chromium is not installed.
 - `debug <file> [--tick N] [--port P] [--check]` (Engine 0.14 T10): the in-browser simulation
   debugger on a run, replay or dump file (The debugger, below). Result `{ url, file, kind, game,
-ticks, openTick, serving }`; with `--check` also `{ tick, hash, headlessHash, matchesHeadless,
-mismatch, eventCount }`. Exit 0; 4 (`--check`) when the page's hash is not the headless run's or
-  the page found a mismatch; 3 for a run file, dump file or content that breaks its schema; 2 for
+ticks, openTick, failure, serving }`; with `--check` also `{ tick, hash, headlessHash, matchesHeadless,
+mismatch, eventCount, failure, reproduced, hashMismatch }` (Engine 0.14 T11: a replay's failed
+  check as the page found it, whether it reproduced, the first stored hash that differs). Exit 0; 4
+  (`--check`) when the page's hash is not the headless run's, the page found a mismatch or a
+  replay did not reproduce; 3 for a run file, dump file or content that breaks its schema; 2 for
   a file that is not there, a `--tick` past the run (or not a dump's own tick) or a world run; 5
   when Chromium is not installed (`--check`).
 - `mutants <target>`: mutant checks (below) on a run file or a game folder, over the rules of
@@ -853,9 +859,15 @@ hashMismatch }`: `reproduced` is true when the first failure is at the same tick
   `{ tick, expected, actual }`, or null. A mismatch means the game's state is different by that
   tick (the game or its content changed since the source run); it fails the run (exit 4) even
   if every check passes. A replay that fails writes no further replay.
-- Debugging: `run` the replay, `trace <replay> --paths ...` over the ticks before the failure to
-  see when a value went wrong, then `dump <replay> --tick N` at the failing tick, or at the
-  mismatch tick and the stored hash tick before it, to see what changed.
+- Debugging: open it in the debugger, `pnpm cli debug <replayFile>` (the line `run` prints, its
+  `debug`; Engine 0.14 T11): the page opens at the failing tick with the failed check (path, op,
+  expected against the actual value there), a button for the tick before, the first stored hash
+  that differs marked (stepping stops there), and the timeline of a game with a world. Headless,
+  `pnpm -s cli debug <replayFile> --check --json` reports `{ openTick, failure, reproduced,
+hashMismatch }` (exit 4 when it does not reproduce or a hash differs). Or with the CLI alone:
+  `run` the replay, `trace <replay> --paths ...` over the ticks before the failure to see when a
+  value went wrong, then `dump <replay> --tick N` at the failing tick, or at the mismatch tick and
+  the stored hash tick before it, to see what changed.
 
 ## World event log and timeline
 
@@ -986,12 +998,25 @@ opens the in-browser simulation debugger, `debugger/` (its own `CLAUDE.md` has t
   tree with search and the changes since the previous tick, the event log (this step's world
   ticks, everything kept, or a world-tick span; filters for entity, cause and component, as
   `events` takes them). The first stored-hash, rewind or view mismatch stops stepping there.
+- **The timeline viewer** (Engine 0.14 T11, decisions 2 and 4): a Timeline panel draws the
+  timeline record at the tick shown (the game's `timeline()` with its clock filled as the CLI
+  fills it) on one axis of game ticks: the world clock (moving or standing still), frozen spans,
+  experience time, opportunity windows with each status change and its cause, and missions open
+  to commit with the outcome; clicking a marker goes to its tick. Its model is pure
+  (`debugger/timeline.ts`, tested in Node); `window.__wwDebugger.timeline()` prints it as text.
+- **A failing replay** opens at `replay.failure.tick` with the failed check (path, op, expected
+  against the actual value there), buttons for that tick and the tick before, and the first
+  stored hash that differs (`replay.hashes`) marked in the banner and on the timeline.
 - **`--check`**: opens the page in headless Chromium, goes to the open tick and returns the page's
   `tick`, `hash` and `mismatch` and the world's `eventCount` (null for a game with no world) beside
   `headlessHash` (a dump: the run's at the dump's tick, or null when it cannot be played) and
-  `matchesHeadless`; exit 4 when they differ or the page found a mismatch.
+  `matchesHeadless`, and (T11) `failure` (a replay's check as the page found it: `actual`,
+  `reached`, `reproduced`, `tickBefore`), `reproduced` and `hashMismatch` (the first stored hash
+  that differs, `{ tick, expected, actual, source }`); exit 4 when they differ, the page found a
+  mismatch or a replay did not reproduce.
   `pnpm -s cli debug games/demo/runs/walk-east.run.json --tick 60 --check --json` exits 0.
-- Tests: `debugger/model.test.ts`, `debug.test.ts`, `tests/browser/debugger.test.ts`,
+- Tests: `debugger/model.test.ts`, `debugger/timeline.test.ts`, `debug.test.ts`, `run.test.ts`
+  (`debug`), `tests/browser/debugger.test.ts`,
   `tests/build/pages.test.ts` (the page is not in the Pages build).
 
 ## Generated docs

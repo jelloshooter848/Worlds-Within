@@ -152,6 +152,97 @@
         border: 1px solid var(--bad);
         color: var(--bad);
       }
+      .failure {
+        margin-top: 6px;
+        padding: 6px 8px;
+        border-radius: 4px;
+        border: 1px solid var(--bad);
+        background: var(--changed);
+      }
+      .failure.here {
+        outline: 2px solid var(--bad);
+      }
+      .timeline-panel {
+        margin: 12px 16px 0;
+      }
+      .timeline {
+        font-size: 12px;
+      }
+      .tl-row {
+        display: grid;
+        grid-template-columns: 14em minmax(0, 1fr);
+        align-items: center;
+        gap: 6px;
+        border-bottom: 1px solid var(--line);
+      }
+      .tl-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tl-track {
+        position: relative;
+        height: 18px;
+        margin-right: 8px;
+      }
+      .tl-span {
+        position: absolute;
+        top: 5px;
+        height: 8px;
+        border-radius: 2px;
+        background: var(--accent);
+        opacity: 0.6;
+      }
+      .tl-span.tl-still,
+      .tl-span.tl-frozen {
+        background: var(--muted);
+      }
+      .tl-span.tl-experience,
+      .tl-span.tl-taken,
+      .tl-span.tl-committed {
+        background: var(--good);
+      }
+      .tl-span.tl-closed {
+        background: var(--line);
+      }
+      .tl-projected {
+        opacity: 0.3;
+      }
+      .tl-marker {
+        position: absolute;
+        top: 2px;
+        width: 10px;
+        height: 14px;
+        margin-left: -5px;
+        padding: 0;
+        border-radius: 2px;
+        background: var(--accent);
+        border: 1px solid var(--panel);
+        cursor: pointer;
+      }
+      .tl-marker:disabled {
+        cursor: default;
+        opacity: 1;
+      }
+      .tl-m-commit,
+      .tl-m-before {
+        background: var(--good);
+      }
+      .tl-m-failure,
+      .tl-m-mismatch {
+        background: var(--bad);
+      }
+      .tl-m-now {
+        display: none;
+      }
+      .tl-now {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--bad);
+        pointer-events: none;
+      }
       .filters {
         display: flex;
         flex-wrap: wrap;
@@ -181,8 +272,21 @@
         <button id="play" hidden>Play from here</button>
         <span class="mono" id="where"></span>
       </div>
-      <div id="banner" class="banner" hidden></div>
+      <div id="banner" class="banner" hidden>
+        <span id="banner-text"></span>
+        <button id="mismatch-at" hidden>Go to the mismatch</button>
+      </div>
+      <div id="failure" class="failure" hidden>
+        <span id="failure-text"></span>
+        <button id="fail-at">Failing tick</button>
+        <button id="fail-before">Tick before</button>
+      </div>
     </header>
+    <section id="timeline-panel" class="timeline-panel">
+      <h2>Timeline</h2>
+      <div class="muted" id="timeline-head"></div>
+      <div id="timeline" class="timeline"></div>
+    </section>
     <main>
       <div>
         <section id="picture-panel" hidden>

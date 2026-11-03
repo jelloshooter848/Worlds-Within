@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { EXIT } from './exit-codes';
 import { main } from './main';
 import { failsCheck, valueAt } from './run-file';
+import { debugLine } from './commands/run';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const WALK = 'games/demo/runs/walk-east.run.json';
@@ -213,7 +214,24 @@ describe('replay files', () => {
 
   it('a passing run writes no replay file', async () => {
     const { result } = await cli(['run', WALK, '--json']);
-    expect(result).toMatchObject({ replayFile: null, replay: null });
+    expect(result).toMatchObject({ replayFile: null, replay: null, debug: null });
+  });
+
+  it('a failing run names the debugger line that opens its replay at the failing tick', async () => {
+    const { first } = await failing();
+    expect(first.debug).toBe(`pnpm cli debug ${String(first.replayFile)}`);
+    const file = runFile((r) => {
+      (r.assertions as unknown[]).push({ tick: 100, path: 'hero.room', op: 'eq', value: 'nowhere' });
+    });
+    const text = await cli(['run', file]);
+    expect(text.stdout).toMatch(
+      /open it in the debugger: pnpm cli debug \S+replays\/edited-t100-[0-9a-f]{12}\.run\.json/,
+    );
+    // A replay that fails again opens itself; a world run has no debugger line.
+    const again = await cli(['run', String(first.replayFile), '--json']);
+    expect(again.result.debug).toBe(`pnpm cli debug ${String(first.replayFile)}`);
+    expect(debugLine('w.run.json', 'w.world.json', null, null)).toBeNull();
+    expect(debugLine('r.run.json', null, null, 40)).toBe('pnpm cli debug r.run.json --tick 40');
   });
 
   it('running the replay fails at the same tick, with the same check and the same hashes', async () => {

@@ -1,6 +1,6 @@
 ---
 name: debug-failing-run
-description: Go from a failing `pnpm cli run` (exit 4, or a red tests/runs test) to its cause and a fix - read the first failing tick, trace the checked paths over the ticks before it, dump the state there and the tick before, screenshot it, check the replay reproduces, use mutant checks to see what the run guards, then fix and rerun. Use when a run file, replay file or golden-hash test fails.
+description: Go from a failing `pnpm cli run` (exit 4, or a red tests/runs test) to its cause and a fix - read the first failing tick, open the replay in the in-browser debugger at that tick (failed check, tick before, state diff, event log, timeline), trace the checked paths over the ticks before it, dump the state there and the tick before, screenshot it, check the replay reproduces, use mutant checks to see what the run guards, then fix and rerun. Use when a run file, replay file or golden-hash test fails.
 ---
 
 # Debug a failing run
@@ -16,7 +16,7 @@ tools' output, not from guesses. Run everything from the repo root as `pnpm -s c
 pnpm -s cli run games/<game>/runs/<run>.run.json --json
 ```
 
-- Exit 0: it passes. If a test still fails, it is the golden hashes (step 7).
+- Exit 0: it passes. If a test still fails, it is the golden hashes (step 8).
 - Exit 2: a usage mistake (path, flag). Exit 3: invalid content: fix each `errors[]` entry (it names
   `file` and the field `path`), check with `pnpm -s cli validate games/<game> --json`, then rerun.
 - Exit 5: a crash. Read `error.message` and `error.stack`; it is a bug in the game's
@@ -26,18 +26,46 @@ pnpm -s cli run games/<game>/runs/<run>.run.json --json
     `index` (which entry of that list), `path`, `op`, `expected`, `actual`, `message`;
   - `failures`: every check that failed at that same tick (the run stops there);
   - `hashes`: the state hashes up to that tick;
-  - `replayFile`: a replay file in `.ww-out/replays/` that reproduces the failure.
+  - `replayFile`: a replay file in `.ww-out/replays/` that reproduces the failure;
+  - `debug`: the line that opens that replay in the debugger, `pnpm cli debug <replayFile>`
+    (step 2; also printed by the text form as `open it in the debugger: ...`).
 
 A run file plays a game (`game`) or, from Engine 0.8, an `engine/sim` world (`world`, a
-`*.world.json` scenario; sample `engine/sim/__fixtures__/village-build.run.json`). Steps 1, 2, 4,
-5 and 7 work the same on a world run; a world has no input, view or kit rules, so step 3
-(screenshot) and step 6 (mutants) do not apply (both exit 2 on it). Its state is the world
+`*.world.json` scenario; sample `engine/sim/__fixtures__/village-build.run.json`). Steps 1, 3, 5,
+6 and 8 work the same on a world run; a world has no input, view or kit rules, so step 4
+(screenshot) and step 7 (mutants) do not apply (both exit 2 on it), and the debugger (step 2)
+steps game runs only (`debug` is null; open a world run's `dump --out` file instead). Its state is the world
 snapshot: compare `components.<Kind>` between dumps, and look in `engine/sim` (scenario, systems)
 rather than a game.
 
 Write down `T = failure.tick`. Everything below looks at ticks `T` and `T - 1`.
 
-## 2. Trace the failing path, then dump the state at the failing tick and the tick before
+## 2. Open it in the debugger at the failing tick
+
+```sh
+pnpm cli debug <replayFile>                      # serves the page, prints the URL; Ctrl-C stops it
+pnpm -s cli debug <replayFile> --check --json    # headless: what the page finds there
+```
+
+The in-browser debugger (`engine/tools/debugger/CLAUDE.md`) opens the replay **at its failing
+tick** (`openTick` = `replay.failure.tick`) with the failed check shown above the panels (path,
+op, expected against the actual value there) and buttons for **the failing tick** and **the tick
+before**. Step and rewind (+1, -1, +10, go to tick: a rewind re-simulates from tick 0), read the
+state tree (search a path) and **what changed since the previous tick**, the checks at each tick
+and the event log (a game with a world: filter by world ticks, entity, cause, component). For a
+game with a world the **timeline** panel shows the world clock, frozen spans, experience time,
+opportunity windows (opened, taken, closed, and by what) and mission opens and commits with their
+outcomes on one axis of game ticks: click a marker to go to that tick. A stored hash that differs
+stops stepping at its tick and is marked in the banner and on the timeline.
+
+`--check --json` gives `{ openTick, failure, reproduced, hashMismatch }`: `failure.actual` is the
+value the page saw, `reproduced: true` says the page fails the same check at that tick, and
+`hashMismatch` names the first stored hash that differs (exit 4 for either problem: go to step 5).
+An agent drives the served page with Playwright through `window.__wwDebugger` (`goto(tick)`,
+`state()`, `diff()`, `checks()`, `failure()`, `events(filter)`, and `timeline()`, the timeline as
+text). Needs Chromium; without it, steps 3 and 5 cover the same ground with the CLI alone.
+
+## 3. Trace the failing path, then dump the state at the failing tick and the tick before
 
 Start with a trace of the path the failing check reads (and a few related ones) over the ticks
 before it: one call, one row per tick, so you see when the value first went wrong without a dump per
@@ -63,7 +91,7 @@ what the last step emitted (a room change, a hit, a pickup). For an assertion at
 above finds when the state first went the wrong way; tick 0 is the start, before
 any step. A dump is capped like any output: if `truncated` is true, read the file in `fullOutput`.
 
-## 3. Look at it
+## 4. Look at it
 
 ```sh
 pnpm -s cli screenshot games/<game>/runs/<run>.run.json --tick <T> --json
@@ -79,7 +107,7 @@ To see the same frame in 3D (a game with a `three` skin and a view `frame()`, su
 SwiftShader, which the command refuses (exit 4, naming the renderer string) unless you add
 `--allow-software-gl`. The state hash is the same whichever backend draws.
 
-## 4. Check the replay reproduces it
+## 5. Check the replay reproduces it
 
 ```sh
 pnpm -s cli run <replayFile> --json
@@ -92,7 +120,7 @@ deterministic: look for `Math.random`, the clock, `Map`/`Set` iteration in a sna
 between runs (module-level variables) in the game or kit. Fix that first: nothing else can be trusted
 until two runs agree.
 
-## 5. Decide what is wrong
+## 6. Decide what is wrong
 
 - **The check is wrong** (the game does what it should; the run file expected something else): fix
   the assertion's `tick`, `path`, `op` or `value`, using the dumped values. Do not just copy `actual`
@@ -106,7 +134,7 @@ until two runs agree.
 - **The code is wrong** (the kit or game breaks a rule): fix it in the kit or game and add or
   extend a unit test there.
 
-## 6. Mutant checks: does the run guard what it should?
+## 7. Mutant checks: does the run guard what it should?
 
 ```sh
 pnpm -s cli mutants games/<game>/runs/<run>.run.json --json
@@ -131,7 +159,7 @@ rule and `unguarded` the rules none does (exit 4 for a strict kit), and a run wh
 are not all guarded has them in its `runs[].weak` (also exit 4). Fix an unguarded rule by
 strengthening a run file or adding one that the rule decides.
 
-## 7. Fix, rerun, and keep the golden hashes honest
+## 8. Fix, rerun, and keep the golden hashes honest
 
 ```sh
 pnpm -s cli run games/<game>/runs/<run>.run.json --json   # exit 0
@@ -141,7 +169,8 @@ pnpm -s cli run games/<game>/runs/<run>.run.json --json   # same hashes again
 `tests/runs/run-files.test.ts` compares every run file's hashes with its committed
 `<run>.hashes.json`. If the fix was meant to change the game's state, regenerate them with
 `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and commit them with the fix. If the state was not meant
-to change and the hashes did, the fix changed more than intended: go back to step 2.
+to change and the hashes did, the fix changed more than intended: go back to step 2 (the
+debugger on the run file shows the first golden hash that differs) or step 3.
 
 Finish with `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 

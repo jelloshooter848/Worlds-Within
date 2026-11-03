@@ -9,8 +9,9 @@ any other agent can read them as plain Markdown steps. Each one uses only the CL
   `games/<name>/` on the top-down kit (manifest, room, headless and view entries, browser page, run
   file with golden hashes, agent docs) that passes `validate`, `run` and the four checks.
 - [debug-failing-run](../../.claude/skills/debug-failing-run/SKILL.md): from a failing `run` to
-  the first failing tick, a dump there and the tick before, a screenshot, the replay, mutant checks,
-  then a fix and a rerun.
+  the first failing tick, its replay opened in the in-browser debugger at that tick (the failed
+  check, the tick before, the timeline), a dump there and the tick before, a screenshot, the
+  replay, mutant checks, then a fix and a rerun.
 
 ## Adding a skill
 

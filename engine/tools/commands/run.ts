@@ -42,7 +42,9 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  * and by `tick`), or null; the run stops there and fails. `failure` is the first failed check
  * (`{ tick, kind, index, path, op, expected, actual, message }`) or null, and `failures` every
  * check that failed at that tick. A failing run writes a replay file (`replay.ts`) and gives its
- * path in `replayFile` (null otherwise, and for replays themselves). On a replay file `replay` is
+ * path in `replayFile` (null otherwise, and for replays themselves); `debug` (Engine 0.14 T11) is
+ * the `pnpm cli debug <file>` line that opens a failed game run in the debugger at its failing
+ * tick (null when it passed, and for a world run). On a replay file `replay` is
  * `{ source, expectedTick, reproduced, hashesChecked, hashMismatch }` (null for other run files),
  * and a hash that differs from the stored one fails the run. Exit 0 when every check passed, 4
  * (`failedCheck`) otherwise, 3 (`invalidContent`, with `errors`) when the run file or the game's
@@ -54,6 +56,23 @@ export function ruleIds(flag: string | undefined): string[] {
     .split(',')
     .map((id) => id.trim())
     .filter((id) => id !== '');
+}
+
+/**
+ * The command line that opens a failed game run in the debugger (Engine 0.14 T11): its replay
+ * file (which opens at the failing tick), else the run file itself (a replay that failed again,
+ * or a run file whose sync hash differs, opened at that tick). Null for a world run, which the
+ * debugger does not step.
+ */
+export function debugLine(
+  runFile: string,
+  worldFile: string | null,
+  replayFile: string | null,
+  mismatchTick: number | null,
+): string | null {
+  if (worldFile !== null) return null;
+  if (replayFile !== null) return `pnpm cli debug ${replayFile}`;
+  return `pnpm cli debug ${runFile}${mismatchTick === null ? '' : ` --tick ${mismatchTick}`}`;
 }
 
 export const runCommand = defineCommand({
@@ -80,6 +99,9 @@ export const runCommand = defineCommand({
     const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
     const passed = failures.length === 0 && !replay?.hashMismatch && hashMismatch === null;
     const replayFile = failures.length > 0 && !stored ? writeReplay(played.value, ctx.cwd, ctx.outDir) : null;
+    const debug = passed
+      ? null
+      : debugLine(loaded.file, loaded.worldFile, replayFile, hashMismatch?.tick ?? null);
     return {
       exit: passed ? EXIT.ok : EXIT.failedCheck,
       result: {
@@ -119,6 +141,7 @@ export const runCommand = defineCommand({
         codesChecked,
         replayFile,
         replay,
+        debug,
       },
     };
   },
@@ -191,6 +214,7 @@ export const runCommand = defineCommand({
       );
     }
     if (result.replayFile) lines.push(`  replay file: ${String(result.replayFile)}`);
+    if (result.debug) lines.push(`  open it in the debugger: ${String(result.debug)}`);
     for (const h of hashes) lines.push(`  hash @${h.tick}: ${h.hash}`);
     return lines.join('\n');
   },

@@ -388,7 +388,9 @@ Use `pnpm -s cli <command> ... --json`: stdout is then exactly one JSON object
 
 1. `validate games/<game>`: fix every error it names (file and field), until exit 0.
 2. `run games/<game>/runs/<name>.run.json`: read `failure` (first failing tick, check, `expected`,
-   `actual`) and `replayFile`.
+   `actual`), `replayFile` and `debug`, the line that opens the replay in the in-browser debugger
+   at the failing tick (`pnpm cli debug <replayFile>`; `--check --json` for `{ openTick, failure,
+reproduced, hashMismatch }`).
 3. `dump <run-file or replay> --tick N`: look at the whole state at the failing tick.
 4. `get` / `set` / `add` / `remove <file> <path> [value]`: change content; every write is
    schema-checked and read back (`verified: true`).

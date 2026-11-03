@@ -44,4 +44,4 @@
 ## Skills
 
 - [Scaffold a game](.claude/skills/scaffold-game/SKILL.md): make a new one-room game in `games/<name>/` that passes `validate`, `run` and the four checks
-- [Debug a failing run](.claude/skills/debug-failing-run/SKILL.md): from a failing `run` to its first failing tick, dumps, screenshot, replay and mutant checks, then fix and rerun
+- [Debug a failing run](.claude/skills/debug-failing-run/SKILL.md): from a failing `run` to its first failing tick, the replay in the debugger at that tick, dumps, screenshot, replay and mutant checks, then fix and rerun

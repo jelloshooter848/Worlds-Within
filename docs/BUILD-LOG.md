@@ -144,6 +144,23 @@ kit)`; the platformer test hands the top-down ids to its vault rounds and the mi
   stepped in the page (it builds games; a world run's dump file opens read-only). No layer arrow
   and no golden hash changed. Tests: `debugger/model.test.ts`, `debug.test.ts`,
   `tests/browser/debugger.test.ts`, `tests/build/pages.test.ts`.
+- **The timeline viewer and failing replays at their failing tick** (T11, decisions 2 and 4): the
+  debugger's Timeline panel draws the timeline record at the tick shown (the game's `timeline()`
+  hook with its clock filled from every game tick's world tick, `DebugSession.timeline()`, equal
+  to `pnpm cli timeline`'s) on one axis of game ticks: the world clock (moving or standing still
+  while a round is played), frozen spans, experience time, opportunity windows with each status
+  change and its cause, and missions open to commit with the outcome; a world tick past the clock
+  is placed as if the world moves one tick per game tick (`projected`). Clicking a marker goes to
+  its tick. The layout is a pure model, `engine/tools/debugger/timeline.ts` (`timelineLayout`,
+  `timelineText`), tested in Node; `window.__wwDebugger.timeline()` prints it as text and
+  `timelineLayout()` gives the rows. A replay opens at `replay.failure.tick` with the failed check
+  (path, op, expected against the actual value, `DebugSession.failure()`), buttons for that tick
+  and the tick before, and the first stored hash that differs marked in the banner and on the
+  timeline. A failing `run` prints `pnpm cli debug <replayFile>` (`debug` in its result, and its
+  text); `debug <replay> --check --json` adds `{ failure, reproduced, hashMismatch }` (exit 4 when
+  a replay does not reproduce). The debug-failing-run skill opens the replay in the debugger as
+  its step 2. No layer arrow and no golden hash changed. Tests: `debugger/timeline.test.ts`,
+  `debugger/model.test.ts`, `debug.test.ts`, `run.test.ts`, `tests/browser/debugger.test.ts`.
 
 ### Planned tasks
 

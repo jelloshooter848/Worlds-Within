@@ -167,10 +167,54 @@ describe.skipIf(missing !== null)('debug --check (headless Chromium)', () => {
       cwd: ROOT,
       outDir: relative(ROOT, dir),
     });
-    const replay = String((JSON.parse(stdout) as { replayFile: string }).replayFile);
+    const ran = JSON.parse(stdout) as { replayFile: string; debug: string };
+    const replay = String(ran.replayFile);
+    // Engine 0.14 T11: the failing run names the line that opens its replay in the debugger.
+    expect(ran.debug).toBe(`pnpm cli debug ${replay}`);
+    const stored = (
+      JSON.parse(readFileSync(join(ROOT, replay), 'utf8')) as { replay: { failure: { tick: number } } }
+    ).replay.failure;
     const { code, result } = await cli(['debug', replay, '--check']);
     expect(code).toBe(EXIT.ok);
-    expect(result).toMatchObject({ kind: 'replay', openTick: 100, tick: 100, matchesHeadless: true });
+    expect(result).toMatchObject({
+      kind: 'replay',
+      openTick: stored.tick,
+      tick: 100,
+      matchesHeadless: true,
+      reproduced: true,
+      hashMismatch: null,
+      failure: {
+        tick: 100,
+        kind: 'assertion',
+        path: 'hero.room',
+        op: 'eq',
+        expected: 'nowhere',
+        actual: 'guard-room',
+        reached: true,
+        reproduced: true,
+        tickBefore: 99,
+      },
+    });
+
+    // The same replay with a stored hash that differs: the page stops at that tick and says so.
+    const json = JSON.parse(readFileSync(join(ROOT, replay), 'utf8')) as {
+      game: string;
+      replay: { source: string; hashes: { tick: number; hash: string }[] };
+    };
+    json.replay.hashes = json.replay.hashes.map((h) =>
+      h.tick === 40 ? { ...h, hash: '0000000000000000' } : h,
+    );
+    const tampered = replay.replace(/\.run\.json$/, '-tampered.run.json');
+    writeFileSync(join(ROOT, tampered), JSON.stringify(json));
+    const bad = await cli(['debug', tampered, '--check']);
+    expect(bad.code).toBe(EXIT.failedCheck);
+    expect(bad.result).toMatchObject({
+      openTick: 100,
+      tick: 40,
+      hashMismatch: { tick: 40, expected: '0000000000000000', source: 'replay' },
+      reproduced: null,
+      failure: { tick: 100, reached: false },
+    });
   }, 60_000);
 
   it('exits 4 when the page finds a stored hash that differs', async () => {

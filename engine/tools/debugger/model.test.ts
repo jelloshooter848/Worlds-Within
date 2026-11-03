@@ -8,14 +8,17 @@ import { checkGameTexts } from '../game-check';
 import type { DebugRunJob } from './job';
 import { DebugSession, diffStates, headlessOptions, searchState, type SessionOptions } from './model';
 import { buildDebugJob, debugKindOf } from './server';
+import { playWorldData } from '../world-data';
 
 // The debugger's model in Node (Engine 0.14 T10): stepping to N, rewinding to M < N and stepping
 // back to N give the run's golden hashes at each tick, with the per-tick cache and without it (the
-// re-simulation alone); the checks, the event log, the diff and the search.
+// re-simulation alone); the checks, the event log, the diff and the search; (T11) the timeline
+// record with its clock and a replay's failed check.
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
 const WALK = 'games/demo/runs/walk-east.run.json';
 const SIEGE = 'games/samples/mini-siege/runs/delegated.run.json';
+const PLAYED = 'games/samples/mini-siege/runs/played.run.json';
 
 /** The golden hashes of a run file, by tick. */
 function golden(run: string): Map<number, string> {
@@ -54,6 +57,16 @@ async function sessionFor(
     () => entry.createGame(content.value, job.seed, headlessOptions(job)),
     extra,
   );
+}
+
+/** A session on a (changed) job, its game from the job's headless module. */
+async function sessionOn(job: DebugRunJob): Promise<DebugSession> {
+  const content = checkGameTexts(job.files, job.root);
+  if (!content.ok) throw new Error(JSON.stringify(content.errors));
+  const entry = (await import(
+    pathToFileURL(resolve(ROOT, job.game, content.value.manifest.headless)).href
+  )) as HeadlessEntry;
+  return new DebugSession(job, () => entry.createGame(content.value, job.seed, headlessOptions(job)));
 }
 
 describe('DebugSession', () => {
@@ -171,6 +184,82 @@ describe('DebugSession', () => {
     const s = await sessionFor(WALK);
     expect(s.events()).toBeNull();
     expect(s.stepEvents()).toBeNull();
+  });
+});
+
+describe('DebugSession: timeline and replay failures (Engine 0.14 T11)', () => {
+  it("gives the mini siege's timeline record with the clock the tools fill", async () => {
+    const s = await sessionFor(PLAYED);
+    expect(s.goto(666)).toBe(666);
+    const data = await playWorldData(ROOT, PLAYED, 666);
+    if (!data.ok) throw new Error('no world data');
+    expect(s.timeline()).toEqual(data.value.timeline);
+    // Back at tick 100 (inside the round): the world stands at 40 and the siege is still frozen.
+    s.goto(100);
+    const back = s.timeline()!;
+    expect(back.clock).toEqual([
+      { game: 0, world: 0 },
+      { game: 40, world: 40 },
+      { game: 100, world: 40 },
+    ]);
+    expect(back.frozen).toEqual([{ event: 'siege', by: 'mission:sabotage', from: 40, to: null }]);
+    // The cache off: the same clock from the re-simulation alone.
+    const fresh = await sessionFor(PLAYED, { cache: false });
+    fresh.goto(100);
+    expect(fresh.timeline()).toEqual(back);
+  });
+
+  it('gives no timeline for a game with no world', async () => {
+    expect((await sessionFor(WALK)).timeline()).toBeNull();
+  });
+
+  it("reads a replay's failed check at its tick: actual value, reproduced, the tick before", async () => {
+    const job = await jobFor(WALK);
+    const failing = {
+      ...job,
+      kind: 'replay' as const,
+      checks: [
+        ...job.checks,
+        {
+          kind: 'assertion' as const,
+          index: 9,
+          tick: 100,
+          path: 'hero.room',
+          op: 'eq' as const,
+          value: 'nowhere',
+        },
+      ],
+      failure: {
+        tick: 100,
+        kind: 'assertion',
+        path: 'hero.room',
+        op: 'eq',
+        expected: 'nowhere',
+        message: 'hero.room is "guard-room", expected "nowhere"',
+      },
+    };
+    const s = await sessionOn(failing);
+    expect(s.failure()).toMatchObject({ tick: 100, reached: false, reproduced: null, tickBefore: 99 });
+    s.goto(100);
+    expect(s.failure()).toMatchObject({
+      reached: true,
+      actual: 'guard-room',
+      reproduced: true,
+      path: 'hero.room',
+      op: 'eq',
+      expected: 'nowhere',
+    });
+    s.goto(99);
+    expect(s.failure()!.reproduced).toBe(true);
+    // A stored failure the run does not give (a different expected value passes there).
+    const passes = await sessionOn({
+      ...failing,
+      checks: [...job.checks, { ...failing.checks.at(-1)!, value: 'guard-room' }],
+      failure: { ...failing.failure, expected: 'guard-room' },
+    });
+    passes.goto(100);
+    expect(passes.failure()).toMatchObject({ reached: true, reproduced: false, actual: 'guard-room' });
+    expect((await sessionFor(WALK)).failure()).toBeNull();
   });
 });
 
