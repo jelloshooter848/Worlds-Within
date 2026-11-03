@@ -41,6 +41,13 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // no input makes that run pass with the golden hashes.
 
 const GAME = 'games/samples/mini-siege/';
+/** The campaign's entries after the dawn, from its file (none until Engine 0.14 T12's ridge camp). */
+const AFTER_DAWN = (() => {
+  const { entries } = JSON.parse(
+    readFileSync(join(ROOT, GAME, 'content/campaigns/siege.campaign.json'), 'utf8'),
+  ) as { entries: { scenario: string; ticks: number; title: string }[] };
+  return entries.slice(entries.findIndex((e) => e.scenario === 'dawn') + 1);
+})();
 /** Loop steps per world tick (`STEPS_PER_TICK` in play.ts). */
 const STEPS_PER_TICK = 6;
 /** The keys the shell binds to each action (`engine/core/input/bindings.ts`). */
@@ -363,6 +370,16 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await hook(page, 'captive')).toBe('');
         expect(await page.locator('#launches button').count()).toBe(0);
         expect(await toEntryEnd(page, frames)).toBe(200);
+        // Every entry after the dawn (Engine 0.14 T12: a scenario added with data files only,
+        // gap M37) is continued to and played to its end, read from the campaign file.
+        for (const entry of AFTER_DAWN) {
+          expect(await hook(page, 'ended')).toMatchObject({ done: false, next: entry.title });
+          expect(await page.locator('#continue').textContent()).toBe(`Continue: ${entry.title}`);
+          await page.click('#continue');
+          await frames(2);
+          expect(await hook(page, 'scenario')).toBe(entry.scenario);
+          expect(await toEntryEnd(page, frames)).toBe(entry.ticks);
+        }
         expect(await hook(page, 'ended')).toMatchObject({ done: true, next: null });
         expect(await page.locator('#continue').textContent()).toBe('Play again');
         expect(await page.locator('#result').textContent()).toContain('The campaign is over.');

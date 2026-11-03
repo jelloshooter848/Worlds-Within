@@ -120,14 +120,18 @@ describe('the mini siege content', () => {
       'wall-tower',
       'watchtower',
     ]);
-    expect(siegeMissions(content).map((m) => [m.id, m.play, m.worldTimeCost])).toEqual([
-      ['exchange-captain', undefined, 10],
-      ['fortify', 'td-defence', 30],
-      ['leave-captain', undefined, 1],
-      ['ransom-captain', undefined, 10],
-      ['rescue-captain', 'mission-room', 40],
-      ['sabotage', 'mission-room', 120],
-    ]);
+    // The siege's and the dawn's missions; a scenario added with data files only may add its own
+    // (Engine 0.14 T12, gap M37), so the list is checked to contain these.
+    expect(siegeMissions(content).map((m) => [m.id, m.play, m.worldTimeCost])).toEqual(
+      expect.arrayContaining([
+        ['exchange-captain', undefined, 10],
+        ['fortify', 'td-defence', 30],
+        ['leave-captain', undefined, 1],
+        ['ransom-captain', undefined, 10],
+        ['rescue-captain', 'mission-room', 40],
+        ['sabotage', 'mission-room', 120],
+      ]),
+    );
     expect(siegeRooms(content).map((r) => r.id)).toEqual(['engine-camp']);
     expect(siegeDefenceMaps(content).map((m) => [m.id, m.towers])).toEqual([
       ['walls', ['archers', 'ballista']],
@@ -440,7 +444,9 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
 
   it('plays the siege, then the dawn, from the campaign file', () => {
     const campaign = siegeCampaign(content);
-    expect(campaign.entries).toEqual([
+    // The siege, then the dawn; entries after them are data a scenario adds by itself (Engine
+    // 0.14 T12, gap M37: the ridge camp), never pinned here.
+    expect(campaign.entries.slice(0, 2)).toEqual([
       { scenario: 'village', ticks: 260, title: 'The siege' },
       { scenario: 'dawn', ticks: 200, title: 'The dawn assault' },
     ]);

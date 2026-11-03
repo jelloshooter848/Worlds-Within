@@ -12,7 +12,8 @@ import { isFullMap, MINI_GAME_STATUS, skinSet, type PresentFrame } from '@engine
 import { SceneStack } from '@engine/core/scene';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { PointerGesture } from '@engine/core/input/pointer-logic';
-import { loadMiniSiege, siegeMissions } from './content';
+import { campaignOrder, entryId } from '@engine/core/campaign';
+import { loadMiniSiege, siegeCampaign, siegeMissions } from './content';
 import { siegePicture } from './picture';
 import { SiegePlay } from './play';
 
@@ -406,7 +407,26 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
     expect(soldier.byTag?.[0]?.tag).toBe('hero');
     while (p.play.ended() === null) p.step();
     expect(p.play.tick).toBe(200);
-    expect(p.play.ended()).toMatchObject({ scenario: 'dawn', done: true, next: null });
+    // Every entry after the dawn (Engine 0.14 T12: a scenario added with data files only, gap M37)
+    // is played to its end the same way, read from the campaign file, never named here.
+    const order = campaignOrder(siegeCampaign(content));
+    const afterDawn = order.slice(order.findIndex((e) => entryId(e) === 'dawn') + 1);
+    expect(p.play.ended()).toMatchObject({
+      scenario: 'dawn',
+      done: afterDawn.length === 0,
+      next: afterDawn[0]?.title ?? null,
+    });
+    for (const [i, entry] of afterDawn.entries()) {
+      p.play.press({ kind: 'continue' });
+      p.step();
+      expect(p.play.scenario).toBe(entryId(entry));
+      while (p.play.ended() === null) p.step();
+      expect(p.play.ended()).toMatchObject({
+        scenario: entryId(entry),
+        done: i === afterDawn.length - 1,
+        next: afterDawn[i + 1]?.title ?? null,
+      });
+    }
     // The campaign is over: a later visit has nothing to carry on, and Continue starts over.
     expect(new SiegePlay({ content, seed: 11, pointer: null }).storedSave()).toBeNull();
     p.play.press({ kind: 'continue' });
