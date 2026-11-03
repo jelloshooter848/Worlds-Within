@@ -4,6 +4,7 @@ import { NullRenderer } from '@engine/backends/null';
 import { ScriptedInput } from './input/scripted-input';
 import type { Action } from './input/actions';
 import {
+  controlsHint,
   hostStatusFor,
   miniGameTable,
   RoundInput,
@@ -64,6 +65,50 @@ describe('miniGameTable', () => {
     expect(round.result()).toBe('pass');
     expect(round.report?.()).toEqual({ result: 'pass', held: 1, need: 1 });
     expect(HOLD.create({ params: {}, attempt: 1 }, 1).report).toBeUndefined();
+  });
+});
+
+describe('controlsHint (Engine 0.15 T10, lesson D14)', () => {
+  const keys = { left: '←', right: '→', up: '↑', down: '↓', jump: 'Z', attack: 'X', select: 'RIGHT SHIFT' };
+
+  it('writes each control as its keys and label, the directions together, the pointer after "or"', () => {
+    expect(
+      controlsHint(
+        [
+          { actions: ['left', 'right', 'up', 'down'], tap: 'a tap', label: 'move' },
+          { actions: ['attack'], label: 'strike' },
+          { actions: ['select'], label: 'give up' },
+        ],
+        keys,
+      ),
+    ).toBe('←→↑↓ or a tap: move, X: strike, RIGHT SHIFT: give up');
+  });
+
+  it("shows the host keys that reach a round action through the def's input map", () => {
+    // The host's jump becomes the round's attack; the host's attack is dropped.
+    expect(
+      controlsHint([{ actions: ['attack'], label: 'strike' }], keys, { jump: 'attack', attack: null }),
+    ).toBe('Z: strike');
+    // Two host keys reach it: both shown.
+    expect(controlsHint([{ actions: ['attack'], label: 'strike' }], keys, { jump: 'attack' })).toBe(
+      'Z/X: strike',
+    );
+  });
+
+  it('follows a remap, and leaves out an action with no key name', () => {
+    expect(controlsHint([{ actions: ['attack'], label: 'strike' }], { ...keys, attack: 'J' })).toBe(
+      'J: strike',
+    );
+    expect(controlsHint([{ actions: ['special'], label: 'use' }], keys)).toBe('use');
+  });
+
+  it('is checked by miniGameTable: a control needs a label and real actions', () => {
+    expect(() => miniGameTable([{ ...HOLD, controls: [{ actions: ['attack'], label: '' }] }])).toThrow(
+      'label',
+    );
+    expect(() =>
+      miniGameTable([{ ...HOLD, controls: [{ actions: ['fly' as Action], label: 'fly' }] }]),
+    ).toThrow('actions');
   });
 });
 

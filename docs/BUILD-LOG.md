@@ -222,6 +222,40 @@ engine/sim/sample-world` needed no update): exactly the files decision 10 predic
     passes as it is with no weak guard, `enemy-follows-plan` is guarded by 14 runs and
     `towerdefense:win-on-clear` by one, and the rest are the lenient rules no run guards, as
     before. No layer arrow changed.
+- **The mission-launch scene and campaign page flow** (T10, decision 11): M26, M34, M36 and D14
+  fixed. `engine/core/shell/mission-launch.ts` (pure, added to `PURE_CORE`): `MissionLaunch`, the
+  flow without DOM over a `MissionHost`-shaped `LaunchGame`, with what only the kit knows handed
+  in (`offers`, `tick`, `control`, `onGame`, `status`, and a campaign's `entryOver`, `save` and
+  `summary`): the launch buttons, the host paused while the player chooses (Play, Delegate, or
+  Decide for a mission without `play`), the round pushed by its `HostScene` and stepped every loop
+  step while the host steps every `stepsPerTick`, every campaign entry **held at tick 0** until
+  `begin` with a briefing from the campaign file (M34), the entry's end by the game's `entryOver`,
+  the result (`LaunchEntryResult`: outcome titles, people, verdict, the session's save and code),
+  Continue, a typed code and the stored save (M36). `engine/core/shell/mission-bar.ts`:
+  `mountMissionBar`, its DOM (the bar, the briefing with Begin, the result panel), the shell's
+  own. **D14:** `MiniGameDef.controls` (`MiniGameControl { actions, tap?, label }`) and
+  `controlsHint(controls, keys, inputMap?)` in `engine/core/minigame.ts`, a mission file's
+  optional `hint`, and `MissionHost.roundHint(keys)`; the topdown kit's `missionRoom` declares
+  `MISSION_ROOM_CONTROLS`, the towerdefense kit's `tdDefence` `TD_DEFENCE_CONTROLS` (its
+  `TD_CONTROLS` plus give up), and the bar writes them with the player's current key names. A
+  campaign entry gains an optional `text` (the briefing); the mini siege's three entries have one.
+  The mini siege's `play.ts` is now the launch's options (its `PageButton`, `SiegeEntryResult`,
+  button handling, entry end and result building are gone) and its `main.ts` the boot,
+  `mountMissionBar` and `window.wwSiege` (`ROUND_HINTS`, `showBar`, `showResult` and
+  `statusText` are gone; `index.html` lost the bar's markup and styles). The tower-defense
+  sample's `HINT` is gone: its status shows `TD_CONTROLS` with the player's keys. Tests:
+  `engine/core/shell/mission-launch.test.ts`, `controlsHint` in `minigame.test.ts`, `roundHint`
+  in `mission-host.test.ts`, the entry `text` in `campaign.test.ts`, two more in the mini siege's
+  `play.test.ts` (entries held until begun, the round's hint), and
+  `tests/browser/mini-siege-page.test.ts` now begins every entry (each held at tick 0 with its
+  briefing, nothing stepping or offered until Begin), the dawn resumed from a code held too.
+  Choices: the hold is on by default for a campaign (`hold: false` turns it off; most of the
+  mini siege's `play.test.ts` cases use it to stay as they were); while held nothing is offered
+  or launched, but a code or the stored save may still be used; the round's hint uses each
+  action's first keyboard binding (`keyHintMap`), so give up reads "RIGHT SHIFT" where the old
+  string said Backspace; the step hook's `replay` does not press Begin (the mini siege's runs do
+  not replay in its page anyway: its battle steps every sixth loop step). No golden hash moved
+  (pages are not hashed); no layer arrow changed.
 
 ### Planned tasks
 

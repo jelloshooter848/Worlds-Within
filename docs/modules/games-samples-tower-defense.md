@@ -26,7 +26,8 @@ launcher.
 - `play.ts`: `TdPlay` (the page's scene: one game tick per update at its `tickRate` of 30, paced
   and merged by the shell since Engine 0.15, gap D2; keys and taps are frame input the kit reads,
   gap D1); `main.ts` + `index.html`: the page over `bootBrowserGame` (the shell's volume control,
-  gap M1; the bar's buttons through `InputManager.press`; `window.wwTd` for scripts).
+  gap M1; the bar's buttons through `InputManager.press`; the status's hint from the kit's
+  `TD_CONTROLS` with the player's keys, lesson D14; `window.wwTd` for scripts).
 - `runs/tapped.run.json` (Engine 0.15): a round won by pointer taps (`input.taps`).
 - `headless.ts`: `createGame(content, seed, opts?)`, the kit's `TdGame` (snapshot
   `{ round, controls, kit }`).

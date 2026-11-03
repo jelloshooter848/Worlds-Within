@@ -13,8 +13,10 @@ import { InputRecorder } from './input/input-recorder';
 import { ScriptedInput, type InputScript } from './input/scripted-input';
 import { missionRoundEnd, type MiniGameEnd } from './mission-adapter';
 import {
+  controlsHint,
   hostStatusFor,
   miniGameTable,
+  type ControlKeyNames,
   RoundInput,
   type MiniGame,
   type MiniGameDef,
@@ -312,6 +314,20 @@ export class MissionHost implements HostedGame<MissionHost> {
   /** The mission whose round is hosted now, or null. */
   get playing(): MissionDef | null {
     return this.hosted?.mission ?? null;
+  }
+
+  /**
+   * The key hint for the round hosted now (Engine 0.15 T10, lesson D14), or '' while none is: the
+   * mission file's own `hint` when it gives one, else the mini game's `controls` written with
+   * `keys` (the player's key names, `keyHintMap` in the shell) through its `inputMap`
+   * (`controlsHint`); '' when the mini game declares no controls.
+   */
+  roundHint(keys: ControlKeyNames = {}): string {
+    const mission = this.playing;
+    if (mission === null) return '';
+    if (mission.hint !== undefined) return mission.hint;
+    const def = mission.play === undefined ? undefined : this.miniGames.get(mission.play);
+    return def?.controls === undefined ? '' : controlsHint(def.controls, keys, def.inputMap);
   }
 
   step(input: InputFrame): void {

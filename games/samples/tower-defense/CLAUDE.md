@@ -104,7 +104,8 @@ screen, cursor)` and `tdCanvasPicture(r, look, cursor, onSound?)`. No drawing of
 - `main.ts` + `index.html`: the page: `bootBrowserGame` with Canvas2D, `game` (the volume
   control's storage key, gap M1), the touch pad, `pointer: true` and `audio` (the sfx and the song
   `road`), the bar (Wave, Tower, Sell, pressing through the shell's `InputManager.press`, and the
-  status) and `window.wwTd` (`tick()`, `kit()`, `cursor()`) for the browser test. No cell-to-client
+  status; before the first wave its hint is the kit's `TD_CONTROLS` written by `controlsHint` with
+  the player's key names, Engine 0.15 T10, lesson D14: the page's `HINT` string is gone) and `window.wwTd` (`tick()`, `kit()`, `cursor()`) for the browser test. No cell-to-client
   copy (gap D13): the test taps through the kit's `screenAtCell` and `window.__ww.toClient`.
 - `play.test.ts`: `TdPlay` on a `SceneStack` (paced at its `tickRate`) into the null backend: the
   `won` input typed one tick at a time wins with the run's golden hash at tick 700 and shows every

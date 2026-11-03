@@ -64,8 +64,14 @@ function tap(x: number, y: number, button?: 'primary' | 'secondary'): ScriptedIn
 }
 
 /** The page: the scene stack with `SiegePlay`'s scene, drawing every step into the null backend. */
-function page() {
-  const play = new SiegePlay({ content, seed: content.manifest.start.seed, pointer: null, stepsPerTick: 1 });
+function page(hold = false) {
+  const play = new SiegePlay({
+    content,
+    seed: content.manifest.start.seed,
+    pointer: null,
+    stepsPerTick: 1,
+    hold,
+  });
   const stack = new SceneStack();
   const presenter = new NullPresenter({ validate: true, freeze: true });
   stack.push(play.scene(stack, () => siegePicture(presenter, content, play.ui)));
@@ -80,13 +86,13 @@ function page() {
 
 /** Steps the battle to world tick 40, where the launch button offers the sabotage. */
 function toLaunch(p: ReturnType<typeof page>): void {
-  expect(p.play.launchButtons()).toEqual([]);
+  expect(p.play.launch.launchButtons()).toEqual([]);
   while (p.play.tick < 40) p.step();
-  expect(p.play.launchButtons()).toEqual(['sabotage']);
-  p.play.press({ kind: 'launch', mission: 'sabotage' });
+  expect(p.play.launch.launchButtons()).toEqual(['sabotage']);
+  p.play.launch.press({ kind: 'launch', mission: 'sabotage' });
   p.step();
-  expect(p.play.choice()).toBe('sabotage');
-  expect(p.play.launchButtons()).toEqual([]);
+  expect(p.play.launch.choice()).toBe('sabotage');
+  expect(p.play.launch.launchButtons()).toEqual([]);
   // Nothing steps while the choice is shown.
   p.step();
   expect(p.play.tick).toBe(40);
@@ -95,10 +101,10 @@ function toLaunch(p: ReturnType<typeof page>): void {
 /** Steps the battle to world tick 10 and launches the fortify mission (the preparation phase). */
 function toFortify(p: ReturnType<typeof page>): void {
   while (p.play.tick < 10) p.step();
-  expect(p.play.launchButtons()).toEqual(['fortify']);
-  p.play.press({ kind: 'launch', mission: 'fortify' });
+  expect(p.play.launch.launchButtons()).toEqual(['fortify']);
+  p.play.launch.press({ kind: 'launch', mission: 'fortify' });
   p.step();
-  expect(p.play.choice()).toBe('fortify');
+  expect(p.play.launch.choice()).toBe('fortify');
   p.step();
   expect(p.play.tick).toBe(10);
 }
@@ -112,13 +118,13 @@ describe('the page glue, headless', () => {
   it('delegates: the battle freezes, the world draws ram-burnt at the commit tick', () => {
     const p = page();
     toLaunch(p);
-    p.play.press({ kind: 'delegate' });
+    p.play.launch.press({ kind: 'delegate' });
     p.step();
-    expect(p.play.choice()).toBeNull();
+    expect(p.play.launch.choice()).toBeNull();
     expect(p.play.game.miniGame()).toBeNull();
-    while (p.play.records().length === 0) p.step();
+    while (p.play.launch.records().length === 0) p.step();
     expect(p.play.tick).toBe(160);
-    expect(p.play.records()[0]).toMatchObject({
+    expect(p.play.launch.records()[0]).toMatchObject({
       outcome: 'ram-burnt',
       resolution: 'delegated',
       commitTick: 160,
@@ -137,7 +143,7 @@ describe('the page glue, headless', () => {
     const keys = new ScriptedInput(recordedRound());
     // Engine 0.14 T9 (gap M19): the round is recorded as the page plays it (`?record` on the page).
     p.play.game.recordRounds(true);
-    p.play.press({ kind: 'play' });
+    p.play.launch.press({ kind: 'play' });
     let roundTicks = 0;
     do {
       keys.next();
@@ -164,9 +170,9 @@ describe('the page glue, headless', () => {
       game: 'mission-room',
       result: 'pass',
     });
-    while (p.play.records().length === 0) p.step();
+    while (p.play.launch.records().length === 0) p.step();
     expect(p.play.tick).toBe(160);
-    expect(p.play.records()[0]).toMatchObject({
+    expect(p.play.launch.records()[0]).toMatchObject({
       outcome: 'both-burnt',
       resolution: 'played',
       commitTick: 160,
@@ -178,21 +184,25 @@ describe('the page glue, headless', () => {
   it('refuses a launch once the window has closed, and keeps the reason', () => {
     const p = page();
     while (p.play.tick < 200) p.step();
-    expect(p.play.launchButtons()).toEqual([]);
-    p.play.press({ kind: 'launch', mission: 'sabotage' });
+    expect(p.play.launch.launchButtons()).toEqual([]);
+    p.play.launch.press({ kind: 'launch', mission: 'sabotage' });
     p.step();
-    expect(p.play.choice()).toBeNull();
-    expect(p.play.message).toMatch(/^not_offered: /);
+    expect(p.play.launch.choice()).toBeNull();
+    expect(p.play.launch.message).toMatch(/^not_offered: /);
   });
 
   it('delegates the preparation phase: overrun lands at the commit tick, 30 after the launch', () => {
     const p = page();
     toFortify(p);
-    p.play.press({ kind: 'delegate' });
+    p.play.launch.press({ kind: 'delegate' });
     p.step();
-    while (p.play.records().length === 0) p.step();
+    while (p.play.launch.records().length === 0) p.step();
     expect(p.play.tick).toBe(40);
-    expect(p.play.records()[0]).toMatchObject({ mission: 'fortify', outcome: 'overrun', commitTick: 40 });
+    expect(p.play.launch.records()[0]).toMatchObject({
+      mission: 'fortify',
+      outcome: 'overrun',
+      commitTick: 40,
+    });
     expect(p.frames.at(-1)!.events).toEqual([
       { type: 'mission-commit', mission: 'fortify', outcome: 'overrun', resolution: 'delegated' },
     ]);
@@ -205,7 +215,7 @@ describe('the page glue, headless', () => {
     toFortify(p);
     const keys = new ScriptedInput(recordedRound('fortify-played'));
     p.play.game.recordRounds(true);
-    p.play.press({ kind: 'play' });
+    p.play.launch.press({ kind: 'play' });
     let roundTicks = 0;
     do {
       keys.next();
@@ -229,9 +239,9 @@ describe('the page glue, headless', () => {
       game: 'td-defence',
       result: 'pass',
     });
-    while (p.play.records().length === 0) p.step();
+    while (p.play.launch.records().length === 0) p.step();
     expect(p.play.tick).toBe(40);
-    expect(p.play.records()[0]).toMatchObject({
+    expect(p.play.launch.records()[0]).toMatchObject({
       outcome: 'held-cheap',
       resolution: 'played',
       commitTick: 40,
@@ -243,7 +253,7 @@ describe('the page glue, headless', () => {
   it('places and sells towers in the walls round by pointer taps (frame input), then quits to overrun', () => {
     const p = page();
     toFortify(p);
-    p.play.press({ kind: 'play' });
+    p.play.launch.press({ kind: 'play' });
     p.step();
     const kit = () => p.play.game.miniGame()!.snapshot()['kit'] as Record<string, unknown>;
     const cursor = () => p.play.game.miniGame()!.snapshot()['controls'] as Record<string, unknown>;
@@ -274,16 +284,20 @@ describe('the page glue, headless', () => {
     quit.next();
     p.step(quit);
     expect(p.play.game.miniGame()).toBeNull();
-    while (p.play.records().length === 0) p.step();
+    while (p.play.launch.records().length === 0) p.step();
     expect(p.play.tick).toBe(40);
-    expect(p.play.records()[0]).toMatchObject({ mission: 'fortify', outcome: 'overrun', resolution: 'quit' });
+    expect(p.play.launch.records()[0]).toMatchObject({
+      mission: 'fortify',
+      outcome: 'overrun',
+      resolution: 'quit',
+    });
   });
 
   it('records the taps of a walls round played by tapping (gap D1)', () => {
     const p = page();
     p.play.game.recordRounds(true);
     toFortify(p);
-    p.play.press({ kind: 'play' });
+    p.play.launch.press({ kind: 'play' });
     p.step();
     p.step(tap(184, 88));
     p.step(tap(184, 88, 'secondary'));
@@ -305,7 +319,7 @@ describe('the page glue, headless', () => {
     const p = page();
     toFortify(p);
     const keys = new ScriptedInput(recordedRound('fortify-played'));
-    p.play.press({ kind: 'play' });
+    p.play.launch.press({ kind: 'play' });
     do {
       keys.next();
       p.step(keys);
@@ -354,7 +368,7 @@ function memoryStorage(): Storage {
 /** Plays the sabotage at 40 and gives up at once: `driven-off`, the captain captured. */
 function quitSiege(p: ReturnType<typeof page>): void {
   toLaunch(p);
-  p.play.press({ kind: 'play' });
+  p.play.launch.press({ kind: 'play' });
   const quit = new ScriptedInput({ steps: [{ frame: 0, hold: ['select'] }] });
   quit.next();
   p.step(quit);
@@ -365,12 +379,12 @@ function quitSiege(p: ReturnType<typeof page>): void {
 /** Steps the dawn to world tick `tick`, launches `mission` there and delegates (decides) it. */
 function decide(p: ReturnType<typeof page>, mission: string, tick = 5): void {
   while (p.play.tick < tick) p.step();
-  p.play.press({ kind: 'launch', mission });
+  p.play.launch.press({ kind: 'launch', mission });
   p.step();
-  expect(p.play.choice()).toBe(mission);
-  p.play.press({ kind: 'delegate' });
+  expect(p.play.launch.choice()).toBe(mission);
+  p.play.launch.press({ kind: 'delegate' });
   p.step();
-  expect(p.play.choice()).toBeNull();
+  expect(p.play.launch.choice()).toBeNull();
 }
 
 describe('the campaign on the page (Engine 0.13 T8)', () => {
@@ -380,15 +394,15 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
     vi.stubGlobal('localStorage', memoryStorage());
     const p = page();
     expect(p.play.scenario).toBe('village');
-    expect(p.play.entryTitle()).toBe('The siege');
+    expect(p.play.launch.entryTitle()).toBe('The siege');
     toLaunch(p);
-    p.play.press({ kind: 'delegate' });
+    p.play.launch.press({ kind: 'delegate' });
     toEnd(p);
-    const end = p.play.ended()!;
+    const end = p.play.launch.ended()!;
     expect(p.play.tick).toBe(260);
     expect(hash(p.play.game.snapshot())).toBe(lastHash('delegated'));
     expect(end).toMatchObject({
-      scenario: 'village',
+      entry: 'village',
       title: 'The siege',
       code: pinnedCode('delegated'),
       stored: true,
@@ -396,21 +410,21 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
       next: 'The dawn assault',
       verdict: 'the hall still stands',
     });
-    expect(end.outcomes).toEqual([p.play.outcomeTitle('sabotage', 'ram-burnt')]);
+    expect(end.outcomes).toEqual([p.play.launch.outcomeTitle('sabotage', 'ram-burnt')]);
     expect(end.people).toEqual(['Captain Hale: active, 110/120 hp']);
     // Nothing steps once the entry has ended, and nothing is offered.
     p.step();
     expect(p.play.tick).toBe(260);
-    expect(p.play.launchButtons()).toEqual([]);
+    expect(p.play.launch.launchButtons()).toEqual([]);
     // The save is in storage: a later visit offers to carry on.
-    expect(new SiegePlay({ content, seed: 11, pointer: null }).storedSave()).toEqual(end.save);
+    expect(new SiegePlay({ content, seed: 11, pointer: null }).launch.storedSave()).toEqual(end.save);
 
-    p.play.press({ kind: 'continue' });
+    p.play.launch.press({ kind: 'continue' });
     p.step();
     expect(p.play.scenario).toBe('dawn');
-    expect(p.play.ended()).toBeNull();
+    expect(p.play.launch.ended()).toBeNull();
     expect(p.play.game.named()['captain']).toMatchObject({ alive: true, hp: 110, x: 12, y: 15 });
-    expect(p.play.launchButtons()).toEqual([]);
+    expect(p.play.launch.launchButtons()).toEqual([]);
     expect(p.frames.at(-1)!.status['captives']).toBe(0);
     // The sergeant (role `hero`) is drawn with her own frames: the skin's look for the tag `hero`.
     p.step();
@@ -420,31 +434,31 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
     expect(sergeant).toBeDefined();
     const soldier = skinSet(content, 'canvas2d').main!.kinds['unit:soldier'] as { byTag?: { tag: string }[] };
     expect(soldier.byTag?.[0]?.tag).toBe('hero');
-    while (p.play.ended() === null) p.step();
+    while (p.play.launch.ended() === null) p.step();
     expect(p.play.tick).toBe(200);
     // Every entry after the dawn (Engine 0.14 T12: a scenario added with data files only, gap M37)
     // is played to its end the same way, read from the campaign file, never named here.
     const order = campaignOrder(siegeCampaign(content));
     const afterDawn = order.slice(order.findIndex((e) => entryId(e) === 'dawn') + 1);
-    expect(p.play.ended()).toMatchObject({
-      scenario: 'dawn',
+    expect(p.play.launch.ended()).toMatchObject({
+      entry: 'dawn',
       done: afterDawn.length === 0,
       next: afterDawn[0]?.title ?? null,
     });
     for (const [i, entry] of afterDawn.entries()) {
-      p.play.press({ kind: 'continue' });
+      p.play.launch.press({ kind: 'continue' });
       p.step();
       expect(p.play.scenario).toBe(entryId(entry));
-      while (p.play.ended() === null) p.step();
-      expect(p.play.ended()).toMatchObject({
-        scenario: entryId(entry),
+      while (p.play.launch.ended() === null) p.step();
+      expect(p.play.launch.ended()).toMatchObject({
+        entry: entryId(entry),
         done: i === afterDawn.length - 1,
         next: afterDawn[i + 1]?.title ?? null,
       });
     }
     // The campaign is over: a later visit has nothing to carry on, and Continue starts over.
-    expect(new SiegePlay({ content, seed: 11, pointer: null }).storedSave()).toBeNull();
-    p.play.press({ kind: 'continue' });
+    expect(new SiegePlay({ content, seed: 11, pointer: null }).launch.storedSave()).toBeNull();
+    p.play.launch.press({ kind: 'continue' });
     p.step();
     expect(p.play.scenario).toBe('village');
   });
@@ -453,28 +467,32 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
     vi.stubGlobal('localStorage', memoryStorage());
     const p = page();
     quitSiege(p);
-    const end = p.play.ended()!;
+    const end = p.play.launch.ended()!;
     expect(hash(p.play.game.snapshot())).toBe(lastHash('quit'));
     expect(end.code).toBe(pinnedCode('quit'));
     expect(end.people).toEqual(['Captain Hale: captured, 90/120 hp']);
-    expect(end.outcomes).toEqual([p.play.outcomeTitle('sabotage', 'driven-off')]);
-    p.play.press({ kind: 'continue' });
+    expect(end.outcomes).toEqual([p.play.launch.outcomeTitle('sabotage', 'driven-off')]);
+    p.play.launch.press({ kind: 'continue' });
     p.step();
     expect(p.play.scenario).toBe('dawn');
     expect(p.play.tick).toBe(0);
     expect(hash(p.play.game.snapshot())).toBe(firstHash('dawn-captured'));
-    expect(p.play.launchButtons().sort()).toEqual(['exchange-captain', 'leave-captain', 'rescue-captain']);
+    expect(p.play.launch.launchButtons().sort()).toEqual([
+      'exchange-captain',
+      'leave-captain',
+      'rescue-captain',
+    ]);
     // The captive marker: the HUD names the captain while the raiders hold him.
     expect(p.frames.at(-1)!.status).toMatchObject({ captives: 1, captive: 'Captain Hale' });
-    expect(p.play.canPlay('rescue-captain')).toBe(true);
-    expect(p.play.canPlay('exchange-captain')).toBe(false);
+    expect(p.play.launch.canPlay('rescue-captain')).toBe(true);
+    expect(p.play.launch.canPlay('exchange-captain')).toBe(false);
     decide(p, 'exchange-captain');
-    while (p.play.ended() === null) p.step();
+    while (p.play.launch.ended() === null) p.step();
     expect(hash(p.play.game.snapshot())).toBe(lastHash('dawn-exchange'));
-    expect(p.play.ended()!.outcomes).toEqual([p.play.outcomeTitle('exchange-captain', 'paid')]);
+    expect(p.play.launch.ended()!.outcomes).toEqual([p.play.launch.outcomeTitle('exchange-captain', 'paid')]);
     // Freed at 15 for 80 gold, he falls defending the village (as in the run): a dead record.
     expect(p.play.game.named()['captain']).toMatchObject({ alive: false, fate: 'dead' });
-    expect(p.play.ended()!.people[0]).toBe('Captain Hale: dead');
+    expect(p.play.launch.ended()!.people[0]).toBe('Captain Hale: dead');
     const main = skinSet(content, 'canvas2d').main!;
     for (const id of ['freed', 'paid', 'failed', 'left'])
       expect(main.events?.[`mission-commit:outcome=${id}`], id).toBeDefined();
@@ -483,22 +501,22 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
   it('resumes from a save code, and refuses a bad one with its reason', () => {
     const p = page();
     p.step();
-    p.play.press({ kind: 'code', text: 'NOT-A-USABLE-CODE' });
+    p.play.launch.press({ kind: 'code', text: 'NOT-A-USABLE-CODE' });
     p.step();
-    expect(p.play.message).toMatch(/^code_typo: /);
+    expect(p.play.launch.message).toMatch(/^code_typo: /);
     expect(p.play.scenario).toBe('village');
     const code = pinnedCode('quit');
     const typo = code.slice(0, 8) + (code[8] === '0' ? '1' : '0') + code.slice(9);
-    p.play.press({ kind: 'code', text: typo });
+    p.play.launch.press({ kind: 'code', text: typo });
     p.step();
-    expect(p.play.message).toMatch(/^code_typo: /);
-    p.play.press({ kind: 'code', text: pinnedCode('quit').toLowerCase() });
+    expect(p.play.launch.message).toMatch(/^code_typo: /);
+    p.play.launch.press({ kind: 'code', text: pinnedCode('quit').toLowerCase() });
     p.step();
-    expect(p.play.message).toBe('');
+    expect(p.play.launch.message).toBe('');
     expect(p.play.scenario).toBe('dawn');
     expect(hash(p.play.game.snapshot())).toBe(firstHash('dawn-captured'));
     decide(p, 'leave-captain');
-    while (p.play.ended() === null) p.step();
+    while (p.play.launch.ended() === null) p.step();
     expect(hash(p.play.game.snapshot())).toBe(lastHash('dawn-leave'));
   });
 
@@ -507,8 +525,8 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
     const first = page();
     quitSiege(first);
     const later = page();
-    expect(later.play.storedSave()).toEqual(first.play.ended()!.save);
-    later.play.press({ kind: 'stored' });
+    expect(later.play.launch.storedSave()).toEqual(first.play.launch.ended()!.save);
+    later.play.launch.press({ kind: 'stored' });
     later.step();
     expect(later.play.scenario).toBe('dawn');
     expect(hash(later.play.game.snapshot())).toBe(firstHash('dawn-captured'));
@@ -517,18 +535,73 @@ describe('the campaign on the page (Engine 0.13 T8)', () => {
   it('ends the campaign once the hall has fallen (its data, gap M31), and starts over on Continue', () => {
     const p = page();
     toFortify(p);
-    p.play.press({ kind: 'delegate' });
+    p.play.launch.press({ kind: 'delegate' });
     toEnd(p);
-    expect(p.play.ended()).toMatchObject({
+    expect(p.play.launch.ended()).toMatchObject({
       save: { position: 1, carried: null, ended: { entry: 0, reason: { gone: 'hall' } } },
       done: true,
       next: null,
       verdict: 'the hall has fallen',
     });
-    expect(p.play.ended()!.code).not.toBeNull();
-    p.play.press({ kind: 'continue' });
+    expect(p.play.launch.ended()!.code).not.toBeNull();
+    p.play.launch.press({ kind: 'continue' });
     p.step();
     expect(p.play.scenario).toBe('village');
     expect(p.play.tick).toBe(0);
+  });
+});
+
+describe('every campaign entry held at tick 0 until begun (Engine 0.15 T10, gap M34)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('holds the siege and the dawn at tick 0 with their briefings, and plays the same world once begun', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    const p = page(true);
+    const entries = campaignOrder(siegeCampaign(content));
+    for (let i = 0; i < 30; i++) p.step();
+    expect(p.play.tick).toBe(0);
+    expect(p.play.launch.held()).toBe(true);
+    expect(p.play.launch.briefing()).toEqual({ title: 'The siege', text: entries[0]!.text });
+    expect(p.play.launch.status()).toContain('press Begin');
+    // Nothing is offered or launched while held.
+    expect(p.play.launch.launchButtons()).toEqual([]);
+    p.play.launch.press({ kind: 'begin' });
+    p.step();
+    expect(p.play.launch.held()).toBe(false);
+    expect(p.play.launch.briefing()).toBeNull();
+    expect(p.play.tick).toBe(1);
+    // The quit siege: Continue builds the dawn, held at its tick 0 with the captive choices waiting.
+    quitSiege(p);
+    expect(hash(p.play.game.snapshot())).toBe(lastHash('quit'));
+    p.play.launch.press({ kind: 'continue' });
+    for (let i = 0; i < 30; i++) p.step();
+    expect(p.play.scenario).toBe('dawn');
+    expect(p.play.tick).toBe(0);
+    expect(p.play.launch.held()).toBe(true);
+    expect(p.play.launch.briefing()?.title).toBe('The dawn assault');
+    expect(p.play.launch.launchButtons()).toEqual([]);
+    expect(hash(p.play.game.snapshot())).toBe(firstHash('dawn-captured'));
+    p.play.launch.press({ kind: 'begin' });
+    p.step();
+    expect(p.play.launch.launchButtons().sort()).toEqual([
+      'exchange-captain',
+      'leave-captain',
+      'rescue-captain',
+    ]);
+    // A code typed in resumes held too.
+    p.play.launch.press({ kind: 'code', text: pinnedCode('quit') });
+    p.step();
+    expect(p.play.tick).toBe(0);
+    expect(p.play.launch.held()).toBe(true);
+  });
+
+  it("shows the round's key hint from the mini game's controls, with the player's key names (lesson D14)", () => {
+    const p = page();
+    toLaunch(p);
+    p.play.launch.press({ kind: 'play' });
+    p.step();
+    expect(
+      p.play.launch.status({ left: '←', right: '→', up: '↑', down: '↓', attack: 'X', select: 'BACKSPACE' }),
+    ).toBe('←→↑↓: move, X: strike, BACKSPACE: give up');
   });
 });

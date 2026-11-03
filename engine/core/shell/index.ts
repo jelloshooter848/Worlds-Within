@@ -47,3 +47,14 @@ export {
   type CampaignResume,
   type CampaignResumeRefusalCode,
 } from './campaign-session';
+export {
+  MissionLaunch,
+  type EntrySummary,
+  type LaunchButton,
+  type LaunchCampaign,
+  type LaunchCampaignSession,
+  type LaunchEntryResult,
+  type LaunchGame,
+  type MissionLaunchOptions,
+} from './mission-launch';
+export { MISSION_BAR_HEIGHT, mountMissionBar, type MissionBar, type MissionBarOptions } from './mission-bar';

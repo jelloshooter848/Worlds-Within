@@ -36,6 +36,11 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // in the same browser carries on from the stored save; a fresh page refuses a bad code with its
 // reason and resumes the dawn from the quit siege's code.
 //
+// Engine 0.15 T10 (gaps M26, M34, M36, lesson D14): the bar, the briefing and the result panel are
+// the shell's (`mountMissionBar`); every campaign entry (the siege, the dawn, the ridge camp, and
+// the dawn resumed from a code) is held at tick 0 with its briefing until Begin is clicked, nothing
+// stepping or offered before; the walls' round's key hint comes from the kit's controls.
+//
 // Engine 0.14 T9 (gap M19): the played sabotage page also has `?record`: the round typed on the
 // keyboard is recorded by the page (`window.__ww.recordings()`), equals the run file's committed
 // input, and written with `pnpm cli record` into a copy of `played.run.json` whose play step has
@@ -66,6 +71,7 @@ const KEYS: Record<string, string> = {
 
 interface Hook {
   tick(): number;
+  held(): boolean;
   scenario(): string;
   ended(): { code: string | null; next: string | null; done: boolean; people: string[] } | null;
   named(): Record<string, { alive: boolean; hp: number | null; fate?: string }>;
@@ -158,6 +164,25 @@ async function opened(
   return { page, frames, context };
 }
 
+/**
+ * The entry is held at tick 0 with its briefing (Engine 0.15 T10, gap M34): nothing steps and
+ * nothing is offered until Begin is clicked; then the briefing goes and the clock runs.
+ */
+async function begin(page: Page, frames: (n: number) => Promise<void>, title: string): Promise<void> {
+  expect(await hook(page, 'held')).toBe(true);
+  expect(await page.locator('#briefing').isVisible()).toBe(true);
+  expect(await page.locator('#briefing-title').textContent()).toBe(title);
+  await frames(STEPS_PER_TICK * 5);
+  expect(await hook(page, 'tick')).toBe(0);
+  expect(await page.locator('#launches button').count()).toBe(0);
+  expect(await page.locator('#status').textContent()).toContain('press Begin');
+  await page.click('#begin');
+  await frames(STEPS_PER_TICK);
+  expect(await hook(page, 'held')).toBe(false);
+  expect(await page.locator('#briefing').isVisible()).toBe(false);
+  expect(await hook(page, 'tick')).toBe(1);
+}
+
 /** A fresh page of the game, stepped to the launch tick and launched. */
 async function launched(
   browser: Browser,
@@ -167,6 +192,7 @@ async function launched(
   query?: string,
 ) {
   const { page, frames, context } = await opened(browser, url, errors, undefined, query);
+  await begin(page, frames, 'The siege');
   for (let i = 0; i < 400 && (await hook(page, 'tick')) < at.tick; i++) await frames(1);
   expect(await hook(page, 'tick')).toBe(at.tick);
   // One button per offered mission (the RTS kit's missionButtons): at 10 and at 40 only one.
@@ -268,7 +294,7 @@ async function toDawn(page: Page, frames: (n: number) => Promise<void>): Promise
   await frames(2);
   expect(await hook(page, 'scenario')).toBe('dawn');
   expect(await page.locator('#result').isVisible()).toBe(false);
-  expect(await hook(page, 'tick')).toBeLessThanOrEqual(1);
+  await begin(page, frames, 'The dawn assault');
 }
 
 describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () => {
@@ -392,6 +418,7 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
           await page.click('#continue');
           await frames(2);
           expect(await hook(page, 'scenario')).toBe(entry.scenario);
+          await begin(page, frames, entry.title);
           expect(await toEntryEnd(page, frames)).toBe(entry.ticks);
         }
         expect(await hook(page, 'ended')).toMatchObject({ done: true, next: null });
@@ -463,6 +490,8 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await hook(page, 'scenario')).toBe('dawn');
         expect(await hook(page, 'tick')).toBe(0);
         expect(await hook(page, 'captive')).toBe('Captain Hale');
+        // The resumed entry is held at tick 0 too (gap M34): the choices wait for Begin.
+        await begin(page, frames, 'The dawn assault');
         expect(await page.locator('#launches button').count()).toBe(3);
       }
       expect(errors).toEqual([]);

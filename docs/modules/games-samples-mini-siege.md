@@ -62,13 +62,14 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   with the host's `mission-open`, `mini-game-end` and `mission-commit` events; Engine 0.15 T6,
   gaps M6, M21 and D9).
 - `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`.
-- `play.ts`: `SiegePlay` (launch buttons, play or delegate choice, the battle at 10 ticks a second,
-  the round at 60, taps in the walls' round as frame input the round reads itself (Engine 0.15,
-  gaps D1 and D12; `roundTap` is gone); Engine 0.13 T8: the campaign,
-  `ended()` an entry's `SiegeEntryResult`, `press` `continue`, `code` and `stored`, `canPlay`) and
-  its `HostScene`; `main.ts` and `index.html`: the page (`bootBrowserGame`, pointer, shell audio
-  and its volume control (Engine 0.15, gap M1),
-  the bar with the code box, the result panel, `window.wwSiege`).
+- `play.ts`: `SiegePlay`, since Engine 0.15 T10 (gaps M26, M34, M36, lesson D14) the engine's
+  `MissionLaunch` (`launch`: launch buttons, play or delegate, the round, every campaign entry held
+  at tick 0 until Begin, its end, the result, Continue, a save code, the stored save) handed only
+  the mini siege's parts: `createGame`, the kit's `missionButtons`, the battle at 10 ticks a second,
+  the pointer's orders through `RtsControls` and a fresh `RtsCamera` per entry, and the entry's
+  summary (people and verdict); `main.ts` and `index.html`: the boot (pointer, shell audio and its
+  volume control), the shell's `mountMissionBar` (the bar, the briefing, the result panel) and
+  `window.wwSiege` (with `held()`). No launch, panel, save code or hint logic of its own.
 - `content/`: `maps/village.world.json` (`rts-map`, with the walls and the `fortify-window` and
   `sabotage-window` opportunities), `maps/dawn.world.json` (the follow-up: its `from`, the
   captive choices' four `relative` opportunities), `campaigns/siege.campaign.json` (`village`

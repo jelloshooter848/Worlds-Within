@@ -80,6 +80,13 @@ export const campaignEntrySchema = z
       .min(1)
       .exactOptional()
       .describe("one line naming the entry for a page (Engine 0.13 T8), e.g. a scenario's name"),
+    text: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        'a few sentences a page shows before the entry begins (Engine 0.15, gap M34): the briefing, read while the entry is held at tick 0',
+      ),
     endIf: campaignEndIfSchema
       .exactOptional()
       .describe(

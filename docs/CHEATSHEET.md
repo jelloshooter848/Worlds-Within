@@ -198,6 +198,19 @@ scenarioKeys(scenario) })` (`@engine/sim/index`), the game's `missions`, its `mi
   `[TD_DEFENCE]: towerdefenseMissionAdapter` in `adapters` (`@kits/towerdefense`); its `params`
   (`td-defence`, table above) pick the walls, the gold, the wave and the outcome rules. See the
   mini siege's `fortify` mission.
+- **A page that launches missions** (Engine 0.15 T10; see `games/samples/mini-siege/play.ts`):
+  `new MissionLaunch({ create(save), missions, offers(game), tick(game), stepsPerTick?, control?,
+onGame?, status?, campaign? })` (`@engine/core/shell`) is the whole flow without DOM: launch
+  buttons from `offers` (the RTS kit's `missionButtons`), the host paused while the player
+  chooses Play or Delegate (Decide for a mission without `play`), the round pushed by its
+  `scene(stack, picture)` (a `HostScene`), and with `campaign: { session, entryOver, save,
+summary, hold? }` every entry held at tick 0 until Begin, its end, the result with its save
+  code, Continue, a typed code and the stored save. `mountMissionBar({ launch, input })` is its
+  DOM (`#bar`, `#briefing`, `#result`; call `bar.update()` after each draw); the page's canvas
+  leaves `MISSION_BAR_HEIGHT` (40 px) below it. A round's key hint is data: `MiniGameDef.controls`
+  (`[{ actions, tap?, label }]`, written with the player's keys by `controlsHint`; the topdown
+  kit's `MISSION_ROOM_CONTROLS`, the towerdefense kit's `TD_CONTROLS`), or a mission file's own
+  `hint`; `MissionHost.roundHint(keys)` picks one. A campaign entry's `text` is its briefing.
 - A round may map the host's actions (`MiniGameDef.inputMap`, `{ "jump": "attack" }`) and show
   host HUD keys (`hostStatus: ['mission']`, drawn as `host:mission`); a button held into a round is
   ignored until released (Engine 0.11). A skin kind entry's `byTag: [{ tag, frames?, palette?,

@@ -137,7 +137,8 @@ port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGam
   the last read from the port's optional `records()`; never in the snapshot; `missionHostEvents`
   picks them out; gap M21), `roundFrame()` (the hosted round's frame with `status.miniGame` set,
   gap D9; `present/hosted.ts`'s `hostedSource` shows it, gap M6), and the options `canOpen(id)`
-  and `onChange()` (gap M18; the RTS kit's `rtsMissionHooks(game)` gives both for an `RtsGame`).
+  and `onChange()` (gap M18; the RTS kit's `rtsMissionHooks(game)` gives both for an `RtsGame`), and (Engine 0.15 T10, lesson D14) `roundHint(keys)`: the mission file's `hint`, else
+  the hosted mini game's `controls` written with the player's keys.
 - `minigame.ts`: the mini game contract (`MiniGameResult` `pass` | `fail` | `quit`,
   `MiniGameContext`, `MiniGame`: `step`, `snapshot`, `result`, `present?`, `report?` (a
   structured JSON report, Engine 0.10); `MiniGameDef`: `id`, `title`, `paramsSchema?` (Zod, Engine
@@ -148,7 +149,9 @@ port, missions, miniGames, adapters, hostStatus? })` wraps a game's `HeadlessGam
   it) and `RoundInput`, which every host steps its round through (`round.step(roundInput.advance(
 frame))`): a button held into the round (held, not pressed, on its first tick) is ignored until
   released, then the map applies; `MiniGameDef.hostStatus?` (the host HUD keys a round shows),
-  `MiniGameContext.hostStatus?` (their values, plain JSON) and `hostStatusFor(def, status)`. Pure.
+  `MiniGameContext.hostStatus?` (their values, plain JSON) and `hostStatusFor(def, status)`. From
+  Engine 0.15 T10 (lesson D14): `MiniGameDef.controls?` (`MiniGameControl { actions, tap?, label
+}`) and `controlsHint(controls, keys, inputMap?)`, the round's key hint as data. Pure.
 - `minigame-params.ts` (Engine 0.10, gap G16): `MiniGameUse` (a place in the content naming a mini
   game and its params), `missionMiniGameUses(content)` and `miniGameParamErrors(uses, defs, root?)`:
   `unknown_mini_game` at the id, or the def's `paramsSchema` issues at their field

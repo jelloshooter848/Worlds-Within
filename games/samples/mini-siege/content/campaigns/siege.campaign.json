@@ -3,8 +3,24 @@
   "id": "siege",
   "title": "The siege, the dawn assault and the ridge camp",
   "entries": [
-    { "scenario": "village", "ticks": 260, "title": "The siege", "endIf": { "gone": "hall" } },
-    { "scenario": "dawn", "ticks": 200, "title": "The dawn assault" },
-    { "scenario": "ridge", "ticks": 160, "title": "The ridge camp" }
+    {
+      "scenario": "village",
+      "ticks": 260,
+      "title": "The siege",
+      "text": "Raiders are marching on the village with a ram and a catapult. Man the walls before they arrive, then send Captain Hale to burn their siege engines, or let his people try.",
+      "endIf": { "gone": "hall" }
+    },
+    {
+      "scenario": "dawn",
+      "ticks": 200,
+      "title": "The dawn assault",
+      "text": "The morning after. The raiders' smaller band comes back. If they took the captain, you have only a short while to break him out, pay for him or leave him behind."
+    },
+    {
+      "scenario": "ridge",
+      "ticks": 160,
+      "title": "The ridge camp",
+      "text": "The raiders fall back to a camp on the ridge with a new ram. Their stores are within reach for a while."
+    }
   ]
 }

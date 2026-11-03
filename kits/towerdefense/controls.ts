@@ -1,5 +1,6 @@
 import type { Action } from '@engine/core/input/actions';
 import type { InputFrame } from '@engine/core/input/input-manager';
+import type { MiniGameControl } from '@engine/core/minigame';
 import { cameraView, clampCameraAxis, type DeepReadonly, type PresentFrame } from '@engine/core/present';
 import type { Cell } from './map';
 import type { TdCursorView } from './present';
@@ -25,6 +26,19 @@ import type { TdCommand, TdWorld } from './world';
  * (`InputFrame.taps`, game screen pixels): `TdGame.step` reads them and calls `tap`, so a run file's
  * `input.taps` replays a round played by tapping. `screenAtCell` is `cellAtScreen`'s inverse.
  */
+
+/**
+ * The controls above as data (Engine 0.15 T10, lesson D14), for a page's key hint
+ * (`controlsHint` in `engine/core/minigame.ts`, with the player's key names): the `td-defence`
+ * round declares them (with "give up") and the tower-defense sample's page shows them.
+ */
+export const TD_CONTROLS: readonly MiniGameControl[] = [
+  { actions: ['left', 'right', 'up', 'down'], tap: 'a tap', label: 'move' },
+  { actions: ['jump'], tap: 'a tap on the cursor', label: 'build' },
+  { actions: ['attack'], label: 'next tower' },
+  { actions: ['special'], tap: 'a right click', label: 'sell' },
+  { actions: ['start'], label: 'send the wave' },
+];
 
 /** Ticks a direction is held before it repeats. */
 export const REPEAT_DELAY = 10;

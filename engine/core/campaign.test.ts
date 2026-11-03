@@ -34,6 +34,13 @@ describe('the campaign schema', () => {
     expect(codes({ ...MAIN, title: 'Main', start: 'raid' })).toEqual([]);
   });
 
+  it("takes an entry's briefing text (Engine 0.15 T10, gap M34), never an empty one", () => {
+    const entries = MAIN.entries.map((e, i) => (i === 0 ? { ...e, text: 'Hold the gate.' } : e));
+    expect(codes({ ...MAIN, entries })).toEqual([]);
+    const empty = MAIN.entries.map((e, i) => (i === 0 ? { ...e, text: '' } : e));
+    expect(codes({ ...MAIN, entries: empty })).toEqual([['entries.0.text', 'too_small']]);
+  });
+
   it('names the field of a broken campaign', () => {
     expect(codes({ ...MAIN, version: 2 })).toEqual([['version', 'invalid_value']]);
     expect(codes({ ...MAIN, entries: [] })).toEqual([['entries', 'too_small']]);

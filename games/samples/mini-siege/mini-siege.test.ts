@@ -446,10 +446,12 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     const campaign = siegeCampaign(content);
     // The siege, then the dawn; entries after them are data a scenario adds by itself (Engine
     // 0.14 T12, gap M37: the ridge camp), never pinned here.
-    expect(campaign.entries.slice(0, 2)).toEqual([
+    // Each entry's briefing `text` (Engine 0.15 T10, gap M34) is the page's to show, not pinned.
+    expect(campaign.entries.slice(0, 2).map(({ text: _text, ...entry }) => entry)).toEqual([
       { scenario: 'village', ticks: 260, title: 'The siege', endIf: { gone: 'hall' } },
       { scenario: 'dawn', ticks: 200, title: 'The dawn assault' },
     ]);
+    expect(campaign.entries.every((e) => (e.text ?? '').length > 0)).toBe(true);
     expect(siegeMap(content, 'dawn').from?.scenario).toBe('village');
     // Without a save the game is the siege, as it always was.
     expect(createGame(content, SEED).campaign.scenario).toBe('village');

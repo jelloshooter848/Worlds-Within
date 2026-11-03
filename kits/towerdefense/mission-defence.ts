@@ -11,6 +11,7 @@ import {
 import type {
   MiniGame,
   MiniGameContext,
+  MiniGameControl,
   MiniGameDef,
   MiniGameInputMap,
   MiniGameResult,
@@ -19,6 +20,7 @@ import type {
 } from '@engine/core/minigame';
 import type { MissionAdapter, MissionDef, MissionReport } from '@engine/core/missions';
 import type { PresentFrame } from '@engine/core/present';
+import { TD_CONTROLS } from './controls';
 import { TdGame } from './game';
 import { cellKinds, LEGEND, type Cell } from './map';
 import { describeWorld } from './present';
@@ -882,6 +884,12 @@ export function tdDefenceProblems(
  * the wave list named as the map names it) and plays it as a `TdDefenceRound`. Throws (no round
  * starts) on an unknown map or more walls than cells.
  */
+/** The `td-defence` round's controls (lesson D14): the kit's `TD_CONTROLS`, and select gives up. */
+export const TD_DEFENCE_CONTROLS: readonly MiniGameControl[] = [
+  ...TD_CONTROLS,
+  { actions: ['select'], label: 'give up' },
+];
+
 export function tdDefence(opts: TdDefenceOptions): MiniGameDef {
   const { maps, towers } = opts;
   return {
@@ -892,6 +900,7 @@ export function tdDefence(opts: TdDefenceOptions): MiniGameDef {
       tdDefenceProblems(tdDefenceParamsSchema.parse(params), maps, owner, scenarios),
     hostStatus: opts.hostStatus ?? ['mission'],
     ...(opts.inputMap ? { inputMap: opts.inputMap } : {}),
+    controls: TD_DEFENCE_CONTROLS,
     create: (ctx, seed) => {
       const parsed = roundInputSchema.safeParse(ctx.params);
       if (!parsed.success) {

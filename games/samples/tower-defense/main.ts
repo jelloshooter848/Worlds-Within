@@ -1,8 +1,13 @@
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import type { Action } from '@engine/core/input/actions';
+import { DEFAULT_KEYBOARD_P1 } from '@engine/core/input/bindings';
+import type { InputManager } from '@engine/core/input/input-manager';
+import { keyHintMap } from '@engine/core/input/key-hints';
+import { controlsHint } from '@engine/core/minigame';
 import type { JsonObject } from '@engine/core/headless';
 import { bootBrowserGame } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
+import { TD_CONTROLS } from '@kits/towerdefense';
 import { loadTowerDefense } from './content';
 import { tdLook, tdPicture } from './picture';
 import { TdPlay } from './play';
@@ -16,7 +21,9 @@ import gameFiles from 'virtual:game-files';
  * sounds) and its volume control (the player's volumes stored per game, gap M1). The scene is
  * `TdPlay` (`play.ts`, stepped at its own `tickRate` by the shell, gap D2); this file is only the
  * DOM: the bar under the picture (Wave, Tower and Sell buttons, pressing through the shell's
- * `InputManager.press`, and the status line) and `window.wwTd` for scripts (the browser test).
+ * `InputManager.press`, and the status line, whose hint before the first wave is the kit's
+ * `TD_CONTROLS` written with the player's key names, lesson D14) and `window.wwTd` for scripts
+ * (the browser test).
  */
 
 /** What the page offers scripts (the browser test) on `window.wwTd`. */
@@ -32,8 +39,8 @@ export interface TdHook {
 const content = mustLoad(loadTowerDefense(gameFiles), 'the tower-defense sample');
 const look = tdLook(content);
 const status = document.getElementById('status') as HTMLElement;
-/** The status line before the first wave. */
-const HINT = 'arrows move, Z or a tap builds, X picks the tower, Enter sends a wave';
+/** The shell's input once booted: the player's key names for the hint (the defaults until then). */
+let input: InputManager | null = null;
 
 let play: TdPlay | null = null;
 const booted = await bootBrowserGame({
@@ -63,7 +70,8 @@ const booted = await bootBrowserGame({
 
 if (booted && play) {
   const scene: TdPlay = play;
-  const { input } = booted;
+  input = booted.input;
+  const pressed = booted.input;
   button('wave', 'start');
   button('tower', 'attack');
   button('sell', 'special');
@@ -78,7 +86,7 @@ if (booted && play) {
   function button(id: string, action: Action): void {
     const el = document.getElementById(id) as HTMLButtonElement;
     el.addEventListener('pointerdown', (e) => e.preventDefault());
-    el.addEventListener('click', () => input.press(action));
+    el.addEventListener('click', () => pressed.press(action));
   }
 }
 
@@ -90,8 +98,13 @@ function showStatus(scene: TdPlay): void {
       : w.outcome === 'lost'
         ? 'the road is lost'
         : w.wavesStarted === 0
-          ? HINT
+          ? hint()
           : '';
   const text = [`tick ${w.tick}`, note].filter((s) => s !== '').join(' | ');
   if (status.textContent !== text) status.textContent = text;
+}
+
+/** The kit's controls (`TD_CONTROLS`, lesson D14) with the player's key names: no page strings. */
+function hint(): string {
+  return controlsHint(TD_CONTROLS, keyHintMap(input?.bindings[0]?.keyboard ?? DEFAULT_KEYBOARD_P1));
 }

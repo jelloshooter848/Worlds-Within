@@ -83,7 +83,8 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   the `n` cells; rules in order: both destroyed, the ram, the catapult, else driven off.
 - `content/campaigns/siege.campaign.json` (`campaign`, Engine 0.13 T7): `village` for 260 world
   ticks, then `dawn` for 200, then (Engine 0.14 T12) `ridge` for 160; since T8 each entry has the
-  `title` the page shows (`The siege`, `The dawn assault`, `The ridge camp`). Since Engine 0.15 T8
+  `title` the page shows (`The siege`, `The dawn assault`, `The ridge camp`). Since Engine 0.15 T10 (gap M34) each has a `text`, the briefing the
+  page shows while the entry is held at tick 0. Since Engine 0.15 T8
   (gap M31) the siege's entry has `endIf: { "gone": "hall" }`: the campaign ends there when the
   hall has fallen, a loss said in data (the glue's own rule is gone). The glue builds the
   entry a campaign save names (`siegeCampaignPlace`); the order is never in code (gap M29), and
@@ -271,54 +272,43 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     `frame()`, `order` and `mission` (a run file's mission steps), the camera at the map's centre;
     the host's events of the steps since the last draw go to the frame (Engine 0.15 T6).
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
-  - `play.ts`: `SiegePlay`, the page's glue without DOM or clock: the `MiniSiegeGame`, an
-    `RtsCamera` starting east of the hall, the kit's `RtsControls` (pointer gestures to orders).
-    `launchButtons()` (the kit's `missionButtons`, none while a choice waits or a round runs),
-    `press({ kind: 'launch', mission })` (the game's `open` step, checked by the kit's
-    `rtsMissionHooks`), then `choice()` and `press({ kind: 'play' | 'delegate' })`; nothing steps
-    while the choice waits. Taps in the walls' round (Engine 0.12 T8) are frame input since
-    Engine 0.15 (gaps D1, D12): the shell puts them on the frame, `MissionHost`'s `RoundInput`
-    passes them to the round and the kit's `TdDefenceRound` maps them through its own camera (a
-    tap moves the cursor, a second tap on it places, a right click or long-press sells); the glue's
-    `defenceRound()` and `roundTap` are gone. `update(input)`: the battle one world tick every
-    `STEPS_PER_TICK` (6: `TICKS_PER_SECOND` 10; kept here rather than the shell's scene
-    `tickRate`, gap D2, because the battle reads the pointer's gestures every loop step), a hosted
-    round one tick per loop step (60 a second, the world waiting). `scene(stack, picture)` is the engine's `HostScene` over it (accessors; its
-    `events` are the host's events of the loop step that stepped the game, none otherwise, since
-    the battle steps every sixth loop step), which
-    pushes the core `miniGameScene` when the round starts and pops it on its end. `records()`,
-    `title(mission)`, `outcomeTitle(mission, outcome)`, `sides()`, `message` (the last refusal).
-    **The campaign** (Engine 0.13 T8): `game` is the entry played now (replaced when the campaign
-    moves on; `scenario`, `entryTitle(save?)`, `entryTicks` from the campaign file). An entry ends at
-    its `ticks`, or the first world tick after once no mission is open (gap M35; since Engine 0.15
-    T8 the engine's `entryOver`, through `MiniSiegeGame.entryOver()`), never while a
-    choice waits or a round runs; then nothing steps or is offered and `ended()` is a
-    `SiegeEntryResult`: the engine's `CampaignSession.end` (the save from `campaignSave()`, kept in
-    browser storage, its code, `stored`, `done`) plus `title`, the outcomes' titles, `people` (the
-    village's named people, `Captain Hale: captured, 90/120 hp`), `verdict` and `next` (the next
-    entry's title, null once done or with no save). `press({ kind: 'continue' })` builds the next
-    entry from the save (`createGame(content, save.seed, { campaign })`), or the siege again;
-    `press({ kind: 'code', text })` resumes from a typed code (`CampaignSession.resume`; a refusal
-    goes to `message` as `<code>: <reason>`, nothing changes) and `press({ kind: 'stored' })` from
-    `storedSave()`. A step that starts an entry does not step it, so the new world starts at tick 0.
-    The scene's `headless()` (Engine 0.14 T9) is the entry's game, so the page's `window.__ww`
-    (`?debug=step`, `?record`) snapshots, hashes and records it; `main.ts`'s wrapping scene
-    forwards it. `canPlay(mission)` is false for a choice without a round (the dawn's exchange, ransom, leave).
-  - `main.ts`: the DOM: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins and the
-    shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone), `audio`
-    (`contentSfx`, `contentSongs`, music `siege`); the bar (`#launches`, one `#launch-<mission>`
-    button per offered mission from `launchButtons()`, so from world tick 20 to 30 both;
-    `#play`, `#delegate`, `#status`: the tick, the choice, the last outcome's title, the hall
-    fallen or the raiders beaten, a refusal; while a round is hosted, its mini game's key hint)
-    and `window.wwSiege` (`tick`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the hosted
-    round's `kit` summary: the walls' round's)). Engine 0.15 T5: `game` for the shell's volume
-    control (gap M1); `clientAt` is gone (gap D13): the browser test taps a walls' cell through the
-    kit's `screenAtCell` and `window.__ww.toClient`. Engine 0.13 T8: `#delegate` reads **Decide** and `#play` hides for a
-    choice without a round; `#result` (the entry's end: title and verdict, outcomes, people, the
-    save code in `#result-code` and `#continue`, "Continue: The dawn assault" or "Play again");
-    `#code` and `#resume` (Enter too; keys typed there drive no game action) and `#stored`
-    ("Carry on: ...", at tick 0 when this browser kept a save); the status starts with the entry's
-    title; `wwSiege` adds `scenario`, `ended`, `named` and `captive`.
+  - `play.ts`: `SiegePlay`, the page's glue without DOM or clock. Since Engine 0.15 T10 (gaps
+    M26, M34, M36, lesson D14; docs/BUILD-LOG.md, Engine 0.15, decision 11) the page's flow is
+    the engine's: `launch` is the shell's `MissionLaunch` (`engine/core/shell/mission-launch.ts`:
+    `launchButtons()`, `press({ kind: 'launch' | 'play' | 'delegate' | 'begin' | 'continue' |
+'code' | 'stored' })`, `choice()`, `canPlay`, `playing()`, `held()`, `briefing()`, `ended()`,
+    `storedSave()`, `status(keys)`, `message`, `records()`, `title`, `outcomeTitle`,
+    `entryTitle`), and `SiegePlay` hands it only the mini siege's parts: `create(save)`
+    (`createGame` at the entry the campaign save is at, the siege fresh when null), the
+    missions, `offers` (the RTS kit's `missionButtons`, checked again by the kit's
+    `rtsMissionHooks` on open), `tick` (`rts.tick`), `stepsPerTick` (`STEPS_PER_TICK` 6:
+    `TICKS_PER_SECOND` 10, kept here rather than the shell's scene `tickRate`, gap D2, because
+    the battle reads the pointer's gestures every loop step), `control` (the pointer's gestures to
+    the kit's `RtsControls`, an order to `RtsGame.issue`, its refusal the message), `onGame` (an
+    `RtsCamera` east of the hall and fresh controls for every entry), `status` (the hall fallen or
+    the raiders beaten) and the campaign: the engine's `CampaignSession` over the campaign file,
+    `entryOver` and `save` (the game's `entryOver()` and `campaignSave()`, gap M35) and `summary`
+    (`people`, the village's named people, `Captain Hale: captured, 90/120 hp`, and the `verdict`:
+    the hall fallen, the raiders beaten, every defender fallen or the hall standing). Every entry
+    (the siege, each Continue, a typed code, the stored save) is held at tick 0 until Begin (gap
+    M34; `hold: false` for tests that do not need it); its end gives a `LaunchEntryResult`
+    (`entry`, `title`, the outcomes' titles, `people`, `verdict`, `next`, and the session's
+    `save`, `code`, `stored`, `done`). The rounds' key hints are the kits' (`missionRoom` and
+    `tdDefence` declare their `controls`; the page's `ROUND_HINTS` is gone). Taps in the walls'
+    round are frame input the kit's round reads itself (gaps D1, D12). Also `game` (the entry's
+    `MiniSiegeGame`), `scenario`, `tick`, `view()`, `sides()`, `ui` and `scene(stack, picture)`
+    (the launch's `HostScene`, which pushes the core `miniGameScene` when the round starts and
+    pops it on its end; its `headless()` is the entry's game for the page's `window.__ww`).
+  - `main.ts`: the boot only: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins
+    and the shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone),
+    `audio` (`contentSfx`, `contentSongs`, music `siege`), `game` (the volume control's storage
+    key, gap M1); then the shell's `mountMissionBar({ launch, input })` (Engine 0.15 T10: `#bar`
+    with `#launches`, `#play`, `#delegate`, `#status`, `#stored`, `#code`, `#resume`; `#briefing`
+    with `#begin`; `#result` with `#result-code` and `#continue`; updated after every draw) and
+    `window.wwSiege` (`tick`, `held`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the
+    hosted round's `kit` summary), `scenario`, `ended`, `named`, `captive`). No launch,
+    campaign-panel, save-code or hint logic of its own. `index.html` is the canvas (leaving the
+    bar's 40 px below it) and the no-display message's style.
 - `mini-siege.test.ts`: the content, the units against their types, the params checks
   (`bad_mini_game_use` at `params.room` and `params.outcomes.0.outcome`), the launch refusals,
   orders refused while the round is hosted, and over whole runs: the battle frozen at every
@@ -369,7 +359,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
   `dawn-exchange`'s last hash; a bad code refused (`code_typo`, twice) and `quit`'s code (lower
   case) resuming at `dawn-captured`'s tick-0 hash and ending on `dawn-leave`'s; the stored save
   carried on from; and the campaign ended once the hall has fallen (`fortify` delegated: `done`,
-  Continue starts over).
+  Continue starts over). Engine 0.15 T10 (most tests pass `hold: false`): every entry held at tick
+  0 until Begin (the siege and the dawn after Continue, with their briefings, nothing offered or
+  stepped before; a code resumes held), the same hashes once begun, and the sabotage round's key
+  hint from the mission room's controls.
 - Also: `tests/runs/mission-events.test.ts` (Engine 0.15 T6, gap M21: `played` and `delegated`
   played through the tools' run loop, the host's `mission-open`, `mini-game-end` and
   `mission-commit` events on the game ticks their assertions name, the golden hashes unchanged),
@@ -386,7 +379,9 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
   captain on the map to its end at 200, "Play again"; or held: the three choice buttons, the
   exchange decided at 5 and committed at 15, the captive marker gone), a second page in the same
   browser carrying on from the stored save, and a fresh page refusing a bad code with its reason
-  in the status and resuming the dawn from `quit`'s code), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
+  in the status and resuming the dawn from `quit`'s code; since Engine 0.15 T10 every entry,
+  the resumed dawn too, held at tick 0 with its briefing until Begin, nothing stepping or offered
+  before), `tests/browser/mini-siege-shots.test.ts` (screenshots on both paths, below) and
   `tests/build/pages.test.ts` (the launcher and the build list the page).
 
 ## Entity ids
@@ -566,7 +561,8 @@ On the page the ridge camp follows the dawn: Continue: The ridge camp, then the 
 ## Playing in the browser
 
 `pnpm dev`, then `games/samples/mini-siege/` from the launcher (or `pnpm build && pnpm preview`).
-The battle plays at 10 world ticks a second; the camera starts east of the hall, the raiders come
+Every campaign entry opens on its briefing with the clock stopped at tick 0 (Engine 0.15 T10, gap
+M34): press **Begin** when ready. The battle plays at 10 world ticks a second; the camera starts east of the hall, the raiders come
 down the road from the east. Mouse and touch work as in the RTS skirmish (click or tap selects,
 drag boxes, right click or long-press commands, wheel or pinch zooms, middle drag or two fingers
 pan). From world tick 20 to 200 the bar shows **Launch: Burn the siege engines** (the torch marks
@@ -589,7 +585,7 @@ the target): pressing it freezes the siege (the held units turn blue, the countd
   result (the outcome, Captain Hale's fate and hp) and its **save code**, which this browser also
   keeps. **Continue: The dawn assault** plays the follow-up from it. If the captain was taken
   (give up the sabotage with Backspace, or a delegation that draws `driven-off`), the HUD shows the
-  shackle and his name, and for the first 60 world ticks (6 seconds, gap M34) the bar offers
+  shackle and his name, and for the first 60 world ticks (6 seconds from Begin, gap M34) the bar offers
   **Break the captain out** (Play or Delegate, with Sergeant Mara Venn as the hero), **Pay for the
   captain** and **Leave the captain behind** (Decide); a failed rescue offers a dearer ransom
   instead. The dawn ends at its world tick 200; **Play again** starts over. Type a save code into

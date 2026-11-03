@@ -109,6 +109,11 @@ Events (`TdEvent`): `placed`, `sold`, `refused`, `wave` (`wave` 1-based, `by` `b
 
 ## Controls (`controls.ts`; decision 3, item 199)
 
+`TD_CONTROLS` (Engine 0.15 T10, lesson D14) is the list below as data (`MiniGameControl`s: move
+or a tap, build or a tap on the cursor, next tower, sell or a right click, send the wave), for a
+page's key hint through `controlsHint`; the tower-defense sample's page shows it before the first
+wave, and `tdDefence` declares it (with give up).
+
 A cursor over the grid, starting on the first build cell in reading order, with the chosen tower
 type (the map's `towers`, in order). `input(frame)` reads one step's shared `Actions` and returns
 the commands, which `TdGame` queues for the round's next step:
@@ -228,7 +233,9 @@ spent, leaked, livesLeft, killed, escaped, fallen, ticks }`. It throws (the host
   stockpile, a wave that selects nothing, a `killed` name not in the wave, or no or a foreign
   report.
 - `tdDefence({ maps, towers, title?, hostStatus?, inputMap?, size?, disabledRules? })`, the
-  `MiniGameDef` (title `DEFENCE`, `hostStatus` `['mission']` by default): `paramsSchema` is
+  `MiniGameDef` (title `DEFENCE`, `hostStatus` `['mission']` by default; since Engine 0.15 T10
+  its `controls` are `TD_DEFENCE_CONTROLS`, the kit's `TD_CONTROLS` plus select to give up, which a
+  page writes as the round's key hint with the player's keys, lesson D14): `paramsSchema` is
   `tdDefenceParamsSchema`; `checkUse` (`tdDefenceProblems`) checks the map is one of `maps` with a
   build cell, `build.slot` is a build cell on it and each rule names a declared outcome, so `pnpm cli
 validate` reports them at their field (`bad_mini_game_use`). `create(ctx, seed)` takes the

@@ -333,6 +333,13 @@ export const missionSchema = z
       .record(z.string(), z.json())
       .exactOptional()
       .describe('data handed to the mini game, checked by its params schema'),
+    hint: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        "the key hint a page shows while the mission's round is played (Engine 0.15); left out, the mini game's own controls written with the player's keys",
+      ),
     outcomes: z
       .array(missionOutcomeSchema)
       .min(1)

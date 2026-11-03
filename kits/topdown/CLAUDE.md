@@ -305,7 +305,9 @@ ticks }` (names in room-text order). It throws (the host's `bad_mission_input` o
   entity stood on.
 - `missionRoom({ rooms, title?, hostStatus?, extraLegend?, wall?, spawners?, items?,
 disabledRules?, size?, top?, inputMap? })`, the `MiniGameDef` (id `mission-room`, title
-  `MISSION`, `hostStatus` `['mission']` by default). Its `paramsSchema` is
+  `MISSION`, `hostStatus` `['mission']` by default; since Engine 0.15 T10 its `controls` are
+  `MISSION_ROOM_CONTROLS`, move, strike and give up, which a page writes as the round's key hint
+  with the player's keys, lesson D14). Its `paramsSchema` is
   `missionRoomParamsSchema` (a mission's params) and its `checkUse` (`missionRoomProblems`) checks
   what the schema cannot see: the room is one of `rooms`, each slot character is in it, each rule
   names an outcome the mission declares, each `damage` effect's `fromReport` names a number the

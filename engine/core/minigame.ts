@@ -103,6 +103,55 @@ export interface MiniGameUseProblem {
   readonly message: string;
 }
 
+/**
+ * One line of a round's controls (Engine 0.15 T10, lesson D14): the actions that do it (in the
+ * round's own action names: `controlsHint` turns them back into the host keys through the def's
+ * `inputMap`), the pointer's part when it has one (`tap: 'a tap'`), and what it does (`label`,
+ * a short lower-case phrase: 'move', 'strike', 'give up').
+ */
+export interface MiniGameControl {
+  readonly actions: readonly Action[];
+  /** The pointer's way of doing the same, as the hint words it ('a tap', 'a right click'); optional. */
+  readonly tap?: string;
+  readonly label: string;
+}
+
+/** The keyboard key name of each action, as a page prints it (`input/key-hints.ts`'s `KeyHints`). */
+export type ControlKeyNames = Readonly<Partial<Record<Action, string>>>;
+
+const DIRECTIONS: readonly Action[] = ['left', 'right', 'up', 'down'];
+
+/**
+ * A round's key hint (Engine 0.15 T10, lesson D14): its `controls` as one line, each written
+ * `keys: label` and joined with ", " ("←→↑↓: move, X: strike, RIGHT SHIFT: give up"). Each round
+ * action is shown by the host keys that reach it through `inputMap` (a host action mapped to it,
+ * or the action itself when the map leaves it alone), named by `keys` (the shell's
+ * `keyHintMap` of the player's bindings); the four directions are written together, and the
+ * pointer's part follows "or". An action with no key name is left out. Pure.
+ */
+export function controlsHint(
+  controls: readonly MiniGameControl[],
+  keys: ControlKeyNames,
+  inputMap: MiniGameInputMap = {},
+): string {
+  const hostKeys = (action: Action): string[] =>
+    Actions.filter((h) => (h in inputMap ? inputMap[h] === action : h === action))
+      .map((h) => keys[h] ?? '')
+      .filter((k) => k !== '');
+  return controls
+    .map((c) => {
+      const dirs = c.actions.filter((a) => DIRECTIONS.includes(a));
+      const together = dirs.length === DIRECTIONS.length;
+      const names = [
+        ...(together ? [dirs.flatMap(hostKeys).join('')] : []),
+        ...c.actions.filter((a) => !together || !DIRECTIONS.includes(a)).flatMap(hostKeys),
+      ].filter((k) => k !== '');
+      const how = [names.join('/'), c.tap ?? ''].filter((k) => k !== '').join(' or ');
+      return how === '' ? c.label : `${how}: ${c.label}`;
+    })
+    .join(', ');
+}
+
 /** A mini game a game supplies by id: its title and how to start a round. */
 export interface MiniGameDef {
   /** Lower-case letters, digits and "-": what level data names it by. */
@@ -134,6 +183,13 @@ export interface MiniGameDef {
    */
   readonly hostStatus?: readonly string[];
   /**
+   * The round's controls as data (Engine 0.15 T10, lesson D14): what each action does, in the
+   * round's own action names, each with a short label (`{ actions: ['attack'], label: 'strike' }`).
+   * A page shows them as the round's key hint with the shell's current key names
+   * (`controlsHint`), so no page writes the hint. Left out: no hint.
+   */
+  readonly controls?: readonly MiniGameControl[];
+  /**
    * Starts a round. Everything random in it must come from `seed` (a host draws it from its own
    * seeded RNG), so the same seed and input always give the same round.
    */
@@ -156,6 +212,11 @@ export function miniGameTable(defs: readonly MiniGameDef[]): ReadonlyMap<string,
       if (!isAction(from) || (to !== null && !isAction(to)))
         throw new Error(
           `mini game "${def.id}": input map "${from}" -> "${String(to)}" names an action that is not one of ${Actions.join(', ')}`,
+        );
+    for (const control of def.controls ?? [])
+      if (control.label === '' || control.actions.some((a) => !isAction(a)))
+        throw new Error(
+          `mini game "${def.id}": control "${control.label}" needs a label and actions from ${Actions.join(', ')}`,
         );
     table.set(def.id, def);
   }

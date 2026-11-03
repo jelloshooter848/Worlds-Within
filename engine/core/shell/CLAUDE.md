@@ -147,6 +147,46 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   campaign's: nothing left to play); `stored()` is the save an earlier visit kept when it has an
   entry past the first left to play, else null; `run(save?)` is `campaignRun`. Storage never
   throws (`save/storage.ts`), so a page without it plays on. The mini siege's page uses it.
+- **The mission-launch scene and campaign page flow** (Engine 0.15 T10, gaps M26, M34, M36,
+  lesson D14; docs/BUILD-LOG.md, Engine 0.15, decision 11, item 288):
+  - `mission-launch.ts` (pure, on `PURE_CORE`): `MissionLaunch<G>({ create(save), missions,
+offers(game), tick(game), stepsPerTick?, control?(game), onGame?(game), status?(game),
+campaign? })` over a `LaunchGame` (a `MissionHost`'s `step`, `events`, `miniGame()`,
+    `mission(step)`, `records()`, optional `roundHint(keys)`). `launchButtons()` is `offers` (none
+    while a choice waits, a round runs, the entry is held or has ended); `press(LaunchButton)`
+    (`launch`, `play`, `delegate`, `begin`, `continue`, `code`, `stored`) acts on the next loop
+    step; `choice()`, `canPlay(mission)` (false for a mission without `play`: Decide),
+    `playing()`, `title`, `outcomeTitle`, `records()`, `message` (the last refusal: a mission
+    step's, an order's from `control`, a save code's, as `<code>: <reason>`), `tick`,
+    `headless()`. `update(input)`: buttons first (an entry started by one is not stepped that
+    step, so it starts at tick 0), then a hosted round one tick per loop step, else, not held,
+    not waiting and not ended, `control(game)` (the kit's own orders, every loop step) and one
+    game step every `stepsPerTick` loop steps, then `campaign.entryOver(game)` ends the entry.
+    `scene(stack, picture)` is the `HostScene` over it (accessors; its `events` the loop step's
+    that stepped the game). `status(keys)`: the round's key hint while one is played
+    (`roundHint`, lesson D14), else `<entry title>, tick N`, `press Begin when ready` while
+    held, the message, the choice's question, the last outcome's title and `status(game)`.
+    **Campaign** (`campaign: { session, entryOver, save, summary, hold? }`, `session` a
+    `CampaignSession` or anything with its `run`, `end`, `resume`, `stored`): every entry (the
+    first, each Continue, a code, the stored save) is **held at tick 0** until `begin` (`held()`,
+    `briefing()`: the entry's `title` and `text` from the campaign file; `hold: false` turns it
+    off), M34; at its end `ended()` is a `LaunchEntryResult` (`CampaignEntryEnd` plus `entry`,
+    `title`, `outcomes` (titles), `people` and `verdict` from `summary(game)`, `next`: the next
+    entry's title or null), M36; `continue` starts the next entry from the save (or the first
+    entry fresh when `next` is null), `code` resumes from a typed code, `stored` from
+    `storedSave()` (offered at tick 0 only). `entry(save?)` and `entryTitle(save?)` read the
+    campaign file.
+  - `mission-bar.ts` (browser only): `mountMissionBar({ launch, input?, parent? })`, the flow's
+    DOM, the shell's own: `#bar` fixed along the bottom (`MISSION_BAR_HEIGHT`, 40 px: the page's
+    canvas leaves that much) with `#launches` (`#launch-<mission>`, "Launch: <title>"), `#play`,
+    `#delegate` ("Decide" for a choice), `#status` (`launch.status` with `keyHintMap` of
+    `input`'s player 1 keyboard bindings) and, with a campaign, `#stored` ("Carry on: <entry>"),
+    `#code` (keys typed there never reach the game; Enter resumes) and `#resume`; `#briefing`
+    (`#briefing-title`, `#briefing-text`, `#begin`) while held; `#result` (`#result-title`,
+    `#result-lines`, `#result-code-label`, `#result-code`, `#continue`: "Continue: <next>" or
+    "Play again"). Its buttons never keep the focus. `update()` (cheap when nothing changed) after
+    every draw. The mini siege's page uses both; its `main.ts` has no bar, panel, code or hint
+    logic of its own.
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
@@ -159,9 +199,10 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts` and `debug.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts` and `mission-launch.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
-  (it alone touches `window.__ww`) and `volume-control.ts` (the volume control's DOM and storage). `campaign-session.ts`
+  (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
+  `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`
   is not pure: it reaches browser storage, through `save/storage.ts`, which never throws.
 - No game rules or content: the game says what to step, what to draw and with which skin.
 
@@ -202,6 +243,14 @@ none, a paused scene's clock, 0 refused) and `InputManager.press`. In the browse
 `tests/browser/tower-defense-page.test.ts` and `mini-siege-page.test.ts` tap cells through
 `__ww.toClient` and `screenAtCell`, and check the volume control is there and its volumes survive
 a reload.
+`mission-launch.test.ts` (Engine 0.15 T10): `MissionLaunch` over a `MissionHost` with a fake
+world and a fake session: an entry held at tick 0 with its briefing until Begin; no hold with
+`hold: false`; a refused launch's reason, the offers, the choice pausing the host, the round with
+its key hint from the controls, the commit and its outcome title; a choice decided; an entry's end
+by the game's rule with its result and code, Continue held again, the campaign's end and Continue
+starting over; a refused code's reason, a code and the stored save resumed (held). The DOM is
+browser-only: `tests/browser/mini-siege-page.test.ts` plays every entry held at tick 0 until Begin
+(nothing stepping or offered before) and the dawn resumed from a code, held too.
 `campaign-session.test.ts` (Engine 0.13 T8): an entry's save stored and its code packed and read
 back (in lower case), a bad code (`code_empty`, `code_typo`) and a finished campaign's
 (`campaign_done`) refused, a null save storing nothing, and blocked storage throwing nothing. The full boot

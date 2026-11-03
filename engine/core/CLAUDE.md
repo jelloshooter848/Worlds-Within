@@ -171,7 +171,12 @@ and `MissionHost`; `HostScene` steps the host, which does it, so no game writes 
 `RoundInput.source()` (Engine 0.14 T9) is the host actions the last `advance` let through (held,
 not masked, before the map): what `MissionHost` records, so the recording fed back as the host
 frame (its first frame pressed, nothing masked) steps the round exactly the same.
-`MiniGameDef.hostStatus?` lists the host HUD status keys a round shows; the host passes their
+`MiniGameDef.controls?` (Engine 0.15 T10, lesson D14) is the round's controls as data,
+`MiniGameControl { actions, tap?, label }` in the round's own action names (`miniGameTable` throws
+on an empty label or a name that is not an `Action`), and `controlsHint(controls, keys, inputMap?)`
+writes them as one key hint ("←→↑↓: move, X: strike, RIGHT SHIFT: give up") with the player's key
+names (`ControlKeyNames`, the shell's `keyHintMap`), each round action shown by the host keys that
+reach it through the `inputMap`; no page writes a hint string. `MiniGameDef.hostStatus?` lists the host HUD status keys a round shows; the host passes their
 values as `MiniGameContext.hostStatus?` (plain JSON, `HostStatus`), picked with
 `hostStatusFor(def, status)` (undefined when none, so the context leaves it out and the round is
 unchanged); a round that presents adds each as status `host:<key>` for its skin (the topdown
@@ -242,7 +247,7 @@ run: `campaignSchema` is the `campaign` content kind (`*.campaign.json`, `conten
 `version` (1), `id`, `title?`, `entries` (at least one; each exactly one of `{ "level": id }`,
 `{ "mission": id }` and, from Engine 0.13, `{ "scenario": id, "ticks": n }` (a world scenario,
 any content file in the `worlds-within/scenario` format such as an `rts-map`, and the world ticks
-it is played; from Engine 0.13 T8 any entry may have a `title`, one line a page shows; `ticks` on another entry or missing on a scenario is `bad_entry` at `ticks`),
+it is played; from Engine 0.13 T8 any entry may have a `title`, one line a page shows, and from Engine 0.15 T10 a `text`, the briefing a page shows while the entry is held at tick 0 (gap M34); `ticks` on another entry or missing on a scenario is `bad_entry` at `ticks`),
 `bad_entry`; none twice, `duplicate_entry`) and `start?` (the id of the entry played first,
 `unknown_entry` when there is none, `ambiguous_start` when entries of two kinds share it). Its
 `checkAll`, `checkCampaigns`, fails each entry naming a level, mission or scenario the game's
@@ -386,6 +391,10 @@ state, result, outcome, refused } }` only while a round is hosted and on the tic
   written to the world, as in world runs, so the world after a played round is the world a run
   that resolved the same result at the open tick has (tested).
 - The round's `hostStatus` gets `mission` (the mission's title) and the option's values.
+- **The round's key hint** (Engine 0.15 T10, lesson D14): `roundHint(keys?)` is the mission
+  file's own `hint` (`missionSchema`'s optional `hint`) when it gives one, else the hosted mini
+  game's `controls` written by `controlsHint` with `keys` through its `inputMap`; '' while no round
+  is hosted or the mini game declares none. The shell's `MissionLaunch` shows it in the status.
 - **Events** (Engine 0.15 T6, gap M21; docs/BUILD-LOG.md, Engine 0.15, decision 7, item 284):
   `events` is the hosted game's last step's events, then the host's own for that step
   (`MissionHostEvent`, plain objects): `mission-open` `{ mission, play }` (`play` null for a
@@ -468,7 +477,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

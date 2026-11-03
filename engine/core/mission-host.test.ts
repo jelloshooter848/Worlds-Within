@@ -102,6 +102,35 @@ function host(game?: HeadlessGame) {
 
 const idle = new ScriptedInput({ steps: [] });
 
+describe('MissionHost.roundHint (Engine 0.15 T10, lesson D14)', () => {
+  const keys = { attack: 'X', select: 'BACKSPACE' };
+  const hosted = (mission: MissionDef, def: MiniGameDef) => {
+    const h = new MissionHost({
+      port: fakePort().port,
+      missions: [mission],
+      miniGames: [def],
+      adapters: { count: ADAPTER },
+    });
+    expect(h.roundHint(keys)).toBe('');
+    h.mission({ mission: 'raid', action: 'open' });
+    h.mission({ mission: 'raid', action: 'play' });
+    return h;
+  };
+  const controls = [
+    { actions: ['attack'], label: 'count' },
+    { actions: ['select'], label: 'give up' },
+  ] as const;
+
+  it("is the mini game's controls with the player's keys while its round is hosted", () => {
+    expect(hosted(RAID, { ...COUNT, controls }).roundHint(keys)).toBe('X: count, BACKSPACE: give up');
+  });
+
+  it("is the mission file's own hint when it gives one, and '' when the mini game declares no controls", () => {
+    expect(hosted({ ...RAID, hint: 'Hold X' }, { ...COUNT, controls }).roundHint(keys)).toBe('Hold X');
+    expect(hosted(RAID, COUNT).roundHint(keys)).toBe('');
+  });
+});
+
 describe('MissionHost', () => {
   it('without a game steps the world through the port and settles after every step', () => {
     const { h, log, tick } = host();

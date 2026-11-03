@@ -9,6 +9,7 @@ import {
 } from '@engine/core/mission-adapter';
 import type {
   MiniGameContext,
+  MiniGameControl,
   MiniGameDef,
   MiniGameResult,
   MiniGameUseProblem,
@@ -773,6 +774,16 @@ export function missionRoomProblems(
  * `worldHero`. Throws (no round starts) on an unknown room, a kind no legend
  * character spawns or more foes than slot cells.
  */
+/**
+ * The mission room's controls (Engine 0.15 T10, lesson D14), for the page's key hint: the hero
+ * moves and strikes (the room challenge's hero), and select gives up (the round ends `quit`).
+ */
+export const MISSION_ROOM_CONTROLS: readonly MiniGameControl[] = [
+  { actions: ['left', 'right', 'up', 'down'], label: 'move' },
+  { actions: ['attack'], label: 'strike' },
+  { actions: ['select'], label: 'give up' },
+];
+
 export function missionRoom(opts: MissionRoomOptions): MiniGameDef {
   const legend = { ...LEGEND, ...(opts.extraLegend ?? {}) };
   const { rooms, title, hostStatus, ...challenge } = opts;
@@ -784,6 +795,7 @@ export function missionRoom(opts: MissionRoomOptions): MiniGameDef {
       missionRoomProblems(missionRoomParamsSchema.parse(params), rooms, owner, scenarios),
     hostStatus: hostStatus ?? ['mission'],
     ...(opts.inputMap ? { inputMap: opts.inputMap } : {}),
+    controls: MISSION_ROOM_CONTROLS,
     create: (ctx, seed) => {
       const parsed = roundInputSchema.safeParse(ctx.params);
       if (!parsed.success) {
