@@ -1,6 +1,6 @@
 ---
 name: debug-failing-run
-description: Go from a failing `pnpm cli run` (exit 4, or a red tests/runs test) to its cause and a fix - read the first failing tick, dump the state there and the tick before, screenshot it, check the replay reproduces, use mutant checks to see what the run guards, then fix and rerun. Use when a run file, replay file or golden-hash test fails.
+description: Go from a failing `pnpm cli run` (exit 4, or a red tests/runs test) to its cause and a fix - read the first failing tick, trace the checked paths over the ticks before it, dump the state there and the tick before, screenshot it, check the replay reproduces, use mutant checks to see what the run guards, then fix and rerun. Use when a run file, replay file or golden-hash test fails.
 ---
 
 # Debug a failing run
@@ -37,7 +37,20 @@ rather than a game.
 
 Write down `T = failure.tick`. Everything below looks at ticks `T` and `T - 1`.
 
-## 2. Dump the state at the failing tick and the tick before
+## 2. Trace the failing path, then dump the state at the failing tick and the tick before
+
+Start with a trace of the path the failing check reads (and a few related ones) over the ticks
+before it: one call, one row per tick, so you see when the value first went wrong without a dump per
+tick or a throwaway script:
+
+```sh
+pnpm -s cli trace games/<game>/runs/<run>.run.json --paths <failure.path>,hero.x,hero.y --from <T-60> --to <T> --json
+```
+
+`rows` is `[{ tick, hash, values: { <path>: value } }]` (`--every K` for every K-th tick; without
+`--json` it is a table). A path not in the snapshot is null and listed in `missing`: check the
+spelling against a dump. Long traces are cut by the output cap (`truncated`, the whole trace in
+`fullOutput`). Then dump the first tick that looks wrong, and the one before it:
 
 ```sh
 pnpm -s cli dump games/<game>/runs/<run>.run.json --tick <T-1> --json
@@ -46,8 +59,8 @@ pnpm -s cli dump games/<game>/runs/<run>.run.json --tick <T> --json
 
 `state` is the whole snapshot (the same object the checks' dotted paths read). Compare the two:
 what changed in the one step between them (`hero`, `room`, `entities`, `events`)? `events` lists
-what the last step emitted (a room change, a hit, a pickup). For an assertion at a late tick, also
-dump a few earlier ticks to find when the state first went the wrong way; tick 0 is the start, before
+what the last step emitted (a room change, a hit, a pickup). For an assertion at a late tick, the trace
+above finds when the state first went the wrong way; tick 0 is the start, before
 any step. A dump is capped like any output: if `truncated` is true, read the file in `fullOutput`.
 
 ## 3. Look at it

@@ -348,6 +348,7 @@ describe('help', () => {
       'validate',
       'run',
       'dump',
+      'trace',
       'code',
       'screenshot',
       'mutants',

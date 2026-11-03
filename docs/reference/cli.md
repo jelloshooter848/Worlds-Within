@@ -16,6 +16,7 @@ Commands:
   validate    check every content file of a game against its schema (starts nothing)
   run         play a run file headless from its seed and check its assertions and invariants
   dump        the whole game or world state at one tick of a run file, as JSON
+  trace       a few snapshot paths over a range of ticks of a run file, one row per traced tick
   code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
@@ -103,6 +104,28 @@ Arguments:
 
 Flags:
   --tick <number>  the tick to show (0 is the start, before any step)
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `trace`
+
+```text
+pnpm cli trace <runFile> [flags]
+
+  a few snapshot paths over a range of ticks of a run file, one row per traced tick
+
+Arguments:
+  <runFile>  the run file, such as games/demo/runs/walk-east.run.json
+
+Flags:
+  --paths <string>  the snapshot paths to read, comma-separated dotted paths (hero.x,hero.room)
+  --from <number>   the first tick to trace (default 0, the start)
+  --to <number>     the last tick to trace (default the run's ticks)
+  --every <number>  trace every K-th tick from --from (default 1)
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

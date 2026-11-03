@@ -102,6 +102,11 @@ rules: [{ id, description, skipped, expected, passed, guarded, failure }], guard
 - `pnpm cli dump <run-file> --tick N`: `{ run, game, world, seed, tick, hash, state, orders,
 missions }`, the whole snapshot (a game's or a world's) at tick N and the recorded orders and
   mission steps applied before it.
+- `pnpm cli trace <run-file> --paths a,b [--from N] [--to M] [--every K]` (Engine 0.14, G8): a
+  few snapshot paths over a range of ticks in one call: `{ run, game, world, seed, from, to, every,
+paths, rows: [{ tick, hash, values }], missing, orders, missions }`, played like `dump` (game or
+  world runs). A missing path is null and listed in `missing`; the cap halves `rows`; text mode is
+  an aligned table. Bad paths or ticks exit 2, a bad run file or content exit 3.
 - `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
 [--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
@@ -164,7 +169,7 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 
 Tests sit next to the code and run with `pnpm test`: they call `main` with captured IO and check
 the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
-test spawns `pnpm -s cli` for real. `run.test.ts` covers `run` and `dump` (wrong assertions,
+test spawns `pnpm -s cli` for real. `trace.test.ts` covers `trace` (rows, `--every`, missing paths, usage errors, the output cap, hashes equal to `run`'s on a world run and a mini siege run), `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and

@@ -6,6 +6,7 @@ import { helpCommand } from './commands/help';
 import { mutantsCommand } from './commands/mutants';
 import { runCommand } from './commands/run';
 import { screenshotCommand } from './commands/screenshot';
+import { traceCommand } from './commands/trace';
 import { validateCommand } from './commands/validate';
 import { EXIT, exitName, UsageError, type ExitCode } from './exit-codes';
 import { capJson, capText, DEFAULT_MAX_OUTPUT, OUTPUT_DIR, writeFullOutput } from './output';
@@ -37,6 +38,7 @@ export function defaultRegistry(): Registry {
   registry.add(validateCommand);
   registry.add(runCommand);
   registry.add(dumpCommand);
+  registry.add(traceCommand);
   registry.add(codeCommand);
   registry.add(screenshotCommand);
   registry.add(mutantsCommand);

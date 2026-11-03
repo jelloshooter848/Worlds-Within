@@ -45,13 +45,15 @@ content)`, which imports the game's headless module by path for its optional
 - `run-file.ts`: the run-file schema (`runFileSchema`, with `orderEntrySchema` for recorded
   orders and `missionEntrySchema`/`MISSION_ACTIONS` for mission steps), `readRunFile(cwd, path)`, the check ops (`CHECK_OPS`, `CHECK_OP_MEANINGS`),
   `valueAt(state, path)` and `failsCheck(state, check)`.
-- `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules? })` loads the game, imports its headless
+- `headless-run.ts`: `playRun(cwd, runFile, { untilTick?, disableRules?, withSave?, onTick? })` loads the game, imports its headless
   module by the path in `game.json` (dynamic `import()` of a file URL, never a static import),
   checks the run file's `disableRules` and `guards` against the kit's rules, plays the ticks and
   makes the checks, hands recorded `orders` over at their ticks and compares the run file's sync
   `hashes` (Recorded orders, below); for a world run it builds the world instead (`world-run.ts`).
   `stateHash(snapshot)`, `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
   game run from its `from` and checks its `codes` (Campaign runs and save codes, below).
+  `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
+  that reads the state per tick (`trace`) uses the one playing loop.
 - `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
   its scenario with the engine system set the scenario names (`worldSystemSet(json)`:
   `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log, and returns it
@@ -80,7 +82,7 @@ content)`, which imports the game's headless module by path for its optional
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `code.ts`, `screenshot.ts`, `mutants.ts`, and `edit.ts`
   for `get`, `set`, `add` and `remove`).
 
 ## The contract
@@ -147,6 +149,17 @@ hash, code, save }` (Campaign runs and save codes, below). Exit 0; 3 for a bad r
 hash, state, orders, missions }`, the whole snapshot and the recorded orders and mission steps
   applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
+- `trace <runFile> --paths a,b [--from N] [--to M] [--every K]` (Engine 0.14, gap G8, decision 5):
+  plays the run like `dump` (no checks; orders, mission steps and `from` applied as `run` does)
+  and reads the dotted snapshot paths (as assertions write them) at ticks N, N+K, ... up to M
+  (defaults 0, the run's `ticks`, 1; M itself only when it is on that grid). Result: `{ run, game,
+world, seed, from, to, every, paths, rows: [{ tick, hash, values: { <path>: value } }], missing:
+[{ path, firstTick, ticks }], orders, missions }`; `hash` is the state hash `run` prints at that
+  tick; a path not in the snapshot gives null and is listed in `missing` (a real null is not).
+  `rows` is a top-level array, so the output cap halves it (whole rows) and the full trace is in
+  `fullOutput`. Text: an aligned table, a column per path. Usage errors (exit 2): no paths, an
+  empty path or segment, a path twice, `--from` after `--to`, `--to` after `ticks`, `--every` below
+  1. Exit 3 for a bad run file or content. Works on game and world runs. Tests: `trace.test.ts`.
 - `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
   a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, tick, backend,
 renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matchesHeadless }`.
@@ -616,7 +629,8 @@ hashMismatch }`: `reproduced` is true when the first failure is at the same tick
   `{ tick, expected, actual }`, or null. A mismatch means the game's state is different by that
   tick (the game or its content changed since the source run); it fails the run (exit 4) even
   if every check passes. A replay that fails writes no further replay.
-- Debugging: `run` the replay, then `dump <replay> --tick N` at the failing tick, or at the
+- Debugging: `run` the replay, `trace <replay> --paths ...` over the ticks before the failure to
+  see when a value went wrong, then `dump <replay> --tick N` at the failing tick, or at the
   mismatch tick and the stored hash tick before it, to see what changed.
 
 ## Screenshots

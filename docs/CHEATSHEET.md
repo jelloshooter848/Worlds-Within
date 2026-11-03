@@ -398,6 +398,7 @@ these steps in order.
 | `validate`   | `pnpm cli validate <game>`              | check every content file of a game against its schema (starts nothing)                    |
 | `run`        | `pnpm cli run <runFile> [flags]`        | play a run file headless from its seed and check its assertions and invariants            |
 | `dump`       | `pnpm cli dump <runFile> [flags]`       | the whole game or world state at one tick of a run file, as JSON                          |
+| `trace`      | `pnpm cli trace <runFile> [flags]`      | a few snapshot paths over a range of ticks of a run file, one row per traced tick         |
 | `code`       | `pnpm cli code <runFile> [flags]`       | the save code of a game run's campaign save at its last tick (or --tick N)                |
 | `screenshot` | `pnpm cli screenshot <runFile> [flags]` | a PNG of one paused, seeded frame of a run file (headless Chromium)                       |
 | `mutants`    | `pnpm cli mutants <target>`             | play run files once per kit rule switched off and report the rules they don't guard       |

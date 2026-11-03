@@ -49,7 +49,7 @@ export type { RefusedMission } from './world-run';
  * tick's orders: on a world the world settles its missions after every step (each commits by
  * itself at its commit tick); on a game (Engine 0.11, item 172) each goes, without `tick`, to the
  * game's `mission` method, and the game's `missionExperience` gives the run's `experience`. Used
- * by `run` and `dump`.
+ * by `run`, `dump`, `code`, `mutants` and `trace` (which reads each tick through `onTick`).
  */
 
 /**
@@ -183,6 +183,12 @@ export interface PlayOptions {
   disableRules?: readonly string[];
   /** Read the game's campaign save at the last tick (`PlayedRun.campaignSave`; Engine 0.13). */
   withSave?: boolean;
+  /**
+   * Called with every tick's snapshot as it is played (tick 0 the start), after that tick's orders,
+   * mission steps and step and before its checks: how `trace` reads a few paths per tick without a
+   * loop of its own. It must not change the snapshot.
+   */
+  onTick?(tick: number, snapshot: JsonObject): void;
 }
 
 /** A content error in the run file at `path`. */
@@ -485,6 +491,7 @@ function play(
       stepper.step();
       snapshot = stepper.snapshot();
     }
+    opts.onTick?.(tick, snapshot);
     if (checking) {
       run.invariants.forEach((c, index) => {
         const failed = failsCheck(snapshot, c);
