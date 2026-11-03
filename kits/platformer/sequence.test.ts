@@ -14,6 +14,8 @@ import {
   LevelSequence,
   levelsInPlayOrder,
   levelStages,
+  stageStarts,
+  startStage,
   type LevelStage,
   type SequenceSnapshot,
 } from './sequence';
@@ -148,6 +150,32 @@ describe('LevelSequence', () => {
     const a = run();
     expect(a.some((s) => s.includes('"stage":1'))).toBe(true);
     expect(run()).toEqual(a);
+  });
+});
+
+describe('a sequence that starts at a later stage (Engine 0.14, gap G9)', () => {
+  it('starts that level fresh and goes on from it as from any level', () => {
+    const seq = new LevelSequence(STAGES, { seed: 1, start: 2 });
+    expect(seq.snapshot()).toMatchObject({ level: 'three', stage: 2, pause: 0, outcome: 'playing' });
+    // The same state the sequence reaches that level in from the start.
+    const full = new LevelSequence(STAGES, { seed: 1 });
+    finish(full, 'cleared');
+    finish(full, 'cleared');
+    expect(canonicalJson(seq.snapshot())).toBe(canonicalJson(full.snapshot()));
+    finish(seq, 'cleared');
+    expect(seq.snapshot()).toMatchObject({ level: 'one', stage: 0 });
+  });
+
+  it('throws on a stage the sequence does not have', () => {
+    expect(() => new LevelSequence(STAGES, { seed: 1, start: 3 })).toThrow(/no stage 3/);
+    expect(() => new LevelSequence(STAGES, { seed: 1, start: -1 })).toThrow(/no stage -1/);
+  });
+
+  it('lists its stages as starts and reads a run start', () => {
+    expect(stageStarts(STAGES)).toEqual({ stages: ['one', 'two', 'three'] });
+    expect(startStage(undefined)).toBeUndefined();
+    expect(startStage({ stage: 1 })).toBe(1);
+    expect(() => startStage({ entry: 'x' })).toThrow(/not at campaign entry "x"/);
   });
 });
 

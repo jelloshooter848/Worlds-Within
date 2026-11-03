@@ -1,4 +1,5 @@
 import type { CampaignSave } from '@engine/core/campaign';
+import type { RunStart } from '@engine/core/headless';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { InputScript } from '@engine/core/input/scripted-input';
 
@@ -43,6 +44,11 @@ export interface ShotJob {
    * handed to the view's `createView` as `HeadlessOptions.campaign`; null for a run without `from`.
    */
   campaign: CampaignSave | null;
+  /**
+   * The level or campaign entry the run starts at (its `start`, Engine 0.14, gap G9), handed to
+   * the view's `createView` as `HeadlessOptions.start`; null for a run without `start`.
+   */
+  start: RunStart | null;
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
   screen: ScreenSize;
   /**

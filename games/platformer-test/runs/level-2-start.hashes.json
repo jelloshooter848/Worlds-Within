@@ -1,0 +1,49 @@
+{
+  "run": "games/platformer-test/runs/level-2-start.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "84ede253a3052ecc"
+    },
+    {
+      "tick": 60,
+      "hash": "5d89d4d0a0f76b02"
+    },
+    {
+      "tick": 120,
+      "hash": "0e8351c19d6eb569"
+    },
+    {
+      "tick": 180,
+      "hash": "17142361410bfe6c"
+    },
+    {
+      "tick": 240,
+      "hash": "1fc6852ca4b136f5"
+    },
+    {
+      "tick": 300,
+      "hash": "49031633b466fb42"
+    },
+    {
+      "tick": 360,
+      "hash": "c1b04e3ba4f0fadb"
+    },
+    {
+      "tick": 420,
+      "hash": "d0db9b05f2d05116"
+    },
+    {
+      "tick": 480,
+      "hash": "2726d54290b92289"
+    },
+    {
+      "tick": 540,
+      "hash": "f1ddd2423c30f109"
+    },
+    {
+      "tick": 577,
+      "hash": "26456b7489d5bd3d"
+    }
+  ]
+}

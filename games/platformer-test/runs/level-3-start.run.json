@@ -1,0 +1,239 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 2
+  },
+  "ticks": 869,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 106,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 126,
+        "hold": ["right"]
+      },
+      {
+        "frame": 254,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 274,
+        "hold": ["right"]
+      },
+      {
+        "frame": 327,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 347,
+        "hold": ["right"]
+      },
+      {
+        "frame": 602,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 622,
+        "hold": ["right"]
+      },
+      {
+        "frame": 642,
+        "hold": []
+      },
+      {
+        "frame": 650,
+        "hold": ["left"]
+      },
+      {
+        "frame": 656,
+        "hold": []
+      },
+      {
+        "frame": 684,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 708,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-3"
+    },
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 0,
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 62,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "hazard",
+        "lives": 2
+      }
+    },
+    {
+      "tick": 62,
+      "path": "player.x",
+      "op": "eq",
+      "value": 6144
+    },
+    {
+      "tick": 206,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 17600
+    },
+    {
+      "tick": 207,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 16384
+    },
+    {
+      "tick": 209,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "pit",
+        "lives": 1
+      }
+    },
+    {
+      "tick": 385,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "hurt",
+        "hp": 1
+      }
+    },
+    {
+      "tick": 385,
+      "path": "player.invuln",
+      "op": "eq",
+      "value": 120
+    },
+    {
+      "tick": 501,
+      "path": "actors.0.type",
+      "op": "eq",
+      "value": "ledge-walker"
+    },
+    {
+      "tick": 501,
+      "path": "actors.0.dir",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 501,
+      "path": "actors.0.y",
+      "op": "eq",
+      "value": 24576
+    },
+    {
+      "tick": 679,
+      "path": "player.x",
+      "op": "eq",
+      "value": 171653
+    },
+    {
+      "tick": 679,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 838,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 838,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 838,
+      "path": "lives",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 838,
+      "path": "player.hp",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 838,
+      "path": "coins",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 869,
+      "path": "pause",
+      "op": "eq",
+      "value": 31
+    }
+  ],
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "gte",
+      "value": 1
+    },
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 2
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "gravity",
+    "fall-cap",
+    "walk",
+    "skid",
+    "friction",
+    "air-control",
+    "jump",
+    "solid-tiles",
+    "hazards-kill",
+    "pits-kill",
+    "goal-clears-level",
+    "actors-wake",
+    "ledge-turn",
+    "enemy-touch-hurts",
+    "invulnerability"
+  ]
+}

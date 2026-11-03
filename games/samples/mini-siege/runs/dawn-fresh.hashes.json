@@ -1,0 +1,25 @@
+{
+  "run": "games/samples/mini-siege/runs/dawn-fresh.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "94084ad90c496a17"
+    },
+    {
+      "tick": 50,
+      "hash": "19dd9dbc308e0b8d"
+    },
+    {
+      "tick": 100,
+      "hash": "10de73a0f6a3e638"
+    },
+    {
+      "tick": 150,
+      "hash": "f73b5f97f0be5811"
+    },
+    {
+      "tick": 200,
+      "hash": "6e309a2e804edc78"
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 import {
   advanceCampaign,
+  campaignOrder,
   campaignRun,
+  campaignSaveAt,
+  entryId,
   newCampaignSave,
   scenarioFrom,
   type CampaignDef,
@@ -8,7 +11,14 @@ import {
 } from '@engine/core/campaign';
 import type { CarriedRecord, CarryFrom } from '@engine/core/carried';
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type { HeadlessGame, HeadlessOptions, JsonObject, MissionStepRefusal } from '@engine/core/headless';
+import type {
+  HeadlessGame,
+  HeadlessOptions,
+  HeadlessStarts,
+  JsonObject,
+  MissionStepRefusal,
+  RunStart,
+} from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
 import { MissionHost } from '@engine/core/mission-host';
@@ -236,14 +246,38 @@ export function siegeCampaignPlace(
 }
 
 /**
+ * The starts a run file may name (`HeadlessEntry.starts`, Engine 0.14, gap G9): the campaign's
+ * entries by id, in play order (`village`, `dawn`). The mini siege has no level sequence, so a
+ * `{ stage }` start is refused by the tools.
+ */
+export function starts(content: ContentBundle): HeadlessStarts {
+  return { entries: campaignOrder(siegeCampaign(content)).map(entryId) };
+}
+
+/**
+ * The campaign save a run's `start: { entry }` begins at (gap G9, decision 6): that entry fresh,
+ * with no carried record (the dawn as its scenario file is written, not as the siege left it).
+ * Throws on a stage start or an entry the campaign lacks (the tools refuse both first).
+ */
+export function siegeStartSave(content: ContentBundle, seed: number, start: RunStart): CampaignSave {
+  if (!('entry' in start)) throw new Error('the mini siege starts at a campaign entry, not a stage');
+  const def = siegeCampaign(content);
+  const save = campaignSaveAt(def, { game: content.manifest.id, seed }, start.entry);
+  if (save === null) throw new Error(`campaign "${def.id}" has no entry "${start.entry}"`);
+  return save;
+}
+
+/**
  * The headless game contract (`engine/core/headless.ts`), for `pnpm cli run`, `dump` and
  * `mutants`: kit rules switched off in `opts` go to the RTS kit. `opts.campaign` (a run file's
  * `from`: another run's end or a save code) picks the campaign entry and its carried record: the
- * dawn built from what the siege left (`worldFromScenario(json, { carried })`); left out, the
- * siege from the start.
+ * dawn built from what the siege left (`worldFromScenario(json, { carried })`); `opts.start` (a
+ * run file's `start: { entry }`, Engine 0.14) picks an entry fresh, with nothing carried; left
+ * out, the siege from the start.
  */
 export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): MiniSiegeGame {
-  const place = siegeCampaignPlace(content, seed, opts.campaign);
+  const save = opts.campaign ?? (opts.start ? siegeStartSave(content, seed, opts.start) : undefined);
+  const place = siegeCampaignPlace(content, seed, save);
   const scenario = siegeScenario(content, seed, place.scenario);
   const carried = place.save.carried;
   const world = worldFromScenario(

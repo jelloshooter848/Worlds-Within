@@ -8,11 +8,12 @@ import { defineCommand } from '../registry';
 /**
  * `dump <run-file> --tick N`: plays the run file up to tick N (no checks) and prints the whole
  * snapshot there (a game's, or for a world run the world's `World.snapshot()`). Result: `{ run,
- * game, world, seed, tick, hash, state, orders, missions }` (`game` or `world` null, whichever is
+ * game, world, seed, start, tick, hash, state, orders, missions }` (`game` or `world` null, whichever is
  * not played; `orders` the recorded order entries applied before tick N, those with `tick < N`, and
  * `missions` the mission steps likewise); the cap (`--max-output`)
  * applies as for every command. N must be between 0 and the run's `ticks` (a usage error
- * otherwise). Exit 0, or 3 (`invalidContent`, with `errors`) when the run file or content is bad.
+ * otherwise). `start` is the run file's `start` (Engine 0.14, gap G9) or null: tick N counts from
+ * that level or entry. Exit 0, or 3 (`invalidContent`, with `errors`) when the run file or content is bad.
  */
 export const dumpCommand = defineCommand({
   name: 'dump',
@@ -30,7 +31,7 @@ export const dumpCommand = defineCommand({
     const played = await playRun(ctx.cwd, args.runFile, { untilTick: flags.tick });
     if (!played.ok)
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
-    const { loaded, seed, lastTick, snapshot } = played.value;
+    const { loaded, seed, lastTick, snapshot, start } = played.value;
     return {
       exit: EXIT.ok,
       result: {
@@ -38,6 +39,7 @@ export const dumpCommand = defineCommand({
         game: loaded.gameDir,
         world: loaded.worldFile,
         seed,
+        start,
         tick: lastTick,
         hash: stateHash(snapshot),
         state: snapshot,

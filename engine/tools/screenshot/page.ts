@@ -43,6 +43,7 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
   const game = entry.createView(content.value, job.seed, {
     disabledRules: job.disabledRules,
     ...(job.campaign === null ? {} : { campaign: job.campaign }),
+    ...(job.start === null ? {} : { start: job.start }),
   });
   const { width, height } = job.screen;
   if (game.screen?.width !== width || game.screen.height !== height)

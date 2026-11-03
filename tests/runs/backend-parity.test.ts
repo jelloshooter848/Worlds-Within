@@ -20,7 +20,7 @@ import {
 import { presentWorld, snapshotWorld, TdPresentState, type TopDownWorld } from '@kits/topdown';
 import { loadGame } from '../../engine/tools/game-loader';
 import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
-import { readRunFile, type RunFile } from '../../engine/tools/run-file';
+import { readRunFile, runStartOf, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/demo/headless';
 import { DemoPicture, demoLook } from '../../games/demo/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
@@ -126,6 +126,7 @@ type PresentLab = (world: PlatformerWorld, events: readonly PlatformerEvent[], t
 function playLab(content: ContentBundle, run: RunFile, present: PresentLab): TickHash[] {
   const game: LabGame = createLab(content, run.seed ?? content.manifest.start.seed, {
     disabledRules: run.disableRules,
+    ...(run.start === undefined ? {} : { start: runStartOf(run.start)! }),
   });
   const input = new ScriptedInput(run.input);
   const hashes: TickHash[] = [];
@@ -319,6 +320,8 @@ describe('backend parity: every other game with a view, through null, canvas2d a
       entry.createView(content, run.seed ?? content.manifest.start.seed, {
         disabledRules: run.disableRules,
         ...(campaign === null ? {} : { campaign }),
+        // A run that starts at a later level or campaign entry (Engine 0.14, gap G9, `start`).
+        ...(run.start === undefined ? {} : { start: runStartOf(run.start)! }),
       });
 
     const nullPresenter = new NullPresenter({ validate: true, freeze: true });

@@ -1,0 +1,173 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 5
+  },
+  "ticks": 277,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 60,
+        "hold": ["right", "attack"]
+      },
+      {
+        "frame": 61,
+        "hold": ["right"]
+      },
+      {
+        "frame": 100,
+        "hold": ["left"]
+      },
+      {
+        "frame": 160,
+        "hold": ["left", "attack"]
+      },
+      {
+        "frame": 161,
+        "hold": ["right"]
+      },
+      {
+        "frame": 267,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "lab-5-trigger"
+    },
+    {
+      "tick": 52,
+      "path": "miniGame.game",
+      "op": "eq",
+      "value": "stop-bar"
+    },
+    {
+      "tick": 52,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "stop-bar",
+        "attempt": 1
+      }
+    },
+    {
+      "tick": 61,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "stop-bar",
+        "result": "fail"
+      }
+    },
+    {
+      "tick": 61,
+      "path": "miniGame",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 61,
+      "path": "triggers.0.attempts",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 61,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "fail"
+    },
+    {
+      "tick": 61,
+      "path": "endedRound.state.ticks",
+      "op": "eq",
+      "value": 9
+    },
+    {
+      "tick": 145,
+      "path": "miniGame.state.attempt",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 161,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "stop-bar",
+        "result": "pass"
+      }
+    },
+    {
+      "tick": 161,
+      "path": "coins",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 161,
+      "path": "tiles",
+      "op": "eq",
+      "value": [
+        {
+          "col": 5,
+          "row": 8,
+          "cell": "empty"
+        },
+        {
+          "col": 9,
+          "row": 8,
+          "cell": "empty"
+        }
+      ]
+    },
+    {
+      "tick": 161,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "pass"
+    },
+    {
+      "tick": 161,
+      "path": "endedRound.state.attempt",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 267,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 267,
+      "path": "coins",
+      "op": "eq",
+      "value": 5
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 5
+    }
+  ],
+  "hashEvery": 60,
+  "guards": ["mini-games"]
+}

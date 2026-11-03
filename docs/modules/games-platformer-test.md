@@ -52,7 +52,9 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 - `main.ts` gets the data files from `virtual:game-files` (`build/game-files.ts`; no `files.ts`).
 - `runs/level-<n>.run.json` (one per level, each played from the first level on) with golden
   `level-<n>.hashes.json` and `guards`; together they guard every kit rule (`level-4` guards
-  `mini-games`: a failed round, then a passed one).
+  `mini-games`: a failed round, then a passed one). From Engine 0.14 (gap G9) `level-2-start`,
+  `level-3-start` and `level-4-start` play the same levels from their own tick 0 (`start: {
+"stage": n }`, 0-based; `headless.ts` exports `starts(content)`).
 
 ## Imports allowed
 

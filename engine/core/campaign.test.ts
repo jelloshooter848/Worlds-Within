@@ -3,6 +3,7 @@ import {
   advanceCampaign,
   campaignLevels,
   campaignRun,
+  campaignSaveAt,
   campaignSaveSchema,
   campaignOrder,
   campaignSchema,
@@ -286,5 +287,28 @@ describe('campaigns played in order (Engine 0.13)', () => {
       ['results.0.entry', 'custom'],
     ]);
     expect(bad({ ...start, format: 'x' })).toEqual([['format', 'invalid_value']]);
+  });
+});
+
+describe('a save at an entry (Engine 0.14, gap G9)', () => {
+  const main = campaignSchema.parse(MAIN) as CampaignDef;
+
+  it('starts the named entry fresh, the entries before it finished with nothing committed', () => {
+    const save = campaignSaveAt(main, { game: 'g', seed: 5 }, 'level-1');
+    expect(save).toMatchObject({ campaign: 'main', seed: 5, position: 2, carried: null });
+    expect(save?.results).toEqual([
+      { entry: 0, missions: [] },
+      { entry: 1, missions: [] },
+    ]);
+    expect(campaignSaveSchema.safeParse(save).success).toBe(true);
+    expect(campaignRun(main, save ?? undefined).entry).toEqual({ level: 'level-1' });
+    expect(campaignSaveAt(main, { game: 'g', seed: 5 }, 'level-2')).toEqual(
+      newCampaignSave({ game: 'g', campaign: 'main', seed: 5 }),
+    );
+  });
+
+  it('follows the play order and gives null for an id the campaign lacks', () => {
+    expect(campaignSaveAt({ ...main, start: 'raid' }, { game: 'g', seed: 1 }, 'level-2')?.position).toBe(2);
+    expect(campaignSaveAt(main, { game: 'g', seed: 1 }, 'nowhere')).toBeNull();
   });
 });

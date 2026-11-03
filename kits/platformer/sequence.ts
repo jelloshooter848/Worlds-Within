@@ -1,7 +1,7 @@
 import { campaignLevels, type CampaignDef } from '@engine/core/campaign';
 import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
 import { CAMPAIGN_KIND } from '@engine/core/content/engine-kinds';
-import type { HostedGame } from '@engine/core/headless';
+import type { HeadlessStarts, HostedGame, RunStart } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { MiniGame, MiniGameDef } from '@engine/core/minigame';
 import type { LevelDef } from './level';
@@ -29,6 +29,12 @@ export interface LevelSequenceOptions {
   miniGames?: readonly MiniGameDef[];
   /** Ticks between a level's end and the next level's start ({@link LEVEL_PAUSE} when left out). */
   pause?: number;
+  /**
+   * The stage played first (0-based, default 0; Engine 0.14, gap G9: a run file's `start: { stage
+   * }`, see {@link startStage}): the sequence starts at that level, fresh, and goes on from it as
+   * from any level. Throws when it is not a stage of the sequence.
+   */
+  start?: number;
 }
 
 /**
@@ -66,9 +72,14 @@ export class LevelSequence implements HostedGame<PlatformerWorld, PlatformerEven
     const pause = opts.pause ?? LEVEL_PAUSE;
     if (!Number.isInteger(pause) || pause < 1)
       throw new Error(`a level pause must be a whole number of ticks >= 1, not ${pause}`);
+    const start = opts.start ?? 0;
+    if (!Number.isInteger(start) || start < 0 || start >= stages.length)
+      throw new Error(
+        `a level sequence of ${stages.length} level(s) has no stage ${start} (stages are 0 to ${stages.length - 1})`,
+      );
     this.stages = stages;
     this.pauseTicks = pause;
-    this.world = this.build(0);
+    this.world = this.build(start);
     this.events = this.world.events.splice(0);
   }
 
@@ -113,6 +124,26 @@ export class LevelSequence implements HostedGame<PlatformerWorld, PlatformerEven
       ...(miniGames ? { miniGames } : {}),
     });
   }
+}
+
+/**
+ * The starts a level sequence over `stages` can honour (`HeadlessEntry.starts`, Engine 0.14, gap
+ * G9): one per stage, the level ids in play order. A game exports
+ * `starts(content) => stageStarts(itsStages(content))` so a run file's `start: { stage }` is checked.
+ */
+export function stageStarts(stages: readonly LevelStage[]): HeadlessStarts {
+  return { stages: stages.map((s) => s.level.id) };
+}
+
+/**
+ * The stage a run's start (`HeadlessOptions.start`) names, for {@link LevelSequenceOptions.start}:
+ * undefined without one. Throws on a campaign entry start (a level sequence starts at stages; the
+ * tools refuse it first when the game lists no entries).
+ */
+export function startStage(start: RunStart | undefined): number | undefined {
+  if (start === undefined) return undefined;
+  if ('stage' in start) return start.stage;
+  throw new Error(`a level sequence starts at a stage, not at campaign entry "${start.entry}"`);
 }
 
 /**

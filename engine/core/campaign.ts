@@ -325,6 +325,26 @@ export function newCampaignSave(opts: { game: string; campaign: string; seed: nu
   };
 }
 
+/**
+ * A campaign save at the entry `entry` names (its id, the first entry in play order with it), as a
+ * run file's `start: { entry }` asks (Engine 0.14, gap G9, decision 6): that entry fresh, with no
+ * carried record, and every entry before it finished with nothing committed. Null when the
+ * campaign has no entry with that id.
+ */
+export function campaignSaveAt(
+  campaign: CampaignDef,
+  opts: { game: string; seed: number },
+  entry: string,
+): CampaignSave | null {
+  const position = campaignOrder(campaign).findIndex((e) => entryId(e) === entry);
+  if (position < 0) return null;
+  return {
+    ...newCampaignSave({ game: opts.game, campaign: campaign.id, seed: opts.seed }),
+    position,
+    results: Array.from({ length: position }, (_, i) => ({ entry: i, missions: [] })),
+  };
+}
+
 /** Where a campaign run is: what {@link campaignRun} reads from a save. */
 export interface CampaignRunState {
   /** The entries in play order ({@link campaignOrder}). */

@@ -9,9 +9,9 @@ import { defineCommand } from '../registry';
 /**
  * `trace <run-file> --paths a,b [--from N] [--to M] [--every K]` (Engine 0.14, gap G8, decision 5,
  * item 251): plays the run file headless with no checks, like `dump` (recorded orders, mission
- * steps and `from` applied as `run` applies them), and reads a few snapshot paths at every K-th
+ * steps, `from` and `start` applied as `run` applies them), and reads a few snapshot paths at every K-th
  * tick from N to M: one row per traced tick, `{ tick, hash, values: { <path>: value } }`. Result:
- * `{ run, game, world, seed, from, to, every, paths, rows, missing, orders, missions }`. A path
+ * `{ run, game, world, seed, start, from, to, every, paths, rows, missing, orders, missions }`. A path
  * not in the snapshot at a tick gives null there; `missing` lists each such path with the first
  * traced tick it was missing at and at how many traced ticks it was (a path holding a real null
  * is not missing). `rows` is a top-level array so the output cap halves it (whole rows), and the
@@ -118,7 +118,7 @@ export const traceCommand = defineCommand({
     });
     if (!played.ok)
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
-    const { loaded, seed, lastTick } = played.value;
+    const { loaded, seed, lastTick, start } = played.value;
     return {
       exit: EXIT.ok,
       result: {
@@ -126,6 +126,7 @@ export const traceCommand = defineCommand({
         game: loaded.gameDir,
         world: loaded.worldFile,
         seed,
+        start,
         from,
         to,
         every,

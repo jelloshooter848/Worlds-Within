@@ -109,6 +109,32 @@ export interface HeadlessOptions {
    * refuse such a run first).
    */
   campaign?: CampaignSave;
+  /**
+   * Optional (Engine 0.14, gap G9, decision 6): where to start, from a run file's `start`: a level
+   * of the game's level sequence (`{ stage }`, 0-based like the platformer kit's snapshot `stage`)
+   * or a campaign entry by id (`{ entry }`, played fresh: at its own start, with no carried record
+   * and nothing committed before it). Tick 0 is then that level's or entry's first state. Left out,
+   * the game starts as it always does. The tools only pass a start the game lists in its
+   * `HeadlessEntry.starts(content)`, and never with `campaign`.
+   */
+  start?: RunStart;
+}
+
+/**
+ * Where a run starts (Engine 0.14, gap G9): a stage of the game's level sequence (0-based) or a
+ * campaign entry by id. `HeadlessOptions.start`, from a run file's `start`.
+ */
+export type RunStart = { stage: number } | { entry: string };
+
+/**
+ * The starts a game can honour (`HeadlessEntry.starts`, Engine 0.14, gap G9): `stages`, the level
+ * ids of its level sequence in play order (a `{ stage: n }` start picks `stages[n]`), and
+ * `entries`, the ids of its campaign's entries in play order (`{ entry: id }`). Either may be left
+ * out: a game without stages refuses `{ stage }`, one without entries `{ entry }`.
+ */
+export interface HeadlessStarts {
+  stages?: readonly string[];
+  entries?: readonly string[];
 }
 
 /** What a game's headless module (named by `headless` in `game.json`) exports. */
@@ -121,6 +147,13 @@ export interface HeadlessEntry {
    * a game without it is validated as before. Builds defs only: it starts no round.
    */
   miniGames?(content: ContentBundle): readonly MiniGameDef[];
+  /**
+   * Optional (Engine 0.14, gap G9): the starts the game can honour (`HeadlessStarts`), for a run
+   * file's `start`. The tools check `start` against them before the first step: a game without
+   * this export cannot take `start` at all (`no_start`), and a stage or entry it does not list is
+   * refused (`bad_start`). Reads the content only: it starts nothing.
+   */
+  starts?(content: ContentBundle): HeadlessStarts;
 }
 
 /**

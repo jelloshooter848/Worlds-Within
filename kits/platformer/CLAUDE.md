@@ -51,12 +51,13 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   stream of frames remembers outside the world; `platformerFrames(size?)`, the kit's
   `FrameSource` for the engine's `FrameStream` (`@engine/core/present`): a fresh state per world
   and `presentWorld` at `size`, so a game's stream is `new FrameStream(platformerFrames(screen))`.
-- `sequence.ts`: `LevelSequence(stages, { seed, disabledRules, miniGames, pause })`, levels
+- `sequence.ts`: `LevelSequence(stages, { seed, disabledRules, miniGames, pause, start })`, levels
   played one after another as the headless contract (under Level sequences), `LevelStage`
   (`{ level, profile }`), `levelStages(levels, profiles, who?)` (each level paired with the
   profile it names), `levelsInPlayOrder(levels, first?, campaign?)`,
   `contentStages(content, { first?, campaign?, who? })`,
-  `LEVEL_PAUSE` and `SequenceSnapshot`. `LevelSequence` is a `HostedGame`
+  `LEVEL_PAUSE`, `SequenceSnapshot`, and (Engine 0.14, gap G9) `stageStarts(stages)` and
+  `startStage(start)` (a run file's start stage, below). `LevelSequence` is a `HostedGame`
   (`engine/core/headless.ts`, Engine 0.10 gap G37): `world`, `events` and `miniGame()`.
 - `kit.ts`: `kit`, the kit's hook for the tools (`defineKit` from `engine/core/kit.ts`): name
   `platformer`, kinds `level` and `profile`, `PLATFORMER_RULES`, `strictMutants: true` and
@@ -300,6 +301,14 @@ not there`), and on a campaign with no level.
   > afresh (failed).
 - Every level is a new `PlatformerWorld` with the options' `seed`, `disabledRules` and
   `miniGames`, so a run file's switched-off rules reach every level.
+- **Start stage** (Engine 0.14, gap G9, decision 6): `opts.start` (0-based, default 0) is the
+  stage played first: that level, fresh, as the sequence would start it after the level before
+  it (so its tick 0 is the state a full run reaches it in), then on from it as from any level
+  (after the last, the first). A stage the sequence lacks throws. A game passes a run file's
+  `start: { "stage": n }` through: `startStage(opts.start)` reads `HeadlessOptions.start` (undefined
+  without one; it throws on a campaign `entry` start), and the game's headless module exports
+  `starts(content) => stageStarts(itsStages(content))` (the level ids in play order), which the
+  tools check `start` against (`engine/tools/CLAUDE.md`, Start levels and entries).
 - `world`, `stage`, `pause`, `events` and `stageCount` are public for browser glue (a scene draws
   `world` and watches for a new world to start a new event stream).
 - `snapshot()` is a `SequenceSnapshot`: `snapshotWorld(world, events)` (every path under

@@ -69,6 +69,8 @@ export function replayOf(played: PlayedRun, cwd: string, replayDir: string): Rec
               : { code: run.from.code },
         }
       : {}),
+    // Engine 0.14 (gap G9): the level or campaign entry the run started at.
+    ...(run.start !== undefined ? { start: run.start } : {}),
     ...(run.codes?.some((c) => c.tick <= tick) ? { codes: run.codes.filter((c) => c.tick <= tick) } : {}),
     // The rules that were off (the run file's and any `--disable-rule`), so the replay fails alike.
     ...(played.disabledRules.length > 0 ? { disableRules: played.disabledRules } : {}),

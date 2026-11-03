@@ -31,7 +31,9 @@ There is no `index.ts`; import the file you need as `@engine/core/<path>`.
   now;
   `HeadlessEntry`: `createGame(content, seed, opts?)` and the optional `miniGames(content)` (Engine
   0.10, gap G16: the game's mini game defs, for `validate`), `HeadlessOptions` with `disabledRules`
-  and, from Engine 0.13, `campaign`, a campaign save to start at),
+  and, from Engine 0.13, `campaign`, a campaign save to start at, and from Engine 0.14 (gap G9)
+  `start`, a `RunStart` (`{ stage }` or `{ entry }`) from a run file's `start`; the optional
+  `HeadlessEntry.starts(content)` lists the stages and entries a game can start at),
   `JsonValue` and `canonicalJson` (sorted keys, the text state hashes are made from).
 - `view.ts`: the view contract for screenshots (`ViewGame`: a `HeadlessGame` plus `screen`, the
   picture size from the manifest, `render(r)`, and optional `frame()`: the frozen

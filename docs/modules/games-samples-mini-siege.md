@@ -89,6 +89,8 @@ sides, named }`; Engine 0.13: `opts.campaign` starts it at a campaign save, `cam
   `<name>.hashes.json`. Engine 0.13 T7, the dawn: `dawn-held.run.json` (from `played`, the
   captain home) and `dawn-captured.run.json` (from `quit`, the captain taken), the same in all but
   `from`; `dawn-code.run.json` (from `quit`'s save code: the same hashes as `dawn-captured`);
+  `dawn-fresh.run.json` (Engine 0.14, gap G9: `start: { "entry": "dawn" }`, the dawn fresh with
+  no carried record; `headless.ts` exports `starts(content)`, the campaign's entries);
   `dawn-rescue`, `dawn-rescue-failed` (the round given up: the ransom opens, the rescue is
   refused), `dawn-exchange` and `dawn-leave`.
 

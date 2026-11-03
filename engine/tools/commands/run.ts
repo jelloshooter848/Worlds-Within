@@ -25,8 +25,9 @@ import { checkReplay, writeReplay, type ReplayCheck } from '../replay';
  *
  * Result: `{ run, game, world, seed, disabledRules, ticks, lastTick, passed, checks: { assertions, invariants },
  * failure, failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders,
- * missions, missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, from, codes,
- * codesChecked }`. From Engine 0.13 (decision 9) `from` is the campaign save the run started from
+ * missions, missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, from, start,
+ * codes, codesChecked }`. `start` (Engine 0.14, gap G9) is the run file's `start` (`{ stage }` or
+ * `{ entry }`) or null. From Engine 0.13 (decision 9) `from` is the campaign save the run started from
  * (`{ run, code, position, campaign }`: the run file or code it names, the entry and campaign) or
  * null, `codes` counts the run file's expected save codes and `codesChecked` those compared (a
  * different one fails the run like an assertion, kind `code`). `orders` counts the run file's recorded orders, `ordersPlayed`
@@ -74,7 +75,7 @@ export const runCommand = defineCommand({
       return { exit: EXIT.invalidContent, result: { run: args.runFile, errors: played.errors } };
     const { loaded, seed, disabledRules, lastTick, hashes, failures } = played.value;
     const { ordersPlayed, refusedOrders, hashesChecked, hashMismatch } = played.value;
-    const { missionsPlayed, refusedMissions, experience, startSave, codesChecked } = played.value;
+    const { missionsPlayed, refusedMissions, experience, startSave, codesChecked, start } = played.value;
     const stored = loaded.run.replay;
     const replay = stored ? checkReplay(played.value, stored, ctx.cwd) : null;
     const passed = failures.length === 0 && !replay?.hashMismatch && hashMismatch === null;
@@ -113,6 +114,7 @@ export const runCommand = defineCommand({
                 campaign: startSave.campaign,
                 position: startSave.position,
               },
+        start,
         codes: loaded.run.codes?.length ?? 0,
         codesChecked,
         replayFile,
@@ -135,6 +137,13 @@ export const runCommand = defineCommand({
     if (from)
       lines.push(
         `  from ${from.run ?? `code ${String(from.code)}`}: campaign "${from.campaign}" at entry ${from.position}`,
+      );
+    const start = result.start as { stage?: number; entry?: string } | null;
+    if (start)
+      lines.push(
+        start.stage !== undefined
+          ? `  start: stage ${start.stage}`
+          : `  start: entry "${String(start.entry)}"`,
       );
     const off = result.disabledRules as string[];
     if (off.length > 0) lines.push(`  rules off: ${off.join(', ')}`);

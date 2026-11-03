@@ -9,7 +9,7 @@ import { defineCommand } from '../registry';
  * `code <run-file> [--tick N]` (Engine 0.13, decision 9, item 228): plays a game run file (no
  * checks) to its last tick, or to tick N, and prints the save code of the game's campaign save
  * there (`HeadlessGame.campaignSave`, packed by `engine/core/campaign-code.ts`), the code a later
- * run's `from: { "code": ... }` or a player starts from. Result: `{ run, game, seed, tick, hash,
+ * run's `from: { "code": ... }` or a player starts from. Result: `{ run, game, seed, start, tick, hash,
  * code, save }` (`save` the campaign save the code packs). Exit 0; 3 (with `errors`) for a bad run
  * file or content, a game that gives no campaign save there (`no_campaign`), or a save the code
  * cannot hold (`code_record`, ...); 2 for a world run, a game with no `campaignSave`, or a bad
@@ -46,7 +46,7 @@ export const codeCommand = defineCommand({
       throw new UsageError(`--tick ${tick} is after the run's last tick (${loaded.run.ticks})`);
     const played = await playRun(ctx.cwd, args.runFile, { untilTick: tick, withSave: true });
     if (!played.ok) return { exit: EXIT.invalidContent, result: { run: loaded.file, errors: played.errors } };
-    const { seed, lastTick, snapshot, campaignSave, codeContext } = played.value;
+    const { seed, lastTick, snapshot, campaignSave, codeContext, start } = played.value;
     if (campaignSave === undefined || codeContext === null)
       throw new UsageError(
         `${loaded.file}: the game's headless module plays no campaign: its game has no campaignSave() method (engine/core/headless.ts)`,
@@ -66,6 +66,7 @@ export const codeCommand = defineCommand({
         run: loaded.file,
         game: loaded.gameDir,
         seed,
+        start,
         tick: lastTick,
         hash: stateHash(snapshot),
         code: now.code,

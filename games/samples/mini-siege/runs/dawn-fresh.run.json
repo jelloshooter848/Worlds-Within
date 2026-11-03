@@ -1,0 +1,85 @@
+{
+  "game": "..",
+  "seed": 11,
+  "start": {
+    "entry": "dawn"
+  },
+  "ticks": 200,
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "world.tick",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 0,
+      "path": "named.captain.alive",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 0,
+      "path": "named.captain.hp",
+      "op": "eq",
+      "value": 120
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.stock.gold",
+      "op": "eq",
+      "value": 150
+    },
+    {
+      "tick": 0,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.charge.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 100,
+      "path": "named.captain.alive",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 100,
+      "path": "sides.village.units",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 200,
+      "path": "sides.raiders.units",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 200,
+      "path": "named.hall.hp",
+      "op": "eq",
+      "value": 300
+    }
+  ],
+  "invariants": [
+    {
+      "path": "named.hall.alive",
+      "op": "eq",
+      "value": true
+    }
+  ],
+  "hashEvery": 50,
+  "codes": [
+    {
+      "tick": 200,
+      "code": "2PHJ0-2P100-0"
+    }
+  ],
+  "guards": ["enemy-follows-plan"]
+}

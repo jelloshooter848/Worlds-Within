@@ -36,15 +36,23 @@ start from another run's end or a save code (`from`) and assert save codes (`cod
   scripted input, checking invariants every tick and assertions at their tick. `--json` result:
   `{ ok, command: 'run', exitCode, run, game, world, seed, ticks, lastTick, passed, checks, failure,
 failures, hashes: [{ tick, hash }], finalHash, orders, ordersPlayed, refusedOrders, missions,
-missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, from, codes, codesChecked, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
+missionsPlayed, refusedMissions, experience, hashesChecked, hashMismatch, from, start, codes, codesChecked, replayFile, replay }`; `failure` names the first failing tick, the check, `expected`
   and `actual`. Exit 0 passed, 4 failed check or sync hash, 3 invalid run file or content.
 - Campaign runs and save codes (Engine 0.13, decision 9): a game run file's `from` is
   `{ "run": "<run file>" }` (played first; this run starts from its game's campaign save at its
   last tick) or `{ "code": "<save code>" }` (decoded, refused with its code at `from.code`), and
   `codes: [{ tick, code }]` the save codes the game's campaign save must give (a different one fails
   like an assertion, kind `code`). `pnpm cli code <run-file> [--tick N]` prints
-  `{ run, game, seed, tick, hash, code, save }`. The game implements `HeadlessGame.campaignSave()`
+  `{ run, game, seed, start, tick, hash, code, save }`. The game implements `HeadlessGame.campaignSave()`
   and reads `HeadlessOptions.campaign`.
+- Start levels and entries (Engine 0.14, gap G9, decision 6): a game run file's `start` is
+  `{ "stage": n }` (a level of the game's level sequence, 0-based) or `{ "entry": "<id>" }` (a
+  campaign entry, fresh, no carried record): tick 0 is that level's or entry's first state, so a
+  later level's run file does not replay the earlier levels. It is checked first against the
+  headless module's `starts(content)` (`no_start` at `start`, `bad_start` at `start.stage` /
+  `start.entry`, exit 3), is a schema error with `from` or on a world run, reaches the game as
+  `HeadlessOptions.start`, and `run`, `dump`, `trace`, `code`, `screenshot` and replay files keep
+  it (results carry `start`).
 - Recorded orders and sync hashes (Engine 0.9, lockstep replay): a run file's `orders` lists
   `{ tick, ...order }` entries in tick order (same tick: ascending `id`), each applied after its
   tick's state and before the step from it (a world: `applyOrder`; a game: its
@@ -113,7 +121,7 @@ paths, rows: [{ tick, hash, values }], missing, orders, missions }`, played like
   backend, drawing every tick on the way, and writes the frame at tick N as a PNG of the game's picture size (`screen` in
   `game.json`, 256x240 by default; default
   `.ww-out/screenshots/<name>-t<N>.png`). `--json` result: `{ ok, command: 'screenshot', exitCode,
-run, game, seed, tick, backend, renderer, path, width, height, bytes, sha256, hash, headlessHash,
+run, game, seed, start, tick, backend, renderer, path, width, height, bytes, sha256, hash, headlessHash,
 hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be the headless run's).
   A run's `from` (Engine 0.13 T8) starts the view at the same campaign save `run` starts from.
   Two runs in a row give byte-identical PNGs. `--backend three` shows the view's `frame()`

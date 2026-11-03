@@ -125,6 +125,10 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
 - `start-to-goal.run.json` checks the coins (1 from the bump block at tick 82, 2 at 193), the
   changed tiles, the position at the goal and `outcome` `cleared`; its invariants hold one life,
   two hit points and stage 0 all along.
+- `mini-game-start.run.json` (Engine 0.14, gap G9) is `mini-game`'s own part from the trigger
+  level's tick 0 (`start: { "stage": 5 }`; the full run reaches it at tick 2738), with the same
+  hashes as the full run from there. `headless.ts` exports `starts(content)` (one stage per level,
+  `tiny` first) and `createGame` passes `opts.start` to the kit's `LevelSequence`.
 - Run one: `pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json`. All of them
   and the rules: `pnpm -s cli mutants games/platformer-lab --json` (exit 0: no weak or unguarded
   rule). See one rule fail: `pnpm -s cli run <run> --disable-rule <id> --json`.

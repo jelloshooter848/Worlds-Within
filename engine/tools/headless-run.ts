@@ -19,6 +19,7 @@ import {
   type HeadlessGame,
   type JsonObject,
   type JsonValue,
+  type RunStart,
 } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { unknownRules } from '@engine/core/rules';
@@ -48,7 +49,9 @@ export type { RefusedMission } from './world-run';
  * `applyOrder`, on a game through its `order` method. `missions` steps go in right after their
  * tick's orders: on a world the world settles its missions after every step (each commits by
  * itself at its commit tick); on a game (Engine 0.11, item 172) each goes, without `tick`, to the
- * game's `mission` method, and the game's `missionExperience` gives the run's `experience`. Used
+ * game's `mission` method, and the game's `missionExperience` gives the run's `experience`. A
+ * game run's `start` (Engine 0.14, gap G9) is checked against the game's `starts` and handed to
+ * `createGame` as `HeadlessOptions.start`. Used
  * by `run`, `dump`, `code`, `mutants` and `trace` (which reads each tick through `onTick`).
  */
 
@@ -136,6 +139,10 @@ export interface PlayedRun {
    * code), or null.
    */
   startSave: CampaignSave | null;
+  /**
+   * Engine 0.14 (gap G9): the level or campaign entry the run started at (its `start`), or null.
+   */
+  start: RunStart | null;
   /** How many of the run file's `codes` were compared. */
   codesChecked: number;
   /**
@@ -260,6 +267,59 @@ async function startSave(
 }
 
 /**
+ * Checks a game run's `start` against the starts its game lists (`HeadlessEntry.starts`, Engine
+ * 0.14, gap G9), before the game is created. Errors name the run file: `no_start` at `start` (the
+ * headless module has no `starts`, or lists no stages or no entries for that kind of start) and
+ * `bad_start` at `start.stage` or `start.entry` (a stage past the last level, an entry the
+ * campaign lacks), naming what the game has.
+ */
+function checkStart(
+  loaded: LoadedRunFile,
+  entry: HeadlessEntry,
+  content: ContentBundle,
+): { ok: true; start: RunStart | null } | { ok: false; errors: ContentError[] } {
+  const start = loaded.run.start;
+  if (start === undefined) return { ok: true, start: null };
+  const headless = content.manifest.headless;
+  const starts = entry.starts?.(content);
+  if (start.stage !== undefined) {
+    const stages = starts?.stages;
+    if (stages === undefined || stages.length === 0)
+      return runError(
+        loaded,
+        ['start'],
+        'no_start',
+        `the game cannot start at a stage: its headless module (${headless}) lists no level sequence (starts(content).stages, engine/core/headless.ts)`,
+      );
+    if (start.stage >= stages.length)
+      return runError(
+        loaded,
+        ['start', 'stage'],
+        'bad_start',
+        `stage ${start.stage} is past the last level: the game has ${stages.length} (0 to ${stages.length - 1}: ${stages.join(', ')})`,
+      );
+    return { ok: true, start: { stage: start.stage } };
+  }
+  const id = start.entry as string;
+  const entries = starts?.entries;
+  if (entries === undefined || entries.length === 0)
+    return runError(
+      loaded,
+      ['start'],
+      'no_start',
+      `the game cannot start at a campaign entry: its headless module (${headless}) lists none (starts(content).entries, engine/core/headless.ts)`,
+    );
+  if (!entries.includes(id))
+    return runError(
+      loaded,
+      ['start', 'entry'],
+      'bad_start',
+      `the game's campaign has no entry "${id}" (its entries: ${entries.join(', ')})`,
+    );
+  return { ok: true, start: { entry: id } };
+}
+
+/**
  * Plays the run file at `runPath` (relative to `cwd`). With `untilTick` it plays only that far and
  * makes no checks (for `dump`); otherwise it plays every tick and stops at the first failing tick.
  * A rule in the run file's `disableRules` or `guards` that the game's kit does not name is a
@@ -306,7 +366,7 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       },
       mission: (step) => applyMissionStep(world, step, defs, keys),
     };
-    return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts, null, null) };
+    return { ok: true, value: play(loaded, stepper, world.seed, null, [], opts, null, null, null) };
   }
   const { run } = loaded;
   const game = loadGame(cwd, loaded.gameDir ?? '.');
@@ -345,6 +405,8 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   const off = new Set([...run.disableRules, ...asked]);
   const disabledRules = rules.filter((r) => off.has(r.id)).map((r) => r.id);
 
+  const runStart = checkStart(loaded, imported.entry, content);
+  if (!runStart.ok) return runStart;
   const codeContext = saveCodeContext(content);
   let start: CampaignSave | null = null;
   if (run.from !== undefined) {
@@ -362,11 +424,11 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
       );
   }
   const seed = start?.seed ?? run.seed ?? content.manifest.start.seed;
-  const instance: HeadlessGame = imported.entry.createGame(
-    content,
-    seed,
-    start === null ? { disabledRules } : { disabledRules, campaign: start },
-  );
+  const instance: HeadlessGame = imported.entry.createGame(content, seed, {
+    disabledRules,
+    ...(start === null ? {} : { campaign: start }),
+    ...(runStart.start === null ? {} : { start: runStart.start }),
+  });
   if ((run.from !== undefined || run.codes !== undefined) && typeof instance.campaignSave !== 'function')
     throw new UsageError(
       `${loaded.file} has ${run.from !== undefined ? '"from"' : '"codes"'}, but the game's headless module (${content.manifest.headless}) plays no campaign: its game has no campaignSave() method (engine/core/headless.ts)`,
@@ -393,7 +455,17 @@ export async function playRun(cwd: string, runPath: string, opts: PlayOptions = 
   };
   return {
     ok: true,
-    value: play(loaded, stepper, seed, content.manifest.kit, disabledRules, opts, start, codeContext),
+    value: play(
+      loaded,
+      stepper,
+      seed,
+      content.manifest.kit,
+      disabledRules,
+      opts,
+      start,
+      runStart.start,
+      codeContext,
+    ),
   };
 }
 
@@ -448,6 +520,7 @@ function play(
   disabledRules: string[],
   opts: PlayOptions,
   startSave: CampaignSave | null,
+  start: RunStart | null,
   codeContext: SaveCodeContext | null,
 ): PlayedRun {
   const { run } = loaded;
@@ -569,6 +642,7 @@ function play(
         hashesChecked,
         hashMismatch,
         startSave,
+        start,
         codesChecked,
         codeContext,
         ...(opts.withSave && stepper.campaignSave ? { campaignSave: stepper.campaignSave() } : {}),

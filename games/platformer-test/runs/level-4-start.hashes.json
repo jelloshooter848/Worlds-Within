@@ -1,0 +1,93 @@
+{
+  "run": "games/platformer-test/runs/level-4-start.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "a182fe04e460a2bb"
+    },
+    {
+      "tick": 60,
+      "hash": "bbf6e4692944cb84"
+    },
+    {
+      "tick": 120,
+      "hash": "53f1f89329c24ce0"
+    },
+    {
+      "tick": 180,
+      "hash": "3c773711006c4827"
+    },
+    {
+      "tick": 240,
+      "hash": "07ca4513d7897c87"
+    },
+    {
+      "tick": 300,
+      "hash": "f76649c9eac8dc1c"
+    },
+    {
+      "tick": 360,
+      "hash": "090fee2bc2e3f6e3"
+    },
+    {
+      "tick": 420,
+      "hash": "f5c9625b4a9bbb6a"
+    },
+    {
+      "tick": 480,
+      "hash": "abdf6827f1d6a8b9"
+    },
+    {
+      "tick": 540,
+      "hash": "0a5b85427503c4ea"
+    },
+    {
+      "tick": 600,
+      "hash": "34f59f85807e66c2"
+    },
+    {
+      "tick": 660,
+      "hash": "4e7138ffab852491"
+    },
+    {
+      "tick": 720,
+      "hash": "7d60b1c912d3f9e9"
+    },
+    {
+      "tick": 780,
+      "hash": "8ae75a3c5af146b7"
+    },
+    {
+      "tick": 840,
+      "hash": "e4414d538b7cf4a2"
+    },
+    {
+      "tick": 900,
+      "hash": "55f5e8f69d71c550"
+    },
+    {
+      "tick": 960,
+      "hash": "ba86895d2a371236"
+    },
+    {
+      "tick": 1020,
+      "hash": "7b6e47d18b8936f6"
+    },
+    {
+      "tick": 1080,
+      "hash": "06287428194e59ec"
+    },
+    {
+      "tick": 1140,
+      "hash": "3e13f9b0d2cd746d"
+    },
+    {
+      "tick": 1200,
+      "hash": "1c19a0d818e6cbe9"
+    },
+    {
+      "tick": 1241,
+      "hash": "06201f9a779cc2fc"
+    }
+  ]
+}

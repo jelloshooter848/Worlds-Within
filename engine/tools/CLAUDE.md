@@ -53,7 +53,9 @@ content)`, which imports the game's headless module by path for its optional
   `stateHash(snapshot)`, `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
   game run from its `from` and checks its `codes` (Campaign runs and save codes, below).
   `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
-  that reads the state per tick (`trace`) uses the one playing loop.
+  that reads the state per tick (`trace`) uses the one playing loop. A game run's `start` (Engine
+  0.14, gap G9) is checked against the game's `starts(content)` and handed to `createGame` as
+  `HeadlessOptions.start` (Start levels and entries, below); `PlayedRun.start` is it, or null.
 - `world-run.ts`: `loadWorldRun(cwd, runFile, worldFile, seed?)` builds a world run's world from
   its scenario with the engine system set the scenario names (`worldSystemSet(json)`:
   `SYSTEM_SETS` from `engine/sim`, `village` when it names none), no event log, and returns it
@@ -127,7 +129,7 @@ content)`, which imports the game's headless module by path for its optional
   `disableRules`; an id the kit does not name is a usage error). Result: `{ run, game, world, seed,
 disabledRules, ticks, lastTick, passed, checks: { assertions, invariants }, failure, failures, hashes: [{ tick,
 hash }], finalHash, orders, ordersPlayed, refusedOrders, missions, missionsPlayed, refusedMissions,
-experience, hashesChecked, hashMismatch, from, codes, codesChecked, replayFile, replay }`.
+experience, hashesChecked, hashMismatch, from, start, codes, codesChecked, replayFile, replay }`.
   `failure` is the first failed check, `{ tick, kind: 'assertion' |
 'invariant', index, path, op, expected, actual, message }`, or null; `failures` is every check
   that failed at that tick. The run stops at the first failing tick and then writes a replay file
@@ -141,11 +143,11 @@ experience, hashesChecked, hashMismatch, from, codes, codesChecked, replayFile, 
   headless module is missing: `missing_file` / `no_headless_entry` at `headless` in `game.json`),
   2 when the run file is not there.
 - `code <runFile> [--tick N]` (Engine 0.13): plays a game run file (no checks) to its last tick or
-  tick N and prints the save code of the game's campaign save there: `{ run, game, seed, tick,
+  tick N and prints the save code of the game's campaign save there: `{ run, game, seed, start, tick,
 hash, code, save }` (Campaign runs and save codes, below). Exit 0; 3 for a bad run file or
   content, a game that gives no campaign save there (`no_campaign`) or a save the code cannot hold
   (`code_record`, ...); 2 for a world run, a game without `campaignSave`, or a bad `--tick`.
-- `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, tick,
+- `dump <runFile> --tick N`: plays to tick N (no checks) and prints `{ run, game, world, seed, start, tick,
 hash, state, orders, missions }`, the whole snapshot and the recorded orders and mission steps
   applied on the way (`tick < N`). N from 0 to the run's `ticks`, else a usage error. Capped like
   everything else: a big state gives the envelope plus `fullOutput`.
@@ -153,7 +155,7 @@ hash, state, orders, missions }`, the whole snapshot and the recorded orders and
   plays the run like `dump` (no checks; orders, mission steps and `from` applied as `run` does)
   and reads the dotted snapshot paths (as assertions write them) at ticks N, N+K, ... up to M
   (defaults 0, the run's `ticks`, 1; M itself only when it is on that grid). Result: `{ run, game,
-world, seed, from, to, every, paths, rows: [{ tick, hash, values: { <path>: value } }], missing:
+world, seed, start, from, to, every, paths, rows: [{ tick, hash, values: { <path>: value } }], missing:
 [{ path, firstTick, ticks }], orders, missions }`; `hash` is the state hash `run` prints at that
   tick; a path not in the snapshot gives null and is listed in `missing` (a real null is not).
   `rows` is a top-level array, so the output cap halves it (whole rows) and the full trace is in
@@ -161,7 +163,7 @@ world, seed, from, to, every, paths, rows: [{ tick, hash, values: { <path>: valu
   empty path or segment, a path twice, `--from` after `--to`, `--to` after `ticks`, `--every` below
   1. Exit 3 for a bad run file or content. Works on game and world runs. Tests: `trace.test.ts`.
 - `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
-  a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, tick, backend,
+  a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, start, tick, backend,
 renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matchesHeadless }`.
   Exit 0, 4 when a state hash the page saw is not the headless one or (`three`) WebGL is not
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
@@ -282,6 +284,9 @@ platformer game whose door pushes a top-down mini game holds `room` files):
 - `hashes` (optional): sync hashes `[{ tick, hash }]` the run must give (Recorded orders, below).
 - `missions` (default none): mission steps (Missions in world runs, and from Engine 0.11 Missions
   in game runs, below).
+- `start` (optional, game runs, Engine 0.14): start at a later level (`{ "stage": n }`, 0-based)
+  or campaign entry (`{ "entry": "<id>" }`), fresh, from tick 0 (Start levels and entries,
+  below).
 - `guards` (optional): the kit rules this run is meant to guard (Mutant checks). An id the kit
   does not name is an `unknown_rule` content error at that entry (exit 3, naming the run file and
   `guards`); an id twice, or one the run's `disableRules` switches off, is a schema error.
@@ -547,11 +552,46 @@ scenario to the next is a campaign save, packed into a short save code
   save code its end gives. `codes` counts them in the result, `codesChecked` those compared.
 - A game without `campaignSave()` cannot take `from` or `codes` (exit 2), as with `orders`.
 - Replay files keep `from` (a `run` rewritten relative to the replay) and the `codes` up to the
-  failing tick.
+  failing tick (and, from Engine 0.14, `start`).
 - `pnpm -s cli code <run-file> --json` prints the code at the run's last tick (`--tick N` for
   another). Tests: `campaign-run.test.ts` (a plain-JS game in a temp folder on two RTS maps and a
   campaign), and `save-code.test.ts` (the sim's captive fixtures: a code taken at the end of the
   first scenario restores the follow-up's start world with equal hashes).
+
+## Start levels and entries
+
+Engine 0.14 (gap G9; docs/BUILD-LOG.md, Engine 0.14, decision 6, item 252): a game run file can
+start at a later level or campaign entry, so a later level's run file no longer replays the
+earlier levels' input (and a change to level 1 moves no hash of it). The sample is
+`games/platformer-test/runs/level-3-start.run.json`, level 3 from its own tick 0:
+
+```json
+{ "game": "..", "seed": 1, "start": { "stage": 2 }, "ticks": 869, "input": { "steps": [...] } }
+```
+
+- **`start`** is exactly one of **`{ "stage": n }`**, a level of the game's level sequence,
+  0-based like the snapshot's `stage` (the platformer kit's `LevelSequence`: that level, fresh, and
+  on from it as from any level), and **`{ "entry": "<id>" }`**, a campaign entry by id (the mini
+  siege's `dawn`: that entry fresh, at its own start, with no carried record and nothing committed
+  before it; `games/samples/mini-siege/runs/dawn-fresh.run.json`). Tick 0 is that level's or
+  entry's first state: `level-3-start`'s ticks are `level-3`'s from tick 1161 on, with the same
+  hashes.
+- It reaches the game as `HeadlessOptions.start` (`engine/core/headless.ts`). The tools check it
+  first against the game's headless module's optional **`starts(content)`** (`HeadlessStarts`:
+  `stages`, the level ids in play order, and `entries`, the campaign's entry ids): a game without
+  it, or without stages (entries) for a `stage` (`entry`) start, is **`no_start` at `start`**; a
+  stage past the last level is `bad_start` at `start.stage`, an entry the game lacks `bad_start` at
+  `start.entry`, each naming what the game has (exit 3, before anything is played). The
+  platformer test, the platformer lab (stages, via the kit's `stageStarts` and `startStage`) and
+  the mini siege (entries) export `starts`.
+- Schema errors (exit 3): neither or both of `stage` and `entry`; `start` with `from` (at `start`:
+  `from` already names where the run starts); `start` on a world run.
+- `run`, `dump`, `trace`, `code` and `screenshot` (`ShotJob.start`, handed to `createView`) all
+  start there, and their results carry `start` (null without one). A replay file keeps `start`
+  and reproduces (`start-run.test.ts`).
+- The full-replay run files (`level-2`, `level-3`, `level-4`) stay as they were, and their hashes
+  with them; `level-2-start`, `level-3-start`, `level-4-start` and the lab's `mini-game-start`
+  sit beside them.
 
 ## Mutant checks
 
@@ -619,7 +659,8 @@ content, so the same failure writes the same file. A replay is an ordinary run f
 - `game` and `replay.source` are relative to the replay file's folder, like `game` in any run file.
 - `seed` is always written out (the seed the source run used). `ticks` is the first failing tick
   (1 when that is tick 0). `input.steps` keeps the steps with `frame` up to the failing tick,
-  `assertions` those at or before it, `invariants` and `hashEvery` all as they were.
+  `assertions` those at or before it, `invariants` and `hashEvery` all as they were. A run's `from`
+  and `start` (Engine 0.14) are kept, so the replay starts where the source run did.
 - `replay.failure` is the source run's first failed check (`index` is left out: the assertion list
   is shorter). `replay.hashes` are the hashes the source run printed, up to and including the
   failing tick (`hashes` in its result).
@@ -659,7 +700,8 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   so a picture can show a mission round or the battle after its commit (the mini siege's). From
   Engine 0.13 T8 (gap M33) a run's `from` is played as `run` plays it: the job carries the start
   save `run` reads (`ShotJob.campaign`, `PlayedRun.startSave`) and the page hands it to
-  `createView` as `HeadlessOptions.campaign`, so a follow-up's picture is the follow-up's.
+  `createView` as `HeadlessOptions.campaign`, so a follow-up's picture is the follow-up's. A run's
+  `start` (Engine 0.14, gap G9) goes the same way (`ShotJob.start`, `HeadlessOptions.start`).
 - `hash` is the state hash of the snapshot the page drew; `headlessHash` is `dump`'s at that tick;
   `hashes` are the state hashes the page saw while drawing every tick (tick 0, every `hashEvery`
   ticks and the last, as `run` lists them). All must match the headless run (`matchesHeadless`);

@@ -23,7 +23,7 @@ an error). Games without orders leave it out and are unchanged; a run file with 
 without it is a usage error (`engine/tools/CLAUDE.md`, Recorded orders). From Engine 0.11 (item 172) the optional `mission(step)` takes one run file `missions` step the same way (`{ mission,
 action, input? }`, after the tick's orders) and returns null or a `MissionStepRefusal` `{ code,
 error }`; the optional `missionExperience()` gives the ticks its played rounds took per mission,
-for the run's `experience` (`MissionHost` has both). From Engine 0.13 (decision 9, item 228) the optional `campaignSave()` gives the campaign save (`campaign.ts`) the game's campaign would have if the entry played now ended at this tick (null when it plays no campaign), for a run file's `codes`, `pnpm cli code` and a later run's `from`; `HeadlessOptions.campaign` hands `createGame` a campaign save to start at (its `position`'s entry, from tick 0, with its carried record). `HostedGame<W, E>`
+for the run's `experience` (`MissionHost` has both). From Engine 0.13 (decision 9, item 228) the optional `campaignSave()` gives the campaign save (`campaign.ts`) the game's campaign would have if the entry played now ended at this tick (null when it plays no campaign), for a run file's `codes`, `pnpm cli code` and a later run's `from`; `HeadlessOptions.campaign` hands `createGame` a campaign save to start at (its `position`'s entry, from tick 0, with its carried record). From Engine 0.14 (gap G9, decision 6, item 252) `HeadlessOptions.start` (`RunStart`: `{ stage }`, a level of the game's level sequence, 0-based, or `{ entry }`, a campaign entry by id, played fresh with no carried record) is a run file's `start`, and the optional `HeadlessEntry.starts(content)` (`HeadlessStarts`: `stages`, the level ids in play order, and `entries`, the campaign's entry ids) lists what a game can honour; the tools refuse a `start` it does not list (`no_start`, `bad_start`). `HostedGame<W, E>`
 (Engine 0.10, gap G37) is a `HeadlessGame` the browser shell's `HostScene` can play by itself:
 `world` (the world now; a new object on a new level), `events` (the last step's) and a required
 `miniGame()`; the platformer kit's `LevelSequence` is one (and so is `MissionHost`), so a game's page passes the game to
@@ -172,6 +172,8 @@ campaign, seed, position, carried, results: [{ entry, missions: [{ mission, outc
 }] }] }`, `position` the entry played now (its index in play order), `carried` the carried record
 (`carried.ts`) the next scenario entry starts from, or null, and one `results` entry per finished
 entry, in play order. `newCampaignSave({ game, campaign, seed })` starts one;
+`campaignSaveAt(campaign, { game, seed }, entry)` (Engine 0.14, gap G9) is a save at the entry with
+that id, fresh (no carried record, every earlier entry finished with nothing committed), or null;
 `campaignRun(campaign, save?)` reads it (`{ order, position, entry, done, scenario,
 nextScenario, carried }`: `scenario` the scenario entry the world is built from, the entry itself
 or for a mission entry the scenario before it, whose end world it is opened on); and

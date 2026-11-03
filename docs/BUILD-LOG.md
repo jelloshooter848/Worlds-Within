@@ -55,6 +55,20 @@ continuing that report's ids (the mini siege's from M37).
   The screenshot page never used `files.ts` (it receives the files in its job), so it is
   unchanged. Tests: `tests/build/game-files.test.ts` (the folder walk, keys and texts against a
   real `import.meta.glob` for two games, hidden files, a real build and the error).
+- **G9: a start level or entry in run files** (T4): a game run file's optional `start` is
+  `{ "stage": n }` (a level of the game's level sequence, 0-based) or `{ "entry": "<id>" }` (a
+  campaign entry, fresh, no carried record), handed to `createGame` as `HeadlessOptions.start`; it
+  and `from` are a schema error together, and a world run takes neither. A game lists what it can
+  start at with the headless module's optional `starts(content)` (`HeadlessStarts`); the tools
+  check `start` against it before playing (`no_start` at `start`, `bad_start` at `start.stage` or
+  `start.entry`, exit 3). `run`, `dump`, `trace`, `code`, `screenshot` (`ShotJob.start`) and
+  replay files keep it. The platformer kit's `LevelSequence` takes `start` (with `stageStarts`
+  and `startStage`), the platformer test and lab pass it, and the mini siege starts an entry fresh
+  (`campaignSaveAt` in `engine/core/campaign.ts`). New run files: `level-2-start`,
+  `level-3-start`, `level-4-start` (platformer test), `mini-game-start` (lab) and `dawn-fresh`
+  (mini siege), each with golden hashes; the start-level files give the same hashes as the full
+  runs from that level's tick, and no existing golden hash moved. Tests: `start-run.test.ts`,
+  `sequence.test.ts`, `campaign.test.ts`.
 
 ### Planned tasks
 

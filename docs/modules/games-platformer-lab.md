@@ -43,7 +43,9 @@ screen)` (a `FramePicture`: those frames onto any presenter) and `labCanvasPictu
   G37), `index.html` (with the 2D/3D toggle and the launcher's `ww-alternate` 3D link),
   and the data files from `virtual:game-files` (no `files.ts`).
 - `runs/*.run.json` with golden `*.hashes.json`: `start-to-goal`, `moves`, `objects`, `shells`,
-  `walkers`, `mini-game`, each with `guards`.
+  `walkers`, `mini-game`, each with `guards`, and (Engine 0.14, gap G9) `mini-game-start`, the
+  trigger level from its own tick 0 (`start: { "stage": 5 }`; `headless.ts` exports
+  `starts(content)`).
 
 ## Imports allowed
 

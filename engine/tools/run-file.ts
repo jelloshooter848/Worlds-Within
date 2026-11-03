@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import { Actions } from '@engine/core/input/actions';
-import { canonicalJson, type JsonValue } from '@engine/core/headless';
+import { canonicalJson, type JsonValue, type RunStart } from '@engine/core/headless';
 import { contentError, validate, type ContentError } from '@engine/core/content/validate';
 import { orderSchema } from '@engine/core/orders';
 import { UsageError } from './exit-codes';
@@ -48,6 +48,10 @@ import { UsageError } from './exit-codes';
  * played first) or a save code (`code`), at the campaign's next entry from tick 0, and `codes`
  * lists `{ tick, code }` save codes the game's campaign save must give (see "Campaign runs and save
  * codes" in this folder's CLAUDE.md). World runs take neither.
+ *
+ * Start (Engine 0.14, gap G9): a game run's `start` begins it at a later level (`{ stage }`) or
+ * campaign entry (`{ entry }`), fresh, from tick 0, so a later level's run file does not replay
+ * the earlier levels' input. The game must list it (`HeadlessEntry.starts`); not with `from`.
  *
  * Ticks: tick 0 is the state the game starts in; tick `t` is the state after `t` steps. The input
  * is `ScriptedInput` steps: each step holds its actions from input frame `frame` on, and frame `f`
@@ -233,6 +237,40 @@ export const runFromSchema = z
       ctx.addIssue({ code: 'custom', path: [], message: 'give exactly one of "run" and "code"' });
   });
 
+/**
+ * Where a game run starts (Engine 0.14, gap G9, decision 6): exactly one of a stage of the game's
+ * level sequence (`stage`, 0-based like the platformer kit's snapshot `stage`) and a campaign entry
+ * by id (`entry`, played fresh: no carried record). Tick 0 is that level's or entry's first state.
+ */
+export const runStartSchema = z
+  .strictObject({
+    stage: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe(
+        "a level of the game's level sequence, 0-based as the snapshot's `stage`: the run starts at that level, fresh, from tick 0",
+      ),
+    entry: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        "a campaign entry's id: the run starts at that entry, fresh (its own start, no carried record), from tick 0",
+      ),
+  })
+  .superRefine((start, ctx) => {
+    if ((start.stage === undefined) === (start.entry === undefined))
+      ctx.addIssue({ code: 'custom', path: [], message: 'give exactly one of "stage" and "entry"' });
+  });
+
+/** A run file's `start` as `HeadlessOptions.start` takes it (undefined without one). */
+export function runStartOf(start: z.output<typeof runStartSchema> | undefined): RunStart | undefined {
+  if (start === undefined) return undefined;
+  return start.stage !== undefined ? { stage: start.stage } : { entry: start.entry as string };
+}
+
 /** A save code a game run's campaign save must give at a tick (Engine 0.13, decision 9). */
 export const codeEntrySchema = z.strictObject({
   tick: z.number().int().min(0).describe('the tick the save code is taken at'),
@@ -305,6 +343,11 @@ export const runFileSchema = z
       .describe(
         "game runs (Engine 0.13): start from another run's end or a save code, at the campaign's next entry, from tick 0",
       ),
+    start: runStartSchema
+      .exactOptional()
+      .describe(
+        "game runs (Engine 0.14): start at a later level (`{ stage }`, 0-based) or campaign entry (`{ entry }`), fresh, from tick 0, instead of the game's first; not with `from`",
+      ),
     codes: z
       .array(codeEntrySchema)
       .exactOptional()
@@ -349,14 +392,20 @@ export const runFileSchema = z
           path: ['guards'],
           message: 'a world run has no kit rules to guard: leave "guards" out',
         });
-      for (const field of ['from', 'codes'] as const)
+      for (const field of ['from', 'codes', 'start'] as const)
         if (run[field] !== undefined)
           ctx.addIssue({
             code: 'custom',
             path: [field],
-            message: `a world run plays no campaign: "${field}" is for game runs`,
+            message: `a world run plays no campaign or levels: "${field}" is for game runs`,
           });
     }
+    if (run.start !== undefined && run.from !== undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['start'],
+        message: 'give "start" or "from", not both: "from" already names where the run starts',
+      });
     run.disableRules.forEach((id, i) => {
       if (run.disableRules.indexOf(id) !== i)
         ctx.addIssue({

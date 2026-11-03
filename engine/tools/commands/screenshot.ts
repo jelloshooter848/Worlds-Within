@@ -22,7 +22,7 @@ import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
  * 256x240 by default; devicePixelRatio 1). No real-time loop and no
  * audio: the same run file and tick give a byte-identical PNG on two runs in a row.
  *
- * Result: `{ run, game, seed, tick, path, width, height, bytes, sha256, hash, headlessHash,
+ * Result: `{ run, game, seed, start, tick, path, width, height, bytes, sha256, hash, headlessHash,
  * hashes, matchesHeadless }`. `path` is the PNG, relative to the working folder (default
  * `.ww-out/screenshots/<run name>-t<tick>.png`); `sha256` is the whole PNG's SHA-256 in hex;
  * `hash` is the state hash of the snapshot the page drew, `headlessHash` the one `dump` gives at
@@ -36,7 +36,8 @@ import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
  * orders, as `run` hands them to the headless game, so a screenshot can show a mission's round.
  * A run's `from` (Engine 0.13 T8, gap M33) is played as `run` plays it: the view is created at the
  * campaign save `run` starts from (`HeadlessOptions.campaign`), so a follow-up's screenshot draws
- * the follow-up.
+ * the follow-up. A run's `start` (Engine 0.14, gap G9) goes to `createView` as
+ * `HeadlessOptions.start`, so the picture is of the level or entry the run starts at.
  *
  * `--backend three` shows the view's `frame()` through the Three.js backend and the game's `three`
  * skin instead (Chromium with the GPU on), syncing every tick and rendering once at tick N. A view
@@ -90,6 +91,7 @@ export const screenshotCommand = defineCommand({
       snapshot,
       disabledRules,
       startSave,
+      start,
       hashes: headlessHashes,
     } = played.value;
 
@@ -139,6 +141,7 @@ export const screenshotCommand = defineCommand({
         missions: loaded.run.missions,
         disabledRules,
         campaign: startSave,
+        start,
         screen,
         backend: flags.backend,
         allowSoftwareGl: flags.allowSoftwareGl,
@@ -165,6 +168,7 @@ export const screenshotCommand = defineCommand({
         run: loaded.file,
         game: loaded.gameDir,
         seed,
+        start,
         tick: lastTick,
         backend: flags.backend,
         renderer: shot.renderer,

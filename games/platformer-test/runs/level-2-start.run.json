@@ -1,0 +1,304 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 1
+  },
+  "ticks": 577,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 50,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 62,
+        "hold": ["right"]
+      },
+      {
+        "frame": 82,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 100,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 149,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 165,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 188,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 196,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 225,
+        "hold": ["left"]
+      },
+      {
+        "frame": 304,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 395,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 410,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 457,
+        "hold": ["right"]
+      },
+      {
+        "frame": 463,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 485,
+        "hold": ["right"]
+      },
+      {
+        "frame": 547,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 560,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-2"
+    },
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 0,
+      "path": "pause",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 59,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "break",
+        "col": 5,
+        "row": 5
+      }
+    },
+    {
+      "tick": 59,
+      "path": "player.vy",
+      "op": "eq",
+      "value": 496
+    },
+    {
+      "tick": 59,
+      "path": "tiles",
+      "op": "contains",
+      "value": {
+        "col": 5,
+        "row": 5,
+        "cell": "empty"
+      }
+    },
+    {
+      "tick": 115,
+      "path": "player.y",
+      "op": "eq",
+      "value": 24576
+    },
+    {
+      "tick": 147,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 9952
+    },
+    {
+      "tick": 150,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "jump",
+        "tier": 2
+      }
+    },
+    {
+      "tick": 212,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 1,
+        "actorType": "shell-walker",
+        "into": "shell"
+      }
+    },
+    {
+      "tick": 212,
+      "path": "player.vy",
+      "op": "eq",
+      "value": -16384
+    },
+    {
+      "tick": 242,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 4768
+    },
+    {
+      "tick": 242,
+      "path": "player.skidding",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 247,
+      "path": "actors.1.dir",
+      "op": "eq",
+      "value": -1
+    },
+    {
+      "tick": 303,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "kick",
+        "actor": 1,
+        "dir": -1
+      }
+    },
+    {
+      "tick": 303,
+      "path": "scrollX",
+      "op": "eq",
+      "value": 86747
+    },
+    {
+      "tick": 345,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "defeat",
+        "actor": 2,
+        "actorType": "walker",
+        "by": 1
+      }
+    },
+    {
+      "tick": 345,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 464,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "jump",
+        "tier": 2
+      }
+    },
+    {
+      "tick": 543,
+      "path": "player.x",
+      "op": "eq",
+      "value": 227840
+    },
+    {
+      "tick": 548,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 548,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 548,
+      "path": "coins",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 577,
+      "path": "pause",
+      "op": "eq",
+      "value": 29
+    }
+  ],
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "path": "player.hp",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "gravity",
+    "fall-cap",
+    "walk",
+    "run-speed",
+    "run-hold",
+    "skid",
+    "air-control",
+    "jump",
+    "jump-by-speed",
+    "variable-jump",
+    "solid-tiles",
+    "one-way-platforms",
+    "ceiling-bump",
+    "level-bounds",
+    "coins-collect",
+    "brick-break",
+    "goal-clears-level",
+    "scroll-lock",
+    "actors-wake",
+    "walkers-turn",
+    "stomping",
+    "stomp-bounce",
+    "shell-kick",
+    "shell-hits-enemies"
+  ]
+}

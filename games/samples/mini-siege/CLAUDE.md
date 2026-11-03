@@ -218,7 +218,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`) and `named` (every scenari
     left out; `MiniSiegeGame.campaignSave()` is the save if the entry played now ended now
     (`advanceCampaign` with the world's committed missions and, in the siege, `carriedRecord`
     for the dawn's `from`), null once the campaign is done or while the hall (the carried
-    stockpile) is gone (gap M31).
+    stockpile) is gone (gap M31). Engine 0.14 (gap G9): `starts(content)` lists the campaign's
+    entries (`village`, `dawn`) for a run file's `start: { entry }`, and `createGame`'s
+    `opts.start` builds that entry fresh (`siegeStartSave`: the engine's `campaignSaveAt`, no
+    carried record, nothing committed before it): the dawn as its scenario file is written.
   - `picture.ts`: `siegeLook(content)` (both `canvas2d` skins by `skinSet`, the sheets, size, the
     grass colour), `siegeSource` / `siegeFrames(content, ui?)`: one stream over the
     `MiniSiegeGame`: the RTS kit's `presentWorld` for `village` with the game's missions (the
@@ -437,6 +440,7 @@ games/samples/mini-siege/runs/quit.run.json` prints it. The fortify runs give no
 | `dawn-rescue-failed` | 201   | `quit.run.json`    | the rescue played (the sergeant's 50 hp start the round on 5 half hearts) and given up at once: `failed` at world 45 injures her (30 hp) and offers `ransom-window`; reopening the rescue at game tick 50 is refused (`not_offered`); the ransom (120 gold) frees the captain at world 60 | `41809d9356d8ed03` |
 | `dawn-exchange`      | 200   | `quit.run.json`    | `exchange-captain` opened and delegated at 5: 80 gold (70 left) and the captain freed at 15; three raiders stand at 200                                                                                                                                                                   | `a1516bdf0b2ba853` |
 | `dawn-leave`         | 200   | `quit.run.json`    | `leave-captain` at 5: no effects, the captain stays captured; five raiders stand at 200, as with no choice at all                                                                                                                                                                         | `facb7083b39bcf95` |
+| `dawn-fresh`         | 200   | `start: dawn`      | the dawn started fresh (Engine 0.14, gap G9: no carried record): its scenario file's captain at 120 and 150 gold, so it plays as `dawn-held`; pins the save code at 200                                                                                                                   | `6e309a2e804edc78` |
 
 - `dawn-held` and `dawn-captured` differ only in `from`, so the only difference in their input is
   the carried record, and that differs only in the captain's entry (`mini-siege.test.ts`).

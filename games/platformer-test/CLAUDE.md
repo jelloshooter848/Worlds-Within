@@ -184,17 +184,28 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
 
 ## Run files
 
-Every run file starts at the first level (a run file cannot start at a later one: gap G9), so
-`level-2.run.json` holds `level-1`'s input and then its own, and `level-3.run.json` both before
-its own. Each level starts `LEVEL_PAUSE` (60) ticks after the one before it is cleared: `level-2`
-at tick 553, `level-3` at tick 1161, `level-4` at tick 2059.
+The `level-<n>` run files start at the first level, so `level-2.run.json` holds `level-1`'s input
+and then its own, and `level-3.run.json` both before its own. Each level starts `LEVEL_PAUSE` (60)
+ticks after the one before it is cleared: `level-2` at tick 553, `level-3` at tick 1161, `level-4`
+at tick 2059. They stay as they are, with their hashes.
 
-| run       | ticks | ends at                        | guards                                                                                                                                                                                                                                                                                                         |
-| --------- | ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `level-1` | 520   | `level-1` cleared at tick 493  | gravity, walk, air-control, jump, jump-by-speed, variable-jump, solid-tiles, coins-collect, bump-blocks, goal-clears-level, actors-wake, stomping, stomp-bounce                                                                                                                                                |
-| `level-2` | 1130  | `level-2` cleared at tick 1101 | gravity, fall-cap, walk, run-speed, run-hold, skid, air-control, jump, jump-by-speed, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, level-bounds, coins-collect, brick-break, goal-clears-level, scroll-lock, actors-wake, walkers-turn, stomping, stomp-bounce, shell-kick, shell-hits-enemies |
-| `level-3` | 2030  | `level-3` cleared at tick 1999 | gravity, fall-cap, walk, skid, friction, air-control, jump, solid-tiles, hazards-kill, pits-kill, goal-clears-level, actors-wake, ledge-turn, enemy-touch-hurts, invulnerability                                                                                                                               |
-| `level-4` | 3300  | `level-4` cleared at tick 3283 | solid-tiles, goal-clears-level, mini-games                                                                                                                                                                                                                                                                     |
+From Engine 0.14 (gap G9) a run file can start at a later level: `start: { "stage": n }`
+(0-based, `level-1` is stage 0; `headless.ts` exports `starts(content)`, one stage per level, and
+`createGame` passes `opts.start` to the kit's `LevelSequence`). `level-2-start`, `level-3-start`
+and `level-4-start` are `level-<n>`'s own part from that level's tick 0 (`start` stages 1, 2 and
+3): the same input, assertions and guards shifted back by 553, 1161 and 2059 ticks, the `stage`
+invariant an `eq`, and the same hashes as the full runs at those ticks. A change to `level-1`
+moves none of them.
+
+| run             | ticks | ends at                        | guards                                                                                                                                                                                                                                                                                                         |
+| --------------- | ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `level-1`       | 520   | `level-1` cleared at tick 493  | gravity, walk, air-control, jump, jump-by-speed, variable-jump, solid-tiles, coins-collect, bump-blocks, goal-clears-level, actors-wake, stomping, stomp-bounce                                                                                                                                                |
+| `level-2`       | 1130  | `level-2` cleared at tick 1101 | gravity, fall-cap, walk, run-speed, run-hold, skid, air-control, jump, jump-by-speed, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, level-bounds, coins-collect, brick-break, goal-clears-level, scroll-lock, actors-wake, walkers-turn, stomping, stomp-bounce, shell-kick, shell-hits-enemies |
+| `level-3`       | 2030  | `level-3` cleared at tick 1999 | gravity, fall-cap, walk, skid, friction, air-control, jump, solid-tiles, hazards-kill, pits-kill, goal-clears-level, actors-wake, ledge-turn, enemy-touch-hurts, invulnerability                                                                                                                               |
+| `level-4`       | 3300  | `level-4` cleared at tick 3283 | solid-tiles, goal-clears-level, mini-games                                                                                                                                                                                                                                                                     |
+| `level-2-start` | 577   | `level-2` cleared at tick 548  | as `level-2`                                                                                                                                                                                                                                                                                                   |
+| `level-3-start` | 869   | `level-3` cleared at tick 838  | as `level-3`                                                                                                                                                                                                                                                                                                   |
+| `level-4-start` | 1241  | `level-4` cleared at tick 1224 | as `level-4`                                                                                                                                                                                                                                                                                                   |
 
 - `level-1.run.json` walks right and jumps five times: under the bump block (coin at tick 59),
   over the 2-tile gap, onto the step (standing on it at 210), over the 3-tile gap through the coin

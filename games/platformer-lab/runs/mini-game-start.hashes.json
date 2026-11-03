@@ -1,0 +1,29 @@
+{
+  "run": "games/platformer-lab/runs/mini-game-start.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "b545da4445264128"
+    },
+    {
+      "tick": 60,
+      "hash": "0dbeb5220400b380"
+    },
+    {
+      "tick": 120,
+      "hash": "f03e432c54fb480a"
+    },
+    {
+      "tick": 180,
+      "hash": "5f309edf553d1f59"
+    },
+    {
+      "tick": 240,
+      "hash": "c168460a26efa194"
+    },
+    {
+      "tick": 277,
+      "hash": "798fe806947ce03b"
+    }
+  ]
+}

@@ -29,7 +29,9 @@ sent through a `MapTracker`, runner, actors, coins, goals, triggers, block bounc
 placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw.
 Its level sequence (`LevelSequence`, Engine 0.7) plays a game's levels one after another as the
 headless contract: a pause after `cleared` or `failed`, then the next level or the same one
-afresh, each a new world with the run's seed, switched-off rules and mini games; its snapshot is
+afresh, each a new world with the run's seed, switched-off rules and mini games (from Engine 0.14,
+gap G9, it can start at a later stage: a run file's `start: { "stage": n }`, through
+`startStage` and `stageStarts`); its snapshot is
 the world's plus `stage` and `pause`, and it is a `HostedGame` (`miniGame()`, Engine 0.10 gap
 G37), so the shell's `HostScene` takes it as it is. It never draws and holds no content beyond tiny test fixtures.
 

@@ -1,0 +1,411 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 3
+  },
+  "ticks": 1241,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 222,
+        "hold": []
+      },
+      {
+        "frame": 822,
+        "hold": ["right"]
+      },
+      {
+        "frame": 823,
+        "hold": ["left"]
+      },
+      {
+        "frame": 862,
+        "hold": ["right"]
+      },
+      {
+        "frame": 906,
+        "hold": ["down"]
+      },
+      {
+        "frame": 912,
+        "hold": ["up"]
+      },
+      {
+        "frame": 913,
+        "hold": ["right"]
+      },
+      {
+        "frame": 918,
+        "hold": ["down"]
+      },
+      {
+        "frame": 930,
+        "hold": ["up"]
+      },
+      {
+        "frame": 932,
+        "hold": ["down"]
+      },
+      {
+        "frame": 933,
+        "hold": ["right"]
+      },
+      {
+        "frame": 938,
+        "hold": ["down"]
+      },
+      {
+        "frame": 944,
+        "hold": ["right"]
+      },
+      {
+        "frame": 955,
+        "hold": ["down"]
+      },
+      {
+        "frame": 957,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 958,
+        "hold": []
+      },
+      {
+        "frame": 973,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 974,
+        "hold": []
+      },
+      {
+        "frame": 988,
+        "hold": ["up"]
+      },
+      {
+        "frame": 990,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1022,
+        "hold": ["down"]
+      },
+      {
+        "frame": 1026,
+        "hold": ["up"]
+      },
+      {
+        "frame": 1030,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1035,
+        "hold": ["down"]
+      },
+      {
+        "frame": 1038,
+        "hold": ["up"]
+      },
+      {
+        "frame": 1041,
+        "hold": ["down"]
+      },
+      {
+        "frame": 1042,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1047,
+        "hold": ["down"]
+      },
+      {
+        "frame": 1053,
+        "hold": ["up"]
+      },
+      {
+        "frame": 1054,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1067,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1068,
+        "hold": []
+      },
+      {
+        "frame": 1083,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1084,
+        "hold": []
+      },
+      {
+        "frame": 1085,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-4"
+    },
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 0,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 222,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "vault",
+        "attempt": 1
+      }
+    },
+    {
+      "tick": 222,
+      "path": "miniGame.game",
+      "op": "eq",
+      "value": "vault"
+    },
+    {
+      "tick": 222,
+      "path": "miniGame.state.room",
+      "op": "eq",
+      "value": "vault"
+    },
+    {
+      "tick": 222,
+      "path": "miniGame.state.round.goal",
+      "op": "eq",
+      "value": "defeat-all"
+    },
+    {
+      "tick": 222,
+      "path": "miniGame.state.hero.maxHp",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 222,
+      "path": "miniGame.state.enemies",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 821,
+      "path": "miniGame.state.round.ticks",
+      "op": "eq",
+      "value": 599
+    },
+    {
+      "tick": 821,
+      "path": "player.x",
+      "op": "eq",
+      "value": 84584
+    },
+    {
+      "tick": 822,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "vault",
+        "result": "fail"
+      }
+    },
+    {
+      "tick": 822,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "respawn"
+      }
+    },
+    {
+      "tick": 822,
+      "path": "miniGame",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 822,
+      "path": "coins",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 822,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 822,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "fail"
+    },
+    {
+      "tick": 822,
+      "path": "endedRound.report.ticks",
+      "op": "eq",
+      "value": 600
+    },
+    {
+      "tick": 841,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 871,
+      "path": "triggers.0.armed",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 906,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game",
+        "trigger": 0,
+        "game": "vault",
+        "attempt": 2
+      }
+    },
+    {
+      "tick": 906,
+      "path": "miniGame.state.round.attempt",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 1084,
+      "path": "miniGame.state.enemies",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1085,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "mini-game-end",
+        "trigger": 0,
+        "game": "vault",
+        "result": "pass"
+      }
+    },
+    {
+      "tick": 1085,
+      "path": "coins",
+      "op": "eq",
+      "value": 7
+    },
+    {
+      "tick": 1085,
+      "path": "tiles",
+      "op": "contains",
+      "value": {
+        "col": 22,
+        "row": 7,
+        "cell": "empty"
+      }
+    },
+    {
+      "tick": 1085,
+      "path": "tiles",
+      "op": "contains",
+      "value": {
+        "col": 21,
+        "row": 8,
+        "cell": "empty"
+      }
+    },
+    {
+      "tick": 1085,
+      "path": "endedRound.result",
+      "op": "eq",
+      "value": "pass"
+    },
+    {
+      "tick": 1085,
+      "path": "endedRound.state.events",
+      "op": "contains",
+      "value": {
+        "type": "kill",
+        "kind": "knight"
+      }
+    },
+    {
+      "tick": 1085,
+      "path": "endedRound.state.enemies",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1085,
+      "path": "endedRound.report.defeated",
+      "op": "eq",
+      "value": ["11,3", "5,7"]
+    },
+    {
+      "tick": 1224,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 1224,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 1224,
+      "path": "coins",
+      "op": "eq",
+      "value": 7
+    }
+  ],
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "gte",
+      "value": 1
+    },
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    }
+  ],
+  "hashEvery": 60,
+  "guards": ["solid-tiles", "goal-clears-level", "mini-games"]
+}

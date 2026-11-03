@@ -1,7 +1,7 @@
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type { HeadlessOptions } from '@engine/core/headless';
+import type { HeadlessOptions, HeadlessStarts } from '@engine/core/headless';
 import type { MiniGameDef } from '@engine/core/minigame';
-import { LevelSequence, type SequenceSnapshot } from '@kits/platformer';
+import { LevelSequence, stageStarts, startStage, type SequenceSnapshot } from '@kits/platformer';
 import { labStages } from './content';
 import { LAB_MINI_GAMES } from './minigame';
 
@@ -20,14 +20,25 @@ export type LabSnapshot = SequenceSnapshot;
 
 /**
  * The headless game contract (`engine/core/headless.ts`), for `pnpm cli run`, `dump` and
- * `mutants`: kit rules switched off in `opts` go to every level's world.
+ * `mutants`: kit rules switched off in `opts` go to every level's world, and a run file's
+ * `start: { stage }` (`opts.start`, gap G9) is the level the sequence starts at.
  */
 export function createGame(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): LabGame {
+  const start = startStage(opts.start);
   return new LevelSequence(labStages(content), {
     seed,
     disabledRules: opts.disabledRules ?? [],
     miniGames: LAB_MINI_GAMES,
+    ...(start === undefined ? {} : { start }),
   });
+}
+
+/**
+ * The starts a run file may name (`HeadlessEntry.starts`, Engine 0.14, gap G9): one stage per
+ * level, in play order (the fixture level `tiny` is stage 0).
+ */
+export function starts(content: ContentBundle): HeadlessStarts {
+  return stageStarts(labStages(content));
 }
 
 /**
