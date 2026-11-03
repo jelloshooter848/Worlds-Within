@@ -337,9 +337,9 @@ cell:
   `crossErrors`; the file is read back (`verified`). `before` and `after` are the rectangle's lines
   before and as read back, `region` is `{ row, col, height, width }`, and `changed: false` says the
   file already held the block. To move the demo's courtyard boulder at (2, 3) one cell down and
-  left: `pnpm -s cli paste games/demo/content/rooms/courtyard.map.txt rows.2.2 '..\nB.' --json`.
+  left: `pnpm -s cli paste games/samples/dungeon/content/rooms/courtyard.map.txt rows.2.2 '..\nB.' --json`.
 - Tests: `edit.test.ts` (Text maps), on the demo's rooms, the tower-defense sample's map and a
-  platformer-test level.
+  platformer sample level.
 
 ## A game on two kits
 
@@ -738,7 +738,7 @@ scenario to the next is a campaign save, packed into a short save code
 Engine 0.14 (gap G9; docs/BUILD-LOG.md, Engine 0.14, decision 6, item 252): a game run file can
 start at a later level or campaign entry, so a later level's run file no longer replays the
 earlier levels' input (and a change to level 1 moves no hash of it). The sample is
-`games/platformer-test/runs/level-3-start.run.json`, level 3 from its own tick 0:
+`games/samples/platformer/runs/level-3-start.run.json`, level 3 from its own tick 0:
 
 ```json
 { "game": "..", "seed": 1, "start": { "stage": 2 }, "ticks": 869, "input": { "steps": [...] } }
@@ -823,7 +823,7 @@ content, so the same failure writes the same file. A replay is an ordinary run f
 
 ```json
 {
-  "game": "../../games/demo",
+  "game": "../../games/samples/dungeon",
   "seed": 1,
   "ticks": 100,
   "input": { "steps": [{ "frame": 0, "hold": ["right"] }] },
@@ -831,7 +831,7 @@ content, so the same failure writes the same file. A replay is an ordinary run f
   "invariants": [{ "path": "hero.hp", "op": "gte", "value": 0 }],
   "hashEvery": 40,
   "replay": {
-    "source": "../../games/demo/runs/walk-east.run.json",
+    "source": "../../games/samples/dungeon/runs/walk-east.run.json",
     "failure": {
       "tick": 100,
       "kind": "assertion",
@@ -916,14 +916,14 @@ missions, events, timeline }`, `run`, `game` and `world` relative to the dump fi
 
 ## Screenshots
 
-`pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 60 --json` writes
+`pnpm -s cli screenshot games/samples/dungeon/runs/walk-east.run.json --tick 60 --json` writes
 `.ww-out/screenshots/walk-east-t60.png` (or `--out <file>.png`, relative to the working folder) and
 prints its `path`, `width`, `height` (the game's picture size: `screen` in `game.json`, 256x240
 by default), `bytes` and `sha256` (the whole PNG, hex).
 
 - The game names a view module in `game.json` (`view`, optional), which exports
   `createView(content, seed, opts?)` returning a `ViewGame` (`engine/core/view.ts`): the headless
-  game plus `screen` (the manifest's picture size) and `render(r)`. The demo's is `games/demo/view.ts`, drawing what its scene draws. No
+  game plus `screen` (the manifest's picture size) and `render(r)`. The demo's is `games/samples/dungeon/view.ts`, drawing what its scene draws. No
   `view` is a `no_view` content error at `view`; a missing file is `missing_file`.
 - How: the command first plays the run headless to tick N (as `dump`), then serves the repo with
   a Vite dev server (middleware mode, no HMR, no dependency pre-bundling) and opens
@@ -1017,7 +1017,7 @@ opens the in-browser simulation debugger, `debugger/` (its own `CLAUDE.md` has t
   `reached`, `reproduced`, `tickBefore`), `reproduced` and `hashMismatch` (the first stored hash
   that differs, `{ tick, expected, actual, source }`); exit 4 when they differ, the page found a
   mismatch or a replay did not reproduce.
-  `pnpm -s cli debug games/demo/runs/walk-east.run.json --tick 60 --check --json` exits 0.
+  `pnpm -s cli debug games/samples/dungeon/runs/walk-east.run.json --tick 60 --check --json` exits 0.
 - Tests: `debugger/model.test.ts`, `debugger/timeline.test.ts`, `debug.test.ts`, `run.test.ts`
   (`debug`), `tests/browser/debugger.test.ts`,
   `tests/build/pages.test.ts` (the page is not in the Pages build).

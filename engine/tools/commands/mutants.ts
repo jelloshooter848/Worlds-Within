@@ -233,7 +233,7 @@ export const mutantsCommand = defineCommand({
       .string()
       .min(1)
       .describe(
-        'a run file (games/demo/runs/walk-east.run.json), or a game folder (games/demo) for every run file of the game',
+        'a run file (games/samples/dungeon/runs/walk-east.run.json), or a game folder (games/samples/dungeon) for every run file of the game',
       ),
   }),
   flags: z.strictObject({}),

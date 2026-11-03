@@ -69,7 +69,7 @@ export interface DebugRunJob {
   game: string;
   /** The game's files as `{ path: text }` (as `readGameFiles` gives them). */
   files: Record<string, string>;
-  /** The game folder as a repo path with a trailing `/` (`games/demo/`), for error messages. */
+  /** The game folder as a repo path with a trailing `/` (`games/samples/dungeon/`), for error messages. */
   root: string;
   /** The URL path the page imports the game's headless module from (served by Vite). */
   headlessUrl: string;

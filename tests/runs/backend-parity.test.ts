@@ -21,8 +21,8 @@ import { presentWorld, snapshotWorld, TdPresentState, type TopDownWorld } from '
 import { loadGame } from '../../engine/tools/game-loader';
 import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { readRunFile, runStartOf, type RunFile } from '../../engine/tools/run-file';
-import { createWorld } from '../../games/demo/headless';
-import { DemoPicture, demoLook } from '../../games/demo/picture';
+import { createWorld } from '../../games/samples/dungeon/headless';
+import { DemoPicture, demoLook } from '../../games/samples/dungeon/picture';
 import { createGame as createLab, type LabGame } from '../../games/platformer-lab/headless';
 import { threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
@@ -43,7 +43,7 @@ vi.setConfig({ testTimeout: 60_000 });
 // `tests/runs/run-files.test.ts` checks against `pnpm cli run` (no presenting at all).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const DEMO_RUNS = 'games/demo/runs';
+const DEMO_RUNS = 'games/samples/dungeon/runs';
 const LAB_RUNS = 'games/platformer-lab/runs';
 
 /** Every run file in `dir`, as repo paths. */
@@ -60,7 +60,7 @@ const labFiles = runsIn(LAB_RUNS);
  * contract alone (gap G6, fixed in Engine 0.7 T7), so a new game is picked up with no edit here.
  * The demo and the lab keep their own blocks below (the lab's also checks the 3D skin).
  */
-const OWN_BLOCKS = new Set(['games/demo', 'games/platformer-lab']);
+const OWN_BLOCKS = new Set(['games/samples/dungeon', 'games/platformer-lab']);
 /** Game folders: `games/<name>/` and, inside the samples group, `games/samples/<name>/`. */
 const gameDirs = (dir: string): string[] =>
   existsSync(join(ROOT, dir))
@@ -155,7 +155,7 @@ function load(file: string): { content: ContentBundle; run: RunFile; golden: Tic
 
 describe('backend parity: null and canvas2d give the same state hashes', () => {
   it('finds the demo runs', () => {
-    expect(files).toContain('games/demo/runs/walk-east.run.json');
+    expect(files).toContain('games/samples/dungeon/runs/walk-east.run.json');
   });
 
   it.each(files)('%s', (file) => {
@@ -299,7 +299,7 @@ function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void):
 
 describe('backend parity: every other game with a view, through null, canvas2d and three', () => {
   it('finds the platformer test runs and the RTS skirmish sample runs', () => {
-    expect(viewRuns).toContain('games/platformer-test/runs/level-4.run.json');
+    expect(viewRuns).toContain('games/samples/platformer/runs/level-4.run.json');
     expect(viewRuns).toContain('games/samples/rts-skirmish/runs/battle.run.json');
   });
 
@@ -386,7 +386,7 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     expect(synced).toBe(run.ticks + 1);
     expect(fallbacks.slice(0, 5), 'entities drawn as fallback boxes (kinds without a mesh)').toEqual([]);
     expect([...noBlock].sort(), 'tiles without a three skin entry').toEqual([]);
-    if (file.endsWith('platformer-test/runs/level-4.run.json'))
+    if (file.endsWith('samples/platformer/runs/level-4.run.json'))
       expect([...sources].sort()).toEqual(['main', 'vault']);
     expect(viaThree).toEqual(golden);
   });

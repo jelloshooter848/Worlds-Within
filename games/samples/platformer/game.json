@@ -1,6 +1,6 @@
 {
-  "id": "platformer-test",
-  "title": "The stacking test: a small original platformer on the platformer kit",
+  "id": "platformer",
+  "title": "The platformer sample: a small original platformer on the platformer kit",
   "kit": "platformer",
   "uses": ["topdown"],
   "content": {

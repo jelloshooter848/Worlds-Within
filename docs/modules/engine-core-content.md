@@ -36,8 +36,8 @@ object.
 - `audio/song-schema.ts`: `songSchema`, `sfxSchema` (every channel must compile as MML).
 - `gfx/sprite-schema.ts`: `spriteSchema` (to `SpriteDef`), `readSpriteText` (the `.txt` form).
 
-Example: `engineContentKinds().parse('song', 'games/demo/songs/theme.json', text)` returns
-`{ ok: false, errors: [{ file: 'games/demo/songs/theme.json', path: 'noise', code: 'invalid_mml', ... }] }`
+Example: `engineContentKinds().parse('song', 'games/samples/dungeon/songs/theme.json', text)` returns
+`{ ok: false, errors: [{ file: 'games/samples/dungeon/songs/theme.json', path: 'noise', code: 'invalid_mml', ... }] }`
 when the noise channel does not compile.
 
 ## Imports allowed

@@ -70,7 +70,7 @@ pnpm cli validate <game>
   check every content file of a game against its schema (starts nothing)
 
 Arguments:
-  <game>  the game folder, such as games/demo
+  <game>  the game folder, such as games/samples/dungeon
 
 Global flags:
   --json                 print exactly one JSON result object on stdout
@@ -86,7 +86,7 @@ pnpm cli run <runFile> [flags]
   play a run file headless from its seed and check its assertions and invariants
 
 Arguments:
-  <runFile>  the run file, such as games/demo/runs/walk-east.run.json
+  <runFile>  the run file, such as games/samples/dungeon/runs/walk-east.run.json
 
 Flags:
   --disable-rule <string>  kit rules to switch off, comma-separated ids (see `mutants`), on top of the run file's
@@ -105,7 +105,7 @@ pnpm cli dump <runFile> [flags]
   the whole game or world state at one tick of a run file, as JSON
 
 Arguments:
-  <runFile>  the run file, such as games/demo/runs/walk-east.run.json
+  <runFile>  the run file, such as games/samples/dungeon/runs/walk-east.run.json
 
 Flags:
   --tick <number>  the tick to show (0 is the start, before any step)
@@ -125,7 +125,7 @@ pnpm cli trace <runFile> [flags]
   a few snapshot paths over a range of ticks of a run file, one row per traced tick
 
 Arguments:
-  <runFile>  the run file, such as games/demo/runs/walk-east.run.json
+  <runFile>  the run file, such as games/samples/dungeon/runs/walk-east.run.json
 
 Flags:
   --paths <string>  the snapshot paths to read, comma-separated dotted paths (hero.x,hero.room)
@@ -208,7 +208,7 @@ pnpm cli screenshot <runFile> [flags]
   a PNG of one paused, seeded frame of a run file (headless Chromium)
 
 Arguments:
-  <runFile>  the run file, such as games/demo/runs/walk-east.run.json
+  <runFile>  the run file, such as games/samples/dungeon/runs/walk-east.run.json
 
 Flags:
   --tick <number>             the tick to draw (0 is the start, before any step)
@@ -230,7 +230,7 @@ pnpm cli debug <file> [flags]
   the in-browser simulation debugger on a run, replay or dump file (state, events, stepping)
 
 Arguments:
-  <file>  a run file, a replay file or a dump file, such as games/demo/runs/walk-east.run.json
+  <file>  a run file, a replay file or a dump file, such as games/samples/dungeon/runs/walk-east.run.json
 
 Flags:
   --tick <number>  the tick to open at (default 0; a replay's failing tick; a dump's own tick)
@@ -251,7 +251,7 @@ pnpm cli mutants <target>
   play run files once per kit rule switched off and report the rules they don't guard
 
 Arguments:
-  <target>  a run file (games/demo/runs/walk-east.run.json), or a game folder (games/demo) for every run file of the game
+  <target>  a run file (games/samples/dungeon/runs/walk-east.run.json), or a game folder (games/samples/dungeon) for every run file of the game
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

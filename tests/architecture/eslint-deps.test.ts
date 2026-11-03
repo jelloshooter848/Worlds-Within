@@ -26,13 +26,13 @@ function importOf(specifier: string): string {
 
 describe('dependency rule: ESLint and the checker agree', () => {
   const bad: [file: string, specifier: string, what: string][] = [
-    ['kits/topdown/bad.ts', '../../games/demo/rooms', 'kit -> game (relative)'],
-    ['kits/topdown/bad.ts', '@kits/../games/demo/rooms', 'kit -> game (via alias)'],
+    ['kits/topdown/bad.ts', '../../games/samples/dungeon/rooms', 'kit -> game (relative)'],
+    ['kits/topdown/bad.ts', '@kits/../games/samples/dungeon/rooms', 'kit -> game (via alias)'],
     ['engine/sim/bad.ts', '@engine/backends/null', 'sim -> backend (alias)'],
     ['engine/sim/bad.ts', '../backends/canvas2d', 'sim -> backend (relative)'],
     ['engine/core/bad.ts', '@kits/topdown', 'core -> kit'],
     ['kits/other/bad.ts', '@kits/topdown', 'kit -> sibling kit'],
-    ['kits/topdown/bad.ts', 'games/demo/rooms', 'kit -> game (bare repo path)'],
+    ['kits/topdown/bad.ts', 'games/samples/dungeon/rooms', 'kit -> game (bare repo path)'],
     ['engine/sim/bad.ts', 'engine/backends/canvas2d', 'sim -> backend (bare repo path)'],
     ['kits/topdown/bad.ts', '@engine/backends/canvas2d', 'kit -> backend'],
     ['kits/topdown/bad.ts', '@engine/backends/null', 'non-test kit file -> null backend'],
@@ -40,7 +40,7 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['kits/topdown/bad.ts', '../../engine/core/gfx/spritesheet', 'kit -> sprite sheets (relative)'],
     ['kits/platformer/bad.ts', 'three', 'kit -> three (owned by the 3D backend)'],
     ['engine/core/bad.ts', 'three', 'core -> three'],
-    ['games/demo/bad.ts', 'three', 'game -> three'],
+    ['games/samples/dungeon/bad.ts', 'three', 'game -> three'],
   ];
 
   it.each(bad)('%s importing %s fails both (%s)', async (file, specifier) => {
@@ -52,9 +52,9 @@ describe('dependency rule: ESLint and the checker agree', () => {
 
   it('sees export-from and dynamic import too', async () => {
     const code = [
-      "export * from '../../games/demo/rooms';",
-      "export { x } from '../../games/demo/scene';",
-      "export const later = () => import('../../games/demo/main');",
+      "export * from '../../games/samples/dungeon/rooms';",
+      "export { x } from '../../games/samples/dungeon/scene';",
+      "export const later = () => import('../../games/samples/dungeon/main');",
     ].join('\n');
     expect(await lintArrows('kits/topdown/bad.ts', code)).toHaveLength(3);
   });
@@ -62,7 +62,7 @@ describe('dependency rule: ESLint and the checker agree', () => {
   const good: [file: string, specifier: string, what: string][] = [
     ['kits/topdown/good.ts', '@engine/core/rng', 'kit -> core'],
     ['kits/topdown/good.ts', '@engine/core/present', 'kit -> the presentation contract'],
-    ['games/demo/good.ts', '@kits/topdown', 'game -> kit'],
+    ['games/samples/dungeon/good.ts', '@kits/topdown', 'game -> kit'],
     ['engine/sim/good.ts', '../core/rng', 'sim -> core (relative)'],
     ['kits/topdown/good.test.ts', '@engine/backends/null', 'kit test -> null backend (test exception)'],
     ['engine/backends/three/good.ts', 'three', 'the 3D backend -> three'],

@@ -43,7 +43,7 @@ const files = [...runFiles('games', 'runs'), ...runFiles('engine', '__fixtures__
 
 describe('run files', () => {
   it('finds the demo run', () => {
-    expect(files).toContain('games/demo/runs/walk-east.run.json');
+    expect(files).toContain('games/samples/dungeon/runs/walk-east.run.json');
   });
 
   it('finds the sample world run', () => {

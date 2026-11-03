@@ -8,9 +8,9 @@ import { discoverGames, gameListHtml, pageInputs } from '../../build/pages.ts';
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 describe('game page discovery', () => {
-  it('finds games/demo and games/platformer-lab in the repo', () => {
+  it('finds games/samples/dungeon and games/platformer-lab in the repo', () => {
     const dirs = discoverGames(repoRoot).map((page) => page.dir);
-    expect(dirs).toContain('games/demo');
+    expect(dirs).toContain('games/samples/dungeon');
     expect(dirs).toContain('games/platformer-lab');
   });
 
@@ -70,7 +70,7 @@ describe('game page discovery', () => {
   it('passes the launcher and every game to the build', () => {
     const inputs = pageInputs(repoRoot);
     expect(inputs.index).toBe(join(repoRoot, 'index.html'));
-    expect(inputs['games-demo']).toBe(join(repoRoot, 'games/demo/index.html'));
+    expect(inputs['games-samples-dungeon']).toBe(join(repoRoot, 'games/samples/dungeon/index.html'));
     expect(inputs['games-platformer-lab']).toBe(join(repoRoot, 'games/platformer-lab/index.html'));
   });
 
@@ -124,8 +124,10 @@ describe('game page discovery', () => {
 
 describe('launcher list', () => {
   it('links each game by a relative path so it works under any base', () => {
-    const html = gameListHtml([{ dir: 'games/demo', name: 'games-demo', title: 'A <b> & "c"' }]);
-    expect(html).toContain('<a href="games/demo/">games/demo</a>');
+    const html = gameListHtml([
+      { dir: 'games/samples/dungeon', name: 'games-samples-dungeon', title: 'A <b> & "c"' },
+    ]);
+    expect(html).toContain('<a href="games/samples/dungeon/">games/samples/dungeon</a>');
     expect(html).toContain('A &lt;b&gt; &amp; &quot;c&quot;');
   });
 

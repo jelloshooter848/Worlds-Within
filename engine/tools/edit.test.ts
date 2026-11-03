@@ -15,11 +15,11 @@ afterEach(() => {
   for (const dir of temps.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
-/** A temp folder holding a copy of the demo (games/demo) and the repo's Prettier settings. */
+/** A temp folder holding a copy of the demo (games/samples/dungeon) and the repo's Prettier settings. */
 function demoCopy(): string {
   const dir = mkdtempSync(join(tmpdir(), 'ww-edit-'));
   temps.push(dir);
-  cpSync(join(ROOT, 'games/demo'), join(dir, 'games/demo'), { recursive: true });
+  cpSync(join(ROOT, 'games/samples/dungeon'), join(dir, 'games/samples/dungeon'), { recursive: true });
   cpSync(join(ROOT, '.prettierrc'), join(dir, '.prettierrc'));
   return dir;
 }
@@ -31,12 +31,12 @@ async function cli(cwd: string, ...argv: string[]): Promise<{ code: number; out:
   return { code, out: JSON.parse(stdout) as Record<string, unknown> };
 }
 
-const SONG = 'games/demo/content/songs/demo.json';
-const PALETTE = 'games/demo/content/palettes/demo-hero.json';
-const ROOM = 'games/demo/content/rooms/guard-room.json';
-const MAP = 'games/demo/content/rooms/guard-room.map.txt';
-const SPRITE = 'games/demo/content/sprites/demo-hero.txt';
-const RUN = 'games/demo/runs/walk-east.run.json';
+const SONG = 'games/samples/dungeon/content/songs/demo.json';
+const PALETTE = 'games/samples/dungeon/content/palettes/demo-hero.json';
+const ROOM = 'games/samples/dungeon/content/rooms/guard-room.json';
+const MAP = 'games/samples/dungeon/content/rooms/guard-room.map.txt';
+const SPRITE = 'games/samples/dungeon/content/sprites/demo-hero.txt';
+const RUN = 'games/samples/dungeon/runs/walk-east.run.json';
 
 /** A temp folder holding a copy of one game folder (repo path) and the repo's Prettier settings. */
 function gameCopy(game: string): string {
@@ -73,7 +73,7 @@ describe('get, set, add, remove', () => {
     const config = await resolveConfig(join(cwd, SONG));
     expect(await check(text, { ...config, parser: 'json' })).toBe(true);
     // And the game still validates.
-    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+    expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.ok);
   });
 
   it('refuses a write that breaks the schema and leaves the file as it was', async () => {
@@ -186,7 +186,7 @@ describe('get, set, add, remove', () => {
 
   it('writing a file back unchanged gives the same text (formatting is kept)', async () => {
     const cwd = demoCopy();
-    for (const file of ['games/demo/game.json', SONG, PALETTE, ROOM, MAP, SPRITE, RUN]) {
+    for (const file of ['games/samples/dungeon/game.json', SONG, PALETTE, ROOM, MAP, SPRITE, RUN]) {
       const before = read(cwd, file);
       const whole = await cli(cwd, 'get', file, '');
       const set = await cli(cwd, 'set', file, '', JSON.stringify(whole.out.value));
@@ -208,8 +208,8 @@ describe('get, set, add, remove', () => {
       ['remove', SONG, 'nope'],
       ['remove', SONG, ''],
       ['get', SONG, '/a~2'],
-      ['get', 'games/demo/missing.json', 'id'],
-      ['get', 'games/demo/main.ts', 'id'],
+      ['get', 'games/samples/dungeon/missing.json', 'id'],
+      ['get', 'games/samples/dungeon/main.ts', 'id'],
     ]) {
       const result = await cli(cwd, ...argv);
       expect(result.code, argv.join(' ')).toBe(EXIT.usage);
@@ -228,38 +228,38 @@ describe('get, set, add, remove', () => {
     expect(set.out).toMatchObject({ written: true, verified: true, before: 1, after: 2 });
     expect(set.out.crossErrors).toEqual([
       expect.objectContaining({
-        file: 'games/demo/content/rooms/courtyard.map.txt',
+        file: 'games/samples/dungeon/content/rooms/courtyard.map.txt',
         path: 'map.5',
         code: 'invalid_dungeon',
         message: 'room "courtyard": the e door leads nowhere',
       }),
       expect.objectContaining({
-        file: 'games/demo/content/rooms/guard-room.map.txt',
+        file: 'games/samples/dungeon/content/rooms/guard-room.map.txt',
         path: 'map.5',
         code: 'invalid_dungeon',
       }),
     ]);
     // validate still fails until the matching edit is made.
-    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.invalidContent);
+    expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.invalidContent);
     const back = await cli(cwd, 'set', ROOM, 'at.0', '1');
     expect(back.code).toBe(EXIT.ok);
     expect(back.out.crossErrors).toEqual([]);
     expect(read(cwd, ROOM)).toBe(before);
-    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+    expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.ok);
   });
 
   it('removes a door pair with one set per room, and the game validates after the second', async () => {
     const cwd = demoCopy();
-    const COURTYARD_MAP = 'games/demo/content/rooms/courtyard.map.txt';
+    const COURTYARD_MAP = 'games/samples/dungeon/content/rooms/courtyard.map.txt';
     const first = await cli(cwd, 'set', COURTYARD_MAP, 'rows.5.15', '#');
     expect(first.code).toBe(EXIT.ok);
     expect(first.out).toMatchObject({ written: true, verified: true, before: 'O', after: '#' });
     expect(first.out.crossErrors).toEqual([expect.objectContaining({ file: MAP, code: 'invalid_dungeon' })]);
-    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.invalidContent);
+    expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.invalidContent);
     const second = await cli(cwd, 'set', MAP, 'rows.5.0', '#');
     expect(second.code).toBe(EXIT.ok);
     expect(second.out).toMatchObject({ written: true, verified: true, crossErrors: [] });
-    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+    expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.ok);
   });
 
   it('still refuses a set that breaks a room file itself', async () => {
@@ -285,7 +285,7 @@ describe('get, set, add, remove', () => {
       line: 4,
       message: 'rooms "courtyard" and "guard-room" both have a player start',
     };
-    const validate = await cli(cwd, 'validate', 'games/demo');
+    const validate = await cli(cwd, 'validate', 'games/samples/dungeon');
     expect(validate.code).toBe(EXIT.invalidContent);
     expect(validate.out.errors).toEqual([expect.objectContaining(error)]);
     const run = await cli(cwd, 'run', RUN);
@@ -295,7 +295,7 @@ describe('get, set, add, remove', () => {
 });
 
 describe('text maps: ruler, regions and paste (G10)', () => {
-  const COURTYARD = 'games/demo/content/rooms/courtyard.map.txt';
+  const COURTYARD = 'games/samples/dungeon/content/rooms/courtyard.map.txt';
 
   it('get rows --ruler gives the rows, a column ruler, the width, height and first row', async () => {
     const cwd = demoCopy();
@@ -377,7 +377,7 @@ describe('text maps: ruler, regions and paste (G10)', () => {
     expect(read(cwd, COURTYARD).split('\n').slice(2, 4)).toEqual(['#...........B..#', '#.B............#']);
     const again = await cli(cwd, 'paste', COURTYARD, 'rows.2.2', '..\\nB.');
     expect(again.out).toMatchObject({ verified: true, changed: false });
-    expect((await cli(cwd, 'validate', 'games/demo')).code).toBe(EXIT.ok);
+    expect((await cli(cwd, 'validate', 'games/samples/dungeon')).code).toBe(EXIT.ok);
     const text = await cliText(cwd, 'paste', COURTYARD, 'rows.2.2', '..\\nB.');
     expect(text.out).toContain('pasted 2 line(s) of 2 (verified, unchanged)');
   });
@@ -476,8 +476,8 @@ describe('text maps: ruler, regions and paste (G10)', () => {
     expect(build.out).toMatchObject({ verified: true, changed: true, after: ['BB'] });
     expect((await cli(td, 'validate', 'games/samples/tower-defense')).code).toBe(EXIT.ok);
 
-    const pf = gameCopy('games/platformer-test');
-    const LEVEL = 'games/platformer-test/content/levels/level-1.map.txt';
+    const pf = gameCopy('games/samples/platformer');
+    const LEVEL = 'games/samples/platformer/content/levels/level-1.map.txt';
     const rows = (await cli(pf, 'get', LEVEL, 'rows', '--ruler')).out;
     expect(rows.height).toBe((rows.rows as string[]).length);
     const same = await cli(pf, 'paste', LEVEL, 'rows.0.0', (rows.rows as string[]).slice(0, 2).join('\\n'));

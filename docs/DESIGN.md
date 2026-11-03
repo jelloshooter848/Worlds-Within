@@ -179,10 +179,9 @@ engine/
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
 kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefense (0.12), all built
 games/
-  demo/              the current top-down demo (becomes samples/dungeon at 0.15)
-  platformer-test/   the stacking test (0.7; becomes samples/platformer at 0.15)
   samples/           engine sample games: rts-skirmish (0.9), mini-siege (0.11), tower-defense (0.12),
-                     all built; platformer and dungeon (0.15)
+                     dungeon (the old demo) and platformer (the 0.7 stacking test), both moved
+                     here in 0.15
   worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
 docs/
 ```

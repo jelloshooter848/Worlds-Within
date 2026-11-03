@@ -16,7 +16,7 @@ import { playWorldData } from '../world-data';
 // record with its clock and a replay's failed check.
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 const SIEGE = 'games/samples/mini-siege/runs/delegated.run.json';
 const PLAYED = 'games/samples/mini-siege/runs/played.run.json';
 

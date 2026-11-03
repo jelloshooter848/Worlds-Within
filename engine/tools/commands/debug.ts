@@ -42,7 +42,9 @@ export const debugCommand = defineCommand({
     file: z
       .string()
       .min(1)
-      .describe('a run file, a replay file or a dump file, such as games/demo/runs/walk-east.run.json'),
+      .describe(
+        'a run file, a replay file or a dump file, such as games/samples/dungeon/runs/walk-east.run.json',
+      ),
   }),
   flags: z.strictObject({
     tick: z

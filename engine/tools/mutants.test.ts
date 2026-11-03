@@ -9,7 +9,7 @@ import { EXIT } from './exit-codes';
 import { main } from './main';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 
 const temps: string[] = [];
 afterEach(() => {
@@ -34,10 +34,10 @@ async function cli(argv: string[]): Promise<{ code: number; result: Record<strin
   return { code, result: JSON.parse(stdout) as Record<string, unknown> };
 }
 
-/** The walk-east run with `edit` applied, written to a temp folder (its game is games/demo). */
+/** The walk-east run with `edit` applied, written to a temp folder (its game is games/samples/dungeon). */
 function runFile(edit: (run: Record<string, unknown>) => void): string {
   const run = JSON.parse(readFileSync(join(ROOT, WALK), 'utf8')) as Record<string, unknown>;
-  run.game = join(ROOT, 'games/demo');
+  run.game = join(ROOT, 'games/samples/dungeon');
   edit(run);
   const file = join(tempDir(), 'edited.run.json');
   writeFileSync(file, JSON.stringify(run, null, 2));
@@ -104,7 +104,7 @@ describe('mutants', () => {
       ok: true,
       command: 'mutants',
       run: WALK,
-      game: 'games/demo',
+      game: 'games/samples/dungeon',
       kit: 'topdown',
       baseline: { passed: true, failure: null },
       guarded: ['doors-change-room'],

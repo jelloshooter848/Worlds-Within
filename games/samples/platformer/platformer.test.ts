@@ -86,7 +86,7 @@ describe('platformer test content', () => {
     const broken = { ...campaign, entries: [...campaign.entries, { level: 'level-9' }] };
     const result = loadTest({ ...FILES, [CAMPAIGN]: JSON.stringify(broken) });
     expect(result.errors.map((e) => [e.file, e.path, e.code])).toEqual([
-      ['games/platformer-test/content/campaigns/main.campaign.json', 'entries.4.level', 'missing_level'],
+      ['games/samples/platformer/content/campaigns/main.campaign.json', 'entries.4.level', 'missing_level'],
     ]);
   });
 
@@ -116,7 +116,7 @@ describe('platformer test content', () => {
     const result = loadTest({ ...FILES, 'content/levels/level-1.json': JSON.stringify(header) });
     expect(result.ok).toBe(false);
     expect(result.errors.map((e) => [e.file, e.path])).toContainEqual([
-      'games/platformer-test/content/levels/level-1.json',
+      'games/samples/platformer/content/levels/level-1.json',
       'scroll',
     ]);
   });

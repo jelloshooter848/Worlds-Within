@@ -9,7 +9,7 @@ import { failsCheck, valueAt } from './run-file';
 import { debugLine } from './commands/run';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 
 const temps: string[] = [];
 afterEach(() => {
@@ -41,10 +41,10 @@ async function cli(
   return { code, stdout, result };
 }
 
-/** The walk-east run with `edit` applied, written to a temp folder (its game is games/demo). */
+/** The walk-east run with `edit` applied, written to a temp folder (its game is games/samples/dungeon). */
 function runFile(edit: (run: Record<string, unknown>) => void): string {
   const run = JSON.parse(readFileSync(join(ROOT, WALK), 'utf8')) as Record<string, unknown>;
-  run.game = join(ROOT, 'games/demo');
+  run.game = join(ROOT, 'games/samples/dungeon');
   edit(run);
   const file = join(tempDir(), 'edited.run.json');
   writeFileSync(file, JSON.stringify(run, null, 2));
@@ -59,7 +59,7 @@ describe('run', () => {
       ok: true,
       command: 'run',
       run: WALK,
-      game: 'games/demo',
+      game: 'games/samples/dungeon',
       seed: 1,
       ticks: 240,
       lastTick: 240,
@@ -144,29 +144,33 @@ describe('run', () => {
 
   it('reports bad game content as invalid content', async () => {
     const root = tempDir();
-    cpSync(join(ROOT, 'games/demo'), join(root, 'games/demo'), { recursive: true });
-    writeFileSync(join(root, 'games/demo/content/songs/demo.json'), '{ nope');
+    cpSync(join(ROOT, 'games/samples/dungeon'), join(root, 'games/samples/dungeon'), { recursive: true });
+    writeFileSync(join(root, 'games/samples/dungeon/content/songs/demo.json'), '{ nope');
     const { code, result } = await cli(['run', WALK, '--json'], root);
     expect(code).toBe(EXIT.invalidContent);
     expect(result.errors).toContainEqual(
-      expect.objectContaining({ file: 'games/demo/content/songs/demo.json' }),
+      expect.objectContaining({ file: 'games/samples/dungeon/content/songs/demo.json' }),
     );
   });
 
   it('reports a missing headless module at the manifest field', async () => {
     const root = tempDir();
-    cpSync(join(ROOT, 'games/demo'), join(root, 'games/demo'), { recursive: true });
-    const manifest = join(root, 'games/demo/game.json');
+    cpSync(join(ROOT, 'games/samples/dungeon'), join(root, 'games/samples/dungeon'), { recursive: true });
+    const manifest = join(root, 'games/samples/dungeon/game.json');
     writeFileSync(manifest, readFileSync(manifest, 'utf8').replace('"headless.ts"', '"gone.ts"'));
     const { code, result } = await cli(['run', WALK, '--json'], root);
     expect(code).toBe(EXIT.invalidContent);
     expect(result.errors).toEqual([
-      expect.objectContaining({ file: 'games/demo/game.json', path: 'headless', code: 'missing_file' }),
+      expect.objectContaining({
+        file: 'games/samples/dungeon/game.json',
+        path: 'headless',
+        code: 'missing_file',
+      }),
     ]);
   });
 
   it('calls a missing run file a usage error', async () => {
-    const { code, result } = await cli(['run', 'games/demo/runs/nope.run.json', '--json']);
+    const { code, result } = await cli(['run', 'games/samples/dungeon/runs/nope.run.json', '--json']);
     expect(code).toBe(EXIT.usage);
     expect(result).toMatchObject({ error: { kind: 'usage' } });
   });

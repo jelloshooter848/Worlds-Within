@@ -153,7 +153,7 @@ loop runs on `requestAnimationFrame` and `__ww` records (Engine 0.14 T9). `debug
 `FixedLoop.advance` (n steps, one render, no rAF), the hook's step, snapshot and hash, a replay's
 input in place of the live frame (frame 0 first), a tick's orders then missions before its step
 with refusals kept, each refused run file, and recording (on in the game now and before every
-step, the recordings copied; false for a game that cannot record). In the browser, `tests/browser/platformer-test.test.ts`
+step, the recordings copied; false for a game that cannot record). In the browser, `tests/browser/platformer.test.ts`
 replays `level-1` to `level-4.run.json` through the built page with `window.__ww.replay` and
 compares the page's hash at every golden tick with `runs/<name>.hashes.json`, refuses a `start`
 run, and finds no `__ww` without `?debug=step`; every browser test that steps a page uses the hook

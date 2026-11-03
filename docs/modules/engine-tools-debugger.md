@@ -52,5 +52,5 @@ Those of `engine/tools` (`config/layers.js`): `engine/tools`, `engine/sim`, `eng
   replay; `pnpm -s cli debug <replay> --check --json` reports `openTick` (the failing tick),
   `failure`, `reproduced` and `hashMismatch`.
 - By hand: `pnpm cli debug games/samples/mini-siege/runs/played.run.json --tick 40` and open the
-  URL; `pnpm -s cli debug games/demo/runs/walk-east.run.json --tick 60 --check --json` must exit 0
+  URL; `pnpm -s cli debug games/samples/dungeon/runs/walk-east.run.json --tick 60 --check --json` must exit 0
   with `matchesHeadless: true`.

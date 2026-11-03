@@ -7,7 +7,7 @@ and rewind through the run. Part of `engine/tools`: the same layer and the same 
 
 ```sh
 pnpm cli debug games/samples/mini-siege/runs/played.run.json --tick 40   # serves it, prints the URL
-pnpm -s cli debug games/demo/runs/walk-east.run.json --tick 60 --check --json   # headless check
+pnpm -s cli debug games/samples/dungeon/runs/walk-east.run.json --tick 60 --check --json   # headless check
 pnpm -s cli debug .ww-out/replays/<name>.run.json --check --json   # a failing replay at its tick
 ```
 

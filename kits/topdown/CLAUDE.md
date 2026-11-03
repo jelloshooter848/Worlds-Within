@@ -34,7 +34,7 @@ re-export it.
 - **Kit code, not content:** the frame helpers in `frames.ts` (`rotateCcw`, `withSideFrames` on any
   `{ frames }` text rows, and the `SIDE_FRAMES` / `THICK_SIDE_FRAMES` / `SPLIT_FRAMES` name lists)
   are text transforms a game may use when it builds a tile sheet. Which sheets, frames and palettes
-  show each presented kind is the skin's business (`games/demo/content/skins/canvas2d.json`), not
+  show each presented kind is the skin's business (`games/samples/dungeon/content/skins/canvas2d.json`), not
   the kit's. `LEGEND` (`room.ts`) is the room text format, not a room.
 - **Purity rule (lint-enforced):** randomness goes through the seeded `Rng` from
   `@engine/core/rng`, never `Math.random`; no `Date.now`, `performance.now` or DOM globals
@@ -119,7 +119,7 @@ by default), `reduceFlashing` and `state` (a `TdPresentState`, one per stream of
 ### Old frame names -> presented kind and animation
 
 What each old `render` method (removed in 0.4-8) drew, so a skin can reproduce it
-(`games/demo/content/skins/canvas2d.json` does, with flat placeholder frames). `t` is `anim.t`;
+(`games/samples/dungeon/content/skins/canvas2d.json` does, with flat placeholder frames). `t` is `anim.t`;
 "cycle N" means the old code changed frame every N ticks of `t`. Sheets are the old sheet roles
 (`tiles` = `dungeon`, `hero` = `link-td`, `enemies` = `dungeon-enemies`) unless named.
 

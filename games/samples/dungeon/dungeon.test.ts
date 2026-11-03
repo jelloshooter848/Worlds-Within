@@ -39,7 +39,7 @@ function withJson(path: string, edit: (data: Record<string, unknown>) => void): 
 
 describe('engine demo', () => {
   it('loads its manifest and every content file', () => {
-    expect(content.manifest).toMatchObject({ id: 'demo', kit: 'topdown', headless: 'headless.ts' });
+    expect(content.manifest).toMatchObject({ id: 'dungeon', kit: 'topdown', headless: 'headless.ts' });
     expect(content.entries.map((e) => `${e.kind}:${e.name}`)).toEqual([
       'room:courtyard',
       'room:guard-room',
@@ -97,7 +97,7 @@ describe('engine demo: broken content', () => {
   it('names the file and the field of a broken room field', () => {
     const r = loadDemo(withJson('content/rooms/courtyard.json', (d) => (d.at = [0, 'one'])));
     expect(r.errors).toMatchObject([
-      { file: 'games/demo/content/rooms/courtyard.json', path: 'at.1', code: 'invalid_type' },
+      { file: 'games/samples/dungeon/content/rooms/courtyard.json', path: 'at.1', code: 'invalid_type' },
     ]);
   });
 
@@ -106,7 +106,7 @@ describe('engine demo: broken content', () => {
     const r = loadDemo({ ...FILES, 'content/rooms/guard-room.map.txt': map });
     expect(r.errors).toMatchObject([
       {
-        file: 'games/demo/content/rooms/guard-room.map.txt',
+        file: 'games/samples/dungeon/content/rooms/guard-room.map.txt',
         path: 'map.2',
         code: 'unknown_char',
         row: 2,
@@ -119,13 +119,15 @@ describe('engine demo: broken content', () => {
   it('names the song file and channel of bad MML', () => {
     const r = loadDemo(withJson('content/songs/demo.json', (d) => (d.noise = 'k s q9')));
     expect(r.errors).toMatchObject([
-      { file: 'games/demo/content/songs/demo.json', path: 'noise', code: 'invalid_mml' },
+      { file: 'games/samples/dungeon/content/songs/demo.json', path: 'noise', code: 'invalid_mml' },
     ]);
   });
 
   it('names game.json and the field of a broken manifest', () => {
     const r = loadDemo(withJson('game.json', (d) => (d.start = { seed: -1 })));
-    expect(r.errors).toMatchObject([{ file: 'games/demo/game.json', path: 'start.seed', code: 'too_small' }]);
+    expect(r.errors).toMatchObject([
+      { file: 'games/samples/dungeon/game.json', path: 'start.seed', code: 'too_small' },
+    ]);
   });
 });
 

@@ -75,7 +75,10 @@ export const traceCommand = defineCommand({
   name: 'trace',
   summary: 'a few snapshot paths over a range of ticks of a run file, one row per traced tick',
   args: z.strictObject({
-    runFile: z.string().min(1).describe('the run file, such as games/demo/runs/walk-east.run.json'),
+    runFile: z
+      .string()
+      .min(1)
+      .describe('the run file, such as games/samples/dungeon/runs/walk-east.run.json'),
   }),
   flags: z.strictObject({
     paths: z

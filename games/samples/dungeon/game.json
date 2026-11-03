@@ -1,6 +1,6 @@
 {
-  "id": "demo",
-  "title": "The engine demo: three rooms on the top-down kit",
+  "id": "dungeon",
+  "title": "The dungeon sample: three rooms on the top-down kit",
   "kit": "topdown",
   "content": {
     "room": ["content/rooms/*.json"],

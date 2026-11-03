@@ -124,7 +124,7 @@ describe('missions in a world run file', () => {
     writeFileSync(
       file,
       JSON.stringify({
-        game: join(ROOT, 'games/demo'),
+        game: join(ROOT, 'games/samples/dungeon'),
         ticks: 5,
         missions: [
           { tick: 0, mission: 'raid', action: 'open', input: { steps: [] } },

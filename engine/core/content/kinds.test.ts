@@ -27,8 +27,8 @@ describe('content kinds', () => {
 
   it('reports a broken song field with the file name and the field path', () => {
     const text = JSON.stringify({ id: 't', bpm: 120, loop: false, pulse1: 'c d e', noise: 'k s q9 h' });
-    expect(kinds.parse('song', 'games/demo/songs/t.json', text).errors).toMatchObject([
-      { file: 'games/demo/songs/t.json', path: 'noise', pointer: '/noise', code: 'invalid_mml' },
+    expect(kinds.parse('song', 'games/samples/dungeon/songs/t.json', text).errors).toMatchObject([
+      { file: 'games/samples/dungeon/songs/t.json', path: 'noise', pointer: '/noise', code: 'invalid_mml' },
     ]);
   });
 

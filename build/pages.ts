@@ -5,9 +5,9 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface GamePage {
-  /** Folder path from the repo root, with forward slashes, e.g. `games/demo`. */
+  /** Folder path from the repo root, with forward slashes, e.g. `games/samples/dungeon`. */
   dir: string;
-  /** Rollup input name, unique per page, e.g. `games-demo`. */
+  /** Rollup input name, unique per page, e.g. `games-samples-dungeon`. */
   name: string;
   /** The page's `<title>`, or its folder path when it has none. */
   title: string;

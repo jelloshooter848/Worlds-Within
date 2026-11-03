@@ -12,12 +12,12 @@ import { main } from './main';
 
 /**
  * A game on two kits (Engine 0.7 T4): `uses` in `game.json` adds another kit's content kinds to
- * the game's own kit's. The test game is a copy of games/platformer-test (kit `platformer`), which
+ * the game's own kit's. The test game is a copy of games/samples/platformer (kit `platformer`), which
  * uses `topdown` and holds one room (`vault`, its door level's mini game, Engine 0.7 T5).
  */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const GAME = 'games/platformer-test';
+const GAME = 'games/samples/platformer';
 const ROOMS = `${GAME}/content/rooms`;
 const LEVEL_1 = `${GAME}/runs/level-1.run.json`;
 

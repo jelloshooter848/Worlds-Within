@@ -60,54 +60,57 @@ async function cli(
   };
 }
 
-/** A copy of games/demo in a temp folder (as `<tmp>/games/demo`), returning the temp root. */
+/** A copy of games/samples/dungeon in a temp folder (as `<tmp>/games/samples/dungeon`), returning the temp root. */
 function demoCopy(): string {
   const root = tempDir();
-  cpSync(join(ROOT, 'games/demo'), join(root, 'games/demo'), { recursive: true });
+  cpSync(join(ROOT, 'games/samples/dungeon'), join(root, 'games/samples/dungeon'), { recursive: true });
   return root;
 }
 
 describe('validate', () => {
-  it('passes games/demo with one JSON object and exit 0', async () => {
-    const run = await cli(['validate', 'games/demo', '--json']);
+  it('passes games/samples/dungeon with one JSON object and exit 0', async () => {
+    const run = await cli(['validate', 'games/samples/dungeon', '--json']);
     expect(run.code).toBe(EXIT.ok);
     const result = run.json();
     expect(result).toMatchObject({
       ok: true,
       command: 'validate',
       exitCode: 0,
-      game: 'games/demo',
+      game: 'games/samples/dungeon',
       errorCount: 0,
     });
     expect(result.fileCount).toBeGreaterThan(5);
-    expect(result.files).toContainEqual({ file: 'games/demo/game.json', errors: 0 });
+    expect(result.files).toContainEqual({ file: 'games/samples/dungeon/game.json', errors: 0 });
     expect(run.stderr).toBe('');
   });
 
   it('names the file and field of a broken field, with the invalid-content code', async () => {
     const root = demoCopy();
-    const file = join(root, 'games/demo/content/rooms/courtyard.json');
+    const file = join(root, 'games/samples/dungeon/content/rooms/courtyard.json');
     const room = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
     room.music = 42;
     writeFileSync(file, JSON.stringify(room));
-    const run = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    const run = await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root });
     expect(run.code).toBe(EXIT.invalidContent);
     const result = run.json();
     expect(result).toMatchObject({ ok: false, exitCode: 3, errorCount: 1 });
     expect(result.errors).toEqual([
-      expect.objectContaining({ file: 'games/demo/content/rooms/courtyard.json', path: 'music' }),
+      expect.objectContaining({ file: 'games/samples/dungeon/content/rooms/courtyard.json', path: 'music' }),
     ]);
-    expect(result.files).toContainEqual({ file: 'games/demo/content/rooms/courtyard.json', errors: 1 });
+    expect(result.files).toContainEqual({
+      file: 'games/samples/dungeon/content/rooms/courtyard.json',
+      errors: 1,
+    });
   });
 
   it('checks a skin: a bad field and a missing sheet or sound, at the skin file and field', async () => {
     const root = demoCopy();
-    const game = join(root, 'games/demo/game.json');
+    const game = join(root, 'games/samples/dungeon/game.json');
     const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
     manifest.content['skin'] = ['content/skins/*.json'];
     writeFileSync(game, JSON.stringify(manifest));
-    mkdirSync(join(root, 'games/demo/content/skins'), { recursive: true });
-    const skinFile = join(root, 'games/demo/content/skins/canvas2d.json');
+    mkdirSync(join(root, 'games/samples/dungeon/content/skins'), { recursive: true });
+    const skinFile = join(root, 'games/samples/dungeon/content/skins/canvas2d.json');
     const skin = {
       backend: 'canvas2d',
       sheets: { sheet: 'demo-hero', fallbackColor: '#00a800' },
@@ -115,14 +118,14 @@ describe('validate', () => {
       events: { title: { sound: 'demo' } },
     };
     writeFileSync(skinFile, JSON.stringify(skin));
-    expect((await cli(['validate', 'games/demo', '--json'], { cwd: root })).code).toBe(EXIT.ok);
+    expect((await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root })).code).toBe(EXIT.ok);
 
     writeFileSync(skinFile, JSON.stringify({ ...skin, kinds: { hero: { frames: {}, flipFacing: 'yes' } } }));
-    const bad = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    const bad = await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root });
     expect(bad.code).toBe(EXIT.invalidContent);
     expect(bad.json().errors).toEqual([
       expect.objectContaining({
-        file: 'games/demo/content/skins/canvas2d.json',
+        file: 'games/samples/dungeon/content/skins/canvas2d.json',
         path: 'kinds.hero.flipFacing',
       }),
     ]);
@@ -133,16 +136,16 @@ describe('validate', () => {
       events: { hit: { sound: 'boom' } },
     };
     writeFileSync(skinFile, JSON.stringify(cross));
-    const run = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    const run = await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root });
     expect(run.code).toBe(EXIT.invalidContent);
     expect(run.json().errors).toEqual([
       expect.objectContaining({
-        file: 'games/demo/content/skins/canvas2d.json',
+        file: 'games/samples/dungeon/content/skins/canvas2d.json',
         path: 'kinds.hero.sheet',
         code: 'missing_ref',
       }),
       expect.objectContaining({
-        file: 'games/demo/content/skins/canvas2d.json',
+        file: 'games/samples/dungeon/content/skins/canvas2d.json',
         path: 'events.hit.sound',
         code: 'missing_ref',
       }),
@@ -151,12 +154,12 @@ describe('validate', () => {
 
   it('checks a campaign file in any game, naming the file and field of a missing level or mission', async () => {
     const root = demoCopy();
-    const game = join(root, 'games/demo/game.json');
+    const game = join(root, 'games/samples/dungeon/game.json');
     const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
     manifest.content['mission'] = ['content/missions/*.mission.json'];
     manifest.content['campaign'] = ['content/missions/*.campaign.json'];
     writeFileSync(game, JSON.stringify(manifest));
-    mkdirSync(join(root, 'games/demo/content/missions'), { recursive: true });
+    mkdirSync(join(root, 'games/samples/dungeon/content/missions'), { recursive: true });
     const raid = {
       id: 'raid',
       title: 'Raid',
@@ -165,17 +168,20 @@ describe('validate', () => {
       onQuit: 'lost',
       outcomes: [{ id: 'lost', title: 'Lost' }],
     };
-    writeFileSync(join(root, 'games/demo/content/missions/raid.mission.json'), JSON.stringify(raid));
-    const file = join(root, 'games/demo/content/missions/main.campaign.json');
+    writeFileSync(
+      join(root, 'games/samples/dungeon/content/missions/raid.mission.json'),
+      JSON.stringify(raid),
+    );
+    const file = join(root, 'games/samples/dungeon/content/missions/main.campaign.json');
     writeFileSync(file, JSON.stringify({ version: 1, id: 'main', entries: [{ mission: 'raid' }] }));
-    expect((await cli(['validate', 'games/demo', '--json'], { cwd: root })).code).toBe(EXIT.ok);
+    expect((await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root })).code).toBe(EXIT.ok);
 
     const entries = [{ mission: 'raid' }, { mission: 'rescue' }, { level: 'level-1' }];
     writeFileSync(file, JSON.stringify({ version: 1, id: 'main', entries }));
-    const bad = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    const bad = await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root });
     expect(bad.code).toBe(EXIT.invalidContent);
     const errors = bad.json().errors as { file: string; path: string; code: string }[];
-    const at = 'games/demo/content/missions/main.campaign.json';
+    const at = 'games/samples/dungeon/content/missions/main.campaign.json';
     expect(errors.map(({ file, path, code }) => ({ file, path, code }))).toEqual([
       { file: at, path: 'entries.1.mission', code: 'missing_mission' },
       { file: at, path: 'entries.2.level', code: 'missing_level' },
@@ -184,12 +190,12 @@ describe('validate', () => {
 
   it('checks a mission file in any game, naming the file and field', async () => {
     const root = demoCopy();
-    const game = join(root, 'games/demo/game.json');
+    const game = join(root, 'games/samples/dungeon/game.json');
     const manifest = JSON.parse(readFileSync(game, 'utf8')) as { content: Record<string, string[]> };
     manifest.content['mission'] = ['content/missions/*.mission.json'];
     writeFileSync(game, JSON.stringify(manifest));
-    mkdirSync(join(root, 'games/demo/content/missions'), { recursive: true });
-    const file = join(root, 'games/demo/content/missions/raid.mission.json');
+    mkdirSync(join(root, 'games/samples/dungeon/content/missions'), { recursive: true });
+    const file = join(root, 'games/samples/dungeon/content/missions/raid.mission.json');
     const mission = {
       id: 'raid',
       title: 'Raid',
@@ -202,17 +208,21 @@ describe('validate', () => {
       ],
     };
     writeFileSync(file, JSON.stringify(mission));
-    expect((await cli(['validate', 'games/demo', '--json'], { cwd: root })).code).toBe(EXIT.ok);
+    expect((await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root })).code).toBe(EXIT.ok);
 
     const outcomes = [mission.outcomes[0], { id: 'won', title: 'Again' }, mission.outcomes[1]];
     writeFileSync(file, JSON.stringify({ ...mission, worldTimeCost: -1, outcomes }));
-    const bad = await cli(['validate', 'games/demo', '--json'], { cwd: root });
+    const bad = await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root });
     expect(bad.code).toBe(EXIT.invalidContent);
     const errors = bad.json().errors as { file: string; path: string; code: string }[];
     expect(errors.map(({ file, path, code }) => ({ file, path, code }))).toEqual([
-      { file: 'games/demo/content/missions/raid.mission.json', path: 'worldTimeCost', code: 'too_small' },
       {
-        file: 'games/demo/content/missions/raid.mission.json',
+        file: 'games/samples/dungeon/content/missions/raid.mission.json',
+        path: 'worldTimeCost',
+        code: 'too_small',
+      },
+      {
+        file: 'games/samples/dungeon/content/missions/raid.mission.json',
         path: 'outcomes.1.id',
         code: 'duplicate_outcome',
       },
@@ -221,12 +231,12 @@ describe('validate', () => {
 
   it('reports an unknown kit at the manifest field', async () => {
     const root = demoCopy();
-    const file = join(root, 'games/demo/game.json');
+    const file = join(root, 'games/samples/dungeon/game.json');
     writeFileSync(file, readFileSync(file, 'utf8').replace('"topdown"', '"nokit"'));
-    const result = (await cli(['validate', 'games/demo', '--json'], { cwd: root })).json();
+    const result = (await cli(['validate', 'games/samples/dungeon', '--json'], { cwd: root })).json();
     expect(result.errors).toContainEqual(
       expect.objectContaining({
-        file: 'games/demo/game.json',
+        file: 'games/samples/dungeon/game.json',
         path: 'kit',
         code: 'unknown_kit',
         message: expect.stringContaining('unknown kit "nokit" in "kit"'),
@@ -237,11 +247,11 @@ describe('validate', () => {
 
   it('prints one line per error for people', async () => {
     const root = demoCopy();
-    writeFileSync(join(root, 'games/demo/content/songs/demo.json'), '{ nope');
-    const run = await cli(['validate', 'games/demo'], { cwd: root });
+    writeFileSync(join(root, 'games/samples/dungeon/content/songs/demo.json'), '{ nope');
+    const run = await cli(['validate', 'games/samples/dungeon'], { cwd: root });
     expect(run.code).toBe(EXIT.invalidContent);
-    expect(run.stdout).toContain('games/demo: ');
-    expect(run.stdout).toContain('games/demo/content/songs/demo.json: (file): not valid JSON');
+    expect(run.stdout).toContain('games/samples/dungeon: ');
+    expect(run.stdout).toContain('games/samples/dungeon/content/songs/demo.json: (file): not valid JSON');
   });
 
   it('calls a missing folder a usage error', async () => {
@@ -258,11 +268,11 @@ describe('validate', () => {
 
 describe('usage errors', () => {
   it.each([
-    [['validate', 'games/demo', '--bogus', '--json']],
+    [['validate', 'games/samples/dungeon', '--bogus', '--json']],
     [['nope', '--json']],
     [['validate', '--json']],
-    [['validate', 'games/demo', 'extra', '--json']],
-    [['--max-output', 'many', 'validate', 'games/demo', '--json']],
+    [['validate', 'games/samples/dungeon', 'extra', '--json']],
+    [['--max-output', 'many', 'validate', 'games/samples/dungeon', '--json']],
   ])('%j exits 2 with one JSON object', async (argv) => {
     const run = await cli(argv);
     expect(run.code).toBe(EXIT.usage);
@@ -270,7 +280,7 @@ describe('usage errors', () => {
   });
 
   it('names the unknown flag, on stderr without --json', async () => {
-    const run = await cli(['validate', 'games/demo', '--bogus']);
+    const run = await cli(['validate', 'games/samples/dungeon', '--bogus']);
     expect(run.code).toBe(EXIT.usage);
     expect(run.stdout).toBe('');
     expect(run.stderr).toContain('unknown flag --bogus');
@@ -310,12 +320,15 @@ describe('output cap', () => {
   it('cuts a long result and writes all of it to a file named in the result', async () => {
     const root = demoCopy();
     // Ten unknown fields in one file: ten errors, far over a 600-byte cap.
-    const file = join(root, 'games/demo/content/palettes/demo-hero.json');
+    const file = join(root, 'games/samples/dungeon/content/palettes/demo-hero.json');
     const palette = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
     for (let i = 0; i < 10; i++) palette[`extra${i}`] = i;
     writeFileSync(file, JSON.stringify(palette));
     const outDir = join(root, 'out');
-    const run = await cli(['validate', 'games/demo', '--json', '--max-output', '600'], { cwd: root, outDir });
+    const run = await cli(['validate', 'games/samples/dungeon', '--json', '--max-output', '600'], {
+      cwd: root,
+      outDir,
+    });
     expect(run.code).toBe(EXIT.invalidContent);
     expect(Buffer.byteLength(run.stdout.trim())).toBeLessThanOrEqual(600);
     const result = run.json();
@@ -375,7 +388,7 @@ describe('help', () => {
 
 describe('pnpm cli', () => {
   it('runs from the command line with one JSON object on stdout', () => {
-    const out = spawnSync('pnpm', ['-s', 'cli', 'validate', 'games/demo', '--json'], {
+    const out = spawnSync('pnpm', ['-s', 'cli', 'validate', 'games/samples/dungeon', '--json'], {
       cwd: ROOT,
       encoding: 'utf8',
     });

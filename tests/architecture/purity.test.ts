@@ -218,7 +218,7 @@ describe('purity rule: ESLint', () => {
     expect(await purityErrors('kits/topdown/good.ts', seeded)).toEqual([]);
     const clock = 'export const t = () => performance.now();\n';
     expect(await purityErrors('engine/core/loop.ts', clock)).toEqual([]);
-    expect(await purityErrors('games/demo/good.ts', clock)).toEqual([]);
+    expect(await purityErrors('games/samples/dungeon/good.ts', clock)).toEqual([]);
   });
 
   it('does not mistake a local named like a global for the global', async () => {

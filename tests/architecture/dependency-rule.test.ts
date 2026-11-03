@@ -35,7 +35,7 @@ describe('dependency rule: the repo', () => {
   it('finds the source tree', () => {
     expect(files.filter((f) => f.startsWith('engine/core/')).length).toBeGreaterThan(10);
     expect(files.some((f) => f.startsWith('kits/topdown/'))).toBe(true);
-    expect(files.some((f) => f.startsWith('games/demo/'))).toBe(true);
+    expect(files.some((f) => f.startsWith('games/samples/dungeon/'))).toBe(true);
   });
 
   it('has no import that points the wrong way', () => {
@@ -61,7 +61,7 @@ describe('dependency rule: the scanner', () => {
       "export * from './c';",
       "export { d } from '../d';",
       "import './side-effect';",
-      "const e = await import('../../games/demo/main.ts');",
+      "const e = await import('../../games/samples/dungeon/main.ts');",
       "// import z from 'commented-out';",
     ].join('\n');
     expect(specifiersOf(text)).toEqual([
@@ -70,7 +70,7 @@ describe('dependency rule: the scanner', () => {
       './c',
       '../d',
       './side-effect',
-      '../../games/demo/main.ts',
+      '../../games/samples/dungeon/main.ts',
     ]);
   });
 });
@@ -134,7 +134,7 @@ describe('dependency rule: the layer table', () => {
   });
 
   it('places files in their layer and unit', () => {
-    expect(placeOf('games/demo/main.ts')?.unit).toBe('games/demo');
+    expect(placeOf('games/samples/dungeon/main.ts')?.unit).toBe('games/samples/dungeon');
     expect(placeOf('games/samples/siege/main.ts')?.unit).toBe('games/samples/siege');
     expect(placeOf('engine/backends/null/index.ts')?.unit).toBe('engine/backends/null');
     expect(placeOf('engine/core/gfx/screen.ts')?.layer.name).toBe('engine/core');
@@ -145,16 +145,16 @@ describe('dependency rule: the layer table', () => {
 describe('dependency rule: resolving specifiers', () => {
   it.each([
     ['kits/topdown/hero.ts', '@engine/core/rng', 'engine/core/rng'],
-    ['games/demo/scene.ts', '@kits/topdown', 'kits/topdown'],
+    ['games/samples/dungeon/scene.ts', '@kits/topdown', 'kits/topdown'],
     ['kits/topdown/hero.ts', './room', 'kits/topdown/room'],
-    ['kits/topdown/hero.ts', '../../games/demo/rooms.ts', 'games/demo/rooms.ts'],
+    ['kits/topdown/hero.ts', '../../games/samples/dungeon/rooms.ts', 'games/samples/dungeon/rooms.ts'],
     ['engine/core/audio/mml.ts', '../save/settings?raw', 'engine/core/save/settings'],
-    ['games/demo/main.ts', '/engine/core/loop', 'engine/core/loop'],
+    ['games/samples/dungeon/main.ts', '/engine/core/loop', 'engine/core/loop'],
     ['kits/topdown/hero.ts', '../../../outside', '../outside'],
     ['kits/topdown/hero.ts', 'vitest', null],
     ['kits/topdown/hero.ts', 'node:fs', null],
     ['kits/topdown/hero.ts', '@engineering/x', null],
-    ['kits/topdown/hero.ts', 'games/demo/rooms', 'games/demo/rooms'],
+    ['kits/topdown/hero.ts', 'games/samples/dungeon/rooms', 'games/samples/dungeon/rooms'],
     ['engine/sim/world.ts', 'engine/backends/canvas2d', 'engine/backends/canvas2d'],
     ['kits/topdown/hero.ts', 'gamesx/y', null],
   ])('%s: %s -> %s', (from, spec, expected) => {
@@ -165,11 +165,11 @@ describe('dependency rule: resolving specifiers', () => {
 describe('dependency rule: the checker', () => {
   // [importing file, specifier, why it must be rejected]
   const bad: [string, string, string][] = [
-    ['kits/topdown/world.ts', '../../games/demo/rooms', 'kit -> game'],
-    ['kits/topdown/world.ts', '/games/demo/rooms.ts', 'kit -> game by a rooted path'],
-    ['kits/topdown/world.ts', 'games/demo/rooms', 'kit -> game by a bare repo path'],
+    ['kits/topdown/world.ts', '../../games/samples/dungeon/rooms', 'kit -> game'],
+    ['kits/topdown/world.ts', '/games/samples/dungeon/rooms.ts', 'kit -> game by a rooted path'],
+    ['kits/topdown/world.ts', 'games/samples/dungeon/rooms', 'kit -> game by a bare repo path'],
     ['engine/sim/world.ts', 'engine/backends/canvas2d', 'sim -> backend by a bare repo path'],
-    ['kits/topdown/world.ts', '../../games/demo/main.ts?raw', 'kit -> game with a query'],
+    ['kits/topdown/world.ts', '../../games/samples/dungeon/main.ts?raw', 'kit -> game with a query'],
     ['engine/sim/world.ts', '@engine/backends/null', 'sim -> backend'],
     ['engine/sim/world.ts', '@engine/backends/canvas2d', 'sim -> backend'],
     ['engine/sim/world.ts', '@kits/topdown', 'sim -> kit'],
@@ -177,7 +177,7 @@ describe('dependency rule: the checker', () => {
     ['engine/core/loop.ts', '@engine/sim/world', 'core -> sim'],
     ['engine/core/loop.ts', '@engine/backends/canvas2d', 'core -> backend'],
     ['engine/core/loop.ts', '@engine/tools/cli', 'core -> tools'],
-    ['engine/backends/canvas2d/renderer.ts', '../../../games/demo/scene', 'backend -> game'],
+    ['engine/backends/canvas2d/renderer.ts', '../../../games/samples/dungeon/scene', 'backend -> game'],
     ['engine/backends/canvas2d/renderer.ts', '@kits/topdown', 'backend -> kit'],
     ['engine/backends/canvas2d/renderer.ts', '../null', 'backend -> another backend'],
     ['engine/backends/canvas2d/renderer.ts', '@engine/sim/world', 'backend -> sim'],
@@ -193,12 +193,12 @@ describe('dependency rule: the checker', () => {
     ['kits/topdown/world.ts', '@engine/core/audio/audio-manager', 'kit -> audio output'],
     ['kits/topdown/world.test.ts', '@engine/core/gfx/renderer', 'kit test -> the core Renderer'],
     ['kits/topdown/world.ts', '@engine/sim/world', 'kit -> sim'],
-    ['engine/tools/cli.ts', '../../games/demo/main.ts', 'tools -> game by a static path'],
-    ['games/demo/main.ts', '../samples/siege/main', 'game -> another game'],
+    ['engine/tools/cli.ts', '../../games/samples/dungeon/main.ts', 'tools -> game by a static path'],
+    ['games/samples/dungeon/main.ts', '../mini-siege/main', 'game -> another game'],
     ['games/samples/siege/main.ts', '../../demo/rooms', 'sample game -> another game'],
-    ['games/demo/main.ts', '../../tests/helpers', 'game -> unlayered folder'],
+    ['games/samples/dungeon/main.ts', '../../../tests/helpers', 'game -> unlayered folder'],
     ['kits/topdown/world.ts', '../../build/pages.ts', 'kit -> unlayered folder'],
-    ['games/demo/main.ts', '../../../elsewhere', 'outside the repo'],
+    ['games/samples/dungeon/main.ts', '../../../../elsewhere', 'outside the repo'],
     ['kits/platformer/world.ts', 'three', 'kit -> three'],
     ['kits/platformer/world.test.ts', 'three', 'kit test -> three'],
     ['engine/core/present/camera.ts', 'three', 'core -> three'],
@@ -218,21 +218,25 @@ describe('dependency rule: the checker', () => {
 
   // [importing file, specifier, the arrow]
   const good: [string, string, string][] = [
-    ['games/demo/main.ts', '@kits/topdown', 'game -> kit'],
-    ['games/platformer-test/headless.ts', '@kits/platformer', 'a game on two kits -> its kit'],
-    ['games/platformer-test/headless.ts', '@kits/topdown', 'a game on two kits -> the kit it uses'],
-    ['games/platformer-test/minigame.ts', '../../kits/topdown/world', 'a game on two kits -> a kit file'],
-    ['games/demo/main.ts', '@engine/sim/world', 'game -> sim'],
-    ['games/demo/main.ts', '@engine/backends/canvas2d', 'game -> backend'],
-    ['games/demo/main.ts', '@engine/core/loop', 'game -> core'],
-    ['games/demo/main.ts', './scene', 'inside one game'],
+    ['games/samples/dungeon/main.ts', '@kits/topdown', 'game -> kit'],
+    ['games/samples/platformer/headless.ts', '@kits/platformer', 'a game on two kits -> its kit'],
+    ['games/samples/platformer/headless.ts', '@kits/topdown', 'a game on two kits -> the kit it uses'],
+    [
+      'games/samples/platformer/minigame.ts',
+      '../../../kits/topdown/world',
+      'a game on two kits -> a kit file',
+    ],
+    ['games/samples/dungeon/main.ts', '@engine/sim/world', 'game -> sim'],
+    ['games/samples/dungeon/main.ts', '@engine/backends/canvas2d', 'game -> backend'],
+    ['games/samples/dungeon/main.ts', '@engine/core/loop', 'game -> core'],
+    ['games/samples/dungeon/main.ts', './scene', 'inside one game'],
     ['games/samples/siege/main.ts', './rooms', 'inside one sample game'],
     ['kits/topdown/world.ts', '@engine/core/rng', 'kit -> core'],
     ['kits/topdown/world.ts', './room', 'inside one kit'],
     ['kits/topdown/world.ts', '@engine/core/present', 'kit -> the presentation contract'],
     ['kits/topdown/world.ts', '@engine/core/gfx/screen', 'kit -> screen sizes'],
     ['kits/topdown/world.ts', '@engine/core/audio/mml', 'kit -> MML (text, not output)'],
-    ['games/demo/main.ts', '@engine/core/gfx/renderer', 'game -> the core Renderer'],
+    ['games/samples/dungeon/main.ts', '@engine/core/gfx/renderer', 'game -> the core Renderer'],
     ['kits/topdown/world.test.ts', '@engine/backends/null', 'test file -> null backend'],
     ['engine/core/gfx/screen.test.ts', '@engine/backends/null', 'core test -> null backend'],
     ['engine/backends/null/index.ts', '@engine/core/gfx/renderer', 'backend -> core'],
@@ -247,7 +251,7 @@ describe('dependency rule: the checker', () => {
     ['engine/core/loop.ts', 'node:fs', 'external package'],
     ['kits/topdown/world.ts', 'vitest', 'external package'],
     ['tests/build/pages.test.ts', '../../build/pages.ts', 'unlayered tooling'],
-    ['tests/architecture/x.test.ts', '../../games/demo/rooms', 'unlayered tooling -> game'],
+    ['tests/architecture/x.test.ts', '../../games/samples/dungeon/rooms', 'unlayered tooling -> game'],
     ['engine/backends/three/scene.ts', 'three', 'the 3D backend -> three'],
     ['engine/backends/three/scene.test.ts', 'three', 'the 3D backend test -> three'],
     ['engine/backends/three/geometry.ts', 'three/src/math/Vector3.js', 'the 3D backend -> a three subpath'],
@@ -261,7 +265,7 @@ describe('dependency rule: the checker', () => {
 
   it('flags a literal dynamic import of a game from a kit, found by the scanner', () => {
     const [spec] = specifiersOf(
-      "export async function load() { return import('../../games/demo/main.ts'); }",
+      "export async function load() { return import('../../games/samples/dungeon/main.ts'); }",
     );
     expect(spec).toBeDefined();
     expect(checkSpecifier('kits/topdown/loader.ts', spec ?? '').ok).toBe(false);

@@ -253,7 +253,7 @@ attempt }, seed)`, the seed drawn from the world's `rng`. A trigger is disarmed 
   room challenge's `state.events`) and `report` (its `report()`, when it has one). The key is left
   out on every other tick (the next `update` drops it; a `LevelSequence` drops it between levels),
   so snapshots without a round's end hash as before. A run file checks a round's last events
-  there: `games/platformer-test/runs/level-4.run.json` asserts the last knight's `kill` at the
+  there: `games/samples/platformer/runs/level-4.run.json` asserts the last knight's `kill` at the
   tick the round passes.
 - **Browser glue (games, not the kit):** a game's page passes its `LevelSequence` to the
   shell's `new HostScene({ stack, game, picture })`, which, after each step, pushes

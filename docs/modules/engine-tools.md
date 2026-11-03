@@ -206,8 +206,8 @@ firstColumn }`); `get <map> rows.R1.C1:R2.C2` copies a rectangle; `paste <map> r
   (`world-run.ts`), `allKits`, `findKit`, `loadKit`, `kitKinds` and `kitRules`
   (`kits.ts`: each kit by its hook `kits/<name>/kit.ts`, listed in the generated `kit-list.ts`).
 
-Example: `pnpm -s cli validate games/demo --json` prints
-`{"ok":true,"command":"validate","exitCode":0,"game":"games/demo","fileCount":10,"errorCount":0,...}`
+Example: `pnpm -s cli validate games/samples/dungeon --json` prints
+`{"ok":true,"command":"validate","exitCode":0,"game":"games/samples/dungeon","fileCount":10,"errorCount":0,...}`
 and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 
 ## Imports allowed
@@ -219,7 +219,7 @@ and exits 0. (`-s` keeps pnpm's own banner off stdout.)
 ## How to test
 
 Tests sit next to the code and run with `pnpm test`: they call `main` with captured IO and check
-the exit code and the one JSON object, using temp copies of `games/demo` for broken content. One
+the exit code and the one JSON object, using temp copies of `games/samples/dungeon` for broken content. One
 test spawns `pnpm -s cli` for real. `record.test.ts` covers `record` (the mini siege's sabotage and walls rounds re-recorded with the kits' bots giving the committed inputs and golden hashes, a page recording list, a round that moves the hashes put back with exit 4, a bad mission id exit 2, a schema-breaking recording exit 3 with the file untouched), `trace.test.ts` covers `trace` (rows, `--every`, missing paths, usage errors, the output cap, hashes equal to `run`'s on a world run and a mini siege run), `world-data.test.ts` covers `events`, `timeline` and `dump --out` (the mini siege, a world run, the skirmish, filters, `no_world`, a dump file round trip), `run.test.ts` covers `run` and `dump` (wrong assertions,
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the

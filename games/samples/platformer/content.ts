@@ -18,10 +18,10 @@ import { kit as topdown } from '@kits/topdown/kit';
 
 const ROOM = roomKind();
 
-/** The game's checked content, from `{ path: text }` pairs relative to `games/platformer-test`. */
+/** The game's checked content, from `{ path: text }` pairs relative to `games/samples/platformer`. */
 export function loadTest(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
   // The kits of `game.json`: `kit` (platformer), then `uses` (topdown, for the door's room).
-  return loadContent(files, kitContentKinds([platformer, topdown]), { root: 'games/platformer-test/' });
+  return loadContent(files, kitContentKinds([platformer, topdown]), { root: 'games/samples/platformer/' });
 }
 
 /**

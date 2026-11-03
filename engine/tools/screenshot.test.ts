@@ -10,7 +10,7 @@ import { isSoftwareRenderer } from '@engine/backends/three';
 import { chromiumArgs, launchChromium, NoBrowserError, pngSize, servedPath } from './screenshot';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 const LAB = 'games/platformer-lab/runs/start-to-goal.run.json';
 
 /**
@@ -62,7 +62,7 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
       ok: true,
       command: 'screenshot',
       run: WALK,
-      game: 'games/demo',
+      game: 'games/samples/dungeon',
       tick: 60,
       width: 256,
       height: 240,
@@ -94,7 +94,7 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
 
   it('takes the picture at the size game.json gives (320x180)', async () => {
     const dir = tempDir();
-    cpSync(join(ROOT, 'games/demo'), join(dir, 'demo'), { recursive: true });
+    cpSync(join(ROOT, 'games/samples/dungeon'), join(dir, 'demo'), { recursive: true });
     const manifest = join(dir, 'demo/game.json');
     const data = JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, unknown>;
     data.screen = { width: 320, height: 180 };
@@ -109,7 +109,7 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
 
   it('reports a game with no view module as invalid content at view', async () => {
     const dir = tempDir();
-    cpSync(join(ROOT, 'games/demo'), join(dir, 'demo'), { recursive: true });
+    cpSync(join(ROOT, 'games/samples/dungeon'), join(dir, 'demo'), { recursive: true });
     const manifest = join(dir, 'demo/game.json');
     const data = JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, unknown>;
     delete data.view;
@@ -124,7 +124,7 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
 /** A copy of the demo with a `three` skin added, so only its view's missing `frame()` stops it. */
 function demoWithThreeSkin(): string {
   const dir = tempDir();
-  cpSync(join(ROOT, 'games/demo'), join(dir, 'demo'), { recursive: true });
+  cpSync(join(ROOT, 'games/samples/dungeon'), join(dir, 'demo'), { recursive: true });
   writeFileSync(join(dir, 'demo/content/skins/three.json'), JSON.stringify({ backend: 'three', kinds: {} }));
   return join(dir, 'demo/runs/walk-east.run.json');
 }
@@ -219,9 +219,13 @@ describe('screenshot (no browser needed)', () => {
     expect(code).toBe(EXIT.invalidContent);
     const errors = result.errors as { file: string; path: string; code: string; message: string }[];
     expect(errors).toEqual([
-      expect.objectContaining({ file: 'games/demo/game.json', path: 'content.skin', code: 'no_three_skin' }),
+      expect.objectContaining({
+        file: 'games/samples/dungeon/game.json',
+        path: 'content.skin',
+        code: 'no_three_skin',
+      }),
     ]);
-    expect(errors[0]!.message).toContain('games/demo/content/skins/canvas2d.json (canvas2d)');
+    expect(errors[0]!.message).toContain('games/samples/dungeon/content/skins/canvas2d.json (canvas2d)');
   });
 
   it('turns the GPU off for canvas2d and picks the WebGL flags for three', () => {
@@ -234,7 +238,7 @@ describe('screenshot (no browser needed)', () => {
   });
 
   it('serves files in the repo by their path and others through /@fs/', () => {
-    expect(servedPath(join(ROOT, 'games/demo/view.ts'))).toBe('/games/demo/view.ts');
+    expect(servedPath(join(ROOT, 'games/samples/dungeon/view.ts'))).toBe('/games/samples/dungeon/view.ts');
     expect(servedPath('/tmp/x/view.ts')).toBe('/@fs/tmp/x/view.ts');
   });
 

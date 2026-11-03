@@ -20,13 +20,16 @@ const at = (path: string) => join(repoRoot, path);
 
 /**
  * What each game's old `files.ts` got from Vite: the same glob, here from this file, so its keys
- * carry the folder (`../../games/demo/game.json`). Vite resolves it at test time.
+ * carry the folder (`../../games/samples/dungeon/game.json`). Vite resolves it at test time.
  */
-const DEMO_GLOB = import.meta.glob(['../../games/demo/game.json', '../../games/demo/content/**/*'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-}) as Record<string, string>;
+const DEMO_GLOB = import.meta.glob(
+  ['../../games/samples/dungeon/game.json', '../../games/samples/dungeon/content/**/*'],
+  {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  },
+) as Record<string, string>;
 const SIEGE_GLOB = import.meta.glob(
   ['../../games/samples/mini-siege/game.json', '../../games/samples/mini-siege/content/**/*'],
   { query: '?raw', import: 'default', eager: true },
@@ -42,10 +45,10 @@ function relativeTo(dir: string, glob: Record<string, string>): Record<string, s
 
 describe('virtual:game-files (Engine 0.14 T2, G5)', () => {
   it('finds the nearest folder holding game.json above the importer', () => {
-    expect(findGameDir(at('games/demo/main.ts'))).toBe(at('games/demo'));
+    expect(findGameDir(at('games/samples/dungeon/main.ts'))).toBe(at('games/samples/dungeon'));
     expect(findGameDir(at('games/samples/mini-siege/main.ts?v=1'))).toBe(at('games/samples/mini-siege'));
     // A file deeper in a game folder still finds that game.
-    expect(findGameDir(at('games/demo/content/rooms/x.json'))).toBe(at('games/demo'));
+    expect(findGameDir(at('games/samples/dungeon/content/rooms/x.json'))).toBe(at('games/samples/dungeon'));
   });
 
   it('finds no game outside a game folder', () => {
@@ -54,7 +57,7 @@ describe('virtual:game-files (Engine 0.14 T2, G5)', () => {
   });
 
   it.each([
-    ['games/demo', DEMO_GLOB],
+    ['games/samples/dungeon', DEMO_GLOB],
     ['games/samples/mini-siege', SIEGE_GLOB],
   ])("gives %s the old glob's keys and texts", (dir, glob) => {
     const old = relativeTo(dir, glob);

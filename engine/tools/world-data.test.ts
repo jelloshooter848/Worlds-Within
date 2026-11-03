@@ -19,7 +19,7 @@ vi.setConfig({ testTimeout: 60_000 });
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const PLAYED = 'games/samples/mini-siege/runs/played.run.json';
 const SKIRMISH = 'games/samples/rts-skirmish/runs';
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 const RAID = 'engine/sim/__fixtures__/raid-partial.run.json';
 
 const temps: string[] = [];
@@ -121,7 +121,11 @@ describe('timeline', () => {
     const { code, result } = await cli(['timeline', WALK, '--json']);
     expect(code).toBe(EXIT.invalidContent);
     expect(result.errors).toEqual([
-      expect.objectContaining({ file: 'games/demo/game.json', path: 'headless', code: 'no_world' }),
+      expect.objectContaining({
+        file: 'games/samples/dungeon/game.json',
+        path: 'headless',
+        code: 'no_world',
+      }),
     ]);
     expect((await cli(['timeline', PLAYED, '--tick', '667', '--json'])).code).toBe(EXIT.usage);
   });

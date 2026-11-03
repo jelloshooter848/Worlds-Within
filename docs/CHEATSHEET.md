@@ -94,11 +94,11 @@ seed, disabledRules })` (`@kits/towerdefense`): `tdRound` picks the `td-map`, it
 contentSfx(content), songs: contentSongs(content), music?, volumes? }` gives the page sound: the
   shell unlocks it on the first key, tap or click, starts `music`, and hands each display factory
   `{ onSound }` (`canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound })`;
-  see `games/platformer-test/main.ts`). A skin's `events` key may name a result:
+  see `games/samples/platformer/main.ts`). A skin's `events` key may name a result:
   `"mini-game-end:pass"`, `"mini-game-end:fail"` (or `type:field=value`), with the bare type as the
   fallback. By hand (the demo): an `AssetRegistry` for palettes and sprites, a `CanvasRenderer` on a
   `Viewport`, an `InputManager` with keyboard and gamepad sources, an `AudioManager` with the
-  songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/demo/main.ts`).
+  songs, a `SceneStack`, and a `FixedLoop({ step, render }).start()` (see `games/samples/dungeon/main.ts`).
 
 ## Content kinds
 

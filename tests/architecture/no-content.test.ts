@@ -133,12 +133,14 @@ describe('content rule: engine and kits hold no game content', () => {
 
   it('still recognises the demo game content (the detector works on real content)', () => {
     // The demo keeps its content in data files; written back as TypeScript, it must be flagged.
-    const song = readFileSync(join(ROOT, 'games/demo/content/songs/demo.json'), 'utf8');
+    const song = readFileSync(join(ROOT, 'games/samples/dungeon/content/songs/demo.json'), 'utf8');
     const music = contentMarkers(`export const SONG = ${song};`);
     expect(music.some((m) => m.endsWith('Song or Sfx object'))).toBe(true);
     expect(music.some((m) => m.endsWith('MML source string'))).toBe(true);
-    const room = JSON.parse(readFileSync(join(ROOT, 'games/demo/content/rooms/courtyard.json'), 'utf8'));
-    room.map = readFileSync(join(ROOT, 'games/demo/content/rooms/courtyard.map.txt'), 'utf8')
+    const room = JSON.parse(
+      readFileSync(join(ROOT, 'games/samples/dungeon/content/rooms/courtyard.json'), 'utf8'),
+    );
+    room.map = readFileSync(join(ROOT, 'games/samples/dungeon/content/rooms/courtyard.map.txt'), 'utf8')
       .trim()
       .split('\n');
     const rooms = contentMarkers(`export const ROOM = ${JSON.stringify(room)};`);
@@ -149,10 +151,10 @@ describe('content rule: engine and kits hold no game content', () => {
 
 describe('content rule: the demo keeps its content in data files', () => {
   it('has no rooms, songs or sprites in its TypeScript', () => {
-    const files = readdirSync(join(ROOT, 'games/demo')).filter((f) => f.endsWith('.ts'));
+    const files = readdirSync(join(ROOT, 'games/samples/dungeon')).filter((f) => f.endsWith('.ts'));
     expect(files).toContain('content.ts');
     const found = files.flatMap((f) =>
-      contentMarkers(readFileSync(join(ROOT, 'games/demo', f), 'utf8'), f).map((m) => `${f}:${m}`),
+      contentMarkers(readFileSync(join(ROOT, 'games/samples/dungeon', f), 'utf8'), f).map((m) => `${f}:${m}`),
     );
     expect(found).toEqual([]);
   });

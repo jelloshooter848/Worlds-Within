@@ -14,7 +14,7 @@ import { closeDebugServers } from './debugger/server';
 // headless run (skipped where Chromium is not installed, never in CI).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 
 const temps: string[] = [];
 afterEach(() => {
@@ -44,7 +44,7 @@ async function cli(argv: string[]): Promise<{ code: number; result: Record<strin
 function walkCopy(edit: (run: Record<string, unknown>) => void): string {
   const dir = tempDir();
   const run = JSON.parse(readFileSync(join(ROOT, WALK), 'utf8')) as Record<string, unknown>;
-  run.game = relative(dir, join(ROOT, 'games/demo'));
+  run.game = relative(dir, join(ROOT, 'games/samples/dungeon'));
   edit(run);
   const file = join(dir, 'walk.run.json');
   writeFileSync(file, JSON.stringify(run));
@@ -53,7 +53,7 @@ function walkCopy(edit: (run: Record<string, unknown>) => void): string {
 
 describe('debug: files and errors', () => {
   it('is a usage error for a file that is not there, a tick past the run and a world run', async () => {
-    expect((await cli(['debug', 'games/demo/runs/nope.run.json'])).code).toBe(EXIT.usage);
+    expect((await cli(['debug', 'games/samples/dungeon/runs/nope.run.json'])).code).toBe(EXIT.usage);
     const late = await cli(['debug', WALK, '--tick', '241']);
     expect(late.code).toBe(EXIT.usage);
     expect(JSON.stringify(late.result)).toMatch(/after the run's last tick/);
@@ -81,7 +81,7 @@ describe('debug: files and errors', () => {
     expect(result).toMatchObject({
       file: WALK,
       kind: 'run',
-      game: 'games/demo',
+      game: 'games/samples/dungeon',
       ticks: 240,
       openTick: 30,
       serving: true,
@@ -96,7 +96,7 @@ describe('debug: files and errors', () => {
       seed: 1,
       ticks: 240,
       openTick: 30,
-      viewUrl: '/games/demo/view.ts',
+      viewUrl: '/games/samples/dungeon/view.ts',
     });
     expect((job.expected as unknown[]).length).toBeGreaterThan(0);
     expect((await fetch(new URL(DEBUG_JOB_PATH, url), { method: 'POST' })).status).toBe(405);
@@ -113,7 +113,7 @@ describe('debug: files and errors', () => {
     expect(other.code).toBe(EXIT.usage);
     const { code, result } = await cli(['debug', relative(ROOT, out)]);
     expect(code).toBe(EXIT.ok);
-    expect(result).toMatchObject({ kind: 'dump', game: 'games/demo', ticks: 240, openTick: 60 });
+    expect(result).toMatchObject({ kind: 'dump', game: 'games/samples/dungeon', ticks: 240, openTick: 60 });
     await closeDebugServers();
   });
 });

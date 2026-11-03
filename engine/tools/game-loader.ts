@@ -15,7 +15,7 @@ export { checkGameTexts, gameKinds, type CheckedContent } from './game-check';
  */
 
 export interface LoadedGame {
-  /** The folder as given, relative to the working folder, with `/` (`games/demo`). */
+  /** The folder as given, relative to the working folder, with `/` (`games/samples/dungeon`). */
   dir: string;
   /** Every file read, relative to the game folder (`game.json`, `content/rooms/hall.json`). */
   files: string[];

@@ -56,7 +56,7 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
 
   Replaying a run file in a browser test:
 
-      await page.goto(`${url}games/platformer-test/?debug=step`);
+      await page.goto(`${url}games/samples/platformer/?debug=step`);
       const hashes = await page.evaluate((run) => {
         const ww = (window as DebugWindow).__ww!;
         ww.replay(run);
@@ -106,5 +106,5 @@ Example (`games/platformer-lab/main.ts`):
 full boot with a fake audio context for the `audio` option, and one in manual-loop mode) and
 `debug.test.ts` (the step hook and replay);
 `tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists, and
-`tests/browser/platformer-test.test.ts` replays the stacking test's run files through the page
+`tests/browser/platformer.test.ts` replays the stacking test's run files through the page
 with `window.__ww` and checks the golden hashes.

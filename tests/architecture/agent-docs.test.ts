@@ -99,7 +99,7 @@ describe('agent docs: the repo', () => {
         'engine/sim',
         'engine/tools',
         'kits/topdown',
-        'games/demo',
+        'games/samples/dungeon',
       ]),
     );
     expect(moduleFolders(ROOT)).not.toContain('engine/backends');

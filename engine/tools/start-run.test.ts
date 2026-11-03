@@ -11,8 +11,8 @@ import { main } from './main';
 // siege's fresh dawn, the errors, and replays that keep `start`.
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const LEVEL_3 = 'games/platformer-test/runs/level-3.run.json';
-const LEVEL_3_START = 'games/platformer-test/runs/level-3-start.run.json';
+const LEVEL_3 = 'games/samples/platformer/runs/level-3.run.json';
+const LEVEL_3_START = 'games/samples/platformer/runs/level-3-start.run.json';
 const DAWN_FRESH = 'games/samples/mini-siege/runs/dawn-fresh.run.json';
 /** The tick the full-replay `level-3` run starts level 3 at (stage 2). */
 const LEVEL_3_TICK = 1161;
@@ -87,12 +87,12 @@ describe('a run file that starts at a later level', () => {
     });
     const trace = await cli(['trace', LEVEL_3_START, '--paths', 'stage', '--to', '0']);
     expect(trace.result).toMatchObject({ start: { stage: 2 }, rows: [{ tick: 0, values: { stage: 2 } }] });
-    const plain = await cli(['dump', 'games/platformer-test/runs/level-1.run.json', '--tick', '0']);
+    const plain = await cli(['dump', 'games/samples/platformer/runs/level-1.run.json', '--tick', '0']);
     expect(plain.result.start).toBeNull();
   });
 
   it('refuses a stage past the last level, naming start.stage', async () => {
-    const { code, result } = await cli(['run', runFile('games/platformer-test', { start: { stage: 4 } })]);
+    const { code, result } = await cli(['run', runFile('games/samples/platformer', { start: { stage: 4 } })]);
     expect(code).toBe(EXIT.invalidContent);
     expect(errorsOf(result)).toEqual([['start.stage', 'bad_start']]);
     expect(JSON.stringify(result.errors)).toContain('level-4');
@@ -128,9 +128,9 @@ describe('a run file that starts at a campaign entry', () => {
 
 describe('a start the game cannot honour', () => {
   it.each([
-    ['games/demo', { stage: 0 }],
+    ['games/samples/dungeon', { stage: 0 }],
     ['games/samples/mini-siege', { stage: 1 }],
-    ['games/platformer-test', { entry: 'level-2' }],
+    ['games/samples/platformer', { entry: 'level-2' }],
   ])('%s refuses start %j with exit 3 at start (no_start)', async (game, start) => {
     for (const command of [['run'], ['dump', '--tick', '0']]) {
       const file = runFile(game, { start });
@@ -145,11 +145,11 @@ describe('the start schema', () => {
   it('takes exactly one of stage and entry, never with from, and not on a world run', async () => {
     const bad = async (game: string | null, fields: Record<string, unknown>) =>
       errorsOf((await cli(['run', runFile(game, fields)])).result);
-    expect(await bad('games/platformer-test', { start: {} })).toEqual([['start', 'custom']]);
-    expect(await bad('games/platformer-test', { start: { stage: 1, entry: 'x' } })).toEqual([
+    expect(await bad('games/samples/platformer', { start: {} })).toEqual([['start', 'custom']]);
+    expect(await bad('games/samples/platformer', { start: { stage: 1, entry: 'x' } })).toEqual([
       ['start', 'custom'],
     ]);
-    expect(await bad('games/platformer-test', { start: { stage: -1 } })).toEqual([
+    expect(await bad('games/samples/platformer', { start: { stage: -1 } })).toEqual([
       ['start.stage', 'too_small'],
     ]);
     expect(await bad('games/samples/mini-siege', { start: { entry: 'dawn' }, from: { code: 'X' } })).toEqual([
@@ -177,7 +177,7 @@ describe('a replay of a run with start', () => {
       file,
       JSON.stringify({
         ...run,
-        game: relative(join(file, '..'), join(ROOT, 'games/platformer-test')),
+        game: relative(join(file, '..'), join(ROOT, 'games/samples/platformer')),
         assertions: [{ tick: 62, path: 'lives', op: 'eq', value: 3 }],
       }),
     );

@@ -1,7 +1,10 @@
-# games/demo
+# games/samples/dungeon
 
-The current demo: a proof-of-life game built on the top-down kit. It is content, not engine, and its
-content lives in data files, not TypeScript. It grows into `games/samples/dungeon` at Engine 0.15.
+The top-down dungeon sample: the engine's sample game for the top-down kit. It began as the
+engine demo (a proof-of-life game in its own `demo` folder) and moved here at Engine 0.15 (T2), run files and
+golden hashes unchanged; 0.15 finishes it as a sample (original assets, this file explaining how
+it was built). Some names still say `demo` (`loadDemo`, `DemoPicture`, the `demo` song and sheets).
+It is content, not engine, and its content lives in data files, not TypeScript.
 
 ## Files
 
@@ -41,7 +44,7 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   `onSound` -> `AudioManager.sfx`) and `main.ts` (boots the Canvas2D backend, input, audio with
   songs and sfx, and the look).
 - The demo never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's `render`):
-  `demo.test.ts` fails if its code names one.
+  `dungeon.test.ts` fails if its code names one.
 
 ## Adding or changing content
 
@@ -49,8 +52,8 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   (`tests/architecture/no-content.test.ts` fails on them).
 - A new file must be claimed by a kind in `game.json` (otherwise it is an `unclaimed_file` error).
 - Node code reads the folder with `readGameFiles` (`engine/core/node/game-files.ts`) and checks it
-  with `loadDemo`; every error names the file (`games/demo/content/...`) and the field.
-- After any content change run `pnpm -s cli validate games/demo --json`: exit 0 means every file
+  with `loadDemo`; every error names the file (`games/samples/dungeon/content/...`) and the field.
+- After any content change run `pnpm -s cli validate games/samples/dungeon --json`: exit 0 means every file
   passes; exit 3 lists each error with its file and field.
 
 ## Run files
@@ -60,8 +63,8 @@ content lives in data files, not TypeScript. It grows into `games/samples/dungeo
   walks the hero east into the guard room and checks his hearts never go below 0.
 - `runs/<name>.hashes.json`: the run's committed golden state hashes. `tests/runs/run-files.test.ts`
   runs every run file twice and compares both to it, so CI checks them.
-- Run one: `pnpm -s cli run games/demo/runs/walk-east.run.json --json` (exit 0 passed, 4 a failed
-  check). See the state at a tick: `pnpm -s cli dump games/demo/runs/walk-east.run.json --tick 100 --json`.
+- Run one: `pnpm -s cli run games/samples/dungeon/runs/walk-east.run.json --json` (exit 0 passed, 4 a failed
+  check). See the state at a tick: `pnpm -s cli dump games/samples/dungeon/runs/walk-east.run.json --tick 100 --json`.
 - `tests/runs/backend-parity.test.ts` plays every run here twice, presenting every tick through
   the null backend's `NullPresenter` and through `DemoPicture` (the Canvas2D backend's
   `SkinnedCanvasPresenter`) onto a recording renderer: both must give the golden hashes.
@@ -81,9 +84,9 @@ Vite build of the copy.
 
 ## How to run
 
-- `pnpm dev` opens the index of games; pick `games/demo`, or open `/games/demo/` directly.
-- `pnpm build` builds the demo (content included) into `dist/games/demo/`.
-- `pnpm test` runs `demo.test.ts`: it loads the data files from disk, walks the hero east into the
+- `pnpm dev` opens the index of games; pick `games/samples/dungeon`, or open `/games/samples/dungeon/` directly.
+- `pnpm build` builds the demo (content included) into `dist/games/samples/dungeon/`.
+- `pnpm test` runs `dungeon.test.ts`: it loads the data files from disk, walks the hero east into the
   guard room drawn through the skin onto a counting renderer (hero and placeholder sprites drawn),
   compiles the song, checks the skin lists every tile, every kind and HUD value walk-east shows
   and that every sound it names is an sfx, that the walk's `room` (tick 89) and `spit` (tick 240)
@@ -92,7 +95,7 @@ Vite build of the copy.
 
 ## Screenshot against Engine 0.3 (build log)
 
-`pnpm -s cli screenshot games/demo/runs/walk-east.run.json --tick 120` was
+`pnpm -s cli screenshot games/samples/dungeon/runs/walk-east.run.json --tick 120` was
 `303b20d7559004e80f01d68e53a54efdb060985419c1825070cfa617ee2a0579` at the end of 0.3 and is now
 `385b61d4a1ff684c27a8d497775c05949d935fd387e19be34a3fbbd632ba7cdd`. The two PNGs differ in 90
 pixels, all inside x 8..30, y 53..57 of the black HUD band: the six red half-heart pips of the new
@@ -115,7 +118,7 @@ Differences a skin cannot express yet, none of them visible in walk-east (all vi
 
 ## Imports
 
-- Allowed: relative paths inside `games/demo`, `@engine/*` (core and backends) and `@kits/*`.
+- Allowed: relative paths inside `games/samples/dungeon`, `@engine/*` (core and backends) and `@kits/*`.
 - Never: other games. Nothing in `engine/` or `kits/` may import from here, and no alias points into
   `games/`.
 - Game rules belong in data (rooms, songs) wherever possible, not code.

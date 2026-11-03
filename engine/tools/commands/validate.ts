@@ -23,7 +23,7 @@ export const validateCommand = defineCommand({
   name: 'validate',
   summary: 'check every content file of a game against its schema (starts nothing)',
   args: z.strictObject({
-    game: z.string().min(1).describe('the game folder, such as games/demo'),
+    game: z.string().min(1).describe('the game folder, such as games/samples/dungeon'),
   }),
   flags: z.strictObject({}),
   async run({ args }, ctx) {

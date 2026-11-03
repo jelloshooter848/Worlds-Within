@@ -8,7 +8,7 @@ description: Make a new game in games/<name>/ on the top-down kit, or on the pla
 Makes `games/<name>/`: a one-room game on the `topdown` kit that passes `validate`, `run` and the
 repo's four checks. Grow it from there (more rooms, songs, sprites) by adding data files, not code.
 Read [`llms.txt`](../../../llms.txt) and the [cheat sheet](../../../docs/CHEATSHEET.md) first;
-`games/demo/` is a complete working example of every file below.
+`games/samples/dungeon/` is a complete working example of every file below.
 
 Rules that apply throughout:
 
@@ -85,7 +85,7 @@ list is in `kits/topdown/room.ts`. Every room field (`music`, `chests`, `hint`, 
 Kits never draw: the kit describes each frame (`presentWorld`) and the Canvas2D backend draws it
 through a skin, which maps each presented kind (`hero`, `knight`, `pickup:heart`, ...) and each map
 tile character to a frame of a sprite file. Start with flat placeholder art and replace the pixels
-later (`games/demo/content/` has a full skin; `kits/topdown/CLAUDE.md` lists every kind, animation
+later (`games/samples/dungeon/content/` has a full skin; `kits/topdown/CLAUDE.md` lists every kind, animation
 state and tile character the kit presents).
 
 `content/palettes/flat.json` (`id` must equal the file name):
@@ -377,7 +377,7 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
 
 ## 5. The browser page: `index.html` and `main.ts`
 
-`index.html`: copy `games/demo/index.html` as is (a full-window `<canvas id="screen">` and
+`index.html`: copy `games/samples/dungeon/index.html` as is (a full-window `<canvas id="screen">` and
 `<script type="module" src="./main.ts">`), changing only the `<title>`. `pnpm build` finds every
 `games/*/index.html` by itself and the launcher links to it.
 
@@ -483,10 +483,10 @@ that command only after a change meant to change the game's state.
 Every game folder needs these, or `pnpm test` fails (`tests/architecture/agent-docs.test.ts`):
 
 - `games/<name>/CLAUDE.md`: what the game is, its files, how to run and test it, and its imports
-  (model: `games/demo/CLAUDE.md`).
-- `games/<name>/AGENTS.md`: one line pointing at `CLAUDE.md` (copy `games/demo/AGENTS.md`, renaming).
+  (model: `games/samples/dungeon/CLAUDE.md`).
+- `games/<name>/AGENTS.md`: one line pointing at `CLAUDE.md` (copy `games/samples/dungeon/AGENTS.md`, renaming).
 - `docs/modules/games-<name>.md` (for a sample, `docs/modules/games-samples-<name>.md`): purpose,
-  public entry points, imports allowed, how to test (model: `docs/modules/games-demo.md`).
+  public entry points, imports allowed, how to test (model: `docs/modules/games-samples-dungeon.md`).
 - A line in `llms.txt` under `## Modules` linking that page:
   `- [games/<name>](docs/modules/games-<name>.md): one line saying what it is`.
 
@@ -569,7 +569,7 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   (`content/skins/canvas2d-<mini game id>.json`) and hand frames to the right presenter with
   `presenterByStatus('miniGame', { <id>: roundPresenter }, levelPresenter)`
   (`@engine/core/present`); a top-down round's presenter takes `clamp: false` (see
-  `games/platformer-test/picture.ts`).
+  `games/samples/platformer/picture.ts`).
 - `main.ts` and the scene (Engine 0.7; Engine 0.10 gap G37): the engine's browser shell does the
   boot. The scene is `new HostScene({ stack, game: createGame(content, seed), picture })`
   (`@engine/core/shell`): the kit's `LevelSequence` is a `HostedGame` (`world`, `events`,

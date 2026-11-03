@@ -17,7 +17,7 @@ export type OrderEntryJson = { tick: number } & Record<string, unknown>;
 export interface ShotJob {
   /** The game's files as `{ path: text }` (as `readGameFiles` gives them). */
   files: Record<string, string>;
-  /** The game folder as a repo path with a trailing `/`, for error messages (`games/demo/`). */
+  /** The game folder as a repo path with a trailing `/`, for error messages (`games/samples/dungeon/`). */
   root: string;
   /** The URL the page imports the game's view module from (served by Vite). */
   viewUrl: string;

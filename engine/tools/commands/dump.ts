@@ -30,7 +30,10 @@ export const dumpCommand = defineCommand({
   name: 'dump',
   summary: 'the whole game or world state at one tick of a run file, as JSON',
   args: z.strictObject({
-    runFile: z.string().min(1).describe('the run file, such as games/demo/runs/walk-east.run.json'),
+    runFile: z
+      .string()
+      .min(1)
+      .describe('the run file, such as games/samples/dungeon/runs/walk-east.run.json'),
   }),
   flags: z.strictObject({
     tick: z.number().int().min(0).describe('the tick to show (0 is the start, before any step)'),

@@ -11,23 +11,28 @@ import { main } from '../../engine/tools/main';
 import { launchChromium, NoBrowserError, pngSize } from '../../engine/tools/screenshot';
 
 // Two resolutions (docs/ROADMAP.md, 0.4 "Done when"): the demo builds and screenshots at a second
-// picture size when only `screen` in its game.json changes. A copy of games/demo (its tests left
+// picture size when only `screen` in its game.json changes. A copy of games/samples/dungeon (its tests left
 // out) with `screen` set to 320x240 must validate, play walk-east with the same state hashes as the
 // committed golden file, screenshot at 320x240 (the same PNG bytes on two runs) like the demo does
 // at 256x240, and build with Vite. The touch layout follows the new size.
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const ALT = { width: 320, height: 240 };
-const GOLDEN = JSON.parse(readFileSync(join(ROOT, 'games/demo/runs/walk-east.hashes.json'), 'utf8')) as {
+const GOLDEN = JSON.parse(
+  readFileSync(join(ROOT, 'games/samples/dungeon/runs/walk-east.hashes.json'), 'utf8'),
+) as {
   hashes: unknown[];
 };
 
 const temp = mkdtempSync(join(tmpdir(), 'ww-two-res-'));
 afterAll(() => rmSync(temp, { recursive: true, force: true }));
 
-/** games/demo copied to <temp>/games/demo with only `screen` in game.json changed. */
-const copy = join(temp, 'games/demo');
-cpSync(join(ROOT, 'games/demo'), copy, { recursive: true, filter: (src) => !src.endsWith('.test.ts') });
+/** games/samples/dungeon copied to <temp>/games/samples/dungeon with only `screen` in game.json changed. */
+const copy = join(temp, 'games/samples/dungeon');
+cpSync(join(ROOT, 'games/samples/dungeon'), copy, {
+  recursive: true,
+  filter: (src) => !src.endsWith('.test.ts'),
+});
 const manifestPath = join(copy, 'game.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>;
 writeFileSync(manifestPath, `${JSON.stringify({ ...manifest, screen: ALT }, null, 2)}\n`);
@@ -59,10 +64,9 @@ if (missing) console.warn(`skipping the two-resolution screenshots: ${missing}`)
 
 describe('the demo at a second resolution (one config value changed)', () => {
   it('changed nothing in the copy but `screen`', () => {
-    const original = JSON.parse(readFileSync(join(ROOT, 'games/demo/game.json'), 'utf8')) as Record<
-      string,
-      unknown
-    >;
+    const original = JSON.parse(
+      readFileSync(join(ROOT, 'games/samples/dungeon/game.json'), 'utf8'),
+    ) as Record<string, unknown>;
     expect(original.screen).toEqual({ width: 256, height: 240 });
     expect({ ...manifest, screen: ALT }).toEqual({ ...original, screen: ALT });
   });
@@ -83,7 +87,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
     'screenshots at both sizes: right PNG size, the same bytes twice, the headless hashes',
     async () => {
       for (const [run, size] of [
-        ['games/demo/runs/walk-east.run.json', { width: 256, height: 240 }],
+        ['games/samples/dungeon/runs/walk-east.run.json', { width: 256, height: 240 }],
         [copyRun, ALT],
       ] as const) {
         const shots = [];
@@ -118,7 +122,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
         rollupOptions: { input: join(copy, 'index.html') },
       },
     });
-    expect(existsSync(join(outDir, 'games/demo/index.html'))).toBe(true);
+    expect(existsSync(join(outDir, 'games/samples/dungeon/index.html'))).toBe(true);
     const js = readdirSync(join(outDir, 'assets'))
       .filter((f) => f.endsWith('.js'))
       .map((f) => readFileSync(join(outDir, 'assets', f), 'utf8'))

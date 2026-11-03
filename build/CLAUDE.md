@@ -20,7 +20,7 @@ Build tooling for the repo: not engine, kit or game code.
   `tsc`. Node tools read the same files with `readGameFiles` (`engine/core/node/game-files.ts`).
 - `launcher.ts` is the root index page's own tiny bundle (it focuses the first game link).
 - Links in the index are relative, so every page works under `VITE_BASE` (e.g. `/Worlds-Within/`).
-- Tests: `tests/build/pages.test.ts` (discovery finds `games/demo`, sorting, skipping folders without
+- Tests: `tests/build/pages.test.ts` (discovery finds `games/samples/dungeon`, sorting, skipping folders without
   an `index.html`, HTML escaping, `ww-alternate` links) and `tests/build/game-files.test.ts` (the
   nearest game folder, the same keys and texts as `import.meta.glob`, a real build, the error
   outside a game folder).

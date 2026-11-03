@@ -19,9 +19,9 @@ export function demoKinds(): ContentKinds {
   return engineContentKinds().register(ROOM);
 }
 
-/** The demo's checked content, from `{ path: text }` pairs relative to `games/demo`. */
+/** The demo's checked content, from `{ path: text }` pairs relative to `games/samples/dungeon`. */
 export function loadDemo(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {
-  return loadContent(files, demoKinds(), { root: 'games/demo/' });
+  return loadContent(files, demoKinds(), { root: 'games/samples/dungeon/' });
 }
 
 /** The dungeon the demo's room files make. */

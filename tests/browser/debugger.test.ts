@@ -146,11 +146,13 @@ describe.skipIf(missing !== null)('the debugger page on a failing replay and a t
     // A deliberately failing run: the demo's walk-east with an assertion it cannot pass.
     const dir = mkdtempSync(join(tmpdir(), 'ww-debugger-replay-'));
     temps.push(dir);
-    const run = JSON.parse(readFileSync(join(ROOT, 'games/demo/runs/walk-east.run.json'), 'utf8')) as {
+    const run = JSON.parse(
+      readFileSync(join(ROOT, 'games/samples/dungeon/runs/walk-east.run.json'), 'utf8'),
+    ) as {
       game: string;
       assertions: unknown[];
     };
-    run.game = relative(dir, join(ROOT, 'games/demo'));
+    run.game = relative(dir, join(ROOT, 'games/samples/dungeon'));
     run.assertions.push({ tick: 100, path: 'hero.room', op: 'eq', value: 'nowhere' });
     writeFileSync(join(dir, 'failing.run.json'), JSON.stringify(run));
     let stdout = '';

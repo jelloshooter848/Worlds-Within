@@ -52,7 +52,10 @@ export const screenshotCommand = defineCommand({
   name: 'screenshot',
   summary: 'a PNG of one paused, seeded frame of a run file (headless Chromium)',
   args: z.strictObject({
-    runFile: z.string().min(1).describe('the run file, such as games/demo/runs/walk-east.run.json'),
+    runFile: z
+      .string()
+      .min(1)
+      .describe('the run file, such as games/samples/dungeon/runs/walk-east.run.json'),
   }),
   flags: z.strictObject({
     tick: z.number().int().min(0).describe('the tick to draw (0 is the start, before any step)'),

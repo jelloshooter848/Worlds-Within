@@ -8,7 +8,7 @@ import { EXIT } from './exit-codes';
 import { main } from './main';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const WALK = 'games/demo/runs/walk-east.run.json';
+const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 const RAID = 'engine/sim/__fixtures__/raid-partial.run.json';
 const SIEGE = 'games/samples/mini-siege/runs/played.run.json';
 
@@ -56,7 +56,7 @@ describe('trace', () => {
       ok: true,
       command: 'trace',
       run: WALK,
-      game: 'games/demo',
+      game: 'games/samples/dungeon',
       world: null,
       seed: 1,
       from: 0,
@@ -233,7 +233,7 @@ describe('trace', () => {
 
   it('is exit 3 for a bad run file', async () => {
     const file = join(tempDir(), 'bad.run.json');
-    writeFileSync(file, JSON.stringify({ game: join(ROOT, 'games/demo'), ticks: 'many' }));
+    writeFileSync(file, JSON.stringify({ game: join(ROOT, 'games/samples/dungeon'), ticks: 'many' }));
     const { code, result } = await cli(['trace', file, '--paths', 'hero.x', '--json']);
     expect(code).toBe(EXIT.invalidContent);
     expect((result.errors as unknown[]).length).toBeGreaterThan(0);

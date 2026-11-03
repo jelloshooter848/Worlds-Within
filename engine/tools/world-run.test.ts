@@ -145,7 +145,7 @@ describe('run file schema: game or world', () => {
   };
 
   it('refuses a run file with both game and world', async () => {
-    const errors = await errorsOf((r) => (r.game = '../games/demo'));
+    const errors = await errorsOf((r) => (r.game = '../games/samples/dungeon'));
     expect(errors).toEqual([
       expect.objectContaining({ path: 'world', message: 'a run file gives "game" or "world", not both' }),
     ]);

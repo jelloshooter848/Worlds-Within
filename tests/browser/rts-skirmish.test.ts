@@ -102,7 +102,7 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       expect(await page.locator(`#games a[href="${GAME}"]`).count()).toBe(1);
 
       // The page in manual-loop mode (`?debug=step`): `window.__ww.step(n)` takes n loop steps
-      // (see platformer-test.test.ts).
+      // (see platformer.test.ts).
       await page.goto(`${server.url}${GAME}?debug=step`);
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
       expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');

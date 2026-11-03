@@ -1,4 +1,4 @@
-# games/platformer-test
+# games/samples/platformer
 
 The stacking test's game (Engine 0.7, `docs/ROADMAP.md`, "0.7 The stacking test"): a small
 original platformer built on `kits/platformer` with the engine as it is, to find out what is
@@ -7,8 +7,9 @@ It is also a worked example for LLM users: this file says how it was built, step
 how to add a level or a mini game room. Engine 0.7 is done (T9): every gap is fixed or moved to a
 named release, and the glue review (the report's "Glue review") found this folder holds only
 content, skins and thin glue.
-At Engine 0.15 it grows into the platformer sample, `games/samples/platformer/`, and this folder
-goes away (its run files move with it and stay green).
+At Engine 0.15 (T2) it moved from its own `platformer-test` folder to `games/samples/platformer/` as the
+platformer kit's sample (its run files moved with it and kept their golden hashes); 0.15 finishes
+it as a sample.
 
 ## The rule
 
@@ -23,7 +24,7 @@ release that will).
 - `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the door level's room),
   256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `campaign`, `profile`,
   `room`, `palette`, `sprite`, `skin` and `sfx`. `index.html` is the page, so the root launcher lists
-  `games/platformer-test/`, and its `ww-alternate` meta tag adds the launcher's `3D` link
+  `games/samples/platformer/`, and its `ww-alternate` meta tag adds the launcher's `3D` link
   (`?backend=three`, 0.7 T8).
 - `content/levels/<id>.json` + `<id>.map.txt`: levels (format: `kits/platformer/CLAUDE.md`,
   Content kinds, and `LEGEND` in `kits/platformer/legend.ts`), played in the campaign file's
@@ -67,7 +68,7 @@ release that will).
   types: `walker`, `ledge-walker` (`turnAt: ledges`), `shell-walker` (a stomp turns it into a
   `shell`) and `shell` (still, kickable at 12288). Profiles live in
   their own folder because the `level` glob `content/levels/*.json` would claim them too.
-- Assets, all text (0.7 T7; `platformer-test.test.ts` fails on any other kind of file):
+- Assets, all text (0.7 T7; `platformer.test.ts` fails on any other kind of file):
   - `content/sprites/hopper.txt` (palette `content/palettes/hopper.json`): original NES-style pixel
     art, one string per row, one character per pixel: the level tiles (`sky`, `ground`, `brick`,
     `bump`, `used`, `one-way`, `hazard`), the runner (12x16: idle, two walk frames, skid, jump,
@@ -165,17 +166,17 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
     `title`, at the manifest's `screen` size, with the top-down rules a run switches off
     (`topdown:<id>`, Engine 0.14 gap G12). What the round asks and what its result does are level data, not code;
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2); Node reads the same files with `readGameFiles`.
-- `platformer-test.test.ts` (0.7 T7 part): every run file played through the view's `frame()`,
+- `platformer.test.ts` (0.7 T7 part): every run file played through the view's `frame()`,
   each frame sorted by source (`status.miniGame`: the level or the vault round), and the right
   skin must map every kind and state, tile, event and HUD value shown; the level skin maps every
   tile, runner and actor state and event the kit has; the vault skin the hero's `hurt` and
   `dying`; every sound is an sfx file; the folder holds only text assets; the view draws a level
   with `hopper` and the round with `vault`; the page's `HostScene` over `createGame` pushes the
   round and pops it.
-- `platformer-test.test.ts` (0.7 T8 part): the `three` skins: a level skin and a vault one, each
+- `platformer.test.ts` (0.7 T8 part): the `three` skins: a level skin and a vault one, each
   with a mesh for every kind and tile its 2D skin maps (but the level's `.`), the 2D skin's
   events, sounds and camera, and a mesh for every kind and tile the runs show in its frames.
-- `platformer-test.test.ts` (earlier parts): content loads, a broken field is named by file and field, the level
+- `platformer.test.ts` (earlier parts): content loads, a broken field is named by file and field, the level
   order (the campaign's; a reversed campaign file plays `level-4` first; a campaign entry naming a
   missing level names the file and field; without a campaign, `level-10` after `level-9`), the start state, the first three levels cleared in
   order with `level-3.run.json`'s input, the door's round failed then passed and all four levels
@@ -244,10 +245,10 @@ moves none of them.
   report `ticks` 600 at 2881, round 2's `pass`, the last knight's `kill` in
   `endedRound.state.events`, no enemies left and the report's `defeated` keys at 3144.
   Invariants: at least 1 life, stage 0 to 3.
-- Run one: `pnpm -s cli run games/platformer-test/runs/level-2.run.json --json`. Its rules:
-  `pnpm -s cli mutants games/platformer-test/runs/level-2.run.json --json` (exit 0 for each run
+- Run one: `pnpm -s cli run games/samples/platformer/runs/level-2.run.json --json`. Its rules:
+  `pnpm -s cli mutants games/samples/platformer/runs/level-2.run.json --json` (exit 0 for each run
   file).
-- The whole folder, `pnpm -s cli mutants games/platformer-test --json`, guards all 32 of the
+- The whole folder, `pnpm -s cli mutants games/samples/platformer --json`, guards all 32 of the
   kit's rules (`level-4.run.json` guards `mini-games`) and must exit 0 (gap G7). Since Engine 0.14
   (gap G12) it also tries the top-down kit's 4 rules inside the vault round, as
   `topdown:<id>`: `level-4` and `level-4-start` guard `topdown:walls-block-movement` (with the
@@ -255,7 +256,7 @@ moves none of them.
   vault is one room with no locked door, so `topdown:damage-reduces-hp`,
   `topdown:doors-change-room` and `topdown:keys-open-locked-doors` stay unguarded (reported, not a
   failure: the top-down kit is not strict; recorded in `docs/reports/stacking-test.md`, G12).
-  `pnpm -s cli run games/platformer-test/runs/level-4-start.run.json --disable-rule
+  `pnpm -s cli run games/samples/platformer/runs/level-4-start.run.json --disable-rule
 topdown:walls-block-movement` switches it off in the round only (`headless.ts` hands
   `rulesOffFor(opts, 'topdown')` to `testMiniGames`; the levels' worlds get `opts.disabledRules`).
 - `runs/level-<n>.hashes.json` are the golden hashes (`tests/runs/run-files.test.ts`). After a
@@ -269,7 +270,7 @@ topdown:walls-block-movement` switches it off in the round only (`headless.ts` h
 1. (0.7 T1) `game.json` copied in shape from the lab (kit, screen, seed, `headless`), with only
    the `level` and `profile` content globs.
 2. The profile: the kit's fixture numbers as a start, then the game's own values.
-3. `level-1.map.txt` drawn as text, then checked with `pnpm -s cli validate games/platformer-test
+3. `level-1.map.txt` drawn as text, then checked with `pnpm -s cli validate games/samples/platformer
 --json` (exit 0).
 4. `content.ts` and `headless.ts`: the lab's glue cut down to what this game needs (no fixture
    level, no mini games, no skins yet). Each copied piece is a gap in the report (G1 to G5).
@@ -286,7 +287,7 @@ topdown:walls-block-movement` switches it off in the round only (`headless.ts` h
    `pnpm -s cli set <map> rows.<row>.<col> '#'` (gap G10: placing things by column in a long row).
 9. Each run file: the earlier levels' input copied in, then this level's found as for step 5 (one
    jump or hold at a time, traced every few ticks), the assertions read off `dump`, and
-   `mutants <run file>` until its `guards` were all guarded. Then `mutants games/platformer-test`
+   `mutants <run file>` until its `guards` were all guarded. Then `mutants games/samples/platformer`
    for the whole game (31 of 32 rules).
 
 10. (0.7 T5) The adapter first: `kits/topdown/challenge.ts` (`roomChallenge`) with its tests,
@@ -310,7 +311,7 @@ topdown:walls-block-movement` switches it off in the round only (`headless.ts` h
     lab uses it too. One skin per frame source needed `presenterByStatus` (gap G14).
 16. Checked with `pnpm -s cli screenshot <run> --tick N --json` (`matchesHeadless` true, ticks
     in a level and inside the round) and by replaying `level-4.run.json` through the built page
-    in headless Chromium (`tests/browser/platformer-test.test.ts`).
+    in headless Chromium (`tests/browser/platformer.test.ts`).
 
 17. (0.7 T8) The two `three` skins written as text, starting from the lab's level meshes (own
     colours, a door for the trigger) and a new round skin with the room laid flat facing the
@@ -335,13 +336,13 @@ topdown:walls-block-movement` switches it off in the round only (`headless.ts` h
 
 ## Files to run
 
-| File                    | Ends at                                                     | Command                                                              |
-| ----------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------- |
-| `runs/level-1.run.json` | `level-1` cleared, tick 493                                 | `pnpm -s cli run games/platformer-test/runs/level-1.run.json --json` |
-| `runs/level-2.run.json` | `level-2` cleared, tick 1101                                | `pnpm -s cli run games/platformer-test/runs/level-2.run.json --json` |
-| `runs/level-3.run.json` | `level-3` cleared, tick 1999                                | `pnpm -s cli run games/platformer-test/runs/level-3.run.json --json` |
-| `runs/level-4.run.json` | the round failed, then passed; `level-4` cleared, tick 3283 | `pnpm -s cli run games/platformer-test/runs/level-4.run.json --json` |
-| the whole folder        | every kit rule guarded                                      | `pnpm -s cli mutants games/platformer-test --json`                   |
+| File                    | Ends at                                                     | Command                                                                 |
+| ----------------------- | ----------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `runs/level-1.run.json` | `level-1` cleared, tick 493                                 | `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json` |
+| `runs/level-2.run.json` | `level-2` cleared, tick 1101                                | `pnpm -s cli run games/samples/platformer/runs/level-2.run.json --json` |
+| `runs/level-3.run.json` | `level-3` cleared, tick 1999                                | `pnpm -s cli run games/samples/platformer/runs/level-3.run.json --json` |
+| `runs/level-4.run.json` | the round failed, then passed; `level-4` cleared, tick 3283 | `pnpm -s cli run games/samples/platformer/runs/level-4.run.json --json` |
+| the whole folder        | every kit rule guarded                                      | `pnpm -s cli mutants games/samples/platformer --json`                   |
 
 Each run's final state hash (`finalHash`): `level-1` `2e94bc209e1a168d`, `level-2`
 `26456b7489d5bd3d`, `level-3` `3d737aadfabe54b6`, `level-4` `06201f9a779cc2fc`; every hash is the
@@ -354,12 +355,12 @@ same through the null backend, Canvas2D and the Three.js scene builder (`tests/r
    any `triggers`), and add `{ "level": "level-5" }` to `content/campaigns/main.campaign.json`
    where it should be played (the campaign decides the order: the kit's `contentStages`; a level
    the campaign does not list is not played). No code changes.
-2. `pnpm -s cli validate games/platformer-test --json` (exit 0; every error names the file and
+2. `pnpm -s cli validate games/samples/platformer --json` (exit 0; every error names the file and
    the field or map row). Fix single cells with `pnpm -s cli set <map> rows.<row>.<col> '#'`.
 3. New actor types go in the profile with `pnpm -s cli add
-games/platformer-test/content/profiles/hopper.profile.json actors.<type> '{...}'`; a new kind or
+games/samples/platformer/content/profiles/hopper.profile.json actors.<type> '{...}'`; a new kind or
    state the level shows needs entries in both skins (`canvas2d.json`, `three.json`) and frames
-   in `content/sprites/hopper.txt`: `platformer-test.test.ts` and the backend parity test fail
+   in `content/sprites/hopper.txt`: `platformer.test.ts` and the backend parity test fail
    on a missing one.
 4. A run file `runs/level-5.run.json`: `level-4.run.json`'s input, then the new level's (a run
    file starts at the first level, gap G9). Find the input a jump at a time with `pnpm -s cli dump
@@ -387,12 +388,12 @@ games/platformer-test/content/profiles/hopper.profile.json actors.<type> '{...}'
 
 ## How to test
 
-`pnpm test games/platformer-test`, `pnpm -s cli validate games/platformer-test --json`,
-`pnpm -s cli run games/platformer-test/runs/level-<n>.run.json --json`,
-`pnpm -s cli mutants games/platformer-test --json`, `pnpm test tests/runs` (golden hashes; backend
+`pnpm test games/samples/platformer`, `pnpm -s cli validate games/samples/platformer --json`,
+`pnpm -s cli run games/samples/platformer/runs/level-<n>.run.json --json`,
+`pnpm -s cli mutants games/samples/platformer --json`, `pnpm test tests/runs` (golden hashes; backend
 parity plays every run through the view into the null backend, into Canvas2D and into the
 Three.js scene builder with the `three` skins, all giving the golden hashes, with no fallback box
-and a block for every tile shown), `pnpm -s cli screenshot games/platformer-test/runs/level-4.run.json --tick 3050
+and a block for every tile shown), `pnpm -s cli screenshot games/samples/platformer/runs/level-4.run.json --tick 3050
 --json` (a tick inside the round; `matchesHeadless` true; add `--backend three
 --allow-software-gl` for 3D where there is no GPU), `pnpm test tests/browser` (the built page
 plays `level-4.run.json` in 2D and in 3D: the launcher lists the game and its `3D` link, both
@@ -400,8 +401,8 @@ rounds show the vault and the level comes back, no page errors; skipped without 
 
 ## How to play (2D and 3D)
 
-`pnpm dev` and open `/games/platformer-test/` (or `pnpm build && pnpm preview` and the root
-launcher's `games/platformer-test/` link); in 3D, `/games/platformer-test/?backend=three` (the
+`pnpm dev` and open `/games/samples/platformer/` (or `pnpm build && pnpm preview` and the root
+launcher's `games/samples/platformer/` link); in 3D, `/games/samples/platformer/?backend=three` (the
 launcher's `3D` link, or the `3D` link at the page's top left; without WebGL 2 the page says so
 and links to 2D; the 3D picture has no HUD yet, gap G33): arrows (or the touch pad) move, Z jumps, X runs; in
 the vault round arrows walk the hero and X stabs. The levels come in order; the door is in
@@ -409,7 +410,7 @@ the vault round arrows walk the hero and X stabs. The levels come in order; the 
 
 ## Imports
 
-- Allowed: relative paths inside `games/platformer-test`, `@engine/*` (core and backends),
+- Allowed: relative paths inside `games/samples/platformer`, `@engine/*` (core and backends),
   `@kits/platformer` and `@kits/topdown` (the door level's room challenge).
 - Never: other games (not even `games/platformer-lab`: copy and log a gap instead) or kits it does
   not use. Nothing in `engine/` or `kits/` imports from here.

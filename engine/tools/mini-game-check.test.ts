@@ -10,12 +10,12 @@ import { main } from './main';
  * `validate` checks a game's mini game ids and params with the content (Engine 0.10, gap G16,
  * item 157): the game's headless module exports `miniGames(content)`, and every level trigger's and
  * mission's `game`/`play` and `params` are checked against those defs' `paramsSchema`. The games
- * here are temp copies of games/platformer-test (its door level, `level-4`, starts the `vault`
+ * here are temp copies of games/samples/platformer (its door level, `level-4`, starts the `vault`
  * room challenge) and games/platformer-lab (`stop-bar`).
  */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const TEST = 'games/platformer-test';
+const TEST = 'games/samples/platformer';
 const DOOR = `${TEST}/content/levels/level-4.json`;
 const LAB = 'games/platformer-lab';
 

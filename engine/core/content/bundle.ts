@@ -17,7 +17,7 @@ import { contentError, validate, type ContentError, type ContentResult } from '.
  * from the file system (`engine/core/node/game-files.ts`); this file only reads the strings.
  *
  * Paths are relative to the game folder (`game.json`, `content/rooms/hall.json`); a leading `./`
- * is dropped. Errors name `root + path`, so with `root: 'games/demo/'` they carry repo paths.
+ * is dropped. Errors name `root + path`, so with `root: 'games/samples/dungeon/'` they carry repo paths.
  */
 
 /** One checked content file. `name` is the file name without its folder and extension. */
@@ -36,7 +36,7 @@ export interface ContentBundle {
 }
 
 export interface LoadOptions {
-  /** Put in front of every path in errors, such as `games/demo/`. */
+  /** Put in front of every path in errors, such as `games/samples/dungeon/`. */
   root?: string;
   /**
    * Run each kind's `checkAll` across its files (default true). The editing verbs turn it off to

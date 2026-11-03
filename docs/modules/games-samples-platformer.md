@@ -1,10 +1,11 @@
-# games/platformer-test
+# games/samples/platformer
 
-Folder: `games/platformer-test`. Detailed rules: [`games/platformer-test/CLAUDE.md`](../../games/platformer-test/CLAUDE.md).
+Folder: `games/samples/platformer`. Detailed rules: [`games/samples/platformer/CLAUDE.md`](../../games/samples/platformer/CLAUDE.md).
 
 ## Purpose
 
-The stacking test's game (Engine 0.7): a small original platformer on `kits/platformer`, built
+The platformer sample: the stacking test's game (Engine 0.7, moved into the
+samples at Engine 0.15): a small original platformer on `kits/platformer`, built
 with the engine as it is to find what is missing; every gap goes into
 [`docs/reports/stacking-test.md`](../reports/stacking-test.md). It holds only content, skins and
 thin glue, and doubles as a worked example and an integration test. Today it plays four short
@@ -58,21 +59,21 @@ checks the door's params with the content (gap G16). At 0.15 it becomes `games/s
 
 ## Imports allowed
 
-- Relative paths inside `games/platformer-test`, `@engine/*` (core and backends), `@kits/platformer`
+- Relative paths inside `games/samples/platformer`, `@engine/*` (core and backends), `@kits/platformer`
   and `@kits/topdown`.
 - Never other games or kits it does not use. Nothing in `engine/` or `kits/` imports from here.
 
 ## How to test
 
-`pnpm test games/platformer-test` (`platformer-test.test.ts`: content, level order, the four
+`pnpm test games/samples/platformer` (`platformer.test.ts`: content, level order, the four
 levels cleared in order, the door's round failed then passed, determinism, level restart, the mini
 games, the 2D and 3D skins covering everything every run shows, text-only assets, the page scene
-pushing and popping the round). `pnpm -s cli validate games/platformer-test --json`,
-`pnpm -s cli run games/platformer-test/runs/level-3.run.json --json` (any run file),
-`pnpm -s cli mutants games/platformer-test --json` (exit 0: every kit rule guarded), `pnpm test tests/runs` (golden hashes,
+pushing and popping the round). `pnpm -s cli validate games/samples/platformer --json`,
+`pnpm -s cli run games/samples/platformer/runs/level-3.run.json --json` (any run file),
+`pnpm -s cli mutants games/samples/platformer --json` (exit 0: every kit rule guarded), `pnpm test tests/runs` (golden hashes,
 and backend parity through null, Canvas2D and the Three.js scene builder), `pnpm -s cli screenshot
-games/platformer-test/runs/level-4.run.json --tick 3050 --json` (inside the round;
+games/samples/platformer/runs/level-4.run.json --tick 3050 --json` (inside the round;
 `matchesHeadless` true; `--backend three --allow-software-gl` for 3D without a GPU), `pnpm test
 tests/browser` (the page plays `level-4.run.json` in headless Chromium, in 2D and in 3D). Play it:
-`pnpm dev`, open `/games/platformer-test/` or `/games/platformer-test/?backend=three` (arrows, Z
+`pnpm dev`, open `/games/samples/platformer/` or `/games/samples/platformer/?backend=three` (arrows, Z
 jumps, X runs and stabs in the round).

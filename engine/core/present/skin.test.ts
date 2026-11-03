@@ -549,8 +549,8 @@ describe('3D skins', () => {
     ]);
   });
 
-  it('leaves the demo and platformer-lab canvas2d skins valid', () => {
-    for (const game of ['demo', 'platformer-lab']) {
+  it('leaves the dungeon sample and platformer-lab canvas2d skins valid', () => {
+    for (const game of ['samples/dungeon', 'platformer-lab']) {
       const url = new URL(`../../../games/${game}/content/skins/canvas2d.json`, import.meta.url);
       const data: unknown = JSON.parse(readFileSync(url, 'utf8'));
       expect(validate(`${game}/skins/canvas2d.json`, data, skinSchema).errors).toEqual([]);
