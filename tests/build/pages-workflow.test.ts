@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 const read = (path: string) => readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), 'utf8');
 const pages = read('.github/workflows/pages.yml');
 const ci = read('.github/workflows/ci.yml');
+const viteConfig = read('vite.config.ts');
 
 /** The tag filters listed under `on.push.tags`. */
 function tagFilters(yaml: string): string[] {
@@ -62,5 +63,15 @@ describe('Pages workflow', () => {
     }
     expect(pages).toContain('name: github-pages');
     expect(pages).toContain('actions/configure-pages@');
+  });
+
+  it('runs every run file in CI and publishes every game page (Engine 0.15 T16)', () => {
+    // CI's `pnpm test` is vitest over vite.config.ts's `test.include`, which takes tests/runs
+    // (every games/**/runs/*.run.json, run-files.test.ts); the Pages build is `pnpm build`, whose
+    // inputs are every games/*/ and games/samples/*/ page (build/pages.ts's `pageInputs`), into `dist`.
+    expect(ci).toMatch(/- run: pnpm test\n/);
+    expect(viteConfig).toContain("'tests/**/*.test.ts'");
+    expect(viteConfig).toContain('input: pageInputs(root)');
+    expect(pages).toMatch(/- run: pnpm build\n/);
   });
 });

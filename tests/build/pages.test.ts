@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { discoverGames, gameListHtml, pageInputs } from '../../build/pages.ts';
+import { discoverGames, GAME_LIST_MARKER, gameListHtml, pageInputs } from '../../build/pages.ts';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
@@ -118,6 +118,34 @@ describe('game page discovery', () => {
       expect(discoverGames(root)).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+// Engine 0.15's Done when (T16): the games index lists the five samples, each a page the build
+// takes, and neither old folder (games/demo, games/platformer-test) is left. The built site itself
+// is opened in tests/browser/games-index.test.ts.
+describe('the games index for Engine 0.15', () => {
+  const SAMPLES = ['dungeon', 'mini-siege', 'platformer', 'rts-skirmish', 'tower-defense'];
+
+  it('finds exactly the five samples under games/samples, each built and linked', () => {
+    const samples = discoverGames(repoRoot).filter((page) => page.dir.startsWith('games/samples/'));
+    expect(samples.map((page) => page.dir)).toEqual(SAMPLES.map((name) => `games/samples/${name}`));
+    const index = readFileSync(join(repoRoot, 'index.html'), 'utf8');
+    expect(index).toContain(GAME_LIST_MARKER);
+    const list = index.replace(GAME_LIST_MARKER, gameListHtml(discoverGames(repoRoot)));
+    const inputs = pageInputs(repoRoot);
+    for (const name of SAMPLES) {
+      expect(list).toContain(`<a href="games/samples/${name}/">games/samples/${name}</a>`);
+      expect(inputs[`games-samples-${name}`]).toBe(join(repoRoot, `games/samples/${name}/index.html`));
+    }
+    expect(list).toContain('<a href="games/samples/platformer/?backend=three">3D</a>');
+  });
+
+  it('has neither old folder, games/demo nor games/platformer-test', () => {
+    for (const old of ['games/demo', 'games/platformer-test']) {
+      expect(existsSync(join(repoRoot, old)), old).toBe(false);
+      expect(Object.keys(pageInputs(repoRoot))).not.toContain(old.replace('/', '-'));
     }
   });
 });

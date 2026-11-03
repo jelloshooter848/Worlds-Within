@@ -46,6 +46,16 @@ describe('run files', () => {
     expect(files).toContain('games/samples/dungeon/runs/walk-east.run.json');
   });
 
+  it('finds run files for each of the five samples, and none left in the old folders (Engine 0.15)', () => {
+    for (const sample of ['dungeon', 'mini-siege', 'platformer', 'rts-skirmish', 'tower-defense']) {
+      expect(
+        files.filter((file) => file.startsWith(`games/samples/${sample}/runs/`)).length,
+        sample,
+      ).toBeGreaterThan(0);
+    }
+    expect(files.filter((file) => /^games\/(demo|platformer-test)\//.test(file))).toEqual([]);
+  });
+
   it('finds the sample world run', () => {
     expect(files).toContain('engine/sim/__fixtures__/village-build.run.json');
   });

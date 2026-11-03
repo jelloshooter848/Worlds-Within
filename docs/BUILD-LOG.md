@@ -724,6 +724,61 @@ not 0.15 changes: the review lists both under the tower-defense kit and `engine/
 the v1 docs state ("walls lost" is the report's reading of the leaks; two missions on one event
 exclude each other for the first one's cost), with no code change.
 
+### Done when
+
+Checked on 2026-11-03 in T16, on top of `6d607b2` (the API review, T15):
+`pnpm lint && pnpm typecheck && pnpm test && pnpm build` pass (203 test files, 2320 tests passed
+and 1 skipped: the opt-in every-tick save check of 0.8), `pnpm docs:check` says the generated
+docs are up to date, `pnpm -s cli validate` passes for all six games (the five samples and the
+platformer lab), and every one of the **56 run files** in the repo (13 sim fixtures, 3 dungeon,
+8 platformer, 5 RTS skirmish, 5 tower-defense, 15 mini siege and 7 lab runs) exits 0 through
+`pnpm -s cli run`; `tests/runs/run-files.test.ts` runs each twice with the same hashes against
+its golden file. The browser tests (`tests/browser`: 12 files) ran in headless Chromium, none
+skipped. T17 checks it all again on the release's last tree.
+
+- **Met: every sample plays from a link.** `tests/browser/games-index.test.ts` (new in T16)
+  builds the repo as the Pages workflow does (Vite with this `vite.config.ts`, under the sub-path
+  `/Worlds-Within/`, as `VITE_BASE` sets it) and serves the output as static files. Headless
+  Chromium opens the games index (`index.html`, its list written by `vite.config.ts`'s
+  `gameIndex` plugin from `build/pages.ts`) and finds one link to each of the five samples
+  (`games/samples/dungeon/`, `platformer/`, `rts-skirmish/`, `tower-defense/`, `mini-siege/`)
+  and the platformer's `3D` link (`?backend=three`), and none to `games/demo/` or
+  `games/platformer-test/`. For each sample it clicks the index's own link, sees the page's
+  canvas, reopens it with `?debug=step` and takes 60 loop steps through `window.__ww.step`: the
+  dungeon, platformer, tower-defense and mini siege pages then give a 16-digit state hash
+  (`__ww.hash()`, their headless game), and the RTS skirmish's page (which steps its own scene)
+  is at game tick 10 by its own hook (`wwSkirmish.tick()`, six loop steps a tick); the platformer
+  in 3D steps the same way from its link. No page logged an error. Each sample's own browser test
+  (`dungeon.test.ts`, `platformer.test.ts`, `rts-skirmish.test.ts`, `tower-defense-page.test.ts`,
+  `mini-siege-page.test.ts`) follows the same index link and plays further, to golden hashes or
+  an end. Without Chromium the same list is checked in
+  `tests/build/pages.test.ts` ("the games index for Engine 0.15": exactly these five folders
+  under `games/samples/`, each linked in the launcher HTML and a build input).
+- **Met: every sample passes its run files in CI.** CI (`.github/workflows/ci.yml`) runs
+  `pnpm test`, whose `test.include` in `vite.config.ts` takes `tests/**/*.test.ts`;
+  `tests/runs/run-files.test.ts` finds every `games/**/runs/*.run.json` and now asserts each of
+  the five samples has run files there and none is left under the old folders; the
+  `mutants` tests (`dungeon-mutants`, `rts-skirmish-mutants`, `tower-defense-mutants`,
+  `per-kit-rules`) and `backend-parity.test.ts` run in the same step.
+  `tests/build/pages-workflow.test.ts` checks CI runs `pnpm test`, the include takes
+  `tests/**`, the build's inputs are `pageInputs(root)` (every `games/*/` and
+  `games/samples/*/` page) and the Pages workflow runs CI's steps and `pnpm build` before
+  uploading `dist`, so it publishes all five samples (nothing was published: owner answer 24).
+- **Met: `games/platformer-test/` and `games/demo/` are gone.** Both folders were moved in T2
+  (`games/samples/platformer/`, `games/samples/dungeon/`, their run files with identical hashes);
+  `tests/build/pages.test.ts` fails if either folder exists or is a build input, and the games
+  index test fails if the launcher links one.
+- **Met: the API review is written up, with every change it calls for made or listed for 1.0.**
+  `docs/reports/api-review.md` (T15): every 0.15 gap fixed with its commit; of its findings A1-A10,
+  A1-A3, A9 and A10 fixed in T15's commit and A4-A8 listed; the eleven `1.0-n` items in its
+  "Listed for 1.0" are the same eleven ids in the roadmap's Engine 1.0 section (checked by
+  listing the ids in both). No gap row in `stacking-test.md`, `mini-siege.md` or
+  `tower-defense.md` is `open`.
+- **The dependency rule holds.** `tests/architecture/dependency-rule.test.ts` (every import
+  against `config/layers.js`), `eslint-deps.test.ts`, `purity.test.ts` and `agent-docs.test.ts`
+  are green; no layer arrow changed in 0.15.
+- **No tag** (owner answer 24).
+
 ## Engine 0.14
 
 Creator tools v1. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
