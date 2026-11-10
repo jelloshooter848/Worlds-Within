@@ -23,6 +23,13 @@ export interface PixiRendererOptions {
   readonly size: ScreenSize;
   /** Where a sheet's pixels come from; the default wraps `sheet.image` (see `sheetSource`). */
   readonly sheetSource?: SheetSourceFactory;
+  /**
+   * A top-level `clear` with an opaque colour sets `backdrop` instead of adding a picture-sized
+   * box, and whoever renders `stage` clears to that colour (default false: the box). The display
+   * sets it (T13b-7): a GL clear costs next to nothing, a full-picture sprite a whole layer of
+   * fill.
+   */
+  readonly backdrop?: boolean;
 }
 
 /** How many of each pooled display object the renderer has made, and how many the frame uses. */
@@ -128,9 +135,10 @@ interface Tint {
   readonly alpha: number;
 }
 
+/** A glow scope (`glow`): reused entries, so a glow per particle allocates nothing. */
 interface Glow {
-  readonly tint: Tint;
-  readonly radius: number;
+  tint: Tint;
+  radius: number;
 }
 
 interface SheetTextures {
@@ -142,6 +150,14 @@ interface SheetTextures {
 
 const NO_TINT: Tint = { rgb: 0xffffff, alpha: 1 };
 
+/**
+ * Sets a pooled sprite's tint, skipping PixiJS's colour parse when it already has it (a reused
+ * sprite usually draws the same thing as last frame).
+ */
+function tintSprite(s: Sprite, rgb: number): void {
+  if (s.tint !== rgb) s.tint = rgb;
+}
+
 /** Rotation in radians per quarter turn (Renderer.sprite's `rotate`). */
 const QUARTER = Math.PI / 2;
 
@@ -151,16 +167,30 @@ const QUARTER = Math.PI / 2;
  * `clear`) empties it again. The objects come from pools and are reused frame after frame, so a
  * steady scene allocates nothing and PixiJS batches its sprites: rectangles and lines are the
  * white texture tinted, sprites are cached sub-rectangle textures of their sheet, a glow is a
- * pre-made soft halo sprite behind each glowing shape. Scopes (`clip`, `alpha`, `blend`,
- * `transform`) are pooled containers that nest what `draw` adds. It never draws on its own: a
- * PixiJS renderer renders `stage` (the display, a later task).
+ * pre-made soft halo sprite behind each glowing shape. `clip` and `transform` are pooled
+ * containers that nest what `draw` adds; `alpha`, `blend` and `glow` add no container (T13b-7):
+ * they are a running alpha, blend mode and halo that each object `draw` adds takes, which is what
+ * PixiJS v8 does with a container's alpha and blend mode anyway (multiplied and inherited down to
+ * each sprite, no offscreen pass), so a translucent glowing particle is one or two sprites, not a
+ * container each. Outside every `transform`, an object whose box (and halo) lies wholly outside
+ * the picture is not added (culling). It never draws on its own: a PixiJS renderer renders `stage`
+ * (the display).
  */
 export class PixiRenderer implements Renderer {
   /** The root of the frame's display list. */
   readonly stage = new Container();
   private parent: Container = this.stage;
+  /** Open scopes (`clip`, `alpha`, `blend`, `transform`): a `clear` inside one starts no frame. */
   private depth = 0;
+  /** Open `transform` scopes: while one is, boxes are in its local space and never culled. */
+  private turned = 0;
+  /** The running opacity of the open `alpha` scopes (their product). */
+  private opacity = 1;
+  /** The blend mode of the innermost open `blend` scope. */
+  private mode: 'normal' | 'add' = 'normal';
+  /** The open glow scopes: `glows[0..glowDepth)`; entries past it are kept for reuse. */
   private readonly glows: Glow[] = [];
+  private glowDepth = 0;
   private readonly sprites = new Pool(() => new Sprite());
   private readonly containers = new Pool(() => new Container());
   private readonly masks = new Pool(() => new Graphics());
@@ -171,10 +201,17 @@ export class PixiRenderer implements Renderer {
   private readonly tints = new Map<string, Tint>();
   private readonly size: ScreenSize;
   private readonly sheetSource: SheetSourceFactory;
+  private readonly useBackdrop: boolean;
+  /**
+   * With the `backdrop` option, the colour (0xRRGGBB) of this frame's top-level opaque `clear`,
+   * to clear the picture to when rendering `stage`; null when the frame has none.
+   */
+  backdrop: number | null = null;
 
   constructor(opts: PixiRendererOptions) {
     this.size = opts.size;
     this.sheetSource = opts.sheetSource ?? sheetSource;
+    this.useBackdrop = opts.backdrop ?? false;
   }
 
   /**
@@ -190,8 +227,12 @@ export class PixiRenderer implements Renderer {
   beginFrame(): void {
     this.stage.removeChildren();
     this.parent = this.stage;
+    this.backdrop = null;
     this.depth = 0;
-    this.glows.length = 0;
+    this.turned = 0;
+    this.opacity = 1;
+    this.mode = 'normal';
+    this.glowDepth = 0;
     this.sprites.used = 0;
     this.containers.used = 0;
     this.masks.used = 0;
@@ -218,16 +259,25 @@ export class PixiRenderer implements Renderer {
 
   /**
    * Fills the picture with `color`. Outside every scope it starts the frame over first (all that
-   * was drawn is covered anyway); inside one it adds a picture-sized box there.
+   * was drawn is covered anyway), and with the `backdrop` option an opaque colour becomes
+   * `backdrop`; otherwise (and inside a scope) it adds a picture-sized box.
    */
   clear(color: string): void {
-    if (this.depth === 0) this.beginFrame();
-    this.box(0, 0, this.size.width, this.size.height, this.tint(color));
+    const tint = this.tint(color);
+    if (this.depth === 0) {
+      this.beginFrame();
+      if (this.useBackdrop && tint.alpha === 1) {
+        this.backdrop = tint.rgb;
+        return;
+      }
+    }
+    this.box(0, 0, this.size.width, this.size.height, tint);
   }
 
   rect(x: number, y: number, w: number, h: number, color: string): void {
     const x0 = x | 0;
     const y0 = y | 0;
+    if (this.culled(x0, y0, w | 0, h | 0)) return;
     const tint = this.tint(color);
     this.halo(x0, y0, w | 0, h | 0);
     this.box(x0, y0, w | 0, h | 0, tint);
@@ -257,6 +307,7 @@ export class PixiRenderer implements Renderer {
     const bh = turned ? w : h;
     const x0 = x | 0;
     const y0 = y | 0;
+    if (this.culled(x0, y0, bw, bh)) return;
     this.halo(x0, y0, bw, bh);
     // Centred anchor: flip (negative scale) and turn about the box's centre, which is the same
     // matrix (translate, rotate, then flip) the canvas renderer builds.
@@ -266,8 +317,9 @@ export class PixiRenderer implements Renderer {
     s.position.set(x0 + bw / 2, y0 + bh / 2);
     s.rotation = (rotate / 90) * QUARTER;
     s.scale.set(((flipX ? -1 : 1) * w) / fw, ((flipY ? -1 : 1) * h) / fh);
-    s.tint = cached.tint.rgb;
-    s.alpha = cached.tint.alpha;
+    tintSprite(s, cached.tint.rgb);
+    s.alpha = cached.tint.alpha * this.opacity;
+    s.blendMode = this.mode;
     this.parent.addChild(s);
   }
 
@@ -285,7 +337,8 @@ export class PixiRenderer implements Renderer {
     const tint = this.tint(color);
     t.text = str;
     t.style.fill = tint.rgb;
-    t.alpha = tint.alpha;
+    t.alpha = tint.alpha * this.opacity;
+    t.blendMode = this.mode;
     t.position.set(x, y - 7);
     this.parent.addChild(t);
   }
@@ -295,7 +348,10 @@ export class PixiRenderer implements Renderer {
     const tint = this.tint(color);
     const dx = x2 - x1;
     const dy = y2 - y1;
-    this.halo(Math.min(x1, x2), Math.min(y1, y2), Math.abs(dx) + 1, Math.abs(dy) + 1);
+    const bx = Math.min(x1, x2);
+    const by = Math.min(y1, y2);
+    if (this.culled(bx, by, Math.abs(dx) + 1, Math.abs(dy) + 1)) return;
+    this.halo(bx, by, Math.abs(dx) + 1, Math.abs(dy) + 1);
     const s = this.white(tint);
     s.anchor.set(0, 0.5);
     s.position.set(x1 + 0.5, y1 + 0.5);
@@ -316,17 +372,37 @@ export class PixiRenderer implements Renderer {
     this.scope(c, draw);
   }
 
+  /**
+   * While `draw` runs, what it adds is `alpha` times as opaque (nested scopes multiply): each
+   * object's own alpha, as PixiJS multiplies a container's alpha into its children's, with no
+   * container.
+   */
   alpha(alpha: number, draw: () => void): void {
-    const c = this.container();
-    c.alpha = alpha;
-    this.scope(c, draw);
+    const prev = this.opacity;
+    this.opacity = prev * alpha;
+    this.depth++;
+    try {
+      draw();
+    } finally {
+      this.opacity = prev;
+      this.depth--;
+    }
   }
 
-  /** A container with PixiJS's `blendMode` (`add` for add); its children inherit it. */
+  /**
+   * While `draw` runs, what it adds gets PixiJS's `blendMode` (`add` for add), set on each object
+   * as a container would pass it down. Sprites in a row with the same mode batch together.
+   */
   blend(mode: BlendMode, draw: () => void): void {
-    const c = this.container();
-    c.blendMode = mode === 'add' ? 'add' : 'normal';
-    this.scope(c, draw);
+    const prev = this.mode;
+    this.mode = mode === 'add' ? 'add' : 'normal';
+    this.depth++;
+    try {
+      draw();
+    } finally {
+      this.mode = prev;
+      this.depth--;
+    }
   }
 
   /**
@@ -336,11 +412,18 @@ export class PixiRenderer implements Renderer {
    * its own texture. The halo is an ellipse over the box, not the shape's outline.
    */
   glow(color: string, radius: number, draw: () => void): void {
-    this.glows.push({ tint: this.tint(color), radius });
+    const tint = this.tint(color);
+    const g = this.glows[this.glowDepth];
+    if (g) {
+      g.tint = tint;
+      g.radius = radius;
+    } else this.glows.push({ tint, radius });
+    const depth = this.glowDepth;
+    this.glowDepth = depth + 1;
     try {
       draw();
     } finally {
-      this.glows.pop();
+      this.glowDepth = depth;
     }
   }
 
@@ -356,7 +439,12 @@ export class PixiRenderer implements Renderer {
     c.position.set(x, y);
     c.rotation = angle;
     c.scale.set(sx, sy);
-    this.scope(c, () => draw(this));
+    this.turned++;
+    try {
+      this.scope(c, () => draw(this));
+    } finally {
+      this.turned--;
+    }
   }
 
   /** A sheet's texture source, frame textures and tint, made the first time it is drawn. */
@@ -393,14 +481,25 @@ export class PixiRenderer implements Renderer {
     return tint;
   }
 
+  /**
+   * Whether the box (x, y, w, h), grown by the current glow's radius, lies wholly outside the
+   * picture, so drawing it would show nothing. Never inside a `transform` (local space there).
+   */
+  private culled(x: number, y: number, w: number, h: number): boolean {
+    if (this.turned > 0) return false;
+    const g = this.glowDepth > 0 ? this.glows[this.glowDepth - 1]!.radius : 0;
+    return x + w + g <= 0 || y + h + g <= 0 || x - g >= this.size.width || y - g >= this.size.height;
+  }
+
   /** A pooled sprite of the 1x1 white texture, tinted, unturned, with its anchor at 0. */
   private white(tint: Tint): Sprite {
     const s = this.sprites.take();
     s.texture = Texture.WHITE;
     s.anchor.set(0, 0);
     s.rotation = 0;
-    s.tint = tint.rgb;
-    s.alpha = tint.alpha;
+    tintSprite(s, tint.rgb);
+    s.alpha = tint.alpha * this.opacity;
+    s.blendMode = this.mode;
     return s;
   }
 
@@ -413,21 +512,22 @@ export class PixiRenderer implements Renderer {
 
   /** The current glow's halo behind the box (x, y, w, h), if a glow is on. */
   private halo(x: number, y: number, w: number, h: number): void {
-    const g = this.glows[this.glows.length - 1];
-    if (!g) return;
+    if (this.glowDepth === 0) return;
+    const g = this.glows[this.glowDepth - 1]!;
     const s = this.sprites.take();
     s.texture = glowHalo();
     s.anchor.set(0, 0);
     s.rotation = 0;
-    s.tint = g.tint.rgb;
-    s.alpha = g.tint.alpha;
+    tintSprite(s, g.tint.rgb);
+    s.alpha = g.tint.alpha * this.opacity;
+    s.blendMode = this.mode;
     s.position.set(x - g.radius, y - g.radius);
     // The halo texture is HALO_SIZE texels; scale it to the grown box.
     s.scale.set((w + 2 * g.radius) / HALO_SIZE, (h + 2 * g.radius) / HALO_SIZE);
     this.parent.addChild(s);
   }
 
-  /** A pooled container reset to identity, opaque, inherited blending and no mask. */
+  /** A pooled container reset to identity, opaque, inherited blending and no mask (`clip`, `transform`). */
   private container(): Container {
     const c = this.containers.take();
     c.removeChildren();

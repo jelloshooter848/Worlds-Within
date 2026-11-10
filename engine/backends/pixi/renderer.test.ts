@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import type { Container } from 'pixi.js';
+import { Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { blended, clipped, glowing, transformed, translucent } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { glowHalo, HALO_SIZE, PixiRenderer } from './renderer';
@@ -153,29 +154,45 @@ describe('PixiRenderer sprites', () => {
 });
 
 describe('PixiRenderer scopes', () => {
-  it('nests alpha in a container at that alpha', () => {
+  it("multiplies alpha into each object's own alpha, nested scopes too, with no container", () => {
     const r = renderer();
-    translucent(r, 0.25, () => r.rect(0, 0, 1, 1, '#fff'));
-    const [c] = only(r.stage.children, Container);
-    expect(c?.alpha).toBe(0.25);
-    expect(c?.children).toHaveLength(1);
-    expect(r.stage.children).toHaveLength(1);
+    translucent(r, 0.25, () => {
+      r.rect(0, 0, 1, 1, '#fff');
+      translucent(r, 0.5, () => r.rect(0, 0, 1, 1, '#ffffff80'));
+    });
+    r.rect(0, 0, 1, 1, '#fff');
+    expect(only(r.stage.children, Sprite)).toHaveLength(3);
+    const [a, b, after] = r.stage.children as Sprite[];
+    expect(a?.alpha).toBe(0.25);
+    expect(b?.alpha).toBeCloseTo(0.125 * 0.5, 2);
+    expect(after?.alpha).toBe(1);
   });
 
-  it("blends add as a container with PixiJS's add blend mode", () => {
+  it("sets PixiJS's add blend mode on each object drawn in an add scope, with no container", () => {
     const r = renderer();
     blended(r, 'add', () => {
       r.rect(0, 0, 2, 2, '#f00');
       r.sprite(sheet, 'A', 0, 0);
+      r.blend('normal', () => r.rect(0, 0, 1, 1, '#fff'));
     });
     r.rect(0, 0, 1, 1, '#fff');
-    const [c, after] = r.stage.children;
-    expect(c?.blendMode).toBe('add');
-    expect(c?.children).toHaveLength(2);
-    for (const child of c?.children ?? []) expect(child.blendMode).toBe('inherit');
-    expect(after).toBeInstanceOf(Sprite);
-    r.blend('normal', () => undefined);
-    expect(r.stage.children[2]?.blendMode).toBe('normal');
+    expect(r.stage.children.map((c) => [c instanceof Sprite, c.blendMode])).toEqual([
+      [true, 'add'],
+      [true, 'add'],
+      [true, 'normal'],
+      [true, 'normal'],
+    ]);
+  });
+
+  it('gives a glow halo the scope alpha and blend mode of its shape', () => {
+    const r = renderer();
+    blended(r, 'add', () =>
+      glowing(r, '#ff0000', 2, () => translucent(r, 0.5, () => r.rect(4, 4, 2, 2, '#fff'))),
+    );
+    const [halo, box] = r.stage.children as Sprite[];
+    expect(halo?.texture).toBe(glowHalo());
+    expect([halo?.blendMode, box?.blendMode]).toEqual(['add', 'add']);
+    expect(box?.alpha).toBe(0.5);
   });
 
   it('puts a tinted halo sprite behind each glowing shape, grown by the radius', () => {
@@ -228,10 +245,10 @@ describe('PixiRenderer scopes', () => {
     });
     const [c] = r.stage.children as Container[];
     expect([c?.x, c?.y, c?.rotation, c?.scale.x, c?.scale.y]).toEqual([40, 50, Math.PI / 2, 2, 3]);
-    const [box, inner] = c?.children ?? [];
+    const [box, line] = c?.children ?? [];
     expect([box?.x, box?.y]).toEqual([-1, -1]);
-    expect(inner?.alpha).toBe(0.5);
-    expect(inner?.children).toHaveLength(1);
+    expect(line?.alpha).toBe(0.5);
+    expect(c?.children).toHaveLength(2);
   });
 
   it('adds a clear inside a scope as a box there, keeping the frame', () => {
@@ -258,19 +275,97 @@ describe('PixiRenderer pools', () => {
     const objects = [...r.stage.children];
     for (let i = 0; i < 5; i++) drawFrame(r);
     expect(r.pools()).toEqual(first);
-    expect(first.used).toEqual({ sprites: 5, containers: 3, masks: 1, texts: 1 });
+    expect(first.used).toEqual({ sprites: 5, containers: 2, masks: 1, texts: 1 });
     expect(r.stage.children).toEqual(objects);
   });
 
   it('resets a reused container: no stale alpha, blend, mask or transform', () => {
     const r = renderer();
     r.clear('#000');
-    r.transform(3, 4, 1, 2, 2, () => r.alpha(0.2, () => r.clip(0, 0, 1, 1, () => undefined)));
+    r.transform(3, 4, 1, 2, 2, () => {
+      const c = r.stage.children[1] as Container;
+      c.alpha = 0.2;
+      c.blendMode = 'add';
+      r.clip(0, 0, 1, 1, () => undefined);
+    });
     r.beginFrame();
-    r.blend('add', () => r.rect(0, 0, 1, 1, '#fff'));
+    r.transform(0, 0, 0, 1, 1, () => r.rect(0, 0, 1, 1, '#fff'));
     const [c] = r.stage.children as Container[];
-    expect([c?.x, c?.y, c?.rotation, c?.scale.x, c?.alpha]).toEqual([0, 0, 0, 1, 1]);
+    expect([c?.x, c?.y, c?.rotation, c?.scale.x, c?.alpha, c?.blendMode]).toEqual([0, 0, 0, 1, 1, 'inherit']);
     expect(c?.mask).toBeFalsy();
     expect(c?.children).toHaveLength(1);
+  });
+
+  it('starts each frame opaque and normal, even after a scope that threw', () => {
+    const r = renderer();
+    expect(() =>
+      r.alpha(0.5, () =>
+        r.blend('add', () =>
+          r.glow('#f00', 2, () => {
+            throw new Error('boom');
+          }),
+        ),
+      ),
+    ).toThrow('boom');
+    r.beginFrame();
+    r.rect(0, 0, 1, 1, '#fff');
+    const [s] = r.stage.children as Sprite[];
+    expect([r.stage.children.length, s?.alpha, s?.blendMode]).toEqual([1, 1, 'normal']);
+  });
+});
+
+describe('PixiRenderer backdrop (T13b-7)', () => {
+  it('turns a top-level opaque clear into the backdrop colour, adding no sprite', () => {
+    const r = new PixiRenderer({ size, backdrop: true });
+    r.rect(1, 1, 1, 1, '#fff');
+    r.clear('#102030');
+    expect([r.backdrop, r.stage.children.length]).toEqual([0x102030, 0]);
+    r.alpha(0.5, () => r.clear('#000'));
+    expect(r.stage.children).toHaveLength(1);
+    expect(r.backdrop).toBe(0x102030);
+    r.clear('rgba(0, 0, 0, 0.5)');
+    expect([r.backdrop, r.stage.children.length]).toEqual([null, 1]);
+    r.beginFrame();
+    expect(r.backdrop).toBeNull();
+  });
+
+  it('keeps the box without the option', () => {
+    const r = renderer();
+    r.clear('#102030');
+    expect([r.backdrop, r.stage.children.length]).toEqual([null, 1]);
+  });
+});
+
+describe('PixiRenderer culling (T13b-7)', () => {
+  it('drops boxes, sprites and lines wholly outside the picture, keeping those that touch it', () => {
+    const r = renderer();
+    r.rect(-4, 0, 4, 4, '#fff'); // ends at x 0: outside
+    r.rect(-4, 0, 5, 4, '#fff'); // one column in
+    r.rect(256, 0, 4, 4, '#fff'); // starts at the right edge: outside
+    r.rect(0, 240, 4, 4, '#fff'); // below
+    r.sprite(sheet, 'A', -8, -8); // ends at the corner: outside
+    r.sprite(sheet, 'A', 250, 236); // partly in
+    r.line(-10, -5, -2, -1, '#fff'); // outside
+    r.line(-10, 5, 2, 5, '#fff'); // crosses in
+    expect(r.stage.children).toHaveLength(3);
+    expect(r.pools().used.sprites).toBe(3);
+  });
+
+  it('keeps a shape just outside whose glow reaches into the picture', () => {
+    const r = renderer();
+    glowing(r, '#f00', 3, () => {
+      r.rect(-5, 0, 4, 4, '#fff'); // 1 px out: its halo reaches 2 px in
+      r.rect(-8, 0, 4, 4, '#fff'); // 4 px out: its halo ends at 0
+    });
+    expect(r.stage.children).toHaveLength(2);
+  });
+
+  it('never culls inside a transform, where boxes are in local space', () => {
+    const r = renderer();
+    transformed(r, 300, 300, 0, 1, 1, () => r.rect(-400, -400, 4, 4, '#fff'));
+    const [c] = r.stage.children as Container[];
+    expect(c?.children).toHaveLength(1);
+    r.rect(-400, -400, 4, 4, '#fff');
+    expect(r.stage.children).toHaveLength(1);
   });
 });

@@ -195,17 +195,19 @@ describe('PixiPresenter (Engine 0.16 T13b-3)', () => {
     const { r, p } = setup();
     p.present(freezeFrame(frame({ entities: [hero()], events: [{ type: 'burst', x: 10, y: 10 }] })));
     const list = flat(r.stage).map((e) => e.obj);
-    const add = list.find((o) => o.blendMode === 'add')!;
-    expect(list.indexOf(add)).toBeGreaterThan(
+    // Additive: the blend mode is on each sprite (no container per particle, T13b-7).
+    const add = list.findIndex((o) => o.blendMode === 'add');
+    expect(add).toBeGreaterThan(
       list.findIndex((o) => o instanceof Sprite && o.texture.source === r.sourceOf(HERO)),
     );
-    const sparks = boxes(add).filter((e) => e.obj.tint === 0xfcd800);
-    expect(sparks.map((e) => [e.obj.x, e.obj.y, e.obj.scale.x])).toEqual([
-      [10, 10, 1],
-      [10, 10, 1],
-      [10, 10, 1],
+    const sparks = boxes(r.stage).filter((e) => e.obj.tint === 0xfcd800);
+    expect(sparks.map((e) => [e.obj.x, e.obj.y, e.obj.scale.x, e.obj.blendMode])).toEqual([
+      [10, 10, 1, 'add'],
+      [10, 10, 1, 'add'],
+      [10, 10, 1, 'add'],
     ]);
-    const glow = halos(add);
+    const glow = halos(r.stage);
+    expect(glow.every((e) => e.obj.blendMode === 'add')).toBe(true);
     expect(glow.map((e) => hex(e.obj.tint))).toEqual(['#fcd800', '#fcd800', '#fcd800']);
     // Each halo is just behind its spark: the 1 px box grown by 3 on every side.
     for (const h of glow) {
@@ -215,11 +217,10 @@ describe('PixiPresenter (Engine 0.16 T13b-3)', () => {
     }
   });
 
-  it("draws a kind's blend and glow as an add container with a tinted halo behind the sprite", () => {
+  it("draws a kind's blend and glow as add sprites, a tinted halo behind the sprite", () => {
     const { r, p } = setup();
     p.present(freezeFrame(frame({ entities: [torch] })));
-    const add = flat(r.stage).find((e) => e.obj.blendMode === 'add')!.obj;
-    const inside = sprites(add);
+    const inside = sprites(r.stage).filter((e) => e.obj.blendMode === 'add');
     expect(inside.map((e) => (e.obj.texture === glowHalo() ? `halo ${hex(e.obj.tint)}` : 'torch'))).toEqual([
       'halo #f8b800',
       'torch',
@@ -254,7 +255,7 @@ describe('PixiPresenter (Engine 0.16 T13b-3)', () => {
     expect(heroSprites(r)[0]!.parents).toEqual([]);
   });
 
-  it('draws flash and tint overlays over the picture in translucent containers', () => {
+  it('draws flash and tint overlays over the picture as translucent boxes', () => {
     const { r, p } = setup();
     p.present(freezeFrame(frame({ frame: 0, entities: [hero()] })));
     p.present(
@@ -262,10 +263,10 @@ describe('PixiPresenter (Engine 0.16 T13b-3)', () => {
     );
     const overlays = boxes(r.stage)
       .filter((e) => e.obj.tint === 0xd82800 || e.obj.tint === 0x0000fc)
-      .map((e) => [hex(e.obj.tint), e.obj.scale.x, e.obj.scale.y, e.parents.map((c) => c.alpha)]);
+      .map((e) => [hex(e.obj.tint), e.obj.scale.x, e.obj.scale.y, e.obj.alpha, e.parents.length]);
     expect(overlays).toEqual([
-      ['#0000fc', 48, 32, [0.4]],
-      ['#d82800', 48, 32, [0.8]],
+      ['#0000fc', 48, 32, 0.4, 0],
+      ['#d82800', 48, 32, 0.8, 0],
     ]);
     // Both after the hero.
     const list = flat(r.stage).map((e) => e.obj);
@@ -351,7 +352,7 @@ describe('PixiPresenter: the UI kit HUD and glyph tint (Engine 0.16 T13b-3)', ()
     expect(glyph!.obj.texture.source).toBe(surfaces.waiting[0]!.texture.source);
     expect([hex(glyph!.obj.tint), glyph!.obj.alpha]).toEqual(['#ff0000', 0.5]);
     const fill = boxes(r.stage)[0]!;
-    expect([fill.obj.scale.x, fill.parents[0]!.alpha]).toEqual([3, 0.5]);
+    expect([fill.obj.scale.x, fill.obj.alpha]).toEqual([3, 0.5]);
   });
 
   it('turns a TintedImage sheet into sprites of its texture with that tint', () => {

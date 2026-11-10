@@ -589,6 +589,108 @@ What the numbers say, on this machine:
 Rerun: `pnpm bench:features` (both backends), `pnpm bench:features --backends pixi --ablate` (the
 cost of each feature on PixiJS), `pnpm bench:features --shots /tmp/feature-shots` (screenshots).
 
+**2026-11-10: tuning PixiJS toward the bar (T13b-7).** Profiled with `pnpm bench:features
+--backends pixi --ablate`, small WebGL test pages and a Node CPU profile of `PixiPresenter.present`
+on the same scene. Same container as above (no GPU: SwiftShader, 4 cores, Chromium 153). What
+the profile showed, and what changed:
+
+- **The fixed cost was the backbuffer quad.** On SwiftShader every textured pixel WebGL fills
+  costs about 0.1 µs, whatever the blending: an empty stage on a 1280 x 960 canvas took 5 ms a
+  frame, the same with T13b-3's one full-canvas sprite of the 320 x 240 backbuffer 120-150 ms,
+  and a 320 x 240 layer about 10 ms. So `pixiDisplay` has `upscale` (default `'page'`): the
+  canvas's drawing buffer is its device size over the whole part of the picture's scale (here
+  320 x 240), the picture goes straight onto it at a whole-number scale (through the backbuffer
+  only for a fractional remainder), and the browser stretches the canvas, pixelated, which its
+  compositor does for free. `upscale: 'gl'` keeps the old full-size buffer.
+- **The background was a whole layer.** A top-level `clear` was a picture-sized white sprite; the
+  display's renderer now takes it as `backdrop`, the colour the GL clear uses (bars round the
+  picture are one black `Graphics`).
+- **A container per particle.** The core walk draws each particle inside `translucent`, `blended`
+  and `glowing`; `PixiRenderer.alpha` and `blend` each made a pooled container, so 3500
+  particles were up to 3500 containers. They are now a running opacity and blend mode set on each
+  sprite, as PixiJS v8 passes a container's down anyway (same picture), and glow scopes reuse
+  their entries. Only `clip` and `transform` make containers.
+- **Culling.** Outside a `transform`, a box, sprite or line wholly off the picture (its glow
+  halo included) is not added: particles and units off the view cost nothing.
+- **The core's particle colours.** Half the CPU time of `present` was `lerpColor` (a regex parse
+  of both colours and array building per particle per frame) and `keyframeAt` (a new array of
+  stops per call, three calls per particle). Both are allocation-free now with the same output
+  (`engine/core/fx`, backend-neutral; the core and fx tests unchanged and green). In Node the RTS
+  feature scene's `present` went from 13.8 to 7.9 ms a frame.
+- **Already in place from T13b-1/3, kept:** the glow as one pre-rendered halo texture (no
+  filters), pooled sprites on the shared white texture, a texture per sheet frame, the map on a
+  `RenderTexture` redrawn only when its id or version changes, HUD glyphs as tinted sprites of one
+  white strip. Pooled sprites skip the tint setter when the colour is unchanged. A PixiJS
+  `ParticleContainer` was not used: the particles are not the CPU cost any more, and it would
+  need runs of particles split out of the immediate-mode walk.
+
+Before (HEAD `9bc7215`, T13b-6) and after, measured one after the other in the same session with
+`pnpm bench:features --backends pixi` (5 s per case, 60 warm-up frames; the T13b-6 table above
+is an earlier run of the same code, slower again). Frame p50 / p95 in ms, draw p50 in ms:
+
+| Map | Features | Zoom | Before frame p50 / p95 | Before draw | After frame p50 / p95 | After draw | p95 <= 16.7 after   |
+| --- | -------- | ---- | ---------------------- | ----------- | --------------------- | ---------- | ------------------- |
+| RTS | features | 0.5  | 129 / 154              | 18.1        | 28.6 / 48.4           | 8.0        | miss by 31.7 (2.9x) |
+| RTS | features | 1    | 142 / 210              | 24.9        | 21.6 / 33.9           | 5.6        | miss by 17.2 (2.0x) |
+| RTS | features | 2    | 93.7 / 122             | 15.3        | 24.0 / 48.1           | 5.1        | miss by 31.4 (2.9x) |
+| RTS | plain    | 0.5  | 57.3 / 74.4            | 2.7         | 10.8 / 32.1           | 2.0        | miss by 15.4        |
+| RTS | plain    | 1    | 61.9 / 84.2            | 2.8         | 11.3 / 32.5           | 1.8        | miss by 15.8        |
+| RTS | plain    | 2    | 62.3 / 88.0            | 3.1         | 10.0 / 19.1           | 2.4        | miss by 2.4         |
+| TD  | features | 0.5  | 77.3 / 117             | 14.2        | 37.6 / 55.8           | 6.9        | miss by 39.1 (3.3x) |
+| TD  | features | 1    | 67.6 / 86.5            | 12.5        | 48.0 / 71.8           | 7.2        | miss by 55.1 (4.3x) |
+| TD  | features | 2    | 66.4 / 86.3            | 11.0        | 40.9 / 60.5           | 4.9        | miss by 43.8 (3.6x) |
+| TD  | plain    | 0.5  | 55.3 / 83.0            | 2.0         | 8.0 / 14.3            | 1.4        | **pass**            |
+| TD  | plain    | 1    | 63.0 / 89.8            | 1.6         | 12.8 / 33.0           | 1.0        | miss by 16.3        |
+| TD  | plain    | 2    | 55.9 / 86.7            | 1.4         | 15.0 / 33.7           | 0.9        | miss by 17.0        |
+
+After, the zoom-1 ablations (`--ablate`, same run; frame p50 / p95, draw p50):
+
+| Map | All on      | -glow       | -add        | -particles  | -parallax   | -hud        | -camera     | -glow,add   | all off     |
+| --- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+| RTS | 21.6 / 33.9 | 21.7 / 34.3 | 17.4 / 33.7 | 22.9 / 49.3 | 28.5 / 50.8 | 28.1 / 56.2 | 43.8 / 71.8 | 28.4 / 50.0 | 15.2 / 34.2 |
+| TD  | 48.0 / 71.8 | 35.1 / 54.2 | 33.1 / 57.1 | 30.3 / 50.9 | 42.7 / 67.9 | 45.9 / 76.9 | 50.5 / 72.8 | 27.9 / 51.8 | 21.7 / 35.0 |
+
+**The bar with every feature on is not met here**: at p95, frames with the features on went
+from 122-210 ms to 34-72 ms (RTS 2.5-6.2 times faster, TD only 1.2-2.1 times: its feature scene
+keeps a larger fill cost, and even its all-features-off ablation is slower than its plain skin),
+plain ones from 74-90 ms to 14-34 ms (2.3-5.8 times), and the draw call from 11-25 ms to 5-8 ms
+p50 (1.7-4.4 times; now well inside the bar on its own), but only TD plain at zoom 0.5 holds
+16.7 ms p95. The p95s are noisy on this shared 4-core container (p95 is
+often 2-3 times p50; one ablation is not cleanly smaller than the full case), so read the table
+for its size, not single milliseconds. **Software-GL caveat, as above:** WebGL here is
+SwiftShader, rasterising every GL draw on the same CPU cores; these frame times measure it, not a
+GPU.
+
+What is left on this machine, largest first:
+
+1. **Fill.** About 10 ms per picture-sized textured layer (0.1 µs a pixel, blending or not): the
+   map copy, the three parallax layers behind it (mostly hidden under the map, but drawn), the
+   HUD panels, and with the features on about 3000 glow halos (each particle's 1-2 px box grown
+   by the glow radius, about 50-100 px each) and the additive wisps. This is SwiftShader's cost
+   and the reason the features-on cases stay at 34-72 ms p95. Cutting it further means drawing
+   less (skipping parallax under an opaque map, smaller or fewer halos), which changes the
+   picture or needs knowledge the renderer does not have; not done.
+2. **The CPU walk**, 5-8 ms p50 with the features on: the core presenter's per-frame particle
+   views (one object per particle, GC), the skin lookups per entity, PixiJS's display-list
+   rebuild (the stage is emptied and refilled every frame, so its instruction set is rebuilt) and
+   GL submission. A `ParticleContainer` for plain-blend particles and pooled particle views in the
+   core would cut it further.
+
+What a GPU would likely change: fill (item 1) becomes close to free (a desktop or laptop GPU
+fills a 320 x 240 picture, or a 1920 x 1080 canvas, in well under a millisecond), so frame time
+falls to about the draw call plus the browser's own work: 5-8 ms p50 with the features on here,
+less on a faster CPU, which is inside the bar. That is an estimate; T13b-8 makes PixiJS the
+default for the RTS and tower defense with Canvas2D as the fallback, and the owner should
+confirm frame times on a machine with a GPU before relying on them (T13b-9 close-out).
+
+Checks after the changes: every pixi Node test (`renderer.test.ts` updated for scopes without
+containers, plus culling and backdrop tests; `display.test.ts` for both `upscale` paths and the
+clear colour; `presenter.test.ts` for blend and alpha on each sprite), the browser display test
+(drawing buffer now 80 x 60, scaled 5x by the page) and the parity test
+(`tests/browser/pixi-parity.test.ts`, unchanged tolerances: the screenshot canvas is at the
+picture's size, so it is drawn directly) pass; no golden hash or run-file result moved and the
+presentation-invariance tests pass (`pnpm test`).
+
 ## Engine 0.15
 
 The sample set. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner

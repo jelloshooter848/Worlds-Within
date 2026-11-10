@@ -79,6 +79,7 @@ window.__pixiResult = (async () => {
   const centre = display.toClient(32, 30);
   return {
     size: [canvas.width, canvas.height],
+    rendering: canvas.style.imageRendering,
     count,
     green,
     webgl: gl !== null,
@@ -142,6 +143,7 @@ describe.skipIf(missing !== null)('pixiDisplay in Chromium (Engine 0.16 T13b-3)'
       expect(result).not.toHaveProperty('error');
       const r = result as {
         size: [number, number];
+        rendering: string;
         count: { sky: number; red: number; black: number; green: number };
         green: number[];
         webgl: boolean;
@@ -150,16 +152,19 @@ describe.skipIf(missing !== null)('pixiDisplay in Chromium (Engine 0.16 T13b-3)'
         ui: boolean;
       };
       expect(r.webgl).toBe(true);
-      expect(r.size).toEqual([400, 300]);
-      // 64x60 stretched to 300 high: 320x300, bars 40 px wide each side.
+      // 64x60 stretched to 300 high is 5x (320x300, bars 40 px wide each side). With the default
+      // `upscale: 'page'` (T13b-7) the browser does the 5x: the drawing buffer is 400x300 over
+      // 5, the picture at 1x in it with bars 8 px wide, and the canvas is shown pixelated.
+      expect(r.size).toEqual([80, 60]);
+      expect(r.rendering).toBe('pixelated');
       expect(r.count.red).toBeGreaterThan(0);
       expect(r.count.sky).toBeGreaterThan(r.count.red);
-      expect(r.count.black).toBeGreaterThanOrEqual(2 * 40 * 300 - 400);
-      // Picture size 320x300 => red box 16 px * 5 = 80 px square.
-      expect(r.count.red).toBeGreaterThan(70 * 70);
+      expect(r.count.black).toBe(2 * 8 * 60);
+      // The red box is 16 px square.
+      expect(r.count.red).toBe(16 * 16);
       // The map's one wall tile, copied from its RenderTexture the right way up: the picture's
-      // top-left 16x16, 80x80 on the page from x = 40.
-      expect(r.green).toEqual([40, 0, 120, 80]);
+      // top-left 16x16, from x = 8 in the buffer (40 on the page).
+      expect(r.green).toEqual([8, 0, 24, 16]);
       expect(r.centre).toEqual({ x: 200, y: 150 });
       expect(r.back).toEqual({ x: 32, y: 30 });
       expect(r.ui).toBe(true);

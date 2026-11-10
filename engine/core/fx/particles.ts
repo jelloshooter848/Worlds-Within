@@ -99,21 +99,41 @@ export function anchorPoint(box: ParticleAnchorBox, anchor: EmitterDef['anchor']
 /** A keyframed value at `t` (0 at birth, 1 at the last frame of life); `lerp` blends two. */
 export function keyframeAt<T>(keys: Keyframes<T>, t: number, lerp: (a: T, b: T, u: number) => T): T {
   if (!Array.isArray(keys)) return keys as T;
-  const list = keys as readonly (T | { at: number; value: T })[];
-  if (list.length === 0) throw new Error('keyframeAt: no keyframes');
-  const stops = list.map((k, i) =>
-    typeof k === 'object' && k !== null && 'at' in k
-      ? k
-      : { at: list.length === 1 ? 0 : i / (list.length - 1), value: k as T },
-  );
+  const list = keys as readonly Stop<T>[];
+  const n = list.length;
+  if (n === 0) throw new Error('keyframeAt: no keyframes');
+  // Read in place (no array of stops per call: this runs three times per particle per frame).
   const tt = Math.min(1, Math.max(0, t));
-  if (tt <= stops[0]!.at) return stops[0]!.value;
-  for (let i = 1; i < stops.length; i++) {
-    const a = stops[i - 1]!;
-    const b = stops[i]!;
-    if (tt <= b.at) return b.at === a.at ? b.value : lerp(a.value, b.value, (tt - a.at) / (b.at - a.at));
+  if (tt <= stopAt(list, 0)) return stopValue(list, 0);
+  for (let i = 1; i < n; i++) {
+    const at = stopAt(list, i);
+    if (tt <= at) {
+      const prev = stopAt(list, i - 1);
+      return at === prev
+        ? stopValue(list, i)
+        : lerp(stopValue(list, i - 1), stopValue(list, i), (tt - prev) / (at - prev));
+    }
   }
-  return stops[stops.length - 1]!.value;
+  return stopValue(list, n - 1);
+}
+
+/** A keyframe: a bare value (spread evenly) or `{ at, value }`. */
+type Stop<T> = T | { at: number; value: T };
+
+function isTimed<T>(k: Stop<T>): k is { at: number; value: T } {
+  return typeof k === 'object' && k !== null && 'at' in k;
+}
+
+/** Keyframe `i`'s time: its own `at`, or `i` spread evenly over 0-1 (0 for a single one). */
+function stopAt<T>(list: readonly Stop<T>[], i: number): number {
+  const k = list[i]!;
+  if (isTimed(k)) return k.at;
+  return list.length === 1 ? 0 : i / (list.length - 1);
+}
+
+function stopValue<T>(list: readonly Stop<T>[], i: number): T {
+  const k = list[i]!;
+  return isTimed(k) ? k.value : k;
 }
 
 const lerpNumber = (a: number, b: number, u: number) => a + (b - a) * u;

@@ -15,13 +15,16 @@ asks for and holds no game rules.
 
 `index.ts`, imported as `@engine/backends/pixi`:
 
-- `PixiRenderer`, `PixiRendererOptions` (`renderer.ts`): `new PixiRenderer({ size, sheetSource? })`
-  implements the core `Renderer` contract (`clear`, `rect`, `sprite` with flips, quarter turns and
-  scale, `text`, `debugText`, `line`, `clip`, `alpha`, `blend` with `add` as PixiJS's
-  `blendMode = 'add'`, `glow`, `transform`) as an immediate-mode API over a retained display list:
-  `stage`, the frame's root `Container`, filled from pools of sprites, containers, mask graphics
-  and texts that are reused every frame. `beginFrame()` (or a top-level `clear`) starts a frame;
-  `pools()` reports the pool counts.
+- `PixiRenderer`, `PixiRendererOptions` (`renderer.ts`): `new PixiRenderer({ size, sheetSource?,
+backdrop? })` implements the core `Renderer` contract (`clear`, `rect`, `sprite` with flips,
+  quarter turns and scale, `text`, `debugText`, `line`, `clip`, `alpha`, `blend` with `add` as
+  PixiJS's `blendMode = 'add'`, `glow`, `transform`) as an immediate-mode API over a retained
+  display list: `stage`, the frame's root `Container`, filled from pools of sprites, containers,
+  mask graphics and texts that are reused every frame. Only `clip` and `transform` add a
+  container; `alpha`, `blend` and `glow` are set on each object drawn inside them (T13b-7), and
+  outside every `transform` what lies wholly off the picture is culled. `beginFrame()` (or a
+  top-level `clear`) starts a frame; with `backdrop: true` a top-level opaque `clear` sets
+  `backdrop` (the colour to clear to) instead of adding a sprite. `pools()` reports the pool counts.
 - `sheetSource`, `SheetSourceFactory`: the default texture source of a sheet (its image, or an
   empty source for a headless sheet); sheet frames are cached `Texture` sub-rectangles of it.
 - `glowHalo()`, `HALO_SIZE`: the glow's pre-made soft halo texture, tinted and stretched behind
@@ -44,8 +47,11 @@ skin, sheets, opts?)`, the core `SkinnedPresenter` (`@engine/core/draw`) on a `P
   `Graphics`, matching Canvas2D's per pixel.
 - `pixiDisplay(canvas, opts)` (`display.ts`): async; a `BrowserDisplay` (renderer, presenter,
   fit, present, toScreen, toClient, transition, uiPainter, effectSettings) on a WebGL-only PixiJS
-  renderer, the picture rendered into a backbuffer at the game's `screen` size and shown scaled and
-  letterboxed like Canvas2D's `Viewport`; or a sentence when WebGL cannot start.
+  renderer, the picture scaled and letterboxed like Canvas2D's `Viewport`; or a sentence when
+  WebGL cannot start. By default (`upscale: 'page'`, T13b-7) the canvas's drawing buffer is its
+  device size over the whole part of the scale and the browser stretches it back up (pixelated),
+  so WebGL fills about one picture's worth of pixels a frame; `upscale: 'gl'` keeps a full-size
+  buffer that WebGL scales a backbuffer into.
   `PixiDisplayOptions` are Canvas2D's `CanvasDisplayOptions`, plus `preserveDrawingBuffer` (T13b-5:
   keep the canvas readable after each picture, for `pnpm cli screenshot --backend pixi`) and
   `seed` and `maxParticles` for the main presenter (T13b-6, the feature benchmark). The result is a
@@ -84,4 +90,7 @@ glows, threshold 32 and 1% for the fx lab's glow and additive particles (see
 
 `pnpm bench:features` measures this backend beside Canvas2D on the RTS and tower-defense feature
 scenes (`--backends canvas2d,pixi`, default both; T13b-6). First numbers, from a container with no
-GPU (WebGL on SwiftShader), are in `docs/BUILD-LOG.md` (Engine 0.16 part A, T13).
+GPU (WebGL on SwiftShader), are in `docs/BUILD-LOG.md` (Engine 0.16 part A, T13), and the tuning
+pass (T13b-7: the browser does the whole-number upscale, the background is a GL clear, no
+container per translucent or additive particle, off-picture culling, cheaper particle colour
+keyframes in `@engine/core/fx`) with before and after numbers right after them.

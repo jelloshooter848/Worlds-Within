@@ -16,14 +16,17 @@ test with Canvas2D T13b-5.
 
 ## PixiRenderer
 
-`new PixiRenderer({ size, sheetSource? })` implements every method of the core `Renderer`
+`new PixiRenderer({ size, sheetSource?, backdrop? })` implements every method of the core `Renderer`
 (`@engine/core/gfx/renderer`), optional ones included. The API stays immediate mode, but each call
 adds a display object to `stage` (a PixiJS `Container`, the frame's display list) instead of
 painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
 
 - Frames: `beginFrame()` empties `stage` and returns every object to its pool; a `clear(color)`
   outside any scope does the same first (what was drawn is covered anyway), then adds a
-  picture-sized box. A `clear` inside a scope only adds the box there.
+  picture-sized box. A `clear` inside a scope only adds the box there. With `backdrop: true`
+  (T13b-7; the display's main renderer) a top-level `clear` with an opaque colour adds no box: it
+  sets `backdrop` (0xRRGGBB, null after `beginFrame`) and whoever renders `stage` clears to it.
+  On software GL a full-picture sprite costs a whole layer of fill; a GL clear costs nothing.
 - Pools: sprites, containers, mask `Graphics` and debug `Text`s come from free lists and are
   reused frame after frame (`pools()` reports used and made counts), so a steady scene allocates
   nothing. Every object is reset when taken; never keep a reference across frames.
@@ -40,13 +43,24 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   (PNG sheets) are applied by the presenter (`anchorOffset`), not here, as on the canvas.
 - `text` is one sprite per glyph, 8 px apart (as the canvas). `debugText` is a pooled PixiJS
   `Text` (8 px monospace) whose top sits 7 px above `y` (the canvas's baseline); debug only.
-- Scopes are pooled containers that hold what `draw` adds: `alpha` sets the container's alpha
-  (nested scopes multiply), `blend('add')` sets `blendMode = 'add'` (its children keep
-  `inherit`), `clip` masks the container with a pooled `Graphics` rectangle (axis aligned, so
-  PixiJS uses a scissor), `transform` sets position, rotation and scale and calls `draw(this)`.
+- Scopes (T13b-7): `clip` and `transform` are pooled containers that hold what `draw` adds;
+  `clip` masks the container with a pooled `Graphics` rectangle (axis aligned, so PixiJS uses a
+  scissor), `transform` sets position, rotation and scale and calls `draw(this)`. `alpha` and
+  `blend` add no container: they are a running opacity (nested scopes multiply) and blend mode
+  that every sprite, halo and text drawn inside takes as its own `alpha` (times its colour's
+  alpha) and `blendMode` (`'add'` or `'normal'`). That is what PixiJS v8 does with a container's
+  alpha and blend mode anyway (multiplied and inherited down to each renderable, no offscreen
+  pass), so the picture is the same, and the core walk's translucent, additive particle is one
+  sprite (two with a glow) instead of a container each. A `clear` inside any scope (`alpha` and
+  `blend` too) adds a box there and starts no frame.
+- Culling (T13b-7): outside every `transform` (where boxes are in local space), a box, sprite or
+  line whose box, grown by the current glow's radius, lies wholly outside the picture (`size`) is
+  not added. Particles and entities off the view cost nothing; what touches the picture by one
+  pixel, or whose halo reaches into it, is kept.
 - Glow: a pre-made soft halo texture (`glowHalo()`, `HALO_SIZE` texels, made once from bytes:
   no canvas) tinted the glow colour and stretched over each glowing box, sprite or line grown by
-  `radius` on every side, added just behind it. It is cheaper than a PixiJS filter (a filter
+  `radius` on every side, added just behind it (with the scope's alpha and blend mode). Glow
+  scopes are reused entries, so a glow per particle allocates nothing. It is cheaper than a PixiJS filter (a filter
   renders its scope to a texture and blurs it; the halo is one more sprite in the batch). The
   halo is an ellipse over the box, not the shape's outline: close to the canvas's `shadowBlur`
   on small particles and boxes, softer on large sprites.
@@ -94,11 +108,25 @@ opts)` builds the display (a test passes a recording `DisplayGpu`):
 - `renderer` is a `PixiRenderer`; `presenter` the game's `PixiPresenter` and one per round, all on
   it and sharing one `PixiSurfaces`.
 - `present()`: flush the surfaces; draw the transition (`transitionShape` with the main
-  presenter's `focus()`) on a `Graphics` over the stage; render the stage and the cover into a
-  backbuffer `RenderTexture` at the game's `screen` size (nearest); render that as one sprite on the
-  canvas, placed by `fitGame` (the screen layout's `fit`, `integerScale`) on black, as Canvas2D's
-  `Viewport`. The stage is kept after `present`: a top-level `clear` (the presenter's first call)
-  starts the next frame, so a frame that draws nothing shows the last picture.
+  presenter's `focus()`) on a `Graphics` over the stage; then the picture (the stage and the
+  cover), cleared to the renderer's `backdrop` (black when the frame has none), placed by `fitGame`
+  (the screen layout's `fit`, `integerScale`) on black, as Canvas2D's `Viewport`. The stage is
+  kept after `present`: a top-level `clear` (the presenter's first call) starts the next frame, so
+  a frame that draws nothing shows the last picture.
+- `upscale` (T13b-7): with `'page'` (default) the drawing buffer is the canvas's device size over
+  `s`, the whole part of the picture's scale (`ceil`, at least 1), the display sets the canvas's
+  `image-rendering: pixelated`, and the browser stretches the canvas back up by `s`. At a
+  whole-number scale (`integerScale`, or a window that happens to fit) the picture is rendered
+  straight onto the canvas at its own size, with black bars as one `Graphics` round it; otherwise
+  it goes into a backbuffer `RenderTexture` at the `screen` size, shown as one nearest-neighbour
+  sprite at the remaining scale (`scale / s`). The picture's offset is rounded to whole buffer
+  pixels, so it may sit up to `s - 1` device pixels from where Canvas2D puts it. `toScreen` and
+  `toClient` map through the buffer (buffer px per CSS px, measured on each `fit`). With `'gl'`
+  `s` is 1: a full-size buffer, the backbuffer scaled by WebGL (T13b-3's path). Why: on software
+  GL (SwiftShader) every textured pixel WebGL fills costs about 0.1 µs, so a full 1280 x 960 quad
+  costs over 100 ms a frame where a 320 x 240 one costs about 10 ms; on a GPU both are cheap, and
+  the browser's compositor scales a canvas for free either way. A screenshot canvas at the
+  picture's size has `s` = 1 and is drawn directly, so its bytes are as before.
 - `drawTransition(graphics, shape, screen)` matches Canvas2D's (`transitionAlphaAt` per pixel):
   fade one box at its alpha; wipe one opaque box and a 1 px band per pixel of each soft edge
   (no gradient texture); iris the picture covered with the circle `cut()` as a hole.
@@ -144,9 +172,15 @@ the machine block names the WebGL renderer and `software` when it is a software 
 First numbers (`docs/BUILD-LOG.md`, T13, 2026-11-10) are from a container with no GPU, where
 WebGL is SwiftShader (software GL on the CPU): the draw call (display list and GL submission) was
 17-40 ms p50 with the features on, 5-10 times less than Canvas2D's, but whole frames were 124-204
-ms p50 even plain, the cost of software GL filling and compositing a 1280 x 960 canvas. Read the
-draw column there; judge frame times (the 16.7 ms p95 bar) on a machine with a GPU. Rerun after
-changing how sprites, particles, glow, blending or the backbuffer are drawn.
+ms p50 even plain, the cost of software GL filling a 1280 x 960 canvas. The tuning pass (T13b-7,
+same log) found that cost was the full-size backbuffer quad and the background sprite, made the
+browser do the whole-number upscale (`upscale`), the background a GL clear (`backdrop`), dropped
+the container per translucent or additive particle, culled what is off the picture, and made the
+core's particle colour keyframes allocation-free: frames with the features on went from 122-210
+ms p95 to 34-72 ms, plain from 74-90 to 14-34 ms (TD plain at zoom 0.5 holds the bar), and the
+draw call from 11-25 to 5-8 ms p50. What remains on SwiftShader is fill (about 10 ms per
+picture-sized layer: map, parallax, glow halos); judge the 16.7 ms p95 bar on a machine with a
+GPU. Rerun after changing how sprites, particles, glow, blending or the backbuffer are drawn.
 
 ## Imports
 
@@ -164,7 +198,8 @@ flash and tint overlays (and reduced flashing), the UI kit HUD with one white gl
 per colour, the skin set, and sounds, hit-pauses, particle counts and focus equal to the core
 presenter on another renderer. `transition.test.ts` checks the transition `Graphics` against
 `transitionAlphaAt` per pixel; `display.test.ts` the display's passes, letterbox, pointer maths,
-transition and UI painter on a recording `DisplayGpu`. `tests/browser/pixi-display.test.ts` builds
+transition and UI painter on a recording `DisplayGpu`, both `upscale` paths and the backdrop
+clear colour. `tests/browser/pixi-display.test.ts` builds
 a page that imports this backend, starts `pixiDisplay` in headless Chromium (SwiftShader) and reads
 the canvas back (skipped without a browser).
 
