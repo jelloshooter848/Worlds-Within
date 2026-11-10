@@ -296,6 +296,19 @@ describe('PixiRenderer pools', () => {
     expect(c?.children).toHaveLength(1);
   });
 
+  it('keeps a reused mask hidden when the scope order changes between frames', () => {
+    const r = renderer();
+    // Frame 1: the clip is the second container, so its mask is held by container 1.
+    r.transform(0, 0, 0, 1, 1, () => r.clip(0, 0, 4, 4, () => r.rect(0, 0, 8, 8, '#fff')));
+    // Frame 2: the clip takes container 0 (and mask 0); the transform then reuses container 1.
+    r.beginFrame();
+    r.clip(0, 0, 4, 4, () => r.rect(0, 0, 8, 8, '#fff'));
+    r.transform(0, 0, 0, 1, 1, () => r.rect(0, 0, 1, 1, '#fff'));
+    const mask = (r.stage.children[0] as Container).mask as Graphics;
+    expect(mask).toBeInstanceOf(Graphics);
+    expect([mask.includeInBuild, mask.measurable]).toEqual([false, false]);
+  });
+
   it('starts each frame opaque and normal, even after a scope that threw', () => {
     const r = renderer();
     expect(() =>

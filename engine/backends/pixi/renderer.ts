@@ -91,6 +91,10 @@ class Pool<T> {
     this.used++;
     return item;
   }
+  /** Calls `fn` on each item taken since the pool was last reset (`used = 0`). */
+  forEachUsed(fn: (item: T) => void): void {
+    for (let i = 0; i < this.used; i++) fn(this.items[i] as T);
+  }
   get made(): number {
     return this.items.length;
   }
@@ -226,6 +230,11 @@ export class PixiRenderer implements Renderer {
   /** Empties the display list for a new frame; its objects go back to their pools. */
   beginFrame(): void {
     this.stage.removeChildren();
+    // Masks and containers are pooled apart, so a mask may go to a different container next
+    // frame; unmasking its old holder later would reset it to visible. Unmask them all first.
+    this.containers.forEachUsed((c) => {
+      if (c.mask) c.mask = null;
+    });
     this.parent = this.stage;
     this.backdrop = null;
     this.depth = 0;
