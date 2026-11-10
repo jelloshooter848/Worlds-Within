@@ -1,7 +1,7 @@
 {
   "game": "..",
   "seed": 1,
-  "ticks": 960,
+  "ticks": 1502,
   "input": {
     "steps": [
       {
@@ -50,186 +50,258 @@
       },
       {
         "frame": 380,
-        "hold": ["right"]
-      },
-      {
-        "frame": 485,
-        "hold": []
-      },
-      {
-        "frame": 486,
-        "hold": ["left"]
-      },
-      {
-        "frame": 507,
-        "hold": ["up"]
+        "hold": ["down"]
       },
       {
         "frame": 513,
-        "hold": ["right"]
+        "hold": ["special"]
       },
       {
-        "frame": 567,
-        "hold": ["attack"]
-      },
-      {
-        "frame": 568,
+        "frame": 514,
         "hold": []
       },
       {
-        "frame": 569,
+        "frame": 522,
+        "hold": ["down"]
+      },
+      {
+        "frame": 563,
         "hold": ["left"]
       },
       {
-        "frame": 687,
-        "hold": ["right"]
+        "frame": 643,
+        "hold": ["special"]
       },
       {
-        "frame": 688,
+        "frame": 644,
+        "hold": []
+      },
+      {
+        "frame": 652,
         "hold": ["left"]
       },
       {
-        "frame": 690,
+        "frame": 656,
         "hold": ["right"]
       },
       {
-        "frame": 691,
-        "hold": ["attack"]
-      },
-      {
-        "frame": 692,
+        "frame": 671,
         "hold": []
       },
       {
-        "frame": 693,
-        "hold": ["attack"]
+        "frame": 676,
+        "hold": ["special"]
       },
       {
-        "frame": 694,
+        "frame": 677,
         "hold": []
       },
       {
-        "frame": 695,
-        "hold": ["attack"]
-      },
-      {
-        "frame": 696,
-        "hold": []
-      },
-      {
-        "frame": 697,
-        "hold": ["attack"]
-      },
-      {
-        "frame": 698,
-        "hold": []
-      },
-      {
-        "frame": 699,
-        "hold": ["attack"]
-      },
-      {
-        "frame": 700,
-        "hold": []
+        "frame": 685,
+        "hold": ["right"]
       },
       {
         "frame": 701,
-        "hold": ["attack"]
+        "hold": ["up"]
       },
       {
-        "frame": 702,
+        "frame": 739,
+        "hold": ["special"]
+      },
+      {
+        "frame": 740,
         "hold": []
       },
       {
-        "frame": 703,
-        "hold": ["attack"]
+        "frame": 748,
+        "hold": ["right"]
       },
       {
-        "frame": 704,
+        "frame": 802,
+        "hold": ["up"]
+      },
+      {
+        "frame": 920,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1027,
         "hold": []
       },
       {
-        "frame": 705,
+        "frame": 1028,
+        "hold": ["left"]
+      },
+      {
+        "frame": 1049,
+        "hold": ["up"]
+      },
+      {
+        "frame": 1055,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1109,
         "hold": ["attack"]
       },
       {
-        "frame": 706,
+        "frame": 1110,
         "hold": []
       },
       {
-        "frame": 707,
+        "frame": 1111,
+        "hold": ["left"]
+      },
+      {
+        "frame": 1229,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1230,
+        "hold": ["left"]
+      },
+      {
+        "frame": 1232,
+        "hold": ["right"]
+      },
+      {
+        "frame": 1233,
         "hold": ["attack"]
       },
       {
-        "frame": 708,
+        "frame": 1234,
         "hold": []
       },
       {
-        "frame": 709,
+        "frame": 1235,
         "hold": ["attack"]
       },
       {
-        "frame": 710,
+        "frame": 1236,
         "hold": []
       },
       {
-        "frame": 711,
+        "frame": 1237,
         "hold": ["attack"]
       },
       {
-        "frame": 712,
+        "frame": 1238,
         "hold": []
       },
       {
-        "frame": 713,
+        "frame": 1239,
         "hold": ["attack"]
       },
       {
-        "frame": 714,
+        "frame": 1240,
         "hold": []
       },
       {
-        "frame": 715,
+        "frame": 1241,
         "hold": ["attack"]
       },
       {
-        "frame": 716,
+        "frame": 1242,
         "hold": []
       },
       {
-        "frame": 717,
+        "frame": 1243,
         "hold": ["attack"]
       },
       {
-        "frame": 718,
+        "frame": 1244,
         "hold": []
       },
       {
-        "frame": 719,
+        "frame": 1245,
         "hold": ["attack"]
       },
       {
-        "frame": 720,
+        "frame": 1246,
         "hold": []
       },
       {
-        "frame": 721,
+        "frame": 1247,
         "hold": ["attack"]
       },
       {
-        "frame": 722,
+        "frame": 1248,
         "hold": []
       },
       {
-        "frame": 723,
+        "frame": 1249,
         "hold": ["attack"]
       },
       {
-        "frame": 724,
+        "frame": 1250,
         "hold": []
       },
       {
-        "frame": 935,
+        "frame": 1251,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1252,
+        "hold": []
+      },
+      {
+        "frame": 1253,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1254,
+        "hold": []
+      },
+      {
+        "frame": 1255,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1256,
+        "hold": []
+      },
+      {
+        "frame": 1257,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1258,
+        "hold": []
+      },
+      {
+        "frame": 1259,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1260,
+        "hold": []
+      },
+      {
+        "frame": 1261,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1262,
+        "hold": []
+      },
+      {
+        "frame": 1263,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1264,
+        "hold": []
+      },
+      {
+        "frame": 1265,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 1266,
+        "hold": []
+      },
+      {
+        "frame": 1477,
         "hold": ["left"]
       }
     ]
@@ -242,79 +314,85 @@
       "value": "chasm"
     },
     {
-      "tick": 410,
+      "tick": 938,
+      "path": "keys",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 952,
       "path": "room",
       "op": "eq",
       "value": "warden-hall"
     },
     {
-      "tick": 410,
+      "tick": 952,
       "path": "entities.4.kind",
       "op": "eq",
       "value": "boss:warden"
     },
     {
-      "tick": 510,
+      "tick": 1052,
       "path": "room",
       "op": "eq",
       "value": "warden-hall"
     },
     {
-      "tick": 510,
+      "tick": 1052,
       "path": "hero.x",
       "op": "lte",
       "value": 16
     },
     {
-      "tick": 546,
+      "tick": 1088,
       "path": "entities.4.boss.step",
       "op": "eq",
       "value": 2
     },
     {
-      "tick": 570,
+      "tick": 1112,
       "path": "entities.4.hp",
       "op": "eq",
       "value": 2
     },
     {
-      "tick": 570,
+      "tick": 1112,
       "path": "entities.4.boss.invuln",
       "op": "gt",
       "value": 0
     },
     {
-      "tick": 694,
+      "tick": 1236,
       "path": "entities.4.hp",
       "op": "eq",
       "value": 1
     },
     {
-      "tick": 694,
+      "tick": 1236,
       "path": "entities.4.boss.phase",
       "op": "eq",
       "value": 1
     },
     {
-      "tick": 726,
+      "tick": 1268,
       "path": "entities.4.boss.mode",
       "op": "eq",
       "value": "dying"
     },
     {
-      "tick": 786,
+      "tick": 1328,
       "path": "flags",
       "op": "eq",
       "value": ["bossDefeated"]
     },
     {
-      "tick": 786,
+      "tick": 1328,
       "path": "enemies",
       "op": "eq",
       "value": 0
     },
     {
-      "tick": 960,
+      "tick": 1502,
       "path": "room",
       "op": "eq",
       "value": "chasm"

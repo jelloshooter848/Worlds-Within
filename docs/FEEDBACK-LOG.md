@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 437.** (Last used: 436.)
+**Next unused number: 441.** (Last used: 440.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1738,3 +1738,25 @@ room-wide dust; details in `engine/core/fx/CLAUDE.md`, "Lighting", and
   rooms 0.55 (the courtyard 0.5). The falloff is in 6 flat bands (`bands`) for a pixel-art look
   rather than a smooth gradient; the vignette is 0.5. Judged moody and readable from screenshots
   at 3x (the guard room's fight stays readable at 0.55); a browser playtest is T10. OK?
+
+**Engine 0.16 part C, T8: The Old Crypt's new wing** (eight rooms, the dash and the path to the boss
+door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files"):
+
+- **437.** The final layout is eight rooms: the five old ones unchanged (the courtyard, guard room,
+  store room, bat hall and crypt, so walk-east, escape and lost-in-the-guard-room keep their
+  hashes and escape still ends on the crypt's exit), the chasm (the dash), a new **ossuary** south
+  of it (a pit band, monsters and a key on a ledge only the dash reaches) and the warden hall,
+  now behind the chasm's **locked** east door. So the game has two ways: the bombed wall to the
+  relic and the exit, and the dash to the key and the boss door. Keys are counted, not named, so
+  either key opens either door. OK, or should the old escape wing become the way on (and the
+  crypt's exit go)?
+- **438.** `beat-the-warden` was re-recorded (`WW_UPDATE_GOLDEN=1`): the locked boss door means
+  its path now goes through the ossuary for the key (1502 ticks instead of 960; the fight's input
+  is T6's, 542 ticks later, and every boss check holds at the same offsets). No other hash moved.
+  OK, or should T9's win run replace it?
+- **439.** Decorations (banners, wall fountains, skulls) are placed lights with a sprite and no
+  light (`radius` 1, `intensity` 0) in the skin's `lighting.maps`, the only data place for a
+  prop the map has no tile for. OK, or should the engine get a proper per-map `props` list?
+- **440.** The HUD's item panel always shows the bomb icon and `ammo.bomb` (0 with the dash): the
+  skin's `icon` HUD item has one frame and no per-value frames. Left for T10's polish pass (a
+  per-value icon in the UI kit, or two items keyed on a status). OK?

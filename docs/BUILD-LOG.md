@@ -144,7 +144,8 @@ enough; silence so far has meant the build kept its default):
   and left in the screenshots), **400-418** (smaller build choices of T1-T3 and the build
   process, added by the finalize pass).
 - Engine 0.16 part C: **419-424** (T1, Hopper's Way's fixes after the part B review: the title's
-  HUD, the 2.5D portrait, the levels' decoration and new enemies).
+  HUD, the 2.5D portrait, the levels' decoration and new enemies); **437-440** (T8, The Old Crypt's
+  new wing: the layout, beat-the-warden re-recorded, props as placed lights, the HUD's item icon).
 
 ### Items not met, and where they went
 
@@ -168,7 +169,17 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
 
-## Engine 0.16 part B
+## Engine 0.16 part C (in progress)
+
+Written up in full by the part's finalize task (T11); until then, the changes a reviewer must not
+miss:
+
+- **T8, golden hashes re-recorded:** `games/samples/dungeon/runs/beat-the-warden` only (with
+  `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`). Reason: the chasm's east door into the warden hall
+  became a locked door whose key lies in the new ossuary, so the run's input now fetches it first
+  (1502 ticks; T6's fight input 542 ticks later). `escape`, `walk-east`,
+  `lost-in-the-guard-room` and `cross-the-chasm` kept their hashes; the new run
+  `to-the-boss-door` got its first ones. Feedback items 437-440.
 
 The flagship platformer, **Hopper's Way** (docs/ROADMAP.md, 0.16 part B), built on branch
 `engine/build-0.15` in eleven tasks (T1-T11; not tagged, nothing published). The platformer

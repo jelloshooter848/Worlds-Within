@@ -5,9 +5,11 @@ Folder: `games/samples/dungeon`. Detailed rules and how it was built: [`games/sa
 ## Purpose
 
 The top-down kit's sample game, **The Old Crypt** (the old engine demo, moved into the samples in
-Engine 0.15 T2 and finished in T12): a short, complete dungeon of five rooms (the courtyard start,
+Engine 0.15 T2 and finished in T12): a short dungeon of eight rooms (the courtyard start,
 a guard room of monsters, a store room with the bombs, a bat hall with the key, and the crypt with
-the relic and the exit), with two end states (escaped through the exit, or fallen), in data files
+the relic and the exit; from Engine 0.16 part C T5-T8 the new wing: the chasm with the dash, the
+ossuary whose key only the dash reaches across its pits, and the warden hall, the boss room behind
+the chasm's locked door), with two end states (escaped through the exit, or fallen), in data files
 checked by schemas: rooms, two MML songs, thirteen sound effects and a Canvas2D skin that draws it
 at 16:9 (320x180, 6x is 1920x1080) on 0x72's CC0 DungeonTileset II (Engine 0.16 part C T3: the
 pack's PNG plus two text sheets cut from it, walls and doors joined by neighbours, varied floors,
@@ -26,7 +28,7 @@ building a top-down game on the engine.
 
 - `game.json`: the game manifest (id `dungeon`, kit `topdown`, content globs by kind, start seed,
   the 320x180 screen, the menus, headless and view entries).
-- `content/`: `rooms/*.json` + `*.map.txt` (five rooms), `songs/` (`crypt`, `daylight`), `sfx/`,
+- `content/`: `rooms/*.json` + `*.map.txt` (eight rooms), `songs/` (`crypt`, `daylight`), `sfx/`,
   `palettes/` and `sprites/` (`crypt-art`, `crypt-floor`: pieces cut from the CC0 pack),
   `fonts/`, `skins/canvas2d.json` (the pack's PNG as `images`; every kind, tile, event and HUD value
   the kit presents, a `background`, no per-kind fallback).
@@ -47,7 +49,9 @@ building a top-down game on the engine.
   `main.ts` decodes the PNG (`withContentImages`) and boots it with the shell's `bootBrowserGame`
   (audio, volume control, menus, `?debug=step`), the scene drawing through the display's presenter.
 - `runs/`: `walk-east` (into the guard room; unchanged since the demo), `escape` (the path to the
-  exit) and `lost-in-the-guard-room` (the fall), each with golden hashes in `<name>.hashes.json`,
+  exit), `lost-in-the-guard-room` (the fall), `cross-the-chasm` (the dash), `to-the-boss-door`
+  (Engine 0.16 part C T8: the dash, the ossuary's key and the locked door into the boss room) and
+  `beat-the-warden` (that path, then the boss fight), each with golden hashes in `<name>.hashes.json`,
   checked by `tests/runs/run-files.test.ts` and `tests/runs/backend-parity.test.ts`; together
   they guard every top-down kit rule (`tests/runs/dungeon-mutants.test.ts`).
 - Any picture size: change only `screen` in `game.json`.

@@ -490,6 +490,102 @@
           "y": 336,
           "w": 16,
           "h": 16
+        },
+        "banner-red": {
+          "x": 16,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "banner-blue": {
+          "x": 32,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "banner-green": {
+          "x": 16,
+          "y": 48,
+          "w": 16,
+          "h": 16
+        },
+        "banner-yellow": {
+          "x": 32,
+          "y": 48,
+          "w": 16,
+          "h": 16
+        },
+        "fountain-red-0": {
+          "x": 64,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "basin-red-0": {
+          "x": 64,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "fountain-blue-0": {
+          "x": 64,
+          "y": 48,
+          "w": 16,
+          "h": 16
+        },
+        "basin-blue-0": {
+          "x": 64,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "fountain-red-1": {
+          "x": 80,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "basin-red-1": {
+          "x": 80,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "fountain-blue-1": {
+          "x": 80,
+          "y": 48,
+          "w": 16,
+          "h": 16
+        },
+        "basin-blue-1": {
+          "x": 80,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "fountain-red-2": {
+          "x": 96,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "basin-red-2": {
+          "x": 96,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "fountain-blue-2": {
+          "x": 96,
+          "y": 48,
+          "w": 16,
+          "h": 16
+        },
+        "basin-blue-2": {
+          "x": 96,
+          "y": 64,
+          "w": 16,
+          "h": 16
         }
       },
       "anchor": "center"
@@ -1997,6 +2093,405 @@
               "ticks": 6,
               "x": 176,
               "y": -2
+            }
+          }
+        ]
+      },
+      "chasm": {
+        "lights": [
+          {
+            "x": 72,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 64,
+              "y": -2
+            }
+          },
+          {
+            "x": 184,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 176,
+              "y": -2
+            }
+          },
+          {
+            "x": 152,
+            "y": 120,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 144,
+              "y": 112
+            }
+          },
+          {
+            "x": 200,
+            "y": 40,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 192,
+              "y": 32
+            }
+          },
+          {
+            "x": 56,
+            "y": 152,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 48,
+              "y": 144
+            }
+          },
+          {
+            "x": 104,
+            "y": 8,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["banner-blue"],
+              "x": 96,
+              "y": 0
+            }
+          },
+          {
+            "x": 152,
+            "y": 8,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["banner-blue"],
+              "x": 144,
+              "y": 0
+            }
+          },
+          {
+            "x": 216,
+            "y": 8,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["banner-blue"],
+              "x": 208,
+              "y": 0
+            }
+          }
+        ]
+      },
+      "ossuary": {
+        "ambient": {
+          "color": "#05030a",
+          "level": 0.74
+        },
+        "lights": [
+          {
+            "x": 72,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 64,
+              "y": -2
+            }
+          },
+          {
+            "x": 136,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 128,
+              "y": -2
+            }
+          },
+          {
+            "x": 232,
+            "y": 20,
+            "radius": 40,
+            "color": "#5fcde4",
+            "intensity": 0.45,
+            "glow": 0.22,
+            "flicker": {
+              "amount": 0.08,
+              "rate": 9
+            },
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["fountain-blue-0", "fountain-blue-1", "fountain-blue-2"],
+              "ticks": 8,
+              "x": 224,
+              "y": 0
+            }
+          },
+          {
+            "x": 232,
+            "y": 24,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["basin-blue-0", "basin-blue-1", "basin-blue-2"],
+              "ticks": 8,
+              "x": 224,
+              "y": 16
+            }
+          },
+          {
+            "x": 120,
+            "y": 104,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 112,
+              "y": 96
+            }
+          },
+          {
+            "x": 24,
+            "y": 152,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 16,
+              "y": 144
+            }
+          },
+          {
+            "x": 232,
+            "y": 136,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 224,
+              "y": 128
+            }
+          },
+          {
+            "x": 56,
+            "y": 104,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 48,
+              "y": 96
+            }
+          },
+          {
+            "x": 168,
+            "y": 152,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 160,
+              "y": 144
+            }
+          },
+          {
+            "x": 104,
+            "y": 8,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["banner-green"],
+              "x": 96,
+              "y": 0
+            }
+          },
+          {
+            "x": 168,
+            "y": 8,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["banner-green"],
+              "x": 160,
+              "y": 0
+            }
+          }
+        ]
+      },
+      "warden-hall": {
+        "lights": [
+          {
+            "x": 72,
+            "y": 20,
+            "radius": 40,
+            "color": "#e43b44",
+            "intensity": 0.45,
+            "glow": 0.22,
+            "flicker": {
+              "amount": 0.08,
+              "rate": 9
+            },
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["fountain-red-0", "fountain-red-1", "fountain-red-2"],
+              "ticks": 8,
+              "x": 64,
+              "y": 0
+            }
+          },
+          {
+            "x": 72,
+            "y": 24,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["basin-red-0", "basin-red-1", "basin-red-2"],
+              "ticks": 8,
+              "x": 64,
+              "y": 16
+            }
+          },
+          {
+            "x": 184,
+            "y": 20,
+            "radius": 40,
+            "color": "#e43b44",
+            "intensity": 0.45,
+            "glow": 0.22,
+            "flicker": {
+              "amount": 0.08,
+              "rate": 9
+            },
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["fountain-red-0", "fountain-red-1", "fountain-red-2"],
+              "ticks": 8,
+              "x": 176,
+              "y": 0
+            }
+          },
+          {
+            "x": 184,
+            "y": 24,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["basin-red-0", "basin-red-1", "basin-red-2"],
+              "ticks": 8,
+              "x": 176,
+              "y": 16
+            }
+          },
+          {
+            "x": 40,
+            "y": 152,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 32,
+              "y": 144
+            }
+          },
+          {
+            "x": 216,
+            "y": 56,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 208,
+              "y": 48
+            }
+          },
+          {
+            "x": 232,
+            "y": 152,
+            "radius": 1,
+            "intensity": 0,
+            "glow": 0,
+            "sprite": {
+              "sheet": "crypt-items",
+              "frames": ["skull"],
+              "x": 224,
+              "y": 144
             }
           }
         ]

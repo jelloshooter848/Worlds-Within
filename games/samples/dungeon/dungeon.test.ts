@@ -61,6 +61,7 @@ describe('the dungeon sample', () => {
       'room:courtyard',
       'room:crypt',
       'room:guard-room',
+      'room:ossuary',
       'room:store-room',
       'room:warden-hall',
       'song:crypt',
@@ -102,11 +103,30 @@ describe('the dungeon sample', () => {
       'courtyard',
       'crypt',
       'guard-room',
+      'ossuary',
       'store-room',
       'warden-hall',
     ]);
     expect(d.rooms.get('store-room')?.def.chests).toEqual(['bomb']);
     expect(d.rooms.get('crypt')?.def).toMatchObject({ goal: true, chests: ['relic'] });
+  });
+
+  it('has its final eight rooms (Engine 0.16 part C T8): the dash, a key past the pits and the locked boss door', () => {
+    const d = dungeonRooms(content);
+    expect(d.rooms.size).toBe(8);
+    const chasm = d.rooms.get('chasm')!;
+    expect(chasm.def.chests).toEqual(['dash']);
+    expect(chasm.doors).toMatchObject({ n: 'open', e: 'locked', s: 'open' });
+    const ossuary = d.rooms.get('ossuary')!;
+    expect([ossuary.gx, ossuary.gy]).toEqual([0, 3]);
+    expect(ossuary.doors).toEqual({ n: 'open' });
+    expect(ossuary.spawns.filter((s) => s.kind === 'key')).toHaveLength(1);
+    expect(ossuary.tiles.filter((t) => t === 'pit').length).toBeGreaterThan(20);
+    expect(d.rooms.get('warden-hall')?.def.boss?.id).toBe('warden');
+    // Every room is lit: braziers or lit torches, and the new rooms dressed with the pack's props.
+    const lighting = dungeonSkin(content).lighting;
+    for (const id of ['chasm', 'ossuary', 'warden-hall'])
+      expect(lighting?.maps?.[id]?.lights?.length ?? 0).toBeGreaterThan(2);
   });
 
   it('runs headless: the hero walks east into the guard room, drawn through the skin', () => {
@@ -315,12 +335,13 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as Run;
   const FALLBACK = dungeonSkin(content).sheets?.fallbackColor;
 
-  it('has run files for the walk, the way out, a fall, (0.16 part C T5) the dash over the chasm and (T6) the boss', () => {
+  it('has run files for the walk, the way out, a fall, (0.16 part C T5) the dash over the chasm, (T6) the boss and (T8) the way to its door', () => {
     expect(runs).toEqual([
       'beat-the-warden.run.json',
       'cross-the-chasm.run.json',
       'escape.run.json',
       'lost-in-the-guard-room.run.json',
+      'to-the-boss-door.run.json',
       'walk-east.run.json',
     ]);
   });
@@ -369,7 +390,8 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     const skin = dungeonSkin(content);
     const seen = new Set<string>();
     let bar = false;
-    for (let t = 0; t < 800; t++) {
+    // T8 put the warden behind the ossuary's key and the chasm's locked door: the fight runs past 1300.
+    for (let t = 0; t < run.ticks; t++) {
       input.next();
       world.update(input);
       const frame = presentWorld(world, world.events.splice(0), { state });

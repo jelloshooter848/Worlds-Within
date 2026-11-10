@@ -1,0 +1,109 @@
+{
+  "run": "games/samples/dungeon/runs/to-the-boss-door.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d29e6b40530102ce"
+    },
+    {
+      "tick": 40,
+      "hash": "2476ceb1d86e0026"
+    },
+    {
+      "tick": 80,
+      "hash": "06f8de4272a852ef"
+    },
+    {
+      "tick": 120,
+      "hash": "b3b605bbfa6b53ec"
+    },
+    {
+      "tick": 160,
+      "hash": "f0b8b227db141265"
+    },
+    {
+      "tick": 200,
+      "hash": "07da9a6f186bbeed"
+    },
+    {
+      "tick": 240,
+      "hash": "078096f4e7730cde"
+    },
+    {
+      "tick": 280,
+      "hash": "e2ff644b10a0ef6f"
+    },
+    {
+      "tick": 320,
+      "hash": "ef243ccd04b18b1c"
+    },
+    {
+      "tick": 360,
+      "hash": "3c085af74962ed15"
+    },
+    {
+      "tick": 400,
+      "hash": "5a49cb744b1746d8"
+    },
+    {
+      "tick": 440,
+      "hash": "7dba12066569ff26"
+    },
+    {
+      "tick": 480,
+      "hash": "410ce9a09c8acb78"
+    },
+    {
+      "tick": 520,
+      "hash": "2c54dea60918b353"
+    },
+    {
+      "tick": 560,
+      "hash": "f90606c1c4445909"
+    },
+    {
+      "tick": 600,
+      "hash": "728712a76b913a9d"
+    },
+    {
+      "tick": 640,
+      "hash": "75a741d88e4a027a"
+    },
+    {
+      "tick": 680,
+      "hash": "a12316bdd194cfc1"
+    },
+    {
+      "tick": 720,
+      "hash": "e4f2e3ef6f5f2762"
+    },
+    {
+      "tick": 760,
+      "hash": "8d910cbcbfef7f27"
+    },
+    {
+      "tick": 800,
+      "hash": "4d2c5d2924f003c4"
+    },
+    {
+      "tick": 840,
+      "hash": "b93a88132ab36a11"
+    },
+    {
+      "tick": 880,
+      "hash": "4ce1827c0cd24df4"
+    },
+    {
+      "tick": 920,
+      "hash": "251fe2ccad501601"
+    },
+    {
+      "tick": 960,
+      "hash": "6f13e9a3be62f244"
+    },
+    {
+      "tick": 992,
+      "hash": "d6431307395a7e2f"
+    }
+  ]
+}

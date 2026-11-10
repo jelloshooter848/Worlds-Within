@@ -1,6 +1,6 @@
 {
   "id": "dungeon",
-  "title": "The dungeon sample: The Old Crypt, five rooms and a way out on the top-down kit",
+  "title": "The dungeon sample: The Old Crypt, eight rooms, a dash over the pits and a boss door on the top-down kit",
   "kit": "topdown",
   "content": {
     "room": ["content/rooms/*.json"],
