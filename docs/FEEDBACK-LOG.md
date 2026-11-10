@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 324.** (Last used: 323.)
+**Next unused number: 340.** (Last used: 339.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1271,3 +1271,64 @@ was built and Choices made)
   for Node tests, screenshots and machines without WebGL. Go ahead with T13b? Or first (a) rerun
   the benchmark on a machine with a GPU, or (b) try the Canvas2D fixes the build log lists
   (pre-rendered glow sprites, culling off-screen particles, batching) before adding PixiJS?
+
+**Engine 0.16 part A, choices made** (T1-T14; details in `docs/BUILD-LOG.md`, Engine 0.16 part
+A, Choices made). Each is built and kept unless the owner says otherwise.
+
+- **324.** Presentation randomness is its own RNG, `fxRng(seed, frame, stream)`, never the
+  world's; `engine/core/fx`, `engine/core/ui` and the audio mixer are off limits to kits and the
+  sim (`FORBIDDEN_CORE`). Presentation invariance is proved by rewriting every game's skins with
+  "effects on" switches (`tests/runs/effects.ts`) rather than by new run files. OK?
+- **325.** Sprite animation (T2) extends the old cycles instead of a new format: `ticks` one
+  number or one per frame, `loop: false` with `then`, frame `events` played as presentation-only
+  events through the skin's `events`; a 3D kind's `poses` is the same table with mesh names. The
+  part A features are shown in a new lab game, `games/fx-lab` (not a sample). OK?
+- **326.** Particles (T3) are the engine's own fixed-step system in `engine/core/fx` (no
+  library), shared by both backends; `blend` and `glow` on kinds are 2D only, and a 3D particle
+  sprite frame draws as a square in its colour. OK?
+- **327.** Camera effects (T4): the shake is trauma squared with `fxRng` noise in whole pixels;
+  hit-pause holds the page loop's ticks (never the game's rules), the picture and the presenters'
+  clocks go on, and manual-loop mode (`?debug=step`) ignores it; the loop now draws only on a
+  frame that took a step. OK?
+- **328.** Screen transitions (T5) are the shell's, by slot in `game.json`'s `transitions`
+  (`level`, `scene`, `mission`, `default`); the closing half holds ticks like a hit-pause, manual
+  mode does not hold, and reduced motion turns every transition into a short fade. OK?
+- **329.** The UI kit (T6, T7) is its own module, `engine/core/ui`, with two content kinds,
+  `font` (one-bit glyph grids as text) and `ui` (screens of menus, buttons, dialog boxes);
+  backends paint its draw items through a small `UiPainter`. The fx lab's own lab menu is 2D only
+  (the shell's menus draw in both backends). OK?
+- **330.** The audio mixer (T8): layered songs start every layer on one clock, sound variation and
+  cooldowns come from `fxRng`, one duck envelope takes events and open dialog boxes, and no
+  headless run ever makes a mixer. OK?
+- **331.** Title, pause and settings (T9) are built by the shell from `game.json`'s `menus`;
+  `?debug=step` and `?record` skip the title so no run file, replay or older browser test moves;
+  settings (shake, flashing, colour mode, touch pad) are stored per game under
+  `ww:<game>:settings`. OK?
+- **332.** Assets (T10, T11): binary files only in a game's `assets/`, carried to the browser as
+  data URLs with the game's files; the engine writes PNGs and GLBs deterministically, and the fx
+  lab's PNG torch and glTF brazier are original, made by scripts in `games/fx-lab/tools/` (own
+  work, CC0, credited). A `.gltf` is packed into a GLB first so it parses in Node. OK?
+- **333.** The 3D scene look (T12) is opt-in per skin (`scene3d`, a kind's `light`, shadow flags,
+  `labels`): a skin without it draws exactly as before; labels are laid out by the UI kit. OK?
+- **334.** `pnpm cli sheet` (T14) draws its tiles on the tools' screenshot page, not on a game's
+  own page: menus, `ui` screens and transitions are drawn over a tile by the engine's own code
+  (`ui=lab.talk`, `pause`, `level*22`), so any run file (also one with `start`) can be shown. In
+  2D an iris closes on the picture's centre (the view's camera is inside the game's picture); in
+  3D it closes on the camera's focus. OK?
+- **335.** Screenshot review sheets may be committed as PNGs in `docs/reports/*-sheet.png` (beside
+  `docs/reports/mockups/`): `tests/architecture/no-content.test.ts` and DESIGN.md say so. The
+  first is `docs/reports/0.16a-effects-sheet.png` (656 KB). OK, or keep sheets out of git?
+- **336.** The final invariance proof (T14) is a second test, `tests/runs/stepped-shell-invariance.test.ts`: the real `bootBrowserGame` on a fake page, stepped by `requestAnimationFrame`, with
+  both presenters, the mixer, hit-pause, transitions (an iris on every level change, a fade every
+  90 frames) and the pause menu (every 150 frames) all on, the run's input fed through the scene.
+  It does not use `__ww.replay`, which refuses runs with `start` and never holds ticks. OK?
+- **337.** The fx lab's title dims the game behind it at 0.95 instead of 0.88 (on the sheet the
+  HUD's heading showed through the subtitle). OK?
+- **338.** The roadmap's first part A Done when ("each feature above is in the engine...") is
+  checked for every feature but the PixiJS backend, T13b, which is not built: it waits for the
+  owner's answer to 323. OK to count part A's engine features as done with T13b open?
+- **339.** **Owner screenshot review (open).** Please look at
+  `docs/reports/0.16a-effects-sheet.png` (24 labelled tiles of the fx lab, 2D and 3D: particles,
+  flashes and shake, transitions, the UI kit, the title, pause, settings and controls screens, the
+  PNG and glTF assets, 3D lighting and shadows) and say whether it is accepted, or name the tiles
+  that are not yet at the bar of item 316.

@@ -61,6 +61,33 @@ export interface ShotJob {
   backend: ShotBackend;
   /** `three` only: go on when WebGL runs on a software renderer (SwiftShader, llvmpipe...). */
   allowSoftwareGl: boolean;
+  /**
+   * `pnpm cli sheet` (Engine 0.16 T14): pictures to keep on the way, each at its tick (at most
+   * `ticks`) with an optional overlay drawn over it. The page returns one PNG per tile, in order,
+   * as `ShotResult.tiles`. Left out by `screenshot`.
+   */
+  tiles?: ShotTile[];
+}
+
+/** The game's menu screens a sheet tile can show (`game.json`'s `menus`, Engine 0.16 T9). */
+export const SHEET_MENU_SCREENS = ['title', 'pause', 'settings', 'controls'] as const;
+export type SheetMenuScreen = (typeof SHEET_MENU_SCREENS)[number];
+
+/**
+ * What a sheet tile draws over the run's picture: one of the game's menu screens, a `ui` content
+ * file (all of it, or one widget opened alone), stepped `frames` display frames with no input (so
+ * focus tweens settle and a dialog types), or a screen transition `age` frames after it started
+ * (a slot of `game.json`'s `transitions`, or a kind with the default timing).
+ */
+export type SheetOverlay =
+  | { kind: 'menu'; screen: SheetMenuScreen; frames: number }
+  | { kind: 'ui'; file: string; widget: string | null; frames: number }
+  | { kind: 'transition'; what: string; age: number };
+
+/** One picture of a sheet: the tick it is taken at and what is drawn over it. */
+export interface ShotTile {
+  tick: number;
+  overlay: SheetOverlay | null;
 }
 
 /** What the page gives back. */
@@ -78,6 +105,8 @@ export interface ShotResult {
   hashes: { tick: number; hash: string }[];
   /** `three`: the WebGL renderer string the picture was drawn with; `canvas2d`: null. */
   renderer: string | null;
+  /** The job's `tiles` as `data:image/png;base64,...`, in order (empty without tiles). */
+  tiles: string[];
 }
 
 /**

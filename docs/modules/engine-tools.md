@@ -9,7 +9,8 @@ validates a game's content, plays run files headless (seeded scripted input, tic
 invariants, state hashes), writes replay files for failing runs, dumps the state at a tick and
 edits content files (`get`, `set`, `add`, `remove`, `paste`, every write checked and verified) and runs
 mutant checks (`mutants`: does a run fail when a kit rule is switched off?), and takes
-deterministic screenshots of a run at a tick in headless Chromium (`screenshot`). From Engine 0.10
+deterministic screenshots of a run at a tick in headless Chromium (`screenshot`), and from
+Engine 0.16 labelled sheets of several of them in one PNG (`sheet`). From Engine 0.10
 a world run file also drives missions (`open`, `delegate`, `play`, `quit`), and `validate` checks
 mini game params and `campaign` files against the content. From Engine 0.13 a game run file may
 start from another run's end or a save code (`from`) and assert save codes (`codes`), and
@@ -168,6 +169,24 @@ hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be
   `--allow-software-gl`, which takes the picture on SwiftShader on purpose (needed in a container
   without a GPU). Needs `pnpm exec playwright install --with-deps
 chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
+- `pnpm cli sheet <run-file> --ticks <tiles> [--backend 2d|three] [--allow-software-gl]
+[--out file.png] [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14):
+  the owner's review sheet. Each tile is `[<run>/]<tick>[+<overlay>][@<backend>]`: a tick of the
+  run file (or of another run file in its folder, `level-3/120`), drawn as `screenshot` draws it,
+  with an optional overlay drawn by the engine's own code (`title`, `pause`, `settings`,
+  `controls` from `game.json`'s `menus`; `ui=<file>[.<widget>]`; a transition slot or kind with
+  `*<age>`) and an optional backend of its own (`@3d`). One Chromium per backend plays each run
+  file once and checks its state hashes against the headless run's; the tiles are tiled with
+  their labels (a caption from `--labels`, then run, tick, overlay and backend) into one PNG
+  (default `.ww-out/sheets/<name>.png`), the same bytes every run on one machine. `--json` result:
+  `{ run, path, width, height, bytes, sha256, columns, scale, matchesHeadless, tiles: [{ run, tick,
+overlay, backend, label }], plays: [{ run, backend, renderer, ticks, hash, headlessHash,
+matchesHeadless }] }`. Exit 4 when a page's hashes differ or a 3D play is refused (software
+  WebGL), 3 for bad content, 2 for a bad tile, an overlay the game lacks or labels that do not
+  match. `docs/reports/0.16a-effects-sheet.png` was made with it (the command is in
+  `docs/BUILD-LOG.md`, Engine 0.16 part A). Code: `sheet.ts` (tiles, `composeSheet`),
+  `sheet-overlay.ts` (overlays from the content, pure), `shot-job.ts` (the page's job, shared
+  with `screenshot`) and `takeScreenshots` (several jobs in one Chromium).
 - `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,
   `remove <file> <path>`: one verb set for editing `game.json`, content files, text-grid part
   files (`rows.3`, `rows.3.5`) and run files. Paths are dotted (`frames["down-0"].3`) or JSON
@@ -237,5 +256,5 @@ test spawns `pnpm -s cli` for real. `record.test.ts` covers `record` (the mini s
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
-compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), and `tests/runs/run-files.test.ts` checks every game's run files
+compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), `sheet.test.ts` the tile grammar, the overlays from the fx lab's content and a 2D and 3D sheet of the fx lab made twice with the same bytes, and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes (`tests/runs/missions.test.ts` holds Engine 0.10's done-when cases).

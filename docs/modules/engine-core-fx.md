@@ -82,4 +82,5 @@ each property's interpolation including colour, the schema; particles: determini
 frame, the count caps, emitters following entities, keyframe interpolation; camera effects: shake
 decay and determinism, zoom and flash values, hit-pause counting; parallax layouts); the skin and presenter hooks in
 `engine/core/present/skin.test.ts` and `engine/backends/canvas2d/presenter.test.ts`; the
-invariance proof in `tests/runs/presentation-invariance.test.ts`.
+invariance proof in `tests/runs/presentation-invariance.test.ts` and, through the shell's own
+loop with every effect on, `tests/runs/stepped-shell-invariance.test.ts` (Engine 0.16 T14).

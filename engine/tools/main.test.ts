@@ -448,6 +448,7 @@ describe('help', () => {
       'timeline',
       'code',
       'screenshot',
+      'sheet',
       'debug',
       'mutants',
       'record',

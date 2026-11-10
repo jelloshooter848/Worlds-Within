@@ -19,7 +19,9 @@ from T6 a HUD through the UI kit (a nine-slice panel, a health bar, a rolling co
 lives counter, a minimap, and text in two original fonts, `content/fonts/fx-small.txt` and the
 larger `fx-title.txt`), from T7 a pause menu and a dialog box as text (`content/ui/lab.json`: a
 slider, a toggle, a disabled item, a dialog with Pip's portrait, typed pages and a choice), run by
-the shell's `UiScene` with keyboard, gamepad, mouse and touch (2D), original sfx, run
+the shell's `UiScene` with keyboard, gamepad, mouse and touch (2D), from T8 layered music, from
+T9 the title, pause, settings and controls screens, from T10-T12 a PNG sprite sheet, a glTF
+model and the 3D scene look, original sfx, run
 files with golden hashes and a browser page. Not a sample: a
 test game, content and glue only.
 
@@ -50,6 +52,11 @@ games/fx-lab/tools/brazier-model.ts`; own work, CC0, credited), shown for the `t
   the 3D skin (`scale` 18, anchored `bottom`, turned 30 degrees, `idle` playing `flicker`) with
   its low-poly text mesh as the stand-in while it loads.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
+- The effects sheet (T14): `docs/reports/0.16a-effects-sheet.png`, 24 labelled tiles of these
+  run files in 2D and 3D made with `pnpm cli sheet` (every part A feature: particles, flashes and
+  shake, transitions, the UI kit, the title, pause, settings and controls screens, the PNG torch
+  and glTF brazier, 3D lighting, shadows, fog and labels); the command is in
+  `docs/BUILD-LOG.md` (Engine 0.16 part A).
 
 ## Imports allowed
 

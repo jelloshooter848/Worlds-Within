@@ -94,7 +94,9 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
 - `screenshot.ts`: `serveRepo({ allow?, port?, handle? })` (Engine 0.14 T10: the repo served with
   Vite in middleware mode on 127.0.0.1, a free port by default, `handle` answering a request
   before Vite; the debugger's server uses it too) and `takeScreenshot(job, gameAbs, viewAbs)`, which serves the repo that way, opens the screenshot page in headless Chromium (Playwright) and
-  returns the PNG bytes (or the page's `ShotRefusal`); `launchChromium(opts?)` (throws
+  returns the PNG bytes (or the page's `ShotRefusal`), and from Engine 0.16 T14
+  `takeScreenshots(requests, launch)` (several jobs, each on a fresh page, in one Chromium behind
+  one served repo) and `pngBytes(dataUrl)`; `launchChromium(opts?)` (throws
   `NoBrowserError` with the install command), `chromiumArgs(opts?)` (Chromium's flags per
   backend), `servedPath(abs)`, `pngSize(png)`.
 - `check-values.ts` (Engine 0.14 T10): `CHECK_OPS`, `CheckOp`, `valueAt` and `failsCheck`, the
@@ -106,6 +108,16 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   `changeLine`: the event log's filters, shared by `events` and the debugger page.
 - `debugger/` (Engine 0.14 T10): the in-browser simulation debugger, its own module with its own
   `CLAUDE.md` (the page, its pure model, its job and its Node server; The debugger, below).
+- `shot-job.ts` (Engine 0.16 T14): `shotSetup(ctx, runFile, { tick, backend, allowSoftwareGl,
+tiles? })`, the screenshot page's job for a run file (played headless to the tick, the game and
+  its view module checked, the `three` skin for 3D) and `invalidShot`, shared by `screenshot` and
+  `sheet`.
+- `sheet.ts` and `sheet-overlay.ts` (Engine 0.16 T14): `sheet`'s tile grammar (`parseTiles`,
+  `SHEET_BACKENDS`, `tileMeta`), `composeSheet(pictures, { columns, scale, title? })` (the tiles
+  laid out with labels in headless Chromium) and, pure, the overlays a tile draws
+  (`parseOverlay`, `checkOverlay`, `overlayUi`: the game's menu screens as the shell builds them
+  or a `ui` file's screen, stepped with no input, as UI kit draw items; `overlayTransition`: a
+  transition slot or kind at an age). Sheets, below.
 - `screenshot/`: the tools-only screenshot page (`index.html`, `page.ts`) and the job it takes
   (`job.ts`). Never in the Pages build: `build/pages.ts` only builds the launcher and game pages.
 - `content-path.ts`: paths for the editing verbs (`parsePath`, dotted or JSON pointer) and the
@@ -126,7 +138,7 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
 - `docs-gen.ts`: the generated docs (below): `defaultDocSources()`, `generateDocs`, `writeDocs`,
   `staleDocs`. `docs.ts` is the entry point of `pnpm docs:gen` and `pnpm docs:check`; it writes
   (or checks) `kit-list.ts` first and only then imports `docs-gen.ts`, which reads every kit.
-- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `debug.ts`, `mutants.ts`, `record.ts`, and `edit.ts`
+- `commands/`: one file per command (`help.ts`, `validate.ts`, `run.ts`, `dump.ts`, `trace.ts`, `events.ts`, `timeline.ts`, `code.ts`, `screenshot.ts`, `sheet.ts`, `debug.ts`, `mutants.ts`, `record.ts`, and `edit.ts`
   for `get`, `set`, `add`, `remove` and `paste`; `edit.ts`'s `writeValue(file, segments, value)`
   is the checked write `record` uses).
 
@@ -238,6 +250,14 @@ renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matche
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
   `view`, or (`three`) a view without `frame()` or a game without a `three` skin, 2 for a bad
   `--tick`, `--out` or flag, 5 when Chromium is not installed.
+- `sheet <runFile> --ticks <tiles> [--backend 2d|three] [--allow-software-gl] [--out path]
+[--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14): labelled
+  screenshots tiled into one PNG (Sheets, below). Result `{ run, path, width, height, bytes,
+sha256, columns, scale, matchesHeadless, tiles, plays }`. Exit 0; 4 a page's state hashes differ
+  from the headless run's (the PNG is still written) or a 3D play is refused (software WebGL
+  without `--allow-software-gl`); 3 bad content (as `screenshot`); 2 a bad tile, a tick past its
+  run, an overlay the game cannot show, labels that do not match the tiles or a bad `--out`; 5 no
+  Chromium.
 - `debug <file> [--tick N] [--port P] [--check]` (Engine 0.14 T10): the in-browser simulation
   debugger on a run, replay or dump file (The debugger, below). Result `{ url, file, kind, game,
 ticks, openTick, failure, serving }`; with `--check` also `{ tick, hash, headlessHash, matchesHeadless,
@@ -1040,6 +1060,45 @@ games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --al
 - Chromium: `pnpm exec playwright install --with-deps chromium` (CI does this). Without it the
   command crashes (exit 5) with that line, and the browser tests skip with a message locally; in
   CI (`CI` set) they are required.
+
+## Sheets
+
+Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
+"154,level-3/120,300+pause,345+level*22@3d" --allow-software-gl --json` writes
+`.ww-out/sheets/level-1.png` (or `--out`): one picture per tile, `--columns` (4) to a row, each at
+`--scale` (1, whole numbers, nearest neighbour) under its label (the `--labels` caption, then
+`level-1 t300 + pause [2D]`), with `--title` over the sheet.
+
+- **Tiles** (`--ticks`, comma-separated) are `[<run>/]<tick>[+<overlay>][@<backend>]`. `<run>/`
+  is another run file in the positional run file's folder (`level-3` or `level-3.run.json`).
+  `@2d` / `@3d` (or `@canvas2d` / `@three`) overrides `--backend` (`2d`, `3d`, `canvas2d`,
+  `three`; default 2D).
+- **Overlays** (`sheet-overlay.ts`) are drawn over the tick's picture by the engine's own code,
+  never the game's: `title`, `pause`, `settings`, `controls` (the shell's menu screens from
+  `game.json`'s `menus`, built as `GameMenus` builds them, with player 1's default keys and the
+  default volumes and settings), `ui=<file>` (a `ui` content file's screen as it opens) or
+  `ui=<file>.<widget>` (every widget closed, that one opened), each stepped `*<frames>` display
+  frames with no input first (30 for menus, 120 for ui: focus tweens settle, a dialog types), or a
+  transition: a slot of `game.json`'s `transitions` (`level`, `scene`, `mission`, `default`) or a
+  kind (`fade`, `wipe`, `iris`, 20-frame halves), `*<age>` frames after it started (default its
+  first fully covered frame). 2D paints them on a copy of the picture (`CanvasUiPainter`,
+  `drawTransition`; an iris closes on the picture's centre, since the view's camera is inside the
+  game's picture); 3D draws the frame again with the presenter's transition pass and its UI
+  overlay (`ThreePresenter.transition`, `.ui`; an iris closes on the camera's focus). A tile's
+  overlay the game cannot show (no `menus`, no such ui file or widget, no transition for a slot,
+  an age past its end) is a usage error before Chromium starts.
+- **How:** tiles are grouped into one play per run file and backend (in the order the tiles first
+  name them); each is `screenshot`'s job (`shot-job.ts`) played to its highest tile tick with
+  `ShotJob.tiles`, and the screenshot page returns one PNG per tile on the way
+  (`ShotResult.tiles`). Each backend's plays share one Chromium (`takeScreenshots`), started with
+  that backend's flags; the sheet is composed in a 2D Chromium page (`composeSheet`): a dark grey
+  background, labels in monospace (white caption, grey details), larger from scale 2. The state
+  hashes each page saw are compared with the headless run's (`plays[].matchesHeadless`).
+- Same tiles and flags, same machine: byte-identical PNG (`sheet.test.ts`). Label text uses a
+  system font, so a sheet's hash can differ between machines.
+- The owner's effects sheet, `docs/reports/0.16a-effects-sheet.png`, is made by the command in
+  `docs/BUILD-LOG.md` (Engine 0.16 part A). Review sheets are the one other place binary files may
+  live (`docs/reports/*-sheet.png`, `tests/architecture/no-content.test.ts`).
 
 ## The debugger
 

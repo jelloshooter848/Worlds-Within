@@ -183,6 +183,9 @@ direction and soft edge, the iris closing on its centre, the iris centre in scre
 schemas naming the bad field). The skin hook is
 tested in `engine/core/present/skin.test.ts` (`skin tweens`) and
 `engine/backends/canvas2d/presenter.test.ts` (`tweens`). `tests/runs/presentation-invariance.test.ts`
-plays every game's run files with presenters fed every frame and the effects switched on (its
-`EFFECTS` table, which each later 0.16 task extends) and checks the golden and final state hashes
-match `pnpm cli run`. Run with `pnpm test`.
+plays every game's run files with presenters fed every frame and the effects switched on (the
+`EFFECTS` table in `tests/runs/effects.ts`, which each later 0.16 task extends) and checks the
+golden and final state hashes match `pnpm cli run`; from Engine 0.16 T14
+`tests/runs/stepped-shell-invariance.test.ts` does the same through the browser shell's own loop
+(`bootBrowserGame` on a fake page) with hit-pause, transitions, the pause menu and the mixer on.
+Run with `pnpm test`.

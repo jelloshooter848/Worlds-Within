@@ -217,8 +217,16 @@ describe('content rule: the detector', () => {
 const SKIPPED_DIRS = new Set(['.git', 'node_modules', 'dist', 'coverage', '.vite', '.ww-out', '.claude']);
 /** Extensions that are binary (or binary model and sound formats) whatever their bytes. */
 const BINARY_EXT = /\.(png|jpe?g|gif|webp|bmp|ico|glb|gltf|bin|ogg|wav|mp3|flac|ttf|otf|woff2?|zip|gz)$/i;
-/** Where binary files may live: a game's assets folder, and the owner's reviewed mockups. */
-const BINARY_ALLOWED = [/^games\/(?:samples\/)?[^/]+\/assets\//, /^docs\/reports\/mockups\/[^/]+\.png$/];
+/**
+ * Where binary files may live: a game's assets folder, the owner's reviewed mockups, and the
+ * owner's screenshot review sheets (`docs/reports/<release>-<name>-sheet.png`, made by
+ * `pnpm cli sheet`, Engine 0.16 T14).
+ */
+const BINARY_ALLOWED = [
+  /^games\/(?:samples\/)?[^/]+\/assets\//,
+  /^docs\/reports\/mockups\/[^/]+\.png$/,
+  /^docs\/reports\/[^/]+-sheet\.png$/,
+];
 
 /** Whether a file is binary: by its extension, or a NUL byte in its first 8 KiB. */
 function isBinaryFile(path: string): boolean {
@@ -246,12 +254,14 @@ describe('content rule: binary files only in games/*/assets', () => {
     expect(binary.filter((p) => !allowed(p))).toEqual([]);
   });
 
-  it('allows games/<game>/assets and games/samples/<game>/assets, nothing else', () => {
+  it('allows games/<game>/assets, games/samples/<game>/assets and review sheets, nothing else', () => {
     expect(allowed('games/fx-lab/assets/pack/a.png')).toBe(true);
     expect(allowed('games/samples/dungeon/assets/tiles/a.png')).toBe(true);
     expect(allowed('games/fx-lab/content/a.png')).toBe(false);
     expect(allowed('engine/core/assets/a.png')).toBe(false);
     expect(allowed('games/assets/a.png')).toBe(false);
+    expect(allowed('docs/reports/0.16a-effects-sheet.png')).toBe(true);
+    expect(allowed('docs/reports/notes.png')).toBe(false);
     expect(isBinaryFile('games/fx-lab/game.json')).toBe(false);
   });
 });

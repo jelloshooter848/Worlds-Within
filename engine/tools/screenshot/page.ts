@@ -1,14 +1,17 @@
-import { CanvasRenderer } from '@engine/backends/canvas2d';
-import { contentPixelSheets } from '@engine/core/assets/content-sheets';
+import { CanvasRenderer, CanvasUiPainter, drawTransition } from '@engine/backends/canvas2d';
+import { contentPixelSheets, contentSheets } from '@engine/core/assets/content-sheets';
+import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
+import { transitionShape } from '@engine/core/fx';
 import { withContentImages } from '@engine/core/assets/content-images';
-import { contentFonts } from '@engine/core/ui';
+import { contentFonts, paintUi, type FontLookup, type UiFrameSize } from '@engine/core/ui';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
 import { checkGameTexts } from '../game-check';
-import type { ShotJob, ShotRefusal, ShotResult } from './job';
+import { overlayTransition, overlayUi } from '../sheet-overlay';
+import type { ShotJob, ShotRefusal, ShotResult, ShotTile } from './job';
 
 /**
  * The screenshot page (browser only, tools only). `pnpm cli screenshot` opens it in headless
@@ -58,7 +61,59 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
     throw new Error(
       `${job.viewUrl} draws a ${String(game.screen?.width)}x${String(game.screen?.height)} picture, but game.json says ${width}x${height}`,
     );
-  return job.backend === 'three' ? shootThree(job, game, content.value) : shootCanvas(job, game);
+  return job.backend === 'three'
+    ? shootThree(job, game, content.value)
+    : shootCanvas(job, game, content.value);
+}
+
+/**
+ * `pnpm cli sheet` (Engine 0.16 T14): the indexes of the job's tiles taken at `tick`, in order.
+ * Each tile's picture is the tick's frame with its overlay (`../sheet-overlay.ts`) drawn over it:
+ * in 2D on a copy of the canvas (the UI through `CanvasUiPainter`, a transition with
+ * `drawTransition`, its iris on the picture's centre: the view's camera is not reachable here), in
+ * 3D through the presenter's own overlay and transition passes.
+ */
+function tilesAt(job: ShotJob, tick: number): number[] {
+  const out: number[] = [];
+  (job.tiles ?? []).forEach((t, i) => {
+    if (t.tick === tick) out.push(i);
+  });
+  return out;
+}
+
+/** A `UiFrameSize` from a sheet lookup (a panel's frame, a portrait), as the shell's boot makes it. */
+function frameSizeOf(sheets: SheetLookup): UiFrameSize {
+  return (sheet, palette, frame) => {
+    const rect = sheets(sheet, palette)?.frames.get(frame);
+    return rect === undefined ? null : { w: rect.w, h: rect.h };
+  };
+}
+
+/** What a tile's overlay needs: the content, its 2D sheets (frame sizes, the 2D painter) and fonts. */
+interface OverlayContext {
+  content: ContentBundle;
+  sheets: SheetLookup;
+  fonts: FontLookup;
+}
+
+function overlayContext(content: ContentBundle): OverlayContext {
+  return { content, sheets: contentSheets(content), fonts: contentFonts(content) };
+}
+
+/** A 2D tile: a copy of `canvas` with the tile's overlay drawn over it, as a PNG data URL. */
+function canvasTile(job: ShotJob, canvas: HTMLCanvasElement, tile: ShotTile, o: OverlayContext): string {
+  const copy = newCanvas(job);
+  const ctx = copy.getContext('2d');
+  if (!ctx) throw new Error('2D canvas not supported');
+  ctx.drawImage(canvas, 0, 0);
+  if (tile.overlay !== null) {
+    const draws = overlayUi(o.content, tile.overlay, { fonts: o.fonts, frameSize: frameSizeOf(o.sheets) });
+    if (draws.length > 0) paintUi(draws, new CanvasUiPainter(new CanvasRenderer(ctx), o.sheets, o.fonts));
+    const view = overlayTransition(o.content, tile.overlay);
+    const shape = view && transitionShape(view, job.screen, null);
+    if (shape) drawTransition(ctx, shape, job.screen);
+  }
+  return copy.toDataURL('image/png');
 }
 
 /** Plays the job's input, recorded orders and mission steps on `game`, calling `show(tick)` at every tick (tick 0 included). */
@@ -111,18 +166,24 @@ function newCanvas(job: ShotJob): HTMLCanvasElement {
   return canvas;
 }
 
-async function shootCanvas(job: ShotJob, game: ViewGame): Promise<ShotResult> {
+async function shootCanvas(job: ShotJob, game: ViewGame, content: ContentBundle): Promise<ShotResult> {
   const canvas = newCanvas(job);
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('2D canvas not supported');
   const renderer = new CanvasRenderer(ctx);
-  const played = await play(job, game, () => game.render(renderer));
+  const overlays = job.tiles === undefined ? null : overlayContext(content);
+  const tiles: string[] = [];
+  const played = await play(job, game, (tick) => {
+    game.render(renderer);
+    for (const i of tilesAt(job, tick)) tiles[i] = canvasTile(job, canvas, job.tiles![i]!, overlays!);
+  });
   return {
     png: canvas.toDataURL('image/png'),
     width: canvas.width,
     height: canvas.height,
     ...played,
     renderer: null,
+    tiles,
   };
 }
 
@@ -180,11 +241,33 @@ async function shootThree(
   const main = presenter;
   const draw = presenterBySkinSet(main, draws);
   const sync = presenterBySkinSet({ present: (f) => main.scene.sync(f) }, syncs);
-  const played = await play(job, game, (tick) => (tick === job.ticks ? draw : sync).present(frame()));
+  const overlays = job.tiles === undefined ? null : overlayContext(content);
+  const tiles: string[] = [];
+  const played = await play(job, game, (tick) => {
+    const here = tilesAt(job, tick);
+    if (here.length === 0) {
+      (tick === job.ticks ? draw : sync).present(frame());
+      return;
+    }
+    // A tick with tiles is drawn once per tile (the same frame), each with its overlay's passes.
+    const shown = frame();
+    for (const i of here) {
+      const tile = job.tiles![i]!;
+      const o = overlays!;
+      presenter.transition(tile.overlay === null ? null : overlayTransition(o.content, tile.overlay));
+      draw.present(shown);
+      if (tile.overlay !== null)
+        presenter.ui(
+          overlayUi(o.content, tile.overlay, { fonts: o.fonts, frameSize: frameSizeOf(o.sheets) }),
+        );
+      tiles[i] = canvas.toDataURL('image/png');
+    }
+    presenter.transition(null);
+  });
   const png = canvas.toDataURL('image/png');
   presenter.dispose();
   models.dispose();
-  return { png, width: canvas.width, height: canvas.height, ...played, renderer };
+  return { png, width: canvas.width, height: canvas.height, ...played, renderer, tiles };
 }
 
 declare global {

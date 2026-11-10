@@ -149,6 +149,8 @@ export interface Shot {
   snapshot: string;
   hashes: ShotResult['hashes'];
   renderer: string | null;
+  /** The job's tiles as PNG bytes, in order (`ShotJob.tiles`; empty without them). */
+  tiles: Buffer[];
 }
 
 /**
@@ -161,40 +163,79 @@ export async function takeScreenshot(
   gameAbs: string,
   viewAbs: string,
 ): Promise<Shot | ShotRefusal> {
-  const browser = await launchChromium({ backend: job.backend, allowSoftwareGl: job.allowSoftwareGl });
+  const [shot] = await takeScreenshots([{ job, gameAbs, viewAbs }], {
+    backend: job.backend,
+    allowSoftwareGl: job.allowSoftwareGl,
+  });
+  return shot!;
+}
+
+/** One job for {@link takeScreenshots}: the job and where its game and view module are. */
+export interface ShotRequest {
+  job: Omit<ShotJob, 'viewUrl'>;
+  gameAbs: string;
+  viewAbs: string;
+}
+
+/**
+ * Plays several jobs (each on a fresh page) in one Chromium and behind one served repo, in order
+ * (`pnpm cli sheet`, Engine 0.16 T14: one job per run file and backend). Every job must be for
+ * `opts.backend`, whose Chromium flags the browser starts with.
+ */
+export async function takeScreenshots(
+  requests: readonly ShotRequest[],
+  opts: LaunchOptions,
+): Promise<(Shot | ShotRefusal)[]> {
+  const browser = await launchChromium(opts);
   let server: ServedRepo | undefined;
   try {
-    server = await serveRepo({ allow: [resolve(gameAbs)] });
-    const page = await browser.newPage({
-      viewport: { width: job.screen.width, height: job.screen.height },
-      deviceScaleFactor: 1,
-    });
-    const errors: string[] = [];
-    page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto(`${server.base}/${SHOT_PAGE}`);
-    try {
-      await page.waitForFunction(() => typeof window.wwShoot === 'function', undefined, { timeout: 30_000 });
-    } catch (error) {
-      const why = errors.length > 0 ? errors.join('; ') : String(error);
-      throw new Error(`the screenshot page did not start: ${why}`, { cause: error });
+    server = await serveRepo({ allow: [...new Set(requests.map((r) => resolve(r.gameAbs)))] });
+    const out: (Shot | ShotRefusal)[] = [];
+    for (const { job, viewAbs } of requests) {
+      const page = await browser.newPage({
+        viewport: { width: job.screen.width, height: job.screen.height },
+        deviceScaleFactor: 1,
+      });
+      const errors: string[] = [];
+      page.on('pageerror', (error) => errors.push(error.message));
+      await page.goto(`${server.base}/${SHOT_PAGE}`);
+      try {
+        await page.waitForFunction(() => typeof window.wwShoot === 'function', undefined, {
+          timeout: 30_000,
+        });
+      } catch (error) {
+        const why = errors.length > 0 ? errors.join('; ') : String(error);
+        throw new Error(`the screenshot page did not start: ${why}`, { cause: error });
+      }
+      const full: ShotJob = { ...job, viewUrl: `${server.base}${servedPath(viewAbs)}` };
+      const shot = await page.evaluate((j) => window.wwShoot!(j), full);
+      await page.close();
+      if ('refused' in shot) {
+        out.push(shot);
+        continue;
+      }
+      out.push({
+        png: pngBytes(shot.png),
+        width: shot.width,
+        height: shot.height,
+        snapshot: shot.snapshot,
+        hashes: shot.hashes,
+        renderer: shot.renderer,
+        tiles: shot.tiles.map(pngBytes),
+      });
     }
-    const full: ShotJob = { ...job, viewUrl: `${server.base}${servedPath(viewAbs)}` };
-    const shot = await page.evaluate((j) => window.wwShoot!(j), full);
-    if ('refused' in shot) return shot;
-    const prefix = 'data:image/png;base64,';
-    if (!shot.png.startsWith(prefix)) throw new Error('the screenshot page did not return a PNG');
-    return {
-      png: Buffer.from(shot.png.slice(prefix.length), 'base64'),
-      width: shot.width,
-      height: shot.height,
-      snapshot: shot.snapshot,
-      hashes: shot.hashes,
-      renderer: shot.renderer,
-    };
+    return out;
   } finally {
     await browser.close();
     await server?.close();
   }
+}
+
+/** A `data:image/png;base64,...` URL's bytes; throws when it is not one. */
+export function pngBytes(dataUrl: string): Buffer {
+  const prefix = 'data:image/png;base64,';
+  if (!dataUrl.startsWith(prefix)) throw new Error('the screenshot page did not return a PNG');
+  return Buffer.from(dataUrl.slice(prefix.length), 'base64');
 }
 
 /** A PNG's width and height, from its IHDR chunk (`readPngSize`, the reader `validate` uses). */

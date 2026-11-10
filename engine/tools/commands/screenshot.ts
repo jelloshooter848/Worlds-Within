@@ -1,18 +1,15 @@
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { z } from 'zod';
-import { contentOf } from '@engine/core/content/bundle';
-import { SKIN_KIND } from '@engine/core/content/engine-kinds';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
 import { contentError, formatErrors, type ContentError } from '@engine/core/content/validate';
-import { skinSet } from '@engine/core/present';
 import { EXIT, UsageError } from '../exit-codes';
-import { loadGame } from '../game-loader';
-import { headlessRules, playRun, stateHash } from '../headless-run';
+import { stateHash } from '../headless-run';
 import { defineCommand } from '../registry';
 import { readRunFile } from '../run-file';
 import { pngSize, takeScreenshot } from '../screenshot';
+import { invalidShot, shotSetup } from '../shot-job';
 import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
 
 /**
@@ -85,74 +82,17 @@ export const screenshotCommand = defineCommand({
       throw new UsageError(`${runFile.value.file} plays a world, which has no view to draw (Engine 0.8)`);
     if (runFile.ok && flags.tick > runFile.value.run.ticks)
       throw new UsageError(`--tick ${flags.tick} is after the run's last tick (${runFile.value.run.ticks})`);
-    const played = await playRun(ctx.cwd, args.runFile, { untilTick: flags.tick });
-    if (!played.ok) return invalid(args.runFile, played.errors);
-    const {
-      loaded,
-      seed,
-      lastTick,
-      snapshot,
-      kit,
-      disabledRulesByKit,
-      startSave,
-      start,
-      hashes: headlessHashes,
-    } = played.value;
-
-    const game = loadGame(ctx.cwd, loaded.gameDir ?? '.');
-    if (!game.content.ok) return invalid(loaded.file, game.content.errors);
-    const root = game.dir === '.' ? '' : `${game.dir}/`;
-    const { view, screen } = game.content.value.manifest;
+    const setup = await shotSetup(ctx, args.runFile, {
+      tick: flags.tick,
+      backend: flags.backend,
+      allowSoftwareGl: flags.allowSoftwareGl,
+    });
+    if (!setup.ok) return setup.outcome;
+    const { request, played, root } = setup.value;
+    const { loaded, seed, start, lastTick, snapshot, hashes: headlessHashes } = played;
     const where = `${root}${MANIFEST_FILE}`;
-    if (view === undefined)
-      return invalid(loaded.file, [
-        contentError(where, ['view'], 'no_view', `${where} names no view module, which screenshot needs`),
-      ]);
-    const gameAbs = resolve(ctx.cwd, game.dir);
-    const viewAbs = resolve(gameAbs, view);
-    if (!existsSync(viewAbs))
-      return invalid(loaded.file, [
-        contentError(where, ['view'], 'missing_file', `no file at ${root}${view}`),
-      ]);
-
-    if (flags.backend === 'three') {
-      const skins = contentOf(game.content.value, SKIN_KIND);
-      if (skinSet(game.content.value, 'three').main === null) {
-        const have =
-          skins.length === 0
-            ? 'it has no skins'
-            : `its skins are ${skins.map((e) => `${root}${e.file} (${e.value.backend})`).join(', ')}`;
-        return invalid(loaded.file, [
-          contentError(
-            where,
-            ['content', 'skin'],
-            'no_three_skin',
-            `--backend three needs a skin with "backend": "three" (not only mini games' three-<id> skins) in ${where} content.skin; ${have}`,
-          ),
-        ]);
-      }
-    }
-
-    const shot = await takeScreenshot(
-      {
-        files: { ...game.texts },
-        root,
-        seed,
-        ticks: lastTick,
-        hashEvery: loaded.run.hashEvery,
-        input: loaded.run.input,
-        orders: loaded.run.orders,
-        missions: loaded.run.missions,
-        ...headlessRules(kit ?? '', disabledRulesByKit),
-        campaign: startSave,
-        start,
-        screen,
-        backend: flags.backend,
-        allowSoftwareGl: flags.allowSoftwareGl,
-      },
-      gameAbs,
-      viewAbs,
-    );
+    const view = setup.value.content.manifest.view ?? '';
+    const shot = await takeScreenshot(request.job, request.gameAbs, request.viewAbs);
     if ('refused' in shot) return refused(shot, loaded.file, where, `${root}${view}`);
     const size = pngSize(shot.png);
     const name = basename(loaded.file)
@@ -202,9 +142,7 @@ export const screenshotCommand = defineCommand({
   },
 });
 
-function invalid(run: string, errors: ContentError[]) {
-  return { exit: EXIT.invalidContent, result: { run, errors } };
-}
+const invalid = invalidShot;
 
 /** The page's refusal as a result: a view without `frame()` is content (3), WebGL a failed check (4). */
 function refused(shot: ShotRefusal, run: string, where: string, viewFile: string) {

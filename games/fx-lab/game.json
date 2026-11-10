@@ -52,7 +52,7 @@
       "music": "lab",
       "footer": "An original game made with the Worlds Within engine",
       "items": ["start", "controls", "settings"],
-      "dim": 0.88
+      "dim": 0.95
     },
     "pause": { "items": ["resume", "controls", "settings", "title"] },
     "controls": [

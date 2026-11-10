@@ -1,6 +1,6 @@
 # Build log
 
-This is the log of the autonomous build of Engine 0.2–0.15 on branch `engine/build-0.15`, for the
+This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 part A on branch `engine/build-0.15`, for the
 owner's review. Nothing in it is merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
@@ -70,6 +70,11 @@ the API review listed (`1.0-1` to `1.0-11`).
   fixed, the API review written (`docs/reports/api-review.md`). Not met: nothing; M2's look for
   two tags at once and the review's findings A4-A8 are listed for 1.0 (`1.0-3`, `1.0-5` to
   `1.0-9`).
+- **0.16 part A Engine presentation features: built, awaiting review.** Animation, tweens,
+  particles, camera effects, parallax, transitions, the UI kit, the mixer, title/pause/settings
+  for every game, PNG and glTF assets, the 3D look, the 2D benchmark, `pnpm cli sheet` and the
+  effects sheet; presentation proved never to change state. Not met: the owner's screenshot
+  review (item 339) and the PixiJS backend (T13b, item 323).
 
 ### How to try each sample
 
@@ -109,7 +114,7 @@ for the platformer and the lab). Each game's `CLAUDE.md` lists its run files and
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 315** (next unused 316). Awaiting the owner's answer, by release (an answer by number is
+used is 339** (next unused 340). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -145,8 +150,170 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 
 ## Engine 0.16 part A
 
-Engine presentation features, built on branch `engine/build-0.15` (not tagged). Task entries are
-added here as they land; the part's close-out (T14) writes the summary.
+Engine presentation features (docs/ROADMAP.md, 0.16 part A), built on branch
+`engine/build-0.15` in fourteen tasks (T1-T14; not tagged, nothing published). Every feature is
+engine (core, backends or the shell), driven by skins and other text, and none can change a run's
+state: two invariance tests play every run file of every game with every effect on and get the
+golden hashes. **Open for the owner:** the screenshot review of the effects sheet (item 339) and
+the PixiJS follow-up (item 323, T13b, not built).
+
+### What was built
+
+- **T1 `engine/core/fx`:** `fxRng(seed, frame, stream)`, the presentation-only RNG; easing curves
+  by name; `Tween`/`TweenSet` (position, scale, rotation, alpha, colour) and tween specs in skins
+  (an event's `tween`, a kind's `spawnTween`). `tests/runs/presentation-invariance.test.ts`: every
+  run file played with presenters fed every frame and the skins rewritten by "effects on"
+  switches (now in `tests/runs/effects.ts`).
+- **T2 sprite animation:** per-frame `ticks`, one-shots with `then`, frame `events` (footsteps)
+  played through the skin's `events`, 3D `poses`; the new lab game `games/fx-lab` (Pip, three
+  short levels, run files with golden hashes).
+- **T3 particles:** a fixed-step `ParticleSystem` with emitters in skins (`emitters`, an event's
+  and a kind's `emit`), additive blending and glow (2D), two `Points` buffers in 3D; six presets in
+  the lab.
+- **T4 camera effects and parallax:** trauma shake, look-ahead, zoom punches, flashes, hit-pause
+  (the shell holds ticks), parallax layers in both backends.
+- **T5 screen transitions:** fade, wipe and iris from `game.json`'s `transitions`, played by the
+  shell on level changes, scene pushes and on demand, drawn by both backends.
+- **T6-T7 `engine/core/ui`:** bitmap fonts (`font` kind), text, nine-slice panels, HUD widgets
+  (bars, counters, icons, minimaps), buttons, menus, dialog boxes and `ui` screens, input from
+  keyboard, gamepad, mouse and touch.
+- **T8 audio mixer:** layered music mixed by rules on the frame's status, varied sound effects
+  from `fxRng` with cooldowns, ducking under events and dialog boxes, master/music/sfx/ui buses.
+- **T9 title, pause and settings:** built by the shell from `game.json`'s `menus` for every sample
+  and the lab, in both backends, by keyboard, gamepad and touch.
+- **T10-T11 assets:** PNG sprite sheets (`images` in 2D skins) and glTF/GLB models (`model` in 3D
+  skins) from a game's `assets/`, checked by `validate` with the game's `CREDITS.md`; the lab's
+  original torch sheet and brazier model.
+- **T12 3D backend:** sun with soft shadows, ambient and hemisphere light, fog, tone mapping,
+  point lights, world-anchored labels.
+- **T13 the 2D feature benchmark:** below (item 323: Canvas2D misses the bar; PixiJS follow-up
+  T13b).
+- **T14 close-out:**
+  - **`pnpm cli sheet`** (`engine/tools/commands/sheet.ts`, `sheet.ts`, `sheet-overlay.ts`,
+    `shot-job.ts`): labelled screenshots of one or more run files at chosen ticks, in 2D and 3D,
+    tiled into one PNG. A tile is `[<run>/]<tick>[+<overlay>][@<backend>]`; overlays are the
+    game's menu screens (`title`, `pause`, `settings`, `controls`), a `ui` file or one of its
+    widgets (`ui=lab.talk`) and screen transitions at an age (`level*22`, `wipe*12`), drawn by the
+    engine's own code over the tick's picture. Each run file and backend is played once (one
+    Chromium per backend, `takeScreenshots`) and its state hashes compared with the headless
+    run's; the same tiles give the same bytes. In the CLI reference, the cheat sheet, the tools'
+    `CLAUDE.md` (Sheets) and module page; tested in `engine/tools/sheet.test.ts` (grammar,
+    overlays from the lab's content, a 2D and 3D sheet made twice). `screenshot` now builds its job
+    with the same `shotSetup`, unchanged in behaviour.
+  - **The effects sheet**, `docs/reports/0.16a-effects-sheet.png` (2088 x 3249, 656 KB): 24 tiles
+    of the lab, below.
+  - **The final invariance proof**, `tests/runs/stepped-shell-invariance.test.ts`: every run file
+    of every game (46) through the browser shell's own loop (`bootBrowserGame` on a fake page,
+    stepped by `requestAnimationFrame` with a fake clock, the run's input fed through the scene)
+    with every effect switch on at once, the Canvas2D and 3D scene presenters both fed every
+    frame, the mixer (unlocked by a key; the lab's layered song playing), hit-pause from the 2D
+    presenter, transitions (the game's, or an iris on every level change, and a fade on demand
+    every 90 display frames) and the pause menu (every 150 frames, resumed 12 frames later). Every
+    tick's hash is the golden one and the final state is `pnpm cli run`'s, while the loop took
+    many more display frames than ticks (on the lab's `level-1`, 1144 frames for 360 ticks).
+  - Docs: this section, the roadmap's Done when, DESIGN.md's 0.16 line, `llms.txt`, the tools'
+    and the fx lab's `CLAUDE.md` and module pages, the cheat sheet, the generated CLI reference.
+
+### Choices made
+
+Items 324-338 in [FEEDBACK-LOG.md](FEEDBACK-LOG.md) (Engine 0.16 part A, choices made); each is
+built and kept unless the owner says otherwise:
+
+- **324** a presentation-only RNG; fx, ui and the mixer off limits to kits and the sim; invariance
+  by rewriting skins. **325** the animation format extends the old cycles; the lab game.
+  **326** the engine's own particle system; glow and blend 2D only. **327** shake in whole pixels;
+  hit-pause holds the loop's ticks, not in manual mode. **328** transitions are the shell's, by
+  slot. **329** `engine/core/ui` with the `font` and `ui` kinds. **330** the mixer's one clock,
+  `fxRng` variation, one duck envelope. **331** menus from `game.json`; `?debug=step` skips the
+  title. **332** assets as data URLs, original lab assets made by scripts. **333** the 3D look
+  opt-in per skin.
+- **334** `sheet` draws overlays with the engine's code on the tools' page (any run file, also one
+  with `start`); a 2D iris closes on the picture's centre. **335** review sheets may be committed
+  as `docs/reports/*-sheet.png`. **336** the stepped-shell invariance test (real boot, fake page,
+  rAF loop) instead of `__ww.replay`. **337** the lab's title dim 0.95. **338** the first Done
+  when counted with T13b (PixiJS) open.
+
+### How to try it
+
+```sh
+pnpm dev    # then /games/fx-lab/ (Escape pauses; ?backend=three for 3D; ?ui=dialog), and any sample
+pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks '154,300+pause,level-3/120@3d' --allow-software-gl --json
+pnpm test tests/runs/presentation-invariance.test.ts tests/runs/stepped-shell-invariance.test.ts
+pnpm bench:features   # the 2D feature benchmark (T13)
+```
+
+The effects sheet was made with:
+
+```sh
+pnpm -s cli sheet games/fx-lab/runs/level-1.run.json \
+  --ticks 'level-1/154,level-1/219,level-3/120,level-3/305,level-3/40,level-2/279,level-1/352,level-1/260,level-1/300,level-2/300,level-1/0+title,level-1/300+pause,level-1/300+settings,level-1/300+controls,level-1/120+ui=lab,level-1/120+ui=lab.talk,level-1/100+wipe*12,level-1/100+default*9,level-1/345+level*22@3d,level-3/40@3d,level-3/120@3d,level-3/300@3d,level-1/219@3d,level-1/300+pause@3d' \
+  --labels 'Particles: land dust|Stomp: sparks, ring, shake, hit-pause|Coin burst and glints, run dust|Torch flame and smoke, door aura|PNG sprite sheet torch|Hurt flash, half health bar|Door: zoom punch and gold tint|Parallax: sky, clouds, mountains, hills|HUD: panels, font, counters, minimap|HUD: health bar after a hit|Title screen|Pause menu|Settings|Controls|UI kit menu: slider, toggle, disabled|UI kit dialog: speaker, portrait|Transition: wipe|Transition: fade (default)|3D: iris closing on Pip at the door|3D: glTF brazier, point light|3D: sun shadows on the slab, labels|3D: fog, torch light, EXIT label|3D: stomp particles|3D: pause menu overlay' \
+  --title 'Engine 0.16 part A: effects sheet (games/fx-lab, pnpm cli sheet)' \
+  --allow-software-gl --scale 2 --out docs/reports/0.16a-effects-sheet.png --json
+```
+
+### Done when
+
+- **Each feature above is in the engine with tests, a module page entry and an example in a
+  skin: met, but for T13b.** Animation, tweens (`engine/core/fx`, `engine/core/present`), particles,
+  camera effects, transitions, the UI kit (`engine/core/ui`), the mixer (`engine/core/audio`),
+  menus (`engine/core/shell`), PNG and glTF assets (`engine/core/content`, the backends) and the 3D
+  look (`engine/backends/three`) each have tests next to the code, an entry on their module page
+  and an example in the fx lab's skins (most also in the platformer sample's). The 2D benchmark is
+  written (T13). The PixiJS backend the benchmark called for (T13b) is not built: it waits for the
+  owner's answer to item 323 (item 338).
+- **A test proves presentation does not change state: met.** `tests/runs/presentation-invariance.test.ts` plays all 46 run files with both presenters and every effect switch on (tweens,
+  animation, particles, camera, transitions, audio, lighting) and `tests/runs/stepped-shell-invariance.test.ts` plays them through the shell's own loop with hit-pause, transitions, the pause menu and
+  the mixer on; both give every golden hash and `pnpm cli run`'s final state. `pnpm test
+tests/runs` (run files against the golden hashes, backend parity) passes with no hash file
+  changed in 0.16 part A's close-out, and `pnpm cli mutants` passes for every sample and the
+  platformer lab (each exit 0 at T14: dungeon,
+  mini siege, platformer, RTS skirmish, tower defense, platformer lab; the lenient `uses` kits'
+  unguarded rules are reported as in 0.15; the fx lab is not a kit test and its strict kit's
+  rules are guarded by the platformer lab, as its `CLAUDE.md` says).
+- **The 2D benchmark and feature test is written up with numbers, and the choice is made: met**
+  (T13, below; item 323).
+- **Every sample has a title screen, a pause menu and a settings screen: met** (T9;
+  `tests/browser/menus.test.ts` opens each sample's and the lab's title, pause, settings and
+  controls by keyboard and touch; the sheet shows the lab's).
+- **`validate` checks PNG and glTF/GLB references and `CREDITS.md`: met** (T10, T11;
+  `engine/core/content/assets.test.ts`, `engine/tools/main.test.ts`; `pnpm -s cli validate
+games/fx-lab` passes with the lab's PNG sheet and GLB model credited).
+- **Owner screenshot review: open (item 339).** The sheet is
+  `docs/reports/0.16a-effects-sheet.png`.
+
+### The effects sheet (owner screenshot review, item 339)
+
+`docs/reports/0.16a-effects-sheet.png`, 24 tiles at scale 2, four to a row, each with a caption
+and its run, tick, overlay and backend. Read and checked tile by tile (the whole sheet and each
+row cropped at full size):
+
+- 2D: land dust; a stomp's gold sparks and white ring in the shake (the hit-pause holds that
+  picture in play); coin burst and glints with run dust; torch flame, smoke and the door's cyan
+  aura; the PNG torch sheet; the red hurt flash with the health bar after a hit; the door's zoom
+  punch to 1.5 with its gold tint; the four parallax layers; the HUD (panels, both fonts, the
+  rolling coin counter, lives, minimap) and the health bar after a hit.
+- Menus and UI kit: the title (name, subtitle, art, menu, footer, key hints), pause, settings
+  (sliders, toggles, the touch pad choice) and controls screens; the lab's `ui` menu (a slider, a
+  toggle, a disabled item) and Pip's dialog box with his portrait.
+- Transitions: a wipe and the default fade in 2D; the level iris closing on Pip at the door in
+  3D.
+- 3D: the glTF brazier with its point light, sun shadows from the coins and Pip on the slab, fog
+  on the mountains, the torch light, the `Pip` and `EXIT` labels, stomp particles, and the pause
+  menu as the 3D overlay pass.
+
+Fixed while reading it: the title's dim (the HUD heading showed through the subtitle, item 337)
+and the sheet's label size at scale 2. Known and left: a 2D iris on the sheet closes on the
+picture's centre, not on Pip (item 334; the page's iris follows him, as the 3D tile shows); the
+`Pip` and `EXIT` labels overlap when Pip stands in the door; the lab's HUD heading and line sit
+over the picture in every tile (they are the lab's, not a sample's).
+
+### Outstanding issues
+
+- **T13b, the PixiJS 2D backend:** not built; waits for the owner's answer to item 323.
+- **The owner's screenshot review:** item 339.
+- A 3D tile is drawn on SwiftShader here (no GPU in the build container), as every 3D screenshot
+  since 0.6.
 
 ### T13: the 2D feature benchmark and the Canvas2D/PixiJS decision (item 320)
 

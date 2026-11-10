@@ -21,6 +21,7 @@ Commands:
   timeline    the world time, opportunities, frozen events and commits of a run file, as data
   code        the save code of a game run's campaign save at its last tick (or --tick N)
   screenshot  a PNG of one paused, seeded frame of a run file (headless Chromium)
+  sheet       labelled screenshots of a run at several ticks, tiled into one PNG (headless Chromium)
   debug       the in-browser simulation debugger on a run, replay or dump file (state, events, stepping)
   mutants     play run files once per kit rule switched off and report the rules they don't guard
   record      write a hosted round's recorded input into a run file's play step, then run it
@@ -215,6 +216,32 @@ Flags:
   --out <string>              where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
   --backend <canvas2d|three>  what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)
   --allow-software-gl         three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
+
+Global flags:
+  --json                 print exactly one JSON result object on stdout
+  --help                 show help for the command
+  --max-output <number>  the output cap in bytes; longer output is cut and the rest written to a file
+```
+
+## `sheet`
+
+```text
+pnpm cli sheet <runFile> [flags]
+
+  labelled screenshots of a run at several ticks, tiled into one PNG (headless Chromium)
+
+Arguments:
+  <runFile>  the run file, such as games/fx-lab/runs/level-1.run.json
+
+Flags:
+  --ticks <string>                  the tiles, comma-separated: [<run>/]<tick>[+<overlay>][@<backend>], such as 216,level-3/120,300+pause,40+ui=lab.talk,352+level*22,200@3d
+  --out <string>                    where to write the PNG (default .ww-out/sheets/<run name>.png)
+  --backend <canvas2d|three|2d|3d>  what draws the tiles without an @<backend> of their own: 2d (canvas2d) or 3d (three)
+  --allow-software-gl               3D tiles: draw on software WebGL (SwiftShader) instead of refusing (exit 4)
+  --columns <number>                tiles per row
+  --scale <number>                  whole-number scale of each picture
+  --labels <string>                 a caption per tile, separated by '|', shown over each tile's run, tick and overlay
+  --title <string>                  a heading over the sheet
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

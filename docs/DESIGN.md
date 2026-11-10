@@ -32,7 +32,8 @@ The engine is designed to be used mainly through an LLM (like Claude Code). That
   glTF/GLB, OGG/WAV) in a game's own `assets/` folder, with a `CREDITS.md` giving each pack's source
   URL, author and licence. CC0 is required (CC-BY only with an owner decision; never non-commercial,
   no-redistribution or ripped assets). Code, levels, missions, skins and data stay text, and our own
-  MML music stays the main music.
+  MML music stays the main music. Review pictures for the owner (`docs/reports/mockups/` and the
+  screenshot review sheets `docs/reports/*-sheet.png`) are the only other binary files.
 - **Every run is repeatable.** The same seed and the same inputs always give the same result, down to
   the tick. Nothing reads the clock or unseeded randomness.
 - **The LLM can check its own work.** A command-line tool can validate content, run a game headless,
@@ -256,11 +257,20 @@ docs/
   control, a skin's `background`, the HUD in 3D and `game.json` kit options. The review
   (`docs/reports/api-review.md`) lists every module's entry points as kept, changed in 0.15 or
   listed for 1.0, which is where the v1 API docs start.
-- **Presentation and feel (0.16, planned).** Before 1.0, every sample is brought to the level of a
-  modern pixel-art indie game (short demos, not full games): shared engine features for animation,
-  tweens, particles, camera effects, transitions, a UI kit, an audio mixer, menus and loading PNG
-  and glTF assets from skins, and a better 3D backend. The mini siege moves to 3D low-poly. The
-  owner's playtest decides when it is done. See `docs/ROADMAP.md`.
+- **Presentation and feel (0.16, part A built; parts B-F planned).** Before 1.0, every sample is
+  brought to the level of a modern pixel-art indie game (short demos, not full games). Part A
+  (built, awaiting the owner's screenshot review) put the shared features in the engine, all
+  driven by skins and other text and none of them able to change a run's state: sprite animation
+  states with frame events, tweens, particle emitters with additive blending and glow, camera
+  effects (shake, look-ahead, zoom, hit-pause, flashes) and parallax, screen transitions, a UI kit
+  (bitmap fonts, panels, HUD widgets, buttons, menus, dialog boxes, input from every device), an
+  audio mixer (layered music, varied sounds, ducking), a title screen, pause menu and settings
+  for every game, PNG sprite sheets and glTF/GLB models in skins, and a 3D backend with lights,
+  shadows, fog, tone mapping and world-anchored labels; `games/fx-lab` shows them all and `pnpm
+cli sheet` makes the review sheet (`docs/reports/0.16a-effects-sheet.png`). Canvas2D missed the
+  frame-time bar with every feature on, so a PixiJS 2D backend is the follow-up task T13b (item
+  323). Parts B-F bring each sample to the bar; the mini siege moves to 3D low-poly. The owner's
+  playtest decides when it is done. See `docs/ROADMAP.md`.
 
 ## Open questions
 

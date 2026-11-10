@@ -862,18 +862,22 @@ other text, so a new game gets it without code of its own.
 - **3D backend upgrade:** lighting (sun, ambient and point lights), shadows, fog, tone mapping and
   HUD labels anchored to world positions (names, health bars, timers over buildings).
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-a), Engine 0.16 part A,
+Done when)
 
-- [ ] Each feature above is in the engine with tests, a module page entry and an example in a skin.
-- [ ] A test proves presentation does not change state: every existing run file, golden hash and
-      mutant check passes unchanged with the new effects on.
+- [x] Each feature above is in the engine with tests, a module page entry and an example in a skin.
+      (All but the PixiJS backend, T13b, which waits for the owner's answer to item 323; item
+      338.)
+- [x] A test proves presentation does not change state: every existing run file, golden hash and
+      mutant check passes unchanged with the new effects on. (`tests/runs/presentation-invariance.test.ts` and, on the stepped shell, `tests/runs/stepped-shell-invariance.test.ts`; T14.)
 - [x] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
       is made and recorded.
 - [x] Every sample has a title screen, a pause menu and a settings screen.
-- [ ] `validate` checks PNG and glTF/GLB references in skins (file present, frames inside the image)
+- [x] `validate` checks PNG and glTF/GLB references in skins (file present, frames inside the image)
       and that each game with an `assets/` folder has a `CREDITS.md` naming every pack.
 - [ ] Owner screenshot review: a sheet of the effects (particles, flashes, UI kit, 3D lighting and
-      shadows) is accepted.
+      shadows) is accepted. (The sheet is `docs/reports/0.16a-effects-sheet.png`, made by
+      `pnpm cli sheet`; open as item 339.)
 
 ### 0.16 part B: the flagship platformer, Hopper's Way
 

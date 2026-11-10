@@ -481,7 +481,10 @@ reproduced, hashMismatch }`).
 5. `run` again, then `mutants <run-file>` (or `mutants games/<game>` for every run file) to see
    which kit rules the run does not guard, and
    `screenshot <run-file> --tick N` to look at a frame (`--backend three --allow-software-gl` for
-   the 3D picture where there is no GPU).
+   the 3D picture where there is no GPU), or `sheet <run-file> --ticks 120,300+pause,200@3d`
+   for several frames in one labelled PNG (tiles from other run files of the folder as
+   `level-3/120`; overlays `title`, `pause`, `settings`, `controls`, `ui=<file>[.<widget>]` or a
+   transition like `level*22`).
 6. Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
 When a run fails, the [debug-failing-run skill](../.claude/skills/debug-failing-run/SKILL.md) walks
@@ -500,6 +503,7 @@ these steps in order.
 | `timeline`   | `pnpm cli timeline <runFile> [flags]`        | the world time, opportunities, frozen events and commits of a run file, as data              |
 | `code`       | `pnpm cli code <runFile> [flags]`            | the save code of a game run's campaign save at its last tick (or --tick N)                   |
 | `screenshot` | `pnpm cli screenshot <runFile> [flags]`      | a PNG of one paused, seeded frame of a run file (headless Chromium)                          |
+| `sheet`      | `pnpm cli sheet <runFile> [flags]`           | labelled screenshots of a run at several ticks, tiled into one PNG (headless Chromium)       |
 | `debug`      | `pnpm cli debug <file> [flags]`              | the in-browser simulation debugger on a run, replay or dump file (state, events, stepping)   |
 | `mutants`    | `pnpm cli mutants <target>`                  | play run files once per kit rule switched off and report the rules they don't guard          |
 | `record`     | `pnpm cli record <runFile> [flags]`          | write a hosted round's recorded input into a run file's play step, then run it               |

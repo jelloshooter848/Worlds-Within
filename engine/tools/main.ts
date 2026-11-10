@@ -9,6 +9,7 @@ import { mutantsCommand } from './commands/mutants';
 import { recordCommand } from './commands/record';
 import { runCommand } from './commands/run';
 import { screenshotCommand } from './commands/screenshot';
+import { sheetCommand } from './commands/sheet';
 import { timelineCommand } from './commands/timeline';
 import { traceCommand } from './commands/trace';
 import { validateCommand } from './commands/validate';
@@ -47,6 +48,7 @@ export function defaultRegistry(): Registry {
   registry.add(timelineCommand);
   registry.add(codeCommand);
   registry.add(screenshotCommand);
+  registry.add(sheetCommand);
   registry.add(debugCommand);
   registry.add(mutantsCommand);
   registry.add(recordCommand);

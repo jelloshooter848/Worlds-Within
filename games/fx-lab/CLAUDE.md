@@ -245,7 +245,7 @@ expected to pass here (`games/platformer-lab` guards the kit's rules).
 
 `game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
 `engine/core/ui/menus.ts`): the title "The fx lab" in `fx-title` over the game's own
-picture at its start (dimmed 0.88), the subtitle "Every effect on three short levels", art (`pip-run-1` x3, `beetle-0` x3),
+picture at its start (dimmed 0.95, from Engine 0.16 T14: at 0.88 the HUD heading showed through the subtitle on the effects sheet), the subtitle "Every effect on three short levels", art (`pip-run-1` x3, `beetle-0` x3),
 the song `lab`, a footer and the items start, controls, settings; the pause menu
 (resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
 rows (Walk; Run (hold); Jump; Lab menu), shown with the player's keys. Colours: focus bar `#00406c`,
@@ -258,6 +258,24 @@ at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the tick
 are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
 start, pause, settings and controls by keyboard and touch, settings kept across a reload;
 `WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
+
+## The effects sheet (Engine 0.16 T14)
+
+`docs/reports/0.16a-effects-sheet.png` is the owner's screenshot review of 0.16 part A: 24 tiles
+of the lab's three run files, made with `pnpm cli sheet` (`engine/tools/CLAUDE.md`, Sheets) at
+scale 2, four to a row. 2D: land dust (`level-1/154`), a stomp's sparks, ring, shake and
+hit-pause (`level-1/219`), the coin burst (`level-3/120`), torch flame, smoke and the door's aura
+(`level-3/305`), the PNG torch (`level-3/40`), the hurt flash (`level-2/279`), the door's zoom
+punch and tint (`level-1/352`), parallax (`level-1/260`), the HUD (`level-1/300`,
+`level-2/300`), the title, pause, settings and controls screens (`+title` on tick 0, the others
+on tick 300), the lab's `ui` menu and dialog (`level-1/120+ui=lab`, `+ui=lab.talk`), a wipe and
+the default fade (`level-1/100+wipe*12`, `+default*9`). 3D: the level iris closing on Pip at the
+door (`level-1/345+level*22@3d`), the glTF brazier (`level-3/40@3d`), sun shadows and labels
+(`level-3/120@3d`), fog, torch light and `EXIT` (`level-3/300@3d`), stomp particles
+(`level-1/219@3d`) and the pause menu over the 3D picture (`level-1/300+pause@3d`). The exact
+command is in `docs/BUILD-LOG.md` (Engine 0.16 part A); rerun it after a change to the lab's look
+and look at the sheet again. While tuning it the title's `dim` went from 0.88 to 0.95 (the HUD
+heading showed through the subtitle).
 
 ## Imports
 
