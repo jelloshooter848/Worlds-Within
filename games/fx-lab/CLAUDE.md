@@ -22,7 +22,18 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   format: `kits/platformer/CLAUDE.md`. The goal `G` is drawn as a door (`goal` kind, 16x32).
   `fx-3` ("torchlight", Engine 0.16 T3): four torches (`t`, the `torch` actor), a platform
   with three coins, a higher one with three more over a pit, two beetles, the door.
-- `content/campaigns/main.campaign.json`: the play order, `fx-1`, `fx-2`, then `fx-3`.
+- `content/campaigns/main.campaign.json`: the play order, `fx-1`, `fx-2`, then `fx-3`. The
+  levels' headers name them (Engine 0.16 part B): "First steps", "Over the spikes", "Torchlight".
+- The level select, level-clear banner, end screen and respawn transition (Engine 0.16 part B,
+  T3; the engine's worked example before the flagship uses them): `game.json`'s title has a
+  `levels` item, `menus.levels` ("Pick a level", `*` after a cleared one, later levels locked
+  until the one before is cleared), `menus.clear` ("Level clear!": coins, time, deaths, shown
+  over the door during the kit's pause), `menus.end` ("Lab complete!", a credits line, the summed
+  stats, Back to title and Levels, after `fx-3`) and `transitions.respawn` (an 18-frame iris on
+  Pip with a hold of 6). `main.ts` passes `levels: stageNames(fxStages(content))` and creates the
+  game at `booted.start` (the chosen stage). `tests/browser/menus.test.ts` plays them by
+  keyboard, gamepad and touch; `pnpm -s cli screenshot runs/level-1.run.json --tick 360
+--overlay clear --scale 6` shoots the banner.
 - `content/profiles/pip.profile.json`: SMBC-style runner numbers (a copy of the platformer
   sample's) with two actor types, `beetle` (a slow walker, stompable) and `torch` (Engine 0.16 T3: stands
   still, harmless, not stompable; scenery for the particle presets).

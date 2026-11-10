@@ -123,7 +123,7 @@ input of the loop steps since a slower scene's last tick as one frame (pressed o
 pressed and held, every step's taps); `Scene.tickRate` (`scene.ts`) makes `SceneStack` step that
 scene only on its ticks (`LOOP_HZ` 60, an accumulator, so any rate up to the loop's) with it (D2).
 `InputManager.press(action)` is a page button: held on player 1's next frame only.
-`save/settings.ts` holds (from Engine 0.16 T9 also `StoredSettings`: screen shake, reduced flashing, the colour mode and the touch pad, `settingsKey(game)` = `ww:<game>:settings`, `readSettings`, `loadSettings`, `storeSettings`, for the shell's settings screen; `save/settings.test.ts`) the player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`,
+`save/settings.ts` holds (from Engine 0.16 part B also `StoredProgress`, the levels cleared, under `progressKey(game)` = `ww:<game>:progress`: `readProgress`, `loadProgress`, `storeProgress`, for the shell's level select; from Engine 0.16 T9 also `StoredSettings`: screen shake, reduced flashing, the colour mode and the touch pad, `settingsKey(game)` = `ww:<game>:settings`, `readSettings`, `loadSettings`, `storeSettings`, for the shell's settings screen; `save/settings.test.ts`) the player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`,
 `volumesKey(game)` = `ww:<game>:volumes`, `readVolumes` checking every field, `loadVolumes(game,
 start?)`, `storeVolumes`; never throws, never read by a headless run) for the shell's volume
 control (M1, `shell/volume-control.ts`). Tested in `input/merged-input.test.ts`,
@@ -188,7 +188,7 @@ through any `Presenter` (the Three.js backend) instead of drawing it with `rende
 one or the other, never both (each keeps its own stream of frames). Like `render`, it must not
 change the game. The optional `background` (a CSS hex colour) is the colour a presenter of
 `frame()` clears to (`screenshot --backend three`) when it is not the skin's: left out, the skin's
-`background` is used, else black (Engine 0.15, gap G36; no game sets it now). `frameView({ game,
+`background` is used, else black (Engine 0.15, gap G36; no game sets it now). The optional `status()` (Engine 0.16 part B) is the status of the last frame `render` drew or `frame()` gave (null before any), for the screenshot page's stat overlays; `frameView` keeps it when its drawer returns its frame (a `FramePicture` does). `frameView({ game,
 screen, frames, picture, background? })` (Engine 0.7, gap G26) is the one helper there: a
 `ViewGame` over a headless game that shows `world` and its last step's `events` (a kit's level
 sequence), keeping the events between draws in a `PendingEvents` (dropped on a new world), with

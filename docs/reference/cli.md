@@ -216,6 +216,8 @@ Flags:
   --out <string>              where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
   --backend <canvas2d|three>  what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)
   --allow-software-gl         three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
+  --scale <number>            whole-number upscale, nearest neighbour: each pixel becomes N x N (320x180 at 6 is 1920x1080)
+  --overlay <string>          draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>] or a transition, each with an optional *<n>
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

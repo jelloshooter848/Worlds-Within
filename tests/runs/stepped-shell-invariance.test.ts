@@ -17,6 +17,7 @@ import {
 import { bootBrowserGame, HostScene } from '@engine/core/shell';
 import { contentFonts, type UiPainter } from '@engine/core/ui';
 import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
+import { sheetLevels } from '../../engine/tools/sheet-overlay';
 import { SWITCH_SETS, withEffects } from './effects';
 import { loadRun, viewMaker } from './view-play';
 
@@ -29,7 +30,10 @@ import { loadRun, viewMaker } from './view-play';
 // presenter's `onHitPause` is the shell's, and every event asks for 3 frames), screen transitions
 // (`game.json`'s, or an iris on every level change, and a fade on demand every 90 display
 // frames, both holding ticks while they close) and the pause menu (opened every 150 frames and
-// resumed 12 frames later, the ticks held under it). The run's input drives the game in place of
+// resumed 12 frames later, the ticks held under it). From Engine 0.16 part B also the respawn
+// transition (`game.json`'s, or a fade on every respawn event, holding ticks while it closes), the
+// level-clear banner and the end screen (the game's levels handed to the menus; the end screen
+// holds the game until the test closes it). The run's input drives the game in place of
 // the keyboard, one tick per step the loop takes. Every tick's state hash is the headless run's
 // (the golden hashes) and the final state is `pnpm cli run`'s, while the loop draws more frames
 // than it takes ticks.
@@ -148,6 +152,15 @@ function fakePage() {
 
 afterEach(() => vi.unstubAllGlobals());
 
+/** What each run showed of Engine 0.16 part B's screens (read by the last test). */
+const stats: {
+  file: string;
+  respawned: boolean;
+  respawnFrames: number;
+  bannerFrames: number;
+  ends: number;
+}[] = [];
+
 /** A UI painter that keeps nothing (the menus lay out and paint; what they draw is not read). */
 const DROP: UiPainter = { fill() {}, image() {}, glyph() {} };
 
@@ -159,7 +172,14 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
 
   it.each(runFiles)('%s', async (file) => {
     const { content, run, golden } = loadRun(ROOT, file);
-    const played = await playRun(ROOT, file);
+    let respawned = false;
+    const played = await playRun(ROOT, file, {
+      onTick: (_tick, snapshot) => {
+        const events = (snapshot as { events?: unknown }).events;
+        if (Array.isArray(events) && events.some((e) => (e as { type?: unknown }).type === 'respawn'))
+          respawned = true;
+      },
+    });
     if (!played.ok) throw new Error(JSON.stringify(played.errors));
     const finalHash = stateHash(played.value.snapshot);
 
@@ -194,17 +214,20 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
     const renderer = new CanvasRenderer(ctx);
     const fonts = contentFonts(shown);
     let transitionFrames = 0;
+    let respawnFrames = 0;
     let drawn = 0;
+    const transitions = {
+      level: { kind: 'iris', ticks: 16, hold: 4 },
+      default: { kind: 'fade', ticks: 10 },
+      respawn: { kind: 'fade', ticks: 8, hold: 2 },
+      ...content.manifest.transitions,
+    } as const;
     const booted = await bootBrowserGame({
       screen,
       touchPad: false,
       reduceMotion: false,
       game: content.manifest.id,
-      transitions: {
-        level: { kind: 'iris', ticks: 16, hold: 4 },
-        default: { kind: 'fade', ticks: 10 },
-        ...content.manifest.transitions,
-      },
+      transitions,
       audio: {
         sfx: contentSfx(shown),
         songs: contentSongs(shown),
@@ -214,7 +237,7 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
         ...(song !== undefined && { music: song }),
         ...(run.seed !== undefined && { seed: run.seed }),
       },
-      menus: { spec: content.manifest.menus, fonts, sheets: () => null },
+      menus: { spec: content.manifest.menus, fonts, sheets: () => null, levels: sheetLevels(content) },
       displays: {
         canvas2d: (_canvas, shell) => {
           const skins2d = skinSet(shown, 'canvas2d');
@@ -253,6 +276,7 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
             },
             transition(v) {
               if (v !== null) transitionFrames++;
+              if (v !== null && v.spec === transitions.respawn) respawnFrames++;
             },
             uiPainter: () => DROP,
             effectSettings() {},
@@ -279,8 +303,15 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
 
     let frames = 0;
     let paused = 0;
+    let ends = 0;
+    let bannerFrames = 0;
     while ((tick < run.ticks || booted.transitions.running) && frames < run.ticks * 4 + 600) {
       frames++;
+      if (booted.menus?.state === 'end') {
+        ends++;
+        booted.menus.resume();
+      }
+      if (booted.menus?.bannerShown) bannerFrames++;
       if (frames % 90 === 0) booted.transition('default');
       if (booted.menus !== null) {
         if (frames % 150 === 0 && booted.menus.pause()) paused++;
@@ -299,5 +330,14 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
     // Display frames the loop took no tick on: hit-pauses, closing transitions, the pause menu.
     if (run.ticks >= 90) expect(frames - run.ticks, 'ticks were held').toBeGreaterThan(0);
     if (song !== undefined) expect(booted.mixer?.state().song, 'the layered song played').toBe(song);
+    // Part B's screens and the respawn transition: what showed is checked over every run below
+    // (a respawn that comes as a round's outcome plays under the round scene's own transition).
+    stats.push({ file, respawned, respawnFrames, bannerFrames, ends });
+  });
+
+  it('showed the respawn transition, the level-clear banner and the end screen somewhere', () => {
+    expect(stats.some((s) => s.respawned && s.respawnFrames > 0)).toBe(true);
+    expect(stats.some((s) => s.bannerFrames > 0)).toBe(true);
+    expect(stats.some((s) => s.ends > 0)).toBe(true);
   });
 });

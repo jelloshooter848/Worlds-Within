@@ -14,7 +14,15 @@ import { defaultBindings } from '@engine/core/input/bindings';
 import { keyHintMap } from '@engine/core/input/key-hints';
 import type { DeepReadonly } from '@engine/core/present';
 import { DEFAULT_SETTINGS, DEFAULT_VOLUMES } from '@engine/core/save/settings';
+import { campaignLevels, type CampaignDef } from '@engine/core/campaign';
+import { contentOf } from '@engine/core/content/bundle';
+import { CAMPAIGN_KIND } from '@engine/core/content/engine-kinds';
 import {
+  clearScreen,
+  endScreen,
+  levelChoices,
+  levelsScreen,
+  type StatValues,
   controlsScreen,
   pauseScreen,
   settingsScreen,
@@ -112,10 +120,18 @@ function uiFile(content: ContentBundle, name: string): UiScreenFile | undefined 
  */
 export function checkOverlay(content: ContentBundle, overlay: SheetOverlay): string | null {
   switch (overlay.kind) {
-    case 'menu':
-      return content.manifest.menus === undefined
-        ? `the game's game.json has no "menus", so it has no ${overlay.screen} screen`
-        : null;
+    case 'menu': {
+      const menus = content.manifest.menus;
+      if (menus === undefined)
+        return `the game's game.json has no "menus", so it has no ${overlay.screen} screen`;
+      if (overlay.screen === 'clear' && menus.clear === undefined)
+        return `the game's menus have no "clear", so it has no level-clear banner`;
+      if (overlay.screen === 'end' && menus.end === undefined)
+        return `the game's menus have no "end", so it has no end screen`;
+      if (overlay.screen === 'levels' && sheetLevels(content).length === 0)
+        return 'the game has no levels for a level select';
+      return null;
+    }
     case 'ui': {
       const file = uiFile(content, overlay.file);
       if (file === undefined) return `the game has no ui file "${overlay.file}"`;
@@ -145,6 +161,37 @@ export function overlayTransition(content: ContentBundle, overlay: SheetOverlay)
 export interface OverlayUiOptions {
   fonts: FontLookup;
   frameSize: UiFrameSize;
+  /**
+   * The status of the frame the overlay is drawn over (the view's `status()`, or the 3D frame's),
+   * which the `clear` and `end` screens show; none: their values show as `-`.
+   */
+  status?: StatValues | null;
+}
+
+/**
+ * The game's levels in play order for the `levels` overlay: its campaign's level entries (the
+ * first campaign file), else its `level` content files by id, each named by its header's `name`
+ * (else the campaign entry's `title`, else the id). None for a game without levels.
+ */
+export function sheetLevels(content: ContentBundle): { id: string; name: string }[] {
+  const named = new Map<string, string>();
+  for (const e of content.entries)
+    if (e.kind === 'level') {
+      const v = e.value as { id?: unknown; name?: unknown };
+      if (typeof v.id === 'string') named.set(v.id, typeof v.name === 'string' ? v.name : v.id);
+    }
+  const campaign = contentOf(content, CAMPAIGN_KIND)[0]?.value as CampaignDef | undefined;
+  if (campaign !== undefined) {
+    const titles = new Map(
+      campaign.entries.flatMap((e) => ('level' in e && e.level !== undefined ? [[e.level, e.title]] : [])),
+    );
+    const ids = campaignLevels(campaign).filter((id) => named.has(id));
+    if (ids.length > 0)
+      return ids.map((id) => ({ id, name: named.get(id) !== id ? named.get(id)! : (titles.get(id) ?? id) }));
+  }
+  return [...named.keys()]
+    .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
+    .map((id) => ({ id, name: named.get(id)! }));
 }
 
 /**
@@ -164,20 +211,27 @@ export function overlayUi(content: ContentBundle, overlay: SheetOverlay, opts: O
       frameSize: opts.frameSize,
       keys: keyHintMap(defaultBindings(0).keyboard),
     };
+    const status = opts.status ?? {};
     file =
       overlay.screen === 'title'
-        ? titleScreen(spec, ctx, { canContinue: false })
-        : overlay.screen === 'pause'
-          ? pauseScreen(spec, ctx)
-          : overlay.screen === 'settings'
-            ? settingsScreen(spec, ctx, {
-                ...DEFAULT_VOLUMES,
-                shake: DEFAULT_SETTINGS.shake,
-                reduceFlashing: DEFAULT_SETTINGS.reduceFlashing,
-                colour: DEFAULT_SETTINGS.colour,
-                touch: 0,
-              })
-            : controlsScreen(spec, ctx);
+        ? titleScreen(spec, ctx, { canContinue: false, hasLevels: sheetLevels(content).length > 0 })
+        : overlay.screen === 'levels'
+          ? levelsScreen(spec, ctx, levelChoices(spec, sheetLevels(content), new Set()))
+          : overlay.screen === 'clear'
+            ? clearScreen(spec, ctx, status)
+            : overlay.screen === 'end'
+              ? endScreen(spec, ctx, status)
+              : overlay.screen === 'pause'
+                ? pauseScreen(spec, ctx)
+                : overlay.screen === 'settings'
+                  ? settingsScreen(spec, ctx, {
+                      ...DEFAULT_VOLUMES,
+                      shake: DEFAULT_SETTINGS.shake,
+                      reduceFlashing: DEFAULT_SETTINGS.reduceFlashing,
+                      colour: DEFAULT_SETTINGS.colour,
+                      touch: 0,
+                    })
+                  : controlsScreen(spec, ctx);
   } else {
     const found = uiFile(content, overlay.file);
     if (found === undefined) throw new Error(`the game has no ui file "${overlay.file}"`);

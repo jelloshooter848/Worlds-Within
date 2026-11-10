@@ -109,8 +109,10 @@ x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin i
   (default), `left`, `down`, `up`; `edge`, the soft edge in picture px, default
   `WIPE_DEFAULT_EDGE` 16) and `iris` (`at`: `follow` (default), `center` or `{ x, y }`), each with
   `ticks` (frames each half), `hold?`, `color?` (default `#000000`) and `ease?`.
-  `transitionsSchema` is `game.json`'s `transitions` (`level`, `scene`, `mission`, `default`;
-  `TRANSITION_SLOTS`), `transitionFor(specs, slot)` the spec a slot plays and `reducedMotion(spec)`
+  `transitionsSchema` is `game.json`'s `transitions` (`level`, `scene`, `mission`, `respawn`
+  (Engine 0.16 part B), `default`; `TRANSITION_SLOTS`; and `events`, a frame event type to the
+  slot it plays; `eventTransitionSlot(specs, type)`: the map's slot, else `respawn` for a
+  `respawn` event when that slot is given), `transitionFor(specs, slot)` the spec a slot plays and `reducedMotion(spec)`
   the short fade in its colour. `transitionAt(spec, age)` is `{ phase, coverage }` or null: `out`
   (coverage `ease((age + 1) / ticks)`, 1 on its last frame), `hold` (1), `in` (the curve played
   backwards, 0 on its last frame); `transitionLength` = `2 * ticks + hold`.

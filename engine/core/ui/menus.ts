@@ -34,8 +34,11 @@ import {
  * `controls` item without a `controls` list (`missing_field`). Pure.
  */
 
-/** What a title screen may offer. `continue` shows only when the game says a save or code exists. */
-export const TITLE_ITEMS = ['start', 'continue', 'controls', 'settings'] as const;
+/**
+ * What a title screen may offer. `continue` shows only when the game says a save or code exists;
+ * `levels` (Engine 0.16 part B) opens the level select, shown only when the page gives levels.
+ */
+export const TITLE_ITEMS = ['start', 'continue', 'levels', 'controls', 'settings'] as const;
 /** What a pause menu may offer. `title` goes back to the title screen (the game starts over). */
 export const PAUSE_ITEMS = ['resume', 'controls', 'settings', 'title'] as const;
 /**
@@ -53,15 +56,19 @@ export const SETTINGS_ITEMS = [
   'colour',
   'touch',
 ] as const;
+/** What the end screen may offer (Engine 0.16 part B): back to the title, or the level select. */
+export const END_ITEMS = ['title', 'levels'] as const;
 export type TitleItem = (typeof TITLE_ITEMS)[number];
 export type PauseItem = (typeof PAUSE_ITEMS)[number];
 export type SettingsItem = (typeof SETTINGS_ITEMS)[number];
-export type MenuItemId = TitleItem | PauseItem | SettingsItem | 'back';
+export type EndItem = (typeof END_ITEMS)[number];
+export type MenuItemId = TitleItem | PauseItem | SettingsItem | EndItem | 'back';
 
 /** Every item's label when `labels` gives none. */
 export const MENU_LABELS: Readonly<Record<MenuItemId, string>> = {
   start: 'Start',
   continue: 'Continue',
+  levels: 'Levels',
   controls: 'Controls',
   settings: 'Settings',
   resume: 'Resume',
@@ -78,7 +85,16 @@ export const MENU_LABELS: Readonly<Record<MenuItemId, string>> = {
 };
 
 /** The headings of the generated screens. */
-export const MENU_HEADINGS = { pause: 'Paused', settings: 'Settings', controls: 'Controls' } as const;
+export const MENU_HEADINGS = {
+  pause: 'Paused',
+  settings: 'Settings',
+  controls: 'Controls',
+  levels: 'Levels',
+  clear: 'Level clear!',
+  end: 'The end',
+} as const;
+/** The mark after a cleared level's name in the level select, when `levels.mark` gives none. */
+export const CLEARED_MARK = '*';
 /** The touch pad setting's words, in slider order (`TOUCH_MODES` in `save/settings.ts`). */
 export const TOUCH_WORDS = ['Auto', 'On', 'Off'] as const;
 /** The pause keys as the controls screen shows them. */
@@ -89,7 +105,9 @@ export const PAUSE_KEYS = 'ESC / P';
  */
 export const KEY_NAME_GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789←→↑↓/';
 
-const ALL_ITEMS: readonly string[] = [...TITLE_ITEMS, ...PAUSE_ITEMS, ...SETTINGS_ITEMS, 'back'];
+const ALL_ITEMS: readonly string[] = [
+  ...new Set([...TITLE_ITEMS, ...PAUSE_ITEMS, ...SETTINGS_ITEMS, ...END_ITEMS, 'back']),
+];
 
 const hex = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
   message: 'a colour is #rgb or #rrggbb',
@@ -165,6 +183,33 @@ const controlSchema = z
         params: { code: 'missing_field' },
       });
   });
+
+/** How a stat line writes its value: a plain number, or ticks as minutes and seconds (`1:05`). */
+export const STAT_FORMATS = ['number', 'time'] as const;
+
+const statLineSchema = z.strictObject({
+  label: z.string().min(1).describe('what it shows ("Coins")'),
+  status: z
+    .string()
+    .min(1)
+    .describe("the frame's status key it reads (`coins`, `time`, `deaths`, `checkpoints`: the kit's)"),
+  of: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe('a status key written after a slash (`checkpointCount`: "2/3")'),
+  format: z
+    .enum(STAT_FORMATS)
+    .exactOptional()
+    .describe('`number` (default) or `time` (ticks at 60 a second, as `m:ss`)'),
+});
+
+/** The lines the level-clear and end screens show when they give none. */
+export const DEFAULT_STAT_LINES: readonly StatLine[] = [
+  { label: 'Coins', status: 'coins' },
+  { label: 'Time', status: 'time', format: 'time' },
+  { label: 'Deaths', status: 'deaths' },
+];
 
 /** The menus' look: the UI style without its font, plus the heading colour and the dim. */
 export const menusStyleSchema = uiStyleSchema
@@ -250,12 +295,60 @@ export const menusSchema = z
       .min(1)
       .exactOptional()
       .describe("the controls screen's rows: actions with what they do, shown with the player's keys"),
+    levels: z
+      .strictObject({
+        heading: z.string().min(1).exactOptional().describe('the heading (default `Levels`)'),
+        lock: z
+          .boolean()
+          .exactOptional()
+          .describe('true (default): a level shows only once the one before it is cleared'),
+        mark: z
+          .string()
+          .min(1)
+          .exactOptional()
+          .describe(`written after a cleared level's name (default \`${CLEARED_MARK}\`)`),
+      })
+      .exactOptional()
+      .describe(
+        "the level select (Engine 0.16 part B), opened by the title's `levels` item: the game's levels by name, cleared and locked",
+      ),
+    clear: z
+      .strictObject({
+        heading: z.string().min(1).exactOptional().describe('the banner heading (default `Level clear!`)'),
+        lines: z
+          .array(statLineSchema)
+          .exactOptional()
+          .describe('the stats it shows from the frame status (default coins, time, deaths)'),
+      })
+      .exactOptional()
+      .describe(
+        'the level-clear banner (Engine 0.16 part B), shown over the game while the kit pauses between levels; it takes no input',
+      ),
+    end: z
+      .strictObject({
+        heading: z.string().min(1).exactOptional().describe('the heading (default `The end`)'),
+        credits: z.string().min(1).exactOptional().describe('a credits line under the heading'),
+        lines: z
+          .array(statLineSchema)
+          .exactOptional()
+          .describe(
+            'the stats it shows, summed over the levels cleared this play (default coins, time, deaths)',
+          ),
+        items: itemList(END_ITEMS, 'end')
+          .exactOptional()
+          .describe(`its menu: ${END_ITEMS.join(', ')} (default title)`),
+      })
+      .exactOptional()
+      .describe('the end screen (Engine 0.16 part B), shown once the last level is cleared'),
   })
-  .describe('the title screen, pause menu, settings and controls screens (Engine 0.16 T9)');
+  .describe(
+    'the title screen, pause menu, settings and controls screens (Engine 0.16 T9), and the level select, level-clear banner and end screen (Engine 0.16 part B)',
+  );
 
 export type MenusSpec = z.output<typeof menusSchema>;
 export type MenusStyle = z.output<typeof menusStyleSchema>;
 export type MenuControl = z.output<typeof controlSchema>;
+export type StatLine = z.output<typeof statLineSchema>;
 
 /** The settings items a game shows: its list, else all but `colour`. */
 export function settingsItems(menus: MenusSpec): readonly SettingsItem[] {
@@ -384,7 +477,7 @@ function buttons(menus: MenusSpec, ids: readonly MenuItemId[]): UiMenuItemSpec[]
 export function titleScreen(
   menus: MenusSpec,
   ctx: MenuBuildContext,
-  opts: { canContinue: boolean },
+  opts: { canContinue: boolean; hasLevels?: boolean },
 ): UiScreenFile {
   const { screen, fonts, frameSize } = ctx;
   const t = menus.title;
@@ -428,7 +521,9 @@ export function titleScreen(
     const { anchor, x, y: ay, ...frame } = art;
     widgets.push({ type: 'image', anchor: anchor ?? 'center', x: x ?? 0, y: ay ?? 0, ...frame });
   }
-  const items = (t.items as TitleItem[]).filter((i) => i !== 'continue' || opts.canContinue);
+  const items = (t.items as TitleItem[]).filter(
+    (i) => (i !== 'continue' || opts.canContinue) && (i !== 'levels' || opts.hasLevels !== false),
+  );
   const hint = menuHint(ctx.keys, false, false);
   const footerY = 6 + rowHeight(fonts, menus.font);
   widgets.push({
@@ -644,6 +739,193 @@ export function controlsScreen(menus: MenusSpec, ctx: MenuBuildContext): UiScree
   return { style: menusUiStyle(menus), focus: 'main', widgets };
 }
 
+/** A frame status value as the stat screens show it. */
+export type StatValues = Readonly<Record<string, string | number | boolean>>;
+
+/** Ticks (60 a second) as minutes and whole seconds, `m:ss`. */
+export function formatTicks(ticks: number): string {
+  const seconds = Math.max(0, Math.floor(ticks / 60));
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** One stat line's value text from the status (`-` for a key the status lacks). */
+export function statText(line: StatLine, status: StatValues): string {
+  const raw = status[line.status];
+  if (raw === undefined) return '-';
+  const value = line.format === 'time' && typeof raw === 'number' ? formatTicks(raw) : String(raw);
+  if (line.of === undefined) return value;
+  const of = status[line.of];
+  return of === undefined ? value : `${value}/${String(of)}`;
+}
+
+/** Rows of `label ... value` text in a box `width` wide from `top`. */
+function statRows(
+  menus: MenusSpec,
+  ctx: MenuBuildContext,
+  lines: readonly StatLine[],
+  status: StatValues,
+  top: number,
+  width: number,
+): UiWidgetSpec[] {
+  const rh = rowHeight(ctx.fonts, menus.font) + 1;
+  const left = Math.floor((ctx.screen.width - width) / 2) + 12;
+  const value = menus.style?.focusText ?? DEFAULT_HEADING;
+  return lines.flatMap((line, i): UiWidgetSpec[] => [
+    { type: 'text', x: left, y: top + i * rh, text: line.label },
+    {
+      type: 'text',
+      x: left,
+      y: top + i * rh,
+      w: width - 24,
+      align: 'right',
+      text: statText(line, status),
+      color: value,
+    },
+  ]);
+}
+
+/** One level as the level select shows it. */
+export interface LevelChoice {
+  id: string;
+  name: string;
+  cleared: boolean;
+  locked: boolean;
+}
+
+/** The level select's item id for stage `i` (0-based, in play order). */
+export function levelItemId(i: number): string {
+  return `level-${i}`;
+}
+
+/** The stage a level select item id names, or null. */
+export function levelItemStage(id: string | number | null | undefined): number | null {
+  const m = typeof id === 'string' ? /^level-(\d+)$/.exec(id) : null;
+  return m === null ? null : Number(m[1]);
+}
+
+/** A level's label in the level select: its name, then the cleared mark. */
+export function levelLabel(menus: MenusSpec, level: LevelChoice): string {
+  return level.cleared ? `${level.name} ${menus.levels?.mark ?? CLEARED_MARK}` : level.name;
+}
+
+/**
+ * Which of the game's levels the level select offers (`levels.lock`, default true): the first,
+ * and every one whose level before it is cleared; all with `lock: false`.
+ */
+export function levelChoices(
+  menus: MenusSpec,
+  levels: readonly { id: string; name: string }[],
+  cleared: ReadonlySet<string>,
+): LevelChoice[] {
+  const lock = menus.levels?.lock ?? true;
+  return levels.map((l, i) => ({
+    id: l.id,
+    name: l.name,
+    cleared: cleared.has(l.id),
+    locked: lock && i > 0 && !cleared.has(levels[i - 1]!.id),
+  }));
+}
+
+/** The level select: a framed list of the levels (locked ones greyed out), then Back. */
+export function levelsScreen(
+  menus: MenusSpec,
+  ctx: MenuBuildContext,
+  levels: readonly LevelChoice[],
+): UiScreenFile {
+  const items: UiMenuItemSpec[] = levels.map((l, i) => ({
+    id: levelItemId(i),
+    label: levelLabel(menus, l),
+    ...(l.locked && { disabled: true }),
+  }));
+  items.push({ id: 'back', label: menuLabel(menus, 'back') });
+  const font = ctx.fonts(menus.font);
+  const widest = font === null ? 0 : Math.max(...items.map((i) => layoutText(font, i.label).width));
+  const width = Math.min(ctx.screen.width - 8, Math.max(140, widest + 48));
+  const widgets = framedScreen(
+    menus,
+    ctx,
+    menus.levels?.heading ?? MENU_HEADINGS.levels,
+    menuHeight(ctx, menus, items.length),
+    width,
+    (top) => [{ id: 'main', type: 'menu', anchor: 'top', y: top, w: width - 20, panel: false, items }],
+    Math.max(menus.style?.dim ?? DEFAULT_DIM, 0.7),
+  );
+  const hint = menuHint(ctx.keys);
+  if (hint !== '') widgets.push(hintStrip(menus, ctx, 1), hintWidget(menus, hint));
+  return { style: menusUiStyle(menus), focus: 'main', widgets };
+}
+
+/**
+ * The level-clear banner: the heading and the stat lines from the frame status, in a panel over
+ * the game (no dim, no menu: it takes no input and the game's pause goes on under it).
+ */
+export function clearScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatValues): UiScreenFile {
+  const lines = menus.clear?.lines ?? DEFAULT_STAT_LINES;
+  const rh = rowHeight(ctx.fonts, menus.font) + 1;
+  const width = Math.min(ctx.screen.width - 8, 160);
+  const widgets = framedScreen(
+    menus,
+    ctx,
+    menus.clear?.heading ?? MENU_HEADINGS.clear,
+    Math.max(0, lines.length * rh - 1),
+    width,
+    (top) => statRows(menus, ctx, lines, status, top, width),
+    0,
+  );
+  return { style: menusUiStyle(menus), widgets };
+}
+
+/**
+ * The end screen: the heading, the credits line, the stat lines (the page sums them over the
+ * levels cleared) and its menu (default Back to title), over the game dimmed.
+ */
+export function endScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatValues): UiScreenFile {
+  const end = menus.end ?? {};
+  const lines = end.lines ?? DEFAULT_STAT_LINES;
+  const items = (end.items ?? ['title']) as EndItem[];
+  const rh = rowHeight(ctx.fonts, menus.font) + 1;
+  const width = Math.min(ctx.screen.width - 8, 200);
+  const creditsH =
+    end.credits === undefined ? 0 : textHeight(ctx.fonts, menus.font, end.credits, width - 24) + 8;
+  const statsH = lines.length * rh;
+  const bodyH = creditsH + statsH + 8 + menuHeight(ctx, menus, items.length);
+  const widgets = framedScreen(
+    menus,
+    ctx,
+    end.heading ?? MENU_HEADINGS.end,
+    bodyH,
+    width,
+    (top) => [
+      ...(end.credits === undefined
+        ? []
+        : [
+            {
+              type: 'text',
+              anchor: 'top',
+              y: top,
+              w: width - 24,
+              align: 'center',
+              text: end.credits,
+            } as UiWidgetSpec,
+          ]),
+      ...statRows(menus, ctx, lines, status, top + creditsH, width),
+      {
+        id: 'main',
+        type: 'menu',
+        anchor: 'top',
+        y: top + creditsH + statsH + 8,
+        w: menuWidth(menus, ctx, items, 96),
+        panel: false,
+        items: buttons(menus, items),
+      },
+    ],
+    Math.max(menus.style?.dim ?? DEFAULT_DIM, 0.7),
+  );
+  const hint = menuHint(ctx.keys, false, false);
+  if (hint !== '') widgets.push(hintStrip(menus, ctx, 1), hintWidget(menus, hint));
+  return { style: menusUiStyle(menus), focus: 'main', widgets };
+}
+
 /** Every text the menus draw in a font, with its `game.json` field (for `missing_glyph`). */
 function menuTexts(menus: MenusSpec): { path: FieldPath; text: string; font: string }[] {
   const font = menus.font;
@@ -678,6 +960,29 @@ function menuTexts(menus: MenusSpec): { path: FieldPath; text: string; font: str
       if (c.tap !== undefined) add(['controls', i, 'tap'], c.tap);
     });
     add(['controls'], `${KEY_NAME_GLYPHS}Pause${PAUSE_KEYS}or`);
+  }
+  if (used.has('levels')) {
+    add(['levels'], menus.levels?.heading ?? MENU_HEADINGS.levels, head);
+    add(['levels'], menus.levels?.mark ?? CLEARED_MARK);
+    label(['levels'], 'back');
+  }
+  const statTexts = (at: FieldPath, lines: readonly StatLine[] | undefined) => {
+    (lines ?? DEFAULT_STAT_LINES).forEach((l, i) =>
+      add(lines === undefined ? at : [...at, 'lines', i, 'label'], l.label),
+    );
+    add(at, '0123456789:/-');
+  };
+  if (menus.clear !== undefined) {
+    add(['clear'], menus.clear.heading ?? MENU_HEADINGS.clear, head);
+    statTexts(['clear'], menus.clear.lines);
+  }
+  if (menus.end !== undefined) {
+    add(['end'], menus.end.heading ?? MENU_HEADINGS.end, head);
+    if (menus.end.credits !== undefined) add(['end', 'credits'], menus.end.credits);
+    statTexts(['end'], menus.end.lines);
+    (menus.end.items ?? ['title']).forEach((id, i) =>
+      label(menus.end?.items ? ['end', 'items', i] : ['end'], id),
+    );
   }
   add(['font'], 'chooseselectbackchange');
   return out;

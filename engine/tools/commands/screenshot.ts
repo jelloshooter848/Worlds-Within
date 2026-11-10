@@ -10,6 +10,7 @@ import { defineCommand } from '../registry';
 import { readRunFile } from '../run-file';
 import { pngSize, takeScreenshot } from '../screenshot';
 import { invalidShot, shotSetup } from '../shot-job';
+import { checkOverlay, overlayLabel, parseOverlay } from '../sheet-overlay';
 import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
 
 /**
@@ -44,6 +45,14 @@ import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
  * flag) unless `--allow-software-gl`, which also makes Chromium use SwiftShader on purpose so the
  * PNG is the same every run; no WebGL context at all is exit 4 too. The result adds `backend` and
  * `renderer` (the WebGL renderer string; null for canvas2d).
+ *
+ * Engine 0.16 part B: `--scale N` (whole, 1-16) returns the picture N times as large, each pixel
+ * an exact N x N block (nearest neighbour), so a 320x180 game at 6 is exactly 1920x1080; and
+ * `--overlay <o>` draws one of `sheet`'s overlays over the tick's picture (`title`, `pause`,
+ * `settings`, `controls`, `levels`, `clear`, `end`, `ui=<file>[.<widget>]` or a transition, with
+ * `*<n>`; `sheet-overlay.ts`), through the same job (`shotSetup`, a one-tile `ShotJob.tiles`). An
+ * overlay the game cannot show is a usage error before Chromium starts. The result adds `scale`
+ * and `overlay` (its label, or null).
  */
 export const screenshotCommand = defineCommand({
   name: 'screenshot',
@@ -71,6 +80,22 @@ export const screenshotCommand = defineCommand({
       .boolean()
       .default(false)
       .describe('three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)'),
+    scale: z
+      .number()
+      .int()
+      .min(1)
+      .max(16)
+      .default(1)
+      .describe(
+        'whole-number upscale, nearest neighbour: each pixel becomes N x N (320x180 at 6 is 1920x1080)',
+      ),
+    overlay: z
+      .string()
+      .min(1)
+      .optional()
+      .describe(
+        "draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>] or a transition, each with an optional *<n>",
+      ),
   }),
   async run({ args, flags }, ctx) {
     if (flags.allowSoftwareGl && flags.backend !== 'three')
@@ -82,25 +107,40 @@ export const screenshotCommand = defineCommand({
       throw new UsageError(`${runFile.value.file} plays a world, which has no view to draw (Engine 0.8)`);
     if (runFile.ok && flags.tick > runFile.value.run.ticks)
       throw new UsageError(`--tick ${flags.tick} is after the run's last tick (${runFile.value.run.ticks})`);
+    let overlay = null;
+    if (flags.overlay !== undefined) {
+      try {
+        overlay = parseOverlay(flags.overlay);
+      } catch (error) {
+        throw new UsageError(`--overlay: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
     const setup = await shotSetup(ctx, args.runFile, {
       tick: flags.tick,
       backend: flags.backend,
       allowSoftwareGl: flags.allowSoftwareGl,
+      ...(overlay !== null && { tiles: [{ tick: flags.tick, overlay }] }),
     });
     if (!setup.ok) return setup.outcome;
+    if (overlay !== null) {
+      const why = checkOverlay(setup.value.content, overlay);
+      if (why !== null) throw new UsageError(`--overlay ${flags.overlay}: ${why}`);
+    }
+    if (flags.scale > 1) setup.value.request.job.scale = flags.scale;
     const { request, played, root } = setup.value;
     const { loaded, seed, start, lastTick, snapshot, hashes: headlessHashes } = played;
     const where = `${root}${MANIFEST_FILE}`;
     const view = setup.value.content.manifest.view ?? '';
     const shot = await takeScreenshot(request.job, request.gameAbs, request.viewAbs);
     if ('refused' in shot) return refused(shot, loaded.file, where, `${root}${view}`);
-    const size = pngSize(shot.png);
+    const png = overlay !== null ? shot.tiles[0]! : shot.png;
+    const size = pngSize(png);
     const name = basename(loaded.file)
       .replace(/\.run\.json$/, '')
       .replace(/\.json$/, '');
     const out = resolve(ctx.cwd, flags.out ?? `${ctx.outDir}/screenshots/${name}-t${lastTick}.png`);
     mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, shot.png);
+    writeFileSync(out, png);
 
     const hash = createHash('sha256').update(shot.snapshot).digest('hex').slice(0, 16);
     const headlessHash = stateHash(snapshot);
@@ -119,8 +159,10 @@ export const screenshotCommand = defineCommand({
         path: relative(ctx.cwd, out).replaceAll('\\', '/'),
         width: size.width,
         height: size.height,
-        bytes: shot.png.length,
-        sha256: createHash('sha256').update(shot.png).digest('hex'),
+        scale: flags.scale,
+        overlay: overlay === null ? null : overlayLabel(overlay),
+        bytes: png.length,
+        sha256: createHash('sha256').update(png).digest('hex'),
         hash,
         headlessHash,
         hashes: shot.hashes,

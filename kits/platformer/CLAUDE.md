@@ -478,7 +478,12 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   spawn of a boss type, or `clear: "boss"`; Engine 0.16 T2) also `bossHp`, `bossMaxHp`,
   `bossPhase`, `bossState` (`bossState`, `asleep` before it wakes, `gone` once its defeat is
   over, hp 0 then) and `bossTelegraph` (the attack it announces, '' when none): the first boss
-  in spawn order, for a HUD bar. Other levels have none of these keys.
+  in spawn order, for a HUD bar. Other levels have none of these keys. From Engine 0.16 part B
+  (T3), for the shell's level-clear and end screens: `time` (the level's ticks, the world's
+  `frame`, which stops once it is cleared), `deaths` (`world.deaths`, lives lost in the level),
+  `checkpoints` (`world.checkpointsReached`, the level's checkpoints touched at least once) and
+  `checkpointCount`. The two counters live on the world but never in the snapshot, so no hash
+  moved.
 - **Camera** (`cameraHint`): `follow: 'runner'`; `x`/`y` the centre of the world's own view
   (`scrollX`, `viewWidth`) as the fallback; `bounds` carries the scroll lock: scrolling `right`
   with `scroll-lock` on, `{ x: scrollX px, y: 0, w: level width - that, h: level height }` (the
@@ -492,7 +497,9 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
 
 ## Content kinds
 
-- `level` (`levels/<id>.json` + `levels/<id>.map.txt`): `id`, `profile` (a `profile` id), `scroll`
+- `level` (`levels/<id>.json` + `levels/<id>.map.txt`): `id`, `name?` (Engine 0.16 part B: how
+  menus name it, the shell's level select; the id when left out; `stageNames(stages)` in
+  `sequence.ts` gives `{ id, name }` per stage in play order), `profile` (a `profile` id), `scroll`
   (`right` default, `free`, `none`), `size` (optional `[cols, rows]`; the size comes from the grid
   and must match), `spawns` (`{ "<char>": { actor, facing } }`), `blocks` (what each `?` holds in
   reading order: `coin`, `coins`, `powerup`, `life` or `actor:<type>`; all coins when left out),

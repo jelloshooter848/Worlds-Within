@@ -1,4 +1,5 @@
 import {
+  eventTransitionSlot,
   reducedMotion,
   transitionFor,
   TransitionPlayer,
@@ -21,6 +22,10 @@ import type { Scene } from '../scene';
  * - **Scene push and pop:** the boot calls {@link ShellTransitions.scenes} after each loop step;
  *   a scene pushed or popped plays its `transitionSlot` (`scene` when it gives none; `HostScene`
  *   marks a mission round `mission`).
+ * - **Frame events** (Engine 0.16 part B): a frame whose events include one the game maps to a
+ *   slot (`transitions.events`, or `respawn` with a `respawn` spec: the platformer kit's respawn)
+ *   is shown first, then that slot starts, so its sounds play at once and the cover closes over
+ *   the moment it happened.
  * - **On demand:** {@link ShellTransitions.start} (the boot's `transition()`, T9's title and
  *   menus), with a `covered` callback run once the picture is fully covered.
  *
@@ -54,6 +59,15 @@ export class ShellTransitions {
   constructor(opts: ShellTransitionOptions = {}) {
     this.specs = opts.specs;
     this.reduceMotion = opts.reduceMotion ?? false;
+  }
+
+  /** The slot a presented frame's events start (Engine 0.16 part B), or null. */
+  eventSlot(frame: DeepReadonly<PresentFrame>): TransitionSlot | null {
+    for (const e of frame.events) {
+      const slot = eventTransitionSlot(this.specs, e.type);
+      if (slot !== null) return slot;
+    }
+    return null;
   }
 
   /** The spec a request plays (reduced motion applied), or null when the game gives none. */
@@ -159,6 +173,9 @@ class TransitionPresenter implements Presenter {
     for (const f of this.held.splice(0)) this.inner.present(f);
     this.inner.present(frame);
     this.last = frame;
+    // A frame event's transition (a respawn) starts after its frame is shown (Engine 0.16 part B).
+    const slot = this.transitions.running ? null : this.transitions.eventSlot(frame);
+    if (slot !== null) this.transitions.start(slot);
   }
 
   resize(size: Parameters<NonNullable<Presenter['resize']>>[0]): void {

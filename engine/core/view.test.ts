@@ -74,4 +74,24 @@ describe('frameView', () => {
     expect(draws).toEqual([['e1'], ['e2'], []]);
     expect(view.background).toBeUndefined();
   });
+
+  it('keeps the status of the last frame drawn or given (Engine 0.16 part B)', () => {
+    const withStatus = (world: { n: number }, events: readonly string[]) => ({
+      ...frameOf(world, events),
+      status: { n: world.n },
+    });
+    const view = frameView({
+      game: testGame(),
+      screen: { width: 8, height: 8 },
+      frames: { next: withStatus },
+      picture: () => ({ draw: (w: { n: number }) => withStatus(w, []) }),
+    });
+    expect(view.status!()).toBeNull();
+    for (let i = 0; i < 3; i++) view.step(input);
+    view.render({} as Renderer);
+    expect(view.status!()).toEqual({ n: 3 });
+    for (let i = 0; i < 3; i++) view.step(input);
+    view.frame!();
+    expect(view.status!()).toEqual({ n: 6 });
+  });
 });

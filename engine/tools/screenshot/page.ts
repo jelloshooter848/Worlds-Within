@@ -3,7 +3,7 @@ import { contentPixelSheets, contentSheets } from '@engine/core/assets/content-s
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import { transitionShape } from '@engine/core/fx';
 import { withContentImages } from '@engine/core/assets/content-images';
-import { contentFonts, paintUi, type FontLookup, type UiFrameSize } from '@engine/core/ui';
+import { contentFonts, paintUi, type FontLookup, type StatValues, type UiFrameSize } from '@engine/core/ui';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
@@ -100,20 +100,48 @@ function overlayContext(content: ContentBundle): OverlayContext {
   return { content, sheets: contentSheets(content), fonts: contentFonts(content) };
 }
 
+/**
+ * A canvas as a PNG data URL at the job's whole-number `scale` (Engine 0.16 part B, `screenshot
+ * --scale`): copied onto a canvas `scale` times as large with image smoothing off, so every pixel
+ * becomes an exact `scale` x `scale` block.
+ */
+function pngOf(job: ShotJob, canvas: HTMLCanvasElement): string {
+  const scale = job.scale ?? 1;
+  if (scale <= 1) return canvas.toDataURL('image/png');
+  const big = document.createElement('canvas');
+  big.width = canvas.width * scale;
+  big.height = canvas.height * scale;
+  const ctx = big.getContext('2d');
+  if (!ctx) throw new Error('2D canvas not supported');
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(canvas, 0, 0, big.width, big.height);
+  return big.toDataURL('image/png');
+}
+
 /** A 2D tile: a copy of `canvas` with the tile's overlay drawn over it, as a PNG data URL. */
-function canvasTile(job: ShotJob, canvas: HTMLCanvasElement, tile: ShotTile, o: OverlayContext): string {
+function canvasTile(
+  job: ShotJob,
+  canvas: HTMLCanvasElement,
+  tile: ShotTile,
+  o: OverlayContext,
+  status: ReturnType<NonNullable<ViewGame['status']>> | null,
+): string {
   const copy = newCanvas(job);
   const ctx = copy.getContext('2d');
   if (!ctx) throw new Error('2D canvas not supported');
   ctx.drawImage(canvas, 0, 0);
   if (tile.overlay !== null) {
-    const draws = overlayUi(o.content, tile.overlay, { fonts: o.fonts, frameSize: frameSizeOf(o.sheets) });
+    const draws = overlayUi(o.content, tile.overlay, {
+      fonts: o.fonts,
+      frameSize: frameSizeOf(o.sheets),
+      status: status as StatValues | null,
+    });
     if (draws.length > 0) paintUi(draws, new CanvasUiPainter(new CanvasRenderer(ctx), o.sheets, o.fonts));
     const view = overlayTransition(o.content, tile.overlay);
     const shape = view && transitionShape(view, job.screen, null);
     if (shape) drawTransition(ctx, shape, job.screen);
   }
-  return copy.toDataURL('image/png');
+  return pngOf(job, copy);
 }
 
 /** Plays the job's input, recorded orders and mission steps on `game`, calling `show(tick)` at every tick (tick 0 included). */
@@ -175,10 +203,11 @@ async function shootCanvas(job: ShotJob, game: ViewGame, content: ContentBundle)
   const tiles: string[] = [];
   const played = await play(job, game, (tick) => {
     game.render(renderer);
-    for (const i of tilesAt(job, tick)) tiles[i] = canvasTile(job, canvas, job.tiles![i]!, overlays!);
+    for (const i of tilesAt(job, tick))
+      tiles[i] = canvasTile(job, canvas, job.tiles![i]!, overlays!, game.status?.() ?? null);
   });
   return {
-    png: canvas.toDataURL('image/png'),
+    png: pngOf(job, canvas),
     width: canvas.width,
     height: canvas.height,
     ...played,
@@ -258,13 +287,17 @@ async function shootThree(
       draw.present(shown);
       if (tile.overlay !== null)
         presenter.ui(
-          overlayUi(o.content, tile.overlay, { fonts: o.fonts, frameSize: frameSizeOf(o.sheets) }),
+          overlayUi(o.content, tile.overlay, {
+            fonts: o.fonts,
+            frameSize: frameSizeOf(o.sheets),
+            status: shown.status as StatValues,
+          }),
         );
-      tiles[i] = canvas.toDataURL('image/png');
+      tiles[i] = pngOf(job, canvas);
     }
     presenter.transition(null);
   });
-  const png = canvas.toDataURL('image/png');
+  const png = pngOf(job, canvas);
   presenter.dispose();
   models.dispose();
   return { png, width: canvas.width, height: canvas.height, ...played, renderer, tiles };

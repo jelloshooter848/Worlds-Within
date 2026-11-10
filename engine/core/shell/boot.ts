@@ -16,8 +16,10 @@ import { TouchSource } from '../input/touch';
 import { layoutScreen } from '../input/touch-layout';
 import { FixedLoop } from '../loop';
 import {
+  loadProgress,
   loadSettings,
   loadVolumes,
+  storeProgress,
   storeSettings,
   storeVolumes,
   TOUCH_MODES,
@@ -25,7 +27,8 @@ import {
 } from '../save/settings';
 import type { SheetLookup } from '../assets/sheet-lookup';
 import { keyHintMap } from '../input/key-hints';
-import type { FontLookup, MenusSpec, UiFrameSize } from '../ui';
+import { levelChoices, paintUi, type FontLookup, type MenusSpec, type UiFrameSize } from '../ui';
+import type { RunStart } from '../headless';
 import { GameMenus, type MenuSettingsHost } from './game-menus';
 import { SceneStack, type Scene } from '../scene';
 import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
@@ -169,6 +172,14 @@ export interface BootMenus {
    * its first scene).
    */
   restart?: 'scene' | 'reload';
+  /**
+   * The game's levels in play order (Engine 0.16 part B): `{ id, name }` each (the level header's
+   * name, else its id; the platformer kit's `contentStages`). With them the title's `levels` item
+   * opens the level select (cleared and locked marks from the player's stored progress,
+   * `ww:<game>:progress`), a level chosen starts the scene again with `page.start` at its stage,
+   * and the last one's clear opens the end screen. Left out: none of these.
+   */
+  levels?: readonly { id: string; name: string }[];
 }
 
 export interface BrowserBootOptions {
@@ -250,6 +261,12 @@ export interface BootPage {
    * (Engine 0.16 T8); does nothing without `audio`.
    */
   uiSound(id: string): void;
+  /**
+   * Where the game starts (Engine 0.16 part B): a level chosen in the level select, `{ stage }`
+   * (the same start a run file's `start` gives `HeadlessOptions.start`), or null for the game's
+   * own start. The scene factory reads it each time it builds the first scene.
+   */
+  start: RunStart | null;
 }
 
 /** What a booted page holds, for a game that wants to reach in (audio, debugging). */
@@ -319,11 +336,16 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   });
   // The scenes draw through the presenter the transitions wrap: it starts the level transition on
   // a new map id and holds the old picture while one closes.
+  // The menus read every presented frame's status (the level-clear banner and the end screen).
+  let menus: GameMenus | null = null;
   const shown: BrowserDisplay = {
     ...display,
-    presenter: mixedPresenter(
-      transitions.presenter(display.presenter, (view) => display.transition?.(view)),
-      mixer,
+    presenter: statusPresenter(
+      mixedPresenter(
+        transitions.presenter(display.presenter, (view) => display.transition?.(view)),
+        mixer,
+      ),
+      (status) => menus?.frameStatus(status),
     ),
   };
   let volume: VolumeControl | null = null;
@@ -390,13 +412,12 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
 
   const scenes = new SceneStack();
   const uiSound = (id: string) => mixer?.uiSound(id);
-  const page: BootPage = { pointer, uiSound };
+  const page: BootPage = { pointer, uiSound, start: null };
   scenes.push(opts.scene(scenes, shown, page));
 
   // The menus (Engine 0.16 T9): the title over the first scene, the pause menu on the pause keys.
   const menuSpec = opts.menus?.spec;
   const uiPainter = display.uiPainter?.bind(display);
-  let menus: GameMenus | null = null;
   let pauseAsked = false;
   let pauseButton: HTMLButtonElement | null = null;
   if (opts.menus !== undefined && menuSpec !== undefined && uiPainter !== undefined) {
@@ -473,10 +494,29 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
           window.location.reload();
           return;
         }
+        page.start = null;
         scenes.clear();
         scenes.push(opts.scene(scenes, shown, page));
         menus?.showTitle();
       },
+      ...(boot.levels !== undefined &&
+        boot.levels.length > 0 && {
+          levels: () => {
+            const cleared = new Set(loadProgress(opts.game).cleared);
+            return levelChoices(menuSpec, boot.levels!, cleared);
+          },
+          startAt: (stage: number) => {
+            page.start = { stage };
+            scenes.clear();
+            scenes.push(opts.scene(scenes, shown, page));
+          },
+          onCleared: (level: string) => {
+            if (opts.game === undefined || !boot.levels!.some((l) => l.id === level)) return;
+            const progress = loadProgress(opts.game);
+            if (progress.cleared.includes(level)) return;
+            storeProgress(opts.game, { cleared: [...progress.cleared, level] });
+          },
+        }),
     });
     window.addEventListener('keydown', (e) => {
       if (e.repeat || !PAUSE_CODES.includes(e.code)) return;
@@ -537,6 +577,11 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
           showMenuState();
           return;
         }
+        // A due end screen opens before the scenes step (the game is held under it).
+        if (menus?.step()) {
+          showMenuState();
+          return;
+        }
         scenes.update([hook ? hook.frame(frame) : frame]);
         showMenuState();
         mixer?.dialog(scenes.find((s) => s instanceof UiScene && s.dialogShown()) !== undefined);
@@ -545,6 +590,9 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       render() {
         display.transition?.(transitions.view());
         scenes.render(display.renderer);
+        // The level-clear banner (Engine 0.16 part B) over the game, under no scene.
+        const banner = menus?.bannerDraws() ?? [];
+        if (banner.length > 0 && uiPainter !== undefined) paintUi(banner, uiPainter());
         display.present();
       },
     },
@@ -570,6 +618,9 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   else loop.start();
   document.body.dataset.backend = backend;
   return {
+    get start() {
+      return page.start;
+    },
     backend,
     display: shown,
     scenes,
@@ -594,6 +645,7 @@ function menusView(menus: GameMenus): MenusView {
   return {
     state: menus.state,
     screen: menus.screen,
+    banner: menus.bannerShown,
     focused: menu?.focused ?? null,
     items: (menu?.items ?? []).map((item) => ({
       id: item.id,
@@ -674,6 +726,20 @@ function mixedPresenter(presenter: Presenter, mixer: Mixer | null): Presenter {
   return {
     present(frame) {
       mixer.frameStatus(frame.status);
+      presenter.present(frame);
+    },
+    ...(presenter.resize !== undefined && { resize: (size) => presenter.resize!(size) }),
+  };
+}
+
+/** The presenter with every frame's status handed to `read` first (the menus' banner and end screen). */
+function statusPresenter(
+  presenter: Presenter,
+  read: (status: DeepReadonly<Record<string, string | number | boolean>>) => void,
+): Presenter {
+  return {
+    present(frame) {
+      read(frame.status);
       presenter.present(frame);
     },
     ...(presenter.resize !== undefined && { resize: (size) => presenter.resize!(size) }),

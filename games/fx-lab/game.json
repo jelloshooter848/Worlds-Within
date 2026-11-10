@@ -19,6 +19,7 @@
   "transitions": {
     "level": { "kind": "iris", "ticks": 28, "hold": 8, "ease": "cubicIn", "at": "follow" },
     "scene": { "kind": "fade", "ticks": 12 },
+    "respawn": { "kind": "iris", "ticks": 18, "hold": 6, "ease": "quadIn", "at": "follow" },
     "default": { "kind": "fade", "ticks": 16, "hold": 4 }
   },
   "menus": {
@@ -51,10 +52,29 @@
       ],
       "music": "lab",
       "footer": "An original game made with the Worlds Within engine",
-      "items": ["start", "controls", "settings"],
+      "items": ["start", "levels", "controls", "settings"],
       "dim": 0.95
     },
     "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "levels": { "heading": "Pick a level", "mark": "*" },
+    "clear": {
+      "heading": "Level clear!",
+      "lines": [
+        { "label": "Coins", "status": "coins" },
+        { "label": "Time", "status": "time", "format": "time" },
+        { "label": "Deaths", "status": "deaths" }
+      ]
+    },
+    "end": {
+      "heading": "Lab complete!",
+      "credits": "Made with the Worlds Within engine. Thanks for playing!",
+      "lines": [
+        { "label": "Coins", "status": "coins" },
+        { "label": "Time", "status": "time", "format": "time" },
+        { "label": "Deaths", "status": "deaths" }
+      ],
+      "items": ["title", "levels"]
+    },
     "controls": [
       { "actions": ["left", "right"], "label": "Walk" },
       { "actions": ["attack"], "label": "Run (hold)" },

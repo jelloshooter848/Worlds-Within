@@ -483,8 +483,10 @@ reproduced, hashMismatch }`).
    `screenshot <run-file> --tick N` to look at a frame (`--backend three --allow-software-gl` for
    the 3D picture where there is no GPU), or `sheet <run-file> --ticks 120,300+pause,200@3d`
    for several frames in one labelled PNG (tiles from other run files of the folder as
-   `level-3/120`; overlays `title`, `pause`, `settings`, `controls`, `ui=<file>[.<widget>]` or a
-   transition like `level*22`).
+   `level-3/120`; overlays `title`, `pause`, `settings`, `controls`, `levels`, `clear`, `end`,
+   `ui=<file>[.<widget>]` or a transition like `level*22` or `respawn`). `screenshot` takes one
+   overlay too (`--overlay clear`) and `--scale N`, an exact whole-number upscale (a 320x180 game
+   at `--scale 6` is 1920x1080): `pnpm -s cli screenshot <run> --tick N --scale 6 --out x.png`.
 6. Before pushing: `pnpm lint && pnpm typecheck && pnpm test && pnpm build`.
 
 When a run fails, the [debug-failing-run skill](../.claude/skills/debug-failing-run/SKILL.md) walks

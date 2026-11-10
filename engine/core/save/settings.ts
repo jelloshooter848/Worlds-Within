@@ -133,3 +133,36 @@ export function loadSettings(game: string | undefined): StoredSettings {
 export function storeSettings(game: string, settings: StoredSettings): boolean {
   return saveJson(settingsKey(game), readSettings(settings));
 }
+
+/**
+ * The player's level progress (Engine 0.16 part B, T3; the shell's level select): the ids of the
+ * levels cleared on this browser, kept under one key per game (`progressKey`) beside the
+ * settings. Presentation only: it marks levels cleared and unlocks them in the level select,
+ * and is never read by a headless run, so no level plays or hashes differently for it.
+ */
+export interface StoredProgress {
+  cleared: string[];
+}
+
+/** The storage key of a game's level progress: `ww:<game>:progress`. */
+export function progressKey(game: string): string {
+  return `ww:${game}:progress`;
+}
+
+/** A stored value read as progress: the cleared ids that are non-empty strings, each once. Pure. */
+export function readProgress(value: unknown): StoredProgress {
+  const v = typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  const list = Array.isArray(v['cleared']) ? v['cleared'] : [];
+  const ids = list.filter((id): id is string => typeof id === 'string' && id !== '');
+  return { cleared: [...new Set(ids)] };
+}
+
+/** A game's stored progress, else none cleared. Never throws. */
+export function loadProgress(game: string | undefined): StoredProgress {
+  return readProgress(game === undefined ? null : loadJson<unknown>(progressKey(game)));
+}
+
+/** Stores a game's progress; false when storage refused. Never throws. */
+export function storeProgress(game: string, progress: StoredProgress): boolean {
+  return saveJson(progressKey(game), readProgress(progress));
+}

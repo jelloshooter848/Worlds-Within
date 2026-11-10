@@ -83,4 +83,45 @@ describe('ShellTransitions (Engine 0.16 T5)', () => {
     expect(t.start('level', () => (covered = true))).toBe(false);
     expect(covered).toBe(true);
   });
+
+  it('plays the respawn slot on a respawn event after showing its frame, and only when given', () => {
+    const t = new ShellTransitions({
+      specs: { respawn: { kind: 'fade', ticks: 2 }, default: { kind: 'wipe', ticks: 3 } },
+    });
+    const shown: string[] = [];
+    const p = t.presenter(
+      {
+        present: (f) =>
+          shown.push(`${f.frame}${f.events.length ? ' ' + f.events.map((e) => e.type).join('+') : ''}`),
+      },
+      () => {},
+    );
+    p.present(frame(1, 'a', true));
+    p.present(frame(2, 'a', false, ['died', 'respawn']));
+    expect(t.view()?.spec.kind).toBe('fade');
+    expect(t.closing).toBe(true);
+    t.step();
+    p.present(frame(3, 'a', false, ['land'])); // held while it closes: the respawn frame stays
+    t.step();
+    t.step();
+    p.present(frame(3, 'a'));
+    expect(shown).toEqual(['1', '2 died+respawn', '2 died+respawn', '3 land', '3']);
+    // Without a respawn spec (only `default`) a respawn plays nothing.
+    const none = new ShellTransitions({ specs: { default: { kind: 'fade', ticks: 2 } } });
+    none.presenter({ present() {} }, () => {}).present(frame(1, 'a', true, ['respawn']));
+    expect(none.running).toBe(false);
+  });
+
+  it("plays the slot the game's events map names for any event", () => {
+    const t = new ShellTransitions({
+      specs: {
+        default: { kind: 'wipe', ticks: 3 },
+        respawn: { kind: 'fade', ticks: 2 },
+        events: { died: 'default' },
+      },
+    });
+    expect(t.eventSlot(frame(1, 'a', false, ['respawn']))).toBeNull();
+    t.presenter({ present() {} }, () => {}).present(frame(1, 'a', true, ['died']));
+    expect(t.view()?.spec.kind).toBe('wipe');
+  });
 });

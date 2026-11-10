@@ -142,6 +142,14 @@ export function stageStarts(stages: readonly LevelStage[]): HeadlessStarts {
 }
 
 /**
+ * Each stage's level id and name in play order (Engine 0.16 part B): the level header's `name`,
+ * else its id. What a page hands the shell's level select (`BootMenus.levels`).
+ */
+export function stageNames(stages: readonly LevelStage[]): { id: string; name: string }[] {
+  return stages.map((s) => ({ id: s.level.id, name: s.level.name ?? s.level.id }));
+}
+
+/**
  * The stage a run's start (`HeadlessOptions.start`) names, for {@link LevelSequenceOptions.start}:
  * undefined without one. Throws on a campaign entry start (a level sequence starts at stages; the
  * tools refuse it first when the game lists no entries).

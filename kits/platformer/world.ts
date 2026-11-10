@@ -165,6 +165,13 @@ export class PlatformerWorld {
   checkpoint: { col: number; row: number } | null = null;
   /** The level's checkpoint cells (`K`), in reading order. */
   readonly checkpoints: readonly { col: number; row: number }[];
+  /**
+   * Deaths in this level so far (Engine 0.16 part B, T3): presentation only (the level-clear and
+   * end screens read it from the frame's status), never in the snapshot.
+   */
+  deaths = 0;
+  /** The checkpoint cells touched at least once (indexes into `checkpoints`); presentation only. */
+  private readonly reached = new Set<number>();
   readonly viewWidth: number;
   private readonly start: LevelCell;
   private readonly games: ReadonlyMap<string, MiniGameDef>;
@@ -234,6 +241,11 @@ export class PlatformerWorld {
 
   emit(e: PlatformerEvent): void {
     this.events.push(e);
+  }
+
+  /** How many of the level's checkpoints the player has touched (presentation only). */
+  get checkpointsReached(): number {
+    return this.reached.size;
   }
 
   /** One tick. */
@@ -660,6 +672,8 @@ export class PlatformerWorld {
         if (cell === 'checkpoint' && this.rules.isOn('checkpoints')) {
           if (this.checkpoint?.col === col && this.checkpoint.row === row) continue;
           this.checkpoint = { col, row };
+          const at = this.checkpoints.findIndex((c) => c.col === col && c.row === row);
+          if (at >= 0) this.reached.add(at);
           this.emit({ type: 'checkpoint', col, row });
         } else if (cell === 'coin' && this.rules.isOn('coins-collect')) {
           this.tiles.setCell(col, row, 'empty');
@@ -682,6 +696,7 @@ export class PlatformerWorld {
    */
   private die(cause: DeathCause): void {
     this.lives--;
+    this.deaths++;
     this.emit({ type: 'died', cause, lives: this.lives });
     if (this.lives <= 0) {
       this.outcome = 'failed';

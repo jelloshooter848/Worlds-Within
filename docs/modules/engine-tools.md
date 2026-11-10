@@ -167,15 +167,22 @@ hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be
   `no_three_skin` at `content.skin`, when either is missing); `renderer` is the WebGL renderer
   string, and a software one (SwiftShader, llvmpipe) is refused with exit 4 naming it and
   `--allow-software-gl`, which takes the picture on SwiftShader on purpose (needed in a container
-  without a GPU). Needs `pnpm exec playwright install --with-deps
-chromium`. Details: `engine/tools/CLAUDE.md` (Screenshots).
+  without a GPU). Engine 0.16 part B: `--scale N` (1-16) writes the picture N times as large,
+  each pixel an exact N x N block (a 320x180 game at `--scale 6` is exactly 1920x1080), and
+  `--overlay <o>` draws one of `sheet`'s overlays over it (`title`, `pause`, `settings`,
+  `controls`, `levels`, `clear`, `end`, `ui=<file>[.<widget>]`, a transition), through the same
+  job; the result adds `scale` and `overlay`. Example: `pnpm -s cli screenshot
+games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear --out x.png --json`.
+  Needs `pnpm exec playwright install --with-deps chromium`. Details: `engine/tools/CLAUDE.md`
+  (Screenshots).
 - `pnpm cli sheet <run-file> --ticks <tiles> [--backend 2d|three] [--allow-software-gl]
 [--out file.png] [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14):
   the owner's review sheet. Each tile is `[<run>/]<tick>[+<overlay>][@<backend>]`: a tick of the
   run file (or of another run file in its folder, `level-3/120`), drawn as `screenshot` draws it,
   with an optional overlay drawn by the engine's own code (`title`, `pause`, `settings`,
-  `controls` from `game.json`'s `menus`; `ui=<file>[.<widget>]`; a transition slot or kind with
-  `*<age>`) and an optional backend of its own (`@3d`). One Chromium per backend plays each run
+  `controls` from `game.json`'s `menus`, and from Engine 0.16 part B `levels`, `clear` and `end`,
+  the stat screens reading the tick's frame status; `ui=<file>[.<widget>]`; a transition slot or
+  kind with `*<age>`, `respawn` among the slots) and an optional backend of its own (`@3d`). One Chromium per backend plays each run
   file once and checks its state hashes against the headless run's; the tiles are tiled with
   their labels (a caption from `--labels`, then run, tick, overlay and backend) into one PNG
   (default `.ww-out/sheets/<name>.png`), the same bytes every run on one machine. `--json` result:
@@ -256,5 +263,5 @@ test spawns `pnpm -s cli` for real. `record.test.ts` covers `record` (the mini s
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
-compares the bytes (canvas2d and three), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), `sheet.test.ts` the tile grammar, the overlays from the fx lab's content and a 2D and 3D sheet of the fx lab made twice with the same bytes, and `tests/runs/run-files.test.ts` checks every game's run files
+compares the bytes (canvas2d and three), an exact 6x picture (`--scale`) and an overlay (`--overlay`), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), `sheet.test.ts` the tile grammar, the overlays from the fx lab's content and a 2D and 3D sheet of the fx lab made twice with the same bytes, and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes (`tests/runs/missions.test.ts` holds Engine 0.10's done-when cases).

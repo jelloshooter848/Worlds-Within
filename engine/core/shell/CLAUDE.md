@@ -300,6 +300,45 @@ transition, music?, restart, ... })` (`booted.menus`) puts each screen on the st
   - Drawing: `BrowserDisplay.uiPainter()`: Canvas2D a `CanvasUiPainter` on the scenes' renderer;
     3D a painter that collects the draws, painted on `present()` as an overlay pass over the
     frame (`ThreePresenter.ui`). Fonts must be handed to the display (`fonts`) for glyphs to draw.
+- **Level select, level-clear banner, end screen and the respawn transition** (Engine 0.16 part
+  B, T3; `game-menus.ts`, `boot.ts`, `transitions.ts`):
+  - `game.json`'s `menus` gains `levels { heading?, lock?, mark? }`, `clear { heading?, lines? }`,
+    `end { heading?, credits?, lines?, items? }` and the title item `levels` (`../ui/menus.ts`).
+    `BootMenus.levels` is the page's levels in play order, `[{ id, name }]` (the platformer kit's
+    `stageNames(contentStages(content))`); without it none of this shows.
+  - **Level select:** the title's Levels item opens it (`GameMenus` screen `levels`, from
+    `title` or the end screen; Back, the attack key or the pause key goes back, focused on
+    Levels). Items `level-<i>` (`levelItemId`), a cleared one marked (`mark`, default `*`), a
+    locked one disabled (`lock`, default true: shown once the level before it is cleared). The
+    progress is `save/settings.ts`'s `StoredProgress` under `ww:<game>:progress`
+    (`loadProgress`, `storeProgress`; presentation only, never read headless). Choosing one plays
+    the `default` transition and, covered, `GameMenusOptions.startAt(stage)`: the boot sets
+    `page.start = { stage }` (`BootPage.start`, a `RunStart`, the very start a run file's `start`
+    gives `HeadlessOptions.start`; also `booted.start`) and rebuilds the first scene with the
+    `scene` factory, which reads it (`createGame(content, seed, page.start ? { start: page.start
+} : {})`). Back to title clears it.
+  - **Frame status:** the scenes' presenter hands every frame's status to
+    `GameMenus.frameStatus(status)` (`statusPresenter`, outermost). On the frame a level's
+    `outcome` turns `cleared` (its `level` id): `onCleared(id)` (the boot stores the progress),
+    the stat lines' numbers are summed for the end screen, and either the end screen is due (the
+    page's last level, with `menus.end`) or the **level-clear banner** shows (`menus.clear`:
+    `clearScreen`, a panel with the heading and the stat lines, no menu). The banner is never on
+    the stack: the boot paints `menus.bannerDraws()` with the display's `uiPainter()` after the
+    scenes render, so the kit's pause between levels steps on under it and it takes no input; it
+    hides on the first frame not `cleared`, and under a menu. `menus.step()` (each loop step,
+    before the scenes update) runs its clock and opens a due **end screen** (`endScreen`: the
+    heading, `credits`, the summed stats, `items`, default `title`): state `end`, the game held
+    under it; Back to title restarts, Levels opens the level select. `resume()` closes it too
+    (tests). `__ww.menus()` adds `banner`; `body[data-menu]` may be `end`.
+  - **Respawn transition:** `game.json`'s `transitions.respawn` (and `transitions.events`, event
+    type to slot; `../fx/transition.ts`'s `eventTransitionSlot`) plays when a presented frame has
+    the kit's `respawn` event: the frame is shown first (its sounds at once), then the slot starts,
+    holding the loop's ticks while it closes as every transition does, so every state hash is the
+    run's. A slot without a spec of its own plays nothing on an event unless `events` names it.
+  - Tested in `game-menus.test.ts`, `transitions.test.ts`, `../ui/menus.test.ts`,
+    `../save/settings.test.ts`, `tests/runs/stepped-shell-invariance.test.ts` (every run file
+    through the shell with the respawn transition, the banner and the end screen, golden hashes
+    held) and `tests/browser/menus.test.ts` (the fx lab's by keyboard, gamepad and touch).
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and

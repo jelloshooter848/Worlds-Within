@@ -39,7 +39,8 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
 - Screen transitions (Engine 0.16 T5, `transition.ts`): `transitionSpecSchema` (`fade`, `wipe`
   with `direction` and a soft `edge`, `iris` with `at`: `follow`, `center` or a point; each
   `{ ticks, hold?, color?, ease? }`), `transitionsSchema` (`game.json`'s `transitions`: `level`,
-  `scene`, `mission`, `default`), `transitionFor`, `reducedMotion` (a short fade,
+  `scene`, `mission`, `respawn` (Engine 0.16 part B, played on a frame event), `default`, and
+  `events`, an event type to a slot), `transitionFor`, `eventTransitionSlot`, `reducedMotion` (a short fade,
   `REDUCED_MOTION_TICKS`), `transitionAt(spec, age)` -> `{ phase: out | hold | in, coverage }`,
   `transitionShape(view, screen, focus)` (what a display draws), `transitionAlphaAt` (the cover at
   a pixel), `irisCentre`, `wipeTravel`, `wipeAlpha`, `TransitionPlayer`. The shell runs them

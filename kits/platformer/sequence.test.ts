@@ -14,6 +14,7 @@ import {
   LevelSequence,
   levelsInPlayOrder,
   levelStages,
+  stageNames,
   stageStarts,
   startStage,
   type LevelStage,
@@ -185,6 +186,15 @@ describe('a sequence that starts at a later stage (Engine 0.14, gap G9)', () => 
     expect(startStage(undefined)).toBeUndefined();
     expect(startStage({ stage: 1 })).toBe(1);
     expect(() => startStage({ entry: 'x' })).toThrow(/not at campaign entry "x"/);
+  });
+
+  it("names its stages for a level select: the header's name, else the id", () => {
+    const named = STAGES.map((s, i) => (i === 1 ? { ...s, level: { ...s.level, name: 'Second' } } : s));
+    expect(stageNames(named)).toEqual([
+      { id: 'one', name: 'one' },
+      { id: 'two', name: 'Second' },
+      { id: 'three', name: 'three' },
+    ]);
   });
 });
 

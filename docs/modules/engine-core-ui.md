@@ -46,7 +46,10 @@ Import from `@engine/core/ui` (`index.ts`).
 - Menus (T9): `menusSchema`, `TITLE_ITEMS`, `PAUSE_ITEMS`, `SETTINGS_ITEMS`, `MENU_LABELS`,
   `titleScreen`, `pauseScreen`, `settingsScreen`, `controlsScreen`, `controlRows`, `menuHint`,
   `checkMenus` (run by `loadContent` on `game.json`: `unknown_menu_item`, `missing_ref`,
-  `missing_frame`, `missing_glyph`, `missing_field`), `sliderText`.
+  `missing_frame`, `missing_glyph`, `missing_field`), `sliderText`. Engine 0.16 part B: the
+  title item `levels`, `END_ITEMS`, the `levels`, `clear` and `end` blocks, `levelsScreen`,
+  `clearScreen`, `endScreen`, `levelChoices`, `levelItemId`, `levelItemStage`, stat lines
+  (`statText`, `formatTicks`, `STAT_FORMATS`, `DEFAULT_STAT_LINES`).
 - UI screens (T7): `UI_KIND`, `uiScreenSchema`, `checkUiWidgets`, `checkUiRefs`, `UiScreen`
   (`update(input)`, `draws()`, `open`, `close`, `focused`, `value`, `itemBox`), `Menu`, `Button`,
   `DialogBox`, `UiNav` (commands from actions with repeat), `UiInput`, `UiEvent`, `uiLook`,

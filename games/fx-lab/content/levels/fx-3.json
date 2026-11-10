@@ -1,5 +1,6 @@
 {
   "id": "fx-3",
+  "name": "Torchlight",
   "profile": "pip",
   "scroll": "right",
   "spawns": {

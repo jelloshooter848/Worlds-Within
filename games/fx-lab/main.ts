@@ -6,7 +6,8 @@ import type { SoundCue } from '@engine/core/present';
 import type { SceneStack } from '@engine/core/scene';
 import { backendFromQuery, bootBrowserGame, HostScene, UiScene } from '@engine/core/shell';
 import type { UiEvent, UiScreen } from '@engine/core/ui';
-import { mustLoadFxLab } from './content';
+import { stageNames } from '@kits/platformer';
+import { fxStages, mustLoadFxLab } from './content';
 import { createGame } from './headless';
 import { fxLook, fxPicture } from './picture';
 import { fxLook3d } from './picture3d';
@@ -32,7 +33,11 @@ import gameFiles from 'virtual:game-files';
  *
  * The menus (Engine 0.16 T9): `game.json`'s `menus` gives the lab a title screen, the shell's
  * pause menu (Escape, P, pad Start, the on-screen button), settings and controls, in both
- * backends; `?debug=step` skips the title.
+ * backends; `?debug=step` skips the title. From Engine 0.16 part B the title's Levels item opens the
+ * shell's level select (the levels' names from their headers; cleared ones marked, later ones
+ * locked until the one before is cleared), a level-clear banner shows during the kit's pause
+ * between levels, the end screen follows the last level, and the `respawn` transition (an iris)
+ * plays on the kit's respawn event.
  *
  * The mixer (Engine 0.16 T8): the 2D skin's `music` section plays `lab`, a calm and a danger layer
  * (`content/songs/`) mixed by the kit's `nearestActor` status (danger near a beetle), on both
@@ -121,7 +126,13 @@ const booted = bootBrowserGame({
   pointer: true,
   game: content.manifest.id,
   transitions: content.manifest.transitions,
-  menus: { spec: content.manifest.menus, fonts: look.fonts, sheets: look.sheet },
+  menus: {
+    spec: content.manifest.menus,
+    fonts: look.fonts,
+    sheets: look.sheet,
+    // The level select, level-clear banner and end screen (Engine 0.16 part B): the levels by name.
+    levels: stageNames(fxStages(content)),
+  },
   audio: {
     sfx: contentSfx(content),
     songs: contentSongs(content),
@@ -146,7 +157,8 @@ const booted = bootBrowserGame({
     page = booted;
     return new FxLabScene({
       stack: scenes,
-      game: createGame(content, content.manifest.start.seed),
+      // A level chosen in the level select starts there, as a run file's `start: { stage }` does.
+      game: createGame(content, content.manifest.start.seed, booted.start ? { start: booted.start } : {}),
       picture: () => fxPicture(display.presenter, look.screen),
     });
   },

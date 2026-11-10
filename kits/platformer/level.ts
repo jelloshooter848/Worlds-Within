@@ -69,6 +69,13 @@ const spawn = z.strictObject({
 export const levelSchema = z
   .strictObject({
     id: z.string().min(1).describe('the level id: its file name'),
+    name: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        "the level's name as menus show it (the shell's level select, Engine 0.16 part B); the id when left out",
+      ),
     profile: z.string().min(1).describe('the physics profile it is played with: a `profile` id'),
     scroll: z
       .enum(['right', 'free', 'none'])

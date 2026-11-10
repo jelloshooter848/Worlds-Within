@@ -114,8 +114,8 @@ tiles? })`, the screenshot page's job for a run file (played headless to the tic
   `sheet`.
 - `sheet.ts` and `sheet-overlay.ts` (Engine 0.16 T14): `sheet`'s tile grammar (`parseTiles`,
   `SHEET_BACKENDS`, `tileMeta`), `composeSheet(pictures, { columns, scale, title? })` (the tiles
-  laid out with labels in headless Chromium) and, pure, the overlays a tile draws
-  (`parseOverlay`, `checkOverlay`, `overlayUi`: the game's menu screens as the shell builds them
+  laid out with labels in headless Chromium) and, pure, the overlays a tile (or, from Engine 0.16
+  part B, `screenshot --overlay`) draws (`parseOverlay`, `checkOverlay`, `sheetLevels`, `overlayUi`: the game's menu screens as the shell builds them
   or a `ui` file's screen, stepped with no input, as UI kit draw items; `overlayTransition`: a
   transition slot or kind at an age). Sheets, below.
 - `screenshot/`: the tools-only screenshot page (`index.html`, `page.ts`) and the job it takes
@@ -243,9 +243,10 @@ world, seed, start, from, to, every, paths, rows: [{ tick, hash, values: { <path
   `fullOutput`. Text: an aligned table, a column per path. Usage errors (exit 2): no paths, an
   empty path or segment, a path twice, `--from` after `--to`, `--to` after `ticks`, `--every` below
   1. Exit 3 for a bad run file or content. Works on game and world runs. Tests: `trace.test.ts`.
-- `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`:
+- `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]
+[--scale N] [--overlay o]`:
   a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, start, tick, backend,
-renderer, path, width, height, bytes, sha256, hash, headlessHash, hashes, matchesHeadless }`.
+renderer, path, width, height, scale, overlay, bytes, sha256, hash, headlessHash, hashes, matchesHeadless }`.
   Exit 0, 4 when a state hash the page saw is not the headless one or (`three`) WebGL is not
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
   `view`, or (`three`) a view without `frame()` or a game without a `three` skin, 2 for a bad
@@ -1057,6 +1058,18 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   In this container (no GPU) that flag is needed: `pnpm -s cli screenshot
 games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --allow-software-gl
 --json`. 3D PNG hashes differ between GPUs and drivers; compare them on one machine.
+- **`--scale N` and `--overlay <o>`** (Engine 0.16 part B): `--scale` (whole, 1-16, default 1)
+  returns every picture N times as large with image smoothing off (`ShotJob.scale`, the page's
+  `pngOf`): each pixel an exact N x N block, so a 320x180 game at 6 is exactly 1920x1080 and
+  `width`/`height` are the scaled size. `--overlay` takes one overlay in `sheet`'s grammar
+  (`parseOverlay`: `title`, `pause`, `settings`, `controls`, `levels`, `clear`, `end`,
+  `ui=<file>[.<widget>]`, a transition slot or kind, each with `*<n>`), checked with
+  `checkOverlay` before Chromium starts (usage error, exit 2, when the game cannot show it) and
+  drawn through the same job as `sheet` (`shotSetup` with a one-tile `ShotJob.tiles`); `overlay`
+  in the result is its label (null without one). The `clear` and `end` screens show the status of
+  the frame drawn at the tick (`ViewGame.status()`, which `frameView` keeps; in 3D the frame's).
+  `pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear
+--out x.png --json` writes the level-clear banner at 1536x1440.
 - Chromium: `pnpm exec playwright install --with-deps chromium` (CI does this). Without it the
   command crashes (exit 5) with that line, and the browser tests skip with a message locally; in
   CI (`CI` set) they are required.
@@ -1076,10 +1089,13 @@ Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
 - **Overlays** (`sheet-overlay.ts`) are drawn over the tick's picture by the engine's own code,
   never the game's: `title`, `pause`, `settings`, `controls` (the shell's menu screens from
   `game.json`'s `menus`, built as `GameMenus` builds them, with player 1's default keys and the
-  default volumes and settings), `ui=<file>` (a `ui` content file's screen as it opens) or
+  default volumes and settings), and from Engine 0.16 part B `levels` (the level select over the
+  game's levels, `sheetLevels`: its campaign's level entries, else its `level` files, named by
+  their headers' `name`; nothing cleared yet), `clear` and `end` (the level-clear banner and the
+  end screen, `menus.clear` / `menus.end`, with the tick's frame status as their stats), `ui=<file>` (a `ui` content file's screen as it opens) or
   `ui=<file>.<widget>` (every widget closed, that one opened), each stepped `*<frames>` display
   frames with no input first (30 for menus, 120 for ui: focus tweens settle, a dialog types), or a
-  transition: a slot of `game.json`'s `transitions` (`level`, `scene`, `mission`, `default`) or a
+  transition: a slot of `game.json`'s `transitions` (`level`, `scene`, `mission`, `respawn`, `default`) or a
   kind (`fade`, `wipe`, `iris`, 20-frame halves), `*<age>` frames after it started (default its
   first fully covered frame). 2D paints them on a copy of the picture (`CanvasUiPainter`,
   `drawTransition`; an iris closes on the picture's centre, since the view's camera is inside the

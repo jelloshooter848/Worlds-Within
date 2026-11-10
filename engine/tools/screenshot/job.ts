@@ -67,10 +67,27 @@ export interface ShotJob {
    * as `ShotResult.tiles`. Left out by `screenshot`.
    */
   tiles?: ShotTile[];
+  /**
+   * Whole-number upscale of every picture returned (Engine 0.16 part B, `screenshot --scale`):
+   * each pixel becomes `scale` x `scale` (nearest neighbour), so 320x180 at 6 is 1920x1080. 1 or
+   * left out: the picture's own size.
+   */
+  scale?: number;
 }
 
-/** The game's menu screens a sheet tile can show (`game.json`'s `menus`, Engine 0.16 T9). */
-export const SHEET_MENU_SCREENS = ['title', 'pause', 'settings', 'controls'] as const;
+/**
+ * The game's menu screens a sheet tile can show (`game.json`'s `menus`, Engine 0.16 T9; from part
+ * B the level select `levels`, the level-clear banner `clear` and the end screen `end`).
+ */
+export const SHEET_MENU_SCREENS = [
+  'title',
+  'pause',
+  'settings',
+  'controls',
+  'levels',
+  'clear',
+  'end',
+] as const;
 export type SheetMenuScreen = (typeof SHEET_MENU_SCREENS)[number];
 
 /**

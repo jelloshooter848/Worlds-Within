@@ -3,12 +3,20 @@ import type { Action } from '../input/actions';
 import type { Renderer } from '../gfx/renderer';
 import type { SceneStack } from '../scene';
 import {
+  clearScreen,
   controlsScreen,
+  DEFAULT_STAT_LINES,
+  endScreen,
+  levelItemStage,
+  levelsScreen,
   pauseScreen,
   settingsScreen,
   titleScreen,
   UiScreen,
   type FontLookup,
+  type LevelChoice,
+  type StatValues,
+  type UiDraw,
   type MenuBuildContext,
   type MenuSettingsValues,
   type MenusSpec,
@@ -31,10 +39,19 @@ import { UiScene } from './ui-scene';
  * the change with the game's `default` transition. Everything here is the page's presentation
  * state: no kit, frame or hash ever sees it. Pure (on `PURE_CORE`): the boot hands it the DOM's
  * side as callbacks.
+ *
+ * Engine 0.16 part B (T3): the level select (the title's `levels` item, `menus.levels`: the
+ * page's levels by name with cleared and locked marks; choosing one starts the game at that stage
+ * under the `default` transition, through `startAt`), the level-clear banner (`menus.clear`: drawn
+ * over the game, never on the stack, while a frame's status says `cleared` on a level that is not
+ * the last, so the kit's pause between levels goes on under it) and the end screen (`menus.end`:
+ * pushed once a frame says the last level is cleared, holding the game, with the stats summed over
+ * the levels cleared since the game started). {@link GameMenus.frameStatus} reads every presented
+ * frame's status; nothing it does reaches the game.
  */
 
-/** What the menus show now: the title (or a screen opened from it), the pause menu, or nothing. */
-export type MenusState = 'title' | 'pause' | 'play';
+/** What the menus show now: the title (or a screen opened from it), the pause menu, the end screen, or nothing. */
+export type MenusState = 'title' | 'pause' | 'end' | 'play';
 
 /** The page side of the settings screen: the values it opens with and where changes go. */
 export interface MenuSettingsHost {
@@ -70,15 +87,35 @@ export interface GameMenusOptions {
   music?(id: string | null): void;
   /** Back to title: the game starts over, then the title shows again (the boot rebuilds the scene). */
   restart(): void;
+  /**
+   * The game's levels in play order with the player's progress (Engine 0.16 part B): the level
+   * select lists them, and the last one's clear opens the end screen. None: no level select.
+   */
+  levels?(): readonly LevelChoice[];
+  /** A level was chosen in the level select: the game starts over at that stage (under the `default` transition). */
+  startAt?(stage: number): void;
+  /** A frame said a level was cleared (its id): the page keeps the progress. */
+  onCleared?(level: string): void;
 }
 
-type Screen = 'title' | 'pause' | 'settings' | 'controls';
+type Screen = 'title' | 'pause' | 'settings' | 'controls' | 'levels' | 'end';
+type Base = 'title' | 'pause' | 'end';
 
 export class GameMenus {
   /** The menu scenes on the stack, bottom first, with the screen each shows. */
   private readonly open: { scene: UiScene; screen: Screen }[] = [];
-  /** The screen settings or controls were opened from, to go back to. */
-  private from: 'title' | 'pause' = 'title';
+  /** The screen settings, controls or the level select were opened from, to go back to. */
+  private from: Base = 'title';
+  /** The level-clear banner while it shows (never on the stack), or null. */
+  private banner: UiScreen | null = null;
+  /** The level and outcome of the last frame read, for the edge to `cleared`. */
+  private last: { level: string; outcome: string } | null = null;
+  /** The status values summed over the levels cleared since the game started (the end screen's). */
+  private sums: Record<string, number> = {};
+  /** The last cleared frame's status, for keys not summed (an `of`). */
+  private lastCleared: StatValues = {};
+  /** The last level was cleared: the end screen opens on the next step. */
+  private endDue = false;
   /** Every event of every menu, in order (for tests and page hooks). */
   readonly events: { screen: Screen; event: UiEvent }[] = [];
   private busy = false;
@@ -93,7 +130,9 @@ export class GameMenus {
   get state(): MenusState {
     const bottom = this.open[0];
     if (bottom === undefined) return 'play';
-    return bottom.screen === 'title' || bottom.screen === 'pause' ? bottom.screen : this.from;
+    return bottom.screen === 'title' || bottom.screen === 'pause' || bottom.screen === 'end'
+      ? bottom.screen
+      : this.from;
   }
 
   /** The screen on top (`title`, `pause`, `settings`, `controls`), or null in play. */
@@ -120,7 +159,14 @@ export class GameMenus {
     const ctx = this.context();
     switch (screen) {
       case 'title':
-        return titleScreen(spec, ctx, { canContinue: this.opts.canContinue?.() ?? false });
+        return titleScreen(spec, ctx, {
+          canContinue: this.opts.canContinue?.() ?? false,
+          hasLevels: (this.opts.levels?.().length ?? 0) > 0,
+        });
+      case 'levels':
+        return levelsScreen(spec, ctx, this.opts.levels?.() ?? []);
+      case 'end':
+        return endScreen(spec, ctx, this.endStatus());
       case 'pause':
         return pauseScreen(spec, ctx);
       case 'settings':
@@ -167,6 +213,7 @@ export class GameMenus {
   /** Puts the title over the game's first scene (its music too). */
   showTitle(): void {
     this.closeAll();
+    this.newGame();
     this.from = 'title';
     this.push('title');
     if (this.opts.spec.title.music !== undefined) this.opts.music?.(this.opts.spec.title.music);
@@ -180,9 +227,9 @@ export class GameMenus {
     return true;
   }
 
-  /** Closes the pause menu (and any screen opened from it): the game steps again. */
+  /** Closes the pause menu or the end screen (and any screen opened from it): the game steps again. */
   resume(): void {
-    if (this.state !== 'pause') return;
+    if (this.state !== 'pause' && this.state !== 'end') return;
     this.closeAll();
   }
 
@@ -195,7 +242,7 @@ export class GameMenus {
     if (this.busy) return false;
     const top = this.screen;
     if (top === null) return this.pause();
-    if (top === 'settings' || top === 'controls') {
+    if (top === 'settings' || top === 'controls' || top === 'levels') {
       this.back(top);
       return true;
     }
@@ -228,17 +275,107 @@ export class GameMenus {
     });
   }
 
-  private sub(screen: 'settings' | 'controls'): void {
+  /** Starts the game over at a stage from the level select (the menus close under the `default` transition). */
+  startAt(stage: number): void {
+    if (this.busy || this.opts.startAt === undefined) return;
+    this.busy = true;
+    this.opts.transition('default', () => {
+      this.busy = false;
+      this.closeAll();
+      this.newGame();
+      if (this.opts.spec.title.music !== undefined) this.opts.music?.(null);
+      this.opts.startAt!(stage);
+    });
+  }
+
+  private sub(screen: 'settings' | 'controls' | 'levels'): void {
     const from = this.screen;
-    if (from !== 'title' && from !== 'pause') return;
+    if (from !== 'title' && from !== 'pause' && from !== 'end') return;
     this.from = from;
     this.pop();
     this.push(screen);
   }
 
-  private back(screen: 'settings' | 'controls'): void {
+  private back(screen: 'settings' | 'controls' | 'levels'): void {
     this.pop();
     this.push(this.from, screen);
+  }
+
+  /** Forgets the play's sums and the banner: a new game starts (the title, a level chosen). */
+  private newGame(): void {
+    this.sums = {};
+    this.lastCleared = {};
+    this.last = null;
+    this.endDue = false;
+    this.banner = null;
+  }
+
+  /** The end screen's values: the summed numbers over the last cleared frame's status. */
+  private endStatus(): StatValues {
+    return { ...this.lastCleared, ...this.sums };
+  }
+
+  /**
+   * A presented frame's status (the boot calls it for every frame the scenes present): on the
+   * frame a level turns `cleared`, its progress is kept (`onCleared`), the stat lines' numbers are
+   * summed, and either the end screen is due (the page's last level, with `menus.end`) or the
+   * level-clear banner shows (`menus.clear`) until a frame is no longer `cleared`.
+   */
+  frameStatus(status: StatValues): void {
+    const level = String(status['level'] ?? '');
+    const outcome = String(status['outcome'] ?? '');
+    const was = this.last;
+    this.last = { level, outcome };
+    if (outcome !== 'cleared') {
+      this.banner = null;
+      return;
+    }
+    if (was !== null && was.outcome === 'cleared' && was.level === level) return;
+    this.banner = null;
+    this.opts.onCleared?.(level);
+    const lines = this.opts.spec.end?.lines ?? DEFAULT_STAT_LINES;
+    for (const line of lines) {
+      const v = status[line.status];
+      if (typeof v === 'number') this.sums[line.status] = (this.sums[line.status] ?? 0) + v;
+    }
+    this.lastCleared = { ...status };
+    const levels = this.opts.levels?.() ?? [];
+    const lastLevel = levels.length > 0 && levels[levels.length - 1]!.id === level;
+    if (lastLevel && this.opts.spec.end !== undefined) {
+      this.endDue = true;
+      return;
+    }
+    if (this.opts.spec.clear !== undefined) {
+      this.banner = new UiScreen(clearScreen(this.opts.spec, this.context(), status), {
+        screen: this.opts.screen,
+        fonts: this.opts.fonts,
+        frameSize: this.opts.frameSize,
+      });
+    }
+  }
+
+  /**
+   * One loop step, before the scenes update: the banner's clock goes on, and a due end screen
+   * opens (in play only). Returns whether the end screen opened.
+   */
+  step(): boolean {
+    this.banner?.update({ commands: [], taps: [], pointer: null });
+    if (!this.endDue || this.open.length > 0 || this.busy) return false;
+    this.endDue = false;
+    this.banner = null;
+    this.from = 'end';
+    this.push('end');
+    return true;
+  }
+
+  /** The level-clear banner's draw items (empty unless it shows in play). */
+  bannerDraws(): UiDraw[] {
+    return this.banner === null || this.open.length > 0 ? [] : this.banner.draws();
+  }
+
+  /** Whether the level-clear banner shows. */
+  get bannerShown(): boolean {
+    return this.banner !== null && this.open.length === 0;
   }
 
   private handle(screen: Screen, e: UiEvent): void {
@@ -250,7 +387,18 @@ export class GameMenus {
       else if (item === 'continue') {
         this.opts.onContinue?.();
         this.start();
-      } else if (item === 'settings' || item === 'controls') this.sub(item);
+      } else if (item === 'settings' || item === 'controls' || item === 'levels') this.sub(item);
+      return;
+    }
+    if (screen === 'end') {
+      if (item === 'title') this.toTitle();
+      else if (item === 'levels') this.sub('levels');
+      return;
+    }
+    if (screen === 'levels') {
+      const stage = levelItemStage(item);
+      if (stage !== null) this.startAt(stage);
+      else if (item === 'back' || e.type === 'back') this.back(screen);
       return;
     }
     if (screen === 'pause') {

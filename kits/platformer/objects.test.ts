@@ -354,6 +354,23 @@ describe('the platformer world: level objects and enemies', () => {
     ).toEqual([]);
   });
 
+  it('counts deaths and checkpoints touched for the status only, never in the snapshot', () => {
+    const map = ['...........G', '.@K.o.K.^...', '############'];
+    const level = levelSchema.parse({ id: 'test', profile: 'runner', map });
+    const world = new PlatformerWorld(level, profileWith({ lives: 2 }), { seed: 3 });
+    const input = new ScriptedInput({ steps: [...CHECKPOINT.script] });
+    expect([world.deaths, world.checkpointsReached, world.checkpoints.length]).toEqual([0, 0, 2]);
+    for (let i = 0; i < 120; i++) {
+      input.next();
+      world.update(input);
+    }
+    expect(world.deaths).toBe(1);
+    expect(world.checkpointsReached).toBe(2);
+    const snap = platformerGame(world).snapshot() as unknown as Record<string, unknown>;
+    expect(snap).not.toHaveProperty('deaths');
+    expect(snap).not.toHaveProperty('checkpointsReached');
+  });
+
   it('snapshots the checkpoint only in a level that has one', () => {
     expect(play(CHECKPOINT)[0]).toHaveProperty('checkpoint', null);
     expect(play(GOAL)[0]).not.toHaveProperty('checkpoint');

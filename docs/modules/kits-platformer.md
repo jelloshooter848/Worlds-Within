@@ -43,7 +43,9 @@ The kit's hook lists each trigger's `game` and `params` (`miniGameUses`, Engine 
 Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
 sent through a `MapTracker`, runner, actors, coins, goals, checkpoints (the current one tagged
 `active`), triggers, block bounces and remains,
-placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw.
+placed events, HUD status (from Engine 0.16 part B also `time`, `deaths`, `checkpoints` and
+`checkpointCount` for the shell's stat screens) and a camera hint carrying the scroll lock) for a
+backend to draw. A level's optional `name` names it in menus (`stageNames`).
 Its level sequence (`LevelSequence`, Engine 0.7) plays a game's levels one after another as the
 headless contract: a pause after `cleared` or `failed`, then the next level or the same one
 afresh, each a new world with the run's seed, switched-off rules and mini games (from Engine 0.14,

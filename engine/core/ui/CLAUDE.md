@@ -152,6 +152,21 @@ P`). `checkMenus(spec, refs)` is what `loadContent` runs on `game.json` (`conten
   `controls`, the key-name characters `KEY_NAME_GLYPHS`, arrows included) and `missing_field` for
   a `controls` item without `controls`. Errors are at `game.json`, `menus.<field>`.
 
+Engine 0.16 part B (T3), in `menus.ts`:
+
+- The title item `levels` (shown only when the page gives levels: `titleScreen`'s `hasLevels`),
+  `END_ITEMS` (`title`, `levels`) and three blocks: `levels { heading?, lock?, mark? }`,
+  `clear { heading?, lines? }` and `end { heading?, credits?, lines?, items? }`. A stat line is
+  `{ label, status, of?, format? }` (`STAT_FORMATS`: `number`, `time`: ticks as `m:ss`,
+  `formatTicks`); `statText(line, status)` (`-` for a key the status lacks, `a/b` with `of`);
+  `DEFAULT_STAT_LINES` (coins, time, deaths). `levelChoices(spec, levels, cleared)` (locks),
+  `levelItemId(i)` / `levelItemStage(id)`, `levelLabel`, `CLEARED_MARK` (`*`).
+- `levelsScreen(spec, ctx, choices)` (a framed list, locked levels disabled, then Back),
+  `clearScreen(spec, ctx, status)` (a panel with the heading and stat rows, no dim, no menu) and
+  `endScreen(spec, ctx, status)` (heading, credits, stats, its menu). `checkMenus` checks their
+  texts' glyphs (headings in the title font; the mark; labels; the digits and `:`, `/`, `-`).
+- Tested in `menus.test.ts`; the shell side in `../shell/game-menus.test.ts`.
+
 Engine 0.16 T12:
 
 - `labels.ts`: world-anchored labels. `layoutLabels(labels, entity, status, project, fonts?)` ->

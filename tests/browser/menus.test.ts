@@ -1,10 +1,10 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Browser, Page } from 'playwright';
 import type { DebugWindow, MenusView } from '@engine/core/shell';
-import { browserMissing, launch, serveBuilt } from './serve';
+import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The shell's menus in the browser (Engine 0.16 T9): every sample and the fx lab open on their
 // title screen (`?debug=step&title=show`: the step hook with the title shown, which `?debug=step`
@@ -15,6 +15,13 @@ import { browserMissing, launch, serveBuilt } from './serve';
 // in browser storage and read back after a reload. Each page's title, pause and settings screens
 // are shot to `WW_SHOTS_DIR` when set (to look at them), else a temp folder. Skipped where
 // Chromium is not installed (never in CI).
+//
+// Engine 0.16 part B (T3): the fx lab's level select, level-clear banner and end screen, by
+// keyboard (the arrows and Enter on the title's Levels item; a level's run-file input played on
+// the keys from the chosen level's tick 0 to its door), by gamepad (a fake standard pad behind
+// `navigator.getGamepads`: the d-pad, A and B) and by touch (taps on the items). Locked levels are
+// skipped by the focus until the stored progress (`ww:fx-lab:progress`) unlocks them; clearing a
+// level stores it. Each screen is shot as `menus-fx-lab-<screen>.png`.
 
 const GAMES = [
   'games/samples/platformer/',
@@ -198,4 +205,218 @@ describe.skipIf(missing !== null)('the title, pause and settings screens (headle
     },
     180_000,
   );
+
+  describe('the fx lab: level select, level-clear banner and end screen', () => {
+    const FX = 'games/fx-lab/';
+    /** Keys for the run files' actions (`run` is held with the attack key, which also runs). */
+    const KEYS: Record<string, string> = {
+      left: 'ArrowLeft',
+      right: 'ArrowRight',
+      jump: 'KeyZ',
+      run: 'KeyX',
+    };
+    const script = (run: string) =>
+      (
+        JSON.parse(readFileSync(join(ROOT, FX, 'runs', run), 'utf8')) as {
+          input: { steps: { frame: number; hold: string[] }[] };
+        }
+      ).input.steps;
+    const level = (page: Page) =>
+      page.evaluate(() => {
+        const s = (window as DebugWindow).__ww!.snapshot() as {
+          level: string;
+          frame: number;
+          outcome: string;
+        };
+        return { level: s.level, frame: s.frame, outcome: s.outcome };
+      });
+
+    /**
+     * Plays a run file's input on the keyboard from the level's frame now, holding each step's
+     * keys until the next step's frame, then until the level is cleared (the kit's frame stops).
+     */
+    async function drive(page: Page, run: string): Promise<void> {
+      const steps = script(run);
+      const held = new Set<string>();
+      for (let i = 0; i < steps.length; i++) {
+        const want = new Set(steps[i]!.hold.map((a) => KEYS[a]!));
+        for (const k of held) if (!want.has(k)) await page.keyboard.up(k);
+        for (const k of want) if (!held.has(k)) await page.keyboard.down(k);
+        held.clear();
+        for (const k of want) held.add(k);
+        const next = steps[i + 1]?.frame;
+        if (next === undefined) break;
+        const { frame } = await level(page);
+        if (next > frame) await step(page, next - frame);
+      }
+      for (let i = 0; i < 400 && (await level(page)).outcome === 'playing'; i++) await step(page, 2);
+      for (const k of held) await page.keyboard.up(k);
+      expect((await level(page)).outcome).toBe('cleared');
+    }
+
+    /** From the level select: choose `item`, with the run's first keys held as the level starts. */
+    async function choose(page: Page, run: string, confirm: () => Promise<void>): Promise<void> {
+      await confirm();
+      for (const a of script(run)[0]!.hold) await page.keyboard.down(KEYS[a]!);
+      await until(page, 'play');
+    }
+
+    it('by keyboard: locked levels skipped, a level chosen, the banner between levels, the end', async () => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const { page, errors } = await open(browser, `${server.url}${FX}?debug=step&title=show`);
+        await step(page, 30);
+        await focus(page, 'levels');
+        await key(page, 'Enter');
+        const view = await menus(page);
+        expect([view.screen, view.focused]).toEqual(['levels', 'level-0']);
+        expect(view.items.map((i) => i.id)).toEqual(['level-0', 'level-1', 'level-2', 'back']);
+        await key(page, 'ArrowDown'); // fx-2 and fx-3 are locked: straight to Back
+        expect((await menus(page)).focused).toBe('back');
+        await step(page, 20);
+        await page.screenshot({ path: join(shots, 'menus-fx-lab-levels.png') });
+        await key(page, 'Escape');
+        expect([(await menus(page)).screen, (await menus(page)).focused]).toEqual(['title', 'levels']);
+
+        // fx-1 cleared on an earlier visit: fx-2 opens.
+        await page.evaluate(() => localStorage.setItem('ww:fx-lab:progress', '{"cleared":["fx-1"]}'));
+        await key(page, 'Enter');
+        await key(page, 'ArrowDown');
+        expect((await menus(page)).focused).toBe('level-1');
+        await choose(page, 'level-2.run.json', () => key(page, 'Enter'));
+        expect((await level(page)).level).toBe('fx-2');
+        await drive(page, 'level-2.run.json');
+        await step(page, 2);
+        expect((await menus(page)).banner).toBe(true);
+        expect((await menus(page)).state).toBe('play'); // the banner takes no input
+        await step(page, 20);
+        await page.screenshot({ path: join(shots, 'menus-fx-lab-clear.png') });
+        for (let i = 0; i < 80 && (await level(page)).level === 'fx-2'; i++) await step(page, 1);
+        expect((await level(page)).level).toBe('fx-3'); // the kit's pause went on under it
+        await step(page, 2);
+        expect((await menus(page)).banner).toBe(false);
+        const progress = await page.evaluate(() => localStorage.getItem('ww:fx-lab:progress'));
+        expect(JSON.parse(progress!)).toEqual({ cleared: ['fx-1', 'fx-2'] });
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 180_000);
+
+    it('by gamepad: the level select and the end screen with the d-pad, A and B', async () => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const page = await browser.newPage({ viewport: { width: 512, height: 480 }, deviceScaleFactor: 1 });
+        // A fake standard pad: `window.__pad` holds the pressed button numbers.
+        await page.addInitScript(() => {
+          const w = window as unknown as { __pad: number[] };
+          w.__pad = [];
+          Object.defineProperty(navigator, 'getGamepads', {
+            value: () => [
+              {
+                index: 0,
+                connected: true,
+                mapping: 'standard',
+                axes: [0, 0, 0, 0],
+                buttons: Array.from({ length: 17 }, (_, i) => ({
+                  pressed: w.__pad.includes(i),
+                  value: w.__pad.includes(i) ? 1 : 0,
+                })),
+              },
+            ],
+          });
+        });
+        const errors: string[] = [];
+        page.on('pageerror', (error) => errors.push(error.message));
+        await page.goto(`${server.url}${FX}?debug=step&title=show`);
+        await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+        await page.evaluate(() => localStorage.setItem('ww:fx-lab:progress', '{"cleared":["fx-1","fx-2"]}'));
+        /** A pad button pressed for one step and released for one. */
+        const pad = async (button: number) => {
+          await page.evaluate((b) => ((window as unknown as { __pad: number[] }).__pad = [b]), button);
+          await step(page, 1);
+          await page.evaluate(() => ((window as unknown as { __pad: number[] }).__pad = []));
+          await step(page, 1);
+        };
+        const A = 0;
+        const B = 2;
+        const DOWN = 13;
+        const UP = 12;
+        await step(page, 10);
+        while ((await menus(page)).focused !== 'levels') await pad(DOWN);
+        await pad(A);
+        expect((await menus(page)).screen).toBe('levels');
+        await pad(B);
+        expect((await menus(page)).screen).toBe('title');
+        await pad(A);
+        await pad(DOWN);
+        await pad(DOWN);
+        expect((await menus(page)).focused).toBe('level-2');
+        await choose(page, 'level-3.run.json', () => pad(A));
+        expect((await level(page)).level).toBe('fx-3');
+        await drive(page, 'level-3.run.json');
+        await step(page, 3);
+        let view = await menus(page);
+        expect([view.state, view.screen, view.banner]).toEqual(['end', 'end', false]);
+        expect(view.items.map((i) => i.id)).toEqual(['title', 'levels']);
+        const held = await hash(page);
+        await step(page, 30);
+        expect(await hash(page)).toBe(held); // the end screen holds the game
+        await page.screenshot({ path: join(shots, 'menus-fx-lab-end.png') });
+        await pad(DOWN);
+        await pad(A);
+        expect((await menus(page)).screen).toBe('levels');
+        await pad(B);
+        view = await menus(page);
+        expect([view.screen, view.focused]).toEqual(['end', 'levels']);
+        await pad(UP);
+        await pad(A);
+        await until(page, 'title');
+        const progress = await page.evaluate(() => localStorage.getItem('ww:fx-lab:progress'));
+        expect(JSON.parse(progress!).cleared).toEqual(['fx-1', 'fx-2', 'fx-3']);
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 180_000);
+
+    it('by touch: taps on the level select and the end screen', async () => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const { page, errors } = await open(browser, `${server.url}${FX}?debug=step&title=show`, true);
+        await page.evaluate(() => localStorage.setItem('ww:fx-lab:progress', '{"cleared":["fx-1","fx-2"]}'));
+        await step(page, 5);
+        const tap = async (item: string) => {
+          const box = (await menus(page)).items.find((i) => i.id === item)!;
+          const at = (await page.evaluate(({ x, y }) => (window as DebugWindow).__ww!.toClient(x, y), {
+            x: box.x + box.w / 2,
+            y: box.y + box.h / 2,
+          }))!;
+          await page.touchscreen.tap(at.x, at.y);
+          await step(page, 2);
+        };
+        await tap('levels');
+        expect((await menus(page)).screen).toBe('levels');
+        await tap('back');
+        expect((await menus(page)).screen).toBe('title');
+        await tap('levels');
+        await choose(page, 'level-3.run.json', () => tap('level-2'));
+        expect((await level(page)).level).toBe('fx-3');
+        await drive(page, 'level-3.run.json');
+        await step(page, 3);
+        expect((await menus(page)).screen).toBe('end');
+        await tap('title');
+        await until(page, 'title');
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 180_000);
+  });
 });

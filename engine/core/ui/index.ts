@@ -120,6 +120,23 @@ export {
 export { DialogBox, type DialogOptions } from './dialog';
 export { anchorBox, UI_DIALOG_MARGIN, UI_PANEL_DEFAULT, UiScreen, type UiScreenOptions } from './screen';
 export {
+  CLEARED_MARK,
+  clearScreen,
+  DEFAULT_STAT_LINES,
+  END_ITEMS,
+  endScreen,
+  formatTicks,
+  levelChoices,
+  levelItemId,
+  levelItemStage,
+  levelLabel,
+  levelsScreen,
+  STAT_FORMATS,
+  statText,
+  type EndItem,
+  type LevelChoice,
+  type StatLine,
+  type StatValues,
   checkMenus,
   controlRows,
   controlsScreen,

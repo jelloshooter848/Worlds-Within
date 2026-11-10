@@ -74,6 +74,7 @@ export {
   transitionAlphaAt,
   transitionAt,
   transitionFor,
+  eventTransitionSlot,
   transitionLength,
   TransitionPlayer,
   transitionShape,

@@ -43,6 +43,12 @@ export interface ViewGame extends HeadlessGame {
    * shows `frame()` (the Three.js backend's clear colour); black when left out.
    */
   readonly background?: string;
+  /**
+   * Optional (Engine 0.16 part B): the status of the last frame `render` drew or `frame()` gave,
+   * or null before any; read by the screenshot page for the shell's stat screens (`+clear`,
+   * `+end`). Must not change the game. `frameView` gives it when its drawer returns its frame.
+   */
+  status?(): DeepReadonly<PresentFrame['status']> | null;
 }
 
 /** What a game's view module (named by `view` in `game.json`) exports. */
@@ -76,6 +82,12 @@ export function frameView<W extends object, E>(opts: FrameViewOptions<W, E>): Vi
   const { game } = opts;
   const pending = new PendingEvents(game.world, game.events);
   let picture: { r: Renderer; p: ReturnType<FrameViewOptions<W, E>['picture']> } | null = null;
+  let status: DeepReadonly<PresentFrame['status']> | null = null;
+  const keep = (drawn: unknown) => {
+    if (typeof drawn === 'object' && drawn !== null && 'status' in drawn)
+      status = (drawn as DeepReadonly<PresentFrame>).status;
+    return drawn;
+  };
   return {
     step(input) {
       game.step(input);
@@ -85,9 +97,10 @@ export function frameView<W extends object, E>(opts: FrameViewOptions<W, E>): Vi
     screen: opts.screen,
     render(r) {
       if (picture?.r !== r) picture = { r, p: opts.picture(r) };
-      picture.p.draw(game.world, pending.take());
+      keep(picture.p.draw(game.world, pending.take()));
     },
-    frame: () => opts.frames.next(game.world, pending.take()),
+    frame: () => keep(opts.frames.next(game.world, pending.take())) as DeepReadonly<PresentFrame>,
+    status: () => status,
     ...(opts.background !== undefined && { background: opts.background }),
   };
 }

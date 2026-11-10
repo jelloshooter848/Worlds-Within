@@ -20,7 +20,8 @@ lives counter, a minimap, and text in two original fonts, `content/fonts/fx-smal
 larger `fx-title.txt`), from T7 a pause menu and a dialog box as text (`content/ui/lab.json`: a
 slider, a toggle, a disabled item, a dialog with Pip's portrait, typed pages and a choice), run by
 the shell's `UiScene` with keyboard, gamepad, mouse and touch (2D), from T8 layered music, from
-T9 the title, pause, settings and controls screens, from T10-T12 a PNG sprite sheet, a glTF
+T9 the title, pause, settings and controls screens (from part B also the level select, the
+level-clear banner, the end screen and a respawn iris), from T10-T12 a PNG sprite sheet, a glTF
 model and the 3D scene look, original sfx, run
 files with golden hashes and a browser page. Not a sample: a
 test game, content and glue only.

@@ -30,10 +30,11 @@ export type WipeDirection = (typeof WIPE_DIRECTIONS)[number];
 
 /**
  * When the shell plays a transition: `level` on a map id change, `scene` on a scene push or pop,
- * `mission` on a mission round's push or pop (falls back to `scene`), `default` for anything a
- * slot does not give (and `shell.transition()` with no slot).
+ * `mission` on a mission round's push or pop (falls back to `scene`), `respawn` on a frame event
+ * (Engine 0.16 part B: the kit's `respawn` event, or any event `events` maps to a slot), `default`
+ * for anything a slot does not give (and `shell.transition()` with no slot).
  */
-export const TRANSITION_SLOTS = ['level', 'scene', 'mission', 'default'] as const;
+export const TRANSITION_SLOTS = ['level', 'scene', 'mission', 'respawn', 'default'] as const;
 export type TransitionSlot = (typeof TRANSITION_SLOTS)[number];
 
 /** The cover's colour when a transition gives none. */
@@ -106,7 +107,18 @@ export const transitionsSchema = z.strictObject({
   mission: transitionSpecSchema
     .exactOptional()
     .describe('played when a mission round is pushed or popped (else `scene`)'),
+  respawn: transitionSpecSchema
+    .exactOptional()
+    .describe(
+      'played on a frame event (Engine 0.16 part B): the `respawn` event, and any event `events` maps to `respawn`; only when given',
+    ),
   default: transitionSpecSchema.exactOptional().describe('played when the slot asked for gives none'),
+  events: z
+    .record(z.string().min(1), z.enum(TRANSITION_SLOTS))
+    .exactOptional()
+    .describe(
+      'frame event type -> the slot it plays (`{ "died": "respawn" }`); left out, `respawn` plays the `respawn` slot when it is given',
+    ),
 });
 
 export type TransitionsSpec = z.output<typeof transitionsSchema>;
@@ -118,6 +130,22 @@ export function transitionFor(
 ): DeepReadonly<TransitionSpec> | null {
   if (specs === undefined) return null;
   return specs[slot] ?? (slot === 'mission' ? specs.scene : undefined) ?? specs.default ?? null;
+}
+
+/**
+ * The slot a frame event plays (Engine 0.16 part B), or null: the game's `events` map first (a
+ * slot with no spec of its own falls back as `transitionFor` does), else a `respawn` event plays
+ * the `respawn` slot when the game gives one. Never on a slot the game left out and no map names.
+ */
+export function eventTransitionSlot(
+  specs: DeepReadonly<TransitionsSpec> | undefined,
+  eventType: string,
+): TransitionSlot | null {
+  if (specs === undefined) return null;
+  const mapped = specs.events?.[eventType];
+  if (mapped !== undefined) return transitionFor(specs, mapped) === null ? null : mapped;
+  if (specs.events === undefined && eventType === 'respawn' && specs.respawn !== undefined) return 'respawn';
+  return null;
 }
 
 /** The spec to play under the player's reduced-motion setting: a short fade in the same colour. */

@@ -462,7 +462,10 @@ function presentEffects(world: PlatformerWorld, st: PlatformerPresentState): Pre
  * The HUD values: `coins`, `hp`, `maxHp`, `lives`, `outcome` (`playing`, `cleared`, `failed`),
  * `level` (its id), `miniGame` (the id of the mini game being played, '' when none) and, from
  * Engine 0.16 T8, `nearestActor`: the whole world px from the runner's box centre to the nearest
- * actor's (-1 when there is none), for a skin's music mix (danger when an enemy is near).
+ * actor's (-1 when there is none), for a skin's music mix (danger when an enemy is near). From
+ * Engine 0.16 part B (T3), for the shell's level-clear and end screens: `time` (the level's ticks
+ * played, the world's frame), `deaths` (lives lost in the level), `checkpoints` (the level's
+ * checkpoints touched) and `checkpointCount` (how many it has). All read-only presentation.
  */
 export function presentStatus(world: PlatformerWorld): Record<string, PresentStatusValue> {
   const pp = world.profile.player;
@@ -475,6 +478,10 @@ export function presentStatus(world: PlatformerWorld): Record<string, PresentSta
     level: world.level.id,
     miniGame: world.miniGame?.def.id ?? '',
     nearestActor: nearestActor(world),
+    time: world.frame,
+    deaths: world.deaths,
+    checkpoints: world.checkpointsReached,
+    checkpointCount: world.checkpoints.length,
     ...(hasBoss(world) ? bossStatus(world) : {}),
   };
 }

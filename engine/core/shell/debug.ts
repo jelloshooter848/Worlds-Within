@@ -78,20 +78,23 @@ export interface PageDebug {
    */
   mix(): MixerState | null;
   /**
-   * The game's menus now (Engine 0.16 T9): what shows (`title`, `pause` or `play`), the screen on
-   * top (`title`, `pause`, `settings`, `controls`, or null in play), its focused item and its
-   * items' values and boxes (to tap one through `toClient`); null on a page without menus.
+   * The game's menus now (Engine 0.16 T9): what shows (`title`, `pause`, `end` or `play`), the
+   * screen on top (`title`, `pause`, `settings`, `controls`, `levels`, `end`, or null in play),
+   * its focused item and its items' values and boxes (to tap one through `toClient`), and (Engine
+   * 0.16 part B) whether the level-clear banner shows; null on a page without menus.
    */
   menus(): MenusView | null;
 }
 
 /** What `PageDebug.menus` reads. */
 export interface MenusView {
-  state: 'title' | 'pause' | 'play';
+  state: 'title' | 'pause' | 'end' | 'play';
   screen: string | null;
   focused: string | null;
   /** The main menu's items now: id, value (a slider's or toggle's) and box in picture px. */
   items: { id: string; value: number | boolean | null; x: number; y: number; w: number; h: number }[];
+  /** Whether the level-clear banner shows over the game (Engine 0.16 part B). */
+  banner: boolean;
 }
 
 /** An order or mission step the game refused during a replay. */

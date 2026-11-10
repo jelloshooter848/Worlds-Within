@@ -195,6 +195,74 @@ function demoWithThreeSkin(): string {
   return join(dir, 'demo/runs/walk-east.run.json');
 }
 
+describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16 part B)', () => {
+  it('writes an exact 6x picture: every pixel an exact 6x6 block of the 1x one', async () => {
+    const dir = tempDir();
+    const one = await cli(['screenshot', WALK, '--tick', '30', '--out', join(dir, 'one.png')]);
+    const six = await cli([
+      'screenshot',
+      WALK,
+      '--tick',
+      '30',
+      '--scale',
+      '6',
+      '--out',
+      join(dir, 'six.png'),
+    ]);
+    expect(six.code).toBe(EXIT.ok);
+    expect(six.result).toMatchObject({
+      width: 1536,
+      height: 1440,
+      scale: 6,
+      overlay: null,
+      matchesHeadless: true,
+    });
+    expect(six.result.hash).toBe(one.result.hash);
+    const small = decodeRgbaPng(readFileSync(join(dir, 'one.png')));
+    const big = decodeRgbaPng(readFileSync(join(dir, 'six.png')));
+    for (const [x, y] of [
+      [0, 0],
+      [17, 33],
+      [128, 120],
+      [200, 211],
+      [255, 239],
+    ] as const)
+      for (const [dx, dy] of [
+        [0, 0],
+        [5, 0],
+        [0, 5],
+        [5, 5],
+        [3, 2],
+      ] as const)
+        expect(big.pixel(x * 6 + dx, y * 6 + dy), `${x},${y}`).toEqual(small.pixel(x, y));
+  }, 120_000);
+
+  it("draws one of sheet's overlays over the picture, and refuses one the game cannot show", async () => {
+    const dir = tempDir();
+    const run = 'games/fx-lab/runs/level-1.run.json';
+    const plain = await cli(['screenshot', run, '--tick', '360', '--out', join(dir, 'p.png')]);
+    const clear = await cli([
+      'screenshot',
+      run,
+      '--tick',
+      '360',
+      '--overlay',
+      'clear',
+      '--out',
+      join(dir, 'c.png'),
+    ]);
+    expect(clear.code).toBe(EXIT.ok);
+    expect(clear.result).toMatchObject({ overlay: 'clear', width: 256, height: 240, matchesHeadless: true });
+    expect(clear.result.sha256).not.toBe(plain.result.sha256);
+    const levels = await cli(['screenshot', run, '--tick', '0', '--overlay', 'levels', '--scale', '2']);
+    expect(levels.result).toMatchObject({ overlay: 'levels', width: 512, height: 480 });
+    const bad = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'end']);
+    expect(bad.code).toBe(EXIT.usage);
+    const nope = await cli(['screenshot', run, '--tick', '0', '--overlay', 'nope']);
+    expect(nope.code).toBe(EXIT.usage);
+  }, 120_000);
+});
+
 describe.skipIf(missing !== null)('screenshot --backend three (headless Chromium)', () => {
   it('takes a byte-identical 3D PNG on SwiftShader with --allow-software-gl', async () => {
     const dir = tempDir();
@@ -273,6 +341,11 @@ describe('screenshot (no browser needed)', () => {
   it('refuses a tick after the run and an --out that is not a PNG', async () => {
     expect((await cli(['screenshot', WALK, '--tick', '9999'])).code).toBe(EXIT.usage);
     expect((await cli(['screenshot', WALK, '--tick', '1', '--out', 'x.jpg'])).code).toBe(EXIT.usage);
+  });
+
+  it('refuses a scale outside 1-16', async () => {
+    expect((await cli(['screenshot', WALK, '--tick', '0', '--scale', '0'])).code).toBe(EXIT.usage);
+    expect((await cli(['screenshot', WALK, '--tick', '0', '--scale', '17'])).code).toBe(EXIT.usage);
   });
 
   it('refuses --allow-software-gl without --backend three, and an unknown backend', async () => {

@@ -9,7 +9,7 @@ import { main } from './main';
 import { launchChromium, NoBrowserError, pngSize } from './screenshot';
 import { parseTiles } from './sheet';
 import { contentFonts } from '@engine/core/ui';
-import { checkOverlay, overlayTransition, overlayUi, parseOverlay } from './sheet-overlay';
+import { checkOverlay, sheetLevels, overlayTransition, overlayUi, parseOverlay } from './sheet-overlay';
 
 // `pnpm cli sheet` (Engine 0.16 T14): the tile grammar, the overlays worked out from the fx lab's
 // content (Node), and the command end to end in headless Chromium (skipped without one, required
@@ -90,6 +90,29 @@ describe('sheet overlays (the fx lab)', () => {
     for (const o of ['title', 'pause', 'settings', 'controls', 'ui=lab', 'ui=lab.talk'])
       expect(overlayUi(content, parseOverlay(o), { fonts, frameSize }).length, o).toBeGreaterThan(0);
     expect(overlayUi(content, parseOverlay('fade'), { fonts, frameSize })).toEqual([]);
+  });
+
+  it('shows the level select, the level-clear banner and the end screen (Engine 0.16 part B)', () => {
+    for (const o of ['levels', 'clear', 'end']) expect(checkOverlay(content, parseOverlay(o)), o).toBeNull();
+    expect(sheetLevels(content)).toEqual([
+      { id: 'fx-1', name: 'First steps' },
+      { id: 'fx-2', name: 'Over the spikes' },
+      { id: 'fx-3', name: 'Torchlight' },
+    ]);
+    const glyphs = (o: string, status?: Record<string, number>) =>
+      overlayUi(content, parseOverlay(o), { fonts, frameSize, ...(status && { status }) })
+        .filter((d) => 'ch' in d)
+        .map((d) => (d as { ch: string }).ch)
+        .join('');
+    expect(glyphs('levels')).toContain('Torchlight');
+    expect(glyphs('clear', { coins: 7, time: 600, deaths: 2 })).toContain('0:10');
+    expect(glyphs('end', { coins: 7 })).toContain('Thanksforplaying');
+    expect(checkOverlay(content, parseOverlay('respawn'))).toBeNull(); // the respawn transition slot
+    const { menus, ...rest } = content.manifest;
+    const { clear: _c, end: _e, ...noStats } = menus!;
+    const bare = { ...content, manifest: { ...rest, menus: noStats } };
+    expect(checkOverlay(bare, parseOverlay('clear'))).toMatch(/no "clear"/);
+    expect(checkOverlay(bare, parseOverlay('end'))).toMatch(/no "end"/);
   });
 
   it('places a transition at its age', () => {

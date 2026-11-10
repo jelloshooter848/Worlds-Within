@@ -3,6 +3,13 @@ import { loadContent } from '../content/bundle';
 import { engineContentKinds } from '../content/engine-kinds';
 import { buildFont, type FontLookup } from './font';
 import {
+  clearScreen,
+  endScreen,
+  formatTicks,
+  levelChoices,
+  levelItemStage,
+  levelsScreen,
+  statText,
   controlRows,
   controlsScreen,
   KEY_NAME_GLYPHS,
@@ -18,7 +25,7 @@ import {
 import { UiScreen } from './screen';
 
 /** Every glyph a 3x4 block on a 3x5 cell (inline fixture). */
-const CHARS = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?.,'()<>/${KEY_NAME_GLYPHS}`;
+const CHARS = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?.,'()<>/:${KEY_NAME_GLYPHS}`;
 const FONT = buildFont('t', {
   cell: { w: 3, h: 5 },
   baseline: 4,
@@ -167,6 +174,96 @@ describe('menus (Engine 0.16 T9)', () => {
   });
 });
 
+describe('level select, level clear and end screens (Engine 0.16 part B, T3)', () => {
+  const B = menusSchema.parse({
+    font: 't',
+    title: { name: 'Hop', items: ['start', 'levels'] },
+    pause: { items: ['resume'] },
+    levels: { heading: 'Map', mark: '(ok)' },
+    clear: { heading: 'Clear!', lines: [{ label: 'Flags', status: 'checkpoints', of: 'checkpointCount' }] },
+    end: { credits: 'By us', items: ['title', 'levels'] },
+  });
+  const glyphs = (file: ReturnType<typeof titleScreen>) =>
+    new UiScreen(file, { screen: CTX.screen, fonts: FONTS })
+      .draws()
+      .filter((d) => 'ch' in d)
+      .map((d) => (d as { ch: string }).ch)
+      .join('');
+
+  it('formats stats: numbers, ticks as m:ss, an of key and a missing key', () => {
+    expect(formatTicks(0)).toBe('0:00');
+    expect(formatTicks(3725)).toBe('1:02');
+    const status = { coins: 4, time: 600, checkpoints: 1, checkpointCount: 3 };
+    expect(statText({ label: 'C', status: 'coins' }, status)).toBe('4');
+    expect(statText({ label: 'T', status: 'time', format: 'time' }, status)).toBe('0:10');
+    expect(statText({ label: 'K', status: 'checkpoints', of: 'checkpointCount' }, status)).toBe('1/3');
+    expect(statText({ label: 'X', status: 'nope' }, status)).toBe('-');
+  });
+
+  it('locks a level until the one before it is cleared, unless lock is off', () => {
+    const levels = [
+      { id: 'a', name: 'A' },
+      { id: 'b', name: 'B' },
+      { id: 'c', name: 'C' },
+    ];
+    expect(levelChoices(B, levels, new Set(['a'])).map((l) => [l.cleared, l.locked])).toEqual([
+      [true, false],
+      [false, false],
+      [false, true],
+    ]);
+    const open = menusSchema.parse({ ...B, levels: { lock: false } });
+    expect(levelChoices(open, levels, new Set()).every((l) => !l.locked)).toBe(true);
+    expect([levelItemStage('level-2'), levelItemStage('back'), levelItemStage(null)]).toEqual([
+      2,
+      null,
+      null,
+    ]);
+  });
+
+  it('builds the level select, the clear banner and the end screen from the spec', () => {
+    const levels = levelsScreen(B, CTX, [
+      { id: 'a', name: 'Meadow', cleared: true, locked: false },
+      { id: 'b', name: 'Caves', cleared: false, locked: true },
+    ]);
+    const ui = new UiScreen(levels, { screen: CTX.screen, fonts: FONTS });
+    expect(ui.menu('main')!.items.map((i) => [i.id, i.label, i.disabled ?? false])).toEqual([
+      ['level-0', 'Meadow (ok)', false],
+      ['level-1', 'Caves', true],
+      ['back', 'Back', false],
+    ]);
+    expect(glyphs(levels)).toContain('Map');
+    const clear = clearScreen(B, CTX, { checkpoints: 2, checkpointCount: 3 });
+    expect(clear.focus).toBeUndefined();
+    expect(clear.widgets.some((w) => w.type === 'menu')).toBe(false);
+    expect(glyphs(clear)).toContain('Clear');
+    expect(glyphs(clear)).toContain('2/3');
+    const end = endScreen(B, CTX, { coins: 12, time: 7200, deaths: 1 });
+    const endUi = new UiScreen(end, { screen: CTX.screen, fonts: FONTS });
+    expect(endUi.menu('main')!.items.map((i) => i.id)).toEqual(['title', 'levels']);
+    expect(glyphs(end)).toContain('By');
+    expect(glyphs(end)).toContain('12');
+    expect(glyphs(end)).toContain('2:00');
+    // A title without levels from the page hides the item.
+    const title = new UiScreen(titleScreen(B, CTX, { canContinue: false, hasLevels: false }), {
+      screen: CTX.screen,
+      fonts: FONTS,
+    });
+    expect(title.menu('main')!.items.map((i) => i.id)).toEqual(['start']);
+  });
+
+  it('refuses an unknown end item and a bad stat format', () => {
+    const bad = menusSchema.safeParse({
+      ...B,
+      end: { items: ['quit'] },
+      clear: { lines: [{ label: 'X', status: 'x', format: 'hours' }] },
+    });
+    expect(bad.success).toBe(false);
+    expect(bad.error!.issues.map((i) => i.path.join('.'))).toEqual(
+      expect.arrayContaining(['end.items.0', 'clear.lines.0.format']),
+    );
+  });
+});
+
 describe("validate: game.json's menus (Engine 0.16 T9)", () => {
   /** A game with a font (A-Z, a-z and the key glyphs), a sprite and a song. */
   function game(menus: unknown): Record<string, string> {
@@ -250,6 +347,30 @@ describe("validate: game.json's menus (Engine 0.16 T9)", () => {
     );
     expect(glyphs.errors.map((e) => [e.path, e.code, e.message])).toEqual([
       ['menus.title.subtitle', 'missing_glyph', 'font "small" has no glyph for "Ü", "ï"'],
+    ]);
+  });
+
+  it('checks the glyphs of the level select, the clear banner and the end screen (Engine 0.16 part B)', () => {
+    const r = loadContent(
+      game({
+        ...good,
+        title: { ...good.title, items: ['start', 'levels'] },
+        clear: { heading: 'Done!', lines: [{ label: 'Coins', status: 'coins' }] },
+        end: { credits: 'Thanks for playing' },
+      }),
+      engineContentKinds(),
+    );
+    expect(r.errors.map((e) => [e.path, e.code])).toEqual([
+      ['menus.levels', 'missing_glyph'],
+      ['menus.clear', 'missing_glyph'],
+      ['menus.clear', 'missing_glyph'],
+      ['menus.end', 'missing_glyph'],
+    ]);
+    expect(r.errors.map((e) => e.message)).toEqual([
+      'font "small" has no glyph for "*"',
+      'font "small" has no glyph for "!"',
+      'font "small" has no glyph for ":", "-"',
+      'font "small" has no glyph for ":", "-"',
     ]);
   });
 });

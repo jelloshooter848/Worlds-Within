@@ -12,9 +12,9 @@ const FONT = buildFont('t', {
   cell: { w: 3, h: 5 },
   baseline: 4,
   glyphs: Object.fromEntries(
-    [...new Set(`ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/'${KEY_NAME_GLYPHS}`)].map(
-      (c) => [c, { rows: ['###', '###', '###', '###', '...'] }],
-    ),
+    [
+      ...new Set(`ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/':*!${KEY_NAME_GLYPHS}`),
+    ].map((c) => [c, { rows: ['###', '###', '###', '###', '...'] }]),
   ),
 });
 
@@ -187,5 +187,143 @@ describe('titleFromQuery (Engine 0.16 T9)', () => {
     expect(titleFromQuery('?record')).toBe(false);
     expect(titleFromQuery('?title=skip')).toBe(false);
     expect(titleFromQuery('?debug=step&title=show')).toBe(true);
+  });
+});
+
+describe('GameMenus: level select, level clear and end (Engine 0.16 part B, T3)', () => {
+  const PART_B = menusSchema.parse({
+    font: 't',
+    title: { name: 'Hop', items: ['start', 'levels', 'settings'] },
+    pause: { items: ['resume', 'title'] },
+    levels: { mark: '*' },
+    clear: { lines: [{ label: 'Coins', status: 'coins' }] },
+    end: {
+      credits: 'Thanks',
+      items: ['title', 'levels'],
+      lines: [
+        { label: 'Coins', status: 'coins' },
+        { label: 'Time', status: 'time', format: 'time' },
+      ],
+    },
+  });
+  const LEVELS = [
+    { id: 'a', name: 'Meadow', cleared: true, locked: false },
+    { id: 'b', name: 'Caves', cleared: false, locked: false },
+    { id: 'c', name: 'Peak', cleared: false, locked: true },
+  ];
+
+  function partB() {
+    const started: number[] = [];
+    const cleared: string[] = [];
+    const t = setup({
+      spec: PART_B,
+      levels: () => LEVELS,
+      startAt: (stage) => started.push(stage),
+      onCleared: (id) => cleared.push(id),
+    });
+    return { ...t, started, cleared };
+  }
+
+  it('lists the levels by name with the cleared mark, skips locked ones and starts the chosen stage', () => {
+    const { menus, press, started, log } = partB();
+    menus.showTitle();
+    expect(menus.ui!.menu('main')!.items.map((i) => i.id)).toEqual(['start', 'levels', 'settings']);
+    press('down');
+    press('jump');
+    expect([menus.state, menus.screen]).toEqual(['title', 'levels']);
+    const menu = menus.ui!.menu('main')!;
+    expect(menu.items.map((i) => [i.id, i.label, i.disabled ?? false])).toEqual([
+      ['level-0', 'Meadow *', false],
+      ['level-1', 'Caves', false],
+      ['level-2', 'Peak', true],
+      ['back', 'Back', false],
+    ]);
+    // Down twice skips the locked level to Back; Back returns to the title focused on Levels.
+    press('down');
+    press('down');
+    expect(menus.ui!.menu('main')!.focused).toBe('back');
+    press('attack');
+    expect([menus.screen, menus.ui!.menu('main')!.focused]).toEqual(['title', 'levels']);
+    press('jump');
+    press('down');
+    press('jump'); // Caves
+    expect(started).toEqual([1]);
+    expect(log).toEqual(['transition default']);
+    expect(menus.state).toBe('play');
+  });
+
+  it('hides the levels item without levels and the pause key goes back from the level select', () => {
+    const { menus, press } = setup({ spec: PART_B });
+    menus.showTitle();
+    expect(menus.ui!.menu('main')!.items.map((i) => i.id)).toEqual(['start', 'settings']);
+    const b = partB();
+    b.menus.showTitle();
+    b.press('down');
+    b.press('jump');
+    expect(b.menus.pauseKey()).toBe(true);
+    expect(b.menus.screen).toBe('title');
+    void press;
+  });
+
+  it('shows the clear banner while a level is cleared, without the stack, and keeps progress', () => {
+    const { menus, stack, game, press, cleared } = partB();
+    menus.frameStatus({ level: 'a', outcome: 'playing', coins: 2 });
+    expect(menus.bannerShown).toBe(false);
+    menus.frameStatus({ level: 'a', outcome: 'cleared', coins: 3, time: 600 });
+    menus.frameStatus({ level: 'a', outcome: 'cleared', coins: 3, time: 600 });
+    expect(menus.bannerShown).toBe(true);
+    expect(cleared).toEqual(['a']);
+    expect(menus.bannerDraws().length).toBeGreaterThan(0);
+    expect(menus.step()).toBe(false);
+    expect([stack.depth, stack.top]).toEqual([1, game]);
+    press();
+    expect(game.steps).toBe(2); // the game's pause goes on under the banner
+    menus.pause();
+    expect(menus.bannerDraws()).toEqual([]); // not over the pause menu
+    menus.resume();
+    menus.frameStatus({ level: 'b', outcome: 'playing', coins: 0 });
+    expect(menus.bannerShown).toBe(false);
+  });
+
+  it('opens the end screen on the last level with the stats summed, holding the game', () => {
+    const { menus, stack, game, press, log } = partB();
+    menus.frameStatus({ level: 'a', outcome: 'cleared', coins: 3, time: 600 });
+    menus.frameStatus({ level: 'b', outcome: 'playing', coins: 0, time: 0 });
+    menus.frameStatus({ level: 'b', outcome: 'cleared', coins: 4, time: 1500 });
+    menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });
+    expect(menus.bannerShown).toBe(false);
+    expect(menus.step()).toBe(true);
+    expect([menus.state, menus.screen]).toEqual(['end', 'end']);
+    const texts = menus
+      .ui!.draws()
+      .filter((d) => 'ch' in d)
+      .map((d) => (d as { ch: string }).ch)
+      .join('');
+    expect(texts).toContain('8'); // 3 + 4 + 1 coins
+    expect(texts).toContain('0:36'); // 2160 ticks
+    const before = game.steps;
+    press();
+    expect(game.steps).toBe(before); // held under the end screen
+    expect(menus.pauseKey()).toBe(false);
+    press('down');
+    press('jump'); // Levels
+    expect(menus.screen).toBe('levels');
+    press('attack');
+    expect([menus.screen, menus.ui!.menu('main')!.focused]).toEqual(['end', 'levels']);
+    press('up');
+    press('jump'); // Back to title
+    expect(log).toEqual(['transition default', 'restart']);
+    expect(menus.state).toBe('title');
+    void stack;
+  });
+
+  it('closes the end screen with resume (the shell invariance test plays on)', () => {
+    const { menus } = partB();
+    menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });
+    menus.step();
+    menus.resume();
+    expect(menus.state).toBe('play');
+    menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });
+    expect(menus.step()).toBe(false);
   });
 });

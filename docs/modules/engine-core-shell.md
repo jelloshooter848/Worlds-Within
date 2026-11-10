@@ -9,7 +9,7 @@ The browser shell every game page shares (Engine 0.7): choosing the backend from
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
 display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
-campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`. A game's `main.ts` and scene are then a few lines of glue.
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`, and (part B) a level select, a level-clear banner, an end screen and an event-triggered respawn transition. A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -129,6 +129,30 @@ sheets, canContinue?, onContinue?, colourModes?, onColourMode?, restart? } })` w
   }
   ```
 
+- **Level select, level-clear banner, end screen and the respawn transition (Engine 0.16 part B,
+  T3)**: `menus.levels` (`heading?`, `lock?` (true: a level shows once the one before it is
+  cleared), `mark?`), `menus.clear` (`heading?`, `lines?`: stat lines `{ label, status, of?,
+format? }` read from the frame status) and `menus.end` (`heading?`, `credits?`, `lines?`,
+  `items?`: `title`, `levels`), and the title item `levels`. The page passes its levels,
+  `BootMenus.levels: [{ id, name }]` (the platformer kit's `stageNames(contentStages(content))`):
+  the level select lists them (cleared marks and locks from `ww:<game>:progress`,
+  `save/settings.ts`'s `loadProgress`/`storeProgress`, presentation only), a chosen level rebuilds
+  the first scene with `page.start = { stage }` (what a run file's `start` gives the game), every
+  presented frame's status reaches `GameMenus.frameStatus` (the banner shows while a level that is
+  not the last is `cleared`, drawn over the game after the scenes and never on the stack, so the
+  kit's pause goes on; the last level's clear opens the end screen, which holds the game, with the
+  stats summed over the levels cleared). `game.json`'s `transitions.respawn` plays on the kit's
+  `respawn` frame event (`transitions.events` maps any event to a slot), after its frame is shown
+  and holding ticks while it closes like any transition, so no hash moves. `__ww.menus().banner`
+  says whether the banner shows. Example: `games/fx-lab/game.json`.
+
+  ```json
+  "title": { "items": ["start", "levels", "controls", "settings"], ... },
+  "levels": { "heading": "Pick a level", "mark": "*" },
+  "clear": { "lines": [{ "label": "Coins", "status": "coins" }, { "label": "Time", "status": "time", "format": "time" }] },
+  "end": { "heading": "Lab complete!", "credits": "Thanks for playing!", "items": ["title", "levels"] }
+  ```
+
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)` (a game's
   `saveCodeContext(content)` and campaign): `end(save)` stores an entry's campaign save in browser
   storage and packs its save code (`{ save, code, codeError, stored, done }`), `resume(text)` reads
@@ -180,8 +204,12 @@ flow and the campaign flow over a `MissionHost` with fakes);
 from a code);
 `game-menus.test.ts` (Engine 0.16 T9: the title holding the game, Start, Continue, pause and
 resume holding the ticks, settings and controls in the pause menu's place, Back to title, the
-title query); `tests/browser/menus.test.ts` opens every sample's and the fx lab's title, starts,
-pauses and changes settings by keyboard and by touch, and reads them back after a reload;
+title query; Engine 0.16 part B: the level select with locks and marks, a level started, the
+clear banner off the stack, the end screen with summed stats); `tests/browser/menus.test.ts` opens
+every sample's and the fx lab's title, starts, pauses and changes settings by keyboard and by
+touch, and reads them back after a reload, and plays the fx lab's level select, clear banner and
+end screen by keyboard, gamepad and touch; `tests/runs/stepped-shell-invariance.test.ts` plays
+every run file through the shell with the respawn transition, the banner and the end screen on;
 `tests/browser/volume-control.test.ts` finds the volume control on every sample page and checks
 two pages keep their volumes across a reload;
 `tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists, and
