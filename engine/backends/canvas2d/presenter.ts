@@ -96,6 +96,12 @@ export interface SkinnedPresenterOptions {
   /** The seed particles draw from (`fxRng`; default 0). Any seed gives the same picture each time. */
   seed?: number;
   /**
+   * The most live particles at once across every emitter (default `PARTICLE_SYSTEM_MAX`, 1024,
+   * from `@engine/core/fx`; Engine 0.16 T13, for a scene that needs more, such as the feature
+   * benchmark's 2000+). A spawn over it is skipped.
+   */
+  maxParticles?: number;
+  /**
    * Makes a surface for the cached map, or null to draw the tiles every frame. The default makes
    * an offscreen canvas where the browser has one, and is null in Node.
    */
@@ -200,7 +206,10 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.opts = opts;
     this.size = opts.size;
     this.camera = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
-    this.particles = new SkinParticles(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
+    this.particles = new SkinParticles(skin, {
+      ...(opts.seed !== undefined && { seed: opts.seed }),
+      ...(opts.maxParticles !== undefined && { max: opts.maxParticles }),
+    });
     this.cameraFx = new CameraFx({
       ...(opts.seed !== undefined && { seed: opts.seed }),
       ...(opts.subPixelShake !== undefined && { subPixel: opts.subPixelShake }),
@@ -231,6 +240,11 @@ export class SkinnedCanvasPresenter implements Presenter {
    */
   effectSettings(settings: CameraFxSettings): void {
     this.settings = { ...this.settings, ...settings };
+  }
+
+  /** How many particles are alive now (after the last `present`; Engine 0.16 T13). */
+  get particleCount(): number {
+    return this.particles.system.count;
   }
 
   /**

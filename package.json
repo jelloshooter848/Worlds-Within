@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "cli": "tsx engine/tools/cli.ts",
+    "bench:features": "tsx tests/bench/feature-render/run.ts",
     "docs:gen": "tsx engine/tools/docs.ts gen",
     "docs:check": "tsx engine/tools/docs.ts check"
   },

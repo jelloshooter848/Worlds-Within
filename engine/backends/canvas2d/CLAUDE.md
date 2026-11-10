@@ -22,7 +22,9 @@ skin's `camera.clamp`, else true),
 `reduceFlashing?`, `seed?` (particles and shake noise, Engine 0.16 T3), from Engine 0.16 T4
 `shakeScale?` (0..1, the player's shake setting), `subPixelShake?` (default false) and
 `onHitPause?(ticks)`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
-canvas, none in Node). Each `present(frame)`, in order:
+canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle system's cap, default
+`PARTICLE_SYSTEM_MAX`, 1024). `particleCount` is the particles alive after the last `present`
+(the feature benchmark reads it). Each `present(frame)`, in order:
 
 - Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
   `mini-game-end:pass` first, then the bare type; gap G28) calls `onSound(sound)` once and starts its
@@ -180,6 +182,18 @@ options, numbers and the decision are in `docs/BUILD-LOG.md`, Engine 0.9, T3). C
 every entity, in view or not; if a view needs more headroom, cull entities outside the view
 before reaching for another backend. Rerun the benchmark after changing how entities, the map or
 zoom are drawn.
+
+## Performance: the 2D feature benchmark (Engine 0.16 T13, item 320)
+
+`tests/bench/feature-render/` (`pnpm bench:features`, JSON on stdout) draws the RTS skirmish's
+and the tower defense's real maps, skins and unit kinds with 500 and 300 walking units and every
+0.16 feature added in a skin (2000+ particles, additive blending, glow, three parallax layers,
+tints, a UI kit HUD, shake, zoom and flash) at zoom 0.5, 1 and 2, beside the plain skins;
+`--ablate` measures each feature off, `--shots <folder>` saves screenshots. On the build
+container (no GPU) this presenter missed the 16.7 ms p95 bar by about ten times with the
+features on (glow, `shadowBlur`, on additive drawing is the worst; 2000+ particles alone are over
+budget), so a PixiJS v8 backend is the follow-up (T13b, item 323; numbers in `docs/BUILD-LOG.md`,
+Engine 0.16 part A, T13). Rerun it after changing how particles, glow or blending are drawn.
 
 ## Imports
 

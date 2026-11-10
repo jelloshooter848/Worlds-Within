@@ -881,6 +881,21 @@ describe('particles, blending and glow (Engine 0.16 T3)', () => {
     expect(run(5)).not.toEqual(run(6));
   });
 
+  it('counts live particles and caps them at maxParticles', () => {
+    const run = (maxParticles?: number) => {
+      const { r } = scoped();
+      const p = new SkinnedCanvasPresenter(r, skin, lookup, {
+        mapSurface: () => null,
+        ...(maxParticles !== undefined && { maxParticles }),
+      });
+      expect(p.particleCount).toBe(0);
+      for (let f = 0; f < 8; f++) p.present(frame({ frame: f, entities: [torch] }));
+      return p.particleCount;
+    };
+    expect(run()).toBe(3);
+    expect(run(2)).toBe(2);
+  });
+
   it("runs a kind's emitter while the entity shows, and draws the kind with its blend and glow", () => {
     const { r, calls } = scoped();
     const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null });

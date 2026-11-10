@@ -847,6 +847,18 @@ other text, so a new game gets it without code of its own.
   (many particles, layered parallax, tinting, additive blending, filters such as glow, at 60 fps on
   the RTS and tower-defense maps). If Canvas2D cannot reach the bar, PixiJS (WebGL) replaces it as
   the 2D backend behind the same presenter and skins. The result and the choice go in the build log.
+  _(Measured at T13, item 323: with every feature on, Canvas2D's p95 frame time is 143-239 ms on
+  both maps at zoom 0.5, 1 and 2, on software rendering; numbers in the
+  [build log](BUILD-LOG.md#t13-the-2d-feature-benchmark-and-the-canvas2dpixijs-decision-item-320).
+  So a follow-up task comes in:)_
+- **PixiJS v8 2D backend (T13b, follow-up to T13, item 323):** `engine/backends/pixi`, a
+  `PixiPresenter` behind the same `Presenter` and the same `canvas2d` skins (camera, zoom, HUD,
+  parallax, particles, tweens and camera effects through the shared core helpers), additive blending
+  and glow as PixiJS blend modes and filters, a display for the shell, agent docs; `pixi.js` at an
+  exact version with a `config/layers.js` `PACKAGES` entry owned by `engine/backends/pixi`. The
+  feature benchmark (`pnpm bench:features`) gains a PixiJS column, and PixiJS becomes the default
+  2D backend only where it holds the bar; Canvas2D stays for Node tests, screenshots and machines
+  without WebGL.
 - **3D backend upgrade:** lighting (sun, ambient and point lights), shadows, fog, tone mapping and
   HUD labels anchored to world positions (names, health bars, timers over buildings).
 
@@ -855,7 +867,7 @@ other text, so a new game gets it without code of its own.
 - [ ] Each feature above is in the engine with tests, a module page entry and an example in a skin.
 - [ ] A test proves presentation does not change state: every existing run file, golden hash and
       mutant check passes unchanged with the new effects on.
-- [ ] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
+- [x] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
       is made and recorded.
 - [x] Every sample has a title screen, a pause menu and a settings screen.
 - [ ] `validate` checks PNG and glTF/GLB references in skins (file present, frames inside the image)
@@ -1158,7 +1170,8 @@ whose only difference is that hero's fate.
   the editor, or both on the same game. It builds on the 0.14 debugger.
 - **An MCP server.** A thin wrapper over the CLI, generated from the same schema. The CLI stays the
   real interface.
-- More backends: isometric. (PixiJS was not adopted at 0.9; 0.16 part A decides it again, item 320.)
+- More backends: isometric. (PixiJS was not adopted at 0.9; 0.16 part A's feature benchmark found
+  Canvas2D short of the bar, so a PixiJS v8 backend is 0.16 part A's follow-up task T13b, item 323.)
 - More kits and modes: a true 3D kit (Mario 64-like), a shmup, a rail shooter, a racer. Each new kit
   comes with its own sample game.
 - A public API with a stability promise to outside developers, a package format for third-party

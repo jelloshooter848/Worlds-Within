@@ -143,6 +143,165 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
 
+## Engine 0.16 part A
+
+Engine presentation features, built on branch `engine/build-0.15` (not tagged). Task entries are
+added here as they land; the part's close-out (T14) writes the summary.
+
+### T13: the 2D feature benchmark and the Canvas2D/PixiJS decision (item 320)
+
+**Decision (item 323): Canvas2D does not hold the bar with the 0.16 features on, so a PixiJS v8
+2D backend follows (T13b, below).** Owner answer 320 allowed PixiJS "if a benchmark and feature
+test show Canvas2D can't reach the bar". With every feature on, Canvas2D's 95th-percentile frame
+time is 143-239 ms (4-8 fps) on both maps at zoom 0.5, 1 and 2, against the 16.7 ms budget (60
+fps). The same units on the games' own skins with nothing added stay at 5-13 ms p95, so the cost
+is the features, not the units. The worst offender is glow (canvas `shadowBlur`) on additive
+(`lighter`) drawing, but switching glow and additive blending off still leaves 32-35 ms p95 at
+zoom 1: 2000+ particles alone are past the budget. **Caveat:** the build container has no GPU
+(below), so Canvas2D is rasterised by Skia on the CPU; a real GPU would make it faster. The bar
+was missed by a factor of 10, not a margin, and the follow-up task reruns this benchmark with a
+PixiJS column before PixiJS replaces anything, so the owner can stop it there (item 323).
+
+**What was built.** `tests/bench/feature-render/`, the 0.9 RTS benchmark (`tests/bench/rts-render/`,
+unchanged) grown into a feature test. Outside the CI test run, like 0.9's (only its
+`scene.test.ts`, a quick Node check, runs in `pnpm test`):
+
+- `games.ts`: the two sample games the bench draws, the RTS skirmish (River Ford, 320 x 240, a
+  40 x 24 map) and the tower defense (Winding Road, 256 x 240, 16 x 15). Each loads its own content
+  and `canvas2d` skin and plays one of its run files through its view to a busy tick (`battle` to
+  tick 120: buildings, gold, both sides' soldiers, a health bar; `won` to tick 500: towers, shots,
+  runners), whose frame is the base: the real map, buildings, towers and unit kinds.
+- `scene.ts`: `featureSkin(skin, info, unitKinds)` adds to the game's skin, in text like any skin:
+  a dust trail `emit` on every unit kind (normal blending), braziers (`bench-brazier`, glowing)
+  with additive glowing flames and normal smoke, `bench-hit` events (additive glowing sparks and
+  sprite glints, a red `color` tween on the unit), `bench-blast` (a smoke burst, an additive ring,
+  a trauma `shake` and a full-screen `tint`), `bench-punch` (a `zoom` punch to 1.25 and a `flash`),
+  wisps over every tenth unit (an additive glowing kind), a glow on towers, heroes and the town
+  centre and additive shots, three `parallax` layers (a 12-band gradient sky and two repeating
+  frames, clouds and hills) and a UI kit HUD (a nine-slice panel, the game's font for a title and
+  a rolling counter, a bar, and a minimap in a second panel) after the game's own HUD items. The
+  extra art is original text pixel art (`fxSheet`). `FeatureScene` makes the frames: the base's
+  buildings and towers, `units` copies of the game's units (500 RTS units of four kinds with
+  health bars, 300 TD runners, every fifth with the TD's `hit` tag, its palette swap) walking in
+  eight directions over the whole map, 16 braziers, the events on a fixed schedule (a hit every 2
+  frames, a blast every 40, a punch every 150) and a camera panning round the map at the case's
+  zoom. `withoutFeatures(skin, names)` switches features off again (glow, add, particles,
+  parallax, hud, camera) to see what each costs. One seed: the same frames every run.
+- `page.ts` and `index.html`: each case drawn by the engine's own `SkinnedCanvasPresenter` on a
+  `Viewport` (whole-number scale, 4x), as a game's page draws, with the game's sheets and fonts
+  plus the bench sheet. The presenter got two small options for it (`maxParticles`, the system
+  cap, default 1024, set to 6000 here; and `particleCount`, read between frames).
+- `run.ts`, run by **`pnpm bench:features`**: builds the page with Vite into a temp folder, serves
+  it, opens it in headless Chromium through Playwright (window 1280 x 960) with vsync and the
+  frame-rate limit off, hands the page the games' files, and per map, zoom (0.5, 1, 2) and
+  features on or plain draws 60 warm-up frames then measures frames for `--seconds` (default 5).
+  It prints one JSON document on stdout (machine, then per case the frame time and draw time as
+  p50 / p95 / p99 / max / mean and fps, frames measured, live particles, entities and `pass`, p95
+  at most 16.7 ms) and progress lines on stderr. `--ablate` adds zoom-1 cases with features off
+  again; `--shots <folder>` saves screenshots; `--maps`, `--zooms`, `--units rts=500,td=300`,
+  `--warmup`, `--no-plain`. Without a browser it prints `{"skipped": ...}` and exits 0.
+- `scene.test.ts` (in `pnpm test`): the feature skin still parses with every feature in it and
+  leaves the game's skin alone, every added frame is on the bench sheet, the copied units are the
+  game's kinds with a walk look, frames are valid and the same each run (and plain frames carry no
+  events or bench kinds), and a `SkinParticles` stepped over 120 frames keeps 2000+ particles alive
+  on both maps, normal and additive, some glowing.
+
+**Feature check (screenshots inspected).** `pnpm bench:features --shots <folder>` saves, per map,
+the scene's first 163 frames drawn at once (a blast just started, a zoom punch held) at each zoom,
+143 frames (two frames into the punch's flash) and the plain skin. Looked at: units of every
+copied kind walking with their animations and health bars; the TD's pale `hit` palette swap on
+every fifth runner and red colour-tween boxes on hit units; the blast's full-screen orange tint;
+dust trails and grey smoke (normal), flames, sparks, glints, the white blast ring and the wisps
+(additive, brightening what is under them) with soft glows round flames, wisps, towers and
+heroes; all three parallax layers round the TD map at zoom 0.5 (the sky gradient, clouds, hills;
+the RTS map covers the picture there but for a band); the HUD's panels, title text, bar, rolling
+counter and minimap with unit and brazier dots beside the games' own HUD; the zoom punch (the
+picture at 1.25 times the case's zoom) and the flash's whitening. The shake is a few picture
+pixels and not visible in a still; it runs in every features case (and is covered by the
+presenter's tests).
+
+**Environment.** The build container: 4 vCPU Intel Xeon @ 2.10 GHz, Linux, **no GPU**. Headless
+Chromium 153.0.8010.12 (Playwright 1.63.0) with `--enable-unsafe-swiftshader`,
+`--disable-gpu-vsync` and `--disable-frame-rate-limit`; WebGL reports SwiftShader (software).
+Canvas2D is rasterised on the CPU. Frame time is the time between animation frames (the whole
+frame: making the scene's frame, drawing, Chromium's raster and compositing); fps is 1000 over its
+mean.
+
+**Numbers** (`pnpm bench:features --seconds 5`, two full runs, "run 1 / run 2"; 500 RTS units,
+300 TD units; particles are the mean alive while measuring):
+
+| Map | Skin     | Zoom | p50 frame (ms) | p95 frame (ms) | fps     | p50 draw (ms) | Particles |
+| --- | -------- | ---- | -------------- | -------------- | ------- | ------------- | --------- |
+| RTS | features | 0.5  | 172 / 190      | 239 / 220      | 6 / 6   | 164 / 182     | 3562      |
+| RTS | features | 1    | 150 / 152      | 207 / 230      | 6 / 6   | 144 / 149     | 3534-3550 |
+| RTS | features | 2    | 177 / 166      | 217 / 205      | 6 / 6   | 170 / 154     | 3534-3562 |
+| RTS | plain    | 0.5  | 8.5 / 9.1      | 11.7 / 13.2    | 118/105 | 6.6 / 7.1     | 0         |
+| RTS | plain    | 1    | 5.8 / 5.0      | 9.7 / 7.6      | 156/184 | 3.8 / 3.4     | 0         |
+| RTS | plain    | 2    | 5.3 / 7.2      | 9.5 / 10.2     | 161/145 | 3.5 / 4.9     | 0         |
+| TD  | features | 0.5  | 137 / 158      | 184 / 216      | 7 / 6   | 135 / 156     | 2622-2626 |
+| TD  | features | 1    | 148 / 129      | 173 / 179      | 7 / 7   | 148 / 124     | 2622-2639 |
+| TD  | features | 2    | 140 / 119      | 155 / 143      | 8 / 8   | 136 / 114     | 2658-2688 |
+| TD  | plain    | 0.5  | 3.8 / 3.6      | 5.5 / 5.7      | 236/243 | 2.1 / 2.0     | 0         |
+| TD  | plain    | 1    | 4.8 / 4.0      | 5.5 / 5.9      | 214/236 | 2.9 / 2.5     | 0         |
+| TD  | plain    | 2    | 3.8 / 3.6      | 5.2 / 5.2      | 253/263 | 1.9 / 1.9     | 0         |
+
+What each feature costs (`--ablate`, run 1, zoom 1, every feature on but those named):
+
+| Off                          | RTS p50 / p95 (ms) | RTS fps | TD p50 / p95 (ms) | TD fps |
+| ---------------------------- | ------------------ | ------- | ----------------- | ------ |
+| nothing (all on)             | 150 / 207          | 6       | 148 / 173         | 7      |
+| glow                         | 16.7 / 34.7        | 50      | 18.3 / 34.3       | 55     |
+| additive blending            | 26.4 / 41.8        | 37      | 19.2 / 32.1       | 52     |
+| particles                    | 23.2 / 34.2        | 44      | 12.3 / 17.9       | 79     |
+| parallax                     | 162 / 218          | 6       | 143 / 188         | 7      |
+| HUD (UI kit items)           | 199 / 217          | 5       | 114 / 165         | 8      |
+| camera (shake, zoom, flash)  | 169 / 222          | 6       | 120 / 172         | 8      |
+| glow and additive blending   | 20.8 / 31.8        | 49      | 16.7 / 34.5       | 62     |
+| all six (units and braziers) | 5.2 / 8.6          | 163     | 5.4 / 6.2         | 201    |
+
+What the numbers say:
+
+- Glow on additive drawing is what makes the full scene 6-8 fps: switching off either glow or
+  additive blending brings it to 16-26 ms p50. Canvas glow is `shadowBlur` on every glowing draw
+  call, and with `lighter` compositing each one is a separate blurred layer in Skia.
+- Without them it still misses: glow and additive blending off together leave 32-35 ms p95 (about
+  50-60 fps mean, with long frames), and with no particles at all the RTS still has 34 ms p95 (the
+  glowing, additive wisps and kinds remain). Particles alone (3500 squares, `globalAlpha` per
+  particle, no culling of those off screen) take most of a frame on the CPU.
+- Parallax, the UI kit HUD and the camera effects are cheap next to these (switching them off
+  changes the numbers within run-to-run noise).
+- With nothing added, Canvas2D still draws the 500 units and their bars at 105-184 fps, as in
+  0.9.
+
+**Canvas2D work that could close part of the gap, not done here:** pre-rendered glow sprites
+instead of `shadowBlur`, skipping particles and entities outside the view, batching particles by
+colour and alpha. The roadmap's rule (item 320) is to switch to PixiJS when the bar is not
+reached, and a GPU-backed renderer is the general fix for thousands of blended sprites, so these
+are listed for the owner (item 323) rather than built.
+
+**Follow-up task T13b: a PixiJS v8 2D backend** (added to the roadmap's 0.16 part A):
+
+- `engine/backends/pixi`: a `PixiPresenter` implementing the same `Presenter` over the same
+  `canvas2d` skins and frames (the camera, zoom, HUD, parallax, particles, tweens and camera
+  effects laid out by the same core helpers the Canvas2D presenter uses: `CameraFollower`,
+  `layoutHud`/`SkinHud`, `layoutParallax`, `SkinParticles`, `CameraFx`), sprites from the same
+  sheet lookups, additive blending and glow as PixiJS blend modes and filters, and a
+  `pixiDisplay` for the shell; agent docs and a module page.
+- `pixi.js` added at an exact version (8.22.0 was measured in 0.9) with a `config/layers.js`
+  `PACKAGES` entry owned by `engine/backends/pixi` (as `three` is by `engine/backends/three`); the
+  owner folder must exist first, so the entry comes with the backend, not with T13.
+- This benchmark gains a PixiJS column on the same scenes (as 0.9's had), and PixiJS replaces
+  Canvas2D as the default 2D backend only if it holds the bar here; Canvas2D stays for Node tests,
+  screenshots and as a fallback where WebGL is missing. Screenshot parity checked against Canvas2D.
+
+**How to rerun.**
+
+```sh
+pnpm bench:features                         # 2 maps x zoom 0.5/1/2, features and plain, 5 s each
+pnpm bench:features --ablate --shots /tmp/feature-shots   # plus the cost of each feature, and screenshots
+pnpm exec tsx tests/bench/rts-render/run.ts # the 0.9 RTS benchmark, unchanged
+```
+
 ## Engine 0.15
 
 The sample set. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner

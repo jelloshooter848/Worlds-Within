@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 323.** (Last used: 322.)
+**Next unused number: 324.** (Last used: 323.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1256,3 +1256,18 @@ was built and Choices made)
   unchanged. OK?
 - **315.** The 3D platformer browser check ignores console errors that mention a GPU stall or WebGL
   (Chromium software-rendering noise); every other error still fails the test. OK?
+
+**Engine 0.16 part A** (details in `docs/BUILD-LOG.md`, Engine 0.16 part A)
+
+- **323.** The 2D feature benchmark (`pnpm bench:features`, T13, item 320): with every 0.16
+  feature on (2000+ particles normal and additive, glow, three parallax layers, tinting, a UI kit
+  HUD, shake and zoom) on the RTS map (500 units) and the tower-defense map (300 units), Canvas2D's
+  p95 frame time is 143-239 ms (4-8 fps) at zoom 0.5, 1 and 2, against 16.7 ms; the same units on
+  the plain skins take 5-13 ms. Glow on additive drawing is the worst cost, but with both off it
+  is still 32-35 ms p95. Measured on software rendering only (no GPU in the build container). The
+  build therefore adds a follow-up task, T13b: a PixiJS v8 2D backend behind the same `Presenter`
+  and skins (`pixi.js` pinned, owned by `engine/backends/pixi` in `config/layers.js`), checked
+  with a PixiJS column in this benchmark before it replaces Canvas2D as the default; Canvas2D stays
+  for Node tests, screenshots and machines without WebGL. Go ahead with T13b? Or first (a) rerun
+  the benchmark on a machine with a GPU, or (b) try the Canvas2D fixes the build log lists
+  (pre-rendered glow sprites, culling off-screen particles, batching) before adding PixiJS?

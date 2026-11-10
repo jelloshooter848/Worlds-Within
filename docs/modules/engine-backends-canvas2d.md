@@ -45,7 +45,10 @@ for and holds no game rules.
   frame parts scaled for nine-slice panels, and glyphs from a strip of the font drawn once per
   colour; the `fonts` option, also on `canvasDisplay` and `skinSetCanvasPresenter`), and reports skin sounds through `onSound(id)` once per
   event (the skin entry from `resolveSkinEvent`, so `mini-game-end:pass` can have its own sound). Details in the folder's CLAUDE.md. Its speed on an RTS view is measured by
-  `pnpm exec tsx tests/bench/rts-render/run.ts` (Engine 0.9 T3; numbers in the build log).
+  `pnpm exec tsx tests/bench/rts-render/run.ts` (Engine 0.9 T3; numbers in the build log), and
+  with every 0.16 feature on the RTS and tower-defense maps by `pnpm bench:features` (Engine 0.16
+  T13, item 320: it missed the 60 fps bar there with glow, additive blending and 2000+ particles,
+  so a PixiJS v8 backend follows, item 323). Options `maxParticles` (the particle cap, default 1024) and the `particleCount` getter came with it.
 
 - `canvasDisplay`, `CanvasDisplayOptions` (`display.ts`, Engine 0.7): the page's 2D
   `BrowserDisplay` for `bootBrowserGame` (`@engine/core/shell`): viewport, renderer and a
