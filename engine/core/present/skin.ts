@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { ContentKind, ContentLookup, KindIssue } from '../content/kinds';
 import type { FieldPath } from '../content/validate';
+import { tweensSchema } from '../fx/schema';
 import {
   cardinalFacing,
   FACINGS,
@@ -342,6 +343,11 @@ const kindEntry = z.strictObject({
   depth,
   z: zOffset,
   offset: offset.exactOptional(),
+  spawnTween: tweensSchema
+    .exactOptional()
+    .describe(
+      'tweens started on an entity of this kind the first frame a presenter shows it (a pop-in), on top of its `fx`; presentation only (Engine 0.16)',
+    ),
   byTag: z
     .array(tagEntry)
     .exactOptional()
@@ -373,6 +379,11 @@ const effect = z.strictObject({
 const eventEntry = z.strictObject({
   sound: id.exactOptional().describe('a song or sfx id to play'),
   effect: effect.exactOptional().describe('a presentation-only effect at the event'),
+  tween: tweensSchema
+    .exactOptional()
+    .describe(
+      "tweens started on the event's `entity` (a squash, a hit flash), on top of its `fx`; ignored for an event with no entity; presentation only (Engine 0.16)",
+    ),
 });
 
 const hudItem = z

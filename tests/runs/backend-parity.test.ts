@@ -3,13 +3,10 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { NullPresenter } from '@engine/backends/null';
-import type { CampaignSave } from '@engine/core/campaign';
 import type { ContentBundle } from '@engine/core/content/bundle';
-import type { JsonObject } from '@engine/core/headless';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { freezeFrame, isFullMap, MINI_GAME_STATUS, skinSet } from '@engine/core/present';
-import type { ViewEntry, ViewGame } from '@engine/core/view';
 import {
   PlatformerPresentState,
   PRESENT_TILES,
@@ -18,9 +15,8 @@ import {
   type PlatformerWorld,
 } from '@kits/platformer';
 import { presentWorld, snapshotWorld, TdPresentState, type TopDownWorld } from '@kits/topdown';
-import { loadGame } from '../../engine/tools/game-loader';
-import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
-import { readRunFile, runStartOf, type RunFile } from '../../engine/tools/run-file';
+import { stateHash, type TickHash } from '../../engine/tools/headless-run';
+import { runStartOf, type RunFile } from '../../engine/tools/run-file';
 import { createWorld } from '../../games/samples/dungeon/headless';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import { DungeonPicture, dungeonLook } from '../../games/samples/dungeon/picture';
@@ -28,6 +24,7 @@ import { createGame as createLab, type LabGame } from '../../games/platformer-la
 import { threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
 import { labLook3d } from '../../games/platformer-lab/picture3d';
+import { loadRun, playView, viewMaker } from './view-play';
 
 // Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
 // take more than vitest's default 5 s on a busy machine.
@@ -144,14 +141,7 @@ function playLab(content: ContentBundle, run: RunFile, present: PresentLab): Tic
 }
 
 function load(file: string): { content: ContentBundle; run: RunFile; golden: TickHash[] } {
-  const loaded = readRunFile(ROOT, file);
-  if (!loaded.ok) throw new Error(JSON.stringify(loaded.errors));
-  if (loaded.value.gameDir === null) throw new Error(`${file} plays a world, not a game`);
-  const game = loadGame(ROOT, loaded.value.gameDir);
-  if (!game.content.ok) throw new Error(JSON.stringify(game.content.errors));
-  const goldenFile = join(ROOT, file.replace(/\.run\.json$/, '.hashes.json'));
-  const golden = (JSON.parse(readFileSync(goldenFile, 'utf8')) as { hashes: TickHash[] }).hashes;
-  return { content: game.content.value, run: loaded.value.run, golden };
+  return loadRun(ROOT, file);
 }
 
 describe('backend parity: null and canvas2d give the same state hashes', () => {
@@ -263,41 +253,6 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
   });
 });
 
-/**
- * Plays `run` through a game's view as `pnpm cli run` plays its headless game, calling `show` each
- * tick. Recorded orders (Engine 0.9) go to the view's `order` after the tick's state is shown and
- * hashed, before the step from it, as `run` hands them to the headless game; a game run's mission
- * steps (Engine 0.11) follow them.
- */
-function playView(view: ViewGame, run: RunFile, show: (view: ViewGame) => void): TickHash[] {
-  const input = new ScriptedInput(run.input);
-  const hashes: TickHash[] = [];
-  const takesOrders = view as ViewGame & { order?(order: JsonObject): string | null };
-  for (let tick = 0; tick <= run.ticks; tick++) {
-    if (tick > 0) {
-      input.next();
-      view.step(input);
-    }
-    show(view);
-    if (tick % run.hashEvery === 0 || tick === run.ticks)
-      hashes.push({ tick, hash: stateHash(view.snapshot()) });
-    for (const entry of run.orders) {
-      if (entry.tick !== tick) continue;
-      if (takesOrders.order === undefined)
-        throw new Error(`the view takes no orders, ${run.orders.length} given`);
-      takesOrders.order(orderOf(entry));
-    }
-    // Mission steps (Engine 0.11) after the tick's orders, as `run` hands them to the game.
-    for (const step of run.missions) {
-      if (step.tick !== tick) continue;
-      if (view.mission === undefined)
-        throw new Error(`the view takes no missions, ${run.missions.length} given`);
-      view.mission(missionOf(step));
-    }
-  }
-  return hashes;
-}
-
 describe('backend parity: every other game with a view, through null, canvas2d and three', () => {
   it('finds the platformer test runs and the RTS skirmish sample runs', () => {
     expect(viewRuns).toContain('games/samples/platformer/runs/level-4.run.json');
@@ -306,24 +261,7 @@ describe('backend parity: every other game with a view, through null, canvas2d a
 
   it.each(viewRuns)('%s', async (file) => {
     const { content, run, golden } = load(file);
-    const dir = file.slice(0, file.indexOf('/runs/'));
-    const manifest = JSON.parse(readFileSync(join(ROOT, dir, 'game.json'), 'utf8')) as { view: string };
-    const entry = (await import(join(ROOT, dir, manifest.view))) as ViewEntry;
-    // A run that starts from another run's end or a save code (Engine 0.13, `from`): the view
-    // starts at the campaign save `pnpm cli run` starts it from.
-    let campaign: CampaignSave | null = null;
-    if (run.from !== undefined) {
-      const started = await playRun(ROOT, file, { untilTick: 0 });
-      if (!started.ok) throw new Error(JSON.stringify(started.errors));
-      campaign = started.value.startSave;
-    }
-    const make = () =>
-      entry.createView(content, run.seed ?? content.manifest.start.seed, {
-        disabledRules: run.disableRules,
-        ...(campaign === null ? {} : { campaign }),
-        // A run that starts at a later level or campaign entry (Engine 0.14, gap G9, `start`).
-        ...(run.start === undefined ? {} : { start: runStartOf(run.start)! }),
-      });
+    const make = await viewMaker(ROOT, file, content, run);
 
     const nullPresenter = new NullPresenter({ validate: true, freeze: true });
     const viaNull = playView(make(), run, (view) => nullPresenter.present(view.frame!()));

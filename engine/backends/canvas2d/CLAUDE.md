@@ -61,6 +61,14 @@ canvas, none in Node). Each `present(frame)`, in order:
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.
+- Tweens (Engine 0.16 T1, `@engine/core/fx`): one `TweenSet` per entity id, presenter state only.
+  An event's skin `tween` starts on its `entity` (with the event's sound and effect, once per frame
+  number); a kind's `spawnTween` on an entity the first frame it is shown (again after it leaves
+  and returns); ended tweens and those of entities gone from the frame are dropped. Drawing lays
+  the tween state on top of `fx`: `x`/`y` added to the position (world px, before the zoom),
+  `scaleX`/`scaleY` times the squash, `rotate` added to the turn, `alpha` times the alpha (clamped
+  to 0-1), and a `color` tween as a translucent box (`colorAmount`) over the drawn box, inside the
+  same transform. Nothing is written back to the frame.
 - HUD from `skin.hud` and `frame.status`: `hearts` (one frame per whole point), `icon` (when
   truthy), `number`/`text` (`Renderer.text` with the font). A missing status draws nothing. The
   layout is the core `layoutHud` (`@engine/core/present`, Engine 0.15, gap G33), shared with the

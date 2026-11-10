@@ -105,6 +105,11 @@ describe('dependency rule: the layer table', () => {
       'engine/core/assets/**',
     ])
       expect(kits).toContain(t);
+    // Presentation effects (Engine 0.16): presenters only, never kits or the sim.
+    expect(kits).toContain('engine/core/fx/**');
+    expect(FORBIDDEN_CORE.filter((f) => f.layer === 'engine/sim').flatMap((f) => f.targets)).toContain(
+      'engine/core/fx/**',
+    );
     for (const rule of FORBIDDEN_CORE) {
       expect(LAYERS.map((l) => l.name)).toContain(rule.layer);
       for (const t of rule.targets) {

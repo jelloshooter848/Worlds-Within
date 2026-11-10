@@ -209,6 +209,16 @@ describe('purity rule: ESLint', () => {
     ],
     ['engine/core/rng.ts', 'export const roll = () => Math.random();\n', 'Math.random (pure core file)'],
     ['engine/core/math/bad.ts', 'export const t = () => Date.now();\n', 'Date.now (pure core folder)'],
+    [
+      'engine/core/fx/bad.ts',
+      'export const roll = () => Math.random();\n',
+      'Math.random in presentation effects (use fxRng)',
+    ],
+    [
+      'engine/core/fx/bad.ts',
+      'export const t = () => performance.now();\n',
+      'a clock in tweens (frames only)',
+    ],
   ])('rejects %s using %s (%s)', async (file, code) => {
     expect((await purityErrors(file, code)).length).toBeGreaterThan(0);
   });

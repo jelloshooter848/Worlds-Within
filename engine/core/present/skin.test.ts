@@ -542,6 +542,39 @@ describe('skin background (G36)', () => {
   });
 });
 
+describe('skin tweens (Engine 0.16 T1)', () => {
+  it("takes an event's tween and a kind's spawnTween, on 2D and 3D skins", () => {
+    const s = fixture();
+    s.events!['hit'] = {
+      sound: 'hurt',
+      tween: [
+        { prop: 'scale', from: 1.5, to: 1, frames: 8, ease: 'backOut' },
+        { prop: 'color', to: '#d82800', frames: 6, yoyo: true, amount: 0.6 },
+      ],
+    };
+    s.kinds['coin']!.spawnTween = { prop: 'y', from: -8, to: 0, frames: 6, ease: 'bounceOut' };
+    expect(errorsOf(s)).toEqual([]);
+    const t = threeFixture();
+    t.kinds['coin']!.spawnTween = { prop: 'alpha', from: 0, to: 1, frames: 4 };
+    expect(errorsOf(t)).toEqual([]);
+  });
+
+  it('names the field of a bad ease, property or colour', () => {
+    const at = (tween: unknown) => errorsOf({ ...fixture(), events: { hit: { tween } } }).map(([p]) => p);
+    expect(at({ prop: 'x', to: 1, frames: 4, ease: 'wobble' })).toEqual(['events.hit.tween.ease']);
+    expect(at({ prop: 'size', to: 1, frames: 4 })).toEqual(['events.hit.tween.prop']);
+    expect(at([{ prop: 'color', to: 'red', frames: 4 }])).toEqual(['events.hit.tween.0.to']);
+    const s = fixture();
+    (s.kinds['coin'] as Record<string, unknown>)['spawnTween'] = {
+      prop: 'x',
+      to: 1,
+      frames: 4,
+      ease: 'nope',
+    };
+    expect(errorsOf(s).map(([p]) => p)).toEqual(['kinds.coin.spawnTween.ease']);
+  });
+});
+
 /** A 3D fixture skin: primitives, a compound mesh, depth, z and the camera3d block. */
 function threeFixture(): SkinFile {
   return {

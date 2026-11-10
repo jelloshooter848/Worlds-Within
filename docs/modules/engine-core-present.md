@@ -60,7 +60,10 @@ color? }`: `tag` matches one whole tag; `prefix` (Engine 0.15, gap M2) any tag s
   backends clear to before each frame drawn with it (`skinBackground(skin)`, else
   `DEFAULT_BACKGROUND`, black); each skin of a skin set clears to its own. An `events` key may also match a field (Engine 0.11, gap G28):
   `mini-game-end:pass` (the event's `result`) or `type:field=value`; `resolveSkinEvent(events,
-event)` gives the entry, the first matching field key in file order, else the bare type's. Field
+event)` gives the entry, the first matching field key in file order, else the bare type's. From
+  Engine 0.16 an event entry's `tween` and a kind entry's `spawnTween` (tween specs from
+  [`engine/core/fx`](engine-core-fx.md)) animate the event's entity or a newly shown entity in the
+  presenter, never in the frame. Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named

@@ -58,6 +58,12 @@ tiles?, events?, hud?, camera?, meshes?, camera3d? }`. `background` (Engine 0.15
   (`EVENT_KEY_FIELD`; `mini-game-end:pass`), `type:field=value` any other
   (`mission-commit:outcome=both-burnt`); any other shape is `bad_event_key`; `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`.
+  - Tweens (Engine 0.16 T1, `engine/core/fx`): an event entry's optional `tween` (one tween spec
+    or a list, `tweensSchema`) is started on the event's `entity` (ignored for an event with none),
+    and a kind entry's optional `spawnTween` on an entity the first frame a presenter shows it.
+    Both are presentation only, allowed on 2D and 3D skins, applied by the Canvas2D presenter on
+    top of the entity's `fx` (never written back to the frame); the 3D backend ignores them for
+    now. A bad ease, prop or colour is an error at that field (`events.hit.tween.ease`).
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px
@@ -201,7 +207,7 @@ skin (content/skins/<backend>.json)`.
 
 - Pure: `engine/core/present/**` is on `PURE_CORE` (`config/layers.js`). No clock, DOM or
   `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types,
-  `../content/bundle` for `skinSet`; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
+  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs in skins; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
 - Everything in a frame is plain JSON-safe data: no classes, functions, `Map`s or kit objects. A
   backend never sees kit internals.
 - Frames are read-only to backends. Never add a field a backend would write back to.

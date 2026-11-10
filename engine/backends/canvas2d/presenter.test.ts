@@ -557,6 +557,118 @@ describe('SkinnedCanvasPresenter', () => {
     expect(s.screen.filter((c) => c === 'rect 0,0 48x32 #fff')).toHaveLength(1);
   });
 
+  describe('tweens (Engine 0.16 T1)', () => {
+    const tweenSkin: SkinFile = {
+      ...SKIN,
+      kinds: {
+        ...SKIN.kinds,
+        hero: { ...SKIN.kinds['hero']!, spawnTween: { prop: 'y', from: -4, to: 0, frames: 4 } },
+      },
+      events: {
+        hit: {
+          tween: [
+            { prop: 'x', from: 8, to: 0, frames: 2 },
+            { prop: 'color', from: '#ffffff', to: '#ff0000', frames: 2, amount: 0.5 },
+          ],
+        },
+        squash: { tween: { prop: 'scale', from: 2, to: 1, frames: 2 } },
+      },
+    };
+    const make = () => {
+      const s = recorder();
+      s.r.alpha = (a, draw) => {
+        s.calls.push(`alpha ${a}`);
+        draw();
+      };
+      const p = new SkinnedCanvasPresenter(s.r, tweenSkin, lookup, { mapSurface: () => null });
+      return { p, calls: s.calls };
+    };
+    const sprites = (calls: string[]) => calls.filter((c) => c.startsWith('sprite hero'));
+
+    it("starts a kind's spawnTween the first frame an entity shows, then rests", () => {
+      const { p, calls } = make();
+      for (let f = 0; f <= 4; f++)
+        p.present(frame({ frame: f, noMap: true, entities: [hero({ x: 10, y: 10 })] }));
+      expect(sprites(calls)).toEqual([6, 7, 8, 9, 10].map((y) => `sprite hero:down-0 10,${y}`));
+    });
+
+    it("starts an event's tween on its entity, with the colour overlay over its box", () => {
+      const { p, calls } = make();
+      p.present(frame({ frame: 0, noMap: true, entities: [hero({ id: 'a', x: 10 })] }));
+      calls.length = 0;
+      p.present(
+        frame({
+          frame: 4,
+          noMap: true,
+          entities: [hero({ id: 'a', x: 10 })],
+          events: [{ type: 'hit', entity: 'a' }],
+        }),
+      );
+      expect(calls).toContain('sprite hero:down-0 18,0');
+      expect(calls).toContain('alpha 0.5');
+      expect(calls).toContain('rect 18,0 16x16 #ffffff');
+      calls.length = 0;
+      p.present(frame({ frame: 5, noMap: true, entities: [hero({ id: 'a', x: 10 })] }));
+      expect(calls).toContain('rect 14,0 16x16 #ff8080');
+      calls.length = 0;
+      p.present(frame({ frame: 6, noMap: true, entities: [hero({ id: 'a', x: 10 })] }));
+      expect(sprites(calls)).toEqual(['sprite hero:down-0 10,0']);
+      expect(calls.some((c) => c.startsWith('rect'))).toBe(false);
+    });
+
+    it('lays a scale tween over the frame fx, about the bottom centre', () => {
+      const { p, calls } = make();
+      p.present(frame({ frame: 0, noMap: true, entities: [hero({ id: 'a' })] }));
+      p.present(
+        frame({
+          frame: 9,
+          noMap: true,
+          entities: [hero({ id: 'a', x: 10, y: 4, fx: { squashX: 1.5 } })],
+          events: [{ type: 'squash', entity: 'a' }],
+        }),
+      );
+      expect(calls).toContain('transform 18,20 0 3,2');
+    });
+
+    it('ignores a tween event with no entity and forgets entities that leave', () => {
+      const { p, calls } = make();
+      p.present(
+        frame({
+          frame: 0,
+          noMap: true,
+          entities: [hero({ id: 'a', x: 10, y: 10 })],
+          events: [{ type: 'hit' }],
+        }),
+      );
+      p.present(frame({ frame: 1, noMap: true, entities: [] }));
+      calls.length = 0;
+      // Back again: a new spawn tween from its start.
+      p.present(frame({ frame: 2, noMap: true, entities: [hero({ id: 'a', x: 10, y: 10 })] }));
+      expect(sprites(calls)).toEqual(['sprite hero:down-0 10,6']);
+    });
+
+    it('gives the same drawing for the same frames, and never changes a frozen frame or skin', () => {
+      const run = () => {
+        const s = recorder();
+        const p = new SkinnedCanvasPresenter(s.r, freezeFrame(structuredClone(tweenSkin)), lookup, {
+          mapSurface: () => null,
+        });
+        for (let f = 0; f < 6; f++)
+          p.present(
+            freezeFrame(
+              frame({
+                frame: f,
+                entities: [hero({ id: 'a', x: f })],
+                events: f === 1 ? [{ type: 'hit', entity: 'a' }] : [],
+              }),
+            ),
+          );
+        return s.calls;
+      };
+      expect(run()).toEqual(run());
+    });
+  });
+
   it('never changes a frozen frame or skin', () => {
     const { r } = recorder();
     const skin = freezeFrame(structuredClone(SKIN));

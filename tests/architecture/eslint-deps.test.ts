@@ -39,6 +39,10 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['kits/topdown/bad.ts', '@engine/core/gfx/renderer', 'kit -> the core Renderer'],
     ['kits/topdown/bad.ts', '../../engine/core/gfx/spritesheet', 'kit -> sprite sheets (relative)'],
     ['kits/platformer/bad.ts', 'three', 'kit -> three (owned by the 3D backend)'],
+    ['kits/topdown/bad.ts', '@engine/core/fx', 'kit -> presentation effects (Engine 0.16)'],
+    ['kits/rts/bad.ts', '../../engine/core/fx/tween', 'kit -> tweens (relative)'],
+    ['engine/sim/bad.ts', '@engine/core/fx/rng', 'sim -> the presentation RNG'],
+    ['engine/sim/bad.ts', '../core/fx', 'sim -> presentation effects (relative)'],
     ['engine/core/bad.ts', 'three', 'core -> three'],
     ['games/samples/dungeon/bad.ts', 'three', 'game -> three'],
   ];
@@ -66,6 +70,8 @@ describe('dependency rule: ESLint and the checker agree', () => {
     ['engine/sim/good.ts', '../core/rng', 'sim -> core (relative)'],
     ['kits/topdown/good.test.ts', '@engine/backends/null', 'kit test -> null backend (test exception)'],
     ['engine/backends/three/good.ts', 'three', 'the 3D backend -> three'],
+    ['engine/backends/canvas2d/good.ts', '@engine/core/fx', 'a backend -> presentation effects'],
+    ['engine/core/present/good.ts', '../fx/schema', 'core -> presentation effects'],
   ];
 
   it.each(good)('%s importing %s passes both (%s)', async (file, specifier) => {

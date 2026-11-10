@@ -6,7 +6,8 @@ audio and MML (`audio/`), save and settings (`save/`), the seeded RNG (`rng.ts`)
 asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.ts`), graphics
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
-[content/CLAUDE.md](content/CLAUDE.md)), the presentation contract (`present/`: the read-only
+[content/CLAUDE.md](content/CLAUDE.md)), presentation effects (`fx/`, Engine 0.16: the
+presentation-only RNG `fxRng`, easing curves and tweens; see [fx/CLAUDE.md](fx/CLAUDE.md)), the presentation contract (`present/`: the read-only
 per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), the browser shell
 games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`; see
 [shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content
@@ -474,7 +475,8 @@ never knows which one is drawing.
 - Randomness goes through `Rng` (`rng.ts`), never `Math.random`, in anything a kit or the sim uses.
 - Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
   `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
-  `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`, `shell/**`). A kit describes frames through
+  `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`, `shell/**`, and from
+  Engine 0.16 `fx/**`, which `engine/sim` may not import either). A kit describes frames through
   `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
@@ -484,7 +486,7 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
-`audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
+`audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, `shell/boot.ts`, the

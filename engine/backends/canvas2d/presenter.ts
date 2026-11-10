@@ -1,4 +1,5 @@
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
+import { REST_STATE, TweenSet, type TweenState } from '@engine/core/fx';
 import { transformed, translucent, type Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
@@ -126,6 +127,10 @@ export class SkinnedCanvasPresenter implements Presenter {
   private lastEvents: number | null = null;
   /** Camera state (presentation only): never in a kit, a frame or a hash. */
   private readonly camera: CameraFollower;
+  /** Running tweens by entity id (skin `events.<type>.tween` and `kinds.<kind>.spawnTween`). */
+  private readonly tweens = new Map<string, TweenSet>();
+  /** The entity ids the last frame showed, so a new one gets its kind's `spawnTween`. */
+  private seen = new Set<string>();
 
   constructor(
     target: Renderer | Ctx,
@@ -147,12 +152,13 @@ export class SkinnedCanvasPresenter implements Presenter {
     const r = this.r;
     const size = this.size ?? frame.size;
     this.takeEvents(frame);
+    this.updateTweens(frame);
     this.updateMap(frame);
     const view = this.cameraView(frame, size);
 
     r.clear(this.opts.background ?? skinBackground(this.skin));
     this.drawMap(view);
-    for (const e of depthOrder(frame.entities)) this.drawEntity(e, view);
+    for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawEffects(frame.frame, view, size);
     this.drawHud(frame);
   }
@@ -170,11 +176,40 @@ export class SkinnedCanvasPresenter implements Presenter {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
+      if (entry.tween !== undefined && ev.entity !== undefined)
+        this.tweensOf(ev.entity).add(entry.tween, frame.frame);
       if (entry.effect === undefined) continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
       const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
       const y = ev.y ?? (at ? at.y + at.h / 2 : 0);
       this.effects.push({ effect: entry.effect, x, y, start: frame.frame });
+    }
+  }
+
+  // ---- Tweens ----
+
+  private tweensOf(id: string): TweenSet {
+    let set = this.tweens.get(id);
+    if (set === undefined) this.tweens.set(id, (set = new TweenSet()));
+    return set;
+  }
+
+  /**
+   * Starts `spawnTween` on entities new this frame, drops ended tweens and those of entities gone
+   * from the frame. Tweens are presenter state only: they never touch the frame.
+   */
+  private updateTweens(frame: Frame): void {
+    const ids = new Set<string>();
+    for (const e of frame.entities) {
+      ids.add(e.id);
+      if (this.seen.has(e.id)) continue;
+      const spawn = this.skin.kinds[e.kind]?.spawnTween;
+      if (spawn !== undefined) this.tweensOf(e.id).add(spawn, frame.frame);
+    }
+    this.seen = ids;
+    for (const [id, set] of this.tweens) {
+      set.update(frame.frame);
+      if (set.size === 0 || !ids.has(id)) this.tweens.delete(id);
     }
   }
 
@@ -301,9 +336,10 @@ export class SkinnedCanvasPresenter implements Presenter {
 
   // ---- Entities ----
 
-  private drawEntity(e: DeepReadonly<PresentEntity>, view: View): void {
+  private drawEntity(e: DeepReadonly<PresentEntity>, view: View, tick: number): void {
     const r = this.r;
     const { zoom } = view;
+    const tw: TweenState = this.tweens.get(e.id)?.state(tick) ?? REST_STATE;
     const sf = resolveSkinFrame(this.skin, e);
     const sheet = sf.sheet === null || sf.frame === null ? null : this.sheet(sf.sheet, sf.palette);
     const rect = sf.frame === null ? undefined : sheet?.frames.get(sf.frame);
@@ -311,25 +347,29 @@ export class SkinnedCanvasPresenter implements Presenter {
     const scaled = (n: number) => (zoom === 1 ? n : Math.max(1, Math.round(n * zoom)));
     const w = scaled(rect?.w ?? sf.size?.w ?? e.w);
     const h = scaled(rect?.h ?? sf.size?.h ?? e.h);
-    const x = Math.round((e.x + (sf.offset?.x ?? 0)) * zoom) - view.x;
-    const y = Math.round((e.y + (sf.offset?.y ?? 0)) * zoom) - view.y;
+    const x = Math.round((e.x + tw.x + (sf.offset?.x ?? 0)) * zoom) - view.x;
+    const y = Math.round((e.y + tw.y + (sf.offset?.y ?? 0)) * zoom) - view.y;
     const draw = (to: Renderer, dx: number, dy: number) => {
       if (rect && sheet) {
         if (zoom === 1) to.sprite(sheet, sf.frame!, dx, dy, sf.flipX);
         else to.sprite(sheet, sf.frame!, dx, dy, sf.flipX, false, 0, zoom);
       } else to.rect(dx, dy, w, h, sf.fallbackColor);
+      // A colour tween's overlay over the drawn box.
+      if (tw.color !== null && tw.colorAmount > 0)
+        translucent(to, tw.colorAmount, () => to.rect(dx, dy, w, h, tw.color!));
     };
+    // Tweens lay their offsets and factors on top of the frame's `fx` (never written back).
     const fx = e.fx;
-    const sx = fx?.squashX ?? 1;
-    const sy = fx?.squashY ?? 1;
-    const turn = fx?.rotate ?? 0;
+    const sx = (fx?.squashX ?? 1) * tw.scaleX;
+    const sy = (fx?.squashY ?? 1) * tw.scaleY;
+    const turn = (fx?.rotate ?? 0) + tw.rotate;
     const body = () => {
       // Squash, stretch and turns pivot on the bottom centre, so feet stay on the ground.
       if (sx !== 1 || sy !== 1 || turn !== 0) {
         transformed(r, x + w / 2, y + h, (turn * Math.PI) / 180, sx, sy, (l) => draw(l, -w / 2, -h));
       } else draw(r, x, y);
     };
-    translucent(r, fx?.alpha ?? 1, body);
+    translucent(r, Math.min(1, Math.max(0, (fx?.alpha ?? 1) * tw.alpha)), body);
   }
 
   // ---- HUD ----
