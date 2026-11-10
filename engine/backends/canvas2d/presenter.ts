@@ -177,6 +177,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   private readonly tweens = new Map<string, TweenSet>();
   /** The entity ids the last frame showed, so a new one gets its kind's `spawnTween`. */
   private seen = new Set<string>();
+  /** The last frame number presented: a lower one is a new level (tweens start over). */
+  private lastFrame: number | null = null;
   /** Frame events of the skin's cycles (`events: { "<frame>": "<type>" }`), presenter state only. */
   private readonly frameEvents = new FrameEventClock();
   /** The skin's particles (`emitters`, events' `emit`, kinds' `emit`, old `particles` effects). */
@@ -260,6 +262,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     const r = this.r;
     const size = this.size ?? frame.size;
     this.fxClock++;
+    this.restartOnNewLevel(frame);
     this.takeEvents(frame);
     this.particles.update(frame.frame, frame.entities);
     this.updateTweens(frame);
@@ -312,6 +315,20 @@ export class SkinnedCanvasPresenter implements Presenter {
   }
 
   // ---- Tweens ----
+
+  /**
+   * A frame number lower than the last one is a new level (a kit's world starts again at 0, often
+   * with the same entity ids): tweens and the ids seen are dropped before the frame's events, as
+   * particles, camera effects and frame events treat it, so a tween started late in one level
+   * never freezes at its start on the next and spawn tweens play again.
+   */
+  private restartOnNewLevel(frame: Frame): void {
+    if (this.lastFrame !== null && frame.frame < this.lastFrame) {
+      this.tweens.clear();
+      this.seen = new Set();
+    }
+    this.lastFrame = frame.frame;
+  }
 
   private tweensOf(id: string): TweenSet {
     let set = this.tweens.get(id);

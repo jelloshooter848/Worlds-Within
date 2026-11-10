@@ -663,6 +663,29 @@ describe('SkinnedCanvasPresenter', () => {
       expect(sprites(calls)).toEqual(['sprite hero:down-0 10,6']);
     });
 
+    it('drops tweens when the frame number goes back (a new level) and replays spawn tweens', () => {
+      const { p, calls } = make();
+      p.present(frame({ frame: 0, noMap: true, entities: [hero({ id: 'a', x: 10, y: 10 })] }));
+      p.present(frame({ frame: 499, noMap: true, entities: [hero({ id: 'a', x: 10, y: 10 })] }));
+      p.present(
+        frame({
+          frame: 500,
+          noMap: true,
+          entities: [hero({ id: 'a', x: 10, y: 10 })],
+          events: [{ type: 'hit', entity: 'a' }],
+        }),
+      );
+      calls.length = 0;
+      // The next level starts at frame 0 with the same id: no frozen hit tween, a fresh spawn tween.
+      p.present(frame({ frame: 0, noMap: true, entities: [hero({ id: 'a', x: 10, y: 10 })] }));
+      expect(sprites(calls)).toEqual(['sprite hero:down-0 10,6']);
+      expect(calls.some((c) => c.startsWith('rect'))).toBe(false);
+      calls.length = 0;
+      for (let f = 1; f <= 4; f++)
+        p.present(frame({ frame: f, noMap: true, entities: [hero({ id: 'a', x: 10, y: 10 })] }));
+      expect(sprites(calls).at(-1)).toBe('sprite hero:down-0 10,10');
+    });
+
     it('gives the same drawing for the same frames, and never changes a frozen frame or skin', () => {
       const run = () => {
         const s = recorder();

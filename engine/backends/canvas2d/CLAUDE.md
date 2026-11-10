@@ -91,7 +91,9 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
 - Tweens (Engine 0.16 T1, `@engine/core/fx`): one `TweenSet` per entity id, presenter state only.
   An event's skin `tween` starts on its `entity` (with the event's sound and effect, once per frame
   number); a kind's `spawnTween` on an entity the first frame it is shown (again after it leaves
-  and returns); ended tweens and those of entities gone from the frame are dropped. Drawing lays
+  and returns); ended tweens and those of entities gone from the frame are dropped, and a frame
+  number lower than the last one (a new level) drops them all and forgets the ids seen, so spawn
+  tweens play again. Drawing lays
   the tween state on top of `fx`: `x`/`y` added to the position (world px, before the zoom),
   `scaleX`/`scaleY` times the squash, `rotate` added to the turn, `alpha` times the alpha (clamped
   to 0-1), and a `color` tween as a translucent box (`colorAmount`) over the drawn box, inside the
