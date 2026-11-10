@@ -73,7 +73,12 @@ const booted = await bootBrowserGame({
     canContinue: () => (play?.launch.storedSave() ?? null) !== null,
     onContinue: () => play?.launch.press({ kind: 'stored' }),
   },
-  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }) },
+  displays: {
+    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
+    // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
+    pixi: async (canvas, { onSound }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
+  },
   pointer: true,
   scene(stack, display, page) {
     const scene = new SiegePlay({ content, seed: content.manifest.start.seed, pointer: page.pointer });

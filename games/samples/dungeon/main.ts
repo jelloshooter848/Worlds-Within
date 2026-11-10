@@ -10,15 +10,16 @@ import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the dungeon sample in the browser with the engine's `bootBrowserGame`: keyboard,
- * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display, audio with the
- * sample's songs and sfx (the `crypt` song starts on the first key, tap or click), the shell's volume control
- * (stored under `ww:dungeon:volumes`, gap M1) and the step hook with `?debug=step`. The scene
- * draws through its own `DungeonPicture` on the display's renderer, with the shell's `onSound`.
+ * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display (or the PixiJS
+ * one with `?backend=pixi`, imported only then, falling back to Canvas2D without WebGL), audio
+ * with the sample's songs and sfx (the `crypt` song starts on the first key, tap or click), the
+ * shell's volume control (stored under `ww:dungeon:volumes`, gap M1) and the step hook with
+ * `?debug=step`. The scene draws through its `DungeonPicture` with the display's presenter, which
+ * plays the skin's sounds through the shell's `onSound`.
  */
 const content = mustLoad(loadDungeon(gameFiles));
 const look = dungeonLook(content);
 const fonts = contentFonts(content);
-let onSound: (id: string) => void = () => {};
 let audio: AudioManager | null = null;
 
 void bootBrowserGame({
@@ -27,13 +28,12 @@ void bootBrowserGame({
   audio: { songs: contentSongs(content), sfx: contentSfx(content), music: DUNGEON_MUSIC },
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet },
   displays: {
-    canvas2d: (canvas, shell) => {
-      onSound = (id) => shell.onSound(id);
-      return canvasDisplay(canvas, { ...look, fonts, onSound: shell.onSound });
-    },
+    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
+    pixi: async (canvas, { onSound }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
   },
-  scene: () =>
-    new DungeonScene(content, look, { onSound: (id) => onSound(id), music: (id) => audio?.playMusic(id) }),
+  scene: (_stack, display) =>
+    new DungeonScene(content, look, { presenter: display.presenter, music: (id) => audio?.playMusic(id) }),
 }).then((booted) => {
   audio = booted?.audio ?? null;
 });

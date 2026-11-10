@@ -15,21 +15,30 @@ campaign as a page plays it (the save kept in browser storage, its save code, a 
 
 Import from `@engine/core/shell` (`index.ts`), or the files below.
 
-- `backend-choice.ts`: `PageBackend`, `THREE_QUERY`, `backendFromQuery(search)`,
-  `otherBackendLink(backend)`. Pure.
+- `backend-choice.ts`: `PageBackend` (`canvas2d` | `pixi` | `three`), `Page2dBackend`,
+  `THREE_QUERY`, `PIXI_QUERY`, `CANVAS2D_QUERY`, `backendFromQuery(search, fallback?)` (the
+  backend the query names exactly, else the game's default 2D backend), `otherBackendLink(backend)`.
+  Pure.
 - `display.ts`: `BrowserDisplay` (`renderer`, `presenter`, `fit(layout)`, `present()`, optional
   `toScreen(clientX, clientY)` for pointer input) and
   `DisplayResult` (a display or why it cannot start). Built by `canvasDisplay`
-  (`@engine/backends/canvas2d`) and `threeDisplay` (`@engine/backends/three`).
+  (`@engine/backends/canvas2d`), `pixiDisplay` (`@engine/backends/pixi`) and `threeDisplay`
+  (`@engine/backends/three`).
 - `host-scene.ts`: `HostScene<W, E>` (`{ stack, game, picture }` with the game itself, a
   `HostedGame` such as the platformer kit's `LevelSequence` (Engine 0.10, gap G37), or
   `{ stack, step, world, events, miniGame, picture }` with accessors): steps the game, keeps events between draws (dropped on a new world), pushes `miniGameScene`
   while the host runs a mini game and pops it on the result. A `MissionHost` (`../mission-host.ts`,
   Engine 0.11) is a `HostedGame` too: its hosted mission round is pushed and popped like any other
   (the host steps it and resolves the mission). Pure.
-- `boot.ts`: `bootBrowserGame({ screen, displays: { canvas2d, three? }, scene })` (browser
-  only; display factories may be `async`, so Three.js loads only in 3D), `showBackendToggle`,
-  `showDisplayMessage`. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
+- `boot.ts`: `bootBrowserGame({ screen, displays: { canvas2d, pixi?, three? }, default2d?, scene })`
+  (browser only; display factories may be `async`, so Three.js loads only in 3D and PixiJS only
+  with PixiJS), `showBackendToggle`, `showDisplayMessage`. Engine 0.16 T13b-4: `?backend=pixi` and
+  `?backend=canvas2d` pick the 2D backend, else `default2d` (default `canvas2d`); a PixiJS display
+  that cannot start (no WebGL: its factory returns a reason or throws) falls back to Canvas2D on a
+  fresh canvas, and `booted.backend` / `body[data-backend]` say what runs (`pageBackend`,
+  `startDisplay`). Wired (opt-in) on the rts-skirmish, tower-defense, dungeon and mini-siege
+  samples, the fx lab, the platformer lab and Hopper's Way; the platformer sample gets the option
+  when its own track merges. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
   gestures (tap, box, pan, zoom) are made per game step beside the `InputFrame`; the scene factory
   gets it as `scene(stack, display, page)` with `page.pointer`. `touchPad: false` hides the touch
   pad (an RTS page). Both are off/on as before by default, so existing games are unchanged.

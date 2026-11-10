@@ -69,3 +69,9 @@ games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json`,
 `pnpm vitest run tests/browser/rts-skirmish.test.ts` (the page followed from the games index's
 link in headless Chromium: the volume control, a battle by mouse and touch, the end screen on the
 win, its export replayed with `pnpm -s cli run` to the same hashes).
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

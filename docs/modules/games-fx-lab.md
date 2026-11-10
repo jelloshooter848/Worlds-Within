@@ -76,3 +76,9 @@ without Chromium); `pnpm test tests/browser/fx-lab-ui.test.ts` (T7: the menu and
 keyboard, mouse and touch; `WW_SHOTS_DIR=<folder>` keeps the shots); `pnpm test
 tests/browser/fx-lab-mix.test.ts` (T8: the mixer's gains recorded over `level-1`, the same on
 every load, and the dialog's duck). `pnpm dev` and open `/games/fx-lab/`.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

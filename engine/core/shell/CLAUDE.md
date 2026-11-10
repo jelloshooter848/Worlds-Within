@@ -7,10 +7,13 @@ part of `engine/core`: it imports core only, never a backend, kit or game. A bac
 display (`canvasDisplay` in `engine/backends/canvas2d`, `threeDisplay` in
 `engine/backends/three`) and the game hands the boot one factory per backend.
 
-- `backend-choice.ts` (pure): `PageBackend` (`canvas2d` | `three`), `THREE_QUERY`
-  (`?backend=three`), `backendFromQuery(search)` (only `backend=three` picks 3D; anything else is
-  Canvas2D) and `otherBackendLink(backend)` (`{ label, href, title }`, relative links: `./` for 2D
-  so it works under any base path).
+- `backend-choice.ts` (pure): `PageBackend` (`canvas2d` | `pixi` | `three`), `Page2dBackend`
+  (`canvas2d` | `pixi`), `THREE_QUERY` (`?backend=three`), `PIXI_QUERY` (`?backend=pixi`) and
+  `CANVAS2D_QUERY` (`?backend=canvas2d`), `backendFromQuery(search, fallback = 'canvas2d')`
+  (`backend=three`, `pixi` or `canvas2d` exactly picks that one; anything else is `fallback`, the
+  game's default 2D backend) and `otherBackendLink(backend)` (`{ label, href, title }`, relative
+  links: both 2D backends link to `./?backend=three`, 3D links to `./`, the game's default 2D, so
+  it works under any base path).
 - `display.ts` (types): `BrowserDisplay` `{ renderer, presenter, fit(layout), present() }`, what
   a backend gives the page: the renderer the scene stack draws through (one that draws nothing in
   3D), a `Presenter` with the game's skin on the page's picture, the fit to the screen layout, and
@@ -65,6 +68,24 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   background resumes, or redoes the unlock on the next gesture. The manager is `booted.audio` (null without the option) for volume changes or
   another song. A game writes no audio code. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
   two page helpers it uses.
+- **The 2D backend choice** (Engine 0.16 T13b-4, item 323): `displays` takes `pixi?`, the PixiJS
+  (WebGL) display (`async (c, { onSound }) => (await import('@engine/backends/pixi')).pixiDisplay(c,
+{ ...look, fonts, onSound })`: a literal dynamic import, so Vite puts PixiJS in its own chunk and
+  a Canvas2D page never downloads it; `tests/architecture/pixi-lazy.test.ts` checks no game imports
+  it statically), and `default2d?: 'canvas2d' | 'pixi'` (default `canvas2d`) is the 2D backend
+  when the query names none. `pageBackend(asked, displays)` (pure) runs `three` or `pixi` only when
+  the game has that display, else Canvas2D. `startDisplay(backend, displays, canvas, shell)`
+  starts it; a PixiJS display that cannot start (its factory returns a reason, rejects or throws:
+  no WebGL, a failed import) is replaced by the Canvas2D one on a fresh copy of the canvas put in
+  its place (a canvas that gave out a WebGL context cannot give a 2D one), with the reason as a
+  `console.warn`, so `booted.backend` and `body[data-backend]` say what actually runs (`pixi` or
+  `canvas2d`); a Canvas2D or 3D display that cannot start still shows its message. Opt-in on the
+  2D pages of the rts-skirmish, tower-defense, dungeon and mini-siege samples, the fx lab, the
+  platformer lab and Hopper's Way (`?backend=pixi`; their default stays Canvas2D). The platformer
+  sample (`games/samples/platformer`) gets the option when its own track merges. Tested in
+  `shell.test.ts` (the query, `pageBackend`, the default, the fallback on a reason and on a throw
+  with fake factories) and `tests/browser/pixi-pages.test.ts` (each wired page on both backends
+  with the same state hash, and the fallback with WebGL taken away).
 - **The audio mixer** (Engine 0.16 T8, `../audio/mixer.ts`): with `audio` the boot makes one
   `Mixer` over the page's `AudioManager` (`booted.mixer`). `BootAudio` takes `mix` (the skin's
   `music` section: layered songs; `music` naming one plays its layers) and `seed` (sound

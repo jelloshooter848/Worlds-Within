@@ -62,3 +62,9 @@ and backend parity through null, Canvas2D and the Three.js scene builder, plus t
 skin's coverage of every kind and tile shown). `pnpm dev` and open `/games/platformer-lab/` to play it, or
 `/games/platformer-lab/?backend=three` to play it in 3D. `pnpm test tests/browser` runs the 3D
 smoke test in headless Chromium (dev server and a sub-path build; skipped without Chromium).
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

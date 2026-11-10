@@ -52,7 +52,12 @@ const booted = await bootBrowserGame({
   // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
   // bar and hook hold on to the first scene.
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
-  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }) },
+  displays: {
+    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
+    // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
+    pixi: async (canvas, { onSound }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
+  },
   pointer: true,
   scene(_stack, display) {
     const scene = new TdPlay({

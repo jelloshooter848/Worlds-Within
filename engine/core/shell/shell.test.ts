@@ -8,11 +8,18 @@ import type { InputFrame } from '../input/input-manager';
 import { ScriptedInput } from '../input/scripted-input';
 import type { MiniGame, MiniGameResult } from '../minigame';
 import { SceneStack } from '../scene';
-import { backendFromQuery, otherBackendLink, THREE_QUERY } from './backend-choice';
+import {
+  backendFromQuery,
+  CANVAS2D_QUERY,
+  otherBackendLink,
+  PIXI_QUERY,
+  THREE_QUERY,
+} from './backend-choice';
 import {
   AUDIO_UNLOCK_EVENTS,
   bootBrowserGame,
   manualFromQuery,
+  pageBackend,
   recordFromQuery,
   showBackendToggle,
   showDisplayMessage,
@@ -33,6 +40,27 @@ describe('backend choice', () => {
     expect(backendFromQuery('?x=1&backend=three')).toBe('three');
     for (const search of ['', '?backend=canvas2d', '?backend=Three', '?backend=3d'])
       expect(backendFromQuery(search)).toBe('canvas2d');
+  });
+
+  it('reads ?backend=pixi and ?backend=canvas2d exactly, else the game default (T13b-4)', () => {
+    expect(backendFromQuery(PIXI_QUERY)).toBe('pixi');
+    expect(backendFromQuery(CANVAS2D_QUERY, 'pixi')).toBe('canvas2d');
+    expect(backendFromQuery(THREE_QUERY, 'pixi')).toBe('three');
+    for (const search of ['', '?backend=Pixi', '?backend=webgl', '?x=pixi'])
+      expect(backendFromQuery(search, 'pixi')).toBe('pixi');
+  });
+
+  it('runs a backend only when the game has its display', () => {
+    const f = () => 'unused';
+    expect(pageBackend('pixi', { canvas2d: f, pixi: f })).toBe('pixi');
+    expect(pageBackend('pixi', { canvas2d: f, three: f })).toBe('canvas2d');
+    expect(pageBackend('three', { canvas2d: f, pixi: f })).toBe('canvas2d');
+    expect(pageBackend('three', { canvas2d: f, three: f })).toBe('three');
+    expect(pageBackend('canvas2d', { canvas2d: f, pixi: f, three: f })).toBe('canvas2d');
+  });
+
+  it('links both 2D backends to 3D', () => {
+    expect(otherBackendLink('pixi')).toMatchObject({ label: '3D', href: './?backend=three' });
   });
 
   it('links to the other backend with relative links', () => {
@@ -299,6 +327,12 @@ function fakePage(ids: string[]) {
         (all[type] ??= []).push(fn);
       },
       blur() {},
+      cloneNode() {
+        return Object.assign(make(tag), { id: el['id'], cloned: true });
+      },
+      replaceWith(other: Record<string, unknown>) {
+        for (const [id, e] of byId) if (e === el) byId.set(id, other as typeof el);
+      },
     };
     return el;
   };
@@ -374,6 +408,63 @@ describe('the page helpers', () => {
     });
     expect(made).toEqual(['2d']);
     expect(byId.get('backend')).toMatchObject({ hidden: true });
+  });
+});
+
+describe('bootBrowserGame choosing the 2D backend (Engine 0.16 T13b-4)', () => {
+  const boot = (search: string, pixi: () => unknown, default2d: 'canvas2d' | 'pixi' = 'pixi') => {
+    const page = fakeBootPage();
+    vi.stubGlobal('performance', { now: () => 0 });
+    const made: { backend: string; canvas: unknown }[] = [];
+    const booted = bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      search,
+      default2d,
+      displays: {
+        canvas2d: (canvas) => (made.push({ backend: 'canvas2d', canvas }), display()),
+        pixi: (canvas) => (made.push({ backend: 'pixi', canvas }), pixi() as ReturnType<typeof display>),
+      },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    return { ...page, made, booted };
+  };
+
+  it('runs the game default (pixi) when the query names none, and ?backend=canvas2d over it', async () => {
+    const first = boot('', () => display());
+    expect((await first.booted)?.backend).toBe('pixi');
+    expect(first.made.map((m) => m.backend)).toEqual(['pixi']);
+    expect((first.body.dataset as Record<string, string>)['backend']).toBe('pixi');
+    const second = boot(CANVAS2D_QUERY, () => display());
+    expect((await second.booted)?.backend).toBe('canvas2d');
+    expect(second.made.map((m) => m.backend)).toEqual(['canvas2d']);
+  });
+
+  it('opts in with ?backend=pixi on a page whose default is Canvas2D', async () => {
+    const { booted, made } = boot(PIXI_QUERY, () => display(), 'canvas2d');
+    expect((await booted)?.backend).toBe('pixi');
+    expect(made.map((m) => m.backend)).toEqual(['pixi']);
+  });
+
+  it('falls back to Canvas2D on a fresh canvas when PixiJS cannot start (a reason)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { booted, made, body, byId } = boot('', () => 'The PixiJS view needs WebGL');
+    const game = await booted;
+    expect(game?.backend).toBe('canvas2d');
+    expect((body.dataset as Record<string, string>)['backend']).toBe('canvas2d');
+    expect(made.map((m) => m.backend)).toEqual(['pixi', 'canvas2d']);
+    expect(made[1]?.canvas).not.toBe(made[0]?.canvas);
+    expect(byId.get('screen')).toBe(made[1]?.canvas);
+    expect(warn.mock.calls[0]?.[0]).toContain('The PixiJS view needs WebGL');
+    warn.mockRestore();
+  });
+
+  it('falls back to Canvas2D when the PixiJS factory throws (its import or WebGL failed)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { booted, body } = boot(PIXI_QUERY, () => Promise.reject(new Error('no WebGL')));
+    expect((await booted)?.backend).toBe('canvas2d');
+    expect((body.dataset as Record<string, string>)['backend']).toBe('canvas2d');
+    warn.mockRestore();
   });
 });
 

@@ -23,6 +23,8 @@ void bootBrowserGame({
   screen,
   displays: {
     canvas2d: (canvas) => canvasDisplay(canvas, labLook(content)),
+    // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
+    pixi: async (canvas) => (await import('@engine/backends/pixi')).pixiDisplay(canvas, labLook(content)),
     three: async (canvas) =>
       (await import('@engine/backends/three')).threeDisplay(canvas, labLook3d(content)),
   },

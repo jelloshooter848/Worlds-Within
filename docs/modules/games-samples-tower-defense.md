@@ -59,3 +59,9 @@ right click sells, Enter or the Wave button sends a wave. The page and the art:
 (deterministic PNG), `tests/browser/tower-defense-page.test.ts` (the built page opened from the
 games index's link, the volume control, played by taps and by keys, no page errors) and `tests/browser/tower-defense-shots.test.ts`
 (headless Chromium; skipped where none is installed), `tests/build/pages.test.ts` (the launcher).
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

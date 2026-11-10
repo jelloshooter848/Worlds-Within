@@ -1,9 +1,12 @@
 /** The browser shell games share (Engine 0.7): backend choice, the host scene, displays, the boot and its step hook. */
 export {
   backendFromQuery,
+  CANVAS2D_QUERY,
   otherBackendLink,
+  PIXI_QUERY,
   THREE_QUERY,
   type BackendLink,
+  type Page2dBackend,
   type PageBackend,
 } from './backend-choice';
 export type { BrowserDisplay, DisplayResult } from './display';

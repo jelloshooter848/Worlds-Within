@@ -613,3 +613,9 @@ start, pause, settings and controls by keyboard and touch, settings kept across 
   `@kits/platformer` and `@kits/topdown` (the door level's room challenge).
 - Never: other games (not even `games/platformer-lab`: copy and log a gap instead) or kits it does
   not use. Nothing in `engine/` or `kits/` imports from here.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

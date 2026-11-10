@@ -216,3 +216,9 @@ three` is the one that refuses software rendering), holds right and jumps and ch
 - Never: other games or other kits. Nothing in `engine/` or `kits/` imports from here.
 - Game rules belong in data (levels, profiles, trigger params), not code. The level order and the
   pause between levels are glue in `headless.ts`.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

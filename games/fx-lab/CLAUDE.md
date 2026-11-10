@@ -292,3 +292,9 @@ heading showed through the subtitle).
 
 - Relative paths inside `games/fx-lab`, `@engine/*` (core and backends) and `@kits/platformer`.
 - Never other games. Nothing in `engine/` or `kits/` imports from here.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

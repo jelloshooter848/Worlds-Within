@@ -142,3 +142,9 @@ paths (and the walls' round by taps), and the campaign along both captain fates 
 code: `tests/browser/mini-siege-page.test.ts`; the ridge camp in the debugger, and a failing
 copy's replay opened at its failing tick: `tests/browser/debugger-done-when.test.ts`.
 To play: `pnpm dev`, then `games/samples/mini-siege/` from the launcher.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

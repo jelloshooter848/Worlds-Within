@@ -8,6 +8,7 @@ import {
   type DeepReadonly,
   type PresentFrame,
   type PresentStatusValue,
+  type Presenter,
   type SkinFile,
 } from '@engine/core/present';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
@@ -37,6 +38,11 @@ export function dungeonLook(content: ContentBundle): DungeonLook {
 export interface DungeonPictureOptions {
   /** Called with each sound the skin attaches to this frame's events (wire it to the audio). */
   onSound?: (id: string) => void;
+  /**
+   * The presenter to show the frames through (the page's display's, so either 2D backend draws
+   * them; Engine 0.16 T13b-4). Left out, a `SkinnedCanvasPresenter` on the renderer, with `onSound`.
+   */
+  presenter?: Presenter;
 }
 
 /** How a run has ended, for the banner: out through the exit, fallen, or not yet. */
@@ -52,7 +58,7 @@ export function dungeonEnd(world: TopDownWorld): DungeonEnd {
 /** One stream of dungeon frames onto one renderer. */
 export class DungeonPicture {
   private state = new TdPresentState();
-  private readonly presenter: SkinnedCanvasPresenter;
+  private readonly presenter: Presenter;
 
   constructor(
     private readonly r: Renderer,
@@ -61,10 +67,12 @@ export class DungeonPicture {
   ) {
     // The kit's camera hint puts the room under the HUD band; the skin turns clamping off
     // (`camera.clamp`), so a map shorter than the picture is not re-centred.
-    this.presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
-      size: look.screen,
-      ...(opts.onSound ? { onSound: opts.onSound } : {}),
-    });
+    this.presenter =
+      opts.presenter ??
+      new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
+        size: look.screen,
+        ...(opts.onSound ? { onSound: opts.onSound } : {}),
+      });
   }
 
   /** A new world (the run starts over): ids and the map are sent afresh. */

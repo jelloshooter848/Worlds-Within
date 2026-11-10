@@ -106,7 +106,10 @@ opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
   snapshot and hash.
 - `main.ts`: `bootBrowserGame` (keyboard, gamepad, touch pad, loop, `?debug=step` step hook, audio
   with the songs and sfx and the `crypt` song once unlocked, the shell's volume control stored
-  under `ww:dungeon:volumes`, gap M1) with `canvasDisplay`; the scene draws on its renderer.
+  under `ww:dungeon:volumes`, gap M1) with `canvasDisplay` (or `pixiDisplay` with `?backend=pixi`,
+  Engine 0.16 T13b-4); the scene draws through `DungeonPicture` with the display's presenter
+  (`DungeonSceneOptions.presenter`, which plays the skin's sounds), so either 2D backend shows it.
+  Without one (the view, the tests) `DungeonPicture` makes its own `SkinnedCanvasPresenter`.
 - `index.html`: the page (canvas `#screen`); the root launcher lists it.
 - The sample never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's
   `render`): `dungeon.test.ts` fails if its code names one. No rooms, MML or pixel rows in `.ts`
@@ -205,3 +208,9 @@ start, pause, settings and controls by keyboard and touch, settings kept across 
 - Never: other games. Nothing in `engine/` or `kits/` may import from here, and no alias points into
   `games/`.
 - Game rules belong in data (rooms, songs, skin) wherever possible, not code.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

@@ -2,6 +2,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { HeadlessGame } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
+import type { Presenter } from '@engine/core/present';
 import type { Scene } from '@engine/core/scene';
 import { snapshotWorld, type TopDownWorld } from '@kits/topdown';
 import { DUNGEON_MUSIC, ESCAPE_MUSIC } from './content';
@@ -16,6 +17,11 @@ export interface DungeonSceneOptions {
   onSound?: (id: string) => void;
   /** Plays a song by id (the page's audio, once it is there). */
   music?: (id: string) => void;
+  /**
+   * The page's display presenter (Canvas2D or PixiJS, which plays the skin's sounds itself);
+   * left out, the scene draws through its own Canvas2D presenter with `onSound`.
+   */
+  presenter?: Presenter;
 }
 
 /**
@@ -71,11 +77,11 @@ export class DungeonScene implements Scene {
   }
 
   render(r: Renderer): void {
-    this.picture ??= new DungeonPicture(
-      r,
-      this.look,
-      this.opts.onSound ? { onSound: this.opts.onSound } : {},
-    );
+    const { onSound, presenter } = this.opts;
+    this.picture ??= new DungeonPicture(r, this.look, {
+      ...(onSound && { onSound }),
+      ...(presenter && { presenter }),
+    });
     this.picture.draw(this.world, this.events.splice(0));
   }
 

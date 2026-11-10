@@ -217,3 +217,9 @@ at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the tick
 are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
 start, pause, settings and controls by keyboard and touch, settings kept across a reload;
 `WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

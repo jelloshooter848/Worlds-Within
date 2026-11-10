@@ -90,3 +90,9 @@ tests/browser` (follows the games index's 2D and 3D links and plays `level-4.run
 headless Chromium, with the HUD and the volume control in both). Play it:
 `pnpm dev`, open `/games/platformer-classic/` or `/games/platformer-classic/?backend=three` (arrows, Z
 jumps, X runs and stabs in the round).
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

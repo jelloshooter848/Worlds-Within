@@ -10,7 +10,8 @@ a guard room of monsters, a store room with the bombs, a bat hall with the key, 
 the relic and the exit), with two end states (escaped through the exit, or fallen), in data files
 checked by schemas: rooms, original NES-style pixel art as text (`hero` and `dungeon` sheets), two
 MML songs, thirteen sound effects and a Canvas2D skin. A thin scene runs the kit's world, hands the
-kit's presentation frames to the Canvas2D backend's `SkinnedCanvasPresenter`, plays the skin's
+kit's presentation frames to the page's display presenter (Canvas2D by default, PixiJS with
+`?backend=pixi`; the view's own `SkinnedCanvasPresenter` for screenshots), plays the skin's
 sounds, shows the end and starts a new run on Z or X. Its `CLAUDE.md` is a worked example of
 building a top-down game on the engine.
 
@@ -51,3 +52,9 @@ with no fallback box, the end states, the scene against the headless game), the 
 games index and plays it (headless Chromium, skipped without one). `pnpm -s cli validate
 games/samples/dungeon --json` checks every data file. `pnpm dev` and open
 `/games/samples/dungeon/` to play it.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).
