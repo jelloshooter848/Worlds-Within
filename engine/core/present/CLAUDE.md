@@ -93,6 +93,17 @@ number | text | icon, x, y, sheet?, frame?, font? }`.
     Both are presentation only, allowed on 2D and 3D skins, applied by the Canvas2D presenter on
     top of the entity's `fx` (never written back to the frame); the 3D backend ignores them for
     now. A bad ease, prop or colour is an error at that field (`events.hit.tween.ease`).
+  - Particles (Engine 0.16 T3, `engine/core/fx`): a skin's top-level `emitters` maps names to
+    emitter defs (`emitterSchema`, on 2D and 3D skins); an event entry's `emit` (a name or a
+    list) starts them at the event (its `x`/`y`, else its entity; an emitter's `anchor` places it
+    on the entity), and a kind entry's `emit` runs them while an entity of the kind shows,
+    following it (torch smoke, a magic aura). An `emit` naming no emitter of the skin is
+    `missing_ref` at that field (`events.hit.emit`, `kinds.torch.emit.1`); a 2D emitter's `frame`
+    is checked against its sheet across files (`missing_frame`, `missing_ref`). The old
+    `effect.kind: particles` keeps working as an implicit emitter (`particlesEffectEmitter(effect)`,
+    `PARTICLES_EFFECT_DEFAULTS`: an even ring flying out 1 px a frame, as before). A kind entry's
+    `blend` (`normal` | `add`) and `glow` (`{ color, radius }`) are 2D fields (`SPRITE_FIELDS`;
+    `wrong_backend_field` on a 3D skin). `skinEmitNames(emit)` lists an `emit`'s names.
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px
@@ -236,7 +247,7 @@ skin (content/skins/<backend>.json)`.
 
 - Pure: `engine/core/present/**` is on `PURE_CORE` (`config/layers.js`). No clock, DOM or
   `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types,
-  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs in skins; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
+  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs and emitters in skins; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
 - Everything in a frame is plain JSON-safe data: no classes, functions, `Map`s or kit objects. A
   backend never sees kit internals.
 - Frames are read-only to backends. Never add a field a backend would write back to.
@@ -256,6 +267,10 @@ loops, a state's first frame, a one-shot once, into `then`, facings, the limit),
 (each event once, a new entity from its tick now, nothing without frame events), 3D `poses`
 (`resolveSkinMesh`, `missing_ref`, `wrong_backend_field` on 2D) and the checks (`bad_frame_ticks`,
 `bad_frame_event`, `bad_then`, in looks too).
+`skin.test.ts`'s `skin emitters (Engine 0.16 T3)` block covers `emitters`, `emit` on events and
+kinds, `blend` and `glow`, unknown names as `missing_ref` at their field, bad emitter fields, the
+2D-only fields, `skinEmitNames` and `particlesEffectEmitter`; the cross-file frame check is in `the
+skin content kind`.
 `skin.test.ts`: its `looks by tag prefix and value (M2)` block covers `skinTagMatches` (whole
 tag, prefix, ranges, non-numbers), file order picking the most specific stage first, the merged
 entry without match fields, and the `bad_tag_look` refusals; `skin background (G36)` covers

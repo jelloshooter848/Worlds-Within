@@ -52,6 +52,13 @@
       "stompable": true,
       "kickable": false,
       "harms": true
+    },
+    "torch": {
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": false,
+      "kickable": false,
+      "harms": false
     }
   }
 }

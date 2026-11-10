@@ -123,6 +123,10 @@
           "frames": ["coin-0", "coin-1", "coin-2", "coin-3"],
           "ticks": 2
         }
+      },
+      "glow": {
+        "color": "#f8b800",
+        "radius": 3
       }
     },
     "goal": {
@@ -139,6 +143,11 @@
           "frames": ["door", "door-glow", "door", "door-lit"],
           "ticks": [40, 6, 20, 6]
         }
+      },
+      "emit": "magic-aura",
+      "glow": {
+        "color": "#a4e4fc",
+        "radius": 6
       }
     },
     "bump-block": {
@@ -153,6 +162,16 @@
           }
         }
       ]
+    },
+    "torch": {
+      "frames": {
+        "idle": "torch"
+      },
+      "emit": ["torch-smoke", "torch-flame"],
+      "glow": {
+        "color": "#f87858",
+        "radius": 5
+      }
     }
   },
   "tiles": {
@@ -178,23 +197,11 @@
   "events": {
     "footstep": {
       "sound": "footstep",
-      "effect": {
-        "kind": "particles",
-        "color": "#bcbcbc",
-        "count": 2,
-        "size": 1,
-        "ticks": 5
-      }
+      "emit": ["run-dust"]
     },
     "skid-dust": {
       "sound": "land",
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 4,
-        "size": 1,
-        "ticks": 8
-      }
+      "emit": ["run-dust", "land-dust"]
     },
     "tumble": {
       "sound": "whoosh"
@@ -212,13 +219,7 @@
     },
     "land": {
       "sound": "land",
-      "effect": {
-        "kind": "particles",
-        "color": "#fcbcb0",
-        "count": 4,
-        "size": 1,
-        "ticks": 6
-      },
+      "emit": ["land-dust"],
       "tween": {
         "prop": "scaleY",
         "from": 0.75,
@@ -255,21 +256,11 @@
     },
     "coin": {
       "sound": "coin",
-      "effect": {
-        "kind": "particles",
-        "color": "#f8b800",
-        "count": 5,
-        "size": 1
-      }
+      "emit": ["coin-burst", "coin-glint"]
     },
     "stomp": {
       "sound": "stomp",
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 6,
-        "size": 1
-      }
+      "emit": ["stomp-sparks", "stomp-ring"]
     },
     "defeat": {
       "effect": {
@@ -356,5 +347,186 @@
       "h": 48
     },
     "lerp": 0.25
+  },
+  "emitters": {
+    "land-dust": {
+      "burst": 10,
+      "life": [14, 22],
+      "speed": [0.5, 1.4],
+      "angle": [182, 358],
+      "anchor": "feet",
+      "offset": {
+        "x": 0,
+        "y": -1
+      },
+      "shape": {
+        "box": {
+          "w": 10,
+          "h": 1
+        }
+      },
+      "gravity": 0.02,
+      "drag": 0.1,
+      "size": [2, 4, 4, 2],
+      "color": ["#fce0a8", "#bcbcbc"],
+      "alpha": [1, 0.8, 0]
+    },
+    "run-dust": {
+      "burst": 2,
+      "life": [12, 18],
+      "speed": [0.15, 0.45],
+      "angle": [225, 315],
+      "gravity": -0.012,
+      "drag": 0.05,
+      "shape": {
+        "box": {
+          "w": 6,
+          "h": 1
+        }
+      },
+      "size": [2, 3, 3],
+      "color": ["#fce0a8", "#bcbcbc"],
+      "alpha": [0.85, 0]
+    },
+    "stomp-sparks": {
+      "burst": 14,
+      "life": [12, 20],
+      "speed": [1.2, 2.6],
+      "angle": [190, 350],
+      "gravity": 0.14,
+      "drag": 0.04,
+      "size": [2, 2, 1],
+      "color": ["#fcfcfc", "#f8b800", "#d82800"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 1
+        },
+        {
+          "at": 0.6,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ],
+      "glow": 2
+    },
+    "stomp-ring": {
+      "burst": 12,
+      "life": 9,
+      "speed": 2,
+      "angle": [0, 360],
+      "even": true,
+      "drag": 0.22,
+      "size": [2, 1],
+      "color": "#fcfcfc",
+      "alpha": [0.7, 0],
+      "blend": "add"
+    },
+    "torch-flame": {
+      "rate": 0.8,
+      "life": [8, 14],
+      "speed": [0.25, 0.6],
+      "angle": [255, 285],
+      "shape": {
+        "circle": 2
+      },
+      "anchor": "top",
+      "offset": {
+        "x": 0,
+        "y": 6
+      },
+      "gravity": -0.02,
+      "size": [3, 3, 1],
+      "color": ["#fce0a8", "#f8b800", "#d82800"],
+      "alpha": [1, 0.9, 0],
+      "glow": 4
+    },
+    "torch-smoke": {
+      "rate": 0.25,
+      "life": [36, 52],
+      "speed": [0.2, 0.4],
+      "angle": [262, 278],
+      "anchor": "top",
+      "offset": {
+        "x": 0,
+        "y": 2
+      },
+      "gravity": -0.004,
+      "drag": 0.01,
+      "size": [2, 4, 7],
+      "color": ["#7c7c7c", "#bcbcbc"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.15,
+          "value": 0.55
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    },
+    "coin-burst": {
+      "burst": 10,
+      "life": [12, 18],
+      "speed": [1.2, 2.2],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "gravity": 0.06,
+      "size": [2, 2, 1],
+      "color": ["#fce0a8", "#f8b800", "#ac7c00"],
+      "alpha": [1, 1, 0],
+      "glow": 2
+    },
+    "coin-glint": {
+      "burst": 3,
+      "life": [18, 26],
+      "speed": [0.3, 0.6],
+      "angle": [245, 295],
+      "shape": {
+        "circle": 5
+      },
+      "frame": "sparkle",
+      "size": [1, 1, 1],
+      "alpha": [1, 1, 0],
+      "blend": "add"
+    },
+    "magic-aura": {
+      "rate": 1,
+      "life": [30, 48],
+      "speed": [0.1, 0.3],
+      "angle": [258, 282],
+      "shape": {
+        "box": {
+          "w": 20,
+          "h": 32
+        }
+      },
+      "gravity": -0.004,
+      "size": [2, 2, 2, 1],
+      "color": ["#fcfcfc", "#a4e4fc", "#00a8a8"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.2,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ],
+      "glow": 3
+    }
   }
 }

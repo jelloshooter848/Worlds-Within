@@ -1,4 +1,4 @@
-import type { Renderer, Rotation } from '@engine/core/gfx/renderer';
+import type { BlendMode, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -92,6 +92,29 @@ export class CanvasRenderer implements Renderer {
     const ctx = this.ctx;
     ctx.save();
     ctx.globalAlpha *= alpha;
+    try {
+      draw();
+    } finally {
+      ctx.restore();
+    }
+  }
+  blend(mode: BlendMode, draw: () => void): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = mode === 'add' ? 'lighter' : 'source-over';
+    try {
+      draw();
+    } finally {
+      ctx.restore();
+    }
+  }
+  glow(color: string, radius: number, draw: () => void): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = radius;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     try {
       draw();
     } finally {

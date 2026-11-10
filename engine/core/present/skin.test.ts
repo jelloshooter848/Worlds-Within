@@ -18,6 +18,8 @@ import {
   skinSchema,
   skinTagIndex,
   skinTagMatches,
+  particlesEffectEmitter,
+  skinEmitNames,
   type SkinFile,
 } from './skin';
 
@@ -178,6 +180,20 @@ describe('the skin content kind', () => {
       ['kinds.bat.byTag.1.palette', 'missing_ref'],
       ['kinds.bat.byTag.1.frames.fly', 'missing_frame'],
       ['kinds.bat.byTag.2.sheet', 'missing_ref'],
+    ]);
+  });
+
+  it("checks a 2D emitter's sprite frame across files", () => {
+    const s = fixture();
+    s.emitters = {
+      leaf: { burst: 1, frame: 'side-0' },
+      star: { burst: 1, frame: 'star' },
+      gone: { burst: 1, sheet: 'nope' },
+    };
+    const r = loadContent(files(s), engineContentKinds(), { root: 'games/g/' });
+    expect(r.errors.map((e) => [e.path, e.code])).toEqual([
+      ['emitters.star.frame', 'missing_frame'],
+      ['emitters.gone.sheet', 'missing_ref'],
     ]);
   });
 
@@ -572,6 +588,74 @@ describe('skin tweens (Engine 0.16 T1)', () => {
       ease: 'nope',
     };
     expect(errorsOf(s).map(([p]) => p)).toEqual(['kinds.coin.spawnTween.ease']);
+  });
+});
+
+describe('skin emitters (Engine 0.16 T3)', () => {
+  const dust = {
+    burst: 6,
+    life: [8, 12] as [number, number],
+    speed: [0.2, 0.8] as [number, number],
+    size: [2, 1],
+  };
+
+  it("takes emitters, an event's emit (a name or a list) and a kind's emit, blend and glow", () => {
+    const s = fixture();
+    s.emitters = { dust, sparks: { burst: 8, blend: 'add', color: ['#fff', '#f80'], alpha: [1, 0] } };
+    s.events!['hit'] = { sound: 'hurt', emit: ['dust', 'sparks'] };
+    s.events!['coin'] = { emit: 'sparks' };
+    s.kinds['coin']!.emit = 'sparks';
+    s.kinds['coin']!.blend = 'add';
+    s.kinds['coin']!.glow = { color: '#f8d800', radius: 6 };
+    expect(errorsOf(s)).toEqual([]);
+    const t = threeFixture();
+    t.emitters = { dust };
+    t.kinds['coin']!.emit = ['dust'];
+    expect(errorsOf(t)).toEqual([]);
+  });
+
+  it('refuses an unknown emitter name as missing_ref at its field', () => {
+    const s = fixture();
+    s.emitters = { dust };
+    s.events!['hit'] = { emit: 'dusst' };
+    s.events!['coin'] = { emit: ['dust', 'smoke'] };
+    s.kinds['coin']!.emit = 'aura';
+    expect(errorsOf(s)).toEqual([
+      ['events.hit.emit', 'missing_ref'],
+      ['events.coin.emit.1', 'missing_ref'],
+      ['kinds.coin.emit', 'missing_ref'],
+    ]);
+    const none = fixture();
+    none.events!['hit'] = { emit: 'dust' };
+    expect(errorsOf(none)).toEqual([['events.hit.emit', 'missing_ref']]);
+  });
+
+  it("names a bad emitter field, and keeps a kind's blend and glow to 2D", () => {
+    const s = fixture();
+    s.emitters = { dust: { ...dust, blend: 'screen' as 'add' } };
+    expect(errorsOf(s).map(([p]) => p)).toEqual(['emitters.dust.blend']);
+    const t = threeFixture();
+    t.kinds['coin']!.blend = 'add';
+    expect(errorsOf(t)).toEqual([['kinds.coin.blend', 'wrong_backend_field']]);
+  });
+
+  it('reads emit names and turns an old particles effect into an even ring', () => {
+    expect(skinEmitNames(undefined)).toEqual([]);
+    expect(skinEmitNames('a')).toEqual(['a']);
+    expect(skinEmitNames(['a', 'b'])).toEqual(['a', 'b']);
+    expect(particlesEffectEmitter({ kind: 'particles' })).toEqual({
+      burst: 6,
+      life: 12,
+      speed: 1,
+      angle: [0, 360],
+      even: true,
+      size: 2,
+      color: '#fcfcfc',
+      max: 6,
+    });
+    expect(
+      particlesEffectEmitter({ kind: 'particles', count: 3, size: 0.4, color: '#f00', ticks: 5 }),
+    ).toMatchObject({ burst: 3, size: 1, color: '#f00', life: 5, max: 3 });
   });
 });
 

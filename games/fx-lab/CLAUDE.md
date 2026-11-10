@@ -2,8 +2,9 @@
 
 The fx lab (Engine 0.16 part A, T2): a small game on the platformer kit that shows every
 presentation feature of 0.16 part A, one task at a time (T2 adds it with sprite animation states,
-per-frame timing, one-shots and frame events; later tasks add particles, camera effects,
-transitions, UI, audio...). It is a lab, **not a sample**: two short original levels with stomps,
+per-frame timing, one-shots and frame events; T3 adds particle emitters, additive blending and
+glow; later tasks add camera effects, transitions, UI, audio...). It is a lab, **not a sample**:
+three short original levels with stomps,
 coins and a door so that events happen, Pip (an original courier) with a full animation set, a 2D
 skin and a low-poly 3D skin, run files with golden hashes and a browser page. Content and glue
 only: nothing in `engine/` or `kits/` depends on it, and every rule is the platformer kit's.
@@ -16,15 +17,19 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   ("over the spikes": a floating ledge, coins on a high platform, a spike strip, a brick row with
   a `?` block, three beetles, the door). 15 rows, so the ground is the picture's bottom row. Map
   format: `kits/platformer/CLAUDE.md`. The goal `G` is drawn as a door (`goal` kind, 16x32).
-- `content/campaigns/main.campaign.json`: the play order, `fx-1` then `fx-2`.
+  `fx-3` ("torchlight", Engine 0.16 T3): four torches (`t`, the `torch` actor), a platform
+  with three coins, a higher one with three more over a pit, two beetles, the door.
+- `content/campaigns/main.campaign.json`: the play order, `fx-1`, `fx-2`, then `fx-3`.
 - `content/profiles/pip.profile.json`: SMBC-style runner numbers (a copy of the platformer
-  sample's) with one actor type, `beetle` (a slow walker, stompable).
+  sample's) with two actor types, `beetle` (a slow walker, stompable) and `torch` (Engine 0.16 T3: stands
+  still, harmless, not stompable; scenery for the particle presets).
 - `content/sprites/fx.txt` (palette `content/palettes/fx.json`): original NES-style text pixel art.
   Pip is 16x16 drawn over the 12x16 body (`size` and `offset` in the skin): `pip-idle-0/1`,
   `pip-blink`, `pip-settle` (a landing squat), `pip-walk-0..3`, `pip-run-0..3`, `pip-skid`,
   `pip-jump-0` (stretch), `pip-jump-1` (tuck), `pip-fall-0/1` (arms up), `pip-hurt-0/1` (the
   second a white flash), `pip-dead-0..2` (a tumble). Also `beetle-0/1/flat/dead`, `coin-0..3`
-  (a spin), `door`, `door-glow`, `door-lit` (16x32), the tiles and HUD icons.
+  (a spin), `door`, `door-glow`, `door-lit` (16x32), `torch` (a brazier on a pole) and `sparkle`
+  (5x5, a particle sprite), the tiles and HUD icons.
   `content/sprites/fx-font.txt`: the HUD's 8x8 digits.
 - `content/sfx/*.json`: original MML sfx (`footstep`, `jump`, `land`, `coin`, `stomp`, `bump`,
   `hurt`, `fail`, `door`, `whoosh`). No song yet (the audio mixer is T8).
@@ -42,12 +47,23 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
     next to the kit's (`jump` and `land` with a squash tween, `coin`, `stomp`, `hurt`, `died`,
     `cleared` the door's sound). A frame event runs through `events` exactly like a kit event.
   - `hud` (hearts, coins, lives) and `camera` (follow the runner, 32x48 deadzone, lerp 0.25).
+  - `emitters` (Engine 0.16 T3), the six presets and their helpers: `land-dust` (the `land`
+    event, at the feet: a sideways puff that slows and fades), `run-dust` (the `footstep` frame
+    event: two rising puffs; `skid-dust` uses it and `land-dust`), `stomp-sparks` and `stomp-ring`
+    (the `stomp` event: gold sparks thrown up under gravity with a glow, and an additive white
+    ring), `torch-smoke` and `torch-flame` (the `torch` kind's `emit`: a slow grey column and a
+    flickering glowing flame), `coin-burst` and `coin-glint` (the `coin` event: gold sparks and
+    additive `sparkle` sprites drifting up) and `magic-aura` (the `goal` kind's `emit`: cyan motes
+    rising round the door). `torch`, `goal` and `coin` also take a 2D `glow`. Tuned by screenshots
+    in 2D and 3D: on this light sky, `add` is kept for small bright accents (the ring, the
+    sparkles); flames and motes use normal blending with a glow so they read.
 - `content/skins/three.json`: the 3D skin. Low-poly compound `meshes` for every pose of Pip
   (`pip-stand`, `pip-walk-a/b/c`, `pip-run-a/b`, `pip-crouch`, `pip-rise`, `pip-fall-a/b`,
   `pip-hurt`, `pip-down`, ...), the beetle, the coin and the door; `kinds` with `mesh` (the rest
   pose) and `poses` (Engine 0.16 T2: the same states as the 2D `frames`, with mesh names, the same
   timing, `then` and frame events), so the 3D scene swaps meshes by animation frame and plays the
-  same footsteps. `camera3d` `layerDepth` 0.25 (the kit's layers stay near the blocks' plane).
+  same footsteps. The same `emitters` without `glow` and `frame` (the glint is a gold square in
+  3D), a low-poly `torch` mesh and the same `emit`s. `camera3d` `layerDepth` 0.25 (the kit's layers stay near the blocks' plane).
 - TypeScript is glue only:
   - `content.ts`: `loadFxLab(files)`, `mustLoadFxLab(files)`, `fxStages(content)` (the kit's
     `contentStages`), `fxSkin(content, backend)`.
@@ -61,10 +77,15 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
 - `runs/level-1.run.json` (fx-1 from the start: three coins, two from the platform, both beetles
   stomped, the pit jumped, the door at tick ~345) and `runs/level-2.run.json` (`start: { stage: 1
 }`: a stomp, the spikes jumped, a second stomp, a beetle's hit, the door), each with golden
-  `*.hashes.json`.
+  `*.hashes.json`. `runs/level-3.run.json` (`start: { stage: 2 }`, Engine 0.16 T3): onto the
+  first platform (three coins), down, a running jump to the second (three more) over the pit, a
+  hop over the last beetle, the door at tick ~327: lands, dust, coins, torches and the door's aura
+  for screenshots.
 - `fx-lab.test.ts`: the level order, Pip's states in both skins, the idle one-shot's `then`, and
   each run played through a Canvas2D picture and a 3D scene with `onSound`: footsteps (frame
-  events) and the kit's sounds are heard, and drawing never changes the snapshot.
+  events) and the kit's sounds are heard, and drawing never changes the snapshot; the six particle
+  presets are in both skins where the lab says, and level-3 played through the 3D scene shows
+  them without changing the snapshot.
 
 ## Making the art
 
@@ -77,9 +98,11 @@ the top. Keep each frame's rows the same length.
 
 ```sh
 pnpm -s cli validate games/fx-lab --json
-pnpm -s cli run games/fx-lab/runs/level-1.run.json --json     # also level-2
+pnpm -s cli run games/fx-lab/runs/level-1.run.json --json     # also level-2, level-3
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --json   # Pip mid-run
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend three --allow-software-gl --json
+# particle presets: level-1 --tick 154 (land dust), 247 (run dust), 219 (stomp sparks);
+# level-3 --tick 120 (coin burst), 305 (torch, door aura)
 pnpm test games/fx-lab tests/runs tests/browser/fx-lab.test.ts
 pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs; ?backend=three for 3D)
 ```

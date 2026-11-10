@@ -19,7 +19,7 @@ layout needs it too. Never hard-code a picture size here: take it from the size 
 `onSound?(id)`, `background?` (default the skin's `background`, else `#000`: `skinBackground`,
 gap G36), `font?` (HUD font, default `font`), `clamp?` (the
 skin's `camera.clamp`, else true),
-`reduceFlashing?`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
+`reduceFlashing?`, `seed?` (particles, Engine 0.16 T3), `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
 canvas, none in Node). Each `present(frame)`, in order:
 
 - Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
@@ -33,6 +33,18 @@ canvas, none in Node). Each `present(frame)`, in order:
   exactly like a frame event through the skin's `events` (sound, effect at the entity's feet,
   tween); never written into the frame. Per-frame `ticks`, one-shots and `then` come with
   `resolveSkinFrame`.
+- Particles (Engine 0.16 T3): a `SkinParticles` (`@engine/core/fx`) seeded by the `seed` option
+  (default 0). Each event's skin entry starts its `emit` (and an old `particles` effect, now an
+  implicit emitter that draws as before); each kind's `emit` runs on its entities, following
+  them; the system steps to `frame.frame` after the events. They are drawn in world space after
+  the entities and before flash and tint: squares `size` px on a side (rounded, at least 1, none
+  at size 0) centred on each particle, or a sprite `frame` scaled by `size`, at their `alpha`, a
+  run of same-blend particles inside one `blended` scope (`add`: the canvas's `lighter`), each
+  glowing particle inside `glowing` (shadow blur in its colour). `reduceFlashing` also draws
+  additive particles with normal blending, half as strong, without glow.
+- A kind's `blend: add` and `glow { color, radius }` (2D, Engine 0.16 T3) wrap its whole drawing
+  in `blended` and `glowing` (`@engine/core/gfx/renderer`; `CanvasRenderer.blend` sets
+  `globalCompositeOperation`, `CanvasRenderer.glow` `shadowColor` and `shadowBlur`).
 - Camera: the framing maths is `CameraFollower` in `@engine/core/present` (`camera.ts`), shared
   with the 3D backend; change it there, not here. The presenter keeps its own instance (state in
   the presenter only: never in a kit, a frame or a hash) and adds `cameraShake` on top. Target: the
@@ -136,7 +148,10 @@ drawn for an entity with its tag, the kind's frame otherwise; the skin set block
 clearing to its own `background`, black without one, the option first, G36; the `frame events`
 block plays a cycle's frame event through `onSound` once per frame started, a state's first frame
 when it begins, and never into the frame); its `camera`
-block reads the camera's top-left off the recorded map copy. The recorder writes a sprite's
+block reads the camera's top-left off the recorded map copy. The `particles, blending and glow
+(Engine 0.16 T3)` block records `blend`, `glow` and `alpha` scopes: event emitters drawn after the
+entities, additive and glowing; the same seed giving the same calls; a kind's emitter running while
+its entity shows and the kind's own blend and glow; the old `particles` ring; reduced flashing. The recorder writes a sprite's
 `scale` as ` xN` when it is not 1; the `zoom` block checks the map copy, tiles, sprites, boxes
 and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses the zoomed
 picture size. `Viewport` needs a

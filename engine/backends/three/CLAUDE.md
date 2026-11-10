@@ -21,13 +21,13 @@ in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebG
 (the WebGL `ThreePresenter`, Engine 0.6 T4) only draws `scene` with `camera`.
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
 `onSound?(id)`, `background?` (the scene's background; default the skin's `background`, else
-`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`,
+`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `seed?` (particles),
 `sheets?` (a `PixelSheetLookup` from `@engine/core/assets/content-sheets`, the game's sprite files
 as decoded RGBA pixels, `contentPixelSheets(content)`: what the HUD draws; Engine 0.15, gap G33).
 `sync(frame)` brings `scene`, `camera`, `particles` and the HUD pass (`hud`) up to the frame. Read-outs for tests and the presenter:
 `entity(id)` (an entity's root `Group`), `entityIds()`, `map` (the built map `Group`, or null),
 `mapBuilds`, `view` (the world box, px with y down, framed on the z = 0 plane, without shake),
-`ambient`, `sun`, `overlay`, `particles` (the particle boxes' `Group`), `hud` (the `HudLayer`:
+`ambient`, `sun`, `overlay`, `particles` (the particle `Points`' `Group`), `particleViews()`, `hud` (the `HudLayer`:
 `scene`, `camera`, `quads()`); `dispose()` frees geometries, materials and textures.
 
 Axes: world px, x right, y flipped (Three's y is up, so a world `y` becomes `-y`), z toward the
@@ -71,12 +71,16 @@ camera.
   `poses` cycles (a `FrameEventClock`, Engine 0.16 T2), calls `onSound(sound)` once; a frame with the same
   `frame` number as the last one does not replay them. Effects: `flash` (skipped with
   `reduceFlashing`) and `tint` (fading from 0.4) show on `overlay`, a full-screen plane on the
-  camera drawn last; `shake` moves the camera; `particles` (Engine 0.15, gap G33) start at the
-  event's `x`/`y` or its `entity`'s box centre and, as in 2D, `count` boxes `size` px on a side
-  fly out evenly round it 1 px a tick for `ticks`, unlit (`MeshBasicMaterial`, one per colour) in
-  the effect's colour, `size` px in front of the z = 0 plane. They come from a pool (the
-  `particles` group's children, hidden when free) of at most `PARTICLE_POOL` (256) boxes; more at
-  once are not drawn.
+  camera drawn last; `shake` moves the camera. Particles (Engine 0.16 T3; Engine 0.15 drew `particles` effects as
+  pooled boxes): a `SkinParticles` (`@engine/core/fx`, seeded by the `seed` option) started by each
+  event's `emit` and old `particles` effect (an implicit emitter flying out as before) and run by
+  each kind's `emit` on its entities, drawn as two `Points` in the `particles` group,
+  `particles:normal` and `particles:add` (`AdditiveBlending`), each a fixed buffer of
+  `PARTICLE_POOL` (1024) points (`position`, `pColor`, `pSize`, `pAlpha`; `geometry.drawRange`
+  is how many show) with a small `ShaderMaterial`: screen-facing squares `pSize` world px wide at
+  any depth, at `PARTICLE_Z` (12) px in front of the z = 0 plane, no depth writes. A sprite
+  `frame` draws as a square in its colour. `reduceFlashing` sends additive particles through the
+  normal buffer at half strength. `particleViews()` is what the scene shows, for tests.
 - HUD (Engine 0.15, gap G33, decision 4, item 281): `hud` is a `HudLayer`, a second scene with an
   `OrthographicCamera` spanning the picture in picture pixels (0 to `width`, y down as negative
   y). Each `sync` lays the HUD out with the core `layoutHud(skin, frame.status, ...)` (the one
@@ -136,7 +140,8 @@ places the canvas absolutely in its (positioned) container with `image-rendering
 ### Known gaps
 
 - Same-layer entities are not ordered by list order (they share a depth plane).
-- The HUD and particles (gap G33) are drawn from Engine 0.15 (above).
+- The HUD and particles (gap G33) are drawn from Engine 0.15 (above); a kind's `blend` and `glow`
+  are 2D only, and particle sprite frames draw as squares.
 
 ## The page's display (`display.ts`, Engine 0.7)
 
@@ -188,5 +193,6 @@ and the no-WebGL 2 message. `hud.test.ts` (gap G33) checks the HUD pass against 
 lookup: one quad per item of `frame.status` where the 2D layout puts it (hearts, an icon, font
 glyphs, a missing frame's box), the orthographic camera, a texture cut from the sheet with its
 rows flipped, quads following the status each frame, boxes without sheets, `threeScenePresenter`
-handing `sheets` to the round scenes, and particles (flying out for their ticks from a point or an
-entity's centre, the pool capped at `PARTICLE_POOL`). WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
+handing `sheets` to the round scenes, and particles (an old effect flying out for its ticks from a
+point or an entity's centre, each buffer capped at `PARTICLE_POOL`, an additive kind emitter in the
+additive buffer and in the normal one under reduced flashing, stopping when its entity goes). WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.

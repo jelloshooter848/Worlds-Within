@@ -6,7 +6,7 @@ import { ThreeScene } from '@engine/backends/three';
 import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
-import { resolveSkinAnimation, resolveSkinMesh } from '@engine/core/present';
+import { resolveSkinAnimation, resolveSkinMesh, skinEmitNames } from '@engine/core/present';
 import { RUNNER_ANIMS } from '@kits/platformer';
 import { fxSkin, fxStages, mustLoadFxLab } from './content';
 import { createGame } from './headless';
@@ -41,8 +41,8 @@ function play(name: string, draw: (game: ReturnType<typeof createGame>, tick: nu
 }
 
 describe('fx lab content', () => {
-  it('plays its two levels in campaign order', () => {
-    expect(fxStages(content).map((s) => s.level.id)).toEqual(['fx-1', 'fx-2']);
+  it('plays its three levels in campaign order', () => {
+    expect(fxStages(content).map((s) => s.level.id)).toEqual(['fx-1', 'fx-2', 'fx-3']);
   });
 
   it('gives Pip a frame or cycle for every runner state, in 2D and in 3D', () => {
@@ -109,5 +109,38 @@ describe('fx lab frame events', () => {
     scene.dispose();
     expect(sounds).toContain('jump');
     expect(sounds.filter((id) => id === 'footstep').length).toBeGreaterThan(10);
+  });
+});
+
+describe('fx lab particles (Engine 0.16 T3)', () => {
+  const PRESETS = ['land-dust', 'run-dust', 'stomp-sparks', 'torch-smoke', 'coin-burst', 'magic-aura'];
+
+  it('has the six preset emitters, started where the lab says, in both skins', () => {
+    for (const backend of ['canvas2d', 'three'] as const) {
+      const skin = fxSkin(content, backend);
+      for (const name of PRESETS) expect(Object.keys(skin.emitters ?? {}), backend).toContain(name);
+      expect(skinEmitNames(skin.events?.['land']?.emit)).toContain('land-dust');
+      expect(skinEmitNames(skin.events?.['footstep']?.emit)).toContain('run-dust');
+      expect(skinEmitNames(skin.events?.['stomp']?.emit)).toContain('stomp-sparks');
+      expect(skinEmitNames(skin.events?.['coin']?.emit)).toContain('coin-burst');
+      expect(skinEmitNames(skin.kinds['torch']?.emit)).toContain('torch-smoke');
+      expect(skinEmitNames(skin.kinds['goal']?.emit)).toContain('magic-aura');
+    }
+  });
+
+  it('level-3: the torches smoke and the door shimmers in the 3D scene, never touching the state', () => {
+    const look = fxLook3d(content);
+    const scene = new ThreeScene(look.skin, { size: look.screen });
+    const frames = fxFrames(look.screen);
+    const seen = new Set<string>();
+    play('level-3', (game) => {
+      const before = canonicalJson(game.snapshot());
+      scene.sync(frames.next(game.world, game.events));
+      for (const p of scene.particleViews()) seen.add(p.emitter);
+      expect(canonicalJson(game.snapshot())).toBe(before);
+    });
+    scene.dispose();
+    for (const name of ['torch-smoke', 'torch-flame', 'magic-aura', 'coin-burst', 'land-dust', 'run-dust'])
+      expect([...seen]).toContain(name);
   });
 });

@@ -25,7 +25,9 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
   directional light; `onSound(id)` once per event (by `resolveSkinEvent`) and per frame event of a `poses` cycle; flash and tint as a full-screen overlay;
-  `particles` as pooled unlit boxes (`particles`, at most `PARTICLE_POOL`). The HUD (Engine 0.15,
+  particles (Engine 0.16 T3: the skin's `emitters`, events' and kinds' `emit`, old `particles`
+  effects) as two `Points` buffers, normal and additive, of at most `PARTICLE_POOL` each
+  (`particles`, `particleViews()`). The HUD (Engine 0.15,
   gap G33): `hud`, a `HudLayer` (`hud.ts`) that draws the core `layoutHud` items for
   `frame.status` through the skin's `hud` as an orthographic pass of textured quads in picture
   pixels (`DataTexture`s cut from the decoded pixel art the `sheets` option gives, a
@@ -56,7 +58,7 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   a stacked mini game's frames are drawn through their own skin, and `sheets` (the decoded pixel
   art every skin's HUD draws from).
 - `HudLayer`, `HudQuad` (`hud.ts`) and `PARTICLE_POOL` (`scene.ts`): the HUD pass and the
-  particle pool's size (Engine 0.15, gap G33).
+  particle buffers' size (Engine 0.15, gap G33; 1024 from Engine 0.16 T3), and `PARTICLE_Z`.
 
 ## Imports allowed
 

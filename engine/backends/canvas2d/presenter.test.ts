@@ -785,3 +785,121 @@ describe('frame events and per-frame timing (Engine 0.16 T2)', () => {
     expect(sounds).toEqual(['step']);
   });
 });
+
+describe('particles, blending and glow (Engine 0.16 T3)', () => {
+  /** The recorder, plus `blend`, `glow` and `alpha` scopes written as `<blend add>` ... `</blend>`. */
+  function scoped() {
+    const { r, calls } = recorder();
+    r.blend = (mode, draw) => {
+      calls.push(`<blend ${mode}>`);
+      draw();
+      calls.push('</blend>');
+    };
+    r.glow = (color, radius, draw) => {
+      calls.push(`<glow ${color} ${radius}>`);
+      draw();
+      calls.push('</glow>');
+    };
+    r.alpha = (a, draw) => {
+      calls.push(`<alpha ${a}>`);
+      draw();
+      calls.push('</alpha>');
+    };
+    return { r, calls };
+  }
+
+  const skin: SkinFile = {
+    ...SKIN,
+    kinds: {
+      ...SKIN.kinds,
+      torch: {
+        frames: { idle: 'down-0' },
+        emit: 'smoke',
+        blend: 'add',
+        glow: { color: '#f8b800', radius: 4 },
+      },
+    },
+    emitters: {
+      sparks: { burst: 3, life: 4, speed: 1, angle: [180, 360], blend: 'add', glow: 3, color: '#fcd800' },
+      smoke: {
+        rate: 0.5,
+        life: 6,
+        speed: 0.25,
+        angle: 270,
+        size: [2, 4],
+        alpha: [0.8, 0],
+        color: '#bcbcbc',
+        anchor: 'top',
+      },
+    },
+    events: {
+      ...SKIN.events,
+      stomp: { emit: ['sparks'] },
+      old: { effect: { kind: 'particles', count: 4, size: 1 } },
+    },
+  };
+  const torch = hero({ id: 'torch', kind: 'torch', x: 20, y: 8, w: 8, h: 8 });
+
+  it('starts event emitters at the event, drawn after the entities, additive and glowing', () => {
+    const { r, calls } = scoped();
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null });
+    p.present(freezeFrame(frame({ entities: [hero()], events: [{ type: 'stomp', x: 10, y: 10 }] })));
+    const at = calls.indexOf('<blend add>');
+    expect(at).toBeGreaterThan(calls.findIndex((c) => c.startsWith('sprite hero:')));
+    const sparks = calls.slice(at, calls.indexOf('</blend>', at));
+    expect(sparks.filter((c) => c === '<glow #fcd800 3>')).toHaveLength(3);
+    expect(sparks.filter((c) => c === 'rect 10,10 1x1 #fcd800')).toHaveLength(3);
+  });
+
+  it('draws the same particles for the same seed, frame by frame', () => {
+    const run = (seed: number) => {
+      const { r, calls } = scoped();
+      const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null, seed });
+      for (let f = 0; f < 10; f++)
+        p.present(
+          frame({ frame: f, entities: [torch], events: f === 2 ? [{ type: 'stomp', x: 30, y: 10 }] : [] }),
+        );
+      return calls;
+    };
+    expect(run(5)).toEqual(run(5));
+    expect(run(5)).not.toEqual(run(6));
+  });
+
+  it("runs a kind's emitter while the entity shows, and draws the kind with its blend and glow", () => {
+    const { r, calls } = scoped();
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null });
+    for (let f = 0; f < 8; f++) p.present(frame({ frame: f, entities: [torch] }));
+    const last = calls.slice(calls.lastIndexOf('clear #000'));
+    // The torch sprite: additive, glowing.
+    const sprite = last.findIndex((c) => c.startsWith('sprite hero:down-0'));
+    expect(last.slice(sprite - 2, sprite)).toEqual(['<blend add>', '<glow #f8b800 4>']);
+    // Smoke from the torch's top: rate 0.5, life 6 => 3 alive, translucent and growing.
+    const smoke = last.filter((c) => c.startsWith('rect') && c.endsWith('#bcbcbc'));
+    expect(smoke).toHaveLength(3);
+    expect(last.filter((c) => c.startsWith('<alpha 0.')).length).toBeGreaterThanOrEqual(2);
+    // The torch gone: its smoke fades out and nothing new is made.
+    for (let f = 8; f < 16; f++) p.present(frame({ frame: f }));
+    const after = calls.slice(calls.lastIndexOf('clear #000'));
+    expect(after.filter((c) => c.endsWith('#bcbcbc'))).toEqual([]);
+  });
+
+  it('still draws an old particles effect as a ring flying out 1 px a frame', () => {
+    const { r, calls } = recorder();
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null });
+    p.present(frame({ frame: 0, events: [{ type: 'old', x: 20, y: 10 }] }));
+    calls.length = 0;
+    p.present(frame({ frame: 2 }));
+    expect(
+      calls.filter((c) => c.startsWith('rect') && c.endsWith('#fcfcfc')).map((c) => c.split(' ')[1]),
+    ).toEqual(['22,10', '20,12', '18,10', '20,8']);
+  });
+
+  it('draws bright particles without additive blending or glow, and dimmer, under reduced flashing', () => {
+    const { r, calls } = scoped();
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null, reduceFlashing: true });
+    p.present(frame({ events: [{ type: 'stomp', x: 10, y: 10 }] }));
+    expect(calls.some((c) => c.startsWith('<glow #fcd800'))).toBe(false);
+    expect(calls.filter((c) => c === '<alpha 0.5>')).toHaveLength(3);
+    expect(calls.filter((c) => c === '<blend add>')).toHaveLength(0);
+  });
+});

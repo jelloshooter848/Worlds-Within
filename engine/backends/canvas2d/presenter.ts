@@ -1,6 +1,6 @@
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
-import { REST_STATE, TweenSet, type TweenState } from '@engine/core/fx';
-import { transformed, translucent, type Renderer } from '@engine/core/gfx/renderer';
+import { REST_STATE, SkinParticles, TweenSet, type ParticleView, type TweenState } from '@engine/core/fx';
+import { blended, glowing, transformed, translucent, type Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import {
@@ -13,6 +13,7 @@ import {
   layoutHud,
   resolveSkinEvent,
   resolveSkinFrame,
+  resolveSkinKind,
   skinBackground,
   type DeepReadonly,
   type HudFrameSize,
@@ -54,8 +55,13 @@ export interface SkinnedPresenterOptions {
    * `camera.clamp`, else true).
    */
   clamp?: boolean;
-  /** Skip `flash` effects (the player's reduced-flashing setting). */
+  /**
+   * The player's reduced-flashing setting: skip `flash` effects, and draw additive (bright)
+   * particles with normal blending, half as strong and without glow.
+   */
   reduceFlashing?: boolean;
+  /** The seed particles draw from (`fxRng`; default 0). Any seed gives the same picture each time. */
+  seed?: number;
   /**
    * Makes a surface for the cached map, or null to draw the tiles every frame. The default makes
    * an offscreen canvas where the browser has one, and is null in Node.
@@ -134,6 +140,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   private seen = new Set<string>();
   /** Frame events of the skin's cycles (`events: { "<frame>": "<type>" }`), presenter state only. */
   private readonly frameEvents = new FrameEventClock();
+  /** The skin's particles (`emitters`, events' `emit`, kinds' `emit`, old `particles` effects). */
+  private readonly particles: SkinParticles;
 
   constructor(
     target: Renderer | Ctx,
@@ -145,6 +153,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.opts = opts;
     this.size = opts.size;
     this.camera = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
+    this.particles = new SkinParticles(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
   }
 
   resize(size: ScreenSize): void {
@@ -155,6 +164,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     const r = this.r;
     const size = this.size ?? frame.size;
     this.takeEvents(frame);
+    this.particles.update(frame.frame, frame.entities);
     this.updateTweens(frame);
     this.updateMap(frame);
     const view = this.cameraView(frame, size);
@@ -162,7 +172,8 @@ export class SkinnedCanvasPresenter implements Presenter {
     r.clear(this.opts.background ?? skinBackground(this.skin));
     this.drawMap(view);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
-    this.drawEffects(frame.frame, view, size);
+    this.drawParticles(view);
+    this.drawEffects(frame.frame, size);
     this.drawHud(frame);
   }
 
@@ -183,7 +194,8 @@ export class SkinnedCanvasPresenter implements Presenter {
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
       if (entry.tween !== undefined && ev.entity !== undefined)
         this.tweensOf(ev.entity).add(entry.tween, frame.frame);
-      if (entry.effect === undefined) continue;
+      this.particles.event(entry, ev, frame.entities, frame.frame);
+      if (entry.effect === undefined || entry.effect.kind === 'particles') continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
       const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
       const y = ev.y ?? (at ? at.y + at.h / 2 : 0);
@@ -224,7 +236,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     return cameraShake(frame, sizes);
   }
 
-  private drawEffects(tick: number, view: View, size: ScreenSize): void {
+  private drawEffects(tick: number, size: ScreenSize): void {
     const r = this.r;
     for (const a of this.effects) {
       const { effect } = a;
@@ -235,24 +247,61 @@ export class SkinnedCanvasPresenter implements Presenter {
         if (!this.opts.reduceFlashing) r.rect(0, 0, size.width, size.height, color);
       } else if (effect.kind === 'tint') {
         translucent(r, 0.4 * (1 - age / ticks), () => r.rect(0, 0, size.width, size.height, color));
-      } else if (effect.kind === 'particles') {
-        const count = effect.count ?? 6;
-        const side = Math.max(1, Math.round(effect.size ?? 2));
-        const drawn = Math.max(1, Math.round(side * view.zoom));
-        for (let i = 0; i < count; i++) {
-          const angle = (i / count) * Math.PI * 2;
-          const px = a.x + Math.cos(angle) * age - side / 2;
-          const py = a.y + Math.sin(angle) * age - side / 2;
-          r.rect(
-            Math.round(px * view.zoom) - view.x,
-            Math.round(py * view.zoom) - view.y,
-            drawn,
-            drawn,
-            color,
-          );
-        }
       }
     }
+  }
+
+  // ---- Particles ----
+
+  /**
+   * The live particles in world space (after the entities): squares `size` px on a side (rounded,
+   * at least 1; none at 0) centred on each particle, or its sprite `frame` scaled by `size`, at its
+   * `alpha`, through `blended` for `add` (the canvas's `lighter`) and `glowing` for `glow`.
+   */
+  private drawParticles(view: View): void {
+    const r = this.r;
+    const list = this.particles.particles(this.opts.reduceFlashing ? { reduceFlashing: true } : {});
+    let i = 0;
+    while (i < list.length) {
+      // One blend scope for each run of particles with the same blend.
+      const blend = list[i]!.blend;
+      let j = i;
+      while (j < list.length && list[j]!.blend === blend) j++;
+      const run = list.slice(i, j);
+      blended(r, blend, () => {
+        for (const p of run)
+          glowing(r, p.color, p.glow, () => translucent(r, p.alpha, () => this.drawParticle(p, view)));
+      });
+      i = j;
+    }
+  }
+
+  private drawParticle(p: ParticleView, view: View): void {
+    const r = this.r;
+    const { zoom } = view;
+    if (p.size <= 0 || p.alpha <= 0) return;
+    if (p.frame !== undefined) {
+      const id = p.sheet ?? this.skin.sheets?.sheet;
+      const sheet = id === undefined ? null : this.sheet(id, this.skin.sheets?.palette);
+      const rect = sheet?.frames.get(p.frame);
+      if (sheet && rect) {
+        const scale = p.size * zoom;
+        const x = Math.round((p.x - (rect.w * p.size) / 2) * zoom) - view.x;
+        const y = Math.round((p.y - (rect.h * p.size) / 2) * zoom) - view.y;
+        if (scale === 1) r.sprite(sheet, p.frame, x, y);
+        else r.sprite(sheet, p.frame, x, y, false, false, 0, scale);
+        return;
+      }
+    }
+    const side = Math.max(1, Math.round(p.size));
+    const drawn = Math.max(1, Math.round(side * zoom));
+    r.rect(
+      Math.round((p.x - side / 2) * zoom) - view.x,
+      Math.round((p.y - side / 2) * zoom) - view.y,
+      drawn,
+      drawn,
+      p.color,
+    );
   }
 
   // ---- Camera ----
@@ -374,7 +423,14 @@ export class SkinnedCanvasPresenter implements Presenter {
         transformed(r, x + w / 2, y + h, (turn * Math.PI) / 180, sx, sy, (l) => draw(l, -w / 2, -h));
       } else draw(r, x, y);
     };
-    translucent(r, Math.min(1, Math.max(0, (fx?.alpha ?? 1) * tw.alpha)), body);
+    // A kind's `blend` and `glow` (2D) wrap the whole drawing.
+    const entry = resolveSkinKind(this.skin, e);
+    const glow = entry?.glow;
+    blended(r, entry?.blend ?? 'normal', () =>
+      glowing(r, glow?.color ?? '#000', glow?.radius ?? 0, () =>
+        translucent(r, Math.min(1, Math.max(0, (fx?.alpha ?? 1) * tw.alpha)), body),
+      ),
+    );
   }
 
   // ---- HUD ----

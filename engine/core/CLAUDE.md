@@ -7,7 +7,7 @@ asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
 [content/CLAUDE.md](content/CLAUDE.md)), presentation effects (`fx/`, Engine 0.16: the
-presentation-only RNG `fxRng`, easing curves and tweens; see [fx/CLAUDE.md](fx/CLAUDE.md)), the presentation contract (`present/`: the read-only
+presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; see [fx/CLAUDE.md](fx/CLAUDE.md)), the presentation contract (`present/`: the read-only
 per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), the browser shell
 games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`; see
 [shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content
@@ -464,7 +464,9 @@ cursor. `bootBrowserGame` makes one when a game asks (`shell/CLAUDE.md`). Pan an
 drive `RtsCamera` (`present/rts-camera.ts`).
 
 `gfx/renderer.ts` is the drawing interface: the `Renderer` interface, `Rotation`, and the
-helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`. Backends implement it; core
+helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`; from Engine 0.16 T3 the
+optional `blend(mode, draw)` (`BlendMode`: `normal` | `add`) and `glow(color, radius, draw)` with
+their helpers `blended` and `glowing` (a renderer without them draws plainly). Backends implement it; core
 never knows which one is drawing.
 
 ## Imports

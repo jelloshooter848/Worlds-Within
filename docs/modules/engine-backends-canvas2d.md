@@ -15,7 +15,8 @@ for and holds no game rules.
 
 `index.ts`, imported as `@engine/backends/canvas2d`:
 
-- `CanvasRenderer` (`renderer.ts`): the `Renderer` implementation for a 2D context.
+- `CanvasRenderer` (`renderer.ts`): the `Renderer` implementation for a 2D context (with the
+  optional `blend` and `glow` of Engine 0.16 T3).
 - `Viewport`, `ViewportOptions` (`viewport.ts`): owns the backbuffer and presents it.
 - `SkinnedCanvasPresenter`, `SkinnedPresenterOptions`, `MapSurface` (`presenter.ts`):
   `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
@@ -24,7 +25,10 @@ for and holds no game rules.
   skin frames (`resolveSkinFrame`, a kind's tag look first, by whole tag or, from Engine 0.15, tag prefix
   and whole-number range (gap M2); flipped by facing, a fallback box when art is missing, squash through
   `transformed()`; from Engine 0.16 T2 per-frame timing, one-shots and `then`, and the cycles' frame
-  events played through the skin's `events` like the frame's own), frames the camera through its own `CameraFollower` from
+  events played through the skin's `events` like the frame's own; from Engine 0.16 T3 a kind's
+  `blend: add` and `glow`, and particles from the skin's `emitters`, started by events' `emit` and
+  run by kinds' `emit`, drawn in world space after the entities with `lighter` for `add` and
+  shadow blur for `glow`; `reduceFlashing` tones additive ones down; a `seed` option), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
   instance lives in the presenter only), honours `zoom` (the hint's, else the skin's; the map

@@ -1,6 +1,8 @@
 import {
+  AdditiveBlending,
   AmbientLight,
-  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
   Color,
   DirectionalLight,
   Group,
@@ -9,14 +11,18 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
+  NormalBlending,
   PerspectiveCamera,
   PlaneGeometry,
+  Points,
   Quaternion,
   Scene,
+  ShaderMaterial,
   Vector3,
   type Material,
 } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
+import { SkinParticles, type ParticleView } from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   cameraShake,
@@ -60,8 +66,13 @@ export interface ThreeSceneOptions {
   background?: string;
   /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
-  /** Skip `flash` effects (the player's reduced-flashing setting). */
+  /**
+   * The player's reduced-flashing setting: skip `flash` effects, and draw additive (bright)
+   * particles with normal blending, half as strong.
+   */
   reduceFlashing?: boolean;
+  /** The seed particles draw from (`fxRng`; default 0). */
+  seed?: number;
   /**
    * The game's sprite sheets as decoded pixels (`contentPixelSheets`), for the HUD's sprite frames
    * and font glyphs (gap G33). Without it a heart or icon is a flat box and text draws nothing.
@@ -78,8 +89,39 @@ const SUN_FROM = new Vector3(-1, 2, 3);
 /** Draw order of the full-screen effect overlay: after everything else. */
 const OVERLAY_ORDER = 1_000_000;
 
-/** The most particle boxes shown at once (the pool's size); later ones are not drawn. */
-export const PARTICLE_POOL = 256;
+/** The most particles shown at once (each blend's buffer size, and the particle system's cap). */
+export const PARTICLE_POOL = 1024;
+
+/** How far in front of the z = 0 plane particles are drawn (world px), so blocks do not hide them. */
+export const PARTICLE_Z = 12;
+
+/** Particles as screen-facing squares: `pSize` world px wide at any depth, `pColor`, `pAlpha`. */
+const PARTICLE_VERTEX = /* glsl */ `
+attribute float pSize;
+attribute float pAlpha;
+attribute vec3 pColor;
+uniform float uScale;
+varying vec3 vColor;
+varying float vAlpha;
+void main() {
+  vColor = pColor;
+  vAlpha = pAlpha;
+  vec4 mv = modelViewMatrix * vec4(position, 1.0);
+  gl_Position = projectionMatrix * mv;
+  gl_PointSize = max(1.0, pSize * uScale / -mv.z);
+}
+`;
+const PARTICLE_FRAGMENT = /* glsl */ `
+varying vec3 vColor;
+varying float vAlpha;
+void main() {
+  gl_FragColor = vec4(vColor, vAlpha);
+  #include <colorspace_fragment>
+}
+`;
+
+/** One blend's particles: a `Points` over fixed-size buffers, drawn up to `geometry.drawRange.count`. */
+type ParticlePoints = Points<BufferGeometry, ShaderMaterial>;
 
 /** One event effect still showing: where it is (world px, y down) and the frame it began on. */
 interface ActiveEffect {
@@ -153,7 +195,10 @@ export class ThreeScene {
   readonly overlay: Mesh<PlaneGeometry, MeshBasicMaterial>;
   /** The HUD pass: its own `scene` and orthographic `camera`, drawn over this one. */
   readonly hud: HudLayer;
-  /** The particle boxes (a pool; hidden ones are free). */
+  /**
+   * The particles: two `Points` (`particles:normal` and `particles:add`, additive blending), each
+   * drawing its first `geometry.drawRange.count` points.
+   */
   readonly particles = new Group();
 
   private readonly skin: Skin;
@@ -171,8 +216,9 @@ export class ThreeScene {
   /** Frame events of the skin's `poses` cycles, scene state only. */
   private readonly frameEvents = new FrameEventClock();
   private framed: PresentBox | null = null;
-  private readonly particleBox = new BoxGeometry(1, 1, 1);
-  private readonly particleMaterials = new Map<string, MeshBasicMaterial>();
+  private readonly skinParticles: SkinParticles;
+  private readonly points: Record<'normal' | 'add', ParticlePoints>;
+  private readonly tmpColor = new Color();
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
@@ -196,6 +242,12 @@ export class ThreeScene {
     this.camera.add(this.overlay);
     this.scene.add(this.camera);
     this.particles.name = 'particles';
+    this.skinParticles = new SkinParticles(skin, {
+      max: PARTICLE_POOL,
+      ...(opts.seed !== undefined && { seed: opts.seed }),
+    });
+    this.points = { normal: makePoints('normal'), add: makePoints('add') };
+    this.particles.add(this.points.normal, this.points.add);
     this.scene.add(this.particles);
     this.hud = new HudLayer(skin, opts.sheets);
   }
@@ -213,7 +265,8 @@ export class ThreeScene {
     this.updateEntities(frame);
     this.updateCamera(frame, size);
     this.updateOverlay(frame.frame);
-    this.updateParticles(frame.frame);
+    this.skinParticles.update(frame.frame, frame.entities);
+    this.updateParticles(size);
     this.hud.sync(frame, size);
   }
 
@@ -253,9 +306,10 @@ export class ThreeScene {
     this.geometries.dispose();
     this.overlay.geometry.dispose();
     this.overlay.material.dispose();
-    this.particleBox.dispose();
-    for (const m of this.particleMaterials.values()) m.dispose();
-    this.particleMaterials.clear();
+    for (const p of Object.values(this.points)) {
+      p.geometry.dispose();
+      p.material.dispose();
+    }
     this.hud.dispose();
   }
 
@@ -274,7 +328,8 @@ export class ThreeScene {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
-      if (entry.effect === undefined) continue;
+      this.skinParticles.event(entry, ev, frame.entities, frame.frame);
+      if (entry.effect === undefined || entry.effect.kind === 'particles') continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
       const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
       const y = ev.y ?? (at ? at.y + at.h / 2 : 0);
@@ -282,42 +337,49 @@ export class ThreeScene {
     }
   }
 
-  /**
-   * `particles` effects as boxes `size` px on a side, `count` of them flying out evenly round the
-   * event's point 1 px a tick (the Canvas2D presenter's pattern), unlit in the effect's colour,
-   * just in front of the z = 0 plane. Boxes come from a pool of at most `PARTICLE_POOL`.
-   */
-  private updateParticles(tick: number): void {
-    const pool = this.particles.children as Mesh<BoxGeometry, MeshBasicMaterial>[];
-    let used = 0;
-    for (const a of this.effects) {
-      const { effect } = a;
-      if (effect.kind !== 'particles') continue;
-      const count = effect.count ?? 6;
-      const side = Math.max(1, Math.round(effect.size ?? 2));
-      const age = tick - a.start;
-      const material = this.particleMaterial(effect.color ?? '#fcfcfc');
-      for (let i = 0; i < count && used < PARTICLE_POOL; i++, used++) {
-        let box = pool[used];
-        if (!box) {
-          box = new Mesh(this.particleBox, material);
-          box.name = 'particle';
-          this.particles.add(box);
-        }
-        const angle = (i / count) * Math.PI * 2;
-        box.material = material;
-        box.visible = true;
-        box.scale.set(side, side, side);
-        box.position.set(a.x + Math.cos(angle) * age, -(a.y + Math.sin(angle) * age), side);
-      }
-    }
-    for (let i = used; i < pool.length; i++) pool[i]!.visible = false;
+  /** The particles shown now (the scene's own reading of its particle system, for tests). */
+  particleViews(): ParticleView[] {
+    return this.skinParticles.particles(this.opts.reduceFlashing ? { reduceFlashing: true } : {});
   }
 
-  private particleMaterial(color: string): MeshBasicMaterial {
-    let m = this.particleMaterials.get(color);
-    if (!m) this.particleMaterials.set(color, (m = new MeshBasicMaterial({ color })));
-    return m;
+  /**
+   * Writes the live particles (world px, y flipped, {@link PARTICLE_Z} in front of the z = 0
+   * plane) into the two `Points` buffers by blend, at most {@link PARTICLE_POOL} each. Colours
+   * are converted to the renderer's working space; a sprite `frame` shows as a square in its
+   * colour (3D draws no particle sprites).
+   */
+  private updateParticles(size: ScreenSize): void {
+    const filled = { normal: 0, add: 0 };
+    const fov = this.cam3d.fov;
+    const scale = size.height / (2 * Math.tan((fov * Math.PI) / 360));
+    for (const p of this.particleViews()) {
+      if (p.size <= 0 || p.alpha <= 0) continue;
+      const points = this.points[p.blend];
+      const i = filled[p.blend];
+      if (i >= PARTICLE_POOL) continue;
+      filled[p.blend] = i + 1;
+      const g = points.geometry;
+      (g.attributes['position'] as BufferAttribute).setXYZ(i, p.x, -p.y, PARTICLE_Z);
+      (g.attributes['pSize'] as BufferAttribute).setX(i, p.size);
+      (g.attributes['pAlpha'] as BufferAttribute).setX(i, p.alpha);
+      this.tmpColor.set(p.color);
+      (g.attributes['pColor'] as BufferAttribute).setXYZ(
+        i,
+        this.tmpColor.r,
+        this.tmpColor.g,
+        this.tmpColor.b,
+      );
+    }
+    for (const blend of ['normal', 'add'] as const) {
+      const points = this.points[blend];
+      const g = points.geometry;
+      g.setDrawRange(0, filled[blend]);
+      points.visible = filled[blend] > 0;
+      points.material.uniforms['uScale']!.value = scale;
+      for (const name of ['position', 'pSize', 'pAlpha', 'pColor']) {
+        (g.attributes[name] as BufferAttribute).needsUpdate = true;
+      }
+    }
   }
 
   /** Flash and tint as a full-screen overlay; the last one listed wins. */
@@ -554,6 +616,31 @@ export class ThreeScene {
     this.overlay.position.set(0, 0, -at);
     this.overlay.scale.set(h * cam.aspect * 1.01, h * 1.01, 1);
   }
+}
+
+/** One blend's particle buffers, {@link PARTICLE_POOL} points, drawn as screen-facing squares. */
+function makePoints(blend: 'normal' | 'add'): ParticlePoints {
+  const g = new BufferGeometry();
+  g.setAttribute('position', new BufferAttribute(new Float32Array(PARTICLE_POOL * 3), 3));
+  g.setAttribute('pColor', new BufferAttribute(new Float32Array(PARTICLE_POOL * 3), 3));
+  g.setAttribute('pSize', new BufferAttribute(new Float32Array(PARTICLE_POOL), 1));
+  g.setAttribute('pAlpha', new BufferAttribute(new Float32Array(PARTICLE_POOL), 1));
+  g.setDrawRange(0, 0);
+  const material = new ShaderMaterial({
+    uniforms: { uScale: { value: 1 } },
+    vertexShader: PARTICLE_VERTEX,
+    fragmentShader: PARTICLE_FRAGMENT,
+    transparent: true,
+    depthWrite: false,
+    blending: blend === 'add' ? AdditiveBlending : NormalBlending,
+  });
+  const points = new Points(g, material);
+  points.name = `particles:${blend}`;
+  points.frustumCulled = false;
+  points.visible = false;
+  // After the scene's opaque meshes, normal before additive.
+  points.renderOrder = blend === 'add' ? 2 : 1;
+  return points;
 }
 
 function disposeMap(group: Group): void {

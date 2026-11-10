@@ -111,6 +111,56 @@ const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
       events: { ...skin.events, 'fx-frame': { effect: { kind: 'particles', count: 2, ticks: 4 } } },
     } as SkinFile;
   },
+  /**
+   * Particles (T3): two emitters in every skin, a burst (additive, glowing) on every event and a
+   * trail on every kind, plus `blend: add` and `glow` on every 2D kind, and an old `particles`
+   * effect on every event that has no effect of its own.
+   */
+  particles: (skin) => {
+    const mesh3d = skin.backend === 'three';
+    return {
+      ...skin,
+      emitters: {
+        ...skin.emitters,
+        'fx-burst': {
+          burst: 6,
+          life: [4, 9],
+          speed: [0.5, 2],
+          angle: [180, 360],
+          gravity: 0.1,
+          drag: 0.05,
+          shape: { circle: 2 },
+          size: [2, 1],
+          color: ['#fcfcfc', '#f8b800'],
+          alpha: [1, 0],
+          blend: 'add',
+          ...(!mesh3d && { glow: 3 }),
+          max: 12,
+        },
+        'fx-trail': { rate: 0.5, life: 6, speed: 0.3, angle: 270, anchor: 'feet', alpha: [0.6, 0], max: 4 },
+      },
+      kinds: Object.fromEntries(
+        Object.entries(skin.kinds).map(([kind, entry]) => [
+          kind,
+          {
+            ...entry,
+            emit: 'fx-trail',
+            ...(!mesh3d && { blend: 'add', glow: { color: '#f8b800', radius: 2 } }),
+          },
+        ]),
+      ),
+      events: Object.fromEntries(
+        Object.entries(skin.events ?? {}).map(([type, entry]) => [
+          type,
+          {
+            ...entry,
+            emit: 'fx-burst',
+            ...(entry.effect === undefined && { effect: { kind: 'particles', count: 3, ticks: 5 } }),
+          },
+        ]),
+      ),
+    } as SkinFile;
+  },
 };
 
 /** The switch sets each run is played with: none (the baseline) and all of them at once. */
@@ -233,6 +283,14 @@ describe('presentation invariance: presenters and effects never change the state
         expect(calls.get('rotate') ?? 0, `${label}: tweens turned something`).toBeGreaterThan(0);
         expect(calls.get('=globalAlpha') ?? 0, `${label}: tweens faded something`).toBeGreaterThan(0);
       }
+      if (switches.includes('particles')) {
+        // The particles really ran: additive blending and glow were set on the canvas.
+        expect(
+          calls.get('=globalCompositeOperation') ?? 0,
+          `${label}: something drew additively`,
+        ).toBeGreaterThan(0);
+        expect(calls.get('=shadowBlur') ?? 0, `${label}: something glowed`).toBeGreaterThan(0);
+      }
 
       // Three.js, for a game with a `three` skin: `frame()` into the scene presenter.
       const skins3d = skinSet(shown, 'three');
@@ -245,10 +303,14 @@ describe('presentation invariance: presenters and effects never change the state
         ...(view3d.background !== undefined && { background: view3d.background }),
       });
       let last3d = '';
+      let particles3d = 0;
       const viaThree = playView(view3d, run, (view) => {
         presenter3d.present(view.frame!());
         last3d = stateHash(view.snapshot());
+        particles3d = Math.max(particles3d, presenter3d.scene.particleViews().length);
       });
+      if (switches.includes('particles'))
+        expect(particles3d, `${label}, three: particles were shown`).toBeGreaterThan(0);
       presenter3d.scene.dispose();
       for (const scene of Object.values(presenter3d.rounds)) scene.dispose();
       expect(viaThree, `${label}, three`).toEqual(golden);

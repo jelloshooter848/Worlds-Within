@@ -43,6 +43,18 @@ export interface Renderer {
    */
   alpha?(alpha: number, draw: () => void): void;
   /**
+   * Optional (Engine 0.16 T3): runs `draw` with blend mode `mode`: `add` adds its colours to what
+   * is under it (the canvas's `lighter`). A renderer without it draws normally: callers use
+   * `blended` below.
+   */
+  blend?(mode: BlendMode, draw: () => void): void;
+  /**
+   * Optional (Engine 0.16 T3): runs `draw` with a soft glow of `color`, `radius` picture px round
+   * what it draws (the canvas's shadow blur). A renderer without it draws without: callers use
+   * `glowing` below.
+   */
+  glow?(color: string, radius: number, draw: () => void): void;
+  /**
    * Optional (0.4.73): runs `draw` with the origin moved to (x, y), turned by `angle` radians
    * (clockwise) and scaled by (sx, sy) in the turned axes, so `draw` works about (0, 0). A
    * renderer without it only moves the origin: callers use `transformed` below.
@@ -77,6 +89,21 @@ export function transformed(
 /** `draw` through `r` at opacity `alpha` where `r` can (Renderer.alpha), else opaque. */
 export function translucent(r: Renderer, alpha: number, draw: () => void): void {
   if (alpha < 1 && r.alpha) r.alpha(alpha, draw);
+  else draw();
+}
+
+/** How a drawing combines with what is under it: `normal` covers, `add` brightens. */
+export type BlendMode = 'normal' | 'add';
+
+/** `draw` through `r` with blend `mode` where `r` can (Renderer.blend), else normally. */
+export function blended(r: Renderer, mode: BlendMode, draw: () => void): void {
+  if (mode !== 'normal' && r.blend) r.blend(mode, draw);
+  else draw();
+}
+
+/** `draw` through `r` with a glow where `r` can (Renderer.glow) and `radius` > 0, else plain. */
+export function glowing(r: Renderer, color: string, radius: number, draw: () => void): void {
+  if (radius > 0 && r.glow) r.glow(color, radius, draw);
   else draw();
 }
 
@@ -135,6 +162,12 @@ export class OffsetRenderer implements Renderer {
   }
   alpha(alpha: number, draw: () => void): void {
     translucent(this.inner, alpha, draw);
+  }
+  blend(mode: BlendMode, draw: () => void): void {
+    blended(this.inner, mode, draw);
+  }
+  glow(color: string, radius: number, draw: () => void): void {
+    glowing(this.inner, color, radius, draw);
   }
   transform(
     x: number,

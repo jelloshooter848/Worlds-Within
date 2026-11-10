@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { ContentKind, ContentLookup, KindIssue } from '../content/kinds';
 import type { FieldPath } from '../content/validate';
-import { tweensSchema } from '../fx/schema';
+import { emitterSchema, type EmitterDef, tweensSchema } from '../fx/schema';
 import {
   cardinalFacing,
   FACINGS,
@@ -170,7 +170,17 @@ const offset = z
   .describe("where the sprite or mesh sits from the entity box's top-left corner");
 
 /** Fields only a sprite (2D) entry has, and only a mesh (3D) entry has. */
-const SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'flipFacing', 'size', 'fallbackColor', 'frame'] as const;
+const SPRITE_FIELDS = [
+  'sheet',
+  'palette',
+  'frames',
+  'flipFacing',
+  'size',
+  'fallbackColor',
+  'frame',
+  'blend',
+  'glow',
+] as const;
 const MESH_FIELDS = ['mesh', 'color', 'poses', 'scale', 'depth', 'z'] as const;
 /** Skin-level fields only a 3D skin has. */
 const MESH_SKIN_FIELDS = ['meshes', 'camera3d'] as const;
@@ -322,6 +332,11 @@ const TAG_MATCH_FIELDS = ['tag', 'prefix', 'min', 'max'] as const;
 const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
 const TAG_MESH_FIELDS = ['mesh', 'color'] as const;
 
+/** One emitter name or a list of them: what an event's or a kind's `emit` takes (Engine 0.16 T3). */
+const emitRefs = z
+  .union([id, z.array(id).min(1)])
+  .describe("the name of an emitter in the skin's `emitters`, or a list of names");
+
 const kindEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file the frames are in (default `sheets.sheet`)'),
   palette: id.exactOptional().describe("2D: a palette to draw with instead of the sprite's own"),
@@ -366,6 +381,22 @@ const kindEntry = z.strictObject({
     .describe(
       'tweens started on an entity of this kind the first frame a presenter shows it (a pop-in), on top of its `fx`; presentation only (Engine 0.16)',
     ),
+  emit: emitRefs
+    .exactOptional()
+    .describe(
+      'emitters that run while an entity of this kind shows, following it (torch smoke, a magic aura); presentation only (Engine 0.16)',
+    ),
+  blend: z
+    .enum(['normal', 'add'])
+    .exactOptional()
+    .describe('2D: `add` draws the sprite additively, brightening what is under it (default `normal`)'),
+  glow: z
+    .strictObject({
+      color: color.describe('the glow colour'),
+      radius: z.number().positive().describe('the blur radius in picture px'),
+    })
+    .exactOptional()
+    .describe('2D: a soft glow round the sprite'),
   byTag: z
     .array(tagEntry)
     .exactOptional()
@@ -396,6 +427,11 @@ const effect = z.strictObject({
 
 const eventEntry = z.strictObject({
   sound: id.exactOptional().describe('a song or sfx id to play'),
+  emit: emitRefs
+    .exactOptional()
+    .describe(
+      "emitters started at the event: at its `x`/`y`, else its entity (the emitter's `anchor` on the entity when it gives one); presentation only (Engine 0.16)",
+    ),
   effect: effect.exactOptional().describe('a presentation-only effect at the event'),
   tween: tweensSchema
     .exactOptional()
@@ -568,6 +604,34 @@ function checkEventKeys(events: Record<string, unknown>, ctx: z.RefinementCtx): 
   }
 }
 
+/** Every `emit` (an event's or a kind's) must name an emitter of the skin's `emitters` (`missing_ref`). */
+function checkEmitRefs(
+  skin: {
+    emitters?: Record<string, unknown>;
+    events?: Record<string, { emit?: string | string[] }>;
+    kinds: Record<string, { emit?: string | string[] }>;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const known = skin.emitters ?? {};
+  const check = (path: FieldPath, emit: string | string[] | undefined) => {
+    if (emit === undefined) return;
+    const list = typeof emit === 'string' ? [emit] : emit;
+    list.forEach((name, i) => {
+      if (Object.hasOwn(known, name)) return;
+      const names = Object.keys(known);
+      ctx.addIssue({
+        code: 'custom',
+        path: typeof emit === 'string' ? [...path, 'emit'] : [...path, 'emit', i],
+        message: `no emitter "${name}" in this skin's \`emitters\`${names.length ? ` (emitters: ${names.join(', ')})` : ''}`,
+        params: { code: 'missing_ref' },
+      });
+    });
+  };
+  for (const [type, entry] of Object.entries(skin.events ?? {})) check(['events', type], entry.emit);
+  for (const [kind, entry] of Object.entries(skin.kinds)) check(['kinds', kind], entry.emit);
+}
+
 function isPrimitive(name: string): name is MeshPrimitive {
   return (MESH_PRIMITIVES as readonly string[]).includes(name);
 }
@@ -596,9 +660,16 @@ export const skinSchema = z
       .exactOptional()
       .describe('3D: named compound meshes, each a list of primitive parts in world px'),
     camera3d: camera3d.exactOptional().describe('3D: perspective framing and light defaults'),
+    emitters: z
+      .record(id, emitterSchema)
+      .exactOptional()
+      .describe(
+        "named particle emitters (Engine 0.16), started by an event's `emit` or run by a kind's `emit`",
+      ),
   })
   .superRefine((skin, ctx) => {
     checkEventKeys(skin.events ?? {}, ctx);
+    checkEmitRefs(skin, ctx);
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, 'kinds', ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
@@ -619,6 +690,7 @@ export type SkinCycle = z.output<typeof cycle>;
 export type SkinTileEntry = z.output<typeof tileEntry>;
 export type SkinMeshPart = z.output<typeof meshPart>;
 export type SkinCamera3d = z.output<typeof camera3d>;
+export type SkinEffect = z.output<typeof effect>;
 
 // ---- Cross-file checks ----
 
@@ -697,6 +769,13 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     }
   }
   (skin.hud ?? []).forEach((item, i) => sheetAt(['hud', i], item.sheet, one(item.frame)));
+  if (!MESH_BACKENDS.includes(skin.backend)) {
+    for (const [emitter, def] of Object.entries(skin.emitters ?? {})) {
+      if (def.frame !== undefined) sheetAt(['emitters', emitter], def.sheet, one(def.frame));
+      else if (def.sheet !== undefined && !sprites.has(def.sheet))
+        missing(['emitters', emitter, 'sheet'], 'sprite', def.sheet);
+    }
+  }
   return issues;
 }
 
@@ -778,6 +857,33 @@ export const SKIN_KIND = {
 } satisfies ContentKind<typeof skinSchema>;
 
 // ---- Event sounds and effects ----
+
+/** The emitter names an `emit` field gives, in order (none when it is left out). */
+export function skinEmitNames(emit: string | readonly string[] | undefined): string[] {
+  if (emit === undefined) return [];
+  return typeof emit === 'string' ? [emit] : [...emit];
+}
+
+/** The particle count, size, colour and ticks an old `particles` effect has when it gives none. */
+export const PARTICLES_EFFECT_DEFAULTS = { count: 6, size: 2, color: '#fcfcfc', ticks: 12 } as const;
+
+/**
+ * An old `effect: { kind: "particles", count?, size?, color?, ticks? }` as an emitter (Engine 0.16
+ * T3): a ring of `count` squares `size` px on a side (rounded, at least 1) flying out evenly at 1 px
+ * a frame for `ticks` frames, as the backends drew it before emitters, so old skins look the same.
+ */
+export function particlesEffectEmitter(effect: DeepReadonly<SkinEffect>): EmitterDef {
+  return {
+    burst: effect.count ?? PARTICLES_EFFECT_DEFAULTS.count,
+    life: effect.ticks ?? PARTICLES_EFFECT_DEFAULTS.ticks,
+    speed: 1,
+    angle: [0, 360],
+    even: true,
+    size: Math.max(1, Math.round(effect.size ?? PARTICLES_EFFECT_DEFAULTS.size)),
+    color: effect.color ?? PARTICLES_EFFECT_DEFAULTS.color,
+    max: effect.count ?? PARTICLES_EFFECT_DEFAULTS.count,
+  };
+}
 
 /**
  * The field an `events` key of the short form `type:value` matches (gap G28, Engine 0.11): the

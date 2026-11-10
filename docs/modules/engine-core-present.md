@@ -69,7 +69,11 @@ event)` gives the entry, the first matching field key in file order, else the ba
   `resolveSkinAnimation`, `resolveSkinMesh` and `frameEventsBetween` are the pure readings, and
   `FrameEventClock` (`frame-events.ts`) turns them into presentation-only events that both
   presenters play through the skin's `events`; `checkSkinRefs` adds `bad_frame_ticks`,
-  `bad_frame_event` and `bad_then`. `games/fx-lab` is the worked example. Field
+  `bad_frame_event` and `bad_then`. From Engine 0.16 T3 a skin's `emitters` (particle emitters
+  from `engine/core/fx`) are started by an event's `emit` and run by a kind's `emit` (following
+  its entities); an unknown name is `missing_ref` at its field; an old `particles` effect is an
+  implicit emitter (`particlesEffectEmitter`); a 2D kind may also take `blend: add` and
+  `glow { color, radius }`. `games/fx-lab` is the worked example. Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named

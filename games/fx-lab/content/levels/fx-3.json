@@ -1,0 +1,13 @@
+{
+  "id": "fx-3",
+  "profile": "pip",
+  "scroll": "right",
+  "spawns": {
+    "b": {
+      "actor": "beetle"
+    },
+    "t": {
+      "actor": "torch"
+    }
+  }
+}

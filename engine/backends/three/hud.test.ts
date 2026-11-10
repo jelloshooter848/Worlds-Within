@@ -1,10 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { Mesh, type MeshBasicMaterial } from 'three';
+import {
+  AdditiveBlending,
+  Mesh,
+  type BufferGeometry,
+  type MeshBasicMaterial,
+  type Points,
+  type ShaderMaterial,
+} from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { Rasterized } from '@engine/core/gfx/pixelart';
 import { freezeFrame, type PresentFrame, type SkinFile } from '@engine/core/present';
 import { threeScenePresenter } from './display';
-import { PARTICLE_POOL, ThreeScene } from './scene';
+import { PARTICLE_POOL, PARTICLE_Z, ThreeScene } from './scene';
 
 /** A sheet of frames side by side, each `w` x `h`, filled with one colour (inline fixture). */
 function sheet(frames: Record<string, [number, number, [number, number, number]]>): Rasterized {
@@ -121,32 +128,44 @@ describe('ThreeScene: the HUD pass (G33)', () => {
   });
 });
 
-describe('ThreeScene: particles (G33)', () => {
-  it('shows particles effects as boxes flying out from the event, for their ticks', () => {
+describe('ThreeScene: particles (G33, Engine 0.16 T3)', () => {
+  /** The points a blend's buffer draws now: [x, y, z, size] each. */
+  const drawn = (scene: ThreeScene, blend: 'normal' | 'add' = 'normal') => {
+    const points = scene.particles.getObjectByName(`particles:${blend}`) as Points<BufferGeometry>;
+    const g = points.geometry;
+    const pos = g.attributes['position']!;
+    const size = g.attributes['pSize']!;
+    return Array.from({ length: g.drawRange.count }, (_, i) => [
+      pos.getX(i),
+      pos.getY(i),
+      pos.getZ(i),
+      size.getX(i),
+    ]);
+  };
+
+  it('shows an old particles effect as points flying out from the event, for their ticks', () => {
     const scene = new ThreeScene(SKIN);
     scene.sync(frame({ events: [{ type: 'burst', x: 40, y: 20 }] }));
-    const shown = () => scene.particles.children.filter((c) => c.visible) as Mesh[];
-    expect(shown()).toHaveLength(4);
-    expect(shown().map((b) => [b.position.x, b.position.y, b.scale.x])).toEqual([
-      [40, -20, 2],
-      [40, -20, 2],
-      [40, -20, 2],
-      [40, -20, 2],
+    expect(drawn(scene)).toEqual([
+      [40, -20, PARTICLE_Z, 2],
+      [40, -20, PARTICLE_Z, 2],
+      [40, -20, PARTICLE_Z, 2],
+      [40, -20, PARTICLE_Z, 2],
     ]);
     scene.sync(frame({ frame: 2 }));
-    const at = shown().map((b) => [Math.round(b.position.x), Math.round(b.position.y)]);
-    expect(at).toEqual([
+    expect(drawn(scene).map(([x, y]) => [Math.round(x!), Math.round(y!)])).toEqual([
       [42, -20],
       [40, -22],
       [38, -20],
       [40, -18],
     ]);
-    expect((shown()[0]!.material as MeshBasicMaterial).color.getHexString()).toBe('f8d800');
+    expect(scene.particleViews()[0]!.color).toBe('#f8d800');
     scene.sync(frame({ frame: 3 }));
-    expect(shown()).toHaveLength(0);
+    expect(drawn(scene)).toEqual([]);
+    expect(scene.particles.getObjectByName('particles:normal')!.visible).toBe(false);
   });
 
-  it("starts at an event's entity centre and keeps the pool at most PARTICLE_POOL boxes", () => {
+  it("starts at an event's entity centre and keeps each buffer at most PARTICLE_POOL points", () => {
     const scene = new ThreeScene(SKIN);
     const box = {
       id: 'e',
@@ -160,11 +179,50 @@ describe('ThreeScene: particles (G33)', () => {
       tags: [],
     };
     scene.sync(frame({ entities: [box], events: [{ type: 'burst', entity: 'e' }] }));
-    const first = scene.particles.children[0]!;
-    expect([first.position.x, first.position.y]).toEqual([14, -12]);
-    const many = Array.from({ length: 100 }, () => ({ type: 'burst', x: 0, y: 0 }));
+    expect(drawn(scene)[0]!.slice(0, 2)).toEqual([14, -12]);
+    const many = Array.from({ length: 400 }, () => ({ type: 'burst', x: 0, y: 0 }));
     scene.sync(frame({ frame: 1, events: many }));
-    expect(scene.particles.children.length).toBe(PARTICLE_POOL);
+    expect(drawn(scene)).toHaveLength(PARTICLE_POOL);
     scene.dispose();
+  });
+
+  it('draws additive emitters through the additive buffer, and kinds emit while shown', () => {
+    const skin: SkinFile = {
+      ...SKIN,
+      kinds: { torch: { mesh: 'box', color: '#888', emit: 'flame' } },
+      emitters: {
+        flame: { rate: 1, life: 4, speed: 0.5, angle: 270, blend: 'add', color: ['#f8d800', '#d82800'] },
+      },
+    };
+    const torch = {
+      id: 't',
+      kind: 'torch',
+      x: 100,
+      y: 50,
+      w: 8,
+      h: 8,
+      facing: 'right' as const,
+      anim: { state: 'idle', t: 0 },
+      tags: [],
+    };
+    const scene = new ThreeScene(skin);
+    for (let f = 0; f < 6; f++) scene.sync(frame({ frame: f, entities: [torch] }));
+    expect(drawn(scene, 'add')).toHaveLength(4);
+    expect(drawn(scene, 'normal')).toHaveLength(0);
+    const add = scene.particles.getObjectByName('particles:add') as Points<BufferGeometry, ShaderMaterial>;
+    expect(add.material.blending).toBe(AdditiveBlending);
+    // Rising from the torch's centre.
+    for (const [x, y] of drawn(scene, 'add')) {
+      expect(x).toBeCloseTo(104);
+      expect(y).toBeGreaterThanOrEqual(-54);
+    }
+    // With reduced flashing the same particles go through the normal buffer, dimmer.
+    const calm = new ThreeScene(skin, { reduceFlashing: true });
+    for (let f = 0; f < 6; f++) calm.sync(frame({ frame: f, entities: [torch] }));
+    expect(drawn(calm, 'add')).toHaveLength(0);
+    expect(drawn(calm, 'normal')).toHaveLength(4);
+    // The torch gone: no new particles, the live ones finish.
+    for (let f = 6; f < 12; f++) scene.sync(frame({ frame: f }));
+    expect(drawn(scene, 'add')).toHaveLength(0);
   });
 });

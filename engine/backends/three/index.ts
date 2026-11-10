@@ -10,5 +10,5 @@ export {
 export { applyCanvasBox, canvasToScreen, fitCanvas, type CanvasBox } from './fit';
 export { GeometryCache, primitiveGeometry, type PartSize } from './geometry';
 export { HudLayer, type HudQuad } from './hud';
-export { PARTICLE_POOL } from './scene';
+export { PARTICLE_POOL, PARTICLE_Z } from './scene';
 export { threeDisplay, threeScenePresenter, webgl2Available, type ThreeDisplayOptions } from './display';
