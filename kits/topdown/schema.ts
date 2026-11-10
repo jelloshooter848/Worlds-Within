@@ -123,6 +123,29 @@ export interface RoomKindOptions {
 export const ROOM_MODES = ['dungeon', 'separate'] as const;
 export type RoomMode = (typeof ROOM_MODES)[number];
 
+/** The dash's tuning in `kitOptions.topdown.dash` (Engine 0.16 part C T5): each field optional. */
+export const dashTuningSchema = z.strictObject({
+  ticks: z.number().int().min(1).exactOptional().describe('ticks the burst lasts (8 when left out)'),
+  distance: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe('pixels it goes at most along the facing (48, three tiles, when left out)'),
+  cooldown: z
+    .number()
+    .int()
+    .min(0)
+    .exactOptional()
+    .describe('ticks after a dash before the next can start (24 when left out)'),
+  guard: z
+    .number()
+    .int()
+    .min(0)
+    .exactOptional()
+    .describe('ticks the hero stays unhurtable after a dash ends (6 when left out); he never is during one'),
+});
+
 /** The top-down kit's `game.json` options (`kitOptions.topdown`, Engine 0.15, gap G17). */
 export const topdownOptionsSchema = z.strictObject({
   rooms: z
@@ -131,6 +154,9 @@ export const topdownOptionsSchema = z.strictObject({
     .describe(
       'how the room files are checked: `dungeon` (the default) as one dungeon, `separate` each room alone (challenge or mission rooms, each with its own start)',
     ),
+  dash: dashTuningSchema
+    .exactOptional()
+    .describe("the dash item's tuning (Engine 0.16 part C T5): `ticks`, `distance`, `cooldown`, `guard`"),
 });
 
 /** The `room` content kind: JSON with its `map` in a sibling `.map.txt` text grid (or inline). */

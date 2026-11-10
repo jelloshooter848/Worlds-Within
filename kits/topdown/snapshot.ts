@@ -12,7 +12,9 @@ import type { TopDownWorld } from './world';
  * - `frame`, `room` (the room on screen), `rng` (the RNG's state), `keys`, `found`, `visited`,
  *   `sliding` (the side of a room slide in progress, or null), `sealed`, `exited`;
  * - `hero.room`, `hero.x`, `hero.y` (room pixels), `hero.facing`, `hero.hp`, `hero.maxHp` (half
- *   hearts), `hero.attacking`, `hero.invuln`, `hero.dying`, `hero.dead`;
+ *   hearts), `hero.attacking`, `hero.invuln`, `hero.dying`, `hero.dead`, and (Engine 0.16 part C
+ *   T5) only once he owns the dash, `hero.dash` (`t` ticks left in a dash, `cooldown`, `guard`):
+ *   a world without the dash keeps every hash it had;
  * - `inventory.owned`, `inventory.current` (the item in the slot, or null), `inventory.ammo.<id>`;
  * - `entities` (the room's things, in update order): `{ kind, x, y, key, hp? }`, where `kind` is
  *   the enemy or pickup kind when it has one and the class name otherwise (`PushBlock`);
@@ -41,6 +43,7 @@ export interface TdSnapshot extends JsonObject {
     invuln: number;
     dying: boolean;
     dead: boolean;
+    dash?: { t: number; cooldown: number; guard: number };
   };
   inventory: { owned: string[]; current: string | null; ammo: { [id: string]: number } };
   entities: { kind: string; x: number; y: number; key: string | null; hp?: number }[];
@@ -69,7 +72,7 @@ export function snapshotWorld(world: TopDownWorld, events: readonly object[] = [
   const inv = world.inv;
   const ammo: { [id: string]: number } = {};
   for (const item of inv.withAmmo()) ammo[item.id] = inv.count(item.id);
-  return {
+  const snap: TdSnapshot = {
     frame: world.frame,
     room: world.room.id,
     rng: world.rng.state(),
@@ -101,6 +104,10 @@ export function snapshotWorld(world: TopDownWorld, events: readonly object[] = [
     enemies: world.enemies().length,
     events: events.map(plainEvent),
   };
+  // New fields only when used (part B's rule): the dash's state once the hero owns it.
+  if (inv.has('dash') || hero.dashing)
+    snap.hero.dash = { t: hero.dashT, cooldown: hero.dashCd, guard: hero.dashGuard };
+  return snap;
 }
 
 /**

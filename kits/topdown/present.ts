@@ -45,6 +45,8 @@ export const PRESENT_TILES = {
   block: 'B',
   statue: 'S',
   water: '~',
+  /** A pit (Engine 0.16 part C T5): a dash crosses it. */
+  pit: '^',
   stairs: '=',
   exit: 'E',
   /** A doorway the hero can walk through. */
@@ -381,6 +383,7 @@ function presentHero(
   else if (h.dying > 0) [state, t] = ['dying', h.dying - 1];
   else if (h.attacking) [state, t] = ['attack', ATTACK_FRAMES - h.attackT];
   else if (h.holdT > 0) [state, t] = ['hold', HOLD_FRAMES - h.holdT];
+  else if (h.dashT > 0) [state, t] = ['dash', h.dashTicks - h.dashT];
   else if (h.kbT > 0) [state, t] = ['hurt', KNOCK_FRAMES - h.kbT];
   else if (h.useT > 0) [state, t] = ['throw', USE_FRAMES - h.useT];
   const tags: string[] = [];
@@ -389,6 +392,7 @@ function presentHero(
     tags.push(calm ? 'calm' : 'flashing');
   }
   if (h.holding) tags.push(`holding:${h.holding}`);
+  if (h.dashT > 0) tags.push('dash');
   const out: PresentEntity[] = [];
   if (h.holding) {
     // The prize held over his head (a tile-sheet frame; its art is centred on him, 16 px up).
@@ -666,6 +670,8 @@ const HERO_EVENTS = new Set([
   'chest',
   'bomb',
   'exit',
+  'dash',
+  'dash-end',
 ]);
 
 /**

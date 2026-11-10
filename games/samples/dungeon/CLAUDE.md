@@ -15,9 +15,12 @@ glue.
  (0,0) store-room  --cracked wall-->  (1,0) bat-hall  --locked door-->  (2,0) crypt  --exit (north)-->
         |                                                                  goal room
  (0,1) courtyard (start)  --open door-->  (1,1) guard-room (a side room full of monsters)
+        |
+ (0,2) chasm (the dash, Engine 0.16 part C T5)
 ```
 
-1. **courtyard** (start, `@`): four blocks, a heart; doors north and east. Its `music` is `crypt`.
+1. **courtyard** (start, `@`): four blocks, a heart; doors north, east and (from Engine 0.16 part C
+   T5) south. Its `music` is `crypt`.
 2. **guard-room**: three bats, a knight and a rock-spitter; a dead end to fight in (or die
    in: the fail case).
 3. **store-room**: a chest holding the `bomb` item (`chests: ["bomb"]`: the item itself, which
@@ -28,6 +31,11 @@ glue.
 5. **crypt**: the goal room (`goal: true`), its chest holding the relic (kit item `relic`, drawn as the pack's red-gem sword; kept in the
    world's `found`), and two exit tiles (`E`) on its north border: stepping on one sets the world's
    `exited`, the run's win.
+6. **chasm** (Engine 0.16 part C T5): south of the courtyard; a chest holding the kit's `dash`
+   item (`chests: ["dash"]`), a two-tile pit (`^`) from wall to wall, and a heart beyond it that
+   only the dash reaches. The dash's tuning is the kit's default (`kitOptions.topdown.dash` would
+   change it; `headless.ts` passes `topdownItems(content.manifest)`). A first room for the new
+   wing T8 builds.
 
 A run ends **escaped** (the hero reached an exit: `exited`) or **fallen** (the hero died after his
 death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the end banner says which
@@ -78,7 +86,7 @@ games/samples/dungeon --json` to see every kit rule guarded.
 - `game.json`: the manifest (schema: `engine/core/content/manifest.ts`): kit `topdown`, content
   globs (`room`, `song`, `palette`, `sprite`, `sfx`, `skin`, `font`), seed 1, **320x180**, `headless.ts`,
   `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
-- `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt` (above).
+- `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt`, `chasm` (above).
 - `content/songs/`: `crypt`, `daylight`. `content/sfx/`: `blast`, `chest`, `door`, `fall`,
   `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`, `unlock`.
 - `content/palettes/`: `crypt-art`, `crypt-floor`. `content/sprites/`: `crypt-art.txt`,
@@ -89,7 +97,8 @@ manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the en
   `mustSkinSet`) over the loaded bundle; `DUNGEON_MUSIC` and `ESCAPE_MUSIC` (song ids). The
   songs and sfx are the engine's `contentSongs` and `contentSfx` (Engine 0.15 T15, the API review
   removed the sample's own `dungeonKinds`, `dungeonSongs` and `dungeonSfx` copies).
-- `headless.ts`: `createWorld(content, seed?, disabledRules?)` and `createGame(content, seed,
+- `headless.ts`: `createWorld(content, seed?, disabledRules?)` (the kit's items from
+  `topdownItems(content.manifest)`, so `kitOptions.topdown.dash` tunes the dash) and `createGame(content, seed,
 opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
 - `picture.ts`: `dungeonLook(content)` (skin, sheets, fonts, picture size), `HUD_TOP` (0),
   `DungeonPicture` (`draw(world, events)`: the kit's `presentWorld` with `idle`, frozen, to the
@@ -146,6 +155,10 @@ games/samples/dungeon/runs/escape.run.json --json` (exit 0 passed, 4 a failed ch
   (`hero.x` 15 at tick 120), then into the guard room to stand among its monsters until the hero
   is down to one heart, dying (tick 1430) and dead with 0 hp at 1521; `guards:
 ["walls-block-movement", "damage-reduces-hp"]`.
+- `cross-the-chasm` (400 ticks, Engine 0.16 part C T5): down into the chasm, into its chest (the
+  dash), to the pit's edge (`hero.x` 145), the dash (`hero.dash.t` 8 at tick 365) over it to
+  `hero.x` 193 (cooldown 24), and the heart beyond; full hearts throughout; `guards:
+["dash-crosses-pits"]`. Adding the courtyard's south door moved no other run's hashes.
 
 `pnpm -s cli mutants games/samples/dungeon --json`: every `TOPDOWN_RULES` rule is guarded by some
 run, and no run is weak on its own `guards` (`tests/runs/dungeon-mutants.test.ts` holds it to that,

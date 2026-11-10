@@ -2,6 +2,7 @@ import type { InputFrame } from '@engine/core/input/input-manager';
 import { DIRS, DIR_VEC, TILE, isHorizontal, mod, type Box, type Dir } from './geometry';
 import { Chest, PUSH_DELAY, PushBlock } from './entity';
 import { SwordBeam } from './beam';
+import type { DashTuning } from './items';
 import type { TopDownWorld } from './world';
 
 /** Frames of one sword stab (the hero stands still for all of them). */
@@ -91,6 +92,20 @@ export class TdHero {
   walkT = 0;
   /** Frames leaning into the same push block. */
   pushT = 0;
+  /** Ticks left in a dash (0 = not dashing), and the ticks the dash lasts in all. */
+  dashT = 0;
+  dashTicks = 0;
+  /** Ticks before the next dash can start. */
+  dashCd = 0;
+  /** Ticks of the guard after a dash (unhurtable, like the dash itself). */
+  dashGuard = 0;
+  /** The way the dash goes, and how far (pixels) it goes in all and so far. */
+  dashDir: Dir = 'down';
+  private dashLen = 0;
+  private dashGone = 0;
+  private dashCooldown = 0;
+  private dashGuardAfter = 0;
+  private dashFrom = { x: 0, y: 0 };
   private pushing: PushBlock | null = null;
   private parity = 0;
   /** The direction pressed most recently, which wins when two are held. */
@@ -106,6 +121,84 @@ export class TdHero {
 
   get attacking(): boolean {
     return this.attackT > 0;
+  }
+
+  get dashing(): boolean {
+    return this.dashT > 0;
+  }
+
+  /** Can a dash start now (not dashing, not recovering from the last one)? */
+  dashReady(): boolean {
+    return this.dashT === 0 && this.dashCd === 0;
+  }
+
+  /**
+   * How far (pixels, at most `distance`) a dash in `dir` from here can go: as far as the way is
+   * open to a dash (a pit is open while the rule `dash-crosses-pits` is on, `world.ts`), then back
+   * to the furthest point where his feet are on no pit. 0: nowhere to go.
+   */
+  dashReach(world: TopDownWorld, dir: Dir, distance: number): number {
+    const v = DIR_VEC[dir];
+    let best = 0;
+    for (let s = 1; s <= distance; s++) {
+      const feet = this.feet(this.x + v.dx * s, this.y + v.dy * s);
+      if (world.blocked(feet, 'dash', null)) break;
+      if (!world.onPit(feet)) best = s;
+    }
+    return best;
+  }
+
+  /**
+   * Starts a dash along the facing with `tuning` (the dash item's use): false when there is
+   * nowhere to go. Emits `dash` (`dir`, `distance`).
+   */
+  startDash(world: TopDownWorld, tuning: Readonly<DashTuning>): boolean {
+    if (!this.dashReady() || tuning.ticks <= 0) return false;
+    const reach = this.dashReach(world, this.facing, tuning.distance);
+    if (reach <= 0) return false;
+    this.dashDir = this.facing;
+    this.dashT = tuning.ticks;
+    this.dashTicks = tuning.ticks;
+    this.dashLen = reach;
+    this.dashGone = 0;
+    this.dashCooldown = tuning.cooldown;
+    this.dashGuardAfter = tuning.guard;
+    this.dashFrom = { x: this.x, y: this.y };
+    this.pushT = 0;
+    world.emit({ type: 'dash', dir: this.dashDir, distance: reach });
+    return true;
+  }
+
+  /** One tick of a dash: its share of the way, pixel by pixel; ends it on the last tick or a bump. */
+  private dashStep(world: TopDownWorld): void {
+    const done = this.dashTicks - this.dashT + 1;
+    const to = Math.round((this.dashLen * done) / this.dashTicks);
+    const v = DIR_VEC[this.dashDir];
+    let bumped = false;
+    for (; this.dashGone < to; this.dashGone++) {
+      if (world.blocked(this.feet(this.x + v.dx, this.y + v.dy), 'dash', null)) {
+        bumped = true;
+        break;
+      }
+      this.x += v.dx;
+      this.y += v.dy;
+    }
+    this.walkT++;
+    if (--this.dashT === 0 || bumped) this.endDash(world);
+  }
+
+  /**
+   * Ends a dash: the cooldown and the guard start, and `dash-end` is emitted. Stopped over a pit
+   * (something moved into the way), he is put back where it started: he never stands on a pit.
+   */
+  endDash(world: TopDownWorld): void {
+    if (this.dashT === 0 && this.dashTicks === 0) return;
+    if (world.onPit(this.feet())) [this.x, this.y] = [this.dashFrom.x, this.dashFrom.y];
+    this.dashT = 0;
+    this.dashTicks = 0;
+    this.dashCd = this.dashCooldown;
+    this.dashGuard = this.dashGuardAfter;
+    world.emit({ type: 'dash-end' });
   }
 
   /** The box that collides with tiles: the lower half, a little narrower than the sprite. */
@@ -148,12 +241,12 @@ export class TdHero {
   }
 
   /**
-   * Takes `damage` half hearts, knocked back toward `push`. False when invulnerable or already
-   * down. With the world's no-damage assist on (or the `damage-reduces-hp` rule off) he is still
+   * Takes `damage` half hearts, knocked back toward `push`. False when invulnerable, dashing or
+   * in the guard after a dash, or already down. With the world's no-damage assist on (or the `damage-reduces-hp` rule off) he is still
    * knocked back but keeps his hearts.
    */
   hurt(world: TopDownWorld, damage: number, push: Dir): boolean {
-    if (this.invuln > 0 || this.dying || this.holdT > 0) return false;
+    if (this.invuln > 0 || this.dying || this.holdT > 0 || this.dashT > 0 || this.dashGuard > 0) return false;
     if (!world.noDamage() && world.rules.isOn('damage-reduces-hp')) this.hp = Math.max(0, this.hp - damage);
     this.attackT = 0;
     this.useT = 0;
@@ -211,7 +304,13 @@ export class TdHero {
       return;
     }
     if (this.invuln > 0) this.invuln--;
+    if (this.dashCd > 0) this.dashCd--;
+    if (this.dashGuard > 0) this.dashGuard--;
     const want = this.wantDir(input);
+    if (this.dashT > 0) {
+      this.dashStep(world);
+      return;
+    }
     if (this.kbT > 0) {
       this.kbT--;
       const v = DIR_VEC[this.kbDir];
@@ -250,7 +349,8 @@ export class TdHero {
       return;
     }
     if (input.pressed('special') && world.useItem()) {
-      this.useT = USE_FRAMES;
+      // A dash is its own pose (`dash`); other items take the throw pose.
+      if (this.dashT === 0) this.useT = USE_FRAMES;
       this.pushT = 0;
       return;
     }

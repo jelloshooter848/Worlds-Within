@@ -10,6 +10,14 @@ items, walking townsfolk and a scripted test bot. It never knows about a particu
 supplies rooms, extra spawn kinds and its own scene, and a backend draws the kit's presentation
 frames through the game's skin. It reports what happened through `world.events`.
 
+From Engine 0.16 part C T5 the kit has a third item, the **dash** (`dashItem`, `DASH`, in
+`DEFAULT_ITEMS`): a data-tuned burst along the facing (`DashTuning`: `ticks`, `distance`,
+`cooldown`, `guard`; a game sets it in `game.json`'s `kitOptions.topdown.dash` and passes
+`topdownItems(manifest)` from `kit.ts` as the world's `items`), unhurtable while it lasts, that
+crosses **pits** (`^`, tile `pit`: they stop walking, walkers and blocks) to floor within its reach
+(rule `dash-crosses-pits`). Events `dash` and `dash-end`; the hero is presented in `dash` with a
+`dash` tag; the snapshot gains `hero.dash` only once he owns it.
+
 ## Public API entry points
 
 `index.ts`, imported as `@kits/topdown`, re-exports `geometry`, `room` (rooms and the `LEGEND` text
@@ -75,7 +83,7 @@ by the `kit` name in `game.json`.
 ## How to test
 
 `*.test.ts` next to the code (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
-`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
+`beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`, `present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`, `dash.test.ts`) run in Node with `pnpm test`, driving the world with `ScriptedInput` and a fixed
 seed. `tests/kits/mission-adapter.test.ts` plays an `engine/sim` mission (the siege fixture's
 `raid`, a real `mission-room` mission since Engine 0.15 T9, with its room in `tests/kits/__fixtures__/`) through
 `topdownMissionAdapter` with the core's `playMissionRound`, outside every layer, since the kit

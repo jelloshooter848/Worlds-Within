@@ -2467,9 +2467,14 @@ How kit `topdown` treats this game (Engine 0.15, gap G17): read by its hook's `k
 - Where: `kitOptions.topdown` in a game's `game.json`
 - Read from: `.json`
 
-| Field   | Type                      | Required | Default | Limits | Description                                                                                                                                              |
-| ------- | ------------------------- | -------- | ------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rooms` | `"dungeon" \| "separate"` | no       |         |        | how the room files are checked: `dungeon` (the default) as one dungeon, `separate` each room alone (challenge or mission rooms, each with its own start) |
+| Field           | Type                      | Required | Default | Limits | Description                                                                                                                                              |
+| --------------- | ------------------------- | -------- | ------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rooms`         | `"dungeon" \| "separate"` | no       |         |        | how the room files are checked: `dungeon` (the default) as one dungeon, `separate` each room alone (challenge or mission rooms, each with its own start) |
+| `dash`          | `object`                  | no       |         |        | the dash item's tuning (Engine 0.16 part C T5): `ticks`, `distance`, `cooldown`, `guard`                                                                 |
+| `dash.ticks`    | `integer`                 | no       |         | >= 1   | ticks the burst lasts (8 when left out)                                                                                                                  |
+| `dash.distance` | `integer`                 | no       |         | >= 1   | pixels it goes at most along the facing (48, three tiles, when left out)                                                                                 |
+| `dash.cooldown` | `integer`                 | no       |         | >= 0   | ticks after a dash before the next can start (24 when left out)                                                                                          |
+| `dash.guard`    | `integer`                 | no       |         | >= 0   | ticks the hero stays unhurtable after a dash ends (6 when left out); he never is during one                                                              |
 
 Example (`docs/reference/examples/topdown-options.json`):
 

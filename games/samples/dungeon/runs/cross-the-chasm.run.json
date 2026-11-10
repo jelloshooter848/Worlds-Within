@@ -1,0 +1,37 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 400,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["down"] },
+      { "frame": 117, "hold": ["left"] },
+      { "frame": 165, "hold": ["down"] },
+      { "frame": 176, "hold": [] },
+      { "frame": 240, "hold": ["right"] },
+      { "frame": 272, "hold": ["down"] },
+      { "frame": 304, "hold": ["right"] },
+      { "frame": 364, "hold": ["special"] },
+      { "frame": 365, "hold": [] },
+      { "frame": 373, "hold": ["right"] },
+      { "frame": 378, "hold": [] }
+    ]
+  },
+  "assertions": [
+    { "tick": 0, "path": "room", "op": "eq", "value": "courtyard" },
+    { "tick": 120, "path": "room", "op": "eq", "value": "chasm" },
+    { "tick": 180, "path": "inventory.current", "op": "eq", "value": "dash" },
+    { "tick": 364, "path": "hero.x", "op": "eq", "value": 145 },
+    { "tick": 365, "path": "hero.dash.t", "op": "eq", "value": 8 },
+    { "tick": 373, "path": "hero.x", "op": "eq", "value": 193 },
+    { "tick": 373, "path": "hero.dash.cooldown", "op": "eq", "value": 24 },
+    { "tick": 400, "path": "hero.x", "op": "gte", "value": 192 },
+    { "tick": 400, "path": "room", "op": "eq", "value": "chasm" }
+  ],
+  "invariants": [
+    { "path": "hero.hp", "op": "eq", "value": 6 },
+    { "path": "hero.dead", "op": "eq", "value": false }
+  ],
+  "hashEvery": 40,
+  "guards": ["dash-crosses-pits"]
+}

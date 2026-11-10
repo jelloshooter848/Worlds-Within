@@ -8,6 +8,7 @@ import { DIR_VEC, OPPOSITE, ROOM_COLS, ROOM_ROWS, TILE, type Dir, type Side } fr
  *   #..............#     B block         S statue       ~ water        = stairs
  *   #...BBBPBBB....#     O open door     L locked door  X shutter door E exit doorway
  *   #......o.......O     @ player start  P push block   o block plate  _ floor switch
+ *                        ^ pit (a dash crosses it)
  *   ...                  t torch (unlit) T torch (lit)  k key  h heart H heart container
  *                        f heart refill  c chest        C cracked wall
  *                        m map           v compass      D building door (floor, `entrances`)
@@ -25,7 +26,17 @@ import { DIR_VEC, OPPOSITE, ROOM_COLS, ROOM_ROWS, TILE, type Dir, type Side } fr
  */
 
 export type TileKind =
-  'floor' | 'floor-alt' | 'wall' | 'cracked' | 'block' | 'statue' | 'water' | 'stairs' | 'door' | 'exit';
+  | 'floor'
+  | 'floor-alt'
+  | 'wall'
+  | 'cracked'
+  | 'block'
+  | 'statue'
+  | 'water'
+  | 'stairs'
+  | 'door'
+  | 'exit'
+  | 'pit';
 /** `cracked`: a doorway walled up with cracked stone until a blast opens it. */
 export type DoorKind = 'open' | 'locked' | 'shutter' | 'cracked';
 /**
@@ -48,6 +59,8 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
   B: { tile: 'block' },
   S: { tile: 'statue' },
   '~': { tile: 'water' },
+  /** A pit (Engine 0.16 part C T5): stops walkers and blocks; a dash crosses it to floor beyond. */
+  '^': { tile: 'pit' },
   '=': { tile: 'stairs' },
   E: { tile: 'exit' },
   O: { tile: 'door', door: 'open' },

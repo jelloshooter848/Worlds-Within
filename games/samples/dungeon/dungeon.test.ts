@@ -57,6 +57,7 @@ describe('the dungeon sample', () => {
     expect(content.manifest).toMatchObject({ id: 'dungeon', kit: 'topdown', headless: 'headless.ts' });
     expect(content.entries.map((e) => `${e.kind}:${e.name}`)).toEqual([
       'room:bat-hall',
+      'room:chasm',
       'room:courtyard',
       'room:crypt',
       'room:guard-room',
@@ -96,6 +97,7 @@ describe('the dungeon sample', () => {
     expect(d.startRoom).toBe('courtyard');
     expect([...d.rooms.keys()].sort()).toEqual([
       'bat-hall',
+      'chasm',
       'courtyard',
       'crypt',
       'guard-room',
@@ -309,8 +311,13 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as Run;
   const FALLBACK = dungeonSkin(content).sheets?.fallbackColor;
 
-  it('has run files for the walk, the way out and a fall', () => {
-    expect(runs).toEqual(['escape.run.json', 'lost-in-the-guard-room.run.json', 'walk-east.run.json']);
+  it('has run files for the walk, the way out, a fall and (0.16 part C T5) the dash over the chasm', () => {
+    expect(runs).toEqual([
+      'cross-the-chasm.run.json',
+      'escape.run.json',
+      'lost-in-the-guard-room.run.json',
+      'walk-east.run.json',
+    ]);
   });
 
   it("names no placeholder art: every sheet and palette is the sample's own", () => {

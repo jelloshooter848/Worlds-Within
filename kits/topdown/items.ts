@@ -261,7 +261,63 @@ export const BOMBS: TdItem = {
   },
 };
 
-export const DEFAULT_ITEMS: Readonly<Record<string, TdItem>> = { boomerang: BOOMERANG, bomb: BOMBS };
+/* ------------------------------------------------------------------------------------------ */
+/* The dash                                                                                    */
+/* ------------------------------------------------------------------------------------------ */
+
+/**
+ * How the dash feels (Engine 0.16 part C T5), all data: a game sets it in `game.json`'s
+ * `kitOptions.topdown.dash` (`topdownItems`, `kit.ts`) or builds its own `dashItem({...})`.
+ */
+export interface DashTuning {
+  /** Ticks the burst lasts. */
+  ticks: number;
+  /** Pixels it goes at most along the facing (less when something solid is in the way). */
+  distance: number;
+  /** Ticks after a dash ends before the next one can start. */
+  cooldown: number;
+  /** Ticks the hero stays unhurtable after the dash ends (he cannot be hurt during it). */
+  guard: number;
+}
+
+/** The kit's dash: 48 px (three tiles) in 8 ticks, 24 ticks to recover, 6 ticks of guard after. */
+export const DASH_TUNING: Readonly<DashTuning> = { ticks: 8, distance: 48, cooldown: 24, guard: 6 };
+
+/** The dash item: its tuning rides on the item, so the hero reads it when it is used. */
+export interface DashItem extends TdItem {
+  readonly dash: Readonly<DashTuning>;
+}
+
+/**
+ * The dash (a dodge): a quick burst along the facing, unhurtable while it lasts, that carries the
+ * hero over a pit (`^`) when there is floor on the far side within its reach (rule
+ * `dash-crosses-pits`). It stops short at anything else solid. Not ready while dashing or
+ * recovering (`TdHero.dashReady`); nowhere to go is no use (no event, no cooldown).
+ */
+export function dashItem(tuning: Partial<DashTuning> = {}): DashItem {
+  const dash: DashTuning = { ...DASH_TUNING, ...tuning };
+  return {
+    id: 'dash',
+    label: 'DASH',
+    icon: 'dash-icon',
+    dash,
+    ready: (w) => w.hero.dashReady(),
+    use: (w) => w.hero.startDash(w, dash),
+  };
+}
+
+export const DASH: DashItem = dashItem();
+
+/**
+ * The kit's items by id: the boomerang, bombs and (Engine 0.16 part C T5) the dash. An item only
+ * matters once the hero is given it (a chest or pickup naming its id), so listing one here moves
+ * no run that never finds it.
+ */
+export const DEFAULT_ITEMS: Readonly<Record<string, TdItem>> = {
+  boomerang: BOOMERANG,
+  bomb: BOMBS,
+  dash: DASH,
+};
 
 /** Does a circle touch a box? */
 export function circleHits(cx: number, cy: number, radius: number, b: Box): boolean {

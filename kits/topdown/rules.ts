@@ -10,6 +10,7 @@ export const TOPDOWN_RULES = defineRules([
   { id: 'doors-change-room', description: 'walking off the room through a doorway slides to the next room' },
   { id: 'damage-reduces-hp', description: 'a hit takes half hearts off the hero' },
   { id: 'keys-open-locked-doors', description: 'bumping a locked doorway with a key held opens it' },
+  { id: 'dash-crosses-pits', description: 'a dash carries the hero over a pit to floor within its reach' },
 ]);
 
 /** One of the kit's rule ids. */

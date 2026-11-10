@@ -37,9 +37,11 @@ import {
  * How something moves through tiles. `hero`: the player (open doors and exits let him through, and
  * an open doorway lets him walk off the edge into the next room). `walk`: walking enemies.
  * `fly`: over water, blocks and statues but not walls. `shot`: projectiles (over water).
- * `block`: a push block (only onto open floor).
+ * `block`: a push block (only onto open floor). `dash`: the hero dashing (Engine 0.16 part C T5):
+ * as `hero`, and over pits while the rule `dash-crosses-pits` is on. Pits (`^`) stop the hero,
+ * walking enemies and blocks; flyers and shots pass over them.
  */
-export type Mover = 'hero' | 'walk' | 'fly' | 'shot' | 'block';
+export type Mover = 'hero' | 'walk' | 'fly' | 'shot' | 'block' | 'dash';
 
 export type TdEvent =
   | { type: 'sword' }
@@ -70,6 +72,8 @@ export type TdEvent =
   | { type: 'fuse' }
   | { type: 'blast' }
   | { type: 'whirr' }
+  | { type: 'dash'; dir: Dir; distance: number }
+  | { type: 'dash-end' }
   | { type: string; [k: string]: unknown };
 
 /** What a room remembers between visits (for the whole run). */
@@ -370,8 +374,9 @@ export class TopDownWorld {
   /** Is a tile solid for a mover (`col`/`row` may be outside the room)? */
   private tileSolid(col: number, row: number, mover: Mover): boolean {
     const inside = col >= 0 && row >= 0 && col < ROOM_COLS && row < ROOM_ROWS;
+    const hero = mover === 'hero' || mover === 'dash';
     if (!inside) {
-      if (mover !== 'hero') return true;
+      if (!hero) return true;
       // Past the edge: open only straight through an open doorway (an outdoor screen: past any
       // walkable edge cell).
       const c = Math.max(0, Math.min(ROOM_COLS - 1, col));
@@ -381,7 +386,7 @@ export class TopDownWorld {
       return tileAt(this.room, c, r) !== 'door' || !this.doorOpen(sideOf(c, r, this.room.wall) as Side);
     }
     const t = tileAt(this.room, col, row) as TileKind;
-    if (mover === 'hero' && this.room.entrances.length > 0) {
+    if (hero && this.room.entrances.length > 0) {
       const e = this.entranceAt(col, row);
       if (e && !this.entranceOpen(e)) return true;
     }
@@ -398,11 +403,14 @@ export class TopDownWorld {
       case 'statue':
         return mover !== 'fly';
       case 'water':
-        return mover === 'hero' || mover === 'walk' || mover === 'block';
+        return hero || mover === 'walk' || mover === 'block';
+      case 'pit':
+        if (mover === 'fly' || mover === 'shot') return false;
+        return mover !== 'dash' || !this.rules.isOn('dash-crosses-pits');
       case 'exit':
-        return mover !== 'hero';
+        return !hero;
       case 'door':
-        return mover !== 'hero' || !this.doorOpen(sideOf(col, row, this.room.wall) as Side);
+        return !hero || !this.doorOpen(sideOf(col, row, this.room.wall) as Side);
     }
   }
 
@@ -421,7 +429,7 @@ export class TopDownWorld {
     const r1 = Math.floor((box.y + box.h - 1) / TILE);
     for (let r = r0; r <= r1; r++)
       for (let c = c0; c <= c1; c++) if (this.tileSolid(c, r, mover)) return true;
-    if (mover === 'hero' && this.inDoorJamb(box)) return true;
+    if ((mover === 'hero' || mover === 'dash') && this.inDoorJamb(box)) return true;
     if (mover === 'fly') return false;
     return this.solidEntityAt(box, self) !== null;
   }
@@ -518,6 +526,17 @@ export class TopDownWorld {
         e.hidden = hide;
       }
     return shown;
+  }
+
+  /** Does `box` touch a pit tile (`^`) of the room on screen? */
+  onPit(box: Box): boolean {
+    const c0 = Math.floor(box.x / TILE);
+    const c1 = Math.floor((box.x + box.w - 1) / TILE);
+    const r0 = Math.floor(box.y / TILE);
+    const r1 = Math.floor((box.y + box.h - 1) / TILE);
+    for (let r = r0; r <= r1; r++)
+      for (let c = c0; c <= c1; c++) if (tileAt(this.room, c, r) === 'pit') return true;
+    return false;
   }
 
   /** Is `box` on the room's floor (inside the wall band)? */
@@ -792,6 +811,7 @@ export class TopDownWorld {
     this.left = null;
     this.transition = null;
     this.walkIn = null;
+    if (this.hero.dashing) this.hero.endDash(this);
     this.hero.x = (door.col + v.dx) * TILE;
     this.hero.y = (door.row + v.dy) * TILE;
     this.hero.facing = out;
@@ -847,6 +867,7 @@ export class TopDownWorld {
     hero.facing = SIDE_DIR[side];
     hero.attackT = 0;
     hero.kbT = 0;
+    if (hero.dashing) hero.endDash(this);
     const v = DIR_VEC[SIDE_DIR[side]];
     const frames = Math.round((v.dx !== 0 ? ROOM_W : ROOM_H) / this.slideSpeed);
     this.enterRoom(next);
@@ -872,6 +893,7 @@ export class TopDownWorld {
     this.walkIn = null;
     this.entering = null;
     this.left = null;
+    if (this.hero.dashing) this.hero.endDash(this);
     this.hero.x = x;
     this.hero.y = y;
     this.enterRoom(room);

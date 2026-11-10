@@ -27,6 +27,7 @@ describe('TOPDOWN_RULES', () => {
       'doors-change-room',
       'damage-reduces-hp',
       'keys-open-locked-doors',
+      'dash-crosses-pits',
     ]);
     for (const r of TOPDOWN_RULES) expect(r.description.length).toBeGreaterThan(0);
   });

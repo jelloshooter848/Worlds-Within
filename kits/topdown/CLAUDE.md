@@ -3,7 +3,7 @@
 The top-down kit: gameplay rules for a room-based action game seen from above. Rooms from text on a
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
 sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
-such as the boomerang and bombs (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
+such as the boomerang, bombs and the dash (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
 `person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), tile-sheet frame helpers (`frames.ts`), the room
 file schema (`schema.ts`), the one-room challenge adapter that hosts the kit as another kit's
 mini game (`challenge.ts`) and the data-driven mission room with its mission adapter
@@ -55,7 +55,9 @@ re-export it.
 
 `snapshotWorld(world, events?)` reads the world into plain JSON-safe data (`TdSnapshot`): `frame`,
 `room`, `rng` (the RNG's state), `keys`, `found`, `visited`, `sliding`, `sealed`, `exited`,
-`hero` (`room`, `x`, `y`, `facing`, `hp`, `maxHp`, `attacking`, `invuln`, `dying`, `dead`),
+`hero` (`room`, `x`, `y`, `facing`, `hp`, `maxHp`, `attacking`, `invuln`, `dying`, `dead`, and
+only once he owns the dash `dash`: `{ t, cooldown, guard }`, Engine 0.16 part C T5, so a world
+without it keeps every hash),
 `inventory` (`owned`, `current`, `ammo`), `entities` (`{ kind, x, y, key, hp? }`, `kind` being the
 enemy or pickup kind or else the class name), `enemies` (living count) and `events`. The class
 name is `typeNameOf(e)` (`type-names.ts`, Engine 0.15 T12): the kit's classes by their names
@@ -83,7 +85,7 @@ state's `stride` remembers the counter, never the world, so no hash moves; off b
 skins without an `idle` state draw as before; tested in `present.test.ts`).
 
 - **Map** (`presentMap`): the room on screen as rows of `PRESENT_TILES` characters (how each cell
-  looks now: `O`/`L`/`X` open, locked and shut doors, `C` cracked walls, `H` a blasted doorway,
+  looks now: `^` a pit (Engine 0.16 part C T5), `O`/`L`/`X` open, locked and shut doors, `C` cracked walls, `H` a blasted doorway,
   `D`/`d` boarded and shut building doors), `id` the room id, tags `wall:<n>` and `dark`. `version`
   is a 32-bit hash of the tiles and tags, so it changes when a door opens, shutters shut, a wall is
   blasted. During a room slide the map is both rooms side by side (id `<from>><to>`, 32x11 or
@@ -98,13 +100,16 @@ skins without an `idle` state draw as before; tested in `present.test.ts`).
   picture and centred in the height left under the band; a picture too short cuts the room's
   bottom, one too narrow cuts both sides evenly. At 256x240 the room fills the play area exactly.
 - **Hero**: id `hero`, kind `hero`, 16x16, `facing`, `anim.state` `walk` (`t` = the walk counter),
-  `attack`, `throw`, `hold`, `hurt` (knockback), `dying` (the spin) or `poof`, `t` ticks into the
-  state; tags `invuln`, then `flashing` or (reduce flashing) `calm`, and `holding:<frame>`. While
+  `attack`, `throw`, `hold`, `dash` (Engine 0.16 part C T5, `t` ticks into the dash), `hurt`
+  (knockback), `dying` (the spin) or `poof`, `t` ticks into the state; tags `invuln`, then
+  `flashing` or (reduce flashing) `calm`, `holding:<frame>`, and `dash` while dashing (for a
+  skin's afterimages and dust). While
   stabbing there is also `hero/sword` (kind `sword`, the blade's box). A dead hero is not listed.
 - **Status**: `hp`, `maxHp` (half hearts), `keys`, `item` ('' for none), `ammo.<id>` for every item
   with ammo, `room`, `mapX`/`mapY`, `mapCols`/`mapRows`, `visited` (`gx,gy` cells, sorted, joined
   by spaces), `hasMap`, `hasCompass`, `goalX`/`goalY` (with the compass) and `top`.
-- **Events**: the `TdEvent`s' JSON-safe fields; hero events (`sword`, `hurt`, `pickup`, ...) get
+- **Events**: the `TdEvent`s' JSON-safe fields; hero events (`sword`, `hurt`, `pickup`, `dash`,
+  `dash-end`, ...) get
   the hero's centre and `entity: 'hero'`, `unlock` its doorway's middle. Events the world gives no
   place for (`hit`, `kill`, `room`) carry none (adding places to `TdEvent` would change hashes).
 - **Ids**: `TdPresentIds` (in `TdPresentState`) names a thing the room text placed
@@ -162,7 +167,9 @@ What each old `render` method (removed in 0.4-8) drew, so a skin can reproduce i
 
 `TOPDOWN_RULES` names a few of the kit's rules for mutant checks (`engine/core/rules.ts`):
 `walls-block-movement` (`tileSolid`), `doors-change-room` (`leaving`), `damage-reduces-hp`
-(`TdHero.hurt`) and `keys-open-locked-doors` (`tryUnlock`). `TdWorldOptions.disabledRules`
+(`TdHero.hurt`), `keys-open-locked-doors` (`tryUnlock`) and (Engine 0.16 part C T5)
+`dash-crosses-pits` (`tileSolid`'s `pit` case for the `dash` mover; tested in `dash.test.ts`, and
+guarded in the dungeon sample by `runs/cross-the-chasm.run.json`). `TdWorldOptions.disabledRules`
 switches rules off (an unknown id throws) and the code guards each with
 `world.rules.isOn(id)`. A game's headless `createGame(content, seed, opts)` passes
 `opts.disabledRules` on; `pnpm cli mutants <run-file>` then reports the rules a run file does not
@@ -171,6 +178,39 @@ has) is Engine 0.5.** When you guard a new rule, add it to `TOPDOWN_RULES` with 
 description, keep the guard a single `isOn` check at the place the rule is decided, and test the
 world with it on and off (`rules.test.ts`). Switching rules off never changes a normal run: every
 rule is on by default.
+
+## The dash and pits (Engine 0.16 part C T5)
+
+The one item that changes how the hero moves and fights, and opens new paths.
+
+- **The item** (`items.ts`): `dashItem(tuning?)` builds it (id `dash`, label `DASH`, icon
+  `dash-icon`); `DASH` is the default one, in `DEFAULT_ITEMS`. Like the boomerang and bombs it sits
+  in the item slot and SPECIAL uses it; a chest (`chests: ["dash"]`) or pickup naming `dash` gives
+  it. Listing it moves nothing for a world whose hero never gets it (no ammo, no loot).
+- **Tuning is data** (`DashTuning`, defaults `DASH_TUNING`: `ticks` 8, `distance` 48 px,
+  `cooldown` 24, `guard` 6). A game sets any of them in `game.json`'s `kitOptions.topdown.dash`
+  (`dashTuningSchema` in `topdownOptionsSchema`, so `validate` refuses a bad field) and passes
+  `topdownItems(manifest)` (`kit.ts`) as the world's `items`; the dungeon sample's `headless.ts`
+  does. Code never hard-codes a game's numbers.
+- **The burst** (`TdHero.startDash`, `dashStep`, `endDash`): along the facing, `distance` px
+  spread evenly over `ticks` ticks, pixel by pixel through the `dash` mover. Its length is fixed at
+  the start (`dashReach`): as far as the way is open, then back to the furthest point where his
+  feet touch no pit, so he never lands on one; nowhere to go is no use (no event, no cooldown). A
+  bump mid-dash ends it early; ended over a pit (something moved into the way) he is put back at
+  the start. The hero cannot be hurt while dashing nor for `guard` ticks after (`hurt` returns
+  false, no knockback); `cooldown` ticks after the end must pass before the next (`dashReady`). The
+  dash takes no throw pose; it ends on a room slide, a building door or a warp.
+- **Pits** (`^`, `LEGEND`, tile kind `pit`): solid to the hero walking, walkers and push blocks;
+  flyers and shots pass over. The `dash` mover is the hero's (doors, jambs, exits) except that it
+  passes over pits while `dash-crosses-pits` is on. Falling in is not modelled: a pit only blocks.
+- **Events**: `dash` (`dir`, `distance`) when it starts, `dash-end` when it ends; both hero events
+  in presented frames (placed at his centre). **Present**: the hero's `dash` state and `dash` tag.
+- **Snapshot**: `hero.dash` (`t`, `cooldown`, `guard`) only once the dash is owned or running.
+- **Tests**: `dash.test.ts` (distance, stopping at a wall, i-frames and guard, cooldown, tuning
+  from `dashItem` and `kitOptions`, pits parsed, presented and blocking each mover, crossing with
+  the rule on, not with it off, not over a pit too wide, not without the item, the presented state
+  and the snapshot field).
+- **Not yet**: `TopDownBot` does not dash; its pathing treats pits as walls.
 
 ## Room files (`schema.ts`)
 
@@ -372,5 +412,5 @@ and the captured.
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
 `beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`,
-`present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`, `dash.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

@@ -436,6 +436,12 @@
           "y": 385,
           "w": 6,
           "h": 7
+        },
+        "flask-big-green": {
+          "x": 320,
+          "y": 336,
+          "w": 16,
+          "h": 16
         }
       },
       "anchor": "center"
@@ -482,6 +488,10 @@
           "frames": ["skull"],
           "ticks": 8,
           "sheet": "crypt-items"
+        },
+        "dash": {
+          "frames": ["knight-run-1", "knight-run-3"],
+          "ticks": 2
         }
       },
       "byTag": [
@@ -542,6 +552,10 @@
               "frames": ["skull"],
               "ticks": 8,
               "sheet": "crypt-items"
+            },
+            "dash": {
+              "frames": ["knight-run-1", "knight-run-3"],
+              "ticks": 2
             }
           }
         }
@@ -607,6 +621,11 @@
         },
         "idle": {
           "frames": ["bomb"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "dash-icon": {
+          "frames": ["flask-big-green"],
           "ticks": 8,
           "sheet": "crypt-items"
         }
@@ -1014,6 +1033,21 @@
           "ease": "bounceOut"
         }
       ]
+    },
+    "pickup:dash": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "flask-big-green"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
     }
   },
   "tiles": {
@@ -1038,7 +1072,7 @@
       "sheet": "crypt-floor",
       "frame": "floor-1",
       "join": {
-        "with": [".", ":", "B", "S", "~", "="],
+        "with": [".", ":", "B", "S", "~", "=", "^"],
         "frames": {
           "top": "floor-shade",
           "top right": "floor-shade",
@@ -1184,6 +1218,10 @@
           "left": "crack-e"
         }
       }
+    },
+    "^": {
+      "sheet": "crypt",
+      "frame": "hole"
     }
   },
   "events": {
@@ -1299,6 +1337,12 @@
       }
     },
     "footstep": {
+      "emit": "footstep-dust"
+    },
+    "dash": {
+      "emit": "footstep-dust"
+    },
+    "dash-end": {
       "emit": "footstep-dust"
     }
   },
