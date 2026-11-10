@@ -353,10 +353,12 @@ describe('platformer test 2D skins', () => {
     }
   });
 
-  it('keeps its assets as text: pixel art, palettes, skins and MML only', () => {
+  it('keeps its content as text: pixel art, palettes, skins and MML only', () => {
+    // The CC0 packs in assets/ are the one exception (Engine 0.16 part B, T4): assets.test.ts.
     const allowed =
       /^(game\.json|content\/[a-z]+\/[a-z0-9-]+(\.profile|\.campaign)?\.(json|txt)|content\/levels\/[a-z0-9-]+\.map\.txt|content\/rooms\/[a-z0-9-]+\.map\.txt)$/;
-    expect(Object.keys(FILES).filter((f) => !allowed.test(f))).toEqual([]);
+    const content = Object.keys(FILES).filter((f) => !f.startsWith('assets/'));
+    expect(content.filter((f) => !allowed.test(f))).toEqual([]);
   });
 
   it('draws a level with the level sheet and font, and the round with the vault sheet', () => {

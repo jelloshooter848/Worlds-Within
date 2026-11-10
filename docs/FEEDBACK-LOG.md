@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 364.** (Last used: 363.)
+**Next unused number: 366.** (Last used: 365.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1399,3 +1399,19 @@ owner says otherwise.
 - **363.** The feature benchmark is a new folder, `tests/bench/feature-render/`, using the
   games' real frames and unit kinds; the 0.9 `tests/bench/rts-render/` is unchanged. The Canvas2D
   presenter gained `maxParticles` (default 1024) and `particleCount` for it. OK?
+
+**Engine 0.16 part B, T4: the CC0 asset packs** (details in
+`games/samples/platformer/assets/CREDITS.md`)
+
+- **364.** Pixel Frog's "Pixel Adventure 1" (fetched from itch.io; CC0 per its itch.io page, the
+  zip has no licence file) has terrain, backgrounds, the player, items, checkpoints, traps and
+  effects but **no enemies** (they are in the paid "Pixel Adventure 2"). The nearest CC0
+  substitute was added for them: Kenney's "Pixel Platformer" (itch.io mirror), its packed
+  character sheet (enemies) and tiles, 10 KB. Its 18 px tiles and 24 px characters are a
+  different grid and style from Pixel Frog's 16 px tiles and 32 px characters, so T6 picks one
+  look (or draws enemies as original text art). OK?
+- **365.** Kenney's "Platformer Kit" (fetched from OpenGameArt, version 1.1, CC0) has terrain
+  blocks, props, coins and a flag but **no player or enemy models**. Substitute for those:
+  Quaternius's "Ultimate Platformer Pack" (itch.io, CC0): `character.glb` as the player stand-in
+  and four animated enemies (1.1 MB). The newer Kit 3.0 on Kenney's itch.io mirror was not used:
+  its models name an outside texture file, which the engine's model check refuses. OK?

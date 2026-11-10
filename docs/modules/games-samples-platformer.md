@@ -32,6 +32,14 @@ challenge rooms. It began as the Engine 0.7 stacking test (every gap it found is
   gap G33), `songs/meadow.json` (the page's MML song). The rounds' params are listed on
   generated pages, `docs/reference/mini-games/platformer-vault.md` and `platformer-cellar.md`
   (gap M11).
+- `assets/` (Engine 0.16 part B, T4): four CC0 packs as binary files, each credited in
+  `assets/CREDITS.md` (source URL, author, licence, files kept; checked by `validate`), about
+  1.8 MB in all: `pixel-adventure-1` (Pixel Frog: terrain, backgrounds, the Ninja Frog player,
+  items, checkpoints, traps, effects; PNG), `kenney-pixel-platformer` (Kenney: 2D enemies and a
+  second tile set; PNG), `kenney-platformer-kit` (Kenney, version 1.1: 2.5D terrain blocks,
+  platforms, props, coins, flag; GLB) and `quaternius-platformer` (Quaternius: the 2.5D player
+  stand-in and enemies, animated; GLB). No skin uses them yet (T6 and T10 will);
+  `assets.test.ts` checks the credits and that every PNG and GLB reads (feedback items 364, 365).
 - `content.ts`: `loadHopper(files)` (the kinds of its two kits by the engine's `kitContentKinds`),
   `hopperStages(content)` (the kit's `contentStages`: the levels in the campaign file's order),
   `hopperRooms(content)`, `hopperSkins(content, backend)` (`{ level, rounds }`: the engine's
@@ -73,9 +81,9 @@ challenge rooms. It began as the Engine 0.7 stacking test (every gap it found is
 
 `pnpm test games/samples/platformer` (`platformer.test.ts`: content, level order, the levels
 cleared in order, the door's round failed then passed, determinism, level restart, the mini
-games, the 2D and 3D skins covering everything every run shows, text-only assets, the song, no
+games, the 2D and 3D skins covering everything every run shows, text-only content, the song, no
 fallback look and no fallback box drawn on any tick of any run, the page scene pushing and popping
-the round). `pnpm -s cli validate games/samples/platformer --json`,
+the round; `assets.test.ts`: the CC0 packs credited, every PNG and GLB readable). `pnpm -s cli validate games/samples/platformer --json`,
 `pnpm -s cli run games/samples/platformer/runs/level-3.run.json --json` (any run file),
 `pnpm -s cli mutants games/samples/platformer --json` (exit 0: every kit rule guarded), `pnpm test tests/runs` (golden hashes,
 and backend parity through null, Canvas2D and the Three.js scene builder), `pnpm -s cli screenshot

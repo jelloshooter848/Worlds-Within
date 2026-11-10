@@ -179,7 +179,32 @@ move it into the engine or the kit (or name the release that will).
   types: `walker`, `ledge-walker` (`turnAt: ledges`), `shell-walker` (a stomp turns it into a
   `shell`) and `shell` (still, kickable at 12288). Profiles live in
   their own folder because the `level` glob `content/levels/*.json` would claim them too.
-- Assets, all text (0.7 T7; `platformer.test.ts` fails on any other kind of file):
+- `assets/` (Engine 0.16 part B, T4): the one place binary files may live (docs/DESIGN.md,
+  item 322): four CC0 packs, each a folder credited in `assets/CREDITS.md` (`## <pack>` with
+  `Source:`, `Author:`, `Licence:` and the files kept; `validate` fails on a pack with no section
+  or a licence that is not CC0). About 1.8 MB in all; only the files the game will use were kept,
+  their names lower-cased with spaces as hyphens. No skin uses them yet: the 2D art pass (T6)
+  and the 2.5D view (T10) will, as skin `images` and `model` entries.
+  - `pixel-adventure-1/` (Pixel Frog, itch.io; 89 PNGs, 84 KB): `terrain/terrain-16x16.png`,
+    `background/<colour>.png` (64x64 tiling backgrounds), `characters/ninja-frog/*-32x32.png`
+    (the player: idle, run, jump, fall, double jump, wall jump, hit) and the appear/disappear
+    puffs, `items/` (fruits, boxes, start, checkpoint flag and end), `traps/` (spikes, saw, fire,
+    platforms, trampoline, spike head, rock head and more), `other/` (dust, confetti,
+    transition, shadow). The pack has no enemies (item 364).
+  - `kenney-pixel-platformer/` (Kenney, itch.io mirror; 10 KB): the packed 18x18 tiles, 24x24
+    characters (the 2D enemies) and background sheets, with their `tilesheet-*.txt` grid notes.
+  - `kenney-platformer-kit/` (Kenney, version 1.1 from OpenGameArt; 59 GLBs, 572 KB): terrain
+    blocks (`block*.glb`), `platform`, bridges, ladders, crates, coins, `flag`, `door`, spikes,
+    `saw`, fences, hedges, `tree`, flowers, rocks. Flat material colours, no texture files.
+  - `quaternius-platformer/` (Quaternius, itch.io; 1.1 MB): `character.glb` (the 2.5D player
+    stand-in, with `Idle`, `Run`, `Jump`, `Death` and more clips) and the enemies `enemy.glb`,
+    `crab.glb`, `skull.glb`, `bee.glb` (item 365: the Kenney kit has no characters). Repacked
+    from `.gltf` to `.glb`, bytes unchanged.
+  - `assets.test.ts` checks the four packs are credited as CC0 with a source URL, that the folder
+    holds only PNGs, GLBs and the packs' licence and grid notes, that every PNG reads and every
+    GLB is a self-contained glTF 2.0 model, and the player's and an enemy's clips.
+- Content, all text (0.7 T7; `platformer.test.ts` fails on any other kind of file outside
+  `assets/`):
   - `content/sprites/hopper.txt` (palette `content/palettes/hopper.json`): original NES-style pixel
     art, one string per row, one character per pixel: the level tiles (`sky`, `ground`, `brick`,
     `bump`, `used`, `one-way`, `hazard`), the runner (12x16: idle, two walk frames, skid, jump,
@@ -293,7 +318,7 @@ onSound })` from a dynamic `import('@engine/backends/three')` (its own chunk wit
   each frame sorted by source (`status.miniGame`: the level or the vault round), and the right
   skin must map every kind and state, tile, event and HUD value shown; the level skin maps every
   tile, runner and actor state and event the kit has; the vault skin the hero's `hurt` and
-  `dying`; every sound is an sfx file; the folder holds only text assets; the view draws a level
+  `dying`; every sound is an sfx file; the folder holds only text content (outside `assets/`); the view draws a level
   with `hopper` and the round with `vault`; the page's `HostScene` over `createGame` pushes the
   round and pops it.
 - `platformer.test.ts` (0.7 T8 part): the `three` skins: a level skin and a vault one, each
