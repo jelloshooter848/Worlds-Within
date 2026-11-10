@@ -257,8 +257,11 @@ describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16
     expect(clear.result.sha256).not.toBe(plain.result.sha256);
     const levels = await cli(['screenshot', run, '--tick', '0', '--overlay', 'levels', '--scale', '2']);
     expect(levels.result).toMatchObject({ overlay: 'levels', width: 512, height: 480 });
-    const bad = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'end']);
+    // The dungeon has an end screen (Engine 0.16 part C T7) but no level-clear banner.
+    const bad = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'clear']);
     expect(bad.code).toBe(EXIT.usage);
+    const noDialog = await cli(['screenshot', WALK, '--tick', '0', '--overlay', 'dialog:nope']);
+    expect(noDialog.code).toBe(EXIT.usage);
     const nope = await cli(['screenshot', run, '--tick', '0', '--overlay', 'nope']);
     expect(nope.code).toBe(EXIT.usage);
   }, 120_000);

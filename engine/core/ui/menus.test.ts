@@ -4,6 +4,9 @@ import { engineContentKinds } from '../content/engine-kinds';
 import { buildFont, type FontLookup } from './font';
 import {
   clearScreen,
+  DIALOG_BOTTOM,
+  DIALOG_WIDGET,
+  dialogScreen,
   endScreen,
   formatTicks,
   levelChoices,
@@ -401,5 +404,88 @@ describe("validate: game.json's menus (Engine 0.16 T9)", () => {
       'font "small" has no glyph for ":", "-"',
       'font "small" has no glyph for ":", "-"',
     ]);
+  });
+  it('checks the dialogs and their triggers: portraits, glyphs and dialog ids (Engine 0.16 part C)', () => {
+    const intro = { speaker: 'Pip', portrait: { sheet: 'art', frame: 'hero' }, pages: ['Hello there'] };
+    expect(
+      loadContent(
+        game({
+          ...good,
+          dialogs: { intro },
+          triggers: { intro: 'intro', end: [{ when: { status: 'won', eq: true }, dialog: 'intro' }] },
+        }),
+        engineContentKinds(),
+      ).errors,
+    ).toEqual([]);
+    const r = loadContent(
+      game({
+        ...good,
+        dialogs: {
+          intro: { ...intro, portrait: { sheet: 'art', frame: 'villain' }, pages: ['Hello!'] },
+          gone: { portrait: { sheet: 'faces', frame: 'a' }, pages: ['Bye'] },
+        },
+        triggers: {
+          intro: 'opening',
+          end: [
+            { when: { status: 'won', eq: true }, dialog: 'ending' },
+            { when: { status: 'dead', eq: true } },
+          ],
+        },
+      }),
+      engineContentKinds(),
+    );
+    expect(r.errors.map((e) => [e.path, e.code])).toEqual([
+      ['menus.dialogs.intro.pages.0', 'missing_glyph'],
+      ['menus.dialogs.intro.portrait.frame', 'missing_frame'],
+      ['menus.dialogs.gone.portrait.sheet', 'missing_ref'],
+      ['menus.triggers.intro', 'missing_ref'],
+      ['menus.triggers.end.0.dialog', 'missing_ref'],
+      ['menus.triggers.end.1', 'missing_field'],
+    ]);
+    const paths = (dialogs: unknown) =>
+      loadContent(game({ ...good, dialogs }), engineContentKinds()).errors.map((e) => e.path);
+    expect(paths({ Intro: { pages: ['Hi'] } })).toEqual(['menus.dialogs.Intro']);
+    expect(paths({ intro: { pages: [] } })).toEqual(['menus.dialogs.intro.pages']);
+  });
+});
+
+describe('shell dialogs (Engine 0.16 part C T7)', () => {
+  const spec = menusSchema.parse({
+    ...SPEC,
+    dialogs: {
+      intro: { speaker: 'Pip', portrait: { sheet: 'art', frame: 'hero' }, pages: ['Hello', 'Bye'], rate: 1 },
+      tall: { pages: ['Hi'], lines: 5 },
+    },
+  });
+
+  it('builds a dialog screen: the box across the bottom, tall enough for its portrait', () => {
+    const file = dialogScreen(spec, CTX, 'intro');
+    expect(file.focus).toBe(DIALOG_WIDGET);
+    const w = file.widgets[0]!;
+    expect(w).toMatchObject({
+      id: 'dialog',
+      type: 'dialog',
+      anchor: 'bottom',
+      y: DIALOG_BOTTOM,
+      w: 240,
+      speaker: 'Pip',
+      pages: ['Hello', 'Bye'],
+      rate: 1,
+    });
+    const ui = new UiScreen(file, { screen: CTX.screen, fonts: FONTS, frameSize: CTX.frameSize });
+    const box = ui.dialog(DIALOG_WIDGET)!;
+    expect(box.box.y + box.box.h).toBe(240 - DIALOG_BOTTOM);
+    expect(box.portraitBox()!.h).toBeGreaterThanOrEqual(20); // 16 px and its frame
+    const tall = dialogScreen(spec, CTX, 'tall').widgets[0]!;
+    const plain = dialogScreen(menusSchema.parse({ ...spec, dialogs: { d: { pages: ['Hi'] } } }), CTX, 'd')
+      .widgets[0]!;
+    expect(tall.h! - plain.h!).toBe(2 * FONT.line);
+    expect(() => dialogScreen(spec, CTX, 'nope')).toThrow('no dialog "nope"');
+  });
+
+  it("the end screen takes an end trigger's heading and credits", () => {
+    const file = endScreen(SPEC, CTX, {}, { heading: 'You won', credits: 'By us' });
+    const texts = file.widgets.flatMap((w) => (w.type === 'text' ? [w.text] : []));
+    expect(texts).toEqual(expect.arrayContaining(['You won', 'By us']));
   });
 });

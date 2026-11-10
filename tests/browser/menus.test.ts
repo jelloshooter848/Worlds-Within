@@ -62,6 +62,20 @@ async function until(page: Page, state: MenusView['state'], max = 200): Promise<
   expect((await menus(page)).state).toBe(state);
 }
 
+/**
+ * Steps until play, closing any dialog on the way (Engine 0.16 part C: the dungeon's intro shows
+ * after Start) with Enter, or with `close` when given (a tap on the box).
+ */
+async function untilPlay(page: Page, close?: () => Promise<void>): Promise<void> {
+  for (let i = 0; i < 300; i++) {
+    const view = await menus(page);
+    if (view.state === 'play') break;
+    if (view.state === 'dialog') await (close ? close() : key(page, 'Enter'));
+    else await step(page, 1);
+  }
+  expect((await menus(page)).state).toBe('play');
+}
+
 /** Moves the focus to `item` with the arrows. */
 async function focus(page: Page, item: string): Promise<void> {
   for (let i = 0; i < 12 && (await menus(page)).focused !== item; i++) await key(page, 'ArrowDown');
@@ -105,7 +119,7 @@ describe.skipIf(missing !== null)('the title, pause and settings screens (headle
         await page.screenshot({ path: join(shots, `menus-${name}-title.png`) });
 
         await key(page, 'Enter');
-        await until(page, 'play');
+        await untilPlay(page);
         expect(await page.isVisible('#ww-pause')).toBe(true);
         await step(page, 10);
 
@@ -179,7 +193,15 @@ describe.skipIf(missing !== null)('the title, pause and settings screens (headle
         };
         expect((await menus(page)).state).toBe('title');
         await tap('start');
-        await until(page, 'play');
+        await untilPlay(page, async () => {
+          const box = (await menus(page)).dialog!;
+          const at = (await page.evaluate(({ x, y }) => (window as DebugWindow).__ww!.toClient(x, y), {
+            x: box.x + box.w / 2,
+            y: box.y + box.h / 2,
+          }))!;
+          await page.touchscreen.tap(at.x, at.y);
+          await step(page, 2);
+        });
         await page.tap('#ww-pause');
         await step(page, 1);
         expect((await menus(page)).screen).toBe('pause');
@@ -570,6 +592,104 @@ describe.skipIf(missing !== null)(
         await until(page, 'title');
         const progress = await page.evaluate(() => localStorage.getItem('ww:platformer:progress'));
         expect(JSON.parse(progress!).cleared).toEqual(['level-1', 'level-2', 'level-3', 'boss']);
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 240_000);
+  },
+);
+
+// Engine 0.16 part C (T7): The Old Crypt's dialogs from `game.json` (`menus.dialogs` and
+// `triggers`). By keyboard: Start opens the intro over the held game; it types, Enter skips the
+// typing, turns the page and closes it; then `lost-in-the-guard-room.run.json`'s input played on
+// the keys until the hero falls, the `fallen` dialog, the end screen with its heading, and back to
+// the title. Each is shot as `menus-dungeon-<screen>.png`.
+describe.skipIf(missing !== null)(
+  'The Old Crypt: intro and end dialogs and the end screen (headless Chromium)',
+  () => {
+    const DG = 'games/samples/dungeon/';
+    const KEYS: Record<string, string> = {
+      left: 'ArrowLeft',
+      right: 'ArrowRight',
+      up: 'ArrowUp',
+      down: 'ArrowDown',
+      attack: 'KeyX',
+      special: 'KeyC',
+    };
+    const steps = (
+      JSON.parse(readFileSync(join(ROOT, DG, 'runs', 'lost-in-the-guard-room.run.json'), 'utf8')) as {
+        input: { steps: { frame: number; hold: string[] }[] };
+      }
+    ).input.steps;
+    const world = (page: Page) =>
+      page.evaluate(() => {
+        const s = (window as DebugWindow).__ww!.snapshot() as { frame: number; hero: { dead: boolean } };
+        return { frame: s.frame, dead: s.hero.dead };
+      });
+
+    it('by keyboard: the intro typed, skipped, paged and closed; the fall, its dialog and the end screen', async () => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const { page, errors } = await open(browser, `${server.url}${DG}?debug=step&title=show`);
+        await step(page, 20);
+        await key(page, 'Enter'); // Start
+        await until(page, 'dialog');
+        let view = await menus(page);
+        expect(view.dialog).toMatchObject({ id: 'intro', page: 0, pages: 2, typed: false });
+        expect(await page.evaluate(() => document.body.dataset.menu)).toBe('dialog');
+        expect(await page.isVisible('#ww-pause')).toBe(false);
+        const held = await hash(page);
+        await step(page, 30);
+        expect(await hash(page)).toBe(held); // the game is held under the dialog
+        view = await menus(page);
+        expect(view.dialog!.shown).toBeGreaterThan(0);
+        expect(view.dialog!.typed).toBe(false);
+        await page.screenshot({ path: join(shots, 'menus-dungeon-intro.png') });
+        await key(page, 'Enter'); // skip: the page whole
+        view = await menus(page);
+        expect(view.dialog).toMatchObject({ page: 0, typed: true });
+        expect(view.dialog!.text).toContain('The old crypt');
+        await key(page, 'Enter'); // the next page
+        view = await menus(page);
+        expect(view.dialog).toMatchObject({ page: 1, typed: false });
+        await key(page, 'Enter'); // skip
+        // The run's first keys go down before the box closes, so they are held on the game's tick 0.
+        for (const a of steps[0]!.hold) await page.keyboard.down(KEYS[a]!);
+        await key(page, 'Enter'); // closed: play
+        expect((await menus(page)).state).toBe('play');
+        expect((await world(page)).frame).toBe(1); // the step after the box closed was the game's first
+
+        // The run's input on the keys, from the world's frame now, until the hero has fallen.
+        const down = new Set(steps[0]!.hold.map((a) => KEYS[a]!));
+        for (let i = 1; i < steps.length; i++) {
+          const { frame } = await world(page);
+          if (steps[i]!.frame > frame) await step(page, steps[i]!.frame - frame);
+          const want = new Set(steps[i]!.hold.map((a) => KEYS[a]!));
+          for (const k of down) if (!want.has(k)) await page.keyboard.up(k);
+          for (const k of want) if (!down.has(k)) await page.keyboard.down(k);
+          down.clear();
+          for (const k of want) down.add(k);
+        }
+        for (let i = 0; i < 1200 && !(await world(page)).dead; i += 20) await step(page, 20);
+        expect((await world(page)).dead).toBe(true);
+        await until(page, 'dialog', 10);
+        expect((await menus(page)).dialog?.id).toBe('fallen');
+        const fallen = await hash(page);
+        await step(page, 40);
+        expect(await hash(page)).toBe(fallen);
+        await page.screenshot({ path: join(shots, 'menus-dungeon-fallen.png') });
+        await key(page, 'Enter'); // whole, or closed if it was typed out
+        if ((await menus(page)).state === 'dialog') await key(page, 'Enter');
+        view = await menus(page);
+        expect([view.state, view.screen, view.focused]).toEqual(['end', 'end', 'title']);
+        await step(page, 30);
+        expect(await hash(page)).toBe(fallen); // the end screen holds the game
+        await page.screenshot({ path: join(shots, 'menus-dungeon-end.png') });
+        await key(page, 'Enter'); // Back to title
+        await until(page, 'title');
         expect(errors).toEqual([]);
         await page.close();
       } finally {

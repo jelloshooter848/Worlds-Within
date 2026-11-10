@@ -69,6 +69,11 @@ export interface DungeonPictureOptions {
   onSound?: (id: string) => void;
   /** Draw through this presenter (the page display's) instead of one of the picture's own. */
   presenter?: Presenter;
+  /**
+   * Draw the end banner (default true). Off when the page's shell shows the end itself (its
+   * dialogs and end screen, `BootPage.endings`, Engine 0.16 part C T7).
+   */
+  banner?: boolean;
 }
 
 /** How a run has ended, for the banner: out through the exit, fallen, or not yet. */
@@ -87,6 +92,7 @@ export class DungeonPicture {
   private readonly presenter: Presenter;
   private readonly painter: CanvasUiPainter;
   private hud = true;
+  private readonly banner: boolean;
 
   constructor(
     r: Renderer,
@@ -103,6 +109,7 @@ export class DungeonPicture {
         ...(opts.onSound ? { onSound: opts.onSound } : {}),
       });
     this.painter = new CanvasUiPainter(r, look.sheet, look.fonts);
+    this.banner = opts.banner ?? true;
   }
 
   /** A new world (the run starts over): ids and the map are sent afresh. */
@@ -122,7 +129,8 @@ export class DungeonPicture {
       presentWorld(world, events, { state: this.state, size: this.look.screen, top: HUD_TOP, idle: true }),
     );
     this.presenter.present(frame);
-    if (this.hud) paintUi(endBanner(this.look, dungeonEnd(world), world.found.has('relic')), this.painter);
+    if (this.hud && this.banner)
+      paintUi(endBanner(this.look, dungeonEnd(world), world.found.has('relic')), this.painter);
     return frame;
   }
 }

@@ -172,6 +172,29 @@ Engine 0.16 part B (T3), in `menus.ts`:
   texts' glyphs (headings in the title font; the mark; labels; the digits and `:`, `/`, `-`).
 - Tested in `menus.test.ts`; the shell side in `../shell/game-menus.test.ts`.
 
+Engine 0.16 part C (T7), in `menus.ts`:
+
+- `dialogs` (`dialogSchema`, `MenuDialog`; ids lower-case letters, digits and `-`): `{ speaker?,
+portrait?: { sheet, frame, palette? } (a sprite file or a skin's PNG image sheet), pages (at
+least one), rate? (frames per character, 0-30), lines? (2-8, default 3) }`, and `triggers`:
+  `intro?` (a dialog id) and `end?: [{ when, dialog?, heading?, credits? }]` (`endTriggerSchema`,
+  `EndTrigger`; `when` is the audio mixer's `mixWhenSchema`, one status test or a list, read with
+  `mixWhenHolds`, the one runtime import from `../audio/mix.ts`, pure). The shell
+  (`../shell/game-menus.ts`) shows them; nothing here decides when.
+- `dialogScreen(spec, ctx, id)`: a `ui` file with one `dialog` widget (`DIALOG_WIDGET`, `dialog`)
+  across the bottom (`DIALOG_BOTTOM`, 6 px up; `UI_DIALOG_MARGIN` each side) in the menus' style
+  (`style.sounds.type` / `page` are the typing and page sounds), `lines` lines high or taller so
+  the portrait's frame holds the frame at 1x (`uiLook`, `panelExtra`); no dim. Throws on an unknown
+  id. `endScreen(spec, ctx, status, ending?)` takes an end trigger's `heading` and `credits` over
+  `end`'s.
+- `checkMenus`: each portrait (`missing_ref` / `missing_frame` at `dialogs.<id>.portrait.*`), the
+  glyphs of every page and speaker (`dialogs.<id>.pages.<i>`, `.speaker`) and of a trigger's
+  heading (title font) and credits, a trigger naming no dialog (`missing_ref` at
+  `triggers.intro`, `triggers.end.<i>.dialog`), and an end trigger with nothing to show (no
+  `dialog` and no `end` screen, or `heading`/`credits` without `end`: `missing_field`).
+- Tested in `menus.test.ts` (the dialog screen's box and height, the end trigger's heading, the
+  checks through `loadContent`); `../shell/game-menus.test.ts`, `../shell/shell.test.ts`.
+
 Engine 0.16 T12:
 
 - `labels.ts`: world-anchored labels. `layoutLabels(labels, entity, status, project, fonts?)` ->
@@ -199,7 +222,8 @@ sprite file (`missing_ref`). Sprite fonts (the classic 8x8 digits) are not check
 
 - Pure: `engine/core/ui/**` is on `PURE_CORE` (`config/layers.js`). No DOM, clock or
   `Math.random`; import only `zod` and pure core files (`../present`, `../fx` (ease, tweens,
-  colours, tween specs), `../content`, and `import type` of `../input/actions`).
+  colours, tween specs), `../content`, `../input/actions`, and from Engine 0.16 part C the status
+  tests of `../audio/mix.ts`).
 - Presenters only: kits and the sim may not import it (`FORBIDDEN_CORE`); kits report status and
   a skin decides how it shows. Its state (a counter's roll, a menu's focus and values, a dialog's
   page and typing) lives in a presenter or the shell's scene, never in a kit, a frame or a hash.

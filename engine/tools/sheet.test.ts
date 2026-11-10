@@ -125,6 +125,38 @@ describe('sheet overlays (the fx lab)', () => {
   });
 });
 
+describe('dialog overlays (the dungeon, Engine 0.16 part C T7)', () => {
+  const game = loadGame(ROOT, 'games/samples/dungeon');
+  if (!game.content.ok) throw new Error('the dungeon does not load');
+  const content = game.content.value;
+  const fonts = contentFonts(content);
+  const frameSize = () => ({ w: 16, h: 28 });
+  const glyphs = (o: string, status?: Record<string, number | boolean>) =>
+    overlayUi(content, parseOverlay(o), { fonts, frameSize, ...(status && { status }) })
+      .filter((d) => 'ch' in d)
+      .map((d) => (d as { ch: string }).ch)
+      .join('');
+
+  it('reads dialog:<id> with frames, checks the id and types the first page out by default', () => {
+    expect(parseOverlay('dialog:intro')).toEqual({ kind: 'dialog', id: 'intro', frames: null });
+    expect(parseOverlay('dialog:intro*12')).toEqual({ kind: 'dialog', id: 'intro', frames: 12 });
+    expect(() => parseOverlay('dialog:')).toThrow(/dialog id/);
+    expect(checkOverlay(content, parseOverlay('dialog:intro'))).toBeNull();
+    expect(checkOverlay(content, parseOverlay('dialog:nope'))).toMatch(/no dialog "nope"; it has intro/);
+    // Each typed glyph is drawn twice, its shadow first.
+    expect(glyphs('dialog:intro')).toContain('TThheeoollddccrryypptt');
+    expect(glyphs('dialog:intro')).toContain('rroooomm..');
+    expect(glyphs('dialog:intro')).toContain('Knight');
+    expect(glyphs('dialog:intro*10').length).toBeLessThan(glyphs('dialog:intro').length);
+  });
+
+  it("draws the end screen with the matching end trigger's heading", () => {
+    expect(glyphs('end', { exited: true, time: 600, roomsSeen: 4 })).toContain('Youescaped!');
+    expect(glyphs('end', { dead: true, time: 600 })).toContain('Youfell');
+    expect(glyphs('end', {})).toContain('Theend');
+  });
+});
+
 async function browserMissing(): Promise<string | null> {
   try {
     await (await launchChromium()).close();

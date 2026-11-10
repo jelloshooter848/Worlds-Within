@@ -28,7 +28,13 @@
       "fill": "#e8762a",
       "padding": 4,
       "gap": 2,
-      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
+      "sounds": {
+        "move": "ui-move",
+        "select": "ui-select",
+        "back": "ui-back",
+        "type": "ui-move",
+        "page": "ui-select"
+      },
       "heading": "#f6c445",
       "outline": "#141016",
       "dim": 0.6,
@@ -54,7 +60,39 @@
       { "actions": ["attack"], "label": "Sword" },
       { "actions": ["special"], "label": "Use item" },
       { "actions": ["select"], "label": "Next item" }
-    ]
+    ],
+    "end": {
+      "heading": "The end",
+      "credits": "Art: 0x72's DungeonTileset II (CC0)",
+      "lines": [
+        { "label": "Time", "status": "time", "format": "time" },
+        { "label": "Rooms seen", "status": "roomsSeen" }
+      ],
+      "items": ["title"]
+    },
+    "dialogs": {
+      "intro": {
+        "speaker": "Knight",
+        "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+        "pages": [
+          "The old crypt lies under the hill. They say a relic waits in its deepest room.",
+          "Keys open locked doors, and a cracked wall may give way to a bomb. Find the way out."
+        ]
+      },
+      "escaped": {
+        "speaker": "Knight",
+        "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+        "pages": ["Daylight at last. The crypt is behind me."]
+      },
+      "fallen": { "pages": ["The torches gutter out. The crypt keeps its secrets for now."] }
+    },
+    "triggers": {
+      "intro": "intro",
+      "end": [
+        { "when": { "status": "exited", "eq": true }, "dialog": "escaped", "heading": "You escaped!" },
+        { "when": { "status": "dead", "eq": true }, "dialog": "fallen", "heading": "You fell" }
+      ]
+    }
   },
   "headless": "headless.ts",
   "view": "view.ts"

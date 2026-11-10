@@ -49,7 +49,12 @@ Import from `@engine/core/ui` (`index.ts`).
   `missing_frame`, `missing_glyph`, `missing_field`), `sliderText`. Engine 0.16 part B: the
   title item `levels`, `END_ITEMS`, the `levels`, `clear` and `end` blocks, `levelsScreen`,
   `clearScreen`, `endScreen`, `levelChoices`, `levelItemId`, `levelItemStage`, stat lines
-  (`statText`, `formatTicks`, `STAT_FORMATS`, `DEFAULT_STAT_LINES`).
+  (`statText`, `formatTicks`, `STAT_FORMATS`, `DEFAULT_STAT_LINES`). Engine 0.16 part C T7:
+  `dialogs` (by id: `speaker?`, `portrait?`, `pages`, `rate?`, `lines?`) and `triggers`
+  (`intro`, `end: [{ when, dialog?, heading?, credits? }]`), `dialogScreen(spec, ctx, id)` (the
+  box across the bottom, widget `DIALOG_WIDGET`, `DIALOG_BOTTOM` px up, tall enough for its
+  portrait), `endScreen`'s optional end trigger (its heading and credits), `MenuDialog`,
+  `EndTrigger`; `checkMenus` checks portraits, page and speaker glyphs and trigger ids.
 - UI screens (T7): `UI_KIND`, `uiScreenSchema`, `checkUiWidgets`, `checkUiRefs`, `UiScreen`
   (`update(input)`, `draws()`, `open`, `close`, `focused`, `value`, `itemBox`), `Menu`, `Button`,
   `DialogBox`, `UiNav` (commands from actions with repeat), `UiInput`, `UiEvent`, `uiLook`,

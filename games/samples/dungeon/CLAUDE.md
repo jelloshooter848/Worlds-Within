@@ -49,6 +49,20 @@ A run ends **escaped** (the hero reached an exit: `exited`) or **fallen** (the h
 death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the end banner says which
 and the scene starts a new run on Z or X (below). Both are world state, so run files assert them.
 
+**Dialogs and the end screen** (Engine 0.16 part C T7): `game.json`'s `menus.dialogs` holds
+`intro` (the knight's portrait, `crypt-actors`' `knight-idle-0`, two pages), `escaped` and
+`fallen`, and `menus.triggers` shows `intro` after Start and, on the first presented frame whose
+status says `exited` or `dead` (the kit's status, `kits/topdown/CLAUDE.md`), that end's dialog and
+then `menus.end` ("You escaped!" or "You fell", the credits line, Time and Rooms seen from the
+frame's `time` and `roomsSeen`, Back to title). The menus style's `sounds.type` (`ui-move`) and
+`page` (`ui-select`) blip as the text types and turns. The text is a placeholder until T9. Where
+the shell shows the end (`page.endings`: dialogs on), the scene gets `shellEnds`: no end banner
+and no Z-to-restart (the end screen's Back to title starts a new run); with `?debug=step` or
+`?record` the dialogs are skipped and the banner shows as before. `view.ts` draws no banner (as
+the page) and gives `status()`, so `pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json
+--tick 1060 --overlay end` shows the end screen with its stats and heading, and `--overlay
+dialog:intro` (or `escaped`, `fallen`) a dialog.
+
 ## How it was built (the worked example)
 
 1. **Start from the scaffold** (`.claude/skills/scaffold-game/SKILL.md`): `game.json` (kit
@@ -111,15 +125,16 @@ manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the en
 opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
 - `picture.ts`: `dungeonLook(content)` (skin, sheets, fonts, picture size), `HUD_TOP` (0),
   `DungeonPicture` (`draw(world, events)`: the kit's `presentWorld` with `idle`, frozen, to the
-  backend's `SkinnedCanvasPresenter` or the `presenter` it is given, plus the end banner;
-  `showHud(shown)`), `dungeonEnd(world)`, `endLines` and `endBanner` (a framed panel in the menus'
+  backend's `SkinnedCanvasPresenter` or the `presenter` it is given, plus the end banner unless
+  `banner: false`; `showHud(shown)`), `dungeonEnd(world)`, `endLines` and `endBanner` (a framed panel in the menus'
   font once the run has ended).
 - `view.ts`: `createView(content, seed, opts?)`, the view entry for `pnpm cli screenshot` (with
   `showHud`, so the title overlay hides the HUD).
 - `scene.ts`: `DungeonScene`: the world stepped once per loop step, its events drawn through
   `DungeonPicture` with the shell's `onSound`, the `crypt` song on enter and `daylight` on the
   way out; once the run has ended (`dungeonEnd`), Z or X at least `END_HOLD` (60) steps later
-  starts a new run seeded from the step count. The world keeps stepping after the end, so until a
+  starts a new run seeded from the step count (not with `shellEnds`, Engine 0.16 part C T7: the
+  shell's end screen ends the run). The world keeps stepping after the end, so until a
   restart the scene is exactly the headless game: `headless()` gives the page's step hook its
   snapshot and hash.
 - `main.ts`: awaits `withContentImages` (the PNG decoded before the first frame), then

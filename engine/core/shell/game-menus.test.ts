@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Action } from '../input/actions';
 import { ActionState } from '../input/input-manager';
 import { SceneStack, type Scene } from '../scene';
-import { buildFont, KEY_NAME_GLYPHS, menusSchema, type MenuSettingsValues } from '../ui';
+import { buildFont, endScreen, KEY_NAME_GLYPHS, menusSchema, type MenuSettingsValues } from '../ui';
 import { GameMenus, type GameMenusOptions } from './game-menus';
 import { titleFromQuery } from './boot';
 import { UiScene } from './ui-scene';
@@ -365,5 +365,138 @@ describe('GameMenus: level select, level clear and end (Engine 0.16 part B, T3)'
     expect(menus.state).toBe('play');
     menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });
     expect(menus.step()).toBe(false);
+  });
+});
+
+describe('GameMenus: dialogs and the end of a top-down game (Engine 0.16 part C T7)', () => {
+  const DIALOGS = menusSchema.parse({
+    font: 't',
+    title: { name: 'Crypt', items: ['start', 'settings'] },
+    pause: { items: ['resume', 'title'] },
+    end: { heading: 'The end', lines: [{ label: 'Time', status: 'time', format: 'time' }] },
+    dialogs: {
+      intro: { speaker: 'Knight', pages: ['Into the crypt', 'Find the way out'], rate: 2 },
+      won: { pages: ['Daylight'], rate: 0 },
+    },
+    triggers: {
+      intro: 'intro',
+      end: [
+        { when: { status: 'exited', eq: true }, dialog: 'won', heading: 'You escaped' },
+        { when: { status: 'dead', eq: true }, heading: 'You fell' },
+      ],
+    },
+  });
+  const crypt = (opts: Partial<GameMenusOptions> = {}) => setup({ spec: DIALOGS, ...opts });
+
+  it('shows the intro after Start, holds the ticks, types, skips, turns the page and closes', () => {
+    const { stack, game, menus, log, press } = crypt();
+    menus.showTitle();
+    press('jump'); // Start: the title closes under the transition, then the intro opens
+    expect(log).toEqual(['transition default']);
+    expect([menus.state, menus.screen, menus.dialog?.id]).toEqual(['dialog', 'dialog', 'intro']);
+    expect(stack.top).toBeInstanceOf(UiScene);
+    expect((stack.top as UiScene).dialogShown()).toBe(true);
+    expect(menus.hudShown).toBe(true);
+    const box = menus.dialog!.box;
+    for (let i = 0; i < 4; i++) press();
+    expect(game.steps).toBe(0); // the game is held under the dialog
+    expect(box.shown).toBe(4); // 9 frames at 2 a character
+    expect(box.typed).toBe(false);
+    expect(menus.pauseKey()).toBe(false); // no pause over a dialog
+    press('jump'); // skip: the page shows whole
+    expect([box.typed, box.page, box.pageText()]).toEqual([true, 0, 'Into the crypt']);
+    press('jump'); // the next page
+    expect([box.page, box.shown]).toEqual([1, 0]);
+    press('jump'); // skip
+    expect(game.steps).toBe(0);
+    press('jump'); // done: the box closes and play starts
+    expect([menus.state, menus.dialog, stack.top]).toEqual(['play', null, game]);
+    expect(game.steps).toBe(1);
+    expect(menus.events.filter((e) => e.screen === 'dialog').map((e) => e.event.type)).toEqual(
+      expect.arrayContaining(['type', 'skip', 'page', 'done']),
+    );
+  });
+
+  it('turns pages on a tap on the box', () => {
+    const { menus, stack, game } = crypt();
+    menus.showTitle();
+    menus.start();
+    const box = menus.dialog!.box;
+    const tap = () => {
+      const frame = new ActionState();
+      frame.beginFrame(new Set());
+      frame.addTaps([{ x: box.box.x + 4, y: box.box.y + 4, button: 'primary' }]);
+      stack.update([frame]);
+    };
+    tap(); // skip
+    expect(box.typed).toBe(true);
+    tap(); // next page
+    expect(box.page).toBe(1);
+    tap();
+    tap(); // done
+    expect([menus.state, game.steps]).toEqual(['play', 0]);
+  });
+
+  it('skips every dialog and ending with dialogs off (?debug=step, ?record)', () => {
+    const { menus, game, press } = crypt({ dialogs: false });
+    menus.showTitle();
+    press('jump');
+    expect(menus.state).toBe('play');
+    expect(game.steps).toBe(1);
+    menus.frameStatus({ exited: true, time: 120 });
+    expect(menus.step()).toBe(false);
+    expect(menus.state).toBe('play');
+  });
+
+  it("ends the game: the end trigger's dialog, then the end screen with its heading, once per game", () => {
+    const { menus, game, press, log } = crypt();
+    menus.frameStatus({ exited: false, dead: false, time: 60 });
+    expect(menus.step()).toBe(false);
+    menus.frameStatus({ exited: true, dead: false, time: 600 });
+    expect(menus.state).toBe('play'); // it opens on the next step, before the scenes update
+    expect(menus.step()).toBe(true);
+    expect([menus.state, menus.dialog?.id]).toEqual(['dialog', 'won']);
+    press('jump'); // rate 0: the page is whole, so this closes it
+    expect([menus.state, menus.screen]).toEqual(['end', 'end']);
+    expect(game.steps).toBe(0);
+    const texts = menus.ui!.draws().filter((d) => d.kind === 'glyph').length;
+    expect(texts).toBeGreaterThan(0);
+    // The ending fires once: closed (the shell invariance test), it does not open again.
+    menus.resume();
+    menus.frameStatus({ exited: true, dead: false, time: 700 });
+    expect(menus.step()).toBe(false);
+    expect(log).toEqual([]); // no transition: the game played on under the dialog and screen
+  });
+
+  it('opens the end screen at once for a trigger without a dialog, and again after Back to title', () => {
+    const { menus, press, log } = crypt();
+    menus.frameStatus({ dead: true, time: 60 });
+    expect(menus.step()).toBe(true);
+    expect([menus.state, menus.screen]).toEqual(['end', 'end']);
+    press('jump'); // Back to title
+    expect(log).toEqual(['transition default', 'restart']);
+    expect(menus.state).toBe('title');
+    press('jump'); // Start: the intro again
+    expect(menus.dialog?.id).toBe('intro');
+    menus.frameStatus({ dead: true, time: 30 });
+    for (let i = 0; i < 4; i++) press('jump');
+    expect(menus.state).toBe('play');
+    expect(menus.step()).toBe(true);
+    expect(menus.state).toBe('end');
+  });
+
+  it('the end screen shows the ending frame status and the trigger heading', () => {
+    const ctx = {
+      screen: { width: 256, height: 240 },
+      fonts: (id: string) => (id === 't' ? FONT : null),
+      frameSize: () => null,
+      keys: {},
+    };
+    const file = endScreen(DIALOGS, ctx, { time: 600 }, DIALOGS.triggers!.end![0]);
+    const texts = file.widgets.flatMap((w) => (w.type === 'text' ? [w.text] : []));
+    expect(texts).toEqual(expect.arrayContaining(['You escaped', 'Time', '0:10']));
+    expect(endScreen(DIALOGS, ctx, {}).widgets.some((w) => w.type === 'text' && w.text === 'The end')).toBe(
+      true,
+    );
   });
 });

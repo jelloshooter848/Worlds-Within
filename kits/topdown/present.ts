@@ -625,7 +625,9 @@ function presentEntities(world: TopDownWorld, ctx: EntityCtx): PresentEntity[] {
  * `ammo.<id>` for every item with ammo (0 until found), `room` (its id), `mapX`/`mapY` (its map
  * cell), `mapCols`/`mapRows`, `visited` (the cells seen, `gx,gy` joined by spaces, sorted),
  * `hasMap`/`hasCompass`, `goalX`/`goalY` once the compass is found, and `top` (the play area's
- * y on the picture, a layout hint).
+ * y on the picture, a layout hint); from Engine 0.16 part C T7 also `time` (the world's ticks),
+ * `roomsSeen`, `exited` (an exit reached), `dead` (the hero dead after his spin) and
+ * `flag.<id>` (true) for each world flag set (a beaten boss's), for a page's end triggers.
  */
 function presentStatus(world: TopDownWorld, top: number): Record<string, PresentStatusValue> {
   const d = world.dungeon;
@@ -652,7 +654,14 @@ function presentStatus(world: TopDownWorld, top: number): Record<string, Present
     hasMap: world.found.has('map'),
     hasCompass: world.found.has('compass'),
     top,
+    // The run's state for a page's end triggers and end screen (Engine 0.16 part C T7):
+    // presentation only, never in the snapshot.
+    time: world.frame,
+    roomsSeen: cells.length,
+    exited: world.exited,
+    dead: world.hero.dead,
   });
+  for (const flag of [...world.flags].sort()) status[`flag.${flag}`] = true;
   // A boss in the room (Engine 0.16 part C T6): its bar's values; none without one.
   const boss = bossesIn(world.entities)[0];
   if (boss) {

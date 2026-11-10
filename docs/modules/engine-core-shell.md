@@ -9,7 +9,7 @@ The browser shell every game page shares (Engine 0.7): choosing the backend from
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
 display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
-campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`, and (part B) a level select, a level-clear banner, an end screen and an event-triggered respawn transition. A game's `main.ts` and scene are then a few lines of glue.
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`, and (part B) a level select, a level-clear banner, an end screen and an event-triggered respawn transition, and (part C) dialog boxes from data shown after Start and at a game's end. A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -150,6 +150,35 @@ format? }` read from the frame status) and `menus.end` (`heading?`, `credits?`, 
   game; before each draw the boot hands it to `BrowserDisplay.showHud(shown)` (both backends give
   it; a presenter's optional `showHud`), so the game picture under those screens has no HUD. The
   pause menu and the end screen keep it. Presentation only: no hash moves.
+- **Dialog boxes from data and the end of any game (Engine 0.16 part C T7)**: `menus.dialogs`
+  (dialogs by id: `speaker?`, `portrait?` a sprite or skin PNG image frame, `pages`, `rate?`,
+  `lines?`) and `menus.triggers`: `intro` (a dialog id shown once Start or Continue has closed the
+  title, before play) and `end` (`[{ when, dialog?, heading?, credits? }]`: the first whose `when`,
+  a status test like a music mix rule's, holds on a presented frame's status ends the game once:
+  its dialog, then the end screen `menus.end` with its heading and credits and that frame's status
+  as the stats). A dialog is a `UiScene` on the stack, so the game's ticks are held under it like
+  the pause menu; confirm (keyboard, gamepad) or a tap or click on the box types the page out,
+  turns it, then closes it; `style.sounds.type`/`page` blip and the mixer ducks the music. Off
+  with `?debug=step` and `?record` (`dialogsFromQuery`, as the title), so runs, replays and the
+  stepped-shell invariance test play straight through; `?title=show` or `?dialogs=show` shows them.
+  `BootPage.endings` tells the scene the shell shows the end (the dungeon then draws no banner).
+  `__ww.menus()` has `state: 'dialog'` and `dialog { id, page, pages, shown, typed, text, x, y, w,
+h }`. `pnpm -s cli screenshot <run> --tick N --overlay dialog:<id>` draws one (its first page
+  typed out, or `*<frames>`); `--overlay end` picks the end trigger whose test holds on the frame.
+  `validate` reports a missing portrait sheet or frame, glyphs a page or speaker lacks, a trigger
+  naming no dialog (`missing_ref`) and an end trigger with nothing to show (`missing_field`).
+  Example: `games/samples/dungeon/game.json`.
+
+  ```json
+  "dialogs": {
+    "intro": { "speaker": "Knight", "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+               "pages": ["The old crypt lies under the hill.", "Find the way out."] }
+  },
+  "triggers": {
+    "intro": "intro",
+    "end": [{ "when": { "status": "exited", "eq": true }, "dialog": "escaped", "heading": "You escaped!" }]
+  }
+  ```
 
   ```json
   "title": { "items": ["start", "levels", "controls", "settings"], ... },
@@ -210,10 +239,14 @@ from a code);
 `game-menus.test.ts` (Engine 0.16 T9: the title holding the game, Start, Continue, pause and
 resume holding the ticks, settings and controls in the pause menu's place, Back to title, the
 title query; Engine 0.16 part B: the level select with locks and marks, a level started, the
-clear banner off the stack, the end screen with summed stats); `tests/browser/menus.test.ts` opens
+clear banner off the stack, the end screen with summed stats; part C T7: the intro after Start
+and the trigger order, held ticks, type, skip, page and close by keys and taps, an ending's dialog
+then its end screen once per game, dialogs off); `shell.test.ts` (a boot with dialogs shown, held
+ticks and hashes, `?dialogs=`); `tests/browser/menus.test.ts` opens
 every sample's and the fx lab's title, starts, pauses and changes settings by keyboard and by
 touch, and reads them back after a reload, and plays the fx lab's level select, clear banner and
-end screen by keyboard, gamepad and touch; `tests/runs/stepped-shell-invariance.test.ts` plays
+end screen by keyboard, gamepad and touch, and The Old Crypt's intro, a fall to its `fallen` dialog
+and end screen (part C T7); `tests/runs/stepped-shell-invariance.test.ts` plays
 every run file through the shell with the respawn transition, the banner and the end screen on;
 `tests/browser/volume-control.test.ts` finds the volume control on every sample page and checks
 two pages keep their volumes across a reload;

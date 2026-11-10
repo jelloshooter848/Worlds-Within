@@ -112,7 +112,10 @@ skins without an `idle` state draw as before; tested in `present.test.ts`).
   with ammo, `room`, `mapX`/`mapY`, `mapCols`/`mapRows`, `visited` (`gx,gy` cells, sorted, joined
   by spaces), `hasMap`, `hasCompass`, `goalX`/`goalY` (with the compass) and `top`; while a boss
   is in the room (Engine 0.16 part C T6) also `bossHp`, `bossMaxHp`, `bossName` and `bossPhase`,
-  for a HUD bar (a room without one has none of them).
+  for a HUD bar (a room without one has none of them). From Engine 0.16 part C T7 also `time`
+  (the world's ticks), `roomsSeen` (the visited cells), `exited`, `dead` (the hero dead after his
+  spin) and `flag.<id>: true` per world flag set (a beaten boss's `flag`), for a page's end
+  triggers (`menus.triggers.end`) and end screen stats. Presentation only: no hash moves.
 - **Events**: the `TdEvent`s' JSON-safe fields; hero events (`sword`, `hurt`, `pickup`, `dash`,
   `dash-end`, ...) get
   the hero's centre and `entity: 'hero'`, `unlock` its doorway's middle. From Engine 0.16 part C

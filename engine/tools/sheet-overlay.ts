@@ -10,6 +10,7 @@ import {
   type TransitionSpec,
   type TransitionView,
 } from '@engine/core/fx';
+import { mixWhenHolds } from '@engine/core/audio/mix';
 import { defaultBindings } from '@engine/core/input/bindings';
 import { keyHintMap } from '@engine/core/input/key-hints';
 import type { DeepReadonly } from '@engine/core/present';
@@ -19,6 +20,8 @@ import { contentOf } from '@engine/core/content/bundle';
 import { CAMPAIGN_KIND } from '@engine/core/content/engine-kinds';
 import {
   clearScreen,
+  DIALOG_WIDGET,
+  dialogScreen,
   endScreen,
   levelChoices,
   levelsScreen,
@@ -50,12 +53,15 @@ import { SHEET_MENU_SCREENS, type SheetMenuScreen, type SheetOverlay } from './s
 export const SHEET_MENU_FRAMES = 30;
 /** Display frames a `ui` screen is stepped before its picture (a dialog types its first page). */
 export const SHEET_UI_FRAMES = 120;
+/** At most this many frames a `dialog:<id>` overlay types its first page for (without `*<n>`). */
+export const SHEET_DIALOG_MAX_FRAMES = 2000;
 /** The half length of a transition named by its kind (`fade`, `wipe`, `iris`), in frames. */
 export const SHEET_TRANSITION_TICKS = 20;
 
 /**
  * Reads one overlay as written in a tile (after its `+`): `title`, `pause`, `settings`,
- * `controls`, `ui=<file>` or `ui=<file>.<widget>`, each with an optional `*<frames>`, or a
+ * `controls`, `ui=<file>` or `ui=<file>.<widget>`, each with an optional `*<frames>`, a shell
+ * dialog `dialog:<id>` (with `*<frames>`, else stepped until its first page is typed out), or a
  * transition slot (`level`, `scene`, `mission`, `default`) or kind (`fade`, `wipe`, `iris`) with
  * an optional `*<age>` (default: the frame it first covers everything). Throws an `Error` naming
  * what is wrong.
@@ -71,6 +77,11 @@ export function parseOverlay(text: string): SheetOverlay {
   }
   if ((SHEET_MENU_SCREENS as readonly string[]).includes(head))
     return { kind: 'menu', screen: head as SheetMenuScreen, frames: count ?? SHEET_MENU_FRAMES };
+  if (head.startsWith('dialog:')) {
+    const id = head.slice('dialog:'.length);
+    if (id === '') throw new Error(`"${text}": dialog: needs a dialog id of menus.dialogs`);
+    return { kind: 'dialog', id, frames: count };
+  }
   if (head.startsWith('ui=')) {
     const [file, ...rest] = head.slice(3).split('.');
     if (file === undefined || file === '') throw new Error(`"${text}": ui= needs a ui file's name`);
@@ -81,7 +92,7 @@ export function parseOverlay(text: string): SheetOverlay {
   const known = [...TRANSITION_SLOTS, ...TRANSITION_KINDS] as readonly string[];
   if (known.includes(head)) return { kind: 'transition', what: head, age: count ?? -1 };
   throw new Error(
-    `"${text}" is not an overlay: use ${SHEET_MENU_SCREENS.join(', ')}, ui=<file>[.<widget>], or a transition (${known.join(', ')}), each with an optional *<n>`,
+    `"${text}" is not an overlay: use ${SHEET_MENU_SCREENS.join(', ')}, ui=<file>[.<widget>], dialog:<id>, or a transition (${known.join(', ')}), each with an optional *<n>`,
   );
 }
 
@@ -92,6 +103,8 @@ export function overlayLabel(o: SheetOverlay): string {
       return o.screen;
     case 'ui':
       return `ui ${o.file}${o.widget === null ? '' : `.${o.widget}`}`;
+    case 'dialog':
+      return `dialog ${o.id}`;
     case 'transition':
       return `${o.what} frame ${o.age}`;
   }
@@ -137,6 +150,14 @@ export function checkOverlay(content: ContentBundle, overlay: SheetOverlay): str
       if (file === undefined) return `the game has no ui file "${overlay.file}"`;
       if (overlay.widget !== null && !file.widgets.some((w, i) => (w.id ?? `#${i}`) === overlay.widget))
         return `the ui file "${overlay.file}" has no widget "${overlay.widget}"`;
+      return null;
+    }
+    case 'dialog': {
+      const dialogs = content.manifest.menus?.dialogs;
+      if (dialogs?.[overlay.id] === undefined)
+        return dialogs === undefined
+          ? `the game's menus have no "dialogs", so it has no dialog "${overlay.id}"`
+          : `the game has no dialog "${overlay.id}"; it has ${Object.keys(dialogs).join(', ')}`;
       return null;
     }
     case 'transition': {
@@ -201,16 +222,31 @@ export function sheetLevels(content: ContentBundle): { id: string; name: string 
 export function overlayUi(content: ContentBundle, overlay: SheetOverlay, opts: OverlayUiOptions): UiDraw[] {
   if (overlay.kind === 'transition') return [];
   const screen = content.manifest.screen;
+  const ctx: MenuBuildContext = {
+    screen,
+    fonts: opts.fonts,
+    frameSize: opts.frameSize,
+    keys: keyHintMap(defaultBindings(0).keyboard),
+  };
+  if (overlay.kind === 'dialog') {
+    const spec = content.manifest.menus;
+    if (spec === undefined) throw new Error(`the game has no "menus" for dialog ${overlay.id}`);
+    const ui = new UiScreen(dialogScreen(spec, ctx, overlay.id), {
+      screen,
+      fonts: opts.fonts,
+      frameSize: opts.frameSize,
+    });
+    const idle = { commands: [], taps: [], pointer: null };
+    if (overlay.frames !== null) for (let i = 0; i < overlay.frames; i++) ui.update(idle);
+    else
+      for (let i = 0; i < SHEET_DIALOG_MAX_FRAMES && ui.dialog(DIALOG_WIDGET)?.typed !== true; i++)
+        ui.update(idle);
+    return ui.draws();
+  }
   let file: UiScreenFile;
   if (overlay.kind === 'menu') {
     const spec = content.manifest.menus;
     if (spec === undefined) throw new Error(`the game has no "menus" for ${overlay.screen}`);
-    const ctx: MenuBuildContext = {
-      screen,
-      fonts: opts.fonts,
-      frameSize: opts.frameSize,
-      keys: keyHintMap(defaultBindings(0).keyboard),
-    };
     const status = opts.status ?? {};
     file =
       overlay.screen === 'title'
@@ -220,7 +256,13 @@ export function overlayUi(content: ContentBundle, overlay: SheetOverlay, opts: O
           : overlay.screen === 'clear'
             ? clearScreen(spec, ctx, status)
             : overlay.screen === 'end'
-              ? endScreen(spec, ctx, status)
+              ? endScreen(
+                  spec,
+                  ctx,
+                  status,
+                  // The end trigger whose test holds on the frame (its heading), as the shell picks it.
+                  spec.triggers?.end?.find((t) => mixWhenHolds(t.when, status)),
+                )
               : overlay.screen === 'pause'
                 ? pauseScreen(spec, ctx)
                 : overlay.screen === 'settings'

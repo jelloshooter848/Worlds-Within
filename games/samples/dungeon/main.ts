@@ -16,7 +16,10 @@ import gameFiles from 'virtual:game-files';
  * `ww:dungeon:volumes`, gap M1) and the step hook with `?debug=step`. The skin's PNG sheets (the
  * CC0 DungeonTileset II in `assets/`) are decoded before the page boots. The scene draws through
  * the display's own presenter (`DungeonPicture` with `presenter`), so the shell's sounds, hit
- * pauses, shake and flashing settings and the HUD hidden under the title all reach it.
+ * pauses, shake and flashing settings and the HUD hidden under the title all reach it. The
+ * intro and end dialogs and the end screen are `game.json`'s `menus.dialogs` and `triggers`
+ * (Engine 0.16 part C T7), shown by the shell; where it shows them (`page.endings`) the scene
+ * draws no end banner of its own.
  */
 const content = await withContentImages(mustLoad(loadDungeon(gameFiles)));
 const look = dungeonLook(content);
@@ -31,8 +34,12 @@ void bootBrowserGame({
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound, onHitPause: hitPause }),
   },
-  scene: (_stack, display) =>
-    new DungeonScene(content, look, { music: (id) => audio?.playMusic(id), presenter: display.presenter }),
+  scene: (_stack, display, page) =>
+    new DungeonScene(content, look, {
+      music: (id) => audio?.playMusic(id),
+      presenter: display.presenter,
+      shellEnds: page.endings,
+    }),
 }).then((booted) => {
   audio = booted?.audio ?? null;
 });

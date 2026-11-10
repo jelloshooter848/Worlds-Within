@@ -346,6 +346,40 @@ transition, music?, restart, ... })` (`booted.menus`) puts each screen on the st
     `../save/settings.test.ts`, `tests/runs/stepped-shell-invariance.test.ts` (every run file
     through the shell with the respawn transition, the banner and the end screen, golden hashes
     held) and `tests/browser/menus.test.ts` (the fx lab's by keyboard, gamepad and touch).
+- **Dialog boxes from data and the end of any game** (Engine 0.16 part C T7; `game-menus.ts`,
+  `boot.ts`; the specs are `../ui/menus.ts`'s `dialogs` and `triggers`):
+  - **Intro:** `GameMenus.start()` (Start or Continue), once the `default` transition has covered
+    the picture and the title closed, shows `triggers.intro` (`showDialog(id)`: a `UiScene` of
+    `dialogScreen` on the stack, `transitionSlot: null`, screen `dialog`, state `dialog`). The
+    stack steps only its top, so the game's ticks are held while it shows, as under the pause
+    menu. The box's `done` (confirm or a tap after the last page is typed) pops it: play.
+  - **Ending:** `frameStatus(status)` first tests `triggers.end` in order (`mixWhenHolds`); the
+    first that holds fires once per game (until `newGame`: the title or a level chosen), keeping
+    that frame's status. `step()` (each loop step, before the scenes) then shows its `dialog`
+    (marked as the ending's) and, when that closes, or at once without one, the end screen
+    (`openEnd`: `menus.end` with the trigger's `heading`/`credits`, the stats from the ending's
+    status, its music). `resume()` closes the end screen as before; the ending does not fire
+    again.
+  - **Input:** the dialog takes the UI kit's confirm (Z, Space, Enter, gamepad A or Start) and
+    taps or clicks on its box (the menus' pointer); the pause key does nothing over it
+    (`pauseKey()` false). `hudShown` stays true. Sounds: the menus style's `sounds.type` and
+    `page` through `onSound`; the mixer ducks the music while `UiScene.dialogShown()`.
+  - **Skipping:** `GameMenusOptions.dialogs` (default true) is the boot's
+    `dialogsFromQuery(search)`: `?dialogs=show|skip` (`DIALOGS_QUERY`), else as `titleFromQuery`
+    (off with `?debug=step` and `?record`, on with `?title=show`). Off, neither trigger fires, so
+    run files, replays, the step hook and `tests/runs/stepped-shell-invariance.test.ts` (which
+    boots with `?title=skip`) play exactly as before.
+  - **The page:** `BootPage.endings` (and `booted.endings`) is true when the menus show and
+    `triggers.end` is given with dialogs on: the scene need not draw an end banner of its own (the
+    dungeon sample's `shellEnds`). `MenusState` and `MenusView.state` gain `dialog`;
+    `__ww.menus().dialog` is `{ id, page, pages, shown, typed, text, x, y, w, h }` or null;
+    `GameMenus.dialog` is `{ id, box }` (the `DialogBox`). `body[data-menu]` may be `dialog`.
+  - Tested in `game-menus.test.ts` (trigger order after Start, held ticks, type, skip, page and
+    close by keys and taps, the ending's dialog then the end screen, once per game, a trigger
+    without a dialog, dialogs off), `shell.test.ts` (a boot: the intro with the hash held, Z to
+    close, the ending from a presented status, `?debug=step` alone, `?dialogs=show`,
+    `dialogsFromQuery`) and `tests/browser/menus.test.ts` (The Old Crypt by keyboard: the intro,
+    a fall played from `lost-in-the-guard-room`'s input, the `fallen` dialog, the end screen).
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and

@@ -17,7 +17,9 @@ crypt darker, blasts lighting the room, a vignette and dust in the air, all in t
 `lighting` block).
 A thin scene runs the kit's world, hands the kit's presentation frames to the page display's
 presenter (or its own `SkinnedCanvasPresenter`), shows the end banner and starts a new run on Z
-or X. Its `CLAUDE.md` is a worked example of
+or X where the shell does not show the end itself; from Engine 0.16 part C T7 `game.json`'s
+`menus.dialogs` and `triggers` give an intro dialog after Start and, when the hero escapes or
+falls, a dialog and the end screen (`menus.end`: time and rooms seen), placeholder text until T9. Its `CLAUDE.md` is a worked example of
 building a top-down game on the engine.
 
 ## Public API entry points

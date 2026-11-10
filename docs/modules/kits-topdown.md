@@ -26,7 +26,8 @@ and speed, a defeat sequence and a world `flag` (the snapshot's `flags`). The ro
 `boss` (`shutters: "boss"`) seals the boss room until it is down. Randomness only through the
 world's seeded RNG. Events `boss-telegraph`, `boss-attack`, `boss-hit`, `boss-phase`,
 `boss-defeat`, `boss-defeated`; presented as kind `boss:<id>` with its states and tags, and HUD
-status `bossHp`, `bossMaxHp`, `bossName`, `bossPhase`. Rules `boss-patterns`, `boss-phases`,
+status `bossHp`, `bossMaxHp`, `bossName`, `bossPhase`. From T7 the status also has `time`,
+`roomsSeen`, `exited`, `dead` and `flag.<id>` for a page's end triggers (presentation only). Rules `boss-patterns`, `boss-phases`,
 `boss-hit-invuln`, `boss-seals-room`. For combat feel, `hit`, `kill`, `stun` and the boss events are
 placed in presented frames at their entity (`eventPlace`, kept beside the event, so no hash moves).
 

@@ -22,6 +22,11 @@ export interface DungeonSceneOptions {
    * settings and hides the HUD under the title) instead of one of the scene's own.
    */
   presenter?: Presenter;
+  /**
+   * The shell shows the run's end (its dialogs and end screen, `BootPage.endings`): no end banner
+   * and no Z-to-restart here (Back to title starts a new run). Default false.
+   */
+  shellEnds?: boolean;
 }
 
 /**
@@ -60,6 +65,7 @@ export class DungeonScene implements Scene {
   update(input: InputFrame): void {
     this.frame++;
     if (
+      !this.opts.shellEnds &&
       dungeonEnd(this.world) &&
       ++this.ended > END_HOLD &&
       (input.pressed('attack') || input.pressed('jump'))
@@ -80,6 +86,7 @@ export class DungeonScene implements Scene {
     this.picture ??= new DungeonPicture(r, this.look, {
       ...(this.opts.onSound ? { onSound: this.opts.onSound } : {}),
       ...(this.opts.presenter ? { presenter: this.opts.presenter } : {}),
+      ...(this.opts.shellEnds ? { banner: false } : {}),
     });
     this.picture.draw(this.world, this.events.splice(0));
   }

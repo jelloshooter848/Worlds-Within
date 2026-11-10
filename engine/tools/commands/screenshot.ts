@@ -94,7 +94,7 @@ export const screenshotCommand = defineCommand({
       .min(1)
       .optional()
       .describe(
-        "draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>] or a transition, each with an optional *<n>",
+        "draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>], dialog:<id> (a menus.dialogs box) or a transition, each with an optional *<n>",
       ),
   }),
   async run({ args, flags }, ctx) {
