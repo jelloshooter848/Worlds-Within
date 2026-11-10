@@ -122,6 +122,8 @@ describe('dependency rule: the layer table', () => {
   it('names an owner for each external package it restricts, and the owners exist', () => {
     const three = PACKAGES.find((p) => p.name === 'three');
     expect(three?.owners).toEqual(['engine/backends/three']);
+    const pixi = PACKAGES.find((p) => p.name === 'pixi.js');
+    expect(pixi?.owners).toEqual(['engine/backends/pixi']);
     for (const pkg of PACKAGES) {
       expect(pkg.owners.length, pkg.name).toBeGreaterThan(0);
       for (const dir of pkg.owners) expect(existsSync(join(ROOT, dir)), dir).toBe(true);
@@ -131,6 +133,7 @@ describe('dependency rule: the layer table', () => {
   it.each([
     ['three', 'three'],
     ['three/addons/controls/OrbitControls.js', 'three'],
+    ['pixi.js', 'pixi.js'],
     ['@types/three', '@types/three'],
     ['@scope/pkg/sub/path', '@scope/pkg'],
     ['node:fs', 'node:fs'],
@@ -213,6 +216,14 @@ describe('dependency rule: the checker', () => {
     ['engine/backends/canvas2d/renderer.ts', 'three', 'another backend -> three'],
     ['engine/sim/world.ts', 'three', 'sim -> three'],
     ['engine/tools/cli.ts', 'three', 'tools -> three'],
+    ['kits/rts/world.ts', 'pixi.js', 'kit -> pixi.js'],
+    ['engine/core/gfx/renderer.ts', 'pixi.js', 'core -> pixi.js'],
+    ['games/samples/tower-defense/main.ts', 'pixi.js', 'sample game -> pixi.js'],
+    ['engine/backends/canvas2d/renderer.ts', 'pixi.js', 'another backend -> pixi.js'],
+    ['engine/backends/three/scene.ts', 'pixi.js', 'the 3D backend -> pixi.js'],
+    ['engine/backends/pixi/renderer.ts', 'three', 'the PixiJS backend -> three'],
+    ['engine/sim/world.ts', 'pixi.js', 'sim -> pixi.js'],
+    ['engine/tools/cli.ts', 'pixi.js', 'tools -> pixi.js'],
   ];
 
   it.each(bad)('rejects %s importing %s (%s)', (from, spec) => {
@@ -260,6 +271,8 @@ describe('dependency rule: the checker', () => {
     ['engine/backends/three/scene.ts', 'three', 'the 3D backend -> three'],
     ['engine/backends/three/scene.test.ts', 'three', 'the 3D backend test -> three'],
     ['engine/backends/three/geometry.ts', 'three/src/math/Vector3.js', 'the 3D backend -> a three subpath'],
+    ['engine/backends/pixi/renderer.ts', 'pixi.js', 'the PixiJS backend -> pixi.js'],
+    ['engine/backends/pixi/renderer.test.ts', 'pixi.js', 'the PixiJS backend test -> pixi.js'],
     ['engine/core/loop.ts', 'zod', 'an unrestricted package'],
     ['tests/architecture/x.test.ts', 'three', 'unlayered tooling -> three'],
   ];

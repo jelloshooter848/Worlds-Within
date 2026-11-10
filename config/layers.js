@@ -148,6 +148,12 @@ export const PACKAGES = [
     reason:
       "Three.js is the 3D backend's own renderer: everything else reaches 3D through a skin and a Presenter",
   },
+  {
+    name: 'pixi.js',
+    owners: ['engine/backends/pixi'],
+    reason:
+      "PixiJS is the WebGL 2D backend's own renderer (Engine 0.16 T13b): everything else reaches it through the Renderer contract, a skin and a Presenter",
+  },
 ];
 
 /**

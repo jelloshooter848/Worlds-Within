@@ -108,7 +108,8 @@ Inside the engine:
 - the simulation imports only core (never a backend or a kit);
 - tools (the CLI) may use any engine part, and load a game by its folder path at run time.
 - some npm packages belong to one unit: `three` may be imported only by the 3D backend
-  (`engine/backends/three`); the table lists each such package and its owners (`PACKAGES`).
+  (`engine/backends/three`), `pixi.js` only by the PixiJS 2D backend (`engine/backends/pixi`,
+  Engine 0.16 T13b); the table lists each such package and its owners (`PACKAGES`).
 
 This is enforced by an ESLint import-restriction rule **and** a test, both reading one table
 (`config/layers.js`), so an LLM can't blur the boundary by accident. A third test scans kit code for
@@ -179,7 +180,8 @@ engine/
   core/        loop, scenes, input, audio (MML synth), save, RNG, maths, presentation contract,
                the mission contract and campaign files as plain JSON (0.10), campaign saves
                and save codes (0.13)
-  backends/    canvas2d (2D sprites), three (2.5D/3D, from 0.6), null (headless)
+  backends/    canvas2d (2D sprites), pixi (2D on WebGL via PixiJS v8, from 0.16), three
+               (2.5D/3D, from 0.6), null (headless)
   sim/         the world: entities, time, events, missions, auto-resolve, opportunities (from 0.8),
                fates of named people and carry-over between scenarios (0.13)
   tools/       the CLI: validate, run, dump, screenshot, get/set/add/remove; docs generation
