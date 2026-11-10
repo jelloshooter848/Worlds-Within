@@ -902,6 +902,17 @@ describe('resolveMeshParts', () => {
     ]);
   });
 
+  it("leaves a model entry's stand-in mesh unscaled: its `scale` is px per model unit", () => {
+    const plain = { mesh: 'box', color: '#fff' };
+    const model = { ...plain, model: 'assets/pack/thing.glb', scale: 18 };
+    expect(resolveMeshParts(skin, model, { w: 4, h: 8 })).toEqual(
+      resolveMeshParts(skin, plain, { w: 4, h: 8 }),
+    );
+    expect(resolveMeshParts(skin, model, { w: 16, h: 16 })).toEqual(
+      resolveMeshParts(skin, plain, { w: 16, h: 16 }),
+    );
+  });
+
   it('gives no parts for a sprite entry or an unknown mesh', () => {
     expect(resolveMeshParts(skin, { frames: { idle: 'a' } }, { w: 16, h: 16 })).toEqual([]);
     expect(resolveMeshParts(skin, { mesh: 'nope', color: '#fff' }, { w: 16, h: 16 })).toEqual([]);

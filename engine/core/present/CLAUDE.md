@@ -110,7 +110,8 @@ number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 th
     animation state -> clip name; a tile: one name) and `castShadow`. `anchor`, `rotate` and
     `clip` without `model` are `missing_field`; all are `wrong_backend_field` on a 2D skin. The
     entry's `mesh` and `color` are still needed: the backend shows that text mesh while the
-    model loads. `modelClipFor(clip, state)` (the state's clip, else `idle`'s, else null),
+    model loads (or without a model library, or when it fails), at the box's size: a model
+    entry's `scale` never grows it (`resolveMeshParts`). `modelClipFor(clip, state)` (the state's clip, else `idle`'s, else null),
     `resolveSkinModel(skin, entity)` (`SkinModel` `{ model, scale, anchor, rotate, castShadow,
 clip, time, offset }`, `time` = `anim.t` / `MODEL_TICKS_PER_SECOND`, 60; the kind's or its
     tag look's model), `resolveTileModel(entry, frame)` and `skinModelUses(skin)` (every model

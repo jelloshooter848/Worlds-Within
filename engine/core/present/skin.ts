@@ -464,7 +464,9 @@ const kindEntry = z.strictObject({
     .number()
     .positive()
     .exactOptional()
-    .describe("3D: size factor about the box's bottom centre (default 1)"),
+    .describe(
+      "3D: size factor about the box's bottom centre; for a `model`, px per model unit (the stand-in mesh is then not scaled) (default 1)",
+    ),
   depth,
   z: zOffset,
   model: modelPath.exactOptional(),
@@ -524,7 +526,9 @@ const tileEntry = z.strictObject({
     .number()
     .positive()
     .exactOptional()
-    .describe("3D: size factor about the tile's bottom centre; for a `model`, px per model unit (default 1)"),
+    .describe(
+      "3D: size factor about the tile's bottom centre; for a `model`, px per model unit (the stand-in mesh is then not scaled) (default 1)",
+    ),
   anchor: modelAnchor.exactOptional(),
   rotate: modelRotate.exactOptional(),
   clip: id
@@ -1878,7 +1882,8 @@ export interface MeshPart {
  * (`{ w: tileSize, h: tileSize }`). A primitive is one part filling `box`, `depth` px thick
  * (default `box.w`); a compound mesh is its parts as written, each defaulting to the entry's
  * colour. `scale` then grows every part about the box's bottom centre (so feet stay on the
- * ground), and `offset` and `z` move the whole mesh. An entry with no `mesh` (a sprite entry), or
+ * ground; not for an entry with a `model`, whose `scale` is px per model unit, so its stand-in
+ * mesh is the box's size), and `offset` and `z` move the whole mesh. An entry with no `mesh` (a sprite entry), or
  * a mesh id the skin lacks, gives no parts. Pure.
  */
 export function resolveMeshParts(
@@ -1903,7 +1908,8 @@ export function resolveMeshParts(
     }));
   } else return [];
 
-  const scale = 'scale' in entry ? (entry.scale ?? 1) : 1;
+  // A model entry's `scale` is px per model unit, not the stand-in mesh's size factor.
+  const scale = entry.model === undefined && 'scale' in entry ? (entry.scale ?? 1) : 1;
   const offset = 'offset' in entry ? entry.offset : undefined;
   const dx = offset?.x ?? 0;
   const dy = offset?.y ?? 0;

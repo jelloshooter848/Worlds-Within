@@ -280,6 +280,16 @@ describe('ThreeScene with models (Engine 0.16 T11)', () => {
       without.entity('c1')!.children[0]!.position,
     );
     expect(meshNames(without.entity('t1')!)).toEqual(['BoxGeometry']);
+    // The stand-in is the box's size, not grown by the model's `scale` (px per model unit).
+    const unscaled = new ThreeScene(
+      skinSchema.parse({ backend: 'three', kinds: { thing: { mesh: 'box', color: '#d82800' } } }) as SkinFile,
+    );
+    unscaled.sync(frame(0, [thing()]));
+    const stand = bounds(without.entity('t1')!);
+    const plain = bounds(unscaled.entity('t1')!);
+    expect(stand.min).toEqual(plain.min);
+    expect(stand.max).toEqual(plain.max);
+    expect(stand.max.y - stand.min.y).toBeCloseTo(16);
   });
 
   it("plays the clip mapped from the entity's anim state, at anim.t / 60 s, without a rebuild", async () => {
