@@ -141,7 +141,8 @@ enough; silence so far has meant the build kept its default):
   owner's screenshot review), **340-363** (smaller build choices added by the finalize pass).
 - Engine 0.16 part B: **364-392** (build choices of T4-T10), **393** (the owner's playtest),
   **394** (the owner's screenshot review), **395-399** (the close-out's choices and the looks found
-  and left in the screenshots).
+  and left in the screenshots), **400-418** (smaller build choices of T1-T3 and the build
+  process, added by the finalize pass).
 
 ### Items not met, and where they went
 
@@ -172,7 +173,7 @@ The flagship platformer, **Hopper's Way** (docs/ROADMAP.md, 0.16 part B), built 
 sample became a short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and a lit
 2.5D view (Three.js), at a 16:9 screen (320x180; 6x is 1920x1080). Its old content is the test
 game `games/platformer-classic`. **Open for the owner:** the playtest (item 393) and the
-screenshot review (item 394), then the build choices 364-392 and 395-399.
+screenshot review (item 394), then the build choices 364-392 and 395-418.
 
 ### What was built
 
@@ -228,7 +229,7 @@ screenshot review (item 394), then the build choices 364-392 and 395-399.
 ### Choices made
 
 Items 364-392 and 395-399 in [FEEDBACK-LOG.md](FEEDBACK-LOG.md) (Engine 0.16 part B, T4-T11);
-each is built and kept unless the owner says otherwise. T1-T3 added no items. In short: the CC0
+each is built and kept unless the owner says otherwise. T1-T3's choices are items 400-418 (below). In short: the CC0
 substitutes for the packs' missing enemies and 3D characters (364, 365); the old content as
 `games/platformer-classic`, the 320x180 screen, the `hoppers-way` profile, the placeholder skin
 (366-369); the Ninja Frog, Kenney's critters, the parallax art, the engine's tile joins, the hurt
@@ -237,6 +238,20 @@ arena, its look, the banner and end screen, the boss runs (379-383); the layered
 engine additions, the sounds and the ducking (384-387); the 2.5D models, look, engine additions,
 no runner label in 3D and no depth of field (388-392); the review screenshot folder (395), the
 heading-width fix (396), the `W` (397), and two looks found and left for the owner (398, 399).
+
+### Smaller build choices
+
+The finalize pass recorded the builders' smaller choices that the owner should check as items
+400-418 in [FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part B, finalize"): the checkpoint
+respawn policy and which checkpoint is current (400, 401); new snapshot fields only when used, so
+no hash moved (402); `jumpCut` under the `variable-jump` rule and the coyote count (403, 404);
+`checkLevel`'s ground rule for checkpoints (405); the boss's `clear: "boss"` header, phases,
+stomp grace, projectiles and its one seeded random spread (406-408); what the `boss` run guards
+(409); the level-clear banner painted over the game, the end screen's summed stats, when the
+respawn transition plays, level locks and stored progress (410-413); the browser tests holding
+`run` as X (414); vitest's 30 s timeout (415); committing two found, finished tasks (T3, T7) as
+their own commits (416); generators not committed (417); a HUD text item drawn without its status
+(418).
 
 ### Golden hashes
 
@@ -352,10 +367,16 @@ tower-defense samples and the platformer lab, and for each run file of Hopper's 
 classic game (the folder checks of those two and the fx lab exit 4 as documented, above and in
 0.16 part A).
 
+Run again by the second finalize pass on the committed T11 tree (nothing red, nothing to fix):
+`pnpm lint`, `pnpm typecheck`, `pnpm docs:check`, `pnpm test` (257 files, 3080 passed, 1
+skipped) and `pnpm build` pass; all 71 run files exit 0 through `pnpm -s cli run`; `pnpm -s cli
+validate games/samples/platformer` passes and `mutants` exits 0 for each of its ten run files.
+That pass added items 400-418 (above) and changed only the docs.
+
 ### Outstanding issues
 
 - **The owner's playtest and screenshot review:** items 393 and 394; parts C-F wait for 394.
-- The build choices of part B (items 364-392, 395-399) wait for the owner's answers.
+- The build choices of part B (items 364-392, 395-418) wait for the owner's answers.
 - 2.5D Burrlock's colour and the arena's 3D grass (item 398); the HUD over the top rows (399).
 - 3D pictures are drawn on SwiftShader here (no GPU in the build container), as every 3D
   screenshot since 0.6.

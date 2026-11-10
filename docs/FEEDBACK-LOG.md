@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 400.** (Last used: 399.)
+**Next unused number: 419.** (Last used: 418.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1589,3 +1589,54 @@ files")
   the top two rows of the level, so the frog bumping the life block high in Autumn Hills' cache
   (tick 631) is half behind it. Make the HUD smaller or translucent while the frog is under it,
   move it, or leave it?
+
+**Engine 0.16 part B, finalize: smaller build choices** (T1-T3 and the build process; details in
+`docs/BUILD-LOG.md`, Engine 0.16 part B, "Smaller build choices")
+
+- **400.** A checkpoint respawn resets only the player: coins taken stay taken, used blocks and
+  broken bricks stay, and actors keep moving (as the old respawn at the start did). With no lives
+  left the level fails and restarts from scratch, without the checkpoint. OK?
+- **401.** The checkpoint touched last becomes the current one, even an earlier one the player
+  walked back to; touching the current one again does nothing. OK?
+- **402.** To keep every old hash, the new snapshot fields appear only when used: `checkpoint` only
+  in levels with a `K`, `player.coyote` only when the profile's `coyote` is over 0 (as
+  `endedRound` does). OK?
+- **403.** `jumpCut` is guarded by the existing `variable-jump` rule, not a rule of its own (the
+  lab's `feel` run checks it). Should it be a separate rule?
+- **404.** Coyote time counts from the tick after the player walks off: `coyote: 6` allows a jump
+  up to 6 ticks late, not 7 (pinned by unit tests). OK?
+- **405.** `checkLevel` accepts a checkpoint only with a solid or one-way tile right under it; a
+  breakable brick counts as solid, though it could be broken later. OK?
+- **406.** A boss level clears through a header field (`clear: "boss"`, boss on the map, no goal
+  needed; a goal still clears it too), and boss phases are a list of hp thresholds, each with its
+  own pattern. OK?
+- **407.** A stomp on the boss always bounces the player and gives it a short grace (`kickGrace`,
+  15 ticks), so the player is not hurt on the way up; during the boss's hit invulnerability a
+  stomp only bounces. OK?
+- **408.** Boss projectiles are ordinary actor types (flying or falling) and vanish at a wall, on
+  landing or on touching the player; there is no separate spawn event (the boss-attack event names
+  the projectile). The only randomness is the drop step's optional spread, from the world's seeded
+  rng. OK?
+- **409.** The sample's `boss` run guards `boss-hit-invuln` through the invulnerability values it
+  checks, not a real double stomp (that is in `boss.test.ts`). Enough?
+- **410.** The level-clear banner is declared in `game.json` (`menus.clear`), not a `ui` content
+  file, and is painted over the game rather than pushed as a scene (a scene would stop the
+  between-level pause), so it takes no input and hides under an open menu. OK?
+- **411.** The end screen opens when the page's last level is cleared and sums the stats of the
+  levels cleared since the game started or a level was picked. OK?
+- **412.** The respawn transition plays only when `transitions.respawn` is set or an event maps to
+  it (no fallback to `default`), after the frame with the death sound; a respawn that ends a
+  mini-game round is covered by the round's own transition instead. OK?
+- **413.** Levels unlock one by one (`menus.levels.lock`, default on), and progress is stored with
+  the settings helpers under `ww:<game>:progress`. OK?
+- **414.** The browser tests hold the run files' `run` action as X (attack, which also runs),
+  because `run` has no key of its own. Should `run` get its own key?
+- **415.** Vitest's global test timeout was raised from 5 s to 30 s (`vite.config.ts`): under full
+  load, unrelated slow tests failed at random. OK, or set it per slow test?
+- **416.** Builders found two finished but uncommitted tasks in the tree (T3 and T7) and committed
+  them as their own commits after all checks passed (b829e3e, 2a63285). OK as a rule for future
+  builds?
+- **417.** The art, skin and boss-input generators (scratch Python and a reactive bot) were not
+  committed; the text art, skins and run files they made are now the source. OK, or commit them?
+- **418.** A HUD text item with a format is drawn even when its status is missing, so Burrlock's
+  name is a sprite icon instead. Should the engine hide such text when the status is missing?
