@@ -3139,6 +3139,12 @@
     "torch": {
       "mesh": "torch",
       "color": "#503000",
+      "model": "assets/fx-lab-glb/brazier.glb",
+      "scale": 18,
+      "anchor": "bottom",
+      "rotate": { "y": 30 },
+      "clip": { "idle": "flicker" },
+      "castShadow": true,
       "emit": ["torch-smoke", "torch-flame"]
     }
   },
@@ -3512,7 +3518,7 @@
       "anchor": "top",
       "offset": {
         "x": 0,
-        "y": 6
+        "y": -1
       },
       "gravity": -0.02,
       "size": [3, 3, 1],
@@ -3527,7 +3533,7 @@
       "anchor": "top",
       "offset": {
         "x": 0,
-        "y": 2
+        "y": -6
       },
       "gravity": -0.004,
       "drag": 0.01,

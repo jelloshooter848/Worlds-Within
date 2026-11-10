@@ -34,7 +34,10 @@ object.
 - `content/png.ts`, `content/assets.ts` (Engine 0.16 T10): a game's `assets/` folder as strings
   (`bundle.assets`; binary files as base64 `data:` URLs), `readPngSize`, `encodePng`, and the
   checks `loadContent` runs on it: `missing_credits` and `bad_licence` at `assets/CREDITS.md`,
-  `missing_file`, `bad_image` and `frame_outside_image` at a skin's `images.<id>`.
+  `missing_file`, `bad_image` and `frame_outside_image` at a skin's `images.<id>`; from Engine
+  0.16 T11 a 3D skin's glTF models (`content/gltf.ts`: GLB and `.gltf` header readers, clip
+  names, `encodeGlb`, `lowPolyModel`): `missing_file` and `bad_model` at `kinds.<kind>.model`,
+  `missing_clip` at `kinds.<kind>.clip.<state>`.
 - `gfx/palette-schema.ts`: `paletteSchema` (`{ id, colors }`).
 - `node/game-files.ts` (Node only): `readGameFiles(dir)`, a game's `game.json`, `content/**` and
   (Engine 0.16 T10) `assets/**`.

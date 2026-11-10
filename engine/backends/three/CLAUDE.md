@@ -8,9 +8,11 @@ backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), t
 (`fit.ts`), the page's display (`display.ts`: `threeDisplay`, `threeScenePresenter`,
 `webgl2Available`), the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
 `GeometryCache`), the HUD pass (`hud.ts`: `HudLayer`, `HudQuad`, `frameTexture`), the parallax planes (`parallax.ts`:
-`ParallaxPlanes`, `PARALLAX_DEPTH_STEP`, Engine 0.16 T4) and `PARTICLE_POOL`.
+`ParallaxPlanes`, `PARALLAX_DEPTH_STEP`, Engine 0.16 T4), the glTF models (`models.ts`:
+`ModelLibrary`, `ModelInstance`, Engine 0.16 T11) and `PARTICLE_POOL`.
 
-Node vs browser: `scene.ts`, `hud.ts` (no canvas: its textures are `DataTexture`s), `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
+Node vs browser: `scene.ts`, `hud.ts` (no canvas: its textures are `DataTexture`s), `models.ts`
+(three's `GLTFLoader` parses a GLB from bytes with no WebGL or DOM), `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
 in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebGLRenderer`) and
 `applyCanvasBox` (it sets CSS) are browser only: Node has no WebGL, so they only typecheck in
 `pnpm test` and are exercised in Playwright Chromium (the 3D play page and
@@ -125,6 +127,44 @@ camera.
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit. No
 `Math.random`, `Date.now` or `performance.now` in this folder's code (a test checks); Three's own
 object UUIDs use randomness internally, which is fine: they never reach a state or a hash.
+
+## glTF/GLB models (`models.ts`, Engine 0.16 T11)
+
+A 3D skin's kind or tile entry may name a model in the game's `assets/` beside its text mesh:
+`model: "assets/<pack>/<file>.glb"` (or `.gltf`), `scale` (px per model unit), `anchor`
+(`bottom`, the default: the model's bounding box's bottom centre on the box's bottom centre;
+`center`: its centre on the box's centre; `origin`: the model's origin; or a model point
+`{ x, y, z }`), `rotate` (`{ x?, y?, z? }` degrees, applied before scale and anchor), `clip` (a
+kind: one name or animation state -> clip name, falling back to `idle`'s; a tile: one name) and
+`castShadow` (set on the meshes; the scene draws no shadows until Engine 0.16 T12). The schema,
+`resolveSkinModel(skin, entity)`, `resolveTileModel(entry, frame)`, `modelClipFor` and
+`skinModelUses` are in `@engine/core/present`; `validate`'s checks (`missing_file`, `bad_model`,
+`missing_clip`, the credits) in `@engine/core/content/assets.ts`.
+
+- `ModelLibrary(assets)` holds the game's asset files (`content.assets`, data URLs). `load(path)`
+  parses one model once with `GLTFLoader.parseAsync` (a `.gltf` is first packed into a GLB by the
+  core's `gltfToGlb`, so its embedded buffers need no fetch: Node has no `ProgressEvent` for
+  three's file loader) and caches its scene and clips; a missing or broken file resolves to null
+  (`status(path)`: `missing`, `loading`, `ready`, `failed`; `error(path)`). `get(path)` gives the
+  model or null, starting the load. `preload(skins)` loads every model the skins name;
+  `dispose()` frees the cached geometries and materials.
+- `ModelInstance(model, spec, box)` is one entity's (or tile cell's) copy: a `SkeletonUtils`
+  clone with its own materials (geometries shared), `rotate`d, scaled and placed by `anchor`
+  from its rest-pose bounds, then moved by the entry's `offset` (px, y down) and `z`, its meshes
+  `castShadow` as the entry says. `pose(clip, time)` plays a clip by name with an
+  `AnimationMixer` set to exactly `time` seconds (looped), so the same frame always shows the
+  same pose; a new clip stops the old one (its tracks go back to the rest pose), null or an
+  unknown name shows the rest pose. `playing`, `meshes()`, `dispose()`.
+- `ThreeScene`'s `models` option: an entity whose entry has a `model` is built from it once
+  `models.get` has it (`userData.model`), its text mesh until then (`userData.loading`; also
+  forever without the option), and rebuilt when it arrives; while it shows the model, `poses`
+  frames do not rebuild it, and each frame poses the clip for its `anim.state` at `anim.t` /
+  `MODEL_TICKS_PER_SECOND` (60). A tile with a loaded model is one instance per cell (named
+  `tile:<key>:model`, at the cell's bottom centre) instead of instanced blocks, posed each frame
+  on `frame.frame` / 60; a map built while a tile model was loading is rebuilt once it is there.
+  Entries without a `model` are built exactly as before. `ThreePresenter`, `withSkin`,
+  `threeDisplay` and `threeScenePresenter` pass `models` on; the screenshot page and the fx lab's
+  page make one from `content.assets` and await `preload` before the first frame.
 
 ## ThreePresenter (browser only)
 
@@ -258,5 +298,12 @@ reduced flashing and `effectSettings`, and the parallax planes: each quad's corn
 where the 2D layout draws it, on the camera behind the blocks with no depth test, layers moving
 at their own rates, and gradients only without sheets. `transition.test.ts` (Engine 0.16 T5) checks the transition pass's
 uniforms for a fade, a wipe and an iris, and `ThreeScene.focus()` centred and at the map's edge.
+`models.test.ts` (Engine 0.16 T11) parses an inline model (written with the core's
+`lowPolyModel`) as a GLB and as an embedded `.gltf` in Node, checks missing and broken files,
+each anchor, scale, rotate and offset by the instance's bounds, clips posed at exact times (set,
+not added) and let go, own materials and shared geometry, `castShadow`, and in a `ThreeScene` the
+text mesh while loading then the model, text-mesh kinds unchanged and nothing but text meshes
+without a library, the clip mapped from the anim state, tile models per cell rebuilt once, and
+repeatable builds over a frozen frame and skin.
 WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser
 (`tests/browser/fx-lab.test.ts` shoots the lab's transitions in 3D too).

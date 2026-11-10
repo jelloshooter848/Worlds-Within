@@ -292,6 +292,41 @@ describe('validate', () => {
     expect(await errors()).toEqual([[SKIN, 'images["lab-torch"].image', 'missing_file']]);
   });
 
+  it('checks the glTF models of a 3D skin: file, header and clips (Engine 0.16 T11)', async () => {
+    // A copy of the fx lab, whose 3D skin shows the torch as assets/fx-lab-glb/brazier.glb.
+    const root = tempDir();
+    cpSync(join(ROOT, 'games/fx-lab'), join(root, 'games/fx-lab'), { recursive: true });
+    const lab = join(root, 'games/fx-lab');
+    const SKIN = 'games/fx-lab/content/skins/three.json';
+    const MODEL = join(lab, 'assets/fx-lab-glb/brazier.glb');
+    const errors = async () => {
+      const run = await cli(['validate', 'games/fx-lab', '--json'], { cwd: root });
+      const json = run.json();
+      expect(run.code).toBe((json.errors as unknown[]).length === 0 ? EXIT.ok : EXIT.invalidContent);
+      return (json.errors as { file: string; path: string; code: string }[]).map((e) => [
+        e.file,
+        e.path,
+        e.code,
+      ]);
+    };
+    expect(await errors()).toEqual([]);
+
+    // A clip the model does not have, at the state that names it.
+    const skinPath = join(root, SKIN);
+    const skinText = readFileSync(skinPath, 'utf8');
+    writeFileSync(skinPath, skinText.replace('"idle": "flicker"', '"idle": "blaze"'));
+    expect(await errors()).toEqual([[SKIN, 'kinds.torch.clip.idle', 'missing_clip']]);
+    writeFileSync(skinPath, skinText);
+
+    // A file that is not a GLB, then no file at all: each at the entry's model field.
+    const glb = readFileSync(MODEL);
+    writeFileSync(MODEL, 'not a model');
+    expect(await errors()).toEqual([[SKIN, 'kinds.torch.model', 'bad_model']]);
+    rmSync(MODEL);
+    expect(await errors()).toEqual([[SKIN, 'kinds.torch.model', 'missing_file']]);
+    writeFileSync(MODEL, glb);
+  });
+
   it('prints one line per error for people', async () => {
     const root = demoCopy();
     writeFileSync(join(root, 'games/samples/dungeon/content/songs/crypt.json'), '{ nope');

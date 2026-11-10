@@ -1,3 +1,4 @@
+import type { ModelLibrary } from './models';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { FontLookup, UiDraw, UiPainter } from '@engine/core/ui';
 import type { Renderer } from '@engine/core/gfx/renderer';
@@ -42,6 +43,8 @@ export interface ThreeDisplayOptions {
   sheets?: PixelSheetLookup;
   /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for every skin's HUD. */
   fonts?: FontLookup;
+  /** The game's glTF models (`new ModelLibrary(content.assets)`, Engine 0.16 T11), for every scene. */
+  models?: ModelLibrary;
 }
 
 /** Whether this browser gives a WebGL 2 context (Three.js needs WebGL 2). Browser only. */
@@ -83,6 +86,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.models !== undefined && { models: opts.models }),
     });
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
@@ -95,6 +99,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.models !== undefined && { models: opts.models }),
     });
   // UI screens (Engine 0.16 T9: the shell's menus) are collected while the scenes draw and drawn
   // over the frame as an overlay pass on `present`.
@@ -144,6 +149,7 @@ export function threeScenePresenter(
     rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
     sheets?: PixelSheetLookup;
     fonts?: FontLookup;
+    models?: ModelLibrary;
     /** Each event sound with its cue (Engine 0.16 T8), as the display's `onSound`. */
     onSound?: (id: string, cue?: SoundCue) => void;
   },
@@ -153,6 +159,7 @@ export function threeScenePresenter(
     ...(opts.background !== undefined && { background: opts.background }),
     ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+    ...(opts.models !== undefined && { models: opts.models }),
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
   });
   let shown = scene;
@@ -164,6 +171,7 @@ export function threeScenePresenter(
       size: opts.screen,
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.models !== undefined && { models: opts.models }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     });
     roundPresenters[id] = show(rounds[id]);

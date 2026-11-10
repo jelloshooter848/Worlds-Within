@@ -26,7 +26,8 @@ import type { ShotJob, ShotRefusal, ShotResult } from './job';
  * game `<id>`, Engine 0.7 T8) on a WebGL canvas of the same size instead: it reads the WebGL renderer
  * string first and refuses (a {@link ShotRefusal}) when there is no context, or when it is a
  * software renderer and `job.allowSoftwareGl` is false; it syncs the scene with every tick's
- * frame (so the camera's lerp is the one play shows) and renders once, at the last tick.
+ * frame (so the camera's lerp is the one play shows) and renders once, at the last tick. The
+ * skins' glTF models (Engine 0.16 T11) are loaded first (`ModelLibrary.preload`).
  */
 
 /** The state hash as `run` computes it: the first 16 hex digits of the SHA-256 of the JSON. */
@@ -139,18 +140,23 @@ async function shootThree(
     };
   const skins = skinSet(content, 'three');
   if (!skins.main) throw new Error(`the game has no skin with backend "three"`);
-  const { ThreePresenter, isSoftwareRenderer } = await import('@engine/backends/three');
+  const { ModelLibrary, ThreePresenter, isSoftwareRenderer } = await import('@engine/backends/three');
   const canvas = newCanvas(job);
   // The sprite sheets as decoded pixels, for every skin's HUD (gap G33).
   const sheets = contentPixelSheets(content);
   // The font files, for HUD text and the UI kit's widgets (Engine 0.16 T6).
   const fonts = contentFonts(content);
+  // The skins' glTF models (Engine 0.16 T11), loaded before the first frame so none shows its
+  // text mesh stand-in.
+  const models = new ModelLibrary(content.assets ?? {});
+  await models.preload([skins.main, ...Object.values(skins.rounds)]);
   let presenter: InstanceType<typeof ThreePresenter>;
   try {
     presenter = new ThreePresenter(canvas, skins.main, {
       size: job.screen,
       sheets,
       fonts,
+      models,
       ...(game.background !== undefined && { background: game.background }),
     });
   } catch (error) {
@@ -167,7 +173,7 @@ async function shootThree(
   const draws: Record<string, Presenter> = {};
   const syncs: Record<string, Presenter> = {};
   for (const [id, skin] of Object.entries(skins.rounds)) {
-    const round = presenter.withSkin(skin, { sheets, fonts });
+    const round = presenter.withSkin(skin, { sheets, fonts, models });
     draws[id] = round;
     syncs[id] = { present: (f) => round.scene.sync(f) };
   }
@@ -177,6 +183,7 @@ async function shootThree(
   const played = await play(job, game, (tick) => (tick === job.ticks ? draw : sync).present(frame()));
   const png = canvas.toDataURL('image/png');
   presenter.dispose();
+  models.dispose();
   return { png, width: canvas.width, height: canvas.height, ...played, renderer };
 }
 

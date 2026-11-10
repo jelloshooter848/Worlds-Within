@@ -39,6 +39,8 @@ import {
   resolveMeshParts,
   resolveSkinKind,
   resolveSkinMesh,
+  resolveSkinModel,
+  resolveTileModel,
   skinBackground,
   skinTagIndex,
   resolveSkinEvent,
@@ -57,6 +59,7 @@ import {
 import { GeometryCache } from './geometry';
 import type { FontLookup } from '@engine/core/ui';
 import { HudLayer } from './hud';
+import { ModelInstance, type ModelLibrary } from './models';
 import { ParallaxPlanes } from './parallax';
 
 type Skin = DeepReadonly<SkinFile>;
@@ -93,6 +96,12 @@ export interface ThreeSceneOptions {
   sheets?: PixelSheetLookup;
   /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for HUD text and widgets. */
   fonts?: FontLookup;
+  /**
+   * The game's glTF/GLB models (Engine 0.16 T11), `new ModelLibrary(content.assets)`: a kind or
+   * tile with a `model` shows it once loaded, and its text `mesh` until then. Without it every
+   * entry shows its text mesh.
+   */
+  models?: ModelLibrary;
 }
 
 /** Ticks an effect lasts when the skin gives none (the same as the Canvas2D presenter). */
@@ -155,15 +164,21 @@ interface EntityNode {
   h: number;
   /** The `byTag` look it was built with (-1: the kind's own). */
   look: number;
-  /** The mesh it was built with (its `poses` frame, else the entry's `mesh`). */
-  mesh: string | undefined;
-  materials: MeshLambertMaterial[];
+  /** What it was built from: `model:<path>` (a loaded model), else `mesh:<name>` (its `poses` frame or `mesh`). */
+  shape: string;
+  /** The model instance it shows, or null (text meshes). */
+  model: ModelInstance | null;
+  materials: Material[];
 }
 
 /** The map being shown, its built blocks, and whether this frame shows it. */
 interface ShownMap {
   map: DeepReadonly<PresentMap>;
   group: Group;
+  /** Tile cells shown as a model, each posed on the frame clock (the tile entry's `clip`). */
+  models: { instance: ModelInstance; tile: string }[];
+  /** Model paths that were still loading when it was built: it is rebuilt once they are there. */
+  waiting: string[];
 }
 
 /**
@@ -301,6 +316,7 @@ export class ThreeScene {
     this.fxClock++;
     this.takeEvents(frame);
     this.updateMap(frame);
+    this.poseTileModels(frame.frame);
     this.updateEntities(frame);
     this.cameraFx.update(this.fxClock);
     this.updateCamera(frame, size);
@@ -348,7 +364,7 @@ export class ThreeScene {
 
   /** Frees every geometry and material this scene made. */
   dispose(): void {
-    if (this.shown) disposeMap(this.shown.group);
+    if (this.shown) disposeMap(this.shown);
     this.shown = null;
     for (const node of this.nodes.values()) disposeNode(node);
     this.nodes.clear();
@@ -465,15 +481,18 @@ export class ThreeScene {
     this.mapVisible = map !== undefined;
     if (map !== undefined) {
       const same = this.shown && this.shown.map.id === map.id && this.shown.map.version === map.version;
-      if (!same) {
+      // A tile model that was loading when the map was built is shown once it is there.
+      const loaded = same && this.shown!.waiting.some((path) => this.opts.models?.get(path));
+      if (!same || loaded) {
+        const full = this.shown && same ? this.shown.map : map;
         if (this.shown) {
           this.scene.remove(this.shown.group);
-          disposeMap(this.shown.group);
+          disposeMap(this.shown);
           this.shown = null;
         }
         // A reference to a map never sent shows nothing until it comes.
-        if (isFullMap(map)) {
-          this.shown = { map, group: this.buildMap(map) };
+        if (isFullMap(full)) {
+          this.shown = this.buildMap(full);
           this.scene.add(this.shown.group);
           this.builds++;
         }
@@ -482,9 +501,23 @@ export class ThreeScene {
     if (this.shown) this.shown.group.visible = this.mapVisible;
   }
 
-  /** One `InstancedMesh` per tile key and mesh part, for `tiles` and then each layer. */
-  private buildMap(map: DeepReadonly<PresentMap>): Group {
+  /** Poses every tile model on the frame clock (its entry's `clip`, `frame` / 60 seconds). */
+  private poseTileModels(frame: number): void {
+    const tiles = this.skin.tiles ?? {};
+    for (const { instance, tile } of this.shown?.models ?? []) {
+      const spec = resolveTileModel(tiles[tile]!, frame);
+      instance.pose(spec?.clip ?? null, spec?.time ?? 0);
+    }
+  }
+
+  /**
+   * One `InstancedMesh` per tile key and mesh part, for `tiles` and then each layer; a tile whose
+   * entry has a loaded `model` is one model instance per cell instead (Engine 0.16 T11).
+   */
+  private buildMap(map: DeepReadonly<PresentMap>): ShownMap {
     const group = new Group();
+    const models: ShownMap['models'] = [];
+    const waiting = new Set<string>();
     group.name = `map:${map.id}@${map.version}`;
     const ts = map.tileSize;
     const tiles = this.skin.tiles ?? {};
@@ -520,6 +553,20 @@ export class ThreeScene {
         }
       }
       for (const [key, list] of cells) {
+        const spec = resolveTileModel(tiles[key]!);
+        const loaded = spec && this.opts.models ? this.opts.models.get(spec.model) : null;
+        if (spec && loaded) {
+          for (const [col, row] of list) {
+            const instance = new ModelInstance(loaded, spec, { w: ts, h: ts });
+            instance.object.name = `tile:${key}:model`;
+            instance.object.userData = { tile: key, layer: grid.layer, model: spec.model };
+            instance.object.position.set(col * ts + ts / 2, -(row + 1) * ts, grid.z);
+            group.add(instance.object);
+            models.push({ instance, tile: key });
+          }
+          continue;
+        }
+        if (spec && this.opts.models) waiting.add(spec.model);
         const parts = resolveMeshParts(this.skin, tiles[key]!, { w: ts, h: ts });
         parts.forEach((part, p) => {
           const blocks = new InstancedMesh(
@@ -544,7 +591,7 @@ export class ThreeScene {
         });
       }
     }
-    return group;
+    return { map, group, models, waiting: [...waiting] };
   }
 
   // ---- Entities ----
@@ -560,7 +607,7 @@ export class ThreeScene {
           node.w !== e.w ||
           node.h !== e.h ||
           node.look !== this.lookOf(e) ||
-          node.mesh !== resolveSkinMesh(this.skin, e))
+          node.shape !== this.shapeOf(e))
       ) {
         this.scene.remove(node.root);
         disposeNode(node);
@@ -587,10 +634,43 @@ export class ThreeScene {
     return skinTagIndex(Object.hasOwn(kinds, e.kind) ? kinds[e.kind] : undefined, e.tags);
   }
 
+  /**
+   * What an entity is built from now: `model:<path>` when its entry's model is loaded (asking the
+   * library starts the load), else `mesh:<name>` (its `poses` frame or `mesh`). A model's clips
+   * play on it without a rebuild.
+   */
+  private shapeOf(e: Entity): string {
+    const model = resolveSkinModel(this.skin, e);
+    if (model && this.opts.models?.get(model.model)) return `model:${model.model}`;
+    return `mesh:${resolveSkinMesh(this.skin, e) ?? ''}`;
+  }
+
   /** The meshes for an entity's kind (or its tag's look) and box, under a root at the box's bottom centre. */
   private buildEntity(e: Entity): EntityNode {
     const entry = resolveSkinKind(this.skin, e);
     const box = { w: e.w, h: e.h };
+    const shape = this.shapeOf(e);
+    const spec = resolveSkinModel(this.skin, e);
+    const loaded = spec && this.opts.models ? this.opts.models.get(spec.model) : null;
+    if (spec && loaded) {
+      // A glTF model (Engine 0.16 T11), placed by its anchor on the box's bottom centre.
+      const instance = new ModelInstance(loaded, spec, box);
+      const root = new Group();
+      root.name = `entity:${e.id}`;
+      root.userData = { id: e.id, kind: e.kind, fallback: false, model: spec.model };
+      root.add(instance.object);
+      const look = this.lookOf(e);
+      return {
+        root,
+        kind: e.kind,
+        w: e.w,
+        h: e.h,
+        look,
+        shape,
+        model: instance,
+        materials: instance.materials,
+      };
+    }
     // A `poses` cycle swaps the mesh by animation state and frame (Engine 0.16 T2).
     const mesh = resolveSkinMesh(this.skin, e);
     const shown = entry && mesh !== undefined ? { ...entry, mesh } : entry;
@@ -604,12 +684,14 @@ export class ThreeScene {
     }
     const root = new Group();
     root.name = `entity:${e.id}`;
-    root.userData = { id: e.id, kind: e.kind, fallback };
-    const materials: MeshLambertMaterial[] = [];
+    // While its model loads (or without a model library) an entry shows its text mesh.
+    root.userData = { id: e.id, kind: e.kind, fallback, ...(spec && { model: spec.model, loading: true }) };
+    const materials: Material[] = [];
     for (const part of parts) {
       const material = new MeshLambertMaterial({ color: part.color });
       materials.push(material);
       const mesh = new Mesh(this.geometries.get(part.shape, part.size), material);
+      if (entry?.castShadow === true) mesh.castShadow = true;
       // Parts are placed from the box's top-left (y down); the root is its bottom centre (y up).
       mesh.position.set(
         part.at.x + part.size.w / 2 - box.w / 2,
@@ -619,7 +701,7 @@ export class ThreeScene {
       mesh.rotation.y = (part.rotate * Math.PI) / 2;
       root.add(mesh);
     }
-    return { root, kind: e.kind, w: e.w, h: e.h, look: this.lookOf(e), mesh, materials };
+    return { root, kind: e.kind, w: e.w, h: e.h, look: this.lookOf(e), shape, model: null, materials };
   }
 
   private place(node: EntityNode, e: Entity): void {
@@ -629,6 +711,10 @@ export class ThreeScene {
     node.root.scale.set(mirror * (fx?.squashX ?? 1), fx?.squashY ?? 1, 1);
     // `rotate` is clockwise on screen; with y up that is a negative turn about z.
     node.root.rotation.z = (-(fx?.rotate ?? 0) * Math.PI) / 180;
+    if (node.model) {
+      const spec = resolveSkinModel(this.skin, e);
+      node.model.pose(spec?.clip ?? null, spec?.time ?? 0);
+    }
     const alpha = Math.min(1, Math.max(0, fx?.alpha ?? 1));
     for (const m of node.materials) {
       const transparent = alpha < 1;
@@ -717,9 +803,10 @@ function makePoints(blend: 'normal' | 'add'): ParticlePoints {
   return points;
 }
 
-function disposeMap(group: Group): void {
+function disposeMap(shown: ShownMap): void {
   const materials = new Set<Material>();
-  for (const child of group.children) {
+  for (const { instance } of shown.models) instance.dispose();
+  for (const child of shown.group.children) {
     if (child instanceof InstancedMesh) {
       materials.add(child.material as Material);
       child.dispose();
@@ -729,5 +816,6 @@ function disposeMap(group: Group): void {
 }
 
 function disposeNode(node: EntityNode): void {
-  for (const m of node.materials) m.dispose();
+  if (node.model) node.model.dispose();
+  else for (const m of node.materials) m.dispose();
 }

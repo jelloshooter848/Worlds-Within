@@ -2,6 +2,7 @@ import { Color, SRGBColorSpace, WebGLRenderer } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { FontLookup, UiDraw } from '@engine/core/ui';
 import { HudLayer } from './hud';
+import type { ModelLibrary } from './models';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   skinBackground,
@@ -40,6 +41,8 @@ export interface ThreePresenterOptions {
   sheets?: PixelSheetLookup;
   /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for HUD text and widgets. */
   fonts?: FontLookup;
+  /** The game's glTF models (`new ModelLibrary(content.assets)`, Engine 0.16 T11), for every scene. */
+  models?: ModelLibrary;
 }
 
 /**
@@ -77,6 +80,7 @@ export class ThreePresenter implements Presenter {
       ...sceneEffects(opts),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.models !== undefined && { models: opts.models }),
     });
     this.renderer = new WebGLRenderer({
       canvas,
@@ -153,6 +157,7 @@ export class ThreePresenter implements Presenter {
       ...sceneEffects(opts),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.models !== undefined && { models: opts.models }),
     });
     this.others.push(scene);
     return {

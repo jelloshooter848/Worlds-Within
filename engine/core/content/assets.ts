@@ -1,4 +1,6 @@
 import { frameOutside, imageSheetFrameList, type ImageSheetSpec } from '../gfx/image-sheet';
+import { skinModelUses, type SkinFile } from '../present/skin';
+import { gltfClipNames, gltfExternalRefs, readModelAsset } from './gltf';
 import { contentError, type ContentError } from './validate';
 import { ASSETS_DIR, CREDITS_FILE, dataUrlBytes, readPngSize } from './png';
 
@@ -15,6 +17,11 @@ import { ASSETS_DIR, CREDITS_FILE, dataUrlBytes, readPngSize } from './png';
  * - **Skin images.** Each skin's `images` entry: its PNG must be there (`missing_file` at
  *   `images.<id>.image`), be a PNG (`bad_image`, its header read for the size) and hold every
  *   frame (`frame_outside_image` at `images.<id>.grid` or `images.<id>.frames.<name>`).
+ * - **Skin models** (Engine 0.16 T11). Each 3D kind or tile `model`: its file must be there
+ *   (`missing_file` at `kinds.<kind>.model`), be a glTF 2.0 model (`bad_model`: a GLB's magic,
+ *   version 2, length and JSON chunk, or a `.gltf`'s JSON and `asset.version`; no buffer or image
+ *   in another file) and have every clip the entry names (`missing_clip` at `kinds.<kind>.clip` or
+ *   `kinds.<kind>.clip.<state>`).
  *
  * Pure: the files are the `{ path: text }` strings the loader gets (binary ones as `data:` URLs).
  */
@@ -144,7 +151,43 @@ export function checkSkinImages(
   return errors;
 }
 
-/** Every asset problem of a game: its credits, then each skin's images in entry order. */
+/** Problems with one skin's glTF models (kinds' and tiles' `model` and `clip`) against the asset files. */
+export function checkSkinModels(
+  file: string,
+  skin: SkinFile,
+  assets: Readonly<Record<string, string>>,
+): ContentError[] {
+  const errors: ContentError[] = [];
+  for (const use of skinModelUses(skin)) {
+    const data = assets[use.model];
+    const at = [...use.path, 'model'];
+    if (data === undefined) {
+      errors.push(contentError(file, at, 'missing_file', `no file "${use.model}" in the game folder`));
+      continue;
+    }
+    const read = readModelAsset(use.model, data);
+    if (!read.ok) {
+      errors.push(contentError(file, at, 'bad_model', `"${use.model}": ${read.message}`));
+      continue;
+    }
+    const external = gltfExternalRefs(read.json);
+    if (external !== null) {
+      errors.push(contentError(file, at, 'bad_model', `"${use.model}": ${external}`));
+      continue;
+    }
+    const names = gltfClipNames(read.json);
+    for (const { path, clip } of use.clips) {
+      if (names.includes(clip)) continue;
+      const has = names.length === 0 ? 'it has no clips' : `its clips: ${names.join(', ')}`;
+      errors.push(
+        contentError(file, [...path], 'missing_clip', `"${use.model}" has no clip "${clip}" (${has})`),
+      );
+    }
+  }
+  return errors;
+}
+
+/** Every asset problem of a game: its credits, then each skin's images and models in entry order. */
 export function checkGameAssets(
   assets: Readonly<Record<string, string>>,
   entries: readonly { kind: string; file: string; value: unknown }[],
@@ -155,6 +198,7 @@ export function checkGameAssets(
     if (e.kind !== 'skin') continue;
     const images = (e.value as { images?: Record<string, ImageSheetSpec> }).images;
     if (images !== undefined) errors.push(...checkSkinImages(at(e.file), images, assets));
+    errors.push(...checkSkinModels(at(e.file), e.value as SkinFile, assets));
   }
   return errors;
 }

@@ -208,7 +208,21 @@ const SPRITE_FIELDS = [
   'blend',
   'glow',
 ] as const;
-const MESH_FIELDS = ['mesh', 'color', 'poses', 'scale', 'depth', 'z'] as const;
+const MESH_FIELDS = [
+  'mesh',
+  'color',
+  'poses',
+  'scale',
+  'depth',
+  'z',
+  'model',
+  'anchor',
+  'rotate',
+  'clip',
+  'castShadow',
+] as const;
+/** The model fields that mean nothing without a `model` (Engine 0.16 T11). */
+const MODEL_FIELDS = ['anchor', 'rotate', 'clip'] as const;
 /** Skin-level fields only a 3D skin has. */
 const MESH_SKIN_FIELDS = ['meshes', 'camera3d'] as const;
 
@@ -224,6 +238,46 @@ const zOffset = z
   .number()
   .exactOptional()
   .describe('3D: px toward the camera from the depth plane (default 0)');
+
+/** Where a model sits on its box when a skin gives no `anchor` (Engine 0.16 T11). */
+export const DEFAULT_MODEL_ANCHOR = 'bottom';
+/** Ticks per second of a model's animation clips: an entity's `anim.t` / 60 is the clip time. */
+export const MODEL_TICKS_PER_SECOND = 60;
+/** The named model anchors: the bounding box's bottom centre, its centre, or the model's origin. */
+export const MODEL_ANCHORS = ['bottom', 'center', 'origin'] as const;
+export type ModelAnchorName = (typeof MODEL_ANCHORS)[number];
+
+const modelPath = z
+  .string()
+  .regex(/^assets\/[^/]+\/[^/]+(?:\/[^/]+)*\.(?:glb|gltf)$/i, {
+    message: 'a glTF model in a pack folder of the game\'s assets: "assets/<pack>/<file>.glb" (or .gltf)',
+  })
+  .describe(
+    "3D: a glTF/GLB model, `assets/<pack>/<file>.glb` or `.gltf` relative to the game folder (Engine 0.16); the entry's `mesh` shows while it loads",
+  );
+const modelAnchor = z
+  .union([
+    z.enum(MODEL_ANCHORS),
+    z.strictObject({
+      x: z.number().describe('model units right'),
+      y: z.number().describe('model units up'),
+      z: z.number().describe('model units toward the viewer'),
+    }),
+  ])
+  .describe(
+    "3D model: the model point put on the box's bottom centre: `bottom` (its bounding box's bottom centre, the default), `center` (its centre, put on the box's centre), `origin` (the model's own origin) or a point `{ x, y, z }` in model units",
+  );
+const modelRotate = z
+  .strictObject({
+    x: z.number().exactOptional().describe('degrees about x'),
+    y: z.number().exactOptional().describe('degrees about y (upright); 90 turns its front to the right'),
+    z: z.number().exactOptional().describe('degrees about z'),
+  })
+  .describe('3D model: a turn applied before `scale` and `anchor`, in degrees (x, then y, then z)');
+const castShadow = z
+  .boolean()
+  .exactOptional()
+  .describe('3D: the model (or mesh) casts a shadow where the scene draws shadows (default false)');
 
 const meshPart = z.strictObject({
   shape: z.enum(MESH_PRIMITIVES).describe('the primitive'),
@@ -402,6 +456,16 @@ const kindEntry = z.strictObject({
     .describe("3D: size factor about the box's bottom centre (default 1)"),
   depth,
   z: zOffset,
+  model: modelPath.exactOptional(),
+  anchor: modelAnchor.exactOptional(),
+  rotate: modelRotate.exactOptional(),
+  clip: z
+    .union([id, z.record(id, id)])
+    .exactOptional()
+    .describe(
+      "3D model: the animation clip to play, one name for every state or animation state -> clip name (a state not listed plays `idle`'s, else none); looped, `anim.t` / 60 seconds in",
+    ),
+  castShadow,
   offset: offset.exactOptional(),
   spawnTween: tweensSchema
     .exactOptional()
@@ -442,6 +506,20 @@ const tileEntry = z.strictObject({
   color: color.exactOptional().describe("3D: the mesh's colour"),
   depth,
   z: zOffset,
+  model: modelPath.exactOptional(),
+  scale: z
+    .number()
+    .positive()
+    .exactOptional()
+    .describe("3D: size factor about the tile's bottom centre; for a `model`, px per model unit (default 1)"),
+  anchor: modelAnchor.exactOptional(),
+  rotate: modelRotate.exactOptional(),
+  clip: id
+    .exactOptional()
+    .describe(
+      '3D model: the animation clip every cell plays, looped on the frame clock (frame / 60 seconds)',
+    ),
+  castShadow,
 });
 
 const effect = z.strictObject({
@@ -750,6 +828,17 @@ function checkShapes(
         message: msg,
         params: { code: 'wrong_backend_field' },
       });
+    }
+    if (mesh && entry['model'] === undefined) {
+      for (const field of MODEL_FIELDS) {
+        if (entry[field] === undefined) continue;
+        ctx.addIssue({
+          code: 'custom',
+          path: [where, key, field],
+          message: `"${field}" is a model field: give "model" too`,
+          params: { code: 'missing_field' },
+        });
+      }
     }
     for (const field of needs) {
       const fromDefault = (field === 'sheet' || field === 'fallbackColor') && defaults?.[field] !== undefined;
@@ -1773,6 +1862,117 @@ export function resolveMeshParts(
       z: p.at.z * scale + dz,
     },
   }));
+}
+
+// ---- Reading models (Engine 0.16 T11) ----
+
+/** A model point `{ x, y, z }` in model units, or a named anchor ({@link MODEL_ANCHORS}). */
+export type ModelAnchor = ModelAnchorName | { x: number; y: number; z: number };
+
+/** A kind's or tile's glTF model, every field resolved: what a 3D backend builds. */
+export interface SkinModel {
+  /** The asset path, `assets/<pack>/<file>.glb`. */
+  model: string;
+  /** Px per model unit. */
+  scale: number;
+  anchor: ModelAnchor;
+  /** Degrees about x, y and z. */
+  rotate: { x: number; y: number; z: number };
+  castShadow: boolean;
+  /** The clip to play now, or null (the model's rest pose). */
+  clip: string | null;
+  /** Seconds into the clip (looped by the backend). */
+  time: number;
+  /** Px right and down from the box (the entry's `offset`), and toward the camera (`z`). */
+  offset: { x: number; y: number; z: number };
+}
+
+/**
+ * The clip a model entry's `clip` gives for an animation state: one name for every state, else
+ * the state's, else `idle`'s, else null. Pure.
+ */
+export function modelClipFor(clip: DeepReadonly<SkinKindEntry['clip']>, state: string): string | null {
+  if (clip === undefined) return null;
+  if (typeof clip === 'string') return clip;
+  if (Object.hasOwn(clip, state)) return clip[state]!;
+  return Object.hasOwn(clip, 'idle') ? clip['idle']! : null;
+}
+
+function modelOf(
+  entry: DeepReadonly<SkinKindEntry | SkinTileEntry>,
+  clip: string | null,
+  time: number,
+): SkinModel | undefined {
+  if (entry.model === undefined) return undefined;
+  const offset = 'offset' in entry ? entry.offset : undefined;
+  return {
+    model: entry.model,
+    scale: entry.scale ?? 1,
+    anchor:
+      entry.anchor === undefined
+        ? DEFAULT_MODEL_ANCHOR
+        : typeof entry.anchor === 'string'
+          ? entry.anchor
+          : { ...entry.anchor },
+    rotate: { x: entry.rotate?.x ?? 0, y: entry.rotate?.y ?? 0, z: entry.rotate?.z ?? 0 },
+    castShadow: entry.castShadow ?? false,
+    clip,
+    time,
+    offset: { x: offset?.x ?? 0, y: offset?.y ?? 0, z: entry.z ?? 0 },
+  };
+}
+
+/**
+ * The glTF model a 3D skin shows for an entity now (Engine 0.16 T11): its kind's (or tag look's)
+ * `model` with the clip for its `anim.state` ({@link modelClipFor}) at `anim.t` /
+ * {@link MODEL_TICKS_PER_SECOND} seconds; undefined when the entry has no model. Pure.
+ */
+export function resolveSkinModel(
+  skin: DeepReadonly<SkinFile>,
+  entity: SkinEntityInput & DeepReadonly<Pick<PresentEntity, 'anim'>>,
+): SkinModel | undefined {
+  const entry = resolveSkinKind(skin, entity);
+  if (entry === undefined) return undefined;
+  return modelOf(entry, modelClipFor(entry.clip, entity.anim.state), entity.anim.t / MODEL_TICKS_PER_SECOND);
+}
+
+/** A tile entry's model, its `clip` looped on the frame clock (`frame` / 60 seconds); undefined without one. Pure. */
+export function resolveTileModel(entry: DeepReadonly<SkinTileEntry>, frame = 0): SkinModel | undefined {
+  return modelOf(entry, entry.clip ?? null, frame / MODEL_TICKS_PER_SECOND);
+}
+
+/** One place a skin names a model: the entry's path (`kinds.torch`) and its clips by field path. */
+export interface SkinModelUse {
+  path: FieldPath;
+  model: string;
+  clips: { path: FieldPath; clip: string }[];
+}
+
+/** Every model a skin names, kinds then tiles, in file order, with the clips each asks for. Pure. */
+export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
+  const out: SkinModelUse[] = [];
+  for (const [kind, entry] of Object.entries(skin.kinds)) {
+    if (entry.model === undefined) continue;
+    const at: FieldPath = ['kinds', kind];
+    const clip = entry.clip;
+    const clips =
+      clip === undefined
+        ? []
+        : typeof clip === 'string'
+          ? [{ path: [...at, 'clip'], clip }]
+          : Object.entries(clip).map(([state, name]) => ({ path: [...at, 'clip', state], clip: name }));
+    out.push({ path: at, model: entry.model, clips });
+  }
+  for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
+    if (entry.model === undefined) continue;
+    const at: FieldPath = ['tiles', tile];
+    out.push({
+      path: at,
+      model: entry.model,
+      clips: entry.clip === undefined ? [] : [{ path: [...at, 'clip'], clip: entry.clip }],
+    });
+  }
+  return out;
 }
 
 /** A skin's 3D framing, with {@link DEFAULT_CAMERA3D} for every field it leaves out. Pure. */

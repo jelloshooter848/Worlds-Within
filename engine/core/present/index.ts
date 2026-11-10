@@ -95,6 +95,17 @@ export {
   type SkinMeshPart,
   type SkinStateFrames,
   type SkinTileEntry,
+  DEFAULT_MODEL_ANCHOR,
+  MODEL_ANCHORS,
+  MODEL_TICKS_PER_SECOND,
+  modelClipFor,
+  resolveSkinModel,
+  resolveTileModel,
+  skinModelUses,
+  type ModelAnchor,
+  type ModelAnchorName,
+  type SkinModel,
+  type SkinModelUse,
 } from './skin';
 export type { SoundCue } from '../audio/mix';
 export {

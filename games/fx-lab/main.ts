@@ -132,12 +132,14 @@ const booted = bootBrowserGame({
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound: heard(onSound), onHitPause: hitPause }),
-    three: async (canvas, { onSound, hitPause }) =>
-      (await import('@engine/backends/three')).threeDisplay(canvas, {
-        ...fxLook3d(content),
-        onSound: heard(onSound),
-        onHitPause: hitPause,
-      }),
+    three: async (canvas, { onSound, hitPause }) => {
+      const three = await import('@engine/backends/three');
+      const look3d = fxLook3d(content);
+      // The 3D skin's glTF brazier (Engine 0.16 T11), loaded before the first frame.
+      const models = new three.ModelLibrary(content.assets ?? {});
+      await models.preload([look3d.skin]);
+      return three.threeDisplay(canvas, { ...look3d, models, onSound: heard(onSound), onHitPause: hitPause });
+    },
   },
   scene: (scenes, display, booted) => {
     stack = scenes;

@@ -54,6 +54,15 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `Source:`, `Author:` and `Licence:`, CC0 unless an `Owner decision:` line cites one) and
   `checkSkinImages` (each skin `images` entry's PNG is there, is a PNG, its header read by
   `readPngSize`, and holds every frame). `parseCredits`, `isCc0`, `assetPacks` are exported.
+- `gltf.ts` (Engine 0.16 T11): glTF 2.0 models. `readGlb(bytes)` (the `glTF` magic, version 2,
+  the length, a first `JSON` chunk), `readGltfText(bytes)` (JSON with `asset.version` 2.x),
+  `readModelAsset(path, data)` (either, by extension, from the data URL the loader holds),
+  `gltfClipNames(json)`, `gltfExternalRefs(json)` (a buffer or image in another file, which the
+  engine never fetches), `gltfToGlb(json)` (an embedded `.gltf` packed into a GLB) and the
+  writers: `encodeGlb(json, bin)`, `encodeGltfEmbedded(json, bin)`, `base64` and
+  `lowPolyModel(parts, clips)` (a small flat-shaded model of `box`, `frustum` and `octahedron`
+  parts with keyframed clips, numbers rounded so the bytes match on every machine: for a game's
+  script and for tests). `assets.ts`'s `checkSkinModels` runs with the asset checks.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
   (`gfx/sprite-schema.ts`, JSON or `.txt`), `font` (`ui/font.ts`, JSON or `.txt`, Engine 0.16 T6:
@@ -96,7 +105,10 @@ file formats are described at the top of that file).
   `assets/CREDITS.md`, a pack folder it does not name, or a pack without `Source`, `Author` or
   `Licence`), `bad_licence` (not CC0 and no owner decision cited), `missing_file` (a skin
   image's PNG is not there), `bad_image` (not a PNG) and `frame_outside_image` (a grid cell or
-  named frame past the image), Engine 0.16 T10 (`assets.ts`); and the top-down kit's room codes `wrong_size`
+  named frame past the image), Engine 0.16 T10 (`assets.ts`), and from T11 for a 3D skin's
+  `model`s `missing_file` (at `kinds.<kind>.model` or `tiles.<tile>.model`), `bad_model` (not a
+  glTF 2.0 GLB or `.gltf`, or one naming another file) and `missing_clip` (a `clip` the model
+  lacks, at `kinds.<kind>.clip.<state>` or `.clip`); and the top-down kit's room codes `wrong_size`
   and `invalid_room` (`kits/topdown/schema.ts`); the platformer kit's level codes `bad_spawn_key`, `size_mismatch`,
   `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`
   (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,

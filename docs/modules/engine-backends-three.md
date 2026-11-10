@@ -70,6 +70,19 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   `transitionAlphaAt` does, drawn by `ThreePresenter` after the HUD (`transition(view)`, which
   `threeDisplay` hands the shell's transitions; an iris closes on `ThreeScene.focus()`, the
   camera's target projected onto the picture).
+- `ModelLibrary`, `ModelInstance`, `LoadedModel`, `ModelStatus` (`models.ts`, Engine 0.16 T11):
+  glTF/GLB models in 3D skins. `new ModelLibrary(content.assets)` loads a skin's models with
+  three's `GLTFLoader` from the game's asset files (a `.gltf` is packed into a GLB first, so
+  nothing is fetched and it parses in Node without WebGL), each once, cached; `get(path)` starts a
+  load and gives null until it is there, `preload(skins)` loads every model the skins name (the
+  page and `pnpm cli screenshot --backend three` await it). The `models` option of `ThreeScene`,
+  `ThreePresenter`, `withSkin`, `threeDisplay` and `threeScenePresenter` hands it to the scenes: a
+  kind or tile whose skin entry has a `model` shows a `ModelInstance` (a clone with its own
+  materials, turned by `rotate`, scaled by `scale`, placed by `anchor` on the box's bottom centre,
+  moved by `offset` and `z`, `castShadow` on its meshes) once loaded and its text `mesh` until
+  then; the clip for the entity's anim state plays at `anim.t` / 60 s through an
+  `AnimationMixer` set to exactly that time (a tile's clip on the frame clock). Text meshes are
+  built exactly as before.
 - `HudLayer`, `HudQuad` (`hud.ts`) and `PARTICLE_POOL` (`scene.ts`): the HUD pass and the
   particle buffers' size (Engine 0.15, gap G33; 1024 from Engine 0.16 T3), and `PARTICLE_Z`.
 
@@ -88,7 +101,11 @@ extension), `fit.test.ts` (`fitCanvas` against `fitGame`) and `display.test.ts`
 (`threeScenePresenter`, the no-WebGL 2 message) and `hud.test.ts` (the HUD pass's quads for a
 frame's status, textures cut and flipped from a sheet, the round skins' HUD through
 `threeScenePresenter`, particles and their pool) and `transition.test.ts` (the transition pass's
-uniforms for each kind, `ThreeScene.focus()`; Engine 0.16 T5). `ThreePresenter` and
+uniforms for each kind, `ThreeScene.focus()`; Engine 0.16 T5) and `models.test.ts` (Engine 0.16
+T11: a GLB and an embedded `.gltf` parsed in Node, missing and broken files, anchors, scale,
+rotate and offset by the model's bounds, clips posed at exact times and let go, own materials,
+the text mesh while loading then the model, the clip from the anim state, tile models per cell,
+text-mesh kinds unchanged). `ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
 browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is

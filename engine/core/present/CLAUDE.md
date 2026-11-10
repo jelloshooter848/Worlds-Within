@@ -103,6 +103,20 @@ number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 th
     refuses an id a sprite file has (`duplicate_name` at `images.<id>`). The file itself (present,
     a PNG, frames inside it) is checked by the content loader (`content/assets.ts`). A frame's
     `anchor` places it on the entity box (`anchorOffset`); text sprites have none.
+  - glTF models (Engine 0.16 T11): a 3D (`MESH_FIELDS`) kind or tile entry may give `model`
+    (`assets/<pack>/<file>.glb` or `.gltf`, else `invalid_format`), `scale` (on tiles too: px per
+    model unit), `anchor` (`MODEL_ANCHORS`: `bottom`, the default, `center`, `origin`, or a model
+    point `{ x, y, z }`), `rotate` (`{ x?, y?, z? }` degrees), `clip` (a kind: one clip name or
+    animation state -> clip name; a tile: one name) and `castShadow`. `anchor`, `rotate` and
+    `clip` without `model` are `missing_field`; all are `wrong_backend_field` on a 2D skin. The
+    entry's `mesh` and `color` are still needed: the backend shows that text mesh while the
+    model loads. `modelClipFor(clip, state)` (the state's clip, else `idle`'s, else null),
+    `resolveSkinModel(skin, entity)` (`SkinModel` `{ model, scale, anchor, rotate, castShadow,
+clip, time, offset }`, `time` = `anim.t` / `MODEL_TICKS_PER_SECOND`, 60; the kind's or its
+    tag look's model), `resolveTileModel(entry, frame)` and `skinModelUses(skin)` (every model
+    with its clips' field paths, for `validate` and preloading). The file, its header and its
+    clips are checked by the content loader (`content/assets.ts`: `missing_file`, `bad_model`,
+    `missing_clip`). Tested in `skin-models.test.ts`.
   - Audio (Engine 0.16 T8, `engine/core/audio/mix.ts`): an event entry's `pitch` and `volume`
     (`[min, max]`, `bad_range` when min is above max), `cooldown` (frames) and `duck { amount,
 attack?, hold?, release? }`, and a top-level `music` section of layered songs (`skinMusicSchema`;

@@ -1011,7 +1011,8 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   backends, that different ticks give different PNGs, the software-GL refusal and the 3D content
   errors). The page decodes the skins' PNG sheets (`withContentImages`, Engine 0.16 T10) before it
   makes the view, so every frame has them (`screenshot.test.ts` checks the fx lab's PNG torch on
-  two runs). Text drawn with `debugText` uses a system font, so a
+  two runs). With `--backend three` it also loads the skins' glTF models first
+  (`ModelLibrary.preload`, Engine 0.16 T11), so no model shows its text mesh stand-in. Text drawn with `debugText` uses a system font, so a
   PNG's hash can differ between machines; compare hashes on one machine.
 - `--backend three` (Engine 0.6): the 3D picture. The page needs the view's `frame()` (else exit 3,
   `no_frame_hook` at `view` in `game.json`) and the command a skin with `"backend": "three"` in the

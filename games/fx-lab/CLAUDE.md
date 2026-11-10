@@ -183,9 +183,27 @@ changing the script; `fx-lab.test.ts` fails while the committed file differs. It
 names it in `images` as `lab-torch` (`names` `torch-0..3`, the named frame `torch-unlit`, anchor
 `bottom`, so the 24-px frame stands on the 16-px box and the flame rises 8 px above it); the
 `torch` kind cycles `torch-0..3` (ticks 6, 5, 7, 5), keeping its glow and emitters. The 3D skin
-keeps its low-poly torch mesh. `assets/CREDITS.md` credits the pack (own work, CC0); `validate`
+keeps its low-poly torch mesh (from T11 the stand-in for its glTF model). `assets/CREDITS.md` credits the pack (own work, CC0); `validate`
 checks it, the file and every frame. The page awaits `withContentImages` before it boots, so the
 image is there for the first frame. Screenshot: `level-3 --tick 40` (the first torch, by Pip).
+
+## The glTF model (Engine 0.16 T11)
+
+`assets/fx-lab-glb/brazier.glb` is the lab's worked example of a glTF model in a 3D skin. It is
+original: `tools/brazier-model.ts` builds it from seven flat-shaded parts with the engine's
+`lowPolyModel` (a foot, a pole, a bowl widening upward, a grey rim, glowing coals, a gold flame
+diamond and its pale core) and one clip, `flicker` (0.6 s: the flame squashes and stretches and
+the core turns), and writes it with `encodeGlb`. About one unit tall, the foot's bottom at y = 0.
+Rerun `pnpm exec tsx games/fx-lab/tools/brazier-model.ts` after changing the script;
+`fx-lab.test.ts` fails while the committed file differs. The 3D skin's `torch` kind names it
+(`model`, `scale` 18 so it stands about 19 px tall on the 16 x 16 box, `anchor` `bottom`,
+`rotate` `{ y: 30 }` so the bowl shows its corners, `clip` `{ idle: flicker }`, `castShadow`)
+and keeps its low-poly `torch` text mesh as the stand-in while the model loads; the `torch-flame`
+and `torch-smoke` emitters sit higher in the 3D skin (offsets -1 and -6 from the box's top) so
+they rise from the model's flame. `assets/CREDITS.md` credits the `fx-lab-glb` pack (own work,
+CC0). The page (`main.ts`) makes a `ModelLibrary` from `content.assets` and awaits `preload`
+before the 3D display starts, as the screenshot page does. Screenshot: `level-3 --tick 40
+--backend three --allow-software-gl` (the first torch, by Pip).
 
 ## Run and test
 
@@ -195,7 +213,8 @@ pnpm -s cli run games/fx-lab/runs/level-1.run.json --json     # also level-2, le
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --json   # Pip mid-run
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend three --allow-software-gl --json
 # particle presets: level-1 --tick 154 (land dust), 247 (run dust), 219 (stomp sparks);
-# level-3 --tick 120 (coin burst), 305 (torch, door aura), 40 (the PNG torch, T10)
+# level-3 --tick 120 (coin burst), 305 (torch, door aura), 40 (the PNG torch, T10; with
+# --backend three the glTF brazier, T11)
 # camera effects (T4): level-1 --tick 216 (stomp shake), 352 (door zoom); level-2 --tick 279
 # (hurt flash); parallax at two camera positions: level-1 --tick 120 and 260
 # the HUD (T6): level-1 --tick 300 (counter, minimap), level-2 --tick 300 (half a health bar)

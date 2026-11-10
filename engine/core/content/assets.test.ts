@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { imageSheetSchema } from '../gfx/image-sheet';
-import { assetPacks, checkCredits, checkSkinImages, isCc0, parseCredits } from './assets';
+import { skinSchema, type SkinFile } from '../present/skin';
+import {
+  assetPacks,
+  checkCredits,
+  checkGameAssets,
+  checkSkinImages,
+  checkSkinModels,
+  isCc0,
+  parseCredits,
+} from './assets';
+import { base64, encodeGlb, encodeGltfEmbedded, lowPolyModel } from './gltf';
 import { assetDataUrl, encodePng } from './png';
 
 const at = (p: string) => `games/g/${p}`;
@@ -105,5 +115,111 @@ describe('skin images against the asset files', () => {
       [file, 'images.sheet.frames.wide', 'frame_outside_image'],
     ]);
     expect(errors[0]!.message).toMatch(/frame "2" \(4, 0, 2x2\) reaches past the 4x2 image/);
+  });
+});
+
+describe('skin models (Engine 0.16 T11)', () => {
+  const file = 'games/g/content/skins/three.json';
+  const model = lowPolyModel(
+    [
+      {
+        name: 'body',
+        shape: 'box',
+        size: { x: 1, y: 1, z: 1 },
+        at: { x: 0, y: 0.5, z: 0 },
+        color: '#808080',
+      },
+    ],
+    [
+      {
+        name: 'spin',
+        tracks: [
+          {
+            node: 'body',
+            path: 'scale',
+            times: [0, 1],
+            values: [
+              [1, 1, 1],
+              [2, 2, 2],
+            ],
+          },
+        ],
+      },
+    ],
+  );
+  const GLB = assetDataUrl('m.glb', base64(encodeGlb(model.json, model.bin)));
+  const GLTF = assetDataUrl(
+    'm.gltf',
+    base64(new TextEncoder().encode(encodeGltfEmbedded(model.json, model.bin))),
+  );
+  const skin = (kind: Record<string, unknown>, tiles?: Record<string, unknown>): SkinFile =>
+    skinSchema.parse({
+      backend: 'three',
+      kinds: { torch: { mesh: 'box', color: '#808080', ...kind } },
+      ...(tiles && { tiles: { '#': { mesh: 'box', color: '#808080', ...tiles } } }),
+    });
+
+  it('passes a GLB and a .gltf whose clips are there', () => {
+    const s = skin(
+      { model: 'assets/p/m.glb', clip: { idle: 'spin', walk: 'spin' } },
+      { model: 'assets/p/m.gltf', clip: 'spin' },
+    );
+    expect(checkSkinModels(file, s, { 'assets/p/m.glb': GLB, 'assets/p/m.gltf': GLTF })).toEqual([]);
+  });
+
+  it("reports a missing model file at the entry's model field (missing_file)", () => {
+    const s = skin({ model: 'assets/p/gone.glb' }, { model: 'assets/p/gone.gltf' });
+    expect(checkSkinModels(file, s, {}).map((e) => [e.file, e.path, e.code])).toEqual([
+      [file, 'kinds.torch.model', 'missing_file'],
+      [file, 'tiles["#"].model', 'missing_file'],
+    ]);
+  });
+
+  it('reports a file that is not a glTF 2 model, or one naming an outside file (bad_model)', () => {
+    const s = skin({ model: 'assets/p/m.glb' });
+    const png = { 'assets/p/m.glb': PNG };
+    expect(checkSkinModels(file, s, png)).toEqual([
+      expect.objectContaining({
+        file,
+        path: 'kinds.torch.model',
+        code: 'bad_model',
+        message: expect.stringContaining('not a GLB'),
+      }),
+    ]);
+    const external = { ...model.json, buffers: [{ byteLength: model.bin.length, uri: 'm.bin' }] };
+    const t = skin({ model: 'assets/p/m.gltf' });
+    const url = assetDataUrl('m.gltf', base64(new TextEncoder().encode(JSON.stringify(external))));
+    expect(checkSkinModels(file, t, { 'assets/p/m.gltf': url })).toEqual([
+      expect.objectContaining({
+        path: 'kinds.torch.model',
+        code: 'bad_model',
+        message: expect.stringContaining('m.bin'),
+      }),
+    ]);
+  });
+
+  it('reports a clip the model lacks at its state (missing_clip), naming the clips it has', () => {
+    const s = skin(
+      { model: 'assets/p/m.glb', clip: { idle: 'spin', walk: 'stride' } },
+      { model: 'assets/p/m.glb', clip: 'wave' },
+    );
+    const errors = checkSkinModels(file, s, { 'assets/p/m.glb': GLB });
+    expect(errors.map((e) => [e.file, e.path, e.code])).toEqual([
+      [file, 'kinds.torch.clip.walk', 'missing_clip'],
+      [file, 'tiles["#"].clip', 'missing_clip'],
+    ]);
+    expect(errors[0]!.message).toBe('"assets/p/m.glb" has no clip "stride" (its clips: spin)');
+  });
+
+  it('runs with the credits: a model pack needs its CREDITS.md section like any pack', () => {
+    const s = skin({ model: 'assets/models/m.glb' });
+    const errors = checkGameAssets(
+      { 'assets/CREDITS.md': credits(CC0_PACK), 'assets/models/m.glb': GLB },
+      [{ kind: 'skin', file: 'content/skins/three.json', value: s }],
+      at,
+    );
+    expect(errors.map((e) => [e.file, e.path, e.code])).toEqual([
+      ['games/g/assets/CREDITS.md', 'models', 'missing_credits'],
+    ]);
   });
 });

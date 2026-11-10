@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import { NullRenderer } from '@engine/backends/null';
-import { ThreeScene } from '@engine/backends/three';
+import { ModelLibrary, ThreeScene } from '@engine/backends/three';
 import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
@@ -16,6 +16,8 @@ import { fxCanvasPicture, fxFrames, fxLook, fxPicture } from './picture';
 import { fxLook3d } from './picture3d';
 import { SHEET_SIZE, TORCH_SHEET, torchSheetPng } from './tools/torch-sheet';
 import { readPngSize } from '@engine/core/content/png';
+import { gltfClipNames, readGlb } from '@engine/core/content/gltf';
+import { BRAZIER_CLIP, BRAZIER_MODEL, brazierGlb } from './tools/brazier-model';
 import { imageSheetFrames } from '@engine/core/gfx/image-sheet';
 
 // The fx lab (Engine 0.16 T2): its content, the full animation set of Pip in both skins, and
@@ -248,5 +250,53 @@ describe('fx lab PNG sheet (Engine 0.16 T10)', () => {
     const frames = imageSheetFrames(skin.images!['lab-torch']!);
     expect([...frames.keys()]).toEqual(['torch-0', 'torch-1', 'torch-2', 'torch-3', 'torch-unlit']);
     expect(frames.get('torch-3')).toEqual({ x: 55, y: 1, w: 16, h: 24, anchor: 'bottom' });
+  });
+});
+
+describe('fx lab glTF model (Engine 0.16 T11)', () => {
+  it('commits exactly the model its script makes: a GLB 2 with the flicker clip', () => {
+    const committed = readFileSync(new URL(`./${BRAZIER_MODEL}`, import.meta.url));
+    expect(new Uint8Array(committed)).toEqual(brazierGlb());
+    const read = readGlb(brazierGlb());
+    expect(read.ok && gltfClipNames(read.json)).toEqual([BRAZIER_CLIP]);
+    expect(content.assets?.['assets/CREDITS.md']).toMatch(/## fx-lab-glb[\s\S]*Licence: CC0/);
+  });
+
+  it('shows the torch as the model in 3D, its text mesh kept as the stand-in while it loads', () => {
+    const torch = fxSkin(content, 'three').kinds['torch']!;
+    expect(torch).toMatchObject({
+      model: BRAZIER_MODEL,
+      mesh: 'torch',
+      anchor: 'bottom',
+      clip: { idle: BRAZIER_CLIP },
+    });
+  });
+
+  it('level-3: every torch stands as the flickering brazier in the 3D scene, never touching the state', async () => {
+    const look = fxLook3d(content);
+    const models = new ModelLibrary(content.assets ?? {});
+    await models.preload([look.skin]);
+    const scene = new ThreeScene(look.skin, { size: look.screen, models });
+    const frames = fxFrames(look.screen);
+    const torches = new Set<string>();
+    const flames = new Set<number>();
+    play('level-3', (game) => {
+      const before = canonicalJson(game.snapshot());
+      const frame = frames.next(game.world, game.events);
+      scene.sync(frame);
+      for (const e of frame.entities) {
+        if (e.kind !== 'torch') continue;
+        const root = scene.entity(e.id)!;
+        expect(root.userData['model']).toBe(BRAZIER_MODEL);
+        expect(root.userData['loading']).toBeUndefined();
+        torches.add(e.id);
+        flames.add(Math.round(root.getObjectByName('flame')!.scale.y * 1000));
+      }
+      expect(canonicalJson(game.snapshot())).toBe(before);
+    });
+    scene.dispose();
+    models.dispose();
+    expect(torches.size).toBe(4);
+    expect(flames.size).toBeGreaterThan(5); // the flicker clip plays
   });
 });

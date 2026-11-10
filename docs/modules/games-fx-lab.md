@@ -44,6 +44,11 @@ test game, content and glue only.
   original torch made by `tools/torch-sheet.ts` (`pnpm exec tsx games/fx-lab/tools/torch-sheet.ts`;
   own work, CC0), named in the 2D skin's `images` as `lab-torch` (a 4-cell grid with margin 1 and
   spacing 2, plus the named frame `torch-unlit`, anchored `bottom`) and drawn for the `torch` kind.
+- `assets/fx-lab-glb/brazier.glb` (T11): the lab's glTF model, an original low-poly brazier
+  with a `flicker` clip, made by `tools/brazier-model.ts` (`pnpm exec tsx
+games/fx-lab/tools/brazier-model.ts`; own work, CC0, credited), shown for the `torch` kind in
+  the 3D skin (`scale` 18, anchored `bottom`, turned 30 degrees, `idle` playing `flicker`) with
+  its low-poly text mesh as the stand-in while it loads.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
 
 ## Imports allowed
@@ -53,7 +58,7 @@ test game, content and glue only.
 
 ## How to test
 
-`pnpm test games/fx-lab` (`fx-lab.test.ts`: the committed PNG equals its script's output (T10), level order, both skins' animation sets, frame-event
+`pnpm test games/fx-lab` (`fx-lab.test.ts`: the committed PNG equals its script's output (T10), and the GLB its script's (T11), every torch shown as the brazier model in the 3D scene over level-3, level order, both skins' animation sets, frame-event
 sounds through both presenters, the particle presets, the camera effects and parallax in both
 skins, hit-pause requests on stomps and the 3D zoom on the door); `pnpm -s cli validate games/fx-lab --json`;
 `pnpm -s cli run games/fx-lab/runs/level-1.run.json --json` (and `level-2`, `level-3`); `pnpm test tests/runs`
