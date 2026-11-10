@@ -38,6 +38,10 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   it), plays `music` once unlocked and hands each display factory `{ onSound }` as its second
   argument (`canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound })`).
   Without it the page is silent and `onSound` does nothing.
+  Engine 0.16 T4: each display factory also gets `shell.hitPause(ticks)` (pass it as the
+  display's `onHitPause`); the loop then holds that many steps (no input, no tick) while the
+  picture keeps drawing (`booted.hitPause`, a `HitPause`), with the same per-tick hashes; manual
+  mode ignores it. The `FixedLoop` draws only on frames that took a step.
   Engine 0.14 (gap G31): `manual: true`, or `?debug=step` in the page's URL (and, T9,
   `?record`, which adds `__ww` with recording on but leaves the loop running)
   (`manualFromQuery`), is manual-loop mode: the `FixedLoop` never runs on `requestAnimationFrame`

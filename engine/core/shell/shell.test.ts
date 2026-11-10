@@ -707,3 +707,90 @@ describe('pointer taps as frame input (gap D1)', () => {
     ]);
   });
 });
+
+describe('hit-pause in the loop (Engine 0.16 T4)', () => {
+  /**
+   * Boots a game whose every 7th tick has a `stomp` event and steps the page's loop through 150
+   * display frames of 17 ms. With `pauses`, the picture asks the shell for a 4-frame hit-pause on
+   * each stomp it draws (what a presenter does for a skin's `hitPause`). Gives the state hash of
+   * every tick, in order, and the tick each display frame drew.
+   */
+  async function play(pauses: boolean, search = '') {
+    fakeBootPage();
+    let onFrame: ((t: number) => void) | null = null;
+    vi.stubGlobal('requestAnimationFrame', (fn: (t: number) => void) => {
+      onFrame = fn;
+      return 1;
+    });
+    let now = 0;
+    vi.stubGlobal('performance', { now: () => now });
+    (globalThis.window as unknown as { location: { search: string } }).location.search = search;
+    let tick = 0;
+    let state = 1;
+    const hashes: string[] = [];
+    const game = {
+      step: () => {
+        tick++;
+        state = (state * 31 + tick) % 1_000_003;
+        hashes.push(stateHash({ tick, state }));
+        game.events = tick % 7 === 0 ? [{ type: 'stomp' }] : [];
+      },
+      snapshot: () => ({ tick, state }),
+      world: {},
+      events: [] as { type: string }[],
+      miniGame: () => null,
+    };
+    let hitPause: (ticks: number) => void = () => {};
+    const drawn: number[] = [];
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      displays: {
+        canvas2d: (_canvas, shell) => {
+          hitPause = shell.hitPause;
+          return display();
+        },
+      },
+      scene: (stack) =>
+        new HostScene({
+          stack,
+          game,
+          picture: () => ({
+            draw: (_world: object, events: readonly { type: string }[]) => {
+              drawn.push(tick);
+              if (pauses && events.some((e) => e.type === 'stomp')) hitPause(4);
+            },
+          }),
+        }),
+    });
+    if (!booted?.loop.manual)
+      for (let i = 0; i < 150; i++) {
+        now += 17;
+        onFrame!(now);
+      }
+    return { hashes, drawn, booted };
+  }
+
+  it('holds the ticks while the picture keeps drawing, with the same per-tick hashes as without', async () => {
+    const plain = await play(false);
+    const paused = await play(true);
+    // Fewer ticks in the same display time, but each tick's state is the same.
+    expect(paused.hashes.length).toBeLessThan(plain.hashes.length);
+    expect(paused.hashes.length).toBeGreaterThan(50);
+    expect(paused.hashes).toEqual(plain.hashes.slice(0, paused.hashes.length));
+    // Every frame drew; after a stomp the same tick is drawn on through the held frames.
+    expect(paused.drawn).toHaveLength(150);
+    const runs = paused.drawn.filter((t, i) => t % 7 === 0 && t > 0 && paused.drawn[i - 1] === t);
+    expect(runs.length).toBeGreaterThanOrEqual(3);
+    expect(paused.booted?.hitPause.remaining).toBeLessThanOrEqual(4);
+  });
+
+  it('does nothing in manual-loop mode, so the step hook stays tick-exact', async () => {
+    const { booted, hashes } = await play(true, '?debug=step');
+    const win = globalThis.window as unknown as DebugWindow;
+    expect(win.__ww!.step(30)).toBe(30);
+    expect(hashes).toHaveLength(30);
+    expect(booted?.hitPause.remaining).toBe(0);
+    (globalThis.window as unknown as { location: { search: string } }).location.search = '';
+  });
+});

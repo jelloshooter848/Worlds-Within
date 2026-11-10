@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import { NullRenderer } from '@engine/backends/null';
 import { ThreeScene } from '@engine/backends/three';
 import { canonicalJson } from '@engine/core/headless';
@@ -10,7 +11,7 @@ import { resolveSkinAnimation, resolveSkinMesh, skinEmitNames } from '@engine/co
 import { RUNNER_ANIMS } from '@kits/platformer';
 import { fxSkin, fxStages, mustLoadFxLab } from './content';
 import { createGame } from './headless';
-import { fxCanvasPicture, fxFrames, fxLook } from './picture';
+import { fxCanvasPicture, fxFrames, fxLook, fxPicture } from './picture';
 import { fxLook3d } from './picture3d';
 
 // The fx lab (Engine 0.16 T2): its content, the full animation set of Pip in both skins, and
@@ -142,5 +143,49 @@ describe('fx lab particles (Engine 0.16 T3)', () => {
     scene.dispose();
     for (const name of ['torch-smoke', 'torch-flame', 'magic-aura', 'coin-burst', 'land-dust', 'run-dust'])
       expect([...seen]).toContain(name);
+  });
+});
+
+describe('fx lab camera effects and parallax (Engine 0.16 T4)', () => {
+  it('shakes and hit-pauses on stomps, flashes on hurt, zooms on the door, with a four-layer sky, in both skins', () => {
+    for (const backend of ['canvas2d', 'three'] as const) {
+      const skin = fxSkin(content, backend);
+      expect(skin.events?.['stomp']?.shake, backend).toBeDefined();
+      expect(skin.events?.['stomp']?.hitPause, backend).toBeDefined();
+      expect(skin.events?.['hurt']?.flash, backend).toBeDefined();
+      expect(skin.events?.['cleared']?.zoom, backend).toBeDefined();
+      expect(skin.camera?.lookAhead, backend).toBeDefined();
+      expect(
+        skin.parallax?.map((l) => l.frame ?? 'gradient'),
+        backend,
+      ).toEqual(['gradient', 'clouds', 'mountains', 'hills']);
+    }
+  });
+
+  it('level-1: the 2D picture asks for a hit-pause on each stomp, and the 3D scene zooms on the door, never touching the state', () => {
+    const look = fxLook(content);
+    const pauses: number[] = [];
+    const scene = new ThreeScene(fxLook3d(content).skin, { size: look.screen });
+    const frames = fxFrames(look.screen);
+    const widths = new Set<number>();
+    let picture: ReturnType<typeof fxPicture> | null = null;
+    play('level-1', (game) => {
+      picture ??= fxPicture(
+        new SkinnedCanvasPresenter(new NullRenderer(), look.skin, look.sheet, {
+          size: look.screen,
+          onHitPause: (t) => pauses.push(t),
+        }),
+        look.screen,
+      );
+      const before = canonicalJson(game.snapshot());
+      picture.draw(game.world, game.events);
+      scene.sync(frames.next(game.world, game.events));
+      widths.add(scene.view!.w);
+      expect(canonicalJson(game.snapshot())).toBe(before);
+    });
+    scene.dispose();
+    // Two stomps in level 1.
+    expect(pauses).toEqual([4, 4]);
+    expect(Math.min(...widths)).toBeLessThan(look.screen.width);
   });
 });

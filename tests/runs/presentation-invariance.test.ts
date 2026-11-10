@@ -161,6 +161,39 @@ const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
       ),
     } as SkinFile;
   },
+  /**
+   * Camera effects and parallax (T4): a shake, a zoom punch, a flash and a hit-pause on every
+   * event, look-ahead on the camera, and a parallax sky (a gradient, and on a 2D skin a tile
+   * frame repeated) behind the map.
+   */
+  camera: (skin) => {
+    const tile = Object.values(skin.tiles ?? {}).find((t) => t.frame !== undefined && t.sheet === undefined);
+    const frameLayer =
+      skin.backend !== 'three' && tile?.frame !== undefined && skin.sheets?.sheet !== undefined
+        ? [{ frame: tile.frame, factor: { x: 0.5, y: 0.25 }, y: 40, repeat: 'xy' as const }]
+        : [];
+    return {
+      ...skin,
+      camera: { ...skin.camera, lookAhead: { x: 16, y: 8, lerp: 0.2 } },
+      parallax: [
+        ...(skin.parallax ?? []),
+        { gradient: ['#203060', '#a4e4fc'], bands: 4, factor: 0, height: 60 },
+        ...frameLayer,
+      ],
+      events: Object.fromEntries(
+        Object.entries(skin.events ?? {}).map(([type, entry]) => [
+          type,
+          {
+            ...entry,
+            shake: { amount: 4, ticks: 10 },
+            zoom: { to: 1.5, ticks: 3, ease: 'backOut', hold: 2, back: 4 },
+            flash: { color: '#fcfcfc', alpha: 0.5, ticks: 3 },
+            hitPause: { ticks: 3 },
+          },
+        ]),
+      ),
+    } as SkinFile;
+  },
 };
 
 /** The switch sets each run is played with: none (the baseline) and all of them at once. */
@@ -199,6 +232,9 @@ function stubContext(width: number, height: number) {
       set: (_t, key, value) => {
         props.set(key, value);
         if (typeof key === 'string') calls.set(`=${key}`, (calls.get(`=${key}`) ?? 0) + 1);
+        // Colours are counted by value too (`=fillStyle:#203060`).
+        if (key === 'fillStyle' && typeof value === 'string')
+          calls.set(`=${key}:${value}`, (calls.get(`=${key}:${value}`) ?? 0) + 1);
         return true;
       },
     },
@@ -278,6 +314,12 @@ describe('presentation invariance: presenters and effects never change the state
       expect(viaCanvas, `${label}, canvas2d`).toEqual(golden);
       expect(last, `${label}, canvas2d: final state`).toBe(finalHash);
       expect(calls.get('fillRect') ?? 0, `${label}: the canvas drew`).toBeGreaterThan(run.ticks);
+      if (switches.includes('camera')) {
+        // The parallax sky really drew: its top band behind every frame.
+        expect(calls.get('=fillStyle:#203060') ?? 0, `${label}: parallax drew`).toBeGreaterThanOrEqual(
+          run.ticks,
+        );
+      }
       if (switches.includes('tweens')) {
         // The tweens really ran: spawn tweens turn, scale and fade every kind's entities.
         expect(calls.get('rotate') ?? 0, `${label}: tweens turned something`).toBeGreaterThan(0);
@@ -304,13 +346,17 @@ describe('presentation invariance: presenters and effects never change the state
       });
       let last3d = '';
       let particles3d = 0;
+      let parallax3d = 0;
       const viaThree = playView(view3d, run, (view) => {
         presenter3d.present(view.frame!());
         last3d = stateHash(view.snapshot());
         particles3d = Math.max(particles3d, presenter3d.scene.particleViews().length);
+        parallax3d = Math.max(parallax3d, presenter3d.scene.parallax.meshes().length);
       });
       if (switches.includes('particles'))
         expect(particles3d, `${label}, three: particles were shown`).toBeGreaterThan(0);
+      if (switches.includes('camera'))
+        expect(parallax3d, `${label}, three: parallax planes were shown`).toBeGreaterThan(0);
       presenter3d.scene.dispose();
       for (const scene of Object.values(presenter3d.rounds)) scene.dispose();
       expect(viaThree, `${label}, three`).toEqual(golden);

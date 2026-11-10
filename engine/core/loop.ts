@@ -15,7 +15,8 @@ export interface FixedLoopOptions {
 
 /**
  * Fixed 60 Hz stepper driven by requestAnimationFrame. No interpolation: the game is
- * rendered at integer pixel positions after the last step, like the NES would. In manual mode
+ * rendered at integer pixel positions after the last step, like the NES would, and only on a
+ * frame that took a step (a 120 Hz display draws every other frame). In manual mode
  * (`{ manual: true }`) nothing runs by itself: `advance(n)` takes exactly n steps, then one render.
  */
 export class FixedLoop {
@@ -90,6 +91,8 @@ export class FixedLoop {
       steps++;
     }
     if (steps === this.maxCatchUp) this.acc = 0;
-    this.target.render();
+    // Draw only after a step (Engine 0.16 T4): a display faster than 60 Hz shows each step once,
+    // so presenters' own clocks (camera effects) run at the loop's rate on every screen.
+    if (steps > 0) this.target.render();
   }
 }

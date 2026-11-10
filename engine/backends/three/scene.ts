@@ -22,10 +22,12 @@ import {
   type Material,
 } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
-import { SkinParticles, type ParticleView } from '@engine/core/fx';
+import { CameraFx, SkinParticles, type CameraFxSettings, type ParticleView } from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
+  cameraArea,
   cameraShake,
+  cameraTarget,
   cameraView,
   cameraZoom,
   CameraFollower,
@@ -48,9 +50,11 @@ import {
   type PresentMap,
   type PresentMapLayer,
   type SkinFile,
+  zoomAbout,
 } from '@engine/core/present';
 import { GeometryCache } from './geometry';
 import { HudLayer } from './hud';
+import { ParallaxPlanes } from './parallax';
 
 type Skin = DeepReadonly<SkinFile>;
 type Frame = DeepReadonly<PresentFrame>;
@@ -67,11 +71,17 @@ export interface ThreeSceneOptions {
   /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
   /**
-   * The player's reduced-flashing setting: skip `flash` effects, and draw additive (bright)
-   * particles with normal blending, half as strong.
+   * The player's reduced-flashing setting: skip `flash` effects and event `flash`es, and draw
+   * additive (bright) particles with normal blending, half as strong.
    */
   reduceFlashing?: boolean;
-  /** The seed particles draw from (`fxRng`; default 0). */
+  /** The player's screen-shake setting, 0 (no shake) to 1 (full, the default). */
+  shakeScale?: number;
+  /** Keep trauma-shake offsets fractional (default false: whole picture px). */
+  subPixelShake?: boolean;
+  /** Called once for each event whose skin entry asks for a `hitPause`, with its ticks (Engine 0.16 T4). */
+  onHitPause?: (ticks: number) => void;
+  /** The seed particles and shake noise draw from (`fxRng`; default 0). */
   seed?: number;
   /**
    * The game's sprite sheets as decoded pixels (`contentPixelSheets`), for the HUD's sprite frames
@@ -200,6 +210,8 @@ export class ThreeScene {
    * drawing its first `geometry.drawRange.count` points.
    */
   readonly particles = new Group();
+  /** The skin's `parallax` layers as distant planes on the camera (Engine 0.16 T4). */
+  readonly parallax: ParallaxPlanes;
 
   private readonly skin: Skin;
   private readonly opts: ThreeSceneOptions;
@@ -219,6 +231,10 @@ export class ThreeScene {
   private readonly skinParticles: SkinParticles;
   private readonly points: Record<'normal' | 'add', ParticlePoints>;
   private readonly tmpColor = new Color();
+  private readonly cameraFx: CameraFx;
+  private settings: CameraFxSettings;
+  /** The camera effects' clock: one tick per `sync`, as the Canvas2D presenter's. */
+  private fxClock = -1;
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
@@ -250,6 +266,16 @@ export class ThreeScene {
     this.particles.add(this.points.normal, this.points.add);
     this.scene.add(this.particles);
     this.hud = new HudLayer(skin, opts.sheets);
+    this.parallax = new ParallaxPlanes(skin, opts.sheets);
+    this.camera.add(this.parallax.group);
+    this.cameraFx = new CameraFx({
+      ...(opts.seed !== undefined && { seed: opts.seed }),
+      ...(opts.subPixelShake !== undefined && { subPixel: opts.subPixelShake }),
+    });
+    this.settings = {
+      ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+      ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
+    };
   }
 
   /** The picture size changed. */
@@ -257,12 +283,19 @@ export class ThreeScene {
     this.size = { width: size.width, height: size.height };
   }
 
+  /** Changes the player's flashing and shake settings from the next frame (fields left out are kept). */
+  effectSettings(settings: CameraFxSettings): void {
+    this.settings = { ...this.settings, ...settings };
+  }
+
   /** Brings the scene and camera up to `frame`. Reads the frame and the skin; changes neither. */
   sync(frame: Frame): void {
     const size = this.size ?? frame.size;
+    this.fxClock++;
     this.takeEvents(frame);
     this.updateMap(frame);
     this.updateEntities(frame);
+    this.cameraFx.update(this.fxClock);
     this.updateCamera(frame, size);
     this.updateOverlay(frame.frame);
     this.skinParticles.update(frame.frame, frame.entities);
@@ -311,6 +344,7 @@ export class ThreeScene {
       p.material.dispose();
     }
     this.hud.dispose();
+    this.parallax.dispose();
   }
 
   // ---- Events ----
@@ -328,7 +362,9 @@ export class ThreeScene {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
+      if (entry.hitPause !== undefined) this.opts.onHitPause?.(entry.hitPause.ticks);
       this.skinParticles.event(entry, ev, frame.entities, frame.frame);
+      this.cameraFx.event(entry, this.fxClock);
       if (entry.effect === undefined || entry.effect.kind === 'particles') continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
       const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
@@ -339,7 +375,7 @@ export class ThreeScene {
 
   /** The particles shown now (the scene's own reading of its particle system, for tests). */
   particleViews(): ParticleView[] {
-    return this.skinParticles.particles(this.opts.reduceFlashing ? { reduceFlashing: true } : {});
+    return this.skinParticles.particles(this.settings.reduceFlashing ? { reduceFlashing: true } : {});
   }
 
   /**
@@ -382,18 +418,23 @@ export class ThreeScene {
     }
   }
 
-  /** Flash and tint as a full-screen overlay; the last one listed wins. */
+  /**
+   * Flash and tint effects, then event `flash`es (Engine 0.16 T4), as a full-screen overlay; the
+   * last one wins.
+   */
   private updateOverlay(tick: number): void {
     let shown: { color: string; opacity: number } | null = null;
     for (const a of this.effects) {
       const { effect } = a;
       const color = effect.color ?? '#fcfcfc';
-      if (effect.kind === 'flash' && !this.opts.reduceFlashing) shown = { color, opacity: 1 };
+      if (effect.kind === 'flash' && !this.settings.reduceFlashing) shown = { color, opacity: 1 };
       else if (effect.kind === 'tint') {
         const ticks = effect.ticks ?? EFFECT_TICKS.tint;
         shown = { color, opacity: 0.4 * (1 - (tick - a.start) / ticks) };
       }
     }
+    for (const f of this.cameraFx.state(this.fxClock, this.settings).flashes)
+      shown = { color: f.color, opacity: f.alpha };
     this.overlay.visible = shown !== null && shown.opacity > 0;
     if (shown) {
       this.overlay.material.color.set(shown.color);
@@ -586,19 +627,27 @@ export class ThreeScene {
   // ---- Camera ----
 
   private updateCamera(frame: Frame, size: ScreenSize): void {
-    const zoom = cameraZoom(frame, this.skin.camera);
-    const view = cameraView(size, zoom);
+    const base = cameraZoom(frame, this.skin.camera);
     const map = this.mapVisible ? (this.shown?.map ?? null) : null;
-    const top = this.follower.update(frame, this.skin.camera, view, map);
+    const framedTop = this.follower.update(frame, this.skin.camera, cameraView(size, base), map);
+    // A zoom punch zooms the framed view about its centre, as the Canvas2D presenter does.
+    const fx = this.cameraFx.state(this.fxClock, this.settings);
+    const area = cameraArea(frame, map, (this.opts.clamp ?? this.skin.camera?.clamp) !== false);
+    const focus = cameraTarget(frame, this.skin.camera);
+    const { cam: top, view } = zoomAbout(framedTop, cameraView(size, base), fx.zoom, area, focus);
+    const zoom = base * fx.zoom;
     this.framed = { x: top.x, y: top.y, w: view.width, h: view.height };
 
+    // Shake in picture px (old `shake` effects and the hint's, scaled; then trauma), in world px.
     const shakes = this.effects.filter((a) => a.effect.kind === 'shake').map((a) => a.effect.size ?? 2);
-    const shake = cameraShake(frame, shakes) / zoom;
+    const scale = Math.min(1, Math.max(0, this.settings.shakeScale ?? 1));
+    const shakeX = Math.round(cameraShake(frame, shakes) * scale) + fx.shakeX;
+    const shakeY = fx.shakeY;
     const { fov, tilt } = this.cam3d;
     const distance = view.height / (2 * Math.tan((fov * Math.PI) / 360));
     const pitch = (tilt * Math.PI) / 180;
-    const cx = top.x + view.width / 2 + shake;
-    const cy = -(top.y + view.height / 2);
+    const cx = top.x + view.width / 2 + shakeX / zoom;
+    const cy = -(top.y + view.height / 2 + shakeY / zoom);
 
     const cam = this.camera;
     cam.fov = fov;
@@ -615,6 +664,10 @@ export class ThreeScene {
     const h = 2 * at * Math.tan((fov * Math.PI) / 360);
     this.overlay.position.set(0, 0, -at);
     this.overlay.scale.set(h * cam.aspect * 1.01, h * 1.01, 1);
+
+    // Parallax planes scroll against the camera's top-left in picture px, as in 2D.
+    const picture = { x: Math.round(top.x * zoom) + shakeX, y: Math.round(top.y * zoom) + shakeY };
+    this.parallax.sync(picture, size, cam, distance);
   }
 }
 

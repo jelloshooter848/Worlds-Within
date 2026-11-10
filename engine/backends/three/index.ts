@@ -9,6 +9,7 @@ export {
 } from './renderer-info';
 export { applyCanvasBox, canvasToScreen, fitCanvas, type CanvasBox } from './fit';
 export { GeometryCache, primitiveGeometry, type PartSize } from './geometry';
-export { HudLayer, type HudQuad } from './hud';
+export { frameTexture, HudLayer, type HudQuad } from './hud';
+export { PARALLAX_DEPTH_STEP, ParallaxPlanes } from './parallax';
 export { PARTICLE_POOL, PARTICLE_Z } from './scene';
 export { threeDisplay, threeScenePresenter, webgl2Available, type ThreeDisplayOptions } from './display';

@@ -1,4 +1,5 @@
 import { AudioManager, type Volumes } from '../audio/audio-manager';
+import { HitPause } from '../fx/hit-pause';
 import type { Sfx, Song } from '../audio/mml';
 import type { ScreenSize } from '../gfx/screen';
 import { GamepadSource } from '../input/gamepad';
@@ -60,6 +61,13 @@ export interface DisplayShell {
    * with the game's sfx when the boot has `audio`, else it does nothing.
    */
   onSound(id: string): void;
+  /**
+   * Holds the game's ticks for `ticks` display frames while the picture keeps drawing (a skin
+   * event's `hitPause`, Engine 0.16 T4; pass it as the display's `onHitPause`). The tick sequence
+   * and every state hash stay the same; in manual-loop mode (`?debug=step`) it does nothing, so
+   * the step hook stays tick-exact.
+   */
+  hitPause(ticks: number): void;
 }
 
 /** Builds a display on the page's canvas (may load its backend first). */
@@ -159,6 +167,8 @@ export interface BootedGame extends BootPage {
   debug: PageDebug | null;
   /** The mute button and volume slider (with `audio`, unless `volumeControl: false`), else null. */
   volume: VolumeControl | null;
+  /** The hit-pause the loop honours (Engine 0.16 T4): display frames still held. */
+  hitPause: HitPause;
 }
 
 /**
@@ -178,7 +188,13 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend');
   const make = backend === 'three' ? opts.displays.three! : opts.displays.canvas2d;
   const audio = opts.audio ? shellAudio(opts.audio) : null;
-  const display = await make(canvas, { onSound: (id) => audio?.sfx(id) });
+  const hitPause = new HitPause();
+  const display = await make(canvas, {
+    onSound: (id) => audio?.sfx(id),
+    hitPause: (ticks) => {
+      if (!manual) hitPause.request(ticks);
+    },
+  });
   if (typeof display === 'string') {
     showDisplayMessage(canvas, display);
     return null;
@@ -243,6 +259,8 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const loop: FixedLoop = new FixedLoop(
     {
       step() {
+        // A hit-pause holds this step: no input frame, no tick; the render still draws the frame.
+        if (hitPause.hold()) return;
         input.beginFrame();
         pointer?.beginFrame(manual ? loop.steps * loop.stepMs : performance.now());
         const frame = input.player(0);
@@ -272,7 +290,18 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     loop.advance(0); // the first picture, before any step
   else loop.start();
   document.body.dataset.backend = backend;
-  return { backend, display, scenes, input, loop, pointer, audio, debug: hook?.api ?? null, volume };
+  return {
+    backend,
+    display,
+    scenes,
+    input,
+    loop,
+    pointer,
+    audio,
+    debug: hook?.api ?? null,
+    volume,
+    hitPause,
+  };
 }
 
 /** The boot's `AudioManager`: the songs and sfx registered, the volumes set, the music waiting. */

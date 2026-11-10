@@ -1,6 +1,6 @@
 import type { ScreenSize } from '../gfx/screen';
-import type { SkinFile } from './skin';
-import type { DeepReadonly, PresentEntity, PresentFrame } from './types';
+import { CAMERA_LOOK_AHEAD_LERP, type SkinFile } from './skin';
+import { facesLeft, type DeepReadonly, type Facing, type PresentEntity, type PresentFrame } from './types';
 
 /** The camera's top-left in whole world pixels (shake not included). */
 export interface CameraPoint {
@@ -40,6 +40,12 @@ type SkinCamera = DeepReadonly<NonNullable<SkinFile['camera']>>;
  *   1 snaps, 0 holds still. The first frame, a new map id and a frame with no target snap.
  * - Clamp (unless `clamp` is false): the view stays inside the hint's `bounds`, else the map;
  *   an area smaller than the picture is centred on that axis.
+ * - Look-ahead (Engine 0.16 T4, the skin's `camera.lookAhead`): when the target is a followed
+ *   entity, the target point moves `x` world px ahead of it in its facing's horizontal direction
+ *   and `y` in its vertical one ({@link facingVector}). The offset glides to a new facing at the
+ *   look-ahead's `lerp` (default `CAMERA_LOOK_AHEAD_LERP`, whole px, 1/256 fixed point as above)
+ *   and snaps with the camera. The deadzone (its `h` is the vertical deadzone) then applies to
+ *   the point ahead.
  * - A frame with the same `frame` number as the last one does not move the camera again.
  */
 export class CameraFollower {
@@ -47,6 +53,8 @@ export class CameraFollower {
   private cam: CameraPoint | null = null;
   private camFrame: number | null = null;
   private camMap: string | null = null;
+  /** The look-ahead offset (world px) last frame. */
+  private ahead: CameraPoint = { x: 0, y: 0 };
 
   constructor(opts: CameraFollowerOptions = {}) {
     this.clamp = opts.clamp !== false;
@@ -75,6 +83,12 @@ export class CameraFollower {
     this.cam = null;
     this.camFrame = null;
     this.camMap = null;
+    this.ahead = { x: 0, y: 0 };
+  }
+
+  /** The look-ahead offset (world px) the last frame used. */
+  get lookAhead(): CameraPoint {
+    return { ...this.ahead };
   }
 
   private frameCamera(
@@ -84,11 +98,13 @@ export class CameraFollower {
     map: DeepReadonly<CameraMap> | null,
   ): CameraPoint {
     const hint = frame.camera;
-    const center = cameraTarget(frame, skinCam);
+    const target = cameraTarget(frame, skinCam);
     const mapId = map?.id ?? null;
     const prev = this.cam;
-    const snap = prev === null || center === null || mapId !== this.camMap;
+    const snap = prev === null || target === null || mapId !== this.camMap;
     this.camMap = mapId;
+    const ahead = this.lookAheadFor(frame, skinCam, snap);
+    const center = target === null ? null : { x: target.x + ahead.x, y: target.y + ahead.y };
 
     const deadzone = hint?.deadzone ?? skinCam?.deadzone ?? { w: 0, h: 0 };
     const lerp = lerpStep(hint?.lerp ?? skinCam?.lerp ?? 1);
@@ -122,15 +138,87 @@ export class CameraFollower {
   }
 
   /** The world box the view is kept inside, or null when nothing clamps it. */
-  private clampArea(
-    frame: Frame,
-    map: DeepReadonly<CameraMap> | null,
-  ): { x: number; y: number; w: number; h: number } | null {
-    if (!this.clamp) return null;
-    const bounds = frame.camera?.bounds;
-    if (bounds) return { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h };
-    return map ? { x: 0, y: 0, w: map.cols * map.tileSize, h: map.rows * map.tileSize } : null;
+  private clampArea(frame: Frame, map: DeepReadonly<CameraMap> | null): CameraArea | null {
+    return cameraArea(frame, map, this.clamp);
   }
+
+  /** This frame's look-ahead offset, moved toward the followed entity's facing (and kept). */
+  private lookAheadFor(frame: Frame, skinCam: SkinCamera | undefined, snap: boolean): CameraPoint {
+    const la = skinCam?.lookAhead;
+    const followed = la === undefined ? null : cameraFollowed(frame, skinCam);
+    if (la === undefined || followed === null) {
+      this.ahead = { x: 0, y: 0 };
+      return this.ahead;
+    }
+    const dir = facingVector(followed.facing);
+    const want = { x: dir.x * Math.round(la.x ?? 0), y: dir.y * Math.round(la.y ?? 0) };
+    const step = lerpStep(la.lerp ?? CAMERA_LOOK_AHEAD_LERP);
+    this.ahead = snap
+      ? want
+      : { x: approach(this.ahead.x, want.x, step), y: approach(this.ahead.y, want.y, step) };
+    return this.ahead;
+  }
+}
+
+/** A world box: what the camera is kept inside. */
+export interface CameraArea {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * The world box a camera is kept inside for `frame`: the hint's `bounds`, else the map's, else
+ * null (nothing clamps it); always null when `clamp` is false.
+ */
+export function cameraArea(
+  frame: Frame,
+  map: DeepReadonly<CameraMap> | null,
+  clamp = true,
+): CameraArea | null {
+  if (!clamp) return null;
+  const bounds = frame.camera?.bounds;
+  if (bounds) return { x: bounds.x, y: bounds.y, w: bounds.w, h: bounds.h };
+  return map ? { x: 0, y: 0, w: map.cols * map.tileSize, h: map.rows * map.tileSize } : null;
+}
+
+/**
+ * A facing as a direction: `x` -1 (left-hand), 1 (right-hand) or 0 (`up`, `down`); `y` -1 (up,
+ * up-left, up-right), 1 (down...) or 0 (`left`, `right`).
+ */
+export function facingVector(facing: Facing): CameraPoint {
+  const x = facesLeft(facing) ? -1 : facing.endsWith('right') ? 1 : 0;
+  const y = facing.startsWith('up') ? -1 : facing.startsWith('down') ? 1 : 0;
+  return { x, y };
+}
+
+/**
+ * A zoom punch (Engine 0.16 T4) on a framed camera: the top-left `cam` and world `view` zoomed by
+ * `factor` (2 shows half as much) about `focus`, a world point that keeps its place on the
+ * picture (the camera's target, so the player stays where it was; held inside the view), else
+ * the view's centre. A punch out (`factor` < 1) is kept inside `area` when there is one
+ * (`clampCameraAxis`); a punch in stays inside on its own.
+ */
+export function zoomAbout(
+  cam: CameraPoint,
+  view: ScreenSize,
+  factor: number,
+  area: CameraArea | null,
+  focus: CameraPoint | null = null,
+): { cam: CameraPoint; view: ScreenSize } {
+  if (factor === 1) return { cam: { ...cam }, view: { ...view } };
+  const zoomed = { width: view.width / factor, height: view.height / factor };
+  // The focus as a share of the view (0 left or top, 1 right or bottom), the centre by default.
+  const share = (at: number | undefined, from: number, extent: number) =>
+    at === undefined ? 0.5 : Math.min(1, Math.max(0, (at - from) / extent));
+  let x = cam.x + (view.width - zoomed.width) * share(focus?.x, cam.x, view.width);
+  let y = cam.y + (view.height - zoomed.height) * share(focus?.y, cam.y, view.height);
+  if (area && factor < 1) {
+    x = clampCameraAxis(x, area.x, area.w, zoomed.width);
+    y = clampCameraAxis(y, area.y, area.h, zoomed.height);
+  }
+  return { cam: { x, y }, view: zoomed };
 }
 
 /**
@@ -152,16 +240,28 @@ export function cameraView(size: ScreenSize, zoom: number): ScreenSize {
 
 /** The world point to keep in view (see `CameraFollower`), or null when there is none. */
 export function cameraTarget(frame: Frame, skinCam: SkinCamera | undefined): CameraPoint | null {
-  const centre = (e: DeepReadonly<PresentEntity>) => ({ x: e.x + e.w / 2, y: e.y + e.h / 2 });
+  const followed = cameraFollowed(frame, skinCam);
+  if (followed) return { x: followed.x + followed.w / 2, y: followed.y + followed.h / 2 };
+  const hint = frame.camera;
+  return hint ? { x: hint.x, y: hint.y } : null;
+}
+
+/**
+ * The entity the camera follows on `frame`: the hint's `follow` (by id) when it is in the frame;
+ * without a hint, the skin's `camera.follow` (an entity id, else a kind); else null.
+ */
+export function cameraFollowed(
+  frame: Frame,
+  skinCam: SkinCamera | undefined,
+): DeepReadonly<PresentEntity> | null {
   const hint = frame.camera;
   if (hint) {
-    const followed = hint.follow === undefined ? undefined : frame.entities.find((e) => e.id === hint.follow);
-    return followed ? centre(followed) : { x: hint.x, y: hint.y };
+    if (hint.follow === undefined) return null;
+    return frame.entities.find((e) => e.id === hint.follow) ?? null;
   }
   const follow = skinCam?.follow;
   if (follow === undefined) return null;
-  const target = frame.entities.find((e) => e.id === follow) ?? frame.entities.find((e) => e.kind === follow);
-  return target ? centre(target) : null;
+  return frame.entities.find((e) => e.id === follow) ?? frame.entities.find((e) => e.kind === follow) ?? null;
 }
 
 /**

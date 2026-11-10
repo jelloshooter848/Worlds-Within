@@ -1,7 +1,16 @@
 import { z } from 'zod';
 import type { ContentKind, ContentLookup, KindIssue } from '../content/kinds';
 import type { FieldPath } from '../content/validate';
-import { emitterSchema, type EmitterDef, tweensSchema } from '../fx/schema';
+import {
+  emitterSchema,
+  flashSpecSchema,
+  hitPauseSpecSchema,
+  parallaxLayerSchema,
+  shakeSpecSchema,
+  tweensSchema,
+  zoomSpecSchema,
+  type EmitterDef,
+} from '../fx/schema';
 import {
   cardinalFacing,
   FACINGS,
@@ -91,6 +100,9 @@ export const DEFAULT_FALLBACK_COLOR = '#ff00ff';
 
 /** The colour a backend clears to when the skin gives no `background` (gap G36). */
 export const DEFAULT_BACKGROUND = '#000';
+
+/** How far a camera's look-ahead closes its gap each frame when the skin gives no `lerp`. */
+export const CAMERA_LOOK_AHEAD_LERP = 0.1;
 
 /** Ticks a frame of a cycle shows when the cycle gives no `ticks`. */
 export const DEFAULT_FRAME_TICKS = 8;
@@ -438,6 +450,26 @@ const eventEntry = z.strictObject({
     .describe(
       "tweens started on the event's `entity` (a squash, a hit flash), on top of its `fx`; ignored for an event with no entity; presentation only (Engine 0.16)",
     ),
+  shake: shakeSpecSchema
+    .exactOptional()
+    .describe(
+      'a camera shake, `{ amount, ticks }`: trauma decaying over `ticks`; presentation only (Engine 0.16)',
+    ),
+  zoom: zoomSpecSchema
+    .exactOptional()
+    .describe(
+      'a zoom punch, `{ to, ticks, ease?, hold?, back? }`, there and back; presentation only (Engine 0.16)',
+    ),
+  flash: flashSpecSchema
+    .exactOptional()
+    .describe(
+      'a full-screen flash, `{ color?, alpha?, ticks }`, fading out; skipped with reduced flashing (Engine 0.16)',
+    ),
+  hitPause: hitPauseSpecSchema
+    .exactOptional()
+    .describe(
+      "a hit-pause, `{ ticks }`: the browser shell holds the game's ticks that many display frames (Engine 0.16)",
+    ),
 });
 
 const hudItem = z
@@ -477,6 +509,26 @@ const camera = z.strictObject({
     .exactOptional()
     .describe(
       'keep the view inside the map, centring a smaller map (default true); false lets a camera hint place it',
+    ),
+  lookAhead: z
+    .strictObject({
+      x: z
+        .number()
+        .int()
+        .min(0)
+        .exactOptional()
+        .describe('world px ahead of a followed entity facing left or right'),
+      y: z.number().int().min(0).exactOptional().describe('world px ahead of one facing up or down'),
+      lerp: z
+        .number()
+        .min(0)
+        .max(1)
+        .exactOptional()
+        .describe(`how far the look-ahead closes its gap each frame (default ${CAMERA_LOOK_AHEAD_LERP})`),
+    })
+    .exactOptional()
+    .describe(
+      'Engine 0.16: frame a followed entity this far ahead in its facing direction, gliding there when it turns',
     ),
 });
 
@@ -666,6 +718,12 @@ export const skinSchema = z
       .describe(
         "named particle emitters (Engine 0.16), started by an event's `emit` or run by a kind's `emit`",
       ),
+    parallax: z
+      .array(parallaxLayerSchema)
+      .exactOptional()
+      .describe(
+        'background layers behind the map, back to front (Engine 0.16): `{ frame | gradient, factor, repeat?, x?, y?, sheet?, bands?, height?, depth? }`',
+      ),
   })
   .superRefine((skin, ctx) => {
     checkEventKeys(skin.events ?? {}, ctx);
@@ -769,6 +827,19 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     }
   }
   (skin.hud ?? []).forEach((item, i) => sheetAt(['hud', i], item.sheet, one(item.frame)));
+  (skin.parallax ?? []).forEach((layer, i) => {
+    if (layer.frame === undefined) return;
+    if (layer.sheet === undefined && skin.sheets?.sheet === undefined) {
+      issues.push({
+        name,
+        path: ['parallax', i, 'sheet'],
+        code: 'missing_field',
+        message: 'a parallax frame needs "sheet" (or sheets.sheet)',
+      });
+      return;
+    }
+    sheetAt(['parallax', i], layer.sheet, one(layer.frame));
+  });
   if (!MESH_BACKENDS.includes(skin.backend)) {
     for (const [emitter, def] of Object.entries(skin.emitters ?? {})) {
       if (def.frame !== undefined) sheetAt(['emitters', emitter], def.sheet, one(def.frame));

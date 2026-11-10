@@ -65,6 +65,16 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   background resumes, or redoes the unlock on the next gesture. The manager is `booted.audio` (null without the option) for volume changes or
   another song. A game writes no audio code. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
   two page helpers it uses.
+- **Hit-pause** (Engine 0.16 T4, `../fx/hit-pause.ts`): the boot keeps one `HitPause`
+  (`booted.hitPause`) and gives every display factory `shell.hitPause(ticks)` beside `onSound`;
+  a game passes it as the display's `onHitPause`, so a presenter playing a skin event's
+  `hitPause { ticks }` asks for that many held display frames. Each loop step first asks
+  `hitPause.hold()`: while it says true the step does nothing (no input frame, no tick), and the
+  render still draws, so the picture freezes while the presenters' own clocks (camera shake,
+  flashes) go on. The tick sequence and every state hash are the same as without it (tested);
+  headless runs never see it, and in manual-loop mode it does nothing (requests are dropped), so
+  the step hook stays tick-exact. `FixedLoop` (`../loop.ts`) draws only on a frame that took a
+  step, so a faster display draws each step once and presenter clocks run at 60 Hz everywhere.
 - **Manual-loop mode and the step hook** (Engine 0.14 T8, gap G31; docs/BUILD-LOG.md, Engine
   0.14, decision 9, item 255). `bootBrowserGame({ manual: true })`, or the page's URL with
   `?debug=step` (`manualFromQuery(search)`, `DEBUG_STEP_QUERY`; `?backend=three&debug=step` for
@@ -190,7 +200,8 @@ campaign? })` over a `LaunchGame` (a `MissionHost`'s `step`, `events`, `miniGame
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
-songs, if it has sound) and `canvasDisplay(canvas, { screen, skin, sheet, background, onSound })` for 2D, the lazy `threeDisplay` for 3D, and a `scene` that
+songs, if it has sound) and `canvasDisplay(canvas, { screen, skin, sheet, background, onSound, onHitPause })` (the
+shell's `onSound` and `hitPause`) for 2D, the lazy `threeDisplay` for 3D, and a `scene` that
 is `new HostScene({ stack, game: createGame(content, seed), picture })` drawing a `FramePicture`
 onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` since Engine 0.10).
 
@@ -221,7 +232,11 @@ playing the song once, later gestures reusing it; without it, no manager and no 
 A boot on a fake page in manual mode (Engine 0.14 T8): `?debug=step` calls no
 `requestAnimationFrame`, puts `window.__ww` there, steps the `HostScene`'s game and hashes it;
 without it the loop starts on `requestAnimationFrame` and there is no `__ww`; with `?record` the
-loop runs on `requestAnimationFrame` and `__ww` records (Engine 0.14 T9). `debug.test.ts`:
+loop runs on `requestAnimationFrame` and `__ww` records (Engine 0.14 T9). Hit-pause (Engine 0.16
+T4): a game whose picture asks for a 4-frame hit-pause on every stomp, stepped by
+`requestAnimationFrame` with a fake clock for 150 frames, takes fewer ticks than without but gives
+exactly the same state hash at each tick, every frame still draws (the stomp's tick drawn again
+through the held frames), and in manual mode `__ww.step(30)` takes 30 ticks with no pause. `debug.test.ts`:
 `FixedLoop.advance` (n steps, one render, no rAF), the hook's step, snapshot and hash, a replay's
 input in place of the live frame (frame 0 first), a tick's orders then missions before its step
 with refusals kept, each refused run file, and recording (on in the game now and before every

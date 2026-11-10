@@ -247,3 +247,170 @@ export const emitterSchema = z
 export type EmitterDef = z.output<typeof emitterSchema>;
 /** Keyframes as an emitter gives them. */
 export type Keyframes<T> = T | readonly T[] | readonly { at: number; value: T }[];
+
+// ---- Camera effects (Engine 0.16 T4) ----
+
+/**
+ * A camera shake as a skin's event entry writes it (`events.stomp.shake`): trauma that decays
+ * over `ticks` presentation frames, `amount` the largest offset in picture px at its start.
+ *
+ *   "shake": { "amount": 4, "ticks": 12 }
+ */
+export const shakeSpecSchema = z
+  .strictObject({
+    amount: z.number().positive().describe('the largest offset in picture px when it starts'),
+    ticks: z.number().int().min(1).describe('presentation frames until it has decayed to nothing'),
+  })
+  .describe('a camera shake: trauma decaying over `ticks`, noise from the presentation RNG');
+
+/**
+ * A zoom punch (`events.cleared.zoom`): the camera zooms by the factor `to` (2 is twice as close)
+ * over `ticks` with `ease`, holds it `hold` frames, then goes back to 1 over `back` frames (default
+ * `ticks`) with the same curve played backwards.
+ *
+ *   "zoom": { "to": 1.5, "ticks": 10, "ease": "cubicOut", "hold": 20 }
+ */
+export const zoomSpecSchema = z
+  .strictObject({
+    to: z.number().positive().describe('the zoom factor it reaches, on top of the camera zoom (1 is none)'),
+    ticks: z.number().int().min(1).describe('presentation frames to reach it'),
+    ease: z
+      .enum(EASE_NAMES)
+      .exactOptional()
+      .describe('the easing curve (default `linear`), played backwards on the way back'),
+    hold: z.number().int().min(0).exactOptional().describe('frames it stays at `to` (default 0)'),
+    back: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe('frames to go back to 1 (default `ticks`; 0 snaps back)'),
+  })
+  .describe('a zoom punch: to `to` and back');
+
+/**
+ * A screen flash (`events.hurt.flash`): the whole picture covered in `color` at `alpha`, fading to
+ * nothing over `ticks`. Skipped with the player's reduced-flashing setting.
+ *
+ *   "flash": { "color": "#fcfcfc", "alpha": 0.7, "ticks": 6 }
+ */
+export const flashSpecSchema = z
+  .strictObject({
+    color: hex.exactOptional().describe('the colour (default `#fcfcfc`)'),
+    alpha: z.number().min(0).max(1).exactOptional().describe('its opacity when it starts (default 1)'),
+    ticks: z.number().int().min(1).describe('presentation frames it fades over'),
+  })
+  .describe('a full-screen flash, skipped with reduced flashing');
+
+/**
+ * A hit-pause (`events.stomp.hitPause`): the browser shell holds the game's ticks for `ticks`
+ * display frames while the presenters keep drawing (a freeze frame). Headless runs ignore it, so
+ * the tick sequence and every hash stay the same.
+ */
+export const hitPauseSpecSchema = z
+  .strictObject({
+    ticks: z.number().int().min(1).max(60).describe('display frames the game is held (at most 60)'),
+  })
+  .describe('a hit-pause (freeze frames) in the browser shell');
+
+export type ShakeSpec = z.output<typeof shakeSpecSchema>;
+export type ZoomSpec = z.output<typeof zoomSpecSchema>;
+export type FlashSpec = z.output<typeof flashSpecSchema>;
+export type HitPauseSpec = z.output<typeof hitPauseSpecSchema>;
+
+// ---- Parallax layers (Engine 0.16 T4) ----
+
+/** How a parallax layer repeats: across (`x`), down (`y`), both (`xy`) or not at all (`none`). */
+export const PARALLAX_REPEATS = ['x', 'y', 'xy', 'none'] as const;
+export type ParallaxRepeat = (typeof PARALLAX_REPEATS)[number];
+
+/** The bands a gradient layer is drawn in when it gives none (pixel-art steps, not a smooth ramp). */
+export const PARALLAX_DEFAULT_BANDS = 8;
+
+const parallaxFactor = z
+  .union([
+    z.number().min(0).max(2),
+    z.strictObject({
+      x: z.number().min(0).max(2).describe('across'),
+      y: z.number().min(0).max(2).describe('down'),
+    }),
+  ])
+  .describe(
+    'how fast it scrolls with the camera: 0 stays put on the screen (a sky), 1 moves with the world; one number or `{ x, y }`',
+  );
+
+/**
+ * One parallax background layer (a skin's top-level `parallax` list, back to front), drawn
+ * behind the map: a sprite `frame` (from `sheet`, else `sheets.sheet`), repeated as `repeat` says,
+ * or a colour `gradient` (top to bottom, in `bands` flat steps, `height` px tall). Its top is `y`
+ * picture px down when the camera is at the world's top, and it scrolls `factor` as fast as the
+ * world. `depth` places it in 3D: a plane that far behind the blocks.
+ *
+ *   { "gradient": ["#3cbcfc", "#a4e4fc"], "factor": 0 }
+ *   { "frame": "hills-far", "factor": { "x": 0.25, "y": 0.1 }, "y": 120, "depth": 400 }
+ */
+export const parallaxLayerSchema = z
+  .strictObject({
+    frame: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe('a sprite frame drawn as the layer (or give `gradient`)'),
+    sheet: z.string().min(1).exactOptional().describe("the frame's sprite file (default `sheets.sheet`)"),
+    gradient: z
+      .array(hex)
+      .min(1)
+      .exactOptional()
+      .describe('colours from top to bottom, blended in `bands` flat steps (or give `frame`)'),
+    bands: z
+      .number()
+      .int()
+      .min(1)
+      .max(64)
+      .exactOptional()
+      .describe(`a gradient's flat steps (default ${PARALLAX_DEFAULT_BANDS})`),
+    height: z
+      .number()
+      .int()
+      .min(1)
+      .exactOptional()
+      .describe("a gradient's height in picture px (default the picture's)"),
+    factor: parallaxFactor,
+    repeat: z
+      .enum(PARALLAX_REPEATS)
+      .exactOptional()
+      .describe('a frame repeats across (`x`, the default), down (`y`), both (`xy`) or not (`none`)'),
+    x: z.number().int().exactOptional().describe('picture px right of the scroll origin (default 0)'),
+    y: z
+      .number()
+      .int()
+      .exactOptional()
+      .describe("its top in picture px when the camera is at the world's top (default 0)"),
+    depth: z
+      .number()
+      .positive()
+      .exactOptional()
+      .describe(
+        '3D: how far behind the blocks the plane stands, in px (default further back for earlier layers)',
+      ),
+  })
+  .superRefine((v, ctx) => {
+    if ((v.frame === undefined) === (v.gradient === undefined)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [v.frame === undefined ? 'frame' : 'gradient'],
+        message: 'give exactly one of "frame" (a sprite) and "gradient" (colours)',
+      });
+    }
+    for (const key of ['bands', 'height'] as const) {
+      if (v[key] !== undefined && v.gradient === undefined)
+        ctx.addIssue({ code: 'custom', path: [key], message: `"${key}" goes with "gradient"` });
+    }
+    for (const key of ['sheet', 'repeat'] as const) {
+      if (v[key] !== undefined && v.frame === undefined)
+        ctx.addIssue({ code: 'custom', path: [key], message: `"${key}" goes with "frame"` });
+    }
+  })
+  .describe('a parallax background layer');
+
+export type ParallaxLayer = z.output<typeof parallaxLayerSchema>;

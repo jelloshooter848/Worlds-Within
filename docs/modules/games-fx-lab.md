@@ -10,7 +10,10 @@ door and (in `fx-3`) torches, Pip (an original courier) with a full animation se
 breathing loop, walk, run, skid, jump, fall, hurt, dead) using per-frame timing, one-shots with
 `then` and frame events (footsteps), a Canvas2D skin and a low-poly 3D skin whose `poses` swap
 meshes by frame, from T3 six particle presets (land dust, run dust, stomp sparks, torch smoke,
-a coin pickup burst, a magic aura on the door) with additive blending and glow, original sfx, run
+a coin pickup burst, a magic aura on the door) with additive blending and glow, from T4 camera
+effects (a shake and a 4-frame hit-pause on stomps, a red flash on hurt, a zoom punch on the door,
+look-ahead) and a four-layer parallax sky (a gradient, clouds, mountains and hills from
+`content/sprites/fx-sky.txt`) in 2D and 3D, original sfx, run
 files with golden hashes and a browser page. Not a sample: a
 test game, content and glue only.
 
@@ -34,7 +37,8 @@ test game, content and glue only.
 ## How to test
 
 `pnpm test games/fx-lab` (`fx-lab.test.ts`: level order, both skins' animation sets, frame-event
-sounds through both presenters, the particle presets); `pnpm -s cli validate games/fx-lab --json`;
+sounds through both presenters, the particle presets, the camera effects and parallax in both
+skins, hit-pause requests on stomps and the 3D zoom on the door); `pnpm -s cli validate games/fx-lab --json`;
 `pnpm -s cli run games/fx-lab/runs/level-1.run.json --json` (and `level-2`, `level-3`); `pnpm test tests/runs`
 (golden hashes, presentation invariance); `pnpm test tests/browser/fx-lab.test.ts` (the page
 replays `level-1` in 2D and 3D with the golden hashes and plays the frame events' sounds; skipped

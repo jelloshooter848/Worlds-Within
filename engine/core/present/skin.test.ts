@@ -205,6 +205,86 @@ describe('the skin content kind', () => {
   });
 });
 
+describe('camera effects and parallax in skins (Engine 0.16 T4)', () => {
+  it('takes shake, zoom, flash and hitPause on events, lookAhead on the camera and parallax layers', () => {
+    const s: SkinFile = {
+      ...fixture(),
+      events: {
+        stomp: { shake: { amount: 3, ticks: 12 }, hitPause: { ticks: 4 } },
+        hurt: { flash: { color: '#d82800', alpha: 0.6, ticks: 8 } },
+        door: { zoom: { to: 1.5, ticks: 10, ease: 'cubicOut', hold: 20 } },
+      },
+      camera: { follow: 'hero', lookAhead: { x: 24, y: 0, lerp: 0.1 } },
+      parallax: [
+        { gradient: ['#3cbcfc', '#a4e4fc'], factor: 0 },
+        { frame: 'a', sheet: 'bat', factor: { x: 0.5, y: 0 }, y: 100, depth: 300 },
+      ],
+    };
+    expect(errorsOf(s)).toEqual([]);
+    expect(errorsOf({ ...s, backend: 'three', kinds: {}, tiles: {} })).toEqual([]);
+  });
+
+  it('names bad fields at their path', () => {
+    const s = fixture() as unknown as Record<string, unknown>;
+    expect(
+      errorsOf({
+        ...s,
+        events: {
+          a: { shake: { amount: -1, ticks: 2 } },
+          b: { hitPause: { ticks: 0 } },
+          c: { zoom: { to: 2 } },
+        },
+        camera: { lookAhead: { x: 1.5 } },
+        parallax: [{ frame: 'a', gradient: ['#000'], factor: 0 }],
+      }).map(([path]) => path),
+    ).toEqual([
+      'events.a.shake.amount',
+      'events.b.hitPause.ticks',
+      'events.c.zoom.ticks',
+      'camera.lookAhead.x',
+      'parallax.0.gradient',
+    ]);
+  });
+
+  it('checks a parallax frame across files', () => {
+    const { manifest, sprite } = {
+      manifest: {
+        id: 'g',
+        kit: 'topdown',
+        content: { skin: ['skins/*.json'], sprite: ['sprites/*.json'], palette: ['palettes/*.json'] },
+        start: { seed: 1 },
+        headless: 'headless.ts',
+      },
+      sprite: JSON.stringify({ palette: 'p', frames: { hills: ['0'] } }),
+    };
+    const skin = (parallax: NonNullable<SkinFile['parallax']>, sheets?: SkinFile['sheets']): SkinFile => ({
+      backend: 'three',
+      ...(sheets && { sheets }),
+      kinds: {},
+      parallax,
+    });
+    const load = (sk: SkinFile) =>
+      loadContent(
+        {
+          'game.json': JSON.stringify(manifest),
+          'skins/three.json': JSON.stringify(sk),
+          'sprites/sky.json': sprite,
+          'palettes/p.json': JSON.stringify({ id: 'p', colors: ['#000'] }),
+        },
+        engineContentKinds(),
+      ).errors.map((e) => [e.path, e.code]);
+    expect(load(skin([{ frame: 'hills', sheet: 'sky', factor: 0.5 }]))).toEqual([]);
+    expect(load(skin([{ frame: 'hills', factor: 0.5 }], { sheet: 'sky' }))).toEqual([]);
+    expect(load(skin([{ frame: 'cliffs', sheet: 'sky', factor: 0.5 }]))).toEqual([
+      ['parallax.0.frame', 'missing_frame'],
+    ]);
+    expect(load(skin([{ frame: 'hills', sheet: 'land', factor: 0.5 }]))).toEqual([
+      ['parallax.0.sheet', 'missing_ref'],
+    ]);
+    expect(load(skin([{ frame: 'hills', factor: 0.5 }]))).toEqual([['parallax.0.sheet', 'missing_field']]);
+  });
+});
+
 describe('event keys with a field match (G28)', () => {
   it('reads a bare type, type:value (the result field) and type:field=value', () => {
     expect(parseEventKey('mini-game-end')).toEqual({ type: 'mini-game-end', match: null });

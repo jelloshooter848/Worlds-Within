@@ -28,7 +28,12 @@ for and holds no game rules.
   events played through the skin's `events` like the frame's own; from Engine 0.16 T3 a kind's
   `blend: add` and `glow`, and particles from the skin's `emitters`, started by events' `emit` and
   run by kinds' `emit`, drawn in world space after the entities with `lighter` for `add` and
-  shadow blur for `glow`; `reduceFlashing` tones additive ones down; a `seed` option), frames the camera through its own `CameraFollower` from
+  shadow blur for `glow`; `reduceFlashing` tones additive ones down; a `seed` option; from Engine
+  0.16 T4 camera effects from the skin's events, a trauma shake on both axes, a zoom punch about
+  the camera's target and full-picture flashes (skipped with `reduceFlashing`), on the presenter's
+  own clock, the `shakeScale` and `subPixelShake` options, `effectSettings` for a settings screen,
+  `onHitPause(ticks)` for an event's `hitPause`, and the skin's `parallax` layers drawn behind the
+  map with the core `layoutParallax`), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
   instance lives in the presenter only), honours `zoom` (the hint's, else the skin's; the map

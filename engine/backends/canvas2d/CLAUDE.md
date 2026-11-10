@@ -19,7 +19,9 @@ layout needs it too. Never hard-code a picture size here: take it from the size 
 `onSound?(id)`, `background?` (default the skin's `background`, else `#000`: `skinBackground`,
 gap G36), `font?` (HUD font, default `font`), `clamp?` (the
 skin's `camera.clamp`, else true),
-`reduceFlashing?`, `seed?` (particles, Engine 0.16 T3), `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
+`reduceFlashing?`, `seed?` (particles and shake noise, Engine 0.16 T3), from Engine 0.16 T4
+`shakeScale?` (0..1, the player's shake setting), `subPixelShake?` (default false) and
+`onHitPause?(ticks)`, `mapSurface?(w, h)` (where the map is cached; the default is an offscreen
 canvas, none in Node). Each `present(frame)`, in order:
 
 - Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
@@ -92,12 +94,26 @@ canvas, none in Node). Each `present(frame)`, in order:
   layout is the core `layoutHud` (`@engine/core/present`, Engine 0.15, gap G33), shared with the
   3D backend's HUD pass: change it there; this presenter only draws its items (`sprite`, `text`,
   a missing frame's `box`).
+- Camera effects and parallax (Engine 0.16 T4, `@engine/core/fx`): an event's skin `shake`,
+  `zoom` and `flash` start on a `CameraFx` (seeded by `seed`) timed by the presenter's own clock,
+  one tick per `present` call, so they go on while the frame number stands still (a hit-pause,
+  the pause between levels); its `hitPause` calls `onHitPause(ticks)` once per event (the shell
+  holds the game's ticks). Each frame the follower frames at the base zoom, then a zoom punch
+  zooms the view about the camera's target (`zoomAbout`, a punch out clamped like the camera),
+  and the trauma shake (`shakeX`, `shakeY`, whole picture px) is added to the camera's top-left
+  after the old horizontal `cameraShake` (both scaled by `shakeScale`). Flashes are drawn over
+  the picture after flash and tint effects and before the HUD, each a full-picture box at its
+  alpha; `reduceFlashing` skips them. `effectSettings({ reduceFlashing?, shakeScale? })` changes
+  both settings from the next frame (a settings screen). The skin's `parallax` layers are drawn
+  after the clear and before the map (`layoutParallax`, shared with 3D): gradient bands as boxes,
+  frames as sprites at scale 1, scrolled against the camera's top-left in picture px (zoom and
+  shake included).
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 
 ## A skin set (`skin-set.ts`, Engine 0.7 T9)
 
-`skinSetCanvasPresenter(r, { skin, rounds?, sheet, screen, background?, onSound?, main? })`: one
+`skinSetCanvasPresenter(r, { skin, rounds?, sheet, screen, background?, onSound?, onHitPause?, main? })`: one
 `Presenter` for a game that stacks kits: a `SkinnedCanvasPresenter` with the game's skin (or
 `main`) and one per mini game skin in `rounds` (each
 clearing to its own skin's `background`, black by default; the `background` option overrides the
@@ -108,7 +124,7 @@ says (`clamp: false` keeps a top-down room under its HUD band; gaps G29 and G34 
 
 ## The page's display (`display.ts`, Engine 0.7)
 
-`canvasDisplay(canvas, { screen, skin, rounds?, sheet, background?, integerScale?, onSound? })` is the
+`canvasDisplay(canvas, { screen, skin, rounds?, sheet, background?, integerScale?, onSound?, onHitPause? })` is the
 Canvas2D `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`: a `Viewport` on
 the page's canvas at the picture size, a `CanvasRenderer` on its backbuffer (the scene stack's
 `renderer`), its `toScreen` (`Viewport.toScreen`, a client point in picture pixels for pointer
@@ -154,7 +170,11 @@ entities, additive and glowing; the same seed giving the same calls; a kind's em
 its entity shows and the kind's own blend and glow; the old `particles` ring; reduced flashing. The recorder writes a sprite's
 `scale` as ` xN` when it is not 1; the `zoom` block checks the map copy, tiles, sprites, boxes
 and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses the zoomed
-picture size. `Viewport` needs a
+picture size. The `camera effects and parallax (Engine 0.16 T4)` block plays a stomp's shake on
+both axes decaying to the framed camera (the same each run), the hit-pause request once per
+event, the shake scale off and back on through `effectSettings`, a flash's fading alpha box and
+reduced flashing, a zoom punch's scales there and back, and the parallax layers behind the map
+moving at their own rates between two camera positions. `Viewport` needs a
 real DOM and is checked by running a game. `display.test.ts` builds a `canvasDisplay` on fake
 canvases: its presenter clears the backbuffer to the background, and `fit` + `present` copy it
 fitted to the page. `rts-camera.test.ts` (Engine 0.9 T5) checks that `RtsCamera`

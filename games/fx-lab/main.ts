@@ -13,7 +13,9 @@ import gameFiles from 'virtual:game-files';
  * kit's events and the frame events of Pip's animation cycles (footsteps on the walk and run
  * frames) both reach the shell's `onSound`, which plays the game's sfx. Every sound id played is
  * also kept in `window.wwFxLab.sounds`, so a browser test can check the frame events' sounds
- * (`tests/browser/fx-lab.test.ts`). Arrows (or the touch pad) move, Z jumps, X runs.
+ * (`tests/browser/fx-lab.test.ts`). Skin events' `hitPause` (a stomp's freeze frames) reach the
+ * shell's `hitPause`, which holds the game's ticks while the picture keeps drawing. Arrows (or the
+ * touch pad) move, Z jumps, X runs.
  */
 const content = mustLoadFxLab(gameFiles);
 const look = fxLook(content);
@@ -31,11 +33,13 @@ void bootBrowserGame({
   game: content.manifest.id,
   audio: { sfx: contentSfx(content) },
   displays: {
-    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound: heard(onSound) }),
-    three: async (canvas, { onSound }) =>
+    canvas2d: (canvas, { onSound, hitPause }) =>
+      canvasDisplay(canvas, { ...look, onSound: heard(onSound), onHitPause: hitPause }),
+    three: async (canvas, { onSound, hitPause }) =>
       (await import('@engine/backends/three')).threeDisplay(canvas, {
         ...fxLook3d(content),
         onSound: heard(onSound),
+        onHitPause: hitPause,
       }),
   },
   scene: (stack, display) =>

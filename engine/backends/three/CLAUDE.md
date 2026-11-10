@@ -7,7 +7,8 @@ backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), t
 `ThreePresenter` (`presenter.ts`), the renderer check (`renderer-info.ts`), the canvas fit helper
 (`fit.ts`), the page's display (`display.ts`: `threeDisplay`, `threeScenePresenter`,
 `webgl2Available`), the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
-`GeometryCache`), the HUD pass (`hud.ts`: `HudLayer`, `HudQuad`) and `PARTICLE_POOL`.
+`GeometryCache`), the HUD pass (`hud.ts`: `HudLayer`, `HudQuad`, `frameTexture`), the parallax planes (`parallax.ts`:
+`ParallaxPlanes`, `PARALLAX_DEPTH_STEP`, Engine 0.16 T4) and `PARTICLE_POOL`.
 
 Node vs browser: `scene.ts`, `hud.ts` (no canvas: its textures are `DataTexture`s), `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
 in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebGLRenderer`) and
@@ -21,7 +22,8 @@ in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebG
 (the WebGL `ThreePresenter`, Engine 0.6 T4) only draws `scene` with `camera`.
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
 `onSound?(id)`, `background?` (the scene's background; default the skin's `background`, else
-`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `seed?` (particles),
+`#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `seed?` (particles and shake noise),
+`shakeScale?`, `subPixelShake?`, `onHitPause?(ticks)` (Engine 0.16 T4, as the Canvas2D presenter's),
 `sheets?` (a `PixelSheetLookup` from `@engine/core/assets/content-sheets`, the game's sprite files
 as decoded RGBA pixels, `contentPixelSheets(content)`: what the HUD draws; Engine 0.15, gap G33).
 `sync(frame)` brings `scene`, `camera`, `particles` and the HUD pass (`hud`) up to the frame. Read-outs for tests and the presenter:
@@ -81,6 +83,20 @@ camera.
   any depth, at `PARTICLE_Z` (12) px in front of the z = 0 plane, no depth writes. A sprite
   `frame` draws as a square in its colour. `reduceFlashing` sends additive particles through the
   normal buffer at half strength. `particleViews()` is what the scene shows, for tests.
+- Camera effects (Engine 0.16 T4): as the Canvas2D presenter, a `CameraFx` on the scene's own
+  clock (one tick per `sync`): a zoom punch shrinks the framed view about the camera's target
+  (the camera moves closer; `view` reads the punched box), the trauma shake moves the camera on x
+  and y (picture px over the zoom, never stored), event flashes show on `overlay` after flash and
+  tint effects (the last wins; skipped with `reduceFlashing`), and `hitPause` calls
+  `onHitPause`. `effectSettings({ reduceFlashing?, shakeScale? })` changes the settings.
+- Parallax (Engine 0.16 T4): `parallax`, a `ParallaxPlanes` (`parallax.ts`) whose `group` hangs on
+  the camera: one quad per core `layoutParallax` draw (the 2D layout, so the layers sit and scroll
+  as in 2D), on a plane the layer's `depth` behind the blocks (default `PARALLAX_DEPTH_STEP`, 200,
+  per place from the front), sized so a picture px of a draw covers a picture px on screen,
+  drawn first (`renderOrder` negative, no depth test or write), behind everything. A frame layer
+  is a texture cut from `sheets` (`frameTexture`, shared with the HUD; alpha-tested, so opaque
+  and drawn before the blocks); without `sheets` only gradients show. `parallax.draws()` and
+  `parallax.meshes()` read it.
 - HUD (Engine 0.15, gap G33, decision 4, item 281): `hud` is a `HudLayer`, a second scene with an
   `OrthographicCamera` spanning the picture in picture pixels (0 to `width`, y down as negative
   y). Each `sync` lays the HUD out with the core `layoutHud(skin, frame.status, ...)` (the one
@@ -104,8 +120,9 @@ object UUIDs use randomness internally, which is fine: they never reach a state 
 its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `WebGLRenderer` on
 `canvas` (an `HTMLCanvasElement` or `OffscreenCanvas`); `resize(size)` changes the picture size.
 Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
-`onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `sheets?`; they are passed on to
-the scene. Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
+`onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `shakeScale?`, `subPixelShake?`,
+`onHitPause?`, `sheets?`; they are passed on to the scene (and `withSkin`'s scenes);
+`effectSettings(settings)` changes the flashing and shake settings on all of them. Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
 with `autoClear` off and the depth cleared. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
 pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background` (the option, else the skin's, else black). The drawing buffer
@@ -145,7 +162,7 @@ places the canvas absolutely in its (positioned) container with `image-rendering
 
 ## The page's display (`display.ts`, Engine 0.7)
 
-`threeDisplay(canvas, { screen, skin, rounds?, background?, integerScale?, onSound?, sheets? })` is the 3D
+`threeDisplay(canvas, { screen, skin, rounds?, background?, integerScale?, onSound?, onHitPause?, sheets? })` is the 3D
 `BrowserDisplay` (`@engine/core/shell`) a game hands `bootBrowserGame`, or a sentence saying why
 it cannot start: `webgl2Available()` is false (no WebGL 2), or `ThreePresenter` threw (the
 message names the error). Its `presenter` is a `ThreePresenter` with the game's `three` skin on
@@ -195,4 +212,10 @@ glyphs, a missing frame's box), the orthographic camera, a texture cut from the 
 rows flipped, quads following the status each frame, boxes without sheets, `threeScenePresenter`
 handing `sheets` to the round scenes, and particles (an old effect flying out for its ticks from a
 point or an entity's centre, each buffer capped at `PARTICLE_POOL`, an additive kind emitter in the
-additive buffer and in the normal one under reduced flashing, stopping when its entity goes). WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
+additive buffer and in the normal one under reduced flashing, stopping when its entity goes).
+`camera-fx.test.ts` (Engine 0.16 T4) checks the scene's trauma shake on both axes decaying (the
+same each run), the hit-pause request once per event and the shake scale, a zoom punch's view
+widths there and back with its corners on the picture's, an event flash on the overlay fading,
+reduced flashing and `effectSettings`, and the parallax planes: each quad's corner projected to
+where the 2D layout draws it, on the camera behind the blocks with no depth test, layers moving
+at their own rates, and gradients only without sheets. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.

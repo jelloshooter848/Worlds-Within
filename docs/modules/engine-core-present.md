@@ -73,7 +73,14 @@ event)` gives the entry, the first matching field key in file order, else the ba
   from `engine/core/fx`) are started by an event's `emit` and run by a kind's `emit` (following
   its entities); an unknown name is `missing_ref` at its field; an old `particles` effect is an
   implicit emitter (`particlesEffectEmitter`); a 2D kind may also take `blend: add` and
-  `glow { color, radius }`. `games/fx-lab` is the worked example. Field
+  `glow { color, radius }`. From Engine 0.16 T4 an event entry also takes `shake { amount, ticks }`,
+  `zoom { to, ticks, ease?, hold?, back? }`, `flash { color?, alpha?, ticks }` and
+  `hitPause { ticks }`, the skin camera `lookAhead { x?, y?, lerp? }` (the follower frames a
+  followed entity ahead in its facing, gliding when it turns; `cameraFollowed`, `facingVector`),
+  and the skin a top-level `parallax` list of background layers (a sprite `frame` or a colour
+  `gradient`, `factor`, `repeat`, `x`/`y`, `depth`; frames checked across files). `zoomAbout`
+  and `cameraArea` (`camera.ts`) are the zoom punch both presenters apply after framing.
+  `games/fx-lab` is the worked example. Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named

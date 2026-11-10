@@ -29,6 +29,13 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `ParticleView`, `keyframeAt`, `anchorPoint`, `PARTICLE_CATCH_UP`, `PARTICLE_SYSTEM_MAX`;
   `SkinParticles` (a skin's event `emit`s, kind `emit`s and old `particles` effects for one
   presenter; `particles({ reduceFlashing })`), `REDUCED_FLASH_ALPHA`.
+- Camera effects (Engine 0.16 T4): `shakeSpecSchema`, `zoomSpecSchema`, `flashSpecSchema`,
+  `hitPauseSpecSchema`; `CameraFx` (`event`, `shake`, `zoom`, `flash`, `update`,
+  `state(frame, { reduceFlashing?, shakeScale? })` -> `{ shakeX, shakeY, zoom, flashes }`; trauma
+  shake from `fxRng`, whole px unless `subPixel`), `shakeStrength`, `zoomFactor`, `zoomLength`,
+  `flashAlpha`; `HitPause` (`request`, `hold`, `remaining`), the shell's freeze-frame counter.
+- Parallax (Engine 0.16 T4): `parallaxLayerSchema`, `layoutParallax(skin, cam, size, frameSize)`
+  (`ParallaxDraw`s for both backends), `parallaxFactor`, `parallaxOrigin`, `gradientBands`.
 
 In skins (`engine/core/present`): an event entry's `tween` (on the event's `entity`) and a kind
 entry's `spawnTween` (on an entity the first frame it is shown), drawn by the Canvas2D
@@ -46,6 +53,15 @@ kind's `emit`; an old `effect: { kind: "particles" }` still draws (an implicit e
     "events": { "land": { "sound": "land", "emit": "dust" } },
     "kinds": { "torch": { "frames": { "idle": "torch" }, "emit": ["torch-smoke", "torch-flame"] } }
 
+Camera effects ride on event entries, and parallax layers sit at the skin's top level:
+
+    "events": { "stomp": { "sound": "stomp", "shake": { "amount": 3, "ticks": 14 }, "hitPause": { "ticks": 4 } },
+                "hurt": { "flash": { "color": "#d82800", "alpha": 0.6, "ticks": 8 } },
+                "cleared": { "zoom": { "to": 1.5, "ticks": 12, "ease": "cubicOut", "hold": 30 } } },
+    "camera": { "follow": "runner", "lookAhead": { "x": 24, "lerp": 0.08 } },
+    "parallax": [ { "gradient": ["#3058e8", "#3cbcfc", "#a4e4fc"], "bands": 12, "factor": 0 },
+                  { "frame": "hills", "sheet": "fx-sky", "factor": { "x": 0.5, "y": 0.1 }, "y": 172, "depth": 300 } ]
+
 ## Imports allowed
 
 `zod` and pure core files (`../rng`, `../present/skin` and `../present/types`). On `PURE_CORE`. Kits and `engine/sim` may not import it
@@ -55,6 +71,7 @@ kind's `emit`; an old `effect: { kind: "particles" }` still draws (an implicit e
 
 `pnpm test engine/core/fx` (RNG determinism and stream independence, every curve's endpoints,
 each property's interpolation including colour, the schema; particles: determinism by seed and
-frame, the count caps, emitters following entities, keyframe interpolation); the skin and presenter hooks in
+frame, the count caps, emitters following entities, keyframe interpolation; camera effects: shake
+decay and determinism, zoom and flash values, hit-pause counting; parallax layouts); the skin and presenter hooks in
 `engine/core/present/skin.test.ts` and `engine/backends/canvas2d/presenter.test.ts`; the
 invariance proof in `tests/runs/presentation-invariance.test.ts`.

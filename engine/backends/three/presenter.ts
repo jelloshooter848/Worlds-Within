@@ -8,6 +8,7 @@ import {
   type Presenter,
   type SkinFile,
 } from '@engine/core/present';
+import type { CameraFxSettings } from '@engine/core/fx';
 import { webglRendererInfo, type WebglRendererInfo } from './renderer-info';
 import { ThreeScene } from './scene';
 
@@ -23,8 +24,14 @@ export interface ThreePresenterOptions {
   background?: string;
   /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */
   clamp?: boolean;
-  /** Skip `flash` effects (the player's reduced-flashing setting). */
+  /** Skip `flash` effects and event `flash`es (the player's reduced-flashing setting). */
   reduceFlashing?: boolean;
+  /** The player's screen-shake setting, 0 (no shake) to 1 (full, the default). */
+  shakeScale?: number;
+  /** Keep trauma-shake offsets fractional (default false: whole picture px). */
+  subPixelShake?: boolean;
+  /** Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4). */
+  onHitPause?: (ticks: number) => void;
   /** The game's sprite sheets as decoded pixels, for the HUD (`contentPixelSheets`; gap G33). */
   sheets?: PixelSheetLookup;
 }
@@ -54,7 +61,7 @@ export class ThreePresenter implements Presenter {
       ...(opts.size !== undefined && { size: opts.size }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
       ...(opts.clamp !== undefined && { clamp: opts.clamp }),
-      ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+      ...sceneEffects(opts),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
     this.renderer = new WebGLRenderer({
@@ -76,6 +83,12 @@ export class ThreePresenter implements Presenter {
     this.scene.resize(this.size);
   }
 
+  /** Changes the player's flashing and shake settings, on this presenter's scenes, from the next frame. */
+  effectSettings(settings: CameraFxSettings): void {
+    this.scene.effectSettings(settings);
+    for (const scene of this.others) scene.effectSettings(settings);
+  }
+
   present(frame: Frame): void {
     this.draw(this.scene, frame);
   }
@@ -93,7 +106,7 @@ export class ThreePresenter implements Presenter {
       ...(opts.background !== undefined && { background: opts.background }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
       ...(opts.clamp !== undefined && { clamp: opts.clamp }),
-      ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+      ...sceneEffects(opts),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
     this.others.push(scene);
@@ -141,4 +154,14 @@ export class ThreePresenter implements Presenter {
     this.drawn = { width: size.width, height: size.height };
     this.renderer.setSize(size.width, size.height, false);
   }
+}
+
+/** The presenter options a `ThreeScene` takes for events and camera effects. */
+function sceneEffects(opts: Omit<ThreePresenterOptions, 'size'>) {
+  return {
+    ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+    ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
+    ...(opts.subPixelShake !== undefined && { subPixelShake: opts.subPixelShake }),
+    ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
+  };
 }

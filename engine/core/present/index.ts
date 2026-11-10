@@ -18,8 +18,13 @@ export type {
 } from './types';
 export { cardinalFacing, FACINGS, facesLeft, isFullMap, mirrorFacing } from './types';
 export {
+  cameraArea,
+  cameraFollowed,
   cameraShake,
   cameraTarget,
+  facingVector,
+  zoomAbout,
+  type CameraArea,
   cameraView,
   cameraZoom,
   clampCameraAxis,
@@ -45,6 +50,7 @@ export {
   DEFAULT_CAMERA3D,
   DEFAULT_FALLBACK_COLOR,
   DEFAULT_FRAME_TICKS,
+  CAMERA_LOOK_AHEAD_LERP,
   EVENT_KEY_FIELD,
   FRAME_EVENT_LIMIT,
   frameEventsBetween,

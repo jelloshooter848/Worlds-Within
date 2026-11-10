@@ -19,6 +19,11 @@ export interface CanvasSkinSetOptions {
   background?: string;
   /** Called for each event whose skin entry names a sound. */
   onSound?: (id: string) => void;
+  /**
+   * Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4):
+   * pass the boot's `shell.hitPause`, which holds the game's ticks.
+   */
+  onHitPause?: (ticks: number) => void;
   /** The game's own presenter when one is made already (else one on `r` with `skin`). */
   main?: Presenter;
 }
@@ -31,7 +36,10 @@ export interface CanvasSkinSetOptions {
  * per-round options; the Three.js backend's `threeDisplay` takes the same `rounds`.
  */
 export function skinSetCanvasPresenter(r: Renderer, opts: CanvasSkinSetOptions): Presenter {
-  const sound = opts.onSound !== undefined ? { onSound: opts.onSound } : {};
+  const sound = {
+    ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+    ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
+  };
   const main =
     opts.main ??
     new SkinnedCanvasPresenter(r, opts.skin, opts.sheet, {

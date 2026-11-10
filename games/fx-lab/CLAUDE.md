@@ -3,7 +3,7 @@
 The fx lab (Engine 0.16 part A, T2): a small game on the platformer kit that shows every
 presentation feature of 0.16 part A, one task at a time (T2 adds it with sprite animation states,
 per-frame timing, one-shots and frame events; T3 adds particle emitters, additive blending and
-glow; later tasks add camera effects, transitions, UI, audio...). It is a lab, **not a sample**:
+glow; T4 adds camera effects and parallax; later tasks add transitions, UI, audio...). It is a lab, **not a sample**:
 three short original levels with stomps,
 coins and a door so that events happen, Pip (an original courier) with a full animation set, a 2D
 skin and a low-poly 3D skin, run files with golden hashes and a browser page. Content and glue
@@ -31,6 +31,10 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   (a spin), `door`, `door-glow`, `door-lit` (16x32), `torch` (a brazier on a pole) and `sparkle`
   (5x5, a particle sprite), the tiles and HUD icons.
   `content/sprites/fx-font.txt`: the HUD's 8x8 digits.
+  `content/sprites/fx-sky.txt` (palette `content/palettes/fx-sky.json`, Engine 0.16 T4): the
+  parallax sky, 128 px wide frames that repeat without a seam: `clouds` (128x28), `mountains`
+  (128x80, snow-capped, lit from the left) and `hills` (128x56, outlined, with bushes). Drawn with
+  a small generator (periodic peaks, cloud blobs and domes); edit the text by hand now.
 - `content/sfx/*.json`: original MML sfx (`footstep`, `jump`, `land`, `coin`, `stomp`, `bump`,
   `hurt`, `fail`, `door`, `whoosh`). No song yet (the audio mixer is T8).
 - `content/skins/canvas2d.json`: the 2D skin, the worked example of Engine 0.16 T2's animation
@@ -46,7 +50,16 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   - `events`: the frame events (`footstep`: a sound and a puff of dust; `skid-dust`; `tumble`)
     next to the kit's (`jump` and `land` with a squash tween, `coin`, `stomp`, `hurt`, `died`,
     `cleared` the door's sound). A frame event runs through `events` exactly like a kit event.
-  - `hud` (hearts, coins, lives) and `camera` (follow the runner, 32x48 deadzone, lerp 0.25).
+  - `hud` (hearts, coins, lives) and `camera` (follow the runner, 32x48 deadzone, lerp 0.25,
+    from T4 `lookAhead` 24 px in the facing direction, gliding at 0.08).
+  - Camera effects (Engine 0.16 T4): `stomp` shakes (`{ amount: 3, ticks: 14 }`) and asks for a
+    4-frame `hitPause`; `hurt` flashes red (`#d82800` at 0.6 over 8 frames; the old flash
+    effect is gone); `died` shakes harder; `cleared` (the door) punches the zoom to 1.5 about Pip
+    (12 frames in, cubicOut, held 30, 18 back) beside its old gold tint.
+  - `parallax` (Engine 0.16 T4), back to front: a 12-band gradient sky (factor 0), `clouds`
+    (factor x 0.1, y 24), `mountains` (x 0.25, y 0.05, y 116) and `hills` (x 0.5, y 0.1, y 172)
+    from `fx-sky`, with 3D `depth`s 900, 600 and 300. The skin's `background` stays the clear
+    colour under it.
   - `emitters` (Engine 0.16 T3), the six presets and their helpers: `land-dust` (the `land`
     event, at the feet: a sideways puff that slows and fades), `run-dust` (the `footstep` frame
     event: two rising puffs; `skid-dust` uses it and `land-dust`), `stomp-sparks` and `stomp-ring`
@@ -63,7 +76,8 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   pose) and `poses` (Engine 0.16 T2: the same states as the 2D `frames`, with mesh names, the same
   timing, `then` and frame events), so the 3D scene swaps meshes by animation frame and plays the
   same footsteps. The same `emitters` without `glow` and `frame` (the glint is a gold square in
-  3D), a low-poly `torch` mesh and the same `emit`s. `camera3d` `layerDepth` 0.25 (the kit's layers stay near the blocks' plane).
+  3D), a low-poly `torch` mesh and the same `emit`s, and the same camera effects, look-ahead and
+  `parallax` (3D cuts the frames from the decoded sheets and hangs them on planes behind the blocks). `camera3d` `layerDepth` 0.25 (the kit's layers stay near the blocks' plane).
 - TypeScript is glue only:
   - `content.ts`: `loadFxLab(files)`, `mustLoadFxLab(files)`, `fxStages(content)` (the kit's
     `contentStages`), `fxSkin(content, backend)`.
@@ -71,7 +85,8 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   - `picture.ts`: `fxLook`, `fxFrames`, `fxPicture`, `fxCanvasPicture(r, look, onSound?)`;
     `picture3d.ts`: `fxLook3d` (no Three.js import). `view.ts`: `createView` (the engine's
     `frameView`), for `pnpm cli screenshot`.
-  - `main.ts`: `bootBrowserGame` with both displays and the sfx; every sound id the page plays is
+  - `main.ts`: `bootBrowserGame` with both displays and the sfx, each display given the shell's
+    `hitPause` as `onHitPause` (Engine 0.16 T4); every sound id the page plays is
     also pushed to `window.wwFxLab.sounds` (for `tests/browser/fx-lab.test.ts`).
   - `index.html`: the page (2D/3D toggle, the launcher's 3D link).
 - `runs/level-1.run.json` (fx-1 from the start: three coins, two from the platform, both beetles
@@ -85,7 +100,9 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   each run played through a Canvas2D picture and a 3D scene with `onSound`: footsteps (frame
   events) and the kit's sounds are heard, and drawing never changes the snapshot; the six particle
   presets are in both skins where the lab says, and level-3 played through the 3D scene shows
-  them without changing the snapshot.
+  them without changing the snapshot; from T4 the camera effects and the four parallax layers are
+  in both skins, level-1's two stomps ask the 2D picture's `onHitPause` for 4 frames each and the
+  3D scene zooms on the door, never touching the state.
 
 ## Making the art
 
@@ -103,6 +120,8 @@ pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --json   # 
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend three --allow-software-gl --json
 # particle presets: level-1 --tick 154 (land dust), 247 (run dust), 219 (stomp sparks);
 # level-3 --tick 120 (coin burst), 305 (torch, door aura)
+# camera effects (T4): level-1 --tick 216 (stomp shake), 352 (door zoom); level-2 --tick 279
+# (hurt flash); parallax at two camera positions: level-1 --tick 120 and 260
 pnpm test games/fx-lab tests/runs tests/browser/fx-lab.test.ts
 pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs; ?backend=three for 3D)
 ```

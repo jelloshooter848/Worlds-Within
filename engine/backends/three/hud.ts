@@ -157,23 +157,33 @@ export class HudLayer {
     const pixels = this.pixels?.(sheet, palette) ?? null;
     const rect = pixels?.frames.get(name);
     let material: MeshBasicMaterial | null = null;
-    if (pixels && rect && rect.w > 0 && rect.h > 0) {
-      const data = new Uint8Array(rect.w * rect.h * 4);
-      for (let row = 0; row < rect.h; row++) {
-        const from = ((rect.y + row) * pixels.width + rect.x) * 4;
-        data.set(pixels.data.subarray(from, from + rect.w * 4), (rect.h - 1 - row) * rect.w * 4);
-      }
-      const texture = new DataTexture(data, rect.w, rect.h, RGBAFormat, UnsignedByteType);
-      texture.magFilter = NearestFilter;
-      texture.minFilter = NearestFilter;
-      texture.generateMipmaps = false;
-      texture.colorSpace = SRGBColorSpace;
-      texture.needsUpdate = true;
-      material = hudMaterial({ map: texture });
-    }
+    if (pixels && rect && rect.w > 0 && rect.h > 0)
+      material = hudMaterial({ map: frameTexture(pixels, rect) });
     this.sprites.set(key, material);
     return material;
   }
+}
+
+/**
+ * One sprite frame's pixels cut from a decoded sheet as a `DataTexture`, rows flipped for GL (v = 0
+ * is the bottom), nearest-neighbour so pixels stay crisp, sRGB. The HUD and parallax planes use it.
+ */
+export function frameTexture(
+  pixels: { width: number; data: Uint8Array | Uint8ClampedArray },
+  rect: { x: number; y: number; w: number; h: number },
+): DataTexture {
+  const data = new Uint8Array(rect.w * rect.h * 4);
+  for (let row = 0; row < rect.h; row++) {
+    const from = ((rect.y + row) * pixels.width + rect.x) * 4;
+    data.set(pixels.data.subarray(from, from + rect.w * 4), (rect.h - 1 - row) * rect.w * 4);
+  }
+  const texture = new DataTexture(data, rect.w, rect.h, RGBAFormat, UnsignedByteType);
+  texture.magFilter = NearestFilter;
+  texture.minFilter = NearestFilter;
+  texture.generateMipmaps = false;
+  texture.colorSpace = SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 /** An unlit HUD material: drawn over the picture in order, no depth, fully transparent pixels skipped. */

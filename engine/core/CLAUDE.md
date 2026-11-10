@@ -1,13 +1,14 @@
 # engine/core
 
 The engine's core: the fixed-step loop (`loop.ts`; from Engine 0.14 T8 `{ manual: true }` makes it
-step only through `advance(n)`, never on `requestAnimationFrame`: the shell's step hook), scenes (`scene.ts`), input (`input/`), chiptune
+step only through `advance(n)`, never on `requestAnimationFrame`: the shell's step hook; from Engine
+0.16 T4 it draws only on a frame that took a step), scenes (`scene.ts`), input (`input/`), chiptune
 audio and MML (`audio/`), save and settings (`save/`), the seeded RNG (`rng.ts`), maths (`math/`),
 asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.ts`), graphics
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
 [content/CLAUDE.md](content/CLAUDE.md)), presentation effects (`fx/`, Engine 0.16: the
-presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; see [fx/CLAUDE.md](fx/CLAUDE.md)), the presentation contract (`present/`: the read-only
+presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; from T4 camera effects, the hit-pause counter and parallax layouts; see [fx/CLAUDE.md](fx/CLAUDE.md)), the presentation contract (`present/`: the read-only
 per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), the browser shell
 games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`; see
 [shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content

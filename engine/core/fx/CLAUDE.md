@@ -69,6 +69,41 @@ particles` as an implicit emitter (`particlesEffectEmitter`, a ring flying out 1
   before); `update(frame, entities)` attaches each kind's `emit` to its entities and steps the
   system; `particles({ reduceFlashing? })` gives what to draw, with `reduceFlashing` drawing
   additive particles with normal blending at `REDUCED_FLASH_ALPHA` (0.5) and no glow.
+- `schema.ts` (Engine 0.16 T4) also holds the camera effects a skin's event entry writes:
+  `shakeSpecSchema` `{ amount, ticks }` (the largest offset in picture px, decaying over
+  `ticks`), `zoomSpecSchema` `{ to, ticks, ease?, hold?, back? }` (a punch to the factor `to`
+  and back; `back` defaults to `ticks`, 0 snaps back), `flashSpecSchema` `{ color?, alpha?,
+ticks }` (default `#fcfcfc` at 1, fading) and `hitPauseSpecSchema` `{ ticks }` (1-60 display
+  frames); and `parallaxLayerSchema` (`ParallaxLayer`): `{ frame | gradient, factor, sheet?,
+repeat?, bands?, height?, x?, y?, depth? }`, exactly one of `frame` (a sprite frame, from
+  `sheet` else `sheets.sheet`; `repeat` `x` (default), `y`, `xy` or `none`) and `gradient`
+  (colours top to bottom, `bands` flat steps, default `PARALLAX_DEFAULT_BANDS` 8, `height` px,
+  default the picture's); `factor` a number or `{ x, y }` in 0-2 (0 stays put, 1 moves with the
+  world); `x`/`y` picture px of its origin when the camera is at the world's top-left; `depth`
+  (3D) how far behind the blocks its plane stands. A field of the other kind is an error at it.
+- `camera-fx.ts` (Engine 0.16 T4): `CameraFx({ seed?, subPixel? })`, one presenter's camera
+  effects. `event(entry, frame)` starts an event entry's `shake`, `zoom` and `flash` (or call
+  `shake`/`zoom`/`flash` directly); `update(frame)` drops ended effects (and every effect started
+  after `frame`); `state(frame, { reduceFlashing?, shakeScale? })` gives `CameraFxState`
+  `{ shakeX, shakeY, zoom, flashes }`. Shake is trauma: each shake's strength is
+  `amount * (1 - age / ticks)²` (`shakeStrength`), exactly 0 from `ticks` on, running shakes add
+  up, and the offset is that times noise in [-1, 1) per axis from `fxRng(seed, frame,
+'camera-shake')`: the same frame always shakes the same way. Whole picture px unless `subPixel`
+  (off by default, for pixel art); `shakeScale` (0..1, the player's setting) scales it. A zoom
+  punch (`zoomFactor`, `zoomLength`) eases from 1 to `to`, holds, and eases back with the curve
+  played backwards; punches multiply. A flash (`flashAlpha`) fades linearly from its alpha;
+  `reduceFlashing` drops every flash. `FLASH_DEFAULT_COLOR`, `CameraFxSettings`.
+- `hit-pause.ts` (Engine 0.16 T4): `HitPause`, the browser shell's freeze-frame counter:
+  `request(ticks)` (only lengthens: requests never add up), `hold()` (true, using one frame, while
+  a pause runs), `remaining`, `clear()`. Pure; no clock.
+- `parallax.ts` (Engine 0.16 T4): `layoutParallax(skin, cam, size, frameSize)`, a skin's
+  `parallax` list laid out once for both backends (as `layoutHud` is): `ParallaxDraw`s in picture
+  px, back to front, `{ kind: 'sprite', layer, sheet, palette?, frame, x, y }` (a frame repeated
+  over the picture per `repeat`; a frame the lookup lacks draws nothing) or `{ kind: 'box', layer,
+x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin is
+  `round(x - cam.x * factor.x)`, `round(y - cam.y * factor.y)` with `cam` the camera's top-left in
+  picture px (zoom and shake included). Helpers: `parallaxFactor`, `parallaxOrigin`,
+  `gradientBands(colors, bands, height)` (no gaps; the first and last bands take the end colours).
 - `index.ts`: re-exports all of the above; import from `@engine/core/fx`.
 
 ## Where it is used
@@ -81,6 +116,13 @@ particles` as an implicit emitter (`particlesEffectEmitter`, a ring flying out 1
   entity id and lays its state on top of the frame's `PresentFx` when drawing (position offset,
   squash factors, turn, alpha, the colour overlay as a translucent box over the drawn box). It
   never writes to the frame. The 3D backend ignores tweens for now.
+- Camera effects and parallax (Engine 0.16 T4): an event entry's `shake`, `zoom`, `flash` and
+  `hitPause`, the skin camera's `lookAhead` (`../present/camera.ts`) and the skin's top-level
+  `parallax`. Both presenters keep a `CameraFx` timed by their own clock (one tick per frame they
+  present, so effects go on while the frame number stands still: a hit-pause, the pause between
+  levels), pass `hitPause` to their `onHitPause` option (the shell's `HitPause`), and draw
+  `layoutParallax` behind the map (Canvas2D) or as planes on the camera (3D). `games/fx-lab` has
+  a shake and a hit-pause on stomps, a flash on hurt, a zoom on the door and a four-layer sky.
 - Particles (Engine 0.16 T3): a skin's top-level `emitters` (named `emitterSchema` defs), an
   event entry's `emit` (a name or a list) and a kind entry's `emit` (running while an entity of
   the kind shows, following it). Both presenters keep a `SkinParticles`: the Canvas2D one draws
@@ -91,8 +133,8 @@ particles` as an implicit emitter (`particlesEffectEmitter`, a ring flying out 1
 
 - Pure: `engine/core/fx/**` is on `PURE_CORE` (`config/layers.js`): no `Math.random` (use
   `fxRng`), no `Date.now`/`performance.now` (time is presentation frames), no DOM. Import only
-  `zod` and pure core files (`../rng`, and `../present/skin` and `../present/types` for
-  `skin-particles.ts`).
+  `zod` and pure core files (`../rng`; `../present/skin` and `../present/types` for
+  `skin-particles.ts`, `camera-fx.ts` and `parallax.ts`; `../gfx/screen` types).
 - Presenters only: kits and `engine/sim` may not import it (`FORBIDDEN_CORE` in
   `config/layers.js`; checked by `tests/architecture/eslint-deps.test.ts` and
   `dependency-rule.test.ts`). Nothing here may reach a world, a frame or a hash. `present/skin.ts`
@@ -111,7 +153,12 @@ repeat, forever, `TweenSet` combining and `onDone`, the schema naming bad fields
 the same, the closed-form motion with drag and gravity, lifetimes, rates with fractions, both count
 caps, an even ring, attached emitters following and stopping, `follow`, clearing on an earlier
 frame and the catch-up cap, keyframe interpolation of size, colour and alpha, `keyframeAt`,
-`anchorPoint`, the emitter schema naming bad fields). The skin hook is
+`anchorPoint`, the emitter schema naming bad fields), `camera-fx.test.ts` (shake decaying to
+exactly zero as trauma squared, deterministic per frame and seed, adding up, sub-pixel and the
+shake scale; zoom punch values with an ease, hold and the way back, punches multiplying; flashes
+fading and reduced flashing; clearing on an earlier frame; `HitPause` frame counting; the
+schemas), `parallax.test.ts` (factors and origins, gradient bands, layers moving at their own
+rates between two camera positions, repeats, a missing frame, the layer schema). The skin hook is
 tested in `engine/core/present/skin.test.ts` (`skin tweens`) and
 `engine/backends/canvas2d/presenter.test.ts` (`tweens`). `tests/runs/presentation-invariance.test.ts`
 plays every game's run files with presenters fed every frame and the effects switched on (its

@@ -23,6 +23,11 @@ export interface CanvasDisplayOptions {
   integerScale?: boolean;
   /** Called for each event whose skin entry names a sound. */
   onSound?: (id: string) => void;
+  /**
+   * Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4):
+   * pass the boot's `shell.hitPause`, which holds the game's ticks.
+   */
+  onHitPause?: (ticks: number) => void;
 }
 
 /**

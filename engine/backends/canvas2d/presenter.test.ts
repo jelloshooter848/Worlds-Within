@@ -903,3 +903,138 @@ describe('particles, blending and glow (Engine 0.16 T3)', () => {
     expect(calls.filter((c) => c === '<blend add>')).toHaveLength(0);
   });
 });
+
+describe('camera effects and parallax (Engine 0.16 T4)', () => {
+  /** 20x10 tiles of 16 px: 320x160, in a 48x32 picture. */
+  const BIG: PresentMap = { ...MAP, id: 'big', cols: 20, rows: 10, tiles: Array(10).fill('.'.repeat(20)) };
+  const skin: SkinFile = {
+    ...SKIN,
+    camera: { follow: 'hero' },
+    events: {
+      stomp: { shake: { amount: 6, ticks: 8 }, hitPause: { ticks: 4 } },
+      hurt: { flash: { color: '#d82800', alpha: 0.8, ticks: 4 } },
+      door: { zoom: { to: 2, ticks: 2, hold: 2 } },
+    },
+    parallax: [
+      { gradient: ['#3cbcfc', '#a4e4fc'], bands: 2, factor: 0 },
+      { frame: 'side-0', factor: { x: 0.5, y: 0 }, y: 10 },
+    ],
+  };
+
+  function setupFx(opts: { reduceFlashing?: boolean; shakeScale?: number } = {}) {
+    const { r, calls } = recorder();
+    r.alpha = (a, draw) => {
+      calls.push(`<alpha ${a}>`);
+      draw();
+      calls.push('</alpha>');
+    };
+    const paused: number[] = [];
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, {
+      mapSurface: () => ({ renderer: recorder().r, image: null }),
+      onHitPause: (t) => paused.push(t),
+      seed: 3,
+      ...opts,
+    });
+    const show = (n: number, events: PresentFrame['events'] = [], x = 152) => {
+      calls.length = 0;
+      p.present(frame({ frame: n, map: BIG, entities: [hero({ x, y: 72 })], events }));
+      const copy = calls.find((c) => c.startsWith('sprite map:'))!;
+      const [mx, my] = copy.split(' ')[2]!.split(',').map(Number);
+      return { cam: [0 - mx!, 0 - my!], scale: copy.split(' ')[3], calls: [...calls] };
+    };
+    return { p, show, paused };
+  }
+
+  it('shakes on both axes from a stomp, decaying back to the framed camera, the same each time', () => {
+    const run = () => {
+      const s = setupFx();
+      const out = [s.show(0).cam, s.show(1, [{ type: 'stomp' }]).cam];
+      for (let n = 2; n <= 10; n++) out.push(s.show(n).cam);
+      return out;
+    };
+    const cams = run();
+    expect(cams[0]).toEqual([136, 64]);
+    const offsets = cams.slice(1, 9).map(([x, y]) => [x! - 136, y! - 64]);
+    expect(offsets.some(([dx]) => dx !== 0)).toBe(true);
+    expect(offsets.some(([, dy]) => dy !== 0)).toBe(true);
+    expect(offsets.flat().every((v) => Math.abs(v) <= 6)).toBe(true);
+    // Eight ticks later it has decayed to nothing.
+    expect(cams.slice(9)).toEqual([
+      [136, 64],
+      [136, 64],
+    ]);
+    expect(run()).toEqual(cams);
+  });
+
+  it('asks the shell for a hit-pause once per event, and the shake scale turns shaking down', () => {
+    const s = setupFx({ shakeScale: 0 });
+    s.show(0);
+    expect(s.show(1, [{ type: 'stomp' }]).cam).toEqual([136, 64]);
+    s.show(1, [{ type: 'stomp' }]);
+    expect(s.paused).toEqual([4]);
+    expect(s.show(2).cam).toEqual([136, 64]);
+    // A settings screen turns it back on.
+    s.p.effectSettings({ shakeScale: 1 });
+    s.show(3, [{ type: 'stomp' }]);
+    const shaken = [4, 5, 6].map((n) => s.show(n).cam);
+    expect(shaken.some(([x, y]) => x !== 136 || y !== 64)).toBe(true);
+  });
+
+  it('flashes over the picture, fading, and reduced flashing skips them', () => {
+    const s = setupFx();
+    s.show(0);
+    const flashed = s.show(1, [{ type: 'hurt' }]).calls;
+    expect(flashed.slice(flashed.indexOf('<alpha 0.8>'), flashed.indexOf('<alpha 0.8>') + 2)).toEqual([
+      '<alpha 0.8>',
+      'rect 0,0 48x32 #d82800',
+    ]);
+    expect(s.show(2).calls).toContain('<alpha 0.6000000000000001>');
+    s.show(3);
+    s.show(4);
+    // Four presented frames after it started, it has faded out.
+    expect(s.show(5).calls.some((c) => c.includes('#d82800'))).toBe(false);
+    const calm = setupFx({ reduceFlashing: true });
+    calm.show(0);
+    expect(calm.show(1, [{ type: 'hurt' }]).calls.some((c) => c.includes('#d82800'))).toBe(false);
+  });
+
+  it('punches the zoom about the view centre and back', () => {
+    const s = setupFx();
+    s.show(0);
+    const steps = [s.show(1, [{ type: 'door' }])];
+    for (let n = 2; n <= 7; n++) steps.push(s.show(n));
+    // Zoom 1 -> 1.5 -> 2 (held two frames) -> 1.5 -> 1: the map copy is scaled and recentred.
+    expect(steps.map((st) => st.scale ?? 'x1')).toEqual(['x1', 'x1.5', 'x2', 'x2', 'x2', 'x1.5', 'x1']);
+    // At zoom 2 the 24x16 world view round the centre (160, 80): top-left (148, 72), in picture px.
+    expect(steps[2]!.cam).toEqual([296, 144]);
+    expect(steps[6]!.cam).toEqual([136, 64]);
+  });
+
+  it('draws the parallax layers behind the map, each moving at its own rate', () => {
+    const s = setupFx();
+    const layers = (calls: string[]) =>
+      calls.slice(
+        1,
+        calls.findIndex((c) => c.startsWith('sprite map:')),
+      );
+    const a = layers(s.show(0, [], 152).calls);
+    // The sky in two bands, then the hills (16 px wide) repeated from -(136 * 0.5) mod 16.
+    expect(a).toEqual([
+      'rect 0,0 48x16 #3cbcfc',
+      'rect 0,16 48x16 #a4e4fc',
+      'sprite hero:side-0 -4,10',
+      'sprite hero:side-0 12,10',
+      'sprite hero:side-0 28,10',
+      'sprite hero:side-0 44,10',
+    ]);
+    // 10 px right: the map moves 10, the hills 5, the sky not at all.
+    const b = layers(s.show(1, [], 162).calls);
+    expect(b.slice(0, 2)).toEqual(a.slice(0, 2));
+    expect(b.slice(2)).toEqual([
+      'sprite hero:side-0 -9,10',
+      'sprite hero:side-0 7,10',
+      'sprite hero:side-0 23,10',
+      'sprite hero:side-0 39,10',
+    ]);
+  });
+});

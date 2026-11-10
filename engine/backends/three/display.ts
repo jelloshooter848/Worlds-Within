@@ -24,6 +24,11 @@ export interface ThreeDisplayOptions {
   /** Called for each event whose skin entry names a sound. */
   onSound?: (id: string) => void;
   /**
+   * Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4):
+   * pass the boot's `shell.hitPause`, which holds the game's ticks.
+   */
+  onHitPause?: (ticks: number) => void;
+  /**
    * The game's sprite sheets as decoded pixels (`contentPixelSheets(content)`), for every skin's
    * HUD (gap G33); without it HUD frames are flat boxes and HUD text draws nothing.
    */
@@ -66,6 +71,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       size: opts.screen,
       ...(opts.background !== undefined && { background: opts.background }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+      ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
   } catch (error) {
@@ -76,6 +82,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
   for (const [id, skin] of Object.entries(opts.rounds ?? {}))
     rounds[id] = presenter.withSkin(skin, {
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+      ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     });
   return {

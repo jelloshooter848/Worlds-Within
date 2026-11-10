@@ -104,6 +104,18 @@ number | text | icon, x, y, sheet?, frame?, font? }`.
     `PARTICLES_EFFECT_DEFAULTS`: an even ring flying out 1 px a frame, as before). A kind entry's
     `blend` (`normal` | `add`) and `glow` (`{ color, radius }`) are 2D fields (`SPRITE_FIELDS`;
     `wrong_backend_field` on a 3D skin). `skinEmitNames(emit)` lists an `emit`'s names.
+  - Camera effects and parallax (Engine 0.16 T4, `engine/core/fx`): an event entry's optional
+    `shake` `{ amount, ticks }` (trauma shake), `zoom` `{ to, ticks, ease?, hold?, back? }` (a
+    zoom punch there and back), `flash` `{ color?, alpha?, ticks }` (a full-screen flash, skipped
+    with reduced flashing) and `hitPause` `{ ticks }` (the browser shell holds the game's ticks
+    that many display frames; headless runs ignore it), on 2D and 3D skins alike; the skin
+    camera's `lookAhead` `{ x?, y?, lerp? }` (below, `camera.ts`); and a top-level `parallax` list
+    of background layers, back to front (`parallaxLayerSchema`: a sprite `frame` or a colour
+    `gradient`, `factor`, `repeat`, `x`/`y`, `depth`), drawn behind the map in 2D and as planes
+    in 3D. A parallax `frame` is checked across files like any frame (`missing_frame`,
+    `missing_ref` for its `sheet`, `missing_field` at `parallax.<i>.sheet` when there is neither a
+    `sheet` nor `sheets.sheet`), on both backends (3D cuts it from the decoded sheets). The old
+    `effect` kinds `flash` and `shake` keep working as before (the shake scale applies to them).
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px
@@ -182,6 +194,17 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   repeated `frame` number does not move it. Clamp: the hint's `bounds`, else the map; an area
   smaller than the picture is centred. `cameraShake(frame, extra)` is the whole-pixel shake (the
   hint's `shake` plus `extra`, flipping side each frame), added by the backend and never stored.
+  Engine 0.16 T4: the skin camera's `lookAhead` `{ x?, y?, lerp? }` frames a followed entity
+  (`cameraFollowed(frame, skin.camera)`: the hint's `follow` by id, else the skin's `follow` by id
+  then kind) `x` world px ahead in its facing's horizontal direction and `y` in its vertical one
+  (`facingVector`), the offset gliding to a new facing at `lerp` (default
+  `CAMERA_LOOK_AHEAD_LERP` 0.1, whole px, 1/256 fixed point) and snapping with the camera; the
+  deadzone (its `h` is the vertical deadzone) then applies to the point ahead. `follower.lookAhead`
+  reads the offset. `cameraArea(frame, map, clamp?)` is the box the view is kept in (the hint's
+  `bounds`, else the map, else null). `zoomAbout(cam, view, factor, area, focus?)` is a zoom
+  punch on a framed camera: the view zoomed by `factor` about `focus` (the camera's target, held
+  inside the view, keeps its place on the picture; else the view's centre), a punch out clamped
+  inside `area`. Both presenters frame at the base zoom, then punch.
   The follower lives in a presenter only: never in a kit, a frame or a hash.
 - `rts-camera.ts` (Engine 0.9 T5): `RtsCamera({ view, area, zoom?, minZoom?, maxZoom?, centre? })`,
   a scrolling, zoomable view over a map larger than the picture: its position (the top-left in
@@ -295,7 +318,10 @@ them, a missing frame's boxes, missing and false values, the font option, the de
 fallbacks) and `presenterBySkinSet`. `camera.test.ts` covers
 `CameraFollower` (follow by id and kind, hint `x`/`y`, deadzone, lerp, clamp to bounds and map,
 small-area centring, the zoomed view at 0.5 and 2, snap on a new map id, repeated frames,
-`reset`), `cameraZoom`, `cameraView` and `cameraShake`. `rts-camera.test.ts` covers `RtsCamera`:
+`reset`), `cameraZoom`, `cameraView` and `cameraShake`, and (Engine 0.16 T4) look-ahead gliding
+to a new facing, vertical look-ahead with the vertical deadzone, no look-ahead without a followed
+entity, `facingVector`, `zoomAbout` (about the centre, about a focus, a focus held inside, a
+punch out clamped) and `cameraArea`. `rts-camera.test.ts` covers `RtsCamera`:
 clamping at zoom 0.5, 1 and 2 (no stored overshoot), a small area centred, zoom limits, zooming
 about a point, slow pans and pinches adding up, `apply`, round trips screen -> world -> screen at
 zoom 0.5, 1, 1.5 and 2, boxes, and that `CameraFollower` frames its `hint()` to exactly its

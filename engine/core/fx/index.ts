@@ -29,3 +29,38 @@ export {
   type ParticleView,
 } from './particles';
 export { REDUCED_FLASH_ALPHA, SkinParticles } from './skin-particles';
+export {
+  flashSpecSchema,
+  hitPauseSpecSchema,
+  PARALLAX_DEFAULT_BANDS,
+  PARALLAX_REPEATS,
+  parallaxLayerSchema,
+  shakeSpecSchema,
+  zoomSpecSchema,
+  type FlashSpec,
+  type HitPauseSpec,
+  type ParallaxLayer,
+  type ParallaxRepeat,
+  type ShakeSpec,
+  type ZoomSpec,
+} from './schema';
+export {
+  CameraFx,
+  FLASH_DEFAULT_COLOR,
+  flashAlpha,
+  shakeStrength,
+  zoomFactor,
+  zoomLength,
+  type CameraFxOptions,
+  type CameraFxSettings,
+  type CameraFxState,
+} from './camera-fx';
+export { HitPause } from './hit-pause';
+export {
+  gradientBands,
+  layoutParallax,
+  parallaxFactor,
+  parallaxOrigin,
+  type ParallaxDraw,
+  type ParallaxFrameSize,
+} from './parallax';

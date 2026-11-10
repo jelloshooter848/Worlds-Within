@@ -260,7 +260,14 @@
     },
     "stomp": {
       "sound": "stomp",
-      "emit": ["stomp-sparks", "stomp-ring"]
+      "emit": ["stomp-sparks", "stomp-ring"],
+      "shake": {
+        "amount": 3,
+        "ticks": 14
+      },
+      "hitPause": {
+        "ticks": 4
+      }
     },
     "defeat": {
       "effect": {
@@ -272,18 +279,17 @@
     },
     "hurt": {
       "sound": "hurt",
-      "effect": {
-        "kind": "flash",
+      "flash": {
         "color": "#d82800",
-        "ticks": 2
+        "alpha": 0.6,
+        "ticks": 8
       }
     },
     "died": {
       "sound": "fail",
-      "effect": {
-        "kind": "shake",
-        "size": 3,
-        "ticks": 12
+      "shake": {
+        "amount": 5,
+        "ticks": 24
       }
     },
     "respawn": {
@@ -300,6 +306,13 @@
         "kind": "tint",
         "color": "#f8b800",
         "ticks": 20
+      },
+      "zoom": {
+        "to": 1.5,
+        "ticks": 12,
+        "ease": "cubicOut",
+        "hold": 30,
+        "back": 18
       }
     }
   },
@@ -346,7 +359,11 @@
       "w": 32,
       "h": 48
     },
-    "lerp": 0.25
+    "lerp": 0.25,
+    "lookAhead": {
+      "x": 24,
+      "lerp": 0.08
+    }
   },
   "emitters": {
     "land-dust": {
@@ -528,5 +545,42 @@
       ],
       "glow": 3
     }
-  }
+  },
+  "parallax": [
+    {
+      "gradient": ["#3058e8", "#3cbcfc", "#a4e4fc"],
+      "bands": 12,
+      "factor": 0
+    },
+    {
+      "frame": "clouds",
+      "sheet": "fx-sky",
+      "factor": {
+        "x": 0.1,
+        "y": 0
+      },
+      "y": 24,
+      "depth": 900
+    },
+    {
+      "frame": "mountains",
+      "sheet": "fx-sky",
+      "factor": {
+        "x": 0.25,
+        "y": 0.05
+      },
+      "y": 116,
+      "depth": 600
+    },
+    {
+      "frame": "hills",
+      "sheet": "fx-sky",
+      "factor": {
+        "x": 0.5,
+        "y": 0.1
+      },
+      "y": 172,
+      "depth": 300
+    }
+  ]
 }

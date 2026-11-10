@@ -1,10 +1,22 @@
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
-import { REST_STATE, SkinParticles, TweenSet, type ParticleView, type TweenState } from '@engine/core/fx';
+import {
+  CameraFx,
+  layoutParallax,
+  REST_STATE,
+  SkinParticles,
+  TweenSet,
+  type CameraFxSettings,
+  type CameraFxState,
+  type ParticleView,
+  type TweenState,
+} from '@engine/core/fx';
 import { blended, glowing, transformed, translucent, type Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import {
+  cameraArea,
   cameraShake,
+  cameraTarget,
   cameraView,
   cameraZoom,
   CameraFollower,
@@ -22,6 +34,7 @@ import {
   type PresentMap,
   type Presenter,
   type SkinFile,
+  zoomAbout,
 } from '@engine/core/present';
 import { CanvasRenderer } from './renderer';
 
@@ -56,10 +69,19 @@ export interface SkinnedPresenterOptions {
    */
   clamp?: boolean;
   /**
-   * The player's reduced-flashing setting: skip `flash` effects, and draw additive (bright)
-   * particles with normal blending, half as strong and without glow.
+   * The player's reduced-flashing setting: skip `flash` effects and event `flash`es, and draw
+   * additive (bright) particles with normal blending, half as strong and without glow.
    */
   reduceFlashing?: boolean;
+  /** The player's screen-shake setting, 0 (no shake) to 1 (full, the default). */
+  shakeScale?: number;
+  /** Keep trauma-shake offsets fractional (default false: whole picture px, for pixel art). */
+  subPixelShake?: boolean;
+  /**
+   * Called once for each event this frame whose skin entry asks for a `hitPause`, with its ticks
+   * (wire it to the browser shell's `hitPause`, which holds the game's ticks; Engine 0.16 T4).
+   */
+  onHitPause?: (ticks: number) => void;
   /** The seed particles draw from (`fxRng`; default 0). Any seed gives the same picture each time. */
   seed?: number;
   /**
@@ -142,6 +164,15 @@ export class SkinnedCanvasPresenter implements Presenter {
   private readonly frameEvents = new FrameEventClock();
   /** The skin's particles (`emitters`, events' `emit`, kinds' `emit`, old `particles` effects). */
   private readonly particles: SkinParticles;
+  /** Camera effects from events' `shake`, `zoom` and `flash` (Engine 0.16 T4). */
+  private readonly cameraFx: CameraFx;
+  /** The player's flashing and shake settings (`effectSettings` changes them). */
+  private settings: CameraFxSettings;
+  /**
+   * The camera effects' clock: one tick per `present` call, so shakes, zoom punches and flashes
+   * go on while the frame number stands still (a hit-pause, the pause between levels).
+   */
+  private fxClock = -1;
 
   constructor(
     target: Renderer | Ctx,
@@ -154,26 +185,47 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.size = opts.size;
     this.camera = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
     this.particles = new SkinParticles(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
+    this.cameraFx = new CameraFx({
+      ...(opts.seed !== undefined && { seed: opts.seed }),
+      ...(opts.subPixelShake !== undefined && { subPixel: opts.subPixelShake }),
+    });
+    this.settings = {
+      ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
+      ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
+    };
   }
 
   resize(size: ScreenSize): void {
     this.size = { width: size.width, height: size.height };
   }
 
+  /**
+   * Changes the player's presentation settings from the next frame (a settings screen): reduced
+   * flashing and the shake scale. Fields left out keep their value.
+   */
+  effectSettings(settings: CameraFxSettings): void {
+    this.settings = { ...this.settings, ...settings };
+  }
+
   present(frame: Frame): void {
     const r = this.r;
     const size = this.size ?? frame.size;
+    this.fxClock++;
     this.takeEvents(frame);
     this.particles.update(frame.frame, frame.entities);
     this.updateTweens(frame);
     this.updateMap(frame);
-    const view = this.cameraView(frame, size);
+    this.cameraFx.update(this.fxClock);
+    const fx = this.cameraFx.state(this.fxClock, this.settings);
+    const view = this.cameraView(frame, size, fx);
 
     r.clear(this.opts.background ?? skinBackground(this.skin));
+    this.drawParallax(view, size);
     this.drawMap(view);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawParticles(view);
     this.drawEffects(frame.frame, size);
+    for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
     this.drawHud(frame);
   }
 
@@ -192,9 +244,11 @@ export class SkinnedCanvasPresenter implements Presenter {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
+      if (entry.hitPause !== undefined) this.opts.onHitPause?.(entry.hitPause.ticks);
       if (entry.tween !== undefined && ev.entity !== undefined)
         this.tweensOf(ev.entity).add(entry.tween, frame.frame);
       this.particles.event(entry, ev, frame.entities, frame.frame);
+      this.cameraFx.event(entry, this.fxClock);
       if (entry.effect === undefined || entry.effect.kind === 'particles') continue;
       const at = ev.entity === undefined ? undefined : frame.entities.find((e) => e.id === ev.entity);
       const x = ev.x ?? (at ? at.x + at.w / 2 : 0);
@@ -230,10 +284,14 @@ export class SkinnedCanvasPresenter implements Presenter {
     }
   }
 
-  /** Shake from the frame's camera hint and from shake effects, as a whole-pixel offset. */
+  /**
+   * Shake from the frame's camera hint and from old `shake` effects, as a whole-pixel offset,
+   * scaled by the player's shake setting.
+   */
   private shake(frame: Frame): number {
     const sizes = this.effects.filter((a) => a.effect.kind === 'shake').map((a) => a.effect.size ?? 2);
-    return cameraShake(frame, sizes);
+    const scale = Math.min(1, Math.max(0, this.settings.shakeScale ?? 1));
+    return Math.round(cameraShake(frame, sizes) * scale) + 0;
   }
 
   private drawEffects(tick: number, size: ScreenSize): void {
@@ -244,7 +302,7 @@ export class SkinnedCanvasPresenter implements Presenter {
       const color = effect.color ?? '#fcfcfc';
       const age = tick - a.start;
       if (effect.kind === 'flash') {
-        if (!this.opts.reduceFlashing) r.rect(0, 0, size.width, size.height, color);
+        if (!this.settings.reduceFlashing) r.rect(0, 0, size.width, size.height, color);
       } else if (effect.kind === 'tint') {
         translucent(r, 0.4 * (1 - age / ticks), () => r.rect(0, 0, size.width, size.height, color));
       }
@@ -260,7 +318,7 @@ export class SkinnedCanvasPresenter implements Presenter {
    */
   private drawParticles(view: View): void {
     const r = this.r;
-    const list = this.particles.particles(this.opts.reduceFlashing ? { reduceFlashing: true } : {});
+    const list = this.particles.particles(this.settings.reduceFlashing ? { reduceFlashing: true } : {});
     let i = 0;
     while (i < list.length) {
       // One blend scope for each run of particles with the same blend.
@@ -312,11 +370,41 @@ export class SkinnedCanvasPresenter implements Presenter {
    * with the 3D backend; it frames the zoomed view (`cameraView`: the picture size over `zoom`,
    * in world pixels), so clamping keeps that view inside the map.
    */
-  private cameraView(frame: Frame, size: ScreenSize): View {
-    const zoom = cameraZoom(frame, this.skin.camera);
+  private cameraView(frame: Frame, size: ScreenSize, fx: CameraFxState): View {
+    const base = cameraZoom(frame, this.skin.camera);
     const map = this.mapVisible ? (this.shown?.map ?? null) : null;
-    const cam = this.camera.update(frame, this.skin.camera, cameraView(size, zoom), map);
-    return { x: Math.round(cam.x * zoom) + this.shake(frame), y: Math.round(cam.y * zoom), zoom };
+    const framed = this.camera.update(frame, this.skin.camera, cameraView(size, base), map);
+    // A zoom punch zooms the framed view about its centre (kept inside the map when it zooms out).
+    const area = cameraArea(frame, map, (this.opts.clamp ?? this.skin.camera?.clamp) !== false);
+    const focus = cameraTarget(frame, this.skin.camera);
+    const { cam } = zoomAbout(framed, cameraView(size, base), fx.zoom, area, focus);
+    const zoom = base * fx.zoom;
+    return {
+      x: Math.round(cam.x * zoom) + this.shake(frame) + fx.shakeX,
+      y: Math.round(cam.y * zoom) + fx.shakeY,
+      zoom,
+    };
+  }
+
+  // ---- Parallax ----
+
+  /**
+   * The skin's `parallax` layers behind the map (`layoutParallax`, shared with the 3D backend),
+   * scrolled against the camera's top-left in picture px (zoom and shake included); frames are
+   * drawn at scale 1 and gradients as flat boxes.
+   */
+  private drawParallax(view: View, size: ScreenSize): void {
+    if (this.skin.parallax === undefined) return;
+    const r = this.r;
+    const frameSize = (id: string, palette: string | undefined, name: string) =>
+      this.sheet(id, palette)?.frames.get(name) ?? null;
+    for (const d of layoutParallax(this.skin, view, size, frameSize)) {
+      if (d.kind === 'box') r.rect(d.x, d.y, d.w, d.h, d.color);
+      else {
+        const sheet = this.sheet(d.sheet, d.palette);
+        if (sheet) r.sprite(sheet, d.frame, d.x, d.y);
+      }
+    }
   }
 
   // ---- Map ----
