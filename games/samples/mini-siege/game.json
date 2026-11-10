@@ -3,11 +3,7 @@
   "title": "The mini siege: a village under attack, a tower-defense stand on its walls and one top-down mission to burn the siege engines",
   "kit": "rts",
   "uses": ["topdown", "towerdefense"],
-  "kitOptions": {
-    "topdown": {
-      "rooms": "separate"
-    }
-  },
+  "kitOptions": { "topdown": { "rooms": "separate" } },
   "content": {
     "rts-map": ["content/maps/*.world.json"],
     "rts-types": ["content/types/*.json"],
@@ -21,14 +17,52 @@
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"],
-    "song": ["content/songs/*.json"]
+    "song": ["content/songs/*.json"],
+    "font": ["content/fonts/*.txt"]
   },
-  "start": {
-    "seed": 11
-  },
-  "screen": {
-    "width": 256,
-    "height": 240
+  "start": { "seed": 11 },
+  "screen": { "width": 256, "height": 240 },
+  "menus": {
+    "font": "siege-small",
+    "titleFont": "siege-title",
+    "style": {
+      "text": "#fcfcfc",
+      "shadow": "#000000",
+      "focusText": "#fc9838",
+      "disabledText": "#a4a4a4",
+      "back": "#0c0c1c",
+      "focusBack": "#58002c",
+      "border": "#fcfcfc",
+      "track": "#3c3c3c",
+      "fill": "#d82800",
+      "padding": 6,
+      "gap": 3,
+      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
+      "heading": "#fc9838",
+      "outline": "#000000",
+      "dim": 0.5
+    },
+    "title": {
+      "name": "The Mini Siege",
+      "subtitle": "Burn the siege engines before dawn",
+      "art": [
+        { "sheet": "siege", "frame": "captain-right-0", "scale": 3, "anchor": "left", "x": 40, "y": -6 },
+        { "sheet": "siege", "frame": "ram-0", "scale": 2, "anchor": "right", "x": 32, "y": -6 }
+      ],
+      "music": "siege",
+      "footer": "An original game made with the Worlds Within engine",
+      "items": ["start", "continue", "controls", "settings"],
+      "dim": 0.6
+    },
+    "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "settings": { "items": ["master", "music", "sfx", "mute", "shake", "flashing"] },
+    "controls": [
+      { "label": "Select, command", "tap": "click, drag, right click" },
+      { "actions": ["left", "right", "up", "down"], "label": "Move (rounds)" },
+      { "actions": ["attack"], "label": "Strike (rounds)" },
+      { "actions": ["jump"], "label": "Build (walls)" },
+      { "actions": ["select"], "label": "Give up a round" }
+    ]
   },
   "headless": "headless.ts",
   "view": "view.ts"

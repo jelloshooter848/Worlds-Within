@@ -9,6 +9,8 @@ import {
   type ContentPart,
 } from './kinds';
 import { gameManifestSchema, MANIFEST_FILE, type GameManifest } from './manifest';
+import type { FontFile } from '../ui/font';
+import { checkMenus, type MenusRefs, type MenusSpec } from '../ui/menus';
 import { contentError, validate, type ContentError, type ContentResult } from './validate';
 
 /**
@@ -221,10 +223,34 @@ export function loadContent(
       errors.push(contentError(at(path), [], 'claimed_twice', msg));
     }
   }
-  if (errors.length === 0 && opts.checkAll !== false)
+  if (errors.length === 0 && opts.checkAll !== false) {
     errors.push(...checkAcross(manifest, kinds, entries, partsByPath, at));
+    if (manifest.menus !== undefined) errors.push(...checkManifestMenus(manifest.menus, entries, at));
+  }
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, value: { manifest, entries }, errors: [] };
+}
+
+/**
+ * The manifest's `menus` (Engine 0.16 T9) against the game's fonts, sprites, palettes, songs and
+ * sounds (`checkMenus`), as errors at `game.json` under `menus`.
+ */
+function checkManifestMenus(
+  menus: MenusSpec,
+  entries: readonly ContentEntry[],
+  at: (path: string) => string,
+): ContentError[] {
+  const of = (kind: string) => entries.filter((e) => e.kind === kind);
+  const music = of('skin').flatMap((e) => Object.keys((e.value as { music?: object }).music ?? {}));
+  const refs: MenusRefs = {
+    fonts: new Map(of('font').map((e) => [e.name, e.value as FontFile])),
+    sprites: new Map(of('sprite').map((e) => [e.name, e.value as { frames?: Record<string, unknown> }])),
+    palettes: new Set(of('palette').map((e) => e.name)),
+    sounds: new Set([...of('song'), ...of('sfx')].map((e) => e.name).concat(music)),
+  };
+  return checkMenus(menus, refs).map((issue) =>
+    contentError(at(MANIFEST_FILE), ['menus', ...issue.path], issue.code, issue.message),
+  );
 }
 
 /** Every kind's `checkAll` over its entries, as errors at the entry's file (or grid part) and field. */

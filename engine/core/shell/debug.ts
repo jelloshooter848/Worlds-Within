@@ -77,6 +77,21 @@ export interface PageDebug {
    * the buses and the sounds played; null on a page without audio. Read only: it never steps.
    */
   mix(): MixerState | null;
+  /**
+   * The game's menus now (Engine 0.16 T9): what shows (`title`, `pause` or `play`), the screen on
+   * top (`title`, `pause`, `settings`, `controls`, or null in play), its focused item and its
+   * items' values and boxes (to tap one through `toClient`); null on a page without menus.
+   */
+  menus(): MenusView | null;
+}
+
+/** What `PageDebug.menus` reads. */
+export interface MenusView {
+  state: 'title' | 'pause' | 'play';
+  screen: string | null;
+  focused: string | null;
+  /** The main menu's items now: id, value (a slider's or toggle's) and box in picture px. */
+  items: { id: string; value: number | boolean | null; x: number; y: number; w: number; h: number }[];
 }
 
 /** An order or mission step the game refused during a replay. */
@@ -102,6 +117,8 @@ export interface PageDebugTarget {
   transition?(what: TransitionRequest): boolean;
   /** The page's mixer state (the shell's `Mixer.state`), when the page has audio. */
   mix?(): MixerState | null;
+  /** The page's menus (the shell's `GameMenus`), when it has them. */
+  menus?(): MenusView | null;
 }
 
 /** A replay in progress: the input and the run's entries still to hand over. */
@@ -162,6 +179,7 @@ export class PageDebugHook {
       toClient: (x, y) => target.toClient?.(x, y) ?? null,
       transition: (what = 'default') => target.transition?.(what) ?? false,
       mix: () => target.mix?.() ?? null,
+      menus: () => target.menus?.() ?? null,
     };
   }
 

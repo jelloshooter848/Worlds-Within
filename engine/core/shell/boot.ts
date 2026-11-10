@@ -15,10 +15,21 @@ import type { PointerGesture, PointerOptions } from '../input/pointer-logic';
 import { TouchSource } from '../input/touch';
 import { layoutScreen } from '../input/touch-layout';
 import { FixedLoop } from '../loop';
-import { loadVolumes } from '../save/settings';
+import {
+  loadSettings,
+  loadVolumes,
+  storeSettings,
+  storeVolumes,
+  TOUCH_MODES,
+  type StoredSettings,
+} from '../save/settings';
+import type { SheetLookup } from '../assets/sheet-lookup';
+import { keyHintMap } from '../input/key-hints';
+import type { FontLookup, MenusSpec, UiFrameSize } from '../ui';
+import { GameMenus, type MenuSettingsHost } from './game-menus';
 import { SceneStack, type Scene } from '../scene';
 import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
-import { PageDebugHook, type PageDebug } from './debug';
+import { PageDebugHook, type MenusView, type PageDebug } from './debug';
 import { ShellTransitions, type TransitionRequest } from './transitions';
 import { UiScene } from './ui-scene';
 import { mountVolumeControl, type VolumeControl } from './volume-control';
@@ -54,6 +65,27 @@ export function recordFromQuery(search: string): boolean {
   const value = new URLSearchParams(search).get(RECORD_QUERY);
   return value !== null && value !== '0';
 }
+
+/** The query value that shows (`title=show`) or skips (`title=skip`) the title screen. */
+export const TITLE_QUERY = 'title';
+
+/**
+ * Whether a page opens on its title screen (Engine 0.16 T9): yes, unless the page is in
+ * manual-loop mode (`?debug=step`) or recording (`?record`), so run files, replays and the
+ * browser tests start straight in play; `?title=skip` skips it too and `?title=show` shows it
+ * even in manual-loop mode (the menus' own browser tests).
+ */
+export function titleFromQuery(search: string): boolean {
+  const asked = new URLSearchParams(search).get(TITLE_QUERY);
+  if (asked === 'show') return true;
+  if (asked === 'skip') return false;
+  return !manualFromQuery(search) && !recordFromQuery(search);
+}
+
+/** The keyboard keys that pause (`KeyboardEvent.code`); gamepad Start (button 9) and the button too. */
+export const PAUSE_CODES: readonly string[] = ['Escape', 'KeyP'];
+/** The standard gamepad's Start button. */
+const PAD_START = 9;
 
 /** The page's step hook, on `window` in manual-loop mode or when recording. */
 export interface DebugWindow {
@@ -111,6 +143,33 @@ export interface BootAudio {
 
 /** The DOM events that count as the first gesture: browsers allow sound only after one. */
 export const AUDIO_UNLOCK_EVENTS = ['keydown', 'pointerdown', 'pointerup', 'touchend', 'click'] as const;
+
+/**
+ * The game's menus (Engine 0.16 T9): `content.manifest.menus` with the fonts and sprite sheets
+ * they draw from, and the game's own hooks for Continue, colour modes and going back to the title.
+ */
+export interface BootMenus {
+  /** `content.manifest.menus`; nothing is shown when it is undefined. */
+  spec: MenusSpec | undefined;
+  /** The game's font files (`contentFonts(content)`). */
+  fonts: FontLookup;
+  /** The game's sprite sheets (frame sizes for a logo, art and panels). */
+  sheets: SheetLookup;
+  /** Whether a save or campaign code exists (the title's Continue shows only then). */
+  canContinue?(): boolean;
+  /** Continue was chosen: resume the save (the title then closes). */
+  onContinue?(): void;
+  /** The game's colour modes' names (the settings screen's `colour` item; none: hidden). */
+  colourModes?: readonly string[];
+  /** The player chose colour mode `index` (also called at boot with the stored one). */
+  onColourMode?(index: number): void;
+  /**
+   * How Back to title starts the game over: `scene` (default) builds the game's first scene again
+   * with the boot's `scene` factory; `reload` reloads the page (for a page whose DOM holds on to
+   * its first scene).
+   */
+  restart?: 'scene' | 'reload';
+}
 
 export interface BrowserBootOptions {
   /** The game's picture size (`content.manifest.screen`). */
@@ -172,6 +231,14 @@ export interface BrowserBootOptions {
    * browser's `prefers-reduced-motion: reduce`.
    */
   reduceMotion?: boolean;
+  /**
+   * The title screen, pause menu, settings and controls screens (Engine 0.16 T9) from
+   * `game.json`'s `menus`, drawn with the display's `uiPainter`. The page opens on the title
+   * (unless `titleFromQuery` says to skip it); Escape, P, gamepad Start and the on-screen
+   * `#ww-pause` button pause. Left out (or with a display that cannot draw UI), the page plays
+   * at once as before.
+   */
+  menus?: BootMenus;
 }
 
 /** The page's inputs beyond the `InputFrame`, for a game's scenes. */
@@ -213,6 +280,8 @@ export interface BootedGame extends BootPage {
    * (then `covered` runs at once).
    */
   transition(what?: TransitionRequest, covered?: () => void): boolean;
+  /** The title, pause and settings menus (Engine 0.16 T9), or null without `menus`. */
+  menus: GameMenus | null;
 }
 
 /**
@@ -272,6 +341,11 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     });
   }
 
+  // The player's stored presentation settings (Engine 0.16 T9): shake, flashing, colour, touch.
+  const settings: StoredSettings = loadSettings(opts.game);
+  display.effectSettings?.({ shakeScale: settings.shake, reduceFlashing: settings.reduceFlashing });
+  if (settings.colour !== 0) opts.menus?.onColourMode?.(settings.colour);
+
   const input = new InputManager(1);
   input.addSource('keyboard', new KeyboardSource());
   if (GamepadSource.available()) input.addSource('gamepad', new GamepadSource());
@@ -279,8 +353,13 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   if (touch) {
     input.addSource('touch', touch);
     touch.show(TouchSource.likelyTouchDevice());
+    if (settings.touch !== 'auto') touch.setMode(settings.touch);
   }
   const pointer = opts.pointer ? pointerSource(canvas, display, opts) : null;
+  // The menus take taps and the hover even on a page that did not ask for the pointer (Engine 0.16
+  // T9); such a page's game never sees them: its taps reach the frame only while a menu shows.
+  const menusWanted = opts.menus?.spec !== undefined && display.uiPainter !== undefined;
+  const menuPointer = pointer === null && menusWanted ? pointerSource(canvas, display, opts) : null;
   // Picture to client px (gap D13): a display without its own inverse (3D: the canvas is sized to
   // the picture) gets the canvas box's.
   shown.toClient = display.toClient ??= (x, y) => {
@@ -311,7 +390,121 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
 
   const scenes = new SceneStack();
   const uiSound = (id: string) => mixer?.uiSound(id);
-  scenes.push(opts.scene(scenes, shown, { pointer, uiSound }));
+  const page: BootPage = { pointer, uiSound };
+  scenes.push(opts.scene(scenes, shown, page));
+
+  // The menus (Engine 0.16 T9): the title over the first scene, the pause menu on the pause keys.
+  const menuSpec = opts.menus?.spec;
+  const uiPainter = display.uiPainter?.bind(display);
+  let menus: GameMenus | null = null;
+  let pauseAsked = false;
+  let pauseButton: HTMLButtonElement | null = null;
+  if (opts.menus !== undefined && menuSpec !== undefined && uiPainter !== undefined) {
+    const boot = opts.menus;
+    const save = () => {
+      if (opts.game !== undefined) storeSettings(opts.game, settings);
+    };
+    const host: MenuSettingsHost = {
+      values: () => {
+        const v = volume?.volumes() ?? loadVolumes(opts.game, opts.audio?.volumes);
+        return {
+          master: v.master,
+          music: v.music,
+          sfx: v.sfx,
+          muted: v.muted,
+          shake: settings.shake,
+          reduceFlashing: settings.reduceFlashing,
+          colour: settings.colour,
+          touch: Math.max(0, TOUCH_MODES.indexOf(settings.touch)),
+        };
+      },
+      change: (item, value) => {
+        const tenth = typeof value === 'number' ? value / 10 : 0;
+        const sound = (v: Partial<Volumes> & { muted?: boolean }) => {
+          if (volume) volume.set(v);
+          else {
+            const next = { ...loadVolumes(opts.game, opts.audio?.volumes), ...v };
+            audio?.setVolumes(next);
+            if (opts.game !== undefined) storeVolumes(opts.game, next);
+          }
+        };
+        if (item === 'master') sound({ master: tenth, muted: false });
+        else if (item === 'music') sound({ music: tenth });
+        else if (item === 'sfx') sound({ sfx: tenth });
+        else if (item === 'mute' && typeof value === 'boolean') sound({ muted: value });
+        else if (item === 'shake') {
+          settings.shake = tenth;
+          display.effectSettings?.({ shakeScale: tenth });
+        } else if (item === 'flashing' && typeof value === 'boolean') {
+          settings.reduceFlashing = value;
+          display.effectSettings?.({ reduceFlashing: value });
+        } else if (item === 'colour' && typeof value === 'number') {
+          settings.colour = value;
+          boot.onColourMode?.(value);
+        } else if (item === 'touch' && typeof value === 'number') {
+          settings.touch = TOUCH_MODES[value] ?? 'auto';
+          touch?.setMode(settings.touch);
+          relayout();
+        } else return;
+        save();
+      },
+    };
+    menus = new GameMenus({
+      spec: menuSpec,
+      stack: scenes,
+      screen: opts.screen,
+      fonts: boot.fonts,
+      frameSize: sheetFrameSize(boot.sheets),
+      painter: () => uiPainter(),
+      pointer: pointer ?? menuPointer,
+      keys: () => keyHintMap(input.bindings[0]?.keyboard),
+      settings: host,
+      ...(boot.colourModes !== undefined && { colourModes: boot.colourModes }),
+      ...(boot.canContinue !== undefined && { canContinue: () => boot.canContinue!() }),
+      ...(boot.onContinue !== undefined && { onContinue: () => boot.onContinue!() }),
+      onSound: uiSound,
+      transition: (what, covered) => transitions.start(what, covered),
+      music: (id) => {
+        const song = id ?? opts.audio?.music;
+        if (song !== undefined) mixer?.play(song);
+      },
+      restart: () => {
+        if (boot.restart === 'reload') {
+          window.location.reload();
+          return;
+        }
+        scenes.clear();
+        scenes.push(opts.scene(scenes, shown, page));
+        menus?.showTitle();
+      },
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.repeat || !PAUSE_CODES.includes(e.code)) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      pauseAsked = true;
+    });
+    pauseButton = mountPauseButton(() => (pauseAsked = true));
+    if (titleFromQuery(search)) menus.showTitle();
+  }
+  let padStart = false;
+  /** Whether gamepad Start went down since the last step (any pad). */
+  const padStartPressed = (): boolean => {
+    const pads = typeof navigator.getGamepads === 'function' ? navigator.getGamepads() : [];
+    const down = [...pads].some((p) => p?.buttons[PAD_START]?.pressed === true);
+    const edge = down && !padStart;
+    padStart = down;
+    return edge;
+  };
+  let shownMenu = '';
+  const showMenuState = () => {
+    const state = menus?.state ?? 'play';
+    if (state === shownMenu) return;
+    shownMenu = state;
+    document.body.dataset.menu = state;
+    if (pauseButton) pauseButton.hidden = state !== 'play';
+  };
+  showMenuState();
 
   // In manual-loop mode the clock is the steps taken (a pointer's long press counts game steps).
   let hook: PageDebugHook | null = null;
@@ -327,10 +520,25 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
         if (hitPause.hold()) return;
         const before = { top: scenes.top, depth: scenes.depth };
         input.beginFrame();
-        pointer?.beginFrame(manual ? loop.steps * loop.stepMs : performance.now());
+        const now = manual ? loop.steps * loop.stepMs : performance.now();
+        pointer?.beginFrame(now);
+        menuPointer?.beginFrame(now);
         const frame = input.player(0);
         if (pointer) frame.addTaps(tapsOf(pointer.gestures()));
+        if (menuPointer) {
+          const taps = tapsOf(menuPointer.gestures());
+          if (menus !== null && menus.state !== 'play') frame.addTaps(taps);
+        }
+        // The pause key (Escape, P, gamepad Start, the button) takes this step: the scenes do not
+        // see its press (Escape is also `start`, which would confirm a menu item).
+        if (menus !== null && (padStartPressed() || pauseAsked)) {
+          pauseAsked = false;
+          menus.pauseKey();
+          showMenuState();
+          return;
+        }
         scenes.update([hook ? hook.frame(frame) : frame]);
+        showMenuState();
         mixer?.dialog(scenes.find((s) => s instanceof UiScene && s.dialogShown()) !== undefined);
         transitions.scenes(before, { top: scenes.top, depth: scenes.depth });
       },
@@ -352,6 +560,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       toClient: (x, y) => display.toClient!(x, y),
       transition: (what) => transitions.start(what),
       mix: () => mixer?.state() ?? null,
+      menus: () => (menus === null ? null : menusView(menus)),
     });
     if (record) hook.api.record(true);
     (window as DebugWindow).__ww = hook.api;
@@ -375,7 +584,64 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     hitPause,
     transitions,
     transition: (what, covered) => transitions.start(what, covered),
+    menus,
   };
+}
+
+/** What the step hook's `menus()` reads. */
+function menusView(menus: GameMenus): MenusView {
+  const menu = menus.ui?.menu('main');
+  return {
+    state: menus.state,
+    screen: menus.screen,
+    focused: menu?.focused ?? null,
+    items: (menu?.items ?? []).map((item) => ({
+      id: item.id,
+      value: menu!.value(item.id) ?? null,
+      ...menu!.itemBox(item.id)!,
+    })),
+  };
+}
+
+/** Sprite frame sizes from the game's sheets (a logo, title art, a nine-slice panel). */
+function sheetFrameSize(sheets: SheetLookup): UiFrameSize {
+  return (sheet, palette, frame) => {
+    const rect = sheets(sheet, palette)?.frames.get(frame);
+    return rect === undefined ? null : { w: rect.w, h: rect.h };
+  };
+}
+
+/** The pause button's id: the on-screen way to pause (touch, mouse). */
+export const PAUSE_BUTTON_ID = 'ww-pause';
+
+const PAUSE_STYLE = `
+#ww-pause { position: fixed; top: 40px; right: 4px; z-index: 20; min-width: 44px; min-height: 32px;
+  padding: 0 8px; border: 1px solid #666; border-radius: 4px; background: rgba(0, 0, 0, 0.55);
+  color: #fff; font: bold 14px/1 system-ui, sans-serif; letter-spacing: 1px; touch-action: manipulation; }
+#ww-pause[hidden] { display: none; }
+`;
+
+/**
+ * The on-screen pause button (fixed at the top right, under the volume control), shown in play
+ * only; it never keeps the focus.
+ */
+function mountPauseButton(onPress: () => void): HTMLButtonElement {
+  const style = document.createElement('style');
+  style.textContent = PAUSE_STYLE;
+  document.head.append(style);
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.id = PAUSE_BUTTON_ID;
+  button.textContent = 'II';
+  button.title = 'Pause (Esc, P)';
+  button.setAttribute('aria-label', 'Pause');
+  button.addEventListener('pointerdown', (e) => e.preventDefault());
+  button.addEventListener('click', () => {
+    onPress();
+    button.blur();
+  });
+  document.body.append(button);
+  return button;
 }
 
 /** The browser's reduced-motion preference (false where it cannot be read). */

@@ -329,7 +329,20 @@ describe('platformer test 2D skins', () => {
     for (const skin of [look.skin, ...Object.values(look.rounds)])
       for (const entry of Object.values(skin.events ?? {}))
         if (entry.sound !== undefined) expect(sfx, entry.sound).toContain(entry.sound);
-    expect([...sfx].sort()).toEqual(['coin', 'door', 'fail', 'hurt', 'jump', 'pass', 'stomp', 'sword']);
+    // The skins' sounds, and from Engine 0.16 T9 the menus' (`game.json`'s `menus.style.sounds`).
+    expect([...sfx].sort()).toEqual([
+      'coin',
+      'door',
+      'fail',
+      'hurt',
+      'jump',
+      'pass',
+      'stomp',
+      'sword',
+      'ui-back',
+      'ui-move',
+      'ui-select',
+    ]);
   });
 
   it("gives the round's end a sound per result in both level skins, the door for a quit (G28)", () => {

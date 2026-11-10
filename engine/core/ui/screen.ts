@@ -169,6 +169,11 @@ export class UiScreen {
       }
       case 'panel':
         return { kind: 'still', spec, box: place(UI_PANEL_DEFAULT) };
+      case 'image': {
+        const size = this.opts.frameSize?.(spec.sheet, spec.palette, spec.frame) ?? { w: 0, h: 0 };
+        const scale = spec.scale ?? 1;
+        return { kind: 'still', spec, box: place({ w: size.w * scale, h: size.h * scale }) };
+      }
     }
   }
 
@@ -392,6 +397,23 @@ export class UiScreen {
           ...box,
           color: spec.color,
           ...(spec.alpha !== undefined && spec.alpha < 1 && { alpha: spec.alpha }),
+        },
+      ];
+    }
+    if (spec.type === 'image') {
+      const size = this.opts.frameSize?.(spec.sheet, spec.palette, spec.frame);
+      if (size === null || size === undefined) return [];
+      return [
+        {
+          kind: 'image',
+          sheet: spec.sheet,
+          ...(spec.palette !== undefined && { palette: spec.palette }),
+          frame: spec.frame,
+          sx: 0,
+          sy: 0,
+          sw: size.w,
+          sh: size.h,
+          ...box,
         },
       ];
     }

@@ -560,6 +560,24 @@ the rounds arrows walk the hero and X stabs. The levels come in order; the doors
 `level-4` and `level-5`. The `meadow` song starts on the first key, tap or click; the volume
 control is at the page's top right.
 
+## Title screen, pause menu and settings (Engine 0.16 T9)
+
+`game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
+`engine/core/ui/menus.ts`): the title "Hopper's Way" in `hopper-title` over the game's own
+picture at its start (dimmed 0.5), the subtitle "Five levels, two doors, one long meadow", art (`runner-jump` x3, `walker-0` x3),
+the song `meadow`, a footer and the items start, controls, settings; the pause menu
+(resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
+rows (Walk; Run (hold); Jump; Move (door rounds); Sword (door rounds)), shown with the player's keys. Colours: focus bar `#0058f8`,
+headings `#fcd800`. Fonts: `content/fonts/hopper-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `hopper-title.txt` (its title font: the small glyphs made bold and doubled with Scale2x, cell 12x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
+
+`main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
+and the fonts to the display. Back to title builds the game again from its first scene. The page opens on the title (the game waits
+at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the ticks are held).
+`?debug=step` and `?record` skip the title, so run files, replays and the older browser tests
+are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
+start, pause, settings and controls by keyboard and touch, settings kept across a reload;
+`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
+
 ## Imports
 
 - Allowed: relative paths inside `games/samples/platformer`, `@engine/*` (core and backends),

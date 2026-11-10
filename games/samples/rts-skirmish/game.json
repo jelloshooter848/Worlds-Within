@@ -10,10 +10,53 @@
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"],
-    "song": ["content/songs/*.json"]
+    "song": ["content/songs/*.json"],
+    "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 9 },
   "screen": { "width": 320, "height": 240 },
+  "menus": {
+    "font": "ford-small",
+    "titleFont": "ford-title",
+    "style": {
+      "text": "#fcfcfc",
+      "shadow": "#000000",
+      "focusText": "#fcbc3c",
+      "disabledText": "#a4a4a4",
+      "back": "#0c0c1c",
+      "focusBack": "#004058",
+      "border": "#fcfcfc",
+      "track": "#3c3c3c",
+      "fill": "#00a800",
+      "padding": 6,
+      "gap": 3,
+      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
+      "heading": "#fcbc3c",
+      "outline": "#000000",
+      "dim": 0.5
+    },
+    "title": {
+      "name": "The River Ford",
+      "subtitle": "Hold the crossing against the raiders",
+      "art": [
+        { "sheet": "skirmish", "frame": "hero-right-0", "scale": 3, "anchor": "left", "x": 40, "y": -6 },
+        { "sheet": "skirmish", "frame": "soldier-right-1", "scale": 3, "anchor": "left", "x": 100, "y": 4 }
+      ],
+      "music": "ford",
+      "footer": "An original game made with the Worlds Within engine",
+      "items": ["start", "controls", "settings"],
+      "dim": 0.6
+    },
+    "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "settings": { "items": ["master", "music", "sfx", "mute", "shake", "flashing"] },
+    "controls": [
+      { "label": "Select", "tap": "click or tap" },
+      { "label": "Select many", "tap": "drag a box" },
+      { "label": "Command", "tap": "right click or long-press" },
+      { "label": "Pan", "tap": "edge, middle drag or two fingers" },
+      { "label": "Zoom", "tap": "wheel or pinch" }
+    ]
+  },
   "headless": "headless.ts",
   "view": "view.ts"
 }

@@ -199,3 +199,21 @@ then types the `won` run's input on the keyboard and wins at tick 673 with 5 liv
 errors; `pnpm test tests/browser/tower-defense-shots.test.ts` takes `build` at tick 40, `won` at
 300 and `leaked` at 1330 twice each (byte-identical, matching the headless hashes, all different).
 `pnpm test tests/build/pages.test.ts` checks the launcher lists it.
+
+## Title screen, pause menu and settings (Engine 0.16 T9)
+
+`game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
+`engine/core/ui/menus.ts`): the title "The Winding Road" in `road-title` over the game's own
+picture at its start (dimmed 0.6), the subtitle "Build on the stones, keep the gate shut", art (`arrow-idle` x3, `cannon-idle` x3),
+the song `road`, a footer and the items start, controls, settings; the pause menu
+(resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
+rows (Move; Build; Next tower; Sell; Send the wave), shown with the player's keys. Colours: focus bar `#00502c`,
+headings `#fcd800`. Fonts: `content/fonts/road-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `road-title.txt` (its title font: the small glyphs doubled with Scale2x, cell 10x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
+
+`main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
+and the fonts to the display. Back to title reloads the page (`restart: 'reload'`: its bar and `window` hook hold the first scene). `index.html` hides the page's bar on the title (`body[data-menu='title']`). The page opens on the title (the game waits
+at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the ticks are held).
+`?debug=step` and `?record` skip the title, so run files, replays and the older browser tests
+are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
+start, pause, settings and controls by keyboard and touch, settings kept across a reload;
+`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.

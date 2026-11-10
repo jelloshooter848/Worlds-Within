@@ -8,6 +8,7 @@ import { CanvasRenderer } from './renderer';
 import { SkinnedCanvasPresenter } from './presenter';
 import { skinSetCanvasPresenter } from './skin-set';
 import { drawTransition } from './transition';
+import { CanvasUiPainter } from './ui-painter';
 import { Viewport } from './viewport';
 
 /** What a Canvas2D page needs from a game: its picture size, its `canvas2d` skin and sheets. */
@@ -75,6 +76,9 @@ export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOpti
     transition(view) {
       transition = view;
     },
+    // The shell's menus (Engine 0.16 T9) draw on the scenes' renderer, over the picture.
+    uiPainter: () => new CanvasUiPainter(renderer, opts.sheet, opts.fonts),
+    effectSettings: (settings) => presenter.effectSettings(settings),
     toScreen: (clientX, clientY) => viewport.toScreen(clientX, clientY),
     toClient: (x, y) => viewport.toClient(x, y),
   };

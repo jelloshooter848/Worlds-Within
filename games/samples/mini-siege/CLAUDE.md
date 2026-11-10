@@ -642,6 +642,24 @@ tests/browser/mini-siege-shots.test.ts` (the screenshots), `pnpm vitest run
 tests/browser/mini-siege-page.test.ts` (the page played from its link, both missions on both
 paths).
 
+## Title screen, pause menu and settings (Engine 0.16 T9)
+
+`game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
+`engine/core/ui/menus.ts`): the title "The Mini Siege" in `siege-title` over the game's own
+picture at its start (dimmed 0.6), the subtitle "Burn the siege engines before dawn", art (`captain-right-0` x3, `ram-0` x2),
+the song `siege`, a footer and the items start, continue, controls, settings; the pause menu
+(resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing); and the controls screen's
+rows (Select, command; Move (rounds); Strike (rounds); Build (walls); Give up a round), shown with the player's keys. Colours: focus bar `#58002c`,
+headings `#fc9838`. Fonts: `content/fonts/siege-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `siege-title.txt` (its title font: the small glyphs made bold and doubled with Scale2x, cell 12x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
+
+`main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
+and the fonts to the display. Back to title reloads the page (`restart: 'reload'`: its bar and `window` hook hold the first scene). Continue shows when this browser kept a campaign save (`launch.storedSave()`) and carries on from it (the bar's Carry on). `index.html` hides the page's bar on the title (`body[data-menu='title']`) and the briefing and result panels on the title and the pause menu. The page opens on the title (the game waits
+at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the ticks are held).
+`?debug=step` and `?record` skip the title, so run files, replays and the older browser tests
+are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
+start, pause, settings and controls by keyboard and touch, settings kept across a reload;
+`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
+
 ## Imports
 
 - Allowed: relative paths inside this folder, `@engine/core/*`, `@engine/sim/*` (the glue

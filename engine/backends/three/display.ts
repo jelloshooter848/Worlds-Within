@@ -1,5 +1,5 @@
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
-import type { FontLookup } from '@engine/core/ui';
+import type { FontLookup, UiDraw, UiPainter } from '@engine/core/ui';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
@@ -96,9 +96,19 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     });
+  // UI screens (Engine 0.16 T9: the shell's menus) are collected while the scenes draw and drawn
+  // over the frame as an overlay pass on `present`.
+  const pending: UiDraw[] = [];
+  const painter: UiPainter = {
+    fill: (d) => void pending.push(d),
+    image: (d) => void pending.push(d),
+    glyph: (d) => void pending.push(d),
+  };
   return {
     renderer: NO_DRAW,
     presenter: Object.keys(rounds).length > 0 ? presenterBySkinSet(presenter, rounds) : presenter,
+    uiPainter: () => painter,
+    effectSettings: (settings) => presenter.effectSettings(settings),
     fit(layout) {
       const dpr = window.devicePixelRatio || 1;
       applyCanvasBox(
@@ -113,7 +123,9 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
         ),
       );
     },
-    present() {},
+    present() {
+      presenter.ui(pending.splice(0));
+    },
     transition: (view) => presenter.transition(view),
   };
 }

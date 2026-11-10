@@ -132,12 +132,11 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
     `UiFrameSize` from the sheet lookup) and `fxUiScreen(content, { sheets, fonts, onSound?,
 open? })`, the `lab` screen with the menu focused, or with `open: 'dialog'` the dialog alone.
   - `main.ts` also (T7) boots with `pointer: true` (taps and hover in picture pixels) and plays
-    the level through `FxLabScene` (a `HostScene` whose start key, Enter, Esc or pad Start, pushes
+    the level through `FxLabScene` (a `HostScene` whose start key, Enter, pushes
     the lab's `UiScene` over the level in 2D: the game waits under it). Resume, Back to title,
-    `back` on the menu and `Let's go!` pop it (no title screen yet: T9); so does any end that
+    `back` on the menu and `Let's go!` pop it (the game's title and pause menu are the shell's, T9, below); so does any end that
     leaves no widget focused. `?ui=menu` / `?ui=dialog` opens one at load; `window.wwFxLab.ui`
-    is `{ open(which?), screen(), events }` for the browser test. The 3D backend does not draw UI
-    screens yet (T9), so there the start key does nothing.
+    is `{ open(which?), screen(), events }` for the browser test. The lab's menu uses `CanvasUiPainter`, so in 3D the start key does nothing (the shell's menus, below, draw in both backends). From T9 Escape and pad Start pause through the shell instead.
   - `index.html`: the page (2D/3D toggle, the launcher's 3D link).
 - `runs/level-1.run.json` (fx-1 from the start: three coins, two from the platform, both beetles
   stomped, the pit jumped, the door at tick ~345) and `runs/level-2.run.json` (`start: { stage: 1
@@ -191,6 +190,24 @@ pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs, Enter pause
 The lab's run files are also played by `tests/runs/presentation-invariance.test.ts` with every
 effect switched on. The kit is strict, but the lab is not a kit test: `pnpm cli mutants` is not
 expected to pass here (`games/platformer-lab` guards the kit's rules).
+
+## Title screen, pause menu and settings (Engine 0.16 T9)
+
+`game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
+`engine/core/ui/menus.ts`): the title "The fx lab" in `fx-title` over the game's own
+picture at its start (dimmed 0.88), the subtitle "Every effect on three short levels", art (`pip-run-1` x3, `beetle-0` x3),
+the song `lab`, a footer and the items start, controls, settings; the pause menu
+(resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
+rows (Walk; Run (hold); Jump; Lab menu), shown with the player's keys. Colours: focus bar `#00406c`,
+headings `#f8b800`. Fonts: `content/fonts/fx-small.txt` (from T9 with the four arrows, for key names) and `fx-title.txt`.
+
+`main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
+and the fonts to the display. Back to title builds the game again from its first scene. The page opens on the title (the game waits
+at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the ticks are held).
+`?debug=step` and `?record` skip the title, so run files, replays and the older browser tests
+are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
+start, pause, settings and controls by keyboard and touch, settings kept across a reload;
+`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
 
 ## Imports
 

@@ -9,7 +9,7 @@ The browser shell every game page shares (Engine 0.7): choosing the backend from
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
 display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
-campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM. A game's `main.ts` and scene are then a few lines of glue.
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`. A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -102,6 +102,33 @@ audio })` mounts it (`booted.volume`; `volumeControl: false` leaves it out). Eve
   recording on while the loop runs as usual (`?debug=step&record` to step it). Copy the list to a
   file and `pnpm cli record <runFile> --mission <id> --input <file>` writes it into the run file.
 
+- **Title, pause and settings (Engine 0.16 T9)**: `bootBrowserGame({ menus: { spec, fonts,
+sheets, canContinue?, onContinue?, colourModes?, onColourMode?, restart? } })` with the game's
+  `content.manifest.menus` (`game.json`'s `menus`, `engine/core/ui/menus.ts`) builds the title
+  screen, pause menu, settings and controls screens on the UI kit (`game-menus.ts`, `GameMenus`,
+  pure; `booted.menus`) and draws them with the display's `uiPainter()` (both backends have one).
+  The page opens on the title over the game's first scene, which waits at tick 0 (its picture is
+  the background) until Start; Escape, P, gamepad Start or the on-screen `#ww-pause` button pause
+  (the game's ticks are held under the menu); settings store under `ww:<game>:settings`
+  (`save/settings.ts`: shake, reduced flashing, colour mode, touch pad) beside the volumes, and
+  reach the display through `BrowserDisplay.effectSettings`. The title is skipped with
+  `?debug=step`, `?record` or `?title=skip` (`titleFromQuery`; `?title=show` shows it in manual
+  mode), so run files, replays and older browser tests start straight in play. `__ww.menus()`
+  reads the state, the screen on top and its items. `body[data-menu]` is `title`, `pause` or
+  `play`, for a page's own CSS.
+
+  ```json
+  "menus": {
+    "font": "hopper-small", "titleFont": "hopper-title",
+    "style": { "focusBack": "#0058f8", "heading": "#fcd800", "sounds": { "move": "ui-move" } },
+    "title": { "name": "Hopper's Way", "subtitle": "...", "music": "meadow",
+               "art": [{ "sheet": "hopper", "frame": "runner-jump", "scale": 3, "anchor": "left", "x": 30 }],
+               "items": ["start", "controls", "settings"] },
+    "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "controls": [{ "actions": ["jump"], "label": "Jump" }]
+  }
+  ```
+
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)` (a game's
   `saveCodeContext(content)` and campaign): `end(save)` stores an entry's campaign save in browser
   storage and packs its save code (`{ save, code, codeError, stored, done }`), `resume(text)` reads
@@ -140,7 +167,7 @@ Example (`games/platformer-lab/main.ts`):
 ## Imports allowed
 
 - `engine/core` only; never backends, the sim, tools, kits or games. Kits may not import it
-  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts` and `transitions.ts` are on `PURE_CORE`.
+  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE`.
 
 ## How to test
 
@@ -151,6 +178,10 @@ motion, the old picture held on a level change; Engine 0.16 T5), `mission-launch
 flow and the campaign flow over a `MissionHost` with fakes);
 `tests/browser/mini-siege-page.test.ts` plays the flow's DOM (every entry held until Begin, resume
 from a code);
+`game-menus.test.ts` (Engine 0.16 T9: the title holding the game, Start, Continue, pause and
+resume holding the ticks, settings and controls in the pause menu's place, Back to title, the
+title query); `tests/browser/menus.test.ts` opens every sample's and the fx lab's title, starts,
+pauses and changes settings by keyboard and by touch, and reads them back after a reload;
 `tests/browser/volume-control.test.ts` finds the volume control on every sample page and checks
 two pages keep their volumes across a reload;
 `tests/browser/lab-3d.test.ts` boots the lab through it in headless Chromium where one exists, and

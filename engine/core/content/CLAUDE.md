@@ -39,7 +39,10 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   merge the kinds, see `engine/tools/game-check.ts`), `content` (kind -> paths or globs relative to the game folder), `start` (`{ seed }`), `screen`
   (`{ width, height }`, whole numbers 64..1920, default 256x240: the game picture's size) and
   `headless` (the module that boots the game headless) and `view?` (the module that draws it, for
-  `screenshot`; `engine/core/view.ts`).
+  `screenshot`; `engine/core/view.ts`), `transitions?` (Engine 0.16 T5) and `menus?` (Engine
+  0.16 T9: the title, pause, settings and controls screens, `engine/core/ui/menus.ts`;
+  `loadContent` checks it against the game's fonts, sprites and songs after the kinds' checks,
+  `checkMenus`, errors at `game.json` `menus.<field>`).
 - `bundle.ts`: `loadContent(files, kinds, { root })` turns `{ path: text }` pairs (from the build's
   `virtual:game-files` module in the browser, `../node/game-files.ts` in Node) into a `ContentBundle`
   (`{ manifest, entries }`); `contentOf(bundle, kind)` and `contentNamed` give typed entries. An
@@ -92,8 +95,7 @@ file formats are described at the top of that file).
   text a font file has no glyph for), `bad_minimap_dot` and `bad_ease` (`present/skin.ts`); the
   font's `bad_font`, `bad_glyph`, `bad_kerning` and its `.txt` reader's `duplicate_glyph`,
   `row_outside_glyph` and `bad_directive` (`ui/font.ts`); the ui screen's `duplicate_widget` and
-  `unknown_widget` (a `focus`, `opens` or `next` naming no widget of the screen, at its field), and
-  `missing_ref`, `missing_frame` and `missing_glyph` for its fonts, sounds and frames (`ui/ui-schema.ts`); the mission's `duplicate_outcome` (an
+  `unknown_widget` (a `focus`, `opens` or `next` naming no widget of the screen, at its field), and `missing_ref`, `missing_frame` and `missing_glyph` for its fonts, sounds and frames (`ui/ui-schema.ts`); the manifest's `menus` (Engine 0.16 T9, `ui/menus.ts`): `unknown_menu_item` (an item or label key no menu has, or one listed twice), `missing_field` (a title without `name` or `logo`, a control without `actions` or `tap`, a `controls` item without the `controls` list), and `missing_ref`, `missing_frame`, `missing_glyph`; the mission's `duplicate_outcome` (an
   outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
   is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
   `open` and `close`) (`missions.ts`); the campaign's `bad_entry` (an entry without exactly one of

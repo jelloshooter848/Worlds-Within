@@ -857,7 +857,7 @@ other text, so a new game gets it without code of its own.
       mutant check passes unchanged with the new effects on.
 - [ ] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
       is made and recorded.
-- [ ] Every sample has a title screen, a pause menu and a settings screen.
+- [x] Every sample has a title screen, a pause menu and a settings screen.
 - [ ] `validate` checks PNG and glTF/GLB references in skins (file present, frames inside the image)
       and that each game with an `assets/` folder has a `CREDITS.md` naming every pack.
 - [ ] Owner screenshot review: a sheet of the effects (particles, flashes, UI kit, 3D lighting and

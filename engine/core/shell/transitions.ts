@@ -109,6 +109,7 @@ export class ShellTransitions {
   ): void {
     if (before.top === after.top) return;
     const moved = after.depth > before.depth ? after.top : before.top;
+    if (moved?.transitionSlot === null) return;
     this.start(moved?.transitionSlot ?? 'scene');
   }
 

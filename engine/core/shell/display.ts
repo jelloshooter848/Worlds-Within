@@ -1,7 +1,9 @@
 import type { TransitionView } from '../fx/transition';
 import type { Renderer } from '../gfx/renderer';
 import type { ScreenLayout } from '../input/touch-layout';
+import type { CameraFxSettings } from '../fx/camera-fx';
 import type { Presenter } from '../present';
+import type { UiPainter } from '../ui/paint';
 
 /**
  * How a page shows a game: the one part of the browser boot (`boot.ts`) that differs between
@@ -42,6 +44,17 @@ export interface BrowserDisplay {
    * (the picture is still held while one closes).
    */
   transition?(view: TransitionView | null): void;
+  /**
+   * A painter for UI screens drawn over the picture (Engine 0.16 T9: the shell's menus): the
+   * Canvas2D display's `CanvasUiPainter` on its renderer, the 3D display's overlay pass. A display
+   * without one shows no menus (the page plays at once).
+   */
+  uiPainter?(): UiPainter;
+  /**
+   * The player's presentation settings for every presenter of the display (Engine 0.16 T9: the
+   * settings screen's screen shake and reduced flashing), from the next frame.
+   */
+  effectSettings?(settings: CameraFxSettings): void;
 }
 
 /** A display, or a sentence saying why it cannot start (no WebGL 2), shown on the page instead. */

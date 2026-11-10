@@ -100,7 +100,7 @@ input of the loop steps since a slower scene's last tick as one frame (pressed o
 pressed and held, every step's taps); `Scene.tickRate` (`scene.ts`) makes `SceneStack` step that
 scene only on its ticks (`LOOP_HZ` 60, an accumulator, so any rate up to the loop's) with it (D2).
 `InputManager.press(action)` is a page button: held on player 1's next frame only.
-`save/settings.ts` holds the player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`,
+`save/settings.ts` holds (from Engine 0.16 T9 also `StoredSettings`: screen shake, reduced flashing, the colour mode and the touch pad, `settingsKey(game)` = `ww:<game>:settings`, `readSettings`, `loadSettings`, `storeSettings`, for the shell's settings screen; `save/settings.test.ts`) the player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`,
 `volumesKey(game)` = `ww:<game>:volumes`, `readVolumes` checking every field, `loadVolumes(game,
 start?)`, `storeVolumes`; never throws, never read by a headless run) for the shell's volume
 control (M1, `shell/volume-control.ts`). Tested in `input/merged-input.test.ts`,

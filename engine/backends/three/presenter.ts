@@ -1,6 +1,7 @@
 import { Color, SRGBColorSpace, WebGLRenderer } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
-import type { FontLookup } from '@engine/core/ui';
+import type { FontLookup, UiDraw } from '@engine/core/ui';
+import { HudLayer } from './hud';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   skinBackground,
@@ -60,6 +61,10 @@ export class ThreePresenter implements Presenter {
   /** The screen transition pass (Engine 0.16 T5), drawn over the picture and the HUD. */
   readonly transitionLayer = new TransitionLayer();
   private transitionView: TransitionView | null = null;
+  /** The UI overlay pass (Engine 0.16 T9: the shell's menus), drawn over the last frame. */
+  readonly overlay: HudLayer;
+  /** Whether a frame was drawn since the last overlay (so an overlay never draws over itself). */
+  private drewFrame = false;
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, skin: Skin, opts: ThreePresenterOptions = {}) {
     const background = opts.background ?? skinBackground(skin);
@@ -85,6 +90,28 @@ export class ThreePresenter implements Presenter {
     this.renderer.setClearColor(new Color(background), 1);
     this.renderer.shadowMap.enabled = false;
     if (opts.size) this.setBuffer(opts.size);
+    this.overlay = new HudLayer(skin, opts.sheets, opts.fonts);
+  }
+
+  /**
+   * Draws UI kit items over the frame drawn last (Engine 0.16 T9: the shell's title, pause and
+   * settings screens; `threeDisplay`'s `uiPainter` collects them and hands them over on
+   * `present`). Nothing is drawn when no frame was drawn since the last call, so a translucent
+   * panel never darkens itself.
+   */
+  ui(draws: readonly UiDraw[]): void {
+    const drew = this.drewFrame;
+    this.drewFrame = false;
+    if (draws.length === 0 || !drew || this.drawn === null) return;
+    this.overlay.syncDraws(draws, this.drawn);
+    const r = this.renderer;
+    r.autoClear = false;
+    try {
+      r.clearDepth();
+      r.render(this.overlay.scene, this.overlay.camera);
+    } finally {
+      r.autoClear = true;
+    }
   }
 
   resize(size: ScreenSize): void {
@@ -145,6 +172,7 @@ export class ThreePresenter implements Presenter {
     this.scene.dispose();
     for (const scene of this.others.splice(0)) scene.dispose();
     this.transitionLayer.dispose();
+    this.overlay.dispose();
     this.renderer.dispose();
   }
 
@@ -154,6 +182,7 @@ export class ThreePresenter implements Presenter {
    */
   private draw(scene: ThreeScene, frame: Frame): void {
     this.setBuffer(this.size ?? frame.size);
+    this.drewFrame = true;
     scene.sync(frame);
     const r = this.renderer;
     r.render(scene.scene, scene.camera);

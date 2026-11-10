@@ -253,8 +253,53 @@ keys?, onEvent?, translucent?, transitionSlot? })`, a `UiScreen` (`../ui`) as a 
   `render(r)` paints `ui.draws()` through `painter(r)` (the backend's, e.g. `CanvasUiPainter`;
   made once per renderer); translucent by default, so the scene below still draws and waits.
   The screen's state lives in the page, never in a kit or a hash. The 3D display's renderer draws
-  nothing, so a `UiScene` shows in 2D only for now (T9). Tested in `ui-scene.test.ts`; the fx lab
+  nothing; from T9 a `UiScene` whose `painter` is the display's `uiPainter()` shows in 3D too (the
+  shell's menus do; the fx lab's own lab menu still uses `CanvasUiPainter`, so it is 2D only). Tested in `ui-scene.test.ts`; the fx lab
   uses it (`tests/browser/fx-lab-ui.test.ts`).
+- **Title screen, pause menu and settings** (Engine 0.16 T9; `game-menus.ts`, pure, on
+  `PURE_CORE`; the screens are built by `../ui/menus.ts` from `game.json`'s `menus`):
+  - `bootBrowserGame({ menus: BootMenus })`: `{ spec (content.manifest.menus), fonts
+(contentFonts), sheets (the 2D sheet lookup, for frame sizes), canContinue?(), onContinue?(),
+colourModes?, onColourMode?(i), restart?: 'scene' | 'reload' }`. Nothing shows when `spec` is
+    undefined or the display has no `uiPainter` (then the page plays at once, as before).
+  - `GameMenus({ spec, stack, screen, fonts, frameSize, painter, pointer?, keys, settings,
+transition, music?, restart, ... })` (`booted.menus`) puts each screen on the stack as a
+    `UiScene` with `transitionSlot: null` (`Scene.transitionSlot` may be null: no transition on
+    push or pop). `showTitle()` pushes the title over the game's first scene, which does not step
+    (its picture at tick 0 is the background, dimmed), and plays `title.music`; Start (or
+    Continue, after `onContinue`) closes it once the `default` transition covers the picture and
+    gives the game's `music` back. `pause()` pushes the pause menu over whatever plays (the
+    stack steps only its top scene, so the game's ticks are held); Resume, Back (the attack
+    key) or the pause key resume. Settings and Controls take the place of the menu they came from
+    and give it back (focused on the item) on Back, Back (attack) or the pause key. Back to title
+    plays the `default` transition and calls `restart`: the boot clears the stack and builds the
+    first scene again with the `scene` factory (`restart: 'scene'`), or reloads the page
+    (`'reload'`, for a page whose DOM and hooks hold its first scene: the RTS, tower-defense and
+    mini siege samples). `state` (`title` | `pause` | `play`), `screen`, `ui`, `events`.
+  - **Pause keys:** Escape and P (`PAUSE_CODES`, a `keydown` on `window`, not from a text field),
+    gamepad Start (button 9, an edge read each step) and the `#ww-pause` button (`PAUSE_BUTTON_ID`,
+    "II", fixed at the top right under the volume control, shown only in play). The boot reads a
+    pause request after the step's input frame and before the scenes update, calls
+    `menus.pauseKey()` and skips the scenes that step, so the press never reaches a menu or the
+    game (Escape is also `start`). `body[data-menu]` is `title`, `pause` or `play` (a page's CSS
+    hides its bar on the title: the RTS, tower-defense and mini siege pages).
+  - **Settings:** master, music and sfx volume and mute go through the volume control
+    (`booted.volume.set`, `ww:<game>:volumes`); screen shake (tenths), reduced flashing, the colour
+    mode and the touch pad (`TOUCH_MODES`) are `save/settings.ts`'s `StoredSettings` under
+    `ww:<game>:settings` (`loadSettings`, `storeSettings`, `readSettings`). At boot and on every
+    change they reach `BrowserDisplay.effectSettings` (every presenter's shake and flashing),
+    `TouchSource.setMode` (then a re-layout) and `onColourMode`. Nothing reaches a game or a hash.
+  - **Touch and mouse:** a page that did not ask for `pointer` gets one for the menus
+    (`menuPointer`): its taps reach the frame only while a menu shows, so the game never sees
+    them; hover moves the focus.
+  - **Skipping the title:** `titleFromQuery(search)`: shown unless `?debug=step` or `?record`
+    (so run files, replays, the screenshot tool's pages and every older browser test start
+    straight in play, and no hash moves) or `?title=skip`; `?title=show` shows it in manual mode
+    (the menus' own browser test). `__ww.menus()` (`MenusView`: `state`, `screen`, `focused`,
+    `items` with values and picture boxes) for tests.
+  - Drawing: `BrowserDisplay.uiPainter()`: Canvas2D a `CanvasUiPainter` on the scenes' renderer;
+    3D a painter that collects the draws, painted on `present()` as an overlay pass over the
+    frame (`ThreePresenter.ui`). Fonts must be handed to the display (`fonts`) for glyphs to draw.
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
@@ -268,7 +313,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts` and `ui-scene.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`
@@ -333,6 +378,14 @@ by the game's rule with its result and code, Continue held again, the campaign's
 starting over; a refused code's reason, a code and the stored save resumed (held). The DOM is
 browser-only: `tests/browser/mini-siege-page.test.ts` plays every entry held at tick 0 until Begin
 (nothing stepping or offered before) and the dawn resumed from a code, held too.
+`game-menus.test.ts` (Engine 0.16 T9): the title holding the game at its start, Start under the
+`default` transition with the music back, Continue only with a save, the pause key pausing and
+resuming with the ticks held, settings and controls in the pause menu's place with a change
+handed to the page, Back to title restarting, the pause key ignored on the title, and
+`titleFromQuery`. In the browser `tests/browser/menus.test.ts` opens every sample's and the fx
+lab's title (`?debug=step&title=show`), checks the hash does not move under the title and the
+pause menu, starts, pauses, changes screen shake and mute by keyboard and reads them back after
+a reload, and does the same by touch (taps on the items, `#ww-pause`), shooting each screen.
 `campaign-session.test.ts` (Engine 0.13 T8): an entry's save stored and its code packed and read
 back (in lower case), a bad code (`code_empty`, `code_typo`) and a finished campaign's
 (`campaign_done`) refused, a null save storing nothing, and blocked storage throwing nothing. The full boot

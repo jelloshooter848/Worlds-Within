@@ -7,6 +7,7 @@ import {
   type MissionBar,
 } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
+import { contentFonts } from '@engine/core/ui';
 import { loadMiniSiege, PLAYER } from './content';
 import { siegeLook, siegePicture } from './picture';
 import type { NamedSummary } from './headless';
@@ -54,6 +55,7 @@ export interface SiegeHook {
 
 const content = mustLoad(loadMiniSiege(gameFiles), 'the mini siege');
 const look = siegeLook(content);
+const fonts = contentFonts(content);
 
 let play: SiegePlay | null = null;
 let bar: MissionBar | null = null;
@@ -61,7 +63,17 @@ const booted = await bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
   audio: { sfx: contentSfx(content), songs: contentSongs(content), music: 'siege' },
-  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }) },
+  // The title, pause and settings screens (Engine 0.16 T9): Continue carries on from the save this
+  // browser kept (the bar's "Carry on"); Back to title reloads the page, whose bar holds the scene.
+  menus: {
+    spec: content.manifest.menus,
+    fonts,
+    sheets: look.sheet,
+    restart: 'reload',
+    canContinue: () => (play?.launch.storedSave() ?? null) !== null,
+    onContinue: () => play?.launch.press({ kind: 'stored' }),
+  },
+  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }) },
   pointer: true,
   scene(stack, display, page) {
     const scene = new SiegePlay({ content, seed: content.manifest.start.seed, pointer: page.pointer });

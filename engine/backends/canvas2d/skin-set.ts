@@ -9,6 +9,7 @@ import {
   type SoundCue,
 } from '@engine/core/present';
 import type { FontLookup } from '@engine/core/ui';
+import type { CameraFxSettings } from '@engine/core/fx';
 import { SkinnedCanvasPresenter } from './presenter';
 
 /** A game's Canvas2D skins (a `SkinSet` from `@engine/core/present`), its sheets and picture size. */
@@ -44,7 +45,10 @@ export interface CanvasSkinSetOptions {
  * frames its map (`camera.clamp`) is the skin's, so the 2D page, the view and the tests need no
  * per-round options; the Three.js backend's `threeDisplay` takes the same `rounds`.
  */
-export function skinSetCanvasPresenter(r: Renderer, opts: CanvasSkinSetOptions): Presenter {
+export function skinSetCanvasPresenter(
+  r: Renderer,
+  opts: CanvasSkinSetOptions,
+): Presenter & { effectSettings(settings: CameraFxSettings): void } {
   const sound = {
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
@@ -60,5 +64,15 @@ export function skinSetCanvasPresenter(r: Renderer, opts: CanvasSkinSetOptions):
   const rounds: Record<string, Presenter> = {};
   for (const [id, skin] of Object.entries(opts.rounds ?? {}))
     rounds[id] = new SkinnedCanvasPresenter(r, skin, opts.sheet, { size: opts.screen, ...sound });
-  return Object.keys(rounds).length > 0 ? presenterBySkinSet(main, rounds) : main;
+  const shown = Object.keys(rounds).length > 0 ? presenterBySkinSet(main, rounds) : main;
+  const all = [main, ...Object.values(rounds)];
+  return {
+    present: (frame) => shown.present(frame),
+    ...(shown.resize !== undefined && { resize: (size: ScreenSize) => shown.resize!(size) }),
+    // The player's shake and flashing settings (Engine 0.16 T9) reach every skin's presenter.
+    effectSettings(settings) {
+      for (const p of all)
+        (p as { effectSettings?: (s: CameraFxSettings) => void }).effectSettings?.(settings);
+    },
+  };
 }

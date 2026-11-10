@@ -21,6 +21,16 @@ commands (keyboard and gamepad through the engine's actions) and the pointer's h
 (mouse and touch, hit-tested in picture pixels); the shell's `UiScene` puts it on the scene
 stack. Its state is presentation only.
 
+Engine 0.16 T9: an `image` widget (a sprite frame at a whole-number `scale`), a slider's
+`labels` (a choice shown as `< Auto >` that a tap or confirm steps on), and `menus.ts`: the
+`menus` block of `game.json` (`menusSchema`: `font`, `titleFont?`, `style?` (UI style fields plus
+`heading`, `outline`, `dim`, `dimColor`), `labels?`, `title { name | logo, subtitle?, art?, dim?,
+music?, footer?, items }`, `pause { items }`, `settings? { items }`, `controls?`) and the four
+screens built from it as `ui` files (`titleScreen`, `pauseScreen`, `settingsScreen`,
+`controlsScreen`), which the shell's `GameMenus` runs. Items: title `start`, `continue`,
+`controls`, `settings`; pause `resume`, `controls`, `settings`, `title`; settings `master`,
+`music`, `sfx`, `mute`, `shake`, `flashing`, `colour`, `touch`.
+
 ## Public API entry points
 
 Import from `@engine/core/ui` (`index.ts`).
@@ -33,6 +43,10 @@ Import from `@engine/core/ui` (`index.ts`).
 - Widgets: `barRatio`, `barFill`, `CounterRoll`, `minimapDraws`, `minimapScale`, `SkinHud`
   (`usesUi`, `layout(input)`), `hudValueText`.
 
+- Menus (T9): `menusSchema`, `TITLE_ITEMS`, `PAUSE_ITEMS`, `SETTINGS_ITEMS`, `MENU_LABELS`,
+  `titleScreen`, `pauseScreen`, `settingsScreen`, `controlsScreen`, `controlRows`, `menuHint`,
+  `checkMenus` (run by `loadContent` on `game.json`: `unknown_menu_item`, `missing_ref`,
+  `missing_frame`, `missing_glyph`, `missing_field`), `sliderText`.
 - UI screens (T7): `UI_KIND`, `uiScreenSchema`, `checkUiWidgets`, `checkUiRefs`, `UiScreen`
   (`update(input)`, `draws()`, `open`, `close`, `focused`, `value`, `itemBox`), `Menu`, `Button`,
   `DialogBox`, `UiNav` (commands from actions with repeat), `UiInput`, `UiEvent`, `uiLook`,
@@ -55,7 +69,8 @@ A screen (from `games/fx-lab/content/ui/lab.json`, shortened):
 
 `pnpm cli validate` reports a widget reference that names no widget (`unknown_widget` at
 `focus`, `widgets.<i>.items.<j>.opens` or `widgets.<i>.choices.<j>.next`), and missing fonts,
-glyphs, sounds and frames at their fields. The 3D backend does not draw UI screens yet (T9).
+glyphs, sounds and frames at their fields. From T9 both backends draw UI screens: the 3D
+display paints them as an overlay pass after the frame (`ThreePresenter.ui(draws)`).
 
 A skin's HUD with widgets (from `games/fx-lab/content/skins/canvas2d.json`):
 
@@ -79,7 +94,9 @@ On `PURE_CORE`. Kits and `engine/sim` may not import it (`FORBIDDEN_CORE`): kits
 
 ## How to test
 
-`pnpm test engine/core/ui engine/core/shell/ui-scene.test.ts engine/backends/canvas2d/ui-painter.test.ts engine/backends/three/hud.test.ts engine/tools/missing-glyph.test.ts games/fx-lab`;
+`pnpm test engine/core/ui engine/core/shell/ui-scene.test.ts engine/core/shell/game-menus.test.ts engine/backends/canvas2d/ui-painter.test.ts engine/backends/three/hud.test.ts engine/tools/missing-glyph.test.ts games/fx-lab`;
+`pnpm test tests/browser/menus.test.ts` opens every game's title, pause and settings screens by
+keyboard and touch (`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`);
 `pnpm test tests/browser/fx-lab-ui.test.ts` drives the fx lab's menu and dialog by keyboard, mouse and
 touch (`WW_SHOTS_DIR=<folder>` keeps its screenshots);
 look at the fx lab's HUD with `pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 300 --json`

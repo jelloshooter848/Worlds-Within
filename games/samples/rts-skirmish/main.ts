@@ -1,5 +1,6 @@
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { bootBrowserGame } from '@engine/core/shell';
+import { contentFonts } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { loadSkirmish, PLAYER, SKIRMISH_MUSIC } from './content';
 import { skirmishLook, skirmishPicture } from './picture';
@@ -56,6 +57,7 @@ export interface SkirmishHook {
 
 const content = mustLoad(loadSkirmish(gameFiles), 'the RTS skirmish');
 const look = skirmishLook(content);
+const fonts = contentFonts(content);
 let shift = false;
 window.addEventListener('keydown', (e) => (shift = e.shiftKey));
 window.addEventListener('keyup', (e) => (shift = e.shiftKey));
@@ -73,7 +75,10 @@ const booted = await bootBrowserGame({
   // The song and the skin's event sounds (Engine 0.15 T14); the shell's volume control keeps the
   // player's volumes (gap M1).
   audio: { songs: contentSongs(content), sfx: contentSfx(content), music: SKIRMISH_MUSIC },
-  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }) },
+  // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
+  // bar and hook hold on to the first scene.
+  menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
+  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }) },
   pointer: true,
   touchPad: false,
   scene(_stack, display, page) {

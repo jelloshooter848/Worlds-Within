@@ -41,6 +41,19 @@ function sliderRange(item: Extract<UiMenuItemSpec, { type: 'slider' }>) {
   return { min, max, step: item.step ?? 1 };
 }
 
+/** What a slider shows for `v`: its word from `labels` (by step from `min`), else the number. */
+export function sliderText(item: Extract<UiMenuItemSpec, { type: 'slider' }>, v: number): string {
+  if (item.labels === undefined) return String(v);
+  const { min, step } = sliderRange(item);
+  const i = Math.round((v - min) / step);
+  return item.labels[Math.min(item.labels.length - 1, Math.max(0, i))] ?? String(v);
+}
+
+/** A slider word as a choice shows it: `< Auto >`. */
+function choiceText(word: string): string {
+  return `< ${word} >`;
+}
+
 /** `v` clamped into the slider's range and snapped to its steps from `min`. */
 export function sliderValue(item: Extract<UiMenuItemSpec, { type: 'slider' }>, v: number): number {
   const { min, max, step } = sliderRange(item);
@@ -125,6 +138,8 @@ export class Menu {
   private valueWidth(item: UiMenuItemSpec): number {
     const font = this.look.font;
     if (item.type === 'slider') {
+      if (item.labels !== undefined)
+        return Math.max(...item.labels.map((t) => measureLine(font, choiceText(t))));
       const { min, max } = sliderRange(item);
       return SLIDER_TRACK + 3 + Math.max(measureLine(font, String(min)), measureLine(font, String(max)));
     }
@@ -235,6 +250,10 @@ export class Menu {
     if (i < 0) return;
     if (i !== this.focusIndex) this.moveTo(i, frame, out);
     const item = this.opts.items[i]!;
+    if (item.type === 'slider' && item.labels !== undefined) {
+      this.cycle(item, out);
+      return;
+    }
     if (item.type === 'slider') {
       const track = this.trackBox(item, this.itemBoxes()[i]!);
       if (p.x < track.x - 1 || p.x > track.x + track.w) return;
@@ -259,6 +278,13 @@ export class Menu {
       if (this.opts.items[i]!.disabled !== true) break;
     }
     if (i !== this.focusIndex && this.opts.items[i]!.disabled !== true) this.moveTo(i, frame, out);
+  }
+
+  /** A slider with words steps on, back to `min` after `max` (a tap or confirm on it). */
+  private cycle(item: Extract<UiMenuItemSpec, { type: 'slider' }>, out: UiEvent[]): void {
+    const { min, max, step } = sliderRange(item);
+    const v = this.values.get(item.id) as number;
+    this.change(item.id, v + step > max ? min : sliderValue(item, v + step), out);
   }
 
   private change(id: string, value: Value, out: UiEvent[]): void {
@@ -288,6 +314,7 @@ export class Menu {
     if (item === undefined || item.disabled === true) return;
     this.tweens[this.focusIndex]!.play(this.look.pressTween, frame);
     if (item.type === 'toggle') this.adjust(1, out);
+    else if (item.type === 'slider' && item.labels !== undefined) this.cycle(item, out);
     else if (item.type !== 'slider') out.push({ type: 'activate', widget: this.id, item: item.id });
   }
 
@@ -329,11 +356,16 @@ export class Menu {
 
   private sliderDraws(item: Extract<UiMenuItemSpec, { type: 'slider' }>, box: Box, color: string): UiDraw[] {
     const look = this.look;
+    const v = this.values.get(item.id) as number;
+    if (item.labels !== undefined) {
+      // A slider with words is a choice: `< Auto >`, no track.
+      const text = choiceText(sliderText(item, v));
+      return lookText(look, text, box.x + box.w - 1 - measureLine(look.font, text), box.y + 1, color);
+    }
     const track = this.trackBox(item, box);
     const { min, max } = sliderRange(item);
-    const v = this.values.get(item.id) as number;
     const filled = max > min ? Math.round(((v - min) / (max - min)) * track.w) : track.w;
-    const text = String(v);
+    const text = sliderText(item, v);
     const tx = box.x + box.w - 1 - measureLine(look.font, text);
     return [
       { kind: 'fill', ...track, color: look.track },

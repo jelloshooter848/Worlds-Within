@@ -34,12 +34,13 @@ export interface UiSceneOptions {
   onEvent?(event: UiEvent, scene: UiScene): void;
   /** Draws over the scene below (default true). */
   translucent?: boolean;
-  transitionSlot?: TransitionSlot;
+  /** The transition played when it is pushed or popped (`scene` when left out; null for none). */
+  transitionSlot?: TransitionSlot | null;
 }
 
 export class UiScene implements Scene {
   readonly translucent: boolean;
-  readonly transitionSlot?: TransitionSlot;
+  readonly transitionSlot?: TransitionSlot | null;
   private readonly nav: UiNav;
   private painted: { r: Renderer; painter: UiPainter } | null = null;
   /** The events of the last step (for tests and page hooks). */

@@ -120,6 +120,10 @@
           sans-serif;
         text-align: center;
       }
+      /* The title screen (Engine 0.16 T9) shows the picture alone: the bar waits for Start. */
+      body[data-menu='title'] #bar {
+        visibility: hidden;
+      }
     </style>
   </head>
   <body>

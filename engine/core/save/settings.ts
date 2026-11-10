@@ -80,3 +80,56 @@ export function loadVolumes(game: string | undefined, start: Partial<StoredVolum
 export function storeVolumes(game: string, volumes: StoredVolumes): boolean {
   return saveJson(volumesKey(game), readVolumes(volumes));
 }
+
+/**
+ * The player's stored presentation and control settings (Engine 0.16 T9; the shell's settings
+ * screen): the screen shake scale (0 to 1), reduced flashing, the colour mode (an index into the
+ * game's modes) and the touch pad (`TouchMode`), kept under one key per game (`settingsKey`)
+ * beside the volumes. Never read by a headless run: none of them is part of a game's state.
+ */
+export interface StoredSettings {
+  shake: number;
+  reduceFlashing: boolean;
+  colour: number;
+  touch: TouchMode;
+}
+
+/** What a player who never changed anything sees. */
+export const DEFAULT_SETTINGS: Readonly<StoredSettings> = Object.freeze({
+  shake: 1,
+  reduceFlashing: false,
+  colour: 0,
+  touch: 'auto',
+});
+
+/** The storage key of a game's presentation settings: `ww:<game>:settings`. */
+export function settingsKey(game: string): string {
+  return `ww:${game}:settings`;
+}
+
+/** A stored value read as settings: every field checked, anything else from `DEFAULT_SETTINGS`. Pure. */
+export function readSettings(value: unknown): StoredSettings {
+  const v = typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+  const colour = v['colour'];
+  const touch = v['touch'];
+  return {
+    shake: unit(v['shake'], DEFAULT_SETTINGS.shake),
+    reduceFlashing:
+      typeof v['reduceFlashing'] === 'boolean' ? v['reduceFlashing'] : DEFAULT_SETTINGS.reduceFlashing,
+    colour:
+      typeof colour === 'number' && Number.isInteger(colour) && colour >= 0
+        ? colour
+        : DEFAULT_SETTINGS.colour,
+    touch: TOUCH_MODES.includes(touch as TouchMode) ? (touch as TouchMode) : DEFAULT_SETTINGS.touch,
+  };
+}
+
+/** A game's stored settings, else the defaults. Never throws. */
+export function loadSettings(game: string | undefined): StoredSettings {
+  return readSettings(game === undefined ? null : loadJson<unknown>(settingsKey(game)));
+}
+
+/** Stores a game's settings; false when storage refused. Never throws. */
+export function storeSettings(game: string, settings: StoredSettings): boolean {
+  return saveJson(settingsKey(game), readSettings(settings));
+}

@@ -145,6 +145,16 @@ with a `ThreeScene` of its own (`.scene`; `opts` as above but `size`, which is t
 for a second frame source in one stream, such as a stacked mini game's frames in another kit's
 skin. Each scene clears to its own skin's `background` (black by default). Each draws its own scene with the one WebGL context; `dispose()` frees them all.
 
+## UI screens over the picture (Engine 0.16 T9)
+
+`HudLayer.syncDraws(draws, size)` places any UI kit draw items as the HUD's quads (the same
+painter as a UI HUD). `ThreePresenter.overlay` is one such layer and `ThreePresenter.ui(draws)`
+draws it over the frame drawn last (depth cleared, no clear), but only when a frame was drawn
+since the last call, so a translucent panel never darkens itself. `threeDisplay`'s `uiPainter()`
+collects the shell's menu draws while the scenes draw and `present()` hands them to `ui`; its
+`effectSettings` is the presenter's. The overlay is drawn after the transition pass, so a menu
+shows over a transition (the shell's menus close or open under a fully covered picture).
+
 ## Screen transitions (`transition.ts`, Engine 0.16 T5)
 
 `TransitionLayer` is the screen transition pass: an `OrthographicCamera` over the picture in

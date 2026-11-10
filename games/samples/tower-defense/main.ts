@@ -6,6 +6,7 @@ import { keyHintMap } from '@engine/core/input/key-hints';
 import { controlsHint } from '@engine/core/minigame';
 import type { JsonObject } from '@engine/core/headless';
 import { bootBrowserGame } from '@engine/core/shell';
+import { contentFonts } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { TD_CONTROLS } from '@kits/towerdefense';
 import { loadTowerDefense } from './content';
@@ -38,6 +39,7 @@ export interface TdHook {
 
 const content = mustLoad(loadTowerDefense(gameFiles), 'the tower-defense sample');
 const look = tdLook(content);
+const fonts = contentFonts(content);
 const status = document.getElementById('status') as HTMLElement;
 /** The shell's input once booted: the player's key names for the hint (the defaults until then). */
 let input: InputManager | null = null;
@@ -47,7 +49,10 @@ const booted = await bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
   audio: { sfx: contentSfx(content), songs: contentSongs(content), music: 'road' },
-  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }) },
+  // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
+  // bar and hook hold on to the first scene.
+  menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
+  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }) },
   pointer: true,
   scene(_stack, display) {
     const scene = new TdPlay({

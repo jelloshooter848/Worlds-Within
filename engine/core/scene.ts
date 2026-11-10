@@ -52,9 +52,10 @@ export interface Scene {
   /**
    * The screen transition the browser shell plays when this scene is pushed or popped (Engine
    * 0.16 T5; `shell/transitions.ts`): a slot of the game's `transitions` (default `scene`).
-   * `HostScene` marks a mission round's scene `mission`.
+   * `HostScene` marks a mission round's scene `mission`. Null (Engine 0.16 T9) plays none: the
+   * shell's own menus open and close at once.
    */
-  readonly transitionSlot?: TransitionSlot;
+  readonly transitionSlot?: TransitionSlot | null;
 }
 
 /** The loop's steps a second (`FixedLoop` in the shell runs at 60). */

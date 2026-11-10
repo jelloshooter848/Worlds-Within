@@ -181,6 +181,24 @@ this folder at 320x240 and checks `validate`, `run` (the same hashes), `screensh
 - `pnpm build` builds it into `dist/games/samples/dungeon/`.
 - `pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 950` shows the crypt.
 
+## Title screen, pause menu and settings (Engine 0.16 T9)
+
+`game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
+`engine/core/ui/menus.ts`): the title "The Old Crypt" in `crypt-title` over the game's own
+picture at its start (dimmed 0.85), the subtitle "Torches, keys and a relic in the dark", art (`attack-side` x3, `knight-side-0` x3),
+the song `crypt`, a footer and the items start, controls, settings; the pause menu
+(resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
+rows (Walk; Sword; Use item; Next item), shown with the player's keys. Colours: focus bar `#6c0000`,
+headings `#fca044`. Fonts: `content/fonts/crypt-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `crypt-title.txt` (its title font: the small glyphs doubled with Scale2x, cell 10x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
+
+`main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
+and the fonts to the display. Back to title builds the game again from its first scene. The page opens on the title (the game waits
+at tick 0 under it); Escape, P, gamepad Start or the `II` button pause (the ticks are held).
+`?debug=step` and `?record` skip the title, so run files, replays and the older browser tests
+are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus.test.ts` (title,
+start, pause, settings and controls by keyboard and touch, settings kept across a reload;
+`WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
+
 ## Imports
 
 - Allowed: relative paths inside `games/samples/dungeon`, `@engine/*` (core and backends) and `@kits/*`.

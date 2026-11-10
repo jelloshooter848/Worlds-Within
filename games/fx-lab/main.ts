@@ -22,12 +22,16 @@ import gameFiles from 'virtual:game-files';
  * shell's `hitPause`, which holds the game's ticks while the picture keeps drawing. Arrows (or the
  * touch pad) move, Z jumps, X runs.
  *
- * The UI kit (Engine 0.16 T7): in 2D, Enter (Esc, pad Start) pauses the level under the lab's
+ * The UI kit (Engine 0.16 T7): in 2D, Enter pauses the level under the lab's
  * `content/ui/lab.json` menu, run by the shell's `UiScene` with keyboard, gamepad, mouse and
  * touch (the boot's `pointer` gives taps and hover in picture pixels); "Talk to Pip" opens the
  * dialog. `?ui=menu` or `?ui=dialog` opens one at load, and `window.wwFxLab.ui` opens them and
- * reads the screen and its events (for `tests/browser/fx-lab-ui.test.ts`). The 3D backend does not
- * draw UI screens yet (Engine 0.16 T9), so there the start key does nothing.
+ * reads the screen and its events (for `tests/browser/fx-lab-ui.test.ts`). The lab's menu is drawn
+ * with `CanvasUiPainter`, so in 3D the start key does nothing.
+ *
+ * The menus (Engine 0.16 T9): `game.json`'s `menus` gives the lab a title screen, the shell's
+ * pause menu (Escape, P, pad Start, the on-screen button), settings and controls, in both
+ * backends; `?debug=step` skips the title.
  *
  * The mixer (Engine 0.16 T8): the 2D skin's `music` section plays `lab`, a calm and a danger layer
  * (`content/songs/`) mixed by the kit's `nearestActor` status (danger near a beetle), on both
@@ -115,6 +119,7 @@ const booted = bootBrowserGame({
   pointer: true,
   game: content.manifest.id,
   transitions: content.manifest.transitions,
+  menus: { spec: content.manifest.menus, fonts: look.fonts, sheets: look.sheet },
   audio: {
     sfx: contentSfx(content),
     songs: contentSongs(content),

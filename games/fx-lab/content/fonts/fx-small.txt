@@ -1,6 +1,7 @@
 ; The fx lab's small font (Engine 0.16 T6): original, 5 px wide (I, f, i, j, l, r, t and some
 ; punctuation narrower), caps 7 px tall on the baseline, lower case with 2 px descenders.
 ; '#' ink, '.' clear; the colour, shadow and outline are the skin's.
+; From Engine 0.16 T9 also the four arrows, for key names on the menus' controls screen.
 cell 5 9
 baseline 7
 spacing 1
@@ -969,5 +970,49 @@ glyph @
 #.###
 #....
 .####
+.....
+.....
+
+glyph ←
+.....
+..#..
+.#...
+#####
+.#...
+..#..
+.....
+.....
+.....
+
+glyph →
+.....
+..#..
+...#.
+#####
+...#.
+..#..
+.....
+.....
+.....
+
+glyph ↑
+..#..
+.###.
+#.#.#
+..#..
+..#..
+..#..
+..#..
+.....
+.....
+
+glyph ↓
+..#..
+..#..
+..#..
+..#..
+#.#.#
+.###.
+..#..
 .....
 .....

@@ -38,7 +38,7 @@ export const UI_ANCHORS = [
 export type UiAnchor = (typeof UI_ANCHORS)[number];
 
 /** The widget types a screen may hold. */
-export const UI_WIDGET_TYPES = ['panel', 'text', 'button', 'menu', 'dialog'] as const;
+export const UI_WIDGET_TYPES = ['panel', 'text', 'image', 'button', 'menu', 'dialog'] as const;
 
 /** A sprite frame: a sheet (a sprite file), its frame, and an optional palette. */
 const spriteRef = z.strictObject({
@@ -168,6 +168,13 @@ const menuItem = z.discriminatedUnion('type', [
     max: z.number().exactOptional().describe('highest value (10)'),
     step: z.number().positive().exactOptional().describe('change per press (1)'),
     value: z.number().exactOptional().describe('the start value (min)'),
+    labels: z
+      .array(z.string())
+      .min(1)
+      .exactOptional()
+      .describe(
+        'a word per step from `min`, shown as a choice (`< Auto >`, no track) instead of the number; a tap or confirm steps on, wrapping (`["Auto", "On", "Off"]`; Engine 0.16 T9)',
+      ),
   }),
   z.strictObject({
     type: z.literal('toggle'),
@@ -198,6 +205,20 @@ const widget = z.discriminatedUnion('type', [
     shadow: hex.exactOptional(),
     outline: hex.exactOptional(),
     align: z.enum(['left', 'center', 'right']).exactOptional().describe('inside `w` (left)'),
+  }),
+  z.strictObject({
+    type: z.literal('image'),
+    ...placement,
+    sheet: z.string().min(1).describe('a sprite file of the game'),
+    frame: z.string().min(1).describe('a frame of that sheet'),
+    palette: z.string().min(1).exactOptional().describe('a palette file to recolour it with'),
+    scale: z
+      .number()
+      .int()
+      .min(1)
+      .max(8)
+      .exactOptional()
+      .describe('whole-number scale (1); the box is the frame times it (Engine 0.16 T9)'),
   }),
   z.strictObject({
     type: z.literal('button'),
@@ -251,6 +272,7 @@ export type UiWidgetSpec = z.output<typeof widget>;
 export type UiMenuSpec = Extract<UiWidgetSpec, { type: 'menu' }>;
 export type UiDialogSpec = Extract<UiWidgetSpec, { type: 'dialog' }>;
 export type UiButtonSpec = Extract<UiWidgetSpec, { type: 'button' }>;
+export type UiImageSpec = Extract<UiWidgetSpec, { type: 'image' }>;
 export type UiMenuItemSpec = z.output<typeof menuItem>;
 export type UiChoiceSpec = z.output<typeof choice>;
 export type UiSpriteRef = z.output<typeof spriteRef>;
@@ -306,8 +328,13 @@ function screenTexts(screen: UiScreenFile): { path: FieldPath; text: string; fon
     if (w.type === 'text') add([...at, 'text'], w.text, w.font ?? font);
     if (w.type === 'button') add([...at, 'label'], w.label);
     if (w.type === 'menu') {
-      w.items.forEach((item, j) => add([...at, 'items', j, 'label'], item.label));
-      if (w.items.some((it) => it.type === 'slider')) add([...at, 'items'], '0123456789');
+      w.items.forEach((item, j) => {
+        add([...at, 'items', j, 'label'], item.label);
+        if (item.type === 'slider' && item.labels !== undefined)
+          item.labels.forEach((l, k) => add([...at, 'items', j, 'labels', k], `< ${l} >`));
+      });
+      if (w.items.some((it) => it.type === 'slider' && it.labels === undefined))
+        add([...at, 'items'], '0123456789');
       if (w.items.some((it) => it.type === 'toggle')) add([...at, 'items'], 'OnOf');
     }
     if (w.type === 'dialog') {
@@ -375,6 +402,7 @@ export function checkUiRefs(name: string, screen: UiScreenFile, others: ContentL
   if (screen.style.panel !== undefined) frameAt(['style', 'panel'], screen.style.panel);
   screen.widgets.forEach((w, i) => {
     if (w.type === 'dialog' && w.portrait !== undefined) frameAt(['widgets', i, 'portrait'], w.portrait);
+    if (w.type === 'image') frameAt(['widgets', i], w);
   });
   return issues;
 }

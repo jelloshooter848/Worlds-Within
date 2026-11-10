@@ -144,6 +144,12 @@ game, as `threeDisplay` takes them) on that same renderer (the display's `presen
 resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `games/platformer-lab/main.ts`).
 
+Menus (Engine 0.16 T9): the display's `uiPainter()` is a `CanvasUiPainter` on its renderer (with
+its `sheet` and `fonts`), what the shell's title, pause and settings screens draw with, and
+`effectSettings(settings)` hands the player's shake and flashing settings to every presenter of
+the skin set (`skinSetCanvasPresenter` now returns a presenter with `effectSettings`, which
+reaches the main and every round presenter).
+
 Screen transitions (Engine 0.16 T5): the display keeps the game's own `SkinnedCanvasPresenter`
 (passed to `skinSetCanvasPresenter` as `main`) and takes the shell's `transition(view)`; on
 `present()` it draws `transitionShape(view, screen, main.focus())` (`@engine/core/fx`) over the

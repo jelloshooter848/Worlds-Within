@@ -67,8 +67,14 @@ describe('the dungeon sample', () => {
       'sfx:pickup',
       'sfx:spit',
       'sfx:sword',
+      'sfx:ui-back',
+      'sfx:ui-move',
+      'sfx:ui-select',
       'sfx:unlock',
       'skin:canvas2d',
+      // The menus' fonts (Engine 0.16 T9).
+      'font:crypt-small',
+      'font:crypt-title',
     ]);
   });
 

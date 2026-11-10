@@ -204,6 +204,8 @@ describe('the tower-defense assets (Engine 0.15 T14 audit)', () => {
     expect(new Set(lengths).size).toBe(1);
     const sfx = new Set(contentSfx(content).map((s) => s.id));
     const sounds = Object.values(skin.events ?? {}).flatMap((e) => (e.sound ? [e.sound] : []));
-    expect(new Set(sounds)).toEqual(sfx);
+    // The skin's sounds and (Engine 0.16 T9) the menus' (`game.json`'s `menus.style.sounds`).
+    const menus = Object.values(content.manifest.menus?.style?.sounds ?? {});
+    expect(new Set([...sounds, ...menus])).toEqual(sfx);
   });
 });

@@ -14,30 +14,53 @@
     "sfx": ["content/sfx/*.json"],
     "song": ["content/songs/*.json"]
   },
-  "start": {
-    "seed": 1
-  },
-  "screen": {
-    "width": 256,
-    "height": 240
-  },
+  "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
   "transitions": {
-    "level": {
-      "kind": "iris",
-      "ticks": 28,
-      "hold": 8,
-      "ease": "cubicIn",
-      "at": "follow"
+    "level": { "kind": "iris", "ticks": 28, "hold": 8, "ease": "cubicIn", "at": "follow" },
+    "scene": { "kind": "fade", "ticks": 12 },
+    "default": { "kind": "fade", "ticks": 16, "hold": 4 }
+  },
+  "menus": {
+    "font": "fx-small",
+    "titleFont": "fx-title",
+    "style": {
+      "text": "#fcfcfc",
+      "shadow": "#000000",
+      "focusText": "#f8b800",
+      "disabledText": "#a4a4a4",
+      "back": "#0c0c1c",
+      "focusBack": "#00406c",
+      "border": "#fcfcfc",
+      "track": "#3c3c3c",
+      "fill": "#00a800",
+      "padding": 6,
+      "gap": 3,
+      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
+      "heading": "#f8b800",
+      "outline": "#000000",
+      "dim": 0.5,
+      "panel": { "sheet": "fx", "frame": "hud-panel", "slice": 2 }
     },
-    "scene": {
-      "kind": "fade",
-      "ticks": 12
+    "title": {
+      "name": "The fx lab",
+      "subtitle": "Every effect on three short levels",
+      "art": [
+        { "sheet": "fx", "frame": "pip-run-1", "scale": 3, "anchor": "left", "x": 32, "y": -6 },
+        { "sheet": "fx", "frame": "beetle-0", "scale": 3, "anchor": "right", "x": 32, "y": 6 }
+      ],
+      "music": "lab",
+      "footer": "An original game made with the Worlds Within engine",
+      "items": ["start", "controls", "settings"],
+      "dim": 0.88
     },
-    "default": {
-      "kind": "fade",
-      "ticks": 16,
-      "hold": 4
-    }
+    "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "controls": [
+      { "actions": ["left", "right"], "label": "Walk" },
+      { "actions": ["attack"], "label": "Run (hold)" },
+      { "actions": ["jump"], "label": "Jump" },
+      { "actions": ["start"], "label": "Lab menu" }
+    ]
   },
   "headless": "headless.ts",
   "view": "view.ts"

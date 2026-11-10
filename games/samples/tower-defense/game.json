@@ -10,10 +10,52 @@
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"],
-    "song": ["content/songs/*.json"]
+    "song": ["content/songs/*.json"],
+    "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 12 },
   "screen": { "width": 256, "height": 240 },
+  "menus": {
+    "font": "road-small",
+    "titleFont": "road-title",
+    "style": {
+      "text": "#fcfcfc",
+      "shadow": "#000000",
+      "focusText": "#fcd800",
+      "disabledText": "#a4a4a4",
+      "back": "#0c0c1c",
+      "focusBack": "#00502c",
+      "border": "#fcfcfc",
+      "track": "#3c3c3c",
+      "fill": "#58d854",
+      "padding": 6,
+      "gap": 3,
+      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
+      "heading": "#fcd800",
+      "outline": "#000000",
+      "dim": 0.5
+    },
+    "title": {
+      "name": "The Winding Road",
+      "subtitle": "Build on the stones, keep the gate shut",
+      "art": [
+        { "sheet": "td", "frame": "arrow-idle", "scale": 3, "anchor": "left", "x": 36, "y": -4 },
+        { "sheet": "td", "frame": "cannon-idle", "scale": 3, "anchor": "right", "x": 36, "y": -4 }
+      ],
+      "music": "road",
+      "footer": "An original game made with the Worlds Within engine",
+      "items": ["start", "controls", "settings"],
+      "dim": 0.6
+    },
+    "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "controls": [
+      { "actions": ["left", "right", "up", "down"], "tap": "a tap", "label": "Move" },
+      { "actions": ["jump"], "tap": "tap again", "label": "Build" },
+      { "actions": ["attack"], "label": "Next tower" },
+      { "actions": ["special"], "tap": "right click", "label": "Sell" },
+      { "actions": ["start"], "label": "Send the wave" }
+    ]
+  },
   "headless": "headless.ts",
   "view": "view.ts"
 }

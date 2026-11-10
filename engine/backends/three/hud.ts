@@ -25,6 +25,7 @@ import {
   paintUi,
   SkinHud,
   type FontLookup,
+  type UiDraw,
   type UiFill,
   type UiGlyph,
   type UiImage,
@@ -126,6 +127,27 @@ export class HudLayer {
         if (placed) quads.push(placed);
       }
     }
+    this.place(quads);
+  }
+
+  /**
+   * Places UI kit draw items as quads (Engine 0.16 T9: the shell's menus over the 3D picture), in
+   * order, on a camera spanning `size`; an empty list hides the pass.
+   */
+  syncDraws(draws: readonly UiDraw[], size: ScreenSize): void {
+    const cam = this.camera;
+    if (cam.right !== size.width || cam.bottom !== -size.height) {
+      cam.right = size.width;
+      cam.bottom = -size.height;
+      cam.updateProjectionMatrix();
+    }
+    const quads: Placed[] = [];
+    paintUi(draws, this.painter(quads));
+    this.place(quads);
+  }
+
+  /** Puts the quads on pooled meshes in draw order; meshes left over hide. */
+  private place(quads: Placed[]): void {
     while (this.pool.length < quads.length) {
       const mesh = new Mesh(this.geometry, quads[this.pool.length]!.material);
       mesh.frustumCulled = false;

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { transitionsSchema } from '../fx/transition';
 import { DEFAULT_SCREEN, SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
+import { menusSchema } from '../ui/menus';
 
 /**
  * The game manifest: `game.json` at the root of a game's folder. It names the game and its kit,
@@ -32,6 +33,11 @@ import { DEFAULT_SCREEN, SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
  * by slot: `level` (the map id changes), `scene` (a scene is pushed or popped), `mission` (a
  * mission round; else `scene`) and `default`, each `{ kind, ticks, hold?, color?, ease? }` with
  * `kind` `fade`, `wipe` (`direction?`, `edge?`) or `iris` (`at?`); `engine/core/fx/transition.ts`.
+ *
+ * `menus` (optional, Engine 0.16 T9) is the game's title screen, pause menu, settings and controls
+ * screens, built by the browser shell on the UI kit: `{ font, titleFont?, style?, labels?, title,
+ * pause, settings?, controls? }` (`engine/core/ui/menus.ts`); `loadContent` checks its fonts,
+ * glyphs, frames and songs against the game's content (`checkMenus`).
  *
  * Content paths are relative to the game folder, with forward slashes. Each entry is a file path
  * or a glob: `*` and `?` match within one folder, `**` matches any number of folders.
@@ -103,6 +109,11 @@ export const gameManifestSchema = z.strictObject({
     .exactOptional()
     .describe(
       'screen transitions the browser shell plays, by slot (`level`, `scene`, `mission`, `default`): `{ kind: fade | wipe | iris, ticks, hold?, color?, ease? }` (Engine 0.16 T5)',
+    ),
+  menus: menusSchema
+    .exactOptional()
+    .describe(
+      'the title screen, pause menu, settings and controls screens the browser shell builds (Engine 0.16 T9): `{ font, titleFont?, style?, labels?, title: { name | logo, subtitle?, art?, music?, items }, pause: { items }, settings?, controls? }`',
     ),
   headless: relativePath.describe('the module that boots the game headless (`createGame`), for `run`'),
   view: relativePath

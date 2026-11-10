@@ -23,8 +23,13 @@ export {
   recordFromQuery,
   showBackendToggle,
   showDisplayMessage,
+  PAUSE_BUTTON_ID,
+  PAUSE_CODES,
   tapsOf,
+  TITLE_QUERY,
+  titleFromQuery,
   type BootAudio,
+  type BootMenus,
   type BootedGame,
   type BootPage,
   type BrowserBootOptions,
@@ -39,7 +44,13 @@ export {
   type VolumeControlOptions,
   type VolumeTarget,
 } from './volume-control';
-export { PageDebugHook, type PageDebug, type PageDebugTarget, type ReplayRefusal } from './debug';
+export {
+  PageDebugHook,
+  type MenusView,
+  type PageDebug,
+  type PageDebugTarget,
+  type ReplayRefusal,
+} from './debug';
 export type { RoundRecording } from '../headless';
 export {
   CampaignSession,
@@ -60,3 +71,4 @@ export {
 export { MISSION_BAR_HEIGHT, mountMissionBar, type MissionBar, type MissionBarOptions } from './mission-bar';
 export { ShellTransitions, type ShellTransitionOptions, type TransitionRequest } from './transitions';
 export { UiScene, type UiSceneOptions } from './ui-scene';
+export { GameMenus, type GameMenusOptions, type MenuSettingsHost, type MenusState } from './game-menus';

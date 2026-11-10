@@ -1,6 +1,7 @@
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { bootBrowserGame, HostScene } from '@engine/core/shell';
+import { contentFonts } from '@engine/core/ui';
 import { loadHopper, PLATFORMER_MUSIC } from './content';
 import { hopperLook, hopperPicture } from './picture';
 import { hopperLook3d } from './picture3d';
@@ -25,16 +26,22 @@ import gameFiles from 'virtual:game-files';
  */
 const content = mustLoad(loadHopper(gameFiles), 'the platformer sample');
 const look = hopperLook(content);
+const fonts = contentFonts(content);
 
 void bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
   transitions: content.manifest.transitions,
   audio: { songs: contentSongs(content), sfx: contentSfx(content), music: PLATFORMER_MUSIC },
+  menus: { spec: content.manifest.menus, fonts, sheets: look.sheet },
   displays: {
-    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }),
+    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
     three: async (canvas, { onSound }) =>
-      (await import('@engine/backends/three')).threeDisplay(canvas, { ...hopperLook3d(content), onSound }),
+      (await import('@engine/backends/three')).threeDisplay(canvas, {
+        ...hopperLook3d(content),
+        fonts,
+        onSound,
+      }),
   },
   scene: (stack, display) =>
     new HostScene({

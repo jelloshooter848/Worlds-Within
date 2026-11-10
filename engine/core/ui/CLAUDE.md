@@ -124,6 +124,34 @@ look, disabled?)` is a one-item menu on a panel.
   `draws()` (shown widgets in file order), `frame`, `focused`, `visible`, `box`, `itemBox`,
   `menu`, `dialog`, `value`, `open`, `close`, `focus`.
 
+Engine 0.16 T9:
+
+- `ui-schema.ts`: an `image` widget (`sheet`, `frame`, `palette?`, `scale?` whole 1-8; its box is
+  the frame times the scale; `missing_ref` / `missing_frame` at `widgets.<i>.sheet` / `.frame`)
+  and a slider's `labels` (a word per step from `min`: `menu.ts` shows it as a choice, `< Auto >`,
+  with no track, `sliderText`; a tap or confirm steps it on, wrapping; sideways stops at the ends).
+- `menus.ts`: the `menus` block of `game.json` (`menusSchema`, on the manifest:
+  `content/manifest.ts`): `font`, `titleFont?`, `style?` (`menusStyleSchema`: the UI style's
+  fields but `font`, plus `heading`, `outline`, `dim` (0.55), `dimColor`), `labels?` (item id to
+  label; `MENU_LABELS` otherwise), `title { name | logo, subtitle?, art?: [{ sheet, frame,
+palette?, scale?, anchor?, x?, y? }], dim?, music?, footer?, items }`, `pause { items }`,
+  `settings? { items }` (default all but `colour`) and `controls?: [{ actions?, label, tap? }]`.
+  Items: `TITLE_ITEMS` (`start`, `continue`, `controls`, `settings`), `PAUSE_ITEMS` (`resume`,
+  `controls`, `settings`, `title`), `SETTINGS_ITEMS` (`master`, `music`, `sfx`, `mute`, `shake`,
+  `flashing`, `colour`, `touch`); an unknown or repeated item (or label key) is
+  `unknown_menu_item`, a title without `name` or `logo` and a control without `actions` or `tap`
+  `missing_field`. `titleScreen(spec, ctx, { canContinue })`, `pauseScreen`, `settingsScreen(spec,
+ctx, values, { colourModes? })` and `controlsScreen` build `ui` files (`UiScreenFile`) laid out
+  from the fonts (`MenuBuildContext`: `screen`, `fonts`, `frameSize`, `keys`, the player's key
+  names): a dim over the game, headings in the title font with an outline, the `main` menu, a key
+  hint (`menuHint`) on a dark strip along the bottom. `controlRows(controls, keys)` writes each
+  row's keys (directions together, `←→`; others `Z / X`; `or` the tap) and adds Pause (`ESC /
+P`). `checkMenus(spec, refs)` is what `loadContent` runs on `game.json` (`content/bundle.ts`):
+  missing fonts, sprites, palettes, songs (or a skin's layered music) and sounds (`missing_ref`),
+  frames (`missing_frame`), glyphs of every text the screens draw (`missing_glyph`; with
+  `controls`, the key-name characters `KEY_NAME_GLYPHS`, arrows included) and `missing_field` for
+  a `controls` item without `controls`. Errors are at `game.json`, `menus.<field>`.
+
 The shell's side is `engine/core/shell/ui-scene.ts` (`UiScene`): a screen as a scene, its input
 from the frame's actions and taps and the pointer's hover, drawn with the backend's `UiPainter`.
 
@@ -171,3 +199,8 @@ focus back, taps and hover routed, a modal dialog, draw order, the same picture 
 input, and the `ui` kind through `loadContent`: a good screen, `unknown_widget` with its path,
 duplicate ids, missing fonts, glyphs, sounds and frames, bad fields);
 `engine/core/shell/ui-scene.test.ts`; in the browser `tests/browser/fx-lab-ui.test.ts`.
+
+T9: `menus.test.ts` (the four screens from a spec, labels, Continue only with a save, the colour
+item only with modes, control rows and hints, the schema's refusals, and `validate`'s errors on
+`game.json` through `loadContent`); `menu.test.ts` (a slider with words);
+`engine/core/shell/game-menus.test.ts`; in the browser `tests/browser/menus.test.ts`.

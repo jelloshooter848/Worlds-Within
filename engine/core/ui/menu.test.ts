@@ -2,13 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Action } from '../input/actions';
 import { buildFont, type FontLookup } from './font';
 import { uiLook } from './look';
-import { Button, Menu, sliderValue } from './menu';
+import { Button, Menu, sliderText, sliderValue } from './menu';
 import type { UiDraw } from './paint';
 import { UI_REPEAT_DELAY, UI_REPEAT_EVERY, UiNav, type UiCommand, type UiInput } from './ui-input';
 import type { UiMenuItemSpec } from './ui-schema';
 
 /** Every glyph of the test font is a 3x4 block on a 3x5 cell (advance 4, line 7). */
-const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789>!?.,';
+const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789>!?.,<';
 const TEST_FONT = buildFont('t', {
   cell: { w: 3, h: 5 },
   baseline: 4,
@@ -223,5 +223,32 @@ describe('menu drawing and tweens (Engine 0.16 T7)', () => {
     const off = new Button('no', 'No', LOOK, true);
     off.place({ x: 0, y: 0, ...off.size() });
     expect(off.update(cmds('confirm'), 1)).toEqual([]);
+  });
+
+  it('shows a slider with words as a choice that steps on and wraps (Engine 0.16 T9)', () => {
+    const touch: UiMenuItemSpec = {
+      type: 'slider',
+      id: 'touch',
+      label: 'Touch',
+      max: 2,
+      labels: ['Auto', 'On', 'Off'],
+    };
+    expect(sliderText(touch as Extract<UiMenuItemSpec, { type: 'slider' }>, 1)).toBe('On');
+    const m = new Menu({ id: 'main', items: [touch] }, LOOK);
+    m.place({ x: 0, y: 0, ...m.size() });
+    const text = () =>
+      m
+        .draws(1)
+        .flatMap((d) => (d.kind === 'glyph' ? [d.ch] : []))
+        .join('');
+    expect(text()).toBe('>Touch<Auto>');
+    expect(m.draws(1).some((d) => d.kind === 'fill' && d.w === 32)).toBe(false); // no track
+    expect(m.update(cmds('right'), 2)).toEqual([{ type: 'change', widget: 'main', item: 'touch', value: 1 }]);
+    m.update(cmds('confirm'), 3);
+    expect(m.value('touch')).toBe(2);
+    m.update({ taps: [centre(m.itemBox('touch')!)] }, 4); // a tap on the last word wraps to the first
+    expect(m.value('touch')).toBe(0);
+    m.update(cmds('left'), 5); // sideways stops at the ends
+    expect(m.value('touch')).toBe(0);
   });
 });
