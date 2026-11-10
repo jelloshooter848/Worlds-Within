@@ -62,9 +62,11 @@ describe('virtual:game-files (Engine 0.14 T2, G5)', () => {
   ])("gives %s the old glob's keys and texts", (dir, glob) => {
     const old = relativeTo(dir, glob);
     const files = readGameFolder(at(dir));
+    // The old glob never reached assets/ (the mini siege's CC0 packs since Engine 0.16 part F).
+    const content = Object.fromEntries(Object.entries(files).filter(([k]) => !k.startsWith('./assets/')));
     // In the glob's order too (sorted, so game.json comes after content/).
-    expect(Object.keys(files)).toEqual(Object.keys(old));
-    expect(files).toEqual(old);
+    expect(Object.keys(content)).toEqual(Object.keys(old));
+    expect(content).toEqual(old);
     expect(Object.keys(files)).toContain('./game.json');
     // The same files Node tools read (readGameFiles lists game.json first), with a leading `./`.
     const node = readGameFiles(at(dir));

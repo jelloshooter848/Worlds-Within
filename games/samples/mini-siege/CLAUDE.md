@@ -627,9 +627,38 @@ missing). Since Engine 0.13 T8 `screenshot` starts a run at its `from` as `run` 
 gold, the choices' offer title) and `dawn-held.run.json --tick 30` (the raiders' band marching; the
 view's camera is the map's centre, so the defenders by the hall are off the picture).
 
+## Asset packs (Engine 0.16 part F, F1)
+
+`assets/` is the one place binary files may live (docs/DESIGN.md, item 322): five CC0 low-poly
+packs for the siege map in 3D (part F; the mockup `docs/reports/mockups/mini-siege-3d.png`), each a
+folder credited in `assets/CREDITS.md` (`## <pack>` with source URL, author, licence, use, files
+kept and what was changed; checked by `validate`), 221 GLB models, about 8.7 MB in all:
+
+- `kenney-castle-kit` (Kenney, Castle Kit 2.0, 68 GLBs, 1.4 MB): walls, towers, gates, drawbridge,
+  flags and the siege engines (ram, catapult, ballista, tower, trebuchet), each also burnt
+  (`*-demolished`). Its colormap texture was baked into vertex colours (the model check refuses a
+  texture in another file).
+- `kenney-nature-kit` (Kenney, Nature Kit 2.1, 129 GLBs, 1.3 MB): trees, rocks, river and path
+  ground tiles, the wooden bridge, fences, tents, campfires, crops. Unchanged.
+- `quaternius-medieval-village` (Quaternius, Medieval Village Pack 2020, 19 GLBs, 2.8 MB): the hall
+  (`inn`), houses, windmill (`mill`), smithy, well, market stands and yard props, converted from
+  OBJ.
+- `quaternius-characters` (Quaternius, Ultimate Animated Character Pack 2019, 4 GLBs, 3.1 MB):
+  `knight-male` (soldiers), `knight-golden-male` (Captain Hale), `viking-male` (raiders, guards),
+  `worker-male` (workers); clips `Idle`, `Walk`, `Walk_Carry`, `PickUp`, `Punch` (attack),
+  `RecieveHit`, `Defeat` (the nearest to a death), `Victory`. Converted from FBX.
+- `quaternius-farm-animals` (Quaternius, Farm Animals, 1 GLB, 0.2 MB): `sheep` (`Idle`, `Jump`),
+  converted from FBX.
+
+The named packs have no people or sheep, hence the last two (owner items). No skin uses the
+models yet (F6 does): `assets.test.ts` checks the credits, that every GLB is self-contained with no
+texture, and that `ModelLibrary` (`engine/backends/three`) parses each one in Node, with the
+characters' and the sheep's clips listed. Keep only files the game uses; a new pack gets a folder,
+a `CREDITS.md` section and a line here.
+
 ## How to test
 
-`pnpm test games/samples/mini-siege`, `pnpm -s cli validate games/samples/mini-siege --json`,
+`pnpm test games/samples/mini-siege` (`assets.test.ts` the packs), `pnpm -s cli validate games/samples/mini-siege --json`,
 `pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (any run file; the
 `dawn-*` runs for the follow-up; `pnpm -s cli code games/samples/mini-siege/runs/quit.run.json`
 for the siege's save code;

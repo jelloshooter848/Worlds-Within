@@ -57,6 +57,17 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   `hero` and the HUD's captive marker), `canvas2d-mission-room.json` (the room, looks by tag `foe:ram`,
   `foe:catapult`) and `canvas2d-td-defence.json` (the walls' round: towers, raiders, shots,
   cursor, ghost, tiles, `td-*` sounds), `content/sfx/`, `content/songs/siege.json`.
+- `assets/` (Engine 0.16 part F, F1): five CC0 low-poly packs as GLB files, each credited in
+  `assets/CREDITS.md` (source URL, author, licence, files kept, changes; checked by `validate`),
+  221 models, about 8.7 MB in all: `kenney-castle-kit` (Kenney, 2.0: walls, towers, gates, flags,
+  the siege engines whole and burnt; its colormap baked into vertex colours),
+  `kenney-nature-kit` (Kenney, 2.1: trees, rocks, river and path tiles, bridge, fences, tents,
+  campfires, crops), `quaternius-medieval-village` (Quaternius, 2020: hall, houses, windmill,
+  smithy, well, market props; from OBJ), `quaternius-characters` (Quaternius, Ultimate Animated
+  Character Pack: knights, a viking raider, a worker; clips `Idle`, `Walk`, `Punch`, `Defeat` and
+  more; from FBX) and `quaternius-farm-animals` (Quaternius: the sheep; from FBX). The last two
+  stand in for the people and sheep the named packs lack (owner items). For the 3D siege map
+  (part F, F6); `assets.test.ts` parses every GLB with `ModelLibrary` in Node and lists its clips.
 - `picture.ts`: `siegeLook`, `siegeFrames` / `siegePicture` / `siegeCanvasPicture` (the battle's
   frames or the hosted round's through the core's `hostedSource` and the host's `roundFrame()`,
   with the host's `mission-open`, `mini-game-end` and `mission-commit` events; Engine 0.15 T6,
@@ -130,7 +141,7 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
 
 ## How to test
 
-`pnpm test games/samples/mini-siege`, `pnpm -s cli validate games/samples/mini-siege --json`,
+`pnpm test games/samples/mini-siege` (`assets.test.ts` the CC0 packs), `pnpm -s cli validate games/samples/mini-siege --json`,
 `pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (and `delegated`,
 `quit`, `fortify-played`, `fortify-delegated`, the `dawn-*` runs), `pnpm -s cli code
 games/samples/mini-siege/runs/quit.run.json` (the save code at the siege's end), `pnpm -s cli mutants games/samples/mini-siege --json`, `pnpm test tests/runs`,
