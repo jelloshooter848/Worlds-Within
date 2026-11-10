@@ -110,6 +110,11 @@ describe('dependency rule: the layer table', () => {
     expect(FORBIDDEN_CORE.filter((f) => f.layer === 'engine/sim').flatMap((f) => f.targets)).toContain(
       'engine/core/fx/**',
     );
+    // The skinned presenter walk the 2D backends share (Engine 0.16 T13b) draws: backends only.
+    expect(kits).toContain('engine/core/draw/**');
+    expect(FORBIDDEN_CORE.filter((f) => f.layer === 'engine/sim').flatMap((f) => f.targets)).toContain(
+      'engine/core/draw/**',
+    );
     for (const rule of FORBIDDEN_CORE) {
       expect(LAYERS.map((l) => l.name)).toContain(rule.layer);
       for (const t of rule.targets) {

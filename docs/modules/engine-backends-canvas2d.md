@@ -20,7 +20,12 @@ for and holds no game rules.
 - `Viewport`, `ViewportOptions` (`viewport.ts`): owns the backbuffer and presents it.
 - `SkinnedCanvasPresenter`, `SkinnedPresenterOptions`, `MapSurface` (`presenter.ts`):
   `new SkinnedCanvasPresenter(rendererOrCtx, skin, sheetLookup(assets), { onSound, size, ... })`
-  is a `Presenter`. It clears each frame to the skin's `background` (Engine 0.15, gap G36; black
+  is a `Presenter`. From Engine 0.16 T13b it is a thin wrapper over the core `SkinnedPresenter`
+  ([engine/core/draw](engine-core-draw.md), shared with the PixiJS backend): it supplies the
+  `CanvasRenderer` and offscreen canvases (`canvasSurface`, `surface.ts`) as the map and glyph
+  surfaces; the drawing below is the core's, and the name, constructor and options are unchanged
+  (`CanvasUiPainter` and `skinSetCanvasPresenter` wrap `RendererUiPainter` and
+  `skinSetPresenter` the same way). It clears each frame to the skin's `background` (Engine 0.15, gap G36; black
   without one; a `background` option overrides it), caches the map per id and version, draws entities by layer then list order with
   skin frames (`resolveSkinFrame`, a kind's tag look first, by whole tag or, from Engine 0.15, tag prefix
   and whole-number range (gap M2); flipped by facing, a fallback box when art is missing, squash through
@@ -72,7 +77,8 @@ for and holds no game rules.
 ## How to test
 
 `*.test.ts` here run in Node with `pnpm test` against a fake 2D context that records calls;
-`presenter.test.ts` uses a recording `Renderer` with inline fixture frames and skin.
+`presenter.test.ts` uses a recording `Renderer` with inline fixture frames and skin. They test the
+shared walk in `@engine/core/draw` through this folder's wrappers.
 `Viewport` needs a real DOM and is checked by running a game (`pnpm dev`); `display.test.ts`
 checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCamera`'s
 `worldToScreen` / `screenToWorld` agree with this presenter's drawing at zoom 0.5, 1 and 2.

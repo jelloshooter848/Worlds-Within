@@ -83,7 +83,9 @@ export const EXCEPTIONS = [
  * (`engine/core/present`) and a backend draws it through a skin. Neither kits nor the sim may use
  * the presentation effects (`engine/core/fx`, Engine 0.16): its RNG and tweens are for presenters
  * only, so no effect can reach the state. Nor the UI kit (`engine/core/ui`, Engine 0.16 T6): its
- * fonts, text, panels and HUD widgets are laid out for presenters and painted by backends. ESLint and
+ * fonts, text, panels and HUD widgets are laid out for presenters and painted by backends. Nor the
+ * skinned presenter walk the 2D backends share (`engine/core/draw`, Engine 0.16 T13b): it draws
+ * through the Renderer. ESLint and
  * tests/architecture/dependency-rule.test.ts both read this list through config/deps.js.
  * @type {readonly ForbiddenCore[]}
  */
@@ -110,15 +112,17 @@ export const FORBIDDEN_CORE = [
       'engine/core/shell/**',
       'engine/core/fx/**',
       'engine/core/ui/**',
+      'engine/core/draw/**',
     ],
   },
   {
     layer: 'engine/sim',
     reason:
-      'the world simulation is headless and deterministic: presentation effects (engine/core/fx, its own RNG, easing and tweens), the UI kit (engine/core/ui) and the audio mixer belong to presenters',
+      'the world simulation is headless and deterministic: presentation effects (engine/core/fx, its own RNG, easing and tweens), the UI kit (engine/core/ui), the shared 2D presenter (engine/core/draw) and the audio mixer belong to presenters',
     targets: [
       'engine/core/fx/**',
       'engine/core/ui/**',
+      'engine/core/draw/**',
       'engine/core/audio/mix.ts',
       'engine/core/audio/mixer.ts',
     ],
@@ -227,6 +231,7 @@ export const PURE_CORE = [
   'engine/core/present/**',
   'engine/core/fx/**',
   'engine/core/ui/**',
+  'engine/core/draw/**',
   'engine/core/assets/sheet-lookup.ts',
 ];
 

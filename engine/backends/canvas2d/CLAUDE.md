@@ -11,9 +11,25 @@ picture size: `new Viewport(canvas, { integerScale }, content.manifest.screen)` 
 `DEFAULT_SCREEN`, `fitGame(size, ...)`) lives in `engine/core/gfx/screen.ts`, because the touch
 layout needs it too. Never hard-code a picture size here: take it from the size given.
 
+## The shared walk (`@engine/core/draw`, Engine 0.16 T13b)
+
+Everything below about how a frame is drawn lives in the core `SkinnedPresenter`
+(`engine/core/draw/skinned-presenter.ts`), with `RendererUiPainter` (`ui-painter.ts`) and
+`skinSetPresenter` (`skin-set.ts`) beside it, so the PixiJS backend draws every feature through
+exactly the same code. This folder keeps thin wrappers with the same names, constructor
+signatures and options: `SkinnedCanvasPresenter` (`presenter.ts`) is `SkinnedPresenter` on a
+`CanvasRenderer` (or the `Renderer` given) with `canvasSurface` (`surface.ts`: an offscreen canvas,
+else a page canvas, none in Node) as its default `mapSurface` and `glyphSurface`;
+`CanvasUiPainter` (`ui-painter.ts`) is `RendererUiPainter` with that default glyph surface;
+`skinSetCanvasPresenter` (`skin-set.ts`) is `skinSetPresenter` making a `SkinnedCanvasPresenter`
+per skin on `r`. `SkinnedPresenterOptions`, `MapSurface` and `GlyphSurface` are re-exported from
+the core, and `CanvasSkinSetOptions` is the core's `SkinSetPresenterOptions`. Change how a feature
+is drawn in `engine/core/draw`, not here; this folder only supplies the canvas.
+
 ## SkinnedCanvasPresenter
 
-`new SkinnedCanvasPresenter(rendererOrCtx, skin, sheets, opts?)` implements `Presenter`.
+`new SkinnedCanvasPresenter(rendererOrCtx, skin, sheets, opts?)` implements `Presenter` (the core
+`SkinnedPresenter` on a canvas; see above).
 `sheets` is a `SheetLookup` (`sheetLookup(assets)` from `@engine/core/assets/sheet-lookup`).
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
 `onSound?(id)`, `background?` (default the skin's `background`, else `#000`: `skinBackground`,
@@ -241,6 +257,9 @@ and lerp, each entity's box is drawn where `worldToScreen` says and maps back wi
 pixel, and the map copy sits at the camera's top-left, in the middle of the map and clamped at
 its edge. `ui-painter.test.ts` (Engine 0.16 T6) checks `CanvasUiPainter`'s fills, whole and
 part frames, glyph runs and the coloured strip drawn once, and the presenter painting a UI HUD.
+These tests drive the shared walk in `@engine/core/draw` through the thin wrappers here (Engine
+0.16 T13b moved the code, not the tests); `engine/core/draw/draw.test.ts` checks the core's own
+defaults (no surfaces) and the skin set's factory.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
 wipe (its gradient line and stops) and an iris (the even-odd hole on the focus) on a recording
 context, and `presenter.test.ts` the presenter's `focus()` scrolled and clamped.

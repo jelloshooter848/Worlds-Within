@@ -167,6 +167,10 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
   (`shell/`) pushes it for a game. Pure.
 - `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
+- `draw/` (Engine 0.16 T13b, its own page [engine/core/draw](engine-core-draw.md)): the skinned
+  presenter walk the 2D backends share, `SkinnedPresenter` on any `Renderer` with injectable map
+  and glyph surfaces, `RendererUiPainter` and `skinSetPresenter`. Backends only (kits and the sim
+  may not import it).
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
   `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable

@@ -8,7 +8,7 @@ asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
 [content/CLAUDE.md](content/CLAUDE.md)), presentation effects (`fx/`, Engine 0.16: the
-presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; from T4 camera effects, the hit-pause counter and parallax layouts; from T5 screen transitions' timing and shapes; see [fx/CLAUDE.md](fx/CLAUDE.md)), the UI kit (`ui/`, Engine 0.16 T6: bitmap pixel fonts as the `font` content kind, text layout, nine-slice panels and the HUD widgets a skin declares, painted by backends through `UiPainter`; from T7 buttons, menus, dialog boxes and UI screens as the `ui` content kind, driven by actions, hover and taps; see [ui/CLAUDE.md](ui/CLAUDE.md)), the presentation contract (`present/`: the read-only
+presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; from T4 camera effects, the hit-pause counter and parallax layouts; from T5 screen transitions' timing and shapes; see [fx/CLAUDE.md](fx/CLAUDE.md)), the UI kit (`ui/`, Engine 0.16 T6: bitmap pixel fonts as the `font` content kind, text layout, nine-slice panels and the HUD widgets a skin declares, painted by backends through `UiPainter`; from T7 buttons, menus, dialog boxes and UI screens as the `ui` content kind, driven by actions, hover and taps; see [ui/CLAUDE.md](ui/CLAUDE.md)), the skinned presenter walk the 2D backends share (`draw/`, Engine 0.16 T13b: `SkinnedPresenter`, `RendererUiPainter` and `skinSetPresenter` on any `Renderer` with injectable map and glyph surfaces, moved out of Canvas2D so the PixiJS presenter draws through the same code; backends only; see [draw/CLAUDE.md](draw/CLAUDE.md)), the presentation contract (`present/`: the read-only
 per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), the browser shell
 games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`; see
 [shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content
@@ -544,7 +544,7 @@ never knows which one is drawing.
 - Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
   `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
   `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`, `shell/**`, and from
-  Engine 0.16 `fx/**`, `ui/**` and the audio mixer's `audio/mix.ts` and `audio/mixer.ts`, which `engine/sim` may not import either). A kit describes frames through
+  Engine 0.16 `fx/**`, `ui/**`, `draw/**` (T13b) and the audio mixer's `audio/mix.ts` and `audio/mixer.ts`, which `engine/sim` may not import either). A kit describes frames through
   `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
@@ -554,7 +554,7 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
-`audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
+`audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**`, `draw/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, `shell/boot.ts`, the
