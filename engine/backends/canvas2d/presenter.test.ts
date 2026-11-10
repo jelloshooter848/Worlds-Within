@@ -1054,3 +1054,59 @@ describe('camera effects and parallax (Engine 0.16 T4)', () => {
     ]);
   });
 });
+
+describe('PNG sheet frames with anchors (Engine 0.16 T10)', () => {
+  /** A PNG sheet as `withContentImages` gives it: 16x24 frames anchored on the box's bottom centre. */
+  const png: SpriteSheet = {
+    id: 'torch',
+    image: null,
+    frames: new Map([
+      ['lit', { x: 1, y: 1, w: 16, h: 24, anchor: 'bottom' as const }],
+      ['held', { x: 19, y: 1, w: 16, h: 24, anchor: { x: 4, y: 22 } }],
+    ]),
+  };
+  const sheets = (id: string) => (id === 'torch' ? png : (SHEETS[id] ?? null));
+  const skin: SkinFile = {
+    ...SKIN,
+    kinds: {
+      ...SKIN.kinds,
+      torch: { sheet: 'torch', frames: { idle: 'lit', walk: 'held' }, flipFacing: true },
+    },
+  };
+  const draw = (entity: PresentFrame['entities'][number], zoom?: number) => {
+    const screen = recorder();
+    const p = new SkinnedCanvasPresenter(screen.r, skin, sheets, {
+      mapSurface: () => ({ renderer: recorder().r, image: null }),
+    });
+    p.present(
+      frame({ entities: [entity], noMap: true, ...(zoom !== undefined && { camera: { x: 0, y: 0, zoom } }) }),
+    );
+    return screen.calls.filter((c) => c.startsWith('sprite'));
+  };
+  const torch = (over: Partial<PresentFrame['entities'][number]> = {}) =>
+    hero({ id: 't', kind: 'torch', x: 16, y: 8, ...over });
+
+  it('draws a bottom-anchored frame standing on the box, taller than it', () => {
+    expect(draw(torch())).toEqual(['sprite torch:lit 16,0']);
+  });
+
+  it('puts a pixel anchor on the bottom centre, mirrored when the frame flips', () => {
+    expect(draw(torch({ anim: { state: 'walk', t: 0 }, facing: 'right' }))).toEqual([
+      'sprite torch:held 20,2',
+    ]);
+    expect(draw(torch({ anim: { state: 'walk', t: 0 }, facing: 'left' }))).toEqual([
+      'sprite torch:held 12,2 flip',
+    ]);
+  });
+
+  it('scales the anchor offset with the zoom', () => {
+    // The frame's top is 8 world px above the box (16 picture px at zoom 2): where a text
+    // sprite at y 0 draws.
+    expect(draw(torch({ x: 0, y: 8 }), 2)).toEqual(['sprite torch:lit 24,16 x2']);
+    expect(draw(hero({ x: 0, y: 0 }), 2)).toEqual(['sprite hero:down-0 24,16 x2']);
+  });
+
+  it('leaves text sprites (no anchor) at the box corner, as before', () => {
+    expect(draw(hero({ x: 16, y: 8 }))).toEqual(['sprite hero:down-0 16,8']);
+  });
+});

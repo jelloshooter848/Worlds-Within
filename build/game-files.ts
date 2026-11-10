@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type { Plugin, ViteDevServer } from 'vite';
+import { ASSETS_DIR, assetDataUrl, isTextAsset } from '../engine/core/content/png.ts';
 
 /** The id a game's browser code imports its data files from. */
 export const GAME_FILES_ID = 'virtual:game-files';
@@ -27,7 +28,8 @@ export function findGameDir(importer: string): string | null {
 
 /**
  * A game folder's data files, as paths relative to the folder (`./game.json`,
- * `./content/rooms/hall.json`): its `game.json` and every file under `content/`, skipping hidden
+ * `./content/rooms/hall.json`): its `game.json` and every file under `content/` and (Engine 0.16
+ * T10) `assets/`, skipping hidden
  * files and folders, sorted. These are the keys `import.meta.glob(['./game.json',
  * './content/**\/*'])` gave each game's old `files.ts`.
  */
@@ -43,13 +45,22 @@ export function gameFilePaths(gameDir: string): string[] {
     }
   };
   if (existsSync(join(gameDir, 'content'))) walk('content');
+  if (existsSync(join(gameDir, ASSETS_DIR))) walk(ASSETS_DIR);
   return out.sort();
 }
 
-/** The game's data files as `{ path: text }` pairs, keyed as {@link gameFilePaths}. */
+/**
+ * The game's data files as `{ path: text }` pairs, keyed as {@link gameFilePaths}: binary assets
+ * (a PNG sheet) as base64 `data:` URLs, as `readGameFiles` gives them.
+ */
 export function readGameFolder(gameDir: string): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const path of gameFilePaths(gameDir)) out[path] = readFileSync(join(gameDir, path), 'utf8');
+  for (const path of gameFilePaths(gameDir)) {
+    const binary = path.startsWith(`./${ASSETS_DIR}/`) && !isTextAsset(path);
+    out[path] = binary
+      ? assetDataUrl(path, readFileSync(join(gameDir, path)).toString('base64'))
+      : readFileSync(join(gameDir, path), 'utf8');
+  }
   return out;
 }
 
@@ -66,10 +77,14 @@ export function noGameError(importer: string): string {
   );
 }
 
-/** Whether `file` (absolute) is one of `gameDir`'s data files: its game.json or under content/. */
+/** Whether `file` (absolute) is one of `gameDir`'s data files: its game.json or under content/ or assets/. */
 function isDataFile(gameDir: string, file: string): boolean {
   const abs = resolve(file);
-  return abs === join(gameDir, MANIFEST) || abs.startsWith(join(gameDir, 'content') + '/');
+  return (
+    abs === join(gameDir, MANIFEST) ||
+    abs.startsWith(join(gameDir, 'content') + '/') ||
+    abs.startsWith(join(gameDir, ASSETS_DIR) + '/')
+  );
 }
 
 /** Reloads the page when a loaded game's data file is added, changed or removed (dev server). */
@@ -108,6 +123,7 @@ export function gameFiles(): Plugin {
       // `vite build --watch` rebuilds when a data file changes or one is added under content/.
       for (const path of gameFilePaths(dir)) this.addWatchFile(join(dir, path));
       if (existsSync(join(dir, 'content'))) this.addWatchFile(join(dir, 'content'));
+      if (existsSync(join(dir, ASSETS_DIR))) this.addWatchFile(join(dir, ASSETS_DIR));
       return gameFilesModule(dir);
     },
     configureServer: watchDataFiles,

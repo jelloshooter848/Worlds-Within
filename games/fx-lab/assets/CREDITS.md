@@ -1,0 +1,12 @@
+# Credits for the fx lab's asset packs
+
+Every folder under `assets/` is one pack and has a section here, checked by `pnpm cli validate`
+(`engine/core/content/assets.ts`): its source, author and licence. Only CC0 is allowed unless an
+owner decision is cited (docs/DESIGN.md, item 322).
+
+## fx-lab-png
+
+- Source: games/fx-lab/tools/torch-sheet.ts (made in this repo by that script; nothing downloaded)
+- Author: the Worlds Within project (own work)
+- Licence: CC0 1.0 Universal
+- Files: `torch.png`, a 72 x 52 sheet: four 16 x 24 flame frames and an unlit torch

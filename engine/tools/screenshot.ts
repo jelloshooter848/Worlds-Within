@@ -4,6 +4,7 @@ import {
   type Server,
   type ServerResponse,
 } from 'node:http';
+import { readPngSize } from '@engine/core/content/png';
 import type { AddressInfo } from 'node:net';
 import type { Browser } from 'playwright';
 import { join, relative, resolve } from 'node:path';
@@ -196,14 +197,9 @@ export async function takeScreenshot(
   }
 }
 
-/** A PNG's width and height, from its IHDR chunk. */
+/** A PNG's width and height, from its IHDR chunk (`readPngSize`, the reader `validate` uses). */
 export function pngSize(png: Buffer): { width: number; height: number } {
-  const signature = '89504e470d0a1a0a';
-  if (
-    png.length < 24 ||
-    png.subarray(0, 8).toString('hex') !== signature ||
-    png.toString('latin1', 12, 16) !== 'IHDR'
-  )
-    throw new Error('not a PNG');
-  return { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
+  const size = readPngSize(png);
+  if (size === null) throw new Error('not a PNG');
+  return size;
 }

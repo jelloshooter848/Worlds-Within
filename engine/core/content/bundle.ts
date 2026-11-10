@@ -10,6 +10,10 @@ import {
 } from './kinds';
 import { gameManifestSchema, MANIFEST_FILE, type GameManifest } from './manifest';
 import type { FontFile } from '../ui/font';
+import type { SpriteSheet } from '../gfx/spritesheet';
+import type { Rasterized } from '../gfx/pixelart';
+import { checkGameAssets } from './assets';
+import { isAssetPath } from './png';
 import { checkMenus, type MenusRefs, type MenusSpec } from '../ui/menus';
 import { contentError, validate, type ContentError, type ContentResult } from './validate';
 
@@ -35,6 +39,24 @@ export interface ContentBundle {
   manifest: GameManifest;
   /** Every content file, by kind in the manifest's order and then by path. */
   entries: readonly ContentEntry[];
+  /**
+   * The game's `assets/` files (Engine 0.16 T10) by path relative to the game folder
+   * (`assets/fx-lab-png/torch.png`): text files as text, binary ones as base64 `data:` URLs
+   * (`content/png.ts`). Left out when the game has none.
+   */
+  assets?: Readonly<Record<string, string>>;
+  /**
+   * The skins' PNG sheets once decoded (`withContentImages` in `engine/core/assets/`, browser
+   * only), by image id; `contentSheets` and `contentPixelSheets` read them. Left out until then.
+   */
+  images?: ReadonlyMap<string, LoadedImageSheet>;
+}
+
+/** A skin's PNG sheet decoded in the browser: the sheet to draw and its RGBA pixels (3D HUD). */
+export interface LoadedImageSheet {
+  sheet: SpriteSheet;
+  /** The whole image's pixels, or null where they could not be read. */
+  pixels: Rasterized | null;
 }
 
 export interface LoadOptions {
@@ -135,7 +157,10 @@ export function loadContent(
   const manifest = read.value;
 
   const errors: ContentError[] = [];
-  const paths = [...texts.keys()].filter((p) => p !== MANIFEST_FILE).sort();
+  // `assets/` holds binary packs and their credits, not content: no kind claims them.
+  const assets: Record<string, string> = {};
+  for (const [path, text] of texts) if (isAssetPath(path)) assets[path] = text;
+  const paths = [...texts.keys()].filter((p) => p !== MANIFEST_FILE && !isAssetPath(p)).sort();
   /** path -> the kind that claimed it. */
   const claimed = new Map<string, string>();
   /** Part files (such as `.map.txt`) belonging to a claimed file. */
@@ -226,9 +251,11 @@ export function loadContent(
   if (errors.length === 0 && opts.checkAll !== false) {
     errors.push(...checkAcross(manifest, kinds, entries, partsByPath, at));
     if (manifest.menus !== undefined) errors.push(...checkManifestMenus(manifest.menus, entries, at));
+    errors.push(...checkGameAssets(assets, entries, at));
   }
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, value: { manifest, entries }, errors: [] };
+  const hasAssets = Object.keys(assets).length > 0;
+  return { ok: true, value: { manifest, entries, ...(hasAssets && { assets }) }, errors: [] };
 }
 
 /**

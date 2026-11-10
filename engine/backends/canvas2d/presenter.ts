@@ -12,7 +12,7 @@ import {
 } from '@engine/core/fx';
 import { blended, glowing, transformed, translucent, type Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
+import { anchorOffset, type SpriteSheet } from '@engine/core/gfx/spritesheet';
 import {
   cameraArea,
   cameraShake,
@@ -529,8 +529,10 @@ export class SkinnedCanvasPresenter implements Presenter {
     const scaled = (n: number) => (zoom === 1 ? n : Math.max(1, Math.round(n * zoom)));
     const w = scaled(rect?.w ?? sf.size?.w ?? e.w);
     const h = scaled(rect?.h ?? sf.size?.h ?? e.h);
-    const x = Math.round((e.x + tw.x + (sf.offset?.x ?? 0)) * zoom) - view.x;
-    const y = Math.round((e.y + tw.y + (sf.offset?.y ?? 0)) * zoom) - view.y;
+    // A PNG sheet's frame anchor (Engine 0.16 T10) places it on the entity box; text sprites have none.
+    const anchor = rect?.anchor === undefined ? null : anchorOffset(rect.anchor, rect, e, sf.flipX);
+    const x = Math.round((e.x + tw.x + (sf.offset?.x ?? 0) + (anchor?.x ?? 0)) * zoom) - view.x;
+    const y = Math.round((e.y + tw.y + (sf.offset?.y ?? 0) + (anchor?.y ?? 0)) * zoom) - view.y;
     const draw = (to: Renderer, dx: number, dy: number) => {
       if (rect && sheet) {
         if (zoom === 1) to.sprite(sheet, sf.frame!, dx, dy, sf.flipX);

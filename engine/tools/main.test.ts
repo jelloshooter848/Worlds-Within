@@ -245,6 +245,53 @@ describe('validate', () => {
     expect(result.exitCode).toBe(3);
   });
 
+  it('checks PNG sheets and the credits of an assets/ folder (Engine 0.16 T10)', async () => {
+    // A copy of the fx lab, whose 2D skin draws the torch from assets/fx-lab-png/torch.png.
+    const root = tempDir();
+    cpSync(join(ROOT, 'games/fx-lab'), join(root, 'games/fx-lab'), { recursive: true });
+    const lab = join(root, 'games/fx-lab');
+    const SKIN = 'games/fx-lab/content/skins/canvas2d.json';
+    const CREDITS = 'games/fx-lab/assets/CREDITS.md';
+    const errors = async () => {
+      const run = await cli(['validate', 'games/fx-lab', '--json'], { cwd: root });
+      const json = run.json();
+      expect(run.code).toBe((json.errors as unknown[]).length === 0 ? EXIT.ok : EXIT.invalidContent);
+      return (json.errors as { file: string; path: string; code: string }[]).map((e) => [
+        e.file,
+        e.path,
+        e.code,
+      ]);
+    };
+    expect(await errors()).toEqual([]);
+
+    // A frame outside the image: the unlit torch moved down past the sheet's 52 rows.
+    const skinPath = join(root, SKIN);
+    const skinText = readFileSync(skinPath, 'utf8');
+    writeFileSync(skinPath, skinText.replace('"y": 27', '"y": 40'));
+    expect(await errors()).toEqual([
+      [SKIN, 'images["lab-torch"].frames["torch-unlit"]', 'frame_outside_image'],
+    ]);
+    writeFileSync(skinPath, skinText);
+
+    // A pack folder the credits do not name.
+    mkdirSync(join(lab, 'assets/extra-pack'));
+    cpSync(join(lab, 'assets/fx-lab-png/torch.png'), join(lab, 'assets/extra-pack/copy.png'));
+    expect(await errors()).toEqual([[CREDITS, '["extra-pack"]', 'missing_credits']]);
+    rmSync(join(lab, 'assets/extra-pack'), { recursive: true });
+
+    // A licence that is not CC0, with no owner decision cited.
+    const credits = readFileSync(join(root, CREDITS), 'utf8');
+    writeFileSync(join(root, CREDITS), credits.replace('CC0 1.0 Universal', 'CC-BY-NC 4.0'));
+    expect(await errors()).toEqual([[CREDITS, '["fx-lab-png"].licence', 'bad_licence']]);
+
+    // No CREDITS.md at all, and the PNG gone: both reported, each at its file and field.
+    rmSync(join(root, CREDITS));
+    expect(await errors()).toEqual([[CREDITS, '', 'missing_credits']]);
+    rmSync(join(lab, 'assets/fx-lab-png/torch.png'));
+    writeFileSync(join(root, CREDITS), credits);
+    expect(await errors()).toEqual([[SKIN, 'images["lab-torch"].image', 'missing_file']]);
+  });
+
   it('prints one line per error for people', async () => {
     const root = demoCopy();
     writeFileSync(join(root, 'games/samples/dungeon/content/songs/crypt.json'), '{ nope');

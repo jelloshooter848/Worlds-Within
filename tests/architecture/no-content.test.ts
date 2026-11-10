@@ -207,3 +207,51 @@ describe('content rule: the detector', () => {
     expect(contentMarkers('', 'engine/core/audio/theme.mml')).toEqual(['1: MML file']);
   });
 });
+
+// Binary files (Engine 0.16 T10; docs/DESIGN.md, item 322): content is text, and the one
+// exception is a game's own `assets/` folder (CC0 packs and original sheets made by a script,
+// credited in its `assets/CREDITS.md`, which `validate` checks). This walks the whole repo (not
+// only engine/ and kits/) and fails on any binary file anywhere else.
+
+/** Folders never scanned: tools' output, dependencies and git's own. */
+const SKIPPED_DIRS = new Set(['.git', 'node_modules', 'dist', 'coverage', '.vite', '.ww-out', '.claude']);
+/** Extensions that are binary (or binary model and sound formats) whatever their bytes. */
+const BINARY_EXT = /\.(png|jpe?g|gif|webp|bmp|ico|glb|gltf|bin|ogg|wav|mp3|flac|ttf|otf|woff2?|zip|gz)$/i;
+/** Where binary files may live: a game's assets folder, and the owner's reviewed mockups. */
+const BINARY_ALLOWED = [/^games\/(?:samples\/)?[^/]+\/assets\//, /^docs\/reports\/mockups\/[^/]+\.png$/];
+
+/** Whether a file is binary: by its extension, or a NUL byte in its first 8 KiB. */
+function isBinaryFile(path: string): boolean {
+  if (BINARY_EXT.test(path)) return true;
+  return readFileSync(join(ROOT, path)).subarray(0, 8192).includes(0);
+}
+
+function repoFiles(dir = ''): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+    const path = dir === '' ? entry.name : `${dir}/${entry.name}`;
+    if (entry.isDirectory()) {
+      if (!SKIPPED_DIRS.has(entry.name)) out.push(...repoFiles(path));
+    } else if (entry.isFile()) out.push(path);
+  }
+  return out;
+}
+
+describe('content rule: binary files only in games/*/assets', () => {
+  const allowed = (path: string) => BINARY_ALLOWED.some((re) => re.test(path));
+
+  it("finds no binary file outside a game's assets folder", () => {
+    const binary = repoFiles().filter(isBinaryFile);
+    expect(binary).toContain('games/fx-lab/assets/fx-lab-png/torch.png');
+    expect(binary.filter((p) => !allowed(p))).toEqual([]);
+  });
+
+  it('allows games/<game>/assets and games/samples/<game>/assets, nothing else', () => {
+    expect(allowed('games/fx-lab/assets/pack/a.png')).toBe(true);
+    expect(allowed('games/samples/dungeon/assets/tiles/a.png')).toBe(true);
+    expect(allowed('games/fx-lab/content/a.png')).toBe(false);
+    expect(allowed('engine/core/assets/a.png')).toBe(false);
+    expect(allowed('games/assets/a.png')).toBe(false);
+    expect(isBinaryFile('games/fx-lab/game.json')).toBe(false);
+  });
+});

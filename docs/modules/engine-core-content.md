@@ -31,8 +31,13 @@ object.
 - `content/game-content.ts` (Engine 0.7 T9): `kitContentKinds(kits)` (the engine's kinds plus each
   kit hook's), `contentArt(content)`, `contentSfx(content)`, `contentSongs(content)`, `mustLoad(result, who?)`: the content
   glue every game wrote for itself.
+- `content/png.ts`, `content/assets.ts` (Engine 0.16 T10): a game's `assets/` folder as strings
+  (`bundle.assets`; binary files as base64 `data:` URLs), `readPngSize`, `encodePng`, and the
+  checks `loadContent` runs on it: `missing_credits` and `bad_licence` at `assets/CREDITS.md`,
+  `missing_file`, `bad_image` and `frame_outside_image` at a skin's `images.<id>`.
 - `gfx/palette-schema.ts`: `paletteSchema` (`{ id, colors }`).
-- `node/game-files.ts` (Node only): `readGameFiles(dir)`, a game's `game.json` and `content/**`.
+- `node/game-files.ts` (Node only): `readGameFiles(dir)`, a game's `game.json`, `content/**` and
+  (Engine 0.16 T10) `assets/**`.
 - `audio/song-schema.ts`: `songSchema`, `sfxSchema` (every channel must compile as MML).
 - `gfx/sprite-schema.ts`: `spriteSchema` (to `SpriteDef`), `readSpriteText` (the `.txt` form).
 

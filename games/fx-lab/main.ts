@@ -1,3 +1,4 @@
+import { withContentImages } from '@engine/core/assets/content-images';
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { canvasDisplay, CanvasUiPainter } from '@engine/backends/canvas2d';
 import type { InputFrame } from '@engine/core/input/input-manager';
@@ -39,7 +40,8 @@ import gameFiles from 'virtual:game-files';
  * so does the dialog box. UI sounds play on the ui bus (`page.uiSound`). `__ww.mix()` reads it
  * (`tests/browser/fx-lab-mix.test.ts`).
  */
-const content = mustLoadFxLab(gameFiles);
+// The 2D skin's PNG sheet (the torch, Engine 0.16 T10) is decoded before the page boots.
+const content = await withContentImages(mustLoadFxLab(gameFiles));
 const look = fxLook(content);
 
 /** What the page shows tests: the sounds it played and the UI screen (presentation only). */

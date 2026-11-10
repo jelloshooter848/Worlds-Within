@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { inflateSync } from 'node:zlib';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXIT } from './exit-codes';
@@ -28,6 +29,46 @@ async function browserMissing(): Promise<string | null> {
 }
 const missing = await browserMissing();
 if (missing) console.warn(`skipping the screenshot browser tests: ${missing}`);
+
+/**
+ * A test-only PNG reader: 8-bit RGB or RGBA, not interlaced (what Chromium and the encoder in
+ * `engine/core/content/png.ts` write), every row unfiltered. `pixel(x, y)` is `[r, g, b, a]`.
+ */
+function decodeRgbaPng(png: Buffer): { pixel(x: number, y: number): number[] } {
+  const { width, height } = pngSize(png);
+  const channels = png[25] === 6 ? 4 : 3;
+  const idat: Buffer[] = [];
+  for (let at = 8; at < png.length;) {
+    const length = png.readUInt32BE(at);
+    if (png.toString('latin1', at + 4, at + 8) === 'IDAT') idat.push(png.subarray(at + 8, at + 8 + length));
+    at += 12 + length;
+  }
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const out = new Uint8Array(height * stride);
+  for (let y = 0; y < height; y++) {
+    const filter = raw[y * (stride + 1)]!;
+    for (let i = 0; i < stride; i++) {
+      const x = raw[y * (stride + 1) + 1 + i]!;
+      const a = i >= channels ? out[y * stride + i - channels]! : 0;
+      const b = y > 0 ? out[(y - 1) * stride + i]! : 0;
+      const c = i >= channels && y > 0 ? out[(y - 1) * stride + i - channels]! : 0;
+      const p = a + b - c;
+      const pa = Math.abs(p - a);
+      const pb = Math.abs(p - b);
+      const pc = Math.abs(p - c);
+      const paeth = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      const add = [0, a, b, (a + b) >> 1, paeth][filter]!;
+      out[y * stride + i] = (x + add) & 0xff;
+    }
+  }
+  return {
+    pixel: (x, y) => {
+      const at = y * stride + x * channels;
+      return [out[at]!, out[at + 1]!, out[at + 2]!, channels === 4 ? out[at + 3]! : 255];
+    },
+  };
+}
 
 const temps: string[] = [];
 afterEach(() => {
@@ -119,6 +160,31 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
     expect(code).toBe(EXIT.invalidContent);
     expect(result.errors).toEqual([expect.objectContaining({ path: 'view', code: 'no_view' })]);
   }, 60_000);
+
+  it('draws the fx lab torch from its PNG sheet, the same bytes on two runs (Engine 0.16 T10)', async () => {
+    const dir = tempDir();
+    const run = 'games/fx-lab/runs/level-3.run.json';
+    const a = await cli(['screenshot', run, '--tick', '40', '--out', join(dir, 'a.png')]);
+    const b = await cli(['screenshot', run, '--tick', '40', '--out', join(dir, 'b.png')]);
+    expect(a.code).toBe(EXIT.ok);
+    expect(a.result.matchesHeadless).toBe(true);
+    expect(b.result.sha256).toBe(a.result.sha256);
+    // The first torch stands on the ground (its box 96, 208, 16x16): the sheet's 16x24 frame is
+    // anchored on its bottom centre, so its pole (the frame's rows 18-23) is the sheet's own
+    // pixels at 96, 218.
+    const shot = decodeRgbaPng(readFileSync(join(dir, 'a.png')));
+    const sheet = decodeRgbaPng(readFileSync(join(ROOT, 'games/fx-lab/assets/fx-lab-png/torch.png')));
+    for (let y = 18; y < 24; y++) {
+      for (let x = 0; x < 16; x++) {
+        const want = sheet.pixel(1 + x, 1 + y);
+        if (want[3] === 0) continue;
+        // Within a little: the flame's additive particles light the pole up a few levels.
+        const got = shot.pixel(96 + x, 200 + y);
+        const off = Math.max(...[0, 1, 2].map((i) => Math.abs(got[i]! - want[i]!)));
+        expect(off, `${x},${y}: ${got.join(',')} for ${want.join(',')}`).toBeLessThanOrEqual(24);
+      }
+    }
+  }, 120_000);
 });
 
 /** A copy of the demo with a `three` skin added, so only its view's missing `frame()` stops it. */

@@ -211,6 +211,7 @@ export const PURE_CORE = [
   'engine/core/gfx/animation.ts',
   'engine/core/gfx/screen.ts',
   'engine/core/gfx/spritesheet.ts',
+  'engine/core/gfx/image-sheet.ts',
   'engine/core/audio/mml.ts',
   'engine/core/audio/song-schema.ts',
   'engine/core/audio/mix.ts',

@@ -47,6 +47,13 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `virtual:game-files` module in the browser, `../node/game-files.ts` in Node) into a `ContentBundle`
   (`{ manifest, entries }`); `contentOf(bundle, kind)` and `contentNamed` give typed entries. An
   entry's name is its file name up to the first dot; an `id` field must match it.
+- `png.ts` and `assets.ts` (Engine 0.16 T10): a game's `assets/` folder. `loadContent` keeps
+  `assets/` files out of the kinds (`bundle.assets`, text as text and binary files as base64
+  `data:` URLs) and, with the cross-file checks, runs `checkGameAssets`: `checkCredits` (any
+  file in `assets/` needs `assets/CREDITS.md` with a `## <pack>` section per pack folder giving
+  `Source:`, `Author:` and `Licence:`, CC0 unless an `Owner decision:` line cites one) and
+  `checkSkinImages` (each skin `images` entry's PNG is there, is a PNG, its header read by
+  `readPngSize`, and holds every frame). `parseCredits`, `isCc0`, `assetPacks` are exported.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
   (`gfx/sprite-schema.ts`, JSON or `.txt`), `font` (`ui/font.ts`, JSON or `.txt`, Engine 0.16 T6:
@@ -85,7 +92,11 @@ file formats are described at the top of that file).
   `claimed_twice`, `unclaimed_file`, `duplicate_name` and `id_mismatch`; the CLI loader's
   `unknown_kit`, `duplicate_kit` and `kind_clash` (at `kit` or `uses.<i>` in `game.json`:
   `engine/tools/game-check.ts`); the editing verbs' `not_writable` and
-  `multiline_row` (`engine/tools/content-file.ts`); and the top-down kit's room codes `wrong_size`
+  `multiline_row` (`engine/tools/content-file.ts`); the asset checks' `missing_credits` (no
+  `assets/CREDITS.md`, a pack folder it does not name, or a pack without `Source`, `Author` or
+  `Licence`), `bad_licence` (not CC0 and no owner decision cited), `missing_file` (a skin
+  image's PNG is not there), `bad_image` (not a PNG) and `frame_outside_image` (a grid cell or
+  named frame past the image), Engine 0.16 T10 (`assets.ts`); and the top-down kit's room codes `wrong_size`
   and `invalid_room` (`kits/topdown/schema.ts`); the platformer kit's level codes `bad_spawn_key`, `size_mismatch`,
   `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`
   (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,

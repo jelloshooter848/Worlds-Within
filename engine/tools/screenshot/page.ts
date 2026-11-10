@@ -1,5 +1,6 @@
 import { CanvasRenderer } from '@engine/backends/canvas2d';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
+import { withContentImages } from '@engine/core/assets/content-images';
 import { contentFonts } from '@engine/core/ui';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
@@ -17,7 +18,8 @@ import type { ShotJob, ShotRefusal, ShotResult } from './job';
  * a canvas of the game's picture size (`job.screen`, from `game.json`), as a player's screen
  * would. It returns the last picture as a PNG data URL, the snapshot at that tick, and the state
  * hashes it saw on the way (tick 0, every `job.hashEvery` ticks and the last), so the CLI can
- * check that drawing every tick changed nothing.
+ * check that drawing every tick changed nothing. The skins' PNG sheets (Engine 0.16 T10) are
+ * decoded first (`withContentImages`), so the picture waits for them.
  *
  * With `job.backend` `three` the page shows the view's `frame()` through a `ThreePresenter` and
  * the game's `three` skins (`skinSet`: `three.json`, and `three-<id>.json` for the frames of mini
@@ -37,8 +39,10 @@ async function stateHash(json: string): Promise<string> {
 }
 
 async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
-  const content = checkGameTexts(job.files, job.root);
-  if (!content.ok) throw new Error(`the game's content has errors: ${JSON.stringify(content.errors)}`);
+  const checked = checkGameTexts(job.files, job.root);
+  if (!checked.ok) throw new Error(`the game's content has errors: ${JSON.stringify(checked.errors)}`);
+  // The skins' PNG sheets are decoded before the view is made, so every frame drawn has them.
+  const content = { ok: true as const, value: await withContentImages(checked.value) };
   const entry = (await import(/* @vite-ignore */ job.viewUrl)) as Partial<ViewEntry>;
   if (typeof entry.createView !== 'function')
     throw new Error(`${job.viewUrl} does not export createView(content, seed) (engine/core/view.ts)`);

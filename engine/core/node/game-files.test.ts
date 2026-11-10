@@ -24,6 +24,18 @@ describe('readGameFiles', () => {
     expect(files['content/rooms/b.json']).toBe('b');
   });
 
+  it('reads assets/ too: text as text, a PNG as a base64 data URL (Engine 0.16 T10)', () => {
+    dir = mkdtempSync(join(tmpdir(), 'ww-game-'));
+    mkdirSync(join(dir, 'assets/pack'), { recursive: true });
+    writeFileSync(join(dir, 'game.json'), '{}');
+    writeFileSync(join(dir, 'assets/CREDITS.md'), '# Credits');
+    writeFileSync(join(dir, 'assets/pack/a.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    const files = readGameFiles(dir);
+    expect(Object.keys(files)).toEqual(['game.json', 'assets/CREDITS.md', 'assets/pack/a.png']);
+    expect(files['assets/CREDITS.md']).toBe('# Credits');
+    expect(files['assets/pack/a.png']).toBe('data:image/png;base64,iVBORw==');
+  });
+
   it('returns nothing for an empty folder', () => {
     dir = mkdtempSync(join(tmpdir(), 'ww-game-'));
     expect(readGameFiles(dir)).toEqual({});

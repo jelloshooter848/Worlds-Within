@@ -203,7 +203,12 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
 - `assets/`: the sprite sheet registry (`registry.ts`), asset packs, and `sheet-lookup.ts`
   (`sheetLookup(assets)`, a `SheetLookup` that returns null instead of throwing for a missing sheet
   or palette; backends and games use it) and `content-sheets.ts` (`contentSheets(content)`: a
-  game's sprite and palette files as a `SheetLookup`, Engine 0.7 T9).
+  game's sprite and palette files as a `SheetLookup`, Engine 0.7 T9; from Engine 0.16 T10 also the
+  skins' PNG sheets once `content-images.ts`'s `withContentImages(content)` decoded them).
+- PNG sprite sheets (Engine 0.16 T10): `gfx/image-sheet.ts` (a skin's `images` entries: schema,
+  grid and named frame maths), `gfx/spritesheet.ts`'s `FrameAnchor` and `anchorOffset`,
+  `content/png.ts` (asset files as strings, `readPngSize`, `encodePng`) and `content/assets.ts`
+  (the `assets/` checks `validate` runs: credits and skin images).
 - `save/`, `a11y/`, `math/`, `platform.ts`. `save/settings.ts` (Engine 0.15 T5, gap M1): the
   player's stored volumes (`StoredVolumes`, `DEFAULT_VOLUMES`, `volumesKey(game)`,
   `readVolumes`, `loadVolumes`, `storeVolumes`; never read headless).

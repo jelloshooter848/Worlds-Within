@@ -79,6 +79,11 @@ canvas, none in Node). Each `present(frame)`, in order:
   `byTag` look that matches one of the entity's tags (a whole `tag`, or from Engine 0.15 a `prefix`
   with an optional `min`/`max` range, gap M2), else the kind's own frames (Engine 0.11, gap G30);
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
+  A frame with an `anchor` (a skin's PNG sheet, Engine 0.16 T10: `anchorOffset` from
+  `@engine/core/gfx/spritesheet`, mirrored when flipped) is drawn so its anchor sits on the
+  entity box (`bottom`: its bottom centre on the box's), before the zoom; text sprites have no
+  anchor and draw at the box's top-left as before. PNG sheets reach the presenter through the
+  same `SheetLookup` (`contentSheets` of a bundle that went through `withContentImages`).
   `fx` squash, stretch and `rotate` go through `transformed()` about the bottom centre; `alpha`
   through `translucent()`.
 - Tweens (Engine 0.16 T1, `@engine/core/fx`): one `TweenSet` per entity id, presenter state only.

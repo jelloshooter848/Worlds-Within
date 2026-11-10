@@ -14,6 +14,9 @@ import { fxSkin, fxStages, mustLoadFxLab } from './content';
 import { createGame } from './headless';
 import { fxCanvasPicture, fxFrames, fxLook, fxPicture } from './picture';
 import { fxLook3d } from './picture3d';
+import { SHEET_SIZE, TORCH_SHEET, torchSheetPng } from './tools/torch-sheet';
+import { readPngSize } from '@engine/core/content/png';
+import { imageSheetFrames } from '@engine/core/gfx/image-sheet';
 
 // The fx lab (Engine 0.16 T2): its content, the full animation set of Pip in both skins, and
 // the frame events' sounds played through both presenters over its run files. The page's own
@@ -226,5 +229,24 @@ describe('fx lab HUD through the UI kit (Engine 0.16 T6)', () => {
     scene.dispose();
     // Panel pieces and icons, bar and minimap fills, glyphs; never a missing frame's box.
     expect([...kinds].sort()).toEqual(['fill', 'glyph', 'sprite']);
+  });
+});
+
+describe('fx lab PNG sheet (Engine 0.16 T10)', () => {
+  it('commits exactly the sheet its script makes', () => {
+    const committed = readFileSync(new URL(`./${TORCH_SHEET}`, import.meta.url));
+    expect(new Uint8Array(committed)).toEqual(torchSheetPng());
+    expect(readPngSize(torchSheetPng())).toEqual(SHEET_SIZE);
+  });
+
+  it('draws the torch from the PNG sheet, anchored on its feet, credited as CC0', () => {
+    const skin = fxSkin(content, 'canvas2d');
+    expect(skin.images?.['lab-torch']?.image).toBe(TORCH_SHEET);
+    expect(skin.kinds['torch']?.sheet).toBe('lab-torch');
+    expect(content.assets?.['assets/CREDITS.md']).toMatch(/## fx-lab-png[\s\S]*Licence: CC0/);
+    // Every frame of every state is in the image's grid or its named frames.
+    const frames = imageSheetFrames(skin.images!['lab-torch']!);
+    expect([...frames.keys()]).toEqual(['torch-0', 'torch-1', 'torch-2', 'torch-3', 'torch-unlit']);
+    expect(frames.get('torch-3')).toEqual({ x: 55, y: 1, w: 16, h: 24, anchor: 'bottom' });
   });
 });

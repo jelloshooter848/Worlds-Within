@@ -1,4 +1,5 @@
 import { CanvasRenderer } from '@engine/backends/canvas2d';
+import { withContentImages } from '@engine/core/assets/content-images';
 import type { HeadlessEntry, JsonObject, JsonValue } from '@engine/core/headless';
 import { stateHash } from '@engine/core/state-hash';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
@@ -161,10 +162,10 @@ async function startRun(job: DebugRunJob, tick: number): Promise<void> {
   const createView = viewEntry?.createView;
   const opts = headlessOptions(job);
   const createGame = entry.createGame;
+  // The view's picture gets the skins' PNG sheets, decoded before the first frame (Engine 0.16 T10).
+  const pictured = await withContentImages(content.value);
   session = new DebugSession<ViewGame>(job, () => createGame(content.value, job.seed, opts), {
-    ...(typeof createView === 'function'
-      ? { makeView: () => createView(content.value, job.seed, opts) }
-      : {}),
+    ...(typeof createView === 'function' ? { makeView: () => createView(pictured, job.seed, opts) } : {}),
   });
   if (typeof createView === 'function') {
     const canvas = $<HTMLCanvasElement>('picture');

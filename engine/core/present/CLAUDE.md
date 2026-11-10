@@ -96,6 +96,13 @@ number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 th
     cached lookup. Both presenters run these through the skin's `events` (sound, effect, tween) after
     the frame's own events, once per frame number, and never write them into the frame, a kit or a
     hash. `games/fx-lab` is the worked example.
+  - PNG sheets (Engine 0.16 T10, `engine/core/gfx/image-sheet.ts`): a top-level `images` map,
+    image id -> `{ image: "assets/<pack>/<file>.png", frameSize?, grid?, names?, frames?, anchor? }`,
+    on 2D and 3D skins. An entry naming the id as its `sheet` uses its frames like a text
+    sprite's; `checkSkinRefs` checks them (`missing_frame`: `image "<id>" has no frame ...`) and
+    refuses an id a sprite file has (`duplicate_name` at `images.<id>`). The file itself (present,
+    a PNG, frames inside it) is checked by the content loader (`content/assets.ts`). A frame's
+    `anchor` places it on the entity box (`anchorOffset`); text sprites have none.
   - Audio (Engine 0.16 T8, `engine/core/audio/mix.ts`): an event entry's `pitch` and `volume`
     (`[min, max]`, `bad_range` when min is above max), `cooldown` (frames) and `duck { amount,
 attack?, hold?, release? }`, and a top-level `music` section of layered songs (`skinMusicSchema`;

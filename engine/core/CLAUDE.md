@@ -56,6 +56,29 @@ cue?)`, `uiSound(id)`, `dialog(open)`, `tick()` once per loop step, `state()` (`
   music bus, the dialog duck, the ui bus), `present/skin-audio.test.ts` and `shell/shell.test.ts`;
   in the browser `tests/browser/fx-lab-mix.test.ts`.
 
+**PNG sprite sheets** (Engine 0.16 T10; docs/DESIGN.md, item 322). A skin's `images` map names
+image sheets (`gfx/image-sheet.ts`, pure, on `PURE_CORE`: `imageSheetSchema`, `imageSheetFrames`,
+`imageSheetFrameList`, `frameOutside`): `{ image: "assets/<pack>/<file>.png", frameSize?, grid?: {
+cols, rows, margin?, spacing? }, names?, frames?: { <name>: { x, y, w, h, anchor? } }, anchor? }`.
+Grid cells are cut left to right, top to bottom (cell (c, r) at `margin + c * (w + spacing)`,
+`margin + r * (h + spacing)`), named by `names` in order, else `"0"`, `"1"`, ...; named `frames` add
+rectangles. Kind, tile, HUD, parallax and emitter entries name the image id as their `sheet` and
+its frames like a text sprite's. `gfx/spritesheet.ts`'s `FrameRect` has an optional `anchor`
+(`FrameAnchor`: `top-left`, `center`, `bottom` or a frame pixel `{ x, y }` put on the box's bottom
+centre) and `anchorOffset(anchor, frame, box, flipX)` places a frame on an entity box (text
+sprites have none and draw as before). The files travel as strings: `node/game-files.ts` and the
+build's `virtual:game-files` read a game's `assets/` folder too, text files as text and binary
+ones as base64 `data:` URLs (`content/png.ts`: `isAssetPath`, `assetDataUrl`, `dataUrlBytes`,
+`readPngSize`, the header reader, and `encodePng`/`crc32`, a deterministic PNG writer with stored
+deflate blocks for a game's script that makes an original sheet). `loadContent` keeps them out
+of the kinds as `bundle.assets` and checks them (`content/assets.ts`). In the browser
+`assets/content-images.ts`'s `withContentImages(content, decode?)` decodes every skin's PNGs
+before the first frame (an `<img>` and its pixels through a canvas) into `bundle.images`, which
+`contentSheets` (2D) and `contentPixelSheets` (the 3D HUD) give by image id; a page awaits it
+before it boots, and the screenshot and debugger pages before they make the view. Tested in
+`content/png.test.ts`, `gfx/image-sheet.test.ts`, `content/assets.test.ts`,
+`assets/content-images.test.ts` and `present/skin-images.test.ts`.
+
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
 JSON-safe data, the optional `order(order)`, and from Engine 0.10 the optional `miniGame()`, the
 round the game is hosting now or null: gap G37, item 159) and `HeadlessEntry` (`createGame(content, seed)`, and from Engine

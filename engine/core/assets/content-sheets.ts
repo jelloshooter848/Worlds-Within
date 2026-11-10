@@ -10,13 +10,21 @@ import { sheetLookup, type SheetLookup } from './sheet-lookup';
  * bundle defined in an `AssetRegistry` over its palette files (`contentArt`). The three lines
  * each game's `picture.ts` wrote for itself (Engine 0.7 T9, gap G35 in
  * docs/reports/stacking-test.md). Sheets are drawn when first asked for (a canvas in the
- * browser), so this is not pure; Node tests that only need ids may still call it.
+ * browser), so this is not pure; Node tests that only need ids may still call it. A bundle that
+ * went through `withContentImages` (`content-images.ts`, Engine 0.16 T10) also gives each skin's
+ * PNG sheets, by image id.
  */
 export function contentSheets(content: ContentBundle): SheetLookup {
   const art = contentArt(content);
   const assets = new AssetRegistry({ default: art.palettes });
   assets.defineAll(art.sprites);
-  return sheetLookup(assets);
+  const sprites = sheetLookup(assets);
+  const images = content.images;
+  // A skin's PNG sheet (Engine 0.16 T10), once `withContentImages` decoded it, by its image id.
+  // A palette does not recolour a PNG: the image is drawn as it is.
+  return images === undefined || images.size === 0
+    ? sprites
+    : (id, palette) => images.get(id)?.sheet ?? sprites(id, palette);
 }
 
 /**
@@ -34,7 +42,11 @@ export type PixelSheetLookup = (id: string, palette?: string) => Rasterized | nu
 export function contentPixelSheets(content: ContentBundle): PixelSheetLookup {
   const art = contentArt(content);
   const decoded = new Map<string, Rasterized | null>();
+  const images = content.images;
   return (id, palette) => {
+    // A skin's PNG sheet (Engine 0.16 T10) once decoded: its pixels and frames, as they are.
+    const image = images?.get(id);
+    if (image !== undefined) return image.pixels;
     const key = palette ? `${id}@${palette}` : id;
     if (decoded.has(key)) return decoded.get(key)!;
     let pixels: Rasterized | null = null;

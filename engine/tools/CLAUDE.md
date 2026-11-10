@@ -169,7 +169,11 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   `{ game, fileCount, errorCount, files: [{ file, errors }], errors: ContentError[] }` (errors as
   in `engine/core/content/validate.ts`, with repo paths). Exit 0 or 3. A folder that is not there
   is a usage error. Its own content codes: `unknown_kit` (at `kit` or `uses.<i>` in `game.json`),
-  `duplicate_kit` and `kind_clash` (at `uses.<i>`; A game on two kits, below). It also runs
+  `duplicate_kit` and `kind_clash` (at `uses.<i>`; A game on two kits, below). From Engine 0.16
+  T10 it reads the game's `assets/` folder too and checks it (`engine/core/content/assets.ts`):
+  `missing_credits` at `assets/CREDITS.md` (none, a pack folder it does not name, a missing
+  `Source`/`Author`/`Licence`), `bad_licence` (not CC0, no owner decision cited) and, at the skin
+  file, `missing_file`, `bad_image` and `frame_outside_image` at `images.<id>...`. It also runs
   each kind's checks across files (`checkAll`), such as the top-down rooms' `invalid_dungeon`, so
   content it passes is content the game can build.
 - `run <runFile> [--disable-rule <ids>]`: plays a run file headless and checks it (below).
@@ -1005,7 +1009,9 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   and the command exits 4 (the PNG is still written), with `message` naming the first tick.
 - Same run file and tick, same machine: byte-identical PNG (`screenshot.test.ts` checks it for both
   backends, that different ticks give different PNGs, the software-GL refusal and the 3D content
-  errors). Text drawn with `debugText` uses a system font, so a
+  errors). The page decodes the skins' PNG sheets (`withContentImages`, Engine 0.16 T10) before it
+  makes the view, so every frame has them (`screenshot.test.ts` checks the fx lab's PNG torch on
+  two runs). Text drawn with `debugText` uses a system font, so a
   PNG's hash can differ between machines; compare hashes on one machine.
 - `--backend three` (Engine 0.6): the 3D picture. The page needs the view's `frame()` (else exit 3,
   `no_frame_hook` at `view` in `game.json`) and the command a skin with `"backend": "three"` in the

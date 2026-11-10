@@ -5,6 +5,31 @@
     "sheet": "fx",
     "fallbackColor": "#ff00ff"
   },
+  "images": {
+    "lab-torch": {
+      "image": "assets/fx-lab-png/torch.png",
+      "frameSize": {
+        "w": 16,
+        "h": 24
+      },
+      "grid": {
+        "cols": 4,
+        "rows": 1,
+        "margin": 1,
+        "spacing": 2
+      },
+      "names": ["torch-0", "torch-1", "torch-2", "torch-3"],
+      "frames": {
+        "torch-unlit": {
+          "x": 1,
+          "y": 27,
+          "w": 16,
+          "h": 24
+        }
+      },
+      "anchor": "bottom"
+    }
+  },
   "kinds": {
     "runner": {
       "flipFacing": true,
@@ -164,8 +189,12 @@
       ]
     },
     "torch": {
+      "sheet": "lab-torch",
       "frames": {
-        "idle": "torch"
+        "idle": {
+          "frames": ["torch-0", "torch-1", "torch-2", "torch-3"],
+          "ticks": [6, 5, 7, 5]
+        }
       },
       "emit": ["torch-smoke", "torch-flame"],
       "glow": {

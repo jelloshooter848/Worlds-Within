@@ -12,6 +12,7 @@ import {
   type EmitterDef,
 } from '../fx/schema';
 import { EASE_NAMES, isEaseName } from '../fx/ease';
+import { imageSheetFrames, imageSheetSchema } from '../gfx/image-sheet';
 import {
   checkMusicLayers,
   checkSoundRange,
@@ -43,6 +44,10 @@ import {
  *     "tiles": { "#": { "sheet": "walls", "frame": "wall", "fallbackColor": "#7c7c7c" } },
  *     "events": { "hit": { "sound": "hurt", "effect": { "kind": "flash", "color": "#fcfcfc" } } },
  *     "hud": [{ "status": "health", "as": "hearts", "x": 8, "y": 8, "frame": "heart" }] }
+ *
+ * PNG sprite sheets (Engine 0.16 T10): a top-level `images` map names image sheets in the game's
+ * `assets/` folder (`imageSheetSchema`, `engine/core/gfx/image-sheet.ts`); an entry naming an
+ * image id as its `sheet` uses its frames like a text sprite's.
  *
  * The backend decides the entry shape: a 3D backend (`three`, see {@link MESH_BACKENDS}) takes
  * mesh entries (`mesh`, `color`, `scale?`, `depth?`, `z?`), every other backend sprite entries
@@ -870,6 +875,12 @@ export const skinSchema = z
         `the colour the backend clears to before each frame it draws with this skin (default \`${DEFAULT_BACKGROUND}\`)`,
       ),
     sheets: sheets.exactOptional().describe('defaults for entries that leave a field out'),
+    images: z
+      .record(id, imageSheetSchema)
+      .exactOptional()
+      .describe(
+        'PNG sprite sheets (Engine 0.16): id -> `{ image: "assets/<pack>/<file>.png", frameSize?, grid?: { cols, rows, margin?, spacing? }, names?, frames?: { name: { x, y, w, h, anchor? } }, anchor? }`; entries name the id as their `sheet`',
+      ),
     kinds: z.record(id, kindEntry).describe('entity kind -> how it looks'),
     tiles: z.record(id, tileEntry).exactOptional().describe('map tile character or id -> how it looks'),
     events: z
@@ -951,6 +962,17 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
   const sprites = new Map(
     others('sprite').map((e) => [e.name, e.value as { frames?: Record<string, unknown> }]),
   );
+  // The skin's PNG sheets (Engine 0.16 T10) are sheets too; an id a sprite file has is a clash.
+  const images = new Set<string>();
+  for (const [image, spec] of Object.entries(skin.images ?? {})) {
+    if (sprites.has(image)) {
+      const message = `image "${image}" has the name of a sprite file: give it another id`;
+      issues.push({ name, path: ['images', image], code: 'duplicate_name', message });
+      continue;
+    }
+    images.add(image);
+    sprites.set(image, { frames: Object.fromEntries(imageSheetFrames(spec)) });
+  }
   const palettes = new Set(others('palette').map((e) => e.name));
   const sounds = new Set([...others('song'), ...others('sfx')].map((e) => e.name));
   const missing = (path: FieldPath, what: string, ref: string) =>
@@ -965,9 +987,10 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
       if (sheet !== undefined) missing([...path, 'sheet'], 'sprite', sheet);
       return;
     }
+    const what = images.has(used) ? 'image' : 'sprite';
     for (const f of frames) {
       if (sprite.frames && !Object.hasOwn(sprite.frames, f.frame)) {
-        const message = `sprite "${used}" has no frame "${f.frame}"`;
+        const message = `${what} "${used}" has no frame "${f.frame}"`;
         issues.push({ name, path: [...path, ...f.path], code: 'missing_frame', message });
       }
     }

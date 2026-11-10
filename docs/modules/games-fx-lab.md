@@ -40,6 +40,10 @@ test game, content and glue only.
   song `lab` (`music`), danger mixed in while the kit's `nearestActor` status is under 72 px;
   footsteps and jumps vary in pitch and volume (footsteps rest 4 frames), stomps and hurts duck
   the music, and so does the dialog box.
+- `assets/fx-lab-png/torch.png` and `assets/CREDITS.md` (T10): the lab's PNG sprite sheet, an
+  original torch made by `tools/torch-sheet.ts` (`pnpm exec tsx games/fx-lab/tools/torch-sheet.ts`;
+  own work, CC0), named in the 2D skin's `images` as `lab-torch` (a 4-cell grid with margin 1 and
+  spacing 2, plus the named frame `torch-unlit`, anchored `bottom`) and drawn for the `torch` kind.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
 
 ## Imports allowed
@@ -49,7 +53,7 @@ test game, content and glue only.
 
 ## How to test
 
-`pnpm test games/fx-lab` (`fx-lab.test.ts`: level order, both skins' animation sets, frame-event
+`pnpm test games/fx-lab` (`fx-lab.test.ts`: the committed PNG equals its script's output (T10), level order, both skins' animation sets, frame-event
 sounds through both presenters, the particle presets, the camera effects and parallax in both
 skins, hit-pause requests on stomps and the 3D zoom on the door); `pnpm -s cli validate games/fx-lab --json`;
 `pnpm -s cli run games/fx-lab/runs/level-1.run.json --json` (and `level-2`, `level-3`); `pnpm test tests/runs`

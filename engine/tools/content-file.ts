@@ -14,6 +14,7 @@ import { gameManifestSchema, MANIFEST_FILE } from '@engine/core/content/manifest
 import { gridRows } from '@engine/core/content/text-grid';
 import { contentError, validate, type ContentError } from '@engine/core/content/validate';
 import { readGameFiles } from '@engine/core/node/game-files';
+import { isAssetPath } from '@engine/core/content/png';
 import { UsageError } from './exit-codes';
 import { checkGameTexts, gameKinds } from './game-loader';
 import { readJson, writeJson } from './json-format';
@@ -132,7 +133,7 @@ export function openContentFile(cwd: string, path: string): ContentFile {
   const root = gameDir === '.' ? '' : `${gameDir}/`;
   const rel = slash(relative(gameAbs, abs));
   const texts = readGameFiles(gameAbs);
-  if (texts[rel] === undefined) {
+  if (texts[rel] === undefined || isAssetPath(rel)) {
     throw new UsageError(
       `${path} is not a content file: only ${MANIFEST_FILE}, files under content/ and run files can be edited`,
     );

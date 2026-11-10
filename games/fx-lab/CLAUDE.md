@@ -171,6 +171,22 @@ parts) and checked with `pnpm cli screenshot` at ticks mid-walk, mid-run, rising
 stomping and hurt. Edit `content/sprites/fx.txt` by hand now: one character per pixel, legend at
 the top. Keep each frame's rows the same length.
 
+## The PNG sheet (Engine 0.16 T10)
+
+`assets/fx-lab-png/torch.png` is the lab's worked example of a PNG sprite sheet in a skin (the
+only binary file the lab has; `tests/architecture/no-content.test.ts` allows binary files only in
+a game's `assets/`). It is original: `tools/torch-sheet.ts` draws it from code (the text sprite
+`torch`'s brazier and a swaying, flickering flame from integer tables) and writes it with the
+engine's deterministic `encodePng`. Rerun `pnpm exec tsx games/fx-lab/tools/torch-sheet.ts` after
+changing the script; `fx-lab.test.ts` fails while the committed file differs. It is 72 x 52: four
+16 x 24 flame frames on a grid (margin 1, spacing 2) and the unlit torch at (1, 27). The 2D skin
+names it in `images` as `lab-torch` (`names` `torch-0..3`, the named frame `torch-unlit`, anchor
+`bottom`, so the 24-px frame stands on the 16-px box and the flame rises 8 px above it); the
+`torch` kind cycles `torch-0..3` (ticks 6, 5, 7, 5), keeping its glow and emitters. The 3D skin
+keeps its low-poly torch mesh. `assets/CREDITS.md` credits the pack (own work, CC0); `validate`
+checks it, the file and every frame. The page awaits `withContentImages` before it boots, so the
+image is there for the first frame. Screenshot: `level-3 --tick 40` (the first torch, by Pip).
+
 ## Run and test
 
 ```sh
@@ -179,7 +195,7 @@ pnpm -s cli run games/fx-lab/runs/level-1.run.json --json     # also level-2, le
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --json   # Pip mid-run
 pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend three --allow-software-gl --json
 # particle presets: level-1 --tick 154 (land dust), 247 (run dust), 219 (stomp sparks);
-# level-3 --tick 120 (coin burst), 305 (torch, door aura)
+# level-3 --tick 120 (coin burst), 305 (torch, door aura), 40 (the PNG torch, T10)
 # camera effects (T4): level-1 --tick 216 (stomp shake), 352 (door zoom); level-2 --tick 279
 # (hurt flash); parallax at two camera positions: level-1 --tick 120 and 260
 # the HUD (T6): level-1 --tick 300 (counter, minimap), level-2 --tick 300 (half a health bar)
