@@ -3083,7 +3083,9 @@
             "1": "tumble"
           }
         }
-      }
+      },
+      "castShadow": true,
+      "receiveShadow": true
     },
     "beetle": {
       "mesh": "beetle-a",
@@ -3104,7 +3106,8 @@
         "fall": "beetle-b",
         "stomped": "beetle-flat",
         "dead": "beetle-flat"
-      }
+      },
+      "castShadow": true
     },
     "coin": {
       "mesh": "coin-face",
@@ -3118,7 +3121,8 @@
           "frames": ["coin-face", "coin-turn"],
           "ticks": 2
         }
-      }
+      },
+      "castShadow": true
     },
     "goal": {
       "mesh": "door-shut",
@@ -3129,12 +3133,16 @@
           "ticks": [40, 6, 20]
         }
       },
-      "emit": "magic-aura"
+      "emit": "magic-aura",
+      "castShadow": true,
+      "receiveShadow": true
     },
     "bump-block": {
       "mesh": "box",
       "color": "#ac7c00",
-      "depth": 16
+      "depth": 16,
+      "castShadow": true,
+      "receiveShadow": true
     },
     "torch": {
       "mesh": "torch",
@@ -3142,37 +3150,65 @@
       "model": "assets/fx-lab-glb/brazier.glb",
       "scale": 18,
       "anchor": "bottom",
-      "rotate": { "y": 30 },
-      "clip": { "idle": "flicker" },
+      "rotate": {
+        "y": 30
+      },
+      "clip": {
+        "idle": "flicker"
+      },
       "castShadow": true,
-      "emit": ["torch-smoke", "torch-flame"]
+      "emit": ["torch-smoke", "torch-flame"],
+      "light": {
+        "kind": "point",
+        "color": "#ffa040",
+        "intensity": 40,
+        "distance": 96,
+        "offset": {
+          "x": 0,
+          "y": -12,
+          "z": 6
+        },
+        "flicker": 0.3
+      }
     }
   },
   "tiles": {
     "#": {
       "mesh": "box",
-      "color": "#c84c0c"
+      "color": "#c84c0c",
+      "castShadow": true,
+      "receiveShadow": true
     },
     "B": {
       "mesh": "box",
-      "color": "#a81000"
+      "color": "#a81000",
+      "castShadow": true,
+      "receiveShadow": true
     },
     "?": {
       "mesh": "box",
-      "color": "#f8b800"
+      "color": "#f8b800",
+      "castShadow": true,
+      "receiveShadow": true
     },
     "u": {
       "mesh": "box",
-      "color": "#ac7c00"
+      "color": "#ac7c00",
+      "castShadow": true,
+      "receiveShadow": true
     },
     "=": {
       "mesh": "box",
       "color": "#bcbcbc",
-      "depth": 12
+      "depth": 12,
+      "castShadow": true,
+      "receiveShadow": true
     },
     "^": {
       "mesh": "cone",
-      "color": "#7c7c7c"
+      "color": "#7c7c7c",
+      "castShadow": true,
+      "receiveShadow": true
     }
   },
   "events": {
@@ -3644,5 +3680,82 @@
       "y": 172,
       "depth": 300
     }
-  ]
+  ],
+  "scene3d": {
+    "sun": {
+      "color": "#fff0d0",
+      "intensity": 1.5,
+      "direction": {
+        "x": -1.6,
+        "y": 2.4,
+        "z": 1.2
+      },
+      "shadow": {
+        "mapSize": 1024,
+        "radius": 2
+      }
+    },
+    "ambient": {
+      "color": "#a8b8e8",
+      "intensity": 0.35
+    },
+    "hemisphere": {
+      "sky": "#a4e4fc",
+      "ground": "#7c4c20",
+      "intensity": 0.5
+    },
+    "fog": {
+      "kind": "linear",
+      "color": "#a4e4fc",
+      "near": 100,
+      "far": 1400
+    },
+    "toneMapping": {
+      "kind": "aces",
+      "exposure": 1.3
+    },
+    "colorSpace": "srgb"
+  },
+  "labels": {
+    "runner": [
+      {
+        "as": "text",
+        "format": "Pip",
+        "font": "fx-small",
+        "color": "#fcfcfc",
+        "outline": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -6
+        }
+      },
+      {
+        "from": {
+          "status": "hp"
+        },
+        "as": "bar",
+        "max": "maxHp",
+        "w": 16,
+        "h": 4,
+        "color": "#00a800",
+        "back": "#000000",
+        "border": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -6
+        }
+      }
+    ],
+    "goal": {
+      "as": "text",
+      "format": "EXIT",
+      "font": "fx-small",
+      "color": "#f8b800",
+      "outline": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -6
+      }
+    }
+  }
 }

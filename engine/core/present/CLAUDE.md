@@ -163,6 +163,28 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
     neither is `missing_ref` at that field; a `meshes` key may not be a primitive's name.
     `camera3d` `{ fov?, tilt?, layerDepth?, lights?: { ambient?, directional? } }` gives framing
     defaults (`DEFAULT_CAMERA3D`; `layerDepth` is z px per entity `layer`).
+  - The 3D scene look (Engine 0.16 T12, `scene3d.ts`): a skin-level `scene3d` (`scene3dSchema`)
+    `{ sun?: { color?, intensity?, direction? (px right, up, toward the camera; default
+`DEFAULT_SUN_DIRECTION`), shadow?: { mapSize?, bias?, radius? } (`DEFAULT_SHADOW`) },
+ambient?: { color?, intensity? }, hemisphere?: { sky, ground, intensity? }, fog?: { kind:
+linear | exp2, color, near?, far? (px behind the z = 0 plane), density? }, toneMapping?: { kind:
+aces | agx | none, exposure? }, colorSpace?: srgb | linear }`; a kind's `light`
+    (`kindLightSchema`: `{ kind: point, color, intensity, distance, decay?, offset? { x, y, z } (y
+down, from the box's centre), flicker? 0..1 }`) and `receiveShadow` on kinds and tiles (beside
+    T11's `castShadow`); and a skin-level `labels` (`labelsSchema`: kind -> a label or a list,
+    `labelSchema` `{ from?: id | kind | { tag: prefix } | { status: field }, as: text | bar |
+timer, format?, max? (number or status field), font?, color?, shadow?, outline?, back?,
+border?, w?, h?, anchor?: top | center | bottom, offset? }`). All are 3D fields
+    (`wrong_backend_field` on a 2D skin). Cross-file (`checkLabelFonts` in `checkSkinRefs`): a
+    label's font that is no font file is `missing_ref`, a `format` character it lacks
+    `missing_glyph`, at `labels.<kind>[.<i>].font` / `.format`. Pure readings:
+    `resolveScene3d(scene3d, camera3d lights)` (`Scene3dLook`, every default filled: without
+    `scene3d` the old ambient and directional intensities, no shadow, fog or tone mapping, sRGB),
+    `skinLabels(labels, kind)`, `labelValue(label, entity, status)`, `labelBar(label, value,
+status)` (a number, a tag's `n/m`, or a number text; `max` the label's, a status field's, the
+    tag's `m`, else 100) and `timerText(ticks)` (`m:ss`, seconds rounded up,
+    `LABEL_TICKS_PER_SECOND` 60). The UI kit lays labels out (`engine/core/ui/labels.ts`); the 3D
+    backend projects and draws them. Tested in `scene3d.test.ts`.
   - `resolveMeshParts(skin, entry, box)` (pure, the one reading of mesh text shared by backends
     and tests): the `MeshPart[]` `{ shape, size, at, color, rotate }` for a kind or tile entry,
     with `box` the entity box or `{ w: tileSize, h: tileSize }`: a primitive is one part filling

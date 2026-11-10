@@ -21,6 +21,7 @@ import {
   type SoundCue,
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
+import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
 import { missingGlyphs, type FontFile } from '../ui/font';
 import {
   cardinalFacing,
@@ -220,11 +221,13 @@ const MESH_FIELDS = [
   'rotate',
   'clip',
   'castShadow',
+  'receiveShadow',
+  'light',
 ] as const;
 /** The model fields that mean nothing without a `model` (Engine 0.16 T11). */
 const MODEL_FIELDS = ['anchor', 'rotate', 'clip'] as const;
 /** Skin-level fields only a 3D skin has. */
-const MESH_SKIN_FIELDS = ['meshes', 'camera3d'] as const;
+const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'labels'] as const;
 
 const meshRef = id.describe(
   `3D: a primitive (${MESH_PRIMITIVES.map((p) => `\`${p}\``).join(', ')}) or a key of \`meshes\``,
@@ -277,7 +280,15 @@ const modelRotate = z
 const castShadow = z
   .boolean()
   .exactOptional()
-  .describe('3D: the model (or mesh) casts a shadow where the scene draws shadows (default false)');
+  .describe(
+    "3D: the model (or mesh) casts a shadow when the skin's `scene3d.sun` has a `shadow` (default false)",
+  );
+const receiveShadow = z
+  .boolean()
+  .exactOptional()
+  .describe(
+    "3D: shadows fall on the mesh (or model) when the skin's `scene3d.sun` has a `shadow` (default false)",
+  );
 
 const meshPart = z.strictObject({
   shape: z.enum(MESH_PRIMITIVES).describe('the primitive'),
@@ -466,6 +477,8 @@ const kindEntry = z.strictObject({
       "3D model: the animation clip to play, one name for every state or animation state -> clip name (a state not listed plays `idle`'s, else none); looped, `anim.t` / 60 seconds in",
     ),
   castShadow,
+  receiveShadow,
+  light: kindLightSchema.exactOptional(),
   offset: offset.exactOptional(),
   spawnTween: tweensSchema
     .exactOptional()
@@ -520,6 +533,7 @@ const tileEntry = z.strictObject({
       '3D model: the animation clip every cell plays, looped on the frame clock (frame / 60 seconds)',
     ),
   castShadow,
+  receiveShadow,
 });
 
 const effect = z.strictObject({
@@ -864,6 +878,8 @@ function checkMeshes(
     tiles?: Record<string, { mesh?: string }>;
     meshes?: Record<string, unknown>;
     camera3d?: unknown;
+    scene3d?: unknown;
+    labels?: unknown;
   },
   ctx: z.RefinementCtx,
 ): void {
@@ -985,6 +1001,12 @@ export const skinSchema = z
       .exactOptional()
       .describe('3D: named compound meshes, each a list of primitive parts in world px'),
     camera3d: camera3d.exactOptional().describe('3D: perspective framing and light defaults'),
+    scene3d: scene3dSchema
+      .exactOptional()
+      .describe(
+        '3D: the scene look (Engine 0.16): `{ sun?: { color?, intensity?, direction?, shadow?: { mapSize?, bias?, radius? } }, ambient?, hemisphere?, fog?: { kind: linear | exp2, color, near?, far?, density? }, toneMapping?: { kind: aces | agx | none, exposure? }, colorSpace? }`',
+      ),
+    labels: labelsSchema.exactOptional(),
     emitters: z
       .record(id, emitterSchema)
       .exactOptional()
@@ -1127,6 +1149,7 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
   }
   issues.push(...checkMusicSongs(name, skin, others));
   issues.push(...checkHudFonts(name, skin, others, sprites));
+  issues.push(...checkLabelFonts(name, skin, others));
   (skin.hud ?? []).forEach((item, i) => {
     sheetAt(['hud', i], item.sheet, one(item.frame));
     if (item.panel !== undefined) sheetAt(['hud', i, 'panel'], item.panel.sheet, one(item.panel.frame));
@@ -1272,6 +1295,40 @@ function checkHudFonts(
     if (item.as === 'number' || item.as === 'counter')
       report('font', missingGlyphs(glyphs, HUD_DIGITS), 'a number shows every digit');
   });
+  return issues;
+}
+
+/**
+ * World-anchored labels' fonts (Engine 0.16 T12): a label's `font` must be a font file of the
+ * game (`missing_ref` at `labels.<kind>[.<i>].font`) with a glyph for every character of its
+ * `format` (`missing_glyph` at `.format`).
+ */
+function checkLabelFonts(name: string, skin: SkinFile, others: ContentLookup): KindIssue[] {
+  const issues: KindIssue[] = [];
+  const fonts = new Map(others('font').map((e) => [e.name, e.value as FontFile]));
+  for (const kind of Object.keys(skin.labels ?? {})) {
+    const list = skinLabels(skin.labels, kind);
+    const many = Array.isArray(skin.labels![kind]);
+    list.forEach((label, i) => {
+      if (label.font === undefined) return;
+      const at: FieldPath = many ? ['labels', kind, i] : ['labels', kind];
+      const font = fonts.get(label.font);
+      if (font === undefined) {
+        const message = `no font "${label.font}" in the game`;
+        issues.push({ name, path: [...at, 'font'], code: 'missing_ref', message });
+        return;
+      }
+      if (label.format === undefined) return;
+      const chars = missingGlyphs(
+        new Set(Object.keys(font.glyphs)),
+        label.format.split(HUD_VALUE_TOKEN).join(''),
+      );
+      if (chars.length === 0) return;
+      const list = chars.map((c) => JSON.stringify(c)).join(', ');
+      const message = `font "${label.font}" has no glyph for ${list} (used in this format)`;
+      issues.push({ name, path: [...at, 'format'], code: 'missing_glyph', message });
+    });
+  }
   return issues;
 }
 

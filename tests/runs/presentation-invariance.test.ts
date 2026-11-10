@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { CanvasRenderer } from '@engine/backends/canvas2d';
 import { threeScenePresenter, TransitionLayer } from '@engine/backends/three';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
+import { contentFonts } from '@engine/core/ui';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { transitionShape } from '@engine/core/fx';
 import { skinSchema, skinSet, SKIN_KIND, type SkinFile } from '@engine/core/present';
@@ -30,6 +31,8 @@ import { loadRun, playView, viewMaker } from './view-play';
 // The audio mixer (T8) is the shell's too: with the effects on, the 3D presenter's sounds go to a
 // `Mixer` over a recording sink (every event sound varied, cooled down and ducking, a layered song
 // mixed from each frame's status, ticked once per tick); no run reads it, and the hashes hold.
+// The 3D scene look (T12: lights, shadows, fog, tone mapping, point lights and world-anchored
+// labels) is the `lighting` switch; the 3D presenter gets the game's fonts so labels draw.
 
 vi.setConfig({ testTimeout: 120_000 });
 
@@ -207,6 +210,51 @@ const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
    * The audio mixer (T8): every event sound varies in pitch and volume, rests and ducks the music,
    * and the skin has a layered song mixed from a status value.
    */
+  /**
+   * The 3D scene look (T12): on a 3D skin, a sun with soft shadows, ambient and hemisphere
+   * light, linear fog and ACES tone mapping; every kind and tile casting and receiving shadows,
+   * every kind carrying a flickering point light and two world-anchored health bars (from the
+   * status and from an `hp:` tag). A 2D skin is left as it is (these are 3D fields).
+   */
+  lighting: (skin) => {
+    if (skin.backend !== 'three') return skin;
+    return {
+      ...skin,
+      scene3d: {
+        sun: { intensity: 1.4, direction: { x: -1, y: 2, z: 1 }, shadow: { mapSize: 256, radius: 2 } },
+        ambient: { color: '#b8c8ff', intensity: 0.3 },
+        hemisphere: { sky: '#a4e4fc', ground: '#503000', intensity: 0.5 },
+        fog: { kind: 'linear', color: '#a4e4fc', near: 0, far: 600 },
+        toneMapping: { kind: 'aces', exposure: 1.2 },
+      },
+      kinds: Object.fromEntries(
+        Object.entries(skin.kinds).map(([kind, entry]) => [
+          kind,
+          {
+            ...entry,
+            castShadow: true,
+            receiveShadow: true,
+            light: { kind: 'point', color: '#ffa040', intensity: 20, distance: 64, flicker: 0.5 },
+          },
+        ]),
+      ),
+      tiles: Object.fromEntries(
+        Object.entries(skin.tiles ?? {}).map(([key, entry]) => [
+          key,
+          { ...entry, castShadow: true, receiveShadow: true },
+        ]),
+      ),
+      labels: Object.fromEntries(
+        Object.keys(skin.kinds).map((kind) => [
+          kind,
+          [
+            { from: { status: 'hp' }, as: 'bar', max: 'maxHp', back: '#000000' },
+            { from: { tag: 'hp:' }, as: 'bar', max: 'maxHp', anchor: 'bottom' },
+          ],
+        ]),
+      ),
+    } as SkinFile;
+  },
   audio: (skin) => ({
     ...skin,
     music: {
@@ -403,10 +451,13 @@ describe('presentation invariance: presenters and effects never change the state
         onSound: (id, cue) => mixer.sound(id, cue),
         rounds: skins3d.rounds,
         sheets: contentPixelSheets(shown),
+        fonts: contentFonts(shown),
         ...(view3d.background !== undefined && { background: view3d.background }),
       });
       let last3d = '';
       let particles3d = 0;
+      let labels3d = 0;
+      let lights3d = 0;
       let parallax3d = 0;
       // Screen transitions with the effects on (T5): the shell's wrapper over the 3D presenter.
       const transitions = new ShellTransitions({
@@ -435,7 +486,13 @@ describe('presentation invariance: presenters and effects never change the state
         last3d = stateHash(view.snapshot());
         particles3d = Math.max(particles3d, presenter3d.scene.particleViews().length);
         parallax3d = Math.max(parallax3d, presenter3d.scene.parallax.meshes().length);
+        labels3d = Math.max(labels3d, presenter3d.scene.labelViews().length);
+        lights3d = Math.max(lights3d, presenter3d.scene.pointLights().length);
       });
+      if (switches.includes('lighting')) {
+        expect(labels3d, `${label}, three: world-anchored labels were shown`).toBeGreaterThan(0);
+        expect(lights3d, `${label}, three: point lights were shown`).toBeGreaterThan(0);
+      }
       if (switches.includes('particles'))
         expect(particles3d, `${label}, three: particles were shown`).toBeGreaterThan(0);
       if (switches.includes('camera'))

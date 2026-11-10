@@ -297,33 +297,37 @@
     ]
   },
   "kinds": {
-    "runner": { "mesh": "runner", "color": "#d82800" },
-    "walker": { "mesh": "walker", "color": "#c84c0c" },
-    "ledge-walker": { "mesh": "walker", "color": "#9878f8" },
-    "shell-walker": { "mesh": "shell-walker", "color": "#00a800" },
-    "shell": { "mesh": "shell", "color": "#00a800" },
-    "coin": { "mesh": "coin", "color": "#f8d800" },
-    "goal": { "mesh": "goal", "color": "#00a800" },
+    "runner": { "mesh": "runner", "color": "#d82800", "castShadow": true, "receiveShadow": true },
+    "walker": { "mesh": "walker", "color": "#c84c0c", "castShadow": true },
+    "ledge-walker": { "mesh": "walker", "color": "#9878f8", "castShadow": true },
+    "shell-walker": { "mesh": "shell-walker", "color": "#00a800", "castShadow": true },
+    "shell": { "mesh": "shell", "color": "#00a800", "castShadow": true },
+    "coin": { "mesh": "coin", "color": "#f8d800", "castShadow": true },
+    "goal": { "mesh": "goal", "color": "#00a800", "castShadow": true, "receiveShadow": true },
     "trigger": {
       "mesh": "box",
       "color": "#9878f8",
       "depth": 16,
-      "byTag": [{ "tag": "look:door", "mesh": "door", "color": "#883c00" }]
+      "byTag": [{ "tag": "look:door", "mesh": "door", "color": "#883c00" }],
+      "castShadow": true,
+      "receiveShadow": true
     },
     "bump-block": {
       "mesh": "box",
       "color": "#883c00",
       "depth": 16,
-      "byTag": [{ "tag": "brick", "mesh": "brick", "color": "#c84c0c" }]
+      "byTag": [{ "tag": "brick", "mesh": "brick", "color": "#c84c0c" }],
+      "castShadow": true,
+      "receiveShadow": true
     }
   },
   "tiles": {
-    "#": { "mesh": "ground", "color": "#c84c0c" },
-    "B": { "mesh": "brick", "color": "#c84c0c" },
-    "?": { "mesh": "bump", "color": "#f8d800" },
-    "u": { "mesh": "box", "color": "#883c00" },
-    "=": { "mesh": "slab", "color": "#00a800" },
-    "^": { "mesh": "spikes", "color": "#bcbcbc" }
+    "#": { "mesh": "ground", "color": "#c84c0c", "castShadow": true, "receiveShadow": true },
+    "B": { "mesh": "brick", "color": "#c84c0c", "castShadow": true, "receiveShadow": true },
+    "?": { "mesh": "bump", "color": "#f8d800", "castShadow": true, "receiveShadow": true },
+    "u": { "mesh": "box", "color": "#883c00", "castShadow": true, "receiveShadow": true },
+    "=": { "mesh": "slab", "color": "#00a800", "castShadow": true, "receiveShadow": true },
+    "^": { "mesh": "spikes", "color": "#bcbcbc", "castShadow": true, "receiveShadow": true }
   },
   "events": {
     "jump": { "sound": "jump" },
@@ -362,5 +366,49 @@
     { "status": "lives", "as": "number", "x": 90, "y": 8, "font": "hopper-font" }
   ],
   "camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 },
-  "camera3d": { "fov": 40, "tilt": 4, "layerDepth": 0.25, "lights": { "ambient": 0.65, "directional": 0.7 } }
+  "camera3d": { "fov": 40, "tilt": 4, "layerDepth": 0.25, "lights": { "ambient": 0.65, "directional": 0.7 } },
+  "scene3d": {
+    "sun": {
+      "color": "#fff4dc",
+      "intensity": 1.4,
+      "direction": { "x": -1.6, "y": 2.4, "z": 1.2 },
+      "shadow": { "mapSize": 1024, "radius": 2 }
+    },
+    "ambient": { "color": "#b0c4f8", "intensity": 0.35 },
+    "hemisphere": { "sky": "#a4c8fc", "ground": "#883c00", "intensity": 0.45 },
+    "fog": { "kind": "linear", "color": "#5c94fc", "near": 0, "far": 900 },
+    "toneMapping": { "kind": "aces", "exposure": 1.3 },
+    "colorSpace": "srgb"
+  },
+  "labels": {
+    "runner": [
+      {
+        "as": "text",
+        "format": "Hopper",
+        "font": "hopper-small",
+        "color": "#fcfcfc",
+        "outline": "#000000",
+        "offset": { "x": 0, "y": -6 }
+      },
+      {
+        "from": { "tag": "hp:" },
+        "as": "bar",
+        "max": "maxHp",
+        "w": 16,
+        "h": 4,
+        "color": "#00a800",
+        "back": "#000000",
+        "border": "#000000",
+        "offset": { "x": 0, "y": -6 }
+      }
+    ],
+    "goal": {
+      "as": "text",
+      "format": "GOAL",
+      "font": "hopper-small",
+      "color": "#f8d800",
+      "outline": "#000000",
+      "offset": { "x": 0, "y": -4 }
+    }
+  }
 }

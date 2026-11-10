@@ -152,6 +152,20 @@ P`). `checkMenus(spec, refs)` is what `loadContent` runs on `game.json` (`conten
   `controls`, the key-name characters `KEY_NAME_GLYPHS`, arrows included) and `missing_field` for
   a `controls` item without `controls`. Errors are at `game.json`, `menus.<field>`.
 
+Engine 0.16 T12:
+
+- `labels.ts`: world-anchored labels. `layoutLabels(labels, entity, status, project, fonts?)` ->
+  `{ draws, views }`: each label of a skin's `labels` entry (`@engine/core/present`'s
+  `labelSchema`) with something to show (a `text` label's value or `format`, a `bar`'s number
+  through `labelBar`, a `timer`'s ticks through `timerText`) is centred on its anchor's picture
+  point (`project(anchor)`, null to hide it: off screen or behind the camera) plus its `offset`
+  (default `DEFAULT_LABEL_OFFSET`, 2 px up); labels on one anchor stack in list order away from
+  the box (`top` up, `bottom` down, `center` up from the centre) `LABEL_GAP` (1) px apart. Text
+  is `textDraws` in the label's font (none without a font) with its caps (`baseline`) as its
+  height; a bar is `DEFAULT_LABEL_BAR` (16x3) unless `w`/`h`, with `border`, `back` and the fill
+  (`barFill`, `DEFAULT_BAR_COLOR`). Whole picture px. `LabelView { entity, kind, as, text?, bar?,
+box }`. The 3D backend paints the draws on its labels layer. Tested in `labels.test.ts`.
+
 The shell's side is `engine/core/shell/ui-scene.ts` (`UiScene`): a screen as a scene, its input
 from the frame's actions and taps and the pointer's hover, drawn with the backend's `UiPainter`.
 

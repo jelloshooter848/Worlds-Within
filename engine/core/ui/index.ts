@@ -151,3 +151,11 @@ export {
   type SettingsItem,
   type TitleItem,
 } from './menus';
+export {
+  DEFAULT_LABEL_BAR,
+  DEFAULT_LABEL_OFFSET,
+  LABEL_GAP,
+  layoutLabels,
+  type LabelProject,
+  type LabelView,
+} from './labels';

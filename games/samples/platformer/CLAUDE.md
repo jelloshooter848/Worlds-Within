@@ -226,7 +226,14 @@ move it into the engine or the kit (or name the release that will).
     two rows of cones on a base. `events` are the 2D skin's sounds, flashes, tints, shakes and
     (Engine 0.15, gap G33) particles; `hud` is the 2D skin's (hearts, coins and lives), drawn from
     `sheets.sheet` `hopper` and `hopper-font` by the 3D backend's HUD pass; `camera` the 2D skin's;
-    `camera3d` `fov` 40, `tilt` 4, `layerDepth` 0.25 (the lab's framing).
+    `camera3d` `fov` 40, `tilt` 4, `layerDepth` 0.25 (the lab's framing). From Engine 0.16 T12 it
+    opts in to the 3D scene look: a warm `scene3d.sun` (from up-left, a little in front) with soft
+    shadows that every kind and tile casts (tiles, the runner, the goal, triggers and bump blocks
+    receive them: a raised block's shadow lies on the ground beside it), a cool ambient, a
+    `hemisphere`, `linear` fog in the sky colour (0 to 900 px behind) and ACES tone mapping at
+    1.3; `labels` put `Hopper` (in `hopper-small`, outlined) over a health bar (the runner's
+    `hp:` tag of `maxHp`) on the runner and `GOAL` over the flag (screenshot: `level-1 --tick 250
+--backend three --allow-software-gl`).
   - `content/skins/three-vault.json` (0.7 T8): the vault round's 3D skin. The room is **laid flat
     facing the camera**: a top-down room seen from the front, exactly as the 2D picture shows it,
     so the 3D backend needed no change of axes. Walls (`#`) and statues (`S`, a pillar on a

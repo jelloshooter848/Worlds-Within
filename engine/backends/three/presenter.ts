@@ -1,4 +1,14 @@
-import { Color, SRGBColorSpace, WebGLRenderer } from 'three';
+import {
+  ACESFilmicToneMapping,
+  AgXToneMapping,
+  Color,
+  LinearSRGBColorSpace,
+  NoToneMapping,
+  PCFShadowMap,
+  SRGBColorSpace,
+  WebGLRenderer,
+  type ToneMapping,
+} from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { FontLookup, UiDraw } from '@engine/core/ui';
 import { HudLayer } from './hud';
@@ -93,6 +103,8 @@ export class ThreePresenter implements Presenter {
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.setClearColor(new Color(background), 1);
     this.renderer.shadowMap.enabled = false;
+    // PCF (not PCF soft): its filter honours each light's `shadow.radius` (Engine 0.16 T12).
+    this.renderer.shadowMap.type = PCFShadowMap;
     if (opts.size) this.setBuffer(opts.size);
     this.overlay = new HudLayer(skin, opts.sheets, opts.fonts);
   }
@@ -190,16 +202,19 @@ export class ThreePresenter implements Presenter {
     this.drewFrame = true;
     scene.sync(frame);
     const r = this.renderer;
+    applyLook(r, scene);
     r.render(scene.scene, scene.camera);
     const size = this.size ?? frame.size;
     const view = this.transitionView;
     const shape = view === null ? null : transitionShape(view, size, scene.focus());
     this.transitionLayer.sync(shape, size);
+    const labels = scene.labels.quads().length > 0;
     const hud = scene.hud.quads().length > 0;
-    if (!hud && shape === null) return;
+    if (!hud && !labels && shape === null) return;
     r.autoClear = false;
     try {
       r.clearDepth();
+      if (labels) r.render(scene.labels.scene, scene.labels.camera);
       if (hud) r.render(scene.hud.scene, scene.hud.camera);
       if (shape !== null) r.render(this.transitionLayer.scene, this.transitionLayer.camera);
     } finally {
@@ -223,4 +238,27 @@ function sceneEffects(opts: Omit<ThreePresenterOptions, 'size'>) {
     ...(opts.subPixelShake !== undefined && { subPixelShake: opts.subPixelShake }),
     ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
   };
+}
+
+const TONE_MAPPING: Record<ThreeScene['look']['toneMapping']['kind'], ToneMapping> = {
+  none: NoToneMapping,
+  aces: ACESFilmicToneMapping,
+  agx: AgXToneMapping,
+};
+
+/**
+ * Sets the renderer up for `scene`'s look (Engine 0.16 T12): shadows on when its sun casts them,
+ * its tone mapping and exposure, and its output colour space. A skin without `scene3d` gets what
+ * every frame had before: no shadows, no tone mapping, sRGB.
+ */
+function applyLook(r: WebGLRenderer, scene: ThreeScene): void {
+  const look = scene.look;
+  const shadows = look.sun.shadow !== null;
+  if (r.shadowMap.enabled !== shadows) {
+    r.shadowMap.enabled = shadows;
+    r.shadowMap.needsUpdate = true;
+  }
+  r.toneMapping = TONE_MAPPING[look.toneMapping.kind];
+  r.toneMappingExposure = look.toneMapping.exposure;
+  r.outputColorSpace = look.colorSpace === 'linear' ? LinearSRGBColorSpace : SRGBColorSpace;
 }

@@ -205,6 +205,21 @@ CC0). The page (`main.ts`) makes a `ModelLibrary` from `content.assets` and awai
 before the 3D display starts, as the screenshot page does. Screenshot: `level-3 --tick 40
 --backend three --allow-software-gl` (the first torch, by Pip).
 
+## Lighting, shadows, fog and labels (Engine 0.16 T12)
+
+The 3D skin opts in to the 3D backend's scene look (`engine/backends/three/CLAUDE.md`): a warm
+`scene3d.sun` from up, left and a little in front (`direction` -1.6, 2.4, 1.2) with soft shadows
+(1024 map, radius 2), a cool ambient and a sky/earth `hemisphere`, `linear` fog in the sky's pale
+blue from 100 to 1400 px behind the blocks (so the parallax hills, mountains and clouds fade with
+distance) and ACES tone mapping at exposure 1.3. Every tile and Pip, the beetles, coins, door and
+`?` blocks cast shadows (coins and Pip shade the floating slabs, beetles the ground); tiles, Pip,
+the door and bump blocks receive them. Each `torch` carries a warm flickering point `light`
+(`#ffa040`, 40 over 96 px, at the flame, flicker 0.3). `labels`: Pip's name in `fx-small` with a
+black outline under a health bar (`status.hp` of `maxHp`, bordered), and `EXIT` in gold over the
+door, 6 px above their boxes. Screenshots inspected: `level-3 --tick 60, 120, 200, 300 --backend
+three --allow-software-gl` (torch glow, coin and Pip shadows on the slab, the beetle's on the
+ground, fogged mountains, the labels).
+
 ## Run and test
 
 ```sh

@@ -70,7 +70,8 @@ camera.
   z = 0 plane shows exactly the view at the skin's `camera3d.fov` and 2D and 3D frame the same world
   box. `camera3d.tilt` (degrees, positive looks down) raises it on a circle round that centre.
   `cameraShake` (hint `shake` plus `shake` effects) moves it on x each frame, never stored.
-- Lights: one `AmbientLight` and one `DirectionalLight` (`camera3d.lights`), no shadows.
+- Lights: one `AmbientLight` and one `DirectionalLight` (`camera3d.lights`), no shadows, unless
+  the skin's `scene3d` says more (Engine 0.16 T12, below).
 - Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
   `mini-game-end:pass` first, then the bare type; gap G28), then each frame event of the skin's
   `poses` cycles (a `FrameEventClock`, Engine 0.16 T2), calls `onSound(sound)` once; a frame with the same
@@ -136,7 +137,8 @@ A 3D skin's kind or tile entry may name a model in the game's `assets/` beside i
 `center`: its centre on the box's centre; `origin`: the model's origin; or a model point
 `{ x, y, z }`), `rotate` (`{ x?, y?, z? }` degrees, applied before scale and anchor), `clip` (a
 kind: one name or animation state -> clip name, falling back to `idle`'s; a tile: one name) and
-`castShadow` (set on the meshes; the scene draws no shadows until Engine 0.16 T12). The schema,
+`castShadow` (set on the meshes; shadows show when the skin's `scene3d.sun` has a `shadow`,
+Engine 0.16 T12). The schema,
 `resolveSkinModel(skin, entity)`, `resolveTileModel(entry, frame)`, `modelClipFor` and
 `skinModelUses` are in `@engine/core/present`; `validate`'s checks (`missing_file`, `bad_model`,
 `missing_clip`, the credits) in `@engine/core/content/assets.ts`.
@@ -166,6 +168,50 @@ kind: one name or animation state -> clip name, falling back to `idle`'s; a tile
   `threeDisplay` and `threeScenePresenter` pass `models` on; the screenshot page and the fx lab's
   page make one from `content.assets` and await `preload` before the first frame.
 
+## Lights, shadows, fog, tone mapping and labels (Engine 0.16 T12)
+
+The skin's `scene3d` (`@engine/core/present`'s `scene3d.ts`: `resolveScene3d(skin.scene3d,
+camera3d.lights)` fills the defaults; `ThreeScene.look` is the result) sets the scene up:
+
+- `sun` `{ color, intensity, direction, shadow? }`: the `DirectionalLight` (`sun`), placed at
+  `direction` (default `DEFAULT_SUN_DIRECTION`, -1, 2, 3, where it always was). With a `shadow`
+  `{ mapSize, bias, radius }` it casts: each frame the sun moves to shine from its direction onto
+  the view's centre on the z = 0 plane (its `target`, updated by hand, not added to the scene),
+  and its orthographic shadow camera covers the view's diagonal plus `SHADOW_MARGIN` (64 px);
+  `normalBias` 0.5 against acne on the low-poly faces. Without one, nothing moves.
+- `ambient` `{ color, intensity }` (the `AmbientLight`) and `hemisphere` `{ sky, ground,
+intensity }` (a `HemisphereLight`, `hemisphere`, added only when given).
+- `fog`: `linear` `{ color, near, far }` given in px behind the z = 0 plane (each frame Three's
+  `Fog` gets them plus the camera's distance, so zoom does not move it), or `exp2` `{ color,
+density }` (`FogExp2`). It shows on the blocks far behind and on the parallax planes (their
+  `MeshBasicMaterial`s take fog); the overlay, particles, HUD and labels never.
+- `toneMapping` `{ kind: aces | agx | none, exposure }` and `colorSpace` (`srgb` | `linear`): read
+  by the presenter (`applyLook`) before each draw of that scene. HUD, label and overlay materials
+  have `toneMapped: false`, so the HUD keeps its colours under any tone mapping.
+- A kind's `light` `{ kind: point, color, intensity, distance, decay? (POINT_LIGHT_DECAY, 1),
+offset? (mesh space from the box's centre, y down), flicker? }` is a `PointLight` child of each
+  entity's root (named `light:<id>`, removed with it); `flicker` scales its intensity down by up
+  to that share each frame from `fxRng(seed, frame, "light:<id>")`, so a frame always looks the
+  same. `pointLights()` lists them.
+- `castShadow` / `receiveShadow` on a kind (its text-mesh parts or its model's meshes) and on a
+  tile (its `InstancedMesh`es, or each tile model's meshes).
+
+A skin without `scene3d`, `light`, `receiveShadow` or `labels` gives exactly the scene objects
+it gave before (tested in `lighting.test.ts`), and the presenter draws it with no shadow map, no
+tone mapping and sRGB output, as before.
+
+**Labels.** The skin's `labels` (kind -> a label or a list: `{ from?: id | kind | { tag } |
+{ status }, as: text | bar | timer, format?, max?, font?, color?, shadow?, outline?, back?,
+border?, w?, h?, anchor?: top | center | bottom, offset? }`) are laid out each `sync`, after the
+camera: for each entity of a listed kind each label's anchor (the box's top centre, centre or
+bottom centre, at its layer's depth) is projected through the camera to picture px; a point
+behind the camera (in front of its near plane) or outside the picture hides that label. The core
+`layoutLabels` (`@engine/core/ui`) places them (centred, the `offset` added, default 2 px above;
+labels on one anchor stack away from the box) and gives `UiDraw`s, which `labels` (a second
+`HudLayer`) paints with `syncDraws`. The presenter draws `labels` after the scene and before the
+HUD. `labelViews()` reads what shows (`LabelView`: entity, kind, type, text or bar, box). Text
+needs the `fonts` option (a label whose font is missing draws nothing).
+
 ## ThreePresenter (browser only)
 
 `new ThreePresenter(canvas, skin, opts?)` implements the core `Presenter`: `present(frame)` syncs
@@ -177,7 +223,9 @@ Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.s
 `effectSettings(settings)` changes the flashing and shake settings on all of them. Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
 with `autoClear` off and the depth cleared. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
-pixel ratio 1, `SRGBColorSpace` output, no shadows, clear colour `background` (the option, else the skin's, else black). The drawing buffer
+pixel ratio 1, `SRGBColorSpace` output, no shadows (from Engine 0.16 T12 the scene's `look`
+sets shadows, tone mapping and the output colour space before each draw; PCF shadow filtering,
+which honours `shadow.radius`), clear colour `background` (the option, else the skin's, else black). The drawing buffer
 is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
 reads the context's renderer (below); `dispose()` frees the scene and the renderer.
 `withSkin(skin, opts?)` (Engine 0.7 T8) is another `Presenter` on the same canvas and renderer
@@ -298,6 +346,12 @@ reduced flashing and `effectSettings`, and the parallax planes: each quad's corn
 where the 2D layout draws it, on the camera behind the blocks with no depth test, layers moving
 at their own rates, and gradients only without sheets. `transition.test.ts` (Engine 0.16 T5) checks the transition pass's
 uniforms for a fade, a wipe and an iris, and `ThreeScene.focus()` centred and at the map's edge.
+`lighting.test.ts` (Engine 0.16 T12) checks a plain skin's lights and objects unchanged, every
+`scene3d` field on the scene (sun, ambient, hemisphere, shadow map and camera round the view, fog
+in camera distance, tone mapping, exp2 fog, AgX and linear output), shadow flags on kinds and
+tiles, a kind's point light (placed, flickering the same each seed, gone with its entity) and
+labels (projected to the picture px a tilt-0 camera gives, stacked, a timer below, quads on the
+labels layer, hidden off screen and behind the camera, skipped without a value or font).
 `models.test.ts` (Engine 0.16 T11) parses an inline model (written with the core's
 `lowPolyModel`) as a GLB and as an embedded `.gltf` in Node, checks missing and broken files,
 each anchor, scale, rotate and offset by the instance's bounds, clips posed at exact times (set,

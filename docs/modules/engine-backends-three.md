@@ -24,7 +24,13 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   one, a `background` option first); the `PerspectiveCamera` is framed by the
   shared `CameraFollower` at the distance where the z = 0 plane shows exactly the picture (so 2D and
   3D frame the same world box), with `zoom` by distance, `tilt` and shake; one ambient and one
-  directional light; `onSound(id)` once per event (by `resolveSkinEvent`) and per frame event of a `poses` cycle; flash and tint as a full-screen overlay;
+  directional light (from Engine 0.16 T12 the skin's `scene3d` look: sun colour, strength,
+  direction and soft shadows, ambient and hemisphere colours, linear or exp2 fog, tone mapping
+  and output colour space, `look`; a kind's flickering point `light`, `pointLights()`;
+  `castShadow`/`receiveShadow` on kinds and tiles; without `scene3d` lit exactly as before);
+  world-anchored labels (Engine 0.16 T12: the skin's `labels`, names, bars and timers laid out by
+  `@engine/core/ui`'s `layoutLabels` at each entity's anchor projected to the picture, hidden off
+  screen or behind the camera, on the `labels` HUD layer; `labelViews()`); `onSound(id)` once per event (by `resolveSkinEvent`) and per frame event of a `poses` cycle; flash and tint as a full-screen overlay;
   particles (Engine 0.16 T3: the skin's `emitters`, events' and kinds' `emit`, old `particles`
   effects) as two `Points` buffers, normal and additive, of at most `PARTICLE_POOL` each
   (`particles`, `particleViews()`). Camera effects (Engine 0.16 T4) as in 2D: trauma shake on x
@@ -46,7 +52,10 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
   `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
   `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour (the `background` option, else the skin's, else black), buffer at
-  the picture size), then the scene's HUD pass over it; `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
+  the picture size), then the scene's labels and HUD passes over it; from Engine 0.16 T12 each
+  draw sets the renderer from the scene's `look` (shadow map on with PCF filtering when the sun
+  casts shadows, ACES or AgX tone mapping and exposure, sRGB or linear output), and HUD, label and
+  overlay materials are never tone mapped or fogged; `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
   (Engine 0.7): another presenter on the same canvas and renderer with its own skin and scene (a
   stacked mini game's frames).
 - `webglRendererInfo`, `isSoftwareRenderer`, `GlInfoSource`, `WebglRendererInfo`
@@ -105,7 +114,12 @@ uniforms for each kind, `ThreeScene.focus()`; Engine 0.16 T5) and `models.test.t
 T11: a GLB and an embedded `.gltf` parsed in Node, missing and broken files, anchors, scale,
 rotate and offset by the model's bounds, clips posed at exact times and let go, own materials,
 the text mesh while loading then the model, the clip from the anim state, tile models per cell,
-text-mesh kinds unchanged). `ThreePresenter` and
+text-mesh kinds unchanged) and `lighting.test.ts` (Engine 0.16 T12: a skin without `scene3d`
+keeping its lights and objects, the sun, ambient, hemisphere, shadows, fog and tone mapping from
+the skin, shadow flags on kinds and tiles, point lights flickering the same each run, labels
+projected to the right picture px, stacked and hidden off screen or behind the camera).
+`tests/runs/presentation-invariance.test.ts` plays every run with the `lighting` switch on.
+`ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
 browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is

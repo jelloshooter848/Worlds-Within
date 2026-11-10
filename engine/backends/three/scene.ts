@@ -5,7 +5,10 @@ import {
   BufferGeometry,
   Color,
   DirectionalLight,
+  Fog,
+  FogExp2,
   Group,
+  HemisphereLight,
   InstancedMesh,
   Matrix4,
   Mesh,
@@ -14,6 +17,7 @@ import {
   NormalBlending,
   PerspectiveCamera,
   PlaneGeometry,
+  PointLight,
   Points,
   Quaternion,
   Scene,
@@ -22,7 +26,7 @@ import {
   type Material,
 } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
-import { CameraFx, SkinParticles, type CameraFxSettings, type ParticleView } from '@engine/core/fx';
+import { CameraFx, fxRng, SkinParticles, type CameraFxSettings, type ParticleView } from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   cameraArea,
@@ -37,6 +41,11 @@ import {
   isFullMap,
   resolveCamera3d,
   resolveMeshParts,
+  resolveScene3d,
+  skinLabels,
+  type Scene3dLook,
+  type SkinKindLight,
+  type SkinLabel,
   resolveSkinKind,
   resolveSkinMesh,
   resolveSkinModel,
@@ -57,7 +66,7 @@ import {
   type SoundCue,
 } from '@engine/core/present';
 import { GeometryCache } from './geometry';
-import type { FontLookup } from '@engine/core/ui';
+import { layoutLabels, type FontLookup, type LabelView, type UiDraw } from '@engine/core/ui';
 import { HudLayer } from './hud';
 import { ModelInstance, type ModelLibrary } from './models';
 import { ParallaxPlanes } from './parallax';
@@ -107,8 +116,11 @@ export interface ThreeSceneOptions {
 /** Ticks an effect lasts when the skin gives none (the same as the Canvas2D presenter). */
 const EFFECT_TICKS: Record<Effect['kind'], number> = { flash: 2, particles: 12, shake: 8, tint: 6 };
 
-/** Direction the one directional light shines from (toward the origin): up, left and in front. */
-const SUN_FROM = new Vector3(-1, 2, 3);
+/** Default point light decay (Three's physically based falloff exponent). */
+export const POINT_LIGHT_DECAY = 1;
+
+/** Extra world px round the view the sun's shadow camera covers, so casters just outside still shade. */
+export const SHADOW_MARGIN = 64;
 
 /** Draw order of the full-screen effect overlay: after everything else. */
 const OVERLAY_ORDER = 1_000_000;
@@ -169,6 +181,8 @@ interface EntityNode {
   /** The model instance it shows, or null (text meshes). */
   model: ModelInstance | null;
   materials: Material[];
+  /** The kind's point light (Engine 0.16 T12), or null. */
+  light: { light: PointLight; spec: DeepReadonly<SkinKindLight> } | null;
 }
 
 /** The map being shown, its built blocks, and whether this frame shows it. */
@@ -205,7 +219,12 @@ interface ShownMap {
  *   else 1); the camera sits on the view's centre at the distance where the z = 0 plane shows
  *   exactly that view at the skin's `camera3d.fov`, so 2D and 3D frame the same world box. A
  *   `tilt` raises it and looks down at the same centre. Shake is added each frame, never stored.
- * - Lights: one ambient and one directional light (`camera3d.lights`), no shadows.
+ * - Lights (Engine 0.16 T12): an ambient and a directional sun (`camera3d.lights`, else the
+ *   skin's `scene3d`), a hemisphere light, fog, soft sun shadows and per-kind point lights when
+ *   the skin's `scene3d` and kinds ask; tone mapping and the output colour space are the
+ *   presenter's (`look`). Without `scene3d` the scene is lit exactly as before.
+ * - Labels (Engine 0.16 T12): `labels`, a `HudLayer` of the skin's world-anchored labels,
+ *   projected each frame, which the presenter draws between the scene and the HUD.
  * - Events: each listed event calls `onSound(sound)` once (a frame shown twice does not replay).
  *   Effects: `flash` and `tint` show as a full-screen overlay in front of the camera, `shake`
  *   wobbles the camera, `particles` are small unlit boxes from a pool (`particles`, at most
@@ -221,6 +240,12 @@ export class ThreeScene {
   readonly camera = new PerspectiveCamera();
   readonly ambient: AmbientLight;
   readonly sun: DirectionalLight;
+  /** The skin's `scene3d.hemisphere` light, or null (Engine 0.16 T12). */
+  readonly hemisphere: HemisphereLight | null;
+  /** The skin's scene look with defaults filled (lights, shadows, fog, tone mapping, colour space). */
+  readonly look: Scene3dLook;
+  /** The world-anchored labels, drawn on the HUD layer between the scene and the HUD (Engine 0.16 T12). */
+  readonly labels: HudLayer;
   /** The full-screen flash and tint overlay, a child of the camera; hidden when no effect shows. */
   readonly overlay: Mesh<PlaneGeometry, MeshBasicMaterial>;
   /** The HUD pass: its own `scene` and orthographic `camera`, drawn over this one. */
@@ -257,6 +282,8 @@ export class ThreeScene {
   private settings: CameraFxSettings;
   /** The camera effects' clock: one tick per `sync`, as the Canvas2D presenter's. */
   private fxClock = -1;
+  private labelShown: LabelView[] = [];
+  private readonly sunFrom: Vector3;
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
@@ -266,13 +293,40 @@ export class ThreeScene {
     this.follower = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
     this.scene.background = new Color(opts.background ?? skinBackground(skin));
 
-    this.ambient = new AmbientLight(0xffffff, this.cam3d.lights.ambient);
-    this.sun = new DirectionalLight(0xffffff, this.cam3d.lights.directional);
-    this.sun.position.copy(SUN_FROM);
-    this.sun.castShadow = false;
+    const look = (this.look = resolveScene3d(skin.scene3d, this.cam3d.lights));
+    this.ambient = new AmbientLight(look.ambient.color, look.ambient.intensity);
+    this.sun = new DirectionalLight(look.sun.color, look.sun.intensity);
+    this.sunFrom = new Vector3(look.sun.direction.x, look.sun.direction.y, look.sun.direction.z);
+    this.sun.position.copy(this.sunFrom);
+    this.sun.castShadow = look.sun.shadow !== null;
+    if (look.sun.shadow !== null) {
+      const { mapSize, bias, radius } = look.sun.shadow;
+      this.sun.shadow.mapSize.set(mapSize, mapSize);
+      this.sun.shadow.bias = bias;
+      this.sun.shadow.normalBias = 0.5;
+      this.sun.shadow.radius = radius;
+    }
     this.scene.add(this.ambient, this.sun);
+    this.hemisphere = null;
+    if (look.hemisphere !== null) {
+      const { sky, ground, intensity } = look.hemisphere;
+      this.hemisphere = new HemisphereLight(sky, ground, intensity);
+      this.scene.add(this.hemisphere);
+    }
+    if (look.fog !== null) {
+      this.scene.fog =
+        look.fog.kind === 'linear'
+          ? new Fog(look.fog.color, look.fog.near, look.fog.far)
+          : new FogExp2(look.fog.color, look.fog.density);
+    }
 
-    const overlayMaterial = new MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false });
+    const overlayMaterial = new MeshBasicMaterial({
+      transparent: true,
+      depthTest: false,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false,
+    });
     this.overlay = new Mesh(new PlaneGeometry(1, 1), overlayMaterial);
     this.overlay.renderOrder = OVERLAY_ORDER;
     this.overlay.frustumCulled = false;
@@ -288,6 +342,7 @@ export class ThreeScene {
     this.particles.add(this.points.normal, this.points.add);
     this.scene.add(this.particles);
     this.hud = new HudLayer(skin, opts.sheets, opts.fonts);
+    this.labels = new HudLayer(skin, opts.sheets, opts.fonts);
     this.parallax = new ParallaxPlanes(skin, opts.sheets);
     this.camera.add(this.parallax.group);
     this.cameraFx = new CameraFx({
@@ -323,6 +378,8 @@ export class ThreeScene {
     this.updateOverlay(frame.frame);
     this.skinParticles.update(frame.frame, frame.entities);
     this.updateParticles(size);
+    this.updateLights(frame.frame);
+    this.updateLabels(frame, size);
     this.hud.sync(frame, size, this.mapVisible ? (this.shown?.map ?? null) : null);
   }
 
@@ -376,7 +433,67 @@ export class ThreeScene {
       p.material.dispose();
     }
     this.hud.dispose();
+    this.labels.dispose();
     this.parallax.dispose();
+  }
+
+  /** The labels shown last frame, in draw order (picture px), for tests. */
+  labelViews(): LabelView[] {
+    return this.labelShown.map((v) => ({ ...v, box: { ...v.box } }));
+  }
+
+  /** The point lights on entities, by entity id (Engine 0.16 T12), for tests. */
+  pointLights(): { id: string; light: PointLight }[] {
+    const out: { id: string; light: PointLight }[] = [];
+    for (const [id, node] of this.nodes) if (node.light) out.push({ id, light: node.light.light });
+    return out;
+  }
+
+  // ---- Lights and labels (Engine 0.16 T12) ----
+
+  /** Each entity's point light: its intensity, flickering by the presentation RNG when its spec asks. */
+  private updateLights(frame: number): void {
+    for (const [id, node] of this.nodes) {
+      if (!node.light) continue;
+      const { light, spec } = node.light;
+      const flicker = spec.flicker ?? 0;
+      const amount = flicker > 0 ? fxRng(this.opts.seed ?? 0, frame, `light:${id}`).float() : 0;
+      light.intensity = spec.intensity * (1 - flicker * amount);
+    }
+  }
+
+  /**
+   * Lays the skin's `labels` out over the entities: each label's anchor on the entity box, at
+   * its layer's depth, projected through the camera to picture px; a point behind the camera or
+   * off the picture hides that label. Drawn by the `labels` layer's quads.
+   */
+  private updateLabels(frame: Frame, size: ScreenSize): void {
+    const draws: UiDraw[] = [];
+    const views: LabelView[] = [];
+    if (this.skin.labels !== undefined) {
+      const cam = this.camera;
+      const p = new Vector3();
+      for (const e of frame.entities) {
+        const list = skinLabels(this.skin.labels, e.kind);
+        if (list.length === 0) continue;
+        const z = (e.layer ?? 0) * this.cam3d.layerDepth;
+        const project = (anchor: NonNullable<SkinLabel['anchor']>) => {
+          const y = anchor === 'top' ? e.y : anchor === 'center' ? e.y + e.h / 2 : e.y + e.h;
+          p.set(e.x + e.w / 2, -y, z).applyMatrix4(cam.matrixWorldInverse);
+          if (p.z > -cam.near) return null;
+          p.applyMatrix4(cam.projectionMatrix);
+          const x = ((p.x + 1) / 2) * size.width;
+          const sy = ((1 - p.y) / 2) * size.height;
+          if (x < 0 || x >= size.width || sy < 0 || sy >= size.height) return null;
+          return { x, y: sy };
+        };
+        const out = layoutLabels(list, e, frame.status, project, this.opts.fonts);
+        draws.push(...out.draws);
+        views.push(...out.views);
+      }
+    }
+    this.labelShown = views;
+    this.labels.syncDraws(draws, size);
   }
 
   // ---- Events ----
@@ -561,6 +678,7 @@ export class ThreeScene {
             instance.object.name = `tile:${key}:model`;
             instance.object.userData = { tile: key, layer: grid.layer, model: spec.model };
             instance.object.position.set(col * ts + ts / 2, -(row + 1) * ts, grid.z);
+            if (tiles[key]!.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
             group.add(instance.object);
             models.push({ instance, tile: key });
           }
@@ -575,6 +693,8 @@ export class ThreeScene {
             list.length,
           );
           blocks.name = `tile:${key}:${p}`;
+          if (tiles[key]!.castShadow === true) blocks.castShadow = true;
+          if (tiles[key]!.receiveShadow === true) blocks.receiveShadow = true;
           blocks.userData = { tile: key, part: p, layer: grid.layer };
           turn.setFromAxisAngle(up, (part.rotate * Math.PI) / 2);
           list.forEach(([col, row], i) => {
@@ -659,6 +779,7 @@ export class ThreeScene {
       root.name = `entity:${e.id}`;
       root.userData = { id: e.id, kind: e.kind, fallback: false, model: spec.model };
       root.add(instance.object);
+      if (entry?.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
       const look = this.lookOf(e);
       return {
         root,
@@ -669,6 +790,7 @@ export class ThreeScene {
         shape,
         model: instance,
         materials: instance.materials,
+        light: this.lightFor(root, e),
       };
     }
     // A `poses` cycle swaps the mesh by animation state and frame (Engine 0.16 T2).
@@ -692,6 +814,7 @@ export class ThreeScene {
       materials.push(material);
       const mesh = new Mesh(this.geometries.get(part.shape, part.size), material);
       if (entry?.castShadow === true) mesh.castShadow = true;
+      if (entry?.receiveShadow === true) mesh.receiveShadow = true;
       // Parts are placed from the box's top-left (y down); the root is its bottom centre (y up).
       mesh.position.set(
         part.at.x + part.size.w / 2 - box.w / 2,
@@ -701,7 +824,33 @@ export class ThreeScene {
       mesh.rotation.y = (part.rotate * Math.PI) / 2;
       root.add(mesh);
     }
-    return { root, kind: e.kind, w: e.w, h: e.h, look: this.lookOf(e), shape, model: null, materials };
+    return {
+      root,
+      kind: e.kind,
+      w: e.w,
+      h: e.h,
+      look: this.lookOf(e),
+      shape,
+      model: null,
+      materials,
+      light: this.lightFor(root, e),
+    };
+  }
+
+  /**
+   * The kind's `light` (Engine 0.16 T12) as a `PointLight` on the root, at the box's centre plus
+   * its `offset` (mesh space: y down), or null. No shadows from point lights.
+   */
+  private lightFor(root: Group, e: Entity): EntityNode['light'] {
+    const kinds = this.skin.kinds;
+    const spec = Object.hasOwn(kinds, e.kind) ? kinds[e.kind]!.light : undefined;
+    if (spec === undefined) return null;
+    const light = new PointLight(spec.color, spec.intensity, spec.distance, spec.decay ?? POINT_LIGHT_DECAY);
+    light.name = `light:${e.id}`;
+    const at = spec.offset ?? { x: 0, y: 0, z: 0 };
+    light.position.set(at.x, e.h / 2 - at.y, at.z);
+    root.add(light);
+    return { light, spec };
   }
 
   private place(node: EntityNode, e: Entity): void {
@@ -727,6 +876,30 @@ export class ThreeScene {
   }
 
   // ---- Camera ----
+
+  /**
+   * With shadows on, the sun follows the view: it shines from its direction onto the view's
+   * centre (on the z = 0 plane) and its shadow camera covers the view and a margin. Without
+   * shadows it stays where it was set (only its direction matters).
+   */
+  private updateSun(cx: number, cy: number, view: { width: number; height: number }, distance: number): void {
+    if (this.look.sun.shadow === null) return;
+    const half = Math.hypot(view.width, view.height) / 2 + SHADOW_MARGIN;
+    const reach = half * 2 + distance;
+    SUN_DIR.copy(this.sunFrom).normalize();
+    this.sun.target.position.set(cx, cy, 0);
+    this.sun.position.set(cx + SUN_DIR.x * reach, cy + SUN_DIR.y * reach, SUN_DIR.z * reach);
+    this.sun.target.updateMatrixWorld();
+    this.sun.updateMatrixWorld();
+    const shadowCam = this.sun.shadow.camera;
+    shadowCam.left = -half;
+    shadowCam.right = half;
+    shadowCam.top = half;
+    shadowCam.bottom = -half;
+    shadowCam.near = 1;
+    shadowCam.far = reach * 2;
+    shadowCam.updateProjectionMatrix();
+  }
 
   private updateCamera(frame: Frame, size: ScreenSize): void {
     const base = cameraZoom(frame, this.skin.camera);
@@ -772,11 +945,22 @@ export class ThreeScene {
     this.overlay.position.set(0, 0, -at);
     this.overlay.scale.set(h * cam.aspect * 1.01, h * 1.01, 1);
 
+    this.updateSun(cx, cy, view, distance);
+    // Linear fog is measured from the camera; the skin gives it behind the z = 0 plane.
+    const fog = this.look.fog;
+    if (fog !== null && fog.kind === 'linear' && this.scene.fog instanceof Fog) {
+      this.scene.fog.near = distance + fog.near;
+      this.scene.fog.far = distance + fog.far;
+    }
+
     // Parallax planes scroll against the camera's top-left in picture px, as in 2D.
     const picture = { x: Math.round(top.x * zoom) + shakeX, y: Math.round(top.y * zoom) + shakeY };
     this.parallax.sync(picture, size, cam, distance);
   }
 }
+
+/** Scratch vector for the sun's direction (one scene updates at a time). */
+const SUN_DIR = new Vector3();
 
 /** One blend's particle buffers, {@link PARTICLE_POOL} points, drawn as screen-facing squares. */
 function makePoints(blend: 'normal' | 'add'): ParticlePoints {

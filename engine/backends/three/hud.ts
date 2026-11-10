@@ -373,6 +373,9 @@ function hudMaterial(opts: { color?: string; map?: DataTexture; opacity?: number
     transparent: true,
     depthTest: false,
     depthWrite: false,
+    // HUD colours are drawn as written: no fog and no tone mapping (Engine 0.16 T12).
+    fog: false,
+    toneMapped: false,
   });
 }
 
