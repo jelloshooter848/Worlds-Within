@@ -1,0 +1,263 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 2
+  },
+  "ticks": 850,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 40,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 50,
+        "hold": ["right"]
+      },
+      {
+        "frame": 88,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 108,
+        "hold": ["right"]
+      },
+      {
+        "frame": 169,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 189,
+        "hold": ["right"]
+      },
+      {
+        "frame": 201,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 217,
+        "hold": ["right"]
+      },
+      {
+        "frame": 233,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 253,
+        "hold": ["right"]
+      },
+      {
+        "frame": 316,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 330,
+        "hold": ["right"]
+      },
+      {
+        "frame": 342,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 346,
+        "hold": ["right"]
+      },
+      {
+        "frame": 403,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 423,
+        "hold": ["right"]
+      },
+      {
+        "frame": 470,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 490,
+        "hold": ["right"]
+      },
+      {
+        "frame": 574,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 594,
+        "hold": ["right"]
+      },
+      {
+        "frame": 690,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 710,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-3"
+    },
+    {
+      "tick": 457,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 46,
+        "row": 9
+      }
+    },
+    {
+      "tick": 537,
+      "path": "player.coyote",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 549,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "hazard",
+        "lives": 2
+      }
+    },
+    {
+      "tick": 549,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "respawn"
+      }
+    },
+    {
+      "tick": 549,
+      "path": "player.x",
+      "op": "eq",
+      "value": 190464
+    },
+    {
+      "tick": 549,
+      "path": "player.y",
+      "op": "eq",
+      "value": 40960
+    },
+    {
+      "tick": 549,
+      "path": "lives",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 549,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 46,
+        "row": 9
+      }
+    },
+    {
+      "tick": 665,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "hazard",
+        "lives": 1
+      }
+    },
+    {
+      "tick": 665,
+      "path": "player.x",
+      "op": "eq",
+      "value": 190464
+    },
+    {
+      "tick": 781,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "hazard",
+        "lives": 0
+      }
+    },
+    {
+      "tick": 781,
+      "path": "outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 840,
+      "path": "outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 841,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 841,
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 841,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 841,
+      "path": "coins",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 841,
+      "path": "stage",
+      "op": "eq",
+      "value": 2
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "path": "level",
+      "op": "eq",
+      "value": "level-3"
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "gravity",
+    "walk",
+    "air-control",
+    "jump",
+    "variable-jump",
+    "solid-tiles",
+    "hazards-kill",
+    "checkpoints"
+  ]
+}

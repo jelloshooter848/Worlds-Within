@@ -1,0 +1,69 @@
+{
+  "run": "games/samples/platformer/runs/level-3-lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "1b6df67a18ab27b6"
+    },
+    {
+      "tick": 60,
+      "hash": "6ab9d8b51df9b33e"
+    },
+    {
+      "tick": 120,
+      "hash": "eba7f0619b3fd214"
+    },
+    {
+      "tick": 180,
+      "hash": "eabe2f00f5194e29"
+    },
+    {
+      "tick": 240,
+      "hash": "ea44f12b6c36fbbe"
+    },
+    {
+      "tick": 300,
+      "hash": "22a935140c0f2b55"
+    },
+    {
+      "tick": 360,
+      "hash": "27b7007dc75f8189"
+    },
+    {
+      "tick": 420,
+      "hash": "164668f5fa0feee8"
+    },
+    {
+      "tick": 480,
+      "hash": "3e06839979ad3406"
+    },
+    {
+      "tick": 540,
+      "hash": "26edcac2ac7b6287"
+    },
+    {
+      "tick": 600,
+      "hash": "87c60838edc02a01"
+    },
+    {
+      "tick": 660,
+      "hash": "5f4f841be198d35a"
+    },
+    {
+      "tick": 720,
+      "hash": "3babb6a20dbb999b"
+    },
+    {
+      "tick": 780,
+      "hash": "887c3be81f25904d"
+    },
+    {
+      "tick": 840,
+      "hash": "0d93a7bc56957e69"
+    },
+    {
+      "tick": 850,
+      "hash": "970514d01802edff"
+    }
+  ]
+}

@@ -1,6 +1,11 @@
 {
   "id": "level-3",
-  "name": "Treetop Path",
+  "name": "Starlit Ridge",
   "profile": "hoppers-way",
-  "scroll": "right"
+  "scroll": "right",
+  "spawns": {
+    "w": { "actor": "walker", "facing": "left" },
+    "l": { "actor": "ledge-walker", "facing": "left" }
+  },
+  "blocks": ["coins"]
 }

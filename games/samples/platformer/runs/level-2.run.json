@@ -1,0 +1,367 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 1
+  },
+  "ticks": 990,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 44,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 58,
+        "hold": ["right"]
+      },
+      {
+        "frame": 100,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 116,
+        "hold": ["right"]
+      },
+      {
+        "frame": 158,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 180,
+        "hold": ["right"]
+      },
+      {
+        "frame": 205,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 225,
+        "hold": ["right"]
+      },
+      {
+        "frame": 258,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 262,
+        "hold": ["right"]
+      },
+      {
+        "frame": 334,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 348,
+        "hold": ["right"]
+      },
+      {
+        "frame": 478,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 496,
+        "hold": ["right"]
+      },
+      {
+        "frame": 538,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 548,
+        "hold": ["right"]
+      },
+      {
+        "frame": 584,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 604,
+        "hold": ["right"]
+      },
+      {
+        "frame": 621,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 629,
+        "hold": ["right"]
+      },
+      {
+        "frame": 651,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 669,
+        "hold": ["right"]
+      },
+      {
+        "frame": 731,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 735,
+        "hold": ["right"]
+      },
+      {
+        "frame": 802,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 822,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-2"
+    },
+    {
+      "tick": 0,
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 0,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 0,
+      "path": "coins",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 109,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "block",
+        "col": 11,
+        "row": 6,
+        "content": "coin"
+      }
+    },
+    {
+      "tick": 109,
+      "path": "coins",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 200,
+      "path": "player.y",
+      "op": "eq",
+      "value": 28672
+    },
+    {
+      "tick": 200,
+      "path": "player.onGround",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "tick": 206,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "jump",
+        "tier": 1
+      }
+    },
+    {
+      "tick": 206,
+      "path": "coins",
+      "op": "eq",
+      "value": 7
+    },
+    {
+      "tick": 270,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 3,
+        "actorType": "walker",
+        "into": null
+      }
+    },
+    {
+      "tick": 270,
+      "path": "player.vy",
+      "op": "eq",
+      "value": -16384
+    },
+    {
+      "tick": 357,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 2,
+        "actorType": "ledge-walker",
+        "into": null
+      }
+    },
+    {
+      "tick": 447,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "checkpoint",
+        "col": 45,
+        "row": 9
+      }
+    },
+    {
+      "tick": 447,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 45,
+        "row": 9
+      }
+    },
+    {
+      "tick": 504,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 1,
+        "actorType": "ledge-walker",
+        "into": null
+      }
+    },
+    {
+      "tick": 621,
+      "path": "player.y",
+      "op": "eq",
+      "value": 20480
+    },
+    {
+      "tick": 621,
+      "path": "coins",
+      "op": "eq",
+      "value": 10
+    },
+    {
+      "tick": 631,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "block",
+        "col": 62,
+        "row": 1,
+        "content": "life"
+      }
+    },
+    {
+      "tick": 631,
+      "path": "lives",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 642,
+      "path": "coins",
+      "op": "eq",
+      "value": 12
+    },
+    {
+      "tick": 745,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 4,
+        "actorType": "walker",
+        "into": null
+      }
+    },
+    {
+      "tick": 959,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 959,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 959,
+      "path": "coins",
+      "op": "eq",
+      "value": 16
+    },
+    {
+      "tick": 959,
+      "path": "lives",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 990,
+      "path": "scrollX",
+      "op": "eq",
+      "value": 327680
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "path": "level",
+      "op": "eq",
+      "value": "level-2"
+    },
+    {
+      "path": "player.hp",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "path": "lives",
+      "op": "gte",
+      "value": 3
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "gravity",
+    "walk",
+    "air-control",
+    "jump",
+    "variable-jump",
+    "solid-tiles",
+    "one-way-platforms",
+    "ceiling-bump",
+    "coins-collect",
+    "bump-blocks",
+    "checkpoints",
+    "goal-clears-level",
+    "actors-wake",
+    "ledge-turn",
+    "stomping",
+    "stomp-bounce"
+  ]
+}

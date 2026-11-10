@@ -826,7 +826,7 @@ function checkShapes(
   backend: string,
   defaults: z.output<typeof sheets> | undefined,
   entries: Record<string, Record<string, unknown>>,
-  where: string,
+  where: readonly (string | number)[],
   needs2d: readonly string[],
   ctx: z.RefinementCtx,
 ): void {
@@ -840,7 +840,7 @@ function checkShapes(
         if (look[field] === undefined) continue;
         ctx.addIssue({
           code: 'custom',
-          path: [where, key, 'byTag', i, field],
+          path: [...where, key, 'byTag', i, field],
           message: `"${field}" is a ${mesh ? '2D' : '3D'} field; backend "${backend}" takes ${mesh ? 'meshes' : 'sprites'}`,
           params: { code: 'wrong_backend_field' },
         });
@@ -851,7 +851,7 @@ function checkShapes(
       const msg = `"${field}" is a ${mesh ? '2D' : '3D'} field; backend "${backend}" takes ${mesh ? 'meshes' : 'sprites'}`;
       ctx.addIssue({
         code: 'custom',
-        path: [where, key, field],
+        path: [...where, key, field],
         message: msg,
         params: { code: 'wrong_backend_field' },
       });
@@ -861,7 +861,7 @@ function checkShapes(
         if (entry[field] === undefined) continue;
         ctx.addIssue({
           code: 'custom',
-          path: [where, key, field],
+          path: [...where, key, field],
           message: `"${field}" is a model field: give "model" too`,
           params: { code: 'missing_field' },
         });
@@ -872,7 +872,7 @@ function checkShapes(
       if (entry[field] !== undefined || fromDefault) continue;
       ctx.addIssue({
         code: 'custom',
-        path: [where, key, field],
+        path: [...where, key, field],
         message: `needs "${field}"${field === 'sheet' || field === 'fallbackColor' ? ` (or sheets.${field})` : ''}`,
         params: { code: 'missing_field' },
       });
@@ -994,6 +994,26 @@ function isPrimitive(name: string): name is MeshPrimitive {
   return (MESH_PRIMITIVES as readonly string[]).includes(name);
 }
 
+/**
+ * One map's look (Engine 0.16 part B, T7): what a skin's `themes` entry changes while a frame
+ * shows that map. Each field left out keeps the skin's own.
+ */
+const themeSchema = z
+  .strictObject({
+    background: color.exactOptional().describe("the colour cleared to on this map (default the skin's)"),
+    parallax: z
+      .array(parallaxLayerSchema)
+      .exactOptional()
+      .describe("this map's background layers, in place of the skin's `parallax` (back to front)"),
+    tiles: z
+      .record(id, tileEntry)
+      .exactOptional()
+      .describe(
+        "tile entries laid over the skin's `tiles` on this map (a key given here replaces the skin's)",
+      ),
+  })
+  .describe("one map's look");
+
 export const skinSchema = z
   .strictObject({
     backend: id.describe('the backend it is for: `canvas2d`, `three` (meshes) or another backend name'),
@@ -1042,6 +1062,12 @@ export const skinSchema = z
       .describe(
         'background layers behind the map, back to front (Engine 0.16): `{ frame | gradient, factor, repeat?, x?, y?, sheet?, bands?, height?, depth? }`',
       ),
+    themes: z
+      .record(id, themeSchema)
+      .exactOptional()
+      .describe(
+        "per-map looks (Engine 0.16 part B, T7): map id -> `{ background?, parallax?, tiles? }`, used in place of the skin's own `background` and `parallax`, and over its `tiles` key by key, while a frame shows the map with that id (a platformer level's id); the Canvas2D presenter draws them, the 3D backend does not yet",
+      ),
     music: skinMusicSchema
       .exactOptional()
       .describe(
@@ -1057,15 +1083,19 @@ export const skinSchema = z
     checkMusicLayers(skin.music, ctx);
     checkEmitRefs(skin, ctx);
     checkMeshes(skin, ctx);
-    checkShapes(skin.backend, skin.sheets, skin.kinds, 'kinds', ['sheet', 'frames', 'fallbackColor'], ctx);
+    checkShapes(skin.backend, skin.sheets, skin.kinds, ['kinds'], ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
       skin.backend,
       skin.sheets,
       skin.tiles ?? {},
-      'tiles',
+      ['tiles'],
       ['sheet', 'frame', 'fallbackColor'],
       ctx,
     );
+    for (const [map, theme] of Object.entries(skin.themes ?? {})) {
+      const at = ['themes', map, 'tiles'];
+      checkShapes(skin.backend, skin.sheets, theme.tiles ?? {}, at, ['sheet', 'frame', 'fallbackColor'], ctx);
+    }
   });
 
 export type SkinFile = z.output<typeof skinSchema>;
@@ -1187,14 +1217,17 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
       });
     }
   }
-  for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
-    if (entry.mesh !== undefined) continue;
-    const joined = Object.entries(entry.join?.frames ?? {}).map(([key, frame]) => ({
-      frame,
-      path: ['join', 'frames', key],
-    }));
-    sheetAt(['tiles', tile], entry.sheet, [...one(entry.frame), ...joined]);
-  }
+  const tileRefs = (at: FieldPath, tiles: SkinFile['tiles']) => {
+    for (const [tile, entry] of Object.entries(tiles ?? {})) {
+      if (entry.mesh !== undefined) continue;
+      const joined = Object.entries(entry.join?.frames ?? {}).map(([key, frame]) => ({
+        frame,
+        path: ['join', 'frames', key],
+      }));
+      sheetAt([...at, tile], entry.sheet, [...one(entry.frame), ...joined]);
+    }
+  };
+  tileRefs(['tiles'], skin.tiles);
   for (const [type, entry] of Object.entries(skin.events ?? {})) {
     if (entry.sound !== undefined && !sounds.has(entry.sound)) {
       missing(['events', type, 'sound'], 'song or sfx', entry.sound);
@@ -1207,19 +1240,26 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     sheetAt(['hud', i], item.sheet, one(item.frame));
     if (item.panel !== undefined) sheetAt(['hud', i, 'panel'], item.panel.sheet, one(item.panel.frame));
   });
-  (skin.parallax ?? []).forEach((layer, i) => {
-    if (layer.frame === undefined) return;
-    if (layer.sheet === undefined && skin.sheets?.sheet === undefined) {
-      issues.push({
-        name,
-        path: ['parallax', i, 'sheet'],
-        code: 'missing_field',
-        message: 'a parallax frame needs "sheet" (or sheets.sheet)',
-      });
-      return;
-    }
-    sheetAt(['parallax', i], layer.sheet, one(layer.frame));
-  });
+  const parallaxRefs = (at: FieldPath, layers: SkinFile['parallax']) =>
+    (layers ?? []).forEach((layer, i) => {
+      if (layer.frame === undefined) return;
+      if (layer.sheet === undefined && skin.sheets?.sheet === undefined) {
+        issues.push({
+          name,
+          path: [...at, i, 'sheet'],
+          code: 'missing_field',
+          message: 'a parallax frame needs "sheet" (or sheets.sheet)',
+        });
+        return;
+      }
+      sheetAt([...at, i], layer.sheet, one(layer.frame));
+    });
+  parallaxRefs(['parallax'], skin.parallax);
+  // A map's look (Engine 0.16 part B, T7) is checked like the skin's own.
+  for (const [map, theme] of Object.entries(skin.themes ?? {})) {
+    parallaxRefs(['themes', map, 'parallax'], theme.parallax);
+    tileRefs(['themes', map, 'tiles'], theme.tiles);
+  }
   if (!MESH_BACKENDS.includes(skin.backend)) {
     for (const [emitter, def] of Object.entries(skin.emitters ?? {})) {
       if (def.frame !== undefined) sheetAt(['emitters', emitter], def.sheet, one(def.frame));
@@ -1560,6 +1600,24 @@ export type SkinEntityInput = Pick<DeepReadonly<PresentEntity>, 'kind'> & {
  */
 export function skinBackground(skin: DeepReadonly<Pick<SkinFile, 'background'>>): string {
   return skin.background ?? DEFAULT_BACKGROUND;
+}
+
+/**
+ * The skin as it looks on the map with id `mapId` (Engine 0.16 part B, T7): its `themes` entry for
+ * that map, if any, laid over it (`background` and `parallax` replaced, `tiles` replaced key by
+ * key); the skin itself when there is none (or no map). A new object: the skin is never changed.
+ * Pure.
+ */
+export function themedSkin<S extends DeepReadonly<SkinFile>>(skin: S, mapId: string | undefined): S {
+  const themes = skin.themes;
+  if (mapId === undefined || themes === undefined || !Object.hasOwn(themes, mapId)) return skin;
+  const theme = themes[mapId]!;
+  return {
+    ...skin,
+    ...(theme.background !== undefined && { background: theme.background }),
+    ...(theme.parallax !== undefined && { parallax: theme.parallax }),
+    ...(theme.tiles !== undefined && { tiles: { ...skin.tiles, ...theme.tiles } }),
+  };
 }
 
 /** A whole number written as text (`"42"`, `"-3"`), or null for anything else. */

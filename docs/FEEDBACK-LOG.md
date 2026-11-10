@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 375.** (Last used: 374.)
+**Next unused number: 379.** (Last used: 378.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1465,3 +1465,28 @@ Build choices)
   gives the hurt flash, shake and blink something to screenshot; the four stages got names for
   the level select (Meadow Start, Over the Hills, Treetop Path, The Boss), which T7 and T8 may
   change. OK?
+
+**Engine 0.16 part B, T7: levels 2 and 3** (details in `games/samples/platformer/CLAUDE.md`,
+"The game", "The 2D skin" and "Run files")
+
+- **375.** Level 2 is **Autumn Hills** (one-way planks over pits, walkers and ledge-walkers
+  pacing a step and a plank, a checkpoint, a high off-path cache of five coins with a bump block
+  holding an extra life) and level 3 is **Starlit Ridge** (spikes, a buffered-jump chain over
+  narrow pillars, a multi-coin block, a checkpoint, a coyote jump over a spike field, a tunnel
+  coin cache under a spiked roof, gold planks over a spike floor). The names replace "Over the
+  Hills" and "Treetop Path". OK?
+- **376.** Each level's own look is an engine addition: a skin's `themes` (map id ->
+  `{ background?, parallax?, tiles? }`, `themedSkin` in `engine/core/present`), drawn by the
+  Canvas2D presenter; the 3D backend ignores it until T10. Level 2 is autumn (orange-topped
+  ground, steel planks, a warm sky, violet mountains), level 3 night (rose sand, gold planks,
+  stars and a moon); their parallax art is the T6 layers recoloured (`hopper-autumn`,
+  `hopper-night`) plus a new star field, not new shapes. OK?
+- **377.** The hidden collectables are an off-path coin cache (level 2's high planks, level 3's
+  tunnel), a life block and a multi-coin block; there are no bricks (the profile still breaks
+  none) and no new enemy kinds, so `pnpm -s cli mutants games/samples/platformer` still exits 4
+  for the rules no level uses yet (bricks, shells, mini games, the boss, walls, skids and the
+  scroll lock); every run file's own `mutants` exits 0. Should a level get breakable bricks or a
+  shell enemy to guard those, or is the platformer lab enough?
+- **378.** Four run files, each starting at its stage (`start: { stage }`): `level-2` and
+  `level-3` (wins, cleared at ticks 959 and 1010) and `level-2-lost` and `level-3-lost` (two
+  respawns on the checkpoint, by pits and by spikes, then the level afresh). OK?

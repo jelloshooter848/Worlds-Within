@@ -26,7 +26,8 @@ for and holds no game rules.
   and whole-number range (gap M2); flipped by facing, a fallback box when art is missing, squash through
   `transformed()`; from Engine 0.16 T10 a PNG sheet's frame placed on the box by its `anchor`; from
   Engine 0.16 part B (T6) a state drawn from its cycle's own `sheet`, and map tiles with a `join`
-  drawn with the frame their neighbours pick (`resolveTileFrame`); from Engine 0.16 T2 per-frame timing, one-shots and `then`, and the cycles' frame
+  drawn with the frame their neighbours pick (`resolveTileFrame`), and (T7) the clear colour,
+  parallax and tiles of the map shown from the skin's `themes` (`themedSkin`); from Engine 0.16 T2 per-frame timing, one-shots and `then`, and the cycles' frame
   events played through the skin's `events` like the frame's own; from Engine 0.16 T3 a kind's
   `blend: add` and `glow`, and particles from the skin's `emitters`, started by events' `emit` and
   run by kinds' `emit`, drawn in world space after the entities with `lighter` for `add` and

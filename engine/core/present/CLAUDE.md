@@ -179,6 +179,16 @@ attack?, hold?, release? }`, and a top-level `music` section of layered songs (`
     `missing_ref` for its `sheet`, `missing_field` at `parallax.<i>.sheet` when there is neither a
     `sheet` nor `sheets.sheet`), on both backends (3D cuts it from the decoded sheets). The old
     `effect` kinds `flash` and `shake` keep working as before (the shake scale applies to them).
+  - Per-map looks (Engine 0.16 part B, T7): a skin-level `themes` map, map id -> `{ background?,
+parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives each level its
+    own sky, background layers and ground. `themedSkin(skin, mapId)` (pure) lays the map's entry
+    over the skin: `background` and `parallax` replace the skin's, `tiles` replace its entries key
+    by key (a `#` with other join frames); another map (or none) gets the skin itself, and the
+    skin is never changed. Checked like the skin's own fields: a theme's tiles by `checkShapes`
+    (`wrong_backend_field`, `missing_field` at `themes.<map>.tiles.<key>...`) and across files
+    (`missing_frame`, `missing_ref` at `themes.<map>.parallax.<i>...` and `.tiles.<key>...`). The
+    Canvas2D presenter draws through it; the 3D backend ignores `themes` for now. Tested in
+    `skin.test.ts` (`per-map looks`).
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px

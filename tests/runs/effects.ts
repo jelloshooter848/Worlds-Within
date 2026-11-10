@@ -152,14 +152,24 @@ export const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
       skin.backend !== 'three' && tile?.frame !== undefined && skin.sheets?.sheet !== undefined
         ? [{ frame: tile.frame, factor: { x: 0.5, y: 0.25 }, y: 40, repeat: 'xy' as const }]
         : [];
+    const sky = (layers: SkinFile['parallax']) => [
+      ...(layers ?? []),
+      { gradient: ['#203060', '#a4e4fc'], bands: 4, factor: 0, height: 60 },
+      ...frameLayer,
+    ];
     return {
       ...skin,
       camera: { ...skin.camera, lookAhead: { x: 16, y: 8, lerp: 0.2 } },
-      parallax: [
-        ...(skin.parallax ?? []),
-        { gradient: ['#203060', '#a4e4fc'], bands: 4, factor: 0, height: 60 },
-        ...frameLayer,
-      ],
+      parallax: sky(skin.parallax),
+      // A map's own look (Engine 0.16 part B, T7) draws its parallax in place of the skin's.
+      ...(skin.themes !== undefined && {
+        themes: Object.fromEntries(
+          Object.entries(skin.themes).map(([map, theme]) => [
+            map,
+            { ...theme, parallax: sky(theme.parallax ?? skin.parallax) },
+          ]),
+        ),
+      }),
       events: Object.fromEntries(
         Object.entries(skin.events ?? {}).map(([type, entry]) => [
           type,

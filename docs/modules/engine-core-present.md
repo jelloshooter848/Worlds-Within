@@ -54,6 +54,8 @@ Import from `@engine/core/present` (`index.ts`).
   `sheet`, so one kind draws each state from its own PNG. Also T6: a 2D tile entry's `join`
   (`tile-join.ts`: `{ with?, edge?, frames: { "top left": frame, "inner-top-right": frame, ... } }`)
   picks the tile's frame by the neighbours it joins (grass tops, edges, corners, notches);
+  from T7 a skin's `themes` (map id -> `{ background?, parallax?, tiles? }`, laid over the skin by
+  `themedSkin(skin, mapId)`) gives each level its own sky, parallax and ground;
   `resolveTileFrame`, `tileJoinKeys`, `TILE_JOIN_WORDS`, `bad_join_key` (`tile-join.test.ts`).
   Engine 0.16 T11: a 3D kind or tile entry may name a
   glTF/GLB `model` in `assets/` with `scale`, `anchor`, `rotate`, `clip` (by animation state)

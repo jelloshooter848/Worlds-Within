@@ -1,0 +1,224 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 1
+  },
+  "ticks": 760,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 44,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 58,
+        "hold": ["right"]
+      },
+      {
+        "frame": 100,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 116,
+        "hold": ["right"]
+      },
+      {
+        "frame": 158,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 180,
+        "hold": ["right"]
+      },
+      {
+        "frame": 205,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 225,
+        "hold": ["right"]
+      },
+      {
+        "frame": 258,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 262,
+        "hold": ["right"]
+      },
+      {
+        "frame": 334,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 348,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-2"
+    },
+    {
+      "tick": 447,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 45,
+        "row": 9
+      }
+    },
+    {
+      "tick": 522,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "pit",
+        "lives": 2
+      }
+    },
+    {
+      "tick": 522,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "respawn"
+      }
+    },
+    {
+      "tick": 522,
+      "path": "player.x",
+      "op": "eq",
+      "value": 186368
+    },
+    {
+      "tick": 522,
+      "path": "player.y",
+      "op": "eq",
+      "value": 40960
+    },
+    {
+      "tick": 522,
+      "path": "lives",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 522,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 45,
+        "row": 9
+      }
+    },
+    {
+      "tick": 522,
+      "path": "coins",
+      "op": "eq",
+      "value": 7
+    },
+    {
+      "tick": 604,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "pit",
+        "lives": 1
+      }
+    },
+    {
+      "tick": 604,
+      "path": "player.x",
+      "op": "eq",
+      "value": 186368
+    },
+    {
+      "tick": 686,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "pit",
+        "lives": 0
+      }
+    },
+    {
+      "tick": 686,
+      "path": "outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 745,
+      "path": "outcome",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "tick": 746,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 746,
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 746,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 746,
+      "path": "coins",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 746,
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "path": "level",
+      "op": "eq",
+      "value": "level-2"
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "gravity",
+    "fall-cap",
+    "walk",
+    "air-control",
+    "jump",
+    "solid-tiles",
+    "one-way-platforms",
+    "pits-kill",
+    "checkpoints"
+  ]
+}

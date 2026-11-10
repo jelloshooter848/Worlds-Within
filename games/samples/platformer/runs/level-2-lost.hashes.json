@@ -1,0 +1,61 @@
+{
+  "run": "games/samples/platformer/runs/level-2-lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "923f286f8ff3f390"
+    },
+    {
+      "tick": 60,
+      "hash": "febf9023e766fb83"
+    },
+    {
+      "tick": 120,
+      "hash": "678e4c33070804af"
+    },
+    {
+      "tick": 180,
+      "hash": "f7a11dbf49d8de2c"
+    },
+    {
+      "tick": 240,
+      "hash": "5dbccec5fbce20c2"
+    },
+    {
+      "tick": 300,
+      "hash": "446d5f1d8044a635"
+    },
+    {
+      "tick": 360,
+      "hash": "044fc73ce57dbdbd"
+    },
+    {
+      "tick": 420,
+      "hash": "a131578496b9c226"
+    },
+    {
+      "tick": 480,
+      "hash": "a059ec03494a8565"
+    },
+    {
+      "tick": 540,
+      "hash": "dacc679ff216c509"
+    },
+    {
+      "tick": 600,
+      "hash": "3537a4b319122efc"
+    },
+    {
+      "tick": 660,
+      "hash": "bc174fbe5372f852"
+    },
+    {
+      "tick": 720,
+      "hash": "64842f1dff7ba4cf"
+    },
+    {
+      "tick": 760,
+      "hash": "b157a38e5bf31d31"
+    }
+  ]
+}

@@ -28,6 +28,7 @@ import {
   resolveSkinKind,
   resolveTileFrame,
   skinBackground,
+  themedSkin,
   type DeepReadonly,
   type HudFrameSize,
   type PresentEntity,
@@ -167,6 +168,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   private readonly opts: SkinnedPresenterOptions;
   private size: ScreenSize | undefined;
   private shown: ShownMap | null = null;
+  /** The skin as each map id shows it (`look`). */
+  private readonly looks = new Map<string, Skin>();
   /** False on a frame with no `map`: nothing is drawn, but the cache is kept for a later reference. */
   private mapVisible = false;
   private effects: ActiveEffect[] = [];
@@ -277,8 +280,10 @@ export class SkinnedCanvasPresenter implements Presenter {
         ? null
         : { x: Math.round(target.x * view.zoom) - view.x, y: Math.round(target.y * view.zoom) - view.y };
 
-    r.clear(this.opts.background ?? skinBackground(this.skin));
-    this.drawParallax(view, size);
+    // The shown map's look (a skin's `themes`, Engine 0.16 part B T7): its sky and parallax.
+    const look = this.look(this.shown?.map.id ?? frame.map?.id);
+    r.clear(this.opts.background ?? skinBackground(look));
+    this.drawParallax(look, view, size);
     this.drawMap(view);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawParticles(view);
@@ -465,12 +470,12 @@ export class SkinnedCanvasPresenter implements Presenter {
    * scrolled against the camera's top-left in picture px (zoom and shake included); frames are
    * drawn at scale 1 and gradients as flat boxes.
    */
-  private drawParallax(view: View, size: ScreenSize): void {
-    if (this.skin.parallax === undefined) return;
+  private drawParallax(look: Skin, view: View, size: ScreenSize): void {
+    if (look.parallax === undefined) return;
     const r = this.r;
     const frameSize = (id: string, palette: string | undefined, name: string) =>
       this.sheet(id, palette)?.frames.get(name) ?? null;
-    for (const d of layoutParallax(this.skin, view, size, frameSize)) {
+    for (const d of layoutParallax(look, view, size, frameSize)) {
       if (d.kind === 'box') r.rect(d.x, d.y, d.w, d.h, d.color);
       else {
         const sheet = this.sheet(d.sheet, d.palette);
@@ -480,6 +485,20 @@ export class SkinnedCanvasPresenter implements Presenter {
   }
 
   // ---- Map ----
+
+  /**
+   * The skin as it looks on the map with id `mapId` (`themedSkin`: its `themes` entry for that
+   * map laid over it), made once per map id.
+   */
+  private look(mapId: string | undefined): Skin {
+    if (mapId === undefined) return this.skin;
+    let look = this.looks.get(mapId);
+    if (look === undefined) {
+      look = themedSkin(this.skin, mapId);
+      this.looks.set(mapId, look);
+    }
+    return look;
+  }
 
   /** Keeps the full map last sent, and redraws its cache when the id or version changes. */
   private updateMap(frame: Frame): void {
@@ -520,7 +539,7 @@ export class SkinnedCanvasPresenter implements Presenter {
    * at any zoom.
    */
   private drawTiles(r: Renderer, map: DeepReadonly<PresentMap>, view: View): void {
-    const tiles = this.skin.tiles ?? {};
+    const tiles = this.look(map.id).tiles ?? {};
     const defaults = this.skin.sheets;
     const ts = map.tileSize;
     const { zoom } = view;

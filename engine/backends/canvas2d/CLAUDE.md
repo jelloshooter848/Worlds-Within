@@ -130,6 +130,11 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
   after the clear and before the map (`layoutParallax`, shared with 3D): gradient bands as boxes,
   frames as sprites at scale 1, scrolled against the camera's top-left in picture px (zoom and
   shake included).
+- Per-map looks (Engine 0.16 part B, T7): the clear colour, the parallax layers and the tiles come
+  from `themedSkin(skin, mapId)` (`@engine/core/present`) for the map shown (the full map last
+  sent, else the frame's map id), made once per map id: a skin's `themes` entry for that map
+  replaces its `background` and `parallax` and lays its `tiles` over the skin's. Everything else
+  (kinds, events, HUD, camera) stays the skin's. Tested in `presenter.test.ts` (`per-map looks`).
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 

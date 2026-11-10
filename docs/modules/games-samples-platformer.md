@@ -10,7 +10,8 @@ short side-scroller of three levels and a mini-boss on `kits/platformer`, in 2D 
 time: T5 gave it a tuned profile (coyote time, jump buffering, a jump cut, run acceleration and
 fall speeds, as data), its screen, its campaign (`level-1`, `level-2`, `level-3`, `boss`) and its
 first level, with run files for a win and a loss; the art pass (T6, the CC0 packs in `assets/`),
-levels 2 and 3 (T7), the mini-boss (T8), music (T9) and the 2.5D view (T10) follow. T6 drew it
+levels 2 and 3 (T7: an autumn level of one-way planks and pacing threats, a night level of
+spikes, buffered and coyote jumps, each with its own sky and ground), the mini-boss (T8), music (T9) and the 2.5D view (T10) follow. T6 drew it
 from the CC0 PNG packs: ground joined by its neighbours, the Ninja Frog with every state (a
 landing crouch, a dying puff), Kenney's critters, a raised checkpoint flag, a trophy goal, four
 parallax layers of original text art, squash and stretch, dust and run particles, hit flashes,
@@ -24,13 +25,20 @@ since T5. It holds only content, skins and thin glue.
   `headless.ts`, `view.ts`).
 - `content/`: `campaigns/main.campaign.json` (the stage list), `levels/level-1.json` +
   `level-1.map.txt` (80x12: coins, a bump block, two walkers, a checkpoint, a coyote-time pit, a
-  running-jump gap) and the placeholders `level-2`, `level-3` and `boss`,
+  running-jump gap), `level-2` (T7, Autumn Hills, 100x12: one-way planks over pits, walkers and
+  ledge-walkers pacing steps and planks, a checkpoint, a high off-path coin cache with a life
+  block), `level-3` (T7, Starlit Ridge, 104x12: spikes, a buffered-jump chain over narrow pillars,
+  a multi-coin block, a checkpoint, a coyote jump over a spike field, a tunnel coin cache under a
+  spiked roof, gold planks over a spike floor) and the placeholder `boss`,
   `profiles/hoppers-way.profile.json` (the tuned profile; its numbers and reasons are a table in
   the `CLAUDE.md`), `sprites/hopper.txt` and `hopper-font.txt` with `palettes/hopper.json`,
   `fonts/`, `sfx/`, `songs/meadow.json` (placeholders copied from the classic game; `hopper.txt` now only for the 3D skin, until T10), `sprites/hopper-sky.txt` with
   `palettes/hopper-sky.json` (T6: the parallax clouds, mountains, hills and bushes),
+  `sprites/hopper-autumn.txt` and `hopper-night.txt` with their palettes (T7: those layers
+  recoloured for level-2 and level-3, and a star field with the moon),
   `skins/canvas2d.json` (T6: the 2D skin on the PNG packs; its parts are listed in the
-  `CLAUDE.md`, "The 2D skin") and `skins/three.json`.
+  `CLAUDE.md`, "The 2D skin"; from T7 its `themes` give level-2 an autumn sky and ground and
+  level-3 a night sky and rose sand) and `skins/three.json`.
 - `assets/` (Engine 0.16 part B, T4): four CC0 packs as binary files, each credited in
   `assets/CREDITS.md` (source URL, author, licence, files kept; checked by `validate`), about
   1.8 MB in all: `pixel-adventure-1` (Pixel Frog: terrain, backgrounds, the Ninja Frog player,
@@ -56,7 +64,11 @@ since T5. It holds only content, skins and thin glue.
 - `runs/level-1.run.json` (the win: cleared at tick 707) and `runs/level-1-lost.run.json` (the
   loss: every life lost, two respawns on the checkpoint, the level afresh), with golden
   `.hashes.json` files and `guards` (coyote time, checkpoints, the jump cut, run speed and more);
-  `runs/level-1-hurt.run.json` (T6: hurt by the first walker at tick 209, for the hit flash).
+  `runs/level-1-hurt.run.json` (T6: hurt by the first walker at tick 209, for the hit flash);
+  T7's `level-2`, `level-2-lost`, `level-3` and `level-3-lost` (each `start: { stage }`, so a
+  change to level 1 moves none of them: wins with one-way platforms, a ledge-walker's turn, a
+  life block, buffered and coyote jumps; losses with two respawns on the checkpoint, by pits and
+  by spikes).
 
 ## Imports allowed
 

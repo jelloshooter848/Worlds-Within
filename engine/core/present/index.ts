@@ -70,6 +70,7 @@ export {
   resolveSkinKind,
   resolveSkinMesh,
   skinBackground,
+  themedSkin,
   skinTagIndex,
   skinTagMatches,
   SKIN_KIND,

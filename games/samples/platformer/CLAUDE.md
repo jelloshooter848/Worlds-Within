@@ -5,7 +5,7 @@ short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and 2.5D (
 16:9 screen. It is built a task at a time (docs/ROADMAP.md, "0.16 part B"): T5 made room for it
 (the old five levels and two doors moved to `games/platformer-classic`, a test game, with their
 run files and hashes unchanged), gave it a tuned profile, its screen, its campaign and its first
-level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3, T8 the
+level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3 (built), T8 the
 mini-boss's arena and the end, T9 music and sounds, T10 the 2.5D view. It is content, not engine:
 the kit holds the rules, this folder holds levels, the profile, art, sound, skins and thin glue.
 
@@ -21,9 +21,31 @@ level-1 -> level-2 -> level-3 -> boss   (campaign main; LEVEL_PAUSE 60 ticks bet
    three coins and a 4-wide pit after it (walk off its edge and jump late: coyote time carries
    the jump), a second `walker` below the far ledge, a 6-wide gap that wants a **running** jump
    (a walking jump falls short) under an arc of four coins, and the goal. 13 coins in all.
-2. **level-2**, **level-3** (T7) and **boss** (T8, the mini-boss's arena, `"clear": "boss"`):
-   placeholders now, each a flat 24x12 corridor from the start to a goal, so the campaign, the
-   level select and the stage list are the flagship's from the start.
+2. **level-2, Autumn Hills** (T7), 100x12 tiles, autumn ground under a warm late-afternoon sky:
+   **one-way platforms and moving threats over pits**. Three coins to jump for, a bump block
+   (a coin), a 5-wide pit with a one-way plank in the middle (three coins over it: land on the
+   plank, jump on), a `walker` (`w`), a 2-high step patrolled by a `ledge-walker` (`l`, turns at
+   its edges), the **checkpoint** (`K`, column 45), a 4-wide pit with a plank over it and a
+   second `ledge-walker` pacing the plank, then the **off-path cache**: a plank stair (row 7,
+   then row 5) to five coins high over a 6-wide pit and a bump block at row 1 holding a **life**
+   (jump into it from the high plank); the cache's plank is also the easy way over that pit. Then
+   a `walker`, a 3-wide pit under an arc of four coins, and the goal. 16 coins in all (15 on the
+   map, one in a block) and the life.
+3. **level-3, Starlit Ridge** (T7), 104x12 tiles, rose-topped sand under a night sky with stars
+   and a moon: **spikes and tighter platforming with coyote time and buffered jumps**. Two coins,
+   a 2-wide spike patch to jump (`^` kills on touch: `hazards-kill`), a **buffered-jump chain**
+   over two pits on narrow pillars (1 wide, then 2 wide and one higher; press jump just before
+   landing and the frog takes off on the landing tick), a multi-coin bump block (`coins`: a coin
+   a bump, ten bumps), a `walker`, a 3-wide pit, the **checkpoint** (`K`, column 46), a 3-high
+   ledge, then a **coyote jump**: walk off the ledge's edge and jump late to clear a 5-wide spike
+   field under an arc of four coins (a jump from the ledge's edge also clears it, a jump from
+   further back does not). A **tunnel cache**: a roof with spikes on top over eight coins in a low
+   tunnel (the lower way through), then a spike floor crossed on three one-way gold planks
+   (buffered jumps again), a `ledge-walker` on the raised last stretch and the goal. 22 coins in
+   all (21 on the map, one or more from the block).
+4. **boss** (T8, the mini-boss's arena, `"clear": "boss"`): a placeholder now, a flat 24x12
+   corridor from the start to a goal, so the campaign, the level select and the stage list are
+   the flagship's from the start.
 
 A level is **cleared** at its goal; the next stage starts `LEVEL_PAUSE` (60) ticks later. A death
 costs a life and puts the player back at the last checkpoint touched (else the start); with no
@@ -46,6 +68,22 @@ All of it is world state, so run files assert it.
 4. **The placeholder skin (369).** The old hand-drawn `hopper` sheet, palette, fonts, sfx and
    `meadow` song were copied in as placeholders (the classic game keeps its own copies), with a
    text-art checkpoint added (`checkpoint`, `checkpoint-on`); T6 replaces the art.
+
+## Build choices (T7; feedback items 375-378)
+
+1. **The levels (375).** level-2 (Autumn Hills) teaches one-way planks and threats that pace
+   steps and planks over pits, with a high off-path cache; level-3 (Starlit Ridge) is the tight
+   one: spikes, buffered jumps onto narrow pillars, a coyote jump over a spike field, a tunnel
+   cache. Laid out by a small script, then each jump found with a headless trace (as `trace` and
+   `dump` give it), and tuned from screenshots.
+2. **Each level's look (376).** An engine skin field, `themes` (`engine/core/present`,
+   `themedSkin`), drawn by the Canvas2D presenter: per map id, the sky colour, the parallax list
+   and tile entries laid over the skin's. The levels keep one skin; the 3D skin has no themes yet.
+3. **Hidden collectables (377).** Off-path coin caches, a life block and a multi-coin block; no
+   bricks (the profile breaks none) and no new enemy kind, so the folder's `mutants` still lists
+   rules no level uses.
+4. **Run files (378).** Each starts at its own stage, so a change to an earlier level moves none
+   of its hashes.
 
 ## The tuned profile: `hoppers-way`
 
@@ -85,11 +123,15 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   `view.ts`. `index.html` is the page (the games index's 2D and `3D` links).
 - `content/campaigns/main.campaign.json`: the stage list, `level-1`, `level-2`, `level-3`, `boss`.
 - `content/levels/<id>.json` + `<id>.map.txt` (format: `kits/platformer/CLAUDE.md` and `LEGEND` in
-  `kits/platformer/legend.ts`): `level-1` (spawns `w`: a `walker` facing left) and the three
-  placeholders, all with `profile: "hoppers-way"` and `scroll: "right"`.
+  `kits/platformer/legend.ts`): `level-1` (spawns `w`: a `walker` facing left), `level-2` and
+  `level-3` (T7; spawns `w` a `walker` and `l` a `ledge-walker`, both facing left; `blocks`:
+  level-2 `["life", "coin"]`, level-3 `["coins"]`, in reading order) and the `boss` placeholder,
+  all with `profile: "hoppers-way"` and `scroll: "right"`.
 - `content/profiles/hoppers-way.profile.json`: the tuned profile (above).
 - `content/sprites/hopper-sky.txt` + `content/palettes/hopper-sky.json` (T6): the parallax
-  layers, original text pixel art (below). `content/sprites/hopper.txt` + `palettes/hopper.json`
+  layers, original text pixel art (below). `hopper-autumn.txt` and `hopper-night.txt` with their
+  palettes (T7): the same layers recoloured for level-2 and level-3, and the night's `stars`
+  frame (a seamless star field with the moon). `content/sprites/hopper.txt` + `palettes/hopper.json`
   and `hopper-font.txt`: the old placeholder art, now used only by the 3D skin (until T10).
   `content/fonts/hopper-small.txt`, `hopper-title.txt` (the HUD's counters and the menus),
   `content/sfx/*.json`, `content/songs/meadow.json`: fonts and the placeholder sound (T9 redoes it).
@@ -188,6 +230,16 @@ by hand now. Every 2D entry's `fallbackColor` is `#ff00ff`, so a missing frame s
   `mountains` (x 0.18, snow caps), `hills` (x 0.38, trees on the crests) and `bushes` (x 0.62,
   dark enough to fill a pit's bottom), each 320 px wide and seamless, drawn by a small
   generator (periodic ridges, crest trees, cloud blobs).
+- **Per-level looks** (T7, `themes`, an engine skin field: map id -> `{ background?, parallax?,
+tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `level-2` (autumn):
+  a golden 14-band sky, `hopper-autumn`'s clouds, dusky violet mountains, muted orange hills and
+  russet bushes, the ground the terrain sheet's orange-topped set (`autumn-*`, the grass set's
+  frames 64 px down) and the one-way planks steel (`metal-plank-*`, so they read on the warm
+  hills). `level-3` (night): a navy-to-violet sky, `hopper-night`'s `stars` (x 0.03) and its
+  dimmed clouds, mountains, hills and bushes, the ground the rose-topped sand (`rose-*`, 128 px
+  down) and gold planks (`gold-plank-*`). `level-1` and the boss keep the skin's own meadow. A
+  one-wide column joins as `top right left` (the top frame) and `right left` (the fill) in each
+  set. The 3D skin has no themes yet (T10).
 - **HUD** (the UI kit): the wood `hud-panel` (slice 16, so its corner ornaments stay in the
   corners) holding empty hearts for `maxHp` under full ones for `hp`, a coin `counter` (two gold
   digits, rolling white for 20 frames) and a lives `counter` with the frog's face (`x{value}`).
@@ -197,22 +249,33 @@ by hand now. Every 2D entry's `fallbackColor` is `#ff00ff`, so a missing frame s
   dark outline, a green focus bar, cream text; the title "Hopper's Way" with the subtitle "A
   frog's run through the long meadow", the frog (`idle-0` x3) and a blob (x2) as art over the
   game's own picture (dim 0.78); title items Start, Levels (the T3 level select, "Pick a level",
-  `*` after a cleared one), Controls, Settings. The levels have names: Meadow Start, Over the
-  Hills, Treetop Path, The Boss (T7 and T8 may rename them).
+  `*` after a cleared one), Controls, Settings. The levels have names: Meadow Start, Autumn Hills,
+  Starlit Ridge (T7 renamed the second and third), The Boss (T8 may rename it).
 - **Screenshots** taken and looked at while tuning (`pnpm -s cli screenshot ... --scale 6` and
   `pnpm -s cli sheet`): `level-1` ticks 3, 40, 58-62 (coins, sparkle), 88-94 (landing squash and
   dust), 120-124 (the block), 214-220 (stomp), 355-412 (checkpoint flag raise and wave, the
   ledge), 500, 612-634 (running, run dust, the running jump's stretch), 707 and 720 (the trophy,
   confetti, zoom); `level-1-hurt` 209-240 (hit flash, blink); `level-1-lost` 513-545 (death,
   puff); and the `title`, `levels` and `pause` overlays.
+- **T7 screenshots** (`sheet` at scale 2 over each level, then `screenshot --scale 6`): `level-2`
+  3-830 (the warm sky, the planks, the cache and the life block: the hills were muted so the
+  orange ground reads, the planks made steel, the life block moved from row 0 to row 1 out of the
+  HUD's band), 200, 504, 625; `level-3` 3-1000 (the night clouds dimmed), 205 (the 1-wide pillar,
+  which gave the `top right left` join), 545 (the coyote jump), 690 (the tunnel roof, which gave
+  the `top bottom` join); `level-3-lost` 549 and `level-2-lost` 530 (death and respawn on the
+  checkpoint); the `levels` overlay (the new names).
 
 ## Run files
 
-| run            | ticks | ends at                                                  | guards                                                                                                                                                                                               |
-| -------------- | ----- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `level-1`      | 730   | `level-1` cleared at tick 707, 12 coins                  | gravity, walk, run-speed, air-control, jump, jump-by-speed, variable-jump, coyote-time, solid-tiles, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce |
-| `level-1-lost` | 910   | every life lost (failed at 843), `level-1` afresh at 903 | gravity, fall-cap, walk, air-control, jump, variable-jump, solid-tiles, pits-kill, checkpoints                                                                                                       |
-| `level-1-hurt` | 300   | hurt by the first walker at 209 (hp 1, invulnerable 120) | walk, air-control, jump, variable-jump, solid-tiles, actors-wake, enemy-touch-hurts, invulnerability                                                                                                 |
+| run            | ticks | ends at                                                  | guards                                                                                                                                                                                                      |
+| -------------- | ----- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `level-1`      | 730   | `level-1` cleared at tick 707, 12 coins                  | gravity, walk, run-speed, air-control, jump, jump-by-speed, variable-jump, coyote-time, solid-tiles, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce        |
+| `level-1-lost` | 910   | every life lost (failed at 843), `level-1` afresh at 903 | gravity, fall-cap, walk, air-control, jump, variable-jump, solid-tiles, pits-kill, checkpoints                                                                                                              |
+| `level-1-hurt` | 300   | hurt by the first walker at 209 (hp 1, invulnerable 120) | walk, air-control, jump, variable-jump, solid-tiles, actors-wake, enemy-touch-hurts, invulnerability                                                                                                        |
+| `level-2`      | 990   | `level-2` cleared at tick 959, 16 coins, 4 lives         | gravity, walk, air-control, jump, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, ledge-turn, stomping, stomp-bounce  |
+| `level-2-lost` | 760   | every life lost (failed at 686), `level-2` afresh at 746 | gravity, fall-cap, walk, air-control, jump, solid-tiles, one-way-platforms, pits-kill, checkpoints                                                                                                          |
+| `level-3`      | 1040  | `level-3` cleared at tick 1010, 22 coins                 | gravity, walk, air-control, jump, variable-jump, coyote-time, solid-tiles, ceiling-bump, one-way-platforms, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce |
+| `level-3-lost` | 850   | every life lost on spikes (failed at 781), afresh at 841 | gravity, walk, air-control, jump, variable-jump, solid-tiles, hazards-kill, checkpoints                                                                                                                     |
 
 - `level-1.run.json` (the win): walks right and jumps for the coins (2 at tick 58), bumps the
   block (a coin, 4 at 123), clears the 2-tile gap, stomps the first walker with a short hop
@@ -232,18 +295,51 @@ by hand now. Every 2D entry's `fallbackColor` is `#ff00ff`, so a missing frame s
 - `level-1-hurt.run.json` (T6, for the hurt screenshots: the hit flash, shake and blink): the
   win's input to the first walker, then walks into it instead of stomping it (`hurt`, hp 1,
   `player.invuln` 120 at 209). Invariants: 3 lives, stage 0. Final hash in its `.hashes.json`.
+- `level-2.run.json` (T7, `start: { stage: 1 }`, so a change to level-1 moves none of its hashes):
+  jumps for three coins, bumps the block (a coin, 4 at tick 109), lands on the one-way plank
+  over the first pit (`player.y` 28672, on the ground, at 200) and jumps on, stomps the `walker`
+  with a jump buffered before landing (pressed at 258, taken off at 262; stomp at 270, bounce
+  `vy` -16384), climbs the step onto the first `ledge-walker` (stomp at 357), touches the
+  checkpoint (`{ col: 45, row: 9 }` at 447), stomps the `ledge-walker` pacing the plank over the
+  next pit (504; with `ledge-turn` off it walks off its plank), climbs the plank stair to the
+  cache (five coins, standing on the row-5 plank at 621), bumps the life out of the high block
+  (631: `lives` 4), jumps off the high plank over the 6-wide pit, stomps the last `walker` (745),
+  takes the arc of four coins over the last pit and clears the level at 959 (16 coins, 4 lives,
+  `scrollX` 327680 at 990). Invariants: stage 1, level `level-2`, 2 hit points, lives at least 3.
+- `level-2-lost.run.json` (T7): the win's input to the checkpoint, then walks into the next pit
+  (died, `pit`, 2 lives, back on the checkpoint at `player.x` 186368 at 522), again (604) and
+  again (686: 0 lives, `failed`); 60 ticks later (746) `level-2` starts afresh: 3 lives, no
+  checkpoint, no coins. Invariants: stage 1, level `level-2`.
+- `level-3.run.json` (T7, `start: { stage: 2 }`): jumps the two coins and the spike patch, jumps
+  for the first pillar from the ground's last tile, then two **buffered jumps** (jump pressed 4
+  ticks before landing on the 1-wide pillar: `player.y` 32768 on the ground at 205, `jump` at 206;
+  again from the 2-wide pillar at 235), bumps the multi-coin block (`block` `coins` at 325),
+  stomps the `walker` (356), clears the pit, touches the checkpoint (`{ col: 46, row: 9 }` at
+  457), climbs the ledge and walks off its edge (537: off the ground, `player.coyote` 6) and
+  jumps 5 ticks later (542: `jump`, coyote 0; with `coyote-time` off it falls onto the spikes),
+  lands past the spike field (601), runs the tunnel's eight coins (18 at 724), crosses the spike
+  floor on the gold planks (buffered jumps at 817 and 854), stomps the `ledge-walker` (939) and
+  clears the level at 1010 with 22 coins. Invariants: 3 lives, 2 hit points, stage 2, level
+  `level-3`.
+- `level-3-lost.run.json` (T7): the win's input to the ledge, then walks off its edge without a
+  jump onto the spikes (died, `hazard`, 2 lives, back on the checkpoint at `player.x` 190464 at
+  549), climbs the ledge and walks off it twice more (665, 781: `failed`); afresh at 841.
 - Run one: `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json`; its rules:
-  `pnpm -s cli mutants games/samples/platformer/runs/level-1.run.json --json` (exit 0 for both run
-  files). The whole folder does not guard every kit rule yet (no bricks, shells or boss): the
-  platformer lab does; T7 and T8 add run files here.
+  `pnpm -s cli mutants games/samples/platformer/runs/level-1.run.json --json` (exit 0 for every run
+  file). The whole folder (`pnpm -s cli mutants games/samples/platformer`) does not guard every
+  kit rule yet, so it exits 4: no level has bricks, shells, a mini game or a boss (the platformer
+  lab guards those; T8 adds the boss's rules), and nothing yet walks into a wall, back against
+  the scroll lock or the level's edge, skids or lets go to stop (`walkers-turn`, `scroll-lock`,
+  `level-bounds`, `skid`, `friction`, `run-hold`).
 - Golden hashes: `runs/<name>.hashes.json`, written with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`
-  (never by hand). Final hashes: `level-1` `3e3c45961fcf7c2e`, `level-1-lost` `a5217ed93bfcb6e0`;
+  (never by hand). Final hashes: `level-1` `3e3c45961fcf7c2e`, `level-1-lost` `a5217ed93bfcb6e0`,
+  `level-2` `e540c076b331627c`, `level-2-lost` `b157a38e5bf31d31`, `level-3` `7a016596e7df7ec1`, `level-3-lost` `970514d01802edff`;
   every hash is the same through the null backend, Canvas2D and the Three.js scene builder.
 - Changing level-1 or the profile moves these hashes: re-find the ticks with `pnpm -s cli trace
 <run> --paths player.x,player.y,events` and `dump`, keep the assertions on what the rules
   decide, and re-record (list the re-recorded hashes in the commit and the build log).
 
-## How to add a level (T7 and T8)
+## How to add a level (T8)
 
 1. Draw `content/levels/<id>.map.txt` in the kit's `LEGEND` (12 rows suit the 180 px screen:
    the bottom two rows ground) and write `<id>.json` (`id`, `profile: "hoppers-way"`, `scroll`,

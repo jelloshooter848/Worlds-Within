@@ -1093,6 +1093,39 @@ describe('camera effects and parallax (Engine 0.16 T4)', () => {
   });
 });
 
+describe('per-map looks (Engine 0.16 part B, T7)', () => {
+  const skin: SkinFile = {
+    ...SKIN,
+    background: '#5c94fc',
+    parallax: [{ gradient: ['#3cbcfc'], bands: 1, height: 8, factor: 0 }],
+    themes: {
+      dusk: {
+        background: '#201030',
+        parallax: [{ gradient: ['#f08040'], bands: 1, height: 8, factor: 0 }],
+        tiles: { '#': { sheet: 'hero', frame: 'side-0', fallbackColor: '#777' } },
+      },
+    },
+  };
+
+  it("draws a themed map with its own sky, parallax and tiles, any other map with the skin's", () => {
+    const { r, calls } = recorder();
+    const p = new SkinnedCanvasPresenter(r, skin, lookup);
+    const drawn = (n: number, map: PresentMap) => {
+      calls.length = 0;
+      p.present(frame({ frame: n, map }));
+      return calls.filter((c) => c.startsWith('clear') || c.startsWith('rect 0,0') || c.includes(':'));
+    };
+    const room = drawn(0, MAP);
+    expect(room.slice(0, 3)).toEqual(['clear #5c94fc', 'rect 0,0 48x8 #3cbcfc', 'sprite walls:wall 0,0']);
+    const dusk = drawn(1, { ...MAP, id: 'dusk' });
+    expect(dusk.slice(0, 3)).toEqual(['clear #201030', 'rect 0,0 48x8 #f08040', 'sprite hero:side-0 0,0']);
+    // Back on the first map: the skin's own look again, and the skin was never changed.
+    expect(drawn(2, MAP).slice(0, 3)).toEqual(room.slice(0, 3));
+    expect(skin.background).toBe('#5c94fc');
+    expect(skin.tiles!['#']!.frame).toBe('wall');
+  });
+});
+
 describe('PNG sheet frames with anchors (Engine 0.16 T10)', () => {
   /** A PNG sheet as `withContentImages` gives it: 16x24 frames anchored on the box's bottom centre. */
   const png: SpriteSheet = {

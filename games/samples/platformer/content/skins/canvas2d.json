@@ -134,6 +134,198 @@
           "y": 32,
           "w": 16,
           "h": 16
+        },
+        "autumn-grass-top-left": {
+          "x": 96,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-grass-top": {
+          "x": 112,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-grass-top-right": {
+          "x": 128,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-dirt-left": {
+          "x": 96,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-dirt": {
+          "x": 112,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-dirt-right": {
+          "x": 128,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-dirt-bottom-left": {
+          "x": 96,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-dirt-bottom": {
+          "x": 112,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-dirt-bottom-right": {
+          "x": 128,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-notch-bottom-right": {
+          "x": 144,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-notch-bottom-left": {
+          "x": 160,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-notch-top-right": {
+          "x": 144,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "autumn-notch-top-left": {
+          "x": 160,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "rose-grass-top-left": {
+          "x": 96,
+          "y": 128,
+          "w": 16,
+          "h": 16
+        },
+        "rose-grass-top": {
+          "x": 112,
+          "y": 128,
+          "w": 16,
+          "h": 16
+        },
+        "rose-grass-top-right": {
+          "x": 128,
+          "y": 128,
+          "w": 16,
+          "h": 16
+        },
+        "rose-dirt-left": {
+          "x": 96,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "rose-dirt": {
+          "x": 112,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "rose-dirt-right": {
+          "x": 128,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "rose-dirt-bottom-left": {
+          "x": 96,
+          "y": 160,
+          "w": 16,
+          "h": 16
+        },
+        "rose-dirt-bottom": {
+          "x": 112,
+          "y": 160,
+          "w": 16,
+          "h": 16
+        },
+        "rose-dirt-bottom-right": {
+          "x": 128,
+          "y": 160,
+          "w": 16,
+          "h": 16
+        },
+        "rose-notch-bottom-right": {
+          "x": 144,
+          "y": 128,
+          "w": 16,
+          "h": 16
+        },
+        "rose-notch-bottom-left": {
+          "x": 160,
+          "y": 128,
+          "w": 16,
+          "h": 16
+        },
+        "rose-notch-top-right": {
+          "x": 144,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "rose-notch-top-left": {
+          "x": 160,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "metal-plank-left": {
+          "x": 272,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "metal-plank": {
+          "x": 288,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "metal-plank-right": {
+          "x": 304,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "gold-plank-left": {
+          "x": 272,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "gold-plank": {
+          "x": 288,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "gold-plank-right": {
+          "x": 304,
+          "y": 0,
+          "w": 16,
+          "h": 16
         }
       }
     },
@@ -848,7 +1040,11 @@
           "inner-top-left": "notch-top-left",
           "inner-top-right": "notch-top-right",
           "inner-bottom-right": "notch-bottom-right",
-          "inner-bottom-left": "notch-bottom-left"
+          "inner-bottom-left": "notch-bottom-left",
+          "top right left": "grass-top",
+          "right left": "dirt",
+          "top bottom": "grass-top",
+          "top right bottom left": "grass-top"
         }
       }
     },
@@ -1453,6 +1649,216 @@
     "lookAhead": {
       "x": 36,
       "lerp": 0.05
+    }
+  },
+  "themes": {
+    "level-2": {
+      "background": "#fbe6c4",
+      "parallax": [
+        {
+          "gradient": ["#e8885a", "#f0a468", "#f5c07e", "#f8d8a0", "#fbe6c4"],
+          "bands": 14,
+          "height": 150,
+          "factor": 0
+        },
+        {
+          "gradient": ["#fbe6c4"],
+          "height": 40,
+          "y": 150,
+          "factor": 0
+        },
+        {
+          "frame": "clouds",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.08,
+            "y": 0
+          },
+          "y": 10,
+          "depth": 1000
+        },
+        {
+          "frame": "mountains",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.18,
+            "y": 0.05
+          },
+          "y": 62,
+          "depth": 700
+        },
+        {
+          "frame": "hills",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.38,
+            "y": 0.1
+          },
+          "y": 96,
+          "depth": 420
+        },
+        {
+          "frame": "bushes",
+          "sheet": "hopper-autumn",
+          "factor": {
+            "x": 0.62,
+            "y": 0.2
+          },
+          "y": 124,
+          "depth": 220
+        }
+      ],
+      "tiles": {
+        "#": {
+          "sheet": "terrain",
+          "frame": "autumn-dirt",
+          "fallbackColor": "#ff00ff",
+          "join": {
+            "with": ["#"],
+            "frames": {
+              "top": "autumn-grass-top",
+              "top left": "autumn-grass-top-left",
+              "top right": "autumn-grass-top-right",
+              "left": "autumn-dirt-left",
+              "right": "autumn-dirt-right",
+              "bottom": "autumn-dirt-bottom",
+              "bottom left": "autumn-dirt-bottom-left",
+              "right bottom": "autumn-dirt-bottom-right",
+              "top right bottom": "autumn-grass-top-right",
+              "top bottom left": "autumn-grass-top-left",
+              "inner-top-left": "autumn-notch-top-left",
+              "inner-top-right": "autumn-notch-top-right",
+              "inner-bottom-right": "autumn-notch-bottom-right",
+              "inner-bottom-left": "autumn-notch-bottom-left",
+              "top right left": "autumn-grass-top",
+              "right left": "autumn-dirt",
+              "top bottom": "autumn-grass-top",
+              "top right bottom left": "autumn-grass-top"
+            }
+          }
+        },
+        "=": {
+          "sheet": "terrain",
+          "frame": "metal-plank",
+          "fallbackColor": "#ff00ff",
+          "join": {
+            "edge": "open",
+            "frames": {
+              "left": "metal-plank-left",
+              "right": "metal-plank-right"
+            }
+          }
+        }
+      }
+    },
+    "level-3": {
+      "background": "#5a4a8c",
+      "parallax": [
+        {
+          "gradient": ["#0c0f2c", "#161a44", "#24265a", "#3a336e", "#5a4a8c"],
+          "bands": 14,
+          "height": 150,
+          "factor": 0
+        },
+        {
+          "gradient": ["#5a4a8c"],
+          "height": 40,
+          "y": 150,
+          "factor": 0
+        },
+        {
+          "frame": "stars",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.03,
+            "y": 0
+          },
+          "y": 0,
+          "depth": 1200
+        },
+        {
+          "frame": "clouds",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.08,
+            "y": 0
+          },
+          "y": 10,
+          "depth": 1000
+        },
+        {
+          "frame": "mountains",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.18,
+            "y": 0.05
+          },
+          "y": 62,
+          "depth": 700
+        },
+        {
+          "frame": "hills",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.38,
+            "y": 0.1
+          },
+          "y": 96,
+          "depth": 420
+        },
+        {
+          "frame": "bushes",
+          "sheet": "hopper-night",
+          "factor": {
+            "x": 0.62,
+            "y": 0.2
+          },
+          "y": 124,
+          "depth": 220
+        }
+      ],
+      "tiles": {
+        "#": {
+          "sheet": "terrain",
+          "frame": "rose-dirt",
+          "fallbackColor": "#ff00ff",
+          "join": {
+            "with": ["#"],
+            "frames": {
+              "top": "rose-grass-top",
+              "top left": "rose-grass-top-left",
+              "top right": "rose-grass-top-right",
+              "left": "rose-dirt-left",
+              "right": "rose-dirt-right",
+              "bottom": "rose-dirt-bottom",
+              "bottom left": "rose-dirt-bottom-left",
+              "right bottom": "rose-dirt-bottom-right",
+              "top right bottom": "rose-grass-top-right",
+              "top bottom left": "rose-grass-top-left",
+              "inner-top-left": "rose-notch-top-left",
+              "inner-top-right": "rose-notch-top-right",
+              "inner-bottom-right": "rose-notch-bottom-right",
+              "inner-bottom-left": "rose-notch-bottom-left",
+              "top right left": "rose-grass-top",
+              "right left": "rose-dirt",
+              "top bottom": "rose-grass-top",
+              "top right bottom left": "rose-grass-top"
+            }
+          }
+        },
+        "=": {
+          "sheet": "terrain",
+          "frame": "gold-plank",
+          "fallbackColor": "#ff00ff",
+          "join": {
+            "edge": "open",
+            "frames": {
+              "left": "gold-plank-left",
+              "right": "gold-plank-right"
+            }
+          }
+        }
+      }
     }
   }
 }

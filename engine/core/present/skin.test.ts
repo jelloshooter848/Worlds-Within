@@ -18,6 +18,7 @@ import {
   skinSchema,
   skinTagIndex,
   skinTagMatches,
+  themedSkin,
   particlesEffectEmitter,
   skinEmitNames,
   type SkinFile,
@@ -282,6 +283,70 @@ describe('camera effects and parallax in skins (Engine 0.16 T4)', () => {
       ['parallax.0.sheet', 'missing_ref'],
     ]);
     expect(load(skin([{ frame: 'hills', factor: 0.5 }]))).toEqual([['parallax.0.sheet', 'missing_field']]);
+  });
+});
+
+describe('per-map looks (Engine 0.16 part B, T7)', () => {
+  const manifest = {
+    id: 'g',
+    kit: 'topdown',
+    content: { skin: ['skins/*.json'], sprite: ['sprites/*.json'], palette: ['palettes/*.json'] },
+    start: { seed: 1 },
+    headless: 'headless.ts',
+  };
+  const load = (sk: SkinFile) =>
+    loadContent(
+      {
+        'game.json': JSON.stringify(manifest),
+        'skins/canvas2d.json': JSON.stringify(sk),
+        'sprites/sky.json': JSON.stringify({ palette: 'p', frames: { hills: ['0'], rock: ['0'] } }),
+        'palettes/p.json': JSON.stringify({ id: 'p', colors: ['#000'] }),
+      },
+      engineContentKinds(),
+    ).errors.map((e) => [e.path, e.code]);
+  const skin = (themes: unknown): SkinFile =>
+    ({
+      backend: 'canvas2d',
+      background: '#5c94fc',
+      sheets: { sheet: 'sky', fallbackColor: '#f0f' },
+      kinds: {},
+      tiles: { '#': { frame: 'hills' }, '^': { frame: 'hills' } },
+      parallax: [{ gradient: ['#3cbcfc'], factor: 0 }],
+      themes,
+    }) as SkinFile;
+
+  it("takes a background, parallax layers and tiles per map id, checked like the skin's own", () => {
+    const ok = skin({
+      dusk: {
+        background: '#201030',
+        parallax: [{ frame: 'hills', factor: 0.5 }],
+        tiles: { '#': { frame: 'rock' } },
+      },
+    });
+    expect(load(ok)).toEqual([]);
+    expect(load(skin({ dusk: { parallax: [{ frame: 'cliffs', factor: 0.5 }] } }))).toEqual([
+      ['themes.dusk.parallax.0.frame', 'missing_frame'],
+    ]);
+    expect(load(skin({ dusk: { tiles: { '#': { frame: 'cliff' } } } }))).toEqual([
+      ['themes.dusk.tiles["#"].frame', 'missing_frame'],
+    ]);
+    expect(
+      load(skin({ dusk: { tiles: { '#': { frame: 'rock', mesh: 'box' } } } })).map(([, c]) => c),
+    ).toContain('wrong_backend_field');
+    expect(load(skin({ dusk: { sky: '#000' } })).map(([p]) => p)).toEqual(['themes.dusk.sky']);
+  });
+
+  it("lays a map's look over the skin, and leaves other maps and the skin alone", () => {
+    const s = skin({ dusk: { background: '#201030', tiles: { '#': { frame: 'rock' } } } });
+    const dusk = themedSkin(s, 'dusk');
+    expect(dusk.background).toBe('#201030');
+    expect(dusk.parallax).toBe(s.parallax);
+    expect(dusk.tiles).toEqual({ '#': { frame: 'rock' }, '^': { frame: 'hills' } });
+    expect(themedSkin(s, 'day')).toBe(s);
+    expect(themedSkin(s, undefined)).toBe(s);
+    expect(themedSkin(s, 'toString')).toBe(s);
+    expect(s.background).toBe('#5c94fc');
+    expect(s.tiles!['#']).toEqual({ frame: 'hills' });
   });
 });
 
