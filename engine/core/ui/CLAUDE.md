@@ -5,7 +5,9 @@ nine-slice panels and the HUD widgets a skin declares (bars, counters, icons, te
 Layout and text maths are pure and shared by every backend; drawing goes through a small
 `UiPainter` interface that each backend implements (`CanvasUiPainter` in
 `engine/backends/canvas2d`, the quads of `HudLayer` in `engine/backends/three`). Part 2 (T7) adds
-buttons, menus, dialog boxes and input from every device.
+buttons, menus, dialog boxes and UI screens written as text (the `ui` content kind), driven by
+input from every device: keyboard and gamepad through the engine's actions, mouse hover, clicks
+and touch taps through hit-tests in picture pixels.
 
 ## Files
 
@@ -60,6 +62,71 @@ color }`, a nine-slice `panel` frame whose insets are the inset, else a one-px `
   nine-slice of `frame` by `slice`, `fill`); `minimap` (`tiles`, `back`, `dots`, `scale`,
   `border`, from the map the presenter shows). `hudValueText(item, value)`, `borderDraws`.
 
+Part 2 (Engine 0.16 T7):
+
+- `ui-schema.ts`: the `ui` content kind (`UI_KIND`, registered in `content/engine-kinds.ts`;
+  `content/ui/*.json`, claimed under `content.ui`). `uiScreenSchema`: `{ style, focus?, back?,
+widgets }`. `style` (`uiStyleSchema`; defaults `UI_STYLE_DEFAULTS`): `font`, colours `text`,
+  `shadow?`, `focusText`, `disabledText`, `back`, `focusBack`, `border`, `track`, `fill`, a
+  nine-slice `panel { sheet, frame, palette?, slice }` (else a filled box with a one-px border),
+  `cursor?` (one character), `padding` (4), `gap` (2), `rate` (display frames per character, 2;
+  0 shows a page at once), `typeEvery` (3), `sounds { move?, select?, back?, type?, page? }` (sfx
+  ids) and `focusTween` / `pressTween` (T1 tween specs). Widgets (`UI_WIDGET_TYPES`), each with
+  `id?`, `anchor?` (`UI_ANCHORS`, nine; default `top-left`; a dialog's `bottom`), `x`/`y`
+  (inward from the anchor's sides; from the centre when centred), `w?`/`h?` and `hidden?`:
+  `panel` (`color` + `alpha`, else the style panel), `text` (`text`, `font?`, `color?`,
+  `shadow?`, `outline?`, `align?` inside `w`), `button` (`label`, `disabled?`, `opens?`),
+  `menu` (`direction` vertical/horizontal, `wrap` (true), `panel` (true), `items`: a `button`
+  (default type; `opens?`), a `slider` (`min` 0, `max` 10, `step` 1, `value`) or a `toggle`
+  (`value`), each with `id`, `label`, `disabled?`) and `dialog` (`speaker?`, `portrait?` a
+  sprite frame, `pages`, `rate?`, `choices?` `[{ id, label, next? }]`, `next?`). Checks:
+  `checkUiWidgets` (in the schema's cross-file pass and in `UiScreen`'s constructor):
+  `duplicate_widget` at `widgets.<i>.id`, `unknown_widget` for a `focus`, `opens` or `next` naming
+  no widget of the screen, at its field (`widgets.0.items.1.opens`), naming the ids there are;
+  `checkUiRefs` adds `missing_ref` (a font, an sfx or song, a sprite or palette), `missing_frame`
+  and `missing_glyph` (any label, page, speaker or text a font lacks; slider digits, `On`/`Off`).
+- `ui-input.ts`: `UI_COMMANDS` (`up`, `down`, `left`, `right`, `confirm`, `back`),
+  `DEFAULT_UI_KEYS` (arrows; `jump` and `start` confirm; `attack` backs out), `UiNav(keys?)`
+  (`commands(frame)`: a press once, a held direction repeating after `UI_REPEAT_DELAY` (18)
+  frames every `UI_REPEAT_EVERY` (5); never `confirm` or `back`), `UiInput { commands?, pointer?,
+taps? }` (the hover point and taps in picture pixels), `inBox`, and `UiEvent` (`focus`,
+  `activate`, `change`, `choice`, `page`, `type`, `skip`, `done`, `open`, `close`, `back`).
+- `look.ts`: `uiLook(style, fonts, frameSize)` -> `UiLook` (defaults filled, the font; throws on
+  a missing font), `UiFrameSize`, `lookText`, `lookPanel`, `panelContent`, `panelExtra`,
+  `panelInset`; `ItemTweens` (a `TweenSet` per item, run on the screen's frames) and
+  `tweenDraws(draws, state)` (x/y offsets in whole px, the colour overlay lerped by its amount,
+  fills' alpha; scale and turn do not apply). `DEFAULT_FOCUS_TWEEN` (a 3 px slide in),
+  `DEFAULT_PRESS_TWEEN` (a 1 px dip and a white flash).
+- `menu.ts`: `Menu({ id, items, direction?, wrap?, panel? }, look)`: `size()` (items, gaps,
+  panel), `place(box)`, `itemBoxes()`, `itemBox(id)`, `itemAt(p)`, `focused`, `focus(id)`,
+  `value(id)` / `setValue(id, v)` (`sliderValue` clamps and snaps to the step),
+  `update(input, frame)` -> `UiEvent[]` (the hover first when it moved, then taps, then
+  commands), `draws(frame, active?)`. Rows are the font's cell + 2 px; a vertical menu moves with
+  up/down and changes with left/right, a horizontal one the other way round; focus skips disabled
+  items and wraps unless `wrap: false`; confirm activates a button and flips a toggle; a tap on a
+  slider's track (`SLIDER_TRACK`, 32 px, left of its value) sets it from the x. `Button(id, label,
+look, disabled?)` is a one-item menu on a panel.
+- `dialog.ts`: `DialogBox({ id, speaker?, portrait?, pages, rate?, choices? }, look)`:
+  `place(box)` wraps each page to the text box and breaks it into pages of whole lines;
+  `restart()`, `page`, `pageCount`, `pageText()`, `shown` (glyphs typed: frames stepped / rate),
+  `typed`, `choosing`, `choiceMenu` (a `Menu` over the box's top-right), `done`, `portraitBox()`,
+  `textBox()`, `advance()`, `update(input, frame)` (types on; confirm or a tap on the box skips,
+  turns or ends; while choosing the list takes the input), `draws(frame)` (the speaker's tab, the
+  box, the portrait scaled by whole steps in its frame, the typed glyphs, a blinking more mark).
+- `screen.ts`: `UiScreen(file, { screen, fonts, frameSize?, onSound? })`: places every widget
+  (`anchorBox`; `UI_PANEL_DEFAULT`, `UI_DIALOG_MARGIN`), focuses `focus` (else the first shown
+  menu, button or dialog), and `update(input)` once per display frame: taps go to the topmost
+  shown widget under them and focus it (a focused dialog is modal), the hover to menus (one the
+  mouse moves onto takes the focus) unless a dialog has it, the commands to the focused widget;
+  then the links: `opens` shows and focuses a widget (the one before is kept), `back` there
+  closes it and gives the focus back, a choice's or a finished dialog's `next` opens that widget,
+  a dialog that ends closes; sounds from the style through `onSound` (each id once per frame).
+  `draws()` (shown widgets in file order), `frame`, `focused`, `visible`, `box`, `itemBox`,
+  `menu`, `dialog`, `value`, `open`, `close`, `focus`.
+
+The shell's side is `engine/core/shell/ui-scene.ts` (`UiScene`): a screen as a scene, its input
+from the frame's actions and taps and the pointer's hover, drawn with the backend's `UiPainter`.
+
 The skin side (the `hud` item schema, `HUD_CLASSIC_TYPES`, `HUD_WIDGET_TYPES`, the `missing_glyph`
 check) is in `engine/core/present/skin.ts`: a `format`'s characters must all be in its font file
 (`missing_glyph` at `hud.<i>.format`), a number or counter's font must have every digit
@@ -69,10 +136,13 @@ sprite file (`missing_ref`). Sprite fonts (the classic 8x8 digits) are not check
 ## Rules
 
 - Pure: `engine/core/ui/**` is on `PURE_CORE` (`config/layers.js`). No DOM, clock or
-  `Math.random`; import only `zod` and pure core files (`../present`, `../fx/ease`, `../content`).
+  `Math.random`; import only `zod` and pure core files (`../present`, `../fx` (ease, tweens,
+  colours, tween specs), `../content`, and `import type` of `../input/actions`).
 - Presenters only: kits and the sim may not import it (`FORBIDDEN_CORE`); kits report status and
-  a skin decides how it shows. Its state (a counter's roll) lives in a presenter, never in a frame
-  or a hash.
+  a skin decides how it shows. Its state (a counter's roll, a menu's focus and values, a dialog's
+  page and typing) lives in a presenter or the shell's scene, never in a kit, a frame or a hash.
+- Timing is display frames: a screen's clock is the number of `update` calls, so the same input
+  gives the same picture (no clock).
 - The engine ships no font (content rule): fonts are game content (`games/fx-lab/content/fonts/`).
   Test fonts are tiny and inline in the tests.
 - A skin whose `hud` has no UI item draws exactly as before: backends keep their `layoutHud` path
@@ -89,3 +159,15 @@ panel and minimap items), `validate.test.ts` (the skin's `missing_glyph` and `mi
 and the widgets' field errors through `loadContent`); `engine/tools/missing-glyph.test.ts` runs
 `validate` on a copy of the fx lab. Backends: `engine/backends/canvas2d/ui-painter.test.ts`,
 `engine/backends/three/hud.test.ts`.
+
+Part 2 (T7): `menu.test.ts` (focus by actions, skipping disabled items and wrapping or not,
+sliders and toggles by actions, activate and back, a horizontal menu, slider snapping, hover and
+tap hit-tests, a slider set by a tap on its track, `UiNav`'s repeat, the focus bar and slide
+tween, the press tween, disabled colour, `Button`), `dialog.test.ts` (the typewriter rate and
+`type` events, skip and done, rate 0, pages broken at whole lines, taps on and off the box, the
+speaker tab, portrait and more mark, choices by actions and by a tap, restart), `screen.test.ts`
+(anchors, focus, `opens` and `back`, a dialog to its choice and `next`, a dialog's end giving the
+focus back, taps and hover routed, a modal dialog, draw order, the same picture for the same
+input, and the `ui` kind through `loadContent`: a good screen, `unknown_widget` with its path,
+duplicate ids, missing fonts, glyphs, sounds and frames, bad fields);
+`engine/core/shell/ui-scene.test.ts`; in the browser `tests/browser/fx-lab-ui.test.ts`.

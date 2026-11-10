@@ -17,20 +17,25 @@ look-ahead) and a four-layer parallax sky (a gradient, clouds, mountains and hil
 closing on Pip at the door and opening on him in the next level; fades for scenes and on demand),
 from T6 a HUD through the UI kit (a nine-slice panel, a health bar, a rolling coin counter, a
 lives counter, a minimap, and text in two original fonts, `content/fonts/fx-small.txt` and the
-larger `fx-title.txt`), original sfx, run
+larger `fx-title.txt`), from T7 a pause menu and a dialog box as text (`content/ui/lab.json`: a
+slider, a toggle, a disabled item, a dialog with Pip's portrait, typed pages and a choice), run by
+the shell's `UiScene` with keyboard, gamepad, mouse and touch (2D), original sfx, run
 files with golden hashes and a browser page. Not a sample: a
 test game, content and glue only.
 
 ## Public API entry points
 
 - `game.json`, `content/` (levels `fx-1`, `fx-2`, `fx-3`, the campaign, the `pip` profile, the `fx`
-  palette and sprites, the fonts `fonts/fx-small.txt` and `fonts/fx-title.txt`, sfx, `skins/canvas2d.json` and `skins/three.json`).
+  palette and sprites, the fonts `fonts/fx-small.txt` and `fonts/fx-title.txt`, sfx, `skins/canvas2d.json` and `skins/three.json`,
+  and from T7 the UI screen `ui/lab.json`).
 - `content.ts`: `loadFxLab`, `mustLoadFxLab`, `fxStages`, `fxSkin`.
 - `headless.ts`: `createGame` (the kit's `LevelSequence`), `starts`.
 - `picture.ts`: `fxLook`, `fxFrames`, `fxPicture`, `fxCanvasPicture(r, look, onSound?)`;
   `picture3d.ts`: `fxLook3d`; `view.ts`: `createView` (for `pnpm cli screenshot`).
+- `ui.ts` (T7): `fxUiFile`, `sheetFrameSize`, `fxUiScreen(content, { sheets, fonts, onSound?, open? })`.
 - `main.ts` and `index.html`: the page (2D, or 3D with `?backend=three`); the sounds it plays are
-  kept in `window.wwFxLab.sounds` for tests.
+  kept in `window.wwFxLab.sounds` for tests; in 2D Enter opens the pause menu, `?ui=menu` or
+  `?ui=dialog` opens one at load, and `window.wwFxLab.ui` opens them and reads the screen.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
 
 ## Imports allowed
@@ -46,4 +51,5 @@ skins, hit-pause requests on stomps and the 3D zoom on the door); `pnpm -s cli v
 `pnpm -s cli run games/fx-lab/runs/level-1.run.json --json` (and `level-2`, `level-3`); `pnpm test tests/runs`
 (golden hashes, presentation invariance); `pnpm test tests/browser/fx-lab.test.ts` (the page
 replays `level-1` in 2D and 3D with the golden hashes and plays the frame events' sounds; skipped
-without Chromium). `pnpm dev` and open `/games/fx-lab/`.
+without Chromium); `pnpm test tests/browser/fx-lab-ui.test.ts` (T7: the menu and the dialog by
+keyboard, mouse and touch; `WW_SHOTS_DIR=<folder>` keeps the shots). `pnpm dev` and open `/games/fx-lab/`.

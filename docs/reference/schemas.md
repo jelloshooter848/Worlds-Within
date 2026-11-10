@@ -1369,6 +1369,93 @@ kggk
 .kk.
 ```
 
+### `ui`
+
+A UI screen: a style (font, colours, panel frame, sounds, focus and press tweens) and widgets placed by anchors: panels, text, buttons, menus with sliders and toggles, and dialog boxes.
+
+- Defined by: engine
+- Where: `content/`, claimed in `game.json` under `content.ui`
+- Read from: `.json`
+
+| Field                 | Type                                                 | Required | Default | Limits                                          | Description                                                                     |
+| --------------------- | ---------------------------------------------------- | -------- | ------- | ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| `style`               | `object`                                             | yes      |         |                                                 | how a screen looks and sounds                                                   |
+| `style.font`          | `string`                                             | yes      |         | not empty                                       | the font file text is drawn in                                                  |
+| `style.text`          | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | text colour (default `#fcfcfc`)                                                 |
+| `style.shadow`        | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | a one-px drop shadow under text                                                 |
+| `style.focusText`     | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | the focused item's text (default `#f8b800`)                                     |
+| `style.disabledText`  | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | a disabled item's text (default `#7c7c7c`)                                      |
+| `style.back`          | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | a panel's fill without a frame (default `#000000`)                              |
+| `style.focusBack`     | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | the bar behind the focused item (default `#24188c`)                             |
+| `style.border`        | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | a frameless panel's one-px border (default `#fcfcfc`)                           |
+| `style.track`         | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | a slider's empty track (default `#3c3c3c`)                                      |
+| `style.fill`          | `string`                                             | no       |         | matches `^#(?:[0-9a-fA-F]{3}\|[0-9a-fA-F]{6})$` | a slider's fill and a toggle's on box (default `#00a800`)                       |
+| `style.panel`         | `object`                                             | no       |         |                                                 | the nine-slice frame panels, menus and dialogs are drawn in                     |
+| `style.panel.sheet`   | `string`                                             | yes      |         | not empty                                       | a sprite file of the game                                                       |
+| `style.panel.frame`   | `string`                                             | yes      |         | not empty                                       | a frame of that sheet                                                           |
+| `style.panel.palette` | `string`                                             | no       |         | not empty                                       | a palette file to recolour it with                                              |
+| `style.panel.slice`   | `integer \| object`                                  | yes      |         |                                                 | the corner insets in px: one number or `{ left, top, right, bottom }`           |
+| `style.cursor`        | `string`                                             | no       |         | not empty; length &lt;= 1                       | a character drawn left of the focused item (`>`)                                |
+| `style.padding`       | `integer`                                            | no       |         | >= 0                                            | px inside a panel (default 4)                                                   |
+| `style.gap`           | `integer`                                            | no       |         | >= 0                                            | px between menu items (default 2)                                               |
+| `style.rate`          | `number`                                             | no       |         | >= 0                                            | display frames per character a dialog types (default 2; 0 shows a page at once) |
+| `style.typeEvery`     | `integer`                                            | no       |         | >= 1                                            | characters per `type` sound (default 3)                                         |
+| `style.sounds`        | `object`                                             | no       |         |                                                 | sfx ids played by the shell on UI events (each optional)                        |
+| `style.sounds.move`   | `string`                                             | no       |         | not empty                                       | focus moved or a value changed                                                  |
+| `style.sounds.select` | `string`                                             | no       |         | not empty                                       | an item or a choice taken                                                       |
+| `style.sounds.back`   | `string`                                             | no       |         | not empty                                       | back out of a widget                                                            |
+| `style.sounds.type`   | `string`                                             | no       |         | not empty                                       | a dialog typing (every `typeEvery` characters)                                  |
+| `style.sounds.page`   | `string`                                             | no       |         | not empty                                       | a dialog turning to its next page                                               |
+| `style.focusTween`    | `object \| object \| (object \| object)[]`           | no       |         |                                                 | played on an item when it takes the focus (T1 tween specs)                      |
+| `style.pressTween`    | `object \| object \| (object \| object)[]`           | no       |         |                                                 | played on an item when it is pressed                                            |
+| `focus`               | `string`                                             | no       |         | not empty                                       | the widget id focused first (the first menu, dialog or button)                  |
+| `back`                | `string`                                             | no       |         | not empty                                       | the sfx played when `back` leaves the screen itself                             |
+| `widgets`             | `(object \| object \| object \| object \| object)[]` | yes      |         | at least 1 item                                 | drawn in order, later ones on top                                               |
+
+Example (`docs/reference/examples/ui.json`):
+
+```json
+{
+  "style": {
+    "font": "small",
+    "shadow": "#000000",
+    "panel": { "sheet": "ui", "frame": "panel", "slice": 2 },
+    "cursor": ">",
+    "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back", "type": "ui-type" },
+    "focusTween": { "prop": "x", "from": 4, "to": 0, "frames": 8, "ease": "backOut" }
+  },
+  "focus": "main",
+  "widgets": [
+    { "type": "panel", "anchor": "center", "color": "#000000", "alpha": 0.5, "w": 256, "h": 240 },
+    { "type": "text", "anchor": "top", "y": 40, "text": "Paused", "font": "title", "outline": "#000000" },
+    {
+      "id": "main",
+      "type": "menu",
+      "anchor": "center",
+      "items": [
+        { "id": "resume", "label": "Resume" },
+        { "id": "talk", "label": "Talk", "opens": "talk" },
+        { "type": "slider", "id": "volume", "label": "Volume", "min": 0, "max": 10, "value": 7 },
+        { "type": "toggle", "id": "shake", "label": "Screen shake", "value": true },
+        { "id": "credits", "label": "Credits", "disabled": true }
+      ]
+    },
+    {
+      "id": "talk",
+      "type": "dialog",
+      "hidden": true,
+      "speaker": "Pip",
+      "portrait": { "sheet": "faces", "frame": "pip" },
+      "pages": ["Hi! The door glows again tonight.", "Shall we go?"],
+      "choices": [
+        { "id": "yes", "label": "Let's go!" },
+        { "id": "later", "label": "Not yet", "next": "main" }
+      ]
+    }
+  ]
+}
+```
+
 ### `level`
 
 A platformer level: id, physics profile, scroll mode, spawns and bump-block contents, with its map in a text grid of the kit legend.

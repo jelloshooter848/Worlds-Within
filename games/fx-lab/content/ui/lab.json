@@ -1,0 +1,76 @@
+{
+  "style": {
+    "font": "fx-small",
+    "text": "#fcfcfc",
+    "shadow": "#000000",
+    "focusText": "#f8b800",
+    "disabledText": "#7c7c7c",
+    "focusBack": "#00406c",
+    "track": "#003c3c",
+    "fill": "#00a800",
+    "panel": { "sheet": "fx", "frame": "hud-panel", "slice": 2 },
+    "cursor": ">",
+    "padding": 5,
+    "gap": 2,
+    "rate": 2,
+    "typeEvery": 3,
+    "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back", "type": "ui-type" },
+    "focusTween": [
+      { "prop": "x", "from": 4, "to": 0, "frames": 8, "ease": "backOut" },
+      { "prop": "color", "from": "#fcfcfc", "to": "#f8b800", "frames": 8, "amount": 0.5 }
+    ],
+    "pressTween": [
+      { "prop": "y", "from": 1, "to": 0, "frames": 8 },
+      { "prop": "color", "from": "#fcfcfc", "to": "#fcfcfc", "frames": 6, "amount": 0.8 }
+    ]
+  },
+  "focus": "main",
+  "widgets": [
+    { "type": "panel", "anchor": "center", "color": "#000000", "alpha": 0.5, "w": 256, "h": 240 },
+    { "type": "panel", "anchor": "center", "y": 1, "w": 172, "h": 140 },
+    {
+      "type": "text",
+      "anchor": "top",
+      "y": 62,
+      "text": "Paused",
+      "font": "fx-title",
+      "color": "#f8b800",
+      "outline": "#000000"
+    },
+    {
+      "id": "main",
+      "type": "menu",
+      "anchor": "center",
+      "y": 14,
+      "w": 152,
+      "panel": false,
+      "items": [
+        { "id": "resume", "label": "Resume" },
+        { "id": "talk", "label": "Talk to Pip", "opens": "talk" },
+        { "type": "slider", "id": "volume", "label": "Volume", "min": 0, "max": 10, "value": 7 },
+        { "type": "toggle", "id": "shake", "label": "Screen shake", "value": true },
+        { "id": "credits", "label": "Credits", "disabled": true },
+        { "id": "quit", "label": "Back to title" }
+      ]
+    },
+    {
+      "id": "talk",
+      "type": "dialog",
+      "hidden": true,
+      "anchor": "bottom",
+      "y": 8,
+      "h": 58,
+      "speaker": "Pip",
+      "portrait": { "sheet": "fx", "frame": "pip-idle-0" },
+      "pages": [
+        "Hi! I'm Pip, a courier. The door at the end of the road glows again tonight.",
+        "I'll stomp the beetles, mind the spikes and bring back every coin I find.",
+        "Shall we go?"
+      ],
+      "choices": [
+        { "id": "yes", "label": "Let's go!" },
+        { "id": "later", "label": "Not yet", "next": "main" }
+      ]
+    }
+  ]
+}

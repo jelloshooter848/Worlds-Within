@@ -17,6 +17,7 @@ describe('content kinds', () => {
       'skin',
       'song',
       'sprite',
+      'ui',
     ]);
     expect(kinds.has('song')).toBe(true);
     expect(kinds.get('sprite')?.readText).toBeTypeOf('function');
@@ -52,7 +53,7 @@ describe('content kinds', () => {
         file: 'r.json',
         code: 'unknown_kind',
         message:
-          'unknown content kind "room" (known: campaign, font, mission, palette, sfx, skin, song, sprite)',
+          'unknown content kind "room" (known: campaign, font, mission, palette, sfx, skin, song, sprite, ui)',
       },
     ]);
   });

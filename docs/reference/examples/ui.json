@@ -1,0 +1,39 @@
+{
+  "style": {
+    "font": "small",
+    "shadow": "#000000",
+    "panel": { "sheet": "ui", "frame": "panel", "slice": 2 },
+    "cursor": ">",
+    "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back", "type": "ui-type" },
+    "focusTween": { "prop": "x", "from": 4, "to": 0, "frames": 8, "ease": "backOut" }
+  },
+  "focus": "main",
+  "widgets": [
+    { "type": "panel", "anchor": "center", "color": "#000000", "alpha": 0.5, "w": 256, "h": 240 },
+    { "type": "text", "anchor": "top", "y": 40, "text": "Paused", "font": "title", "outline": "#000000" },
+    {
+      "id": "main",
+      "type": "menu",
+      "anchor": "center",
+      "items": [
+        { "id": "resume", "label": "Resume" },
+        { "id": "talk", "label": "Talk", "opens": "talk" },
+        { "type": "slider", "id": "volume", "label": "Volume", "min": 0, "max": 10, "value": 7 },
+        { "type": "toggle", "id": "shake", "label": "Screen shake", "value": true },
+        { "id": "credits", "label": "Credits", "disabled": true }
+      ]
+    },
+    {
+      "id": "talk",
+      "type": "dialog",
+      "hidden": true,
+      "speaker": "Pip",
+      "portrait": { "sheet": "faces", "frame": "pip" },
+      "pages": ["Hi! The door glows again tonight.", "Shall we go?"],
+      "choices": [
+        { "id": "yes", "label": "Let's go!" },
+        { "id": "later", "label": "Not yet", "next": "main" }
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@
 The fx lab (Engine 0.16 part A, T2): a small game on the platformer kit that shows every
 presentation feature of 0.16 part A, one task at a time (T2 adds it with sprite animation states,
 per-frame timing, one-shots and frame events; T3 adds particle emitters, additive blending and
-glow; T4 adds camera effects and parallax; T5 screen transitions; T6 the UI kit's HUD; later tasks add menus, audio...). It is a lab, **not a sample**:
+glow; T4 adds camera effects and parallax; T5 screen transitions; T6 the UI kit's HUD; T7 a menu and a dialog box; later tasks add audio...). It is a lab, **not a sample**:
 three short original levels with stomps,
 coins and a door so that events happen, Pip (an original courier) with a full animation set, a 2D
 skin and a low-poly 3D skin, run files with golden hashes and a browser page. Content and glue
@@ -47,7 +47,18 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   (128x80, snow-capped, lit from the left) and `hills` (128x56, outlined, with bushes). Drawn with
   a small generator (periodic peaks, cloud blobs and domes); edit the text by hand now.
 - `content/sfx/*.json`: original MML sfx (`footstep`, `jump`, `land`, `coin`, `stomp`, `bump`,
-  `hurt`, `fail`, `door`, `whoosh`). No song yet (the audio mixer is T8).
+  `hurt`, `fail`, `door`, `whoosh`, and from T7 the UI's `ui-move`, `ui-select`, `ui-back`,
+  `ui-type`). No song yet (the audio mixer is T8).
+- `content/ui/lab.json` (Engine 0.16 T7, the `ui` kind, `engine/core/ui/CLAUDE.md`): the UI
+  kit's worked example. A style (`fx-small`, a black shadow, gold focus, the `hud-panel` frame
+  sliced 2, a `>` cursor, the four UI sounds, a focus tween that slides in with `backOut` and a
+  press tween that dips and flashes), a dimming panel (black at 0.5), a framed panel holding
+  `Paused` in `fx-title`, and the `main` menu (no panel of its own): Resume, Talk to Pip (opens
+  `talk`), a Volume slider (0-10, 7), a Screen shake toggle, a disabled Credits, Back to title.
+  `talk` is a hidden dialog at the bottom, 58 px high: the speaker `Pip`, his `pip-idle-0`
+  portrait (scaled 2x in its frame), three pages (the first two wrap to two lines) typed at 2
+  frames a character, and the choice `Let's go!` / `Not yet` (back to `main`). Tuned by
+  screenshots at page scale (the panel covers the HUD's heading).
 - `content/skins/canvas2d.json`: the 2D skin, the worked example of Engine 0.16 T2's animation
   format (`engine/core/present/CLAUDE.md`):
   - `runner`: every `RUNNER_ANIMS` state. `idle` is a one-shot (`pip-settle` then `pip-idle-0`,
@@ -108,6 +119,16 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
     `hitPause` as `onHitPause` (Engine 0.16 T4) and `content.manifest.transitions` as
     `transitions` (T5); every sound id the page plays is
     also pushed to `window.wwFxLab.sounds` (for `tests/browser/fx-lab.test.ts`).
+  - `ui.ts` (Engine 0.16 T7): `fxUiFile(content, name?)`, `sheetFrameSize(sheets)` (a
+    `UiFrameSize` from the sheet lookup) and `fxUiScreen(content, { sheets, fonts, onSound?,
+open? })`, the `lab` screen with the menu focused, or with `open: 'dialog'` the dialog alone.
+  - `main.ts` also (T7) boots with `pointer: true` (taps and hover in picture pixels) and plays
+    the level through `FxLabScene` (a `HostScene` whose start key, Enter, Esc or pad Start, pushes
+    the lab's `UiScene` over the level in 2D: the game waits under it). Resume, Back to title,
+    `back` on the menu and `Let's go!` pop it (no title screen yet: T9); so does any end that
+    leaves no widget focused. `?ui=menu` / `?ui=dialog` opens one at load; `window.wwFxLab.ui`
+    is `{ open(which?), screen(), events }` for the browser test. The 3D backend does not draw UI
+    screens yet (T9), so there the start key does nothing.
   - `index.html`: the page (2D/3D toggle, the launcher's 3D link).
 - `runs/level-1.run.json` (fx-1 from the start: three coins, two from the platform, both beetles
   stomped, the pit jumped, the door at tick ~345) and `runs/level-2.run.json` (`start: { stage: 1
@@ -129,7 +150,11 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   (`WW_SHOTS_DIR=<folder>` keeps the shots to look at). From T6 `fx-lab.test.ts` checks both fonts
   cover A-Z, a-z, 0-9 and the punctuation, both skins have a bar, counter, minimap, panel and
   text, and level-1 played through the 3D scene shows panel pieces, fills and glyphs (never a
-  missing frame's box) without changing the snapshot.
+  missing frame's box) without changing the snapshot. From T7 `tests/browser/fx-lab-ui.test.ts`
+  operates the 2D page's menu and dialog with the keyboard (Enter, arrows, a slider, Z to skip),
+  the mouse (a click on the toggle, hover and a click on Talk) and, on a touch page
+  (`?ui=dialog`, `hasTouch`), taps that skip, turn pages and take a choice; it shoots the menu,
+  the dialog and the choice (`fx-lab-ui-*.png`, kept with `WW_SHOTS_DIR`).
 
 ## Making the art
 
@@ -150,8 +175,8 @@ pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend t
 # camera effects (T4): level-1 --tick 216 (stomp shake), 352 (door zoom); level-2 --tick 279
 # (hurt flash); parallax at two camera positions: level-1 --tick 120 and 260
 # the HUD (T6): level-1 --tick 300 (counter, minimap), level-2 --tick 300 (half a health bar)
-pnpm test games/fx-lab tests/runs tests/browser/fx-lab.test.ts
-pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs; ?backend=three for 3D)
+pnpm test games/fx-lab tests/runs tests/browser/fx-lab.test.ts tests/browser/fx-lab-ui.test.ts
+pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs, Enter pauses; ?ui=dialog; ?backend=three for 3D)
 ```
 
 The lab's run files are also played by `tests/runs/presentation-invariance.test.ts` with every

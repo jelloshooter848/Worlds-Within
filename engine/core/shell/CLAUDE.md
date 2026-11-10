@@ -231,6 +231,17 @@ campaign? })` over a `LaunchGame` (a `MissionHost`'s `step`, `events`, `miniGame
     "Play again"). Its buttons never keep the focus. `update()` (cheap when nothing changed) after
     every draw. The mini siege's page uses both; its `main.ts` has no bar, panel, code or hint
     logic of its own.
+- `ui-scene.ts` (pure, on `PURE_CORE`; Engine 0.16 T7): `UiScene({ ui, painter(r), pointer?,
+keys?, onEvent?, translucent?, transitionSlot? })`, a `UiScreen` (`../ui`) as a scene. Each
+  step: commands from player 1's frame (`UiNav`, so keyboard and gamepad through the bindings,
+  held directions repeating), the frame's taps (mouse clicks and touch taps from the boot's
+  `pointer`, already in picture pixels through the display's `toScreen`) and the hover
+  (`pointer.cursor()`); `onEvent(event, scene)` for each event (`last` keeps the step's).
+  `render(r)` paints `ui.draws()` through `painter(r)` (the backend's, e.g. `CanvasUiPainter`;
+  made once per renderer); translucent by default, so the scene below still draws and waits.
+  The screen's state lives in the page, never in a kit or a hash. The 3D display's renderer draws
+  nothing, so a `UiScene` shows in 2D only for now (T9). Tested in `ui-scene.test.ts`; the fx lab
+  uses it (`tests/browser/fx-lab-ui.test.ts`).
 - `index.ts`: re-exports all of the above (`@engine/core/shell`), `volume-control.ts` and `tapsOf` included.
 
 A game's `main.ts` is then: load its content, then `bootBrowserGame` with `audio` (its sfx and
@@ -244,7 +255,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts` and `transitions.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts` and `ui-scene.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`

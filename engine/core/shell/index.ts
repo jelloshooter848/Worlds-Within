@@ -59,3 +59,4 @@ export {
 } from './mission-launch';
 export { MISSION_BAR_HEIGHT, mountMissionBar, type MissionBar, type MissionBarOptions } from './mission-bar';
 export { ShellTransitions, type ShellTransitionOptions, type TransitionRequest } from './transitions';
+export { UiScene, type UiSceneOptions } from './ui-scene';

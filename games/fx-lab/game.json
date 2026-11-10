@@ -9,6 +9,7 @@
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "font": ["content/fonts/*.txt"],
+    "ui": ["content/ui/*.json"],
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"]
   },
