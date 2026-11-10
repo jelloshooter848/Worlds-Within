@@ -96,6 +96,31 @@ number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 th
     cached lookup. Both presenters run these through the skin's `events` (sound, effect, tween) after
     the frame's own events, once per frame number, and never write them into the frame, a kit or a
     hash. `games/fx-lab` is the worked example.
+  - Several sheets per kind (Engine 0.16 part B, T6): a cycle (a state's `{ frames, ... }` or a
+    facing's) may name its own `sheet` (2D; a character pack ships one PNG per animation), so one
+    kind draws its run from `frog-run` and its jump from `frog-jump`. `resolveSkinAnimation` gives
+    it as `SkinAnimation.sheet` and `resolveSkinFrame` draws from it (else the entry's sheet, else
+    `sheets.sheet`). `checkSkinRefs` checks the cycle's frames against its own sheet and reports a
+    sheet the game lacks once, at `kinds.<kind>.frames.<state>[.<facing>].sheet` (`missing_ref`);
+    a `sheet` on a 3D `poses` cycle is `wrong_backend_field`, one on a state without `frames`
+    (a frame per facing) a schema error. Tested in `skin-images.test.ts`.
+  - Neighbour-based tile frames (Engine 0.16 part B, T6; `tile-join.ts`): a 2D tile entry's
+    `join` `{ with?, edge?, frames }` picks the frame by the neighbours the cell joins, so one map
+    character draws grass tops, edges, outer corners and inner notches. A side is open when the
+    cell beside it is not one of `with` (default the tile's own key); outside the map counts as
+    joined (`edge: "join"`, the default) or open (`edge: "open"`); an inner corner is open when
+    both its sides join and the diagonal does not. A `frames` key lists the open sides, then the
+    open inner corners, space-separated in the order of `TILE_JOIN_WORDS` (`top right bottom left
+inner-top-left inner-top-right inner-bottom-right inner-bottom-left`): `"top left"`,
+    `"inner-top-right"`, `"right bottom inner-top-left"`. The frame is the full key's, else the
+    sides-only key's, else the entry's `frame` (also with nothing open). A key out of order, with
+    an unknown word or a word twice, or an inner corner beside its own open side is `bad_join_key`
+    at `tiles.<tile>.join.frames.<key>` (`tileJoinKeyProblem` names the order wanted); `join` is a
+    2D field (`wrong_backend_field` on a 3D skin); its frames are checked against the tile's sheet
+    (`missing_frame` at `tiles.<tile>.join.frames.<key>`). Pure: `tileJoinKeys(join, own, grid,
+col, row)` (the keys looked up, most specific first) and `resolveTileFrame(entry, own, grid,
+col, row)` (`TileGrid`: text rows or rows of ids). The Canvas2D presenter draws tiles through
+    it (once per map version, into the map cache). Tested in `tile-join.test.ts`.
   - PNG sheets (Engine 0.16 T10, `engine/core/gfx/image-sheet.ts`): a top-level `images` map,
     image id -> `{ image: "assets/<pack>/<file>.png", frameSize?, grid?, names?, frames?, anchor? }`,
     on 2D and 3D skins. An entry naming the id as its `sheet` uses its frames like a text
@@ -347,6 +372,9 @@ skin (content/skins/<backend>.json)`.
 `present.test.ts`: a fixture frame using every field passes the schema, wrong fields are reported
 at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the map on the first
 frame and on a version (or id) change only. `present.test.ts` also checks all eight facings pass the schema and the facing helpers.
+`tile-join.test.ts` (Engine 0.16 part B, T6): the join keys (open sides, inner corners, the map's
+edge, `with`, id grids), `resolveTileFrame`'s fallbacks, `bad_join_key`, the 2D-only field and the
+cross-file frame check; `skin-images.test.ts` also covers a cycle's own `sheet`.
 `skin-anim.test.ts` (Engine 0.16 T2): cycle timing (per-frame ticks, wraps, one-shots done),
 `resolveSkinAnimation` (per-frame timing, a one-shot held, `then` from the tick it finished, a
 `then` loop that holds, old one-number cycles unchanged), `frameEventsBetween` (the window, wrapped

@@ -42,7 +42,7 @@ The kit's hook lists each trigger's `game` and `params` (`miniGameUses`, Engine 
 `pnpm cli validate` checks them against the mini games a game's headless entry exports.
 Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
 sent through a `MapTracker`, runner, actors, coins, goals, checkpoints (the current one tagged
-`active`), triggers, block bounces and remains,
+`active`, and from Engine 0.16 part B in state `active` timed from its touch, for a flag raise), triggers, block bounces and remains,
 placed events, HUD status (from Engine 0.16 part B also `time`, `deaths`, `checkpoints` and
 `checkpointCount` for the shell's stat screens) and a camera hint carrying the scroll lock) for a
 backend to draw. A level's optional `name` names it in menus (`stageNames`).

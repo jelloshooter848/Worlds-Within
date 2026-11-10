@@ -6,12 +6,17 @@ import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-inp
 import { readGameFiles } from '@engine/core/node/game-files';
 import { NullRenderer } from '@engine/backends/null';
 import type { Renderer } from '@engine/core/gfx/renderer';
-import { isFullMap, type SkinFile } from '@engine/core/present';
+import { isFullMap, resolveSkinAnimation, resolveTileFrame, type SkinFile } from '@engine/core/present';
+import { skinSetCanvasPresenter } from '@engine/backends/canvas2d';
+import { withContentImages } from '@engine/core/assets/content-images';
+import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
+import type { ContentBundle } from '@engine/core/content/bundle';
+import { stateHash } from '@engine/core/state-hash';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { compileSong } from '@engine/core/audio/mml';
 import { ACTOR_ANIMS, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
 import { loadHopper, PLATFORMER_MUSIC, hopperStages } from './content';
-import { hopperLook } from './picture';
+import { hopperLook, hopperPicture } from './picture';
 import { hopperLook3d } from './picture3d';
 import { createView } from './view';
 import { createGame, type HopperSnapshot } from './headless';
@@ -20,11 +25,24 @@ import { createGame, type HopperSnapshot } from './headless';
 // fill. Its content loads, its campaign lists the flagship's stages, its tuned profile uses the
 // kit's movement-feel fields, its screen is 16:9, and its skins draw every frame of its run files
 // in 2D and 3D from the art, never a fallback box. The old five levels and two doors are
-// `games/platformer-classic` (their run files, hashes and tests moved with them).
+// `games/platformer-classic` (their run files, hashes and tests moved with them). T6, the art and
+// feel pass: the 2D skin draws from the CC0 PNG packs (tiles joined by their neighbours, the
+// frog's states from one PNG per animation), with parallax, squash and stretch, dust, hit flashes
+// and hit-pauses, all presentation: drawing never changes a state hash.
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
 const content = mustLoad(loadHopper(FILES));
+
+/**
+ * The bundle with its skins' PNG sheets "decoded" for Node: each image's size from its header and
+ * no pixels (the recording renderers below never look at them), as `withContentImages` gives the
+ * page and the screenshot tool the real ones.
+ */
+const imaged: ContentBundle = await withContentImages(content, async (url) => {
+  const size = readPngSize(dataUrlBytes(url)!)!;
+  return { image: null, width: size.width, height: size.height, data: null };
+});
 
 interface Run {
   ticks: number;
@@ -146,8 +164,8 @@ function shownByRuns(): Shown {
   return s;
 }
 
-describe("Hopper's Way: skins (placeholders until the art pass, T6)", () => {
-  const look = hopperLook(content);
+describe("Hopper's Way: skins (the art and feel pass, T6)", () => {
+  const look = hopperLook(imaged);
   const look3d = hopperLook3d(content);
   const shown = shownByRuns();
 
@@ -161,7 +179,9 @@ describe("Hopper's Way: skins (placeholders until the art pass, T6)", () => {
     const skin = look.skin;
     const states = (kind: string) => Object.keys(skin.kinds[kind]?.frames ?? {}).sort();
     expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(Object.values(PRESENT_TILES).sort());
-    expect(states('runner')).toEqual([...RUNNER_ANIMS].sort());
+    // Every state the kit sends, and the skin's own: `breathe` after a landing's crouch, and the
+    // dying puff's `vanish` and `gone`.
+    expect(states('runner')).toEqual([...RUNNER_ANIMS, 'breathe', 'vanish', 'gone'].sort());
     for (const type of Object.keys(hopperStages(content)[0]!.profile.actors))
       expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
   });
@@ -219,7 +239,7 @@ describe("Hopper's Way: skins (placeholders until the art pass, T6)", () => {
         if (color === '#ff00ff') fallbacks.push(tick);
       },
     });
-    const view = createView(content, 1, run.start ? { start: run.start } : {});
+    const view = createView(imaged, 1, run.start ? { start: run.start } : {});
     const input = new ScriptedInput(run.input);
     for (tick = 0; tick <= run.ticks; tick++) {
       if (tick > 0) {
@@ -230,5 +250,92 @@ describe("Hopper's Way: skins (placeholders until the art pass, T6)", () => {
     }
     expect(sprites).toBeGreaterThan(run.ticks);
     expect(fallbacks.slice(0, 5)).toEqual([]);
+  });
+});
+
+describe("Hopper's Way: the 2D art and feel (T6)", () => {
+  const look = hopperLook(imaged);
+  const skin = look.skin;
+
+  it('joins the ground tiles by their neighbours: grass on top, edges, corners and notches', () => {
+    const view = createView(imaged, 1);
+    const map = view.frame!().map!;
+    if (!isFullMap(map)) throw new Error('the first frame sends the full map');
+    const grid = map.tiles as readonly string[];
+    const at = (col: number, row: number) => resolveTileFrame(skin.tiles!['#']!, '#', grid, col, row);
+    expect(at(0, 10)).toBe('grass-top'); // the map's edge counts as joined
+    expect(at(0, 11)).toBe('dirt');
+    expect(at(15, 10)).toBe('grass-top-right'); // the first gap
+    expect(at(18, 11)).toBe('dirt-left');
+    expect(at(30, 8)).toBe('grass-top-left'); // the 2-high step
+    expect(at(30, 10)).toBe('notch-top-left'); // the ground under it
+    expect(at(31, 10)).toBe('notch-top-right');
+    expect(at(47, 9)).toBe('dirt-right'); // the ledge's right side over the pit
+  });
+
+  it("draws the frog's states from one PNG per animation, with a crouch on landing and a dying puff", () => {
+    const frog = (state: string, t = 0) =>
+      resolveSkinAnimation(skin, { kind: 'runner', facing: 'right', anim: { state, t }, tags: [] });
+    expect(frog('run')).toMatchObject({ sheet: 'frog-run', frame: 'run-0' });
+    expect(frog('jump')).toMatchObject({ sheet: 'frog-jump' });
+    expect(frog('fall')).toMatchObject({ sheet: 'frog-fall' });
+    expect(frog('idle', 0)).toMatchObject({ state: 'idle', frame: 'run-4' }); // the landing crouch
+    expect(frog('idle', 5)).toMatchObject({ state: 'breathe', sheet: 'frog-idle' });
+    // The hurt cycle opens on the pack's two white frames: the hit flash.
+    expect(frog('hurt', 0)).toMatchObject({ sheet: 'frog-hit', frame: 'hit-0' });
+    expect(frog('dead', 22)).toMatchObject({ state: 'vanish', sheet: 'puff' });
+    expect(frog('dead', 59)).toMatchObject({ state: 'gone', frame: 'blank' });
+    // The checkpoint raises its flag from the tick it is touched, then waves it.
+    const flag = (t: number) =>
+      resolveSkinAnimation(skin, {
+        kind: 'checkpoint',
+        facing: 'right',
+        anim: { state: 'active', t },
+        tags: ['active'],
+      });
+    expect(flag(0)).toMatchObject({ sheet: 'flag', frame: 'raise-0' });
+    expect(flag(60)).toMatchObject({ state: 'waving', sheet: 'flag-wave' });
+  });
+
+  it('plays squash and stretch, dust, run particles, shakes, flashes and hit-pauses on their events', () => {
+    const ev = skin.events!;
+    const tweens = (type: string) => [ev[type]!.tween ?? []].flat();
+    expect(tweens('jump').find((t) => t.prop === 'scaleY')).toMatchObject({ from: expect.any(Number) });
+    expect((tweens('jump').find((t) => t.prop === 'scaleY')!.from as number) > 1).toBe(true); // stretch
+    expect((tweens('land').find((t) => t.prop === 'scaleY')!.from as number) < 1).toBe(true); // squash
+    expect(ev['jump']!.emit).toBe('jump-dust');
+    expect(ev['land']!.emit).toBe('land-dust');
+    expect(ev['footstep']!.emit).toBe('run-dust');
+    expect(ev['skid-dust']!.emit).toBe('skid-dust');
+    expect(ev['stomp']).toMatchObject({ hitPause: { ticks: 4 }, shake: { amount: expect.any(Number) } });
+    expect(ev['hurt']).toMatchObject({ hitPause: { ticks: 6 }, flash: { color: '#ffffff' } });
+    const run = skin.kinds['runner']!.frames!['run'] as { right: { events: Record<string, string> } };
+    expect(Object.values(run.right.events)).toEqual(['footstep', 'footstep']);
+  });
+
+  it.each(RUNS)('%s: drawing every tick asks for its hit-pauses and changes no state hash', (name) => {
+    const run = runOf(name);
+    const opts = run.start ? { start: run.start } : {};
+    const pauses: number[] = [];
+    let tick = 0;
+    const view = createView(imaged, 1, opts);
+    const game = createGame(content, 1, opts);
+    const picture = hopperPicture(
+      skinSetCanvasPresenter(new NullRenderer(), { ...look, onHitPause: () => pauses.push(tick) }),
+      look.screen,
+    );
+    const a = new ScriptedInput(run.input);
+    const b = new ScriptedInput(run.input);
+    for (tick = 0; tick <= run.ticks; tick++) {
+      if (tick > 0) {
+        a.next();
+        b.next();
+        view.step(a);
+        game.step(b);
+      }
+      picture.draw(game.world, game.events);
+      expect(stateHash(view.snapshot() as never), `tick ${tick}`).toBe(stateHash(game.snapshot() as never));
+    }
+    expect(pauses.length).toBeGreaterThan(0);
   });
 });

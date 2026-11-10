@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { contentNamed, contentOf, entryName, globToRegExp, loadContent } from './bundle';
 import { engineContentKinds, SONG_KIND } from './engine-kinds';
 import type { ContentKind } from './kinds';
+import { encodePng } from './png';
 
 const NOTE = {
   name: 'note',
@@ -237,5 +238,39 @@ describe('globs and names', () => {
   it('names an entry by its file name up to the first dot', () => {
     expect(entryName('content/rooms/hall.map.txt')).toBe('hall');
     expect(entryName('a.json')).toBe('a');
+  });
+});
+
+describe('menus art from a skin image (Engine 0.16 part B)', () => {
+  const png = `data:image/png;base64,${Buffer.from(encodePng(8, 8, new Uint8Array(256))).toString('base64')}`;
+  const game = (frame: string) => ({
+    './game.json': JSON.stringify({
+      ...MANIFEST,
+      content: { skin: ['content/skins/*.json'], font: ['content/fonts/*.txt'] },
+      menus: {
+        font: 'f',
+        title: { name: 'A', art: [{ sheet: 'hero', frame, anchor: 'left', x: 0, y: 0 }], items: ['start'] },
+        pause: { items: ['resume'] },
+      },
+    }),
+    'content/fonts/f.txt': 'cell 1 1\nbaseline 1\n\nglyph A\n#\n',
+    'content/skins/canvas2d.json': JSON.stringify({
+      backend: 'canvas2d',
+      images: { hero: { image: 'assets/pack/hero.png', frames: { stand: { x: 0, y: 0, w: 8, h: 8 } } } },
+      kinds: {},
+    }),
+    'assets/CREDITS.md':
+      '# Credits\n\n## pack\n\n- Source: https://example.org/pack\n- Author: A\n- Licence: CC0 1.0\n',
+    'assets/pack/hero.png': png,
+  });
+
+  it("lets the title's art name a skin's PNG sheet and its frames", () => {
+    // The tiny font has no glyphs for the menus' words: only the art's errors matter here.
+    const art = (frame: string) =>
+      loadContent(game(frame), kinds).errors.filter((e) => e.path.startsWith('menus.title.art'));
+    expect(art('stand')).toEqual([]);
+    expect(art('sit')).toMatchObject([
+      { file: 'game.json', path: 'menus.title.art.0.frame', code: 'missing_frame' },
+    ]);
   });
 });

@@ -1,0 +1,29 @@
+{
+  "run": "games/samples/platformer/runs/level-1-hurt.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "1f529be4d0ca7f23"
+    },
+    {
+      "tick": 60,
+      "hash": "12cc099198dd435d"
+    },
+    {
+      "tick": 120,
+      "hash": "32fb73ce38877314"
+    },
+    {
+      "tick": 180,
+      "hash": "5486ec4ff84c4cd7"
+    },
+    {
+      "tick": 240,
+      "hash": "09aed3f896575f57"
+    },
+    {
+      "tick": 300,
+      "hash": "9fdad082f401981c"
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 300,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 52,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 66,
+        "hold": ["right"]
+      },
+      {
+        "frame": 114,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 130,
+        "hold": ["right"]
+      },
+      {
+        "frame": 146,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 160,
+        "hold": ["right"]
+      },
+      {
+        "frame": 200,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "level-1"
+    },
+    {
+      "tick": 208,
+      "path": "player.hp",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 209,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "hurt",
+        "hp": 1
+      }
+    },
+    {
+      "tick": 209,
+      "path": "player.hp",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 209,
+      "path": "player.invuln",
+      "op": "eq",
+      "value": 120
+    },
+    {
+      "tick": 300,
+      "path": "player.hp",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "invariants": [
+    {
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "walk",
+    "air-control",
+    "jump",
+    "variable-jump",
+    "solid-tiles",
+    "actors-wake",
+    "enemy-touch-hurts",
+    "invulnerability"
+  ]
+}

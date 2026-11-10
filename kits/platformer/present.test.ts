@@ -407,6 +407,13 @@ describe('presentWorld: mini games', () => {
     const f = frames.at(-1)!;
     expect(byId(f, 'checkpoint@3,1')!.tags).toEqual([]);
     expect(byId(f, 'checkpoint@6,1')!.tags).toEqual(['active']);
+    // The current one is `active` from the tick it was touched, its clock counting from there.
+    const touched = frames.findIndex((fr) =>
+      fr.events.some((e) => e.type === 'checkpoint' && e['col'] === 6),
+    );
+    expect(byId(frames[touched]!, 'checkpoint@6,1')!.anim).toEqual({ state: 'active', t: 0 });
+    expect(byId(frames[touched + 5]!, 'checkpoint@6,1')!.anim).toEqual({ state: 'active', t: 5 });
+    expect(byId(frames[touched]!, 'checkpoint@3,1')!.anim.state).toBe('idle');
   });
 });
 

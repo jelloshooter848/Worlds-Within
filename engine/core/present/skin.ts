@@ -22,6 +22,7 @@ import {
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
+import { tileJoinSchema } from './tile-join';
 import { missingGlyphs, type FontFile } from '../ui/font';
 import {
   cardinalFacing,
@@ -134,8 +135,13 @@ const frameTicks = z
     `ticks each frame shows: one number for every frame, or one per frame (default ${DEFAULT_FRAME_TICKS})`,
   );
 
+const cycleSheet = id.describe(
+  "2D: the sprite file or image these frames come from (default the entry's `sheet`), so one kind can draw states from several PNG sheets",
+);
+
 const cycle = z.strictObject({
   frames: z.array(id).min(1).describe('the frame names, shown in turn'),
+  sheet: cycleSheet.exactOptional(),
   ticks: frameTicks.exactOptional(),
   loop: z
     .boolean()
@@ -165,6 +171,7 @@ const stateFrames = z.union([
   z
     .strictObject({
       frames: cycle.shape.frames.exactOptional(),
+      sheet: cycle.shape.sheet,
       ticks: cycle.shape.ticks,
       loop: cycle.shape.loop,
       then: cycle.shape.then,
@@ -184,7 +191,7 @@ const stateFrames = z.union([
         });
       }
       if (v.frames === undefined) {
-        for (const key of ['ticks', 'loop', 'then', 'events'] as const) {
+        for (const key of ['sheet', 'ticks', 'loop', 'then', 'events'] as const) {
           if (v[key] !== undefined) {
             ctx.addIssue({ code: 'custom', path: [key], message: `"${key}" goes with "frames"` });
           }
@@ -208,6 +215,7 @@ const SPRITE_FIELDS = [
   'frame',
   'blend',
   'glow',
+  'join',
 ] as const;
 const MESH_FIELDS = [
   'mesh',
@@ -514,6 +522,7 @@ const kindEntry = z.strictObject({
 const tileEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file (default `sheets.sheet`)'),
   frame: id.exactOptional().describe('2D: the frame name in the sheet'),
+  join: tileJoinSchema.exactOptional(),
   fallbackColor: color
     .exactOptional()
     .describe('2D: the colour when the frame is missing (default `sheets.fallbackColor`)'),
@@ -916,7 +925,17 @@ function checkMeshes(
   };
   for (const [key, entry] of Object.entries(skin.kinds)) {
     check(['kinds', key], entry.mesh);
+    const sheetsSeen = new Set<string>();
     for (const pose of framesOf(entry.poses ?? {}, 'poses')) {
+      if (pose.sheet !== undefined && !sheetsSeen.has(JSON.stringify(pose.sheet.path))) {
+        sheetsSeen.add(JSON.stringify(pose.sheet.path));
+        ctx.addIssue({
+          code: 'custom',
+          path: ['kinds', key, ...pose.sheet.path],
+          message: `"sheet" is a 2D field; backend "${skin.backend}" takes meshes`,
+          params: { code: 'wrong_backend_field' },
+        });
+      }
       if (isPrimitive(pose.frame) || Object.hasOwn(meshes, pose.frame)) continue;
       ctx.addIssue({
         code: 'custom',
@@ -1069,6 +1088,8 @@ export type SkinEventEntry = z.output<typeof eventEntry>;
 interface NamedFrame {
   frame: string;
   path: FieldPath;
+  /** A cycle's own `sheet` (Engine 0.16 part B), and the path of that field: the frame is checked there. */
+  sheet?: { id: string; path: FieldPath };
 }
 
 /** Every sprite, palette and sound a skin names that the game lacks, and every frame its sheet lacks. */
@@ -1095,11 +1116,34 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
 
   /** A sheet named at `path` (or the default sheet) and the frames, `{ frame, path }`, used from it. */
   const sheetAt = (path: FieldPath, sheet: string | undefined, frames: readonly NamedFrame[]) => {
+    checkSheet(
+      path,
+      ['sheet'],
+      sheet,
+      frames.filter((f) => f.sheet === undefined),
+    );
+    // A cycle with its own sheet: its frames are checked against it, its sheet reported once.
+    const bySheet = new Map<string, { id: string; at: FieldPath; frames: NamedFrame[] }>();
+    for (const f of frames) {
+      if (f.sheet === undefined) continue;
+      const key = JSON.stringify(f.sheet.path);
+      const group = bySheet.get(key) ?? { id: f.sheet.id, at: f.sheet.path, frames: [] };
+      group.frames.push(f);
+      bySheet.set(key, group);
+    }
+    for (const g of bySheet.values()) checkSheet(path, g.at, g.id, g.frames);
+  };
+  const checkSheet = (
+    path: FieldPath,
+    sheetPath: FieldPath,
+    sheet: string | undefined,
+    frames: readonly NamedFrame[],
+  ) => {
     const used = sheet ?? skin.sheets?.sheet;
     if (used === undefined) return;
     const sprite = sprites.get(used);
     if (!sprite) {
-      if (sheet !== undefined) missing([...path, 'sheet'], 'sprite', sheet);
+      if (sheet !== undefined) missing([...path, ...sheetPath], 'sprite', sheet);
       return;
     }
     const what = images.has(used) ? 'image' : 'sprite';
@@ -1144,7 +1188,12 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     }
   }
   for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
-    if (entry.mesh === undefined) sheetAt(['tiles', tile], entry.sheet, one(entry.frame));
+    if (entry.mesh !== undefined) continue;
+    const joined = Object.entries(entry.join?.frames ?? {}).map(([key, frame]) => ({
+      frame,
+      path: ['join', 'frames', key],
+    }));
+    sheetAt(['tiles', tile], entry.sheet, [...one(entry.frame), ...joined]);
   }
   for (const [type, entry] of Object.entries(skin.events ?? {})) {
     if (entry.sound !== undefined && !sounds.has(entry.sound)) {
@@ -1393,12 +1442,16 @@ function framesOf(frames: Record<string, SkinStateFrames>, field = 'frames'): Na
   const out: NamedFrame[] = [];
   const add = (spec: string | SkinCycle, path: FieldPath) => {
     if (typeof spec === 'string') out.push({ frame: spec, path });
-    else spec.frames.forEach((f, i) => out.push({ frame: f, path: [...path, 'frames', i] }));
+    else {
+      const sheet = spec.sheet === undefined ? {} : { sheet: { id: spec.sheet, path: [...path, 'sheet'] } };
+      spec.frames.forEach((f, i) => out.push({ frame: f, path: [...path, 'frames', i], ...sheet }));
+    }
   };
   for (const [state, spec] of Object.entries(frames)) {
     const at: FieldPath = [field, state];
     if (typeof spec === 'string') add(spec, at);
-    else if (spec.frames !== undefined) add({ frames: spec.frames }, at);
+    else if (spec.frames !== undefined)
+      add({ frames: spec.frames, ...(spec.sheet !== undefined && { sheet: spec.sheet }) }, at);
     else for (const f of FACINGS) if (spec[f] !== undefined) add(spec[f], [...at, f]);
   }
   return out;
@@ -1705,6 +1758,8 @@ export interface SkinAnimation {
   t: number;
   /** Draw it mirrored left to right (`flipFacing`). */
   flipX: boolean;
+  /** The cycle's own `sheet` (2D, Engine 0.16 part B), when it names one: draw the frame from it. */
+  sheet?: string;
 }
 
 /**
@@ -1732,7 +1787,15 @@ export function resolveSkinAnimation(
     return { state: seg.state, frame: seg.spec, index: 0, t: local, flipX: seg.flipX };
   }
   const { index } = cyclePosition(seg.spec, local);
-  return { state: seg.state, frame: seg.spec.frames[index]!, index, t: local, flipX: seg.flipX };
+  const out: SkinAnimation = {
+    state: seg.state,
+    frame: seg.spec.frames[index]!,
+    index,
+    t: local,
+    flipX: seg.flipX,
+  };
+  if (seg.spec.sheet !== undefined) out.sheet = seg.spec.sheet;
+  return out;
 }
 
 /** A frame event: a cycle's `events` entry whose frame started ({@link frameEventsBetween}). */
@@ -1838,6 +1901,7 @@ export function resolveSkinFrame(
   if (anim !== undefined) {
     out.frame = anim.frame;
     out.flipX = anim.flipX;
+    if (anim.sheet !== undefined) out.sheet = anim.sheet;
   }
   return out;
 }

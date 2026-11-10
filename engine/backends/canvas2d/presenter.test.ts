@@ -1148,3 +1148,53 @@ describe('PNG sheet frames with anchors (Engine 0.16 T10)', () => {
     expect(draw(hero({ x: 16, y: 8 }))).toEqual(['sprite hero:down-0 16,8']);
   });
 });
+
+describe('neighbour-based tile frames and per-cycle sheets (Engine 0.16 part B, T6)', () => {
+  const ground = sheet('ground', { fill: [16, 16], top: [16, 16], 'top-left': [16, 16], left: [16, 16] });
+  const jump = sheet('jump', { up: [16, 16] });
+  const sheets = (id: string) => ({ ground, jump })[id as 'ground'] ?? SHEETS[id] ?? null;
+  const skin: SkinFile = {
+    ...SKIN,
+    kinds: { ...SKIN.kinds, hero: { frames: { idle: 'down-0', jump: { frames: ['up'], sheet: 'jump' } } } },
+    tiles: {
+      '#': {
+        sheet: 'ground',
+        frame: 'fill',
+        fallbackColor: '#777',
+        join: { frames: { top: 'top', 'top left': 'top-left', left: 'left' } },
+      },
+    },
+  };
+  const present = (f: PresentFrame) => {
+    const screen = recorder();
+    const p = new SkinnedCanvasPresenter(screen.r, skin, sheets, { mapSurface: () => null });
+    p.present(f);
+    return screen.calls.filter((c) => c.startsWith('sprite'));
+  };
+
+  it('draws each tile with the frame its neighbours pick', () => {
+    const map: PresentMap = {
+      id: 'block',
+      version: 0,
+      tileSize: 16,
+      cols: 3,
+      rows: 3,
+      tiles: ['...', '.##', '.##'],
+    };
+    // The map's edges count as joined: the right column and the bottom row have no edge.
+    expect(present(frame({ map }))).toEqual([
+      'sprite ground:top-left 16,16',
+      'sprite ground:top 32,16',
+      'sprite ground:left 16,32',
+      'sprite ground:fill 32,32',
+    ]);
+  });
+
+  it("draws a state from its cycle's own sheet", () => {
+    const entities = [hero({ anim: { state: 'jump', t: 0 } }), hero({ id: 'h2', x: 16 })];
+    expect(present(frame({ noMap: true, entities }))).toEqual([
+      'sprite jump:up 0,0',
+      'sprite hero:down-0 16,0',
+    ]);
+  });
+});

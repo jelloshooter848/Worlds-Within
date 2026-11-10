@@ -50,7 +50,12 @@ Import from `@engine/core/present` (`index.ts`).
   check reports sheets, palettes, sounds and frames the game lacks (`missing_ref`,
   `missing_frame`). Engine 0.16 T10: a top-level `images` map names PNG sprite sheets in the
   game's `assets/` (frames as a grid or named rectangles, with anchors); entries use an image id
-  as their `sheet` (`skin-images.test.ts`). Engine 0.16 T11: a 3D kind or tile entry may name a
+  as their `sheet` (`skin-images.test.ts`); from Engine 0.16 part B (T6) a cycle may name its own
+  `sheet`, so one kind draws each state from its own PNG. Also T6: a 2D tile entry's `join`
+  (`tile-join.ts`: `{ with?, edge?, frames: { "top left": frame, "inner-top-right": frame, ... } }`)
+  picks the tile's frame by the neighbours it joins (grass tops, edges, corners, notches);
+  `resolveTileFrame`, `tileJoinKeys`, `TILE_JOIN_WORDS`, `bad_join_key` (`tile-join.test.ts`).
+  Engine 0.16 T11: a 3D kind or tile entry may name a
   glTF/GLB `model` in `assets/` with `scale`, `anchor`, `rotate`, `clip` (by animation state)
   and `castShadow`, keeping its text `mesh` as the stand-in while it loads;
   `resolveSkinModel`, `resolveTileModel`, `modelClipFor`, `skinModelUses`

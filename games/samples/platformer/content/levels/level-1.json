@@ -1,8 +1,12 @@
 {
   "id": "level-1",
+  "name": "Meadow Start",
   "profile": "hoppers-way",
   "scroll": "right",
   "spawns": {
-    "w": { "actor": "walker", "facing": "left" }
+    "w": {
+      "actor": "walker",
+      "facing": "left"
+    }
   }
 }

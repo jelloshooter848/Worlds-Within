@@ -277,7 +277,8 @@ function presentActor(a: Actor, ctx: Ctx): PresentEntity {
  * touched last: a skin's `byTag` draws its raised flag) and mini-game triggers (`trigger`, tags
  * `armed`, `running` and `look:<id>` when its level entry gives a `look`)
  * from the tiles, in reading order: one 16x16 entity per cell, id `<kind>@<col>,<row>`, anim
- * `idle` with `t` the world's frame (they idle from the level's start).
+ * `idle` with `t` the world's frame (they idle from the level's start); the current checkpoint
+ * `active`, with `t` the ticks since it was touched (Engine 0.16 part B, T6: a skin's flag raise).
  */
 function presentObjects(ctx: Ctx): PresentEntity[] {
   const w = ctx.world;
@@ -289,7 +290,8 @@ function presentObjects(ctx: Ctx): PresentEntity[] {
       const cell = w.tiles.cellAt(col, row);
       if (cell !== 'coin' && cell !== 'goal' && cell !== 'trigger' && cell !== 'checkpoint') continue;
       const tags: string[] = [];
-      if (cell === 'checkpoint' && w.checkpoint?.col === col && w.checkpoint.row === row) tags.push('active');
+      const active = cell === 'checkpoint' && w.checkpoint?.col === col && w.checkpoint.row === row;
+      if (active) tags.push('active');
       if (cell === 'trigger') {
         const t = triggers.get(`${col},${row}`);
         if (t?.armed) tags.push('armed');
@@ -304,7 +306,10 @@ function presentObjects(ctx: Ctx): PresentEntity[] {
         w: TILE,
         h: TILE,
         facing: 'right',
-        anim: { state: 'idle', t: w.frame },
+        // The current checkpoint is `active` from the tick it was touched (a skin's flag raise).
+        anim: active
+          ? { state: 'active', t: clock(ctx, `${cell}@${col},${row}`, 'active') }
+          : { state: 'idle', t: w.frame },
         tags,
         layer: PF_DEPTH.objects,
       });

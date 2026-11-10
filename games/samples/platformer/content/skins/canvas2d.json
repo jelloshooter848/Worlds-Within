@@ -1,101 +1,752 @@
 {
   "backend": "canvas2d",
-  "background": "#5c94fc",
+  "background": "#c8eaf8",
   "sheets": {
-    "sheet": "hopper",
+    "sheet": "terrain",
     "fallbackColor": "#ff00ff"
+  },
+  "images": {
+    "terrain": {
+      "image": "assets/pixel-adventure-1/terrain/terrain-16x16.png",
+      "frames": {
+        "grass-top-left": {
+          "x": 96,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "grass-top": {
+          "x": 112,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "grass-top-right": {
+          "x": 128,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-left": {
+          "x": 96,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "dirt": {
+          "x": 112,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-right": {
+          "x": 128,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-bottom-left": {
+          "x": 96,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-bottom": {
+          "x": 112,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "dirt-bottom-right": {
+          "x": 128,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "notch-bottom-right": {
+          "x": 144,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "notch-bottom-left": {
+          "x": 160,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "notch-top-right": {
+          "x": 144,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "notch-top-left": {
+          "x": 160,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "prize": {
+          "x": 272,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "used": {
+          "x": 192,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "brick": {
+          "x": 288,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "plank-left": {
+          "x": 272,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "plank": {
+          "x": 288,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "plank-right": {
+          "x": 304,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "hud-panel": {
+          "x": 0,
+          "y": 64,
+          "w": 48,
+          "h": 48
+        },
+        "air": {
+          "x": 64,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        }
+      }
+    },
+    "spikes": {
+      "image": "assets/pixel-adventure-1/traps/spikes/idle.png",
+      "frames": {
+        "spikes": {
+          "x": 0,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        }
+      }
+    },
+    "frog-idle": {
+      "image": "assets/pixel-adventure-1/characters/ninja-frog/idle-32x32.png",
+      "frameSize": {
+        "w": 32,
+        "h": 32
+      },
+      "grid": {
+        "cols": 11,
+        "rows": 1
+      },
+      "names": [
+        "idle-0",
+        "idle-1",
+        "idle-2",
+        "idle-3",
+        "idle-4",
+        "idle-5",
+        "idle-6",
+        "idle-7",
+        "idle-8",
+        "idle-9",
+        "idle-10"
+      ],
+      "anchor": "bottom"
+    },
+    "frog-run": {
+      "image": "assets/pixel-adventure-1/characters/ninja-frog/run-32x32.png",
+      "frameSize": {
+        "w": 32,
+        "h": 32
+      },
+      "grid": {
+        "cols": 12,
+        "rows": 1
+      },
+      "names": [
+        "run-0",
+        "run-1",
+        "run-2",
+        "run-3",
+        "run-4",
+        "run-5",
+        "run-6",
+        "run-7",
+        "run-8",
+        "run-9",
+        "run-10",
+        "run-11"
+      ],
+      "anchor": "bottom"
+    },
+    "frog-jump": {
+      "image": "assets/pixel-adventure-1/characters/ninja-frog/jump-32x32.png",
+      "anchor": "bottom",
+      "frames": {
+        "jump": {
+          "x": 0,
+          "y": 0,
+          "w": 32,
+          "h": 32
+        }
+      }
+    },
+    "frog-fall": {
+      "image": "assets/pixel-adventure-1/characters/ninja-frog/fall-32x32.png",
+      "anchor": "bottom",
+      "frames": {
+        "fall": {
+          "x": 0,
+          "y": 0,
+          "w": 32,
+          "h": 32
+        },
+        "frog-face": {
+          "x": 4,
+          "y": 6,
+          "w": 24,
+          "h": 15,
+          "anchor": "top-left"
+        }
+      }
+    },
+    "frog-hit": {
+      "image": "assets/pixel-adventure-1/characters/ninja-frog/hit-32x32.png",
+      "frameSize": {
+        "w": 32,
+        "h": 32
+      },
+      "grid": {
+        "cols": 7,
+        "rows": 1
+      },
+      "names": ["hit-0", "hit-1", "hit-2", "hit-3", "hit-4", "hit-5", "hit-6"],
+      "anchor": "bottom"
+    },
+    "frog-spin": {
+      "image": "assets/pixel-adventure-1/characters/ninja-frog/double-jump-32x32.png",
+      "frameSize": {
+        "w": 32,
+        "h": 32
+      },
+      "grid": {
+        "cols": 6,
+        "rows": 1
+      },
+      "names": ["spin-0", "spin-1", "spin-2", "spin-3", "spin-4", "spin-5"],
+      "anchor": "bottom"
+    },
+    "puff": {
+      "image": "assets/pixel-adventure-1/characters/disappearing-96x96.png",
+      "frameSize": {
+        "w": 96,
+        "h": 96
+      },
+      "grid": {
+        "cols": 7,
+        "rows": 1
+      },
+      "names": ["puff-0", "puff-1", "puff-2", "puff-3", "puff-4", "puff-5", "puff-6"],
+      "anchor": "center",
+      "frames": {
+        "blank": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        }
+      }
+    },
+    "flag": {
+      "image": "assets/pixel-adventure-1/items/checkpoints/checkpoint/checkpoint-flag-out-64x64.png",
+      "frameSize": {
+        "w": 64,
+        "h": 64
+      },
+      "grid": {
+        "cols": 26,
+        "rows": 1
+      },
+      "names": [
+        "raise-0",
+        "raise-1",
+        "raise-2",
+        "raise-3",
+        "raise-4",
+        "raise-5",
+        "raise-6",
+        "raise-7",
+        "raise-8",
+        "raise-9",
+        "raise-10",
+        "raise-11",
+        "raise-12",
+        "raise-13",
+        "raise-14",
+        "raise-15",
+        "raise-16",
+        "raise-17",
+        "raise-18",
+        "raise-19",
+        "raise-20",
+        "raise-21",
+        "raise-22",
+        "raise-23",
+        "raise-24",
+        "raise-25"
+      ],
+      "anchor": {
+        "x": 23,
+        "y": 63
+      }
+    },
+    "flag-wave": {
+      "image": "assets/pixel-adventure-1/items/checkpoints/checkpoint/checkpoint-flag-idle-64x64.png",
+      "frameSize": {
+        "w": 64,
+        "h": 64
+      },
+      "grid": {
+        "cols": 10,
+        "rows": 1
+      },
+      "names": [
+        "wave-0",
+        "wave-1",
+        "wave-2",
+        "wave-3",
+        "wave-4",
+        "wave-5",
+        "wave-6",
+        "wave-7",
+        "wave-8",
+        "wave-9"
+      ],
+      "anchor": {
+        "x": 23,
+        "y": 63
+      }
+    },
+    "flag-pole": {
+      "image": "assets/pixel-adventure-1/items/checkpoints/checkpoint/checkpoint-no-flag.png",
+      "anchor": {
+        "x": 23,
+        "y": 63
+      },
+      "frames": {
+        "pole": {
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        }
+      }
+    },
+    "trophy": {
+      "image": "assets/pixel-adventure-1/items/checkpoints/end/end-idle.png",
+      "anchor": {
+        "x": 32,
+        "y": 63
+      },
+      "frames": {
+        "trophy": {
+          "x": 0,
+          "y": 0,
+          "w": 64,
+          "h": 64
+        }
+      }
+    },
+    "sparkle": {
+      "image": "assets/pixel-adventure-1/items/fruits/collected.png",
+      "frameSize": {
+        "w": 32,
+        "h": 32
+      },
+      "grid": {
+        "cols": 6,
+        "rows": 1
+      },
+      "names": ["sparkle-0", "sparkle-1", "sparkle-2", "sparkle-3", "sparkle-4", "sparkle-5"],
+      "anchor": "center"
+    },
+    "dust": {
+      "image": "assets/pixel-adventure-1/other/dust-particle.png",
+      "frames": {
+        "dust": {
+          "x": 4,
+          "y": 4,
+          "w": 8,
+          "h": 8
+        }
+      }
+    },
+    "pickups": {
+      "image": "assets/kenney-pixel-platformer/tiles-packed.png",
+      "anchor": "center",
+      "frames": {
+        "coin": {
+          "x": 198,
+          "y": 126,
+          "w": 18,
+          "h": 18
+        },
+        "coin-edge": {
+          "x": 216,
+          "y": 126,
+          "w": 18,
+          "h": 18
+        },
+        "heart": {
+          "x": 72,
+          "y": 36,
+          "w": 18,
+          "h": 18,
+          "anchor": "top-left"
+        },
+        "heart-half": {
+          "x": 90,
+          "y": 36,
+          "w": 18,
+          "h": 18,
+          "anchor": "top-left"
+        },
+        "heart-empty": {
+          "x": 108,
+          "y": 36,
+          "w": 18,
+          "h": 18,
+          "anchor": "top-left"
+        },
+        "hud-coin": {
+          "x": 201,
+          "y": 129,
+          "w": 12,
+          "h": 12,
+          "anchor": "top-left"
+        }
+      }
+    },
+    "critters": {
+      "image": "assets/kenney-pixel-platformer/characters-packed.png",
+      "anchor": "bottom",
+      "frames": {
+        "blob-0": {
+          "x": 0,
+          "y": 48,
+          "w": 24,
+          "h": 24
+        },
+        "blob-1": {
+          "x": 24,
+          "y": 48,
+          "w": 24,
+          "h": 24
+        },
+        "blob-flat": {
+          "x": 48,
+          "y": 48,
+          "w": 24,
+          "h": 24
+        },
+        "spike-0": {
+          "x": 144,
+          "y": 24,
+          "w": 24,
+          "h": 24
+        },
+        "spike-1": {
+          "x": 168,
+          "y": 24,
+          "w": 24,
+          "h": 24
+        },
+        "spike-flat": {
+          "x": 192,
+          "y": 24,
+          "w": 24,
+          "h": 24
+        }
+      }
+    }
   },
   "kinds": {
     "runner": {
+      "sheet": "frog-idle",
+      "fallbackColor": "#ff00ff",
+      "flipFacing": true,
       "frames": {
         "idle": {
-          "right": "runner-idle"
+          "right": {
+            "sheet": "frog-run",
+            "frames": ["run-4"],
+            "ticks": [5],
+            "loop": false,
+            "then": "breathe"
+          }
+        },
+        "breathe": {
+          "right": {
+            "sheet": "frog-idle",
+            "frames": [
+              "idle-0",
+              "idle-1",
+              "idle-2",
+              "idle-3",
+              "idle-4",
+              "idle-5",
+              "idle-6",
+              "idle-7",
+              "idle-8",
+              "idle-9",
+              "idle-10"
+            ],
+            "ticks": 4
+          }
         },
         "walk": {
           "right": {
-            "frames": ["runner-walk-0", "runner-walk-1"],
-            "ticks": 6
+            "sheet": "frog-run",
+            "frames": [
+              "run-0",
+              "run-1",
+              "run-2",
+              "run-3",
+              "run-4",
+              "run-5",
+              "run-6",
+              "run-7",
+              "run-8",
+              "run-9",
+              "run-10",
+              "run-11"
+            ],
+            "ticks": 4,
+            "events": {
+              "4": "footstep",
+              "10": "footstep"
+            }
           }
         },
         "run": {
           "right": {
-            "frames": ["runner-walk-0", "runner-walk-1"],
-            "ticks": 3
+            "sheet": "frog-run",
+            "frames": [
+              "run-0",
+              "run-1",
+              "run-2",
+              "run-3",
+              "run-4",
+              "run-5",
+              "run-6",
+              "run-7",
+              "run-8",
+              "run-9",
+              "run-10",
+              "run-11"
+            ],
+            "ticks": 2,
+            "events": {
+              "4": "footstep",
+              "10": "footstep"
+            }
           }
         },
         "skid": {
-          "right": "runner-skid"
+          "right": {
+            "sheet": "frog-run",
+            "frames": ["run-4"],
+            "ticks": [60],
+            "events": {
+              "0": "skid-dust"
+            }
+          }
         },
         "jump": {
-          "right": "runner-jump"
+          "right": {
+            "sheet": "frog-jump",
+            "frames": ["jump"],
+            "ticks": [1]
+          }
         },
         "fall": {
-          "right": "runner-fall"
+          "right": {
+            "sheet": "frog-fall",
+            "frames": ["fall"],
+            "ticks": [1]
+          }
         },
         "hurt": {
           "right": {
-            "frames": ["runner-hurt", "runner-idle"],
-            "ticks": 2
+            "sheet": "frog-hit",
+            "frames": ["hit-0", "hit-1", "hit-2", "hit-3", "hit-4", "hit-5", "hit-6"],
+            "ticks": [2, 2, 2, 2, 2, 2, 4],
+            "loop": false
           }
         },
-        "dead": "runner-dead"
-      },
-      "flipFacing": true
+        "dead": {
+          "right": {
+            "sheet": "frog-hit",
+            "frames": ["hit-0", "hit-1", "hit-2", "hit-3", "hit-4", "hit-5"],
+            "ticks": [3, 3, 4, 4, 4, 4],
+            "loop": false,
+            "then": "vanish",
+            "events": {
+              "0": "dying"
+            }
+          }
+        },
+        "vanish": {
+          "right": {
+            "sheet": "puff",
+            "frames": ["puff-1", "puff-2", "puff-3", "puff-4", "puff-5", "puff-6"],
+            "ticks": 4,
+            "loop": false,
+            "then": "gone",
+            "events": {
+              "0": "poof"
+            }
+          }
+        },
+        "gone": {
+          "right": {
+            "sheet": "puff",
+            "frames": ["blank"],
+            "ticks": [1]
+          }
+        }
+      }
     },
     "walker": {
+      "sheet": "critters",
+      "fallbackColor": "#ff00ff",
+      "flipFacing": true,
       "frames": {
-        "idle": "walker-0",
+        "idle": {
+          "right": "blob-0"
+        },
         "walk": {
-          "frames": ["walker-0", "walker-1"],
-          "ticks": 8
+          "right": {
+            "frames": ["blob-0", "blob-1"],
+            "ticks": 12
+          }
         },
         "run": {
-          "frames": ["walker-0", "walker-1"],
-          "ticks": 4
+          "right": {
+            "frames": ["blob-0", "blob-1"],
+            "ticks": 5
+          }
         },
-        "fall": "walker-0",
-        "stomped": "walker-flat",
-        "dead": "walker-dead"
+        "fall": {
+          "right": "blob-1"
+        },
+        "stomped": {
+          "right": {
+            "frames": ["blob-flat"],
+            "ticks": [30]
+          }
+        },
+        "dead": {
+          "right": {
+            "frames": ["blob-flat"],
+            "ticks": [30]
+          }
+        }
       }
     },
     "ledge-walker": {
+      "sheet": "critters",
+      "fallbackColor": "#ff00ff",
+      "flipFacing": true,
       "frames": {
-        "idle": "ledge-walker-0",
+        "idle": {
+          "right": "spike-0"
+        },
         "walk": {
-          "frames": ["ledge-walker-0", "ledge-walker-1"],
-          "ticks": 8
+          "right": {
+            "frames": ["spike-0", "spike-1"],
+            "ticks": 12
+          }
         },
         "run": {
-          "frames": ["ledge-walker-0", "ledge-walker-1"],
-          "ticks": 4
+          "right": {
+            "frames": ["spike-0", "spike-1"],
+            "ticks": 5
+          }
         },
-        "fall": "ledge-walker-0",
-        "stomped": "ledge-walker-flat",
-        "dead": "ledge-walker-dead"
+        "fall": {
+          "right": "spike-1"
+        },
+        "stomped": {
+          "right": {
+            "frames": ["spike-flat"],
+            "ticks": [30]
+          }
+        },
+        "dead": {
+          "right": {
+            "frames": ["spike-flat"],
+            "ticks": [30]
+          }
+        }
       }
     },
     "coin": {
+      "sheet": "pickups",
+      "fallbackColor": "#ff00ff",
+      "emit": "coin-glint",
       "frames": {
         "idle": {
-          "frames": ["coin", "coin", "coin-turn"],
-          "ticks": 10
+          "frames": ["coin", "coin-edge", "coin"],
+          "ticks": [50, 6, 6]
         },
         "pop": {
-          "frames": ["coin", "coin-turn"],
+          "frames": ["coin", "coin-edge"],
           "ticks": 3
         }
       }
     },
     "goal": {
+      "sheet": "trophy",
+      "fallbackColor": "#ff00ff",
+      "emit": "trophy-shine",
       "frames": {
-        "idle": "goal"
+        "idle": "trophy"
       }
     },
     "bump-block": {
+      "sheet": "terrain",
+      "fallbackColor": "#ff00ff",
       "frames": {
-        "bump": "used"
+        "bump": "prize"
       },
       "byTag": [
+        {
+          "tag": "used",
+          "frames": {
+            "bump": "used"
+          }
+        },
         {
           "tag": "brick",
           "frames": {
@@ -105,14 +756,67 @@
       ]
     },
     "checkpoint": {
+      "sheet": "flag-pole",
+      "fallbackColor": "#ff00ff",
       "frames": {
-        "idle": "checkpoint"
+        "idle": "pole",
+        "active": "pole"
       },
       "byTag": [
         {
           "tag": "active",
           "frames": {
-            "idle": "checkpoint-on"
+            "idle": "pole",
+            "active": {
+              "sheet": "flag",
+              "frames": [
+                "raise-0",
+                "raise-1",
+                "raise-2",
+                "raise-3",
+                "raise-4",
+                "raise-5",
+                "raise-6",
+                "raise-7",
+                "raise-8",
+                "raise-9",
+                "raise-10",
+                "raise-11",
+                "raise-12",
+                "raise-13",
+                "raise-14",
+                "raise-15",
+                "raise-16",
+                "raise-17",
+                "raise-18",
+                "raise-19",
+                "raise-20",
+                "raise-21",
+                "raise-22",
+                "raise-23",
+                "raise-24",
+                "raise-25"
+              ],
+              "ticks": 2,
+              "loop": false,
+              "then": "waving"
+            },
+            "waving": {
+              "sheet": "flag-wave",
+              "frames": [
+                "wave-0",
+                "wave-1",
+                "wave-2",
+                "wave-3",
+                "wave-4",
+                "wave-5",
+                "wave-6",
+                "wave-7",
+                "wave-8",
+                "wave-9"
+              ],
+              "ticks": 5
+            }
           }
         }
       ]
@@ -120,193 +824,635 @@
   },
   "tiles": {
     ".": {
-      "frame": "sky"
+      "sheet": "terrain",
+      "frame": "air",
+      "fallbackColor": "#ff00ff"
     },
     "#": {
-      "frame": "ground"
+      "sheet": "terrain",
+      "frame": "dirt",
+      "fallbackColor": "#ff00ff",
+      "join": {
+        "with": ["#"],
+        "frames": {
+          "top": "grass-top",
+          "top left": "grass-top-left",
+          "top right": "grass-top-right",
+          "left": "dirt-left",
+          "right": "dirt-right",
+          "bottom": "dirt-bottom",
+          "bottom left": "dirt-bottom-left",
+          "right bottom": "dirt-bottom-right",
+          "top right bottom": "grass-top-right",
+          "top bottom left": "grass-top-left",
+          "inner-top-left": "notch-top-left",
+          "inner-top-right": "notch-top-right",
+          "inner-bottom-right": "notch-bottom-right",
+          "inner-bottom-left": "notch-bottom-left"
+        }
+      }
     },
     "B": {
-      "frame": "brick"
+      "sheet": "terrain",
+      "frame": "brick",
+      "fallbackColor": "#ff00ff"
     },
     "?": {
-      "frame": "bump"
+      "sheet": "terrain",
+      "frame": "prize",
+      "fallbackColor": "#ff00ff"
     },
     "u": {
-      "frame": "used"
+      "sheet": "terrain",
+      "frame": "used",
+      "fallbackColor": "#ff00ff"
     },
     "=": {
-      "frame": "one-way"
+      "sheet": "terrain",
+      "frame": "plank",
+      "fallbackColor": "#ff00ff",
+      "join": {
+        "edge": "open",
+        "frames": {
+          "left": "plank-left",
+          "right": "plank-right"
+        }
+      }
     },
     "^": {
-      "frame": "hazard"
+      "sheet": "spikes",
+      "frame": "spikes",
+      "fallbackColor": "#ff00ff"
     }
   },
   "events": {
     "jump": {
-      "sound": "jump"
+      "sound": "jump",
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ],
+      "pitch": [-1, 1],
+      "volume": [0.85, 1]
     },
     "land": {
-      "effect": {
-        "kind": "particles",
-        "color": "#fcbcb0",
-        "count": 3,
-        "size": 1,
+      "emit": "land-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 0.72,
+          "to": 1,
+          "frames": 8,
+          "ease": "backOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 1.25,
+          "to": 1,
+          "frames": 8,
+          "ease": "backOut"
+        }
+      ]
+    },
+    "footstep": {
+      "emit": "run-dust"
+    },
+    "skid-dust": {
+      "emit": "skid-dust"
+    },
+    "bump": {
+      "emit": "bump-bits",
+      "shake": {
+        "amount": 1.5,
         "ticks": 6
       }
     },
-    "bump": {
-      "effect": {
-        "kind": "shake",
-        "size": 1,
-        "ticks": 4
-      }
-    },
     "block": {
-      "effect": {
-        "kind": "particles",
-        "color": "#f8d800",
-        "count": 4,
-        "size": 1
-      }
+      "emit": "coin-burst"
     },
     "break": {
       "sound": "stomp",
-      "effect": {
-        "kind": "particles",
-        "color": "#c84c0c",
-        "count": 8,
-        "size": 2,
-        "ticks": 16
+      "emit": "brick-bits",
+      "shake": {
+        "amount": 2,
+        "ticks": 8
       }
     },
     "coin": {
       "sound": "coin",
-      "effect": {
-        "kind": "particles",
-        "color": "#f8d800",
-        "count": 5,
-        "size": 1
-      }
+      "emit": ["coin-burst", "coin-sparkle"],
+      "pitch": [0, 2]
     },
     "spawn": {
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 4,
-        "size": 1
-      }
+      "emit": "respawn-ring"
     },
     "stomp": {
       "sound": "stomp",
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 6,
-        "size": 1
-      }
+      "emit": ["stomp-stars", "stomp-ring"],
+      "shake": {
+        "amount": 2.5,
+        "ticks": 10
+      },
+      "hitPause": {
+        "ticks": 4
+      },
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 0.5,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 1.4,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ]
     },
     "kick": {
       "sound": "stomp",
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 3,
-        "size": 1
+      "emit": "stomp-ring",
+      "shake": {
+        "amount": 1.5,
+        "ticks": 6
       }
     },
     "defeat": {
-      "effect": {
-        "kind": "particles",
-        "color": "#d82800",
-        "count": 6,
-        "size": 1
-      }
+      "emit": "stomp-stars"
     },
     "hurt": {
       "sound": "hurt",
-      "effect": {
-        "kind": "flash",
-        "color": "#d82800",
-        "ticks": 2
+      "emit": "hurt-sparks",
+      "shake": {
+        "amount": 3,
+        "ticks": 12
+      },
+      "hitPause": {
+        "ticks": 6
+      },
+      "flash": {
+        "color": "#ffffff",
+        "alpha": 0.35,
+        "ticks": 6
+      },
+      "tween": {
+        "prop": "alpha",
+        "from": 1,
+        "to": 0.35,
+        "frames": 4,
+        "yoyo": true,
+        "repeat": 13,
+        "delay": 12
       }
     },
     "died": {
       "sound": "fail",
-      "effect": {
-        "kind": "shake",
-        "size": 3,
-        "ticks": 12
+      "shake": {
+        "amount": 4,
+        "ticks": 18
+      },
+      "hitPause": {
+        "ticks": 8
+      },
+      "flash": {
+        "color": "#ffffff",
+        "alpha": 0.3,
+        "ticks": 6
       }
     },
+    "dying": {
+      "emit": "hurt-sparks"
+    },
+    "poof": {
+      "emit": "dying-burst"
+    },
     "respawn": {
-      "effect": {
-        "kind": "particles",
-        "color": "#fcfcfc",
-        "count": 8,
-        "size": 1
-      }
+      "emit": "respawn-ring",
+      "tween": [
+        {
+          "prop": "scale",
+          "from": 0.2,
+          "to": 1,
+          "frames": 14,
+          "ease": "backOut"
+        },
+        {
+          "prop": "alpha",
+          "from": 0,
+          "to": 1,
+          "frames": 8
+        }
+      ]
     },
     "cleared": {
       "sound": "pass",
-      "effect": {
-        "kind": "tint",
-        "color": "#f8d800",
-        "ticks": 20
+      "emit": "clear-confetti",
+      "zoom": {
+        "to": 1.25,
+        "ticks": 14,
+        "ease": "cubicOut",
+        "hold": 30,
+        "back": 16
       }
     },
     "checkpoint": {
       "sound": "coin",
-      "effect": {
-        "kind": "particles",
-        "color": "#00a800",
-        "count": 6,
-        "size": 1
+      "emit": "flag-confetti",
+      "pitch": [3, 3],
+      "shake": {
+        "amount": 1,
+        "ticks": 6
       }
     }
   },
+  "emitters": {
+    "land-dust": {
+      "burst": 10,
+      "life": [14, 22],
+      "speed": [0.5, 1.2],
+      "angle": [185, 355],
+      "anchor": "feet",
+      "offset": {
+        "x": 0,
+        "y": -1
+      },
+      "shape": {
+        "box": {
+          "w": 10,
+          "h": 1
+        }
+      },
+      "gravity": -0.01,
+      "drag": 0.12,
+      "size": [3, 4, 3, 1],
+      "color": ["#fffaf0", "#e2d2b0", "#b8a888"],
+      "alpha": [1, 0.8, 0]
+    },
+    "jump-dust": {
+      "burst": 6,
+      "life": [10, 16],
+      "speed": [0.3, 0.9],
+      "angle": [160, 380],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 8,
+          "h": 1
+        }
+      },
+      "gravity": -0.005,
+      "drag": 0.15,
+      "size": [3, 3, 1],
+      "color": ["#fffaf0", "#e2d2b0", "#b8a888"],
+      "alpha": [1, 0]
+    },
+    "run-dust": {
+      "burst": 2,
+      "life": [10, 16],
+      "speed": [0.15, 0.45],
+      "angle": [215, 325],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 6,
+          "h": 1
+        }
+      },
+      "gravity": -0.012,
+      "drag": 0.05,
+      "size": [2, 3, 2],
+      "color": ["#fffaf0", "#e2d2b0", "#b8a888"],
+      "alpha": [0.9, 0]
+    },
+    "skid-dust": {
+      "burst": 5,
+      "life": [10, 18],
+      "speed": [0.4, 1.0],
+      "angle": [200, 340],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 6,
+          "h": 1
+        }
+      },
+      "gravity": -0.01,
+      "drag": 0.1,
+      "size": [2, 3, 1],
+      "color": ["#fffaf0", "#e2d2b0", "#b8a888"],
+      "alpha": [0.9, 0]
+    },
+    "stomp-stars": {
+      "burst": 10,
+      "life": [12, 20],
+      "speed": [1.0, 2.2],
+      "angle": [190, 350],
+      "gravity": 0.12,
+      "drag": 0.05,
+      "size": [2, 2, 1],
+      "color": ["#ffffff", "#ffe060", "#ff9040"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 1
+        },
+        {
+          "at": 0.6,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    },
+    "stomp-ring": {
+      "burst": 12,
+      "life": 9,
+      "speed": 2,
+      "angle": [0, 360],
+      "even": true,
+      "drag": 0.22,
+      "size": [2, 1],
+      "color": "#ffffff",
+      "alpha": [0.8, 0],
+      "blend": "add"
+    },
+    "coin-burst": {
+      "burst": 8,
+      "life": [10, 16],
+      "speed": [0.8, 1.8],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "gravity": 0.05,
+      "size": [2, 1],
+      "color": ["#fff6b0", "#ffd030", "#c08000"],
+      "alpha": [1, 1, 0]
+    },
+    "coin-sparkle": {
+      "burst": 1,
+      "life": 18,
+      "frame": "sparkle-3",
+      "sheet": "sparkle",
+      "size": [0.8, 1.2],
+      "alpha": [1, 0]
+    },
+    "coin-glint": {
+      "rate": 0.02,
+      "life": [14, 20],
+      "speed": [0.05, 0.15],
+      "angle": [250, 290],
+      "shape": {
+        "circle": 5
+      },
+      "size": [1, 2, 1],
+      "color": "#ffffff",
+      "alpha": [0, 1, 0],
+      "blend": "add"
+    },
+    "trophy-shine": {
+      "rate": 0.12,
+      "life": [24, 36],
+      "speed": [0.1, 0.3],
+      "angle": [250, 290],
+      "anchor": "top",
+      "offset": {
+        "x": 0,
+        "y": -26
+      },
+      "shape": {
+        "box": {
+          "w": 30,
+          "h": 18
+        }
+      },
+      "size": [1, 2, 1],
+      "color": ["#fffbe0", "#ffe060"],
+      "alpha": [0, 1, 0],
+      "blend": "add"
+    },
+    "flag-confetti": {
+      "burst": 18,
+      "life": [24, 40],
+      "speed": [1.0, 2.4],
+      "angle": [230, 310],
+      "gravity": 0.08,
+      "drag": 0.04,
+      "offset": {
+        "x": 0,
+        "y": -24
+      },
+      "size": 2,
+      "color": ["#ff5050", "#ffd030", "#50d0ff", "#70e070"],
+      "alpha": [1, 1, 0]
+    },
+    "hurt-sparks": {
+      "burst": 10,
+      "life": [10, 16],
+      "speed": [1, 2],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "size": [2, 1],
+      "color": ["#ffffff", "#ff6060"],
+      "alpha": [1, 0]
+    },
+    "dying-burst": {
+      "burst": 14,
+      "life": [16, 26],
+      "speed": [0.8, 2],
+      "angle": [0, 360],
+      "drag": 0.08,
+      "size": [2, 2, 1],
+      "color": ["#ffffff", "#9fe070", "#4f9a4a"],
+      "alpha": [1, 0]
+    },
+    "respawn-ring": {
+      "burst": 16,
+      "life": 14,
+      "speed": 1.6,
+      "angle": [0, 360],
+      "even": true,
+      "drag": 0.15,
+      "size": [2, 1],
+      "color": "#ffffff",
+      "alpha": [0.9, 0],
+      "blend": "add"
+    },
+    "bump-bits": {
+      "burst": 5,
+      "life": [10, 14],
+      "speed": [0.6, 1.4],
+      "angle": [220, 320],
+      "gravity": 0.12,
+      "size": 2,
+      "color": ["#ffe060", "#c08000"],
+      "alpha": [1, 0]
+    },
+    "brick-bits": {
+      "burst": 10,
+      "life": [16, 26],
+      "speed": [1, 2.4],
+      "angle": [200, 340],
+      "gravity": 0.16,
+      "size": [3, 2],
+      "color": ["#e05040", "#a03028"],
+      "alpha": [1, 1, 0]
+    },
+    "clear-confetti": {
+      "burst": 40,
+      "life": [40, 70],
+      "speed": [1.2, 3],
+      "angle": [220, 320],
+      "gravity": 0.06,
+      "drag": 0.03,
+      "shape": {
+        "box": {
+          "w": 24,
+          "h": 4
+        }
+      },
+      "size": 2,
+      "color": ["#ff5050", "#ffd030", "#50d0ff", "#70e070", "#ffffff"],
+      "alpha": [1, 1, 0]
+    }
+  },
+  "parallax": [
+    {
+      "gradient": ["#3f8edc", "#5aa6e6", "#7cc0ee", "#a2d6f4", "#c8eaf8"],
+      "bands": 14,
+      "height": 150,
+      "factor": 0
+    },
+    {
+      "gradient": ["#c8eaf8"],
+      "height": 40,
+      "y": 150,
+      "factor": 0
+    },
+    {
+      "frame": "clouds",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.08,
+        "y": 0
+      },
+      "y": 10,
+      "depth": 1000
+    },
+    {
+      "frame": "mountains",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.18,
+        "y": 0.05
+      },
+      "y": 62,
+      "depth": 700
+    },
+    {
+      "frame": "hills",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.38,
+        "y": 0.1
+      },
+      "y": 96,
+      "depth": 420
+    },
+    {
+      "frame": "bushes",
+      "sheet": "hopper-sky",
+      "factor": {
+        "x": 0.62,
+        "y": 0.2
+      },
+      "y": 124,
+      "depth": 220
+    }
+  ],
   "hud": [
+    {
+      "as": "panel",
+      "x": 4,
+      "y": 4,
+      "w": 132,
+      "h": 32,
+      "sheet": "terrain",
+      "frame": "hud-panel",
+      "slice": 16
+    },
+    {
+      "status": "maxHp",
+      "as": "hearts",
+      "x": 11,
+      "y": 11,
+      "sheet": "pickups",
+      "frame": "heart-empty"
+    },
     {
       "status": "hp",
       "as": "hearts",
-      "x": 8,
-      "y": 8,
+      "x": 11,
+      "y": 11,
+      "sheet": "pickups",
       "frame": "heart"
     },
     {
       "status": "coins",
-      "as": "icon",
-      "x": 40,
-      "y": 8,
-      "frame": "hud-coin"
-    },
-    {
-      "status": "coins",
-      "as": "number",
-      "x": 50,
-      "y": 8,
-      "font": "hopper-font"
-    },
-    {
-      "status": "lives",
-      "as": "icon",
-      "x": 80,
-      "y": 8,
-      "frame": "hud-life"
+      "as": "counter",
+      "x": 52,
+      "y": 14,
+      "sheet": "pickups",
+      "frame": "hud-coin",
+      "digits": 2,
+      "tween": {
+        "ticks": 20,
+        "color": "#fff6b0"
+      },
+      "font": "hopper-small",
+      "color": "#ffe060",
+      "shadow": "#1a1a2e"
     },
     {
       "status": "lives",
-      "as": "number",
+      "as": "counter",
       "x": 90,
-      "y": 8,
-      "font": "hopper-font"
+      "y": 13,
+      "sheet": "frog-fall",
+      "frame": "frog-face",
+      "format": "x{value}",
+      "font": "hopper-small",
+      "color": "#fcfcfc",
+      "shadow": "#1a1a2e"
     }
   ],
   "camera": {
     "follow": "runner",
     "deadzone": {
-      "w": 32,
-      "h": 48
+      "w": 24,
+      "h": 40
     },
-    "lerp": 0.25
+    "lerp": 0.2,
+    "lookAhead": {
+      "x": 36,
+      "lerp": 0.05
+    }
   }
 }

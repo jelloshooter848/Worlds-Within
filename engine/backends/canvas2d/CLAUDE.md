@@ -75,12 +75,15 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
   Whole-number zooms (2, 3) and halves (0.5) keep tiles evenly sized.
 - Map: a full map is drawn onto the surface once per id and version and copied each frame; a
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
-  `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`.
+  `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`. A tile entry with a
+  `join` (Engine 0.16 part B, T6) draws the frame its neighbours in the same grid pick
+  (`resolveTileFrame` from `@engine/core/present`: grass tops, edges, corners, notches).
 - Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip
   (all eight facings: a diagonal without a frame uses its horizontal one), from the kind's first
   `byTag` look that matches one of the entity's tags (a whole `tag`, or from Engine 0.15 a `prefix`
   with an optional `min`/`max` range, gap M2), else the kind's own frames (Engine 0.11, gap G30);
   a missing sheet or frame draws a `fallbackColor` box of the skin `size`, else the entity's box.
+  A cycle's own `sheet` (Engine 0.16 part B, T6) is the sheet that state draws from.
   A frame with an `anchor` (a skin's PNG sheet, Engine 0.16 T10: `anchorOffset` from
   `@engine/core/gfx/spritesheet`, mirrored when flipped) is drawn so its anchor sits on the
   entity box (`bottom`: its bottom centre on the box's), before the zoom; text sprites have no
@@ -222,7 +225,9 @@ picture size. The `camera effects and parallax (Engine 0.16 T4)` block plays a s
 both axes decaying to the framed camera (the same each run), the hit-pause request once per
 event, the shake scale off and back on through `effectSettings`, a flash's fading alpha box and
 reduced flashing, a zoom punch's scales there and back, and the parallax layers behind the map
-moving at their own rates between two camera positions. `Viewport` needs a
+moving at their own rates between two camera positions. The `neighbour-based tile frames and
+per-cycle sheets (Engine 0.16 part B, T6)` block draws a joined block's corner, top, side and
+fill frames and a state from its cycle's own sheet. `Viewport` needs a
 real DOM and is checked by running a game. `display.test.ts` builds a `canvasDisplay` on fake
 canvases: its presenter clears the backbuffer to the background, and `fit` + `present` copy it
 fitted to the page. `rts-camera.test.ts` (Engine 0.9 T5) checks that `RtsCamera`

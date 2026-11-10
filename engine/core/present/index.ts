@@ -153,3 +153,15 @@ export {
   type SkinScene3d,
   type ToneMappingKind,
 } from './scene3d';
+export {
+  resolveTileFrame,
+  TILE_INNER_CORNERS,
+  TILE_JOIN_EDGES,
+  TILE_JOIN_WORDS,
+  TILE_SIDES,
+  tileJoinKeyProblem,
+  tileJoinKeys,
+  tileJoinSchema,
+  type TileGrid,
+  type TileJoin,
+} from './tile-join';

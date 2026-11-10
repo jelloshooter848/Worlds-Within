@@ -88,23 +88,21 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   `kits/platformer/legend.ts`): `level-1` (spawns `w`: a `walker` facing left) and the three
   placeholders, all with `profile: "hoppers-way"` and `scroll: "right"`.
 - `content/profiles/hoppers-way.profile.json`: the tuned profile (above).
-- `content/sprites/hopper.txt` + `content/palettes/hopper.json`, `hopper-font.txt`,
-  `content/fonts/hopper-small.txt`, `hopper-title.txt`, `content/sfx/*.json`,
-  `content/songs/meadow.json`: the placeholder art, fonts and sound, copied from the classic game
-  (its 0.7 and 0.15 art), plus the frames `checkpoint` and `checkpoint-on`.
-- `content/skins/canvas2d.json` and `three.json`: the placeholder skins: every `PRESENT_TILES`
-  character, `runner`, `walker`, `ledge-walker`, `coin`, `goal`, `bump-block` and `checkpoint`
-  (its `active` tag through `byTag`: the touched checkpoint's raised green pennant), every event
-  the levels show (the checkpoint's with a sound and green particles), the HUD (hearts, coins,
-  lives) and the camera (follow the runner, deadzone 32x48, lerp 0.25); the 3D skin the same
-  kinds as low-poly meshes, with the 2D skin's events, HUD and camera, the 0.16 T12 scene look
-  and labels.
+- `content/sprites/hopper-sky.txt` + `content/palettes/hopper-sky.json` (T6): the parallax
+  layers, original text pixel art (below). `content/sprites/hopper.txt` + `palettes/hopper.json`
+  and `hopper-font.txt`: the old placeholder art, now used only by the 3D skin (until T10).
+  `content/fonts/hopper-small.txt`, `hopper-title.txt` (the HUD's counters and the menus),
+  `content/sfx/*.json`, `content/songs/meadow.json`: fonts and the placeholder sound (T9 redoes it).
+- `content/skins/canvas2d.json`: the 2D skin, built on the CC0 PNG packs (T6, "The 2D skin"
+  below). `three.json`: the 3D skin, still low-poly meshes (T10 makes the 2.5D view), with the 2D
+  skin's `images` (for the HUD's frames), `events`, `emitters`, `hud` and `camera`, the 0.16 T12
+  scene look and labels.
 - `assets/` (Engine 0.16 part B, T4): the one place binary files may live (docs/DESIGN.md,
   item 322): four CC0 packs, each a folder credited in `assets/CREDITS.md` (`## <pack>` with
   `Source:`, `Author:`, `Licence:` and the files kept; `validate` fails on a pack with no section
   or a licence that is not CC0). About 1.8 MB in all; only the files the game will use were kept,
-  their names lower-cased with spaces as hyphens. No skin uses them yet: the 2D art pass (T6)
-  and the 2.5D view (T10) will, as skin `images` and `model` entries.
+  their names lower-cased with spaces as hyphens. The 2D skin uses the two PNG packs (T6); the
+  2.5D view (T10) will use the GLBs as `model` entries.
   - `pixel-adventure-1/` (Pixel Frog, itch.io; 89 PNGs, 84 KB): `terrain/terrain-16x16.png`,
     `background/<colour>.png` (64x64 tiling backgrounds), `characters/ninja-frog/*-32x32.png`
     (the player: idle, run, jump, fall, double jump, wall jump, hit) and the appear/disappear
@@ -125,15 +123,88 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
     GLB is a self-contained glTF 2.0 model, and the player's and an enemy's clips.
 - TypeScript, glue only: `content.ts` (`loadHopper`, `hopperStages`, `hopperSkins`,
   `PLATFORMER_MUSIC`), `headless.ts` (`createGame`: the kit's `LevelSequence` with `viewWidth`
-  from the screen; `starts`), `picture.ts` (`hopperLook`, `hopperFrames`, `hopperPicture`,
-  `hopperCanvasPicture`), `picture3d.ts` (`hopperLook3d`), `view.ts` (`createView`, for
-  `screenshot`), `main.ts` (`bootBrowserGame`, the `HostScene` over the game, a display per
-  backend). Each is a few calls into the engine and the kit.
+  from the screen; `starts`), `picture.ts` (`hopperLook`: the skins, the sheets with the PNGs,
+  the fonts and the size; `hopperFrames`, `hopperPicture`, `hopperCanvasPicture`), `picture3d.ts`
+  (`hopperLook3d`), `view.ts` (`createView`, for `screenshot`), `main.ts` (awaits
+  `withContentImages` so the PNGs are decoded before the first frame, then `bootBrowserGame`
+  with the levels by name for the level select, `booted.start` for a chosen level, the shell's
+  `hitPause` to both displays, the `HostScene` over the game). Each is a few calls into the
+  engine and the kit.
 - `platformer.test.ts`: content loads; the stage list; the 16:9 screen; the tuned profile's
   fields; level-1's checkpoint, coins, block and walkers; text-only content outside `assets/`;
   the start state, the view width and equal snapshots on two runs; the skins covering every kind,
   state, tag, tile, event and HUD value every run shows, the 3D skin matching the 2D one, the
-  sounds and song; every tick of every run drawn from the art, never a fallback box.
+  sounds and song; every tick of every run drawn from the art (the PNGs "decoded" in Node from
+  their headers), never a fallback box (every 2D entry's `fallbackColor` is `#ff00ff`, so a
+  missing frame is caught); from T6 the tile joins on level-1's map, the frog's states and
+  sheets, the checkpoint's flag raise, the feel events, and every run drawn through the Canvas2D
+  presenter asking for hit-pauses with the same state hash on every tick as an undrawn game.
+
+## The 2D skin (T6; feedback items 370-374)
+
+`content/skins/canvas2d.json`, the art and feel pass. Presentation only: no rule, profile or level
+map changed, so every golden hash is the same (the sample's tests draw every tick and compare state
+hashes with an undrawn game). Built by a small script and tuned from screenshots; edit the JSON
+by hand now. Every 2D entry's `fallbackColor` is `#ff00ff`, so a missing frame shows (and fails
+`platformer.test.ts`).
+
+- **`images`** (the CC0 PNGs in `assets/`): `terrain` (Pixel Adventure's 16 px terrain: the grass
+  block's nine pieces `grass-top-left` .. `dirt-bottom-right`, the four inner-corner `notch-*`
+  pieces, `prize` (gold), `used` (steel), `brick`, `plank-*`, an empty `air` cell and the wood
+  frame `hud-panel`), `spikes`, one sheet per frog animation (`frog-idle` 11 frames, `frog-run`
+  12, `frog-jump`, `frog-fall` (also the HUD's `frog-face`), `frog-hit` 7 (the first two white),
+  `frog-spin`), `puff` (the 96 px disappearing puff, centred, and a 1 px `blank`), `flag` (the
+  26-frame flag raise), `flag-wave`, `flag-pole`, `trophy` (the goal), `sparkle` (the fruit
+  "collected" ring), `dust`, `pickups` (Kenney's coin and its edge, the three hearts, a 12 px
+  `hud-coin`) and `critters` (Kenney's enemies: `blob-*` for `walker`, `spike-*` for
+  `ledge-walker`, each with a flattened frame). Frog frames are anchored `bottom` (32 px over the
+  12x16 box), the checkpoint's on its pole (`{ x: 23, y: 63 }`).
+- **Tiles**: `#` joins its own kind (`join`, the engine's neighbour-based tile frames): grass on
+  top, dirt edges at the sides and bottom, outer corners, and notches where the ground meets a
+  step (`inner-top-left`, `inner-top-right`); `=` planks with ends (`edge: open`); `?` the gold
+  block, `u` steel, `B` brick, `^` spikes, `.` the empty `air` cell.
+- **The frog (`runner`)**, each state from its own PNG (a cycle's `sheet`): `idle` is a 5-tick
+  landing crouch (`run-4`) that hands over to `breathe` (the 11-frame idle at 4 ticks); `walk`
+  (4 ticks a frame) and `run` (2) the 12-frame run with `footstep` frame events on frames 4 and
+  10 (the feet down); `skid` the crouch with a `skid-dust` frame event; `jump`, `fall`; `hurt`
+  the 7 hit frames (the two white ones are the hit flash); `dead` (the remains after a death, and
+  a failed level) the hit frames, then `vanish` (the puff, a `poof` frame event) and `gone`.
+- **Others**: `walker`/`ledge-walker` two-frame walks (`run` faster) and a flattened `stomped` /
+  `dead`; `coin` Kenney's coin turning to its edge every 62 ticks with a `coin-glint` emitter (a
+  rare white mote); `goal` the trophy with `trophy-shine` motes; `bump-block` gold, steel once
+  used; `checkpoint` the bare pole, and with the kit's `active` state (from T6, timed from the
+  touch) the 26-frame flag raise, then `waving`.
+- **Feel** (`events`, `emitters`; all presentation): `jump` stretches (scaleY 1.3, scaleX 0.8,
+  9 frames back) with `jump-dust`; `land` squashes (scaleY 0.72, scaleX 1.25, `backOut`) with
+  `land-dust`; `footstep` puffs `run-dust`, `skid-dust` a wider puff; `stomp` a 4-frame
+  `hitPause`, a 2.5 px shake, stars and an additive ring, and squashes the walker's remains;
+  `hurt` a 6-frame `hitPause`, a 3 px shake, a white screen flash (0.35), red-white sparks and,
+  after the white frames, an alpha blink through the invulnerability; `died` a hit-pause, shake
+  and a softer flash; `coin` gold sparks and the sparkle ring; `bump` gold bits and a small
+  shake; `checkpoint` confetti; `respawn` a ring and a pop-in (scale and alpha); `cleared`
+  confetti and a 1.25 zoom punch. The emitters' dust is cream and grey, so it reads on grass and
+  sky.
+- **Parallax** (back to front): a 14-band sky gradient, then `hopper-sky`'s `clouds` (x 0.08),
+  `mountains` (x 0.18, snow caps), `hills` (x 0.38, trees on the crests) and `bushes` (x 0.62,
+  dark enough to fill a pit's bottom), each 320 px wide and seamless, drawn by a small
+  generator (periodic ridges, crest trees, cloud blobs).
+- **HUD** (the UI kit): the wood `hud-panel` (slice 16, so its corner ornaments stay in the
+  corners) holding empty hearts for `maxHp` under full ones for `hp`, a coin `counter` (two gold
+  digits, rolling white for 20 frames) and a lives `counter` with the frog's face (`x{value}`).
+- **Camera**: follow the runner, deadzone 24x40, lerp 0.2, `lookAhead` 36 px (lerp 0.05): at
+  320x180 the frog sits left of centre running right, with room to see the next gap.
+- **Menus** (`game.json`): the wood panel (slice 16) for every menu screen, gold headings with a
+  dark outline, a green focus bar, cream text; the title "Hopper's Way" with the subtitle "A
+  frog's run through the long meadow", the frog (`idle-0` x3) and a blob (x2) as art over the
+  game's own picture (dim 0.78); title items Start, Levels (the T3 level select, "Pick a level",
+  `*` after a cleared one), Controls, Settings. The levels have names: Meadow Start, Over the
+  Hills, Treetop Path, The Boss (T7 and T8 may rename them).
+- **Screenshots** taken and looked at while tuning (`pnpm -s cli screenshot ... --scale 6` and
+  `pnpm -s cli sheet`): `level-1` ticks 3, 40, 58-62 (coins, sparkle), 88-94 (landing squash and
+  dust), 120-124 (the block), 214-220 (stomp), 355-412 (checkpoint flag raise and wave, the
+  ledge), 500, 612-634 (running, run dust, the running jump's stretch), 707 and 720 (the trophy,
+  confetti, zoom); `level-1-hurt` 209-240 (hit flash, blink); `level-1-lost` 513-545 (death,
+  puff); and the `title`, `levels` and `pause` overlays.
 
 ## Run files
 
@@ -141,6 +212,7 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
 | -------------- | ----- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `level-1`      | 730   | `level-1` cleared at tick 707, 12 coins                  | gravity, walk, run-speed, air-control, jump, jump-by-speed, variable-jump, coyote-time, solid-tiles, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce |
 | `level-1-lost` | 910   | every life lost (failed at 843), `level-1` afresh at 903 | gravity, fall-cap, walk, air-control, jump, variable-jump, solid-tiles, pits-kill, checkpoints                                                                                                       |
+| `level-1-hurt` | 300   | hurt by the first walker at 209 (hp 1, invulnerable 120) | walk, air-control, jump, variable-jump, solid-tiles, actors-wake, enemy-touch-hurts, invulnerability                                                                                                 |
 
 - `level-1.run.json` (the win): walks right and jumps for the coins (2 at tick 58), bumps the
   block (a coin, 4 at 123), clears the 2-tile gap, stomps the first walker with a short hop
@@ -157,6 +229,9 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   `player.x` 149504 at 513), climbs the ledge and falls in again (678: 1 life, the checkpoint
   again) and again (843: 0 lives, outcome `failed`); 60 ticks later (903) `level-1` starts
   afresh: `playing`, 3 lives, no checkpoint, no coins. Invariants: stage 0, level `level-1`.
+- `level-1-hurt.run.json` (T6, for the hurt screenshots: the hit flash, shake and blink): the
+  win's input to the first walker, then walks into it instead of stomping it (`hurt`, hp 1,
+  `player.invuln` 120 at 209). Invariants: 3 lives, stage 0. Final hash in its `.hashes.json`.
 - Run one: `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json`; its rules:
   `pnpm -s cli mutants games/samples/platformer/runs/level-1.run.json --json` (exit 0 for both run
   files). The whole folder does not guard every kit rule yet (no bricks, shells or boss): the

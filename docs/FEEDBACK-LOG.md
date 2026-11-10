@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 370.** (Last used: 369.)
+**Next unused number: 375.** (Last used: 374.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1438,3 +1438,30 @@ Build choices)
 - **369.** The placeholder skin is the old hand-drawn `hopper` art copied in, plus a text-art
   checkpoint (grey pennant, green once touched) and the checkpoint's sound; the shell-walker,
   shell and door looks were left out (no level uses them). T6 replaces it with the CC0 packs. OK?
+
+**Engine 0.16 part B, T6: the 2D art and feel pass** (details in
+`games/samples/platformer/CLAUDE.md`, The 2D skin)
+
+- **370.** The player is Pixel Adventure's Ninja Frog: its 32 px frames stand bottom-anchored on
+  the kit's 12x16 box, so the frog is about 24x26 px and its head rises some 10 px above the box
+  (it overlaps a block for a frame or two when it bumps one from below). The box was not changed
+  (that would move every hash). Its states come from the pack's PNGs (one per animation; the
+  engine gained a cycle's own `sheet` for it): a landing crouch then the idle breath, the run
+  (walk slower) with footstep dust, jump, fall, the hit frames (the two white ones are the hit
+  flash) and a dying puff. OK?
+- **371.** Enemies are Kenney's 24 px critters (a blue blob for `walker`, a red spike-helmet for
+  `ledge-walker`, each with a flattened stomped frame) next to Pixel Adventure's tiles; coins and
+  hearts are Kenney's too; the goal is Pixel Adventure's trophy, the checkpoint its flag (raised
+  with the pack's 26-frame animation from the touch, then waving). OK?
+- **372.** The parallax layers (clouds, snow-capped mountains, hills with crest trees, bushes) are
+  original text pixel art from a small generator, not a pack's PNG: the packs' backgrounds are
+  opaque tiles or opaque bands with their own sky, which cannot be layered. OK?
+- **373.** Engine additions for the pass (presentation only): neighbour-based tile frames (a 2D
+  tile's `join`, so `#` draws grass tops, edges, corners and notches), a cycle's own `sheet`, the
+  menus' art and panels may use a skin's PNG `images`, and the platformer kit's current
+  checkpoint has the state `active` timed from its touch (for the flag raise; skins without it
+  fall back to `idle`). OK?
+- **374.** A third run file, `level-1-hurt` (walk into the first walker: the hurt at tick 209),
+  gives the hurt flash, shake and blink something to screenshot; the four stages got names for
+  the level select (Meadow Start, Over the Hills, Treetop Path, The Boss), which T7 and T8 may
+  change. OK?

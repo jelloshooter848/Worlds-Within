@@ -25,6 +25,8 @@ import { threeScenePresenter } from '@engine/backends/three';
 import { labCanvasPicture, labLook, labPicture } from '../../games/platformer-lab/picture';
 import { labLook3d } from '../../games/platformer-lab/picture3d';
 import { loadRun, playView, viewMaker } from './view-play';
+import { withContentImages } from '@engine/core/assets/content-images';
+import { nodeImageDecoder } from './node-png';
 
 // Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
 // take more than vitest's default 5 s on a busy machine.
@@ -291,7 +293,8 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     const presenter3d = threeScenePresenter(skins3d.main, {
       screen: content.manifest.screen,
       rounds: skins3d.rounds,
-      sheets: contentPixelSheets(content),
+      // The skins' PNG sheets decoded as the page decodes them (Engine 0.16 part B: HUD icons).
+      sheets: contentPixelSheets(await withContentImages(content, nodeImageDecoder)),
       ...(background !== undefined && { background }),
     });
     const fallbacks: string[] = [];

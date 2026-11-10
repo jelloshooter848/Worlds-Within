@@ -5,6 +5,7 @@ import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { FramePicture, FrameStream, type Presenter, type SkinFile } from '@engine/core/present';
 import { skinSetCanvasPresenter } from '@engine/backends/canvas2d';
+import { contentFonts, type FontLookup } from '@engine/core/ui';
 import {
   platformerFrames,
   type PlatformerEvent,
@@ -31,9 +32,11 @@ export interface HopperLook {
   rounds: Record<string, SkinFile>;
   sheet: SheetLookup;
   screen: ScreenSize;
+  /** The font files (`content/fonts/`) the HUD's counters and the menus draw text with. */
+  fonts: FontLookup;
 }
 
-/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files) and size. */
+/** The `canvas2d` skins, the sprite sheets (sprite and palette files, the skins' PNGs), the fonts and size. */
 export function hopperLook(content: ContentBundle): HopperLook {
   const skins = hopperSkins(content, 'canvas2d');
   return {
@@ -41,6 +44,7 @@ export function hopperLook(content: ContentBundle): HopperLook {
     rounds: skins.rounds,
     sheet: contentSheets(content),
     screen: content.manifest.screen,
+    fonts: contentFonts(content),
   };
 }
 

@@ -14,6 +14,7 @@ import type { SpriteSheet } from '../gfx/spritesheet';
 import type { Rasterized } from '../gfx/pixelart';
 import { checkGameAssets } from './assets';
 import { isAssetPath } from './png';
+import { imageSheetFrames, type ImageSheetSpec } from '../gfx/image-sheet';
 import { checkMenus, type MenusRefs, type MenusSpec } from '../ui/menus';
 import { contentError, validate, type ContentError, type ContentResult } from './validate';
 
@@ -259,8 +260,9 @@ export function loadContent(
 }
 
 /**
- * The manifest's `menus` (Engine 0.16 T9) against the game's fonts, sprites, palettes, songs and
- * sounds (`checkMenus`), as errors at `game.json` under `menus`.
+ * The manifest's `menus` (Engine 0.16 T9) against the game's fonts, sprites (and, from Engine 0.16
+ * part B, its skins' PNG `images`), palettes, songs and sounds (`checkMenus`), as errors at
+ * `game.json` under `menus`.
  */
 function checkManifestMenus(
   menus: MenusSpec,
@@ -271,7 +273,15 @@ function checkManifestMenus(
   const music = of('skin').flatMap((e) => Object.keys((e.value as { music?: object }).music ?? {}));
   const refs: MenusRefs = {
     fonts: new Map(of('font').map((e) => [e.name, e.value as FontFile])),
-    sprites: new Map(of('sprite').map((e) => [e.name, e.value as { frames?: Record<string, unknown> }])),
+    // A skin's PNG sheets (`images`, Engine 0.16 T10) are sheets the menus may draw from too.
+    sprites: new Map([
+      ...of('skin').flatMap((e) =>
+        Object.entries((e.value as { images?: Record<string, ImageSheetSpec> }).images ?? {}).map(
+          ([id, spec]) => [id, { frames: Object.fromEntries(imageSheetFrames(spec)) }] as const,
+        ),
+      ),
+      ...of('sprite').map((e) => [e.name, e.value as { frames?: Record<string, unknown> }] as const),
+    ]),
     palettes: new Set(of('palette').map((e) => e.name)),
     sounds: new Set([...of('song'), ...of('sfx')].map((e) => e.name).concat(music)),
   };

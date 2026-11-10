@@ -434,7 +434,7 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   | --------------------- | -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
   | `coin@<col>,<row>`    | `coin`                                       | 0     | `idle`, `t` = world frame                                                                   |                                                               |
   | `goal@<col>,<row>`    | `goal`                                       | 0     | `idle`, `t` = world frame                                                                   |                                                               |
-  | `checkpoint@<c>,<r>`  | `checkpoint`                                 | 0     | `idle`, `t` = world frame                                                                   | `active` (the one touched last)                               |
+  | `checkpoint@<c>,<r>`  | `checkpoint`                                 | 0     | `idle`, `t` = world frame; the current one `active`, `t` from the tick it was touched       | `active` (the one touched last)                               |
   | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`, `look:<id>`                               |
   | `bump-block@<c>,<r>`  | `bump-block`                                 | 5     | `bump`, `t` 0..7; the box is raised by `BUMP_RISE[t]` px                                    | the cell now: `used`, `bump` or `brick`                       |
   | `coin-pop@<c>,<r>`    | `coin`                                       | 5     | `pop`, `t` 0..29 (`COIN_POP_TICKS`), one tile over the block                                | `popped`                                                      |
@@ -449,7 +449,10 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   one without a `look` gets no such tag. A bump-block's tag is the cell after the bump, so a skin
   can draw a bumped brick as a brick and a used block as used (`byTag` on `bump-block`). A
   checkpoint is listed in reading order with the coins, goals and triggers (one pass over the
-  tiles); the current one is tagged `active`, so a skin's `byTag` draws its raised flag.
+  tiles); the current one is tagged `active`, so a skin's `byTag` draws its raised flag, and from
+  Engine 0.16 part B (T6) its state is `active` with `t` the ticks since it was touched (needs
+  `state`), so a skin can raise the flag from that tick (a one-shot, then a waving loop).
+  A skin with no `active` state falls back to `idle`, as before.
 
   Effects (bounces, popped coins, remains, `runner/dead`) need `state`. The bump-block entity is
   drawn over its own tile (a skin should draw it with the block's look, raised). `actor#<n>` keeps

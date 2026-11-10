@@ -26,6 +26,7 @@ import {
   resolveSkinEvent,
   resolveSkinFrame,
   resolveSkinKind,
+  resolveTileFrame,
   skinBackground,
   type DeepReadonly,
   type HudFrameSize,
@@ -535,9 +536,11 @@ export class SkinnedCanvasPresenter implements Presenter {
           const y = at(row) - view.y;
           const sheetId = entry.sheet ?? defaults?.sheet;
           const sheet = sheetId === undefined ? null : this.sheet(sheetId, defaults?.palette);
-          if (entry.frame !== undefined && sheet?.frames.has(entry.frame)) {
-            if (zoom === 1) r.sprite(sheet, entry.frame, x, y);
-            else r.sprite(sheet, entry.frame, x, y, false, false, 0, zoom);
+          // A `join` entry (Engine 0.16 part B) picks its frame by the neighbours it joins.
+          const frame = resolveTileFrame(entry, key, grid, col, row);
+          if (frame !== undefined && sheet?.frames.has(frame)) {
+            if (zoom === 1) r.sprite(sheet, frame, x, y);
+            else r.sprite(sheet, frame, x, y, false, false, 0, zoom);
           } else {
             const color = entry.fallbackColor ?? entry.color ?? defaults?.fallbackColor;
             if (color !== undefined) r.rect(x, y, at(col + 1) - view.x - x, at(row + 1) - view.y - y, color);
