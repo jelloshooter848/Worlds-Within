@@ -67,6 +67,18 @@ const playerSchema = z.strictObject({
     .max(30)
     .exactOptional()
     .describe('ticks a jump press is remembered until the player can jump (0 when left out)'),
+  coyote: z
+    .number()
+    .int()
+    .min(0)
+    .max(30)
+    .exactOptional()
+    .describe(
+      'coyote time: ticks after walking off a ledge (not after a jump) in which a jump press still jumps (0 when left out)',
+    ),
+  jumpCut: optVel(
+    'letting go of jump while rising caps the upward speed at this (a short hop); left out, no cap',
+  ),
   maxFall: vel('the fall speed cap'),
   fallReset: vel('the fall speed set when a fall goes over `maxFall`'),
   stompBounce: vel('the upward speed a stomp bounces the player with'),
@@ -102,7 +114,9 @@ const playerSchema = z.strictObject({
     .min(1)
     .max(99)
     .default(1)
-    .describe('tries at the level: a death with a life left respawns the player at the start'),
+    .describe(
+      'tries at the level: a death with a life left respawns the player at the last checkpoint touched, else the start',
+    ),
 });
 
 /** One actor type's data-set behaviour. */

@@ -12,7 +12,8 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
 - `legend.ts`: `LEGEND`, the level text format: one character per 16x16 tile (`.` empty, `#`
   solid, `B` breakable brick, `?` bump block, `=` one-way platform, `^` hazard, `o` coin, `@`
   player start, `G` goal, `!` mini-game trigger: what it starts is the next entry of the header's
-  `triggers`). Enemy spawns have no fixed character: the level header's `spawns` maps characters
+  `triggers`; `K` checkpoint (Engine 0.16 T1): where a death with lives left respawns the player
+  once touched). Enemy spawns have no fixed character: the level header's `spawns` maps characters
   of its own to actor types.
 - `level.ts`: `levelSchema` (the level header plus its `map`), `LevelDef`, `levelCells`,
   `levelSize` and `checkLevel(level, profile)`, the checks beyond the shape.
@@ -38,7 +39,8 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   checks the level (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the
   seeded `rng`, the `rules` switch, the tiles, the player, the actors, `coins`, `lives`,
   `scrollX` (the view's left edge; the view is `viewWidth` px wide, 256 by default) and `outcome`
-  (`playing`, `cleared`, `failed`), the mini-game `triggers` (`TriggerState`) and `miniGame`
+  (`playing`, `cleared`, `failed`), `checkpoints` (the level's `K` cells) and `checkpoint` (the
+  one touched last, or null), the mini-game `triggers` (`TriggerState`) and `miniGame`
   (the `MiniGameRun` being played, or null) and `endedRound` (the `EndedRound`, a run with its
   `result`, on the tick it ended, else null; gap G20); `update(input)` steps one tick and pushes
   `PlatformerEvent`s (below).
@@ -112,7 +114,14 @@ One tick of the player (`player.ts`), every number from the profile's `player`:
    `maxWalk`/`maxRun`, and over the cap slows by `friction` to it. In the air the direction steers
    towards `airCap` (`maxRun` only if the take-off |vx| was over `maxWalk`), no friction;
 3. a jump press (remembered `jumpBuffer` ticks, `bufferedJump`) on the ground takes off at the tier
-   picked by |vx| (the first tier whose `below` is over |vx|, else the last);
+   picked by |vx| (the first tier whose `below` is over |vx|, else the last). Coyote time
+   (`coyote-time`, Engine 0.16 T1): on the tick the player walks off a ledge (any way but a jump)
+   `coyoteLeft` is set to the profile's `coyote`, and it counts down by one each tick in the air
+   after that; while it is over 0 a jump press still takes off as from the ground (so `coyote: 6`
+   allows a jump on the 6 ticks after the one it left on). A jump, a landing and a stomp bounce
+   set it to 0, so there is never a second jump in the air. Letting go of jump while rising in a
+   jump caps the upward speed at the profile's `jumpCut`, when it gives one (`variable-jump`; a
+   short hop, applied before the move);
 4. move x (solid tiles stop it), then y (a standing body probes 1 sub-pixel down; falling, it lands
    on solid tiles and on one-way tiles its feet were above; rising, a solid tile puts the head back
    under it);
@@ -121,7 +130,9 @@ One tick of the player (`player.ts`), every number from the profile's `player`:
    `fallReset`.
 
 Then the world holds the player inside the level's left and right edges (and the view's left edge,
-under Level objects and enemies). There is no corner slip and no coyote time yet.
+under Level objects and enemies). There is no corner slip yet. `coyote` and `jumpCut` are left
+out of every profile written before Engine 0.16, so those play (and hash) exactly as before; the
+snapshot has `player.coyote` (the ticks left) only when the profile's `coyote` is over 0.
 
 The player starts as SMBC's does: placed on the start tile but not yet on the ground, so tick 0 is
 an air tick (air control from rest gives `minWalk`, and the first tier's `gravity` is added) and
@@ -152,7 +163,7 @@ SMBC behaviour deliberately left out of the kit (and kept out of the traces' scr
 
 Movement rule ids (`MOVEMENT_RULES` in `rules.ts`), each guarded by `rules.isOn(id)` and each made
 to fail a test in `world.test.ts` when off: `gravity`, `fall-cap`, `walk`, `run-speed`, `run-hold`, `friction`,
-`skid`, `air-control`, `jump`, `jump-by-speed`, `variable-jump`, `solid-tiles`,
+`skid`, `air-control`, `jump`, `coyote-time`, `jump-by-speed`, `variable-jump`, `solid-tiles`,
 `one-way-platforms`, `ceiling-bump` (off: the head stays under the tile but the rise goes on),
 `level-bounds`.
 
@@ -186,19 +197,26 @@ One tick of the world (`world.ts`; nothing happens once the outcome is `cleared`
    unless the player is invulnerable; a hit starts `invulnTicks` of invulnerability
    (`invulnerability`);
 6. the tiles the player's box covers: a coin is taken (`coins-collect`; `coin` with the count), a
-   hazard kills (`hazards-kill`), a goal ends the level as `cleared` (`goal-clears-level`;
+   checkpoint (`K`) other than the current one becomes the current one (`checkpoints`;
+   `checkpoint` event with `col`, `row`; the last one touched wins, so walking back over an
+   earlier one makes it current again), a hazard kills (`hazards-kill`), a goal ends the level as `cleared` (`goal-clears-level`;
    `cleared`);
 7. a player whose top is below the last row dies (`pits-kill`; off, it falls on for ever).
 8. an armed mini-game trigger the player touches starts its round (`mini-games`; under Mini
    games); while a round runs, a tick steps only the round.
 
 A death (`died` with `cause` `pit`, `hazard` or `hurt` at 0 hit points, and the lives left) takes
-a life; with lives left the player starts again at the start with full hit points (`respawn`; the
-view goes back to the start, the actors and tiles stay as they are), else the outcome is `failed`.
+a life; with lives left the player starts again with full hit points at the current checkpoint,
+or at the start when it has touched none (`respawn`; the view follows it there, standing in the
+checkpoint's cell as on the start), else the outcome is `failed`. Policy (Engine 0.16 T1): a
+respawn changes nothing else, at a checkpoint or at the start: coins taken stay taken and counted,
+used blocks and broken bricks stay as they are, actors go on where they are, and the level's
+outcome flow is the same (a death with no lives left fails the level, which a level sequence
+then starts afresh, with no checkpoint).
 
 Events (`PlatformerEvent`, the last step's in the snapshot): `jump` (tier), `land`, `bump`,
 `block`, `break`, `coin`, `spawn`, `stomp`, `kick`, `defeat`, `hurt`, `died`, `respawn`,
-`cleared`, `mini-game` and `mini-game-end` (under Mini games). They are deterministic, so they
+`checkpoint` (`col`, `row`), `cleared`, `mini-game` and `mini-game-end` (under Mini games). They are deterministic, so they
 are part of the hashed snapshot.
 
 Left out for now (simplifications, not SMBC's full behaviour): a power-up is given at once (no
@@ -207,7 +225,7 @@ a respawn is immediate (a presentation can add the pause), and there is no score
 
 Object rule ids (`OBJECT_RULES` in `rules.ts`), each made to fail a test in `objects.test.ts` when
 off: `coins-collect`, `bump-blocks`, `brick-break`, `hazards-kill`, `pits-kill`,
-`goal-clears-level`, `scroll-lock`, `actors-wake`, `walkers-turn`, `ledge-turn`, `stomping`,
+`goal-clears-level`, `checkpoints`, `scroll-lock`, `actors-wake`, `walkers-turn`, `ledge-turn`, `stomping`,
 `stomp-bounce`, `shell-kick`, `shell-hits-enemies`, `enemy-touch-hurts`, `invulnerability`.
 
 ## Mini games
@@ -340,7 +358,8 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
 
 - **Map** (`presentMap`): the terrain only, as rows of `PRESENT_TILES` characters: `.` open air,
   `#` solid, `B` brick, `?` bump block, `u` used bump block, `=` one-way platform, `^` hazard.
-  Coins, goals, triggers and the start are `.` (coins, goals and triggers are entities). `id` is
+  Coins, goals, triggers, checkpoints and the start are `.` (coins, goals, triggers and
+  checkpoints are entities). `id` is
   the level's id, `tileSize` 16, tags `scroll:<right|free|none>`, `version` a 32-bit hash of the
   rows, so it changes when a bump block is used, a brick breaks or a gate opens (`open:` outcome),
   never when a coin is taken. With `state` the map is sent in full on the first frame and after a
@@ -351,6 +370,7 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   | --------------------- | -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
   | `coin@<col>,<row>`    | `coin`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
   | `goal@<col>,<row>`    | `goal`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
+  | `checkpoint@<c>,<r>`  | `checkpoint`                                 | 0     | `idle`, `t` = world frame                                                                   | `active` (the one touched last)         |
   | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`, `look:<id>`         |
   | `bump-block@<c>,<r>`  | `bump-block`                                 | 5     | `bump`, `t` 0..7; the box is raised by `BUMP_RISE[t]` px                                    | the cell now: `used`, `bump` or `brick` |
   | `coin-pop@<c>,<r>`    | `coin`                                       | 5     | `pop`, `t` 0..29 (`COIN_POP_TICKS`), one tile over the block                                | `popped`                                |
@@ -362,7 +382,9 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   A trigger whose level entry gives a `look` (Engine 0.11, gap G13) is tagged `look:<id>`, so a
   skin's `byTag` (`engine/core/present/CLAUDE.md`) draws it its own way (a door, a pipe, a sign);
   one without a `look` gets no such tag. A bump-block's tag is the cell after the bump, so a skin
-  can draw a bumped brick as a brick and a used block as used (`byTag` on `bump-block`).
+  can draw a bumped brick as a brick and a used block as used (`byTag` on `bump-block`). A
+  checkpoint is listed in reading order with the coins, goals and triggers (one pass over the
+  tiles); the current one is tagged `active`, so a skin's `byTag` draws its raised flag.
 
   Effects (bounces, popped coins, remains, `runner/dead`) need `state`. The bump-block entity is
   drawn over its own tile (a skin should draw it with the block's look, raised). `actor#<n>` keeps
@@ -377,7 +399,8 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
 - **Events**: every `PlatformerEvent` field copied. `jump`, `land`, `hurt`, `died`, `respawn`,
   `cleared` sit at the runner's centre with `entity: 'runner'` (`died` where the last frame showed
   it); `spawn`, `stomp`, `kick`, `defeat` at the actor's centre (the last frame's box when it is
-  gone) with `entity: 'actor#<n>'`; `bump`, `block`, `break`, `coin` at the tile's centre;
+  gone) with `entity: 'actor#<n>'`; `bump`, `block`, `break`, `coin`, `checkpoint` at the tile's
+  centre;
   `mini-game`, `mini-game-end` at the trigger's centre.
 - **Status** (`presentStatus`): `coins`, `hp`, `maxHp`, `lives`, `outcome` (`playing`, `cleared`,
   `failed`), `level`, `miniGame` (the running mini game's id, '' when none) and, from Engine 0.16
@@ -406,15 +429,19 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   `open:<col>:<row>` outside the map), plus the grid's `ragged_row`, `unknown_char`,
   `empty_grid` at the `.map.txt` line.
 - `checkAll` (`checkLevel`), once every file passes its schema: `no_start`, `two_starts` (at each
-  extra `@`, row/col), `no_goal`, `missing_profile` (at `profile`) and `unknown_actor` (at each map
+  extra `@`, row/col), `no_goal`, `checkpoint_no_ground` (at a `K` with no solid or one-way tile
+  under it to respawn on, or in the bottom row; row/col), `missing_profile` (at `profile`) and `unknown_actor` (at each map
   cell using a spawn whose actor the profile lacks, with row/col; at `spawns.<char>.actor` when no
   cell uses it; at `blocks.<n>` for a block's `actor:<type>`).
 - `profile` (`<id>.profile.json`): `player` (`box`, `minWalk`, `walkAccel`, `runAccel`,
   `friction`, `skid`, `skidTurn`, `maxWalk`, `maxRun`, `runHold` ticks, `jumps` tiers of
   `{ below?, speed, holdGravity, gravity }` with no `below` on the last, `jumpBuffer?` ticks
-  (0 when left out), `maxFall`, `fallReset`,
+  (0 when left out), `coyote?` ticks (0..30, 0 when left out: no coyote time), `jumpCut?`
+  (1/4096 px per tick: the upward speed cap when jump is let go while rising; left out, none),
+  `maxFall`, `fallReset`,
   `stompBounce`, `hp` (1 when left out), `maxHp?` (`hp` when left out), `invulnTicks` (0),
-  `breakBricksAt?` (left out: bricks never break), `lives` (1)), `actorGravity`, `actorMaxFall`
+  `breakBricksAt?` (left out: bricks never break), `lives` (1; a death with a life left respawns
+  at the current checkpoint, else the start)), `actorGravity`, `actorMaxFall`
   and `actors` by name (`box?`, `speed`, `turnAt` `walls`/`ledges`, `stompable`, `stompInto?`,
   `kickable`, `kickSpeed?`, `harms`, `kickGrace?` ticks, 15 when left out). Codes:
   `bad_jump_tiers`, `bad_speed_caps`, `bad_hp` (`maxHp` under `hp`), `unknown_actor` (a

@@ -1,6 +1,6 @@
 # games/platformer-lab
 
-The platformer kit's test lab (Engine 0.5): the kit's fixture level played start to goal, five
+The platformer kit's test lab (Engine 0.5): the kit's fixture level played start to goal, six
 small levels that each put one group of the kit's named rules to work, and run files that guard
 every rule (`pnpm cli mutants` passes, the kit is strict). It plays in the browser through the
 Canvas2D backend and a placeholder skin, and (Engine 0.6) through the Three.js backend with a
@@ -26,24 +26,32 @@ engine, and nothing in `engine/` or `kits/` depends on it.
     a walker that walks through the player (`enemy-touch-hurts`, `invulnerability`) and one asleep
     on a far shelf (`actors-wake`);
   - `lab-5-trigger`: a mini-game trigger (`mini-games`) whose pass gives 5 coins and opens the
-    wall to the goal (`open:9:8`) and whose fail puts the player back on it.
+    wall to the goal (`open:9:8`) and whose fail puts the player back on it;
+  - `lab-6-feel` (Engine 0.16 T1, profile `lab-feel`): a ledge to walk off and jump from late
+    (`coyote-time`) over a three-tile pit, the jump let go early (`variable-jump`'s `jumpCut`), a
+    checkpoint `K` and a hazard to die on once (`checkpoints`: the respawn is on the
+    checkpoint), then a jump over the hazard to the goal.
 - `content/profiles/<id>.profile.json`: physics profiles. `runner.profile.json` is the kit's
   fixture profile, byte for byte (tiny uses it); `lab-runner` is the same runner with 3 lives and a
-  `ledge-walker` type (the lab's own levels use it). Profiles are in their own folder, not in
+  `ledge-walker` type (the lab's own levels use it); `lab-feel` (Engine 0.16 T1, `lab-6-feel`
+  only) is `lab-runner`'s player with `coyote` 6 and `jumpCut` 8192 and no actor types. The
+  older levels keep `lab-runner`, so their runs and hashes did not move. Profiles are in their own folder, not in
   `content/levels/`, because the `level` glob `content/levels/*.json` would claim them too.
 - `content/sprites/lab-placeholders.txt` (palette `content/palettes/lab-placeholders.json`):
   original flat NES-style placeholder frames for every tile, kind and HUD icon, and the mini
   game's bar. `content/sprites/lab-font.txt`: the HUD's 8x8 digits.
 - `content/skins/canvas2d.json`: the skin (format: `engine/core/present/skin.ts`). `kinds` maps
   `runner` (every `RUNNER_ANIMS` state), each actor type of both profiles (every `ACTOR_ANIMS`
-  state), `coin`, `goal`, `trigger`, `bump-block` and the mini game's `bar-cell` and `bar-marker`;
+  state), `coin`, `goal`, `trigger`, `checkpoint` (a grey pole and flag, `byTag` `active`: the
+  `checkpoint-on` frame, a red flag), `bump-block` and the mini game's `bar-cell` and `bar-marker`;
   `tiles` every `PRESENT_TILES` character; `events` every `PlatformerEvent` type (effects only:
   the lab has no sounds); `hud` `hp` (hearts), `coins` and `lives` (icon and number in
   `lab-font`); `camera` follows the runner with a 32x48 deadzone and lerp 0.25 (the kit's hint
   adds the scroll lock as `bounds`).
 - `content/skins/three.json` (Engine 0.6): the 3D skin, low-poly meshes written as text. `meshes`
   holds compound meshes (`runner`, `walker`, shared by `walker` and `ledge-walker` in their own
-  colours, `shell-walker`, `shell`, `coin`, `goal`, `trigger`, `brick`, `bump`, `slab`, `spikes`,
+  colours, `shell-walker`, `shell`, `coin`, `goal`, `trigger`, `checkpoint` (grey, red when
+  `active`, by `byTag`), `brick`, `bump`, `slab`, `spikes`,
   `bar-marker`); `kinds` maps every kind the 2D skin maps (`bump-block` and `bar-cell` are plain
   boxes); `tiles` every `PRESENT_TILES` character but `.` (open air is the sky: no block): `#`
   and `u` boxes, `B` a brick with a dark mortar course, `?` a block with a mark on its face, `=`
@@ -57,7 +65,8 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   - `content.ts`: `labKinds`, `loadLab(files)`, `labStages(content)` (the levels in play order:
     the order of `content/campaigns/main.campaign.json` (Engine 0.10, gap G2): `FIRST_LEVEL`
     (`tiny`) first, then `lab-1-moves` to `lab-5-trigger`, the order the lab played before, so no
-    run file or golden hash moved; each paired with its profile by the kit's `contentStages`),
+    run file or golden hash moved, and (Engine 0.16 T1) `lab-6-feel` last, after every older
+    run's end; each paired with its profile by the kit's `contentStages`),
     `labSkin`,
     `labSkin3d` (the `three` skin), `mustLoad` (the engine's, naming the lab);
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
@@ -121,10 +130,17 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
 | `shells`        | 2107  | `lab-3-shells` cleared (2097)  | actors-wake, stomping, stomp-bounce, shell-kick, shell-hits-enemies                                                                      |
 | `walkers`       | 2688  | `lab-4-walkers` cleared (2678) | actors-wake, walkers-turn, ledge-turn, enemy-touch-hurts, invulnerability                                                                |
 | `mini-game`     | 3015  | `lab-5-trigger` cleared (3005) | mini-games (a failed round, then a passed one; each round's last tick read from `endedRound`)                                            |
+| `feel`          | 207   | `lab-6-feel` cleared (198)     | coyote-time, checkpoints, variable-jump (`start: { "stage": 6 }`)                                                                        |
 
 - `start-to-goal.run.json` checks the coins (1 from the bump block at tick 82, 2 at 193), the
   changed tiles, the position at the goal and `outcome` `cleared`; its invariants hold one life,
   two hit points and stage 0 all along.
+- `feel.run.json` (Engine 0.16 T1) starts on `lab-6-feel` (`start: { "stage": 6 }`, so it does
+  not replay the earlier levels): it walks off the ledge (tick 60, `player.coyote` 6), presses
+  jump 3 ticks later (a `jump` at tick 63, only with coyote time), lets go at tick 71
+  (`player.vy` -6656: capped at -8192 by `jumpCut`, then one tick of gravity, 1536), touches the checkpoint
+  (tick 103, `checkpoint` `{ col: 10, row: 8 }`), dies on the hazard and respawns on the
+  checkpoint (tick 134, `player.x` 43008), then jumps the hazard to the goal (tick 198, 2 lives).
 - `mini-game-start.run.json` (Engine 0.14, gap G9) is `mini-game`'s own part from the trigger
   level's tick 0 (`start: { "stage": 5 }`; the full run reaches it at tick 2738), with the same
   hashes as the full run from there. `headless.ts` exports `starts(content)` (one stage per level,

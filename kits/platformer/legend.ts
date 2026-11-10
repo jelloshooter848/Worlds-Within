@@ -25,7 +25,8 @@ export type CellKind =
   | 'coin'
   | 'start'
   | 'goal'
-  | 'trigger';
+  | 'trigger'
+  | 'checkpoint';
 
 /** How each cell kind collides (the legend's entries agree with it). */
 export const CELL_COLLISION: Readonly<Record<CellKind, Collision>> = {
@@ -40,6 +41,7 @@ export const CELL_COLLISION: Readonly<Record<CellKind, Collision>> = {
   start: 'empty',
   goal: 'empty',
   trigger: 'empty',
+  checkpoint: 'empty',
 };
 
 export interface LegendEntry {
@@ -67,6 +69,11 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
     cell: 'trigger',
     collision: 'empty',
     meaning: 'a mini-game trigger; what it starts is the next entry of the header\'s "triggers"',
+  },
+  K: {
+    cell: 'checkpoint',
+    collision: 'empty',
+    meaning: 'a checkpoint: touching it makes it where a death with lives left respawns the player',
   },
 };
 

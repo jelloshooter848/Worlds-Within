@@ -11,10 +11,15 @@ export const MOVEMENT_RULES = defineRules([
   { id: 'skid', description: 'holding the way opposite the motion brakes hard, then turns round' },
   { id: 'air-control', description: 'a held direction steers in the air, capped by the take-off speed' },
   { id: 'jump', description: 'pressing jump on the ground (or within jumpBuffer ticks of landing) jumps' },
+  {
+    id: 'coyote-time',
+    description: 'for coyote ticks after walking off a ledge (not after a jump) a jump press still jumps',
+  },
   { id: 'jump-by-speed', description: 'the jump tier (take-off speed, gravities) follows the take-off |vx|' },
   {
     id: 'variable-jump',
-    description: 'while jump is held and the player rises, the lower holdGravity applies',
+    description:
+      'while jump is held and the player rises, the lower holdGravity applies; letting go while rising caps the rise at jumpCut',
   },
   { id: 'solid-tiles', description: 'solid tiles stop bodies on both axes' },
   { id: 'one-way-platforms', description: 'one-way tiles hold up a body falling onto them from above' },
@@ -36,6 +41,10 @@ export const OBJECT_RULES = defineRules([
   { id: 'hazards-kill', description: 'touching a hazard tile kills the player' },
   { id: 'pits-kill', description: 'falling below the last row kills the player' },
   { id: 'goal-clears-level', description: 'touching a goal tile ends the level as cleared' },
+  {
+    id: 'checkpoints',
+    description: 'touching a checkpoint tile makes it where a death with lives left respawns the player',
+  },
   {
     id: 'scroll-lock',
     description: 'with scroll right, the view never scrolls back and its left edge holds the player in',

@@ -14,9 +14,12 @@ import type { EndedRound, PlatformerEvent, PlatformerWorld } from './world';
  *   box, as the profile's `box` is placed; `player.vx`, `player.vy` in 1/4096 px per tick (down is
  *   positive); `player.onGround`, `player.facing` (-1 or 1), `player.jumping`, `player.skidding`,
  *   `player.runTimer` (ticks), `player.tier` (the jump tier's index in the profile's `jumps`),
- *   `player.hp`, `player.invuln` (ticks left);
+ *   `player.hp`, `player.invuln` (ticks left); `player.coyote` (coyote ticks left: only when the
+ *   profile gives `coyote` over 0, so other snapshots hash as before);
  * - `actors`: every actor in the level, in spawn order: `id`, `type`, `x`/`y` (bottom centre),
  *   `vx`, `vy`, `dir`, `speed`, `active`, `onGround`, `grace`;
+ * - `checkpoint`: the checkpoint the player touched last (`col`, `row`) or null; only in a level
+ *   with checkpoint cells (`K`), so other snapshots hash as before;
  * - `tiles`: the cells changed since the start, in reading order (`col`, `row`, `cell`);
  * - `triggers`: every mini-game trigger, in reading order: `col`, `row`, `game`, `armed`,
  *   `attempts`;
@@ -50,7 +53,9 @@ export interface PlatformerSnapshot extends JsonObject {
     tier: number;
     hp: number;
     invuln: number;
+    coyote?: number;
   };
+  checkpoint?: { col: number; row: number } | null;
   actors: {
     id: number;
     type: string;
@@ -126,7 +131,9 @@ export function snapshotWorld(
       tier: world.profile.player.jumps.indexOf(p.tier),
       hp: p.hp,
       invuln: p.invuln,
+      ...((world.profile.player.coyote ?? 0) > 0 ? { coyote: p.coyoteLeft } : {}),
     },
+    ...(world.checkpoints.length > 0 ? { checkpoint: world.checkpoint && { ...world.checkpoint } } : {}),
     actors: world.actors.map((a) => ({
       id: a.id,
       type: a.type,

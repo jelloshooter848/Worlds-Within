@@ -31,8 +31,8 @@ import type { PlatformerEvent, PlatformerWorld } from './world';
 
 /**
  * The characters of a presented map (the kit's tile contract; a skin maps each to a frame). Only
- * the terrain is in the map: coins, goals and mini-game triggers are entities, so taking a coin
- * does not send the map again. Start cells are open air.
+ * the terrain is in the map: coins, goals, checkpoints and mini-game triggers are entities, so
+ * taking a coin does not send the map again. Start cells are open air.
  */
 export const PRESENT_TILES = {
   empty: '.',
@@ -58,11 +58,12 @@ const CELL_CHAR: Readonly<Record<CellKind, string>> = {
   start: PRESENT_TILES.empty,
   goal: PRESENT_TILES.empty,
   trigger: PRESENT_TILES.empty,
+  checkpoint: PRESENT_TILES.empty,
 };
 
 /** Depth layers (`PresentEntity.layer`), drawn low to high. */
 export const PF_DEPTH = {
-  /** Coins, goals and mini-game triggers. */
+  /** Coins, goals, checkpoints and mini-game triggers. */
   objects: 0,
   /** A bump block bouncing over its tile, a coin popping out of a block. */
   blocks: 5,
@@ -236,8 +237,9 @@ function presentActor(a: Actor, ctx: Ctx): PresentEntity {
 }
 
 /**
- * Coins (`coin`), goals (`goal`) and mini-game triggers (`trigger`, tags `armed`, `running` and
- * `look:<id>` when its level entry gives a `look`)
+ * Coins (`coin`), goals (`goal`), checkpoints (`checkpoint`, tag `active` on the one the player
+ * touched last: a skin's `byTag` draws its raised flag) and mini-game triggers (`trigger`, tags
+ * `armed`, `running` and `look:<id>` when its level entry gives a `look`)
  * from the tiles, in reading order: one 16x16 entity per cell, id `<kind>@<col>,<row>`, anim
  * `idle` with `t` the world's frame (they idle from the level's start).
  */
@@ -249,8 +251,9 @@ function presentObjects(ctx: Ctx): PresentEntity[] {
   for (let row = 0; row < w.tiles.rows; row++) {
     for (let col = 0; col < w.tiles.cols; col++) {
       const cell = w.tiles.cellAt(col, row);
-      if (cell !== 'coin' && cell !== 'goal' && cell !== 'trigger') continue;
+      if (cell !== 'coin' && cell !== 'goal' && cell !== 'trigger' && cell !== 'checkpoint') continue;
       const tags: string[] = [];
+      if (cell === 'checkpoint' && w.checkpoint?.col === col && w.checkpoint.row === row) tags.push('active');
       if (cell === 'trigger') {
         const t = triggers.get(`${col},${row}`);
         if (t?.armed) tags.push('armed');
@@ -498,8 +501,8 @@ function miniGameFrame(
 
 /**
  * The world as a presentation frame: the map (or only its id and version when `opts.state`'s
- * tracker sent it already), entities in draw order (coins, goals and triggers; block effects;
- * actors and their remains; the runner), this step's `events` placed in the world, HUD status
+ * tracker sent it already), entities in draw order (coins, goals, checkpoints and triggers; block
+ * effects; actors and their remains; the runner), this step's `events` placed in the world, HUD status
  * values and a camera hint that follows the runner inside the scroll lock. While a mini game
  * runs, its own frame (when it has `present()`) or the paused level, with `status.miniGame` set.
  * It only reads the world and keeps its memory in `opts.state`.

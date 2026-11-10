@@ -175,7 +175,9 @@ export interface LevelProblem {
 
 /**
  * What a level needs beyond its shape: exactly one start (`two_starts` at each extra one, `no_start`),
- * at least one goal (`no_goal`), its profile (`missing_profile`, when `profile` is undefined), and
+ * at least one goal (`no_goal`), every checkpoint (`K`) on ground to respawn on: a solid or one-way
+ * tile under it, so not in the bottom row (`checkpoint_no_ground`, at the cell), its profile
+ * (`missing_profile`, when `profile` is undefined), and
  * every spawn and block actor naming one of the profile's actor types (`unknown_actor`, at each map
  * cell that uses the spawn, or at the header field when no cell does).
  */
@@ -193,6 +195,13 @@ export function checkLevel(level: LevelDef, profile: ProfileDef | undefined): Le
   }
   if (!cells.some((c) => legendEntry(c.ch)?.cell === 'goal'))
     problems.push({ path: ['map'], code: 'no_goal', message: 'the map has no goal (G)' });
+  for (const c of cells) {
+    if (legendEntry(c.ch)?.cell !== 'checkpoint') continue;
+    const below = level.map[c.row + 1] === undefined ? undefined : [...level.map[c.row + 1]!][c.col];
+    const ground = below === undefined ? 'empty' : (legendEntry(below)?.collision ?? 'empty');
+    if (ground === 'empty')
+      at(c, 'checkpoint_no_ground', 'a checkpoint (K) needs a solid or one-way tile under it to respawn on');
+  }
   if (profile === undefined) {
     const msg = `no profile "${level.profile}": add ${level.profile}.profile.json, or name a profile the game has`;
     problems.push({ path: ['profile'], code: 'missing_profile', message: msg });

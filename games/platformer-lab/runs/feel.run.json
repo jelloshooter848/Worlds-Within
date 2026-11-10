@@ -1,0 +1,163 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 6
+  },
+  "ticks": 207,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 62,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 70,
+        "hold": ["right"]
+      },
+      {
+        "frame": 150,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 180,
+        "hold": ["right"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "lab-6-feel"
+    },
+    {
+      "tick": 0,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 60,
+      "path": "player.onGround",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 60,
+      "path": "player.coyote",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 63,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "jump",
+        "tier": 1
+      }
+    },
+    {
+      "tick": 63,
+      "path": "player.coyote",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 71,
+      "path": "player.vy",
+      "op": "eq",
+      "value": -6656
+    },
+    {
+      "tick": 90,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "land"
+      }
+    },
+    {
+      "tick": 90,
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 103,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "checkpoint",
+        "col": 10,
+        "row": 8
+      }
+    },
+    {
+      "tick": 103,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 10,
+        "row": 8
+      }
+    },
+    {
+      "tick": 134,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "died",
+        "cause": "hazard",
+        "lives": 2
+      }
+    },
+    {
+      "tick": 134,
+      "path": "player.x",
+      "op": "eq",
+      "value": 43008
+    },
+    {
+      "tick": 134,
+      "path": "player.y",
+      "op": "eq",
+      "value": 36864
+    },
+    {
+      "tick": 198,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 198,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 198,
+      "path": "lives",
+      "op": "eq",
+      "value": 2
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 6
+    }
+  ],
+  "hashEvery": 60,
+  "guards": ["coyote-time", "checkpoints", "variable-jump"]
+}

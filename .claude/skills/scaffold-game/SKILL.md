@@ -519,12 +519,15 @@ these differences; `games/platformer-lab/` is a complete working example of ever
 - A profile, `content/profiles/<id>.profile.json`: the player's movement numbers and the actor
   types, in whole sub-pixel units. Start from a copy of `kits/platformer/__fixtures__/runner.profile.json`
   (SMBC's default runner) and change its `id`; every field is in `docs/reference/schemas.md`
-  (`profile`).
+  (`profile`). The feel knobs are optional and off when left out: `jumpBuffer` (ticks a press is
+  remembered), `coyote` (ticks after walking off a ledge a jump still takes off) and `jumpCut`
+  (the upward speed cap when jump is let go while rising), beside each jump tier's `holdGravity`.
 - A level, `content/levels/<id>.json` (`{ "id": "<id>", "profile": "<profile id>", "scroll": "right" }`,
   plus `spawns`, `blocks` and `triggers` when the map uses them) and `content/levels/<id>.map.txt`:
   one character per 16x16 tile, all rows the same length, exactly one `@` and at least one `G`.
   Characters: `.` empty, `#` solid, `B` brick, `?` bump block, `=` one-way platform, `^` hazard,
-  `o` coin, `@` start, `G` goal, `!` mini-game trigger; enemy spawns are characters of your own
+  `o` coin, `@` start, `G` goal, `!` mini-game trigger, `K` checkpoint (needs ground under it; a
+  death with lives left respawns on the last one touched); enemy spawns are characters of your own
   named in `spawns` (`"w": { "actor": "walker" }`).
 
   ```text
@@ -534,8 +537,9 @@ these differences; `games/platformer-lab/` is a complete working example of ever
   ########....############
   ```
 
-- The skin maps the kit's kinds (`runner`, `coin`, `goal`, `trigger`, `bump-block` and each actor
-  type of your profiles), their animation states (`RUNNER_ANIMS`, `ACTOR_ANIMS`), the map
+- The skin maps the kit's kinds (`runner`, `coin`, `goal`, `trigger`, `checkpoint` (tagged
+  `active` when it is the current one: a `byTag` look), `bump-block` and each actor type of your
+  profiles), their animation states (`RUNNER_ANIMS`, `ACTOR_ANIMS`), the map
   characters (`PRESENT_TILES`: `. # B ? u = ^`), the events and the HUD values (`coins`, `hp`,
   `lives`, ...); the full table is in `kits/platformer/CLAUDE.md` (Presentation frames). Give it
   `"camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 }` so the view

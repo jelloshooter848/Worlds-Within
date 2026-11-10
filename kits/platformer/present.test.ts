@@ -388,6 +388,22 @@ describe('presentWorld: mini games', () => {
     expect(s.world.miniGame).not.toBeNull();
     expect(byId(s.frames.at(-1)!, 'trigger@3,1')!.tags).toEqual(['running', 'look:door']);
   });
+
+  it('shows checkpoints as objects, the one touched last tagged active, and places their event', () => {
+    const s = setup(['..........', '.@.K..K..G', '##########']);
+    const f0 = s.frames[0]!;
+    expect(byId(f0, 'checkpoint@3,1')).toMatchObject({ kind: 'checkpoint', x: 48, y: 16, tags: [] });
+    expect(JSON.stringify(f0.map)).not.toContain('K'); // open air in the map
+    s.step(['right'], 90);
+    const frames = s.frames;
+    expect(allEvents(frames, 'checkpoint')).toEqual([
+      { type: 'checkpoint', col: 3, row: 1, x: 56, y: 24 },
+      { type: 'checkpoint', col: 6, row: 1, x: 104, y: 24 },
+    ]);
+    const f = frames.at(-1)!;
+    expect(byId(f, 'checkpoint@3,1')!.tags).toEqual([]);
+    expect(byId(f, 'checkpoint@6,1')!.tags).toEqual(['active']);
+  });
 });
 
 describe('platformerFrames', () => {

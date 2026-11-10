@@ -67,6 +67,11 @@
     "coin": { "frames": { "idle": "coin", "pop": "coin" }, "fallbackColor": "#f8d800" },
     "goal": { "frames": { "idle": "goal" }, "fallbackColor": "#00a800" },
     "trigger": { "frames": { "idle": "trigger" }, "fallbackColor": "#9878f8" },
+    "checkpoint": {
+      "frames": { "idle": "checkpoint" },
+      "fallbackColor": "#7c7c7c",
+      "byTag": [{ "tag": "active", "frames": { "idle": "checkpoint-on" }, "fallbackColor": "#d82800" }]
+    },
     "bump-block": { "frames": { "bump": "used" }, "fallbackColor": "#fc9838" },
     "bar-cell": { "frames": { "idle": "bar-cell", "zone": "bar-zone" }, "fallbackColor": "#bcbcbc" },
     "bar-marker": {
@@ -102,6 +107,7 @@
     "hurt": { "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
     "died": { "effect": { "kind": "shake", "size": 3, "ticks": 12 } },
     "respawn": { "effect": { "kind": "particles", "color": "#fcfcfc", "count": 8, "size": 1 } },
+    "checkpoint": { "effect": { "kind": "particles", "color": "#d82800", "count": 6, "size": 1 } },
     "cleared": { "effect": { "kind": "tint", "color": "#f8d800", "ticks": 20 } },
     "mini-game": { "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
     "mini-game-end": { "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } }

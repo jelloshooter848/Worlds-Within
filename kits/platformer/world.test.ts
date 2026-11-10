@@ -15,6 +15,9 @@ const PROFILE = profileSchema.parse(JSON.parse(fixture('runner.profile.json')));
 const P = PROFILE.player;
 const HALF_W = px(P.box.w) >> 1;
 
+/** The fixture profile with 6 ticks of coyote time and a jump cut at 2 px per tick. */
+const FEEL = { ...PROFILE, player: { ...P, coyote: 6, jumpCut: 0x2000 } };
+
 /** A level of the given rows, played with the fixture profile. */
 function level(map: string[]) {
   return levelSchema.parse({ id: 'test', profile: 'runner', map });
@@ -23,8 +26,14 @@ function level(map: string[]) {
 type Script = { frame: number; hold: Action[] }[];
 
 /** Plays `ticks` ticks of `script` on `map` with `disabled` rules off: the snapshot after each. */
-function play(map: string[], script: Script, ticks: number, disabled: string[] = []): PlatformerSnapshot[] {
-  const world = new PlatformerWorld(level(map), PROFILE, { seed: 7, disabledRules: disabled });
+function play(
+  map: string[],
+  script: Script,
+  ticks: number,
+  disabled: string[] = [],
+  profile = PROFILE,
+): PlatformerSnapshot[] {
+  const world = new PlatformerWorld(level(map), profile, { seed: 7, disabledRules: disabled });
   const game = platformerGame(world);
   const input = new ScriptedInput({ steps: script });
   const out: PlatformerSnapshot[] = [];
@@ -56,6 +65,18 @@ const UNDER = ['........', '=======G', '........', '.@......', '########'];
 const LOW = ['........', '########', '........', '.@.....G', '########'];
 /** A wall at col 6, four tiles right of the start. */
 const WALL = ['......#.', '......#.', '......#G', '.@....#.', '########'];
+/** A ledge three tiles long (cols 0-2), then a pit five tiles wide, then ground with the goal. */
+const CLIFF = ['..........', '..........', '.@.......G', '###.....##'];
+
+/** The first tick the player is in the air after walking right off CLIFF's ledge. */
+function leaveTick(profile = FEEL): number {
+  return play(CLIFF, RIGHT, 60, [], profile).findIndex((x, i) => i > 1 && !x.player.onGround);
+}
+/** Walks right off CLIFF's ledge and presses jump `late` ticks after leaving it. */
+const lateJump = (late: number): Script => [
+  { frame: 0, hold: ['right'] },
+  { frame: leaveTick() + late, hold: ['right', 'jump'] },
+];
 
 const RIGHT: Script = [{ frame: 0, hold: ['right'] }];
 const RUN_RIGHT: Script = [{ frame: 0, hold: ['right', 'run'] }];
@@ -212,6 +233,13 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
     },
   },
   {
+    name: 'a jump pressed within coyote ticks of walking off a ledge still jumps',
+    holds: (off) => {
+      const s = play(CLIFF, lateJump(3), 120, off, FEEL);
+      return events(s, 'jump').length === 1 && last(s).outcome === 'cleared';
+    },
+  },
+  {
     name: "the level's left edge holds the player in",
     holds: (off) => {
       const s = play(FLAT, [{ frame: 0, hold: ['left'] }], 60, off);
@@ -233,6 +261,38 @@ describe('the platformer world', () => {
   it('fails at least one kit test with each movement rule switched off', () => {
     const weak = MOVEMENT_RULES.map((r) => r.id).filter((id) => CASES.every((c) => c.holds([id])));
     expect(weak).toEqual([]);
+  });
+
+  it('counts coyote time down from the tick the player walks off a ledge', () => {
+    const at = leaveTick();
+    const s = play(CLIFF, RIGHT, at + 9, [], FEEL);
+    expect(s.slice(at, at + 8).map((x) => x.player.coyote)).toEqual([6, 5, 4, 3, 2, 1, 0, 0]);
+    expect(s[at - 1]!.player.coyote).toBe(0);
+    // The last tick of coyote time still jumps, the one after does not.
+    expect(events(play(CLIFF, lateJump(6), 60, [], FEEL), 'jump')).toHaveLength(1);
+    expect(events(play(CLIFF, lateJump(7), 60, [], FEEL), 'jump')).toEqual([]);
+  });
+
+  it('gives no coyote time without a coyote in the profile, nor after a jump', () => {
+    const s = play(CLIFF, lateJump(1), 60);
+    expect(events(s, 'jump')).toEqual([]);
+    expect(s[0]!.player).not.toHaveProperty('coyote');
+    // Jump, then press again right after take-off: no second jump in the air.
+    const twice: Script = [...jump(2), { frame: 6, hold: ['jump'] }, { frame: 8, hold: [] }];
+    const t = play(FLAT, twice, 40, [], FEEL);
+    expect(events(t, 'jump')).toHaveLength(1);
+    expect(t.every((x) => x.player.coyote === 0)).toBe(true);
+  });
+
+  it('cuts the rise at jumpCut when jump is let go while rising (variable-jump)', () => {
+    const s = play(FLAT, jump(3), 40, [], FEEL);
+    const released = s[5]!; // let go on tick 5: the rise is cut before the move
+    expect(released.player.vy).toBe(-0x2000 + P.jumps[0]!.gravity);
+    const full = play(FLAT, jump(3), 40);
+    expect(minY(s)).toBeGreaterThan(minY(full));
+    expect(minY(play(FLAT, jump(3), 40, ['variable-jump'], FEEL))).toBe(
+      minY(play(FLAT, jump(3), 40, ['variable-jump'])),
+    );
   });
 
   it('reports a fall into a pit as a death, and the level as failed with no lives left', () => {

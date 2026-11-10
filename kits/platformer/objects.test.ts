@@ -71,6 +71,13 @@ const BRICK = { ...BLOCK, map: ['.......G', '.B......', '........', '.@......', 
 const HAZARD = { map: ['.......G', '.@..^...', '########'], script: RIGHT, ticks: 60 };
 const PIT = { map: ['.......G', '.@......', '###..###'], script: RIGHT, ticks: 80 };
 const GOAL = { map: ['........', '.@..G...', '########'], script: RIGHT, ticks: 60 };
+/** A checkpoint two tiles right of the start, then a hazard: two lives, so the death respawns. */
+const CHECKPOINT = {
+  map: ['.........G', '.@.K..^...', '##########'],
+  script: [...RIGHT, { frame: 70, hold: [] }] as Script,
+  ticks: 90,
+  profile: profileWith({ lives: 2 }),
+};
 /** A long level, scrolling right: run right, then walk back left. */
 const LONG = {
   map: ['.'.repeat(60), `.@${'.'.repeat(57)}G`, '#'.repeat(60)],
@@ -253,6 +260,19 @@ const CASES: { name: string; holds: (off: string[]) => boolean }[] = [
     },
   },
   {
+    name: 'a death after touching a checkpoint respawns the player on it',
+    holds: (off) => {
+      const s = play(CHECKPOINT, off);
+      const at = s.findIndex((x) => x.events.some((e) => e.type === 'respawn'));
+      return (
+        events(s, 'checkpoint').length === 1 &&
+        at > 0 &&
+        s[at]!.player.x === tileToSub(3) + tileToSub(1) / 2 &&
+        s[at]!.checkpoint?.col === 3
+      );
+    },
+  },
+  {
     name: 'after a hit the player is invulnerable and survives the touch',
     holds: (off) => {
       const s = play(TOUCH, off);
@@ -312,6 +332,31 @@ describe('the platformer world: level objects and enemies', () => {
     expect(at).toBeGreaterThan(0);
     expect(s[at]!.player).toMatchObject({ x: tileToSub(1) + tileToSub(1) / 2, hp: P.hp });
     expect(s[at]!.outcome).toBe('playing');
+  });
+
+  it('records the checkpoint touched last, once per touch, and keeps coins and tiles on a respawn', () => {
+    const map = ['...........G', '.@K.o.K.^...', '############'];
+    const s = play({ ...CHECKPOINT, map, ticks: 120 });
+    expect(events(s, 'checkpoint')).toEqual([
+      { type: 'checkpoint', col: 2, row: 1 },
+      { type: 'checkpoint', col: 6, row: 1 },
+    ]);
+    const at = s.findIndex((x) => x.events.some((e) => e.type === 'respawn'));
+    expect(s[at]!.checkpoint).toEqual({ col: 6, row: 1 });
+    expect(s[at]!.player).toMatchObject({ x: tileToSub(6) + tileToSub(1) / 2, y: tileToSub(2) });
+    expect(s[at]).toMatchObject({ coins: 1, lives: 1, tiles: [{ col: 4, row: 1, cell: 'empty' }] });
+    // Standing on the checkpoint it respawned on is no new touch.
+    expect(
+      s
+        .slice(at)
+        .flatMap((x) => x.events)
+        .filter((e) => e.type === 'checkpoint'),
+    ).toEqual([]);
+  });
+
+  it('snapshots the checkpoint only in a level that has one', () => {
+    expect(play(CHECKPOINT)[0]).toHaveProperty('checkpoint', null);
+    expect(play(GOAL)[0]).not.toHaveProperty('checkpoint');
   });
 
   it('dies of a harm at no hit points left', () => {

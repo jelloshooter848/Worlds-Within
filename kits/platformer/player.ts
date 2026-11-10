@@ -24,8 +24,10 @@ export interface PlayerStepEvents {
  * A tick:
  *   1. run: holding run (or attack) sets the run timer to `runHold`, else it counts down;
  *   2. on the ground, walk, run, friction and skid change vx; in the air, air control does;
- *   3. a jump press (remembered `jumpBuffer` ticks) on the ground takes off with the tier picked by
- *      |vx|, and the air speed cap becomes `maxRun` only after a real run (|vx| > maxWalk);
+ *   3. a jump press (remembered `jumpBuffer` ticks) on the ground, or within `coyote` ticks of
+ *      walking off a ledge (`coyote-time`), takes off with the tier picked by |vx|, and the air
+ *      speed cap becomes `maxRun` only after a real run (|vx| > maxWalk); letting go of jump while
+ *      rising caps the upward speed at `jumpCut` (`variable-jump`, when the profile gives one);
  *   4. the body moves, x then y (a standing body probes 1 sub-pixel down to stay on the ground);
  *   5. on the ground the jump ends; in the air gravity applies (the tier's `holdGravity` while
  *      jump is held and the player rises, else its `gravity`), and a fall past `maxFall` drops
@@ -48,6 +50,12 @@ export class Player {
   hp: number;
   /** Ticks left in which the player cannot be harmed (after a hit). */
   invuln = 0;
+  /**
+   * Coyote time left: set to the profile's `coyote` on the tick the player walks off a ledge
+   * (not a jump), one less each tick in the air after that; while it is over 0 a jump press still
+   * jumps (`coyote-time`). Always 0 with no `coyote` in the profile.
+   */
+  coyoteLeft = 0;
 
   constructor(
     x: number,
@@ -66,6 +74,7 @@ export class Player {
     this.body.vy = -speed;
     this.body.onGround = false;
     this.jumping = false;
+    this.coyoteLeft = 0;
   }
 
   /**
@@ -105,8 +114,10 @@ export class Player {
 
     let jumped = false;
     const pressed = (p.jumpBuffer ?? 0) > 0 ? input.bufferedJump(p.jumpBuffer ?? 0) : input.pressed('jump');
-    if (r.isOn('jump') && b.onGround && pressed) {
+    const coyote = !b.onGround && this.coyoteLeft > 0 && r.isOn('coyote-time');
+    if (r.isOn('jump') && (b.onGround || coyote) && pressed) {
       input.consumeJumpBuffer();
+      this.coyoteLeft = 0;
       this.tier = this.pickTier(b.vx);
       b.vy = -this.tier.speed;
       b.onGround = false;
@@ -115,6 +126,9 @@ export class Player {
       jumped = true;
     }
     const holding = r.isOn('variable-jump') && this.jumping && input.held('jump') && b.vy < 0;
+    const cut = p.jumpCut;
+    if (cut !== undefined && r.isOn('variable-jump') && this.jumping && !input.held('jump') && b.vy < -cut)
+      b.vy = -cut;
 
     if (b.vx !== 0) this.facing = sign(b.vx) as -1 | 1;
     else if (dir !== 0) this.facing = dir;
@@ -123,6 +137,11 @@ export class Player {
     // Like the NES: the take-off speed moves the body on the take-off tick, gravity comes after.
     const dy = b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy);
     moveY(b, tiles, dy, r.isOn('ceiling-bump'));
+
+    // Coyote time starts on the tick the player walks off a ledge, and runs down in the air.
+    if (b.onGround) this.coyoteLeft = 0;
+    else if (wasOnGround && !jumped) this.coyoteLeft = p.coyote ?? 0;
+    else if (this.coyoteLeft > 0) this.coyoteLeft--;
 
     if (b.onGround) {
       this.tier = this.pickTier(b.vx);

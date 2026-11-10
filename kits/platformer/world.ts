@@ -37,6 +37,7 @@ export type PlatformerEvent =
   | { type: 'hurt'; hp: number }
   | { type: 'died'; cause: DeathCause; lives: number }
   | { type: 'respawn' }
+  | { type: 'checkpoint'; col: number; row: number }
   | { type: 'cleared' }
   | { type: 'mini-game'; trigger: number; game: string; attempt: number }
   | { type: 'mini-game-end'; trigger: number; game: string; result: MiniGameResult };
@@ -110,8 +111,8 @@ export interface EndedRound extends MiniGameRun {
  *      defeat the actors they touch (`shell-hits-enemies`); actors below the level are gone;
  *   5. the player touches actors: a still shell is kicked (`shell-kick`), a fall from above
  *      stomps (`stomping`, `stomp-bounce`), else a harmful one hurts (`enemy-touch-hurts`);
- *   6. the player touches tiles: coins (`coins-collect`), hazards (`hazards-kill`) and goals
- *      (`goal-clears-level`);
+ *   6. the player touches tiles: coins (`coins-collect`), checkpoints (`checkpoints`), hazards
+ *      (`hazards-kill`) and goals (`goal-clears-level`);
  *   7. a player whose top is below the last row dies (`pits-kill`);
  *   8. a mini-game trigger the player enters starts a round of the mini game it names
  *      (`mini-games`, seeded from `rng`). While it runs, `update` steps the round instead of
@@ -120,9 +121,11 @@ export interface EndedRound extends MiniGameRun {
  *      level goes on from the next tick. The ended round stays readable (`endedRound`) until the
  *      next `update`, so the snapshot of that tick holds its last events and final state.
  *
- * A death takes a life; with lives left the player starts again at the start, else the outcome is
- * `failed`. Everything random comes from `rng` (seeded), so the same level, seed and input give the
- * same run.
+ * A death takes a life; with lives left the player starts again at the last checkpoint it touched
+ * (`checkpoint`), or at the start when it has touched none, else the outcome is `failed`. A respawn
+ * changes nothing else: coins taken stay taken (and counted), used blocks and broken bricks stay as
+ * they are, and actors go on where they are. Everything random comes from `rng` (seeded), so the
+ * same level, seed and input give the same run.
  */
 export class PlatformerWorld {
   readonly rng: Rng;
@@ -137,6 +140,10 @@ export class PlatformerWorld {
   lives: number;
   /** The view's left edge, in sub-pixels. */
   scrollX = 0;
+  /** The checkpoint (`K`) the player touched last, where a death with lives left respawns it. */
+  checkpoint: { col: number; row: number } | null = null;
+  /** The level's checkpoint cells (`K`), in reading order. */
+  readonly checkpoints: readonly { col: number; row: number }[];
   readonly viewWidth: number;
   private readonly start: LevelCell;
   private readonly games: ReadonlyMap<string, MiniGameDef>;
@@ -174,6 +181,7 @@ export class PlatformerWorld {
     const start = cells.find((c) => c.ch === '@');
     if (!start) throw new Error(`level "${level.id}" has no start`); // checkLevel has caught it
     this.start = start;
+    this.checkpoints = cells.filter((c) => c.ch === 'K').map((c) => ({ col: c.col, row: c.row }));
     this.player = Player.atStart(start.col, start.row, profile.player, this.rules);
     const games = miniGameTable(opts.miniGames ?? []);
     cells
@@ -493,7 +501,11 @@ export class PlatformerWorld {
     for (let row = tileAt(b.y); row <= tileAt(b.y + b.h - 1); row++) {
       for (let col = tileAt(b.x); col <= tileAt(b.x + b.w - 1); col++) {
         const cell = this.tiles.cellAt(col, row);
-        if (cell === 'coin' && this.rules.isOn('coins-collect')) {
+        if (cell === 'checkpoint' && this.rules.isOn('checkpoints')) {
+          if (this.checkpoint?.col === col && this.checkpoint.row === row) continue;
+          this.checkpoint = { col, row };
+          this.emit({ type: 'checkpoint', col, row });
+        } else if (cell === 'coin' && this.rules.isOn('coins-collect')) {
           this.tiles.setCell(col, row, 'empty');
           this.coins++;
           this.emit({ type: 'coin', col, row, coins: this.coins });
@@ -508,7 +520,10 @@ export class PlatformerWorld {
     }
   }
 
-  /** A death: a life off; with lives left the player starts again at the start, else `failed`. */
+  /**
+   * A death: a life off; with lives left the player starts again at the last checkpoint touched
+   * (else the start), else `failed`.
+   */
   private die(cause: DeathCause): void {
     this.lives--;
     this.emit({ type: 'died', cause, lives: this.lives });
@@ -516,7 +531,8 @@ export class PlatformerWorld {
       this.outcome = 'failed';
       return;
     }
-    this.player = Player.atStart(this.start.col, this.start.row, this.profile.player, this.rules);
+    const at = this.checkpoint ?? this.start;
+    this.player = Player.atStart(at.col, at.row, this.profile.player, this.rules);
     this.scrollX = 0;
     this.scroll();
     this.emit({ type: 'respawn' });

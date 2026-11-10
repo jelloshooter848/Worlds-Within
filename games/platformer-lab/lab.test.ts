@@ -50,6 +50,7 @@ const EVENT_TYPES = [
   'hurt',
   'died',
   'respawn',
+  'checkpoint',
   'cleared',
   'mini-game',
   'mini-game-end',
@@ -78,6 +79,7 @@ describe('platformer lab content', () => {
     expect(stages.map((s) => s.level.id)).toEqual([
       'lab-4-walkers',
       'lab-5-trigger',
+      'lab-6-feel',
       FIRST_LEVEL,
       'lab-1-moves',
       'lab-2-objects',
@@ -93,6 +95,7 @@ describe('platformer lab content', () => {
       'lab-3-shells',
       'lab-4-walkers',
       'lab-5-trigger',
+      'lab-6-feel',
     ]);
   });
 
@@ -121,7 +124,8 @@ describe('platformer lab skin', () => {
     expect(states('runner')).toEqual([...RUNNER_ANIMS].sort());
     for (const type of actorTypes) expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
     expect(states('coin')).toEqual(['idle', 'pop']);
-    for (const kind of ['goal', 'trigger']) expect(states(kind)).toEqual(['idle']);
+    for (const kind of ['goal', 'trigger', 'checkpoint']) expect(states(kind)).toEqual(['idle']);
+    expect(skin.kinds['checkpoint']?.byTag?.map((l) => l.tag)).toEqual(['active']);
     expect(states('bump-block')).toEqual(['bump']);
     expect(states('bar-cell')).toEqual(['idle', 'zone']);
     expect(states('bar-marker')).toEqual(['fail', 'idle', 'pass', 'quit']);

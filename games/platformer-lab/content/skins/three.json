@@ -126,6 +126,16 @@
       },
       { "shape": "box", "size": { "w": 14, "h": 4, "d": 14 }, "at": { "x": 1, "y": 12, "z": 0 } }
     ],
+    "checkpoint": [
+      {
+        "shape": "cylinder",
+        "size": { "w": 2, "h": 14, "d": 2 },
+        "at": { "x": 7, "y": 0, "z": 0 },
+        "color": "#fcfcfc"
+      },
+      { "shape": "box", "size": { "w": 5, "h": 4, "d": 1 }, "at": { "x": 9, "y": 1, "z": 0 } },
+      { "shape": "box", "size": { "w": 6, "h": 2, "d": 6 }, "at": { "x": 5, "y": 14, "z": 0 } }
+    ],
     "brick": [
       { "shape": "box", "size": { "w": 16, "h": 14, "d": 16 }, "at": { "x": 0, "y": 0, "z": 0 } },
       {
@@ -175,6 +185,11 @@
     "coin": { "mesh": "coin", "color": "#f8d800" },
     "goal": { "mesh": "goal", "color": "#00a800" },
     "trigger": { "mesh": "trigger", "color": "#9878f8" },
+    "checkpoint": {
+      "mesh": "checkpoint",
+      "color": "#7c7c7c",
+      "byTag": [{ "tag": "active", "color": "#d82800" }]
+    },
     "bump-block": { "mesh": "box", "color": "#883c00", "depth": 16 },
     "bar-cell": { "mesh": "box", "color": "#bcbcbc", "depth": 4 },
     "bar-marker": { "mesh": "bar-marker", "color": "#f8d800" }
@@ -201,6 +216,7 @@
     "hurt": { "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
     "died": { "effect": { "kind": "shake", "size": 3, "ticks": 12 } },
     "respawn": {},
+    "checkpoint": { "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
     "cleared": { "effect": { "kind": "tint", "color": "#f8d800", "ticks": 20 } },
     "mini-game": { "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
     "mini-game-end": { "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } }

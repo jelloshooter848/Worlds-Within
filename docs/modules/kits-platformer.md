@@ -12,7 +12,14 @@ behaviour is set by data), and a headless world (`PlatformerWorld`) that moves t
 level with SMBC-style whole-number physics and named, switchable movement rules, and plays a whole level: coins, bump blocks
 and bricks, hazards and pits, data-set walker and shell enemies (stomps, kicks, harm), hit points
 with invulnerability, lives, the scroll lock and a `cleared` or `failed` outcome, with a JSON-safe
-snapshot and `platformerGame(world)` for the headless contract. Its mini game hook: a level's `!`
+snapshot and `platformerGame(world)` for the headless contract. Movement feel is data too (Engine 0.16 T1): the profile's optional `coyote` (ticks after
+walking off a ledge in which a jump still takes off; rule `coyote-time`) and `jumpCut` (the upward
+speed cap when jump is let go while rising; under `variable-jump`) sit beside `jumpBuffer` and the
+tiers' `holdGravity`, all off when left out. The legend's `K` is a checkpoint (rule
+`checkpoints`): touching it makes it current (`checkpoint` event; the snapshot's `checkpoint`
+`{ col, row }` or null, only in a level that has one), and a death with lives left respawns there
+instead of at the start (coins, used blocks, broken bricks and actors stay as they are);
+`checkLevel` reports a checkpoint with no ground under it (`checkpoint_no_ground`). Its mini game hook: a level's `!`
 trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), the level pauses
 while it runs (the round sees the input through the engine's `RoundInput`: a button held into the
 trigger is ignored until released, and the def's `inputMap` applies; it is handed the level's HUD
@@ -25,7 +32,8 @@ events, and report; Engine 0.10, gap G20), so a run file can check a round's las
 The kit's hook lists each trigger's `game` and `params` (`miniGameUses`, Engine 0.10), so
 `pnpm cli validate` checks them against the mini games a game's headless entry exports.
 Its presentation (`presentWorld`) describes each tick as a read-only `PresentFrame` (terrain map
-sent through a `MapTracker`, runner, actors, coins, goals, triggers, block bounces and remains,
+sent through a `MapTracker`, runner, actors, coins, goals, checkpoints (the current one tagged
+`active`), triggers, block bounces and remains,
 placed events, HUD status and a camera hint carrying the scroll lock) for a backend to draw.
 Its level sequence (`LevelSequence`, Engine 0.7) plays a game's levels one after another as the
 headless contract: a pause after `cleared` or `failed`, then the next level or the same one

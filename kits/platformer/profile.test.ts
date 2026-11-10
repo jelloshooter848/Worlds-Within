@@ -63,6 +63,17 @@ describe('profileSchema', () => {
     expect(profileSchema.parse(plain).player).toMatchObject({ hp: 1, lives: 1 });
   });
 
+  it('takes coyote time and a jump cut as whole numbers, both left out by default', () => {
+    expect(PROFILE.player).not.toHaveProperty('coyote');
+    expect(PROFILE.player).not.toHaveProperty('jumpCut');
+    const feel = profileSchema.parse(broken({ 'player.coyote': 6, 'player.jumpCut': 0x2000 })).player;
+    expect([feel.coyote, feel.jumpCut]).toEqual([6, 0x2000]);
+    expect(errorsOf(broken({ 'player.coyote': 31, 'player.jumpCut': -1 }))).toEqual([
+      ['player.coyote', 'too_big'],
+      ['player.jumpCut', 'too_small'],
+    ]);
+  });
+
   it('checks the speed caps, what a stomp turns an actor into, and a kick speed', () => {
     const data = broken({
       'player.maxWalk': PROFILE.player.maxRun + 1,

@@ -89,6 +89,16 @@ describe('checkLevel', () => {
     ]);
   });
 
+  it('passes a checkpoint on ground and reports one with no ground to respawn on', () => {
+    expect(checkLevel(parsed({ map: ['......G', '.?...K.', '@..w.##', '###.###'] }), PROFILE)).toEqual([]);
+    expect(checkLevel(parsed({ map: ['......G', '.?.....', '@.Kw=#K', '###.###'] }), PROFILE)).toEqual([]);
+    const level = parsed({ map: ['K.....G', '.?.....', '@..w.##', '###K###'] });
+    expect(checkLevel(level, PROFILE).map((p) => [p.path, p.code, p.row, p.col])).toEqual([
+      [['map', 0], 'checkpoint_no_ground', 0, 0],
+      [['map', 3], 'checkpoint_no_ground', 3, 3],
+    ]);
+  });
+
   it('reports a profile that is not there', () => {
     expect(checkLevel(parsed(), undefined)).toEqual([
       expect.objectContaining({ path: ['profile'], code: 'missing_profile' }),

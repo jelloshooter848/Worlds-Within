@@ -1,0 +1,25 @@
+{
+  "run": "games/platformer-lab/runs/feel.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "e535550cbca84ecf"
+    },
+    {
+      "tick": 60,
+      "hash": "9f8ca54ef49230eb"
+    },
+    {
+      "tick": 120,
+      "hash": "e7bb2a36819ffdc2"
+    },
+    {
+      "tick": 180,
+      "hash": "b58387fb274eb830"
+    },
+    {
+      "tick": 207,
+      "hash": "c1519cf710731954"
+    }
+  ]
+}
