@@ -6,7 +6,7 @@ short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and 2.5D (
 (the old five levels and two doors moved to `games/platformer-classic`, a test game, with their
 run files and hashes unchanged), gave it a tuned profile, its screen, its campaign and its first
 level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3, T8 the
-mini-boss's arena and the end (built), T9 music and sounds, T10 the 2.5D view. It is content, not engine:
+mini-boss's arena and the end (built), T9 music and sounds (built), T10 the 2.5D view. It is content, not engine:
 the kit holds the rules, this folder holds levels, the profile, art, sound, skins and thin glue.
 
 ## The game
@@ -138,6 +138,83 @@ All of it is world state, so run files assert it.
    Start) to the arena cleared: the headless equivalent of title to end screen (the end screen is
    the shell's, tested in the browser).
 
+## Build choices (T9; feedback items 384-387)
+
+1. **The music (384).** One layered song for the whole game, the skins' `music.hoppers-way`, so
+   no game code picks a song: each level's layers play by the frame's `level` status and the
+   others are silent. No CC0 sound pack was fetched: everything is original MML.
+2. **Two engine additions (385).** A mix rule's `when` may be a list of status tests that must all
+   hold (`engine/core/audio/mix.ts`, `mixWhenHolds`: a level and its danger), and
+   `menus.end.music` (`engine/core/ui/menus.ts`, played by the shell's `GameMenus` when the end
+   screen opens; the game's music comes back when a level is chosen from there).
+3. **The sounds (386)** and **the ducking (387)**: the tables below.
+
+## Music and sound (T9)
+
+Presentation only: no rule, level or profile changed, so every golden hash is the same (the
+sample's tests and `tests/runs/presentation-invariance.test.ts` play the runs through a `Mixer`).
+The page passes the 2D skin's `music` to the shell (`main.ts`: `audio.mix`, and the game's seed
+for sound variation); the 3D skin's `music` and event sounds are the same (tested).
+
+- **Songs** (`content/songs/`, written by a small script from chord lists and hand-written
+  melodies; edit the JSON by hand now). The layers of `hoppers-way` are all 150 bpm, 16 bars,
+  looping from the start, so they stay in step (`validate`'s `bad_layers`):
+
+  | layer          | song                  | what                                                             |
+  | -------------- | --------------------- | ---------------------------------------------------------------- |
+  | `meadow`       | `hopper-meadow`       | level-1, C major: a bouncy lead, soft pads, a root-fifth bass    |
+  | `meadow-drive` | `hopper-meadow-drive` | a thin 16th arpeggio and a kick-snare beat                       |
+  | `autumn`       | `hopper-autumn`       | level-2, A minor: a rolling lead, pads, a dotted bass            |
+  | `autumn-drive` | `hopper-autumn-drive` | an 8th arpeggio and a syncopated beat                            |
+  | `night`        | `hopper-night`        | level-3, E minor: a slow fading lead, low pads, long bass notes  |
+  | `night-drive`  | `hopper-night-drive`  | a high quiet arpeggio and a half-time beat                       |
+  | `boss`         | `hopper-boss`         | the arena, D minor: chord stabs, a pumping octave bass and drums |
+  | `boss-rage`    | `hopper-boss-rage`    | the boss's lead melody and 16th hats                             |
+
+  `hopper-title` (120 bpm, 8 bars, looping) is `menus.title.music`; `hopper-fanfare` (once) is
+  `menus.end.music`.
+
+- **The mix** (`music.hoppers-way.mix`, the first rule that holds; layers it leaves at 0 are
+  silent; `fade` 40 ticks unless a rule gives one): `outcome` `cleared` -> all 0 (8 ticks: the
+  clear jingle plays alone); `failed` -> all 0 (20); in the arena, `bossState` `defeated` -> all 0
+  (45: the defeat sequence's own sounds), `gone` -> all 0, `asleep` -> `boss` 0.45 (the walk in),
+  `bossPhase` >= 1 -> `boss` and `boss-rage` 1 (10), else `boss` 1 and `boss-rage` 0.35; in each
+  level, `nearestActor` 0..95 px -> its calm and drive layers at 1 (12), else the calm at 1 and the
+  drive at 0.15; anything else the meadow.
+- **Sounds** (`events`; `pitch` in semitones and `volume` drawn per play, `cooldown` frames):
+
+  | event                                   | sound                                      | variation                       |
+  | --------------------------------------- | ------------------------------------------ | ------------------------------- |
+  | `jump:tier=0` / `1` / `2` (`jump` bare) | `jump-short` / `jump` / `jump-high`        | pitch ±1 (±0.5 top), volume     |
+  | `land`                                  | `land`                                     | pitch -2..1, volume, cooldown 6 |
+  | `footstep` (run cycle frames 4 and 10)  | `step`                                     | pitch ±3, volume, cooldown 4    |
+  | `skid-dust` (the skid's first frame)    | `skid`                                     | pitch ±1, cooldown 10           |
+  | `bump`, `block`, `block:content=life`   | `bump`, `block`, `life`                    | pitch ±1 (life none)            |
+  | `break`, `coin`, `spawn`                | `break`, `coin`, `spawn`                   | pitch ±2, 0..1, none            |
+  | `stomp`, `kick`, `defeat`               | `stomp`, `kick`, `defeat`                  | pitch ±2, ±1, ±2                |
+  | `hurt`, `died`, `poof`, `respawn`       | `hurt`, `death`, `poof`, `respawn`         | hurt pitch ±1, poof volume      |
+  | `checkpoint`, `cleared`                 | `checkpoint`, `clear`                      | none                            |
+  | `boss-telegraph:attack=<a>` (bare)      | `boss-<a>-warn` (`boss-warn`)              | none                            |
+  | `boss-attack:attack=<a>` (bare)         | `boss-<a>` (`boss-attack`)                 | pitch ±1 (charge none)          |
+  | `boss-hit`, `boss-defeat`               | `boss-hit`, `boss-defeat`                  | hit pitch ±1                    |
+  | `boss-pop`, `boss-crack`, `boss-blast`  | `boss-pop`, `boss-crack`, `boss-blast`     | pop pitch ±3                    |
+  | menus: `move`, `select`, `back`         | `ui-move`, `ui-select`, `ui-back` (ui bus) | none                            |
+
+  `dying` (the remains' first frame) has no sound: `died` plays on the same tick.
+
+- **Ducking** (`duck { amount, attack, hold, release }`): `stomp` 0.25 (1, 2, 12), `hurt` 0.6 (2,
+  12, 40), `died` 0.85 (2, 50, 60), `boss-hit` 0.55 (2, 10, 36), `boss-defeat` 0.9 (4, 120, 90),
+  `boss-blast` 0.9 (2, 30, 60), `cleared` 1 (2, 110, 20).
+- **Tests** (`platformer.test.ts`, "music and sound (T9)"): every sound a skin names is an sfx of
+  the game and every song compiles; every kit event the runs show and every event the kit can
+  send here (a jump per tier, each boss attack's telegraph and attack, a brick, a shell, a life)
+  resolves to an entry with a sound in both skins; every frame event a skin's cycles name has one
+  (but `dying`); the repeated sounds vary; the UI sounds, title song and fanfare; the layered song
+  equal in both skins; each level's run mixed tick by tick (`LayerMix`): only its layers, the drive
+  up near an enemy, silence at the clear; the boss run: quiet asleep, rage in phase 2, silence at
+  the end; the boss run through a `Mixer`: the music ducks on each of the four hits and comes back.
+  Hear it: `pnpm dev`, `/games/samples/platformer/`; `__ww.mix()` with `?debug=step`.
+
 ## The tuned profile: `hoppers-way`
 
 JSON has no comments, so the numbers chosen are here. Units are the kit's
@@ -192,7 +269,8 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   `content/sprites/burrlock.txt` + `palettes/burrlock.json` and `burrlock-angry.json` (T8): the
   boss, its shots and its HUD name plate (The 2D skin, Burrlock, below).
   `content/fonts/hopper-small.txt`, `hopper-title.txt` (the HUD's counters and the menus),
-  `content/sfx/*.json`, `content/songs/meadow.json`: fonts and the placeholder sound (T9 redoes it).
+  `content/sfx/*.json` (39 sound effects) and `content/songs/hopper-*.json` (the layered song's
+  eight layers, the title tune, the end fanfare): T9, "Music and sound" above.
 - `content/skins/canvas2d.json`: the 2D skin, built on the CC0 PNG packs (T6, "The 2D skin"
   below). `three.json`: the 3D skin, still low-poly meshes (T10 makes the 2.5D view), with the 2D
   skin's `images` (for the HUD's frames), `events`, `emitters`, `hud` and `camera`, the 0.16 T12
@@ -234,7 +312,7 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   fields; level-1's checkpoint, coins, block and walkers; text-only content outside `assets/`;
   the start state, the view width and equal snapshots on two runs; the skins covering every kind,
   state, tag, tile, event and HUD value every run shows, the 3D skin matching the 2D one, the
-  sounds and song; every tick of every run drawn from the art (the PNGs "decoded" in Node from
+  sounds and songs; every tick of every run drawn from the art (the PNGs "decoded" in Node from
   their headers), never a fallback box (every 2D entry's `fallbackColor` is `#ff00ff`, so a
   missing frame is caught); from T6 the tile joins on level-1's map, the frog's states and
   sheets, the checkpoint's flag raise, the feel events, and every run drawn through the Canvas2D

@@ -1,0 +1,7 @@
+{
+  "id": "boss-defeat",
+  "bpm": 160,
+  "pulse": "v12 @2 l16 o5 d c+ c < b a+ a g+ g p-12 f+4",
+  "triangle": "l8 o3 d < a f d4",
+  "noise": "v10 x1 l8 n10 n12 n14 n15"
+}

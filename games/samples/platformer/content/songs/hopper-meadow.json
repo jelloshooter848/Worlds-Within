@@ -1,0 +1,8 @@
+{
+  "id": "hopper-meadow",
+  "bpm": 150,
+  "loop": true,
+  "pulse1": "v8 @2 q7 L o5e4 o5g8 o5e8 o5c4 o4g4 | o4a8 o5c8 o5e8 o5a8 o5g4 o5e4 | o5f8 o5e8 o5f8 o5a8 o6c4 o5a4 | o5g4. o5f8 o5e4 o5d4 | o5e4 o5g8 o5e8 o5c4 o5e8 o5g8 | o5a4 o5g8 o5e8 o5c4 o4a4 | o5d8 o5f8 o5a8 o5f8 o5d4 o5f8 o5e8 | o5d4 o4g4 o4b4 o5d4 | o5c8 o5f8 o5a8 o6c8 o5a4 o5f4 | o4b8 o5d8 o5g8 o5b8 o5a4 o5g4 | o5g8 o5e8 o4b8 o5e8 o5g4 o5b4 | o5a4. o5g8 o5e4 o5c4 | o5f4 o5a8 o5f8 o5c4 o5f4 | o5d8 o5e8 o5f8 o5g8 o5a4 o5b4 | o6c2 o5g4 o5e4 | o5c2 r2",
+  "pulse2": "v4 @1 q8 L o4e2 o4g2 | o5c2 o5e2 | o4a2 o5c2 | o4b2 o5d2 | o4e2 o4g2 | o5c2 o5e2 | o4f2 o4a2 | o4b2 o5d2 | o4a2 o5c2 | o4b2 o5d2 | o4g2 o4b2 | o5c2 o5e2 | o4a2 o5c2 | o4b2 o5d2 | o4e2 o4g2 | o4e2 o4g2",
+  "triangle": "q6 L o3c4 o3g4 o4c4 o3g4 | o2a4 o3e4 o3a4 o3e4 | o2f4 o3c4 o3f4 o3c4 | o2g4 o3d4 o3g4 o3d4 | o3c4 o3g4 o4c4 o3g4 | o2a4 o3e4 o3a4 o3e4 | o3d4 o3a4 o4d4 o3a4 | o2g4 o3d4 o3g4 o3d4 | o2f4 o3c4 o3f4 o3c4 | o2g4 o3d4 o3g4 o3d4 | o2e4 o2b4 o3e4 o2b4 | o2a4 o3e4 o3a4 o3e4 | o2f4 o3c4 o3f4 o3c4 | o2g4 o3d4 o3g4 o3d4 | o3c4 o3g4 o4c4 o3g4 | o3c4 o3g4 o4c4 o3g4"
+}

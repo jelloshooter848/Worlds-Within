@@ -1,1 +1,1 @@
-{ "id": "stomp", "bpm": 240, "pulse": "v12 @2 l32 o3 c < g", "noise": "v8 l32 k" }
+{ "id": "stomp", "bpm": 240, "pulse": "v11 @2 l32 o5 p-12 c16 < e32", "noise": "v8 l32 k" }

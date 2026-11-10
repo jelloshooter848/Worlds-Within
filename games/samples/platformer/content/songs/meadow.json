@@ -1,9 +1,0 @@
-{
-  "id": "meadow",
-  "bpm": 144,
-  "loop": true,
-  "pulse1": "v9 @2 l8 o5 L c e g e a g e c d f a f g4 e4 e g > c < g a g f e d4 g4 c2 c e g > c < b g e g a f a > c < b4 g4 a g f e d e f a g4 b4 > c2 <",
-  "pulse2": "v5 @1 l2 o4 L e g f d g e f e e g f d c d d e",
-  "triangle": "l8 o3 L c r g r c r g r d r a r g r b r c r g r f r a r g r d r c r g r c r g r c r g r f r a r g r d r f r c r d r a r g r b r c4 c4",
-  "noise": "v4 l8 L [k r h r s r h r]7 k r h h s s s s"
-}

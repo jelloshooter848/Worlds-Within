@@ -156,7 +156,8 @@ Engine 0.16 part B (T3), in `menus.ts`:
 
 - The title item `levels` (shown only when the page gives levels: `titleScreen`'s `hasLevels`),
   `END_ITEMS` (`title`, `levels`) and three blocks: `levels { heading?, lock?, mark? }`,
-  `clear { heading?, lines? }` and `end { heading?, credits?, lines?, items? }`. A stat line is
+  `clear { heading?, lines? }` and `end { heading?, credits?, lines?, items?, music? }` (`music`
+  from T9 of part B: a song played when the end screen opens; `missing_ref` like the title's). A stat line is
   `{ label, status, of?, format? }` (`STAT_FORMATS`: `number`, `time`: ticks as `m:ss`,
   `formatTicks`); `statText(line, status)` (`-` for a key the status lacks, `a/b` with `of`);
   `DEFAULT_STAT_LINES` (coins, time, deaths). `levelChoices(spec, levels, cleared)` (locks),

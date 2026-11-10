@@ -14,7 +14,10 @@ levels 2 and 3 (T7: an autumn level of one-way planks and pacing threats, a nigh
 spikes, buffered and coyote jumps, each with its own sky and ground), the mini-boss (T8:
 Burrlock, the bramble beetle, in an arena at dusk, with telegraphed attacks, a faster second
 phase, white hit flashes, hit-pauses, a boss bar and a defeat sequence, then the end screen),
-music (T9) and the 2.5D view (T10) follow. T6 drew it
+music and sound (T9: one layered MML song, a calm and a drive layer per level and the boss's
+fight and rage layers, mixed from the frame's status and ducked under big hits; a title tune, an
+end fanfare and a varied sound for every kit event, frame event and menu move), and the 2.5D view
+(T10) follows. T6 drew it
 from the CC0 PNG packs: ground joined by its neighbours, the Ninja Frog with every state (a
 landing crouch, a dying puff), Kenney's critters, a raised checkpoint flag, a trophy goal, four
 parallax layers of original text art, squash and stretch, dust and run particles, hit flashes,
@@ -40,7 +43,9 @@ since T5. It holds only content, skins and thin glue.
   projectiles `thorn` and `acorn`), `sprites/burrlock.txt` with `palettes/burrlock.json` and
   `burrlock-angry.json` (T8: the boss's original text pixel art, its poses, white flash, defeat
   frames, shots and HUD name plate; the angry palette is its second phase), `sprites/hopper.txt` and `hopper-font.txt` with `palettes/hopper.json`,
-  `fonts/`, `sfx/`, `songs/meadow.json` (placeholders copied from the classic game; `hopper.txt` now only for the 3D skin, until T10), `sprites/hopper-sky.txt` with
+  `fonts/` (`hopper.txt` now only for the 3D skin, until T10), `sfx/` and `songs/` (T9: 39 sound
+  effects, the eight `hopper-*` layers of the skins' `hoppers-way` music, `hopper-title`,
+  `hopper-fanfare`), `sprites/hopper-sky.txt` with
   `palettes/hopper-sky.json` (T6: the parallax clouds, mountains, hills and bushes),
   `sprites/hopper-autumn.txt` and `hopper-night.txt` with their palettes (T7: those layers
   recoloured for level-2 and level-3, and a star field with the moon),

@@ -317,6 +317,21 @@ describe('GameMenus: level select, level clear and end (Engine 0.16 part B, T3)'
     void stack;
   });
 
+  it("plays the end screen's music when it opens and gives the game's back on a level chosen", () => {
+    const spec = menusSchema.parse({ ...PART_B, end: { ...PART_B.end, music: 'fanfare' } });
+    const started: number[] = [];
+    const { menus, music, press } = setup({ spec, levels: () => LEVELS, startAt: (s) => started.push(s) });
+    menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });
+    expect(music).toEqual([]);
+    expect(menus.step()).toBe(true);
+    expect(music).toEqual(['fanfare']);
+    press('down');
+    press('jump'); // Levels
+    press('jump'); // Meadow
+    expect(started).toEqual([0]);
+    expect(music).toEqual(['fanfare', null]);
+  });
+
   it('closes the end screen with resume (the shell invariance test plays on)', () => {
     const { menus } = partB();
     menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });

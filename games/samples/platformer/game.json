@@ -86,7 +86,7 @@
           "y": 34
         }
       ],
-      "music": "meadow",
+      "music": "hopper-title",
       "items": ["start", "levels", "controls", "settings"],
       "dim": 0.78
     },
@@ -132,6 +132,7 @@
     "end": {
       "heading": "Hopper's Way cleared!",
       "credits": "Burrlock is beaten and the meadow is safe. Thanks for playing!",
+      "music": "hopper-fanfare",
       "lines": [
         {
           "label": "Coins",

@@ -1,0 +1,6 @@
+{
+  "id": "death",
+  "bpm": 200,
+  "pulse": "v11 @2 l16 o5 c < b a+ r8 q6 a8 g+8 g4",
+  "triangle": "l16 o3 c r c r8 < f8 e8 d+4"
+}

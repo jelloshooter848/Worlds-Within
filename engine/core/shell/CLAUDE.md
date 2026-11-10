@@ -328,7 +328,8 @@ transition, music?, restart, ... })` (`booted.menus`) puts each screen on the st
     hides on the first frame not `cleared`, and under a menu. `menus.step()` (each loop step,
     before the scenes update) runs its clock and opens a due **end screen** (`endScreen`: the
     heading, `credits`, the summed stats, `items`, default `title`): state `end`, the game held
-    under it; Back to title restarts, Levels opens the level select. `resume()` closes it too
+    under it, and its `music` played (`menus.end.music`, a jingle; T9 of part B; the game's music
+    comes back when a level is chosen from there); Back to title restarts, Levels opens the level select. `resume()` closes it too
     (tests). `__ww.menus()` adds `banner`; `body[data-menu]` may be `end`.
   - **Respawn transition:** `game.json`'s `transitions.respawn` (and `transitions.events`, event
     type to slot; `../fx/transition.ts`'s `eventTransitionSlot`) plays when a presented frame has

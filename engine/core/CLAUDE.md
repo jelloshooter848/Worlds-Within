@@ -29,7 +29,8 @@ ne | lt | lte | gt | gte }, layers: { <layer>: 0..1 }, fade? }] }`. `AudioManage
   (`Sequencer.playLayers`; each layer on its own voices and gain, `Apu.layer(i)`), so a note on
   tick n of any layer sounds on the same sample, loop after loop. `LayerMix` evaluates the rules
   each tick on the last presented frame's status (the first rule that holds wins; a rule without
-  `when` always holds; a layer no rule named plays at 1) and crossfades straight over the rule's
+  `when` always holds; from Engine 0.16 part B `when` may be a list of tests that must all hold,
+  `mixWhenHolds`, so one song can hold a layer per level and its danger; a layer no rule named plays at 1) and crossfades straight over the rule's
   `fade` (else the entry's, else `DEFAULT_MIX_FADE`, 30 ticks); the first update snaps.
   `setLayerGains` ramps each layer's gain over one 60 Hz frame. `validate` (`checkSkinRefs`): a
   layer naming no song is `missing_ref` at `music.<id>.layers.<layer>`, a rule's layer the entry

@@ -7,6 +7,9 @@ import {
   soundVariation,
   statusMatches,
   duckSpecSchema,
+  mixRuleIndex,
+  mixRuleSchema,
+  mixWhenHolds,
   type MusicEntry,
 } from './mix';
 import { compileSong } from './mml';
@@ -35,6 +38,75 @@ describe('statusMatches', () => {
     expect(statusMatches({ status: 'mode', ne: 'boss' }, { mode: 'boss' })).toBe(false);
     expect(statusMatches({ status: 'hurt', eq: true }, { hurt: true })).toBe(true);
     expect(statusMatches({ status: 'hp', lte: 1 }, { hp: 1 })).toBe(true);
+  });
+});
+
+describe('a list of status tests (Engine 0.16 part B)', () => {
+  const LEVELS: MusicEntry = {
+    layers: { meadow: 'm', danger: 'd', boss: 'b' },
+    mix: [
+      {
+        when: [
+          { status: 'level', eq: 'boss' },
+          { status: 'phase', gte: 1 },
+        ],
+        layers: { meadow: 0, danger: 1, boss: 1 },
+      },
+      { when: [{ status: 'level', eq: 'boss' }], layers: { meadow: 0, danger: 0, boss: 1 } },
+      {
+        when: [
+          { status: 'level', eq: 'meadow' },
+          { status: 'near', gte: 0, lt: 80 },
+        ],
+        layers: { meadow: 1, danger: 1, boss: 0 },
+      },
+      { layers: { meadow: 1, danger: 0, boss: 0 } },
+    ],
+  };
+
+  it('holds only when every test of the list holds', () => {
+    expect(
+      mixWhenHolds(
+        [
+          { status: 'level', eq: 'boss' },
+          { status: 'phase', gte: 1 },
+        ],
+        { level: 'boss', phase: 1 },
+      ),
+    ).toBe(true);
+    expect(
+      mixWhenHolds(
+        [
+          { status: 'level', eq: 'boss' },
+          { status: 'phase', gte: 1 },
+        ],
+        { level: 'boss', phase: 0 },
+      ),
+    ).toBe(false);
+    expect(
+      mixWhenHolds(
+        [
+          { status: 'level', eq: 'boss' },
+          { status: 'phase', gte: 1 },
+        ],
+        { level: 'boss' },
+      ),
+    ).toBe(false);
+    expect(mixWhenHolds({ status: 'level', eq: 'boss' }, { level: 'boss' })).toBe(true);
+  });
+
+  it('picks a rule per level and its danger', () => {
+    expect(mixRuleIndex(LEVELS, { level: 'boss', phase: 1 })).toBe(0);
+    expect(mixRuleIndex(LEVELS, { level: 'boss', phase: 0 })).toBe(1);
+    expect(mixRuleIndex(LEVELS, { level: 'meadow', near: 40 })).toBe(2);
+    expect(mixRuleIndex(LEVELS, { level: 'meadow', near: -1 })).toBe(3);
+    expect(mixRuleIndex(LEVELS, { level: 'hills', near: 40 })).toBe(3);
+  });
+
+  it('the schema takes one test or a non-empty list, never an empty one', () => {
+    expect(mixRuleSchema.safeParse({ when: [{ status: 'a', eq: 1 }], layers: { x: 1 } }).success).toBe(true);
+    expect(mixRuleSchema.safeParse({ when: { status: 'a', eq: 1 }, layers: { x: 1 } }).success).toBe(true);
+    expect(mixRuleSchema.safeParse({ when: [], layers: { x: 1 } }).success).toBe(false);
   });
 });
 

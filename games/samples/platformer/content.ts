@@ -13,8 +13,13 @@ import { kit as platformer } from '@kits/platformer/kit';
  * platformer kit's `contentStages`.
  */
 
-/** The song the page plays from the first key, tap or click on (`content/songs/meadow.json`). */
-export const PLATFORMER_MUSIC = 'meadow';
+/**
+ * The music the page plays once a level starts (T9): the skins' layered `music` entry, a calm and a
+ * drive layer per level and the boss's fight and rage layers (`content/songs/hopper-*.json`),
+ * mixed from each frame's status. The title plays `hopper-title`, the end screen `hopper-fanfare`
+ * (`game.json`'s `menus`).
+ */
+export const PLATFORMER_MUSIC = 'hoppers-way';
 
 /** The game's checked content, from `{ path: text }` pairs relative to `games/samples/platformer`. */
 export function loadHopper(files: Readonly<Record<string, string>>): ContentResult<ContentBundle> {

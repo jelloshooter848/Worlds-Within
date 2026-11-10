@@ -329,7 +329,10 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
     if (booted.menus !== null && run.ticks >= 150) expect(paused, 'the pause menu showed').toBeGreaterThan(0);
     // Display frames the loop took no tick on: hit-pauses, closing transitions, the pause menu.
     if (run.ticks >= 90) expect(frames - run.ticks, 'ticks were held').toBeGreaterThan(0);
-    if (song !== undefined) expect(booted.mixer?.state().song, 'the layered song played').toBe(song);
+    // Once the end screen opened, its own music (`menus.end.music`, a fanfare) is the last song.
+    const endSong = ends > 0 ? shown.manifest.menus?.end?.music : undefined;
+    if (song !== undefined)
+      expect(booted.mixer?.state().song, 'the layered song played').toBe(endSong ?? song);
     // Part B's screens and the respawn transition: what showed is checked over every run below
     // (a respawn that comes as a round's outcome plays under the round scene's own transition).
     stats.push({ file, respawned, respawnFrames, bannerFrames, ends });

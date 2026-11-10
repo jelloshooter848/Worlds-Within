@@ -1518,8 +1518,10 @@
     }
   },
   "events": {
-    "jump": {
-      "sound": "jump",
+    "jump:tier=0": {
+      "sound": "jump-short",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1],
       "emit": "jump-dust",
       "tween": [
         {
@@ -1536,11 +1538,79 @@
           "frames": 9,
           "ease": "quadOut"
         }
-      ],
+      ]
+    },
+    "jump:tier=1": {
+      "sound": "jump",
       "pitch": [-1, 1],
-      "volume": [0.85, 1]
+      "volume": [0.85, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "jump:tier=2": {
+      "sound": "jump-high",
+      "pitch": [-0.5, 0.5],
+      "volume": [0.9, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "jump": {
+      "sound": "jump",
+      "pitch": [-1, 1],
+      "volume": [0.85, 1],
+      "emit": "jump-dust",
+      "tween": [
+        {
+          "prop": "scaleY",
+          "from": 1.3,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleX",
+          "from": 0.8,
+          "to": 1,
+          "frames": 9,
+          "ease": "quadOut"
+        }
+      ]
     },
     "land": {
+      "sound": "land",
+      "pitch": [-2, 1],
+      "volume": [0.6, 0.9],
+      "cooldown": 6,
       "emit": "land-dust",
       "tween": [
         {
@@ -1560,23 +1630,42 @@
       ]
     },
     "footstep": {
+      "sound": "step",
+      "pitch": [-3, 3],
+      "volume": [0.5, 0.9],
+      "cooldown": 4,
       "emit": "run-dust"
     },
     "skid-dust": {
+      "sound": "skid",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1],
+      "cooldown": 10,
       "emit": "skid-dust"
     },
     "bump": {
+      "sound": "bump",
+      "pitch": [-1, 1],
+      "volume": [0.85, 1],
       "emit": "bump-bits",
       "shake": {
         "amount": 1.5,
         "ticks": 6
       }
     },
+    "block:content=life": {
+      "sound": "life",
+      "emit": "coin-burst"
+    },
     "block": {
+      "sound": "block",
+      "pitch": [-1, 1],
       "emit": "coin-burst"
     },
     "break": {
-      "sound": "stomp",
+      "sound": "break",
+      "pitch": [-2, 2],
+      "volume": [0.85, 1],
       "emit": "brick-bits",
       "shake": {
         "amount": 2,
@@ -1585,14 +1674,24 @@
     },
     "coin": {
       "sound": "coin",
-      "emit": ["coin-burst", "coin-sparkle"],
-      "pitch": [0, 2]
+      "pitch": [0, 1],
+      "volume": [0.85, 1],
+      "emit": ["coin-burst", "coin-sparkle"]
     },
     "spawn": {
+      "sound": "spawn",
       "emit": "respawn-ring"
     },
     "stomp": {
       "sound": "stomp",
+      "pitch": [-2, 2],
+      "volume": [0.9, 1],
+      "duck": {
+        "amount": 0.25,
+        "attack": 1,
+        "hold": 2,
+        "release": 12
+      },
       "emit": ["stomp-stars", "stomp-ring"],
       "shake": {
         "amount": 2.5,
@@ -1619,7 +1718,8 @@
       ]
     },
     "kick": {
-      "sound": "stomp",
+      "sound": "kick",
+      "pitch": [-1, 1],
       "emit": "stomp-ring",
       "shake": {
         "amount": 1.5,
@@ -1627,10 +1727,19 @@
       }
     },
     "defeat": {
+      "sound": "defeat",
+      "pitch": [-2, 2],
       "emit": "stomp-stars"
     },
     "hurt": {
       "sound": "hurt",
+      "pitch": [-1, 1],
+      "duck": {
+        "amount": 0.6,
+        "attack": 2,
+        "hold": 12,
+        "release": 40
+      },
       "emit": "hurt-sparks",
       "shake": {
         "amount": 3,
@@ -1655,7 +1764,13 @@
       }
     },
     "died": {
-      "sound": "fail",
+      "sound": "death",
+      "duck": {
+        "amount": 0.85,
+        "attack": 2,
+        "hold": 50,
+        "release": 60
+      },
       "shake": {
         "amount": 4,
         "ticks": 18
@@ -1673,9 +1788,12 @@
       "emit": "hurt-sparks"
     },
     "poof": {
+      "sound": "poof",
+      "volume": [0.7, 0.9],
       "emit": "dying-burst"
     },
     "respawn": {
+      "sound": "respawn",
       "emit": "respawn-ring",
       "tween": [
         {
@@ -1694,7 +1812,13 @@
       ]
     },
     "cleared": {
-      "sound": "pass",
+      "sound": "clear",
+      "duck": {
+        "amount": 1,
+        "attack": 2,
+        "hold": 110,
+        "release": 20
+      },
       "emit": "clear-confetti",
       "zoom": {
         "to": 1.25,
@@ -1705,18 +1829,19 @@
       }
     },
     "checkpoint": {
-      "sound": "coin",
+      "sound": "checkpoint",
       "emit": "flag-confetti",
-      "pitch": [3, 3],
       "shake": {
         "amount": 1,
         "ticks": 6
       }
     },
     "boss-telegraph:attack=shoot": {
+      "sound": "boss-shoot-warn",
       "emit": ["tele-glow", "tele-mark"]
     },
     "boss-telegraph:attack=charge": {
+      "sound": "boss-charge-warn",
       "emit": ["paw-dust", "ground-warn", "tele-mark"],
       "shake": {
         "amount": 1,
@@ -1724,6 +1849,7 @@
       }
     },
     "boss-telegraph:attack=leap": {
+      "sound": "boss-leap-warn",
       "emit": ["paw-dust", "tele-mark"],
       "tween": [
         {
@@ -1737,6 +1863,7 @@
       ]
     },
     "boss-telegraph:attack=drop": {
+      "sound": "boss-drop-warn",
       "emit": ["canopy-leaves", "tele-mark"],
       "shake": {
         "amount": 1.5,
@@ -1744,6 +1871,8 @@
       }
     },
     "boss-attack:attack=shoot": {
+      "sound": "boss-shoot",
+      "pitch": [-1, 1],
       "emit": "spit",
       "tween": {
         "prop": "scaleX",
@@ -1754,6 +1883,7 @@
       }
     },
     "boss-attack:attack=charge": {
+      "sound": "boss-charge",
       "emit": "charge-dust",
       "shake": {
         "amount": 2,
@@ -1761,6 +1891,8 @@
       }
     },
     "boss-attack:attack=leap": {
+      "sound": "boss-leap",
+      "pitch": [-1, 1],
       "emit": "charge-dust",
       "tween": [
         {
@@ -1780,13 +1912,22 @@
       ]
     },
     "boss-attack:attack=drop": {
+      "sound": "boss-drop",
+      "pitch": [-1, 1],
       "shake": {
         "amount": 1.5,
         "ticks": 8
       }
     },
     "boss-hit": {
-      "sound": "stomp",
+      "sound": "boss-hit",
+      "pitch": [-1, 1],
+      "duck": {
+        "amount": 0.55,
+        "attack": 2,
+        "hold": 10,
+        "release": 36
+      },
       "emit": ["boss-hit-stars", "boss-hit-ring"],
       "shake": {
         "amount": 4,
@@ -1818,6 +1959,13 @@
       ]
     },
     "boss-defeat": {
+      "sound": "boss-defeat",
+      "duck": {
+        "amount": 0.9,
+        "attack": 4,
+        "hold": 120,
+        "release": 90
+      },
       "emit": ["boss-hit-stars", "boss-hit-ring", "defeat-pop"],
       "shake": {
         "amount": 6,
@@ -1857,6 +2005,8 @@
       ]
     },
     "boss-pop": {
+      "sound": "boss-pop",
+      "pitch": [-3, 3],
       "emit": "defeat-pop",
       "shake": {
         "amount": 2,
@@ -1864,6 +2014,7 @@
       }
     },
     "boss-crack": {
+      "sound": "boss-crack",
       "emit": "shell-chips",
       "shake": {
         "amount": 3,
@@ -1871,6 +2022,13 @@
       }
     },
     "boss-blast": {
+      "sound": "boss-blast",
+      "duck": {
+        "amount": 0.9,
+        "attack": 2,
+        "hold": 30,
+        "release": 60
+      },
       "emit": ["defeat-blast", "defeat-smoke"],
       "shake": {
         "amount": 7,
@@ -1886,9 +2044,11 @@
       }
     },
     "boss-telegraph": {
+      "sound": "boss-warn",
       "emit": "tele-mark"
     },
     "boss-attack": {
+      "sound": "boss-attack",
       "shake": {
         "amount": 1,
         "ticks": 6
@@ -2573,6 +2733,297 @@
       "size": [5, 6, 4],
       "color": ["#6a6070", "#8a8090", "#4a4050"],
       "alpha": [0.8, 0.5, 0]
+    }
+  },
+  "music": {
+    "hoppers-way": {
+      "layers": {
+        "meadow": "hopper-meadow",
+        "meadow-drive": "hopper-meadow-drive",
+        "autumn": "hopper-autumn",
+        "autumn-drive": "hopper-autumn-drive",
+        "night": "hopper-night",
+        "night-drive": "hopper-night-drive",
+        "boss": "hopper-boss",
+        "boss-rage": "hopper-boss-rage"
+      },
+      "fade": 40,
+      "mix": [
+        {
+          "when": {
+            "status": "outcome",
+            "eq": "cleared"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 8
+        },
+        {
+          "when": {
+            "status": "outcome",
+            "eq": "failed"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "defeated"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 45
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "gone"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossState",
+              "eq": "asleep"
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0.45,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "boss"
+            },
+            {
+              "status": "bossPhase",
+              "gte": 1
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 1,
+            "boss-rage": 1
+          },
+          "fade": 10
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "boss"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 1,
+            "boss-rage": 0.35
+          },
+          "fade": 20
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-1"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 1,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-1"
+          },
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 0.15,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-2"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 1,
+            "autumn-drive": 1,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-2"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 1,
+            "autumn-drive": 0.15,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "when": [
+            {
+              "status": "level",
+              "eq": "level-3"
+            },
+            {
+              "status": "nearestActor",
+              "gte": 0,
+              "lt": 96
+            }
+          ],
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 1,
+            "night-drive": 1,
+            "boss": 0,
+            "boss-rage": 0
+          },
+          "fade": 12
+        },
+        {
+          "when": {
+            "status": "level",
+            "eq": "level-3"
+          },
+          "layers": {
+            "meadow": 0,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 1,
+            "night-drive": 0.15,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        },
+        {
+          "layers": {
+            "meadow": 1,
+            "meadow-drive": 0,
+            "autumn": 0,
+            "autumn-drive": 0,
+            "night": 0,
+            "night-drive": 0,
+            "boss": 0,
+            "boss-rage": 0
+          }
+        }
+      ]
     }
   }
 }

@@ -306,6 +306,19 @@ describe("validate: game.json's menus (Engine 0.16 T9)", () => {
     pause: { items: ['resume', 'settings', 'title'] },
   };
 
+  it("reports an end screen's music the game lacks (Engine 0.16 part B)", () => {
+    // The test font has no ":" or "-" for the stat digits: only the music refs are looked at.
+    const refs = (music: string) =>
+      loadContent(
+        game({ ...good, end: { heading: 'The end', items: ['title'], music } }),
+        engineContentKinds(),
+      )
+        .errors.filter((e) => e.code === 'missing_ref')
+        .map((e) => e.path);
+    expect(refs('tune')).toEqual([]);
+    expect(refs('jingle')).toEqual(['menus.end.music']);
+  });
+
   it('passes a good menus block', () => {
     expect(loadContent(game(good), engineContentKinds()).errors).toEqual([]);
   });

@@ -14,6 +14,9 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import { stateHash } from '@engine/core/state-hash';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { compileSong } from '@engine/core/audio/mml';
+import { LayerMix } from '@engine/core/audio/mix';
+import { Mixer, type MixerAudio } from '@engine/core/audio/mixer';
+import { resolveSkinEvent, skinSoundCue } from '@engine/core/present';
 import { ACTOR_ANIMS, BOSS_ANIMS, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
 import { loadHopper, PLATFORMER_MUSIC, hopperStages } from './content';
 import { hopperLook, hopperPicture } from './picture';
@@ -215,16 +218,6 @@ describe("Hopper's Way: skins (the art and feel pass, T6)", () => {
     expect(Object.keys(look3d.skin.events ?? {}).sort()).toEqual(Object.keys(look.skin.events ?? {}).sort());
     expect(look3d.skin.hud).toEqual(look.skin.hud);
     expect(look3d.skin.camera).toEqual(look.skin.camera);
-  });
-
-  it('names only sounds the game has, and one song that compiles, the one the page plays', () => {
-    const sfx = new Set(contentSfx(content).map((s) => s.id));
-    for (const skin of [look.skin, look3d.skin] as SkinFile[])
-      for (const entry of Object.values(skin.events ?? {}))
-        if (entry.sound !== undefined) expect(sfx, entry.sound).toContain(entry.sound);
-    const songs = contentSongs(content);
-    expect(songs.map((s) => s.id)).toEqual([PLATFORMER_MUSIC]);
-    expect(compileSong(songs[0]!).length).toBeGreaterThan(0);
   });
 
   it.each(RUNS)(
@@ -432,5 +425,246 @@ describe("Hopper's Way: the mini-boss's arena (T8)", () => {
     expect(menus.clear?.lines?.map((l) => l.status)).toEqual(['coins', 'time', 'deaths']);
     expect(menus.end?.items).toEqual(['title', 'levels']);
     expect(menus.end?.lines?.map((l) => l.status)).toEqual(['coins', 'time', 'deaths']);
+  });
+});
+
+/** A presented frame, as the view gives it (read-only). */
+type Frame = ReturnType<NonNullable<ReturnType<typeof createView>['frame']>>;
+
+/** Every frame of a run file, as the screenshot tool and a page see them. */
+function eachFrame(name: string, see: (frame: Frame, tick: number) => void): void {
+  const run = runOf(name);
+  const view = createView(content, 1, run.start ? { start: run.start } : {});
+  const input = new ScriptedInput(run.input);
+  for (let t = 0; t <= run.ticks; t++) {
+    if (t > 0) {
+      input.next();
+      view.step(input);
+    }
+    see(view.frame!(), t);
+  }
+}
+
+describe("Hopper's Way: music and sound (T9)", () => {
+  const look = hopperLook(imaged);
+  const look3d = hopperLook3d(content);
+  const skins = { canvas2d: look.skin, three: look3d.skin } as Record<string, SkinFile>;
+  const sfx = new Set(contentSfx(content).map((s) => s.id));
+  const songs = new Map(contentSongs(content).map((s) => [s.id, s]));
+  const music = look.skin.music![PLATFORMER_MUSIC]!;
+
+  /** Every distinct kit event the run files show (one per type and the fields a skin keys on). */
+  const kitEvents = new Map<string, { type: string } & Record<string, unknown>>();
+  for (const name of RUNS)
+    eachFrame(name, (frame) => {
+      for (const e of frame.events) {
+        const ev = e as { type: string } & Record<string, unknown>;
+        kitEvents.set(JSON.stringify([ev.type, ev['tier'], ev['attack'], ev['content']]), ev);
+      }
+    });
+
+  /**
+   * Every event the platformer kit can send in this game (no mini games): the runs show most;
+   * a brick, a shell, a block's actor and a life are the kit's too, so they have their sounds.
+   */
+  const KIT_EVENTS: ({ type: string } & Record<string, unknown>)[] = [
+    ...[0, 1, 2].map((tier) => ({ type: 'jump', tier })),
+    ...['land', 'bump', 'break', 'coin', 'spawn', 'stomp', 'kick', 'defeat', 'hurt', 'died'].map((type) => ({
+      type,
+    })),
+    ...['respawn', 'checkpoint', 'cleared', 'boss-hit', 'boss-defeat'].map((type) => ({ type })),
+    ...['coin', 'coins', 'life'].map((content) => ({ type: 'block', content })),
+    ...['shoot', 'charge', 'leap', 'drop'].flatMap((attack) => [
+      { type: 'boss-telegraph', attack },
+      { type: 'boss-attack', attack },
+    ]),
+  ];
+
+  /** Frame events a skin's cycles name that play no sound of their own. */
+  const SILENT_FRAME_EVENTS = new Set(['dying']); // the remains appear on the `died` event's tick
+
+  it('names only sounds the game has, and every song compiles', () => {
+    for (const skin of Object.values(skins))
+      for (const [key, entry] of Object.entries(skin.events ?? {}))
+        if (entry.sound !== undefined) expect(sfx, `${skin.backend} ${key}`).toContain(entry.sound);
+    for (const song of songs.values()) expect(compileSong(song).length, song.id).toBeGreaterThan(0);
+  });
+
+  it('has a sound for every kit event the runs show, in the 2D and 3D skins', () => {
+    expect(kitEvents.size).toBeGreaterThan(20);
+    const silent: string[] = [];
+    for (const [backend, skin] of Object.entries(skins))
+      for (const [key, ev] of kitEvents)
+        if (resolveSkinEvent(skin.events, ev)?.sound === undefined) silent.push(`${backend} ${key}`);
+    expect(silent).toEqual([]);
+  });
+
+  it('has a sound for every event the kit can send here, a jump per tier and a telegraph per attack', () => {
+    const sound = (skin: SkinFile, ev: { type: string } & Record<string, unknown>) =>
+      resolveSkinEvent(skin.events, ev)?.sound;
+    for (const [backend, skin] of Object.entries(skins)) {
+      for (const ev of KIT_EVENTS) expect(sound(skin, ev), `${backend} ${JSON.stringify(ev)}`).toBeDefined();
+      expect(new Set([0, 1, 2].map((tier) => sound(skin, { type: 'jump', tier }))).size).toBe(3);
+      const attacks = ['shoot', 'charge', 'leap', 'drop'];
+      expect(new Set(attacks.map((attack) => sound(skin, { type: 'boss-telegraph', attack }))).size).toBe(4);
+      expect(new Set(attacks.map((attack) => sound(skin, { type: 'boss-attack', attack }))).size).toBe(4);
+      expect(sound(skin, { type: 'block', content: 'life' })).not.toBe(
+        sound(skin, { type: 'block', content: 'coin' }),
+      );
+    }
+  });
+
+  it("has a sound for every skin frame event (footsteps, the skid, the puff, the boss's defeat)", () => {
+    const named = new Set<string>();
+    const walk = (o: unknown, inCycle: boolean): void => {
+      if (Array.isArray(o)) o.forEach((v) => walk(v, inCycle));
+      else if (o !== null && typeof o === 'object')
+        for (const [k, v] of Object.entries(o)) {
+          if (k === 'events' && inCycle)
+            Object.values(v as Record<string, string>).forEach((t) => named.add(t));
+          else walk(v, inCycle || k === 'kinds');
+        }
+    };
+    for (const skin of Object.values(skins)) walk(skin.kinds, true);
+    expect([...named].sort()).toEqual(
+      ['boss-blast', 'boss-crack', 'boss-pop', 'dying', 'footstep', 'poof', 'skid-dust'].sort(),
+    );
+    for (const [backend, skin] of Object.entries(skins))
+      for (const type of named)
+        if (!SILENT_FRAME_EVENTS.has(type))
+          expect(skin.events?.[type]?.sound, `${backend} ${type}`).toBeDefined();
+  });
+
+  it('varies the sounds heard over and over: jumps, steps, landings, coins, stomps and bumps', () => {
+    for (const skin of Object.values(skins))
+      for (const key of [
+        'jump:tier=0',
+        'jump:tier=1',
+        'footstep',
+        'land',
+        'coin',
+        'stomp',
+        'bump',
+        'boss-pop',
+      ]) {
+        const e = skin.events![key]!;
+        expect(e.pitch ?? e.volume, `${skin.backend} ${key}`).toBeDefined();
+      }
+  });
+
+  it('plays a sound for every UI move, its own title song and an end fanfare', () => {
+    const menus = content.manifest.menus!;
+    const ui = menus.style!.sounds!;
+    for (const id of [ui.move, ui.select, ui.back]) expect(sfx).toContain(id);
+    expect(new Set([ui.move, ui.select, ui.back]).size).toBe(3);
+    expect(songs.get(menus.title.music!)?.loop).toBe(true);
+    expect(songs.get(menus.end!.music!)?.loop).toBe(false);
+  });
+
+  it('mixes one layered song, the same in both skins: a calm and a drive layer per level, two for the boss', () => {
+    expect(look3d.skin.music).toEqual(look.skin.music);
+    expect(Object.keys(look.skin.music ?? {})).toEqual([PLATFORMER_MUSIC]);
+    expect(Object.keys(music.layers).sort()).toEqual(
+      [
+        'autumn',
+        'autumn-drive',
+        'boss',
+        'boss-rage',
+        'meadow',
+        'meadow-drive',
+        'night',
+        'night-drive',
+      ].sort(),
+    );
+    for (const song of Object.values(music.layers)) expect(songs.has(song), song).toBe(true);
+  });
+
+  /** The layer levels at every tick of a run, as the page's mixer sets them from each frame. */
+  const mixOf = (name: string) => {
+    const mix = new LayerMix(music);
+    const out: { tick: number; status: Frame['status']; gains: Record<string, number> }[] = [];
+    eachFrame(name, (frame, tick) =>
+      out.push({ tick, status: frame.status, gains: mix.update(frame.status) }),
+    );
+    return out;
+  };
+  const LEVEL_LAYERS: Record<string, [string, string]> = {
+    'level-1': ['meadow', 'meadow-drive'],
+    'level-2': ['autumn', 'autumn-drive'],
+    'level-3': ['night', 'night-drive'],
+    boss: ['boss', 'boss-rage'],
+  };
+
+  it.each(['level-1', 'level-2', 'level-3'])(
+    "plays %s's own layers: the drive comes up near an enemy and drops away, and stops at the clear",
+    (level) => {
+      const seen = mixOf(`${level}.run.json`);
+      const [calm, drive] = LEVEL_LAYERS[level]!;
+      const playing = seen.filter((s) => s.status['outcome'] === 'playing');
+      // Only this level's layers sound while it is played.
+      for (const s of playing)
+        for (const [layer, gain] of Object.entries(s.gains))
+          if (layer !== calm && layer !== drive) expect(gain, `${layer} at ${s.tick}`).toBeLessThan(0.05);
+      expect(playing.some((s) => s.gains[calm] === 1)).toBe(true);
+      const drives = playing.map((s) => s.gains[drive]!);
+      expect(Math.max(...drives)).toBe(1); // an enemy near
+      expect(Math.min(...drives)).toBeLessThan(0.2); // none near
+      const near = playing.find((s) => s.gains[drive] === 1)!;
+      const status = near.status['nearestActor'] as number;
+      expect(status).toBeGreaterThanOrEqual(0);
+      expect(status).toBeLessThan(96);
+      // Cleared: every layer fades out under the clear jingle.
+      const last = seen[seen.length - 1]!;
+      expect(last.status['outcome']).toBe('cleared');
+      expect(Math.max(...Object.values(last.gains))).toBe(0);
+    },
+  );
+
+  it("plays the boss's fight layer, adds the rage layer in its second phase, and falls silent at its defeat", () => {
+    const seen = mixOf('boss.run.json');
+    const at = (when: (s: (typeof seen)[number]) => boolean) => seen.filter(when);
+    const asleep = at((s) => s.status['bossState'] === 'asleep');
+    expect(asleep.length).toBeGreaterThan(0);
+    expect(asleep.every((s) => s.gains['boss']! < 0.5 && s.gains['boss-rage'] === 0)).toBe(true);
+    const phase2 = at((s) => s.status['bossPhase'] === 1 && s.status['bossState'] !== 'defeated');
+    expect(phase2.length).toBeGreaterThan(0);
+    expect(phase2.some((s) => s.gains['boss'] === 1 && s.gains['boss-rage'] === 1)).toBe(true);
+    const phase1 = at((s) => s.status['bossPhase'] === 0 && s.status['bossState'] !== 'asleep');
+    expect(phase1.some((s) => s.gains['boss'] === 1 && s.gains['boss-rage']! < 0.5)).toBe(true);
+    const last = seen[seen.length - 1]!;
+    expect(Math.max(...Object.values(last.gains))).toBe(0);
+    for (const s of seen)
+      for (const layer of ['meadow', 'autumn', 'night', 'meadow-drive', 'autumn-drive', 'night-drive'])
+        expect(s.gains[layer], `${layer} at ${s.tick}`).toBeLessThan(0.05);
+  });
+
+  it('ducks the music under the big hits: a hurt, a death, a boss hit and its defeat', () => {
+    for (const skin of Object.values(skins))
+      for (const key of ['hurt', 'died', 'boss-hit', 'boss-defeat', 'boss-blast'])
+        expect(skin.events![key]!.duck?.amount, `${skin.backend} ${key}`).toBeGreaterThanOrEqual(0.5);
+    // Through the shell's mixer, as the page plays the boss run: the music dips on each boss hit.
+    const ducks: number[] = [];
+    const audio: MixerAudio = {
+      playMusic: () => {},
+      sfx: () => {},
+      setLayerGains: () => {},
+      setDuck: (f) => void ducks.push(f),
+      volumeLevels: { master: 1, music: 1, sfx: 1, muted: false },
+    };
+    const mixer = new Mixer({ audio, music: look.skin.music!, seed: 1 });
+    mixer.play(PLATFORMER_MUSIC);
+    const hits: number[] = [];
+    eachFrame('boss.run.json', (frame, tick) => {
+      mixer.frameStatus(frame.status);
+      for (const ev of frame.events) {
+        const entry = resolveSkinEvent(look.skin.events, ev as { type: string });
+        if (entry?.sound !== undefined) mixer.sound(entry.sound, skinSoundCue(entry, frame.frame));
+        if (ev.type === 'boss-hit') hits.push(tick);
+      }
+      mixer.tick();
+    });
+    expect(hits.length).toBe(4);
+    for (const tick of hits) expect(Math.min(...ducks.slice(tick, tick + 6))).toBeLessThan(0.6);
+    expect(ducks.slice(hits[0]!, hits[1]!)).toContain(1); // back up between hits
   });
 });

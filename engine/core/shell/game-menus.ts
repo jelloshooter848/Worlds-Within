@@ -283,7 +283,8 @@ export class GameMenus {
       this.busy = false;
       this.closeAll();
       this.newGame();
-      if (this.opts.spec.title.music !== undefined) this.opts.music?.(null);
+      if (this.opts.spec.title.music !== undefined || this.opts.spec.end?.music !== undefined)
+        this.opts.music?.(null);
       this.opts.startAt!(stage);
     });
   }
@@ -365,6 +366,7 @@ export class GameMenus {
     this.banner = null;
     this.from = 'end';
     this.push('end');
+    if (this.opts.spec.end?.music !== undefined) this.opts.music?.(this.opts.spec.end.music);
     return true;
   }
 

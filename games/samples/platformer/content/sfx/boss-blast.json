@@ -1,0 +1,7 @@
+{
+  "id": "boss-blast",
+  "bpm": 180,
+  "noise": "v15 x1 l4 n15 n14",
+  "triangle": "l8 o2 p-12 c2",
+  "pulse": "v8 @3 l16 o3 p-12 c4"
+}

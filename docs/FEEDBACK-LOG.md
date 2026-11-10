@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 384.** (Last used: 383.)
+**Next unused number: 388.** (Last used: 387.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1513,3 +1513,25 @@ files")
   cleared, the four wins' input on their stages' ticks: the headless equivalent of title to end
   screen; the end screen itself is checked by the browser test). The boss runs were found by a
   small reactive bot whose keys were recorded. OK?
+
+**Engine 0.16 part B, T9: layered music and a sound for every action** (details in
+`games/samples/platformer/CLAUDE.md`, "Build choices (T9)" and "Music and sound")
+
+- **384.** The music: one layered song, `hoppers-way`, with a calm and a drive layer per level
+  (Meadow in C major, Autumn Hills in A minor, Starlit Ridge in E minor) and the boss's fight and
+  rage layers (D minor), all 150 bpm and 16 bars so they stay in step; the level's own layers
+  play, the drive layer comes up within 96 px of an enemy, the rage layer joins in Burrlock's
+  second phase, and everything fades out at a clear, a game over and the boss's defeat. Its own
+  title tune and an end fanfare. All original MML; no CC0 sound pack was fetched. OK, or would you
+  rather each level start its own song from the top (needs an engine change: music chosen by status)?
+- **385.** Two small engine additions: a mix rule's `when` may be a list of status tests that must
+  all hold (a level and its danger), and `game.json`'s `menus.end.music` plays a song when the end
+  screen opens. OK?
+- **386.** The sounds: 39 original sfx, a jump per tier, footsteps on the run cycle's frames, a
+  skid, land, bump, block, a 1-up for the life block, break, coin, stomp, kick, hurt, death, the
+  puff, respawn, checkpoint, a telegraph and an attack sound per boss attack, the boss's hit,
+  defeat, pops, crack and blast, the clear jingle and the UI moves; most vary in pitch and volume,
+  steps and landings rest a few frames. OK?
+- **387.** Ducking: a hurt (60%), a death (85%), a boss hit (55%), the boss's defeat and its blast
+  (90%) and a stomp (a light 25%) duck the music; the level clear mutes it under the jingle. Too
+  much or too little?

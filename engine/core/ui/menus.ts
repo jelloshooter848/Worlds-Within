@@ -337,6 +337,13 @@ export const menusSchema = z
         items: itemList(END_ITEMS, 'end')
           .exactOptional()
           .describe(`its menu: ${END_ITEMS.join(', ')} (default title)`),
+        music: z
+          .string()
+          .min(1)
+          .exactOptional()
+          .describe(
+            "a song (or layered music entry) played when the end screen opens, such as a short jingle; the game's music comes back when a level is chosen",
+          ),
       })
       .exactOptional()
       .describe('the end screen (Engine 0.16 part B), shown once the last level is cleared'),
@@ -1038,6 +1045,8 @@ export function checkMenus(menus: MenusSpec, refs: MenusRefs): Omit<KindIssue, '
   if (menus.style?.panel !== undefined) frameAt(['style', 'panel'], menus.style.panel);
   if (menus.title.music !== undefined && !refs.sounds.has(menus.title.music))
     missing(['title', 'music'], 'song', menus.title.music);
+  if (menus.end?.music !== undefined && !refs.sounds.has(menus.end.music))
+    missing(['end', 'music'], 'song', menus.end.music);
   for (const [key, id] of Object.entries(menus.style?.sounds ?? {}))
     if (id !== undefined && !refs.sounds.has(id)) missing(['style', 'sounds', key], 'sfx or song', id);
   const wantsControls = [...menus.title.items, ...menus.pause.items].includes('controls');
