@@ -327,9 +327,26 @@ content lacks (`missing_level`, `missing_mission`, `missing_scenario`, at `entri
 `.mission` or `.scenario`; scenarios are found by shape through `others(ANY_KIND)`,
 `campaignScenarios`), and a scenario entry whose scenario has a `from` naming anything but the
 scenario entry just before it in play order (`bad_from`; the first scenario entry may have a `from`
-and then starts as written), so `pnpm cli validate` names the file and field.
-`campaignOrder(campaign)` is the entries from `start` and then round to the ones before it;
-`campaignLevels(campaign)` the level ids in that order; `entryKind`, `entryId`. The platformer
+and then starts as written), so `pnpm cli validate` names the file and field. From Engine 0.16
+F4 a scenario entry may give a `clock` (`{ day, hour, minute? }`, what the world clock reads at
+its world tick 0; on another entry `bad_entry` at `clock`) and the campaign `ticksPerHour` (1-3600,
+default 60: a tick a minute); `checkCampaigns` reports an entry whose clock reads before that of
+the clocked entry played before it (`clock_backwards`, at `entries.<i>.clock`), and
+`entryWorldClock(campaign, entry, worldTick)` gives the entry's clock at a tick (null without
+one).
+
+`clock.ts` (Engine 0.16 F4): the world clock, presentation only (derived from the campaign entry
+and the world tick, never in a world, hash or save code). `clockTimeSchema` (`{ day >= 1, hour
+0-23, minute? 0-59 }`), `worldClock(start, worldTick, ticksPerHour = DEFAULT_TICKS_PER_HOUR)` ->
+`WorldClock` `{ day, hour, minute, time ('15:04'), text ('Day 2 15:04'), phase, fraction (0 up to
+
+1. }`(whole minutes, rounded down),`clockAt(minutes)`, `clockMinutes(time)`, `dayPhase(hour)`
+(`DAY_PHASES`: dawn from 5, morning 7, afternoon 12, late afternoon 15, evening 18, night 21;
+`DAY_PHASE_STARTS`) and `clockStatus(clock, prefix = 'clock')`, the frame status a skin reads
+(`clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`; `CLOCK_STATUS_FIELDS`).
+A game hands it to `hostedSource`'s `status`(the mini siege does). Pure (on`PURE_CORE`);
+tested in `clock.test.ts`.
+`campaignOrder(campaign)`is the entries from`start`and then round to the ones before it;`campaignLevels(campaign)`the level ids in that order;`entryKind`, `entryId`. The platformer
 kit's `contentStages` plays the level entries.
 
 **Played in order** (Engine 0.13, closing the 0.10 leftover): a campaign run's state is its
@@ -552,7 +569,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `clock.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**`, `draw/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

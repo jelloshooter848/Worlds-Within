@@ -192,6 +192,7 @@ export const PURE_CORE = [
   'engine/core/orders.ts',
   'engine/core/missions.ts',
   'engine/core/campaign.ts',
+  'engine/core/clock.ts',
   'engine/core/campaign-code.ts',
   'engine/core/carried.ts',
   'engine/core/rts-types.ts',

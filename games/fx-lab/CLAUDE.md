@@ -265,6 +265,22 @@ The models are `assets/fx-lab-decor/{bush,pine,flowers,stone}.gltf`, embedded `.
 keeps them byte for byte). `places.meadow` names `THE POND`, `THE PATH` and `OLD WALL` (off the
 picture at the example's framing until you pan). The page takes `?scale=<n>` (`renderScale`).
 
+### Time of day (Engine 0.16 F4)
+
+The ground skin's `scene3d.timeOfDay` has keys at 03:00 (night: a dim blue moon from the right,
+dark navy sky and fog), 06:30 (dawn: a low orange sun from the left, peach sky and fog), 13:00
+(the skin's own look), 17:30 (warm late light), 19:30 (dusk: a low red sun from the right) and
+22:00 (night), eased over 45 frames (`sineInOut`) on a jump. Its `hud` is one `clock` item at the
+top centre (`Day {day} {time} {phase}` in `fx-small` with a black outline over a 3 px day bar:
+night, dawn, day, late light and dusk bands, marks at 6, 12 and 18, a white marker).
+`groundClock(hour, n, jump?)` gives frame `n` the world clock (`clockStatus`) at `hour` of day 1,
+two hours later from frame `jump` (a mission's commit cost); `groundFrame(n, camera, screen,
+clock?)` adds it to the status (none by default: the skin's own look and no clock HUD). The page
+takes `?hour=<h>&jump=<n>`; `tests/browser/fx-lab-ground.test.ts` shoots 13:00, 20:30 and ten
+frames into a jump from 13:00 (`fx-lab-ground-13h.png`, `-20h30.png`, `-jump.png` under
+`WW_SHOTS_DIR`; looked at for F4: the evening picture dark blue-green with the braziers glowing,
+the clock reading `Day 1 20:30 evening` with its marker in the dusk band).
+
 ## Run and test
 
 ```sh

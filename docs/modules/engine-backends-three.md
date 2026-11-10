@@ -137,6 +137,18 @@ Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which sk
 browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is
 drawn at `?backend=three`.
 
+## Engine 0.16 F4: the time of day
+
+- A skin's `scene3d.timeOfDay` (`{ status?, tween?, ease?, keys: [{ hour, sun?, ambient?,
+hemisphere?, fog?, background?, exposure? }] }`) is applied by `ThreeScene` each `sync` from the
+  frame's world clock (`clock.day`, `clock.fraction`): the sun's colour, strength and direction,
+  the ambient, the hemisphere light, the fog, the background and the exposure (`scene.exposure`,
+  read by the presenter), interpolated between the keys round the day. A jump in world time of
+  more than half an hour eases over `tween` display frames (`DayClockTween`). A frame without the
+  clock, or a skin without `timeOfDay`, looks as before. Read-outs `dayLook` and `dayHour`.
+  Tested in `engine/backends/three/time-of-day.test.ts`; the fx lab's ground page
+  (`?hour=<h>&jump=<n>`) is shot by `tests/browser/fx-lab-ground.test.ts`.
+
 ## Engine 0.16 F3: crisp output, instanced tile models, decor and places
 
 - `ThreePresenter({ renderScale?, decor? })`, `threeDisplay({ renderScale?, decor? })`,

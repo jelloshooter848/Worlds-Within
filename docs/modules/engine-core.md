@@ -233,6 +233,14 @@ keys?)` and `playMissionRound`'s `keys`, a mission file's optional `marker` (a s
 worldTick, missionsOpen })`, the one entry-end rule; save code v2 (`SAVE_CODE_VERSION` 2,
   `saveCodeId(id)`: campaigns and missions by stable 12-bit id code; v1 codes still read;
   `code_collision` from `validate` and on encoding).
+- The world clock (Engine 0.16 F4, `clock.ts`): `worldClock(start, worldTick, ticksPerHour?)` ->
+  `{ day, hour, minute, time, text, phase, fraction }`, `clockStatus(clock, prefix?)` (the frame
+  status `clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`), `dayPhase`,
+  `DAY_PHASES`, `clockTimeSchema`; a campaign entry's `clock: { day, hour, minute? }` and the
+  campaign's `ticksPerHour` (default 60), `entryWorldClock(campaign, entry, worldTick)`, and
+  `validate`'s `clock_backwards`. Presentation only: derived from the entry and the world tick,
+  never in a world, hash or save code. Example: `clockStatus(worldClock({ day: 2, hour: 14 },
+64))['clock.text']` is `Day 2 15:04`.
 
 ## Imports allowed
 

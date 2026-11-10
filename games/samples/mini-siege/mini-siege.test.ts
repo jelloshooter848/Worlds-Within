@@ -23,6 +23,7 @@ import {
   siegeTypes,
 } from './content';
 import { createGame, miniGames, type MiniSiegeGame, type NamedSummary } from './headless';
+import { siegeFrames } from './picture';
 
 // Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
 // take more than vitest's default 5 s on a busy machine.
@@ -477,9 +478,16 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     // The siege, then the dawn; entries after them are data a scenario adds by itself (Engine
     // 0.14 T12, gap M37: the ridge camp), never pinned here.
     // Each entry's briefing `text` (Engine 0.15 T10, gap M34) is the page's to show, not pinned.
+    // Each has a world clock (Engine 0.16 F4): the siege from 14:00 on day 2, the dawn at 05:30.
     expect(campaign.entries.slice(0, 2).map(({ text: _text, ...entry }) => entry)).toEqual([
-      { scenario: 'village', ticks: 260, title: 'The siege', endIf: { gone: 'hall' } },
-      { scenario: 'dawn', ticks: 200, title: 'The dawn assault' },
+      {
+        scenario: 'village',
+        ticks: 260,
+        title: 'The siege',
+        endIf: { gone: 'hall' },
+        clock: { day: 2, hour: 14 },
+      },
+      { scenario: 'dawn', ticks: 200, title: 'The dawn assault', clock: { day: 3, hour: 5, minute: 30 } },
     ]);
     expect(campaign.entries.every((e) => (e.text ?? '').length > 0)).toBe(true);
     expect(siegeMap(content, 'dawn').from?.scenario).toBe('village');
@@ -714,5 +722,22 @@ describe('the dawn assault: the follow-up that starts from the siege (Engine 0.1
     expect(game.entryOver()).toBe(false);
     expect(game.campaignSave()).toBeNull();
     expect(play('quit').entryOver()).toBe(true);
+  });
+});
+
+describe('the world clock (Engine 0.16 F4)', () => {
+  it("puts the campaign entry's clock, moved on by the world tick, on every frame", () => {
+    const game = createGame(content, SEED);
+    const frames = siegeFrames(content);
+    expect(frames.next(game, []).status).toMatchObject({
+      'clock.day': 2,
+      'clock.time': '14:00',
+      'clock.text': 'Day 2 14:00',
+      'clock.phase': 'afternoon',
+      'clock.fraction': 14 / 24,
+    });
+    while (game.sim.tick < 64) game.step(NO_INPUT);
+    expect(game.clock()).toMatchObject({ day: 2, time: '15:04', phase: 'late afternoon' });
+    expect(frames.next(game, []).status['clock.text']).toBe('Day 2 15:04');
   });
 });

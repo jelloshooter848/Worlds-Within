@@ -58,11 +58,15 @@ tiles?, events?, hud?, camera?, meshes?, camera3d? }`. `background` (Engine 0.15
   (`EVENT_KEY_FIELD`; `mini-game-end:pass`), `type:field=value` any other
   (`mission-commit:outcome=both-burnt`); any other shape is `bad_event_key`; `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 the UI kit's
-  widgets (`as: bar | counter | panel | minimap`, `HUD_WIDGET_TYPES`; `HUD_CLASSIC_TYPES` are the
+  widgets (`as: bar | counter | panel | minimap`, and from F4 `clock`, `HUD_WIDGET_TYPES`; `HUD_CLASSIC_TYPES` are the
   four before) with their fields (`w`, `h`, `color`, `shadow`, `outline`, `align`, `format` with
   `{value}` (`HUD_VALUE_TOKEN`), `digits`, `gap`, `tween`, `max`, `back`, `border`, `low`,
-  `panel`, `slice`, `fill`, `scale`, `tiles`, `dots`; `status` optional for `panel`, `minimap`
-  and a `text` with a `format`; laid out by `engine/core/ui`'s `SkinHud`). Cross-file:
+  `panel`, `slice`, `fill`, `scale`, `tiles`, `dots`, and F4's `dayBar` `{ h?, back?, bands?, marks?,
+markColor?, marker? }` (a `clock` item only, else `bad_field`); `status` optional for `panel`, `minimap`, `clock`
+  (there the clock's status prefix, default `clock`) and a `text` with a `format`; a `clock` needs
+  `w`, `h` and a `font`, and its `format` (default `HUD_CLOCK_FORMAT`, `Day {day} {time}`) takes
+  the tokens `HUD_CLOCK_TOKENS` (`{day}`, `{time}`, `{phase}`, `{text}`; `{value}` is the text),
+  checked for every glyph they can show; laid out by `engine/core/ui`'s `SkinHud`). Cross-file:
   `checkSkinRefs` checks a `panel`'s frame, and the HUD's fonts: a `format` character or (for a
   number or counter) a digit a font file lacks is `missing_glyph` at `hud.<i>.format` or
   `hud.<i>.font`, a counter's or styled text's font that is neither a font nor a sprite file
@@ -204,7 +208,8 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
 `DEFAULT_SUN_DIRECTION`), shadow?: { mapSize?, bias?, radius? } (`DEFAULT_SHADOW`) },
 ambient?: { color?, intensity? }, hemisphere?: { sky, ground, intensity? }, fog?: { kind:
 linear | exp2, color, near?, far? (px behind the z = 0 plane), density? }, toneMapping?: { kind:
-aces | agx | none, exposure? }, colorSpace?: srgb | linear }`; a kind's `light`
+aces | agx | none, exposure? }, colorSpace?: srgb | linear, timeOfDay? (Engine 0.16 F4,
+`time-of-day.ts`) }`; a kind's `light`
     (`kindLightSchema`: `{ kind: point, color, intensity, distance, decay?, offset? { x, y, z } (y
 down, from the box's centre), flicker? 0..1 }`) and `receiveShadow` on kinds and tiles (beside
     T11's `castShadow`); and a skin-level `labels` (`labelsSchema`: kind -> a label or a list,
@@ -371,7 +376,7 @@ zoom, centre, { pitch, yaw, fov })` (degrees; pitch down from the horizon, yaw 0
   gives each frame source its own presenter (own skin, camera and map cache): the platformer
   kit's `status.miniGame` is the running round's id, '' on the level.
 - `hosted.ts` (Engine 0.15 T6, gap M6, decision 7, item 284): one round picture for every hosted
-  mission. `hostedSource(main, { round, events? })` is a `FrameSource` over a game's own source
+  mission. `hostedSource(main, { round, events?, status? })` is a `FrameSource` over a game's own source
   (`main`): while `round(world)` gives a frame (`MissionHost.roundFrame()`: the hosted round's own
   frame, `status.miniGame` already set by the host, gap D9) it is shown, its map through a
   `MapTracker` of its own that is reset when the round ends; otherwise `main`'s frame with
@@ -379,7 +384,23 @@ zoom, centre, { pitch, yaw, fov })` (degrees; pitch down from the horizon, yaw 0
   is shown (`missionHostEvents` for a `MissionHost`'s `mission-open`, `mini-game-end` and
   `mission-commit`, gap M21); left out, none. With a skin set (`presenterBySkinSet`) a page writes
   this one call instead of the battle-or-round switch. `HostedPresentState<S>` is its stream
-  state (`main`, `roundMaps`, `inRound`).
+  state (`main`, `roundMaps`, `inRound`). From Engine 0.16 F4 `status(world)` adds the game's own
+  status to every frame, its own and a round's (the world clock, `clockStatus(...)` from
+  `engine/core/clock.ts`); null or left out adds nothing.
+- `time-of-day.ts` (Engine 0.16 F4): a `three` skin's `scene3d.timeOfDay` (`timeOfDaySchema`)
+  `{ status? (the clock prefix, default `clock`), tween? (display frames a jump eases over,
+default `DEFAULT_TIME_TWEEN`45; 0 snaps), ease? (default`DEFAULT_TIME_EASE` sineInOut), keys:
+[{ hour (0 up to 24), sun?: { color?, intensity?, direction? }, ambient?: { color?, intensity? },
+hemisphere?: { sky?, ground?, intensity? }, fog?: { color?, near?, far?, density? }, background?,
+exposure? }] }`: keys in rising hour order (`bad_time_key`), a key's `fog` needs the skin's own
+  `scene3d.fog` (`missing_field`), an unknown ease is `bad_ease`. A key's missing field is the
+  skin's own value (`baseDayLook(look, background)`, `keyDayLook`); `TimeOfDayLook(spec,
+base).at(hour)` interpolates between the keys round the 24-hour day (colours by channel,
+  `lerpDayLook`) and `.base` is the skin's own look, shown on frames without the clock.
+  `statusHours(status, prefix?)` reads `<prefix>.day` and `.fraction` as hours since day 1;
+  `DayClockTween({ ticks?, ease? }).shown(hours)` follows a steady clock and eases a move larger
+  than `TIME_JUMP_HOURS` (0.5) over its ticks (a mission's commit cost). Pure; the 3D backend
+  applies it (`engine/backends/three`).
 - `skin-set.ts` (Engine 0.7 T8, gap G32): `skinSet(content, backend)` gives one backend's skins
   for a game by file name: `main` (`content/skins/<backend>.json`, else the first skin of that
   backend that is not a mini game's; null when none) and `rounds` (`<backend>-<id>.json`, by the

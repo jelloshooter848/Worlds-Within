@@ -132,6 +132,11 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   ends the campaign when the hall is gone (`endIf`, gap M31), `campaignSave()` and the page use
   the engine's `entryOver` (gap M35), and the pinned save codes are version 2 (gap M38;
   `dawn-code` keeps a v1 code, still read). The fortify runs' hashes moved once.
+- Engine 0.16 F4: the campaign gives each entry a world clock (the siege from day 2, 14:00; the
+  dawn assault day 3, 05:30; the ridge camp day 3, 10:00; 60 ticks an hour, so the sabotage's 120
+  ticks are two hours) and every frame carries it (`MiniSiegeGame.clock()`, `hostedSource`'s
+  `status`: `clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`). No hash
+  or save code moved; the 3D skin and HUD that show it are part F's later tasks.
 
 ## Imports allowed
 

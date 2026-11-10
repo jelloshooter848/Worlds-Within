@@ -5,11 +5,13 @@ import {
   campaignSaveAt,
   entryId,
   entryOver,
+  entryWorldClock,
   newCampaignSave,
   scenarioFrom,
   type CampaignDef,
   type CampaignSave,
 } from '@engine/core/campaign';
+import type { WorldClock } from '@engine/core/clock';
 import type { CarriedRecord, CarryFrom } from '@engine/core/carried';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import {
@@ -154,6 +156,16 @@ export class MiniSiegeGame extends MissionHost {
     this.keys = parts.keys;
     this.factions = parts.factions;
     this.campaign = parts.campaign;
+  }
+
+  /**
+   * The world clock now (Engine 0.16 F4): the campaign entry's `clock` moved on by the world tick
+   * (`entryWorldClock`), or null for an entry without one. Presentation only: read by the picture
+   * (`clockStatus` on every frame), never in the snapshot, a hash or the save.
+   */
+  clock(): WorldClock | null {
+    const { def, save } = this.campaign;
+    return entryWorldClock(def, campaignRun(def, save).entry, this.sim.tick);
   }
 
   /**

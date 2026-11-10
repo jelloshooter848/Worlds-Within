@@ -553,8 +553,184 @@
       "kind": "aces",
       "exposure": 1.3
     },
-    "colorSpace": "srgb"
+    "colorSpace": "srgb",
+    "timeOfDay": {
+      "tween": 45,
+      "ease": "sineInOut",
+      "keys": [
+        {
+          "hour": 3,
+          "sun": {
+            "color": "#4058a0",
+            "intensity": 0.15,
+            "direction": {
+              "x": 1.2,
+              "y": 2.4,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#5060a0",
+            "intensity": 0.2
+          },
+          "hemisphere": {
+            "sky": "#203058",
+            "ground": "#101018",
+            "intensity": 0.25
+          },
+          "fog": {
+            "color": "#141c34"
+          },
+          "background": "#0c1428",
+          "exposure": 1.0
+        },
+        {
+          "hour": 6.5,
+          "sun": {
+            "color": "#ffa060",
+            "intensity": 0.8,
+            "direction": {
+              "x": -3,
+              "y": 1,
+              "z": 0.6
+            }
+          },
+          "ambient": {
+            "color": "#c8a0a0",
+            "intensity": 0.3
+          },
+          "hemisphere": {
+            "sky": "#f8b890",
+            "ground": "#503020",
+            "intensity": 0.4
+          },
+          "fog": {
+            "color": "#f0b898"
+          },
+          "background": "#f0b898",
+          "exposure": 1.2
+        },
+        {
+          "hour": 13
+        },
+        {
+          "hour": 17.5,
+          "sun": {
+            "color": "#ffc080",
+            "intensity": 1.2,
+            "direction": {
+              "x": 2.2,
+              "y": 1.6,
+              "z": 1
+            }
+          },
+          "hemisphere": {
+            "sky": "#f8d0a0",
+            "ground": "#704020",
+            "intensity": 0.45
+          },
+          "fog": {
+            "color": "#f8d0a8"
+          },
+          "background": "#f8d0a8"
+        },
+        {
+          "hour": 19.5,
+          "sun": {
+            "color": "#ff6830",
+            "intensity": 0.6,
+            "direction": {
+              "x": 3,
+              "y": 0.8,
+              "z": 0.6
+            }
+          },
+          "ambient": {
+            "color": "#a080b0",
+            "intensity": 0.3
+          },
+          "hemisphere": {
+            "sky": "#c06850",
+            "ground": "#402030",
+            "intensity": 0.35
+          },
+          "fog": {
+            "color": "#a05848"
+          },
+          "background": "#a05848",
+          "exposure": 1.15
+        },
+        {
+          "hour": 22,
+          "sun": {
+            "color": "#5068b0",
+            "intensity": 0.2,
+            "direction": {
+              "x": 1.6,
+              "y": 2.4,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#5060a0",
+            "intensity": 0.2
+          },
+          "hemisphere": {
+            "sky": "#283860",
+            "ground": "#101018",
+            "intensity": 0.25
+          },
+          "fog": {
+            "color": "#18203c"
+          },
+          "background": "#101830",
+          "exposure": 1.0
+        }
+      ]
+    }
   },
+  "hud": [
+    {
+      "as": "clock",
+      "x": 63,
+      "y": 4,
+      "w": 130,
+      "h": 15,
+      "font": "fx-small",
+      "format": "Day {day} {time} {phase}",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "dayBar": {
+        "h": 3,
+        "back": "#101830",
+        "bands": [
+          {
+            "hour": 5,
+            "color": "#f0a070"
+          },
+          {
+            "hour": 7,
+            "color": "#88c8f0"
+          },
+          {
+            "hour": 17,
+            "color": "#f0b070"
+          },
+          {
+            "hour": 19.5,
+            "color": "#a05848"
+          },
+          {
+            "hour": 21,
+            "color": "#101830"
+          }
+        ],
+        "marks": [6, 12, 18],
+        "markColor": "#000000",
+        "marker": "#fcfcfc"
+      }
+    }
+  ],
   "labels": {
     "runner": [
       {

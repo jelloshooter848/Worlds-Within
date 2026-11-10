@@ -1,3 +1,4 @@
+import { clockStatus, worldClock } from '@engine/core/clock';
 import { contentOf, type ContentBundle } from '@engine/core/content/bundle';
 import {
   mustSkinSet,
@@ -20,7 +21,9 @@ import {
  * label and aura, two braziers (the glTF model, their light and flame), trees, rocks, a wall, a
  * path and a pond. Nothing here plays: `groundFrame(n)` is frame `n` of a fixed scene (Pip and
  * one beetle turn every 30 frames, a coin bursts every 60), framed by an `RtsCamera` with the
- * skin's ground camera, the same one a ground-view RTS picks through. `tests/browser/fx-lab-ground.test.ts`
+ * skin's ground camera, the same one a ground-view RTS picks through. Since Engine 0.16 F4 the skin
+ * has a `scene3d.timeOfDay` and a `clock` HUD item: a frame given the world clock
+ * ({@link groundClock}) shows that hour's light and sky and the clock at the top. `tests/browser/fx-lab-ground.test.ts`
  * shoots it; `games/fx-lab/ground.test.ts` checks the scene in Node.
  */
 
@@ -107,11 +110,26 @@ export function groundCamera(skin: SkinFile, screen: { width: number; height: nu
   });
 }
 
-/** Frame `n` of the example (see the file comment), framed by `camera`. */
+/**
+ * The example's world clock at frame `n` (Engine 0.16 F4), for the skin's `scene3d.timeOfDay` and
+ * its `clock` HUD: day 1 at `hour` (fractions are minutes), and from frame `jump` on two hours
+ * later (a mission's 120-tick commit cost), which the skin eases over its tween.
+ */
+export function groundClock(hour: number, n: number, jump?: number): Record<string, string | number> {
+  const minutes = Math.round(hour * 60);
+  const start = { day: 1, hour: Math.floor(minutes / 60) % 24, minute: minutes % 60 };
+  return clockStatus(worldClock(start, jump !== undefined && n >= jump ? 120 : 0));
+}
+
+/**
+ * Frame `n` of the example (see the file comment), framed by `camera`; `clock` (from
+ * {@link groundClock}) adds the world clock to the status (none by default: the skin's own look).
+ */
 export function groundFrame(
   n: number,
   camera: RtsCamera,
   screen: { width: number; height: number },
+  clock?: Record<string, string | number>,
 ): PresentFrame {
   const turn = FACING_TURN[Math.floor(n / 30) % FACING_TURN.length]!;
   const entities: PresentEntity[] = [
@@ -131,7 +149,7 @@ export function groundFrame(
     entities,
     map: MAP,
     events: n % 60 === 0 ? [{ type: 'coin', entity: 'coin' }] : [],
-    status: { hp: 3, maxHp: 4 },
+    status: { hp: 3, maxHp: 4, ...clock },
     camera: camera.hint(),
   };
 }

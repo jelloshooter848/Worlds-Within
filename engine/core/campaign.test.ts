@@ -10,6 +10,7 @@ import {
   checkCampaigns,
   entryId,
   entryOver,
+  entryWorldClock,
   newCampaignSave,
   type CampaignDef,
 } from './campaign';
@@ -154,6 +155,37 @@ describe('campaign order', () => {
     expect(check([s('village'), s('not-a-world')])).toEqual([['entries.1.scenario', 'missing_scenario']]);
     expect(check([s('village'), s('dusk')])).toEqual([['entries.1.scenario', 'bad_from']]);
     expect(check([s('dusk'), s('dawn')])).toEqual([['entries.1.scenario', 'bad_from']]);
+  });
+
+  it('takes an entry clock and ticks an hour, and finds a clock that runs backwards (Engine 0.16 F4)', () => {
+    const all = [
+      { name: 'village', value: { format: 'worlds-within/scenario' } },
+      { name: 'dawn', value: { format: 'worlds-within/scenario', from: { scenario: 'village' } } },
+    ];
+    const others = (kind: string) => (kind === '*' ? all : []);
+    const check = (entries: unknown[]) =>
+      checkCampaigns(
+        [{ name: 'c', value: campaignSchema.parse({ version: 1, id: 'c', entries }) }],
+        others,
+      ).map((i) => [i.path.join('.'), i.code]);
+    const village = { scenario: 'village', ticks: 260, clock: { day: 2, hour: 14 } };
+    const dawn = { scenario: 'dawn', ticks: 200, clock: { day: 3, hour: 5, minute: 30 } };
+    expect(codes({ version: 1, id: 'c', ticksPerHour: 60, entries: [village, dawn] })).toEqual([]);
+    expect(check([village, dawn])).toEqual([]);
+    expect(check([village, { ...dawn, clock: { day: 2, hour: 13 } }])).toEqual([
+      ['entries.1.clock', 'clock_backwards'],
+    ]);
+    // Entries without a clock are skipped.
+    expect(check([village, { scenario: 'dawn', ticks: 5 }])).toEqual([]);
+    expect(codes({ version: 1, id: 'c', entries: [{ level: 'a', clock: { day: 1, hour: 6 } }] })).toEqual([
+      ['entries.0.clock', 'bad_entry'],
+    ]);
+    expect(codes({ version: 1, id: 'c', entries: [{ ...village, clock: { day: 1, hour: 25 } }] })).toEqual([
+      ['entries.0.clock.hour', 'too_big'],
+    ]);
+    expect(codes({ version: 1, id: 'c', ticksPerHour: 0, entries: [village] })).toEqual([
+      ['ticksPerHour', 'too_small'],
+    ]);
   });
 
   it('is checked across the content by the loader, naming file and field', () => {
@@ -408,5 +440,24 @@ describe('one entry-end rule (Engine 0.15 T8, gap M35)', () => {
   it('leaves level and mission entries to their own play', () => {
     expect(entryOver({ level: 'a' }, { worldTick: 1_000, missionsOpen: 0 })).toBe(false);
     expect(entryOver({ mission: 'raid' }, { worldTick: 1_000, missionsOpen: 0 })).toBe(false);
+  });
+});
+
+describe('the world clock of an entry (Engine 0.16 F4)', () => {
+  it("moves the entry clock on by the world tick at the campaign's ticks an hour", () => {
+    const def = campaignSchema.parse({
+      version: 1,
+      id: 'c',
+      ticksPerHour: 30,
+      entries: [
+        { scenario: 'village', ticks: 100, clock: { day: 2, hour: 14 } },
+        { scenario: 'dawn', ticks: 100 },
+      ],
+    });
+    expect(entryWorldClock(def, def.entries[0]!, 45)?.text).toBe('Day 2 15:30');
+    const { ticksPerHour: _, ...plain } = def;
+    expect(entryWorldClock(plain, def.entries[0]!, 45)?.time).toBe('14:45');
+    expect(entryWorldClock(def, def.entries[1]!, 45)).toBeNull();
+    expect(entryWorldClock(def, null, 45)).toBeNull();
   });
 });

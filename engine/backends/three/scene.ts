@@ -50,6 +50,11 @@ import {
   resolveCamera3d,
   resolveMeshParts,
   resolveScene3d,
+  baseDayLook,
+  DayClockTween,
+  statusHours,
+  TimeOfDayLook,
+  type DayLook,
   skinLabels,
   type Scene3dLook,
   type SkinKindLight,
@@ -77,6 +82,7 @@ import {
   type DecorLookup,
   type SkinModel,
 } from '@engine/core/present';
+import { CLOCK_STATUS } from '@engine/core/clock';
 import { GeometryCache } from './geometry';
 import { layoutLabels, type FontLookup, type LabelView, type UiDraw } from '@engine/core/ui';
 import { HudLayer } from './hud';
@@ -345,6 +351,16 @@ export class ThreeScene {
   private fxClock = -1;
   private labelShown: LabelView[] = [];
   private readonly sunFrom: Vector3;
+  /** The skin's `scene3d.timeOfDay` over its own look, or null (Engine 0.16 F4). */
+  private readonly timeOfDay: TimeOfDayLook | null;
+  /** Eases a jump in world time (presentation state only). */
+  private readonly dayTween: DayClockTween | null;
+  /** The status prefix the time of day reads the clock from. */
+  private readonly clockPrefix: string;
+  /** The look the scene shows now: the skin's own, or the time of day's (Engine 0.16 F4). */
+  private day: DayLook;
+  /** The hour the time of day shows (hours since day 1, 00:00), or null without a clock. */
+  private dayHours: number | null = null;
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
@@ -358,6 +374,17 @@ export class ThreeScene {
     this.scene.background = new Color(opts.background ?? skinBackground(skin));
 
     const look = (this.look = resolveScene3d(skin.scene3d, this.cam3d.lights));
+    this.day = baseDayLook(look, opts.background ?? skinBackground(skin));
+    const timeOfDay = skin.scene3d?.timeOfDay;
+    this.timeOfDay = timeOfDay === undefined ? null : new TimeOfDayLook(timeOfDay, this.day);
+    this.dayTween =
+      timeOfDay === undefined
+        ? null
+        : new DayClockTween({
+            ...(timeOfDay.tween !== undefined && { ticks: timeOfDay.tween }),
+            ...(timeOfDay.ease !== undefined && { ease: timeOfDay.ease }),
+          });
+    this.clockPrefix = timeOfDay?.status ?? CLOCK_STATUS;
     this.renderScale = opts.renderScale ?? look.renderScale;
     this.ambient = new AmbientLight(look.ambient.color, look.ambient.intensity);
     this.sun = new DirectionalLight(look.sun.color, look.sun.intensity);
@@ -373,8 +400,9 @@ export class ThreeScene {
     }
     this.scene.add(this.ambient, this.sun);
     this.hemisphere = null;
-    if (look.hemisphere !== null) {
-      const { sky, ground, intensity } = look.hemisphere;
+    // A time of day that brings a hemisphere light in needs one, at strength 0 where the skin has none.
+    if (look.hemisphere !== null || timeOfDay?.keys.some((k) => k.hemisphere !== undefined)) {
+      const { sky, ground, intensity } = this.day.hemisphere;
       this.hemisphere = new HemisphereLight(sky, ground, intensity);
       this.scene.add(this.hemisphere);
     }
@@ -434,6 +462,7 @@ export class ThreeScene {
   sync(frame: Frame): void {
     const size = this.size ?? frame.size;
     this.fxClock++;
+    this.updateTimeOfDay(frame);
     this.takeEvents(frame);
     this.updateMap(frame);
     this.poseTileModels(frame.frame);
@@ -458,6 +487,24 @@ export class ThreeScene {
   /** The ids of the entities in the scene. */
   entityIds(): string[] {
     return [...this.nodes.keys()];
+  }
+
+  /**
+   * The look shown now (Engine 0.16 F4): the skin's own, or its `scene3d.timeOfDay` at the hour
+   * {@link dayHour} gives. Read it for tests; the lights, fog and background already show it.
+   */
+  get dayLook(): Readonly<DayLook> {
+    return this.day;
+  }
+
+  /** The hour the time of day shows (hours since day 1, 00:00; eased over a jump), or null. */
+  get dayHour(): number | null {
+    return this.dayHours;
+  }
+
+  /** The tone mapping exposure to draw with: the skin's, or its time of day's now. */
+  get exposure(): number {
+    return this.day.exposure;
   }
 
   /** The map's blocks, or null when no map has been built (it may be hidden this frame). */
@@ -525,6 +572,41 @@ export class ThreeScene {
   // ---- Lights and labels (Engine 0.16 T12) ----
 
   /** Each entity's point light: its intensity, flickering by the presentation RNG when its spec asks. */
+  /**
+   * The skin's time of day (Engine 0.16 F4): the frame's clock (`<prefix>.day` and `.fraction`)
+   * through the tween (a jump eases), the look at that hour, onto the lights, fog and background.
+   * A frame without the clock shows the skin's own look.
+   */
+  private updateTimeOfDay(frame: Frame): void {
+    if (this.timeOfDay === null || this.dayTween === null) return;
+    const hours = this.dayTween.shown(statusHours(frame.status, this.clockPrefix));
+    if (hours === this.dayHours) return;
+    this.dayHours = hours;
+    this.applyDay(hours === null ? this.timeOfDay.base : this.timeOfDay.at(hours));
+  }
+
+  private applyDay(day: DayLook): void {
+    this.day = day;
+    this.sun.color.set(day.sun.color);
+    this.sun.intensity = day.sun.intensity;
+    this.sunFrom.set(day.sun.direction.x, day.sun.direction.y, day.sun.direction.z);
+    // With shadows the sun is placed each frame from `sunFrom`; without, only its direction matters.
+    if (this.look.sun.shadow === null) this.sun.position.copy(this.sunFrom);
+    this.ambient.color.set(day.ambient.color);
+    this.ambient.intensity = day.ambient.intensity;
+    if (this.hemisphere !== null) {
+      this.hemisphere.color.set(day.hemisphere.sky);
+      this.hemisphere.groundColor.set(day.hemisphere.ground);
+      this.hemisphere.intensity = day.hemisphere.intensity;
+    }
+    const fog = this.scene.fog;
+    if (day.fog !== null && fog !== null) {
+      fog.color.set(day.fog.color);
+      if (fog instanceof FogExp2) fog.density = day.fog.density;
+    }
+    if (this.scene.background instanceof Color) this.scene.background.set(day.background);
+  }
+
   private updateLights(frame: number): void {
     for (const [id, node] of this.nodes) {
       if (!node.light) continue;
@@ -1290,8 +1372,8 @@ export class ThreeScene {
     this.overlay.scale.set(h * cam.aspect * 1.01, h * 1.01, 1);
 
     this.updateGroundSun(g);
-    const fog = this.look.fog;
-    if (fog !== null && fog.kind === 'linear' && this.scene.fog instanceof Fog) {
+    const fog = this.day.fog;
+    if (fog !== null && this.scene.fog instanceof Fog) {
       this.scene.fog.near = distance + fog.near;
       this.scene.fog.far = distance + fog.far;
     }
@@ -1382,8 +1464,8 @@ export class ThreeScene {
 
     this.updateSun(cx, cy, view, distance);
     // Linear fog is measured from the camera; the skin gives it behind the z = 0 plane.
-    const fog = this.look.fog;
-    if (fog !== null && fog.kind === 'linear' && this.scene.fog instanceof Fog) {
+    const fog = this.day.fog;
+    if (fog !== null && this.scene.fog instanceof Fog) {
       this.scene.fog.near = distance + fog.near;
       this.scene.fog.far = distance + fog.far;
     }

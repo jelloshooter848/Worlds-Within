@@ -128,4 +128,65 @@ describe.skipIf(missing !== null)('fx lab ground view in the browser (Engine 0.1
       await browser.close();
     }
   });
+
+  it(
+    'moves the light and sky with the world clock and eases a jump (Engine 0.16 F4)',
+    { timeout: 180_000 },
+    async () => {
+      const base = await serveGroundPage();
+      const browser = await launch();
+      try {
+        const page = await browser.newPage({ viewport: { width: 512, height: 480 }, deviceScaleFactor: 1 });
+        const errors: string[] = [];
+        page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+        page.on('console', (msg) => {
+          if (msg.type() === 'error') errors.push(`console: ${msg.text()}`);
+        });
+        await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
+        /** The picture at `query`'s frame: its mean brightness, top rows' sky, and the hour shown. */
+        const shoot = async (query: string, frame: number, name: string) => {
+          await page.goto(`${base}/games/fx-lab/ground/?frame=${frame}&${query}`);
+          await page.waitForFunction(
+            (f) => (window as unknown as { wwGround?: { shown: number } }).wwGround?.shown === f,
+            frame,
+            { timeout: 60_000 },
+          );
+          const read = await page.evaluate(() => {
+            const canvas = document.getElementById('screen') as HTMLCanvasElement;
+            const c = document.createElement('canvas');
+            c.width = canvas.width;
+            c.height = canvas.height;
+            const ctx = c.getContext('2d')!;
+            ctx.drawImage(canvas, 0, 0);
+            const d = ctx.getImageData(0, 0, c.width, c.height).data;
+            let sum = 0;
+            for (let i = 0; i < d.length; i += 4) sum += (d[i]! + d[i + 1]! + d[i + 2]!) / 3;
+            return {
+              mean: sum / (d.length / 4),
+              hour: (window as unknown as { wwGround: { hour: number | null } }).wwGround.hour,
+              png: canvas.toDataURL('image/png'),
+            };
+          });
+          const dir = process.env['WW_SHOTS_DIR'];
+          if (dir) {
+            mkdirSync(dir, { recursive: true });
+            writeFileSync(join(dir, `${name}.png`), Buffer.from(read.png.split(',')[1]!, 'base64'));
+          }
+          return read;
+        };
+        const noon = await shoot('hour=13', 70, 'fx-lab-ground-13h');
+        const evening = await shoot('hour=20.5', 70, 'fx-lab-ground-20h30');
+        const eased = await shoot('hour=13&jump=60', 70, 'fx-lab-ground-jump');
+        expect(errors).toEqual([]);
+        expect(noon.hour).toBeCloseTo(13);
+        expect(evening.hour).toBeCloseTo(20.5);
+        expect(evening.mean).toBeLessThan(noon.mean * 0.75);
+        // Ten frames into the 45-frame ease of a two-hour jump: on the way, not there yet.
+        expect(eased.hour!).toBeGreaterThan(13);
+        expect(eased.hour!).toBeLessThan(15);
+      } finally {
+        await browser.close();
+      }
+    },
+  );
 });

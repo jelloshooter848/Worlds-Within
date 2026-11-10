@@ -3,16 +3,18 @@ import { contentDecor, freezeFrame } from '@engine/core/present';
 import { contentFonts } from '@engine/core/ui';
 import gameFiles from 'virtual:game-files';
 import { mustLoadFxLab } from '../content';
-import { groundCamera, groundFrame, groundSkin } from '../ground';
+import { groundCamera, groundClock, groundFrame, groundSkin } from '../ground';
 
 /**
  * The ground-view example page (Engine 0.16 F2; not one of `pnpm build`'s pages: the browser
  * test `tests/browser/fx-lab-ground.test.ts` builds it alone): the lab's meadow (`../ground.ts`) in the `ground` skin through the
  * WebGL `ThreePresenter`, frame by frame at 60 a second. `?frame=<n>` holds frame `n` (every
  * frame before it is synced first, so particles and turns are where play has them); `?scale=<n>`
- * draws at n x the picture size (`renderScale`, Engine 0.16 F3); a drag pans
+ * draws at n x the picture size (`renderScale`, Engine 0.16 F3); `?hour=<h>` gives the frames the
+ * world clock at that hour of day 1 (the skin's time of day and clock HUD, Engine 0.16 F4), and
+ * `&jump=<n>` moves it two hours on from frame `n` (eased by the skin); a drag pans
  * and the wheel zooms the `RtsCamera` the frames are framed by. `window.wwGround.shown` is the
- * last frame drawn (for `tests/browser/fx-lab-ground.test.ts`).
+ * last frame drawn and `.hour` the hour its time of day showed (for `tests/browser/fx-lab-ground.test.ts`).
  */
 const content = mustLoadFxLab(gameFiles);
 const skin = groundSkin(content);
@@ -31,8 +33,13 @@ const presenter = new ThreePresenter(canvas, skin, {
   renderScale,
 });
 const camera = groundCamera(skin, screen);
-const hold = Number(new URLSearchParams(location.search).get('frame') ?? 'NaN');
-const state = { shown: -1 };
+const params = new URLSearchParams(location.search);
+const hold = Number(params.get('frame') ?? 'NaN');
+const hour = params.get('hour') === null ? null : Number(params.get('hour'));
+const jump = params.get('jump') === null ? undefined : Number(params.get('jump'));
+const frameAt = (n: number) =>
+  groundFrame(n, camera, screen, hour === null ? undefined : groundClock(hour, n, jump));
+const state = { shown: -1, hour: null as number | null };
 (window as unknown as { wwGround: typeof state }).wwGround = state;
 
 const toPicture = (e: PointerEvent | WheelEvent) => {
@@ -56,11 +63,12 @@ canvas.addEventListener('wheel', (e) => camera.zoomBy(e.deltaY < 0 ? 1.1 : 1 / 1
 
 let n = 0;
 if (Number.isFinite(hold)) {
-  for (; n < hold; n++) presenter.scene.sync(freezeFrame(groundFrame(n, camera, screen)));
+  for (; n < hold; n++) presenter.scene.sync(freezeFrame(frameAt(n)));
 }
 const step = () => {
-  presenter.present(freezeFrame(groundFrame(n, camera, screen)));
+  presenter.present(freezeFrame(frameAt(n)));
   state.shown = n;
+  state.hour = presenter.scene.dayHour;
   if (!Number.isFinite(hold)) n++;
   requestAnimationFrame(step);
 };

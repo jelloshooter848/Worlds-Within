@@ -33,6 +33,7 @@ import {
   type ModelAnchorName,
 } from './model-fields';
 import { missingGlyphs, type FontFile } from '../ui/font';
+import { DAY_PHASES } from '../clock';
 import {
   cardinalFacing,
   FACINGS,
@@ -618,8 +619,23 @@ const eventEntry = z.strictObject({
 /** The HUD item types drawn before Engine 0.16 T6, exactly as they were (`layoutHud`). */
 export const HUD_CLASSIC_TYPES = ['hearts', 'number', 'text', 'icon'] as const;
 
-/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`). */
-export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap'] as const;
+/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`), and F4's world `clock`. */
+export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap', 'clock'] as const;
+
+/**
+ * The tokens a `clock` HUD item's `format` replaces (Engine 0.16 F4), each with the clock status
+ * field it reads (`<status>.<field>`, `clockStatus` in `engine/core/clock.ts`); `{value}` is the
+ * text too.
+ */
+export const HUD_CLOCK_TOKENS = {
+  '{day}': 'day',
+  '{time}': 'time',
+  '{phase}': 'phase',
+  '{text}': 'text',
+} as const;
+
+/** A `clock` HUD item's text when it gives no `format`. */
+export const HUD_CLOCK_FORMAT = 'Day {day} {time}';
 
 /** The token a HUD item's `format` replaces with the status value. */
 export const HUD_VALUE_TOKEN = '{value}';
@@ -656,6 +672,33 @@ const minimapDot = z
     params: { code: 'bad_minimap_dot' },
   });
 
+const dayBar = z.strictObject({
+  h: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe("the bar's height, px (default 3), at the bottom of the box"),
+  back: color.exactOptional().describe("the bar's colour where no band covers it (default `#203050`)"),
+  bands: z
+    .array(
+      z.strictObject({
+        hour: z.number().min(0).lt(24).describe('the hour the band starts at'),
+        color: color.describe('its colour'),
+      }),
+    )
+    .exactOptional()
+    .describe(
+      "colours along the day, each from its hour to the next band's (the last to midnight): night, dawn, day, dusk",
+    ),
+  marks: z
+    .array(z.number().min(0).lt(24))
+    .exactOptional()
+    .describe('hours with a one-px tick mark on the bar'),
+  markColor: color.exactOptional().describe("the tick marks' colour (default `#000000`)"),
+  marker: color.exactOptional().describe('the marker at the time now (default `#fcfcfc`)'),
+});
+
 const hudItem = z
   .strictObject({
     status: id
@@ -666,7 +709,7 @@ const hudItem = z
     as: z
       .enum([...HUD_CLASSIC_TYPES, ...HUD_WIDGET_TYPES])
       .describe(
-        'how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice) and `minimap`',
+        "how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice), `minimap` and (F4) `clock` (the world clock's text and a day bar; `status` is its prefix, default `clock`)",
       ),
     x: z.number().int().describe('left edge, screen pixels'),
     y: z.number().int().describe('top edge, screen pixels'),
@@ -751,6 +794,11 @@ const hudItem = z
       .array(minimapDot)
       .exactOptional()
       .describe("a minimap's entity dots, drawn in order over the tiles"),
+    dayBar: dayBar
+      .exactOptional()
+      .describe(
+        "a `clock`'s day bar under its text: the day from midnight to midnight with a marker at the time now (Engine 0.16 F4)",
+      ),
   })
   .superRefine((v, ctx) => {
     const need = (field: string, why: string) =>
@@ -763,9 +811,21 @@ const hudItem = z
     if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
-    const statusFree = v.as === 'panel' || v.as === 'minimap' || (v.as === 'text' && v.format !== undefined);
+    const statusFree =
+      v.as === 'panel' ||
+      v.as === 'minimap' ||
+      v.as === 'clock' ||
+      (v.as === 'text' && v.format !== undefined);
     if (!statusFree && v.status === undefined) need('status', 'a status key');
-    if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap') {
+    if (v.as === 'clock' && v.font === undefined) need('font', 'a font');
+    if (v.dayBar !== undefined && v.as !== 'clock')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['dayBar'],
+        message: '"dayBar" goes with a "clock" item only',
+        params: { code: 'bad_field' },
+      });
+    if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap' || v.as === 'clock') {
       if (v.w === undefined) need('w', 'a width');
       if (v.h === undefined) need('h', 'a height');
     }
@@ -1393,6 +1453,14 @@ function checkHudFonts(
         message: `font "${item.font}" has no glyph for ${list} (${what})`,
       });
     };
+    if (item.as === 'clock') {
+      report(
+        'format',
+        missingGlyphs(glyphs, clockFormatChars(item.format ?? HUD_CLOCK_FORMAT)),
+        'a clock shows them',
+      );
+      return;
+    }
     if (item.format !== undefined)
       report(
         'format',
@@ -1403,6 +1471,23 @@ function checkHudFonts(
       report('font', missingGlyphs(glyphs, HUD_DIGITS), 'a number shows every digit');
   });
   return issues;
+}
+
+/**
+ * Every character a `clock` item's `format` can show (Engine 0.16 F4): its own text and, for each
+ * token, what that field can hold (digits, `:` for the time, `Day ` for the text, the part-of-day
+ * names for `{phase}`).
+ */
+function clockFormatChars(format: string): string {
+  let chars = format;
+  for (const token of [...Object.keys(HUD_CLOCK_TOKENS), HUD_VALUE_TOKEN])
+    chars = chars.split(token).join('');
+  const has = (t: string) => format.includes(t);
+  if (has('{day}')) chars += HUD_DIGITS;
+  if (has('{time}')) chars += `${HUD_DIGITS}:`;
+  if (has('{text}') || has(HUD_VALUE_TOKEN)) chars += `Day ${HUD_DIGITS}:`;
+  if (has('{phase}')) chars += DAY_PHASES.join('');
+  return chars;
 }
 
 /**

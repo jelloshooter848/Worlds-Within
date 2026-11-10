@@ -54,4 +54,28 @@ describe('hostedSource', () => {
     const stream = new FrameStream(hostedSource(MAIN, { round: () => null }));
     expect(stream.next({ round: false }, [{ type: 'mission-open' }]).events).toEqual([]);
   });
+
+  it("adds the game's own status (the world clock, Engine 0.16 F4) to its frames and the round's", () => {
+    const game: Game = { round: false };
+    const stream = new FrameStream(
+      hostedSource(MAIN, {
+        round: (g) => (g.round ? frame({ miniGame: 'room' }) : null),
+        status: () => ({ 'clock.day': 2, 'clock.phase': 'evening' }),
+      }),
+    );
+    expect(stream.next(game, []).status).toEqual({
+      main: '1',
+      miniGame: '',
+      'clock.day': 2,
+      'clock.phase': 'evening',
+    });
+    game.round = true;
+    expect(stream.next(game, []).status).toEqual({
+      miniGame: 'room',
+      'clock.day': 2,
+      'clock.phase': 'evening',
+    });
+    const none = new FrameStream(hostedSource(MAIN, { round: () => null, status: () => null }));
+    expect(none.next(game, []).status).toEqual({ main: '1', miniGame: '' });
+  });
 });

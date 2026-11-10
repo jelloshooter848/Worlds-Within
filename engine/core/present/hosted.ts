@@ -11,7 +11,8 @@ import { isFullMap, type PresentEvent, type PresentFrame } from './types';
  * the round ends, so the next round sends its map again); otherwise it is the game's own source's
  * frame with `status.miniGame` set to '' (so a skin set draws it with the main skin). The host's
  * events for the frame (`events`, e.g. `missionHostEvents` for a `MissionHost`'s mission events,
- * gap M21) are added to whichever frame is shown. Pure: no clock, no DOM, no kit code.
+ * gap M21) are added to whichever frame is shown, and so is the game's own `status` (Engine 0.16
+ * F4: the world clock). Pure: no clock, no DOM, no kit code.
  *
  *   const source = hostedSource(rtsSource, { round: (g) => g.roundFrame(), events: missionHostEvents });
  */
@@ -22,6 +23,12 @@ export interface HostedSourceOptions<W, E> {
   round(world: W): PresentFrame | null;
   /** The events since the last frame that the host adds to it (none when left out). */
   events?(events: readonly E[]): readonly PresentEvent[];
+  /**
+   * Status the game adds to every frame, its own and a round's (Engine 0.16 F4): e.g. the world
+   * clock, `clockStatus(entryWorldClock(...))`, so a skin's `scene3d.timeOfDay` and a `clock` HUD
+   * widget read it. Presentation only; null or left out adds nothing.
+   */
+  status?(world: W): Readonly<PresentFrame['status']> | null;
 }
 
 /** The stream state of a hosted source: the game's own, and the round's map tracker. */
@@ -52,6 +59,8 @@ export function hostedSource<W, E, S>(
         frame = main.present(world, events, state.main);
         frame.status[MINI_GAME_STATUS] = '';
       }
+      const status = opts.status?.(world);
+      if (status) Object.assign(frame.status, status);
       const added = opts.events?.(events) ?? [];
       if (added.length > 0) frame.events.push(...added);
       return frame;

@@ -92,6 +92,8 @@ export {
   HUD_CLASSIC_TYPES,
   HUD_VALUE_TOKEN,
   HUD_WIDGET_TYPES,
+  HUD_CLOCK_FORMAT,
+  HUD_CLOCK_TOKENS,
   type SkinHudItem,
   skinSchema,
   type EventKey,
@@ -170,6 +172,22 @@ export {
   type SkinScene3d,
   type ToneMappingKind,
 } from './scene3d';
+export {
+  baseDayLook,
+  DayClockTween,
+  DEFAULT_TIME_EASE,
+  DEFAULT_TIME_TWEEN,
+  keyDayLook,
+  lerpDayLook,
+  statusHours,
+  TIME_JUMP_HOURS,
+  TimeOfDayLook,
+  timeOfDayKeySchema,
+  timeOfDaySchema,
+  type DayLook,
+  type SkinTimeOfDay,
+  type TimeOfDayKey,
+} from './time-of-day';
 export {
   checkDecorGrids,
   checkDecorRefs,

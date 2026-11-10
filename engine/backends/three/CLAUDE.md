@@ -187,7 +187,8 @@ intensity }` (a `HemisphereLight`, `hemisphere`, added only when given).
 density }` (`FogExp2`). It shows on the blocks far behind and on the parallax planes (their
   `MeshBasicMaterial`s take fog); the overlay, particles, HUD and labels never.
 - `toneMapping` `{ kind: aces | agx | none, exposure }` and `colorSpace` (`srgb` | `linear`): read
-  by the presenter (`applyLook`) before each draw of that scene. HUD, label and overlay materials
+  by the presenter (`applyLook`) before each draw of that scene (the exposure from
+  `scene.exposure`, which a time of day moves, Engine 0.16 F4). HUD, label and overlay materials
   have `toneMapped: false`, so the HUD keeps its colours under any tone mapping.
 - A kind's `light` `{ kind: point, color, intensity, distance, decay? (POINT_LIGHT_DECAY, 1),
 offset? (mesh space from the box's centre, y down), flicker? }` is a `PointLight` child of each
@@ -254,6 +255,25 @@ scene objects it built before: the side-view code path is unchanged (`scene.test
 - `games/fx-lab`'s `content/skins/ground.json` and `ground.ts` are the worked example (a meadow,
   Pip and beetles turning, labels, braziers with light and flame); its page
   `games/fx-lab/ground/` is built and shot by `tests/browser/fx-lab-ground.test.ts`.
+
+## The time of day (Engine 0.16 F4)
+
+A skin's `scene3d.timeOfDay` (`@engine/core/present`'s `time-of-day.ts`) moves the scene's look
+with the world clock the frame carries (`clock.day` and `clock.fraction`, or the prefix its
+`status` names; `clockStatus` in `@engine/core/clock`). Each `sync` first runs the clock through
+the scene's `DayClockTween` (a steady clock is followed at once; a jump of more than half an hour,
+such as a mission's two-hour commit cost, eases over the skin's `tween` display frames), takes
+`TimeOfDayLook.at(hour)` and sets the sun's colour, strength and direction (`sunFrom`; the shadow
+placement reads it each frame), the ambient, the hemisphere light (made at strength 0 when only
+the keys bring one in), the fog's colour (and `near`/`far` or `density`), the background colour
+and the exposure (`scene.exposure`, which the presenter's `applyLook` hands the renderer). A frame
+without the clock shows the skin's own look (`TimeOfDayLook.base`); a skin without `timeOfDay`
+never changes (its `exposure` is `look.toneMapping.exposure`). Read-outs: `dayLook` (the look
+shown now) and `dayHour` (hours since day 1, 00:00, eased; null without a clock). Presentation
+state only, no clock or randomness: the same frames give the same picture. Tested in
+`time-of-day.test.ts`; the fx lab's ground skin has one (with a `clock` HUD item), shown by
+`games/fx-lab/ground/?hour=<h>[&jump=<n>]` and shot at 13:00, 20:30 and ten frames into a jump by
+`tests/browser/fx-lab-ground.test.ts`.
 
 ## Crisp output, instanced tile models and decor (Engine 0.16 F3)
 

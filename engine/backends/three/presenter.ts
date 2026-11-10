@@ -294,6 +294,6 @@ function applyLook(r: WebGLRenderer, scene: ThreeScene): void {
     r.shadowMap.needsUpdate = true;
   }
   r.toneMapping = TONE_MAPPING[look.toneMapping.kind];
-  r.toneMappingExposure = look.toneMapping.exposure;
+  r.toneMappingExposure = scene.exposure;
   r.outputColorSpace = look.colorSpace === 'linear' ? LinearSRGBColorSpace : SRGBColorSpace;
 }

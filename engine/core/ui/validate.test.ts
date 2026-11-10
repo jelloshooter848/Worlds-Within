@@ -90,4 +90,36 @@ describe('the skin checks its HUD fonts (Engine 0.16 T6)', () => {
       ['hud.3.tween.ease', 'bad_ease'],
     ]);
   });
+
+  it("checks a clock's fields and the glyphs its format can show (Engine 0.16 F4)", () => {
+    const r = loadContent(
+      game([
+        { as: 'clock', x: 0, y: 0, w: 40, h: 12 } as never,
+        { as: 'clock', x: 0, y: 0, font: 'small' } as never,
+        { status: 'hp', as: 'text', x: 0, y: 0, dayBar: {} } as never,
+      ]),
+      engineContentKinds(),
+    );
+    expect(r.errors.map((e) => [e.path, e.code, e.message])).toEqual([
+      ['hud.0.font', 'missing_field', '"clock" needs a font'],
+      ['hud.1.w', 'missing_field', '"clock" needs a width'],
+      ['hud.1.h', 'missing_field', '"clock" needs a height'],
+      ['hud.2.dayBar', 'bad_field', '"dayBar" goes with a "clock" item only'],
+    ]);
+    const glyphs = loadContent(
+      game([
+        { as: 'clock', x: 0, y: 0, w: 40, h: 12, font: 'small', format: 'A {day}' },
+        { as: 'clock', x: 0, y: 0, w: 40, h: 12, font: 'small' },
+      ]),
+      engineContentKinds(),
+    );
+    expect(glyphs.errors.map((e) => [e.path, e.code, e.message])).toEqual([
+      ['hud.0.format', 'missing_glyph', 'font "small" has no glyph for "9" (a clock shows them)'],
+      [
+        'hud.1.format',
+        'missing_glyph',
+        'font "small" has no glyph for "D", "a", "y", "9", ":" (a clock shows them)',
+      ],
+    ]);
+  });
 });

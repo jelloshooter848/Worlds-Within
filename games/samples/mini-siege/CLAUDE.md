@@ -89,7 +89,11 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   (gap M31) the siege's entry has `endIf: { "gone": "hall" }`: the campaign ends there when the
   hall has fallen, a loss said in data (the glue's own rule is gone). The glue builds the
   entry a campaign save names (`siegeCampaignPlace`); the order is never in code (gap M29), and
-  the tests read every entry after the dawn from this file (gap M37).
+  the tests read every entry after the dawn from this file (gap M37). Since Engine 0.16 F4 each
+  entry has a world `clock` (the siege day 2, 14:00; the dawn day 3, 05:30; the ridge day 3,
+  10:00) and the campaign `ticksPerHour: 60` (the sabotage's 120 ticks are two hours);
+  `MiniSiegeGame.clock()` reads it at the world tick and `siegeSource` puts `clockStatus` on every
+  frame (`hostedSource`'s `status`). Presentation only: no hash or save code moved.
 - `content/maps/dawn.world.json` (`rts-map`, Engine 0.13 T7): "The dawn assault", the morning
   after: the village's terrain, the hall patched to 300 of 400 hp (150 gold, replaced by the
   carried gold), two soldiers (13,14 and 13,17), in the squad `defenders` the `captain` (Captain

@@ -3,6 +3,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
+import { clockStatus } from '@engine/core/clock';
 import { missionHostEvents } from '@engine/core/mission-host';
 import {
   FramePicture,
@@ -39,7 +40,9 @@ import type { MiniSiegeGame } from './headless';
  * in with each draw (`draw(game, events)`, the host's `events` of the steps since the last frame)
  * and put on the frame by `missionHostEvents`: `mission-open`, `mini-game-end` with the round's
  * `result` (`mini-game-end:pass` / `fail` / `quit`) and `mission-commit` with the record's
- * `outcome` and `resolution` (`mission-commit:outcome=both-burnt`). Shared by the page
+ * `outcome` and `resolution` (`mission-commit:outcome=both-burnt`). Every frame also carries the
+ * world clock (Engine 0.16 F4: `clock.day`, `clock.time`, `clock.text`, `clock.phase`,
+ * `clock.fraction`, from the campaign entry's `clock` and the world tick). Shared by the page
  * (`main.ts`), the view (`view.ts`, for `pnpm cli screenshot`) and the tests, so a screenshot is
  * what a player sees.
  */
@@ -93,7 +96,14 @@ export function siegeSource(
         state,
       }),
   };
-  return hostedSource(battle, { round: (game) => game.roundFrame(), events: missionHostEvents });
+  return hostedSource(battle, {
+    round: (game) => game.roundFrame(),
+    events: missionHostEvents,
+    status: (game) => {
+      const clock = game.clock();
+      return clock && clockStatus(clock);
+    },
+  });
 }
 
 /** The game's missions as the RTS presentation reads them (titles, events, `marker` keys: gap M25). */
