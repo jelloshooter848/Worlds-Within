@@ -1,3 +1,4 @@
+import type { TransitionRequest } from './transitions';
 import type { HeadlessGame, JsonObject, JsonValue, RoundRecording } from '../headless';
 import type { Action } from '../input/actions';
 import type { InputFrame } from '../input/input-manager';
@@ -64,6 +65,12 @@ export interface PageDebug {
    * `screenAtCell` for a cell). Null when the page has no display mapping.
    */
   toClient(x: number, y: number): { x: number; y: number } | null;
+  /**
+   * Plays a screen transition now (Engine 0.16 T5): a slot of the game's (`level`, `scene`,
+   * `mission`, `default`) or a spec (`{ kind: 'wipe', ticks: 20 }`). The steps after it show it
+   * (manual-loop mode plays transitions without holding ticks). False when none could start.
+   */
+  transition(what?: TransitionRequest): boolean;
 }
 
 /** An order or mission step the game refused during a replay. */
@@ -85,6 +92,8 @@ export interface PageDebugTarget {
   game(): HeadlessGame | null;
   /** The display's picture-to-client mapping (`BrowserDisplay.toClient`), when it has one. */
   toClient?(x: number, y: number): { x: number; y: number };
+  /** Starts a screen transition (the shell's `ShellTransitions.start`), when the page has them. */
+  transition?(what: TransitionRequest): boolean;
 }
 
 /** A replay in progress: the input and the run's entries still to hand over. */
@@ -143,6 +152,7 @@ export class PageDebugHook {
       recordings: () =>
         JSON.parse(JSON.stringify(target.game()?.roundRecordings?.() ?? [])) as RoundRecording[],
       toClient: (x, y) => target.toClient?.(x, y) ?? null,
+      transition: (what = 'default') => target.transition?.(what) ?? false,
     };
   }
 

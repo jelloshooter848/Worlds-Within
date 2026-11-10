@@ -61,6 +61,11 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   `ThreeScene` for tests. Both take `rounds` (a skin per mini game id, the core `skinSet`'s), so
   a stacked mini game's frames are drawn through their own skin, and `sheets` (the decoded pixel
   art every skin's HUD draws from).
+- `TransitionLayer` (`transition.ts`, Engine 0.16 T5): the screen transition pass, one
+  full-picture quad with a small `ShaderMaterial` working out each pixel's cover as the core
+  `transitionAlphaAt` does, drawn by `ThreePresenter` after the HUD (`transition(view)`, which
+  `threeDisplay` hands the shell's transitions; an iris closes on `ThreeScene.focus()`, the
+  camera's target projected onto the picture).
 - `HudLayer`, `HudQuad` (`hud.ts`) and `PARTICLE_POOL` (`scene.ts`): the HUD pass and the
   particle buffers' size (Engine 0.15, gap G33; 1024 from Engine 0.16 T3), and `PARTICLE_Z`.
 
@@ -78,7 +83,8 @@ reads the built scene graph and projects points through the camera), `renderer-i
 extension), `fit.test.ts` (`fitCanvas` against `fitGame`) and `display.test.ts`
 (`threeScenePresenter`, the no-WebGL 2 message) and `hud.test.ts` (the HUD pass's quads for a
 frame's status, textures cut and flipped from a sheet, the round skins' HUD through
-`threeScenePresenter`, particles and their pool). `ThreePresenter` and
+`threeScenePresenter`, particles and their pool) and `transition.test.ts` (the transition pass's
+uniforms for each kind, `ThreeScene.focus()`; Engine 0.16 T5). `ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
 browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is

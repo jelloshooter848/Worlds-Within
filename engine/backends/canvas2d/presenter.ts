@@ -173,6 +173,8 @@ export class SkinnedCanvasPresenter implements Presenter {
    * go on while the frame number stands still (a hit-pause, the pause between levels).
    */
   private fxClock = -1;
+  /** Where the camera's target (the followed entity) was on the picture last frame (T5's iris). */
+  private focusPoint: { x: number; y: number } | null = null;
 
   constructor(
     target: Renderer | Ctx,
@@ -207,6 +209,15 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.settings = { ...this.settings, ...settings };
   }
 
+  /**
+   * The camera's target (the followed entity's centre, else the hint's point) on the picture as
+   * the last frame drew it, in picture px (zoom and shake included), or null (Engine 0.16 T5: the
+   * point an iris transition closes on).
+   */
+  focus(): { x: number; y: number } | null {
+    return this.focusPoint === null ? null : { ...this.focusPoint };
+  }
+
   present(frame: Frame): void {
     const r = this.r;
     const size = this.size ?? frame.size;
@@ -218,6 +229,11 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.cameraFx.update(this.fxClock);
     const fx = this.cameraFx.state(this.fxClock, this.settings);
     const view = this.cameraView(frame, size, fx);
+    const target = cameraTarget(frame, this.skin.camera);
+    this.focusPoint =
+      target === null
+        ? null
+        : { x: Math.round(target.x * view.zoom) - view.x, y: Math.round(target.y * view.zoom) - view.y };
 
     r.clear(this.opts.background ?? skinBackground(this.skin));
     this.drawParallax(view, size);

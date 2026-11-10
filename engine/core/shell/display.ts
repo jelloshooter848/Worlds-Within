@@ -1,3 +1,4 @@
+import type { TransitionView } from '../fx/transition';
 import type { Renderer } from '../gfx/renderer';
 import type { ScreenLayout } from '../input/touch-layout';
 import type { Presenter } from '../present';
@@ -33,6 +34,14 @@ export interface BrowserDisplay {
    * a kit's `screenAtCell`, the towerdefense kit's cell centre). Both backends give it.
    */
   toClient?(x: number, y: number): { x: number; y: number };
+  /**
+   * The screen transition to draw over the picture from now on (Engine 0.16 T5), or null for
+   * none: the shell hands it over before each frame. The display draws
+   * `transitionShape(view, screen, focus)` (`@engine/core/fx`) over everything, with `focus` the
+   * point its camera follows on screen, for an iris. A display without it shows no transitions
+   * (the picture is still held while one closes).
+   */
+  transition?(view: TransitionView | null): void;
 }
 
 /** A display, or a sentence saying why it cannot start (no WebGL 2), shown on the page instead. */

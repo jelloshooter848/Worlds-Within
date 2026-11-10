@@ -3,7 +3,7 @@
 The fx lab (Engine 0.16 part A, T2): a small game on the platformer kit that shows every
 presentation feature of 0.16 part A, one task at a time (T2 adds it with sprite animation states,
 per-frame timing, one-shots and frame events; T3 adds particle emitters, additive blending and
-glow; T4 adds camera effects and parallax; later tasks add transitions, UI, audio...). It is a lab, **not a sample**:
+glow; T4 adds camera effects and parallax; T5 screen transitions; later tasks add UI, audio...). It is a lab, **not a sample**:
 three short original levels with stomps,
 coins and a door so that events happen, Pip (an original courier) with a full animation set, a 2D
 skin and a low-poly 3D skin, run files with golden hashes and a browser page. Content and glue
@@ -11,7 +11,10 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
 
 ## Files
 
-- `game.json`: the manifest (kit `platformer`, 256x240, seed 1, `headless.ts`, `view.ts`).
+- `game.json`: the manifest (kit `platformer`, 256x240, seed 1, `headless.ts`, `view.ts`) and,
+  from Engine 0.16 T5, its screen `transitions`: `level` an iris (28 frames each way, `cubicIn`, a
+  hold of 8) closing on Pip at the door and opening on him in the next level, `scene` a 12-frame
+  fade and `default` a 16-frame fade with a hold of 4 (what `__ww.transition()` plays).
 - `content/levels/fx-1.json` + `.map.txt` ("first steps": three coins on the ground, a one-way
   platform with two coins above it, a `?` block, two beetles, a pit, the door) and `fx-2`
   ("over the spikes": a floating ledge, coins on a high platform, a spike strip, a brick row with
@@ -86,7 +89,8 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
     `picture3d.ts`: `fxLook3d` (no Three.js import). `view.ts`: `createView` (the engine's
     `frameView`), for `pnpm cli screenshot`.
   - `main.ts`: `bootBrowserGame` with both displays and the sfx, each display given the shell's
-    `hitPause` as `onHitPause` (Engine 0.16 T4); every sound id the page plays is
+    `hitPause` as `onHitPause` (Engine 0.16 T4) and `content.manifest.transitions` as
+    `transitions` (T5); every sound id the page plays is
     also pushed to `window.wwFxLab.sounds` (for `tests/browser/fx-lab.test.ts`).
   - `index.html`: the page (2D/3D toggle, the launcher's 3D link).
 - `runs/level-1.run.json` (fx-1 from the start: three coins, two from the platform, both beetles
@@ -102,7 +106,11 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   presets are in both skins where the lab says, and level-3 played through the 3D scene shows
   them without changing the snapshot; from T4 the camera effects and the four parallax layers are
   in both skins, level-1's two stomps ask the 2D picture's `onHitPause` for 4 frames each and the
-  3D scene zooms on the door, never touching the state.
+  3D scene zooms on the door, never touching the state. From T5 `tests/browser/fx-lab.test.ts` also
+  plays level-1 to the level change in each backend with `?debug=step` and shoots the iris
+  mid-close, covered and mid-open, then a wipe and the default fade on demand
+  (`__ww.transition`), reading the black share and the sides of each picture
+  (`WW_SHOTS_DIR=<folder>` keeps the shots to look at).
 
 ## Making the art
 

@@ -26,6 +26,20 @@
     "width": 256,
     "height": 240
   },
+  "transitions": {
+    "level": {
+      "kind": "fade",
+      "ticks": 20,
+      "hold": 6
+    },
+    "scene": {
+      "kind": "iris",
+      "ticks": 20,
+      "hold": 4,
+      "ease": "quadIn",
+      "at": "follow"
+    }
+  },
   "headless": "headless.ts",
   "view": "view.ts"
 }

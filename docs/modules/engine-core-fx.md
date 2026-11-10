@@ -36,6 +36,14 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `flashAlpha`; `HitPause` (`request`, `hold`, `remaining`), the shell's freeze-frame counter.
 - Parallax (Engine 0.16 T4): `parallaxLayerSchema`, `layoutParallax(skin, cam, size, frameSize)`
   (`ParallaxDraw`s for both backends), `parallaxFactor`, `parallaxOrigin`, `gradientBands`.
+- Screen transitions (Engine 0.16 T5, `transition.ts`): `transitionSpecSchema` (`fade`, `wipe`
+  with `direction` and a soft `edge`, `iris` with `at`: `follow`, `center` or a point; each
+  `{ ticks, hold?, color?, ease? }`), `transitionsSchema` (`game.json`'s `transitions`: `level`,
+  `scene`, `mission`, `default`), `transitionFor`, `reducedMotion` (a short fade,
+  `REDUCED_MOTION_TICKS`), `transitionAt(spec, age)` -> `{ phase: out | hold | in, coverage }`,
+  `transitionShape(view, screen, focus)` (what a display draws), `transitionAlphaAt` (the cover at
+  a pixel), `irisCentre`, `wipeTravel`, `wipeAlpha`, `TransitionPlayer`. The shell runs them
+  (`engine/core/shell/transitions.ts`).
 
 In skins (`engine/core/present`): an event entry's `tween` (on the event's `entity`) and a kind
 entry's `spawnTween` (on an entity the first frame it is shown), drawn by the Canvas2D

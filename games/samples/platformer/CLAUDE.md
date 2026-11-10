@@ -115,7 +115,9 @@ move it into the engine or the kit (or name the release that will).
 - `game.json`: the manifest: kit `platformer`, `uses: ["topdown"]` (for the doors' rooms),
   `kitOptions: { "topdown": { "rooms": "separate" } }` (Engine 0.15, gap G17: each room file is
   its own challenge room, checked alone),
-  256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), content kinds `level`, `campaign`, `profile`,
+  256x240, seed 1, `headless.ts`, `view.ts` (0.7 T7), `transitions` (Engine 0.16 T5: `level` a
+  fade with a short hold between levels, `scene` an iris closing on Hopper when a door starts its
+  room's round and opening when the round ends; `main.ts` passes them to `bootBrowserGame`), content kinds `level`, `campaign`, `profile`,
   `room`, `palette`, `sprite`, `skin` and `sfx`. `index.html` is the page, so the root launcher lists
   `games/samples/platformer/`, and its `ww-alternate` meta tag adds the launcher's `3D` link
   (`?backend=three`, 0.7 T8).

@@ -13,3 +13,4 @@ export { frameTexture, HudLayer, type HudQuad } from './hud';
 export { PARALLAX_DEPTH_STEP, ParallaxPlanes } from './parallax';
 export { PARTICLE_POOL, PARTICLE_Z } from './scene';
 export { threeDisplay, threeScenePresenter, webgl2Available, type ThreeDisplayOptions } from './display';
+export { TransitionLayer } from './transition';

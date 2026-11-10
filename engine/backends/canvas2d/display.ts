@@ -1,9 +1,12 @@
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
+import { transitionShape, type TransitionView } from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { DeepReadonly, SkinFile } from '@engine/core/present';
 import type { BrowserDisplay } from '@engine/core/shell/display';
 import { CanvasRenderer } from './renderer';
+import { SkinnedCanvasPresenter } from './presenter';
 import { skinSetCanvasPresenter } from './skin-set';
+import { drawTransition } from './transition';
 import { Viewport } from './viewport';
 
 /** What a Canvas2D page needs from a game: its picture size, its `canvas2d` skin and sheets. */
@@ -37,12 +40,22 @@ export interface CanvasDisplayOptions {
  * mini game in `rounds`, `skinSetCanvasPresenter`) on that same renderer. `fit` follows the
  * screen layout; `present` copies the backbuffer to the page; `toScreen` maps a client point to
  * picture pixels (`Viewport.toScreen`) for pointer input, and `toClient` its inverse
- * (`Viewport.toClient`, Engine 0.15, gap D13) for page scripts. Browser only.
+ * (`Viewport.toClient`, Engine 0.15, gap D13) for page scripts. A screen transition the shell
+ * hands `transition` (Engine 0.16 T5) is drawn over the backbuffer on `present`
+ * (`drawTransition`), an iris closing on the main presenter's `focus()`. Browser only.
  */
 export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOptions): BrowserDisplay {
   const viewport = new Viewport(canvas, { integerScale: opts.integerScale ?? false }, opts.screen);
   const renderer = new CanvasRenderer(viewport.ctx);
-  const presenter = skinSetCanvasPresenter(renderer, opts);
+  // The game's own presenter, kept to read where its camera's target is (an iris closes on it).
+  const main = new SkinnedCanvasPresenter(renderer, opts.skin, opts.sheet, {
+    size: opts.screen,
+    ...(opts.background !== undefined && { background: opts.background }),
+    ...(opts.onSound !== undefined && { onSound: opts.onSound }),
+    ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
+  });
+  const presenter = skinSetCanvasPresenter(renderer, { ...opts, main });
+  let transition: TransitionView | null = null;
   return {
     renderer,
     presenter,
@@ -50,7 +63,14 @@ export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOpti
       viewport.fit = layout.fit;
       viewport.resize();
     },
-    present: () => viewport.present(),
+    present() {
+      const shape = transition && transitionShape(transition, opts.screen, main.focus());
+      if (shape) drawTransition(viewport.ctx as CanvasRenderingContext2D, shape, opts.screen);
+      viewport.present();
+    },
+    transition(view) {
+      transition = view;
+    },
     toScreen: (clientX, clientY) => viewport.toScreen(clientX, clientY),
     toClient: (x, y) => viewport.toClient(x, y),
   };

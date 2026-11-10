@@ -148,6 +148,7 @@ describe('HostScene', () => {
     // Tick 2 starts the round; attack from frame 3 passes it after two held ticks.
     expect(depths.slice(0, 5)).toEqual([1, 2, 2, 2, 1]);
     expect(host.results).toEqual(['pass']);
+    expect(scene.headless()).toBeNull();
     expect(stack.top).toBe(scene);
     expect(host.world().tick).toBe(5);
   });
@@ -251,6 +252,8 @@ describe('HostScene hosting a mission round (Engine 0.11, item 173)', () => {
     // Tick 1 starts the round (pushed); attack, held into it, counts only once released and pressed
     // again, so the scripted hold never ends it: give it a fresh press.
     expect(depths[1]).toBe(2);
+    // A mission host's round plays the `mission` transition slot (Engine 0.16 T5).
+    expect(stack.top?.transitionSlot).toBe('mission');
     expect(host.miniGame()).not.toBeNull();
     expect(worldTick).toBe(1); // the world waits while the round is hosted
     const press = new ScriptedInput({
@@ -792,5 +795,137 @@ describe('hit-pause in the loop (Engine 0.16 T4)', () => {
     expect(hashes).toHaveLength(30);
     expect(booted?.hitPause.remaining).toBe(0);
     (globalThis.window as unknown as { location: { search: string } }).location.search = '';
+  });
+});
+
+describe('screen transitions in the loop (Engine 0.16 T5)', () => {
+  /**
+   * Boots a game that moves to level `b` at tick 40 (its world and map id change), drawn through
+   * a `FramePicture`-like drawer onto the display's presenter, and steps the page's loop through
+   * 150 display frames of 17 ms (or, in manual mode, `__ww.step` 100 times). Gives every tick's
+   * state hash, the map id and tick each display frame showed, and the transitions the display
+   * was handed.
+   */
+  async function play(transitions: boolean, search = '') {
+    fakeBootPage();
+    let onFrame: ((t: number) => void) | null = null;
+    vi.stubGlobal('requestAnimationFrame', (fn: (t: number) => void) => {
+      onFrame = fn;
+      return 1;
+    });
+    let now = 0;
+    vi.stubGlobal('performance', { now: () => now });
+    (globalThis.window as unknown as { location: { search: string } }).location.search = search;
+    let tick = 0;
+    let state = 1;
+    const hashes: string[] = [];
+    const game = {
+      step: () => {
+        tick++;
+        state = (state * 31 + tick) % 1_000_003;
+        hashes.push(stateHash({ tick, state }));
+        if (tick === 40) game.world = { level: 'b' };
+      },
+      snapshot: () => ({ tick, state }),
+      world: { level: 'a' },
+      events: [] as { type: string }[],
+      miniGame: () => null,
+    };
+    const shown: string[] = [];
+    const views: (string | null)[] = [];
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      reduceMotion: false,
+      ...(transitions && { transitions: { level: { kind: 'iris', ticks: 6, hold: 2 } } }),
+      displays: {
+        canvas2d: () => ({
+          ...display(),
+          presenter: {
+            present: (frame: { frame: number; map?: { id: string } }) =>
+              shown.push(`${frame.map?.id}@${frame.frame}`),
+          },
+          transition: (view) => views.push(view === null ? null : `${view.spec.kind} ${view.phase}`),
+        }),
+      },
+      scene: (stack, shownDisplay) =>
+        new HostScene({
+          stack,
+          game,
+          picture: () => {
+            // As a map tracker does: the full map on its first frame, a reference after.
+            let sent = '';
+            return {
+              draw: (world: { level: string }) => {
+                const full = sent !== world.level;
+                sent = world.level;
+                shownDisplay.presenter.present({
+                  frame: tick,
+                  size: { width: 256, height: 240 },
+                  entities: [],
+                  map: full
+                    ? { id: world.level, version: 0, tileSize: 16, tiles: [] }
+                    : { id: world.level, version: 0 },
+                  events: [],
+                  status: {},
+                } as never);
+              },
+            };
+          },
+        }),
+    });
+    if (!booted?.loop.manual)
+      for (let i = 0; i < 150; i++) {
+        now += 17;
+        onFrame!(now);
+      }
+    return { hashes, shown, views, booted };
+  }
+
+  it('a level change plays its transition, holding ticks, with every tick the hash of the run without', async () => {
+    const plain = await play(false);
+    const moved = await play(true);
+    // The ticks taken are each the same state as without the transition (the headless run's).
+    expect(moved.hashes.length).toBeGreaterThan(100);
+    expect(moved.hashes).toEqual(plain.hashes.slice(0, moved.hashes.length));
+    // The out half and hold (8 frames) held the ticks: its first frame is drawn right after the
+    // step that changed the level, the other 7 held a step each.
+    expect(plain.hashes.length - moved.hashes.length).toBe(7);
+    // The display was handed the iris: out, hold, then in.
+    const seq = moved.views.filter((v) => v !== null);
+    expect(seq.filter((v) => v === 'iris out').length).toBeGreaterThanOrEqual(6);
+    expect(seq).toContain('iris hold');
+    expect(seq.at(-1)).toBe('iris in');
+    // While it closed, the picture stayed on level a; then level b showed.
+    const first = moved.shown.findIndex((s) => s.startsWith('b@'));
+    expect(moved.shown.slice(first - 8, first).every((s) => s === 'a@39')).toBe(true);
+    expect(plain.shown.find((s) => s.startsWith('b@'))).toBe('b@40');
+    expect(moved.shown[first]).toBe('b@40');
+    expect(moved.booted?.transitions.running).toBe(false);
+  });
+
+  it('in manual-loop mode it plays without holding ticks, so the step hook stays tick-exact', async () => {
+    const { hashes, views } = await play(true, '?debug=step');
+    const win = globalThis.window as unknown as DebugWindow;
+    expect(win.__ww!.step(45)).toBe(45);
+    expect(hashes).toHaveLength(45);
+    expect(views.at(-1)).toBe('iris out');
+    // On demand, through the step hook: a spec of its own.
+    win.__ww!.step(20);
+    expect(win.__ww!.transition({ kind: 'wipe', ticks: 4 })).toBe(true);
+    win.__ww!.step(2);
+    expect(views.at(-1)).toBe('wipe out');
+    expect(win.__ww!.transition('level')).toBe(false); // one runs already
+    (globalThis.window as unknown as { location: { search: string } }).location.search = '';
+  });
+
+  it('without transitions nothing plays on a level change; on demand a spec still does', async () => {
+    const { booted, views } = await play(false);
+    expect(views.every((v) => v === null)).toBe(true);
+    let covered = 0;
+    expect(booted!.transition('default', () => covered++)).toBe(false);
+    expect(covered).toBe(1);
+    expect(booted!.transition({ kind: 'fade', ticks: 3 }, () => covered++)).toBe(true);
+    expect(covered).toBe(1);
   });
 });

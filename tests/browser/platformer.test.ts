@@ -50,7 +50,9 @@ const LOOKS: Record<number, string> = {
   100: SKY, // level-1
   2200: SKY, // level-4, walking to the door
   2400: BLACK, // round 1 (2281 to 2881)
-  2900: SKY, // back on the level after the failed round
+  // Back on the level after the failed round, once the round's iris (Engine 0.16 T5: `game.json`'s
+  // `scene` transition, 20 + 4 + 20 frames from 2881) has opened again.
+  2930: SKY,
   3100: BLACK, // round 2 (2965 to 3144)
   3200: SKY, // the passed round opened the wall
 };

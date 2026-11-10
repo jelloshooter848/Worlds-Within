@@ -1,3 +1,4 @@
+import type { TransitionSlot } from '../fx/transition';
 import type { Renderer } from '../gfx/renderer';
 import type { HeadlessGame, HostedGame } from '../headless';
 import type { InputFrame } from '../input/input-manager';
@@ -35,6 +36,12 @@ interface HostSceneBase<W extends object, E> {
   picture(r: Renderer): HostDrawer<W, E>;
   /** True to keep drawing the level under the mini game's scene. */
   readonly translucentMiniGame?: boolean;
+  /**
+   * The screen transition the shell plays when a round's scene is pushed and popped (Engine 0.16
+   * T5): default `mission` when the game is a mission host (it has `mission(step)` and hosts
+   * mission rounds), else `scene`.
+   */
+  readonly roundTransition?: TransitionSlot;
 }
 
 /** The game itself (Engine 0.10, gap G37): the scene reads `world`, `events` and `miniGame()`. */
@@ -83,15 +90,16 @@ export class HostScene<W extends object, E> implements Scene {
     const game = this.opts.miniGame();
     const { stack } = this.opts;
     if (game && stack.top === this)
-      stack.push(
-        miniGameScene({
+      stack.push({
+        ...miniGameScene({
           game,
           step: (i) => this.step(i),
           render: (r) => this.render(r),
           done: () => stack.pop(),
           translucent: this.opts.translucentMiniGame ?? false,
         }),
-      );
+        transitionSlot: this.opts.roundTransition ?? this.roundSlot(),
+      });
   }
 
   /**
@@ -100,6 +108,12 @@ export class HostScene<W extends object, E> implements Scene {
    */
   headless(): HeadlessGame | null {
     return this.game ?? this.opts.headless?.() ?? null;
+  }
+
+  /** A mission host's rounds are missions; anything else's are scenes. */
+  private roundSlot(): TransitionSlot {
+    const game = this.headless();
+    return game !== null && typeof game.mission === 'function' && 'records' in game ? 'mission' : 'scene';
   }
 
   render(r: Renderer): void {

@@ -183,6 +183,44 @@ describe('the manifest screen size', () => {
   });
 });
 
+describe('the manifest transitions (Engine 0.16 T5)', () => {
+  const withTransitions = (transitions: unknown) =>
+    files({ './game.json': JSON.stringify({ ...MANIFEST, transitions }) });
+
+  it('takes the transitions by slot', () => {
+    const read = loadContent(
+      withTransitions({
+        level: { kind: 'iris', ticks: 24, at: 'follow' },
+        scene: { kind: 'wipe', ticks: 16, direction: 'left', edge: 12 },
+        default: { kind: 'fade', ticks: 12, color: '#000' },
+      }),
+      kinds,
+    );
+    expect(read.errors).toEqual([]);
+    expect(read.ok && read.value.manifest.transitions?.level).toEqual({
+      kind: 'iris',
+      ticks: 24,
+      at: 'follow',
+    });
+    const plain = loadContent(files(), kinds);
+    expect(plain.ok && plain.value.manifest.transitions).toBeUndefined();
+  });
+
+  it('rejects an unknown kind, a bad field and an unknown slot, at the field', () => {
+    const errs = (transitions: unknown) =>
+      loadContent(withTransitions(transitions), kinds, { root: 'g/' }).errors;
+    expect(errs({ level: { kind: 'spin', ticks: 20 } })).toMatchObject([
+      { file: 'g/game.json', path: 'transitions.level.kind' },
+    ]);
+    expect(errs({ scene: { kind: 'wipe', ticks: 20, direction: 'sideways' } })).toMatchObject([
+      { file: 'g/game.json', path: 'transitions.scene.direction' },
+    ]);
+    expect(errs({ menu: { kind: 'fade', ticks: 20 } })).toMatchObject([
+      { file: 'g/game.json', path: 'transitions.menu' },
+    ]);
+  });
+});
+
 describe('globs and names', () => {
   it.each([
     ['content/*.json', 'content/a.json', true],

@@ -184,6 +184,7 @@ export const PURE_CORE = [
   'engine/core/shell/host-scene.ts',
   'engine/core/shell/debug.ts',
   'engine/core/shell/mission-launch.ts',
+  'engine/core/shell/transitions.ts',
   'engine/core/state-hash.ts',
   'engine/core/math/**',
   'engine/core/scene.ts',

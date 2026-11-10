@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { transitionsSchema } from '../fx/transition';
 import { DEFAULT_SCREEN, SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
 
 /**
@@ -26,6 +27,11 @@ import { DEFAULT_SCREEN, SCREEN_MAX, SCREEN_MIN } from '../gfx/screen';
  *
  * `screen` is the game picture's size in game pixels (optional, 256x240 when left out): the
  * backbuffer, the integer scaling, the touch layout and screenshots all follow it.
+ *
+ * `transitions` (optional, Engine 0.16 T5) are the screen transitions the browser shell plays,
+ * by slot: `level` (the map id changes), `scene` (a scene is pushed or popped), `mission` (a
+ * mission round; else `scene`) and `default`, each `{ kind, ticks, hold?, color?, ease? }` with
+ * `kind` `fade`, `wipe` (`direction?`, `edge?`) or `iris` (`at?`); `engine/core/fx/transition.ts`.
  *
  * Content paths are relative to the game folder, with forward slashes. Each entry is a file path
  * or a glob: `*` and `?` match within one folder, `**` matches any number of folders.
@@ -92,6 +98,11 @@ export const gameManifestSchema = z.strictObject({
     .default({ ...DEFAULT_SCREEN })
     .describe(
       `the game picture's size in game px (default ${DEFAULT_SCREEN.width}x${DEFAULT_SCREEN.height}); scaling, the touch layout and screenshots follow it`,
+    ),
+  transitions: transitionsSchema
+    .exactOptional()
+    .describe(
+      'screen transitions the browser shell plays, by slot (`level`, `scene`, `mission`, `default`): `{ kind: fade | wipe | iris, ticks, hold?, color?, ease? }` (Engine 0.16 T5)',
     ),
   headless: relativePath.describe('the module that boots the game headless (`createGame`), for `run`'),
   view: relativePath

@@ -8,9 +8,10 @@ import {
   type Presenter,
   type SkinFile,
 } from '@engine/core/present';
-import type { CameraFxSettings } from '@engine/core/fx';
+import { transitionShape, type CameraFxSettings, type TransitionView } from '@engine/core/fx';
 import { webglRendererInfo, type WebglRendererInfo } from './renderer-info';
 import { ThreeScene } from './scene';
+import { TransitionLayer } from './transition';
 
 type Skin = DeepReadonly<SkinFile>;
 type Frame = DeepReadonly<PresentFrame>;
@@ -52,6 +53,9 @@ export class ThreePresenter implements Presenter {
   private drawn: ScreenSize | null = null;
   /** The scenes of the presenters `withSkin` made, freed with this one. */
   private readonly others: ThreeScene[] = [];
+  /** The screen transition pass (Engine 0.16 T5), drawn over the picture and the HUD. */
+  readonly transitionLayer = new TransitionLayer();
+  private transitionView: TransitionView | null = null;
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, skin: Skin, opts: ThreePresenterOptions = {}) {
     const background = opts.background ?? skinBackground(skin);
@@ -94,6 +98,14 @@ export class ThreePresenter implements Presenter {
   }
 
   /**
+   * The screen transition to draw over every frame from now on, or null (Engine 0.16 T5; the
+   * shell hands it to `threeDisplay`'s `transition`). An iris closes on the drawn scene's `focus()`.
+   */
+  transition(view: TransitionView | null): void {
+    this.transitionView = view;
+  }
+
+  /**
    * Another presenter on this one's canvas and renderer, with its own skin and `ThreeScene`
    * (camera, map and entities): for a second frame source in one stream, such as a mini game's
    * frames in another kit's skin (Engine 0.7 T8, gap G32). One WebGL context draws both, whichever
@@ -126,6 +138,7 @@ export class ThreePresenter implements Presenter {
   dispose(): void {
     this.scene.dispose();
     for (const scene of this.others.splice(0)) scene.dispose();
+    this.transitionLayer.dispose();
     this.renderer.dispose();
   }
 
@@ -138,11 +151,17 @@ export class ThreePresenter implements Presenter {
     scene.sync(frame);
     const r = this.renderer;
     r.render(scene.scene, scene.camera);
-    if (scene.hud.quads().length === 0) return;
+    const size = this.size ?? frame.size;
+    const view = this.transitionView;
+    const shape = view === null ? null : transitionShape(view, size, scene.focus());
+    this.transitionLayer.sync(shape, size);
+    const hud = scene.hud.quads().length > 0;
+    if (!hud && shape === null) return;
     r.autoClear = false;
     try {
       r.clearDepth();
-      r.render(scene.hud.scene, scene.hud.camera);
+      if (hud) r.render(scene.hud.scene, scene.hud.camera);
+      if (shape !== null) r.render(this.transitionLayer.scene, this.transitionLayer.camera);
     } finally {
       r.autoClear = true;
     }

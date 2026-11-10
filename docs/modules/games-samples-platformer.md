@@ -19,7 +19,8 @@ challenge rooms. It began as the Engine 0.7 stacking test (every gap it found is
 
 - `game.json`: the manifest (kit `platformer`, `uses: ["topdown"]`, `kitOptions: { "topdown": {
 "rooms": "separate" } }` (each room file its own challenge room, gap G17), 256x240, seed 1, `headless.ts`,
-  `view.ts`).
+  `view.ts`; from Engine 0.16 T5 `transitions`: a fade between levels and an iris on the doors'
+  rooms, played by the shell's `bootBrowserGame`).
 - `content/`: `levels/level-<n>.json` + `level-<n>.map.txt` (`level-1` to `level-5`; `level-4`
   and `level-5` the door levels), `campaigns/main.campaign.json` (the play order, `level-1` to
   `level-5`, Engine 0.10), `profiles/hopper.profile.json`, `rooms/vault.json` + `vault.map.txt` and

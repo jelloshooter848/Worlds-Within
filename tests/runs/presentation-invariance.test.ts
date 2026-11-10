@@ -3,10 +3,12 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CanvasRenderer } from '@engine/backends/canvas2d';
-import { threeScenePresenter } from '@engine/backends/three';
+import { threeScenePresenter, TransitionLayer } from '@engine/backends/three';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import type { ContentBundle } from '@engine/core/content/bundle';
+import { transitionShape } from '@engine/core/fx';
 import { skinSchema, skinSet, SKIN_KIND, type SkinFile } from '@engine/core/present';
+import { ShellTransitions } from '@engine/core/shell/transitions';
 import { playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { loadRun, playView, viewMaker } from './view-play';
 
@@ -20,7 +22,10 @@ import { loadRun, playView, viewMaker } from './view-play';
 // The effects are switched on by rewriting the game's skins (`EFFECTS`), so every kind and event
 // carries them, whatever the game's own skins use. Each later 0.16 part A task adds its switch
 // here (sprite animation, particles, camera, transitions, ...); the invariance must hold with all
-// of them on at once.
+// of them on at once. Screen transitions (T5) are the shell's, not a skin's: with the effects on,
+// the 3D presenter is wrapped in the shell's `ShellTransitions` (an iris on every level change, a
+// fade on demand every 90 ticks), stepped once per tick, and each transition shape is synced into
+// a `TransitionLayer`, as the page does; the held frames it shows must not change the state either.
 
 vi.setConfig({ testTimeout: 120_000 });
 
@@ -347,8 +352,27 @@ describe('presentation invariance: presenters and effects never change the state
       let last3d = '';
       let particles3d = 0;
       let parallax3d = 0;
+      // Screen transitions with the effects on (T5): the shell's wrapper over the 3D presenter.
+      const transitions = new ShellTransitions({
+        specs: { level: { kind: 'iris', ticks: 20, hold: 4 }, default: { kind: 'fade', ticks: 12 } },
+      });
+      const layer = new TransitionLayer();
+      let transitionFrames = 0;
+      const shown3d =
+        switches.length === 0
+          ? presenter3d
+          : transitions.presenter(presenter3d, (v) => {
+              const shape = v && transitionShape(v, screen, presenter3d.scene.focus());
+              layer.sync(shape, screen);
+              if (shape) transitionFrames++;
+            });
+      let tick3d = 0;
       const viaThree = playView(view3d, run, (view) => {
-        presenter3d.present(view.frame!());
+        if (switches.length > 0) {
+          transitions.step();
+          if (++tick3d % 90 === 0) transitions.start();
+        }
+        shown3d.present(view.frame!());
         last3d = stateHash(view.snapshot());
         particles3d = Math.max(particles3d, presenter3d.scene.particleViews().length);
         parallax3d = Math.max(parallax3d, presenter3d.scene.parallax.meshes().length);
@@ -357,6 +381,9 @@ describe('presentation invariance: presenters and effects never change the state
         expect(particles3d, `${label}, three: particles were shown`).toBeGreaterThan(0);
       if (switches.includes('camera'))
         expect(parallax3d, `${label}, three: parallax planes were shown`).toBeGreaterThan(0);
+      if (switches.length > 0 && run.ticks >= 90)
+        expect(transitionFrames, `${label}, three: transitions were shown`).toBeGreaterThan(0);
+      layer.dispose();
       presenter3d.scene.dispose();
       for (const scene of Object.values(presenter3d.rounds)) scene.dispose();
       expect(viaThree, `${label}, three`).toEqual(golden);

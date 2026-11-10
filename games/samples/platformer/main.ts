@@ -29,6 +29,7 @@ const look = hopperLook(content);
 void bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
+  transitions: content.manifest.transitions,
   audio: { songs: contentSongs(content), sfx: contentSfx(content), music: PLATFORMER_MUSIC },
   displays: {
     canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound }),

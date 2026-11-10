@@ -31,6 +31,7 @@ const heard = (onSound: (id: string) => void) => (id: string) => {
 void bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
+  transitions: content.manifest.transitions,
   audio: { sfx: contentSfx(content) },
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>

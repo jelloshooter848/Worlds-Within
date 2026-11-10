@@ -133,6 +133,20 @@ with a `ThreeScene` of its own (`.scene`; `opts` as above but `size`, which is t
 for a second frame source in one stream, such as a stacked mini game's frames in another kit's
 skin. Each scene clears to its own skin's `background` (black by default). Each draws its own scene with the one WebGL context; `dispose()` frees them all.
 
+## Screen transitions (`transition.ts`, Engine 0.16 T5)
+
+`TransitionLayer` is the screen transition pass: an `OrthographicCamera` over the picture in
+picture px (as the HUD's) and one full-picture quad with a small `ShaderMaterial` whose fragment
+shader works out each pixel's cover from the core `TransitionShape` (`@engine/core/fx`) exactly
+as `transitionAlphaAt` does (a fade's alpha, a wipe's soft-edged band along its travel, an
+iris's hole), the colour through Three's colour space (`colorspace_fragment`). `sync(shape, size)`
+sets the uniforms (`uKind`, `uColor`, `uAlpha`, `uDir`, `uSize`, `uLead`, `uTrail`, `uEdge`,
+`uCentre`, `uRadius`) and hides the quad for null; `shown` reads it back; it runs in Node.
+`ThreePresenter.transition(view)` (what `threeDisplay`'s `transition` calls) keeps the view; each
+draw then syncs `transitionShape(view, size, scene.focus())` and renders the pass last, after the
+HUD (`presenter.transitionLayer`). `ThreeScene.focus()` is the camera's target on the z = 0 plane
+projected onto the picture (picture px), or null: where an iris closes.
+
 ## Renderer check (`renderer-info.ts`, pure)
 
 `webglRendererInfo(gl)` returns `{ vendor, renderer, unmasked }`: the `UNMASKED_VENDOR_WEBGL` /
@@ -218,4 +232,7 @@ same each run), the hit-pause request once per event and the shake scale, a zoom
 widths there and back with its corners on the picture's, an event flash on the overlay fading,
 reduced flashing and `effectSettings`, and the parallax planes: each quad's corner projected to
 where the 2D layout draws it, on the camera behind the blocks with no depth test, layers moving
-at their own rates, and gradients only without sheets. WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser.
+at their own rates, and gradients only without sheets. `transition.test.ts` (Engine 0.16 T5) checks the transition pass's
+uniforms for a fade, a wipe and an iris, and `ThreeScene.focus()` centred and at the map's edge.
+WebGL drawing (`ThreePresenter`) is not tested in Node; it needs a browser
+(`tests/browser/fx-lab.test.ts` shoots the lab's transitions in 3D too).

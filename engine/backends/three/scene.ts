@@ -228,6 +228,8 @@ export class ThreeScene {
   /** Frame events of the skin's `poses` cycles, scene state only. */
   private readonly frameEvents = new FrameEventClock();
   private framed: PresentBox | null = null;
+  /** The camera's target projected onto the picture last frame (picture px), or null. */
+  private focusPoint: { x: number; y: number } | null = null;
   private readonly skinParticles: SkinParticles;
   private readonly points: Record<'normal' | 'add', ParticlePoints>;
   private readonly tmpColor = new Color();
@@ -323,6 +325,15 @@ export class ThreeScene {
   /** How many times a map has been built (once per new map id and version). */
   get mapBuilds(): number {
     return this.builds;
+  }
+
+  /**
+   * The camera's target (the followed entity's centre, else the hint's point) on the z = 0 plane,
+   * projected onto the picture last frame, in picture px (Engine 0.16 T5: where an iris closes),
+   * or null.
+   */
+  focus(): { x: number; y: number } | null {
+    return this.focusPoint === null ? null : { ...this.focusPoint };
   }
 
   /** The world box (px, y down) the camera framed on the z = 0 plane last frame, without shake. */
@@ -658,6 +669,11 @@ export class ThreeScene {
     cam.lookAt(cx, cy, 0);
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld();
+    if (focus === null) this.focusPoint = null;
+    else {
+      const p = new Vector3(focus.x, -focus.y, 0).project(cam);
+      this.focusPoint = { x: ((p.x + 1) / 2) * size.width, y: ((1 - p.y) / 2) * size.height };
+    }
 
     // The overlay just past the near plane, filling the view.
     const at = cam.near * 2;

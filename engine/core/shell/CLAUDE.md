@@ -75,6 +75,38 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   headless runs never see it, and in manual-loop mode it does nothing (requests are dropped), so
   the step hook stays tick-exact. `FixedLoop` (`../loop.ts`) draws only on a frame that took a
   step, so a faster display draws each step once and presenter clocks run at 60 Hz everywhere.
+- **Screen transitions** (Engine 0.16 T5; `transitions.ts`, pure, on `PURE_CORE`; the timing and
+  shapes are `../fx/transition.ts`): `bootBrowserGame({ transitions, reduceMotion? })` with the
+  game's `content.manifest.transitions` (`game.json`'s `transitions`, by slot: `level`, `scene`,
+  `mission`, `default`; `transitionFor`: `mission` falls back to `scene`, any slot to `default`)
+  makes a `ShellTransitions` (`booted.transitions`; made on every page, so on-demand ones work
+  without specs). `reduceMotion` defaults to the browser's `prefers-reduced-motion: reduce`; with
+  it every transition is a short fade (`reducedMotion`, `REDUCED_MOTION_TICKS` frames a half).
+  - **When:** the display the scene factory gets (and `booted.display`) is the factory's with its
+    `presenter` wrapped (`ShellTransitions.presenter`): a frame whose map id differs from the last
+    one shown starts `level`. After each loop step the boot hands
+    `transitions.scenes(before, after)` the stack's top and depth: a push plays the new top's
+    `Scene.transitionSlot`, a pop
+    the popped scene's (`scene` when it gives none; `HostScene` marks the round scenes it pushes
+    `mission` for a mission host, a game with `mission` and `records`, else `scene`, or its
+    `roundTransition` option). On demand: `booted.transition(slotOrSpec = 'default', covered?)`
+    (T9's title and menus; `covered` runs once the picture is fully covered, on the in half's
+    first frame, or at once when nothing could start) and the step hook's `__ww.transition`. One
+    at a time: a request while one runs starts nothing.
+  - **The picture:** while a transition closes (out half and hold) the wrapped presenter keeps
+    presenting the last frame it showed before (presenters' own clocks go on), and keeps the
+    frames that came meanwhile with a full map or events; once it opens it presents those, in
+    order, then the frame. Before each frame (and before each render) the display gets
+    `BrowserDisplay.transition(view)` (the `TransitionView` or null) and draws
+    `transitionShape(view, screen, focus)` over everything: `canvasDisplay` on its backbuffer at
+    `present` (`drawTransition`), `threeDisplay` as a pass after the HUD (`TransitionLayer`); an
+    iris closes on the presenter's `focus()`, the followed entity on screen.
+  - **Ticks:** the transition clock is one tick per loop step. While it closes the loop step does
+    nothing (no input frame, no tick), as for a hit-pause, so every tick's state hash is the same
+    as without it (tested: a level change with a transition gives the headless run's hashes). Its
+    first closing frame is drawn right after the step that changed the level. In manual-loop
+    mode it plays but never holds, so `__ww.step(n)` stays n ticks (the old picture is held
+    while the game steps on).
 - **Manual-loop mode and the step hook** (Engine 0.14 T8, gap G31; docs/BUILD-LOG.md, Engine
   0.14, decision 9, item 255). `bootBrowserGame({ manual: true })`, or the page's URL with
   `?debug=step` (`manualFromQuery(search)`, `DEBUG_STEP_QUERY`; `?backend=three&debug=step` for
@@ -148,6 +180,8 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
     Canvas2D display's `Viewport.toClient`; a display without one (3D: its canvas is the picture)
     gets the canvas box's mapping from the boot. The step hook has it as `window.__ww.toClient`
     for browser tests (with the tower-defense kit's `screenAtCell`).
+  - `transition(slotOrSpec = 'default')` (Engine 0.16 T5): plays a screen transition now (false
+    when none could start), for browser tests that shoot one mid-way.
 - `campaign-session.ts` (Engine 0.13 T8): `CampaignSession(context, campaign)`, a campaign as a
   page plays it, with no DOM: `end(save)` keeps an entry's save in browser storage
   (`../save/campaign-store.ts`) and packs its save code (`../campaign-code.ts`), giving
@@ -210,7 +244,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts` and `mission-launch.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts` and `transitions.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`
@@ -258,6 +292,15 @@ none, a paused scene's clock, 0 refused) and `InputManager.press`. In the browse
 `tests/browser/tower-defense-page.test.ts` and `mini-siege-page.test.ts` tap cells through
 `__ww.toClient` and `screenAtCell`, and check the volume control is there and its volumes survive
 a reload.
+Screen transitions (Engine 0.16 T5): `shell.test.ts` boots a game that changes level at tick 40
+with an iris, stepped by `requestAnimationFrame` for 150 frames: every tick's hash is the run's
+without it, 7 steps held, the display handed the iris out, hold and in, and the picture held on
+the old level until it opens; in manual mode `__ww.step(45)` is 45 ticks and `__ww.transition`
+plays a spec; without specs nothing plays on a level change, on demand a spec still does, and
+`covered` runs at once when none starts; a mission host's round scene is `mission`.
+`transitions.test.ts`: slots on push and pop, reduced motion, the held frames shown in order once
+it opens, no transition on the first map or a reference. In the browser,
+`tests/browser/fx-lab.test.ts` shoots the lab's iris, a wipe and a fade mid-way in both backends.
 `mission-launch.test.ts` (Engine 0.15 T10): `MissionLaunch` over a `MissionHost` with a fake
 world and a fake session: an entry held at tick 0 with its briefing until Begin; no hold with
 `hold: false`; a refused launch's reason, the offers, the choice pausing the host, the round with

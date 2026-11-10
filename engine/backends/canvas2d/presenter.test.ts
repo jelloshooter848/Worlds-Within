@@ -297,6 +297,22 @@ describe('SkinnedCanvasPresenter', () => {
     /** The hero with its centre at (cx, cy). */
     const at = (cx: number, cy: number) => [hero({ x: cx - 8, y: cy - 8 })];
 
+    it("gives the followed entity on screen as its focus, the iris transition's centre (Engine 0.16 T5)", () => {
+      const skin: SkinFile = { ...SKIN, camera: { follow: 'hero', lerp: 1 } };
+      const p = new SkinnedCanvasPresenter(recorder().r, skin, lookup, {
+        mapSurface: () => ({ renderer: recorder().r, image: null }),
+      });
+      expect(p.focus()).toBeNull();
+      // Scrolled: the camera's top-left at (200, 100) puts the hero's centre (224, 116) at (24, 16).
+      p.present(frame({ map: BIG, entities: at(224, 116) }));
+      expect(p.focus()).toEqual({ x: 24, y: 16 });
+      // Clamped at the map's corner, the hero sits off the picture's centre.
+      p.present(frame({ frame: 1, map: BIG, entities: at(10, 12) }));
+      expect(p.focus()).toEqual({ x: 10, y: 12 });
+      p.present(frame({ frame: 2, map: BIG, entities: [] }));
+      expect(p.focus()).toBeNull();
+    });
+
     it('follows with a deadzone: no scroll inside the box, scrolling past its edge', () => {
       const c = cam({ follow: 'hero', deadzone: { w: 16, h: 8 } });
       // Centred at first: (100 - 24, 80 - 16).

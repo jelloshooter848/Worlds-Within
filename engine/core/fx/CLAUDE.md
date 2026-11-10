@@ -104,6 +104,24 @@ x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin i
   `round(x - cam.x * factor.x)`, `round(y - cam.y * factor.y)` with `cam` the camera's top-left in
   picture px (zoom and shake included). Helpers: `parallaxFactor`, `parallaxOrigin`,
   `gradientBands(colors, bands, height)` (no gaps; the first and last bands take the end colours).
+- `transition.ts` (Engine 0.16 T5): screen transitions' timing and shapes. `transitionSpecSchema`
+  (a union on `kind`; an unknown kind is an error at `kind`): `fade`, `wipe` (`direction` `right`
+  (default), `left`, `down`, `up`; `edge`, the soft edge in picture px, default
+  `WIPE_DEFAULT_EDGE` 16) and `iris` (`at`: `follow` (default), `center` or `{ x, y }`), each with
+  `ticks` (frames each half), `hold?`, `color?` (default `#000000`) and `ease?`.
+  `transitionsSchema` is `game.json`'s `transitions` (`level`, `scene`, `mission`, `default`;
+  `TRANSITION_SLOTS`), `transitionFor(specs, slot)` the spec a slot plays and `reducedMotion(spec)`
+  the short fade in its colour. `transitionAt(spec, age)` is `{ phase, coverage }` or null: `out`
+  (coverage `ease((age + 1) / ticks)`, 1 on its last frame), `hold` (1), `in` (the curve played
+  backwards, 0 on its last frame); `transitionLength` = `2 * ticks + hold`.
+  `transitionShape(view, screen, focus?)` is what a display draws: `fade` `{ color, alpha }`,
+  `wipe` `{ direction, length, edge, lead, trail }` (along the travel `s`: opaque between the soft
+  edges, the lead coming in on the out half, the trail following it off the far side on the in
+  half: `wipeTravel`, `wipeAlpha`), `iris` `{ x, y, radius }` (the uncovered circle; at no
+  coverage it reaches the farthest corner; centre `irisCentre(at, focus, screen)`, kept on the
+  picture). `transitionAlphaAt(shape, x, y, screen)` is the cover at a pixel's centre, the one
+  definition both backends draw. `TransitionPlayer` (`start(spec, covered?)`, `step()`, `view`,
+  `running`, `closing`) runs one; the shell's `ShellTransitions` uses it.
 - `index.ts`: re-exports all of the above; import from `@engine/core/fx`.
 
 ## Where it is used
@@ -158,7 +176,11 @@ exactly zero as trauma squared, deterministic per frame and seed, adding up, sub
 shake scale; zoom punch values with an ease, hold and the way back, punches multiplying; flashes
 fading and reduced flashing; clearing on an earlier frame; `HitPause` frame counting; the
 schemas), `parallax.test.ts` (factors and origins, gradient bands, layers moving at their own
-rates between two camera positions, repeats, a missing frame, the layer schema). The skin hook is
+rates between two camera positions, repeats, a missing frame, the layer schema),
+`transition.test.ts` (phases and coverage over time with a hold and an ease, slots and fallbacks,
+reduced motion, the player's `covered`, each kind's covered share frame by frame, the wipe's
+direction and soft edge, the iris closing on its centre, the iris centre in screen space, the
+schemas naming the bad field). The skin hook is
 tested in `engine/core/present/skin.test.ts` (`skin tweens`) and
 `engine/backends/canvas2d/presenter.test.ts` (`tweens`). `tests/runs/presentation-invariance.test.ts`
 plays every game's run files with presenters fed every frame and the effects switched on (its

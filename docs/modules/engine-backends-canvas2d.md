@@ -33,7 +33,8 @@ for and holds no game rules.
   the camera's target and full-picture flashes (skipped with `reduceFlashing`), on the presenter's
   own clock, the `shakeScale` and `subPixelShake` options, `effectSettings` for a settings screen,
   `onHitPause(ticks)` for an event's `hitPause`, and the skin's `parallax` layers drawn behind the
-  map with the core `layoutParallax`), frames the camera through its own `CameraFollower` from
+  map with the core `layoutParallax`; from Engine 0.16 T5 `focus()`, the camera's target on the
+  picture, where an iris transition closes), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
   instance lives in the presenter only), honours `zoom` (the hint's, else the skin's; the map
@@ -46,7 +47,10 @@ for and holds no game rules.
 - `canvasDisplay`, `CanvasDisplayOptions` (`display.ts`, Engine 0.7): the page's 2D
   `BrowserDisplay` for `bootBrowserGame` (`@engine/core/shell`): viewport, renderer and a
   `SkinnedCanvasPresenter` with the game's skin (and one per mini game in `rounds`), fitted to
-  the screen layout.
+  the screen layout. From Engine 0.16 T5 it takes the shell's screen transition
+  (`transition(view)`) and draws it over the backbuffer on `present` with `drawTransition`
+  (`transition.ts`: a fade, a wipe's linear gradient with soft edges, an iris's even-odd hole on
+  the main presenter's `focus()`).
 - `skinSetCanvasPresenter`, `CanvasSkinSetOptions` (`skin-set.ts`, Engine 0.7 T9): one presenter
   over a game's skin and a skin per mini game, picked per frame by `status.miniGame`; each skin's
   `camera.clamp` says how it frames its map and its `background` what it clears to.
@@ -63,3 +67,5 @@ for and holds no game rules.
 `Viewport` needs a real DOM and is checked by running a game (`pnpm dev`); `display.test.ts`
 checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCamera`'s
 `worldToScreen` / `screenToWorld` agree with this presenter's drawing at zoom 0.5, 1 and 2.
+`transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for each kind on a recording
+context; `tests/browser/fx-lab.test.ts` shoots an iris, a wipe and a fade mid-transition.

@@ -42,6 +42,15 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   display's `onHitPause`); the loop then holds that many steps (no input, no tick) while the
   picture keeps drawing (`booted.hitPause`, a `HitPause`), with the same per-tick hashes; manual
   mode ignores it. The `FixedLoop` draws only on frames that took a step.
+  Engine 0.16 T5: `transitions` (the game's `content.manifest.transitions`) and `reduceMotion`
+  (default the browser's `prefers-reduced-motion`) give the page screen transitions
+  (`transitions.ts`, `ShellTransitions`; `booted.transitions`): the `level` one on a map id change
+  (the presenter the scenes draw through is wrapped to see it), `scene` (or `mission`, a mission
+  round's, `Scene.transitionSlot`) on a scene push or pop, and any on demand with
+  `booted.transition(slotOrSpec?, covered?)` (`covered` runs once the picture is fully covered).
+  While one closes the old picture is held and the loop holds ticks (as a hit-pause, same per-tick
+  hashes; manual mode plays it without holding); the display draws it
+  (`BrowserDisplay.transition(view)`). Under reduced motion each is a short fade.
   Engine 0.14 (gap G31): `manual: true`, or `?debug=step` in the page's URL (and, T9,
   `?record`, which adds `__ww` with recording on but leaves the loop running)
   (`manualFromQuery`), is manual-loop mode: the `FixedLoop` never runs on `requestAnimationFrame`
@@ -65,6 +74,7 @@ audio })` mounts it (`booted.volume`; `volumeControl: false` leaves it out). Eve
   - `snapshot()`, `hash()`: the page's game's headless snapshot (the topmost scene's
     `Scene.headless()`, which `HostScene` with a `game` gives) and its state hash
     (`engine/core/state-hash.ts`, the hash in a run's `.hashes.json`), or null;
+  - `transition(slotOrSpec?)` (Engine 0.16 T5): plays a screen transition now;
   - `replay(runFileJson)`: from tick 0, the run's `input` through a `ScriptedInput` in place of the
     keyboard, and its `orders` and `missions` handed to the game before the step from their tick
     (refusals in `refused`); throws on a run with `world`, `from`, `start` or `disableRules`, or
@@ -126,13 +136,14 @@ Example (`games/platformer-lab/main.ts`):
 ## Imports allowed
 
 - `engine/core` only; never backends, the sim, tools, kits or games. Kits may not import it
-  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts` and `mission-launch.ts` are on `PURE_CORE`.
+  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts` and `transitions.ts` are on `PURE_CORE`.
 
 ## How to test
 
 `engine/core/shell/shell.test.ts` with `pnpm test` (Node, a fake page for the DOM helpers, and a
 full boot with a fake audio context for the `audio` option, and one in manual-loop mode) and
-`debug.test.ts` (the step hook and replay, taps, `toClient`), `mission-launch.test.ts` (the launch
+`debug.test.ts` (the step hook and replay, taps, `toClient`), `transitions.test.ts` (slots, reduced
+motion, the old picture held on a level change; Engine 0.16 T5), `mission-launch.test.ts` (the launch
 flow and the campaign flow over a `MissionHost` with fakes);
 `tests/browser/mini-siege-page.test.ts` plays the flow's DOM (every entry held until Begin, resume
 from a code);

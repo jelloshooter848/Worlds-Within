@@ -1,3 +1,4 @@
+import type { TransitionSlot } from './fx/transition';
 import type { HeadlessGame } from './headless';
 import type { InputFrame } from './input/input-manager';
 import { MergedInput } from './input/merged-input';
@@ -48,6 +49,12 @@ export interface Scene {
    * over it at 60 play in one page. Headless runs step every tick and never read it.
    */
   readonly tickRate?: number;
+  /**
+   * The screen transition the browser shell plays when this scene is pushed or popped (Engine
+   * 0.16 T5; `shell/transitions.ts`): a slot of the game's `transitions` (default `scene`).
+   * `HostScene` marks a mission round's scene `mission`.
+   */
+  readonly transitionSlot?: TransitionSlot;
 }
 
 /** The loop's steps a second (`FixedLoop` in the shell runs at 60). */

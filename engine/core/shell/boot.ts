@@ -1,5 +1,7 @@
 import { AudioManager, type Volumes } from '../audio/audio-manager';
 import { HitPause } from '../fx/hit-pause';
+import type { TransitionsSpec } from '../fx/transition';
+import type { DeepReadonly } from '../present/types';
 import type { Sfx, Song } from '../audio/mml';
 import type { ScreenSize } from '../gfx/screen';
 import { GamepadSource } from '../input/gamepad';
@@ -15,6 +17,7 @@ import { loadVolumes } from '../save/settings';
 import { SceneStack, type Scene } from '../scene';
 import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
 import { PageDebugHook, type PageDebug } from './debug';
+import { ShellTransitions, type TransitionRequest } from './transitions';
 import { mountVolumeControl, type VolumeControl } from './volume-control';
 import type { BrowserDisplay, DisplayResult } from './display';
 
@@ -146,6 +149,17 @@ export interface BrowserBootOptions {
    * page's query has `debug=step`. Off by default: the page plays as before.
    */
   manual?: boolean;
+  /**
+   * The game's screen transitions (`content.manifest.transitions`, Engine 0.16 T5): played on a
+   * map id change (`level`), a scene push or pop (`scene`, `mission`) and on demand
+   * (`booted.transition`). Left out, none play (an on-demand one with its own spec still does).
+   */
+  transitions?: DeepReadonly<TransitionsSpec> | undefined;
+  /**
+   * The player's reduced-motion setting: every transition becomes a short fade. Default: the
+   * browser's `prefers-reduced-motion: reduce`.
+   */
+  reduceMotion?: boolean;
 }
 
 /** The page's inputs beyond the `InputFrame`, for a game's scenes. */
@@ -169,6 +183,14 @@ export interface BootedGame extends BootPage {
   volume: VolumeControl | null;
   /** The hit-pause the loop honours (Engine 0.16 T4): display frames still held. */
   hitPause: HitPause;
+  /** The page's screen transitions (Engine 0.16 T5). */
+  transitions: ShellTransitions;
+  /**
+   * Plays a transition now (a slot of the game's, default `default`, or a spec), with `covered`
+   * run once the picture is fully covered (swap the scene there). False when none could start
+   * (then `covered` runs at once).
+   */
+  transition(what?: TransitionRequest, covered?: () => void): boolean;
 }
 
 /**
@@ -199,6 +221,16 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     showDisplayMessage(canvas, display);
     return null;
   }
+  const transitions = new ShellTransitions({
+    ...(opts.transitions !== undefined && { specs: opts.transitions }),
+    reduceMotion: opts.reduceMotion ?? prefersReducedMotion(),
+  });
+  // The scenes draw through the presenter the transitions wrap: it starts the level transition on
+  // a new map id and holds the old picture while one closes.
+  const shown: BrowserDisplay = {
+    ...display,
+    presenter: transitions.presenter(display.presenter, (view) => display.transition?.(view)),
+  };
   let volume: VolumeControl | null = null;
   if (audio) {
     const start = opts.audio?.volumes;
@@ -225,7 +257,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const pointer = opts.pointer ? pointerSource(canvas, display, opts) : null;
   // Picture to client px (gap D13): a display without its own inverse (3D: the canvas is sized to
   // the picture) gets the canvas box's.
-  display.toClient ??= (x, y) => {
+  shown.toClient = display.toClient ??= (x, y) => {
     const rect = canvas.getBoundingClientRect();
     return {
       x: rect.left + (x / opts.screen.width) * rect.width,
@@ -245,29 +277,35 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       touchScale: 1,
       screen: opts.screen,
     });
-    display.fit(layout);
+    shown.fit(layout);
     touch?.applyLayout(layout);
   };
   relayout();
   window.addEventListener('resize', relayout);
 
   const scenes = new SceneStack();
-  scenes.push(opts.scene(scenes, display, { pointer }));
+  scenes.push(opts.scene(scenes, shown, { pointer }));
 
   // In manual-loop mode the clock is the steps taken (a pointer's long press counts game steps).
   let hook: PageDebugHook | null = null;
   const loop: FixedLoop = new FixedLoop(
     {
       step() {
-        // A hit-pause holds this step: no input frame, no tick; the render still draws the frame.
+        // A closing transition or a hit-pause holds this step: no input frame, no tick; the
+        // render still draws the frame. In manual-loop mode transitions play but hold nothing.
+        transitions.step();
+        if (transitions.closing && !manual) return;
         if (hitPause.hold()) return;
+        const before = { top: scenes.top, depth: scenes.depth };
         input.beginFrame();
         pointer?.beginFrame(manual ? loop.steps * loop.stepMs : performance.now());
         const frame = input.player(0);
         if (pointer) frame.addTaps(tapsOf(pointer.gestures()));
         scenes.update([hook ? hook.frame(frame) : frame]);
+        transitions.scenes(before, { top: scenes.top, depth: scenes.depth });
       },
       render() {
+        display.transition?.(transitions.view());
         scenes.render(display.renderer);
         display.present();
       },
@@ -282,6 +320,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       steps: () => loop.steps,
       game: () => scenes.find((s) => (s.headless?.() ?? null) !== null)?.headless?.() ?? null,
       toClient: (x, y) => display.toClient!(x, y),
+      transition: (what) => transitions.start(what),
     });
     if (record) hook.api.record(true);
     (window as DebugWindow).__ww = hook.api;
@@ -292,7 +331,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   document.body.dataset.backend = backend;
   return {
     backend,
-    display,
+    display: shown,
     scenes,
     input,
     loop,
@@ -301,7 +340,18 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     debug: hook?.api ?? null,
     volume,
     hitPause,
+    transitions,
+    transition: (what, covered) => transitions.start(what, covered),
   };
+}
+
+/** The browser's reduced-motion preference (false where it cannot be read). */
+function prefersReducedMotion(): boolean {
+  try {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  } catch {
+    return false;
+  }
 }
 
 /** The boot's `AudioManager`: the songs and sfx registered, the volumes set, the music waiting. */

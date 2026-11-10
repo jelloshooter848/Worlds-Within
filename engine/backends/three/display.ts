@@ -103,6 +103,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       );
     },
     present() {},
+    transition: (view) => presenter.transition(view),
   };
 }
 

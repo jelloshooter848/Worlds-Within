@@ -13,7 +13,8 @@ meshes by frame, from T3 six particle presets (land dust, run dust, stomp sparks
 a coin pickup burst, a magic aura on the door) with additive blending and glow, from T4 camera
 effects (a shake and a 4-frame hit-pause on stomps, a red flash on hurt, a zoom punch on the door,
 look-ahead) and a four-layer parallax sky (a gradient, clouds, mountains and hills from
-`content/sprites/fx-sky.txt`) in 2D and 3D, original sfx, run
+`content/sprites/fx-sky.txt`) in 2D and 3D, from T5 screen transitions in `game.json` (an iris
+closing on Pip at the door and opening on him in the next level; fades for scenes and on demand), original sfx, run
 files with golden hashes and a browser page. Not a sample: a
 test game, content and glue only.
 

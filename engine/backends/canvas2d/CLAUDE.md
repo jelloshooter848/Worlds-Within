@@ -134,6 +134,17 @@ game, as `threeDisplay` takes them) on that same renderer (the display's `presen
 resizes; `present()` copies the backbuffer to the page. Browser only (moved from
 `games/platformer-lab/main.ts`).
 
+Screen transitions (Engine 0.16 T5): the display keeps the game's own `SkinnedCanvasPresenter`
+(passed to `skinSetCanvasPresenter` as `main`) and takes the shell's `transition(view)`; on
+`present()` it draws `transitionShape(view, screen, main.focus())` (`@engine/core/fx`) over the
+backbuffer before the copy, with `drawTransition(ctx, shape, screen)` (`transition.ts`, exported):
+a fade fills the picture at its alpha, a wipe fills it with a linear gradient from the trail to
+the lead (stops at the soft edges, alphas from the core `wipeAlpha`), an iris fills the picture
+but for its circle (`rect` + `arc`, `fill('evenodd')`); the context is saved and restored.
+`SkinnedCanvasPresenter.focus()` is the camera's target (`cameraTarget`: the followed entity's
+centre, else the hint's point) on the picture as the last frame drew it (zoom and shake
+included), or null.
+
 ## Performance: the RTS benchmark (Engine 0.9 T3)
 
 `tests/bench/rts-render/` measures this presenter in headless Chromium (Playwright): a synthetic
@@ -181,4 +192,6 @@ fitted to the page. `rts-camera.test.ts` (Engine 0.9 T5) checks that `RtsCamera`
 (`@engine/core/present`) agrees with this presenter: at zoom 0.5, 1 and 2, with a skin deadzone
 and lerp, each entity's box is drawn where `worldToScreen` says and maps back within half a picture
 pixel, and the map copy sits at the camera's top-left, in the middle of the map and clamped at
-its edge.
+its edge. `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
+wipe (its gradient line and stops) and an iris (the even-odd hole on the focus) on a recording
+context, and `presenter.test.ts` the presenter's `focus()` scrolled and clamped.
