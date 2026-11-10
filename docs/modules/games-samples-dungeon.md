@@ -21,6 +21,10 @@ building a top-down game on the engine.
 - `content/`: `rooms/*.json` + `*.map.txt` (five rooms), `songs/` (`crypt`, `daylight`), `sfx/`,
   `palettes/` (`hero`, `dungeon`), `sprites/` (`hero.txt`, `dungeon.txt`), `skins/canvas2d.json`
   (every kind, tile, event and HUD value the kit presents, a `background`, no per-kind fallback).
+- `assets/`: 0x72's CC0 DungeonTileset II (Engine 0.16 part C, T2) in `dungeon-tileset-ii/`
+  (`sheet.png` with every frame, `tile-list.txt` naming each frame's rectangle, three autotile
+  atlases, 65 KB), credited in `assets/CREDITS.md`; checked by `assets.test.ts`. No skin uses it
+  yet (the art pass is T3).
 - `content.ts`: `loadDungeon(files)` (the kit hook's kinds), `dungeonRooms`, `dungeonSkin`
   (the engine's `mustSkinSet`), `mustLoad`, `DUNGEON_MUSIC`, `ESCAPE_MUSIC`; songs and sfx are the
   engine's `contentSongs` and `contentSfx`.
@@ -45,7 +49,7 @@ building a top-down game on the engine.
 
 ## How to test
 
-`pnpm test` runs `dungeon.test.ts` (content, rooms, songs, sounds, every run file's ticks drawn
+`pnpm test` runs `assets.test.ts` (the CC0 pack's credits, sizes and tile list), `dungeon.test.ts` (content, rooms, songs, sounds, every run file's ticks drawn
 with no fallback box, the end states, the scene against the headless game), the run files and
 `tests/runs/dungeon-mutants.test.ts`; `tests/browser/dungeon.test.ts` opens it from the built
 games index and plays it (headless Chromium, skipped without one). `pnpm -s cli validate

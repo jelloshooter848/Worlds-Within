@@ -199,6 +199,22 @@ are unchanged; `?debug=step&title=show` shows it. Tested in `tests/browser/menus
 start, pause, settings and controls by keyboard and touch, settings kept across a reload;
 `WW_SHOTS_DIR=<folder>` keeps `menus-<game>-*.png`), tuned from those screenshots at page scale.
 
+## Assets (Engine 0.16 part C, T2)
+
+`assets/dungeon-tileset-ii/` holds 0x72's **DungeonTileset II** (v1.7, CC0, from
+https://0x72.itch.io/dungeontileset-ii), credited in `assets/CREDITS.md` (source, author, licence:
+`pnpm -s cli validate` checks it, `engine/core/content/assets.ts`): `sheet.png` (512 x 512, every
+frame of the pack), `tile-list.txt` (one `<name> <x> <y> <w> <h>` line per frame of the sheet,
+e.g. `knight_m_run_anim_f0 192 100 16 28`), the autotile atlases `atlas-floor-16x16.png`,
+`atlas-walls-low-16x16.png` and `atlas-walls-high-16x32.png`, and the author's `readme.txt`;
+65 KB in all. No skin uses it yet: the art pass (part C, T3) adds a skin `images` entry for
+`assets/dungeon-tileset-ii/sheet.png` whose `frames` come from `tile-list.txt`. The pack has no
+torches, bats or sounds (item 425): those stay original text art and MML. Binary files live only
+in `assets/` (`tests/architecture/no-content.test.ts`); `assets.test.ts` checks the credits, the
+file list, each PNG's size, every tile-list frame inside the sheet, the frames the art pass needs,
+and a 100 KB bound. To add a pack: a new `assets/<pack>/` folder, its `## <pack>` section in
+`CREDITS.md` (CC0 only), and its files in `assets.test.ts`.
+
 ## Imports
 
 - Allowed: relative paths inside `games/samples/dungeon`, `@engine/*` (core and backends) and `@kits/*`.

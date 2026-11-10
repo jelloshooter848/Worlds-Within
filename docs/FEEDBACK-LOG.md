@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 425.** (Last used: 424.)
+**Next unused number: 426.** (Last used: 425.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1665,3 +1665,14 @@ details in `docs/BUILD-LOG.md`, Engine 0.16 part B, "Fixes after review"):
   inputs still win and lose as before, so no run steps changed (eight run files re-recorded);
   most are stomped on the hero's existing path. Should the levels instead get enemies that need
   new routes (and new run inputs)?
+
+**Engine 0.16 part C, T2: The Old Crypt's CC0 art pack** (0x72's DungeonTileset II v1.7, fetched
+from itch.io; credited in `games/samples/dungeon/assets/CREDITS.md`):
+
+- **425.** The pack was fetched as asked (no substitute), but kept as its one 512 x 512 sheet with
+  its tile list (`name x y w h` per frame) and three autotile atlases (65 KB), not as the zip's
+  750 per-frame PNGs, since a skin's `images` entry names frames as rectangles of one PNG; the
+  sheet also holds characters the game will not use (elves, lizards, wizards). The pack has no
+  torches, bats or sounds: torches and bats stay original text art (or come from T4's lighting),
+  and the sound stays MML (no CC0 SFX pack was added). OK, or should unused characters be cut
+  from the sheet, or a CC0 torch and bat set be found?
