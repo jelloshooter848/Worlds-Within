@@ -1,0 +1,310 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 3
+  },
+  "ticks": 801,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": []
+      },
+      {
+        "frame": 1,
+        "hold": ["right"]
+      },
+      {
+        "frame": 286,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 304,
+        "hold": ["right"]
+      },
+      {
+        "frame": 323,
+        "hold": ["left"]
+      },
+      {
+        "frame": 337,
+        "hold": ["right"]
+      },
+      {
+        "frame": 387,
+        "hold": []
+      },
+      {
+        "frame": 427,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 445,
+        "hold": ["left"]
+      },
+      {
+        "frame": 458,
+        "hold": []
+      },
+      {
+        "frame": 463,
+        "hold": ["right"]
+      },
+      {
+        "frame": 513,
+        "hold": ["left"]
+      },
+      {
+        "frame": 532,
+        "hold": ["right"]
+      },
+      {
+        "frame": 550,
+        "hold": ["left"]
+      },
+      {
+        "frame": 561,
+        "hold": ["right"]
+      },
+      {
+        "frame": 564,
+        "hold": ["left"]
+      },
+      {
+        "frame": 566,
+        "hold": ["right"]
+      },
+      {
+        "frame": 567,
+        "hold": ["left"]
+      },
+      {
+        "frame": 568,
+        "hold": ["right"]
+      },
+      {
+        "frame": 569,
+        "hold": ["left"]
+      },
+      {
+        "frame": 570,
+        "hold": ["right"]
+      },
+      {
+        "frame": 571,
+        "hold": ["left"]
+      },
+      {
+        "frame": 572,
+        "hold": ["right"]
+      },
+      {
+        "frame": 573,
+        "hold": ["left"]
+      },
+      {
+        "frame": 574,
+        "hold": ["right"]
+      },
+      {
+        "frame": 575,
+        "hold": ["left"]
+      },
+      {
+        "frame": 576,
+        "hold": ["right"]
+      },
+      {
+        "frame": 577,
+        "hold": ["left"]
+      },
+      {
+        "frame": 602,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 620,
+        "hold": ["left"]
+      },
+      {
+        "frame": 627,
+        "hold": []
+      },
+      {
+        "frame": 637,
+        "hold": ["right"]
+      },
+      {
+        "frame": 639,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "boss"
+    },
+    {
+      "tick": 0,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 110,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 12,
+        "row": 7
+      }
+    },
+    {
+      "tick": 240,
+      "path": "actors.0.boss.step",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 241,
+      "path": "actors.0.boss.step",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 278,
+      "path": "actors.1.type",
+      "op": "eq",
+      "value": "thorn"
+    },
+    {
+      "tick": 301,
+      "path": "actors.1.y",
+      "op": "eq",
+      "value": 38912
+    },
+    {
+      "tick": 322,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 323,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 323,
+      "path": "actors.0.boss.invuln",
+      "op": "eq",
+      "value": 50
+    },
+    {
+      "tick": 351,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 375,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 377,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 377,
+      "path": "actors.0.boss.phase",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 377,
+      "path": "actors.0.boss.step",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 639,
+      "path": "actors.0.boss.mode",
+      "op": "eq",
+      "value": "defeated"
+    },
+    {
+      "tick": 639,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 788,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 789,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 789,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "path": "level",
+      "op": "eq",
+      "value": "boss"
+    },
+    {
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "path": "player.hp",
+      "op": "gte",
+      "value": 1
+    }
+  ],
+  "guards": [
+    "gravity",
+    "walk",
+    "skid",
+    "air-control",
+    "jump",
+    "variable-jump",
+    "solid-tiles",
+    "checkpoints",
+    "actors-wake",
+    "stomp-bounce",
+    "invulnerability",
+    "boss-pattern",
+    "boss-phases",
+    "boss-stomp-hits",
+    "boss-hit-invuln",
+    "boss-defeat-clears",
+    "boss-projectiles"
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "run": "games/samples/platformer/runs/full-game.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "1f529be4d0ca7f23"
+    },
+    {
+      "tick": 120,
+      "hash": "32fb73ce38877314"
+    },
+    {
+      "tick": 240,
+      "hash": "8b43768848b3a445"
+    },
+    {
+      "tick": 360,
+      "hash": "947f0e606908227f"
+    },
+    {
+      "tick": 480,
+      "hash": "7d02a4111dad3b63"
+    },
+    {
+      "tick": 600,
+      "hash": "4030be8675115a0d"
+    },
+    {
+      "tick": 720,
+      "hash": "8d6a49bc1ddd0353"
+    },
+    {
+      "tick": 840,
+      "hash": "37d5903181e349b4"
+    },
+    {
+      "tick": 960,
+      "hash": "268812ccde760dd4"
+    },
+    {
+      "tick": 1080,
+      "hash": "d5f32fc6e800a236"
+    },
+    {
+      "tick": 1200,
+      "hash": "1559c1c61df75c18"
+    },
+    {
+      "tick": 1320,
+      "hash": "74104cad28dabf1f"
+    },
+    {
+      "tick": 1440,
+      "hash": "0f8f3ef3891a900e"
+    },
+    {
+      "tick": 1560,
+      "hash": "b04521283faa0b71"
+    },
+    {
+      "tick": 1680,
+      "hash": "490ae2fa9ecb2c10"
+    },
+    {
+      "tick": 1800,
+      "hash": "b577fd438da0fca1"
+    },
+    {
+      "tick": 1920,
+      "hash": "af790215547e7b18"
+    },
+    {
+      "tick": 2040,
+      "hash": "447e1476e7fbb1d5"
+    },
+    {
+      "tick": 2160,
+      "hash": "874d257318361b1e"
+    },
+    {
+      "tick": 2280,
+      "hash": "ea0ca7f0721069bf"
+    },
+    {
+      "tick": 2400,
+      "hash": "536d23f1e1fe0720"
+    },
+    {
+      "tick": 2520,
+      "hash": "4671011eb6f2977c"
+    },
+    {
+      "tick": 2640,
+      "hash": "16a10425203fbf3b"
+    },
+    {
+      "tick": 2760,
+      "hash": "f15b92aa2e4f46b5"
+    },
+    {
+      "tick": 2880,
+      "hash": "1555607abd4126ba"
+    },
+    {
+      "tick": 3000,
+      "hash": "5451e4fe806716ef"
+    },
+    {
+      "tick": 3120,
+      "hash": "540046a54c931bb4"
+    },
+    {
+      "tick": 3240,
+      "hash": "f1df70d0447541ac"
+    },
+    {
+      "tick": 3360,
+      "hash": "57d0e150f6460672"
+    },
+    {
+      "tick": 3480,
+      "hash": "96be9289e49982e4"
+    },
+    {
+      "tick": 3600,
+      "hash": "7539cc5cdbca157e"
+    },
+    {
+      "tick": 3650,
+      "hash": "64466619ac689e09"
+    }
+  ]
+}

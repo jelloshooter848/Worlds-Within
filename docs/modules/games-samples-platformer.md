@@ -11,7 +11,10 @@ time: T5 gave it a tuned profile (coyote time, jump buffering, a jump cut, run a
 fall speeds, as data), its screen, its campaign (`level-1`, `level-2`, `level-3`, `boss`) and its
 first level, with run files for a win and a loss; the art pass (T6, the CC0 packs in `assets/`),
 levels 2 and 3 (T7: an autumn level of one-way planks and pacing threats, a night level of
-spikes, buffered and coyote jumps, each with its own sky and ground), the mini-boss (T8), music (T9) and the 2.5D view (T10) follow. T6 drew it
+spikes, buffered and coyote jumps, each with its own sky and ground), the mini-boss (T8:
+Burrlock, the bramble beetle, in an arena at dusk, with telegraphed attacks, a faster second
+phase, white hit flashes, hit-pauses, a boss bar and a defeat sequence, then the end screen),
+music (T9) and the 2.5D view (T10) follow. T6 drew it
 from the CC0 PNG packs: ground joined by its neighbours, the Ninja Frog with every state (a
 landing crouch, a dying puff), Kenney's critters, a raised checkpoint flag, a trophy goal, four
 parallax layers of original text art, squash and stretch, dust and run particles, hit flashes,
@@ -21,24 +24,30 @@ since T5. It holds only content, skins and thin glue.
 
 ## Public API entry points
 
-- `game.json`: the manifest (kit `platformer`, 320x180, seed 1, `transitions.level`, `menus`,
-  `headless.ts`, `view.ts`).
+- `game.json`: the manifest (kit `platformer`, 320x180, seed 1, `transitions.level` and (T8)
+  `transitions.respawn` (an iris on the frog), `menus` with (T8) the level-clear banner (`clear`)
+  and the end screen (`end`: stats, Back to title, Levels), `headless.ts`, `view.ts`).
 - `content/`: `campaigns/main.campaign.json` (the stage list), `levels/level-1.json` +
   `level-1.map.txt` (80x12: coins, a bump block, two walkers, a checkpoint, a coyote-time pit, a
   running-jump gap), `level-2` (T7, Autumn Hills, 100x12: one-way planks over pits, walkers and
   ledge-walkers pacing steps and planks, a checkpoint, a high off-path coin cache with a life
   block), `level-3` (T7, Starlit Ridge, 104x12: spikes, a buffered-jump chain over narrow pillars,
   a multi-coin block, a checkpoint, a coyote jump over a spike field, a tunnel coin cache under a
-  spiked roof, gold planks over a spike floor) and the placeholder `boss`,
+  spiked roof, gold planks over a spike floor) and `boss` (T8, Burrlock's Hollow, 40x12: a runway with a
+  checkpoint, a step down under a hanging wall into an arena, `"clear": "boss"`),
   `profiles/hoppers-way.profile.json` (the tuned profile; its numbers and reasons are a table in
-  the `CLAUDE.md`), `sprites/hopper.txt` and `hopper-font.txt` with `palettes/hopper.json`,
+  the `CLAUDE.md`; from T8 also the boss type `burrlock` on the kit's boss form and its
+  projectiles `thorn` and `acorn`), `sprites/burrlock.txt` with `palettes/burrlock.json` and
+  `burrlock-angry.json` (T8: the boss's original text pixel art, its poses, white flash, defeat
+  frames, shots and HUD name plate; the angry palette is its second phase), `sprites/hopper.txt` and `hopper-font.txt` with `palettes/hopper.json`,
   `fonts/`, `sfx/`, `songs/meadow.json` (placeholders copied from the classic game; `hopper.txt` now only for the 3D skin, until T10), `sprites/hopper-sky.txt` with
   `palettes/hopper-sky.json` (T6: the parallax clouds, mountains, hills and bushes),
   `sprites/hopper-autumn.txt` and `hopper-night.txt` with their palettes (T7: those layers
   recoloured for level-2 and level-3, and a star field with the moon),
   `skins/canvas2d.json` (T6: the 2D skin on the PNG packs; its parts are listed in the
   `CLAUDE.md`, "The 2D skin"; from T7 its `themes` give level-2 an autumn sky and ground and
-  level-3 a night sky and rose sand) and `skins/three.json`.
+  level-3 a night sky and rose sand; from T8 the boss's telegraph looks, hit and defeat effects,
+  boss bar and the arena's dusk theme) and `skins/three.json`.
 - `assets/` (Engine 0.16 part B, T4): four CC0 packs as binary files, each credited in
   `assets/CREDITS.md` (source URL, author, licence, files kept; checked by `validate`), about
   1.8 MB in all: `pixel-adventure-1` (Pixel Frog: terrain, backgrounds, the Ninja Frog player,
@@ -68,7 +77,10 @@ since T5. It holds only content, skins and thin glue.
   T7's `level-2`, `level-2-lost`, `level-3` and `level-3-lost` (each `start: { stage }`, so a
   change to level 1 moves none of them: wins with one-way platforms, a ledge-walker's turn, a
   life block, buffered and coyote jumps; losses with two respawns on the checkpoint, by pits and
-  by spikes).
+  by spikes); T8's `boss` (Burrlock beaten: cleared at tick 789), `boss-lost` (three lives lost
+  to the boss, the arena afresh) and `full-game` (from the title's first stage, level-1, through
+  every level and the boss to the end, cleared at 3645: the four wins' input on the stages'
+  ticks).
 
 ## Imports allowed
 
@@ -81,7 +93,8 @@ since T5. It holds only content, skins and thin glue.
 `pnpm test games/samples/platformer` (`platformer.test.ts`: content, the stage list, the 16:9
 screen, the tuned profile, the start state, the view width, determinism, the skins covering
 everything the runs show in 2D and 3D, no fallback box on any tick, the tile joins, the frog's
-sheets, the feel events, and every run drawn with its hit-pauses and the same state hashes;
+sheets, the feel events, every run drawn with its hit-pauses and the same state hashes, and (T8)
+the arena, the boss's telegraphed pattern and phases, its skin and the clear and end menus;
 `assets.test.ts`: the CC0
 packs credited, every PNG and GLB readable). `pnpm -s cli validate games/samples/platformer
 --json`, `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json`, `pnpm -s cli
@@ -89,4 +102,5 @@ mutants games/samples/platformer/runs/level-1.run.json --json` (exit 0 for each 
 `pnpm test tests/runs` (golden hashes, backend parity), `pnpm -s cli screenshot
 games/samples/platformer/runs/level-1.run.json --tick 400 --scale 6 --json` (and `--overlay
 title`, `levels`, `pause`; `pnpm -s cli sheet` for many ticks), `pnpm test
-tests/browser`. Play it: `pnpm dev`, open `/games/samples/platformer/` (arrows, Z jumps, X runs).
+tests/browser` (`menus.test.ts`, T8: Hopper's Way's level-clear banner by keyboard and the boss
+beaten to the end screen by gamepad). Play it: `pnpm dev`, open `/games/samples/platformer/` (arrows, Z jumps, X runs).

@@ -25,6 +25,13 @@
       "kind": "fade",
       "ticks": 20,
       "hold": 6
+    },
+    "respawn": {
+      "kind": "iris",
+      "ticks": 16,
+      "hold": 6,
+      "ease": "quadIn",
+      "at": "follow"
     }
   },
   "menus": {
@@ -103,6 +110,44 @@
     "levels": {
       "heading": "Pick a level",
       "mark": "*"
+    },
+    "clear": {
+      "heading": "Level clear!",
+      "lines": [
+        {
+          "label": "Coins",
+          "status": "coins"
+        },
+        {
+          "label": "Time",
+          "status": "time",
+          "format": "time"
+        },
+        {
+          "label": "Deaths",
+          "status": "deaths"
+        }
+      ]
+    },
+    "end": {
+      "heading": "Hopper's Way cleared!",
+      "credits": "Burrlock is beaten and the meadow is safe. Thanks for playing!",
+      "lines": [
+        {
+          "label": "Coins",
+          "status": "coins"
+        },
+        {
+          "label": "Time",
+          "status": "time",
+          "format": "time"
+        },
+        {
+          "label": "Deaths",
+          "status": "deaths"
+        }
+      ],
+      "items": ["title", "levels"]
     }
   },
   "headless": "headless.ts",

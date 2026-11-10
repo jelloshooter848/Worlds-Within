@@ -420,3 +420,161 @@ describe.skipIf(missing !== null)('the title, pause and settings screens (headle
     }, 180_000);
   });
 });
+
+// Engine 0.16 part B (T8): Hopper's Way's level-clear banner and end screen. By keyboard: level-3
+// chosen from the level select, played to its goal from its run file's input, the banner over the
+// pause, then the boss's arena starting. By gamepad: the arena chosen, Burrlock beaten with
+// `boss.run.json`'s input, the end screen holding the game, and back to the title from it. Each
+// screen is shot as `menus-hoppers-way-<screen>.png`.
+describe.skipIf(missing !== null)(
+  "Hopper's Way: the level-clear banner and the end screen (headless Chromium)",
+  () => {
+    const HW = 'games/samples/platformer/';
+    const KEYS: Record<string, string> = {
+      left: 'ArrowLeft',
+      right: 'ArrowRight',
+      jump: 'KeyZ',
+      attack: 'KeyX',
+    };
+    const script = (run: string) =>
+      (
+        JSON.parse(readFileSync(join(ROOT, HW, 'runs', run), 'utf8')) as {
+          input: { steps: { frame: number; hold: string[] }[] };
+        }
+      ).input.steps;
+    const level = (page: Page) =>
+      page.evaluate(() => {
+        const s = (window as DebugWindow).__ww!.snapshot() as {
+          level: string;
+          frame: number;
+          outcome: string;
+        };
+        return { level: s.level, frame: s.frame, outcome: s.outcome };
+      });
+
+    /** Plays a run file's input on the keyboard from the level's frame now, until it is cleared. */
+    async function drive(page: Page, run: string): Promise<void> {
+      const steps = script(run);
+      const held = new Set<string>();
+      for (let i = 0; i < steps.length; i++) {
+        const want = new Set(steps[i]!.hold.map((a) => KEYS[a]!));
+        for (const k of held) if (!want.has(k)) await page.keyboard.up(k);
+        for (const k of want) if (!held.has(k)) await page.keyboard.down(k);
+        held.clear();
+        for (const k of want) held.add(k);
+        const next = steps[i + 1]?.frame;
+        if (next === undefined) break;
+        const { frame } = await level(page);
+        if (next > frame) await step(page, next - frame);
+      }
+      for (let i = 0; i < 400 && (await level(page)).outcome === 'playing'; i++) await step(page, 2);
+      for (const k of held) await page.keyboard.up(k);
+      expect((await level(page)).outcome).toBe('cleared');
+    }
+
+    async function choose(page: Page, run: string, confirm: () => Promise<void>): Promise<void> {
+      await confirm();
+      for (const a of script(run)[0]!.hold) await page.keyboard.down(KEYS[a]!);
+      await until(page, 'play');
+    }
+
+    it('by keyboard: level-3 from the level select, the banner, then the arena', async () => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const { page, errors } = await open(browser, `${server.url}${HW}?debug=step&title=show`);
+        await page.evaluate(() =>
+          localStorage.setItem('ww:platformer:progress', '{"cleared":["level-1","level-2"]}'),
+        );
+        await step(page, 30);
+        await focus(page, 'levels');
+        await key(page, 'Enter');
+        await key(page, 'ArrowDown');
+        await key(page, 'ArrowDown');
+        expect((await menus(page)).focused).toBe('level-2');
+        await choose(page, 'level-3.run.json', () => key(page, 'Enter'));
+        expect((await level(page)).level).toBe('level-3');
+        await drive(page, 'level-3.run.json');
+        await step(page, 2);
+        expect((await menus(page)).banner).toBe(true);
+        await step(page, 20);
+        await page.screenshot({ path: join(shots, 'menus-hoppers-way-clear.png') });
+        for (let i = 0; i < 120 && (await level(page)).level === 'level-3'; i++) await step(page, 1);
+        expect((await level(page)).level).toBe('boss');
+        await step(page, 2);
+        expect((await menus(page)).banner).toBe(false);
+        const progress = await page.evaluate(() => localStorage.getItem('ww:platformer:progress'));
+        expect(JSON.parse(progress!).cleared).toEqual(['level-1', 'level-2', 'level-3']);
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 240_000);
+
+    it('by gamepad: the arena, Burrlock beaten, the end screen and back to the title', async () => {
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const page = await browser.newPage({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 1 });
+        await page.addInitScript(() => {
+          const w = window as unknown as { __pad: number[] };
+          w.__pad = [];
+          Object.defineProperty(navigator, 'getGamepads', {
+            value: () => [
+              {
+                index: 0,
+                connected: true,
+                mapping: 'standard',
+                axes: [0, 0, 0, 0],
+                buttons: Array.from({ length: 17 }, (_, i) => ({
+                  pressed: w.__pad.includes(i),
+                  value: w.__pad.includes(i) ? 1 : 0,
+                })),
+              },
+            ],
+          });
+        });
+        const errors: string[] = [];
+        page.on('pageerror', (error) => errors.push(error.message));
+        await page.goto(`${server.url}${HW}?debug=step&title=show`);
+        await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+        await page.evaluate(() =>
+          localStorage.setItem('ww:platformer:progress', '{"cleared":["level-1","level-2","level-3"]}'),
+        );
+        const pad = async (button: number) => {
+          await page.evaluate((b) => ((window as unknown as { __pad: number[] }).__pad = [b]), button);
+          await step(page, 1);
+          await page.evaluate(() => ((window as unknown as { __pad: number[] }).__pad = []));
+          await step(page, 1);
+        };
+        const A = 0;
+        const DOWN = 13;
+        await step(page, 10);
+        while ((await menus(page)).focused !== 'levels') await pad(DOWN);
+        await pad(A);
+        expect((await menus(page)).screen).toBe('levels');
+        while ((await menus(page)).focused !== 'level-3') await pad(DOWN);
+        await choose(page, 'boss.run.json', () => pad(A));
+        expect((await level(page)).level).toBe('boss');
+        await drive(page, 'boss.run.json');
+        await step(page, 3);
+        const view = await menus(page);
+        expect([view.state, view.screen, view.banner]).toEqual(['end', 'end', false]);
+        expect(view.items.map((i) => i.id)).toEqual(['title', 'levels']);
+        const held = await hash(page);
+        await step(page, 30);
+        expect(await hash(page)).toBe(held); // the end screen holds the game
+        await page.screenshot({ path: join(shots, 'menus-hoppers-way-end.png') });
+        await pad(A);
+        await until(page, 'title');
+        const progress = await page.evaluate(() => localStorage.getItem('ww:platformer:progress'));
+        expect(JSON.parse(progress!).cleared).toEqual(['level-1', 'level-2', 'level-3', 'boss']);
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 240_000);
+  },
+);

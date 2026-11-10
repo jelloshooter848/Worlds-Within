@@ -5,8 +5,8 @@ short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and 2.5D (
 16:9 screen. It is built a task at a time (docs/ROADMAP.md, "0.16 part B"): T5 made room for it
 (the old five levels and two doors moved to `games/platformer-classic`, a test game, with their
 run files and hashes unchanged), gave it a tuned profile, its screen, its campaign and its first
-level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3 (built), T8 the
-mini-boss's arena and the end, T9 music and sounds, T10 the 2.5D view. It is content, not engine:
+level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3, T8 the
+mini-boss's arena and the end (built), T9 music and sounds, T10 the 2.5D view. It is content, not engine:
 the kit holds the rules, this folder holds levels, the profile, art, sound, skins and thin glue.
 
 ## The game
@@ -43,9 +43,29 @@ level-1 -> level-2 -> level-3 -> boss   (campaign main; LEVEL_PAUSE 60 ticks bet
    tunnel (the lower way through), then a spike floor crossed on three one-way gold planks
    (buffered jumps again), a `ledge-walker` on the raised last stretch and the goal. 22 coins in
    all (21 on the map, one or more from the block).
-4. **boss** (T8, the mini-boss's arena, `"clear": "boss"`): a placeholder now, a flat 24x12
-   corridor from the start to a goal, so the campaign, the level select and the stage list are
-   the flagship's from the start.
+4. **boss, Burrlock's Hollow** (T8), 40x12 tiles, the autumn ground under a dusk sky (its own
+   `themes` entry): a runway (row 8 ground) with three coins to jump for and the **checkpoint**
+   (`K`, column 12, before the arena), then a step down under a wall hanging from the top
+   (column 19, rows 0-5, and solid again at rows 8-9) into the **arena** (columns 20-38, floor at
+   row 10, a full-height wall at column 39). The view's 320 px are exactly the arena once it has
+   scrolled there (the scroll lock keeps it). `"clear": "boss"`: no goal; the level is cleared at
+   the end of **Burrlock**'s defeat sequence. The hanging wall's low part stops a charge and a
+   thorn at the arena's edge, so neither leaves it; the way in is the gap between its parts.
+
+**Burrlock, the bramble beetle** (`b`, actor type `burrlock` in the profile; original: a domed
+violet beetle with a bone horn and bramble thorns on its shell, `content/sprites/burrlock.txt`).
+A 28x22 box, 4 hit points, `hitInvuln` 50, `defeatTicks` 150; it wakes as the view reaches it.
+Its pattern, all data on the kit's boss form (`kits/platformer/CLAUDE.md`, Bosses):
+
+| phase          | steps (ticks), looped                                                                                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1 (hp 4-3)     | idle 40, telegraph `shoot` 36, `shoot` a `thorn` (14), idle 24, telegraph `charge` 40, `charge` at 2.25 px/tick to a wall, idle 56 (the stomp window)                                                  |
+| 2 (hp 2 and 1) | idle 22, telegraph `shoot` 26, `shoot` (10), telegraph `leap` 28, `leap` (4.5 up, 1.5 px/tick across), telegraph `drop` 30, `drop` an `acorn` over the frog (spread 2 tiles, the world's rng), idle 40 |
+
+`thorn` (10x6, `projectile: flies`, 2 px/tick, gone at a wall) and `acorn` (10x12, `projectile:
+falls`) harm on touch. A stomp takes a hit point (then 50 ticks in which a stomp only bounces);
+any other touch hurts the frog. Every attack is announced by a telegraph naming it, and the
+second phase's telegraphs and idles are shorter.
 
 A level is **cleared** at its goal; the next stage starts `LEVEL_PAUSE` (60) ticks later. A death
 costs a life and puts the player back at the last checkpoint touched (else the start); with no
@@ -85,34 +105,68 @@ All of it is world state, so run files assert it.
 4. **Run files (378).** Each starts at its own stage, so a change to an earlier level moves none
    of its hashes.
 
+## Build choices (T8; feedback items 379-383)
+
+1. **The boss (379).** Burrlock, the bramble beetle: four attacks over two phases (a thorn shot
+   and a wall-to-wall charge, then the shot, a leap at the frog and an acorn dropped over it),
+   each with a telegraph of its own; four stomps beat it. All data on the T2 boss form; no kit
+   change.
+2. **The arena (380).** A runway with the checkpoint, then a step down under a hanging wall into
+   a one-screen arena. The wall's low part is what stops the charge and the thorns at the left
+   (a thorn otherwise flew on through the level). A respawn puts the frog back on the runway,
+   with the boss where it was (the kit's rule: actors go on), so a death costs a walk back in.
+3. **The look (381).** Original text pixel art (40x30 frames over the box, facing right, the
+   skin flips it), drawn by a small generator and checked as a contact sheet: idle breathing, a
+   pose per telegraph (rearing with a glowing mouth for the shot, head down and pawing for the
+   charge, a crouch for the leap, a roar with glowing thorns for the drop), the shot, the charge
+   cycle, the leap, a white silhouette (`white`) and a dizzy `hurt`, the cracked shell and the
+   beetle on its back; the second phase is the same art in a red palette (`burrlock-angry`, a
+   `byTag` look on `phase:`, which also gives every phase-2 telegraph the roaring pose, since a
+   look matches one tag). A dusk theme for the arena. The HUD's name plate is a sprite frame in
+   the game's font (an `icon` on `bossMaxHp`, so it shows only in a level with a boss: a `text`
+   with a `format` always shows) over a `bar` on `bossHp` / `bossMaxHp`, red below half.
+4. **The end (382).** `menus.clear` (Coins, Time, Deaths) between levels and `menus.end` ("Hopper's
+   Way cleared!", a credit line, the summed stats, Back to title and Levels) after the arena,
+   the shell's T3 screens; `transitions.respawn` (an iris closing on the frog) on every death in
+   every level.
+5. **Run files (383).** `boss` (the win) and `boss-lost` (three lives lost) were found by a small
+   reactive bot (jump a thorn or a charge, stomp when it is open, keep away while it is
+   invulnerable, run from a leap or an acorn) whose held keys were recorded; the win holds no key
+   on its first tick, as a player choosing the arena from the level select does (the page's first
+   tick of a level reads no key held from the menu), so the browser test replays it exactly.
+   `full-game` plays the four wins' input on their stages' ticks, from stage 0 (the title's
+   Start) to the arena cleared: the headless equivalent of title to end screen (the end screen is
+   the shell's, tested in the browser).
+
 ## The tuned profile: `hoppers-way`
 
 JSON has no comments, so the numbers chosen are here. Units are the kit's
 (`kits/platformer/profile.ts`): speeds in 1/4096 px per tick (4096 = 1 px/tick, 60 ticks a
 second), accelerations in the same unit per tick. "Old" is the classic `hopper` profile.
 
-| Field                   | Value                    | Old                    | Why                                                                    |
-| ----------------------- | ------------------------ | ---------------------- | ---------------------------------------------------------------------- |
-| `minWalk`               | 384                      | 320                    | a walk from rest starts a touch quicker                                |
-| `walkAccel`             | 192                      | 160                    | full walking speed in about 0.5 s, not 0.6 s                           |
-| `runAccel`              | 256                      | 224                    | full run in about 0.4 s from walking speed                             |
-| `friction`              | 320                      | 224                    | letting go stops in about 20 ticks: less ice                           |
-| `skid`, `skidTurn`      | 512, 2560                | 400, 2304              | turning round is snappier                                              |
-| `maxWalk`, `maxRun`     | 6400, 10240              | 6144, 9984             | 1.56 and 2.5 px/tick: a 320 px screen crossed in 3.4 s and 2.1 s       |
-| `runHold`               | 10                       | 10                     | a run jump still counts as run for 10 ticks after letting go           |
-| `jumps` (3 tiers)       | below 4096, below 8192,  | below 4096, below 9216 | the top tier only from a real run; it rises 76 px with jump held       |
-|                         | then 19456 at the top    | then 20480             | (a 6-tile gap needs it), the others about 64 px                        |
-| `holdGravity`/`gravity` | 512/1920, 512/1920,      | 512/1792, 496/1600,    | a heavier fall than the rise: jumps land quicker and feel less floaty  |
-|                         | 608/2176                 | 640/2304               |                                                                        |
-| `jumpBuffer`            | 6                        | 6                      | a press up to 0.1 s before landing still jumps                         |
-| `coyote`                | 6                        | none                   | a press up to 0.1 s after walking off a ledge still jumps              |
-| `jumpCut`               | 8192                     | none                   | letting go of jump while rising caps the rise at 2 px/tick: short hops |
-| `maxFall`, `fallReset`  | 17408, 16384             | 17920, 16384           | a 4.25 px/tick fall cap: fast, still readable at 320x180               |
-| `stompBounce`           | 16384                    | 16384                  | a stomp bounces about as high as a short jump                          |
-| `hp`, `maxHp`, `lives`  | 2, 2, 3                  | 2, 2, 3                | two hits, three tries; the checkpoint makes a death cheap              |
-| `invulnTicks`           | 120                      | 120                    | 2 s to get clear after a hit                                           |
-| `breakBricksAt`         | left out                 | 2                      | bricks never break (no level has any yet)                              |
-| actors                  | `walker`, `ledge-walker` | four types             | speed 1536 (0.375 px/tick): simple enemies to stomp                    |
+| Field                   | Value                        | Old                    | Why                                                                    |
+| ----------------------- | ---------------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| `minWalk`               | 384                          | 320                    | a walk from rest starts a touch quicker                                |
+| `walkAccel`             | 192                          | 160                    | full walking speed in about 0.5 s, not 0.6 s                           |
+| `runAccel`              | 256                          | 224                    | full run in about 0.4 s from walking speed                             |
+| `friction`              | 320                          | 224                    | letting go stops in about 20 ticks: less ice                           |
+| `skid`, `skidTurn`      | 512, 2560                    | 400, 2304              | turning round is snappier                                              |
+| `maxWalk`, `maxRun`     | 6400, 10240                  | 6144, 9984             | 1.56 and 2.5 px/tick: a 320 px screen crossed in 3.4 s and 2.1 s       |
+| `runHold`               | 10                           | 10                     | a run jump still counts as run for 10 ticks after letting go           |
+| `jumps` (3 tiers)       | below 4096, below 8192,      | below 4096, below 9216 | the top tier only from a real run; it rises 76 px with jump held       |
+|                         | then 19456 at the top        | then 20480             | (a 6-tile gap needs it), the others about 64 px                        |
+| `holdGravity`/`gravity` | 512/1920, 512/1920,          | 512/1792, 496/1600,    | a heavier fall than the rise: jumps land quicker and feel less floaty  |
+|                         | 608/2176                     | 640/2304               |                                                                        |
+| `jumpBuffer`            | 6                            | 6                      | a press up to 0.1 s before landing still jumps                         |
+| `coyote`                | 6                            | none                   | a press up to 0.1 s after walking off a ledge still jumps              |
+| `jumpCut`               | 8192                         | none                   | letting go of jump while rising caps the rise at 2 px/tick: short hops |
+| `maxFall`, `fallReset`  | 17408, 16384                 | 17920, 16384           | a 4.25 px/tick fall cap: fast, still readable at 320x180               |
+| `stompBounce`           | 16384                        | 16384                  | a stomp bounces about as high as a short jump                          |
+| `hp`, `maxHp`, `lives`  | 2, 2, 3                      | 2, 2, 3                | two hits, three tries; the checkpoint makes a death cheap              |
+| `invulnTicks`           | 120                          | 120                    | 2 s to get clear after a hit                                           |
+| `breakBricksAt`         | left out                     | 2                      | bricks never break (no level has any yet)                              |
+| actors                  | `walker`, `ledge-walker`     | four types             | speed 1536 (0.375 px/tick): simple enemies to stomp                    |
+| boss (T8)               | `burrlock`, `thorn`, `acorn` | none                   | the mini-boss and its two projectiles (The game, above)                |
 
 ## Files
 
@@ -122,17 +176,21 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   settings; pause; the controls rows Walk, Run (hold), Jump (hold for higher)); `headless.ts`,
   `view.ts`. `index.html` is the page (the games index's 2D and `3D` links).
 - `content/campaigns/main.campaign.json`: the stage list, `level-1`, `level-2`, `level-3`, `boss`.
+- From T8 `game.json` also has `transitions.respawn` (an iris on the frog, 16 ticks a half, held 6) and `menus.clear` and `menus.end` (the level-clear banner and the end screen).
 - `content/levels/<id>.json` + `<id>.map.txt` (format: `kits/platformer/CLAUDE.md` and `LEGEND` in
   `kits/platformer/legend.ts`): `level-1` (spawns `w`: a `walker` facing left), `level-2` and
   `level-3` (T7; spawns `w` a `walker` and `l` a `ledge-walker`, both facing left; `blocks`:
-  level-2 `["life", "coin"]`, level-3 `["coins"]`, in reading order) and the `boss` placeholder,
-  all with `profile: "hoppers-way"` and `scroll: "right"`.
+  level-2 `["life", "coin"]`, level-3 `["coins"]`, in reading order) and `boss` (T8, spawns `b`
+  Burrlock facing left, `"clear": "boss"`), all with `profile: "hoppers-way"` and `scroll:
+"right"`.
 - `content/profiles/hoppers-way.profile.json`: the tuned profile (above).
 - `content/sprites/hopper-sky.txt` + `content/palettes/hopper-sky.json` (T6): the parallax
   layers, original text pixel art (below). `hopper-autumn.txt` and `hopper-night.txt` with their
   palettes (T7): the same layers recoloured for level-2 and level-3, and the night's `stars`
   frame (a seamless star field with the moon). `content/sprites/hopper.txt` + `palettes/hopper.json`
   and `hopper-font.txt`: the old placeholder art, now used only by the 3D skin (until T10).
+  `content/sprites/burrlock.txt` + `palettes/burrlock.json` and `burrlock-angry.json` (T8): the
+  boss, its shots and its HUD name plate (The 2D skin, Burrlock, below).
   `content/fonts/hopper-small.txt`, `hopper-title.txt` (the HUD's counters and the menus),
   `content/sfx/*.json`, `content/songs/meadow.json`: fonts and the placeholder sound (T9 redoes it).
 - `content/skins/canvas2d.json`: the 2D skin, built on the CC0 PNG packs (T6, "The 2D skin"
@@ -237,7 +295,8 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
   frames 64 px down) and the one-way planks steel (`metal-plank-*`, so they read on the warm
   hills). `level-3` (night): a navy-to-violet sky, `hopper-night`'s `stars` (x 0.03) and its
   dimmed clouds, mountains, hills and bushes, the ground the rose-topped sand (`rose-*`, 128 px
-  down) and gold planks (`gold-plank-*`). `level-1` and the boss keep the skin's own meadow. A
+  down) and gold planks (`gold-plank-*`). `boss` (T8, dusk): level-2's layers and autumn ground
+  under a violet-to-coral sky. `level-1` keeps the skin's own meadow. A
   one-wide column joins as `top right left` (the top frame) and `right left` (the fill) in each
   set. The 3D skin has no themes yet (T10).
 - **HUD** (the UI kit): the wood `hud-panel` (slice 16, so its corner ornaments stay in the
@@ -250,7 +309,24 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
   frog's run through the long meadow", the frog (`idle-0` x3) and a blob (x2) as art over the
   game's own picture (dim 0.78); title items Start, Levels (the T3 level select, "Pick a level",
   `*` after a cleared one), Controls, Settings. The levels have names: Meadow Start, Autumn Hills,
-  Starlit Ridge (T7 renamed the second and third), The Boss (T8 may rename it).
+  Starlit Ridge (T7 renamed the second and third), Burrlock's Hollow (T8 renamed the arena).
+- **Burrlock** (T8; `kinds.burrlock`, `thorn`, `acorn`): offset `{ x: -6, y: -8 }` (the 40x30
+  frame over the 28x22 box), `flipFacing`. States: `idle` breathing (24/18 ticks), `telegraph`
+  (a fallback blink), `charge` a two-frame run, `leap`, `shoot`, `drop`, `hurt` the white
+  silhouette and the dizzy pose every 3 ticks (the hit flash), `defeated` a one-shot: eight white
+  flashes, the shell cracking twice, then on its back kicking (frame events `boss-pop` on the
+  flashes, `boss-crack`, `boss-blast`). `byTag`, in file order: `phase:` 1-9 (the red palette and
+  its own frames, every telegraph the roar), then `telegraph:shoot`, `:charge`, `:leap`, `:drop`
+  (each its pose cycling with a glowing frame). Events: each `boss-telegraph:attack=<a>` a
+  warning mark over its head and its own sign (mouth glow; pawing dust and a red line on the
+  ground with a small shake; dust and a squash; leaves falling over the arena with a shake),
+  each `boss-attack:attack=<a>` dust, spit or a squash; `boss-hit` a hit-pause (8), a 4 px shake,
+  a white screen flash, stars, a ring and a squash; `boss-defeat` a long hit-pause (24), shake,
+  flash, a 1.3 zoom punch held a second, and tweens that sink it 10 px and fade it out over the
+  sequence's end; `boss-blast` a big burst, smoke, a yellow flash and a shake. The thorn trails
+  green motes, the acorn brown ones. HUD: the name plate (`icon` on `bossMaxHp`) and the bar
+  (`bossHp` of `bossMaxHp`, violet, red at half or under). The 3D skin has a compound low-poly
+  beetle (shell, head, horn, thorns, legs), red in phase 2, and the same events and HUD.
 - **Screenshots** taken and looked at while tuning (`pnpm -s cli screenshot ... --scale 6` and
   `pnpm -s cli sheet`): `level-1` ticks 3, 40, 58-62 (coins, sparkle), 88-94 (landing squash and
   dust), 120-124 (the block), 214-220 (stomp), 355-412 (checkpoint flag raise and wave, the
@@ -264,18 +340,30 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
   which gave the `top right left` join), 545 (the coyote jump), 690 (the tunnel roof, which gave
   the `top bottom` join); `level-3-lost` 549 and `level-2-lost` 530 (death and respawn on the
   checkpoint); the `levels` overlay (the new names).
+- **T8 screenshots** (`sheet` at scale 2, then `screenshot --scale 6`): `boss` 200-790 (the
+  telegraphs: a color tween drew a box over the sprite, so the telegraphs flash by frames
+  instead; the phase-2 telegraphs in the base palette, so the angry look comes first; the
+  defeat's sink and fade ended early and snapped back, so the tweens last to the end),
+  262 (the shot's wind-up), 323 (a hit: flash, squash, stars), 340 (the charge's wind-up),
+  516 (a phase-2 telegraph), 645 and 700 (the defeat's flashes and crack), 720 (the blast), 786
+  (on its back, fading), `788+clear` and `790+end`; `level-2` `975+clear` (where the name plate
+  first showed in a level with no boss: it became an icon); `boss-lost` 580 with
+  `respawn*14` (the iris).
 
 ## Run files
 
-| run            | ticks | ends at                                                  | guards                                                                                                                                                                                                      |
-| -------------- | ----- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `level-1`      | 730   | `level-1` cleared at tick 707, 12 coins                  | gravity, walk, run-speed, air-control, jump, jump-by-speed, variable-jump, coyote-time, solid-tiles, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce        |
-| `level-1-lost` | 910   | every life lost (failed at 843), `level-1` afresh at 903 | gravity, fall-cap, walk, air-control, jump, variable-jump, solid-tiles, pits-kill, checkpoints                                                                                                              |
-| `level-1-hurt` | 300   | hurt by the first walker at 209 (hp 1, invulnerable 120) | walk, air-control, jump, variable-jump, solid-tiles, actors-wake, enemy-touch-hurts, invulnerability                                                                                                        |
-| `level-2`      | 990   | `level-2` cleared at tick 959, 16 coins, 4 lives         | gravity, walk, air-control, jump, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, ledge-turn, stomping, stomp-bounce  |
-| `level-2-lost` | 760   | every life lost (failed at 686), `level-2` afresh at 746 | gravity, fall-cap, walk, air-control, jump, solid-tiles, one-way-platforms, pits-kill, checkpoints                                                                                                          |
-| `level-3`      | 1040  | `level-3` cleared at tick 1010, 22 coins                 | gravity, walk, air-control, jump, variable-jump, coyote-time, solid-tiles, ceiling-bump, one-way-platforms, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce |
-| `level-3-lost` | 850   | every life lost on spikes (failed at 781), afresh at 841 | gravity, walk, air-control, jump, variable-jump, solid-tiles, hazards-kill, checkpoints                                                                                                                     |
+| run            | ticks | ends at                                                   | guards                                                                                                                                                                                                                                                                                                 |
+| -------------- | ----- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `level-1`      | 730   | `level-1` cleared at tick 707, 12 coins                   | gravity, walk, run-speed, air-control, jump, jump-by-speed, variable-jump, coyote-time, solid-tiles, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce                                                                                                   |
+| `level-1-lost` | 910   | every life lost (failed at 843), `level-1` afresh at 903  | gravity, fall-cap, walk, air-control, jump, variable-jump, solid-tiles, pits-kill, checkpoints                                                                                                                                                                                                         |
+| `level-1-hurt` | 300   | hurt by the first walker at 209 (hp 1, invulnerable 120)  | walk, air-control, jump, variable-jump, solid-tiles, actors-wake, enemy-touch-hurts, invulnerability                                                                                                                                                                                                   |
+| `level-2`      | 990   | `level-2` cleared at tick 959, 16 coins, 4 lives          | gravity, walk, air-control, jump, variable-jump, solid-tiles, one-way-platforms, ceiling-bump, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, ledge-turn, stomping, stomp-bounce                                                                                             |
+| `level-2-lost` | 760   | every life lost (failed at 686), `level-2` afresh at 746  | gravity, fall-cap, walk, air-control, jump, solid-tiles, one-way-platforms, pits-kill, checkpoints                                                                                                                                                                                                     |
+| `level-3`      | 1040  | `level-3` cleared at tick 1010, 22 coins                  | gravity, walk, air-control, jump, variable-jump, coyote-time, solid-tiles, ceiling-bump, one-way-platforms, coins-collect, bump-blocks, checkpoints, goal-clears-level, actors-wake, stomping, stomp-bounce                                                                                            |
+| `level-3-lost` | 850   | every life lost on spikes (failed at 781), afresh at 841  | gravity, walk, air-control, jump, variable-jump, solid-tiles, hazards-kill, checkpoints                                                                                                                                                                                                                |
+| `boss`         | 801   | Burrlock beaten at 639, the arena cleared at 789          | gravity, walk, skid, air-control, jump, variable-jump, solid-tiles, checkpoints, actors-wake, stomp-bounce, invulnerability, boss-pattern, boss-phases, boss-stomp-hits, boss-hit-invuln, boss-defeat-clears, boss-projectiles                                                                         |
+| `boss-lost`    | 1570  | every life lost to the boss (failed at 1498), afresh 1558 | gravity, walk, friction, air-control, jump, solid-tiles, checkpoints, actors-wake, stomp-bounce, enemy-touch-hurts, invulnerability, boss-pattern, boss-phases, boss-stomp-hits, boss-projectiles                                                                                                      |
+| `full-game`    | 3650  | stage 0 to the arena cleared at 3645 (every stage)        | gravity, fall-cap, walk, run-speed, air-control, jump, coyote-time, jump-by-speed, variable-jump, solid-tiles, one-way-platforms, coins-collect, bump-blocks, goal-clears-level, actors-wake, stomping, stomp-bounce, boss-pattern, boss-phases, boss-stomp-hits, boss-defeat-clears, boss-projectiles |
 
 - `level-1.run.json` (the win): walks right and jumps for the coins (2 at tick 58), bumps the
   block (a coin, 4 at 123), clears the 2-tile gap, stomps the first walker with a short hop
@@ -324,27 +412,43 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
 - `level-3-lost.run.json` (T7): the win's input to the ledge, then walks off its edge without a
   jump onto the spikes (died, `hazard`, 2 lives, back on the checkpoint at `player.x` 190464 at
   549), climbs the ledge and walks off it twice more (665, 781: `failed`); afresh at 841.
+- `boss.run.json` (T8, `start: { stage: 3 }`): nothing held on tick 0, then walks in (the
+  checkpoint `{ col: 12, row: 7 }` at 110); Burrlock wakes, telegraphs its shot (step 1 at 241),
+  shoots a `thorn` (277: `actors.1` flying level, `y` 38912 at 301), the frog jumps it and stomps
+  the boss during the charge's wind-up (323: hp 3, `invuln` 50) and again during the charge
+  (377: hp 2, phase 1, its pattern from step 0); the thorn is gone at the wall (375). In phase 2
+  a thorn hurts the frog (hp 1), a stomp before the leap (463: hp 1), the frog runs from the
+  acorn, and the last stomp (639: `defeated`, hp 0) starts the defeat sequence; the arena is
+  `cleared` at 789 with the boss gone. Invariants: stage 3, level `boss`, 3 lives, hp at least 1.
+- `boss-lost.run.json` (T8): walks in and stands; a thorn (347: hp 1) and the charge kill it
+  (579: 2 lives, back on the checkpoint, `player.x` 51200); it walks back in, stomps once on the
+  way (680: boss hp 3) and dies again (1218: 1 life), stomps once more (1319: phase 1) and loses
+  the last life (1498: `failed`, 0 lives); 60 ticks later (1558) the arena starts afresh: 3
+  lives, no checkpoint, the boss at 4 hp in phase 0.
+- `full-game.run.json` (T8): from stage 0 with no `start`, `level-1`'s win input from tick 0, each
+  next win's from the tick its stage starts (`level-2` at 767, `level-3` at 1786, the arena at
+  2856: a clear plus `LEVEL_PAUSE`), each cut at its clear; asserts every clear (707, 1726, 2796, 3645) with its coins and every stage start, and never `failed`.
 - Run one: `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json`; its rules:
   `pnpm -s cli mutants games/samples/platformer/runs/level-1.run.json --json` (exit 0 for every run
   file). The whole folder (`pnpm -s cli mutants games/samples/platformer`) does not guard every
-  kit rule yet, so it exits 4: no level has bricks, shells, a mini game or a boss (the platformer
-  lab guards those; T8 adds the boss's rules), and nothing yet walks into a wall, back against
-  the scroll lock or the level's edge, skids or lets go to stop (`walkers-turn`, `scroll-lock`,
-  `level-bounds`, `skid`, `friction`, `run-hold`).
+  kit rule yet, so it exits 4: no level has bricks, shells or a mini game (the platformer lab
+  guards those), and nothing yet walks into a wall, back against the scroll lock or the level's
+  edge, or lets go of run (`walkers-turn`, `scroll-lock`, `level-bounds`, `run-hold`). From T8
+  the boss runs guard every boss rule, `skid` (`boss`) and `friction` (`boss-lost`).
 - Golden hashes: `runs/<name>.hashes.json`, written with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`
   (never by hand). Final hashes: `level-1` `3e3c45961fcf7c2e`, `level-1-lost` `a5217ed93bfcb6e0`,
-  `level-2` `e540c076b331627c`, `level-2-lost` `b157a38e5bf31d31`, `level-3` `7a016596e7df7ec1`, `level-3-lost` `970514d01802edff`;
+  `level-2` `e540c076b331627c`, `level-2-lost` `b157a38e5bf31d31`, `level-3` `7a016596e7df7ec1`, `level-3-lost` `970514d01802edff`, `boss` `87d0244f546e1782`,
+  `boss-lost` `d02efed89cc84eeb`, `full-game` `64466619ac689e09`;
   every hash is the same through the null backend, Canvas2D and the Three.js scene builder.
 - Changing level-1 or the profile moves these hashes: re-find the ticks with `pnpm -s cli trace
 <run> --paths player.x,player.y,events` and `dump`, keep the assertions on what the rules
   decide, and re-record (list the re-recorded hashes in the commit and the build log).
 
-## How to add a level (T8)
+## How to add a level
 
 1. Draw `content/levels/<id>.map.txt` in the kit's `LEGEND` (12 rows suit the 180 px screen:
    the bottom two rows ground) and write `<id>.json` (`id`, `profile: "hoppers-way"`, `scroll`,
-   `spawns`; for the boss `"clear": "boss"` and the boss's actor type in the profile). Replacing
-   a placeholder keeps its id, so the campaign needs no change.
+   `spawns`; a boss level `"clear": "boss"` and the boss's actor type in the profile, as `boss`).
 2. `pnpm -s cli validate games/samples/platformer --json` (exit 0).
 3. A new kind or state needs entries in both skins and frames in the sheet: `platformer.test.ts`
    and the backend parity test fail on a missing one.
@@ -357,10 +461,14 @@ n }` (0-based place in the campaign), found a jump at a time with `trace` and `d
 `pnpm test games/samples/platformer` (`platformer.test.ts`, `assets.test.ts`), `pnpm -s cli
 validate games/samples/platformer --json`, `pnpm -s cli run games/samples/platformer/runs/level-1.run.json
 --json`, `pnpm -s cli mutants games/samples/platformer/runs/level-1.run.json --json`, `pnpm test
-tests/runs` (golden hashes and backend parity), `pnpm -s cli screenshot
+tests/runs` (golden hashes and backend parity), `pnpm -s cli run
+games/samples/platformer/runs/full-game.run.json --json` (the whole game), `pnpm -s cli screenshot
 games/samples/platformer/runs/level-1.run.json --tick 400 --scale 6 --json` (a 1920x1080 PNG;
 `--backend three --allow-software-gl` for 3D without a GPU), `pnpm test tests/browser` (the games
-index's 2D and 3D links, the title, pause and settings screens, the volume control).
+index's 2D and 3D links, the title, pause and settings screens, the volume control; from T8
+`menus.test.ts`'s Hopper's Way block: level-3 chosen and cleared by keyboard with the level-clear
+banner over the pause, then the arena; the arena chosen by gamepad, Burrlock beaten with
+`boss.run.json`'s input, the end screen holding the game, Back to title).
 
 ## How to play (2D and 3D)
 

@@ -1,0 +1,117 @@
+{
+  "run": "games/samples/platformer/runs/boss-lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "46564d08464c7b70"
+    },
+    {
+      "tick": 60,
+      "hash": "568611325f61c0de"
+    },
+    {
+      "tick": 120,
+      "hash": "b7a93889fbc2ce34"
+    },
+    {
+      "tick": 180,
+      "hash": "dbeb315745174ed4"
+    },
+    {
+      "tick": 240,
+      "hash": "8f5fe8f99f419d9c"
+    },
+    {
+      "tick": 300,
+      "hash": "581156b0259dfd81"
+    },
+    {
+      "tick": 360,
+      "hash": "91541b810ba147b6"
+    },
+    {
+      "tick": 420,
+      "hash": "87d57738dd631064"
+    },
+    {
+      "tick": 480,
+      "hash": "760f686a980b1c4b"
+    },
+    {
+      "tick": 540,
+      "hash": "787f30f2e4940c07"
+    },
+    {
+      "tick": 600,
+      "hash": "b466ee59bd488a08"
+    },
+    {
+      "tick": 660,
+      "hash": "5878c6256e497265"
+    },
+    {
+      "tick": 720,
+      "hash": "aa8376f0ff8cf7b0"
+    },
+    {
+      "tick": 780,
+      "hash": "da39be6580626219"
+    },
+    {
+      "tick": 840,
+      "hash": "969725497bb95a51"
+    },
+    {
+      "tick": 900,
+      "hash": "fb8206d5620e154b"
+    },
+    {
+      "tick": 960,
+      "hash": "076bdf8f9d0dcdee"
+    },
+    {
+      "tick": 1020,
+      "hash": "1d6db7d258ecb80b"
+    },
+    {
+      "tick": 1080,
+      "hash": "7a1fbd8fcaa7a8c0"
+    },
+    {
+      "tick": 1140,
+      "hash": "41481eddaef44f8e"
+    },
+    {
+      "tick": 1200,
+      "hash": "89339c343569e0e6"
+    },
+    {
+      "tick": 1260,
+      "hash": "2ef0bb5978b3b335"
+    },
+    {
+      "tick": 1320,
+      "hash": "433a1628ae5eca2d"
+    },
+    {
+      "tick": 1380,
+      "hash": "00f6c1bce9ecdb46"
+    },
+    {
+      "tick": 1440,
+      "hash": "5c45438e1343dc9e"
+    },
+    {
+      "tick": 1500,
+      "hash": "12525e27e051f928"
+    },
+    {
+      "tick": 1560,
+      "hash": "578c0c9d0f9b8fb0"
+    },
+    {
+      "tick": 1570,
+      "hash": "d02efed89cc84eeb"
+    }
+  ]
+}

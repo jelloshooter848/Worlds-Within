@@ -1,0 +1,65 @@
+{
+  "run": "games/samples/platformer/runs/boss.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "46564d08464c7b70"
+    },
+    {
+      "tick": 60,
+      "hash": "b75c2481ef624b7b"
+    },
+    {
+      "tick": 120,
+      "hash": "f11519b534eae06e"
+    },
+    {
+      "tick": 180,
+      "hash": "7b25af2f7ab4529b"
+    },
+    {
+      "tick": 240,
+      "hash": "01356c318487d30b"
+    },
+    {
+      "tick": 300,
+      "hash": "4e50ae26673b1de7"
+    },
+    {
+      "tick": 360,
+      "hash": "e62a6d02ba15fa4a"
+    },
+    {
+      "tick": 420,
+      "hash": "0a70e5151da7d2dd"
+    },
+    {
+      "tick": 480,
+      "hash": "56a282dbbc71d5d8"
+    },
+    {
+      "tick": 540,
+      "hash": "0b75c5611c82e8c5"
+    },
+    {
+      "tick": 600,
+      "hash": "9955453a2a200106"
+    },
+    {
+      "tick": 660,
+      "hash": "2285f0a7fd881a8a"
+    },
+    {
+      "tick": 720,
+      "hash": "d5684e8e505c49b8"
+    },
+    {
+      "tick": 780,
+      "hash": "2cf58482f5d71555"
+    },
+    {
+      "tick": 801,
+      "hash": "87d0244f546e1782"
+    }
+  ]
+}

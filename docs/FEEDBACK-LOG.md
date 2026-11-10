@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 379.** (Last used: 378.)
+**Next unused number: 384.** (Last used: 383.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1490,3 +1490,26 @@ Build choices)
 - **378.** Four run files, each starting at its stage (`start: { stage }`): `level-2` and
   `level-3` (wins, cleared at ticks 959 and 1010) and `level-2-lost` and `level-3-lost` (two
   respawns on the checkpoint, by pits and by spikes, then the level afresh). OK?
+
+**Engine 0.16 part B, T8: the mini-boss's arena, level-clear and end screen** (details in
+`games/samples/platformer/CLAUDE.md`, "The game", "Build choices (T8)", "The 2D skin" and "Run
+files")
+
+- **379.** The mini-boss is **Burrlock, the bramble beetle** (original text pixel art): four hit
+  points; phase 1 a thorn shot and a wall-to-wall charge, phase 2 (at 2 hp, shorter telegraphs)
+  the shot, a leap at the frog and an acorn dropped over it; each attack has its own wind-up.
+  Four stomps beat it. Is it the right difficulty for a first boss?
+- **380.** The arena, **Burrlock's Hollow**: a runway with the checkpoint, then a step down under
+  a hanging wall into a one-screen arena; a death puts the frog back on the runway with the boss
+  as it was (its hit points kept). OK, or should a death reset the boss's health?
+- **381.** The boss's look: a pose per telegraph, a white silhouette as the hit flash, a red
+  palette for phase 2 (which gives every phase-2 telegraph the same roaring pose, since a skin
+  look matches one tag), a defeat of eight white flashes, a cracked shell, a blast and the beetle
+  sinking on its back; a dusk sky for the arena; a name plate and a health bar top right. OK?
+- **382.** The end: the level-clear banner (Coins, Time, Deaths) between levels, and after the
+  arena the end screen "Hopper's Way cleared!" with a credit line, the summed stats, Back to
+  title and Levels; every death plays an iris on the frog (`transitions.respawn`). OK?
+- **383.** Three run files: `boss` (win), `boss-lost` (loss) and `full-game` (stage 0 to the arena
+  cleared, the four wins' input on their stages' ticks: the headless equivalent of title to end
+  screen; the end screen itself is checked by the browser test). The boss runs were found by a
+  small reactive bot whose keys were recorded. OK?

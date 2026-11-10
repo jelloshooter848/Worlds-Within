@@ -14,7 +14,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import { stateHash } from '@engine/core/state-hash';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import { compileSong } from '@engine/core/audio/mml';
-import { ACTOR_ANIMS, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
+import { ACTOR_ANIMS, BOSS_ANIMS, PRESENT_TILES, RUNNER_ANIMS } from '@kits/platformer';
 import { loadHopper, PLATFORMER_MUSIC, hopperStages } from './content';
 import { hopperLook, hopperPicture } from './picture';
 import { hopperLook3d } from './picture3d';
@@ -182,8 +182,9 @@ describe("Hopper's Way: skins (the art and feel pass, T6)", () => {
     // Every state the kit sends, and the skin's own: `breathe` after a landing's crouch, and the
     // dying puff's `vanish` and `gone`.
     expect(states('runner')).toEqual([...RUNNER_ANIMS, 'breathe', 'vanish', 'gone'].sort());
-    for (const type of Object.keys(hopperStages(content)[0]!.profile.actors))
-      expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
+    // A boss type (T8's Burrlock) has the kit's boss states, every other type the actor states.
+    for (const [type, def] of Object.entries(hopperStages(content)[0]!.profile.actors))
+      expect(states(type), type).toEqual([...(def.boss ? BOSS_ANIMS : ACTOR_ANIMS)].sort());
   });
 
   it('the 2D skin covers every kind, state, tag, tile, event and HUD value the runs show', () => {
@@ -226,31 +227,35 @@ describe("Hopper's Way: skins (the art and feel pass, T6)", () => {
     expect(compileSong(songs[0]!).length).toBeGreaterThan(0);
   });
 
-  it.each(RUNS)('draws every tick of %s from the art in 2D, never a fallback box', (name) => {
-    const run = runOf(name);
-    let sprites = 0;
-    const fallbacks: number[] = [];
-    let tick = 0;
-    const r: Renderer = Object.assign(new NullRenderer(), {
-      sprite() {
-        sprites++;
-      },
-      rect(_x: number, _y: number, _w: number, _h: number, color: string) {
-        if (color === '#ff00ff') fallbacks.push(tick);
-      },
-    });
-    const view = createView(imaged, 1, run.start ? { start: run.start } : {});
-    const input = new ScriptedInput(run.input);
-    for (tick = 0; tick <= run.ticks; tick++) {
-      if (tick > 0) {
-        input.next();
-        view.step(input);
+  it.each(RUNS)(
+    'draws every tick of %s from the art in 2D, never a fallback box',
+    (name) => {
+      const run = runOf(name);
+      let sprites = 0;
+      const fallbacks: number[] = [];
+      let tick = 0;
+      const r: Renderer = Object.assign(new NullRenderer(), {
+        sprite() {
+          sprites++;
+        },
+        rect(_x: number, _y: number, _w: number, _h: number, color: string) {
+          if (color === '#ff00ff') fallbacks.push(tick);
+        },
+      });
+      const view = createView(imaged, 1, run.start ? { start: run.start } : {});
+      const input = new ScriptedInput(run.input);
+      for (tick = 0; tick <= run.ticks; tick++) {
+        if (tick > 0) {
+          input.next();
+          view.step(input);
+        }
+        view.render(r);
       }
-      view.render(r);
-    }
-    expect(sprites).toBeGreaterThan(run.ticks);
-    expect(fallbacks.slice(0, 5)).toEqual([]);
-  });
+      expect(sprites).toBeGreaterThan(run.ticks);
+      expect(fallbacks.slice(0, 5)).toEqual([]);
+    },
+    30_000,
+  ); // the full game is 3650 ticks drawn one by one
 });
 
 describe("Hopper's Way: the 2D art and feel (T6)", () => {
@@ -313,29 +318,119 @@ describe("Hopper's Way: the 2D art and feel (T6)", () => {
     expect(Object.values(run.right.events)).toEqual(['footstep', 'footstep']);
   });
 
-  it.each(RUNS)('%s: drawing every tick asks for its hit-pauses and changes no state hash', (name) => {
-    const run = runOf(name);
-    const opts = run.start ? { start: run.start } : {};
-    const pauses: number[] = [];
-    let tick = 0;
-    const view = createView(imaged, 1, opts);
-    const game = createGame(content, 1, opts);
-    const picture = hopperPicture(
-      skinSetCanvasPresenter(new NullRenderer(), { ...look, onHitPause: () => pauses.push(tick) }),
-      look.screen,
-    );
-    const a = new ScriptedInput(run.input);
-    const b = new ScriptedInput(run.input);
-    for (tick = 0; tick <= run.ticks; tick++) {
-      if (tick > 0) {
-        a.next();
-        b.next();
-        view.step(a);
-        game.step(b);
+  it.each(RUNS)(
+    '%s: drawing every tick asks for its hit-pauses and changes no state hash',
+    (name) => {
+      const run = runOf(name);
+      const opts = run.start ? { start: run.start } : {};
+      const pauses: number[] = [];
+      let tick = 0;
+      const view = createView(imaged, 1, opts);
+      const game = createGame(content, 1, opts);
+      const picture = hopperPicture(
+        skinSetCanvasPresenter(new NullRenderer(), { ...look, onHitPause: () => pauses.push(tick) }),
+        look.screen,
+      );
+      const a = new ScriptedInput(run.input);
+      const b = new ScriptedInput(run.input);
+      for (tick = 0; tick <= run.ticks; tick++) {
+        if (tick > 0) {
+          a.next();
+          b.next();
+          view.step(a);
+          game.step(b);
+        }
+        picture.draw(game.world, game.events);
+        expect(stateHash(view.snapshot() as never), `tick ${tick}`).toBe(stateHash(game.snapshot() as never));
       }
-      picture.draw(game.world, game.events);
-      expect(stateHash(view.snapshot() as never), `tick ${tick}`).toBe(stateHash(game.snapshot() as never));
+      expect(pauses.length).toBeGreaterThan(0);
+    },
+    30_000,
+  ); // the full game is 3650 ticks drawn one by one
+});
+
+// T8: the mini-boss's arena. Burrlock, the bramble beetle, is profile data on the kit's boss form
+// (telegraphed attacks, a faster second phase, two projectiles); the arena has a checkpoint
+// before it and clears at the end of the defeat sequence. Its 2D skin telegraphs each attack,
+// flashes white on a hit, plays a defeat sequence and shows a boss bar; the game ends on the
+// shell's end screen.
+describe("Hopper's Way: the mini-boss's arena (T8)", () => {
+  const stage = hopperStages(content)[3]!;
+  const boss = stage.profile.actors['burrlock']!.boss!;
+  const skin = hopperLook(imaged).skin;
+
+  it('ends the campaign on the arena: a checkpoint, a wall the boss charges into, cleared by the boss', () => {
+    expect(stage.level.id).toBe('boss');
+    expect(stage.level.clear).toBe('boss');
+    const rows = FILES['content/levels/boss.map.txt']!.trim().split('\n');
+    const checkpoint = rows.findIndex((r) => r.includes('K'));
+    const wall = rows[0]!.indexOf('#'); // the arena's left wall, hanging from the top
+    expect(wall).toBe(19);
+    expect(rows[checkpoint]!.indexOf('K')).toBeLessThan(wall);
+    expect(rows.find((r) => r.includes('b'))!.indexOf('b')).toBeGreaterThan(wall);
+    // The arena's floor-level wall stops a charge and a thorn; the way in is over it.
+    expect(rows[9]![wall]).toBe('#');
+    expect(rows[6]![wall]).toBe('.');
+  });
+
+  it('telegraphs every attack, and its second phase is faster', () => {
+    const patterns = [boss.pattern, ...(boss.phases ?? []).map((p) => p.pattern)];
+    for (const pattern of patterns)
+      pattern.forEach((step, i) => {
+        if (step.do === 'idle' || step.do === 'telegraph') return;
+        const before = pattern[i - 1]!;
+        expect(before.do, `${step.do} at ${i}`).toBe('telegraph');
+        expect((before as { attack: string }).attack).toBe(step.do);
+      });
+    const ticks = (p: readonly { do: string; ticks?: number }[]) =>
+      Math.max(...p.filter((s) => s.do === 'telegraph').map((s) => s.ticks ?? 0));
+    expect(boss.phases).toHaveLength(1);
+    expect(boss.phases![0]!.hp).toBe(boss.hp / 2);
+    expect(ticks(boss.phases![0]!.pattern)).toBeLessThan(ticks(boss.pattern));
+    const attacks = new Set(
+      patterns
+        .flat()
+        .filter((s) => s.do === 'telegraph')
+        .map((s) => (s as { attack: string }).attack),
+    );
+    expect([...attacks].sort()).toEqual(['charge', 'drop', 'leap', 'shoot']);
+    expect(stage.profile.actors['thorn']!.projectile).toBe('flies');
+    expect(stage.profile.actors['acorn']!.projectile).toBe('falls');
+  });
+
+  it('draws each telegraph its own way, an angry second phase, a white hit flash and a defeat sequence', () => {
+    const entry = skin.kinds['burrlock']!;
+    const tags = (entry.byTag ?? []).map((l) => l.tag ?? `${l.prefix}${l.min}`);
+    expect(tags).toEqual([
+      'phase:1',
+      'telegraph:shoot',
+      'telegraph:charge',
+      'telegraph:leap',
+      'telegraph:drop',
+    ]);
+    const hurt = entry.frames!['hurt'] as { right: { frames: string[] } };
+    expect(hurt.right.frames[0]).toBe('white');
+    const defeated = entry.frames!['defeated'] as {
+      right: { frames: string[]; loop: boolean; events: Record<string, string> };
+    };
+    expect(defeated.right.loop).toBe(false);
+    for (const type of new Set(Object.values(defeated.right.events)))
+      expect(skin.events?.[type], type).toBeDefined();
+    for (const type of ['boss-hit', 'boss-defeat']) {
+      expect(skin.events?.[type]?.hitPause, type).toBeDefined();
+      expect(skin.events?.[type]?.flash, type).toBeDefined();
+      expect(skin.events?.[type]?.shake, type).toBeDefined();
     }
-    expect(pauses.length).toBeGreaterThan(0);
+    for (const attack of ['shoot', 'charge', 'leap', 'drop'])
+      expect(skin.events?.[`boss-telegraph:attack=${attack}`]?.emit, attack).toBeDefined();
+    // The boss bar and name plate show only where the frame has the boss's status.
+    expect(skin.hud?.filter((h) => h.status?.startsWith('boss')).map((h) => h.as)).toEqual(['icon', 'bar']);
+  });
+
+  it('has a level-clear banner and an end screen with stats and the way back to the title', () => {
+    const menus = content.manifest.menus!;
+    expect(menus.clear?.lines?.map((l) => l.status)).toEqual(['coins', 'time', 'deaths']);
+    expect(menus.end?.items).toEqual(['title', 'levels']);
+    expect(menus.end?.lines?.map((l) => l.status)).toEqual(['coins', 'time', 'deaths']);
   });
 });
