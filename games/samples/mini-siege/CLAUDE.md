@@ -68,6 +68,8 @@ the gap report with a named release.
 - `content/enemy/raiders.json` (`rts-enemy`): every 20 ticks from tick 0, `batter` (the ram) and
   `bombard` (the catapult) attack the nearest building, `charge` (the raiders) the nearest
   village unit.
+- Every mission file has a `text` (Engine 0.16 F5): the short description the in-picture mission
+  card shows; presentation only (the sim never stores it), so no hash or save code moved.
 - `content/missions/sabotage.mission.json` (`mission`): "Burn the siege engines", event
   `siege`, `marker` `ram` (the offer marker stands over the ram, Engine 0.15 T9, gap M25),
   `worldTimeCost` 120, `play` `mission-room`, `onQuit` `driven-off`. Outcomes (weight,
@@ -311,6 +313,11 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     `MiniSiegeGame`), `scenario`, `tick`, `view()`, `sides()`, `ui` and `scene(stack, picture)`
     (the launch's `HostScene`, which pushes the core `miniGameScene` when the round starts and
     pops it on its end; its `headless()` is the entry's game for the page's `window.__ww`).
+    Since Engine 0.16 F5 `missionScreens(opts)` is the shell's `MissionScreens` over `launch`
+    (the briefing, the mission card with Play or Delegate, the mission result and the entry's
+    results, in the picture with the UI kit, styled by `game.json`'s `menus`), handed the sim's
+    `missionCardFacts` and `worldChanges` on `game.sim` and the campaign's `ticksPerHour`: passed
+    through, never computed here.
   - `main.ts`: the boot only: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins
     and the shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone),
     `audio` (`contentSfx`, `contentSongs`, music `siege`), `game` (the volume control's storage
@@ -319,7 +326,12 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     with `#begin`; `#result` with `#result-code` and `#continue`; updated after every draw) and
     `window.wwSiege` (`tick`, `held`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the
     hosted round's `kit` summary), `scenario`, `ended`, `named`, `captive`). No launch,
-    campaign-panel, save-code or hint logic of its own. `index.html` is the canvas (leaving the
+    campaign-panel, save-code or hint logic of its own. With `?ui=picture` (Engine 0.16 F5) the
+    page shows the flow in the picture instead of the bar: `SiegePlay.missionScreens` (its keys
+    from the player's bindings, its sounds the shell's ui bus) under the shell's
+    `missionScreensScene`, drawn with the display's `uiPainter`, and the pointer's gestures on a
+    screen kept from the battle's controls (`MissionScreens.uncovered`); the bar stays the default
+    until the 3D page (part F, F7). `index.html` is the canvas (leaving the
     bar's 40 px below it) and the no-display message's style.
 - `mini-siege.test.ts`: the content, the units against their types, the params checks
   (`bad_mini_game_use` at `params.room` and `params.outcomes.0.outcome`), the launch refusals,
@@ -347,6 +359,17 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
   `not_offered` by the kit and `mission_committed` by the sim, the ransom paid), a dead captain
   carried in as a record opening nothing, the campaign ended (`ended`, a v2 code) once the hall
   has fallen, and no save before the entry is over (Engine 0.15 T8).
+- `mission-screens.test.ts` (Engine 0.16 F5): the mission flow in the picture over the page's
+  glue (`SiegePlay.missionScreens` and the shell's `missionScreensScene` on a real `SceneStack`):
+  the siege's briefing begun by a key; the sabotage's card (`MISSION AVAILABLE`, its `text`,
+  `Costs 2 hours of world time`, `Hero Captain Hale`, `Foes ram, catapult, Grell, Vosk`, the
+  window's `Window closes in 160 ticks` counting down, the battle stepping on under it); the
+  fortify's card and both listed while both windows are open; Delegate by a tap, by keys and by a
+  gamepad, Play by the mouse (hover then click; the screens step aside for the round); the dawn's
+  captive choices listed, one chosen, Play disabled for a choice; the mission result's Continue;
+  and the results of the delegated, played and quit sieges (missions, losses by faction, people,
+  buildings, the save code, Continue to the dawn's briefing) with each run file's last hash
+  unmoved.
 - `play.test.ts`: the page's glue on a real `SceneStack`, drawing every step into the null
   backend: launch at world tick 40, then delegate (`ram-burnt` at 160, the commit's event) or play
   (the round pushed and popped, `played.run.json`'s recorded round fed as the page's keys and

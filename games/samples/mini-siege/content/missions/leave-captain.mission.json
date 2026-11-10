@@ -1,6 +1,7 @@
 {
   "id": "leave-captain",
   "title": "Leave the captain behind",
+  "text": "Leave the captain with the raiders and hold the village.",
   "worldTimeCost": 1,
   "onQuit": "left",
   "outcomes": [{ "id": "left", "title": "The captain stays with the raiders", "weight": 1 }]

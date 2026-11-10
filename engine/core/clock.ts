@@ -132,3 +132,13 @@ export function clockStatus(
     [`${prefix}.fraction`]: clock.fraction,
   };
 }
+
+/** World ticks as a duration on the clock: `2 hours`, `1 hour 30 min`, `40 min` (Engine 0.16 F5, the mission card's cost). */
+export function durationText(ticks: number, ticksPerHour: number = DEFAULT_TICKS_PER_HOUR): string {
+  const minutes = Math.max(0, Math.round((ticks * 60) / ticksPerHour));
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const h = hours === 0 ? '' : `${hours} hour${hours === 1 ? '' : 's'}`;
+  const m = rest === 0 ? '' : `${rest} min`;
+  return [h, m].filter((s) => s !== '').join(' ') || '0 min';
+}

@@ -1,6 +1,7 @@
 {
   "id": "ransom-captain",
   "title": "Pay the raiders' new price",
+  "text": "The rescue failed: pay the raiders' new price of 120 gold.",
   "worldTimeCost": 10,
   "onQuit": "paid",
   "outcomes": [

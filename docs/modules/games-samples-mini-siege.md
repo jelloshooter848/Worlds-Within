@@ -80,7 +80,11 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   the pointer's orders through `RtsControls` and a fresh `RtsCamera` per entry, and the entry's
   summary (people and verdict); `main.ts` and `index.html`: the boot (pointer, shell audio and its
   volume control), the shell's `mountMissionBar` (the bar, the briefing, the result panel) and
-  `window.wwSiege` (with `held()`). No launch, panel, save code or hint logic of its own.
+  `window.wwSiege` (with `held()`). No launch, panel, save code or hint logic of its own. Since
+  Engine 0.16 F5 `SiegePlay.missionScreens` is the shell's in-picture `MissionScreens` (briefing,
+  mission card, results with the world's changes) with the sim's facts and changes passed
+  through; the page shows it instead of the bar with `?ui=picture`, and every mission file has a
+  card `text` (presentation only, no hash moved). Tested in `mission-screens.test.ts`.
 - `content/`: `maps/village.world.json` (`rts-map`, with the walls and the `fortify-window` and
   `sabotage-window` opportunities), `maps/dawn.world.json` (the follow-up: its `from`, the
   captive choices' four `relative` opportunities), `campaigns/siege.campaign.json` (`village`

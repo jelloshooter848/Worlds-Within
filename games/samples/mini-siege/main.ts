@@ -1,16 +1,20 @@
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import type { JsonObject } from '@engine/core/headless';
+import type { InputManager } from '@engine/core/input/input-manager';
+import { keyHintMap } from '@engine/core/input/key-hints';
 import {
   bootBrowserGame,
+  missionScreensScene,
   mountMissionBar,
   type LaunchEntryResult,
   type MissionBar,
+  type MissionScreens,
 } from '@engine/core/shell';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { contentFonts } from '@engine/core/ui';
 import { loadMiniSiege, PLAYER } from './content';
 import { siegeLook, siegePicture } from './picture';
-import type { NamedSummary } from './headless';
+import type { MiniSiegeGame, NamedSummary } from './headless';
 import { SiegePlay } from './play';
 import gameFiles from 'virtual:game-files';
 
@@ -23,9 +27,14 @@ import gameFiles from 'virtual:game-files';
  * `SiegePlay`'s (`play.ts`), the engine's `MissionLaunch`; since Engine 0.15 T10 (gaps M26, M34,
  * M36, lesson D14) the bar, the briefing and the result panel are the shell's `mountMissionBar`
  * (launch buttons, Play / Delegate or Decide, the status with the round's key hint, Begin, the
- * result with its save code, Continue, the stored save and the code box). This file is only the
- * boot and `window.wwSiege` for scripts.
+ * result with its save code, Continue, the stored save and the code box). Since Engine 0.16 F5,
+ * `?ui=picture` shows the flow in the picture instead of the bar: the shell's `MissionScreens`
+ * (briefing, mission card, results) drawn with the display's UI painter over the battle, the
+ * pointer's taps on them kept from the battle's controls. This file is only the boot and
+ * `window.wwSiege` for scripts.
  */
+
+const pictureUi = new URLSearchParams(location.search).get('ui') === 'picture';
 
 /** What the page offers scripts on `window.wwSiege`. */
 export interface SiegeHook {
@@ -59,6 +68,8 @@ const fonts = contentFonts(content);
 
 let play: SiegePlay | null = null;
 let bar: MissionBar | null = null;
+let screens: MissionScreens<MiniSiegeGame> | null = null;
+let input: InputManager | null = null;
 const booted = await bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
@@ -81,9 +92,27 @@ const booted = await bootBrowserGame({
   },
   pointer: true,
   scene(stack, display, page) {
-    const scene = new SiegePlay({ content, seed: content.manifest.start.seed, pointer: page.pointer });
+    const source = page.pointer;
+    // With the screens in the picture, a tap on them is theirs, never an order on the battle.
+    const pointer = source && { gestures: () => screens?.uncovered(source.gestures()) ?? source.gestures() };
+    const scene = new SiegePlay({ content, seed: content.manifest.start.seed, pointer });
     play = scene;
     const host = scene.scene(stack, () => siegePicture(display.presenter, content, scene.ui));
+    const painter = display.uiPainter?.bind(display);
+    if (pictureUi && painter !== undefined) {
+      screens = scene.missionScreens({
+        fonts,
+        pointer: source,
+        keys: () => keyHintMap(input?.bindings[0]?.keyboard),
+        onSound: (id) => page.uiSound(id),
+      });
+      const over = missionScreensScene(host, screens, () => painter());
+      return {
+        update: (frame, frames) => over.update(frame, frames),
+        headless: () => host.headless(),
+        render: (r) => over.render(r),
+      };
+    }
     return {
       update: (input) => host.update(input),
       // The game the page plays now, for the shell's `window.__ww` (`?debug=step`, `?record`).
@@ -99,7 +128,8 @@ const booted = await bootBrowserGame({
 if (booted && play) {
   const scene: SiegePlay = play;
   const { launch } = scene;
-  bar = mountMissionBar({ launch, input: booted.input });
+  input = booted.input;
+  if (screens === null) bar = mountMissionBar({ launch, input: booted.input });
   const hook: SiegeHook = {
     tick: () => scene.tick,
     held: () => launch.held(),

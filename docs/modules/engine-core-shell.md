@@ -9,7 +9,7 @@ The browser shell every game page shares (Engine 0.7): choosing the backend from
 query and the 2D/3D toggle link, the host scene that plays a headless game and pushes its mini
 games, and the browser boot (keyboard, gamepad, touch pad, scene stack, fixed loop) over a
 display a backend builds, (Engine 0.11) the page's music and sound, and (Engine 0.13) a
-campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`, and (part B) a level select, a level-clear banner, an end screen and an event-triggered respawn transition. A game's `main.ts` and scene are then a few lines of glue.
+campaign as a page plays it (the save kept in browser storage, its save code, a typed code read back), (Engine 0.14) a step hook for stepping a page tick by tick and replaying a run file in it, and (Engine 0.15) the player's stored volumes with a mute and volume control, pointer taps as frame input, a scene's tick rate and `toClient`, and (T10) the mission-launch scene and campaign page flow (launch, play or delegate, the round and its key hint, each entry held at tick 0 until Begin, the result with its save code, Continue and resume) with its DOM, and (Engine 0.16 T9) every game's title screen, pause menu, settings and controls screens from `game.json`'s `menus`, and (part B) a level select, a level-clear banner, an end screen and an event-triggered respawn transition, and (F5) the mission flow in the picture (briefing, mission card with Play or Delegate, results with the world's changes). A game's `main.ts` and scene are then a few lines of glue.
 
 ## Public API entry points
 
@@ -182,6 +182,16 @@ onGame?, status?, campaign?: { session, entryOver, save, summary, hold? } })`: `
   `#result` with `#result-code` and `#continue`); `update()` after every draw;
   `MISSION_BAR_HEIGHT` (40 px). See `games/samples/mini-siege/main.ts`.
 
+- `mission-screens.ts` (Engine 0.16 F5): the mission flow in the picture with the UI kit, styled
+  by `game.json`'s `menus`: `briefingScreen`, `missionCardScreen`, `missionChoiceScreen`,
+  `windowBadgeScreen`, `outcomeScreen`, `resultsScreen` (each a `ui` file), and
+  `MissionScreens({ launch, menus, screen, fonts, facts?, changes?, ticksPerHour?, pointer?, keys? })`:
+  `kind()` (`briefing`, `card`, `outcome`, `results` or null), `update(input)` (keys, gamepad,
+  mouse and taps to `launch.press`), `covers(p)`, `uncovered(gestures)`, `draws()`;
+  `missionScreensScene(scene, screens, painter)` draws it over the page's scene. The facts and
+  changes come from `engine/sim` (`missionCardFacts`, `worldChanges`). Pure. See
+  `games/samples/mini-siege/main.ts` (`?ui=picture`).
+
 Example (`games/platformer-lab/main.ts`):
 
     void bootBrowserGame({
@@ -201,7 +211,7 @@ Example (`games/platformer-lab/main.ts`):
 ## Imports allowed
 
 - `engine/core` only; never backends, the sim, tools, kits or games. Kits may not import it
-  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE`.
+  (`FORBIDDEN_CORE`). `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE`.
 
 ## How to test
 
@@ -209,7 +219,9 @@ Example (`games/platformer-lab/main.ts`):
 full boot with a fake audio context for the `audio` option, and one in manual-loop mode) and
 `debug.test.ts` (the step hook and replay, taps, `toClient`), `transitions.test.ts` (slots, reduced
 motion, the old picture held on a level change; Engine 0.16 T5), `mission-launch.test.ts` (the launch
-flow and the campaign flow over a `MissionHost` with fakes);
+flow and the campaign flow over a `MissionHost` with fakes); `mission-screens.test.ts` (Engine 0.16
+F5: the in-picture screens and their input) and `games/samples/mini-siege/mission-screens.test.ts`
+(the siege's cards and results);
 `tests/browser/mini-siege-page.test.ts` plays the flow's DOM (every entry held until Begin, resume
 from a code);
 `game-menus.test.ts` (Engine 0.16 T9: the title holding the game, Start, Continue, pause and

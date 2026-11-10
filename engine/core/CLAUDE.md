@@ -285,7 +285,7 @@ bad field (`units: units must not repeat`). Pure (on `PURE_CORE`); tested in `or
 for the same reason: `engine/sim` runs the lifecycle (open, play or delegate, commit, frozen
 events) and kits play missions, and neither imports the other. `missionSchema` is a mission
 definition and the `mission` content kind (`*.mission.json`, `content/engine-kinds.ts`): `id`,
-`title`, `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
+`title`, `text?` (Engine 0.16 F5: a short description the in-picture mission card shows; presentation only, the sim never stores it, so it moves no hash), `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
 fixed when it opens), `play?` (the mini game or kit round a player plays it with; from Engine 0.13
 optional: a mission without it is a choice with a record, such as paying a ransom, only delegated,
 and `missionMiniGameUses` and `MissionHost` skip it, a host `play` step refused `not_playable`), `params?` (JSON,
@@ -345,7 +345,21 @@ and the world tick, never in a world, hash or save code). `clockTimeSchema` (`{ 
 `DAY_PHASE_STARTS`) and `clockStatus(clock, prefix = 'clock')`, the frame status a skin reads
 (`clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`; `CLOCK_STATUS_FIELDS`).
 A game hands it to `hostedSource`'s `status`(the mini siege does). Pure (on`PURE_CORE`);
-tested in `clock.test.ts`.
+tested in `clock.test.ts`. `durationText(ticks, ticksPerHour?)` (Engine 0.16 F5) writes world
+ticks as a duration on the clock (`2 hours`, `1 hour 30 min`, `40 min`), the mission card's cost.
+
+`world-changes.ts` (Engine 0.16 F5): the types and text of what changed in a world and of a
+mission card, for the shell's in-picture mission screens (`shell/mission-screens.ts`):
+`WorldChanges { since, tick, losses: FactionLosses[], people: PersonChange[], buildings:
+BuildingChange[], records }`, `LostUnit`, `noChanges(since, tick?)`, `changeSections(changes, {
+title? })` (`Missions`, `Losses`, `People`, `Buildings`, empty ones left out), `changeLines`,
+`lossText` (`2 raider, ram, Grell`), `personText` (`Captain Hale: captured by raiders`),
+`buildingText` (`Hall: 120 hp lost (280/400)`, `North wall: destroyed`), `recordText`,
+`displayName` (`north-wall` -> `North wall`); `MissionCardFacts { hero, foes, ticksLeft }`,
+`NO_CARD_FACTS`, `missionChips(def, facts, ticksPerHour?)` (`Costs 2 hours of world time`, `Hero
+Captain Hale`, `Foes ram, catapult, Grell, Vosk`) and `windowText` (`Window closes in 136
+ticks`). `engine/sim` computes the values (`worldChanges`, `missionCardFacts`); the core only
+writes them. Pure (on `PURE_CORE`); tested in `world-changes.test.ts`.
 `campaignOrder(campaign)`is the entries from`start`and then round to the ones before it;`campaignLevels(campaign)`the level ids in that order;`entryKind`, `entryId`. The platformer
 kit's `contentStages` plays the level entries.
 
@@ -569,7 +583,7 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `clock.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `clock.ts`, `world-changes.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/mission-screens.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
 `audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**`, `draw/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from

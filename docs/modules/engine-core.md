@@ -244,6 +244,12 @@ worldTick, missionsOpen })`, the one entry-end rule; save code v2 (`SAVE_CODE_VE
 
 ## Imports allowed
 
+- The world's changes and the mission card's text (Engine 0.16 F5, `world-changes.ts`):
+  `WorldChanges` (losses by faction, people whose fate moved, buildings damaged or destroyed,
+  records), `changeSections`, `changeLines`, `MissionCardFacts`, `missionChips` and `windowText`;
+  `durationText(ticks, ticksPerHour?)` in `clock.ts`. `engine/sim` computes the values
+  (`worldChanges`, `missionCardFacts`); the shell's `MissionScreens` shows them. A mission's
+  `text` is presentation only (never stored by the sim).
 - Other files in `engine/core` (relative paths) and npm packages.
 - Never `engine/backends`, `engine/sim`, `engine/tools`, kits or games.
 - Files on `PURE_CORE` in `config/layers.js` must stay pure: no `Math.random`, `Date.now`,

@@ -1,4 +1,5 @@
 import { saveCodeContext } from '@engine/core/campaign-code';
+import { DEFAULT_TICKS_PER_HOUR } from '@engine/core/clock';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { PointerGesture } from '@engine/core/input/pointer-logic';
@@ -7,6 +8,8 @@ import type { SceneStack } from '@engine/core/scene';
 import { CampaignSession } from '@engine/core/shell/campaign-session';
 import type { HostDrawer, HostScene } from '@engine/core/shell/host-scene';
 import { MissionLaunch, type EntrySummary } from '@engine/core/shell/mission-launch';
+import { MissionScreens, type MissionScreensOptions } from '@engine/core/shell/mission-screens';
+import { missionCardFacts, worldChanges } from '@engine/sim/index';
 import {
   missionButtons,
   RtsControls,
@@ -134,6 +137,28 @@ export class SiegePlay {
     picture: (r: Renderer) => HostDrawer<MiniSiegeGame, unknown>,
   ): HostScene<MiniSiegeGame, unknown> {
     return this.launch.scene(stack, picture);
+  }
+
+  /**
+   * The mission flow in the picture (Engine 0.16 F5): the shell's `MissionScreens` over `launch`,
+   * styled by `game.json`'s `menus`, with the sim's card facts (`missionCardFacts`) and world
+   * changes (`worldChanges`) and the campaign's ticks per hour passed through, never computed here.
+   */
+  missionScreens(
+    opts: Omit<MissionScreensOptions<MiniSiegeGame>, 'launch' | 'menus' | 'screen' | 'facts' | 'changes'>,
+  ): MissionScreens<MiniSiegeGame> {
+    const { manifest } = this.opts.content;
+    if (manifest.menus === undefined)
+      throw new Error('the mini siege needs its menus for the mission screens');
+    return new MissionScreens<MiniSiegeGame>({
+      ticksPerHour: siegeCampaign(this.opts.content).ticksPerHour ?? DEFAULT_TICKS_PER_HOUR,
+      ...opts,
+      launch: this.launch,
+      menus: manifest.menus,
+      screen: manifest.screen,
+      facts: (game, def) => missionCardFacts(game.sim, def),
+      changes: (game, since) => worldChanges(game.sim, since),
+    });
   }
 
   /** A camera east of the hall and fresh controls, for a new entry's game. */

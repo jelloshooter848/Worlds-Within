@@ -267,6 +267,42 @@ campaign? })` over a `LaunchGame` (a `MissionHost`'s `step`, `events`, `miniGame
     "Play again"). Its buttons never keep the focus. `update()` (cheap when nothing changed) after
     every draw. The mini siege's page uses both; its `main.ts` has no bar, panel, code or hint
     logic of its own.
+- **The mission flow in the picture** (Engine 0.16 F5; `mission-screens.ts`, pure, on
+  `PURE_CORE`): the `MissionLaunch` shown with the UI kit instead of (or beside) the DOM bar,
+  styled by `game.json`'s `menus` (`style`, `font`, `titleFont`). Builders, each a `ui` file
+  (`UiScreenFile`) from a `MissionScreenContext { menus, screen, fonts, keys?, words? }`:
+  `briefingScreen(ctx, { title, text }, { stored? })` (dimmed picture, centred panel, the entry's
+  title in the title font when it fits, its text, **Begin** and, with a kept save, **Carry on**),
+  `missionCardScreen(ctx, { def, open, canPlay, facts, ticksPerHour })` (bottom right, never
+  pausing: `MISSION AVAILABLE` / `MISSION OPEN`, the title, the mission's `text`, chips from
+  `missionChips`: the cost on the clock (`durationText`), the hero, the foes; **Play** (disabled
+  without a round) and **Delegate**), `missionChoiceScreen(ctx, defs)` (several offers at once,
+  the dawn's captive choices: one item `launch:<id>` each), `windowBadgeScreen(ctx, text, card)`
+  (`Window closes in N ticks` over the card's corner), `outcomeScreen(ctx, record, title,
+changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes since it
+  opened, **Continue**) and `resultsScreen(ctx, { title, verdict, changes, outcomeTitle, code })`
+  (the entry's results: each section of `changeSections` (missions, losses by faction, people,
+  buildings) as far as the picture has room, `and N more` for the rest, the save code,
+  **Continue**). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
+  `CARD_MARGIN`, `CARD_WIDTH`.
+  `MissionScreens<G>({ launch, menus, screen, fonts, frameSize?, keys?(), facts?(game, def),
+changes?(game, sinceTick), ticksPerHour?, uiKeys?, pointer?, onSound?, words? })`: `kind()` is
+  `results` (the entry ended), `briefing` (held), `outcome` (a record committed since the last
+  one shown), `card` (a mission offered or open) or null (a round is played, or nothing); `sync()`
+  builds the screen when what it shows changed (keeping the focused item; the badge is a screen of
+  its own so the ticks counting down never rebuild the card); `update(input)` takes player 1's
+  commands (`UiNav`: keyboard and gamepad through the bindings), the frame's taps (mouse and
+  touch) and the hover, and maps `activate` to `launch.press`: `begin`, `stored`, `continue`
+  (results: the launch's; outcome: closes it), `launch:<id>`, and `play` / `delegate` (with no
+  choice waiting, `launch` first, both carried out on the same loop step). `covers(p)` (a point on
+  a screen's panel or the badge; any point under a modal screen), `uncovered(gestures)` (a page's
+  pointer gestures without those on a screen, so a kit's controls under the card never take its
+  taps), `changes(since)`, `facts(def)`, `cardMissions()`, `windowLine()`, `press(item)`,
+  `draws()`. The facts and changes are `engine/sim`'s `missionCardFacts` and `worldChanges`,
+  handed in by the page, never computed in its glue; it reads state only. `missionScreensScene(
+scene, screens, painter(r))` is the page's scene with the screens over it (the screens take the
+  frame first, then the scene steps; drawn with the backend's `UiPainter` after the scene). The
+  mini siege's `SiegePlay.missionScreens` and its page's `?ui=picture` use it.
 - `ui-scene.ts` (pure, on `PURE_CORE`; Engine 0.16 T7): `UiScene({ ui, painter(r), pointer?,
 keys?, onEvent?, translucent?, transitionSlot? })`, a `UiScreen` (`../ui`) as a scene. Each
   step: commands from player 1's frame (`UiNav`, so keyboard and gamepad through the bindings,
@@ -375,7 +411,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`
@@ -440,6 +476,16 @@ by the game's rule with its result and code, Continue held again, the campaign's
 starting over; a refused code's reason, a code and the stored save resumed (held). The DOM is
 browser-only: `tests/browser/mini-siege-page.test.ts` plays every entry held at tick 0 until Begin
 (nothing stepping or offered before) and the dawn resumed from a code, held too.
+`mission-screens.test.ts` (Engine 0.16 F5): the briefing, card (Play disabled for a choice, its
+corner, the badge) and results (cut to the picture with `and N more`, the save code) built from a
+`menus` spec; `MissionScreens` over a `MissionLaunch` of a fake game: the card and its window
+counting down, Delegate by keys (right, then confirm) and the result's Continue, Play by a tap
+(the screens step aside for the round), the hover's focus and taps off the card left to the page,
+several offers listed and one chosen. The mini siege's missions and runs:
+`games/samples/mini-siege/mission-screens.test.ts` (the briefing by a key, the sabotage's and the
+fortify's cards with the sim's facts, both offers listed, Delegate by a tap, by keys and by a
+gamepad, Play by the mouse, the dawn's captive choices with Play disabled, and the results of the
+delegated, played and quit sieges with the run files' hashes unmoved).
 `game-menus.test.ts` (Engine 0.16 T9): the title holding the game at its start, Start under the
 `default` transition with the music back, Continue only with a save, the pause key pausing and
 resuming with the ticks held, settings and controls in the pause menu's place with a change

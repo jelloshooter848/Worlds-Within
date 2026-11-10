@@ -28,6 +28,18 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   (`keepKeys`, internal), **never in the snapshot**, so no hash moves (see "Key table" below).
   `keyAlive(world, key)` (Engine 0.15 T8, gap M31): whether a key's entity exists and is not
   `dead`, what a game hands `advanceCampaign` for a campaign entry's `endIf`.
+- `world-changes.ts` (Engine 0.16 F5): `worldChanges(world, sinceTick = 0)`, what changed in
+  the world from a tick, read from the event log (skipping `SETUP_CAUSES`: `scenario`, `carry`,
+  `load`), its causes and the key table: units destroyed and named people who died, by faction
+  (a destroyed entity's `Owner`, `Unit` and `Member` read from the `remove` changes before its
+  `destroy`), named people whose `Fate` moved (from the state before the first move to the state
+  now, and by whom), buildings whose `Health` fell or that were destroyed, and the records
+  committed since (`WorldChanges`, `engine/core/world-changes.ts`). `missionCardFacts(world, def)`:
+  the hero its `params.hero.select` picks (by name), the foes each `params.foes[].select` picks
+  (the selector shape the mission rounds share: `faction`, `types`, `member`, `squad`, `event`
+  (the mission's when left out); counted by type, named people by name) and the ticks until the
+  offered window for it closes. Both read only; the shell's in-picture mission screens show them
+  (a page passes them through). `openMission` never stores a mission's `text` (presentation, F5).
 - `path.ts`: integer walking on the terrain grid, `distanceField` and `nextStep` (see "Walking").
 - `astar.ts`: RTS pathfinding, `findPath` (A*) for one unit and `flowField`/`flowStep` for a
   group, 4-way or 8-way (see "Walking").
@@ -970,4 +982,4 @@ patrolSystem]` and `log: { ticks: 100 }`. The hall completes near tick 400 and t
 - Tests run in Node with `pnpm test`, with no browser (`world.test.ts`, `events.test.ts`, `math.test.ts`,
   `components.test.ts`, `squad.test.ts`, `terrain.test.ts`, `save.test.ts`, `scenario.test.ts`,
   `path.test.ts`, `astar.test.ts`, `systems.test.ts`, `rts.test.ts`, `economy.test.ts`,
-  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `mission-report.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `keys.test.ts`, `sample-world.test.ts`).
+  `footprint.test.ts`, `time.test.ts`, `mission.test.ts`, `mission-fate.test.ts`, `mission-report.test.ts`, `opportunity.test.ts`, `fate.test.ts`, `timeline.test.ts`, `keys.test.ts`, `world-changes.test.ts` (Engine 0.16 F5: the world's build left out, a mission's losses by faction, buildings damaged and destroyed, captives and the dead, read only, the card's hero, foes and window, a mission's text never stored), `sample-world.test.ts`).
