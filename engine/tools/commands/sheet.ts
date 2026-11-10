@@ -21,7 +21,7 @@ import { shotSetup, type ShotSetup } from '../shot-job';
 import { firstDifference } from './screenshot';
 
 /**
- * `sheet <run-file> --ticks <tiles> [--backend 2d|three] [--allow-software-gl] [--out file.png]
+ * `sheet <run-file> --ticks <tiles> [--backend 2d|3d|pixi] [--allow-software-gl] [--out file.png]
  * [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14): screenshots of
  * a run at several ticks, tiled with labels into one PNG, for reviewing effects at a glance (the
  * owner's effects sheet, `docs/reports/0.16a-effects-sheet.png`).
@@ -41,14 +41,18 @@ import { firstDifference } from './screenshot';
  *   default the frame it first covers all). 2D paints them with `CanvasUiPainter` and
  *   `drawTransition` (an iris on the picture's centre), 3D with the presenter's overlay and
  *   transition passes (an iris on the camera's focus).
- * - `@<backend>`: `2d` (`canvas2d`) or `3d` (`three`) for this tile, else `--backend`.
+ * - `@<backend>`: `2d` (`canvas2d`), `3d` (`three`) or `pixi` (PixiJS, Engine 0.16 T13b-5: the
+ *   view's `frame()` through `pixiDisplay` and the 2D skin, as `screenshot --backend pixi`) for
+ *   this tile, else `--backend`. `120@canvas2d,120@pixi` puts the two 2D backends side by side;
+ *   PixiJS tiles draw their overlays with its own UI painter and transition pass (an iris on the
+ *   camera's focus, as in the shell).
  *
  * Each run file and backend is played once in headless Chromium (one browser per backend), its
  * state hashes compared with the headless run's as `screenshot` compares them. Result: `{ run,
  * path, width, height, bytes, sha256, columns, scale, tiles: [{ run, tick, overlay, backend,
  * label }], plays: [{ run, backend, renderer, ticks, hash, headlessHash, matchesHeadless,
  * message? }], matchesHeadless }`. Exit 0; 4 when a page's hashes differ from the headless run
- * (the PNG is still written) or a `three` play is refused (software WebGL without
+ * (the PNG is still written) or a `three` or `pixi` play is refused (software WebGL without
  * `--allow-software-gl`, no WebGL); 3 for a bad run file or content (as `screenshot`); 2 for a bad
  * tile, a tick past its run, an overlay the game cannot show, a bad `--out` or labels that do not
  * match the tiles; 5 when Chromium is not installed.
@@ -64,7 +68,7 @@ export const sheetCommand = defineCommand({
       .string()
       .min(1)
       .describe(
-        'the tiles, comma-separated: [<run>/]<tick>[+<overlay>][@<backend>], such as 216,level-3/120,300+pause,40+ui=lab.talk,352+level*22,200@3d',
+        'the tiles, comma-separated: [<run>/]<tick>[+<overlay>][@<backend>], such as 216,level-3/120,300+pause,40+ui=lab.talk,352+level*22,200@3d,120@pixi',
       ),
     out: z
       .string()
@@ -74,7 +78,9 @@ export const sheetCommand = defineCommand({
     backend: z
       .enum(SHEET_BACKENDS)
       .default('canvas2d')
-      .describe('what draws the tiles without an @<backend> of their own: 2d (canvas2d) or 3d (three)'),
+      .describe(
+        'what draws the tiles without an @<backend> of their own: 2d (canvas2d), 3d (three) or pixi (PixiJS)',
+      ),
     allowSoftwareGl: z
       .boolean()
       .default(false)
@@ -139,7 +145,7 @@ export const sheetCommand = defineCommand({
       play.setup = setup.value;
     }
 
-    for (const b of ['canvas2d', 'three'] as const) {
+    for (const b of ['canvas2d', 'pixi', 'three'] as const) {
       const mine = plays.filter((p) => p.backend === b);
       if (mine.length === 0) continue;
       const shots = await takeScreenshots(

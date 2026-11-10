@@ -30,6 +30,12 @@ export interface PixiDisplayOptions {
   onSound?: (id: string, cue?: SoundCue) => void;
   /** Called with the ticks of each event whose skin entry asks for a `hitPause`. */
   onHitPause?: (ticks: number) => void;
+  /**
+   * Keep the canvas's drawing buffer after each picture (WebGL's `preserveDrawingBuffer`), so a
+   * tool can read the canvas back (`toDataURL`) at any time (`pnpm cli screenshot --backend pixi`,
+   * T13b-5). Default false: the page's own display lets the browser drop it, which is faster.
+   */
+  preserveDrawingBuffer?: boolean;
 }
 
 /**
@@ -60,6 +66,7 @@ export async function pixiDisplay(
       preference: ['webgl'],
       antialias: false,
       failIfMajorPerformanceCaveat: false,
+      preserveDrawingBuffer: opts.preserveDrawingBuffer ?? false,
       background: '#000',
       width: opts.screen.width,
       height: opts.screen.height,

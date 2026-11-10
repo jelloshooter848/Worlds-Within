@@ -39,14 +39,17 @@ export interface LaunchOptions {
  * Chromium's flags for a backend. `canvas2d` turns the GPU off (the 2D canvas is drawn on the
  * CPU, the same every run). `three` asks for the GPU (and ignores the blocklist), so WebGL is
  * hardware-backed where a GPU exists; with `allowSoftwareGl` it uses SwiftShader through ANGLE
- * instead, on purpose, so the picture is the same on every run on one machine.
+ * instead, on purpose, so the picture is the same on every run on one machine. `pixi` (Engine
+ * 0.16 T13b-5) always uses SwiftShader: a 2D picture needs no GPU to be right, and the same
+ * software renderer everywhere keeps PixiJS screenshots and the parity test repeatable.
  */
 export function chromiumArgs(opts: LaunchOptions = {}): string[] {
-  if ((opts.backend ?? 'canvas2d') === 'canvas2d')
-    return ['--disable-gpu', '--disable-accelerated-2d-canvas', ...STABLE_ARGS];
-  const gl = opts.allowSoftwareGl
-    ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
-    : ['--enable-gpu', '--ignore-gpu-blocklist'];
+  const backend = opts.backend ?? 'canvas2d';
+  if (backend === 'canvas2d') return ['--disable-gpu', '--disable-accelerated-2d-canvas', ...STABLE_ARGS];
+  const gl =
+    backend === 'pixi' || opts.allowSoftwareGl
+      ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
+      : ['--enable-gpu', '--ignore-gpu-blocklist'];
   return [...gl, ...STABLE_ARGS];
 }
 
@@ -82,6 +85,12 @@ export interface ServeOptions {
   allow?: readonly string[];
   /** The local port to listen on (default: a free one). */
   port?: number;
+  /**
+   * Packages Vite pre-bundles when it starts (`optimizeDeps.include`), for pages that import a
+   * package with CommonJS dependencies (`pixi.js`'s `eventemitter3` and `earcut`), which the
+   * browser cannot load as they are. Default none: every other import loads as it is.
+   */
+  prebundle?: readonly string[];
   /** Answers a request before Vite does; returns false to let Vite have it. */
   handle?(req: IncomingMessage, res: ServerResponse): boolean;
 }
@@ -108,8 +117,9 @@ export async function serveRepo(opts: ServeOptions = {}): Promise<ServedRepo> {
     appType: 'mpa',
     logLevel: 'silent',
     clearScreen: false,
-    // Pre-bundling would reload the page halfway through; the page's few imports load as they are.
-    optimizeDeps: { noDiscovery: true, include: [] },
+    // Pre-bundling found on the way would reload the page halfway through; the page's few imports
+    // load as they are, and the packages named in `prebundle` are bundled before the page opens.
+    optimizeDeps: { noDiscovery: true, include: [...(opts.prebundle ?? [])] },
     server: {
       middlewareMode: true,
       hmr: false,
@@ -189,7 +199,10 @@ export async function takeScreenshots(
   const browser = await launchChromium(opts);
   let server: ServedRepo | undefined;
   try {
-    server = await serveRepo({ allow: [...new Set(requests.map((r) => resolve(r.gameAbs)))] });
+    server = await serveRepo({
+      allow: [...new Set(requests.map((r) => resolve(r.gameAbs)))],
+      ...(opts.backend === 'pixi' && { prebundle: ['pixi.js'] }),
+    });
     const out: (Shot | ShotRefusal)[] = [];
     for (const { job, viewAbs } of requests) {
       const page = await browser.newPage({

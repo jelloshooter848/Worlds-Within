@@ -9,6 +9,7 @@ import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import { presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
+import type { PixiRenderer } from '@engine/backends/pixi';
 import { checkGameTexts } from '../game-check';
 import { overlayTransition, overlayUi } from '../sheet-overlay';
 import type { ShotJob, ShotRefusal, ShotResult, ShotTile } from './job';
@@ -31,6 +32,12 @@ import type { ShotJob, ShotRefusal, ShotResult, ShotTile } from './job';
  * software renderer and `job.allowSoftwareGl` is false; it syncs the scene with every tick's
  * frame (so the camera's lerp is the one play shows) and renders once, at the last tick. The
  * skins' glTF models (Engine 0.16 T11) are loaded first (`ModelLibrary.preload`).
+ *
+ * With `job.backend` `pixi` (Engine 0.16 T13b-5) the page shows the view's `frame()` through
+ * `pixiDisplay` (`@engine/backends/pixi`, imported only then) and the game's `canvas2d` skins on a
+ * WebGL canvas of the picture's size, presenting every tick as the shell does. The drawing buffer
+ * is kept (`preserveDrawingBuffer`), so the canvas reads back after any picture. Software WebGL
+ * (SwiftShader here) is not refused: the result names the renderer string instead.
  */
 
 /** The state hash as `run` computes it: the first 16 hex digits of the SHA-256 of the JSON. */
@@ -61,9 +68,9 @@ async function shoot(job: ShotJob): Promise<ShotResult | ShotRefusal> {
     throw new Error(
       `${job.viewUrl} draws a ${String(game.screen?.width)}x${String(game.screen?.height)} picture, but game.json says ${width}x${height}`,
     );
-  return job.backend === 'three'
-    ? shootThree(job, game, content.value)
-    : shootCanvas(job, game, content.value);
+  if (job.backend === 'three') return shootThree(job, game, content.value);
+  if (job.backend === 'pixi') return shootPixi(job, game, content.value);
+  return shootCanvas(job, game, content.value);
 }
 
 /**
@@ -301,6 +308,80 @@ async function shootThree(
   presenter.dispose();
   models.dispose();
   return { png, width: canvas.width, height: canvas.height, ...played, renderer, tiles };
+}
+
+/** The WebGL renderer string of `canvas`'s context (unmasked where the browser allows), or null. */
+function glRenderer(canvas: HTMLCanvasElement): string | null {
+  const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+  if (gl === null) return null;
+  const debug = gl.getExtension('WEBGL_debug_renderer_info');
+  return String(gl.getParameter(debug === null ? gl.RENDERER : debug.UNMASKED_RENDERER_WEBGL));
+}
+
+async function shootPixi(
+  job: ShotJob,
+  game: ViewGame,
+  content: ContentBundle,
+): Promise<ShotResult | ShotRefusal> {
+  const frame = game.frame?.bind(game);
+  if (frame === undefined)
+    return {
+      refused: 'no_frame_hook',
+      renderer: null,
+      message: `${job.viewUrl} gives no frame() (engine/core/view.ts), which --backend pixi needs`,
+    };
+  const skins = skinSet(content, 'canvas2d');
+  if (!skins.main) throw new Error(`the game has no skin with backend "canvas2d"`);
+  const { pixiDisplay } = await import('@engine/backends/pixi');
+  const canvas = newCanvas(job);
+  const o = overlayContext(content);
+  const display = await pixiDisplay(canvas, {
+    screen: job.screen,
+    skin: skins.main,
+    rounds: skins.rounds,
+    sheet: o.sheets,
+    fonts: o.fonts,
+    ...(game.background !== undefined && { background: game.background }),
+    preserveDrawingBuffer: true,
+  });
+  if (typeof display === 'string') return { refused: 'no_webgl', renderer: null, message: display };
+  const renderer = glRenderer(canvas);
+  const tiles: string[] = [];
+  // The scenes' display list (`PixiRenderer.stage`), kept after each picture: a tile's UI is
+  // painted onto its end and taken off again, so the frame is presented once per tick (a second
+  // present would move the camera's lerp and the effects' clock on).
+  const stage = (display.renderer as PixiRenderer).stage;
+  const played = await play(job, game, (tick) => {
+    const shown = frame();
+    display.presenter.present(shown);
+    display.present();
+    // A tick with tiles: each tile's overlay over the same picture, the UI through the display's
+    // PixiJS UI painter, a transition through the display's own pass (an iris on the presenter's
+    // focus, the camera, as the shell draws it; the 2D tile's iris is on the picture's centre).
+    for (const i of tilesAt(job, tick)) {
+      const tile = job.tiles![i]!;
+      if (tile.overlay === null) {
+        tiles[i] = pngOf(job, canvas);
+        continue;
+      }
+      const kept = stage.children.length;
+      display.transition?.(overlayTransition(o.content, tile.overlay));
+      const draws = overlayUi(o.content, tile.overlay, {
+        fonts: o.fonts,
+        frameSize: frameSizeOf(o.sheets),
+        status: shown.status as StatValues,
+      });
+      const painter = display.uiPainter?.();
+      if (draws.length > 0 && painter !== undefined) paintUi(draws, painter);
+      display.present();
+      tiles[i] = pngOf(job, canvas);
+      // Back to the bare picture, for the next tile and the last tick's PNG.
+      if (stage.children.length > kept) stage.removeChildren(kept);
+      display.transition?.(null);
+      display.present();
+    }
+  });
+  return { png: pngOf(job, canvas), width: canvas.width, height: canvas.height, ...played, renderer, tiles };
 }
 
 declare global {

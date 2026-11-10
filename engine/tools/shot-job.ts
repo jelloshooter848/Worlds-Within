@@ -16,7 +16,7 @@ import type { ShotBackend, ShotTile } from './screenshot/job';
 /**
  * The screenshot page's job for a run file (`screenshot`, and from Engine 0.16 T14 `sheet`): the
  * run played headless to `tick` (for the hashes the page must match), the game loaded, its view
- * module found and, for `three`, its `three` skin checked, all before Chromium starts. Bad command
+ * module found and, for `three`, its `three` skin checked (for `pixi`, its `canvas2d` skin), all before Chromium starts. Bad command
  * lines throw `UsageError`; bad content gives the command's exit-3 outcome.
  */
 export interface ShotSetup {
@@ -96,6 +96,19 @@ export async function shotSetup(
       ]),
     };
   }
+
+  if (opts.backend === 'pixi' && skinSet(game.content.value, 'canvas2d').main === null)
+    return {
+      ok: false,
+      outcome: invalidShot(loaded.file, [
+        contentError(
+          where,
+          ['content', 'skin'],
+          'no_canvas2d_skin',
+          `--backend pixi draws the game's 2D skin and needs one with "backend": "canvas2d" in ${where} content.skin`,
+        ),
+      ]),
+    };
 
   return {
     ok: true,

@@ -3,8 +3,12 @@ import type { RunStart } from '@engine/core/headless';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { InputScript } from '@engine/core/input/scripted-input';
 
-/** The backends `pnpm cli screenshot` can draw with (`--backend`). */
-export const SHOT_BACKENDS = ['canvas2d', 'three'] as const;
+/**
+ * The backends `pnpm cli screenshot` can draw with (`--backend`): Canvas2D (the view's `render`),
+ * Three.js (its `frame()` and the `three` skin) and, from Engine 0.16 T13b-5, PixiJS (its
+ * `frame()` and the same `canvas2d` skin through `pixiDisplay`).
+ */
+export const SHOT_BACKENDS = ['canvas2d', 'three', 'pixi'] as const;
 export type ShotBackend = (typeof SHOT_BACKENDS)[number];
 
 /**
@@ -55,8 +59,10 @@ export interface ShotJob {
   /** The game's picture size from its manifest (`screen`): the page's viewport and canvas. */
   screen: ScreenSize;
   /**
-   * What draws the picture: `canvas2d` (the view's `render` every tick) or `three` (the view's
-   * `frame()` every tick through a `ThreePresenter` and the game's `three` skin, drawn once).
+   * What draws the picture: `canvas2d` (the view's `render` every tick), `three` (the view's
+   * `frame()` every tick through a `ThreePresenter` and the game's `three` skin, drawn once) or
+   * `pixi` (the view's `frame()` every tick through `pixiDisplay` and the game's `canvas2d` skins,
+   * on WebGL, software or not).
    */
   backend: ShotBackend;
   /** `three` only: go on when WebGL runs on a software renderer (SwiftShader, llvmpipe...). */
@@ -120,7 +126,7 @@ export interface ShotResult {
    * `hashEvery` ticks and the last tick), so the CLI can check drawing changed nothing.
    */
   hashes: { tick: number; hash: string }[];
-  /** `three`: the WebGL renderer string the picture was drawn with; `canvas2d`: null. */
+  /** `three` and `pixi`: the WebGL renderer string the picture was drawn with; `canvas2d`: null. */
   renderer: string | null;
   /** The job's `tiles` as `data:image/png;base64,...`, in order (empty without tiles). */
   tiles: string[];
@@ -128,8 +134,9 @@ export interface ShotResult {
 
 /**
  * What the page gives back instead of a picture when it cannot take one: the view has no
- * `frame()` (`no_frame_hook`), the canvas gives no WebGL context (`no_webgl`), or WebGL runs on a
- * software renderer and the job does not allow it (`software_gl`).
+ * `frame()` (`no_frame_hook`; `three` and `pixi`), the canvas gives no WebGL context
+ * (`no_webgl`), or WebGL runs on a software renderer and the job does not allow it
+ * (`software_gl`; `three` only).
  */
 export interface ShotRefusal {
   refused: 'no_frame_hook' | 'no_webgl' | 'software_gl';

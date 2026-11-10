@@ -110,8 +110,12 @@ scripted)` picks the frame each step reads, and `missionStep(step, index)` hands
   `CLAUDE.md` (the page, its pure model, its job and its Node server; The debugger, below).
 - `shot-job.ts` (Engine 0.16 T14): `shotSetup(ctx, runFile, { tick, backend, allowSoftwareGl,
 tiles? })`, the screenshot page's job for a run file (played headless to the tick, the game and
-  its view module checked, the `three` skin for 3D) and `invalidShot`, shared by `screenshot` and
-  `sheet`.
+  its view module checked, the `three` skin for 3D, the `canvas2d` skin for PixiJS) and
+  `invalidShot`, shared by `screenshot` and `sheet`.
+- `png-diff.ts` (Engine 0.16 T13b-5): `decodePng(png)` (8-bit RGB or RGBA, every row filter) and
+  `pixelDiff(a, b, { threshold, region?, skip? })` (pixels whose R, G or B differ by more than the
+  threshold: count, share, largest channel difference, bounding box), for the PixiJS/Canvas2D
+  parity test (Visual parity, below). Node only.
 - `sheet.ts` and `sheet-overlay.ts` (Engine 0.16 T14): `sheet`'s tile grammar (`parseTiles`,
   `SHEET_BACKENDS`, `tileMeta`), `composeSheet(pictures, { columns, scale, title? })` (the tiles
   laid out with labels in headless Chromium) and, pure, the overlays a tile (or, from Engine 0.16
@@ -243,15 +247,16 @@ world, seed, start, from, to, every, paths, rows: [{ tick, hash, values: { <path
   `fullOutput`. Text: an aligned table, a column per path. Usage errors (exit 2): no paths, an
   empty path or segment, a path twice, `--from` after `--to`, `--to` after `ticks`, `--every` below
   1. Exit 3 for a bad run file or content. Works on game and world runs. Tests: `trace.test.ts`.
-- `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]
+- `screenshot <runFile> --tick N [--out path] [--backend canvas2d|three|pixi] [--allow-software-gl]
 [--scale N] [--overlay o]`:
   a PNG of the frame at tick N (Screenshots, below). Result: `{ run, game, seed, start, tick, backend,
 renderer, path, width, height, scale, overlay, bytes, sha256, hash, headlessHash, hashes, matchesHeadless }`.
   Exit 0, 4 when a state hash the page saw is not the headless one or (`three`) WebGL is not
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
-  `view`, or (`three`) a view without `frame()` or a game without a `three` skin, 2 for a bad
+  `view`, or (`three`, `pixi`) a view without `frame()` or a game without a `three` (`canvas2d`)
+  skin, 2 for a bad
   `--tick`, `--out` or flag, 5 when Chromium is not installed.
-- `sheet <runFile> --ticks <tiles> [--backend 2d|three] [--allow-software-gl] [--out path]
+- `sheet <runFile> --ticks <tiles> [--backend 2d|3d|pixi] [--allow-software-gl] [--out path]
 [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14): labelled
   screenshots tiled into one PNG (Sheets, below). Result `{ run, path, width, height, bytes,
 sha256, columns, scale, matchesHeadless, tiles, plays }`. Exit 0; 4 a page's state hashes differ
@@ -1030,7 +1035,7 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   and the command exits 4 (the PNG is still written), with `message` naming the first tick.
 - Same run file and tick, same machine: byte-identical PNG (`screenshot.test.ts` checks it for both
   backends, that different ticks give different PNGs, the software-GL refusal and the 3D content
-  errors). The page decodes the skins' PNG sheets (`withContentImages`, Engine 0.16 T10) before it
+  errors; from T13b-5 PixiJS's too). The page decodes the skins' PNG sheets (`withContentImages`, Engine 0.16 T10) before it
   makes the view, so every frame has them (`screenshot.test.ts` checks the fx lab's PNG torch on
   two runs). With `--backend three` it also loads the skins' glTF models first
   (`ModelLibrary.preload`, Engine 0.16 T11), so no model shows its text mesh stand-in. Text drawn with `debugText` uses a system font, so a
@@ -1058,6 +1063,24 @@ by default), `bytes` and `sha256` (the whole PNG, hex).
   In this container (no GPU) that flag is needed: `pnpm -s cli screenshot
 games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --allow-software-gl
 --json`. 3D PNG hashes differ between GPUs and drivers; compare them on one machine.
+- `--backend pixi` (Engine 0.16 T13b-5): the same 2D picture through the PixiJS backend. The page
+  imports `@engine/backends/pixi` and builds a `pixiDisplay` on a WebGL canvas of the `screen`
+  size with the game's `canvas2d` skins (`skinSet(content, 'canvas2d')`: main and mini-game
+  rounds), its sprite sheets (`contentSheets`, PNG sheets decoded), fonts and the view's
+  `background`; each tick it presents the view's `frame()` once and calls `display.present()`, as
+  the shell does. The view needs `frame()` (else exit 3, `no_frame_hook`) and the game a
+  `canvas2d` skin (else exit 3, `no_canvas2d_skin`). The display keeps its drawing buffer
+  (`PixiDisplayOptions.preserveDrawingBuffer`), so `toDataURL` reads the canvas back after any
+  picture. Chromium always runs on SwiftShader for `pixi` (`--use-angle=swiftshader
+--enable-unsafe-swiftshader`): software WebGL is not refused as for `three` (a 2D picture needs
+  no GPU to be right) and the result's `renderer` names the WebGL renderer string. Two runs give
+  the same bytes. Vite pre-bundles `pixi.js` for the page (`ServeOptions.prebundle`: its
+  `eventemitter3` and `earcut` are CommonJS). `--allow-software-gl` stays `three` only. Example:
+  `pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 154 --backend pixi --json`.
+  A PixiJS tile's overlay (`--overlay`, `sheet`) is the display's own: the UI through its
+  `PixiUiPainter` (painted onto the end of the stage and taken off after the picture, so the
+  frame is presented once per tick), a transition through its transition pass (an iris closes on
+  the presenter's focus, the camera, as in the shell).
 - **`--scale N` and `--overlay <o>`** (Engine 0.16 part B): `--scale` (whole, 1-16, default 1)
   returns every picture N times as large with image smoothing off (`ShotJob.scale`, the page's
   `pngOf`): each pixel an exact N x N block, so a 320x180 game at 6 is exactly 1920x1080 and
@@ -1084,8 +1107,10 @@ Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
 
 - **Tiles** (`--ticks`, comma-separated) are `[<run>/]<tick>[+<overlay>][@<backend>]`. `<run>/`
   is another run file in the positional run file's folder (`level-3` or `level-3.run.json`).
-  `@2d` / `@3d` (or `@canvas2d` / `@three`) overrides `--backend` (`2d`, `3d`, `canvas2d`,
-  `three`; default 2D).
+  `@2d` / `@3d` (or `@canvas2d` / `@three`) or, from Engine 0.16 T13b-5, `@pixi` overrides
+  `--backend` (`2d`, `3d`, `canvas2d`, `three`, `pixi`; default 2D). Labels end `[2D]`, `[3D]` or
+  `[PixiJS]`. `--ticks "154@canvas2d,154@pixi,100+wipe*12@2d,100+wipe*12@pixi" --columns 2` puts
+  the two 2D backends side by side, a row per tick.
 - **Overlays** (`sheet-overlay.ts`) are drawn over the tick's picture by the engine's own code,
   never the game's: `title`, `pause`, `settings`, `controls` (the shell's menu screens from
   `game.json`'s `menus`, built as `GameMenus` builds them, with player 1's default keys and the
@@ -1115,6 +1140,29 @@ Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
 - The owner's effects sheet, `docs/reports/0.16a-effects-sheet.png`, is made by the command in
   `docs/BUILD-LOG.md` (Engine 0.16 part A). Review sheets are the one other place binary files may
   live (`docs/reports/*-sheet.png`, `tests/architecture/no-content.test.ts`).
+
+## Visual parity (PixiJS and Canvas2D)
+
+Engine 0.16 T13b-5: `tests/browser/pixi-parity.test.ts` plays the fx lab's `level-1`, the RTS
+skirmish's `battle` and the tower defense's `won` run once per 2D backend through the screenshot
+page (`shotSetup` and `takeScreenshots` with `ShotJob.tiles`, as `sheet` does), at ticks where
+effects show (particles, flashes, tints, shake; parallax and the HUD are always on) and with a
+fade, a wipe and (the fx lab) the pause menu over some, and compares each Canvas2D picture with
+the PixiJS one (`png-diff.ts`). Both plays must give the headless run's state hashes. The
+tolerance (a pixel differs when one of R, G, B differs by more than the threshold):
+
+- RTS and tower defense (no glow, no additive blending): threshold 8, at most 0.1% of the pixels
+  (they are equal to the bit on SwiftShader; the margin is for other GPUs).
+- The fx lab (additive glowing particles, a glowing door): threshold 32, at most 1% of the pixels,
+  because PixiJS's glow is a stretched soft halo sprite and Canvas2D's is `shadowBlur` (measured
+  up to about 0.6%, all around the glowing things); its top half (sky, parallax, HUD, title, the
+  pause menu) must also hold the strict bound.
+- Not compared: the iris (PixiJS closes it on the camera's focus, the page's Canvas2D tile on the
+  picture's centre).
+
+It skips with a reason where Chromium is not installed (required in CI). To look at a difference,
+make a side-by-side sheet: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
+"100@2d,100@pixi" --columns 2 --scale 2 --json`.
 
 ## The debugger
 

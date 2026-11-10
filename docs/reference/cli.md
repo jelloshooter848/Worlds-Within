@@ -212,12 +212,12 @@ Arguments:
   <runFile>  the run file, such as games/samples/dungeon/runs/walk-east.run.json
 
 Flags:
-  --tick <number>             the tick to draw (0 is the start, before any step)
-  --out <string>              where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
-  --backend <canvas2d|three>  what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)
-  --allow-software-gl         three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
-  --scale <number>            whole-number upscale, nearest neighbour: each pixel becomes N x N (320x180 at 6 is 1920x1080)
-  --overlay <string>          draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>] or a transition, each with an optional *<n>
+  --tick <number>                  the tick to draw (0 is the start, before any step)
+  --out <string>                   where to write the PNG (default .ww-out/screenshots/<run name>-t<tick>.png)
+  --backend <canvas2d|three|pixi>  what draws it: canvas2d (the view's render), three (its frame() and the game's three skin) or pixi (its frame() and the 2D skin through PixiJS)
+  --allow-software-gl              three only: take the picture on software WebGL (SwiftShader) instead of refusing (exit 4)
+  --scale <number>                 whole-number upscale, nearest neighbour: each pixel becomes N x N (320x180 at 6 is 1920x1080)
+  --overlay <string>               draw one of sheet's overlays over the picture: title, pause, settings, controls, levels, clear, end, ui=<file>[.<widget>] or a transition, each with an optional *<n>
 
 Global flags:
   --json                 print exactly one JSON result object on stdout
@@ -236,14 +236,14 @@ Arguments:
   <runFile>  the run file, such as games/fx-lab/runs/level-1.run.json
 
 Flags:
-  --ticks <string>                  the tiles, comma-separated: [<run>/]<tick>[+<overlay>][@<backend>], such as 216,level-3/120,300+pause,40+ui=lab.talk,352+level*22,200@3d
-  --out <string>                    where to write the PNG (default .ww-out/sheets/<run name>.png)
-  --backend <canvas2d|three|2d|3d>  what draws the tiles without an @<backend> of their own: 2d (canvas2d) or 3d (three)
-  --allow-software-gl               3D tiles: draw on software WebGL (SwiftShader) instead of refusing (exit 4)
-  --columns <number>                tiles per row
-  --scale <number>                  whole-number scale of each picture
-  --labels <string>                 a caption per tile, separated by '|', shown over each tile's run, tick and overlay
-  --title <string>                  a heading over the sheet
+  --ticks <string>                       the tiles, comma-separated: [<run>/]<tick>[+<overlay>][@<backend>], such as 216,level-3/120,300+pause,40+ui=lab.talk,352+level*22,200@3d,120@pixi
+  --out <string>                         where to write the PNG (default .ww-out/sheets/<run name>.png)
+  --backend <canvas2d|three|pixi|2d|3d>  what draws the tiles without an @<backend> of their own: 2d (canvas2d), 3d (three) or pixi (PixiJS)
+  --allow-software-gl                    3D tiles: draw on software WebGL (SwiftShader) instead of refusing (exit 4)
+  --columns <number>                     tiles per row
+  --scale <number>                       whole-number scale of each picture
+  --labels <string>                      a caption per tile, separated by '|', shown over each tile's run, tick and overlay
+  --title <string>                       a heading over the sheet
 
 Global flags:
   --json                 print exactly one JSON result object on stdout

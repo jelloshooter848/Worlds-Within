@@ -11,7 +11,8 @@ It holds `PixiRenderer` (`renderer.ts`, T13b-1), and from T13b-3 `PixiPresenter`
 `PixiSurfaces` (`surface.ts`), `PixiUiPainter` (`ui-painter.ts`), `skinSetPixiPresenter`
 (`skin-set.ts`), `drawTransition` (`transition.ts`) and `pixiDisplay` (`display.ts`); `index.ts`
 exports them all and has no side effects of its own, so a page can `import('@engine/backends/pixi')`
-only when it draws with PixiJS. The shell's backend choice comes in T13b-4.
+only when it draws with PixiJS. The shell's backend choice is T13b-4; screenshots and the parity
+test with Canvas2D T13b-5.
 
 ## PixiRenderer
 
@@ -101,9 +102,31 @@ opts)` builds the display (a test passes a recording `DisplayGpu`):
 - `drawTransition(graphics, shape, screen)` matches Canvas2D's (`transitionAlphaAt` per pixel):
   fade one box at its alpha; wipe one opaque box and a 1 px band per pixel of each soft edge
   (no gradient texture); iris the picture covered with the circle `cut()` as a hole.
+- `preserveDrawingBuffer` (T13b-5, default false) keeps the canvas's drawing buffer after each
+  picture, so a tool reads it back with `toDataURL` at any time (the screenshot page sets it).
 - `uiPainter()` is one `PixiUiPainter` (made once, so glyph strips are drawn once);
   `effectSettings` reaches every presenter; `toScreen`/`toClient` are the `Viewport`'s maths;
   `fit(layout)` resizes the drawing buffer to the canvas's CSS size times `devicePixelRatio`.
+
+## Screenshots and visual parity (T13b-5)
+
+- `pnpm -s cli screenshot <run> --tick N --backend pixi --json` draws a run's tick through
+  `pixiDisplay` with the game's `canvas2d` skins (the view's `frame()`, presented once per tick)
+  and writes the PNG; the result's `backend` is `pixi` and `renderer` the WebGL renderer string.
+  Chromium runs on SwiftShader for it (software WebGL is fine for 2D, not refused as for 3D), so
+  two runs give the same bytes.
+- `pnpm -s cli sheet <run> --ticks "120@canvas2d,120@pixi" --columns 2 --json` puts both 2D
+  backends side by side (labels `[2D]` and `[PixiJS]`). Overlays on a PixiJS tile use this
+  backend's `PixiUiPainter` and transition pass.
+- `tests/browser/pixi-parity.test.ts` compares Canvas2D and PixiJS pictures of the same ticks of
+  the fx lab, the RTS skirmish and the tower defense, effects on, with a fade, a wipe and the pause
+  menu. Tolerance (a pixel differs when R, G or B differs by more than the threshold): where
+  nothing glows (RTS, TD; the fx lab's top half) threshold 8 and at most 0.1% of the pixels; the
+  fx lab as a whole threshold 32 and at most 1%, because the glow here is a stretched halo sprite
+  and Canvas2D's is `shadowBlur`. The iris is not compared (it closes on the camera's focus here,
+  on the picture's centre in the page's Canvas2D tile). A change that moves the picture must keep
+  this test green; if a looser bound is needed, say why in this file and in
+  `engine/tools/CLAUDE.md` (Visual parity).
 
 ## Imports
 

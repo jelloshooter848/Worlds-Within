@@ -11,10 +11,10 @@ import { readRunFile } from '../run-file';
 import { pngSize, takeScreenshot } from '../screenshot';
 import { invalidShot, shotSetup } from '../shot-job';
 import { checkOverlay, overlayLabel, parseOverlay } from '../sheet-overlay';
-import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
+import { SHOT_BACKENDS, type ShotBackend, type ShotRefusal } from '../screenshot/job';
 
 /**
- * `screenshot <run-file> --tick N [--out path] [--backend canvas2d|three] [--allow-software-gl]`: plays the run file to tick N in headless Chromium
+ * `screenshot <run-file> --tick N [--out path] [--backend canvas2d|three|pixi] [--allow-software-gl]`: plays the run file to tick N in headless Chromium
  * through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
  * backend, drawing every tick on the way (as a player's screen would), and writes the last frame as a PNG of the game's picture size (`screen` in `game.json`,
  * 256x240 by default; devicePixelRatio 1). No real-time loop and no
@@ -46,6 +46,14 @@ import { SHOT_BACKENDS, type ShotRefusal } from '../screenshot/job';
  * PNG is the same every run; no WebGL context at all is exit 4 too. The result adds `backend` and
  * `renderer` (the WebGL renderer string; null for canvas2d).
  *
+ * `--backend pixi` (Engine 0.16 T13b-5) shows the view's `frame()` through the PixiJS backend
+ * (`pixiDisplay`) and the game's `canvas2d` skins, presenting every tick as the shell does, on
+ * WebGL in Chromium on SwiftShader (always, so the PNG is the same every run). Software WebGL is
+ * not refused for PixiJS (the 2D picture needs no GPU to be right): `renderer` names the WebGL
+ * renderer string. A view without `frame()` is exit 3 (`no_frame_hook`), a game without a
+ * `canvas2d` skin exit 3 (`no_canvas2d_skin`), no WebGL context exit 4. How close the picture is
+ * to Canvas2D's is `tests/browser/pixi-parity.test.ts`'s check.
+ *
  * Engine 0.16 part B: `--scale N` (whole, 1-16) returns the picture N times as large, each pixel
  * an exact N x N block (nearest neighbour), so a 320x180 game at 6 is exactly 1920x1080; and
  * `--overlay <o>` draws one of `sheet`'s overlays over the tick's picture (`title`, `pause`,
@@ -74,7 +82,7 @@ export const screenshotCommand = defineCommand({
       .enum(SHOT_BACKENDS)
       .default('canvas2d')
       .describe(
-        "what draws it: canvas2d (the view's render) or three (its frame() and the game's three skin)",
+        "what draws it: canvas2d (the view's render), three (its frame() and the game's three skin) or pixi (its frame() and the 2D skin through PixiJS)",
       ),
     allowSoftwareGl: z
       .boolean()
@@ -132,7 +140,7 @@ export const screenshotCommand = defineCommand({
     const where = `${root}${MANIFEST_FILE}`;
     const view = setup.value.content.manifest.view ?? '';
     const shot = await takeScreenshot(request.job, request.gameAbs, request.viewAbs);
-    if ('refused' in shot) return refused(shot, loaded.file, where, `${root}${view}`);
+    if ('refused' in shot) return refused(shot, loaded.file, where, `${root}${view}`, flags.backend);
     const png = overlay !== null ? shot.tiles[0]! : shot.png;
     const size = pngSize(png);
     const name = basename(loaded.file)
@@ -187,23 +195,25 @@ export const screenshotCommand = defineCommand({
 const invalid = invalidShot;
 
 /** The page's refusal as a result: a view without `frame()` is content (3), WebGL a failed check (4). */
-function refused(shot: ShotRefusal, run: string, where: string, viewFile: string) {
+function refused(shot: ShotRefusal, run: string, where: string, viewFile: string, backend: ShotBackend) {
   if (shot.refused === 'no_frame_hook')
     return invalid(run, [
       contentError(
         where,
         ['view'],
         'no_frame_hook',
-        `${viewFile} (view in ${where}) gives no frame() (engine/core/view.ts), which --backend three needs`,
+        `${viewFile} (view in ${where}) gives no frame() (engine/core/view.ts), which --backend ${backend} needs`,
       ),
     ]);
   const message =
     shot.refused === 'software_gl'
       ? `WebGL is not hardware-backed: the renderer is "${String(shot.renderer)}", a software one. Run where a GPU is available, or pass --allow-software-gl to take the picture with SwiftShader anyway`
-      : `no WebGL context, so --backend three cannot draw (${shot.message}). Pass --allow-software-gl to use SwiftShader`;
+      : backend === 'pixi'
+        ? `no WebGL context, so --backend pixi cannot draw (${shot.message})`
+        : `no WebGL context, so --backend three cannot draw (${shot.message}). Pass --allow-software-gl to use SwiftShader`;
   return {
     exit: EXIT.failedCheck,
-    result: { run, backend: 'three', renderer: shot.renderer, refused: shot.refused, message },
+    result: { run, backend, renderer: shot.renderer, refused: shot.refused, message },
   };
 }
 

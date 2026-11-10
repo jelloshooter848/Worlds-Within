@@ -153,7 +153,7 @@ paths, rows: [{ tick, hash, values }], missing, orders, missions }`, played like
 ticks, openTick, serving }` (staying up until stopped); `--check` opens it in headless Chromium at
   the tick and adds `{ tick, hash, headlessHash, matchesHeadless, mismatch, eventCount }`, exit 4
   on a mismatch.
-- `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three]
+- `pnpm cli screenshot <run-file> --tick N [--out path] [--backend canvas2d|three|pixi]
 [--allow-software-gl]`: plays the run in headless Chromium
   through the game's view module (`view` in `game.json`, `engine/core/view.ts`) and the canvas2d
   backend, drawing every tick on the way, and writes the frame at tick N as a PNG of the game's picture size (`screen` in
@@ -167,7 +167,10 @@ hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be
   `no_three_skin` at `content.skin`, when either is missing); `renderer` is the WebGL renderer
   string, and a software one (SwiftShader, llvmpipe) is refused with exit 4 naming it and
   `--allow-software-gl`, which takes the picture on SwiftShader on purpose (needed in a container
-  without a GPU). Engine 0.16 part B: `--scale N` (1-16) writes the picture N times as large,
+  without a GPU). `--backend pixi` (Engine 0.16 T13b-5) shows the view's `frame()` through the
+  PixiJS backend (`pixiDisplay`) and the game's `canvas2d` skin, always on SwiftShader, and is not
+  refused on software WebGL: `renderer` names the WebGL renderer string (exit 3 `no_frame_hook`
+  or `no_canvas2d_skin` when the view or skin is missing). Engine 0.16 part B: `--scale N` (1-16) writes the picture N times as large,
   each pixel an exact N x N block (a 320x180 game at `--scale 6` is exactly 1920x1080), and
   `--overlay <o>` draws one of `sheet`'s overlays over it (`title`, `pause`, `settings`,
   `controls`, `levels`, `clear`, `end`, `ui=<file>[.<widget>]`, a transition), through the same
@@ -175,14 +178,15 @@ hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be
 games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear --out x.png --json`.
   Needs `pnpm exec playwright install --with-deps chromium`. Details: `engine/tools/CLAUDE.md`
   (Screenshots).
-- `pnpm cli sheet <run-file> --ticks <tiles> [--backend 2d|three] [--allow-software-gl]
+- `pnpm cli sheet <run-file> --ticks <tiles> [--backend 2d|3d|pixi] [--allow-software-gl]
 [--out file.png] [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14):
   the owner's review sheet. Each tile is `[<run>/]<tick>[+<overlay>][@<backend>]`: a tick of the
   run file (or of another run file in its folder, `level-3/120`), drawn as `screenshot` draws it,
   with an optional overlay drawn by the engine's own code (`title`, `pause`, `settings`,
   `controls` from `game.json`'s `menus`, and from Engine 0.16 part B `levels`, `clear` and `end`,
   the stat screens reading the tick's frame status; `ui=<file>[.<widget>]`; a transition slot or
-  kind with `*<age>`, `respawn` among the slots) and an optional backend of its own (`@3d`). One Chromium per backend plays each run
+  kind with `*<age>`, `respawn` among the slots) and an optional backend of its own (`@3d`, or `@pixi` for PixiJS: `120@canvas2d,120@pixi` puts
+  the two 2D backends side by side, labelled `[2D]` and `[PixiJS]`). One Chromium per backend plays each run
   file once and checks its state hashes against the headless run's; the tiles are tiled with
   their labels (a caption from `--labels`, then run, tick, overlay and backend) into one PNG
   (default `.ww-out/sheets/<name>.png`), the same bytes every run on one machine. `--json` result:
@@ -194,6 +198,14 @@ matchesHeadless }] }`. Exit 4 when a page's hashes differ or a 3D play is refuse
   `docs/BUILD-LOG.md`, Engine 0.16 part A). Code: `sheet.ts` (tiles, `composeSheet`),
   `sheet-overlay.ts` (overlays from the content, pure), `shot-job.ts` (the page's job, shared
   with `screenshot`) and `takeScreenshots` (several jobs in one Chromium).
+- Visual parity (Engine 0.16 T13b-5): `tests/browser/pixi-parity.test.ts` draws the same ticks of
+  the fx lab, the RTS skirmish and the tower defense through Canvas2D and PixiJS (effects on, with
+  fades, wipes and the pause menu) and compares them with `png-diff.ts` (`decodePng`,
+  `pixelDiff`). Tolerance: a pixel differs when R, G or B differs by more than the threshold; the
+  RTS and TD (no glow) allow threshold 8 and 0.1% of the pixels, the fx lab (glow, additive
+  particles: a halo sprite against `shadowBlur`) threshold 32 and 1%, with its top half held to
+  the strict bound. The iris is not compared (PixiJS closes it on the camera's focus). Skipped
+  without Chromium. Details: `engine/tools/CLAUDE.md` (Visual parity).
 - `pnpm cli get <file> <path>`, `set <file> <path> <value>`, `add <file> <path> <value>`,
   `remove <file> <path>`: one verb set for editing `game.json`, content files, text-grid part
   files (`rows.3`, `rows.3.5`) and run files. Paths are dotted (`frames["down-0"].3`) or JSON
@@ -263,5 +275,5 @@ test spawns `pnpm -s cli` for real. `record.test.ts` covers `record` (the mini s
 invariants, broken run files, replay files and hash mismatches), `mutants.test.ts` `--disable-rule`, `disableRules` and `mutants`, `edit.test.ts` the editing
 verbs on temp copies of the demo, `orders-run.test.ts` recorded orders, sync hashes and system sets (the battle fixture, a stub game with `order`), `missions-run.test.ts` mission steps in world runs (refusals, schema and mission-file errors, dump and replays), `game-missions-run.test.ts` mission steps in game runs (a stub game with `mission`: refusals, experience, hashes, dump, replays, the usage error), `world-run.test.ts` `run`, `dump`, replays and `mutants` on the
 sample world run and the game-or-world schema errors, `screenshot.test.ts` takes the same screenshot twice and
-compares the bytes (canvas2d and three), an exact 6x picture (`--scale`) and an overlay (`--overlay`), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), `sheet.test.ts` the tile grammar, the overlays from the fx lab's content and a 2D and 3D sheet of the fx lab made twice with the same bytes, and `tests/runs/run-files.test.ts` checks every game's run files
+compares the bytes (canvas2d, three and pixi), an exact 6x picture (`--scale`) and an overlay (`--overlay`), checks the software-GL refusal and the 3D content errors (skipped with a message when Chromium is missing locally, required in CI), `sheet.test.ts` the tile grammar, the overlays from the fx lab's content and a 2D and 3D sheet of the fx lab made twice with the same bytes, and `tests/runs/run-files.test.ts` checks every game's run files
 against their golden hashes (`tests/runs/missions.test.ts` holds Engine 0.10's done-when cases).

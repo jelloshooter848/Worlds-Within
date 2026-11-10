@@ -46,7 +46,8 @@ skin, sheets, opts?)`, the core `SkinnedPresenter` (`@engine/core/draw`) on a `P
   fit, present, toScreen, toClient, transition, uiPainter, effectSettings) on a WebGL-only PixiJS
   renderer, the picture rendered into a backbuffer at the game's `screen` size and shown scaled and
   letterboxed like Canvas2D's `Viewport`; or a sentence when WebGL cannot start.
-  `PixiDisplayOptions` are Canvas2D's `CanvasDisplayOptions`. `pixiDisplayOn(gpu, canvas, opts)`
+  `PixiDisplayOptions` are Canvas2D's `CanvasDisplayOptions`, plus `preserveDrawingBuffer` (T13b-5:
+  keep the canvas readable after each picture, for `pnpm cli screenshot --backend pixi`). `pixiDisplayOn(gpu, canvas, opts)`
   builds it on a started renderer (`DisplayGpu`). `index.ts` has no side effects at import.
 
 The shell's backend choice comes with T13b-4.
@@ -68,4 +69,10 @@ tweens, flash and tint overlays, the UI HUD's tinted glyphs, the cached map) and
 hit-pauses, particle counts and focus equal the core presenter's; `transition.test.ts` and
 `display.test.ts` the transitions and the display on a recording renderer.
 `tests/browser/pixi-display.test.ts` starts `pixiDisplay` in headless Chromium and reads the
-canvas back (skipped without a browser).
+canvas back (skipped without a browser). Screenshots and parity (T13b-5): `pnpm cli screenshot
+<run> --tick N --backend pixi` draws a run's tick through `pixiDisplay` (its result names the
+WebGL renderer), `pnpm cli sheet` takes `@pixi` tiles (`120@canvas2d,120@pixi` side by side), and
+`tests/browser/pixi-parity.test.ts` compares Canvas2D and PixiJS pictures of the fx lab, the RTS
+and the tower defense with a stated tolerance: threshold 8 and 0.1% of the pixels where nothing
+glows, threshold 32 and 1% for the fx lab's glow and additive particles (see
+`engine/tools/CLAUDE.md`, Visual parity).

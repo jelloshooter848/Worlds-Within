@@ -8,14 +8,21 @@ import { overlayLabel, parseOverlay } from './sheet-overlay';
  * tiled in headless Chromium. See `commands/sheet.ts` for the command.
  */
 
-/** The backend names `sheet` takes: the screenshot backends and their short names. */
-export const SHEET_BACKENDS = ['canvas2d', 'three', '2d', '3d'] as const;
+/**
+ * The backend names `sheet` takes: the screenshot backends and their short names (`2d` is
+ * Canvas2D, `3d` Three.js; `pixi` is PixiJS, Engine 0.16 T13b-5).
+ */
+export const SHEET_BACKENDS = ['canvas2d', 'three', 'pixi', '2d', '3d'] as const;
 export type SheetBackendName = (typeof SHEET_BACKENDS)[number];
 
 /** A short backend name as the screenshot page's backend. */
 export function sheetBackend(name: SheetBackendName): ShotBackend {
-  return name === '2d' || name === 'canvas2d' ? 'canvas2d' : 'three';
+  if (name === '2d' || name === 'canvas2d') return 'canvas2d';
+  return name === 'pixi' ? 'pixi' : 'three';
 }
+
+/** A backend's tag in a tile's label. */
+export const BACKEND_TAG: Record<ShotBackend, string> = { canvas2d: '2D', three: '3D', pixi: 'PixiJS' };
 
 /** One tile as written: `[<run>/]<tick>[+<overlay>][@<backend>]`. */
 export interface SheetTileSpec {
@@ -33,7 +40,7 @@ const TILE = /^(?:([A-Za-z0-9_.-]+)\/)?(\d+)(?:\+([^@]+))?(?:@([a-z0-9]+))?$/;
 
 /**
  * Reads `--ticks`: comma-separated tiles, each `[<run>/]<tick>[+<overlay>][@<backend>]`
- * (`216`, `level-3/120`, `300+pause`, `40+ui=lab.talk*90`, `352+level*22`, `200@3d`). Throws a
+ * (`216`, `level-3/120`, `300+pause`, `40+ui=lab.talk*90`, `352+level*22`, `200@3d`, `120@pixi`). Throws a
  * `UsageError` naming the tile that is wrong.
  */
 export function parseTiles(text: string): SheetTileSpec[] {
@@ -77,7 +84,7 @@ export function tileMeta(
 ) {
   const name = run.replace(/^.*\//, '').replace(/\.run\.json$/, '');
   const over = tile.overlay === null ? '' : ` + ${overlayLabel(tile.overlay)}`;
-  return `${name} t${tile.tick}${over} [${backend === 'three' ? '3D' : '2D'}]`;
+  return `${name} t${tile.tick}${over} [${BACKEND_TAG[backend]}]`;
 }
 
 /** One picture of the sheet: its PNG and its label lines. */
