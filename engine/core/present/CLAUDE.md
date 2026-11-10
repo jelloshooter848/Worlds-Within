@@ -115,8 +115,8 @@ inner-top-left inner-top-right inner-bottom-right inner-bottom-left`): `"top lef
     `"inner-top-right"`, `"right bottom inner-top-left"`. The frame is the full key's, else the
     sides-only key's, else the entry's `frame` (also with nothing open). A key out of order, with
     an unknown word or a word twice, or an inner corner beside its own open side is `bad_join_key`
-    at `tiles.<tile>.join.frames.<key>` (`tileJoinKeyProblem` names the order wanted); `join` is a
-    2D field (`wrong_backend_field` on a 3D skin); its frames are checked against the tile's sheet
+    at `tiles.<tile>.join.frames.<key>` (`tileJoinKeyProblem` names the order wanted); on a 3D
+    skin (from Engine 0.16 part B, T10) its frames name other tile entries (below); its 2D frames are checked against the tile's sheet
     (`missing_frame` at `tiles.<tile>.join.frames.<key>`). Pure: `tileJoinKeys(join, own, grid,
 col, row)` (the keys looked up, most specific first) and `resolveTileFrame(entry, own, grid,
 col, row)` (`TileGrid`: text rows or rows of ids). The Canvas2D presenter draws tiles through
@@ -143,6 +143,20 @@ clip, time, offset }`, `time` = `anim.t` / `MODEL_TICKS_PER_SECOND`, 60; the kin
     with its clips' field paths, for `validate` and preloading). The file, its header and its
     clips are checked by the content loader (`content/assets.ts`: `missing_file`, `bad_model`,
     `missing_clip`). Tested in `skin-models.test.ts`.
+  - The 2.5D view's model fields (Engine 0.16 part B, T10; Hopper's Way): a 3D kind or tile may
+    give `tint` (a colour multiplied into the model's materials) and `stretch` (`{ x?, y?, z? }`
+    factors on top of `scale`, model axes), a kind `clipHold` (animation states whose clip plays
+    once and holds), all `missing_field` without `model`; a tag look may give `model`, `scale`,
+    `anchor`, `rotate`, `clip`, `tint` and `stretch` (its own model for that look;
+    `wrong_backend_field` on a 2D skin). `SkinModel` gains `stretch`, `tint` and `hold`. A 3D
+    tile's `join` (no longer 2D only) picks another `tiles` entry by key: each `join.frames` value
+    must be a tile key of the skin (in a theme, of the theme's or the skin's), else `missing_ref`
+    (`checkJoinTiles`). A top-level `scenery` (3D, `MESH_SKIN_FIELDS`; `sceneryRowSchema`,
+    `SkinSceneryRow`: `{ model, scale?, stretch?, rotate?, tint?, every, from?, z, y?, jitter?: {
+x?, y?, z?, scale?, turn? }, castShadow?, receiveShadow? }`) lists rows of scenery models along
+    a map; `sceneryModel(row)` is a row's `SkinModel`. `skinModelUses` now also lists tag looks'
+    models (and clips), scenery rows and each theme's tiles and scenery, so `validate` checks and
+    pages preload them. Tested in `skin-models.test.ts` (part B block) and `tile-join.test.ts`.
   - Audio (Engine 0.16 T8, `engine/core/audio/mix.ts`): an event entry's `pitch` and `volume`
     (`[min, max]`, `bad_range` when min is above max), `cooldown` (frames) and `duck { amount,
 attack?, hold?, release? }`, and a top-level `music` section of layered songs (`skinMusicSchema`;
@@ -154,8 +168,8 @@ attack?, hold?, release? }`, and a top-level `music` section of layered songs (`
     or a list, `tweensSchema`) is started on the event's `entity` (ignored for an event with none),
     and a kind entry's optional `spawnTween` on an entity the first frame a presenter shows it.
     Both are presentation only, allowed on 2D and 3D skins, applied by the Canvas2D presenter on
-    top of the entity's `fx` (never written back to the frame); the 3D backend ignores them for
-    now. A bad ease, prop or colour is an error at that field (`events.hit.tween.ease`).
+    top of the entity's `fx` (never written back to the frame), and from Engine 0.16 part B T10
+    by the 3D backend too (item 340: offsets, factors, turn, alpha; a colour as the emissive colour). A bad ease, prop or colour is an error at that field (`events.hit.tween.ease`).
   - Particles (Engine 0.16 T3, `engine/core/fx`): a skin's top-level `emitters` maps names to
     emitter defs (`emitterSchema`, on 2D and 3D skins); an event entry's `emit` (a name or a
     list) starts them at the event (its `x`/`y`, else its entity; an emitter's `anchor` places it
@@ -187,7 +201,9 @@ parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives e
     skin is never changed. Checked like the skin's own fields: a theme's tiles by `checkShapes`
     (`wrong_backend_field`, `missing_field` at `themes.<map>.tiles.<key>...`) and across files
     (`missing_frame`, `missing_ref` at `themes.<map>.parallax.<i>...` and `.tiles.<key>...`). The
-    Canvas2D presenter draws through it; the 3D backend ignores `themes` for now. Tested in
+    Canvas2D presenter draws through it; from Engine 0.16 part B T10 the 3D backend too, and a
+    theme may also give `scene3d` (that map's lights, fog and tone mapping) and `scenery` (its
+    scenery rows), both replacing the skin's. Tested in
     `skin.test.ts` (`per-map looks`).
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;

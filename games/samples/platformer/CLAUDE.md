@@ -6,7 +6,7 @@ short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and 2.5D (
 (the old five levels and two doors moved to `games/platformer-classic`, a test game, with their
 run files and hashes unchanged), gave it a tuned profile, its screen, its campaign and its first
 level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3, T8 the
-mini-boss's arena and the end (built), T9 music and sounds (built), T10 the 2.5D view. It is content, not engine:
+mini-boss's arena and the end (built), T9 music and sounds (built), T10 the 2.5D view (built). It is content, not engine:
 the kit holds the rules, this folder holds levels, the profile, art, sound, skins and thin glue.
 
 ## The game
@@ -265,22 +265,24 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   layers, original text pixel art (below). `hopper-autumn.txt` and `hopper-night.txt` with their
   palettes (T7): the same layers recoloured for level-2 and level-3, and the night's `stars`
   frame (a seamless star field with the moon). `content/sprites/hopper.txt` + `palettes/hopper.json`
-  and `hopper-font.txt`: the old placeholder art, now used only by the 3D skin (until T10).
+  and `hopper-font.txt`: the old placeholder art, kept as the 3D skin's `sheets.sheet` default
+  (T10 draws nothing from it: the 3D HUD uses the 2D skin's PNG frames).
   `content/sprites/burrlock.txt` + `palettes/burrlock.json` and `burrlock-angry.json` (T8): the
   boss, its shots and its HUD name plate (The 2D skin, Burrlock, below).
   `content/fonts/hopper-small.txt`, `hopper-title.txt` (the HUD's counters and the menus),
   `content/sfx/*.json` (39 sound effects) and `content/songs/hopper-*.json` (the layered song's
   eight layers, the title tune, the end fanfare): T9, "Music and sound" above.
 - `content/skins/canvas2d.json`: the 2D skin, built on the CC0 PNG packs (T6, "The 2D skin"
-  below). `three.json`: the 3D skin, still low-poly meshes (T10 makes the 2.5D view), with the 2D
-  skin's `images` (for the HUD's frames), `events`, `emitters`, `hud` and `camera`, the 0.16 T12
-  scene look and labels.
+  below). `three.json`: the 2.5D skin on the CC0 GLB packs (T10, "The 2.5D view" below), with
+  the 2D skin's `images` (for the HUD's frames), `events` (plus white hit flashes), `emitters`,
+  `hud` and `camera`; each entry keeps a low-poly text `mesh` as its stand-in while the model
+  loads.
 - `assets/` (Engine 0.16 part B, T4): the one place binary files may live (docs/DESIGN.md,
   item 322): four CC0 packs, each a folder credited in `assets/CREDITS.md` (`## <pack>` with
   `Source:`, `Author:`, `Licence:` and the files kept; `validate` fails on a pack with no section
   or a licence that is not CC0). About 1.8 MB in all; only the files the game will use were kept,
   their names lower-cased with spaces as hyphens. The 2D skin uses the two PNG packs (T6); the
-  2.5D view (T10) will use the GLBs as `model` entries.
+  2.5D view (T10) uses the GLBs as `model` entries.
   - `pixel-adventure-1/` (Pixel Frog, itch.io; 89 PNGs, 84 KB): `terrain/terrain-16x16.png`,
     `background/<colour>.png` (64x64 tiling backgrounds), `characters/ninja-frog/*-32x32.png`
     (the player: idle, run, jump, fall, double jump, wall jump, hit) and the appear/disappear
@@ -308,6 +310,8 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   with the levels by name for the level select, `booted.start` for a chosen level, the shell's
   `hitPause` to both displays, the `HostScene` over the game). Each is a few calls into the
   engine and the kit.
+- `main.ts` (T10): the 3D display loads the skin's GLB models (`ModelLibrary.preload`) before
+  the first frame.
 - `platformer.test.ts`: content loads; the stage list; the 16:9 screen; the tuned profile's
   fields; level-1's checkpoint, coins, block and walkers; text-only content outside `assets/`;
   the start state, the view width and equal snapshots on two runs; the skins covering every kind,
@@ -376,7 +380,7 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
   down) and gold planks (`gold-plank-*`). `boss` (T8, dusk): level-2's layers and autumn ground
   under a violet-to-coral sky. `level-1` keeps the skin's own meadow. A
   one-wide column joins as `top right left` (the top frame) and `right left` (the fill) in each
-  set. The 3D skin has no themes yet (T10).
+  set. The 3D skin has its own themes (T10).
 - **HUD** (the UI kit): the wood `hud-panel` (slice 16, so its corner ornaments stay in the
   corners) holding empty hearts for `maxHp` under full ones for `hp`, a coin `counter` (two gold
   digits, rolling white for 20 frames) and a lives `counter` with the frog's face (`x{value}`).
@@ -403,8 +407,8 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
   flash, a 1.3 zoom punch held a second, and tweens that sink it 10 px and fade it out over the
   sequence's end; `boss-blast` a big burst, smoke, a yellow flash and a shake. The thorn trails
   green motes, the acorn brown ones. HUD: the name plate (`icon` on `bossMaxHp`) and the bar
-  (`bossHp` of `bossMaxHp`, violet, red at half or under). The 3D skin has a compound low-poly
-  beetle (shell, head, horn, thorns, legs), red in phase 2, and the same events and HUD.
+  (`bossHp` of `bossMaxHp`, violet, red at half or under). The 3D skin's Burrlock is
+  the Quaternius crab from T10 (tinted red in phase 2), with the same events and HUD.
 - **Screenshots** taken and looked at while tuning (`pnpm -s cli screenshot ... --scale 6` and
   `pnpm -s cli sheet`): `level-1` ticks 3, 40, 58-62 (coins, sparkle), 88-94 (landing squash and
   dust), 120-124 (the block), 214-220 (stomp), 355-412 (checkpoint flag raise and wave, the
@@ -427,6 +431,73 @@ tiles? }`, drawn by the Canvas2D presenter while the frame shows that map). `lev
   (on its back, fading), `788+clear` and `790+end`; `level-2` `975+clear` (where the name plate
   first showed in a level with no boss: it became an icon); `boss-lost` 580 with
   `respawn*14` (the iris).
+
+## Build choices (T10; feedback items 388-392)
+
+1. **The models (388).** Kenney's Platformer Kit for the world (blocks, crates, the gold cube,
+   platforms, spikes, coins, a jewel goal, the checkpoint flag, trees, rocks, flowers) and
+   Quaternius' Platformer pack for the characters (the player stand-in, `enemy`, `skull`, and the
+   `crab` as Burrlock). The player is Quaternius' blue character, not a frog: the packs have none.
+2. **The look (389).** Sun with soft shadows (2048 map, radius 3), hemisphere and ambient light,
+   ACES tone mapping, linear fog from 30 px behind the play plane, per level; the 2D parallax art
+   as distant fogged planes; rows of seeded 3D scenery behind. Camera fov 32, tilt 7.
+3. **Engine additions (390).** In `engine/backends/three` and `engine/core/present`: tweens in 3D
+   (item 340), `themes` in 3D with `scene3d` and `scenery`, a 3D tile `join`, `scenery` rows, a
+   tag look's own `model`, a model's `tint`, `stretch` and `clipHold`.
+4. **No name label (391)** over the runner in 3D; **no depth of field (392)**: fog does that job.
+
+## The 2.5D view (T10)
+
+`content/skins/three.json`, presentation only: no rule, level or profile changed, so every golden
+hash is the same (the tests draw every tick of every run in 3D and compare state hashes). Built
+by a small script and tuned from screenshots; edit the JSON by hand now.
+
+- **Tiles** (models per cell, `scale` 16 px per unit): `#` is Kenney's `blockDirt` three tiles deep
+  (`stretch.z` 3) with a 3D `join` that shows the `grass` entry (`block`, grass on a dirt block,
+  its lip overhanging) wherever the cell's top is open; `?` the gold `cube`, `u` `crateStrong`,
+  `B` `crate`, `=` `platform` (5x thicker, anchored so its top is the cell's top, as the one-way
+  plank collides), `^` `spikes` (taller and deeper). Level 1's ground is tinted a warmer green
+  (`#ffffb0`).
+- **Kinds**: `runner` Quaternius `character` (scale 8, turned 62 degrees toward the camera; clips
+  Idle, Walk, Run, Duck for the skid, Jump_Idle in the air, HitReact and Death held); `walker`
+  `enemy` and `ledge-walker` `skull` (Walk, Death held when stomped); `coin` `coinGold` (centred,
+  a warm tint and a forever yoyo emissive shimmer as a `spawnTween`); `goal` the `jewel` with a
+  gold point light; `bump-block` the gold `cube`, `crateStrong` when used, `crate` for a brick
+  (tag looks with their own model); `checkpoint` the `flag` tinted grey until touched (a tag
+  look gives it its red back) with a warm point light; `burrlock` the `crab` (scale 17, violet;
+  red in phase 2 through a `phase:` look's tint; Idle, Bite_InPlace telegraphs, Walk charge,
+  Jump leap held, Bite_Front shot, Yes for the drop's roar, HitRecieve and Death held). `thorn`
+  and `acorn` keep their text low-poly meshes.
+- **Feel in 3D**: the 2D skin's tweens play in 3D (the landing squash, the jump stretch, the
+  hurt blink, the boss's hit squash, the defeat's sink and fade), plus a white emissive flash on
+  `hurt` and `boss-hit` (colour tweens), with the same particles, shakes, zoom punches, screen
+  flashes and hit-pauses.
+- **Scene look** (`scene3d`, and each theme's): a sun with soft shadows, ambient and hemisphere
+  light, ACES tone mapping, linear fog from 30 to about 700 px behind the play plane in the
+  sky's horizon colour. Level 1 a warm day, level 2 (`themes.level-2`) a low orange sun with
+  autumn-tinted ground and scenery, level 3 a blue moonlight from the right with dim violet
+  ground, the arena a dusk light.
+- **Depth**: the 2D parallax layers as planes far behind (`depth` 300-640, so fogged), and
+  `scenery` rows (seeded per copy): a low grass ridge 170 px behind, trees on it, rocks and
+  flowers, a taller ridge and bigger trees 350 px behind; tinted per level.
+- **Camera**: the 2D skin's `camera` (the same follow point, deadzone, lerp and look-ahead), fov
+  32, tilted 7 degrees down. The goal keeps its GOAL label; the runner has none.
+- **Screenshots** taken and looked at while tuning (`pnpm -s cli screenshot <run> --tick <n>
+--scale 6 --backend three --allow-software-gl`, and `sheet` at scale 2 with `@3d` tiles):
+  `level-1` 60, 214, 400 (washed out and the back ridge read as part of the play field: the
+  scenery moved further back and lower, the fog made stronger, the lights lowered, the ground
+  tinted, the coins given a shimmer, the hero scaled up), 3, 120, 355, 500, 620, 700, 707;
+  `level-2` 200, 504, 631, 850; `level-3` 205, 457, 545, 690, 850; `boss` 240, 300, 323, 377,
+  516, 520, 650, 700 (the crab made bigger, the arena's tint softened); the `title` and `levels`
+  overlays (level-1 3), `pause` (level-2 300), `clear` (level-2 975), `end` (boss 790) and the
+  respawn iris (`boss-lost` 580, where the name label showed through: removed).
+- **Tests** (`platformer.test.ts`, "the 2.5D view (T10)"): every kind, tag look, tile and scenery
+  row is a GLB of the packs and loads; every look has shadows, fog, a hemisphere light, ACES and
+  scenery; every tick of every run file drawn in 3D through the scene builder with the models
+  loaded: no fallback box, no entity left on its stand-in mesh, no tile as an instanced block,
+  scenery on every level, and the golden state hashes; each stage's fog is its own; the boss's hit
+  flashes white. `tests/runs/backend-parity.test.ts` now loads each game's models too, so a
+  model that never loads is a missing mesh there as well.
 
 ## Run files
 

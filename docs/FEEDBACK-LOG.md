@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 388.** (Last used: 387.)
+**Next unused number: 393.** (Last used: 392.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1535,3 +1535,29 @@ files")
 - **387.** Ducking: a hurt (60%), a death (85%), a boss hit (55%), the boss's defeat and its blast
   (90%) and a stomp (a light 25%) duck the music; the level clear mutes it under the jingle. Too
   much or too little?
+
+**Engine 0.16 part B, T10: the 2.5D view of Hopper's Way** (details in
+`games/samples/platformer/CLAUDE.md`, "Build choices (T10)" and "The 2.5D view")
+
+- **388.** The 2.5D view is built from the CC0 GLB packs: Kenney's grass and dirt blocks (three
+  tiles deep, a grass-topped block wherever a cell's top is open), crates and the gold cube for
+  blocks, platforms for the one-way planks, spikes, the gold coin, a jewel for the goal and a flag
+  for the checkpoint; Quaternius' character as the player stand-in (a blue character, not a frog:
+  no CC0 3D frog was fetched), `enemy` and `skull` for the two walkers and the `crab`, tinted
+  violet and red in phase 2, for Burrlock. Thorns and acorns stay text low-poly meshes. OK, or
+  should a 3D frog be found or made?
+- **389.** The look: a sun with soft shadows, a hemisphere light and ACES tone mapping per level
+  (day, autumn afternoon, moonlit night, dusk in the arena), linear fog from just behind the play
+  plane, the 2D parallax art as distant fogged planes, and rows of 3D scenery behind (a grass
+  ridge, trees, rocks, flowers, a taller far ridge), placed by a seeded jitter. The camera frames
+  exactly what 2D frames, tilted 7 degrees down (fov 32). The picture is drawn at 320x180 and
+  scaled up, so the 3D view is pixelated like the 2D one. OK?
+- **390.** Engine additions: tweens in 3D (item 340 resolved: scale, offsets, turn, alpha, and a
+  colour tween as a white emissive hit flash), per-map `themes` in 3D (with a theme's own
+  `scene3d` and `scenery`), a 3D tile `join` that picks another tile entry, `scenery` rows, a tag
+  look's own `model`, and a model's `tint`, `stretch` and `clipHold`. OK?
+- **391.** The runner's "Hopper" name label and health bar over its head (the 3D skin's T12
+  labels) were removed in 3D: the HUD shows the hearts and a name over the hero is clutter in a
+  side view (it also showed through the respawn iris). The GOAL label stays. OK?
+- **392.** No depth of field: the backend has none, and fog on the background does that job. Add
+  a depth-of-field pass later (needs a post-processing pass in the 3D backend)?

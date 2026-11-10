@@ -135,7 +135,8 @@ x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin i
 - `SkinnedCanvasPresenter` (`engine/backends/canvas2d/presenter.ts`) keeps one `TweenSet` per
   entity id and lays its state on top of the frame's `PresentFx` when drawing (position offset,
   squash factors, turn, alpha, the colour overlay as a translucent box over the drawn box). It
-  never writes to the frame. The 3D backend ignores tweens for now.
+  never writes to the frame. From Engine 0.16 part B T10 the 3D backend's `ThreeScene` does the
+  same on each entity's root (a colour tween as the materials' emissive colour; item 340).
 - Camera effects and parallax (Engine 0.16 T4): an event entry's `shake`, `zoom`, `flash` and
   `hitPause`, the skin camera's `lookAhead` (`../present/camera.ts`) and the skin's top-level
   `parallax`. Both presenters keep a `CameraFx` timed by their own clock (one tick per frame they

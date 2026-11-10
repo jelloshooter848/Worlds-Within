@@ -1,5 +1,6 @@
 import {
   AnimationMixer,
+  Color,
   Box3,
   Euler,
   Group,
@@ -159,10 +160,16 @@ export class ModelInstance {
       o.material = Array.isArray(o.material) ? o.material.map(copy) : copy(o.material);
       o.castShadow = spec.castShadow;
     });
+    // A tint (Engine 0.16 part B) multiplies into each own material's colour.
+    if (spec.tint !== null) {
+      const tint = new Color(spec.tint);
+      for (const m of this.materials) if ('color' in m && m.color instanceof Color) m.color.multiply(tint);
+    }
     const deg = Math.PI / 180;
     const turn = new Euler(spec.rotate.x * deg, spec.rotate.y * deg, spec.rotate.z * deg, 'XYZ');
     inner.rotation.copy(turn);
-    inner.scale.setScalar(spec.scale);
+    const stretch = spec.stretch;
+    inner.scale.set(spec.scale * stretch.x, spec.scale * stretch.y, spec.scale * stretch.z);
     inner.position.set(0, 0, 0);
     this.object.add(inner);
     this.object.updateMatrixWorld(true);
@@ -179,7 +186,7 @@ export class ModelInstance {
           else target.y = box.h / 2;
         }
       }
-    } else point.set(anchor.x, anchor.y, anchor.z).applyEuler(turn).multiplyScalar(spec.scale);
+    } else point.set(anchor.x, anchor.y, anchor.z).multiply(inner.scale).applyEuler(turn);
     inner.position.copy(target.sub(point)).add(new Vector3(spec.offset.x, -spec.offset.y, spec.offset.z));
     this.object.name = 'model';
     this.mixer = new AnimationMixer(inner);
@@ -190,8 +197,11 @@ export class ModelInstance {
     return this.clip;
   }
 
-  /** Shows `clip` (by name; null or a name the model lacks: the rest pose) at `time` seconds, looped. */
-  pose(clip: string | null, time: number): void {
+  /**
+   * Shows `clip` (by name; null or a name the model lacks: the rest pose) at `time` seconds,
+   * looped, or with `hold` played once and held on its last pose (Engine 0.16 part B).
+   */
+  pose(clip: string | null, time: number, hold = false): void {
     const found = clip === null ? undefined : this.clips.find((c) => c.name === clip);
     const name = found ? found.name : null;
     if (name !== this.clip) {
@@ -200,7 +210,10 @@ export class ModelInstance {
       this.action?.play();
       this.clip = name;
     }
-    if (this.action) this.mixer.setTime(time);
+    if (this.action) {
+      const length = this.action.getClip().duration;
+      this.mixer.setTime(hold && length > 0 ? Math.min(time, length * 0.999) : time);
+    }
   }
 
   /** Every mesh of the instance (for tests and shadow settings). */

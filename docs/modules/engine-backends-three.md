@@ -47,6 +47,15 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   nine-slice piece, a `glyph` texture per font, character and colour; the `fonts` option on the
   scene, `ThreePresenter`, `threeDisplay` and `threeScenePresenter`); every HUD material is
   transparent, so `renderOrder` alone stacks them.
+- From Engine 0.16 part B (T10, Hopper's Way's 2.5D view) `ThreeScene` also plays a skin's
+  **tweens** (item 340: an event's `tween` and a kind's `spawnTween`, laid on the entity root's
+  position, scale, turn and opacity, a colour tween as the materials' emissive colour;
+  `tweenState(id, frame)`), draws **per-map looks** (`themes`: sky, parallax, tiles and, in 3D, a
+  theme's own `scene3d` lights and fog and its `scenery`; `look` and `hemisphere` follow the
+  shown map), lets a tile's **`join`** pick another tile entry (grass on top, dirt inside), builds
+  **`scenery`** rows of models along the map behind the blocks with a seeded jitter
+  (`sceneryObjects()`), and takes a tag look's own `model` and a model's `tint`, `stretch` and
+  `clipHold` (`ModelInstance.pose(clip, time, hold)`). Tested in `look.test.ts`.
 - `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
   `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing, sheets })`
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a

@@ -26,7 +26,16 @@ import {
   type Material,
 } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
-import { CameraFx, fxRng, SkinParticles, type CameraFxSettings, type ParticleView } from '@engine/core/fx';
+import {
+  CameraFx,
+  fxRng,
+  REST_STATE,
+  SkinParticles,
+  TweenSet,
+  type CameraFxSettings,
+  type ParticleView,
+  type TweenState,
+} from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   cameraArea,
@@ -50,7 +59,10 @@ import {
   resolveSkinMesh,
   resolveSkinModel,
   resolveTileModel,
+  resolveTileFrame,
+  sceneryModel,
   skinBackground,
+  themedSkin,
   skinTagIndex,
   resolveSkinEvent,
   type DeepReadonly,
@@ -191,6 +203,8 @@ interface ShownMap {
   group: Group;
   /** Tile cells shown as a model, each posed on the frame clock (the tile entry's `clip`). */
   models: { instance: ModelInstance; tile: string }[];
+  /** Scenery copies (Engine 0.16 part B, T10). */
+  scenery: ModelInstance[];
   /** Model paths that were still loading when it was built: it is rebuilt once they are there. */
   waiting: string[];
 }
@@ -240,10 +254,13 @@ export class ThreeScene {
   readonly camera = new PerspectiveCamera();
   readonly ambient: AmbientLight;
   readonly sun: DirectionalLight;
-  /** The skin's `scene3d.hemisphere` light, or null (Engine 0.16 T12). */
-  readonly hemisphere: HemisphereLight | null;
-  /** The skin's scene look with defaults filled (lights, shadows, fog, tone mapping, colour space). */
-  readonly look: Scene3dLook;
+  /** The skin's `scene3d.hemisphere` light (the shown map's theme's), or null (Engine 0.16 T12). */
+  hemisphere: HemisphereLight | null;
+  /**
+   * The scene look with defaults filled (lights, shadows, fog, tone mapping, colour space): the
+   * skin's, or from Engine 0.16 part B the shown map's `themes` entry's `scene3d`.
+   */
+  look: Scene3dLook;
   /** The world-anchored labels, drawn on the HUD layer between the scene and the HUD (Engine 0.16 T12). */
   readonly labels: HudLayer;
   /** The full-screen flash and tint overlay, a child of the camera; hidden when no effect shows. */
@@ -284,9 +301,20 @@ export class ThreeScene {
   private fxClock = -1;
   private labelShown: LabelView[] = [];
   private readonly sunFrom: Vector3;
+  /** The skin as the shown map's theme lays it (Engine 0.16 part B, T10): tiles, sky, parallax, look, scenery. */
+  private themed: Skin;
+  /** The map id the theme was taken for (undefined: none yet or no map). */
+  private themeFor: string | undefined;
+  /** Running tweens by entity id (skin `events.<type>.tween`, `kinds.<kind>.spawnTween`; Engine 0.16 part B). */
+  private readonly tweens = new Map<string, TweenSet>();
+  /** The entity ids the last frame showed, so a new one gets its kind's `spawnTween`. */
+  private seen = new Set<string>();
+  /** The last frame number synced: a lower one is a new level (tweens start over). */
+  private lastFrame: number | null = null;
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
+    this.themed = skin;
     this.opts = opts;
     this.size = opts.size;
     this.cam3d = resolveCamera3d(skin);
@@ -369,9 +397,12 @@ export class ThreeScene {
   sync(frame: Frame): void {
     const size = this.size ?? frame.size;
     this.fxClock++;
+    this.updateTheme(frame);
+    this.restartOnNewLevel(frame);
     this.takeEvents(frame);
     this.updateMap(frame);
     this.poseTileModels(frame.frame);
+    this.updateTweens(frame);
     this.updateEntities(frame);
     this.cameraFx.update(this.fxClock);
     this.updateCamera(frame, size);
@@ -512,6 +543,8 @@ export class ThreeScene {
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound, skinSoundCue(entry, frame.frame));
       if (entry.hitPause !== undefined) this.opts.onHitPause?.(entry.hitPause.ticks);
+      if (entry.tween !== undefined && ev.entity !== undefined)
+        this.tweensOf(ev.entity).add(entry.tween, frame.frame);
       this.skinParticles.event(entry, ev, frame.entities, frame.frame);
       this.cameraFx.event(entry, this.fxClock);
       if (entry.effect === undefined || entry.effect.kind === 'particles') continue;
@@ -620,7 +653,7 @@ export class ThreeScene {
 
   /** Poses every tile model on the frame clock (its entry's `clip`, `frame` / 60 seconds). */
   private poseTileModels(frame: number): void {
-    const tiles = this.skin.tiles ?? {};
+    const tiles = this.themed.tiles ?? {};
     for (const { instance, tile } of this.shown?.models ?? []) {
       const spec = resolveTileModel(tiles[tile]!, frame);
       instance.pose(spec?.clip ?? null, spec?.time ?? 0);
@@ -637,7 +670,7 @@ export class ThreeScene {
     const waiting = new Set<string>();
     group.name = `map:${map.id}@${map.version}`;
     const ts = map.tileSize;
-    const tiles = this.skin.tiles ?? {};
+    const tiles = this.themed.tiles ?? {};
     const materials = new Map<string, MeshLambertMaterial>();
     const material = (color: string) => {
       let m = materials.get(color);
@@ -662,8 +695,11 @@ export class ThreeScene {
       for (let row = 0; row < grid.tiles.length; row++) {
         const line = grid.tiles[row]!;
         for (let col = 0; col < line.length; col++) {
-          const key = String(line[col]);
-          if (!Object.hasOwn(tiles, key)) continue;
+          const own = String(line[col]);
+          if (!Object.hasOwn(tiles, own)) continue;
+          // A 3D `join` (Engine 0.16 part B, T10) picks another tile entry by the cell's neighbours.
+          const joined = resolveTileFrame({ join: tiles[own]!.join }, own, grid.tiles, col, row);
+          const key = joined !== undefined && Object.hasOwn(tiles, joined) ? joined : own;
           let list = cells.get(key);
           if (!list) cells.set(key, (list = []));
           list.push([col, row]);
@@ -711,7 +747,158 @@ export class ThreeScene {
         });
       }
     }
-    return { map, group, models, waiting: [...waiting] };
+    const scenery = this.buildScenery(map, group, waiting);
+    return { map, group, models, scenery, waiting: [...waiting] };
+  }
+
+  /**
+   * The shown skin's `scenery` rows (Engine 0.16 part B, T10): copies of each row's model along the
+   * map, `every` px apart from `from` and past both ends by the row's depth (a row far behind shows
+   * beyond the map's edge), each nudged by its own `jitter` drawn from `fxRng(seed, row,
+   * "scenery:<copy>")`, so the same seed always places them the same. A row whose model is not
+   * loaded yet waits (the map is rebuilt once it is there).
+   */
+  private buildScenery(map: DeepReadonly<PresentMap>, group: Group, waiting: Set<string>): ModelInstance[] {
+    const out: ModelInstance[] = [];
+    const width = map.cols * map.tileSize;
+    const bottom = map.rows * map.tileSize;
+    (this.themed.scenery ?? []).forEach((row, r) => {
+      const loaded = this.opts.models?.get(row.model) ?? null;
+      if (!loaded) {
+        if (this.opts.models) waiting.add(row.model);
+        return;
+      }
+      const base = sceneryModel(row);
+      const from = row.from ?? 0;
+      const margin = Math.abs(row.z) + row.every;
+      const first = Math.ceil((-margin - from) / row.every);
+      const last = Math.floor((width + margin - from) / row.every);
+      const j = row.jitter ?? {};
+      for (let i = first; i <= last; i++) {
+        const rng = fxRng(this.opts.seed ?? 0, r, `scenery:${i}`);
+        const spread = (amount: number | undefined) => (rng.float() * 2 - 1) * (amount ?? 0);
+        const dx = spread(j.x);
+        const dy = spread(j.y);
+        const dz = spread(j.z);
+        const ds = spread(j.scale);
+        const turn = spread(j.turn);
+        const instance = new ModelInstance(loaded, { ...base, scale: base.scale * (1 + ds) }, { w: 0, h: 0 });
+        instance.object.name = `scenery:${r}:${i}`;
+        instance.object.userData = { scenery: r, model: row.model };
+        instance.object.position.set(from + i * row.every + dx, -((row.y ?? bottom) + dy), row.z + dz);
+        instance.object.rotation.y = (turn * Math.PI) / 180;
+        if (row.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
+        group.add(instance.object);
+        out.push(instance);
+      }
+    });
+    return out;
+  }
+
+  /** The scenery copies of the built map (Engine 0.16 part B, T10), for tests. */
+  sceneryObjects(): Group[] {
+    return (this.shown?.scenery ?? []).map((s) => s.object);
+  }
+
+  // ---- Per-map looks (Engine 0.16 part B, T10) ----
+
+  /**
+   * The shown map's `themes` entry (`themedSkin`), taken when the map id changes: the clear
+   * colour (unless the `background` option is set), the parallax layers, the scene look (lights,
+   * fog), and, through the map build, the tiles and scenery. A skin without `themes` keeps its own.
+   */
+  private updateTheme(frame: Frame): void {
+    const id = frame.map?.id ?? this.shown?.map.id;
+    if (id === this.themeFor) return;
+    this.themeFor = id;
+    const themed = themedSkin(this.skin, id);
+    if (themed === this.themed) return;
+    this.themed = themed;
+    if (this.opts.background === undefined) (this.scene.background as Color).set(skinBackground(themed));
+    this.parallax.setSkin(themed);
+    this.applyLook(resolveScene3d(themed.scene3d, this.cam3d.lights));
+  }
+
+  /** Sets the lights and fog to `look` (a theme's scene look), keeping the light objects. */
+  private applyLook(look: Scene3dLook): void {
+    this.look = look;
+    this.ambient.color.set(look.ambient.color);
+    this.ambient.intensity = look.ambient.intensity;
+    this.sun.color.set(look.sun.color);
+    this.sun.intensity = look.sun.intensity;
+    this.sunFrom.set(look.sun.direction.x, look.sun.direction.y, look.sun.direction.z);
+    if (look.sun.shadow === null) this.sun.position.copy(this.sunFrom);
+    this.sun.castShadow = look.sun.shadow !== null;
+    if (look.sun.shadow !== null) {
+      const { mapSize, bias, radius } = look.sun.shadow;
+      if (this.sun.shadow.mapSize.x !== mapSize) {
+        this.sun.shadow.mapSize.set(mapSize, mapSize);
+        this.sun.shadow.map?.dispose();
+        this.sun.shadow.map = null;
+      }
+      this.sun.shadow.bias = bias;
+      this.sun.shadow.normalBias = 0.5;
+      this.sun.shadow.radius = radius;
+    }
+    if (look.hemisphere === null) {
+      if (this.hemisphere) this.scene.remove(this.hemisphere);
+      this.hemisphere = null;
+    } else {
+      const { sky, ground, intensity } = look.hemisphere;
+      if (!this.hemisphere) {
+        this.hemisphere = new HemisphereLight(sky, ground, intensity);
+        this.scene.add(this.hemisphere);
+      }
+      this.hemisphere.color.set(sky);
+      this.hemisphere.groundColor.set(ground);
+      this.hemisphere.intensity = intensity;
+    }
+    const fog = look.fog;
+    if (fog === null) this.scene.fog = null;
+    else if (fog.kind === 'linear') this.scene.fog = new Fog(fog.color, fog.near, fog.far);
+    else this.scene.fog = new FogExp2(fog.color, fog.density);
+  }
+
+  // ---- Tweens (Engine 0.16 part B, T10; item 340) ----
+
+  /**
+   * A frame number lower than the last one is a new level (a kit's world starts again at 0, often
+   * with the same entity ids): tweens and the ids seen are dropped, as the Canvas2D presenter does.
+   */
+  private restartOnNewLevel(frame: Frame): void {
+    if (this.lastFrame !== null && frame.frame < this.lastFrame) {
+      this.tweens.clear();
+      this.seen = new Set();
+    }
+    this.lastFrame = frame.frame;
+  }
+
+  private tweensOf(id: string): TweenSet {
+    let set = this.tweens.get(id);
+    if (set === undefined) this.tweens.set(id, (set = new TweenSet()));
+    return set;
+  }
+
+  /** Starts `spawnTween` on entities new this frame and drops ended tweens and those of entities gone. */
+  private updateTweens(frame: Frame): void {
+    const ids = new Set<string>();
+    for (const e of frame.entities) {
+      ids.add(e.id);
+      if (this.seen.has(e.id)) continue;
+      const kinds = this.skin.kinds;
+      const spawn = Object.hasOwn(kinds, e.kind) ? kinds[e.kind]!.spawnTween : undefined;
+      if (spawn !== undefined) this.tweensOf(e.id).add(spawn, frame.frame);
+    }
+    this.seen = ids;
+    for (const [id, set] of this.tweens) {
+      set.update(frame.frame);
+      if (set.size === 0 || !ids.has(id)) this.tweens.delete(id);
+    }
+  }
+
+  /** The tween state an entity shows at `frame` (the rest state when none runs), for tests. */
+  tweenState(id: string, frame: number): TweenState {
+    return this.tweens.get(id)?.state(frame) ?? { ...REST_STATE };
   }
 
   // ---- Entities ----
@@ -738,7 +925,7 @@ export class ThreeScene {
         this.nodes.set(e.id, node);
         this.scene.add(node.root);
       }
-      this.place(node, e);
+      this.place(node, e, frame.frame);
     }
     for (const [id, node] of this.nodes) {
       if (seen.has(id)) continue;
@@ -853,18 +1040,26 @@ export class ThreeScene {
     return { light, spec };
   }
 
-  private place(node: EntityNode, e: Entity): void {
+  /**
+   * Places an entity's root from its box, facing and `fx`, with its tweens laid on top (Engine
+   * 0.16 part B, T10, item 340: `x`/`y` world px added, `scaleX`/`scaleY` times the squash (the
+   * depth follows `scaleX`, so a squash stays solid), `rotate` added to the turn, `alpha` times the
+   * alpha, and a `color` tween as the materials' emissive colour at its `colorAmount`). Nothing is
+   * written back to the frame.
+   */
+  private place(node: EntityNode, e: Entity, frame: number): void {
     const fx = e.fx;
+    const tw = this.tweens.get(e.id)?.state(frame) ?? REST_STATE;
     const mirror = facesLeft(e.facing) ? -1 : 1;
-    node.root.position.set(e.x + e.w / 2, -(e.y + e.h), (e.layer ?? 0) * this.cam3d.layerDepth);
-    node.root.scale.set(mirror * (fx?.squashX ?? 1), fx?.squashY ?? 1, 1);
+    node.root.position.set(e.x + tw.x + e.w / 2, -(e.y + tw.y + e.h), (e.layer ?? 0) * this.cam3d.layerDepth);
+    node.root.scale.set(mirror * (fx?.squashX ?? 1) * tw.scaleX, (fx?.squashY ?? 1) * tw.scaleY, tw.scaleX);
     // `rotate` is clockwise on screen; with y up that is a negative turn about z.
-    node.root.rotation.z = (-(fx?.rotate ?? 0) * Math.PI) / 180;
+    node.root.rotation.z = (-((fx?.rotate ?? 0) + tw.rotate) * Math.PI) / 180;
     if (node.model) {
       const spec = resolveSkinModel(this.skin, e);
-      node.model.pose(spec?.clip ?? null, spec?.time ?? 0);
+      node.model.pose(spec?.clip ?? null, spec?.time ?? 0, spec?.hold ?? false);
     }
-    const alpha = Math.min(1, Math.max(0, fx?.alpha ?? 1));
+    const alpha = Math.min(1, Math.max(0, (fx?.alpha ?? 1) * tw.alpha));
     for (const m of node.materials) {
       const transparent = alpha < 1;
       if (m.transparent !== transparent) {
@@ -872,6 +1067,7 @@ export class ThreeScene {
         m.needsUpdate = true;
       }
       m.opacity = alpha;
+      flashMaterial(m, tw);
     }
   }
 
@@ -959,6 +1155,24 @@ export class ThreeScene {
   }
 }
 
+/**
+ * A colour tween's flash on one material (Engine 0.16 part B, T10): its emissive colour becomes
+ * the tween colour times its `colorAmount` (a white hit flash), and goes back to the material's
+ * own emissive when no colour tween runs. Materials without an emissive colour are left alone.
+ */
+function flashMaterial(m: Material, tw: Readonly<TweenState>): void {
+  const emissive = (m as Material & { emissive?: Color }).emissive;
+  if (!(emissive instanceof Color)) return;
+  const own = m.userData['ownEmissive'] as Color | undefined;
+  if (tw.color !== null && tw.colorAmount > 0) {
+    if (own === undefined) m.userData['ownEmissive'] = emissive.clone();
+    emissive.set(tw.color).multiplyScalar(tw.colorAmount);
+  } else if (own !== undefined) {
+    emissive.copy(own);
+    delete m.userData['ownEmissive'];
+  }
+}
+
 /** Scratch vector for the sun's direction (one scene updates at a time). */
 const SUN_DIR = new Vector3();
 
@@ -990,6 +1204,7 @@ function makePoints(blend: 'normal' | 'add'): ParticlePoints {
 function disposeMap(shown: ShownMap): void {
   const materials = new Set<Material>();
   for (const { instance } of shown.models) instance.dispose();
+  for (const instance of shown.scenery) instance.dispose();
   for (const child of shown.group.children) {
     if (child instanceof InstancedMesh) {
       materials.add(child.material as Material);

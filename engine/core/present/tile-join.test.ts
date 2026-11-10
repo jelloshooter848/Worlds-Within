@@ -114,9 +114,30 @@ describe('join in skins', () => {
     });
   });
 
-  it('is a 2D field', () => {
-    const three = skin({ frames: { top: 'top' } }, 'three');
-    expect(three.error?.issues.some((i) => i.path.join('.') === 'tiles.#.join')).toBe(true);
+  it('in a 3D skin picks another tile entry by key (Engine 0.16 part B, T10)', () => {
+    const three = (frames: Record<string, string>) =>
+      skinSchema.safeParse({
+        backend: 'three',
+        kinds: {},
+        tiles: {
+          '#': { mesh: 'box', color: '#000', join: { frames } },
+          top: { mesh: 'box', color: '#0f0' },
+        },
+        themes: {
+          night: { tiles: { '#': { mesh: 'box', color: '#000', join: { frames: { left: 'nope' } } } } },
+        },
+      });
+    const bad = three({ top: 'top', left: 'side' });
+    expect(bad.success).toBe(false);
+    expect(
+      bad.error?.issues.map((i) => [i.path.join('.'), (i as { params?: { code?: string } }).params?.code]),
+    ).toEqual([
+      ['tiles.#.join.frames.left', 'missing_ref'],
+      ['themes.night.tiles.#.join.frames.left', 'missing_ref'],
+    ]);
+    expect(three({ top: 'top' }).error?.issues.map((i) => i.path.join('.'))).toEqual([
+      'themes.night.tiles.#.join.frames.left',
+    ]);
   });
 
   it('checks the join frames against the sheet', () => {

@@ -6,7 +6,14 @@ import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-inp
 import { readGameFiles } from '@engine/core/node/game-files';
 import { NullRenderer } from '@engine/backends/null';
 import type { Renderer } from '@engine/core/gfx/renderer';
-import { isFullMap, resolveSkinAnimation, resolveTileFrame, type SkinFile } from '@engine/core/present';
+import {
+  isFullMap,
+  resolveSkinAnimation,
+  resolveTileFrame,
+  skinModelUses,
+  type SkinFile,
+} from '@engine/core/present';
+import { ModelLibrary, threeScenePresenter } from '@engine/backends/three';
 import { skinSetCanvasPresenter } from '@engine/backends/canvas2d';
 import { withContentImages } from '@engine/core/assets/content-images';
 import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
@@ -666,5 +673,113 @@ describe("Hopper's Way: music and sound (T9)", () => {
     expect(hits.length).toBe(4);
     for (const tick of hits) expect(Math.min(...ducks.slice(tick, tick + 6))).toBeLessThan(0.6);
     expect(ducks.slice(hits[0]!, hits[1]!)).toContain(1); // back up between hits
+  });
+});
+
+describe("Hopper's Way: the 2.5D view (T10)", () => {
+  const look3d = hopperLook3d(content);
+  const skin = look3d.skin;
+  const models = new ModelLibrary(content.assets ?? {});
+  const ready = models.preload([skin]);
+  const hashes = (name: string) =>
+    (
+      JSON.parse(
+        readFileSync(new URL(`./runs/${name.replace('.run.json', '.hashes.json')}`, import.meta.url), 'utf8'),
+      ) as {
+        hashes: { tick: number; hash: string }[];
+      }
+    ).hashes;
+
+  it('builds every kind, tag look, tile and scenery row from the CC0 GLB models, and themes each level', async () => {
+    await ready;
+    const uses = skinModelUses(skin);
+    for (const use of uses) expect(models.status(use.model), use.path.join('.')).toBe('ready');
+    for (const kind of [
+      'runner',
+      'walker',
+      'ledge-walker',
+      'coin',
+      'goal',
+      'bump-block',
+      'checkpoint',
+      'burrlock',
+    ])
+      expect(skin.kinds[kind]?.model, kind).toMatch(
+        /^assets\/(kenney-platformer-kit|quaternius-platformer)\//,
+      );
+    for (const tile of ['#', 'grass', 'B', '?', 'u', '=', '^'])
+      expect(skin.tiles?.[tile]?.model, tile).toBeDefined();
+    expect(Object.keys(skin.themes ?? {}).sort()).toEqual(['boss', 'level-2', 'level-3']);
+    for (const look of [skin, ...Object.values(skin.themes ?? {})]) {
+      expect(look.scene3d?.sun?.shadow, 'soft sun shadows').toBeDefined();
+      expect(look.scene3d?.fog?.kind).toBe('linear');
+      expect(look.scene3d?.hemisphere).toBeDefined();
+      expect(look.scene3d?.toneMapping?.kind).toBe('aces');
+      expect(look.scenery?.length).toBeGreaterThan(3);
+    }
+    // The 3D camera follows the same point as 2D (the skins' `camera` is equal; tested above),
+    // tilted down a little.
+    expect(skin.camera3d?.tilt).toBeGreaterThan(0);
+  });
+
+  it.each(RUNS)(
+    'draws every tick of %s in 2.5D from the models, with no missing mesh and the same state hashes',
+    async (name) => {
+      await ready;
+      const run = runOf(name);
+      const presenter = threeScenePresenter(skin, { ...look3d, models });
+      const scene = presenter.scene;
+      const picture = hopperPicture(presenter, look3d.screen);
+      const game = createGame(content, 1, run.start ? { start: run.start } : {});
+      const input = new ScriptedInput(run.input);
+      const missing = new Set<string>();
+      const maps = new Set<string>();
+      const golden = new Map(hashes(name).map((h) => [h.tick, h.hash]));
+      const wrong: number[] = [];
+      for (let tick = 0; tick <= run.ticks; tick++) {
+        if (tick > 0) {
+          input.next();
+          game.step(input);
+        }
+        const frame = picture.draw(game.world, game.events);
+        for (const id of scene.entityIds()) {
+          const data = scene.entity(id)!.userData;
+          if (data['fallback'] === true || data['loading'] === true)
+            missing.add(
+              `${String(data['kind'])}${data['fallback'] === true ? ' (fallback box)' : ' (no model)'}`,
+            );
+        }
+        // Every tile is a model per cell: an instanced block would be a tile with no model.
+        for (const child of scene.map?.children ?? [])
+          if (child.name.startsWith('tile:') && !child.name.endsWith(':model')) missing.add(child.name);
+        if (frame.map && isFullMap(frame.map)) {
+          maps.add(frame.map.id);
+          expect(scene.sceneryObjects().length, `${frame.map.id}: scenery`).toBeGreaterThan(20);
+        }
+        const want = golden.get(tick);
+        if (want !== undefined && stateHash(game.snapshot()) !== want) wrong.push(tick);
+      }
+      scene.dispose();
+      expect([...missing].sort()).toEqual([]);
+      expect(wrong).toEqual([]);
+      expect(maps.size).toBeGreaterThan(0);
+    },
+    60_000,
+  );
+
+  it("gives each level its own sky, fog and lights, and the boss's hit a white flash", async () => {
+    await ready;
+    const presenter = threeScenePresenter(skin, { ...look3d, models });
+    const scene = presenter.scene;
+    const fogs: string[] = [];
+    for (const stage of [0, 1, 2, 3]) {
+      const game = createGame(content, 1, { start: { stage } });
+      hopperPicture(presenter, look3d.screen).draw(game.world, game.events);
+      fogs.push(`#${(scene.scene.fog as { color: { getHexString(): string } }).color.getHexString()}`);
+    }
+    expect(new Set(fogs).size).toBe(4);
+    const hit = [skin.events?.['boss-hit']?.tween ?? []].flat();
+    expect(hit.some((t) => t.prop === 'color')).toBe(true);
+    scene.dispose();
   });
 });

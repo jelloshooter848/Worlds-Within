@@ -43,7 +43,7 @@ since T5. It holds only content, skins and thin glue.
   projectiles `thorn` and `acorn`), `sprites/burrlock.txt` with `palettes/burrlock.json` and
   `burrlock-angry.json` (T8: the boss's original text pixel art, its poses, white flash, defeat
   frames, shots and HUD name plate; the angry palette is its second phase), `sprites/hopper.txt` and `hopper-font.txt` with `palettes/hopper.json`,
-  `fonts/` (`hopper.txt` now only for the 3D skin, until T10), `sfx/` and `songs/` (T9: 39 sound
+  `fonts/`, `sfx/` and `songs/` (T9: 39 sound
   effects, the eight `hopper-*` layers of the skins' `hoppers-way` music, `hopper-title`,
   `hopper-fanfare`), `sprites/hopper-sky.txt` with
   `palettes/hopper-sky.json` (T6: the parallax clouds, mountains, hills and bushes),
@@ -52,7 +52,11 @@ since T5. It holds only content, skins and thin glue.
   `skins/canvas2d.json` (T6: the 2D skin on the PNG packs; its parts are listed in the
   `CLAUDE.md`, "The 2D skin"; from T7 its `themes` give level-2 an autumn sky and ground and
   level-3 a night sky and rose sand; from T8 the boss's telegraph looks, hit and defeat effects,
-  boss bar and the arena's dusk theme) and `skins/three.json`.
+  boss bar and the arena's dusk theme) and `skins/three.json` (T10: the 2.5D view on the CC0 GLB
+  packs: Kenney's blocks, crates, platforms, spikes, coins, jewel, flag and scenery and
+  Quaternius' characters, a sun with soft shadows, hemisphere light, fog, ACES tone mapping and
+  rows of seeded 3D scenery per level through 3D `themes`, the 2D tweens plus white hit flashes,
+  the same camera as 2D tilted 7 degrees; `CLAUDE.md`, "The 2.5D view").
 - `assets/` (Engine 0.16 part B, T4): four CC0 packs as binary files, each credited in
   `assets/CREDITS.md` (source URL, author, licence, files kept; checked by `validate`), about
   1.8 MB in all: `pixel-adventure-1` (Pixel Frog: terrain, backgrounds, the Ninja Frog player,
@@ -100,12 +104,15 @@ screen, the tuned profile, the start state, the view width, determinism, the ski
 everything the runs show in 2D and 3D, no fallback box on any tick, the tile joins, the frog's
 sheets, the feel events, every run drawn with its hit-pauses and the same state hashes, and (T8)
 the arena, the boss's telegraphed pattern and phases, its skin and the clear and end menus;
+from T10 every tick of every run drawn in 2.5D with the GLB models loaded, no missing mesh and
+the same state hashes;
 `assets.test.ts`: the CC0
 packs credited, every PNG and GLB readable). `pnpm -s cli validate games/samples/platformer
 --json`, `pnpm -s cli run games/samples/platformer/runs/level-1.run.json --json`, `pnpm -s cli
 mutants games/samples/platformer/runs/level-1.run.json --json` (exit 0 for each run file),
 `pnpm test tests/runs` (golden hashes, backend parity), `pnpm -s cli screenshot
-games/samples/platformer/runs/level-1.run.json --tick 400 --scale 6 --json` (and `--overlay
+games/samples/platformer/runs/level-1.run.json --tick 400 --scale 6 --json` (`--backend three
+--allow-software-gl` for the 2.5D view; and `--overlay
 title`, `levels`, `pause`; `pnpm -s cli sheet` for many ticks), `pnpm test
 tests/browser` (`menus.test.ts`, T8: Hopper's Way's level-clear banner by keyboard and the boss
 beaten to the end screen by gamepad). Play it: `pnpm dev`, open `/games/samples/platformer/` (arrows, Z jumps, X runs).

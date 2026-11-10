@@ -48,6 +48,10 @@ export default defineConfig({
   server: { port: 5173, open: process.env.CI ? false : '/' },
   test: {
     environment: 'node',
+    // The whole suite keeps every core busy for minutes (from Engine 0.16 part B, T10 it also
+    // draws every run in 3D with its models), so a test that takes 1 s alone can pass vitest's
+    // default 5 s: allow 30 s before calling one hung.
+    testTimeout: 30_000,
     include: [
       'engine/**/*.test.ts',
       'kits/**/*.test.ts',

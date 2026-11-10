@@ -46,13 +46,20 @@ void bootBrowserGame({
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound, onHitPause: hitPause }),
-    three: async (canvas, { onSound, hitPause }) =>
-      (await import('@engine/backends/three')).threeDisplay(canvas, {
-        ...hopperLook3d(content),
+    three: async (canvas, { onSound, hitPause }) => {
+      const three = await import('@engine/backends/three');
+      const look3d = hopperLook3d(content);
+      // The 2.5D view's glTF models (T10: the CC0 Kenney and Quaternius packs), loaded before the first frame.
+      const models = new three.ModelLibrary(content.assets ?? {});
+      await models.preload([look3d.skin]);
+      return three.threeDisplay(canvas, {
+        ...look3d,
+        models,
         fonts: look.fonts,
         onSound,
         onHitPause: hitPause,
-      }),
+      });
+    },
   },
   scene: (stack, display, booted) =>
     new HostScene({
