@@ -50,7 +50,9 @@ Within keeps its own version in its own folder.
    contract, a mini siege that puts them together, the tower-defense kit, and heroes and consequences.
 6. **Tools and samples** (0.14 to 0.15, done): creator tools, and a finished sample game for every
    kit. At 0.15 the demo and the stacking-test game became samples, and their old folders went away.
-7. **Engine 1.0**: documented internal APIs (v1), complete agent docs, and every sample playable from
+7. **Presentation and feel** (0.16): shared presentation features in the engine, and every sample
+   brought to the level of a modern pixel-art indie game, checked by the owner's playtest.
+8. **Engine 1.0**: documented internal APIs (v1), complete agent docs, and every sample playable from
    a link.
 
 **Worlds Within track (after Engine 1.0):** the full Siege, heroes and the campaign, a third mode,
@@ -81,6 +83,9 @@ skirmish, a tower-defense map, and a **mini siege** that joins several genres th
 simulation (see 0.11). The platformer sample grows out of the stacking-test game (0.7) and the dungeon
 sample out of the demo; both moved into `games/samples/` at 0.15 (`games/samples/platformer/` and
 `games/samples/dungeon/`), so all five are there.
+
+At 0.16 the samples are brought to the level of a modern pixel-art indie game (short demos with the
+quality, not the breadth, of a market game), and the mini siege moves to 3D low-poly (see 0.16).
 
 Samples are games: they live under `games/`, and the dependency rule applies to them like any other
 game. The engine never imports from them.
@@ -780,6 +785,223 @@ shapes of all 38 gaps, what "finished" means for a sample, and the API review's 
 
 ---
 
+## 0.16 Presentation and feel
+
+**Goal:** every sample looks, sounds and feels like a small game that would be accepted on the
+modern market, at the level of a good pixel-art indie game. The samples stay short demos: they need
+the quality, not the breadth (item 316). The owner's playtest decides when this release is done
+(item 317).
+
+**Why now:** at 0.15 the samples work and are tested, but they still look and feel like engine
+tests. Engine 1.0 is meant to prove that a game can be made with the engine, so the samples must
+show what a finished game made with it looks like.
+
+**Rules for the whole release:**
+
+- **References set the quality bar only.** Each part names games to compare against (item 318). Every
+  demo is an original game with its own names, levels and characters. Nothing recreates an
+  existing game, its levels, its characters or its art.
+- **Runs stay deterministic.** All presentation (animation, tweens, particles, camera effects,
+  transitions, audio) is drawn from the read-only snapshot and never changes the state hash. Every
+  existing run file, golden hash and mutant check keeps passing. Golden hashes are re-recorded, with
+  the repo's own tools only, where a rule change in a part requires it, and each one is listed in
+  the build log with the reason.
+- **Third-party assets** (item 322): CC0 packs are allowed as binary files (PNG, glTF/GLB, OGG/WAV) in
+  each game's own `assets/` folder, with a `CREDITS.md` there giving the source URL, author and
+  licence of each pack. CC0 is required; CC-BY only with an owner decision; never non-commercial,
+  no-redistribution or ripped assets. Code, levels, missions, skins and data stay text, and our own
+  MML music stays the main music (item 321 chose free online assets).
+- **Downloading assets.** kenney.nl blocks automated downloads, so packs are fetched from their
+  OpenGameArt or itch.io mirrors. If a pack cannot be fetched automatically, the build notes it for
+  the owner (as a numbered item) and uses the nearest CC0 alternative.
+- **Order.** Part A comes first. Part B is the flagship and is reviewed by the owner before parts C-F
+  are considered done. Parts C-F follow in order.
+
+### 0.16 part A: engine presentation features
+
+Shared by every demo. Everything here is engine (core, backends or the shell), driven by skins and
+other text, so a new game gets it without code of its own.
+
+**Scope:**
+
+- **Sprite animation:** named states per kind (idle, run, jump, attack, hurt and so on) in the skin,
+  per-frame timing, looping or one-shot, and frame events (a footstep sound on frame 3) for the
+  backend.
+- **Tweening:** position, scale, rotation, alpha and colour, with the usual easing curves, for UI
+  and for effects on entities.
+- **Particles:** emitters declared in the skin (dust, sparks, smoke, hits, pickups, magic), started
+  by snapshot events.
+- **Camera effects:** shake, smooth follow, zoom, hit-pause (freeze frames) and screen flashes,
+  triggered by events in the skin.
+- **Screen transitions:** fade, wipe and iris between scenes and levels.
+- **A UI kit:** bitmap pixel fonts with upper and lower case, panels, buttons, menus, dialog boxes and
+  HUD widgets (bars, counters, icons, minimaps), usable by keyboard, gamepad, mouse and touch.
+- **Audio mixer:** music in layers (a calm and a danger layer, for example), sound effects with
+  random pitch and volume variation from a presentation-only RNG, and ducking (music lowered under
+  dialogue or a big hit). Builds on the 0.15 stored volumes.
+- **Title screen, pause menu and settings** for every game: start, continue, controls, volume, and
+  back to the title.
+- **Asset loading:** PNG sprite sheets and glTF/GLB models declared in text skins, with frames,
+  anchors and sizes in the skin. Existing text sprites and text meshes keep working.
+- **2D backend benchmark and feature test (item 320):** a test of Canvas2D against the features above
+  (many particles, layered parallax, tinting, additive blending, filters such as glow, at 60 fps on
+  the RTS and tower-defense maps). If Canvas2D cannot reach the bar, PixiJS (WebGL) replaces it as
+  the 2D backend behind the same presenter and skins. The result and the choice go in the build log.
+- **3D backend upgrade:** lighting (sun, ambient and point lights), shadows, fog, tone mapping and
+  HUD labels anchored to world positions (names, health bars, timers over buildings).
+
+**Done when:**
+
+- [ ] Each feature above is in the engine with tests, a module page entry and an example in a skin.
+- [ ] A test proves presentation does not change state: every existing run file, golden hash and
+      mutant check passes unchanged with the new effects on.
+- [ ] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
+      is made and recorded.
+- [ ] Every sample has a title screen, a pause menu and a settings screen.
+- [ ] `validate` checks PNG and glTF/GLB references in skins (file present, frames inside the image)
+      and that each game with an `assets/` folder has a `CREDITS.md` naming every pack.
+- [ ] Owner screenshot review: a sheet of the effects (particles, flashes, UI kit, 3D lighting and
+      shadows) is accepted.
+
+### 0.16 part B: the flagship platformer, Hopper's Way
+
+The platformer sample becomes the flagship demo: 2-3 short levels and a mini-boss, in 2D and in a
+2.5D view in the 3D backend.
+
+**References (quality bar only):** Celeste and Shovel Knight for feel and pixel quality; Donkey Kong
+Country Returns for the 2.5D view.
+
+**Assets (CC0):** Pixel Frog "Pixel Adventure 1" or Kenney Pixel Platformer for 2D; Kenney Platformer
+Kit for 2.5D.
+
+**Scope:**
+
+- Tight movement feel: coyote time, jump buffering, variable jump height, landing squash, dust and
+  run particles, with tuning as data. (Rule changes here move the platformer's golden hashes;
+  each is re-recorded with the repo's tools and listed.)
+- 2-3 short levels with parallax backgrounds, hazards, collectables and checkpoints, then a
+  mini-boss with telegraphed attacks, hit flashes, hit-pause and a defeat sequence.
+- Title screen, level select or map, pause, settings, death and respawn with a transition, and an
+  end screen.
+- The 2.5D view: lit low-poly models, shadows, depth of field or fog for the background layers,
+  the camera following the same point as in 2D.
+- Music in layers and sounds for every action.
+
+**Done when:**
+
+- [ ] All levels and the mini-boss play from start to end in 2D and in 2.5D, with run files for a
+      win and a loss that pass in CI.
+- [ ] Every existing platformer run file passes, or its hashes were re-recorded for a listed rule
+      change.
+- [ ] Owner playtest: the levels and the boss feel good to play with keyboard and gamepad.
+- [ ] Owner screenshot review of this part (2D and 2.5D, in play and in menus) is accepted before
+      parts C-F are considered done.
+
+### 0.16 part C: the top-down dungeon, The Old Crypt
+
+A short dungeon: 6-8 rooms, a key, an item that opens new paths, and a boss.
+
+**References (quality bar only):** Hyper Light Drifter and Eastward.
+
+**Assets (CC0):** 0x72 DungeonTileset II.
+
+**Scope:**
+
+- 6-8 rooms with lighting and mood (torches, dust, darkness at the edges), room transitions, a key
+  and a locked door, one item that changes how the player moves or fights, and a boss room.
+- Combat feel: attack animations, knockback, hit flashes, hit-pause, screen shake and particles.
+- Dialog boxes for a short intro and the end; a HUD with health, key and item.
+
+**Done when:**
+
+- [ ] The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
+      that pass in CI.
+- [ ] Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
+      change.
+- [ ] Owner playtest and screenshot review of the dungeon are accepted.
+
+### 0.16 part D: the RTS skirmish, The River Ford
+
+A 10-minute skirmish against an AI opponent.
+
+**References (quality bar only):** Northgard.
+
+**Assets (CC0):** Kenney Medieval RTS or Quaternius Ultimate Fantasy RTS.
+
+**Scope:**
+
+- One map for a 10-minute match against the AI: gather, build, train and attack, with a clear win
+  and loss.
+- Fog of war, a minimap, selection and order feedback (rings, markers, paths), unit barks (short
+  voice-like sounds or text on orders), and build and train progress shown in the world.
+- Readable at every zoom: unit outlines, team colours and health bars.
+
+**Done when:**
+
+- [ ] A full match plays from the title to a win or a loss in about 10 minutes, with run files for a
+      win and a loss that pass in CI.
+- [ ] Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
+      listed rule change needs it.
+- [ ] Owner playtest and screenshot review of the skirmish are accepted.
+
+### 0.16 part E: the tower defense, The Winding Road
+
+A tower-defense map with 10 waves.
+
+**References (quality bar only):** Kingdom Rush.
+
+**Assets (CC0):** Kenney Tower Defense.
+
+**Scope:**
+
+- One map with 10 waves, 3 tower types with upgrades, a star rating (1-3) at the end, and a
+  speed-up button.
+- Wave preview, tower range shown when placing, projectiles and impacts with particles, enemy
+  health bars, and a clear end screen with the stars.
+
+**Done when:**
+
+- [ ] All 10 waves play from the title to the star rating, with run files for a win, a loss and a
+      sped-up run that pass in CI (speed-up gives the same hashes as normal speed).
+- [ ] Every existing tower-defense run file passes, or its hashes were re-recorded for a listed rule
+      change.
+- [ ] Owner playtest and screenshot review of the map are accepted.
+
+### 0.16 part F: the mini siege in 3D low-poly
+
+The mini siege's overworld moves to the 3D backend in a low-poly style (item 319). The visual target
+is [the chosen mockup](reports/mockups/mini-siege-3d.png) (the 2D pixel mockup,
+[mini-siege-2d-rejected.png](reports/mockups/mini-siege-2d-rejected.png), was not chosen).
+
+**References (quality bar only):** Thronefall.
+
+**Assets (CC0):** Kenney Castle Kit and Nature Kit, Quaternius Medieval Village.
+
+**Scope:**
+
+- The siege map in 3D low-poly matching the mockup: lighting, shadows, fog, world-anchored labels
+  and health bars.
+- A mission briefing card, the Play or Delegate choice, and a results screen that shows what
+  changed in the world (losses, captives, buildings, the record).
+- The passage of time made visible: light and sky moving through the day, and the world clock on
+  screen.
+- The hosted rounds (top-down and tower defense) use parts C and E's presentation.
+
+**Done when:**
+
+- [ ] The campaign plays from the title through the siege and the dawn follow-up in 3D, and every
+      mini-siege run file passes, or its hashes were re-recorded for a listed rule change.
+- [ ] A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
+      log.
+- [ ] Owner playtest and screenshot review are accepted.
+
+**Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
+pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.
+
+**Out of scope:** new kits, new genres, more content than each part lists, and Worlds Within content.
+
+---
+
 ## Engine 1.0
 
 **Goal:** an engine we (or an LLM working for us) can make a new game with, using only its docs and
@@ -788,7 +1010,7 @@ samples.
 **Ships with (all required):**
 
 - **A sample game for every gameplay kit,** each with its own original assets: a platformer level, a
-  top-down dungeon, an RTS skirmish, and a tower-defense map.
+  top-down dungeon, an RTS skirmish, and a tower-defense map, all at the 0.16 quality bar.
 - **The mini siege,** the multi-genre sample: an RTS map that launches a top-down mission, which can be
   delegated or played, and gets structured results back through the world simulation, time and the
   mission contract.
@@ -936,7 +1158,7 @@ whose only difference is that hero's fate.
   the editor, or both on the same game. It builds on the 0.14 debugger.
 - **An MCP server.** A thin wrapper over the CLI, generated from the same schema. The CLI stays the
   real interface.
-- More backends: PixiJS (not adopted at 0.9: the T3 benchmark found Canvas2D fast enough), isometric.
+- More backends: isometric. (PixiJS was not adopted at 0.9; 0.16 part A decides it again, item 320.)
 - More kits and modes: a true 3D kit (Mario 64-like), a shmup, a rail shooter, a racer. Each new kit
   comes with its own sample game.
 - A public API with a stability promise to outside developers, a package format for third-party
@@ -965,7 +1187,7 @@ whose only difference is that hero's fate.
 | How delegated outcomes are weighted                                                                    | 0.10: decided (item 154): whole-number weights per outcome in the mission data, one draw with the world's seeded RNG; no weight 0 ([build log](BUILD-LOG.md#decisions-5))   |
 | Exact rules for flashback (retrospective) missions                                                     | 0.10: deferred until after Engine 1.0 (item 156)                                                                                                                            |
 | What the mini siege's top-down mission is                                                              | 0.11: decided (answer 23, item 182): sabotaging siege engines, with original content ([build log](BUILD-LOG.md#decisions-4))                                                |
-| Art style for the samples                                                                              | Decide later, by 0.15 (proposal: simple original pixel art written as text, like the test games)                                                                            |
+| Art style for the samples                                                                              | 0.15: decided (answer 22): pixel art as text; 0.16 raises it (items 316-322): modern pixel-art indie quality, CC0 packs allowed, the mini siege in 3D low-poly              |
 | Is the player a civilization, a hero, or both? (The engine's RTS hero unit is the 0.9 hero row above.) | WW 0.1 (proposal: a commander plus a few named heroes)                                                                                                                      |
 | Art direction: chiptune and NES-style pixels like SMBC, or something else                              | WW 0.1 (engine samples use their own simple art)                                                                                                                            |
 | Which third mode                                                                                       | WW 0.3                                                                                                                                                                      |

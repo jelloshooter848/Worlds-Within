@@ -5,7 +5,8 @@
   `games/samples/`) before Worlds Within starts. The two have separate version lines, tagged
   with full three-part versions: `engine-vX.Y.Z` and `ww-vX.Y.Z` (first tag of a release is `.0`; `.1`,
   `.2` and on are bug-fix-only patches). Two-part and plain `v*` tags are never used.
-- **The repo is LLM-first.** Content is text, every run is repeatable from a seed, and tools let an
+- **The repo is LLM-first.** Content is text (except third-party CC0 art and sound packs, kept as
+  binary files in a game's `assets/` folder with a `CREDITS.md`; see `docs/DESIGN.md`), every run is repeatable from a seed, and tools let an
   agent check its own work. Every new module (engine part, kit or game) gets agent docs: its own
   `CLAUDE.md` and a page linked from `llms.txt` (from Engine 0.3).
 - **Agent docs layout.** `llms.txt` at the root links one page per module in `docs/modules/`

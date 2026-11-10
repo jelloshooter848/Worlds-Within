@@ -4,27 +4,34 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 316.** (Last used: 315.)
+**Next unused number: 323.** (Last used: 322.)
 
-| #   | Item                                                  | Answer                                                                          |
-| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 8   | Mini siege at Engine 0.11                             | Accepted                                                                        |
-| 9   | 0.15 sample set release                               | Accepted                                                                        |
-| 10  | Tower defense split                                   | Accepted                                                                        |
-| 11  | Civilization/hero split; RTS hero unit decided at 0.9 | Accepted                                                                        |
-| 12  | Mini siege mission                                    | Answered by 23                                                                  |
-| 13  | All four kit samples required for 1.0                 | Yes                                                                             |
-| 14  | Stacking-test game and demo grow into samples         | Yes                                                                             |
-| 15  | Samples' art style                                    | Answered by 22                                                                  |
-| 16  | Engine 1.0 API public or internal                     | Internal                                                                        |
-| 17  | Approve roadmap and merge to master                   | Owner still revising                                                            |
-| 18  | Add numbering rule to CLAUDE.md                       | Yes (done)                                                                      |
-| 19  | Tower-defense prep phase in the mini siege at 0.12    | Accepted                                                                        |
-| 20  | Tag names and PixiJS timing                           | Accepted; tags are always three-part, e.g. engine-v0.5.0, so patch releases fit |
-| 21  | Branch for the autonomous build                       | One build branch, engine/build-0.15; nothing merged to master                   |
-| 22  | Art, music and 3D style                               | NES-style pixel art as text, MML chiptune, procedural low-poly meshes           |
-| 23  | Mini siege mission (answers 12)                       | Sabotaging siege engines                                                        |
-| 24  | Publishing during the build                           | No publishing and no tags during the build                                      |
+| #   | Item                                                  | Answer                                                                                                                                            |
+| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 8   | Mini siege at Engine 0.11                             | Accepted                                                                                                                                          |
+| 9   | 0.15 sample set release                               | Accepted                                                                                                                                          |
+| 10  | Tower defense split                                   | Accepted                                                                                                                                          |
+| 11  | Civilization/hero split; RTS hero unit decided at 0.9 | Accepted                                                                                                                                          |
+| 12  | Mini siege mission                                    | Answered by 23                                                                                                                                    |
+| 13  | All four kit samples required for 1.0                 | Yes                                                                                                                                               |
+| 14  | Stacking-test game and demo grow into samples         | Yes                                                                                                                                               |
+| 15  | Samples' art style                                    | Answered by 22                                                                                                                                    |
+| 16  | Engine 1.0 API public or internal                     | Internal                                                                                                                                          |
+| 17  | Approve roadmap and merge to master                   | Owner still revising                                                                                                                              |
+| 18  | Add numbering rule to CLAUDE.md                       | Yes (done)                                                                                                                                        |
+| 19  | Tower-defense prep phase in the mini siege at 0.12    | Accepted                                                                                                                                          |
+| 20  | Tag names and PixiJS timing                           | Accepted; tags are always three-part, e.g. engine-v0.5.0, so patch releases fit                                                                   |
+| 21  | Branch for the autonomous build                       | One build branch, engine/build-0.15; nothing merged to master                                                                                     |
+| 22  | Art, music and 3D style                               | NES-style pixel art as text, MML chiptune, procedural low-poly meshes                                                                             |
+| 23  | Mini siege mission (answers 12)                       | Sabotaging siege engines                                                                                                                          |
+| 24  | Publishing during the build                           | No publishing and no tags during the build                                                                                                        |
+| 316 | Samples' quality bar                                  | (b) Modern pixel-art indie quality: should feel like a game acceptable on the modern market, without the breadth; they are demos                  |
+| 317 | A release for presentation before 1.0                 | (a) Add Engine 0.16 "Presentation and feel"; the owner's playtest is its Done when                                                                |
+| 318 | 0.16 demo list and quality references                 | Yes, approved                                                                                                                                     |
+| 319 | Mini siege overworld style                            | 3D low-poly (target: docs/reports/mockups/mini-siege-3d.png; the 2D mockup was rejected)                                                          |
+| 320 | Replace Canvas2D with PixiJS for 2D                   | OK, if a benchmark and feature test show Canvas2D can't reach the bar                                                                             |
+| 321 | Where assets come from                                | Free game assets from online                                                                                                                      |
+| 322 | Third-party assets as binary files                    | (a) CC0 packs as binary files (PNG, glTF/GLB, OGG/WAV) in each game's assets/ with a CREDITS.md; the rest stays text; our MML music stays primary |
 
 Items 1–7 came from an earlier review list (decisions such as the stacking-test scope, the split base
 layer, the PixiJS timing and the sim location). All were accepted except item 4, which was a question
