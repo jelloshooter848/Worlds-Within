@@ -15,7 +15,10 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     (`left`, `up-left`, `down-left`).
   - `map` is either the full `PresentMap` `{ id, version, tileSize, cols, rows, tiles, layers?, tags? }`
     (`tiles` as text rows or a grid of tile ids; `tags?` free labels such as `dark`) or only a `PresentMapRef` `{ id, version }`.
-    `isFullMap(map)` tells them apart. Bump `version` whenever any tile changes.
+    `isFullMap(map)` tells them apart. Bump `version` whenever any tile changes. From Engine 0.16
+    part C T4 a full map may list `parts` (`PresentMapPart` `{ id, col, row, cols, rows, tags? }`,
+    in tiles): the maps it is made of, each at its place (the top-down kit's room slide lists its
+    two rooms), so a skin's per-map looks (lighting's placed lights and darkness) follow each part.
   - `PresentEvent` `{ type, x?, y?, entity?, ...any JSON-safe fields }`: this frame's events, for
     a skin's sounds and effects.
   - `status`: HUD values, `Record<string, number | string | boolean>`.
@@ -208,6 +211,15 @@ attack?, hold?, release? }`, and a top-level `music` section of layered songs (`
     `missing_ref` for its `sheet`, `missing_field` at `parallax.<i>.sheet` when there is neither a
     `sheet` nor `sheets.sheet`), on both backends (3D cuts it from the decoded sheets). The old
     `effect` kinds `flash` and `shake` keep working as before (the shake scale applies to them).
+  - Lighting (Engine 0.16 part C T4, `engine/core/fx`'s `lightingSchema`): a 2D skin's top-level
+    `lighting` (darkness per map tag or id, lights per kind and state, tile, fixed place and event,
+    flicker, a vignette, banded falloff and room-wide `particles`; format in `fx/CLAUDE.md`). It is
+    a 2D field (`wrong_backend_field` on a 3D skin). Checked in the schema: its `kinds` and `tiles`
+    keys must be the skin's (`missing_ref` at `lighting.kinds.<kind>`), its `events` keys read like
+    `events`' (`bad_event_key`), its particles' `emit` must name emitters (`missing_ref` at
+    `lighting.particles.<i>.emit`); and across files a placed light's `sprite` frames against its
+    sheet (`missing_frame`, `missing_ref`, `missing_field` at `lighting.maps.<id>.lights.<i>.sprite`
+    without a sheet). Tested in `fx/lighting.test.ts`.
   - Per-map looks (Engine 0.16 part B, T7): a skin-level `themes` map, map id -> `{ background?,
 parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives each level its
     own sky, background layers and ground. `themedSkin(skin, mapId)` (pure) lays the map's entry

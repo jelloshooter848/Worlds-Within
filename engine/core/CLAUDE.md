@@ -533,7 +533,10 @@ drive `RtsCamera` (`present/rts-camera.ts`).
 `gfx/renderer.ts` is the drawing interface: the `Renderer` interface, `Rotation`, and the
 helpers `transformed`, `translucent`, `clipped` and `OffsetRenderer`; from Engine 0.16 T3 the
 optional `blend(mode, draw)` (`BlendMode`: `normal` | `add`) and `glow(color, radius, draw)` with
-their helpers `blended` and `glowing` (a renderer without them draws plainly). Backends implement it; core
+their helpers `blended` and `glowing` (a renderer without them draws plainly); from Engine 0.16
+part C T4 the optional `gradient(fill)` (`RadialFill` `{ x, y, radius, color, stops, mode: normal
+| add | erase, box? }`, `RadialMode`) and its helper `radialFilled` (a renderer without it draws
+nothing), what a 2D skin's lighting is drawn with. Backends implement it; core
 never knows which one is drawing.
 
 ## Imports

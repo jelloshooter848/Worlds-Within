@@ -220,6 +220,25 @@ export function presentMap(world: TopDownWorld): TdPresentedMap {
     rows: across ? ROOM_ROWS : ROOM_ROWS * 2,
     tiles,
     tags,
+    // Each room's place in the slide map, for a skin's per-room looks (Engine 0.16 part C T4).
+    parts: [
+      {
+        id: tr.from.id,
+        col: fromAt.x / TILE,
+        row: fromAt.y / TILE,
+        cols: ROOM_COLS,
+        rows: ROOM_ROWS,
+        tags: roomTags(tr.from),
+      },
+      {
+        id: room.id,
+        col: origin.x / TILE,
+        row: origin.y / TILE,
+        cols: ROOM_COLS,
+        rows: ROOM_ROWS,
+        tags: roomTags(room),
+      },
+    ],
   };
   return { map, origin, view: { x: fromAt.x + v.dx * shift, y: fromAt.y + v.dy * shift } };
 }

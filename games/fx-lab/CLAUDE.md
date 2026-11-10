@@ -175,6 +175,17 @@ open? })`, the `lab` screen with the menu focused, or with `open: 'dialog'` the 
   (`?ui=dialog`, `hasTouch`), taps that skip, turn pages and take a choice; it shoots the menu,
   the dialog and the choice (`fx-lab-ui-*.png`, kept with `WW_SHOTS_DIR`).
 
+## Lighting (Engine 0.16 part C T4)
+
+The 2D skin's `lighting` block is the engine's worked example of 2D lighting
+(`engine/core/fx/CLAUDE.md`): `fx-3` ("torchlight") is a night level (`maps.fx-3`, darkness 0.82
+in `#0c0a24`) lit by each torch (`kinds.torch`: radius 72 from the flame, `#f8b800`, flickering
+14% every 5 frames), Pip's small cyan light (`kinds.runner`), the door's and the coins' glow, a
+flash of light on `stomp` and `coin` (`events`), a vignette on every level and drifting embers
+(`night-embers`, `particles` on `fx-3` only). Screenshot: `pnpm -s cli screenshot
+games/fx-lab/runs/level-3.run.json --tick 40 --scale 3`. The 3D skin lights with its own
+`scene3d`.
+
 ## Making the art
 
 The pixel art was drawn with a small generator (rows composed from shared head, body and leg

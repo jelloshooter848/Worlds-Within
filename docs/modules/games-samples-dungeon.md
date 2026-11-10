@@ -11,7 +11,10 @@ the relic and the exit), with two end states (escaped through the exit, or falle
 checked by schemas: rooms, two MML songs, thirteen sound effects and a Canvas2D skin that draws it
 at 16:9 (320x180, 6x is 1920x1080) on 0x72's CC0 DungeonTileset II (Engine 0.16 part C T3: the
 pack's PNG plus two text sheets cut from it, walls and doors joined by neighbours, varied floors,
-an animated knight, monsters with white hit flashes, particles, a framed HUD and restyled menus).
+an animated knight, monsters with white hit flashes, particles, a framed HUD and restyled menus;
+from T4 lighting and mood: dark rooms with brazier pools, the hero's small light, the bat hall and
+crypt darker, blasts lighting the room, a vignette and dust in the air, all in the skin's
+`lighting` block).
 A thin scene runs the kit's world, hands the kit's presentation frames to the page display's
 presenter (or its own `SkinnedCanvasPresenter`), shows the end banner and starts a new run on Z
 or X. Its `CLAUDE.md` is a worked example of

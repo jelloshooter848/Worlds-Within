@@ -273,6 +273,35 @@ skin tuned from them.
 - **Menus**: restyled in the pack's colours with the stone panel; the title shows the knight and
   the orc.
 
+## Lighting and mood (Engine 0.16 part C T4; feedback items 434-436)
+
+The skin's `lighting` block (the engine's 2D lighting, `engine/core/fx/CLAUDE.md`), drawn by the
+Canvas2D presenter after the entities and before the HUD. Presentation only: the bat hall and the
+crypt gained the kit's free `dark` flag (it only tags the map), and no run file's hashes moved.
+
+- **Darkness:** every room `ambient` 0.55 (`#0b0710`), the courtyard 0.5 (`maps.courtyard`), and
+  the rooms tagged `dark` (the bat hall and the crypt) 0.86 (`tags.dark`, `#05030a`). During a
+  slide the darkness blends between the two rooms as the view moves (the kit's slide map lists its
+  rooms as `parts`).
+- **Torches:** the rooms have no torches in their text, so each room's `maps.<room>.lights` places
+  braziers on the top wall (the original `torch-lit-0..3` cycle, 6 frames each, drawn under the
+  darkness and before the entities; the light at the bowl, radius 84, warm `#f6a845`, flickering
+  12% every 5 frames): two in the courtyard, the guard room, the store room and the crypt, one in
+  the bat hall (top right, clear of the HUD panels). The store room's cold torches (`torch`
+  `off`) give no light; a lit one (`lit`) would (`kinds.torch`).
+- **The hero's small light** (radius 46, `#ffd9a0`, 0.8), a fuse's spark on a bomb (stronger on
+  `fuse-short`), the blast (`explosion`, radius 84) and a flash of light on the `blast` event
+  (radius 140, 26 frames, lighting the whole room), a red flash on `hurt`, faint lights on sword
+  beams, rocks, the key and the relic, and daylight from the crypt's exit tiles (`tiles.E`).
+- **Mood:** the falloff in 6 flat bands (`bands`, pixel-art rings), a vignette (0.5 from half
+  way), `dust-motes` hanging in every room and `crypt-embers` (additive) rising in the crypt
+  (`particles`, prewarmed so a room's air is full as it shows).
+- How it was tuned: screenshots at 3x of the courtyard, the store room, the blast, the slide into
+  the bat hall, the bat hall with the key, the guard-room fight and the crypt
+  (`pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 600 --scale 3`), read
+  and adjusted (braziers moved clear of the HUD panels, the default darkness eased to keep the
+  guard-room fight readable).
+
 ## Imports
 
 - Allowed: relative paths inside `games/samples/dungeon`, `@engine/*` (core and backends) and `@kits/*`.

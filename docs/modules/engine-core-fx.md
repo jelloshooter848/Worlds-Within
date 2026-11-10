@@ -46,6 +46,14 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   a pixel), `irisCentre`, `wipeTravel`, `wipeAlpha`, `TransitionPlayer`. The shell runs them
   (`engine/core/shell/transitions.ts`).
 
+- Lighting (Engine 0.16 part C T4, `lighting.ts`): `lightingSchema` (a 2D skin's `lighting`),
+  `SkinLighting` (`event`, `layout({ frame, entities, map, view, size, reduceFlashing? })` ->
+  `LightingLayout` `{ darkness, lights, vignette, bands }` in picture px, `props(map, frame)` the
+  placed lights' sprites), `lightStops(intensity, bands)` (the falloff a backend draws),
+  `flickerNoise(seed, key, frame, rate)` and `flickered` (deterministic flicker from `fxRng`),
+  `ambientFor`, `blendedDarkness`, `mapParts`; room-wide particles through `SkinParticles.update(frame,
+entities, map)` (`AMBIENT_PREWARM`).
+
 In skins (`engine/core/present`): an event entry's `tween` (on the event's `entity`) and a kind
 entry's `spawnTween` (on an entity the first frame it is shown), drawn by the Canvas2D
 `SkinnedCanvasPresenter` on top of the frame's `fx`:
@@ -71,6 +79,20 @@ Camera effects ride on event entries, and parallax layers sit at the skin's top 
     "parallax": [ { "gradient": ["#3058e8", "#3cbcfc", "#a4e4fc"], "bands": 12, "factor": 0 },
                   { "frame": "hills", "sheet": "fx-sky", "factor": { "x": 0.5, "y": 0.1 }, "y": 172, "depth": 300 } ]
 
+Lighting is one top-level block of a 2D skin (the dungeon's, shortened):
+
+    "lighting": { "ambient": { "color": "#0b0710", "level": 0.55 },
+      "tags": { "dark": { "color": "#05030a", "level": 0.86 } },
+      "maps": { "crypt": { "lights": [ { "x": 72, "y": 12, "radius": 84, "color": "#f6a845",
+        "flicker": { "amount": 0.12, "rate": 5 },
+        "sprite": { "sheet": "crypt-art", "frames": ["torch-lit-0", "torch-lit-1"], "ticks": 6, "x": 64, "y": -2 } } ] } },
+      "kinds": { "hero": { "radius": 46, "color": "#ffd9a0", "intensity": 0.8 },
+                 "torch": { "radius": 64, "states": ["lit"], "anchor": "top" } },
+      "tiles": { "E": { "radius": 60, "color": "#dfeeff" } },
+      "events": { "blast": { "radius": 140, "color": "#fff1c4", "glow": 0.6, "ticks": 26 } },
+      "vignette": { "strength": 0.5, "inner": 0.5 }, "bands": 6,
+      "particles": [ { "emit": "dust-motes" }, { "emit": "crypt-embers", "maps": ["crypt"] } ] }
+
 ## Imports allowed
 
 `zod` and pure core files (`../rng`, `../present/skin` and `../present/types`). On `PURE_CORE`. Kits and `engine/sim` may not import it
@@ -81,7 +103,8 @@ Camera effects ride on event entries, and parallax layers sit at the skin's top 
 `pnpm test engine/core/fx` (RNG determinism and stream independence, every curve's endpoints,
 each property's interpolation including colour, the schema; particles: determinism by seed and
 frame, the count caps, emitters following entities, keyframe interpolation; camera effects: shake
-decay and determinism, zoom and flash values, hit-pause counting; parallax layouts); the skin and presenter hooks in
+decay and determinism, zoom and flash values, hit-pause counting; parallax layouts; lighting: falloff stops, flicker determinism, darkness by
+map and tag and over a slide's parts, light layouts, flashes, the vignette, room-wide particles); the skin and presenter hooks in
 `engine/core/present/skin.test.ts` and `engine/backends/canvas2d/presenter.test.ts`; the
 invariance proof in `tests/runs/presentation-invariance.test.ts` and, through the shell's own
 loop with every effect on, `tests/runs/stepped-shell-invariance.test.ts` (Engine 0.16 T14).

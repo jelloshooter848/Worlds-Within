@@ -1263,3 +1263,138 @@ describe('neighbour-based tile frames and per-cycle sheets (Engine 0.16 part B, 
     ]);
   });
 });
+
+describe('lighting (Engine 0.16 part C T4)', () => {
+  /** The recorder plus `gradient` (one line per fill) and `alpha` and `blend` scopes. */
+  function lit() {
+    const { r, calls } = recorder();
+    r.gradient = (g) =>
+      calls.push(
+        `gradient ${g.mode} ${g.x},${g.y} r${g.radius} ${g.color} ${g.stops.map((s) => `${s.at}:${s.alpha.toFixed(2)}`).join(' ')}${g.box ? ` box ${g.box.x},${g.box.y} ${g.box.w}x${g.box.h}` : ''}`,
+      );
+    r.alpha = (a, draw) => {
+      calls.push(`<alpha ${a}>`);
+      draw();
+      calls.push('</alpha>');
+    };
+    return { r, calls };
+  }
+
+  const skin: SkinFile = {
+    ...SKIN,
+    kinds: { ...SKIN.kinds, torch: { frames: { idle: 'down-0', lit: 'down-0' } } },
+    lighting: {
+      ambient: { color: '#000010', level: 0.8 },
+      kinds: { torch: { radius: 10, states: ['lit'], intensity: 1, glow: 0.5, color: '#ff8800' } },
+      maps: {
+        room: {
+          lights: [
+            { x: 40, y: 8, radius: 8, glow: 0, sprite: { sheet: 'walls', frames: ['wall'], x: 32, y: 0 } },
+          ],
+        },
+      },
+      events: { boom: { radius: 20, ticks: 4, glow: 0 } },
+      vignette: { strength: 0.5, inner: 0.5 },
+    },
+  };
+  const torch = (state: string) =>
+    hero({ id: 'torch', kind: 'torch', x: 0, y: 16, w: 8, h: 8, anim: { state, t: 0 } });
+
+  function setupLit(opts: { reduceFlashing?: boolean } = {}) {
+    const screen = lit();
+    const light = lit();
+    let made = 0;
+    const p = new SkinnedCanvasPresenter(screen.r, skin, lookup, {
+      mapSurface: () => null,
+      lightSurface: () => {
+        made++;
+        return { renderer: light.r, image: null };
+      },
+      ...opts,
+    });
+    return { p, screen: screen.calls, light: light.calls, made: () => made };
+  }
+
+  it('draws the light map after the entities and before the HUD: darkness with each light erased', () => {
+    const { p, screen, light } = setupLit();
+    p.present(freezeFrame(frame({ entities: [hero(), torch('lit')], status: { score: 1 } })));
+    // The light map: cleared to the darkness, then a soft hole per light.
+    expect(light[0]).toBe('clear #000010');
+    const holes = light.filter((c) => c.startsWith('gradient erase'));
+    expect(holes).toHaveLength(2);
+    expect(holes[0]).toMatch(/^gradient erase 40,8 r8 #000000 0:1\.00 /);
+    expect(holes[1]).toMatch(/^gradient erase 4,20 r10 /);
+    // On the picture: laid over at the darkness level, after the entities, before the HUD's text.
+    const map = screen.indexOf('<alpha 0.8>');
+    expect(screen[map + 1]).toBe('sprite light-map:light 0,0');
+    expect(map).toBeGreaterThan(screen.findIndex((c) => c.startsWith('sprite hero:')));
+    expect(map).toBeLessThan(screen.findIndex((c) => c.startsWith('text ')));
+    // Then the torch's glow (added), then the vignette over the whole picture.
+    const glow = screen.findIndex((c) => c.startsWith('gradient add 4,20 r10 #ff8800 0:0.50'));
+    expect(glow).toBeGreaterThan(map);
+    const vignette = screen.findIndex((c) => c.startsWith('gradient normal 24,16'));
+    expect(screen[vignette]).toMatch(/0:0\.00 0\.5:0\.00 1:0\.50 box 0,0 48x32$/);
+    expect(vignette).toBeGreaterThan(glow);
+  });
+
+  it('lights a kind only in its states, and draws a placed light sprite under the entities', () => {
+    const { p, screen, light } = setupLit();
+    p.present(freezeFrame(frame({ entities: [hero(), torch('off')] })));
+    expect(light.filter((c) => c.startsWith('gradient erase'))).toHaveLength(1);
+    const prop = screen.indexOf('sprite walls:wall 32,0');
+    expect(prop).toBeGreaterThan(-1);
+    expect(prop).toBeLessThan(screen.findIndex((c) => c.startsWith('sprite hero:')));
+  });
+
+  it("flashes an event's light that fades over its ticks; reduced flashing halves it", () => {
+    const run = (reduceFlashing: boolean) => {
+      const { p, light } = setupLit({ reduceFlashing });
+      const out: string[] = [];
+      for (let f = 0; f < 6; f++) {
+        light.length = 0;
+        p.present(freezeFrame(frame({ frame: f, events: f === 0 ? [{ type: 'boom', x: 10, y: 10 }] : [] })));
+        out.push(light.find((c) => c.startsWith('gradient erase 10,10')) ?? 'none');
+      }
+      return out;
+    };
+    const full = run(false);
+    expect(full[0]).toContain(' 0:1.00 ');
+    expect(full[2]).toContain(' 0:0.50 ');
+    expect(full.slice(4)).toEqual(['none', 'none']);
+    expect(run(true)[0]).toContain(' 0:0.50 ');
+  });
+
+  it('makes the light map once, again on a resize; without one, darkness is a flat box', () => {
+    const { p, made } = setupLit();
+    p.present(freezeFrame(frame()));
+    p.present(freezeFrame(frame({ frame: 1 })));
+    expect(made()).toBe(1);
+    p.resize({ width: 64, height: 32 });
+    p.present(freezeFrame(frame({ frame: 2 })));
+    expect(made()).toBe(2);
+    const { r, calls } = lit();
+    new SkinnedCanvasPresenter(r, skin, lookup, { mapSurface: () => null, lightSurface: () => null }).present(
+      freezeFrame(frame()),
+    );
+    const at = calls.indexOf('<alpha 0.8>');
+    expect(calls[at + 1]).toBe('rect 0,0 48x32 #000010');
+  });
+
+  it('draws nothing for a skin without lighting, and the same calls for the same seed', () => {
+    const { r, calls } = lit();
+    new SkinnedCanvasPresenter(r, SKIN, lookup, { mapSurface: () => null }).present(freezeFrame(frame()));
+    expect(calls.some((c) => c.startsWith('gradient'))).toBe(false);
+    const flick: SkinFile = {
+      ...skin,
+      lighting: { kinds: { hero: { radius: 12, flicker: { amount: 0.3, rate: 2 } } } },
+    };
+    const play = (seed: number) => {
+      const a = lit();
+      const p = new SkinnedCanvasPresenter(a.r, flick, lookup, { mapSurface: () => null, seed });
+      for (let f = 0; f < 5; f++) p.present(freezeFrame(frame({ frame: f, entities: [hero()] })));
+      return a.calls.filter((c) => c.startsWith('gradient'));
+    };
+    expect(play(3)).toEqual(play(3));
+    expect(play(3)).not.toEqual(play(4));
+  });
+});

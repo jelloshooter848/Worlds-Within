@@ -38,7 +38,12 @@ for and holds no game rules.
   `showHud(shown)` (Engine 0.16 part C T1: no HUD while the shell's title shows; the display and
   the skin set forward it), a map layer's anchored frames placed on their cell (decoration props),
   `onHitPause(ticks)` for an event's `hitPause`, and the skin's `parallax` layers drawn behind the
-  map with the core `layoutParallax`; from Engine 0.16 T5 `focus()`, the camera's target on the
+  map with the core `layoutParallax`; from Engine 0.16 part C T4 the skin's `lighting` (a
+  `SkinLighting` from `@engine/core/fx`: placed lights' sprites over the map, then after the
+  particles a picture-sized light map, option `lightSurface`, filled with the darkness and each
+  light erased out of it as a radial gradient, laid over at the darkness level, the lights' glows
+  added and the vignette, all before effects and the HUD; `Renderer.gradient`, implemented by
+  `CanvasRenderer`); from Engine 0.16 T5 `focus()`, the camera's target on the
   picture, where an iris transition closes), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
@@ -78,5 +83,9 @@ for and holds no game rules.
 `Viewport` needs a real DOM and is checked by running a game (`pnpm dev`); `display.test.ts`
 checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCamera`'s
 `worldToScreen` / `screenToWorld` agree with this presenter's drawing at zoom 0.5, 1 and 2.
+`presenter.test.ts`'s `lighting` block (Engine 0.16 part C T4) checks the light map's holes, its
+order after the entities and before the HUD, glows and the vignette, states, placed sprites, event
+flashes fading and with reduced flashing, the surface made once and on a resize, the flat box
+without one and the same calls per seed.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for each kind on a recording
 context; `tests/browser/fx-lab.test.ts` shoots an iris, a wipe and a fade mid-transition.

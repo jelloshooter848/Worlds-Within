@@ -59,6 +59,11 @@ games/fx-lab/tools/brazier-model.ts`; own work, CC0, credited), shown for the `t
   and glTF brazier, 3D lighting, shadows, fog and labels); the command is in
   `docs/BUILD-LOG.md` (Engine 0.16 part A).
 
+Lighting (Engine 0.16 part C T4): the 2D skin's `lighting` makes `fx-3` ("torchlight") a night
+level (`maps.fx-3`, darkness 0.82 in deep blue) lit by each torch (radius 72, flickering), Pip's
+small cyan light, the door and the coins, with a flash of light on `stomp` and `coin`, a vignette
+on every level and drifting embers (`night-embers`, `particles` on `fx-3` only).
+
 ## Imports allowed
 
 - Relative paths inside `games/fx-lab`, `@engine/*` (core and backends) and `@kits/platformer`.

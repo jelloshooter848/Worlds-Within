@@ -4,12 +4,14 @@ import type { FieldPath } from '../content/validate';
 import {
   emitterSchema,
   flashSpecSchema,
+  lightingSchema,
   hitPauseSpecSchema,
   parallaxLayerSchema,
   shakeSpecSchema,
   tweensSchema,
   zoomSpecSchema,
   type EmitterDef,
+  type LightingSpec,
 } from '../fx/schema';
 import { EASE_NAMES, isEaseName } from '../fx/ease';
 import { imageSheetFrames, imageSheetSchema } from '../gfx/image-sheet';
@@ -1101,6 +1103,69 @@ function checkEmitRefs(
   for (const [kind, entry] of Object.entries(skin.kinds)) check(['kinds', kind], entry.emit);
 }
 
+/**
+ * A skin's `lighting` (Engine 0.16 part C T4): a 2D field (`wrong_backend_field` on a 3D skin);
+ * its kinds and tiles must be the skin's (`missing_ref`), its event keys read like `events`' keys
+ * (`bad_event_key`) and its particles' `emit` must name emitters of the skin (`missing_ref`).
+ */
+function checkLighting(
+  skin: {
+    backend: string;
+    kinds: Record<string, unknown>;
+    tiles?: Record<string, unknown>;
+    emitters?: Record<string, unknown>;
+    lighting?: LightingSpec;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  const lighting = skin.lighting;
+  if (lighting === undefined) return;
+  if (MESH_BACKENDS.includes(skin.backend)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['lighting'],
+      message: `"lighting" is a 2D field; backend "${skin.backend}" lights with \`scene3d\` and kinds' \`light\``,
+      params: { code: 'wrong_backend_field' },
+    });
+    return;
+  }
+  const missing = (path: (string | number)[], what: string, name: string, known: Record<string, unknown>) => {
+    const names = Object.keys(known);
+    ctx.addIssue({
+      code: 'custom',
+      path,
+      message: `no ${what} "${name}" in this skin${names.length ? ` (${names.slice(0, 20).join(', ')})` : ''}`,
+      params: { code: 'missing_ref' },
+    });
+  };
+  for (const kind of Object.keys(lighting.kinds ?? {}))
+    if (!Object.hasOwn(skin.kinds, kind)) missing(['lighting', 'kinds', kind], 'kind', kind, skin.kinds);
+  const tiles = skin.tiles ?? {};
+  for (const tile of Object.keys(lighting.tiles ?? {}))
+    if (!Object.hasOwn(tiles, tile)) missing(['lighting', 'tiles', tile], 'tile', tile, tiles);
+  for (const key of Object.keys(lighting.events ?? {})) {
+    if (parseEventKey(key) !== null) continue;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['lighting', 'events', key],
+      message: `"${key}" is not an event key: use "type", "type:value" or "type:field=value"`,
+      params: { code: 'bad_event_key' },
+    });
+  }
+  const emitters = skin.emitters ?? {};
+  (lighting.particles ?? []).forEach((p, i) => {
+    const list = typeof p.emit === 'string' ? [p.emit] : p.emit;
+    list.forEach((name, j) => {
+      if (Object.hasOwn(emitters, name)) return;
+      const at =
+        typeof p.emit === 'string'
+          ? ['lighting', 'particles', i, 'emit']
+          : ['lighting', 'particles', i, 'emit', j];
+      missing(at, 'emitter', name, emitters);
+    });
+  });
+}
+
 function isPrimitive(name: string): name is MeshPrimitive {
   return (MESH_PRIMITIVES as readonly string[]).includes(name);
 }
@@ -1186,6 +1251,11 @@ export const skinSchema = z
       .describe(
         'background layers behind the map, back to front (Engine 0.16): `{ frame | gradient, factor, repeat?, x?, y?, sheet?, bands?, height?, depth? }`',
       ),
+    lighting: lightingSchema
+      .exactOptional()
+      .describe(
+        '2D lighting and mood (Engine 0.16 part C): `{ ambient?, tags?, maps?: { id: { ambient?, lights? } }, kinds?, tiles?, events?, vignette?, bands?, particles? }`: darkness per map tag or id, lights per kind and state, tile, place and event (radius, colour, intensity, glow, flicker), a vignette and room-wide particles',
+      ),
     themes: z
       .record(id, themeSchema)
       .exactOptional()
@@ -1206,6 +1276,7 @@ export const skinSchema = z
     }
     checkMusicLayers(skin.music, ctx);
     checkEmitRefs(skin, ctx);
+    checkLighting(skin, ctx);
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, ['kinds'], ['sheet', 'frames', 'fallbackColor'], ctx);
     checkShapes(
@@ -1420,6 +1491,27 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     parallaxRefs(['themes', map, 'parallax'], theme.parallax);
     tileRefs(['themes', map, 'tiles'], theme.tiles);
   }
+  // A placed light's sprite (Engine 0.16 part C T4) is checked like any frame.
+  for (const [map, entry] of Object.entries(skin.lighting?.maps ?? {}))
+    (entry.lights ?? []).forEach((light, i) => {
+      const sprite = light.sprite;
+      if (sprite === undefined) return;
+      const at: FieldPath = ['lighting', 'maps', map, 'lights', i, 'sprite'];
+      if (sprite.sheet === undefined && skin.sheets?.sheet === undefined) {
+        issues.push({
+          name,
+          path: [...at, 'sheet'],
+          code: 'missing_field',
+          message: 'a light sprite needs "sheet" (or sheets.sheet)',
+        });
+        return;
+      }
+      sheetAt(
+        at,
+        sprite.sheet,
+        sprite.frames.map((frame, j) => ({ frame, path: ['frames', j] })),
+      );
+    });
   if (!MESH_BACKENDS.includes(skin.backend)) {
     for (const [emitter, def] of Object.entries(skin.emitters ?? {})) {
       if (def.frame !== undefined) sheetAt(['emitters', emitter], def.sheet, one(def.frame));

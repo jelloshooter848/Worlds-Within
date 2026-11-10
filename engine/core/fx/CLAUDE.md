@@ -124,6 +124,46 @@ x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin i
   picture). `transitionAlphaAt(shape, x, y, screen)` is the cover at a pixel's centre, the one
   definition both backends draw. `TransitionPlayer` (`start(spec, covered?)`, `step()`, `view`,
   `running`, `closing`) runs one; the shell's `ShellTransitions` uses it.
+- `schema.ts` (Engine 0.16 part C T4) also holds `lightingSchema` (`LightingSpec`), a 2D skin's
+  `lighting` block, and its parts (`ambientSchema`, `entityLightSchema`, `eventLightSchema`,
+  `placedLightSchema`, `lightSpriteSchema`, `lightFlickerSchema`, `vignetteSchema`,
+  `ambientParticlesSchema`, `LIGHT_DEFAULTS`, `LIGHT_MAX_BANDS`): `{ ambient?, tags?, maps?, kinds?,
+tiles?, events?, vignette?, bands?, particles? }`. An ambient is `{ color? (default #000000),
+level 0-1 }`, the darkness where no light reaches. A light is `{ radius (world px), color?
+(#ffffff), intensity? (0-1, how much darkness it clears at its centre, default 1), glow? (0-1,
+how strongly its colour is added, default 0.2), flicker?: { amount 0-1, rate? (frames between
+values, default 6) } }`; a kind's (`kinds.<kind>`, one or a list) adds `states?` (only in those
+  `anim.state`s), `anchor?` (`centre`, `feet`, `top`) and `offset?`; a tile's (`tiles.<key>`, at
+  each such tile's centre) `offset?`; an event's (`events.<key>`, keys read like the skin's
+  `events`) `ticks` (it fades from full to nothing) and `offset?`; a placed one
+  (`maps.<id>.lights`) `x`/`y` (world px in that map) and `sprite?` `{ frames, ticks? (8), sheet?,
+x, y }` (an animated frame drawn under the darkness before the entities: a wall torch the map has
+  no tile for). `maps.<id>.ambient` beats the first `tags` key (file order) the map has, which
+  beats `ambient`. `vignette` `{ color?, strength 0-1, inner? (0.45, where it starts as a share of
+the centre-to-corner distance) }`; `bands` (0-16, default 0 smooth) steps each falloff;
+  `particles` lists room-wide emitters `{ emit, tags?, maps?, prewarm? (120) }`.
+- `lighting.ts` (Engine 0.16 part C T4): `SkinLighting(skin, { seed? })`, one presenter's
+  lighting, the part every 2D backend shares. `event(ev, entities, frame)` starts an event's
+  flash (at its `x`/`y`, else its entity's centre); `layout({ frame, entities, map, view, size,
+reduceFlashing? })` gives the `LightingLayout` in picture px `{ darkness: { color, level } | null,
+lights: LightDraw[] { key, x, y, radius, color, intensity, glow }, vignette, bands }` (null for a
+  skin without `lighting`): placed lights (each map part's at its place), tile lights (found once
+  per map version), kind lights by state, then event flashes fading linearly; a light wholly off
+  the picture is left out; `reduceFlashing` halves flashes and flicker. `props(map, frame)` gives
+  the placed lights' sprites (`LightPropDraw`, world px). The darkness is `blendedDarkness`: each
+  map part's ambient (`ambientFor`) weighted by how much of the view it covers (`mapParts`: a
+  map's `parts`, else the whole map), so a room slide fades from one room's darkness to the next.
+  Flicker is `flickerNoise(seed, key, frame, rate)`: a value in [-1, 1] from `fxRng(seed, k,
+'light:<key>')` every `rate` frames, smoothstepped between, applied by `flickered` (radius and
+  glow times `1 + amount * n`, intensity half that). `lightStops(intensity, bands)` is the falloff
+  a backend draws: smoothstep from the intensity to 0 in `LIGHT_SMOOTH_STOPS` (8) stops, or
+  `bands` flat steps with hard edges then 0 past the radius.
+- `skin-particles.ts` (Engine 0.16 part C T4): `update(frame, entities, map?)` with the full map
+  shown also runs the skin's `lighting.particles` on their own `ambient` system: each entry whose
+  `tags` (one of the map's) and `maps` (its id or a part's) fit spawns its emitters over the whole
+  map's box (`shape` box, `anchor` centre); another map (id or tags) clears them and starts them
+  `prewarm` frames ahead (`AMBIENT_PREWARM`, 120) so the air is full at once. `particles()` lists
+  them first. The 3D backend passes no map, so it has none.
 - `index.ts`: re-exports all of the above; import from `@engine/core/fx`.
 
 ## Where it is used
@@ -150,12 +190,18 @@ x, y, w, h, color }` (a gradient's bands across the picture). A layer's origin i
   the particles in world space after the entities (`blended`/`glowing` on the renderer), the 3D
   one as `Points` with an additive material for `add`. `games/fx-lab` has six presets.
 
+- Lighting (Engine 0.16 part C T4): a 2D skin's `lighting`. The Canvas2D presenter keeps a
+  `SkinLighting` (seeded by its `seed`) and draws its layout after the particles and before
+  effects, flashes and the HUD; the PixiJS backend does not draw it yet (feedback item 434) and a
+  3D skin may not have it. `games/fx-lab` lights its `fx-3` level; `games/samples/dungeon` every
+  room.
+
 ## Rules
 
 - Pure: `engine/core/fx/**` is on `PURE_CORE` (`config/layers.js`): no `Math.random` (use
   `fxRng`), no `Date.now`/`performance.now` (time is presentation frames), no DOM. Import only
   `zod` and pure core files (`../rng`; `../present/skin` and `../present/types` for
-  `skin-particles.ts`, `camera-fx.ts` and `parallax.ts`; `../gfx/screen` types).
+  `skin-particles.ts`, `camera-fx.ts`, `parallax.ts` and `lighting.ts`; `../gfx/screen` types).
 - Presenters only: kits and `engine/sim` may not import it (`FORBIDDEN_CORE` in
   `config/layers.js`; checked by `tests/architecture/eslint-deps.test.ts` and
   `dependency-rule.test.ts`). Nothing here may reach a world, a frame or a hash. `present/skin.ts`
@@ -180,7 +226,12 @@ shake scale; zoom punch values with an ease, hold and the way back, punches mult
 fading and reduced flashing; clearing on an earlier frame; `HitPause` frame counting; the
 schemas), `parallax.test.ts` (factors and origins, gradient bands, layers moving at their own
 rates between two camera positions, repeats, a missing frame, the layer schema),
-`transition.test.ts` (phases and coverage over time with a hold and an ease, slots and fallbacks,
+`lighting.test.ts` (Engine 0.16 part C T4: smooth and banded falloffs, flicker determinism by
+seed and light and its scaling, darkness by map, tag and skin and blended over a slide's parts,
+the layout of kind lights by state, tile lights and placed lights in picture px, culling, event
+flashes fading, the vignette's defaults, placed sprites cycling at each part's place, room-wide
+particles prewarmed over the map, by tag and id and restarted on another map, the schema and the
+skin's reference checks), `transition.test.ts` (phases and coverage over time with a hold and an ease, slots and fallbacks,
 reduced motion, the player's `covered`, each kind's covered share frame by frame, the wipe's
 direction and soft edge, the iris closing on its centre, the iris centre in screen space, the
 schemas naming the bad field). The skin hook is

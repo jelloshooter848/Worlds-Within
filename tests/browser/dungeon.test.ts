@@ -100,9 +100,15 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
       };
       expect(state.room).toBe('guard-room');
       // The 16:9 picture (Engine 0.16 part C T3): the skin's dark background in the side margin,
-      // the west wall's stone ledge beside the room (the CC0 pack's colours).
-      expect(await pixel(page, 12, 120)).toBe('20,16,22');
-      expect(await pixel(page, 32 + 13, 58)).toMatch(/^(170,141,122|211,191,169)$/);
+      // the west wall's stone ledge beside the room (the CC0 pack's colours), from T4 under the
+      // skin's darkness and vignette (the margin's #141016 darkened).
+      expect(await pixel(page, 12, 120)).toBe('10,7,12');
+      // The ledge's warm stone, dimmed by the darkness (78,64,58 from 170,141,122 at T4).
+      const ledge = (await pixel(page, 32 + 13, 58)).split(',').map(Number) as [number, number, number];
+      expect(ledge[0]).toBeGreaterThan(ledge[1]);
+      expect(ledge[1]).toBeGreaterThan(ledge[2]);
+      expect(ledge[0]).toBeGreaterThanOrEqual(50);
+      expect(ledge[0]).toBeLessThanOrEqual(120);
       expect(errors).toEqual([]);
     } finally {
       await close();

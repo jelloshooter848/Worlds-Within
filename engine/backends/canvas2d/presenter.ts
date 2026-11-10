@@ -2,15 +2,25 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import {
   CameraFx,
   layoutParallax,
+  lightStops,
   REST_STATE,
+  SkinLighting,
   SkinParticles,
   TweenSet,
   type CameraFxSettings,
   type CameraFxState,
+  type LightingLayout,
   type ParticleView,
   type TweenState,
 } from '@engine/core/fx';
-import { blended, glowing, transformed, translucent, type Renderer } from '@engine/core/gfx/renderer';
+import {
+  blended,
+  glowing,
+  radialFilled,
+  transformed,
+  translucent,
+  type Renderer,
+} from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { anchorOffset, type SpriteSheet } from '@engine/core/gfx/spritesheet';
 import {
@@ -108,6 +118,12 @@ export interface SkinnedPresenterOptions {
    * an offscreen canvas where the browser has one, and is null in Node.
    */
   mapSurface?: (width: number, height: number) => MapSurface | null;
+  /**
+   * Makes the picture-sized surface the skin's `lighting` darkness is drawn on (the light map,
+   * Engine 0.16 part C T4), or null for none: the darkness is then a flat translucent box and the
+   * lights only glow. The default makes an offscreen canvas where the browser has one, null in Node.
+   */
+  lightSurface?: (width: number, height: number) => MapSurface | null;
 }
 
 /** Ticks an effect lasts when the skin gives none. */
@@ -203,6 +219,10 @@ export class SkinnedCanvasPresenter implements Presenter {
   private readonly uiPainter: CanvasUiPainter;
   /** Whether the HUD is drawn (`showHud`; the shell hides it under the title). */
   private hudShown = true;
+  /** The skin's `lighting` (Engine 0.16 part C T4): darkness, lights, flicker, vignette. */
+  private readonly lighting: SkinLighting;
+  /** The light map's surface and its size (made on the first lit frame, again on a resize). */
+  private lightMap: { surface: MapSurface | null; w: number; h: number } | null = null;
 
   constructor(
     target: Renderer | Ctx,
@@ -226,6 +246,7 @@ export class SkinnedCanvasPresenter implements Presenter {
       ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
       ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
     };
+    this.lighting = new SkinLighting(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
     this.hud = new SkinHud(skin, {
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.font !== undefined && { font: opts.font }),
@@ -278,7 +299,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.fxClock++;
     this.restartOnNewLevel(frame);
     this.takeEvents(frame);
-    this.particles.update(frame.frame, frame.entities);
+    this.particles.update(frame.frame, frame.entities, this.shownMap(frame));
     this.updateTweens(frame);
     this.updateMap(frame);
     this.cameraFx.update(this.fxClock);
@@ -295,8 +316,10 @@ export class SkinnedCanvasPresenter implements Presenter {
     r.clear(this.opts.background ?? skinBackground(look));
     this.drawParallax(look, view, size);
     this.drawMap(view);
+    this.drawLightProps(view, frame.frame);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawParticles(view);
+    this.drawLighting(frame, view, size);
     this.drawEffects(frame.frame, size);
     for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
     if (this.hudShown) this.drawHud(frame);
@@ -314,6 +337,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     // The frame's events, then the skin's frame events (a footstep on a run cycle's frame),
     // which run through the same `events` entries but never go into the frame.
     for (const ev of [...frame.events, ...this.frameEvents.next(this.skin, frame.entities)]) {
+      this.lighting.event(ev, frame.entities, frame.frame);
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound, skinSoundCue(entry, frame.frame));
@@ -447,6 +471,121 @@ export class SkinnedCanvasPresenter implements Presenter {
       drawn,
       p.color,
     );
+  }
+
+  // ---- Lighting (Engine 0.16 part C T4) ----
+
+  /** The full map the presenter shows this frame, or null. */
+  private shownMap(frame: Frame): DeepReadonly<PresentMap> | null {
+    if (frame.map === undefined) return null;
+    if (isFullMap(frame.map)) return frame.map;
+    const shown = this.shown?.map;
+    return shown !== undefined && shown.id === frame.map.id && shown.version === frame.map.version
+      ? shown
+      : null;
+  }
+
+  /** The placed lights' sprites (a wall torch), in world space, over the map and under the entities. */
+  private drawLightProps(view: View, tick: number): void {
+    if (this.lighting.spec?.maps === undefined || !this.mapVisible) return;
+    const r = this.r;
+    const map = this.shown?.map ?? null;
+    for (const d of this.lighting.props(map, tick)) {
+      const id = d.sheet ?? this.skin.sheets?.sheet;
+      const sheet = id === undefined ? null : this.sheet(id, this.skin.sheets?.palette);
+      if (!sheet) continue;
+      const x = Math.round(d.x * view.zoom) - view.x;
+      const y = Math.round(d.y * view.zoom) - view.y;
+      if (view.zoom === 1) r.sprite(sheet, d.frame, x, y);
+      else r.sprite(sheet, d.frame, x, y, false, false, 0, view.zoom);
+    }
+  }
+
+  /**
+   * The skin's lighting over the picture (after the entities and particles, before effects and
+   * the HUD): the darkness drawn on the light map with each light erased out of it as a radial
+   * gradient (`lightStops`: smooth or in `bands`), the map laid over the picture at the darkness
+   * level, then each light's colour added (`add`), then the vignette.
+   */
+  private drawLighting(frame: Frame, view: View, size: ScreenSize): void {
+    if (this.lighting.spec === undefined) return;
+    const map = this.mapVisible ? (this.shown?.map ?? null) : null;
+    const layout = this.lighting.layout({
+      frame: frame.frame,
+      entities: frame.entities,
+      map,
+      view,
+      size,
+      ...(this.settings.reduceFlashing !== undefined && { reduceFlashing: this.settings.reduceFlashing }),
+    });
+    if (layout === null) return;
+    const r = this.r;
+    if (layout.darkness !== null) this.drawDarkness(layout, size);
+    for (const l of layout.lights) {
+      if (l.glow <= 0) continue;
+      radialFilled(r, {
+        x: l.x,
+        y: l.y,
+        radius: l.radius,
+        color: l.color,
+        stops: lightStops(l.glow, layout.bands),
+        mode: 'add',
+      });
+    }
+    const v = layout.vignette;
+    if (v !== null) {
+      const cx = size.width / 2;
+      const cy = size.height / 2;
+      radialFilled(r, {
+        x: cx,
+        y: cy,
+        radius: Math.hypot(cx, cy),
+        color: v.color,
+        stops: [
+          { at: 0, alpha: 0 },
+          { at: v.inner, alpha: 0 },
+          { at: 1, alpha: v.strength },
+        ],
+        mode: 'normal',
+        box: { x: 0, y: 0, w: size.width, h: size.height },
+      });
+    }
+  }
+
+  /** The darkness with the lights cut out of it, on the light map (or a flat box without one). */
+  private drawDarkness(layout: LightingLayout, size: ScreenSize): void {
+    const r = this.r;
+    const dark = layout.darkness!;
+    let lm = this.lightMap;
+    if (lm === null || lm.w !== size.width || lm.h !== size.height) {
+      const make = this.opts.lightSurface ?? defaultMapSurface;
+      lm = { surface: make(size.width, size.height), w: size.width, h: size.height };
+      this.lightMap = lm;
+    }
+    const surface = lm.surface;
+    if (surface === null) {
+      translucent(r, dark.level, () => r.rect(0, 0, size.width, size.height, dark.color));
+      return;
+    }
+    const s = surface.renderer;
+    s.clear(dark.color);
+    for (const l of layout.lights) {
+      if (l.intensity <= 0) continue;
+      radialFilled(s, {
+        x: l.x,
+        y: l.y,
+        radius: l.radius,
+        color: '#000000',
+        stops: lightStops(l.intensity, layout.bands),
+        mode: 'erase',
+      });
+    }
+    const sheet: SpriteSheet = {
+      id: 'light-map',
+      image: surface.image,
+      frames: new Map([['light', { x: 0, y: 0, w: size.width, h: size.height }]]),
+    };
+    translucent(r, dark.level, () => r.sprite(sheet, 'light', 0, 0));
   }
 
   // ---- Camera ----

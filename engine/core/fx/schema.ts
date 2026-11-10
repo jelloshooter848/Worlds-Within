@@ -414,3 +414,214 @@ export const parallaxLayerSchema = z
   .describe('a parallax background layer');
 
 export type ParallaxLayer = z.output<typeof parallaxLayerSchema>;
+
+// ---- Lighting (Engine 0.16 part C, T4) ----
+
+/**
+ * A skin's `lighting` block (docs/ROADMAP.md, Engine 0.16 part C T4): darkness over the picture
+ * with light sources cutting through it, all presentation only. Units are world px and
+ * presentation frames; colours `#rgb`/`#rrggbb`.
+ *
+ *   "lighting": {
+ *     "ambient": { "level": 0.3 },
+ *     "tags": { "dark": { "color": "#0a0612", "level": 0.85 } },
+ *     "kinds": { "hero": { "radius": 40 }, "torch": { "radius": 64, "states": ["lit"], "flicker": { "amount": 0.15 } } },
+ *     "events": { "blast": { "radius": 96, "color": "#ffd890", "ticks": 18 } },
+ *     "vignette": { "strength": 0.5 },
+ *     "particles": [{ "emit": "dust", "tags": ["dark"] }]
+ *   }
+ */
+
+/** What a light gives when it leaves a field out. */
+export const LIGHT_DEFAULTS = {
+  color: '#ffffff',
+  intensity: 1,
+  glow: 0.2,
+  flickerRate: 6,
+  ambientColor: '#000000',
+  vignetteColor: '#000000',
+  vignetteInner: 0.45,
+} as const;
+
+/** The most light bands a skin may ask for (`bands`; 0 is a smooth falloff). */
+export const LIGHT_MAX_BANDS = 16;
+
+const unit = (what: string) => z.number().min(0).max(1).describe(what);
+
+export const lightFlickerSchema = z
+  .strictObject({
+    amount: unit('how far radius and intensity wander, as a share (0.15: up to 15% either way)'),
+    rate: z
+      .number()
+      .int()
+      .min(1)
+      .max(120)
+      .exactOptional()
+      .describe(
+        `frames between two new random values, eased between (default ${LIGHT_DEFAULTS.flickerRate})`,
+      ),
+  })
+  .describe('a flicker from the presentation RNG (`fxRng`): the same seed and frame flicker the same way');
+
+const lightFields = {
+  radius: z.number().positive().max(4096).describe('world px from the centre to where the light ends'),
+  color: hex
+    .exactOptional()
+    .describe(`the light's colour, for its glow (default \`${LIGHT_DEFAULTS.color}\`)`),
+  intensity: unit(
+    `how much of the darkness it clears at its centre (default ${LIGHT_DEFAULTS.intensity}), falling to 0 at \`radius\``,
+  ).exactOptional(),
+  glow: unit(
+    `how strongly its colour is added over the picture at its centre (default ${LIGHT_DEFAULTS.glow}; 0: no glow)`,
+  ).exactOptional(),
+  flicker: lightFlickerSchema.exactOptional(),
+};
+
+const pointOffset = z
+  .strictObject({ x: z.number().describe('world px right'), y: z.number().describe('world px down') })
+  .describe('world px added to where the light sits');
+
+/** A light on every entity of a kind (a kind's entry in `lighting.kinds`). */
+export const entityLightSchema = z
+  .strictObject({
+    ...lightFields,
+    states: z
+      .array(z.string().min(1))
+      .min(1)
+      .exactOptional()
+      .describe('only while the entity\'s `anim.state` is one of these (`["lit"]`); default every state'),
+    anchor: z
+      .enum(['centre', 'feet', 'top'])
+      .exactOptional()
+      .describe('where on the entity box it sits (default `centre`)'),
+    offset: pointOffset.exactOptional(),
+  })
+  .describe('a light on each entity of the kind');
+
+/** A light flashed by an event (a blast), fading over `ticks`. */
+export const eventLightSchema = z
+  .strictObject({
+    ...lightFields,
+    ticks: z.number().int().min(1).max(600).describe('frames it fades over, from full to nothing'),
+    offset: pointOffset.exactOptional(),
+  })
+  .describe("a flash of light at the event's `x`/`y`, else its entity's centre");
+
+/** A sprite drawn with a placed light (a wall torch the map has no tile for). */
+export const lightSpriteSchema = z
+  .strictObject({
+    frames: z.array(z.string().min(1)).min(1).describe('frame names, cycled'),
+    ticks: z.number().int().min(1).exactOptional().describe('frames each frame shows (default 8)'),
+    sheet: z.string().min(1).exactOptional().describe('the sheet (default `sheets.sheet`)'),
+    x: z.number().describe("world px of the frame's top-left"),
+    y: z.number().describe("world px of the frame's top-left"),
+  })
+  .describe('a sprite drawn under the darkness, before the entities');
+
+/** A light at a fixed place in one map (`lighting.maps.<id>.lights`). */
+export const placedLightSchema = z
+  .strictObject({
+    ...lightFields,
+    x: z.number().describe("world px of the light's centre in the map"),
+    y: z.number().describe("world px of the light's centre in the map"),
+    sprite: lightSpriteSchema.exactOptional(),
+  })
+  .describe('a light at a fixed place in the map');
+
+export const ambientSchema = z
+  .strictObject({
+    color: hex.exactOptional().describe(`the darkness's colour (default \`${LIGHT_DEFAULTS.ambientColor}\`)`),
+    level: unit('how dark: 0 none, 1 the colour itself where no light reaches'),
+  })
+  .describe('the darkness over a map');
+
+export const vignetteSchema = z
+  .strictObject({
+    color: hex.exactOptional().describe(`its colour (default \`${LIGHT_DEFAULTS.vignetteColor}\`)`),
+    strength: unit('its opacity at the picture corners'),
+    inner: unit(
+      `where it starts, as a share of the centre-to-corner distance (default ${LIGHT_DEFAULTS.vignetteInner})`,
+    ).exactOptional(),
+  })
+  .describe('the picture darkened toward its edges, over the light map');
+
+export const ambientParticlesSchema = z
+  .strictObject({
+    emit: z
+      .union([z.string().min(1), z.array(z.string().min(1)).min(1)])
+      .describe("an emitter of the skin's `emitters`, or a list; spawned over the whole map"),
+    tags: z
+      .array(z.string().min(1))
+      .min(1)
+      .exactOptional()
+      .describe('only on a map with one of these tags (default every map)'),
+    maps: z
+      .array(z.string().min(1))
+      .min(1)
+      .exactOptional()
+      .describe('only on these map ids (default every map)'),
+    prewarm: z
+      .number()
+      .int()
+      .min(0)
+      .max(240)
+      .exactOptional()
+      .describe('frames run ahead when a map shows, so the air is full at once (default 120)'),
+  })
+  .describe('room-wide particles (dust motes, drifting embers)');
+
+export const lightingSchema = z
+  .strictObject({
+    ambient: ambientSchema.exactOptional().describe('the darkness on every map (default none)'),
+    tags: z
+      .record(z.string().min(1), ambientSchema)
+      .exactOptional()
+      .describe("map tag -> its darkness; the first key in file order that is one of the map's tags wins"),
+    maps: z
+      .record(
+        z.string().min(1),
+        z.strictObject({
+          ambient: ambientSchema.exactOptional(),
+          lights: z.array(placedLightSchema).exactOptional().describe('lights at fixed places in this map'),
+        }),
+      )
+      .exactOptional()
+      .describe('map id -> its darkness (over `tags` and `ambient`) and lights at fixed places'),
+    kinds: z
+      .record(z.string().min(1), z.union([entityLightSchema, z.array(entityLightSchema).min(1)]))
+      .exactOptional()
+      .describe('entity kind -> a light (or a list) on each entity of it'),
+    tiles: z
+      .record(z.string().min(1), z.strictObject({ ...lightFields, offset: pointOffset.exactOptional() }))
+      .exactOptional()
+      .describe('map tile key -> a light at the centre of each such tile (an exit glowing with daylight)'),
+    events: z
+      .record(z.string().min(1), eventLightSchema)
+      .exactOptional()
+      .describe(
+        "event key (as in the skin's `events`: `type`, `type:value`, `type:field=value`) -> a flash of light",
+      ),
+    vignette: vignetteSchema.exactOptional(),
+    bands: z
+      .number()
+      .int()
+      .min(0)
+      .max(LIGHT_MAX_BANDS)
+      .exactOptional()
+      .describe('light falls off in this many flat steps, pixel-art style (default 0: smooth)'),
+    particles: z
+      .array(ambientParticlesSchema)
+      .exactOptional()
+      .describe('room-wide emitters spawned over the whole map shown (dust motes, drifting embers)'),
+  })
+  .describe('2D lighting: darkness, lights, a vignette and room-wide particles (Engine 0.16 part C)');
+
+export type LightFlicker = z.output<typeof lightFlickerSchema>;
+export type EntityLight = z.output<typeof entityLightSchema>;
+export type EventLight = z.output<typeof eventLightSchema>;
+export type PlacedLight = z.output<typeof placedLightSchema>;
+export type LightSprite = z.output<typeof lightSpriteSchema>;
+export type AmbientSpec = z.output<typeof ambientSchema>;
+export type VignetteSpec = z.output<typeof vignetteSchema>;
+export type AmbientParticles = z.output<typeof ambientParticlesSchema>;
+export type LightingSpec = z.output<typeof lightingSchema>;

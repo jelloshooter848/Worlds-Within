@@ -1,4 +1,5 @@
-import type { BlendMode, Renderer, Rotation } from '@engine/core/gfx/renderer';
+import { parseHexColor } from '@engine/core/fx';
+import type { BlendMode, RadialFill, Renderer, Rotation } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
@@ -107,6 +108,26 @@ export class CanvasRenderer implements Renderer {
     } finally {
       ctx.restore();
     }
+  }
+  /** A radial gradient (Engine 0.16 part C T4): `erase` is `destination-out`, `add` is `lighter`. */
+  gradient(g: RadialFill): void {
+    const ctx = this.ctx;
+    // A context without radial gradients (a test's fake page, whose methods may return nothing) draws none.
+    if (!(g.radius > 0) || typeof ctx.createRadialGradient !== 'function') return;
+    const rgb = parseHexColor(g.color) ?? [0, 0, 0];
+    const grad = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, g.radius) as CanvasGradient | undefined;
+    if (grad === undefined) return;
+    for (const s of g.stops) {
+      const a = Math.min(1, Math.max(0, s.alpha));
+      grad.addColorStop(Math.min(1, Math.max(0, s.at)), `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`);
+    }
+    const box = g.box ?? { x: g.x - g.radius, y: g.y - g.radius, w: g.radius * 2, h: g.radius * 2 };
+    ctx.save();
+    ctx.globalCompositeOperation =
+      g.mode === 'erase' ? 'destination-out' : g.mode === 'add' ? 'lighter' : 'source-over';
+    ctx.fillStyle = grad;
+    ctx.fillRect(box.x, box.y, box.w, box.h);
+    ctx.restore();
   }
   glow(color: string, radius: number, draw: () => void): void {
     const ctx = this.ctx;

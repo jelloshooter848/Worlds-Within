@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 434.** (Last used: 433.)
+**Next unused number: 437.** (Last used: 436.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1715,3 +1715,26 @@ existing five rooms; details in `games/samples/dungeon/CLAUDE.md`, "16:9 on the 
   kept as a fallback; the title's art is now the pack's knight and orc at 3x. OK?
 - **433.** No lighting yet (torches do not glow, no darkness or vignette): that is T4. The
   footsteps raise dust but make no sound (the sample has no step sfx). OK, or add a step sound?
+
+**Engine 0.16 part C, T4: 2D lighting and mood in skins** (darkness, lights, flicker, vignette,
+room-wide dust; details in `engine/core/fx/CLAUDE.md`, "Lighting", and
+`games/samples/dungeon/CLAUDE.md`, "Lighting and mood"):
+
+- **434.** The PixiJS backend (`engine/backends/pixi`, a parallel track) does not draw a skin's
+  `lighting` yet: it needs the same pass later (the light map from `SkinLighting.layout`, each
+  light erased out of the darkness with `lightStops`, the coloured glows added, the vignette, and
+  the placed lights' sprites from `SkinLighting.props`). The 3D backend ignores `lighting` too (it
+  lights with `scene3d` and kinds' `light`); a 3D skin with `lighting` is `wrong_backend_field`.
+  Schedule the PixiJS pass with the backend's next task?
+- **435.** The Old Crypt's rooms have no wall torches in their text (adding `T` torches would move
+  the run files' hashes), so the skin places them: `lighting.maps.<room>.lights` are lights at
+  fixed places with an optional animated sprite (the original brazier) drawn under the darkness.
+  They are decoration: the hero walks in front of them. To keep them through a room slide the
+  top-down kit's slide map now lists its two rooms as `parts` (`PresentMapPart`, a new optional
+  map field: id, place in tiles, tags), so per-room lights and darkness follow each room; nothing
+  in the world or a snapshot changed. OK, or should torches become room content later?
+- **436.** The bat hall and the crypt are now `dark: true` (the kit's free room flag, which only
+  tags the map `dark`; no hash moved) and take the skin's `tags.dark` darkness (0.86); the other
+  rooms 0.55 (the courtyard 0.5). The falloff is in 6 flat bands (`bands`) for a pixel-art look
+  rather than a smooth gradient; the vignette is 0.5. Judged moody and readable from screenshots
+  at 3x (the guard room's fight stays readable at 0.55); a browser playtest is T10. OK?

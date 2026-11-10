@@ -1,11 +1,14 @@
 import { particlesEffectEmitter, skinEmitNames, type SkinFile } from '../present/skin';
-import type { DeepReadonly, PresentEntity, PresentEvent } from '../present/types';
+import type { DeepReadonly, PresentEntity, PresentEvent, PresentMap } from '../present/types';
 import { anchorPoint, ParticleSystem, type ParticleView } from './particles';
 import type { EmitterDef } from './schema';
 
 type Skin = DeepReadonly<SkinFile>;
 type Entity = DeepReadonly<PresentEntity>;
 type EventEntry = NonNullable<SkinFile['events']>[string];
+
+/** Frames a room's ambient particles run ahead when its map shows, when the skin gives no `prewarm`. */
+export const AMBIENT_PREWARM = 120;
 
 /** How strongly bright (additive) particles show with the reduced-flashing setting on. */
 export const REDUCED_FLASH_ALPHA = 0.5;
@@ -18,12 +21,20 @@ export const REDUCED_FLASH_ALPHA = 0.5;
  */
 export class SkinParticles {
   readonly system: ParticleSystem;
+  /**
+   * Room-wide particles (the skin's `lighting.particles`, Engine 0.16 part C T4): their own
+   * system, started afresh (and run ahead by `prewarm`) whenever another map shows.
+   */
+  readonly ambient: ParticleSystem;
+  /** The map the ambient particles were started for (`<id>|<tags>`), or null. */
+  private ambientFor: string | null = null;
 
   constructor(
     private readonly skin: Skin,
     opts: { seed?: number; max?: number } = {},
   ) {
     this.system = new ParticleSystem(opts);
+    this.ambient = new ParticleSystem({ ...(opts.seed !== undefined && { seed: opts.seed }) });
   }
 
   /**
@@ -55,8 +66,12 @@ export class SkinParticles {
     }
   }
 
-  /** Attaches the kinds' emitters to this frame's entities and steps the system to `frame`. */
-  update(frame: number, entities: readonly Entity[]): void {
+  /**
+   * Attaches the kinds' emitters to this frame's entities and steps the system to `frame`; with
+   * `map` (the full map shown), also runs the skin's room-wide `lighting.particles` over it.
+   */
+  update(frame: number, entities: readonly Entity[], map?: DeepReadonly<PresentMap> | null): void {
+    if (map !== undefined) this.updateAmbient(frame, map);
     const kinds = this.skin.kinds;
     const boxes = new Map<string, Entity>();
     for (const e of entities) {
@@ -76,10 +91,51 @@ export class SkinParticles {
    * not flash.
    */
   particles(opts: { reduceFlashing?: boolean } = {}): ParticleView[] {
-    const all = this.system.particles();
+    // Room-wide particles first: they hang in the air behind the effects.
+    const all = [...this.ambient.particles(), ...this.system.particles()];
     if (!opts.reduceFlashing) return all;
     return all.map((p) =>
       p.blend === 'add' ? { ...p, blend: 'normal', alpha: p.alpha * REDUCED_FLASH_ALPHA, glow: 0 } : p,
     );
   }
+
+  /**
+   * The room-wide emitters for `map`: each `lighting.particles` entry whose `tags` (one of the
+   * map's) and `maps` (its id or a part's) fit spawns over the whole map's box. A map other than
+   * the last (a new id, or a frame number that went back) starts them afresh, `prewarm` frames
+   * ahead, so the air is already full.
+   */
+  private updateAmbient(frame: number, map: DeepReadonly<PresentMap> | null): void {
+    const entries = this.skin.lighting?.particles ?? [];
+    if (entries.length === 0) return;
+    // Keyed by id and tags: a blast that moves the version keeps the air as it is.
+    const key = map === null ? null : `${map.id}|${(map.tags ?? []).join(',')}`;
+    const behind = this.ambient.frame !== null && frame < this.ambient.frame;
+    if (key !== this.ambientFor || behind) {
+      this.ambient.clear();
+      this.ambientFor = key;
+      if (map === null) return;
+      const ids = [map.id, ...(map.parts ?? []).map((p) => p.id)];
+      const tags = map.tags ?? [];
+      const box = mapBox(map);
+      entries.forEach((entry, i) => {
+        if (entry.tags !== undefined && !entry.tags.some((t) => tags.includes(t))) return;
+        if (entry.maps !== undefined && !entry.maps.some((m) => ids.includes(m))) return;
+        const start = frame - (entry.prewarm ?? AMBIENT_PREWARM);
+        for (const name of skinEmitNames(entry.emit)) {
+          const def = this.skin.emitters?.[name] as EmitterDef | undefined;
+          if (def === undefined) continue;
+          const over: EmitterDef = { ...def, anchor: 'centre', shape: { box: { w: box.w, h: box.h } } };
+          this.ambient.attach(`ambient:${i}`, name, over, box, start);
+        }
+      });
+    }
+    if (map !== null)
+      this.ambient.update(frame, (id) => (id.startsWith('ambient:') ? mapBox(map) : undefined));
+  }
+}
+
+/** A map's whole box in world px. */
+function mapBox(map: DeepReadonly<PresentMap>) {
+  return { x: 0, y: 0, w: map.cols * map.tileSize, h: map.rows * map.tileSize };
 }

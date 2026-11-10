@@ -55,6 +55,13 @@ export interface Renderer {
    */
   glow?(color: string, radius: number, draw: () => void): void;
   /**
+   * Optional (Engine 0.16 part C T4): fills `g.box` (default the circle's square) with a radial
+   * gradient round (`g.x`, `g.y`): `g.color` at each stop's `alpha`, the last stop's carried on
+   * past `g.radius`. `mode` `normal` covers, `add` brightens, `erase` takes the alpha away (a hole
+   * in a light map). A renderer without it draws nothing: callers use `radialFilled` below.
+   */
+  gradient?(g: RadialFill): void;
+  /**
    * Optional (0.4.73): runs `draw` with the origin moved to (x, y), turned by `angle` radians
    * (clockwise) and scaled by (sx, sy) in the turned axes, so `draw` works about (0, 0). A
    * renderer without it only moves the origin: callers use `transformed` below.
@@ -113,6 +120,27 @@ export function clipped(r: Renderer, x: number, y: number, w: number, h: number,
   else draw();
 }
 
+/** How a radial fill combines with what is under it (`Renderer.gradient`). */
+export type RadialMode = 'normal' | 'add' | 'erase';
+
+/** A radial gradient fill (`Renderer.gradient`), in the renderer's pixels. */
+export interface RadialFill {
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+  /** `at` 0 (the centre) to 1 (the radius), ascending; `alpha` 0-1. */
+  stops: readonly { at: number; alpha: number }[];
+  mode: RadialMode;
+  /** The box filled (default the circle's bounding square). */
+  box?: { x: number; y: number; w: number; h: number };
+}
+
+/** Fills `g` through `r` where `r` can (Renderer.gradient), else draws nothing. */
+export function radialFilled(r: Renderer, g: RadialFill): void {
+  if (r.gradient) r.gradient(g);
+}
+
 /** Quarter turns clockwise (Renderer.sprite). */
 export type Rotation = 0 | 90 | 180 | 270;
 
@@ -168,6 +196,15 @@ export class OffsetRenderer implements Renderer {
   }
   glow(color: string, radius: number, draw: () => void): void {
     glowing(this.inner, color, radius, draw);
+  }
+  gradient(g: RadialFill): void {
+    const box = g.box ?? { x: g.x - g.radius, y: g.y - g.radius, w: g.radius * 2, h: g.radius * 2 };
+    radialFilled(this.inner, {
+      ...g,
+      x: g.x + this.dx,
+      y: g.y + this.dy,
+      box: { ...box, x: box.x + this.dx, y: box.y + this.dy },
+    });
   }
   transform(
     x: number,

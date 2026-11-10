@@ -10,6 +10,7 @@ export type {
   PresentFx,
   PresentMap,
   PresentMapLayer,
+  PresentMapPart,
   PresentMapRef,
   PresentStatusValue,
   PresentTilesGrid,

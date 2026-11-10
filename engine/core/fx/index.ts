@@ -28,7 +28,47 @@ export {
   type ParticleSystemOptions,
   type ParticleView,
 } from './particles';
-export { REDUCED_FLASH_ALPHA, SkinParticles } from './skin-particles';
+export { AMBIENT_PREWARM, REDUCED_FLASH_ALPHA, SkinParticles } from './skin-particles';
+export {
+  ambientParticlesSchema,
+  ambientSchema,
+  entityLightSchema,
+  eventLightSchema,
+  LIGHT_DEFAULTS,
+  LIGHT_MAX_BANDS,
+  lightFlickerSchema,
+  lightingSchema,
+  lightSpriteSchema,
+  placedLightSchema,
+  vignetteSchema,
+  type AmbientParticles,
+  type AmbientSpec,
+  type EntityLight,
+  type EventLight,
+  type LightFlicker,
+  type LightingSpec,
+  type LightSprite,
+  type PlacedLight,
+  type VignetteSpec,
+} from './schema';
+export {
+  ambientFor,
+  blendedDarkness,
+  flickered,
+  flickerNoise,
+  LIGHT_SMOOTH_STOPS,
+  LIGHT_SPRITE_TICKS,
+  lightStops,
+  mapParts,
+  SkinLighting,
+  type LightDraw,
+  type LightingInput,
+  type LightingLayout,
+  type LightingView,
+  type LightPropDraw,
+  type LightStop,
+  type SkinLightingOptions,
+} from './lighting';
 export {
   flashSpecSchema,
   hitPauseSpecSchema,

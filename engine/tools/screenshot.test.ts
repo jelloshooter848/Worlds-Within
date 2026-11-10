@@ -178,10 +178,11 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
       for (let x = 0; x < 16; x++) {
         const want = sheet.pixel(1 + x, 1 + y);
         if (want[3] === 0) continue;
-        // Within a little: the flame's additive particles light the pole up a few levels.
+        // Within a little: the flame's additive particles and (Engine 0.16 part C T4) the torch's
+        // own light glowing over the level's darkness shift the pole by a few dozen levels.
         const got = shot.pixel(96 + x, 200 + y);
         const off = Math.max(...[0, 1, 2].map((i) => Math.abs(got[i]! - want[i]!)));
-        expect(off, `${x},${y}: ${got.join(',')} for ${want.join(',')}`).toBeLessThanOrEqual(24);
+        expect(off, `${x},${y}: ${got.join(',')} for ${want.join(',')}`).toBeLessThanOrEqual(64);
       }
     }
   }, 120_000);

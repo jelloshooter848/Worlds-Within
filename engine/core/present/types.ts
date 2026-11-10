@@ -125,6 +125,22 @@ export interface PresentMapLayer {
   tiles: PresentTilesText | PresentTilesGrid;
 }
 
+/**
+ * Extension point (Engine 0.16 part C T4): one map shown inside another at a place, in tiles. A
+ * map made of several (the top-down kit's room slide: two rooms side by side) lists them, so a
+ * skin's per-map looks (lights placed in a room, its darkness) follow each part.
+ */
+export interface PresentMapPart {
+  id: string;
+  /** The part's top-left in the map, in tiles. */
+  col: number;
+  row: number;
+  cols: number;
+  rows: number;
+  /** The part's own tags (`dark`). */
+  tags?: string[];
+}
+
 /** A map is named by its id and version; a new version means its tiles changed. */
 export interface PresentMapRef {
   id: string;
@@ -144,6 +160,8 @@ export interface PresentMap extends PresentMapRef {
   layers?: PresentMapLayer[];
   /** Free labels a skin may match on (`dark`); part of the map, so a change bumps `version`. */
   tags?: string[];
+  /** Extension point: the maps this one is made of, each at its place (a room slide's two rooms). */
+  parts?: PresentMapPart[];
 }
 
 /**

@@ -1407,6 +1407,55 @@
       "size": [2, 1],
       "color": ["#ffffff", "#ff8a6a", "#c33424"],
       "alpha": [1, 0]
+    },
+    "dust-motes": {
+      "rate": 0.1,
+      "life": [160, 240],
+      "speed": [0.02, 0.09],
+      "angle": [0, 360],
+      "gravity": 0.0005,
+      "size": 1,
+      "color": ["#c9b8a6", "#e8e0d8"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.3,
+          "value": 0.7
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ],
+      "max": 36
+    },
+    "crypt-embers": {
+      "rate": 0.05,
+      "life": [120, 180],
+      "speed": [0.1, 0.25],
+      "angle": [250, 290],
+      "gravity": -0.001,
+      "size": 1,
+      "color": ["#fff1c4", "#f6c445", "#e8762a"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.25,
+          "value": 0.9
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ],
+      "blend": "add",
+      "max": 16
     }
   },
   "hud": [
@@ -1485,5 +1534,348 @@
       "color": "#fcfcfc",
       "shadow": "#222222"
     }
-  ]
+  ],
+  "lighting": {
+    "ambient": {
+      "color": "#0b0710",
+      "level": 0.55
+    },
+    "tags": {
+      "dark": {
+        "color": "#05030a",
+        "level": 0.86
+      }
+    },
+    "maps": {
+      "courtyard": {
+        "ambient": {
+          "color": "#0b0710",
+          "level": 0.5
+        },
+        "lights": [
+          {
+            "x": 72,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 64,
+              "y": -2
+            }
+          },
+          {
+            "x": 184,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 176,
+              "y": -2
+            }
+          }
+        ]
+      },
+      "guard-room": {
+        "lights": [
+          {
+            "x": 72,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 64,
+              "y": -2
+            }
+          },
+          {
+            "x": 184,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 176,
+              "y": -2
+            }
+          }
+        ]
+      },
+      "store-room": {
+        "lights": [
+          {
+            "x": 88,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 80,
+              "y": -2
+            }
+          },
+          {
+            "x": 168,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 160,
+              "y": -2
+            }
+          }
+        ]
+      },
+      "bat-hall": {
+        "lights": [
+          {
+            "x": 216,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 208,
+              "y": -2
+            }
+          }
+        ]
+      },
+      "crypt": {
+        "lights": [
+          {
+            "x": 72,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 64,
+              "y": -2
+            }
+          },
+          {
+            "x": 184,
+            "y": 12,
+            "radius": 84,
+            "color": "#f6a845",
+            "intensity": 0.95,
+            "glow": 0.16,
+            "flicker": {
+              "amount": 0.12,
+              "rate": 5
+            },
+            "sprite": {
+              "sheet": "crypt-art",
+              "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+              "ticks": 6,
+              "x": 176,
+              "y": -2
+            }
+          }
+        ]
+      }
+    },
+    "kinds": {
+      "hero": {
+        "radius": 46,
+        "color": "#ffd9a0",
+        "intensity": 0.8,
+        "glow": 0.05,
+        "flicker": {
+          "amount": 0.05,
+          "rate": 8
+        }
+      },
+      "torch": {
+        "radius": 64,
+        "color": "#f6a845",
+        "states": ["lit"],
+        "anchor": "top",
+        "glow": 0.16,
+        "flicker": {
+          "amount": 0.12,
+          "rate": 5
+        }
+      },
+      "bomb": [
+        {
+          "radius": 18,
+          "color": "#e8762a",
+          "states": ["fuse"],
+          "anchor": "top",
+          "intensity": 0.6,
+          "glow": 0.2,
+          "flicker": {
+            "amount": 0.3,
+            "rate": 3
+          }
+        },
+        {
+          "radius": 26,
+          "color": "#f6c445",
+          "states": ["fuse-short"],
+          "anchor": "top",
+          "intensity": 0.75,
+          "glow": 0.3,
+          "flicker": {
+            "amount": 0.35,
+            "rate": 2
+          }
+        }
+      ],
+      "explosion": {
+        "radius": 84,
+        "color": "#f6c445",
+        "intensity": 1,
+        "glow": 0.4,
+        "flicker": {
+          "amount": 0.15,
+          "rate": 2
+        }
+      },
+      "sword-beam": {
+        "radius": 28,
+        "color": "#a4e4fc",
+        "intensity": 0.7,
+        "glow": 0.3
+      },
+      "rock": {
+        "radius": 16,
+        "color": "#e8762a",
+        "intensity": 0.5,
+        "glow": 0.15
+      },
+      "pickup:key": {
+        "radius": 20,
+        "color": "#f6c445",
+        "intensity": 0.55,
+        "glow": 0.2,
+        "flicker": {
+          "amount": 0.2,
+          "rate": 10
+        }
+      },
+      "pickup:relic": {
+        "radius": 28,
+        "color": "#e43b44",
+        "intensity": 0.6,
+        "glow": 0.25,
+        "flicker": {
+          "amount": 0.15,
+          "rate": 12
+        }
+      }
+    },
+    "tiles": {
+      "E": {
+        "radius": 60,
+        "color": "#dfeeff",
+        "intensity": 1,
+        "glow": 0.18,
+        "offset": {
+          "x": 0,
+          "y": -6
+        }
+      }
+    },
+    "events": {
+      "blast": {
+        "radius": 140,
+        "color": "#fff1c4",
+        "intensity": 1,
+        "glow": 0.6,
+        "ticks": 26
+      },
+      "hurt": {
+        "radius": 40,
+        "color": "#e43b44",
+        "intensity": 0.5,
+        "glow": 0.35,
+        "ticks": 10
+      }
+    },
+    "vignette": {
+      "color": "#000000",
+      "strength": 0.5,
+      "inner": 0.5
+    },
+    "particles": [
+      {
+        "emit": "dust-motes"
+      },
+      {
+        "emit": "crypt-embers",
+        "maps": ["crypt"]
+      }
+    ],
+    "bands": 6
+  }
 }

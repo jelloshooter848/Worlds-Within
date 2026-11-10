@@ -87,7 +87,9 @@ skins without an `idle` state draw as before; tested in `present.test.ts`).
   `D`/`d` boarded and shut building doors), `id` the room id, tags `wall:<n>` and `dark`. `version`
   is a 32-bit hash of the tiles and tags, so it changes when a door opens, shutters shut, a wall is
   blasted. During a room slide the map is both rooms side by side (id `<from>><to>`, 32x11 or
-  16x22, tags `slide`, `slide:<side>`, the new room's tags and the old one's with a `from-` prefix);
+  16x22, tags `slide`, `slide:<side>`, the new room's tags and the old one's with a `from-` prefix, and
+  from Engine 0.16 part C T4 `parts`: each room's id, place in tiles and own tags, so a skin's
+  per-room lighting follows each room through the slide);
   the new room sits at its offset in it and the `camera` hint scrolls across. With `state`, the
   `MapTracker` sends the full map only when the id or version changes, else `{ id, version }`.
 - **Positions** are world pixels (the room's top-left tile at 0,0). The HUD band is not baked in:
