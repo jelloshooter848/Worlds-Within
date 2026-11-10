@@ -11,6 +11,11 @@ picture size: `new Viewport(canvas, { integerScale }, content.manifest.screen)` 
 `DEFAULT_SCREEN`, `fitGame(size, ...)`) lives in `engine/core/gfx/screen.ts`, because the touch
 layout needs it too. Never hard-code a picture size here: take it from the size given.
 
+Where it runs (Engine 0.16 T13b-8): the RTS skirmish and tower-defense pages default to the
+PixiJS backend (`@engine/backends/pixi`); Canvas2D remains for Node tests, screenshots
+(`pnpm cli screenshot`, the parity sheet), machines without WebGL (the shell falls back to it)
+and `?backend=canvas2d`, and it stays the default of the other 2D pages.
+
 ## The shared walk (`@engine/core/draw`, Engine 0.16 T13b)
 
 Everything below about how a frame is drawn lives in the core `SkinnedPresenter`

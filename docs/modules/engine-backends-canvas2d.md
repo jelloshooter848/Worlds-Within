@@ -9,7 +9,9 @@ The browser backend for 2D. It draws the core `Renderer` contract onto a 2D canv
 backbuffer, sized to the game's picture (`screen` in `game.json`, 256x240 by default), on the
 display canvas, scaled and letterboxed. It also implements the presentation contract: it draws any
 `PresentFrame` (`@engine/core/present`) through a skin. It draws only what the caller asks
-for and holds no game rules.
+for and holds no game rules. The RTS skirmish and tower-defense pages default to PixiJS from
+Engine 0.16 T13b-8; Canvas2D remains for Node tests, screenshots, machines without WebGL (the
+shell's fallback), `?backend=canvas2d` and the other 2D pages' default.
 
 ## Public API entry points
 

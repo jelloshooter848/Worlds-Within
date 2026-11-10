@@ -13,6 +13,10 @@ import { browserMissing, launch, serveBuilt } from './serve';
 // state hash, where the page has one, is the same on both backends after the same steps) and it logged no errors. Then,
 // with WebGL taken away from the page (`getContext('webgl'|'webgl2')` returns null), `?backend=pixi`
 // falls back to Canvas2D. Skipped where Chromium is not installed (never in CI).
+//
+// Engine 0.16 T13b-8: the RTS skirmish and the tower defense default to PixiJS. With no query each
+// runs on PixiJS (headless Chromium's software WebGL, SwiftShader, counts as WebGL being there),
+// with WebGL taken away it runs on Canvas2D, and `?backend=canvas2d` still forces Canvas2D.
 
 const PAGES = [
   'games/samples/rts-skirmish/',
@@ -23,6 +27,9 @@ const PAGES = [
   'games/platformer-lab/',
   'games/platformer-classic/',
 ];
+
+/** The pages whose default 2D backend is PixiJS (Engine 0.16 T13b-8); the others default to Canvas2D. */
+const DEFAULT_PIXI = ['games/samples/rts-skirmish/', 'games/samples/tower-defense/'];
 
 const missing = await browserMissing();
 if (missing) console.warn(`skipping the PixiJS pages test: ${missing}`);
@@ -94,6 +101,32 @@ describe.skipIf(missing !== null)('the 2D backend choice on the game pages (head
     },
     300_000,
   );
+
+  it.each(DEFAULT_PIXI)(
+    '%s defaults to PixiJS, runs on Canvas2D without WebGL and with ?backend=canvas2d',
+    async (game) => {
+      const server = await serve();
+      const pixi = await play(`${server.url}${game}?debug=step`);
+      expect(pixi.backend, pixi.errors.join('\n')).toBe('pixi');
+      expect(pixi.errors).toEqual([]);
+      const noWebgl = await play(`${server.url}${game}?debug=step`, true);
+      expect(noWebgl.backend, noWebgl.errors.join('\n')).toBe('canvas2d');
+      expect(noWebgl.errors).toEqual([]);
+      const forced = await play(`${server.url}${game}?backend=canvas2d&debug=step`);
+      expect(forced.backend, forced.errors.join('\n')).toBe('canvas2d');
+      expect(forced.errors).toEqual([]);
+      expect(noWebgl.hash).toBe(pixi.hash);
+      expect(forced.hash).toBe(pixi.hash);
+    },
+    300_000,
+  );
+
+  it('keeps Canvas2D as the default of the other pages (the dungeon)', async () => {
+    const server = await serve();
+    const run = await play(`${server.url}games/samples/dungeon/?debug=step`);
+    expect(run.backend, run.errors.join('\n')).toBe('canvas2d');
+    expect(run.errors).toEqual([]);
+  }, 300_000);
 
   it('falls back to Canvas2D with ?backend=pixi where WebGL is missing', async () => {
     const server = await serve();

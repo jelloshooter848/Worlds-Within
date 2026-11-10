@@ -81,7 +81,9 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   `console.warn`, so `booted.backend` and `body[data-backend]` say what actually runs (`pixi` or
   `canvas2d`); a Canvas2D or 3D display that cannot start still shows its message. Opt-in on the
   2D pages of the rts-skirmish, tower-defense, dungeon and mini-siege samples, the fx lab, the
-  platformer lab and Hopper's Way (`?backend=pixi`; their default stays Canvas2D). The platformer
+  platformer lab and Hopper's Way (`?backend=pixi`; their default stays Canvas2D). The
+  rts-skirmish and tower-defense pages default to PixiJS (`default2d: 'pixi'`, Engine 0.16
+  T13b-8; `?backend=canvas2d` forces Canvas2D). The platformer
   sample (`games/samples/platformer`) gets the option when its own track merges. Tested in
   `shell.test.ts` (the query, `pageBackend`, the default, the fallback on a reason and on a throw
   with fake factories) and `tests/browser/pixi-pages.test.ts` (each wired page on both backends

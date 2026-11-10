@@ -10,8 +10,9 @@ import type { SideSummary } from './headless';
 import gameFiles from 'virtual:game-files';
 
 /**
- * Boots the skirmish in the browser (Engine 0.9 T12) with the engine's `bootBrowserGame`: Canvas2D
- * (T3 kept PixiJS out), pointer gestures on (mouse and touch: `PointerSource`), the touch pad off
+ * Boots the skirmish in the browser (Engine 0.9 T12) with the engine's `bootBrowserGame`: PixiJS
+ * (WebGL) by default since Engine 0.16 T13b-8, Canvas2D where WebGL is missing or with
+ * `?backend=canvas2d`, pointer gestures on (mouse and touch: `PointerSource`), the touch pad off
  * (the RTS plays by pointer), keyboard Shift for additive selection. The scene is `SkirmishPlay`
  * (`play.ts`); this file is only the DOM: the button bar under the picture, the status line, the
  * export (a download of the recorded battle as a run file), the end screen and the
@@ -80,10 +81,13 @@ const booted = await bootBrowserGame({
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
   displays: {
     canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
-    // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
+    // PixiJS (Engine 0.16 T13b-4) in its own chunk; Canvas2D without WebGL.
     pixi: async (canvas, { onSound }) =>
       (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
   },
+  // PixiJS by default (Engine 0.16 T13b-8), Canvas2D where WebGL is missing or with
+  // `?backend=canvas2d`.
+  default2d: 'pixi',
   pointer: true,
   touchPad: false,
   scene(_stack, display, page) {

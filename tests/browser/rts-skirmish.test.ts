@@ -19,7 +19,8 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // same every time. It then exports the recording (`window.wwSkirmish.exportRun`) and replays it
 // headless with `pnpm -s cli run`, which must pass with every sync hash equal. Where things are on
 // the page comes from the hook (`clientAt`, `units`), never from fixed pixels, so the camera can
-// move. Skipped where Chromium is not installed (never in CI).
+// move. The page runs on its default backend, PixiJS (Engine 0.16 T13b-8). Skipped where Chromium
+// is not installed (never in CI).
 
 const GAME = 'games/samples/rts-skirmish/';
 const TILE = 16;
@@ -112,7 +113,9 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       // (see platformer.test.ts).
       await page.goto(`${page.url()}?debug=step`);
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
-      expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
+      // PixiJS by default (Engine 0.16 T13b-8; headless Chromium's SwiftShader counts as WebGL), so
+      // the selection, orders and touch below go through the PixiJS display's letterbox maths.
+      expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('pixi');
       // The shell's volume control (gap M1), and no end screen yet.
       expect(await page.locator('#ww-volume').count()).toBe(1);
       expect(await page.isVisible('#end')).toBe(false);

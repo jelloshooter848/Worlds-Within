@@ -36,8 +36,9 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   `?backend=canvas2d` pick the 2D backend, else `default2d` (default `canvas2d`); a PixiJS display
   that cannot start (no WebGL: its factory returns a reason or throws) falls back to Canvas2D on a
   fresh canvas, and `booted.backend` / `body[data-backend]` say what runs (`pageBackend`,
-  `startDisplay`). Wired (opt-in) on the rts-skirmish, tower-defense, dungeon and mini-siege
-  samples, the fx lab, the platformer lab and Hopper's Way; the platformer sample gets the option
+  `startDisplay`). Wired on the rts-skirmish, tower-defense, dungeon and mini-siege samples, the
+  fx lab, the platformer lab and Hopper's Way (opt-in; the rts-skirmish and tower-defense pages
+  default to PixiJS from Engine 0.16 T13b-8, `?backend=canvas2d` forcing Canvas2D); the platformer sample gets the option
   when its own track merges. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
   gestures (tap, box, pan, zoom) are made per game step beside the `InputFrame`; the scene factory
   gets it as `scene(stack, display, page)` with `page.pointer`. `touchPad: false` hides the touch
