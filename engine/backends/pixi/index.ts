@@ -18,4 +18,10 @@ export { PixiPresenter, type PixiPresenterOptions } from './presenter';
 export { PixiUiPainter } from './ui-painter';
 export { skinSetPixiPresenter } from './skin-set';
 export { drawTransition } from './transition';
-export { pixiDisplay, pixiDisplayOn, type DisplayGpu, type PixiDisplayOptions } from './display';
+export {
+  pixiDisplay,
+  pixiDisplayOn,
+  type DisplayGpu,
+  type PixiDisplay,
+  type PixiDisplayOptions,
+} from './display';

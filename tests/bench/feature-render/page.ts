@@ -3,7 +3,7 @@ import { contentSheets } from '@engine/core/assets/content-sheets';
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import { rasterize } from '@engine/core/gfx/pixelart';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import type { SkinFile } from '@engine/core/present';
+import type { PresentFrame, SkinFile } from '@engine/core/present';
 import { contentFonts, type FontLookup } from '@engine/core/ui';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d/presenter';
 import { Viewport } from '@engine/backends/canvas2d/viewport';
@@ -23,12 +23,16 @@ import {
 
 // The feature benchmark's page (Engine 0.16 T13), driven by `run.ts` through Playwright. Each case
 // is drawn by the engine's own `SkinnedCanvasPresenter` on a `Viewport` (whole-number scale to the
-// window), as a game's page draws, with the game's fonts and sheets plus the bench sheet.
-// `window.featureBench.run` draws warm-up frames, then measures frames for `seconds`: per frame the time
-// in the draw call (present plus the copy to the page) and the time since the previous animation
-// frame (the frame-rate limit is off, so that is the whole frame: the scene's next frame, drawing
-// and Chromium's raster and compositing). `window.featureBench.shot` draws `SHOT_FRAMES` frames at once
-// (a blast just started, a zoom punch held) for a screenshot.
+// window), or with `backend: 'pixi'` (T13b-6) by `pixiDisplay` (`@engine/backends/pixi`, imported
+// only then; its `PixiPresenter`, whole-number scale) on the same canvas size, as a game's page
+// draws, with the game's fonts and sheets plus the bench sheet. Each case gets a fresh canvas; a
+// PixiJS case's WebGL context is let go (`WEBGL_lose_context`) when the next case starts.
+// `window.featureBench.run` draws warm-up frames, then measures frames for `seconds`: per frame
+// the time in the draw call (present plus the copy to the page; for PixiJS, building the display
+// list and submitting the GL commands) and the time since the previous animation frame (the
+// frame-rate limit is off, so that is the whole frame: the scene's next frame, drawing and
+// Chromium's raster or GL work and compositing). `window.featureBench.shot` draws `SHOT_FRAMES`
+// frames at once (a blast just started, a zoom punch held) for a screenshot.
 
 export interface GameText {
   files: Record<string, string>;
@@ -86,8 +90,13 @@ function loaded(map: FeatureMap): Loaded {
   return g;
 }
 
+/** Lets the last case's canvas go: its WebGL context too, so contexts do not pile up. */
+let release: () => void = () => {};
+
 /** A fresh canvas filling the window, replacing the last case's. */
 function freshCanvas(): HTMLCanvasElement {
+  release();
+  release = () => {};
   document.querySelector('canvas')?.remove();
   const canvas = document.createElement('canvas');
   canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;image-rendering:pixelated';
@@ -97,41 +106,82 @@ function freshCanvas(): HTMLCanvasElement {
 
 /** A case's scene and a draw function onto a fresh canvas. */
 interface CaseSetUp {
-  draw: () => void;
-  presenter: SkinnedCanvasPresenter;
+  /**
+   * The scene's next frame through the presenter, then (unless `toPage` is false) the picture onto
+   * the page: the canvas copy, or for PixiJS the GL render.
+   */
+  draw: (toPage?: boolean) => void;
+  /** Live particles in the presenter. */
+  particles: () => number;
   /** Entities in the last frame drawn. */
   entities: () => number;
 }
 
-function setUp(req: FeatureCase): CaseSetUp {
+interface SetUpOptions {
+  /** Keep the WebGL drawing buffer for a screenshot (PixiJS only). */
+  shot?: boolean;
+}
+
+async function setUp(req: FeatureCase, setUpOpts: SetUpOptions = {}): Promise<CaseSetUp> {
   const g = loaded(req.map);
   const screen = g.game.content.manifest.screen;
-  const viewport = new Viewport(freshCanvas(), { integerScale: true }, screen);
   const skin =
     req.features === false
       ? g.game.skin
       : req.without?.length
         ? withoutFeatures(g.featureSkin, req.without)
         : g.featureSkin;
-  const presenter = new SkinnedCanvasPresenter(viewport.ctx, skin, g.sheets, {
-    size: screen,
-    fonts: g.fonts,
-    seed: req.seed ?? 1,
-    maxParticles: BENCH_MAX_PARTICLES,
-  });
   const scene = new FeatureScene(g.game.base, req);
   let entities = 0;
-  const draw = () => {
+  const canvas = freshCanvas();
+  let present: (frame: PresentFrame) => void;
+  let toPage: () => void;
+  let particles: () => number;
+  if ((req.backend ?? 'canvas2d') === 'pixi') {
+    // The PixiJS display a game's page starts (`pixiDisplay`, whole-number scale), on the same
+    // canvas, skin, sheets and fonts.
+    const { pixiDisplay } = await import('@engine/backends/pixi');
+    const display = await pixiDisplay(canvas, {
+      screen,
+      skin,
+      sheet: g.sheets,
+      fonts: g.fonts,
+      integerScale: true,
+      seed: req.seed ?? 1,
+      maxParticles: BENCH_MAX_PARTICLES,
+      preserveDrawingBuffer: setUpOpts.shot ?? false,
+    });
+    if (typeof display === 'string') throw new Error(display);
+    release = () => {
+      const gl = canvas.getContext('webgl2') ?? canvas.getContext('webgl');
+      gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    };
+    present = (frame) => display.presenter.present(frame);
+    toPage = () => display.present();
+    particles = () => display.main.particleCount;
+  } else {
+    const viewport = new Viewport(canvas, { integerScale: true }, screen);
+    const presenter = new SkinnedCanvasPresenter(viewport.ctx, skin, g.sheets, {
+      size: screen,
+      fonts: g.fonts,
+      seed: req.seed ?? 1,
+      maxParticles: BENCH_MAX_PARTICLES,
+    });
+    present = (frame) => presenter.present(frame);
+    toPage = () => viewport.present();
+    particles = () => presenter.particleCount;
+  }
+  const draw = (copy = true) => {
     const frame = scene.next();
     entities = frame.entities.length;
-    presenter.present(frame);
-    viewport.present();
+    present(frame);
+    if (copy) toPage();
   };
-  return { draw, presenter, entities: () => entities };
+  return { draw, particles, entities: () => entities };
 }
 
-function measure(req: FeatureRequest): Promise<FeatureTimes> {
-  const { draw, presenter, entities } = setUp(req);
+async function measure(req: FeatureRequest): Promise<FeatureTimes> {
+  const { draw, particles, entities } = await setUp(req);
   return new Promise((done) => {
     const times: FeatureTimes = { draw: [], interval: [], particles: [], entities: 0 };
     let n = 0;
@@ -146,12 +196,12 @@ function measure(req: FeatureRequest): Promise<FeatureTimes> {
       const t1 = performance.now();
       if (n >= req.warmup) {
         times.draw.push(t1 - t0);
-        if (times.draw.length % 10 === 0) times.particles.push(presenter.particleCount);
+        if (times.draw.length % 10 === 0) times.particles.push(particles());
       }
       n++;
       if (n <= req.warmup || now - start < req.seconds * 1000) requestAnimationFrame(tick);
       else {
-        times.particles.push(presenter.particleCount);
+        times.particles.push(particles());
         times.entities = entities();
         done(times);
       }
@@ -182,11 +232,13 @@ const api = {
   run(req: FeatureRequest): Promise<FeatureTimes> {
     return measure(req);
   },
-  /** Draws the case's first `frames` frames at once; the picture stays for a screenshot. */
-  shot(req: FeatureCase, frames = SHOT_FRAMES): { particles: number; entities: number } {
-    const { draw, presenter, entities } = setUp(req);
-    for (let i = 0; i < frames; i++) draw();
-    return { particles: presenter.particleCount, entities: entities() };
+  /** Steps the case's first `frames` frames at once and shows the last; it stays for a screenshot. */
+  async shot(req: FeatureCase, frames = SHOT_FRAMES): Promise<{ particles: number; entities: number }> {
+    const { draw, particles, entities } = await setUp(req, { shot: true });
+    // Only the last frame goes to the page: on software GL, rendering every one queues seconds of
+    // GL work for the screenshot to wait on.
+    for (let i = 0; i < frames; i++) draw(i === frames - 1);
+    return { particles: particles(), entities: entities() };
   },
 };
 

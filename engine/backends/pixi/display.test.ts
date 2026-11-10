@@ -6,6 +6,7 @@ import { layoutScreen } from '@engine/core/input/touch-layout';
 import { freezeFrame, type SkinFile } from '@engine/core/present';
 import { buildFont, type FontLookup } from '@engine/core/ui';
 import { pixiDisplayOn, type DisplayGpu } from './display';
+import { PixiPresenter } from './presenter';
 import { PixiRenderer } from './renderer';
 
 // The PixiJS display (Engine 0.16 T13b-3) on a recording stand-in for the PixiJS renderer, so
@@ -121,5 +122,20 @@ describe('pixiDisplayOn', () => {
     // The glyph strip's surface is rendered before the picture.
     expect(passes.map((p) => p.target?.frame.width ?? 'page')).toEqual([3, 256, 'page']);
     expect(() => display.effectSettings!({ shakeScale: 0, reduceFlashing: true })).not.toThrow();
+  });
+
+  it("gives the game's own presenter as main, with the seed and particle cap asked for", () => {
+    const { gpu, canvas } = setup(256, 240);
+    const display = pixiDisplayOn(gpu, canvas, {
+      screen,
+      skin: SKIN,
+      sheet: () => null,
+      seed: 7,
+      maxParticles: 6000,
+    });
+    expect(display.main).toBeInstanceOf(PixiPresenter);
+    expect(display.main.particleCount).toBe(0);
+    const opts = (display.main as unknown as { opts: { seed?: number; maxParticles?: number } }).opts;
+    expect(opts).toMatchObject({ seed: 7, maxParticles: 6000 });
   });
 });

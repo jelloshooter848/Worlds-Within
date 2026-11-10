@@ -221,6 +221,15 @@ features on (glow, `shadowBlur`, on additive drawing is the worst; 2000+ particl
 budget), so a PixiJS v8 backend is the follow-up (T13b, item 323; numbers in `docs/BUILD-LOG.md`,
 Engine 0.16 part A, T13). Rerun it after changing how particles, glow or blending are drawn.
 
+From T13b-6 it measures this presenter and the PixiJS backend side by side (each result names its
+`backend`; the machine block names the WebGL renderer and whether it is software). Rerun with:
+
+    pnpm bench:features                        # both backends
+    pnpm bench:features --backends canvas2d    # this backend only (add --ablate for feature costs)
+
+On the build container (no GPU: Skia on the CPU) this presenter's features-on p95 was 169-363 ms
+and plain 11-17 ms (`docs/BUILD-LOG.md`, T13, 2026-11-10).
+
 ## Imports
 
 - Allowed: `@engine/core/*`, files in this folder, browser APIs (canvas, `window`).

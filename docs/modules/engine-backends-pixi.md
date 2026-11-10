@@ -47,8 +47,11 @@ skin, sheets, opts?)`, the core `SkinnedPresenter` (`@engine/core/draw`) on a `P
   renderer, the picture rendered into a backbuffer at the game's `screen` size and shown scaled and
   letterboxed like Canvas2D's `Viewport`; or a sentence when WebGL cannot start.
   `PixiDisplayOptions` are Canvas2D's `CanvasDisplayOptions`, plus `preserveDrawingBuffer` (T13b-5:
-  keep the canvas readable after each picture, for `pnpm cli screenshot --backend pixi`). `pixiDisplayOn(gpu, canvas, opts)`
-  builds it on a started renderer (`DisplayGpu`). `index.ts` has no side effects at import.
+  keep the canvas readable after each picture, for `pnpm cli screenshot --backend pixi`) and
+  `seed` and `maxParticles` for the main presenter (T13b-6, the feature benchmark). The result is a
+  `PixiDisplay`: the `BrowserDisplay` plus `main`, the game's own `PixiPresenter` (its
+  `particleCount`). `pixiDisplayOn(gpu, canvas, opts)` builds it on a started renderer
+  (`DisplayGpu`). `index.ts` has no side effects at import.
 
 The shell's backend choice comes with T13b-4.
 
@@ -76,3 +79,9 @@ WebGL renderer), `pnpm cli sheet` takes `@pixi` tiles (`120@canvas2d,120@pixi` s
 and the tower defense with a stated tolerance: threshold 8 and 0.1% of the pixels where nothing
 glows, threshold 32 and 1% for the fx lab's glow and additive particles (see
 `engine/tools/CLAUDE.md`, Visual parity).
+
+## Performance
+
+`pnpm bench:features` measures this backend beside Canvas2D on the RTS and tower-defense feature
+scenes (`--backends canvas2d,pixi`, default both; T13b-6). First numbers, from a container with no
+GPU (WebGL on SwiftShader), are in `docs/BUILD-LOG.md` (Engine 0.16 part A, T13).

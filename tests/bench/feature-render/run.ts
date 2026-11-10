@@ -9,27 +9,33 @@ import { listen } from '../../browser/serve';
 import { BUDGET_MS, frameStats, type FrameStats } from '../rts-render/scene';
 import { FEATURE_GAMES } from './games';
 import type { FeatureInfo, FeatureRequest, FeatureTimes, GameText } from './page';
-import { FEATURE_NAMES, PUNCH_AT, type FeatureMap, type FeatureName } from './scene';
+import { FEATURE_BACKENDS, parseBackends, planCases } from './plan';
+import { PUNCH_AT, type FeatureBackend, type FeatureMap, type FeatureName } from './scene';
 
 // The 2D feature benchmark (Engine 0.16 T13, item 320; numbers and the Canvas2D/PixiJS decision
 // in docs/BUILD-LOG.md, Engine 0.16 part A). Not part of `pnpm test`. Run it with
 //
-//   pnpm bench:features [--seconds 5] [--warmup 60] [--maps rts,td] [--zooms 0.5,1,2]
-//                       [--units rts=500,td=300] [--no-plain] [--ablate] [--shots <folder>]
+//   pnpm bench:features [--seconds 5] [--warmup 60] [--backends canvas2d,pixi] [--maps rts,td]
+//                       [--zooms 0.5,1,2] [--units rts=500,td=300] [--no-plain] [--ablate]
+//                       [--shots <folder>]
 //
 // It builds the page in this folder with Vite into a temp folder, serves it, opens it in headless
 // Chromium through Playwright with vsync and the frame-rate limit off, hands the page the two
-// sample games' files (the RTS skirmish and the tower defense) and, per map, zoom and features
-// on/off (`plain`: the game's own skin and the same units, nothing added; `--no-plain` skips it;
+// sample games' files (the RTS skirmish and the tower defense) and, per map, backend (`canvas2d`:
+// the Canvas2D presenter on a `Viewport`; `pixi`: `pixiDisplay`, PixiJS on WebGL, T13b-6;
+// `--backends` picks, default both), zoom and features on/off (`plain`: the game's own skin and
+// the same units, nothing added; `--no-plain` skips it;
 // `--ablate` adds zoom-1 cases with features switched off again: each alone, glow and additive
 // blending together, and all of them, to see what each costs),
 // draws `warmup` frames and then measures frames for `seconds`. It prints one JSON document on
-// stdout: the machine, then per case the frame time (ms between animation frames: the whole frame)
-// and the draw call's time as p50 / p95 / p99 / max / mean and fps, the frames measured, the live
+// stdout: the machine (Chromium, the WebGL renderer string, `software` when it is a software GL
+// such as SwiftShader, the CPU), then per case its `backend`, the frame time (ms between
+// animation frames: the whole frame) and the draw call's time as p50 / p95 / p99 / max / mean and fps, the frames measured, the live
 // particles (mean and min of samples) and entities, and `pass` (p95 at most 16.7 ms, 60 fps).
-// Progress lines go to stderr. `--shots <folder>` also saves a PNG per case (features on) after
-// the scene's first `SHOT_FRAMES` frames, drawn at once: a blast and a zoom punch on screen
-// (keep the folder outside the repo). Without a browser it prints `{"skipped": "<why>"}`, exit 0.
+// Progress lines go to stderr. `--shots <folder>` also saves a PNG per backend and case (features
+// on, `features-<map>-x<zoom>-<backend>.png`) after the scene's first `SHOT_FRAMES` frames, drawn
+// at once: a blast and a zoom punch on screen (keep the folder outside the repo). Without a
+// browser it prints `{"skipped": "<why>"}`, exit 0.
 
 const HERE = fileURLToPath(new URL('./', import.meta.url));
 const ROOT = resolve(HERE, '../../..');
@@ -40,6 +46,7 @@ const CHROMIUM_ARGS = ['--enable-unsafe-swiftshader', '--disable-gpu-vsync', '--
 interface Options {
   seconds: number;
   warmup: number;
+  backends: FeatureBackend[];
   maps: FeatureMap[];
   zooms: number[];
   units: Record<FeatureMap, number>;
@@ -52,6 +59,7 @@ function parseArgs(argv: readonly string[]): Options {
   const opts: Options = {
     seconds: 5,
     warmup: 60,
+    backends: [...FEATURE_BACKENDS],
     maps: ['rts', 'td'],
     zooms: [0.5, 1, 2],
     units: { rts: FEATURE_GAMES.rts.units, td: FEATURE_GAMES.td.units },
@@ -64,6 +72,7 @@ function parseArgs(argv: readonly string[]): Options {
     const value = () => argv[++i] ?? '';
     if (arg === '--seconds') opts.seconds = Number(value());
     else if (arg === '--warmup') opts.warmup = Number(value());
+    else if (arg === '--backends') opts.backends = parseBackends(value());
     else if (arg === '--maps') opts.maps = maps(value());
     else if (arg === '--zooms')
       opts.zooms = value()
@@ -88,13 +97,6 @@ function maps(v: string): FeatureMap[] {
   for (const m of out) if (m !== 'rts' && m !== 'td') throw new Error(`unknown map "${m}" (rts or td)`);
   return out as FeatureMap[];
 }
-
-/** `--ablate`: each feature off alone, glow and additive blending off together, and all of them. */
-const ABLATIONS: FeatureName[][] = [
-  ...FEATURE_NAMES.map((name) => [name]),
-  ['glow', 'add'],
-  [...FEATURE_NAMES],
-];
 
 const TYPES: Record<string, string> = { '.html': 'text/html', '.js': 'text/javascript' };
 
@@ -126,9 +128,10 @@ async function servePage(outDir: string) {
 
 interface CaseResult {
   map: FeatureMap;
+  backend: FeatureBackend;
   features: boolean;
   /** Features switched off again (`--ablate`). */
-  without: FeatureName[];
+  without: readonly FeatureName[];
   units: number;
   zoom: number;
   frame: FrameStats;
@@ -173,81 +176,84 @@ async function main(): Promise<void> {
     const machine = {
       chromium: info.userAgent.match(/Chrome\/([\d.]+)/)?.[1] ?? '?',
       webgl: info.webgl,
+      software: /swiftshader|llvmpipe|software/i.test(info.webgl),
       cpu: `${cpus()[0]?.model ?? '?'} x${cpus().length}`,
       window: info.window,
       screens: info.screens,
     };
-    console.error(`Chromium ${machine.chromium}, WebGL: ${machine.webgl}, CPU: ${machine.cpu}`);
+    console.error(
+      `Chromium ${machine.chromium}, WebGL: ${machine.webgl}${machine.software ? ' (software GL)' : ''}, ` +
+        `CPU: ${machine.cpu}`,
+    );
     if (opts.shots) {
       mkdirSync(opts.shots, { recursive: true });
       for (const map of opts.maps) {
-        for (const zoom of opts.zooms) {
-          const shot = await page.evaluate((r) => window.featureBench!.shot(r), {
-            map,
-            zoom,
-            units: opts.units[map],
+        for (const backend of opts.backends) {
+          for (const zoom of opts.zooms) {
+            const shot = await page.evaluate((r) => window.featureBench!.shot(r), {
+              map,
+              backend,
+              zoom,
+              units: opts.units[map],
+            });
+            const path = join(opts.shots, `features-${map}-x${zoom}-${backend}.png`);
+            await page.screenshot({ path });
+            console.error(`shot ${path} (${shot.particles} particles, ${shot.entities} entities)`);
+          }
+          // Two frames into the zoom punch's flash, and the game's plain skin, at zoom 1.
+          const req = { map, backend, zoom: 1, units: opts.units[map] };
+          await page.evaluate((r) => window.featureBench!.shot(r, r.frames), {
+            ...req,
+            frames: PUNCH_AT + 3,
           });
-          const path = join(opts.shots, `features-${map}-x${zoom}.png`);
-          await page.screenshot({ path });
-          console.error(`shot ${path} (${shot.particles} particles, ${shot.entities} entities)`);
+          await page.screenshot({ path: join(opts.shots, `features-${map}-flash-${backend}.png`) });
+          await page.evaluate((r) => window.featureBench!.shot(r), { ...req, features: false });
+          await page.screenshot({ path: join(opts.shots, `plain-${map}-x1-${backend}.png`) });
         }
-        // Two frames into the zoom punch's flash, and the game's plain skin, at zoom 1.
-        const req = { map, zoom: 1, units: opts.units[map] };
-        await page.evaluate((r) => window.featureBench!.shot(r, r.frames), { ...req, frames: PUNCH_AT + 3 });
-        await page.screenshot({ path: join(opts.shots, `features-${map}-flash.png`) });
-        await page.evaluate((r) => window.featureBench!.shot(r), { ...req, features: false });
-        await page.screenshot({ path: join(opts.shots, `plain-${map}-x1.png`) });
       }
     }
     const results: CaseResult[] = [];
-    // Features on and plain at every zoom; with --ablate, the ablations at zoom 1.
-    const variants: { features: boolean; without: FeatureName[]; zooms: number[] }[] = [
-      { features: true, without: [], zooms: opts.zooms },
-      ...(opts.plain ? [{ features: false, without: [], zooms: opts.zooms }] : []),
-      ...(opts.ablate ? ABLATIONS.map((without) => ({ features: true, without, zooms: [1] })) : []),
-    ];
-    for (const map of opts.maps) {
-      for (const { features, without, zooms } of variants) {
-        for (const zoom of zooms) {
-          const req: FeatureRequest = {
-            map,
-            zoom,
-            units: opts.units[map],
-            features,
-            without,
-            warmup: opts.warmup,
-            seconds: opts.seconds,
-          };
-          const times: FeatureTimes = await page.evaluate((r) => window.featureBench!.run(r), req);
-          const frame = round(frameStats(times.interval));
-          const samples = times.particles.length > 0 ? times.particles : [0];
-          const result: CaseResult = {
-            map,
-            features,
-            without,
-            units: req.units,
-            zoom,
-            frame,
-            draw: round(frameStats(times.draw)),
-            particles: {
-              mean: Math.round(samples.reduce((s, n) => s + n, 0) / samples.length),
-              min: Math.min(...samples),
-            },
-            entities: times.entities,
-            pass: frame.p95 <= BUDGET_MS,
-          };
-          results.push(result);
-          console.error(
-            `${map.padEnd(3)} ${features ? (without.length ? `-${without.join(',')}` : 'features') : 'plain'} x${zoom} ` +
-              `frame p50 ${frame.p50.toFixed(2)} p95 ${frame.p95.toFixed(2)} ms, ${frame.fps.toFixed(0)} fps, ` +
-              `draw p50 ${result.draw.p50.toFixed(2)} ms, ${result.particles.mean} particles ` +
-              `${result.pass ? 'PASS' : 'MISS'}`,
-          );
-        }
-      }
+    // Per map and backend: features on and plain at every zoom; with --ablate, the ablations at zoom 1.
+    for (const planned of planCases(opts)) {
+      const { map, backend, features, without, zoom } = planned;
+      const req: FeatureRequest = { ...planned, warmup: opts.warmup, seconds: opts.seconds };
+      const times: FeatureTimes = await page.evaluate((r) => window.featureBench!.run(r), req);
+      const frame = round(frameStats(times.interval));
+      const samples = times.particles.length > 0 ? times.particles : [0];
+      const result: CaseResult = {
+        map,
+        backend,
+        features,
+        without,
+        units: req.units,
+        zoom,
+        frame,
+        draw: round(frameStats(times.draw)),
+        particles: {
+          mean: Math.round(samples.reduce((s, n) => s + n, 0) / samples.length),
+          min: Math.min(...samples),
+        },
+        entities: times.entities,
+        pass: frame.p95 <= BUDGET_MS,
+      };
+      results.push(result);
+      console.error(
+        `${map.padEnd(3)} ${backend.padEnd(8)} ` +
+          `${features ? (without.length ? `-${without.join(',')}` : 'features') : 'plain'} x${zoom} ` +
+          `frame p50 ${frame.p50.toFixed(2)} p95 ${frame.p95.toFixed(2)} p99 ${frame.p99.toFixed(2)} ms, ` +
+          `${frame.fps.toFixed(0)} fps, draw p50 ${result.draw.p50.toFixed(2)} ms, ` +
+          `${result.particles.mean} particles ${result.pass ? 'PASS' : 'MISS'}`,
+      );
     }
     if (errors.length > 0) throw new Error(`the page logged errors:\n${errors.join('\n')}`);
-    const summary = { budgetMs: BUDGET_MS, seconds: opts.seconds, warmup: opts.warmup, machine, results };
+    const summary = {
+      budgetMs: BUDGET_MS,
+      seconds: opts.seconds,
+      warmup: opts.warmup,
+      backends: opts.backends,
+      machine,
+      results,
+    };
     console.log(JSON.stringify(summary, null, 2));
   } finally {
     await browser.close();

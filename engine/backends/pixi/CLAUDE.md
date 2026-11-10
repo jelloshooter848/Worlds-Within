@@ -104,6 +104,9 @@ opts)` builds the display (a test passes a recording `DisplayGpu`):
   (no gradient texture); iris the picture covered with the circle `cut()` as a hole.
 - `preserveDrawingBuffer` (T13b-5, default false) keeps the canvas's drawing buffer after each
   picture, so a tool reads it back with `toDataURL` at any time (the screenshot page sets it).
+- `seed` and `maxParticles` (T13b-6) go to the main presenter (the feature benchmark sets 6000
+  particles), and the display (`PixiDisplay`) gives that presenter as `main`, so a tool reads its
+  `particleCount` (`presenter` is the skin set's, which has none).
 - `uiPainter()` is one `PixiUiPainter` (made once, so glyph strips are drawn once);
   `effectSettings` reaches every presenter; `toScreen`/`toClient` are the `Viewport`'s maths;
   `fit(layout)` resizes the drawing buffer to the canvas's CSS size times `devicePixelRatio`.
@@ -127,6 +130,23 @@ opts)` builds the display (a test passes a recording `DisplayGpu`):
   on the picture's centre in the page's Canvas2D tile). A change that moves the picture must keep
   this test green; if a looser bound is needed, say why in this file and in
   `engine/tools/CLAUDE.md` (Visual parity).
+
+## Performance: the 2D feature benchmark (T13b-6)
+
+`pnpm bench:features` (`tests/bench/feature-render/`) draws the RTS and tower-defense feature
+scenes through `pixiDisplay` beside Canvas2D: same skin, units, seed, zooms 0.5/1/2, features on
+and plain, `--ablate` per backend, `--shots` per-backend PNGs. Each result names its `backend`;
+the machine block names the WebGL renderer and `software` when it is a software GL. Rerun with:
+
+    pnpm bench:features                               # both backends
+    pnpm bench:features --backends pixi --ablate      # this backend, and what each feature costs
+
+First numbers (`docs/BUILD-LOG.md`, T13, 2026-11-10) are from a container with no GPU, where
+WebGL is SwiftShader (software GL on the CPU): the draw call (display list and GL submission) was
+17-40 ms p50 with the features on, 5-10 times less than Canvas2D's, but whole frames were 124-204
+ms p50 even plain, the cost of software GL filling and compositing a 1280 x 960 canvas. Read the
+draw column there; judge frame times (the 16.7 ms p95 bar) on a machine with a GPU. Rerun after
+changing how sprites, particles, glow, blending or the backbuffer are drawn.
 
 ## Imports
 

@@ -3,7 +3,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import { transitionShape, type TransitionView } from '@engine/core/fx';
 import { fitGame, type GameFit, type ScreenSize } from '@engine/core/gfx/screen';
 import type { DeepReadonly, SkinFile, SoundCue } from '@engine/core/present';
-import type { BrowserDisplay, DisplayResult } from '@engine/core/shell/display';
+import type { BrowserDisplay } from '@engine/core/shell/display';
 import type { FontLookup, UiPainter } from '@engine/core/ui';
 import { PixiPresenter } from './presenter';
 import { PixiRenderer } from './renderer';
@@ -36,7 +36,18 @@ export interface PixiDisplayOptions {
    * T13b-5). Default false: the page's own display lets the browser drop it, which is faster.
    */
   preserveDrawingBuffer?: boolean;
+  /** The seed the main presenter's particles draw from (`SkinnedPresenterOptions.seed`). */
+  seed?: number;
+  /** The main presenter's particle cap (`SkinnedPresenterOptions.maxParticles`; the 2D feature benchmark sets 6000). */
+  maxParticles?: number;
 }
+
+/**
+ * A started PixiJS display: the shell's `BrowserDisplay`, plus the game's own `PixiPresenter`
+ * (`main`; `presenter` is the skin set's), so a tool such as the 2D feature benchmark reads its
+ * `particleCount`.
+ */
+export type PixiDisplay = BrowserDisplay & { readonly main: PixiPresenter };
 
 /**
  * The part of a PixiJS renderer the display uses: rendering a container (into a texture, or onto
@@ -58,7 +69,7 @@ export interface DisplayGpu extends SurfaceTarget {
 export async function pixiDisplay(
   canvas: HTMLCanvasElement,
   opts: PixiDisplayOptions,
-): Promise<DisplayResult> {
+): Promise<PixiDisplay | string> {
   let gpu: DisplayGpu;
   try {
     gpu = (await autoDetectRenderer({
@@ -97,7 +108,7 @@ export function pixiDisplayOn(
   gpu: DisplayGpu,
   canvas: HTMLCanvasElement,
   opts: PixiDisplayOptions,
-): BrowserDisplay {
+): PixiDisplay {
   const { screen } = opts;
   const renderer = new PixiRenderer({ size: screen });
   const surfaces = new PixiSurfaces(renderer);
@@ -108,6 +119,8 @@ export function pixiDisplayOn(
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
     ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+    ...(opts.seed !== undefined && { seed: opts.seed }),
+    ...(opts.maxParticles !== undefined && { maxParticles: opts.maxParticles }),
   });
   const presenter = skinSetPixiPresenter(renderer, { ...opts, main }, surfaces);
   // The picture at the game's size: the scenes' stage with the transition over it.
@@ -138,6 +151,7 @@ export function pixiDisplayOn(
   return {
     renderer,
     presenter,
+    main,
     fit(layout) {
       fit = layout.fit;
       resize();

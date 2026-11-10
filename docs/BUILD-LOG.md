@@ -526,6 +526,69 @@ pnpm bench:features --ablate --shots /tmp/feature-shots   # plus the cost of eac
 pnpm exec tsx tests/bench/rts-render/run.ts # the 0.9 RTS benchmark, unchanged
 ```
 
+**2026-11-10: the PixiJS column (T13b-6), first numbers.** `pnpm bench:features` now measures
+both 2D backends on the same scenes (`--backends canvas2d,pixi`, default both): per map and
+backend, features on and plain at zoom 0.5, 1 and 2, the same feature skin, units (RTS 500, TD
+300), seed and window (1280 x 960, whole-number scale). A PixiJS case is drawn by `pixiDisplay`
+(its `PixiPresenter`, the game's page path) on a fresh canvas of the same size; `pixiDisplay` got
+`seed` and `maxParticles` options and gives its main presenter as `main` (for `particleCount`).
+Each result names its `backend`; the machine block names the WebGL renderer and whether it is
+software (`software: true` here); `--ablate` runs per backend; `--shots` saves
+`features-<map>-x<zoom>-<backend>.png` and the flash and plain shots per backend. The case plan is
+`plan.ts`, checked in Node by `scene.test.ts` (a Canvas2D and a PixiJS case for each map, zoom,
+features on and plain).
+
+**Caveat: this container has no GPU.** Canvas2D is rasterised by Skia on the CPU, and WebGL is
+SwiftShader (`ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)`), a software GL on the same 4 CPU cores
+(Intel(R) Xeon(R) Processor @ 2.10GHz x4, Chromium 153.0.8010.12). These are not the numbers a player's
+GPU gives, and they say little about PixiJS on real hardware. One run, 60 warm-up frames, 5 s per
+case, nothing else running; frame = ms between animation frames, draw = ms in the draw call.
+
+| Map | Backend  | Features | Zoom | Frame p50 / p95 / p99 (ms) | fps | Draw p50 / p95 (ms) | Particles | p95 <= 16.7 |
+| --- | -------- | -------- | ---- | -------------------------- | --- | ------------------- | --------- | ----------- |
+| RTS | Canvas2D | features | 0.5  | 212 / 363 / 387            | 5   | 188 / 358           | 3574      | miss        |
+| RTS | Canvas2D | features | 1    | 149 / 234 / 356            | 6   | 137 / 226           | 3534      | miss        |
+| RTS | Canvas2D | features | 2    | 148 / 169 / 198            | 7   | 141 / 166           | 3590      | miss        |
+| RTS | Canvas2D | plain    | 0.5  | 9.5 / 16.4 / 33.9          | 97  | 6.5 / 12.3          | 0         | pass        |
+| RTS | Canvas2D | plain    | 1    | 7.4 / 15.0 / 32.4          | 118 | 4.8 / 10.7          | 0         | pass        |
+| RTS | Canvas2D | plain    | 2    | 7.8 / 17.1 / 32.2          | 106 | 4.6 / 10.0          | 0         | miss        |
+| RTS | PixiJS   | features | 0.5  | 330 / 741 / 741            | 3   | 39.8 / 305          | 3498      | miss        |
+| RTS | PixiJS   | features | 1    | 153 / 297 / 306            | 6   | 17.3 / 29.3         | 3550      | miss        |
+| RTS | PixiJS   | features | 2    | 194 / 434 / 550            | 4   | 19.7 / 48.6         | 3574      | miss        |
+| RTS | PixiJS   | plain    | 0.5  | 163 / 417 / 514            | 5   | 3.2 / 10.3          | 0         | miss        |
+| RTS | PixiJS   | plain    | 1    | 166 / 422 / 540            | 5   | 4.6 / 17.0          | 0         | miss        |
+| RTS | PixiJS   | plain    | 2    | 204 / 308 / 335            | 5   | 4.0 / 10.1          | 0         | miss        |
+| TD  | Canvas2D | features | 0.5  | 137 / 252 / 370            | 6   | 127 / 257           | 2669      | miss        |
+| TD  | Canvas2D | features | 1    | 161 / 223 / 223            | 6   | 155 / 219           | 2619      | miss        |
+| TD  | Canvas2D | features | 2    | 177 / 216 / 230            | 6   | 175 / 222           | 2633      | miss        |
+| TD  | Canvas2D | plain    | 0.5  | 4.6 / 11.0 / 39.9          | 150 | 2.0 / 4.5           | 0         | pass        |
+| TD  | Canvas2D | plain    | 1    | 4.9 / 13.4 / 39.4          | 149 | 2.0 / 4.4           | 0         | pass        |
+| TD  | Canvas2D | plain    | 2    | 5.0 / 11.4 / 27.5          | 167 | 1.9 / 3.6           | 0         | pass        |
+| TD  | PixiJS   | features | 0.5  | 230 / 406 / 495            | 4   | 21.0 / 35.9         | 2684      | miss        |
+| TD  | PixiJS   | features | 1    | 199 / 460 / 596            | 4   | 18.0 / 51.8         | 2644      | miss        |
+| TD  | PixiJS   | features | 2    | 195 / 313 / 492            | 5   | 16.5 / 50.3         | 2626      | miss        |
+| TD  | PixiJS   | plain    | 0.5  | 124 / 348 / 379            | 7   | 1.9 / 3.6           | 0         | miss        |
+| TD  | PixiJS   | plain    | 1    | 142 / 281 / 353            | 7   | 2.0 / 5.6           | 0         | miss        |
+| TD  | PixiJS   | plain    | 2    | 153 / 262 / 309            | 6   | 1.9 / 4.4           | 0         | miss        |
+
+What the numbers say, on this machine:
+
+- Neither backend holds the bar with the features on: Canvas2D 169-363 ms p95, PixiJS 297-741 ms.
+- PixiJS's draw call (building the display list and submitting GL commands) is 17-40 ms p50 with
+  the features on, against Canvas2D's 127-188 ms: the CPU side of PixiJS is about 5-10 times
+  cheaper. Its frames are long anyway because SwiftShader rasterises every GL draw on the CPU
+  after the call returns.
+- PixiJS plain, with a 2-5 ms draw call, still takes 124-204 ms p50 per frame, where Canvas2D
+  plain takes 5-10 ms: the fixed cost here is software GL filling a 1280 x 960 WebGL canvas and
+  compositing it, not the scene. On a GPU that cost should be small, so the frame-time column for
+  PixiJS here mostly measures SwiftShader.
+- T13b-7 (tuning toward the bar) should therefore read the draw-time column here and, before
+  PixiJS becomes the default (T13b-8), get frame times from a machine with a GPU; the owner
+  decides with the T13b-9 close-out.
+
+Rerun: `pnpm bench:features` (both backends), `pnpm bench:features --backends pixi --ablate` (the
+cost of each feature on PixiJS), `pnpm bench:features --shots /tmp/feature-shots` (screenshots).
+
 ## Engine 0.15
 
 The sample set. Built on branch `engine/build-0.15`; not tagged (no tags during the build, owner
