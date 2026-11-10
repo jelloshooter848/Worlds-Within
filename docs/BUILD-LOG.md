@@ -73,8 +73,9 @@ the API review listed (`1.0-1` to `1.0-11`).
 - **0.16 part A Engine presentation features: built, awaiting review.** Animation, tweens,
   particles, camera effects, parallax, transitions, the UI kit, the mixer, title/pause/settings
   for every game, PNG and glTF assets, the 3D look, the 2D benchmark, `pnpm cli sheet` and the
-  effects sheet; presentation proved never to change state. Not met: the owner's screenshot
-  review (item 339) and the PixiJS backend (T13b, item 323).
+  effects sheet; presentation proved never to change state; the PixiJS v8 2D backend (T13b,
+  item 323), the default for the RTS and tower defense. Not met: the owner's screenshot review
+  (item 339, now with the PixiJS parity sheet as well).
 
 ### How to try each sample
 
@@ -126,7 +127,8 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.14: **247-277**. Engine 0.15: **278-315** (278-291 the decisions before code, 292-303
   the smaller build choices, 304-315 more choices added by the last finalize pass).
 - Engine 0.16 part A: **323** (PixiJS follow-up T13b), **324-338** (choices made), **339** (the
-  owner's screenshot review), **340-363** (smaller build choices added by the finalize pass).
+  owner's screenshot review), **340-363** (smaller build choices added by the finalize pass),
+  **379-382** (the PixiJS backend's close-out, T13b-9).
 
 ### Items not met, and where they went
 
@@ -136,7 +138,8 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
   behind `--allow-software-gl` (item 75); a check on a machine with a GPU is still to be made.
 - **0.5, SMBC's full behaviour** (character moves, swimming, power states): left out, not
   scheduled; a game that needs them adds them to the kit.
-- **0.9, the PixiJS backend**: conditional, not needed (item 133); not scheduled.
+- **0.9, the PixiJS backend**: conditional, not needed (item 133); built later, in 0.16 part A
+  (T13b, item 323).
 - **0.10, flashback missions**: deferred until after Engine 1.0 (item 156, roadmap "Later").
 - **0.11 M13, the captain as the round's hero**: moved to 0.13, built there.
 - **0.12 D5 and D11** (walls lost as the report's reading; two missions on one event): moved to
@@ -156,8 +159,9 @@ Engine presentation features (docs/ROADMAP.md, 0.16 part A), built on branch
 `engine/build-0.15` in fourteen tasks (T1-T14; not tagged, nothing published). Every feature is
 engine (core, backends or the shell), driven by skins and other text, and none can change a run's
 state: two invariance tests play every run file of every game with every effect on and get the
-golden hashes. **Open for the owner:** the screenshot review of the effects sheet (item 339) and
-the PixiJS follow-up (item 323, T13b, not built).
+golden hashes. **Open for the owner:** the screenshot review of the effects sheet and the PixiJS
+parity sheet (item 339) and the PixiJS close-out choices (items 379-382). The PixiJS follow-up
+(item 323, T13b) is built (nine tasks T13b-1 to T13b-9, below).
 
 ### What was built
 
@@ -190,6 +194,10 @@ the PixiJS follow-up (item 323, T13b, not built).
   point lights, world-anchored labels.
 - **T13 the 2D feature benchmark:** below (item 323: Canvas2D misses the bar; PixiJS follow-up
   T13b).
+- **T13b the PixiJS v8 2D backend:** `engine/backends/pixi`, the shared presenter walk in
+  `engine/core/draw`, the shell's backend choice, PixiJS screenshots and sheet tiles, a parity
+  test, a PixiJS column in the benchmark, tuning, and PixiJS as the RTS and tower defense's
+  default; [its own section](#t13b-the-pixijs-v8-2d-backend-item-323) below.
 - **T14 close-out:**
   - **`pnpm cli sheet`** (`engine/tools/commands/sheet.ts`, `sheet.ts`, `sheet-overlay.ts`,
     `shot-job.ts`): labelled screenshots of one or more run files at chosen ticks, in 2D and 3D,
@@ -271,13 +279,15 @@ pnpm -s cli sheet games/fx-lab/runs/level-1.run.json \
 ### Done when
 
 - **Each feature above is in the engine with tests, a module page entry and an example in a
-  skin: met, but for T13b.** Animation, tweens (`engine/core/fx`, `engine/core/present`), particles,
+  skin: met.** Animation, tweens (`engine/core/fx`, `engine/core/present`), particles,
   camera effects, transitions, the UI kit (`engine/core/ui`), the mixer (`engine/core/audio`),
   menus (`engine/core/shell`), PNG and glTF assets (`engine/core/content`, the backends) and the 3D
   look (`engine/backends/three`) each have tests next to the code, an entry on their module page
   and an example in the fx lab's skins (most also in the platformer sample's). The 2D benchmark is
-  written (T13). The PixiJS backend the benchmark called for (T13b) is not built: it waits for the
-  owner's answer to item 323 (item 338).
+  written (T13). The PixiJS backend the benchmark called for (T13b) is built (T13b-1 to T13b-9,
+  `engine/backends/pixi`, its own module page and `CLAUDE.md`; it draws the same `canvas2d` skins,
+  so every 2D skin example is a PixiJS example too), checked against Canvas2D by
+  `tests/browser/pixi-parity.test.ts` and the parity sheet (below).
 - **A test proves presentation does not change state: met.** `tests/runs/presentation-invariance.test.ts` plays all 46 run files with both presenters and every effect switch on (tweens,
   animation, particles, camera, transitions, audio, lighting) and `tests/runs/stepped-shell-invariance.test.ts` plays them through the shell's own loop with hit-pause, transitions, the pause menu and
   the mixer on; both give every golden hash and `pnpm cli run`'s final state. `pnpm test
@@ -295,8 +305,9 @@ tests/runs` (run files against the golden hashes, backend parity) passes with no
 - **`validate` checks PNG and glTF/GLB references and `CREDITS.md`: met** (T10, T11;
   `engine/core/content/assets.test.ts`, `engine/tools/main.test.ts`; `pnpm -s cli validate
 games/fx-lab` passes with the lab's PNG sheet and GLB model credited).
-- **Owner screenshot review: open (item 339).** The sheet is
-  `docs/reports/0.16a-effects-sheet.png`.
+- **Owner screenshot review: open (item 339).** The sheets are
+  `docs/reports/0.16a-effects-sheet.png` and, from T13b-9, `docs/reports/0.16a-pixi-parity-sheet.png`
+  (Canvas2D and PixiJS side by side).
 
 ### The effects sheet (owner screenshot review, item 339)
 
@@ -327,14 +338,17 @@ over the picture in every tile (they are the lab's, not a sample's).
 ### Deviations from the roadmap
 
 - **T13b added to the scope:** the benchmark found Canvas2D short of the bar, so (as item 320
-  allowed) a PixiJS v8 backend was added to the roadmap's part A as a follow-up task. It is not
-  built; `pixi.js` is not in `package.json` yet (item 323).
+  allowed) a PixiJS v8 backend was added to the roadmap's part A as a follow-up task. It is
+  built (`pixi.js` 8.22.0, exact pin); its own deviations are in
+  [its section](#t13b-the-pixijs-v8-2d-backend-item-323) below (the bar is still not met on this
+  container's software GL; Hopper's Way is not wired).
 - **Binary files in the repo:** three, all asked for by the tasks and allowed by
   `tests/architecture/no-content.test.ts`: the lab's `assets/fx-lab-png/torch.png` and its `.glb`
   model in `assets/fx-lab-glb/` (each made by a script in `games/fx-lab/tools/`, with a test that
   the committed file equals the script's output, credited in `CREDITS.md`), and the review sheet
-  `docs/reports/0.16a-effects-sheet.png` (item 335). Owner answer 322 allows assets in a game's
-  `assets/`; the sheet is a new allowance.
+  `docs/reports/0.16a-effects-sheet.png` (item 335), plus T13b-9's parity sheet
+  `docs/reports/0.16a-pixi-parity-sheet.png` under the same rule. Owner answer 322 allows assets
+  in a game's `assets/`; the sheets are a new allowance.
 - **Not every feature is in both backends:** tweens play only in 2D (item 340); the lab's own
   `ui` screens draw only in 2D (the shell's menus draw in both; item 329); glow and additive blend
   are 2D only (item 326); PNG frames in a 3D HUD are tested through the sheet lookups, not a 3D
@@ -362,15 +376,17 @@ size) are included. Nothing needed fixing in this pass.
 
 ### Outstanding issues
 
-- **T13b, the PixiJS 2D backend:** not built; waits for the owner's answer to item 323.
-- **The owner's screenshot review:** item 339.
+- **T13b, the PixiJS 2D backend:** built. Open: frame times on a machine with a GPU (this
+  container has none: on SwiftShader PixiJS misses the 16.7 ms p95 bar with the features on, and
+  even plain on a loaded machine; item 379); Hopper's Way is not wired to it (item 380).
+- **The owner's screenshot review:** item 339 (the effects sheet and the PixiJS parity sheet).
 - A 3D tile is drawn on SwiftShader here (no GPU in the build container), as every 3D screenshot
   since 0.6.
 - On the sheet, a 2D iris closes on the picture's centre, not on Pip (item 334), and the `Pip`
   and `EXIT` labels overlap when Pip stands in the door.
 - The 3D backend ignores tweens, and the lab's own `ui` screens (its lab menu and dialog) draw in
   2D only (items 340, 329).
-- The build choices of part A (items 323-363) wait for the owner's answers.
+- The build choices of part A (items 323-363 and 379-382) wait for the owner's answers.
 
 ### T13: the 2D feature benchmark and the Canvas2D/PixiJS decision (item 320)
 
@@ -690,6 +706,185 @@ clear colour; `presenter.test.ts` for blend and alpha on each sprite), the brows
 (`tests/browser/pixi-parity.test.ts`, unchanged tolerances: the screenshot canvas is at the
 picture's size, so it is drawn directly) pass; no golden hash or run-file result moved and the
 presentation-invariance tests pass (`pnpm test`).
+
+### T13b: the PixiJS v8 2D backend (item 323)
+
+Built on `engine/0.16-track2` in nine tasks (T13b-1 to T13b-9), after T13's benchmark found
+Canvas2D far short of the bar (item 323, allowed by owner answer 320). PixiJS draws the same
+`canvas2d` skins and the same read-only frames as Canvas2D, so no game content changed and no
+golden hash moved.
+
+**What was built.**
+
+- **T13b-1 `engine/backends/pixi` and `PixiRenderer`:** `pixi.js` 8.22.0 at an exact pin, owned by
+  `engine/backends/pixi` in `config/layers.js`'s `PACKAGES` (as `three` is by
+  `engine/backends/three`). `PixiRenderer` implements the core `Renderer` over a pooled PixiJS
+  display list: sheet frames as cached sub-rectangle textures, boxes and lines as tinted white
+  sprites, additive blending as a blend mode, glow as a pre-made soft halo sprite (no filters),
+  clips as masked containers. Agent docs, module page, `llms.txt`, DESIGN.md.
+- **T13b-2 the shared presenter walk:** the renderer-agnostic part of `SkinnedCanvasPresenter`
+  (events and frame events, tweens, particles, the camera and its effects, parallax, map, tiles,
+  entities, the HUD through the UI kit), the `Renderer`-only UI painter and the skin-set presenter
+  moved to the new **`engine/core/draw`** (`SkinnedPresenter`, `RendererUiPainter`, skin sets),
+  parameterised by a `Renderer` and injectable map and glyph surfaces. Canvas2D keeps
+  `SkinnedCanvasPresenter`, `CanvasUiPainter` and `skinSetCanvasPresenter` as thin wrappers with
+  the same API and offscreen-canvas surfaces; PixiJS supplies its own. `engine/core/draw` is
+  forbidden to kits and the sim and is on `PURE_CORE`; its own `CLAUDE.md` and module page. Both
+  2D backends therefore lay a picture out with one piece of code, and only paint differently.
+- **T13b-3 `PixiPresenter` and `pixiDisplay`:** the shared walk on a `PixiRenderer`, the map cached
+  on a `RenderTexture` (redrawn when its id or version changes), HUD glyphs drawn once in white and
+  tinted (core option `tintGlyphs`). `pixiDisplay` starts a WebGL-only PixiJS renderer and returns
+  a full `BrowserDisplay` (letterboxed as `Viewport`, fade, wipe and iris transitions, a
+  `PixiUiPainter` for menus and `ui` screens, effect settings), or a sentence when WebGL cannot
+  start.
+- **T13b-4 the shell's backend choice:** `?backend=pixi` and `?backend=canvas2d` pick the 2D
+  backend; a game's `default2d` picks it when the query names none; a PixiJS display that cannot
+  start falls back to Canvas2D on a fresh canvas, and `body[data-backend]` says what runs.
+  PixiJS is a dynamic import in its own chunk (`tests/architecture/pixi-lazy.test.ts`), wired on
+  the dungeon, mini siege, RTS and tower-defense samples, the fx lab, the platformer lab and the
+  platformer classic.
+- **T13b-5 screenshots and parity:** `pnpm cli screenshot --backend pixi` and `@pixi` sheet tiles
+  (SwiftShader, the renderer string in the result), `engine/tools/png-diff.ts`, and
+  `tests/browser/pixi-parity.test.ts` (below).
+- **T13b-6 the benchmark's PixiJS column** and **T13b-7 tuning** (both above, in T13's section):
+  the backbuffer drawn straight onto a canvas at the picture's size and stretched by the page
+  (`upscale: 'page'`), the GL clear colour as the backdrop, no container per particle, culling off
+  the picture, and allocation-free particle colours in `engine/core/fx`.
+- **T13b-8 the defaults:** the RTS skirmish and tower-defense pages set `default2d: 'pixi'`: they
+  run on PixiJS where WebGL starts and on Canvas2D otherwise; `?backend=canvas2d` forces Canvas2D.
+  Every other 2D page stays on Canvas2D, with PixiJS by `?backend=pixi`. Node tests, screenshots
+  by default and the headless tools stay Canvas2D.
+- **T13b-9 close-out:** the parity sheet, this section, the roadmap. `sheet` tiles may now name a
+  run file in another folder by a path relative to the positional run file's folder
+  (`../../samples/rts-skirmish/runs/battle/141`), so one sheet tiles several games (item 382;
+  `engine/tools/sheet.test.ts`).
+
+**Parity: the tolerance and where the backends differ.** `tests/browser/pixi-parity.test.ts`
+plays the fx lab's `level-1`, the RTS `battle` and the TD `won` once per backend (both plays give
+the headless run's state hashes) and compares each tick's pictures (particles, flashes, tints,
+shake, parallax, the HUD, a fade, a wipe, the pause menu). A pixel differs when one of R, G, B
+differs by more than the threshold (item 381):
+
+- RTS and tower defense (no glow, no additive blending): threshold 8, at most 0.1% of the pixels.
+  On SwiftShader they are equal to the bit; the margin is for another GPU's rounding.
+- The fx lab: threshold 32, at most 1% of the picture, with its top half (sky, parallax, HUD,
+  title, the pause menu) held to the strict bound. **The one real difference is glow:** PixiJS
+  draws it as a stretched soft halo sprite, Canvas2D as `shadowBlur`, and additive overlaps
+  round a little differently: up to about 0.6% of the pixels, channels up to ~95 apart, all round
+  glowing things (the coins' and the door's halo is a little wider and brighter in PixiJS).
+- Not compared: the iris, which PixiJS closes on the camera's focus (as the shell does) and the
+  screenshot page's Canvas2D tile on the picture's centre (item 334).
+
+**The parity sheet** (owner screenshot review, item 339): `docs/reports/0.16a-pixi-parity-sheet.png`
+(1304 x 6453, 1.0 MB), 24 tiles at scale 2, Canvas2D on the left and PixiJS on the right, a row
+per picture: the fx lab's stomp, the door's glow and gold tint, a coin burst, a wipe, the title,
+pause and settings menus; the RTS battle's hits, its won tint and banner, a fade; the TD's cannon
+shots and its won tint. Every play matched the headless run's hashes. Read row by row: the two
+columns agree in layout, sprites, HUD, fonts, menus, tints and transitions; the visible
+difference is the glow (in the wipe row the coins' halo is visible in PixiJS and faint on the
+canvas; the door's glow is a little softer), as the parity test measures. Made with:
+
+```sh
+R=../../samples/rts-skirmish/runs/battle; T=../../samples/tower-defense/runs/won
+pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --columns 2 --scale 2 \
+  --ticks "level-1/154@2d,level-1/154@pixi,level-1/345@2d,level-1/345@pixi,level-3/120@2d,level-3/120@pixi,level-1/100+wipe*12@2d,level-1/100+wipe*12@pixi,level-1/0+title@2d,level-1/0+title@pixi,level-1/300+pause@2d,level-1/300+pause@pixi,level-1/300+settings@2d,level-1/300+settings@pixi,$R/141@2d,$R/141@pixi,$R/160@2d,$R/160@pixi,$R/127+fade*10@2d,$R/127+fade*10@pixi,$T/455@2d,$T/455@pixi,$T/674@2d,$T/674@pixi" \
+  --labels 'FX lab: stomp sparks, ring, shake (Canvas2D)|FX lab: stomp sparks, ring, shake (PixiJS)|FX lab: door glow and gold tint (Canvas2D)|FX lab: door glow and gold tint (PixiJS)|FX lab: coin burst, glints, dust (Canvas2D)|FX lab: coin burst, glints, dust (PixiJS)|FX lab: wipe transition (Canvas2D)|FX lab: wipe transition (PixiJS)|FX lab: title screen (Canvas2D)|FX lab: title screen (PixiJS)|FX lab: pause menu (Canvas2D)|FX lab: pause menu (PixiJS)|FX lab: settings (Canvas2D)|FX lab: settings (PixiJS)|RTS battle: hits, particles (Canvas2D)|RTS battle: hits, particles (PixiJS)|RTS battle: won, tint and banner (Canvas2D)|RTS battle: won, tint and banner (PixiJS)|RTS battle: fade transition (Canvas2D)|RTS battle: fade transition (PixiJS)|TD won: cannon shots, shake (Canvas2D)|TD won: cannon shots, shake (PixiJS)|TD won: round won (Canvas2D)|TD won: round won (PixiJS)' \
+  --title 'Engine 0.16 part A, T13b: Canvas2D (left) and PixiJS (right), pnpm cli sheet' \
+  --out docs/reports/0.16a-pixi-parity-sheet.png --json
+```
+
+**The final benchmark, both backends** (`pnpm bench:features`, at T13b-9's head, the code of
+T13b-8). **Software GL:** this container has no GPU; WebGL is SwiftShader
+(`ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)`)
+and Canvas2D is Skia on the CPU, on 4 cores (Intel Xeon @ 2.10GHz, Chromium 153). **The machine
+was also loaded** (load average 14-17 on 4 cores: other build tracks were running), so every
+frame time here is slower and noisier than T13b-7's quieter run above; read the sizes and the
+draw column, not single milliseconds. 1280 x 960 window, 5 s per case, 60 warm-up frames; frame
+= ms between animation frames, draw = ms in the draw call.
+
+| Map | Backend  | Features | Zoom | Frame p50 / p95 / p99 (ms) | fps | Draw p50 / p95 (ms) | Particles | p95 <= 16.7 |
+| --- | -------- | -------- | ---- | -------------------------- | --- | ------------------- | --------- | ----------- |
+| RTS | Canvas2D | features | 0.5  | 196 / 327 / 430            | 4   | 180 / 319           | 3574      | miss        |
+| RTS | Canvas2D | features | 1    | 192 / 351 / 774            | 4   | 179 / 342           | 3620      | miss        |
+| RTS | Canvas2D | features | 2    | 167 / 245 / 414            | 6   | 158 / 241           | 3562      | miss        |
+| RTS | Canvas2D | plain    | 0.5  | 12.7 / 34.7 / 63.4         | 67  | 8.6 / 21.5          | 0         | miss        |
+| RTS | Canvas2D | plain    | 1    | 8.7 / 16.0 / 59.9          | 97  | 4.6 / 8.9           | 0         | pass        |
+| RTS | Canvas2D | plain    | 2    | 9.5 / 34.2 / 78.0          | 76  | 5.3 / 18.0          | 0         | miss        |
+| RTS | PixiJS   | features | 0.5  | 78.3 / 155 / 233           | 12  | 9.1 / 23.2          | 3546      | miss        |
+| RTS | PixiJS   | features | 1    | 62.3 / 157 / 228           | 13  | 7.1 / 37.3          | 3609      | miss        |
+| RTS | PixiJS   | features | 2    | 53.0 / 132 / 147           | 17  | 7.0 / 11.3          | 3597      | miss        |
+| RTS | PixiJS   | plain    | 0.5  | 27.3 / 49.5 / 83.4         | 36  | 3.8 / 7.3           | 0         | miss        |
+| RTS | PixiJS   | plain    | 1    | 21.1 / 65.2 / 118          | 38  | 2.2 / 3.9           | 0         | miss        |
+| RTS | PixiJS   | plain    | 2    | 15.5 / 36.5 / 87.0         | 49  | 1.9 / 3.5           | 0         | miss        |
+| TD  | Canvas2D | features | 0.5  | 142 / 282 / 362            | 7   | 133 / 240           | 2669      | miss        |
+| TD  | Canvas2D | features | 1    | 149 / 285 / 305            | 6   | 141 / 280           | 2626      | miss        |
+| TD  | Canvas2D | features | 2    | 169 / 349 / 597            | 5   | 159 / 336           | 2665      | miss        |
+| TD  | Canvas2D | plain    | 0.5  | 5.3 / 15.7 / 60.6          | 129 | 2.1 / 4.7           | 0         | pass        |
+| TD  | Canvas2D | plain    | 1    | 5.2 / 13.3 / 44.3          | 137 | 2.1 / 3.9           | 0         | pass        |
+| TD  | Canvas2D | plain    | 2    | 5.2 / 14.3 / 43.8          | 144 | 1.9 / 5.8           | 0         | pass        |
+| TD  | PixiJS   | features | 0.5  | 75.3 / 168 / 210           | 12  | 10.3 / 27.0         | 2666      | miss        |
+| TD  | PixiJS   | features | 1    | 87.7 / 169 / 234           | 11  | 9.2 / 14.3          | 2649      | miss        |
+| TD  | PixiJS   | features | 2    | 65.9 / 136 / 197           | 14  | 5.9 / 12.2          | 2648      | miss        |
+| TD  | PixiJS   | plain    | 0.5  | 8.2 / 24.7 / 52.4          | 95  | 1.0 / 1.9           | 0         | miss        |
+| TD  | PixiJS   | plain    | 1    | 23.9 / 50.0 / 117          | 39  | 1.3 / 2.0           | 0         | miss        |
+| TD  | PixiJS   | plain    | 2    | 25.8 / 66.5 / 106          | 33  | 1.2 / 2.0           | 0         | miss        |
+
+What it says, on this machine: with the features on, PixiJS's frames are 2-3 times shorter than
+Canvas2D's (p50 53-88 ms against 142-196 ms) and its draw call 15-25 times cheaper (6-10 ms
+against 133-180 ms p50), but **neither backend holds the 16.7 ms p95 bar with the features on**.
+Plain, Canvas2D is faster here (its plain scenes need no GL fill), and PixiJS's plain frames are
+dominated by SwiftShader's fill and the load (T13b-7's quieter run had them at 8-15 ms p50).
+PixiJS's draw call alone, the part a GPU does not take over, is inside the budget in every case
+at p50. Whether PixiJS holds the bar on real hardware is an estimate until someone measures it
+on a machine with a GPU (item 379).
+
+**Defaults chosen** (item 379): PixiJS is the default 2D backend of the RTS skirmish and the
+tower defense, the two maps the bar is about, falling back to Canvas2D where WebGL does not start
+(and `?backend=canvas2d`); every other 2D page stays Canvas2D with PixiJS opt-in
+(`?backend=pixi`); Node tests, `screenshot` and `sheet` default to Canvas2D. The roadmap's "only
+where it holds the bar" could not be shown on this container; the default rests on the draw-call
+numbers and T13b-7's estimate for a GPU.
+
+**Deviations.**
+
+- **The bar is not shown to be met** on any machine yet (software GL only, above; item 379).
+- **Hopper's Way (`games/samples/platformer`) is not wired to PixiJS:** another build track owns
+  that game during 0.16 part B, so its page has no `pixi` display (the old Hopper's Way, now
+  `games/platformer-classic`, is wired). Wiring it is the same few lines as the other pages
+  (item 380). Its part B `themes` are drawn by the shared core walk, so they should draw on
+  PixiJS too, but that is not tested.
+- **Glow is not a PixiJS filter**, as the roadmap's scope line says, but a pre-made halo sprite
+  (filters cost a pass each and were the slowest path on software GL); it is the one visible
+  difference from Canvas2D (item 381).
+- **`sheet` grammar extended** (relative run paths) for the parity sheet (item 382).
+
+**Owner questions** (numbered after the last number in FEEDBACK-LOG.md when this was written,
+378; this track does not edit that log, so the orchestrator copies them there, renumbering if
+another track took these numbers first):
+
+- **379.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
+  the fallback without WebGL), although on this container's software GL it does not hold 16.7 ms
+  p95 with every feature on; its draw call does, and T13b-7 estimates a GPU makes the rest
+  small. Keep it the default until someone measures frame times on a machine with a GPU
+  (`pnpm bench:features`), or go back to Canvas2D by default until then?
+- **380.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
+  in part B); every other 2D page is, opt-in by `?backend=pixi`. Wire Hopper's Way after part B,
+  and should any other page default to PixiJS?
+- **381.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
+  additive blending (RTS, tower defense: equal to the bit here), threshold 32 and 1% where glow
+  shows (the fx lab), glow drawn as a halo sprite in PixiJS against `shadowBlur` on the canvas
+  (the coins' and the door's halo differ a little, as the parity sheet shows), the iris not
+  compared. OK?
+- **382.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
+  positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
+  parity sheet tiles three games. OK?
+
+**Checks at the close-out** (T13b-9's finalize pass): `pnpm lint`, `pnpm typecheck`,
+`pnpm docs:check`, `pnpm test` (266 files, 3113 tests passed and 1 skipped; on the loaded machine
+the two `engine/tools/docs.test.ts` cases first timed out at 5 s and passed when run again
+alone) and `pnpm build` pass; all 68 run files (13 sim fixtures and 55 game run files) exit 0
+through `pnpm -s cli run` with no golden hash changed; `pnpm -s cli validate` passes for all eight
+game folders; the parity sheet's eight plays all matched the headless run's hashes.
 
 ## Engine 0.15
 

@@ -26,7 +26,10 @@ export const BACKEND_TAG: Record<ShotBackend, string> = { canvas2d: '2D', three:
 
 /** One tile as written: `[<run>/]<tick>[+<overlay>][@<backend>]`. */
 export interface SheetTileSpec {
-  /** Another run file of the same folder (its name, `level-3` or `level-3.run.json`), or null. */
+  /**
+   * Another run file: its name in the same folder (`level-3` or `level-3.run.json`), or a path
+   * relative to that folder (`../../samples/rts-skirmish/runs/battle`), or null.
+   */
   run: string | null;
   tick: number;
   overlay: SheetOverlay | null;
@@ -36,7 +39,7 @@ export interface SheetTileSpec {
   text: string;
 }
 
-const TILE = /^(?:([A-Za-z0-9_.-]+)\/)?(\d+)(?:\+([^@]+))?(?:@([a-z0-9]+))?$/;
+const TILE = /^(?:([A-Za-z0-9_./-]+)\/)?(\d+)(?:\+([^@]+))?(?:@([a-z0-9]+))?$/;
 
 /**
  * Reads `--ticks`: comma-separated tiles, each `[<run>/]<tick>[+<overlay>][@<backend>]`

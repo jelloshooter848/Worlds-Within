@@ -1106,7 +1106,9 @@ Engine 0.16 T14: `pnpm -s cli sheet games/fx-lab/runs/level-1.run.json --ticks
 `level-1 t300 + pause [2D]`), with `--title` over the sheet.
 
 - **Tiles** (`--ticks`, comma-separated) are `[<run>/]<tick>[+<overlay>][@<backend>]`. `<run>/`
-  is another run file in the positional run file's folder (`level-3` or `level-3.run.json`).
+  is another run file in the positional run file's folder (`level-3` or `level-3.run.json`), or
+  (from Engine 0.16 T13b-9) a path relative to that folder, so one sheet can tile several games
+  (`../../samples/rts-skirmish/runs/battle/141` from `games/fx-lab/runs/level-1.run.json`).
   `@2d` / `@3d` (or `@canvas2d` / `@three`) or, from Engine 0.16 T13b-5, `@pixi` overrides
   `--backend` (`2d`, `3d`, `canvas2d`, `three`, `pixi`; default 2D). Labels end `[2D]`, `[3D]` or
   `[PixiJS]`. `--ticks "154@canvas2d,154@pixi,100+wipe*12@2d,100+wipe*12@pixi" --columns 2` puts

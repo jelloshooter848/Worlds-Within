@@ -31,7 +31,8 @@ import { firstDifference } from './screenshot';
  * - `<tick>`: drawn as `screenshot --tick` draws it (every tick on the way drawn, the run's input,
  *   orders, missions, `from` and `start` played as `run` plays them).
  * - `<run>/`: another run file in the same folder as `<run-file>` (`level-3/120` is
- *   `level-3.run.json`'s tick 120), so one sheet can show several levels.
+ *   `level-3.run.json`'s tick 120), so one sheet can show several levels, or a path relative to
+ *   that folder (`../../samples/rts-skirmish/runs/battle/141`), so one sheet can show several games.
  * - `+<overlay>`: drawn over the picture by the engine's own code: one of the game's menu
  *   screens (`title`, `pause`, `settings`, `controls`: `game.json`'s `menus`, as the browser
  *   shell builds them), a `ui` content file (`ui=lab`, or one widget opened alone,
