@@ -1,7 +1,8 @@
 # Build log
 
-This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 part A on branch `engine/build-0.15`, for the
-owner's review. Nothing in it is merged to `master`, tagged or published.
+This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 part A (with part A2, the
+PixiJS backend) on branch `engine/build-0.15`, for the owner's review.
+Nothing in it is merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
@@ -152,6 +153,152 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
   `1.0-11`).
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
+
+## Engine 0.16 part A2: the PixiJS v8 2D backend (T13b, item 323)
+
+The second part of 0.16 part A, built on branch `engine/0.16-track2` (T13b-1 to T13b-9, not
+tagged, nothing published) for the orchestrator to merge into `engine/build-0.15`. The full
+record, with the parity results and the benchmark tables, is in
+[T13b: the PixiJS v8 2D backend](#t13b-the-pixijs-v8-2d-backend-item-323) below; this section
+is the finalize pass's summary.
+
+### What was built
+
+- **`engine/backends/pixi`**: `PixiRenderer` (the core `Renderer` over a pooled PixiJS display
+  list), `PixiPresenter` and `pixiDisplay` (a WebGL-only `BrowserDisplay` with letterboxing,
+  transitions, menus and the UI kit), with `pixi.js` 8.22.0 at an exact pin owned by this folder
+  in `config/layers.js`.
+- **`engine/core/draw`**: the presenter walk Canvas2D and PixiJS now share (`SkinnedPresenter`,
+  `RendererUiPainter`, skin sets). Canvas2D keeps its old names as thin wrappers, so its
+  pictures and every golden hash are unchanged.
+- **The shell's backend choice**: `?backend=pixi` / `?backend=canvas2d`, a game's `default2d`,
+  and a Canvas2D fallback when WebGL does not start. PixiJS loads lazily in its own chunk.
+- **Defaults**: the RTS skirmish and the tower defense run on PixiJS by default; every other 2D
+  page stays on Canvas2D with PixiJS opt-in. Node tests, `screenshot` and `sheet` stay Canvas2D.
+- **Tools and tests**: `pnpm cli screenshot --backend pixi`, `@pixi` sheet tiles, a PixiJS
+  column in `pnpm bench:features`, `engine/tools/png-diff.ts`, the parity test
+  (`tests/browser/pixi-parity.test.ts`) and the parity sheet
+  (`docs/reports/0.16a-pixi-parity-sheet.png`).
+
+### How to try it
+
+```sh
+pnpm install
+pnpm dev
+# then open, for example:
+#   http://localhost:5173/games/samples/rts-skirmish/             (PixiJS by default)
+#   http://localhost:5173/games/samples/rts-skirmish/?backend=canvas2d
+#   http://localhost:5173/games/fx-lab/?backend=pixi               (glow, particles, menus)
+# <body data-backend="..."> says which backend is running.
+pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 154 --backend pixi --json
+pnpm vitest run engine/backends/pixi engine/core/draw tests/browser/pixi-parity.test.ts
+pnpm bench:features            # both backends; takes several minutes
+```
+
+### Done when
+
+Checked against "0.16 part A: engine presentation features" in the roadmap, for what part A2
+adds.
+
+- **Each feature in the engine with tests, a module page entry and a skin example: met for the
+  PixiJS backend.** Tests in `engine/backends/pixi/*.test.ts`, `engine/core/draw/draw.test.ts`,
+  `tests/architecture/pixi-lazy.test.ts` and `tests/browser/pixi-{display,pages,parity}.test.ts`;
+  module pages `docs/modules/engine-backends-pixi.md` and `engine-core-draw.md`, both linked from
+  `llms.txt`. PixiJS draws the existing `canvas2d` skins, so every skin is its example.
+- **Presentation does not change state: met.** No golden hash moved; all 68 run files pass
+  through `pnpm -s cli run`; the presentation-invariance tests pass; every play in the parity
+  test and the parity sheet matched the headless run's hashes.
+- **The benchmark written up and the choice recorded: met.** `pnpm bench:features` has a PixiJS
+  column; the numbers and the choice (PixiJS default for RTS and TD) are in the T13b section.
+  But the roadmap's "only where it holds the bar" could not be shown (see deviations).
+- **Title, pause and settings for every sample: met** (unchanged by A2). On PixiJS they draw
+  through `PixiUiPainter`; the parity sheet shows the fx lab's title, pause and settings on both
+  backends.
+- **`validate` checks PNG and glTF references and CREDITS.md: met** (unchanged by A2); all eight
+  game folders pass `pnpm -s cli validate`.
+- **Owner screenshot review: not met.** Waiting for the owner (item 339); the PixiJS parity
+  sheet was added to it.
+
+### Deviations from the roadmap
+
+- **PixiJS is the default for RTS and TD without holding the bar.** On this container's software
+  GL neither backend holds 16.7 ms p95 with every feature on; PixiJS's draw call does. A check
+  on a machine with a GPU is open (item 419).
+- **Glow is a halo sprite, not a PixiJS filter** (the roadmap says filters). It is cheaper and is
+  the one visible difference from Canvas2D (item 421).
+- **Hopper's Way (`games/samples/platformer`) is not wired to PixiJS**: another track owns it
+  (item 420).
+- **`pnpm cli sheet` grammar extended** with run paths relative to the main run file's folder,
+  for the parity sheet (item 422).
+
+### Outstanding issues
+
+- Frame times on a machine with a GPU are not measured (item 419). The final benchmark table
+  was made on a heavily loaded machine (load 14-17 on 4 cores).
+- The owner's screenshot review of both sheets (item 339).
+- Old map `RenderTexture`s are not freed when a map's version changes (one texture per map
+  version a page shows).
+- Possible further tuning, not done: a PixiJS `ParticleContainer`, keeping the display list
+  between frames, and skipping parallax layers hidden under an opaque map.
+- Slow tests on a loaded machine: in this pass (load average 17-18 on 4 cores, other tracks
+  running) 12 tests in 8 files hit vitest's 5 s timeout in the full `pnpm test`; each file
+  passes when run alone. No assertion failed. A longer timeout for those tests may be worth it.
+
+### Finalize pass (checks)
+
+`pnpm lint`, `pnpm typecheck`, `pnpm docs:check` and `pnpm build` pass. `pnpm test`: 266 files,
+3102 passed, 1 skipped, 12 timed out under load (`astar`, `docs`, `start-run`, `two-kits`,
+`no-content`, `mission-events`, the mini siege's `play` and the debugger's `model` tests); all
+eight files pass when run alone. All 68 run files exit 0 through `pnpm -s cli run`, and all eight
+game folders pass `pnpm -s cli validate`.
+
+### Build decisions to review (track 2)
+
+- **T2-1.** `pixi.js` is pinned at 8.22.0, the newest stable release, published 2026-10-01.
+- **T2-2.** Glow is a pre-made soft halo texture, tinted and stretched behind each glowing box,
+  sprite or line, instead of a PixiJS filter (one sprite in the same batch, no extra pass). It
+  is an oval over the shape's box, not its outline, so it is softer than Canvas2D's glow on
+  large sprites.
+- **T2-3.** The shared drawing code went into a new folder, `engine/core/draw`, not into
+  `engine/core/present`, because kits import `present` and the drawing code must be blocked
+  for kits and the sim. It is on `PURE_CORE` and has its own agent docs.
+- **T2-4.** In the core the map and glyph surfaces default to none (redrawn every frame);
+  Canvas2D's wrappers default them to an offscreen canvas, so Canvas2D behaves exactly as
+  before. Canvas2D's exported names are unchanged.
+- **T2-5.** A new optional core option, `tintGlyphs`, lets PixiJS draw HUD glyphs once in white
+  and tint them. Off, Canvas2D is unchanged.
+- **T2-6.** `pixiDisplay` asks for WebGL only (`preference: ['webgl']`, not `'webgl'`, which
+  would fall back to WebGPU or canvas) and allows software WebGL (SwiftShader), as the 3D view
+  does.
+- **T2-7.** When PixiJS cannot start, Canvas2D runs on a fresh copy of the canvas. A page that
+  asks for a backend the game does not have runs Canvas2D. `backendFromQuery` gained an
+  optional `fallback`.
+- **T2-8.** The dungeon page now draws through the display's presenter (so it works on any 2D
+  backend) and plays the skin's sounds through the display; its view and tests keep their own
+  Canvas2D presenter, so screenshots and hashes are unchanged.
+- **T2-9.** PixiJS screenshots always use software WebGL (SwiftShader), even on a machine with a
+  GPU, so PNGs and the parity test repeat exactly.
+- **T2-10.** Parity tolerance: threshold 8 and at most 0.1% of pixels where nothing glows (RTS,
+  TD, the fx lab's top half); threshold 32 and at most 1% for the whole fx lab. The iris is not
+  compared, because the screenshot page's Canvas2D tile closes it on the picture's centre.
+- **T2-11.** `pixiDisplay` lets the page do the whole-number upscale by default
+  (`upscale: 'page'`, `image-rendering: pixelated`), the largest saving on software GL. The
+  picture can sit up to s-1 device pixels from where Canvas2D puts it; `upscale: 'gl'` keeps
+  the old path.
+- **T2-12.** Tuning changed how the display list is built: a top-level opaque `clear` becomes the
+  GL clear colour, `alpha` and `blend` scopes are set on each object instead of making
+  containers, and the renderer culls off-picture objects (with the glow radius as margin).
+- **T2-13.** `engine/core/fx` was made allocation-free (`lerpColor` keeps a cache of up to 1024
+  parsed colours; `keyframeAt` reads in place). Output is the same on every backend.
+- **T2-14.** To let the bench reach the game's presenter, `PixiDisplayOptions` gained `seed` and
+  `maxParticles`, and `pixiDisplay` returns `PixiDisplay` (a `BrowserDisplay` plus `main`).
+- **T2-15.** The RTS, tower-defense and menus browser tests now run on the PixiJS default
+  instead of being pinned to Canvas2D, so they check pointer input through the PixiJS display.
+- **T2-16.** Old map `RenderTexture`s are not destroyed when a new map version arrives (the core
+  gives no signal); noted in the backend's `CLAUDE.md`.
+- **T2-17.** The BUILD-LOG summary line "the last number used is 363" was already out of date
+  and was left for the feedback-numbering owner. The track's owner questions are 419-422; the
+  orchestrator copies them into FEEDBACK-LOG.md at merge.
 
 ## Engine 0.16 part A
 
