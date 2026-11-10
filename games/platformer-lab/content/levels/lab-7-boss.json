@@ -1,0 +1,12 @@
+{
+  "id": "lab-7-boss",
+  "profile": "lab-boss",
+  "scroll": "none",
+  "clear": "boss",
+  "spawns": {
+    "b": {
+      "actor": "mini-boss",
+      "facing": "left"
+    }
+  }
+}

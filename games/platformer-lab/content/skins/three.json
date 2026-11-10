@@ -5,207 +5,793 @@
     "runner": [
       {
         "shape": "sphere",
-        "size": { "w": 8, "h": 7, "d": 8 },
-        "at": { "x": 2, "y": 0, "z": 0 },
+        "size": {
+          "w": 8,
+          "h": 7,
+          "d": 8
+        },
+        "at": {
+          "x": 2,
+          "y": 0,
+          "z": 0
+        },
         "color": "#fcbcb0"
       },
-      { "shape": "box", "size": { "w": 10, "h": 3, "d": 9 }, "at": { "x": 1, "y": -1, "z": 0 } },
-      { "shape": "box", "size": { "w": 4, "h": 1, "d": 8 }, "at": { "x": 9, "y": 2, "z": 0 } },
-      { "shape": "box", "size": { "w": 10, "h": 5, "d": 8 }, "at": { "x": 1, "y": 7, "z": 0 } },
       {
         "shape": "box",
-        "size": { "w": 10, "h": 3, "d": 8 },
-        "at": { "x": 1, "y": 11, "z": 0 },
+        "size": {
+          "w": 10,
+          "h": 3,
+          "d": 9
+        },
+        "at": {
+          "x": 1,
+          "y": -1,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 1,
+          "d": 8
+        },
+        "at": {
+          "x": 9,
+          "y": 2,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 10,
+          "h": 5,
+          "d": 8
+        },
+        "at": {
+          "x": 1,
+          "y": 7,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 10,
+          "h": 3,
+          "d": 8
+        },
+        "at": {
+          "x": 1,
+          "y": 11,
+          "z": 0
+        },
         "color": "#0058f8"
       },
       {
         "shape": "box",
-        "size": { "w": 4, "h": 2, "d": 6 },
-        "at": { "x": 1, "y": 14, "z": 0 },
+        "size": {
+          "w": 4,
+          "h": 2,
+          "d": 6
+        },
+        "at": {
+          "x": 1,
+          "y": 14,
+          "z": 0
+        },
         "color": "#883c00"
       },
       {
         "shape": "box",
-        "size": { "w": 4, "h": 2, "d": 6 },
-        "at": { "x": 7, "y": 14, "z": 0 },
+        "size": {
+          "w": 4,
+          "h": 2,
+          "d": 6
+        },
+        "at": {
+          "x": 7,
+          "y": 14,
+          "z": 0
+        },
         "color": "#883c00"
       }
     ],
     "walker": [
-      { "shape": "sphere", "size": { "w": 16, "h": 10, "d": 14 }, "at": { "x": 0, "y": 0, "z": 0 } },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 16,
+          "h": 10,
+          "d": 14
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
       {
         "shape": "box",
-        "size": { "w": 2, "h": 3, "d": 1 },
-        "at": { "x": 6, "y": 4, "z": 6.5 },
+        "size": {
+          "w": 2,
+          "h": 3,
+          "d": 1
+        },
+        "at": {
+          "x": 6,
+          "y": 4,
+          "z": 6.5
+        },
         "color": "#fcfcfc"
       },
       {
         "shape": "box",
-        "size": { "w": 2, "h": 3, "d": 1 },
-        "at": { "x": 10, "y": 4, "z": 6.5 },
+        "size": {
+          "w": 2,
+          "h": 3,
+          "d": 1
+        },
+        "at": {
+          "x": 10,
+          "y": 4,
+          "z": 6.5
+        },
         "color": "#fcfcfc"
       },
       {
         "shape": "box",
-        "size": { "w": 10, "h": 5, "d": 10 },
-        "at": { "x": 3, "y": 9, "z": 0 },
+        "size": {
+          "w": 10,
+          "h": 5,
+          "d": 10
+        },
+        "at": {
+          "x": 3,
+          "y": 9,
+          "z": 0
+        },
         "color": "#fcbcb0"
       },
       {
         "shape": "box",
-        "size": { "w": 5, "h": 2, "d": 8 },
-        "at": { "x": 1, "y": 14, "z": 0 },
+        "size": {
+          "w": 5,
+          "h": 2,
+          "d": 8
+        },
+        "at": {
+          "x": 1,
+          "y": 14,
+          "z": 0
+        },
         "color": "#000000"
       },
       {
         "shape": "box",
-        "size": { "w": 5, "h": 2, "d": 8 },
-        "at": { "x": 10, "y": 14, "z": 0 },
+        "size": {
+          "w": 5,
+          "h": 2,
+          "d": 8
+        },
+        "at": {
+          "x": 10,
+          "y": 14,
+          "z": 0
+        },
         "color": "#000000"
       }
     ],
     "shell-walker": [
       {
         "shape": "sphere",
-        "size": { "w": 7, "h": 7, "d": 7 },
-        "at": { "x": 9, "y": 0, "z": 0 },
+        "size": {
+          "w": 7,
+          "h": 7,
+          "d": 7
+        },
+        "at": {
+          "x": 9,
+          "y": 0,
+          "z": 0
+        },
         "color": "#fcbcb0"
       },
       {
         "shape": "box",
-        "size": { "w": 4, "h": 5, "d": 4 },
-        "at": { "x": 10, "y": 6, "z": 0 },
+        "size": {
+          "w": 4,
+          "h": 5,
+          "d": 4
+        },
+        "at": {
+          "x": 10,
+          "y": 6,
+          "z": 0
+        },
         "color": "#fcbcb0"
       },
-      { "shape": "sphere", "size": { "w": 14, "h": 10, "d": 12 }, "at": { "x": 0, "y": 8, "z": 0 } },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 14,
+          "h": 10,
+          "d": 12
+        },
+        "at": {
+          "x": 0,
+          "y": 8,
+          "z": 0
+        }
+      },
       {
         "shape": "box",
-        "size": { "w": 16, "h": 2, "d": 13 },
-        "at": { "x": 0, "y": 17, "z": 0 },
+        "size": {
+          "w": 16,
+          "h": 2,
+          "d": 13
+        },
+        "at": {
+          "x": 0,
+          "y": 17,
+          "z": 0
+        },
         "color": "#fcfcfc"
       },
       {
         "shape": "box",
-        "size": { "w": 4, "h": 5, "d": 6 },
-        "at": { "x": 2, "y": 19, "z": 0 },
+        "size": {
+          "w": 4,
+          "h": 5,
+          "d": 6
+        },
+        "at": {
+          "x": 2,
+          "y": 19,
+          "z": 0
+        },
         "color": "#fcbcb0"
       },
       {
         "shape": "box",
-        "size": { "w": 4, "h": 5, "d": 6 },
-        "at": { "x": 10, "y": 19, "z": 0 },
+        "size": {
+          "w": 4,
+          "h": 5,
+          "d": 6
+        },
+        "at": {
+          "x": 10,
+          "y": 19,
+          "z": 0
+        },
         "color": "#fcbcb0"
       }
     ],
     "shell": [
-      { "shape": "sphere", "size": { "w": 16, "h": 10, "d": 14 }, "at": { "x": 0, "y": 4, "z": 0 } },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 16,
+          "h": 10,
+          "d": 14
+        },
+        "at": {
+          "x": 0,
+          "y": 4,
+          "z": 0
+        }
+      },
       {
         "shape": "box",
-        "size": { "w": 16, "h": 2, "d": 14 },
-        "at": { "x": 0, "y": 13, "z": 0 },
+        "size": {
+          "w": 16,
+          "h": 2,
+          "d": 14
+        },
+        "at": {
+          "x": 0,
+          "y": 13,
+          "z": 0
+        },
         "color": "#fcfcfc"
       }
     ],
-    "coin": [{ "shape": "sphere", "size": { "w": 10, "h": 14, "d": 3 }, "at": { "x": 3, "y": 1, "z": 0 } }],
+    "coin": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 10,
+          "h": 14,
+          "d": 3
+        },
+        "at": {
+          "x": 3,
+          "y": 1,
+          "z": 0
+        }
+      }
+    ],
     "goal": [
       {
         "shape": "cylinder",
-        "size": { "w": 2, "h": 14, "d": 2 },
-        "at": { "x": 7, "y": 0, "z": 0 },
+        "size": {
+          "w": 2,
+          "h": 14,
+          "d": 2
+        },
+        "at": {
+          "x": 7,
+          "y": 0,
+          "z": 0
+        },
         "color": "#fcfcfc"
       },
-      { "shape": "box", "size": { "w": 7, "h": 5, "d": 1 }, "at": { "x": 9, "y": 1, "z": 0 } },
-      { "shape": "box", "size": { "w": 8, "h": 2, "d": 8 }, "at": { "x": 4, "y": 14, "z": 0 } }
+      {
+        "shape": "box",
+        "size": {
+          "w": 7,
+          "h": 5,
+          "d": 1
+        },
+        "at": {
+          "x": 9,
+          "y": 1,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 8,
+          "h": 2,
+          "d": 8
+        },
+        "at": {
+          "x": 4,
+          "y": 14,
+          "z": 0
+        }
+      }
     ],
     "trigger": [
       {
         "shape": "cone",
-        "size": { "w": 8, "h": 8, "d": 8 },
-        "at": { "x": 4, "y": 2, "z": 0 },
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 8
+        },
+        "at": {
+          "x": 4,
+          "y": 2,
+          "z": 0
+        },
         "color": "#fcfcfc"
       },
-      { "shape": "box", "size": { "w": 14, "h": 4, "d": 14 }, "at": { "x": 1, "y": 12, "z": 0 } }
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 4,
+          "d": 14
+        },
+        "at": {
+          "x": 1,
+          "y": 12,
+          "z": 0
+        }
+      }
     ],
     "checkpoint": [
       {
         "shape": "cylinder",
-        "size": { "w": 2, "h": 14, "d": 2 },
-        "at": { "x": 7, "y": 0, "z": 0 },
+        "size": {
+          "w": 2,
+          "h": 14,
+          "d": 2
+        },
+        "at": {
+          "x": 7,
+          "y": 0,
+          "z": 0
+        },
         "color": "#fcfcfc"
       },
-      { "shape": "box", "size": { "w": 5, "h": 4, "d": 1 }, "at": { "x": 9, "y": 1, "z": 0 } },
-      { "shape": "box", "size": { "w": 6, "h": 2, "d": 6 }, "at": { "x": 5, "y": 14, "z": 0 } }
-    ],
-    "brick": [
-      { "shape": "box", "size": { "w": 16, "h": 14, "d": 16 }, "at": { "x": 0, "y": 0, "z": 0 } },
       {
         "shape": "box",
-        "size": { "w": 16, "h": 2, "d": 16 },
-        "at": { "x": 0, "y": 14, "z": 0 },
+        "size": {
+          "w": 5,
+          "h": 4,
+          "d": 1
+        },
+        "at": {
+          "x": 9,
+          "y": 1,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 2,
+          "d": 6
+        },
+        "at": {
+          "x": 5,
+          "y": 14,
+          "z": 0
+        }
+      }
+    ],
+    "brick": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 14,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 2,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 14,
+          "z": 0
+        },
         "color": "#000000"
       }
     ],
     "bump": [
-      { "shape": "box", "size": { "w": 16, "h": 16, "d": 16 }, "at": { "x": 0, "y": 0, "z": 0 } },
       {
         "shape": "box",
-        "size": { "w": 4, "h": 6, "d": 1 },
-        "at": { "x": 6, "y": 4, "z": 8.5 },
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 6,
+          "d": 1
+        },
+        "at": {
+          "x": 6,
+          "y": 4,
+          "z": 8.5
+        },
         "color": "#fcfcfc"
       }
     ],
-    "slab": [{ "shape": "box", "size": { "w": 16, "h": 4, "d": 16 }, "at": { "x": 0, "y": 0, "z": 0 } }],
+    "slab": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 4,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    ],
     "spikes": [
       {
         "shape": "box",
-        "size": { "w": 16, "h": 4, "d": 16 },
-        "at": { "x": 0, "y": 12, "z": 0 },
+        "size": {
+          "w": 16,
+          "h": 4,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 12,
+          "z": 0
+        },
         "color": "#7c7c7c"
       },
-      { "shape": "cone", "size": { "w": 5, "h": 10, "d": 5 }, "at": { "x": 0.5, "y": 2, "z": 0 } },
-      { "shape": "cone", "size": { "w": 5, "h": 10, "d": 5 }, "at": { "x": 5.5, "y": 2, "z": 0 } },
-      { "shape": "cone", "size": { "w": 5, "h": 10, "d": 5 }, "at": { "x": 10.5, "y": 2, "z": 0 } }
-    ],
-    "bar-marker": [
-      { "shape": "box", "size": { "w": 6, "h": 16, "d": 6 }, "at": { "x": 1, "y": 0, "z": 0 } },
       {
         "shape": "cone",
-        "size": { "w": 8, "h": 4, "d": 8 },
-        "at": { "x": 0, "y": -4, "z": 0 },
+        "size": {
+          "w": 5,
+          "h": 10,
+          "d": 5
+        },
+        "at": {
+          "x": 0.5,
+          "y": 2,
+          "z": 0
+        }
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 5,
+          "h": 10,
+          "d": 5
+        },
+        "at": {
+          "x": 5.5,
+          "y": 2,
+          "z": 0
+        }
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 5,
+          "h": 10,
+          "d": 5
+        },
+        "at": {
+          "x": 10.5,
+          "y": 2,
+          "z": 0
+        }
+      }
+    ],
+    "bar-marker": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 16,
+          "d": 6
+        },
+        "at": {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 8,
+          "h": 4,
+          "d": 8
+        },
+        "at": {
+          "x": 0,
+          "y": -4,
+          "z": 0
+        },
         "color": "#fcfcfc"
+      }
+    ],
+    "mini-boss": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 20,
+          "h": 19,
+          "d": 14
+        },
+        "at": {
+          "x": 2,
+          "y": 3,
+          "z": 0
+        },
+        "color": "#9878f8"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 4,
+          "d": 2
+        },
+        "at": {
+          "x": 6,
+          "y": 7,
+          "z": 7
+        },
+        "color": "#fcfcfc"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 4,
+          "d": 2
+        },
+        "at": {
+          "x": 14,
+          "y": 7,
+          "z": 7
+        },
+        "color": "#fcfcfc"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2,
+          "h": 3,
+          "d": 3
+        },
+        "at": {
+          "x": 5,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#f8d800"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2,
+          "h": 3,
+          "d": 3
+        },
+        "at": {
+          "x": 17,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#f8d800"
+      }
+    ],
+    "bolt": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 8
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      }
+    ],
+    "rock": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 12,
+          "h": 12,
+          "d": 10
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
       }
     ]
   },
   "kinds": {
-    "runner": { "mesh": "runner", "color": "#d82800" },
-    "walker": { "mesh": "walker", "color": "#c84c0c" },
-    "ledge-walker": { "mesh": "walker", "color": "#9878f8" },
-    "shell-walker": { "mesh": "shell-walker", "color": "#00a800" },
-    "shell": { "mesh": "shell", "color": "#00a800" },
-    "coin": { "mesh": "coin", "color": "#f8d800" },
-    "goal": { "mesh": "goal", "color": "#00a800" },
-    "trigger": { "mesh": "trigger", "color": "#9878f8" },
+    "runner": {
+      "mesh": "runner",
+      "color": "#d82800"
+    },
+    "walker": {
+      "mesh": "walker",
+      "color": "#c84c0c"
+    },
+    "ledge-walker": {
+      "mesh": "walker",
+      "color": "#9878f8"
+    },
+    "shell-walker": {
+      "mesh": "shell-walker",
+      "color": "#00a800"
+    },
+    "shell": {
+      "mesh": "shell",
+      "color": "#00a800"
+    },
+    "coin": {
+      "mesh": "coin",
+      "color": "#f8d800"
+    },
+    "goal": {
+      "mesh": "goal",
+      "color": "#00a800"
+    },
+    "trigger": {
+      "mesh": "trigger",
+      "color": "#9878f8"
+    },
     "checkpoint": {
       "mesh": "checkpoint",
       "color": "#7c7c7c",
-      "byTag": [{ "tag": "active", "color": "#d82800" }]
+      "byTag": [
+        {
+          "tag": "active",
+          "color": "#d82800"
+        }
+      ]
     },
-    "bump-block": { "mesh": "box", "color": "#883c00", "depth": 16 },
-    "bar-cell": { "mesh": "box", "color": "#bcbcbc", "depth": 4 },
-    "bar-marker": { "mesh": "bar-marker", "color": "#f8d800" }
+    "bump-block": {
+      "mesh": "box",
+      "color": "#883c00",
+      "depth": 16
+    },
+    "bar-cell": {
+      "mesh": "box",
+      "color": "#bcbcbc",
+      "depth": 4
+    },
+    "bar-marker": {
+      "mesh": "bar-marker",
+      "color": "#f8d800"
+    },
+    "mini-boss": {
+      "mesh": "mini-boss",
+      "color": "#9878f8"
+    },
+    "bolt": {
+      "mesh": "bolt",
+      "color": "#d82800"
+    },
+    "rock": {
+      "mesh": "rock",
+      "color": "#bcbcbc"
+    }
   },
   "tiles": {
-    "#": { "mesh": "box", "color": "#c84c0c" },
-    "B": { "mesh": "brick", "color": "#c84c0c" },
-    "?": { "mesh": "bump", "color": "#fc9838" },
-    "u": { "mesh": "box", "color": "#883c00" },
-    "=": { "mesh": "slab", "color": "#00a800" },
-    "^": { "mesh": "spikes", "color": "#bcbcbc" }
+    "#": {
+      "mesh": "box",
+      "color": "#c84c0c"
+    },
+    "B": {
+      "mesh": "brick",
+      "color": "#c84c0c"
+    },
+    "?": {
+      "mesh": "bump",
+      "color": "#fc9838"
+    },
+    "u": {
+      "mesh": "box",
+      "color": "#883c00"
+    },
+    "=": {
+      "mesh": "slab",
+      "color": "#00a800"
+    },
+    "^": {
+      "mesh": "spikes",
+      "color": "#bcbcbc"
+    }
   },
   "events": {
     "jump": {},
     "land": {},
-    "bump": { "effect": { "kind": "shake", "size": 1, "ticks": 4 } },
+    "bump": {
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
     "block": {},
     "break": {},
     "coin": {},
@@ -213,14 +799,108 @@
     "stomp": {},
     "kick": {},
     "defeat": {},
-    "hurt": { "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
-    "died": { "effect": { "kind": "shake", "size": 3, "ticks": 12 } },
+    "hurt": {
+      "effect": {
+        "kind": "flash",
+        "color": "#d82800",
+        "ticks": 2
+      }
+    },
+    "died": {
+      "effect": {
+        "kind": "shake",
+        "size": 3,
+        "ticks": 12
+      }
+    },
     "respawn": {},
-    "checkpoint": { "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
-    "cleared": { "effect": { "kind": "tint", "color": "#f8d800", "ticks": 20 } },
-    "mini-game": { "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
-    "mini-game-end": { "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } }
+    "checkpoint": {
+      "effect": {
+        "kind": "flash",
+        "color": "#d82800",
+        "ticks": 2
+      }
+    },
+    "cleared": {
+      "effect": {
+        "kind": "tint",
+        "color": "#f8d800",
+        "ticks": 20
+      }
+    },
+    "mini-game": {
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "mini-game-end": {
+      "effect": {
+        "kind": "tint",
+        "color": "#9878f8",
+        "ticks": 10
+      }
+    },
+    "boss-telegraph": {
+      "effect": {
+        "kind": "tint",
+        "color": "#f8d800",
+        "ticks": 6
+      }
+    },
+    "boss-attack": {
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "boss-hit": {
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 3
+      },
+      "shake": {
+        "amount": 3,
+        "ticks": 12
+      },
+      "hitPause": {
+        "ticks": 4
+      }
+    },
+    "boss-defeat": {
+      "effect": {
+        "kind": "shake",
+        "size": 4,
+        "ticks": 30
+      },
+      "flash": {
+        "color": "#fcfcfc",
+        "alpha": 0.6,
+        "ticks": 20
+      },
+      "hitPause": {
+        "ticks": 8
+      }
+    }
   },
-  "camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 },
-  "camera3d": { "fov": 40, "tilt": 4, "layerDepth": 0.25, "lights": { "ambient": 0.65, "directional": 0.7 } }
+  "camera": {
+    "follow": "runner",
+    "deadzone": {
+      "w": 32,
+      "h": 48
+    },
+    "lerp": 0.25
+  },
+  "camera3d": {
+    "fov": 40,
+    "tilt": 4,
+    "layerDepth": 0.25,
+    "lights": {
+      "ambient": 0.65,
+      "directional": 0.7
+    }
+  }
 }

@@ -78,6 +78,12 @@ export const levelSchema = z
       .tuple([z.number().int().min(1), z.number().int().min(1)])
       .exactOptional()
       .describe('[columns, rows]; the size comes from the grid, and a size given here must match it'),
+    clear: z
+      .enum(['goal', 'boss'])
+      .exactOptional()
+      .describe(
+        "`goal` (left out): a goal tile clears the level; `boss` (Engine 0.16 T2): so does the end of the last boss's defeat sequence, and the map needs no goal",
+      ),
     spawns: z
       .record(z.string(), spawn)
       .default({})
@@ -175,7 +181,8 @@ export interface LevelProblem {
 
 /**
  * What a level needs beyond its shape: exactly one start (`two_starts` at each extra one, `no_start`),
- * at least one goal (`no_goal`), every checkpoint (`K`) on ground to respawn on: a solid or one-way
+ * at least one goal (`no_goal`; not with `"clear": "boss"`, which needs a boss spawn on the map
+ * instead: `no_boss`), every checkpoint (`K`) on ground to respawn on: a solid or one-way
  * tile under it, so not in the bottom row (`checkpoint_no_ground`, at the cell), its profile
  * (`missing_profile`, when `profile` is undefined), and
  * every spawn and block actor naming one of the profile's actor types (`unknown_actor`, at each map
@@ -193,7 +200,7 @@ export function checkLevel(level: LevelDef, profile: ProfileDef | undefined): Le
     const first = starts[0]!;
     at(extra, 'two_starts', `a second player start (@); the first is at row ${first.row} col ${first.col}`);
   }
-  if (!cells.some((c) => legendEntry(c.ch)?.cell === 'goal'))
+  if (level.clear !== 'boss' && !cells.some((c) => legendEntry(c.ch)?.cell === 'goal'))
     problems.push({ path: ['map'], code: 'no_goal', message: 'the map has no goal (G)' });
   for (const c of cells) {
     if (legendEntry(c.ch)?.cell !== 'checkpoint') continue;
@@ -216,6 +223,18 @@ export function checkLevel(level: LevelDef, profile: ProfileDef | undefined): Le
     if (used.length === 0)
       problems.push({ path: ['spawns', key, 'actor'], code: 'unknown_actor', message: unknown(s.actor) });
     for (const cell of used) at(cell, 'unknown_actor', `spawn "${key}": ${unknown(s.actor)}`);
+  }
+  if (level.clear === 'boss') {
+    const bossSpawn = Object.entries(level.spawns).some(
+      ([key, s]) => profile.actors[s.actor]?.boss !== undefined && cells.some((c) => c.ch === key),
+    );
+    if (!bossSpawn)
+      problems.push({
+        path: ['clear'],
+        code: 'no_boss',
+        message:
+          'a level cleared by its boss ("clear": "boss") needs a spawn of a boss actor type on its map',
+      });
   }
   (level.blocks ?? []).forEach((b, i) => {
     const actor = b.startsWith('actor:') ? b.slice('actor:'.length) : undefined;

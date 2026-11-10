@@ -19,7 +19,16 @@ tiers' `holdGravity`, all off when left out. The legend's `K` is a checkpoint (r
 `checkpoints`): touching it makes it current (`checkpoint` event; the snapshot's `checkpoint`
 `{ col, row }` or null, only in a level that has one), and a death with lives left respawns there
 instead of at the start (coins, used blocks, broken bricks and actors stay as they are);
-`checkLevel` reports a checkpoint with no ground under it (`checkpoint_no_ground`). Its mini game hook: a level's `!`
+`checkLevel` reports a checkpoint with no ground under it (`checkpoint_no_ground`). A data-driven
+mini-boss (Engine 0.16 T2): an actor type with a `boss` form (`hp`, `hitInvuln`, `defeatTicks`, a
+looping `pattern` of `idle`, `telegraph`, `charge`, `leap`, `shoot` and `drop` steps, and
+`phases` that switch the pattern at hp thresholds) and projectile types (`projectile: flies` or
+`falls`); a stomp takes one hp (bounce, hit invulnerability), any other touch hurts, and at 0 hp
+a defeat sequence runs, after which a level with `"clear": "boss"` is cleared (`boss.ts`, rules
+`boss-pattern`, `boss-phases`, `boss-stomp-hits`, `boss-hit-invuln`, `boss-defeat-clears`,
+`boss-projectiles`; events `boss-telegraph`, `boss-attack`, `boss-hit`, `boss-defeat`; the
+boss's whole-number state in the snapshot and its state, hp, phase and telegraph in the frames'
+tags and status). Its mini game hook: a level's `!`
 trigger starts a mini game the game supplies by id (`engine/core/minigame.ts`), the level pauses
 while it runs (the round sees the input through the engine's `RoundInput`: a button held into the
 trigger is ignored until released, and the def's `inputMap` applies; it is handed the level's HUD
@@ -48,11 +57,12 @@ G37), so the shell's `HostScene` takes it as it is. It never draws and holds no 
 `index.ts`, imported as `@kits/platformer`, re-exports `legend` (`LEGEND`, the level text format),
 `level` (`levelSchema`, `LevelDef`, `LevelTrigger`, `TRIGGER_OUTCOMES`, `levelCells`, `levelSize`, `checkLevel`), `profile`
 (`profileSchema`, `ProfileDef`, `profileKind`, `SUB`, `VEL`), `schema` (`levelKind`), `rules`
-(`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
+(`PLATFORMER_RULES`, `MOVEMENT_RULES`, `OBJECT_RULES`, `MINI_GAME_RULES`, `BOSS_RULES`), `boss`
+(`BossState`, `stepOver`, `stepSpeed`), `tiles` (`TileGrid`), `body` (`Body`, `moveX`, `moveY`), `player`
 (`Player`), `actor` (`Actor`), `world` (`PlatformerWorld` with its `miniGames` option, `PlatformerEvent`, `Outcome`, `TriggerState`, `MiniGameRun`, `EndedRound`) and `snapshot` (`snapshotWorld`,
 `platformerGame`, `snapshotEndedRound`, `EndedRoundSnapshot`) and `present` (`presentWorld`, `PlatformerPresentState`, `platformerFrames` (the `FrameSource` for
 the engine's `FrameStream`), `presentMap`,
-`presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`) and `sequence` (`LevelSequence`,
+`presentStatus`, `cameraHint`, `PRESENT_TILES`, `PF_DEPTH`, `BOSS_ANIMS`, `bossState`) and `sequence` (`LevelSequence`,
 `LevelSequenceOptions`, `LevelStage`, `levelStages`, `levelsInPlayOrder`, `contentStages`
 (a bundle's levels in play order with their profiles, Engine 0.7 T9: the order of the game's
 `campaign` file when it has one, Engine 0.10, else by id), `LEVEL_PAUSE`, `SequenceSnapshot`). `kit.ts` exports `kit`, the kit's hook for the tools (name `platformer`,
@@ -74,6 +84,8 @@ it by the `kit` name in `game.json`.
 case), determinism and whole-number snapshots; `objects.test.ts` covers the level objects and
 enemies the same way and plays the fixture level from start to goal; `minigame.test.ts` covers the
 mini game hook with a test-only mini game (pass, fail, quit, determinism, the rule off);
+`boss.test.ts` covers the boss (pattern stepping, stomp hits, hit invulnerability, the phase
+change, the defeat and level clear, projectiles, each boss rule off, checks and presentation);
 `sequence.test.ts` covers the level sequence (cleared -> next,
 failed -> same, wrap-around, the pause ignoring input, rules given to every world);
 `present.test.ts` checks that presenting every tick leaves the state hashes alone, that every

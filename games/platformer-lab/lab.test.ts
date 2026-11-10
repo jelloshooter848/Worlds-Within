@@ -13,6 +13,7 @@ import { presentFrameSchema } from '@engine/core/present';
 import { validate } from '@engine/core/content/validate';
 import {
   ACTOR_ANIMS,
+  BOSS_ANIMS,
   LEVEL_PAUSE,
   PRESENT_TILES,
   presentStatus,
@@ -54,6 +55,10 @@ const EVENT_TYPES = [
   'cleared',
   'mini-game',
   'mini-game-end',
+  'boss-telegraph',
+  'boss-attack',
+  'boss-hit',
+  'boss-defeat',
 ];
 
 /** The null renderer, counting the sprites (and bitmap text) drawn from each sheet. */
@@ -80,6 +85,7 @@ describe('platformer lab content', () => {
       'lab-4-walkers',
       'lab-5-trigger',
       'lab-6-feel',
+      'lab-7-boss',
       FIRST_LEVEL,
       'lab-1-moves',
       'lab-2-objects',
@@ -96,6 +102,7 @@ describe('platformer lab content', () => {
       'lab-4-walkers',
       'lab-5-trigger',
       'lab-6-feel',
+      'lab-7-boss',
     ]);
   });
 
@@ -113,7 +120,9 @@ describe('platformer lab content', () => {
 
 describe('platformer lab skin', () => {
   const skin = labSkin(content);
-  const actorTypes = new Set(contentOf(content, profileKind()).flatMap((e) => Object.keys(e.value.actors)));
+  const types = contentOf(content, profileKind()).flatMap((e) => Object.entries(e.value.actors));
+  const actorTypes = new Set(types.filter(([, t]) => !t.boss).map(([name]) => name));
+  const bossTypes = new Set(types.filter(([, t]) => t.boss).map(([name]) => name));
 
   it('maps every tile the kit presents', () => {
     expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(Object.values(PRESENT_TILES).sort());
@@ -123,6 +132,8 @@ describe('platformer lab skin', () => {
     const states = (kind: string) => Object.keys(skin.kinds[kind]?.frames ?? {}).sort();
     expect(states('runner')).toEqual([...RUNNER_ANIMS].sort());
     for (const type of actorTypes) expect(states(type), type).toEqual([...ACTOR_ANIMS].sort());
+    expect([...bossTypes]).toEqual(['mini-boss']);
+    for (const type of bossTypes) expect(states(type), type).toEqual([...BOSS_ANIMS].sort());
     expect(states('coin')).toEqual(['idle', 'pop']);
     for (const kind of ['goal', 'trigger', 'checkpoint']) expect(states(kind)).toEqual(['idle']);
     expect(skin.kinds['checkpoint']?.byTag?.map((l) => l.tag)).toEqual(['active']);

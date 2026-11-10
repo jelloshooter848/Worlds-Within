@@ -1,6 +1,7 @@
 import { px, tileAt, velToSub } from '@engine/core/math/units';
 import type { RuleSwitch } from '@engine/core/rules';
 import { makeBody, moveX, moveY, type Body } from './body';
+import { BossState } from './boss';
 import type { ActorType, ProfileDef } from './profile';
 import type { TileGrid } from './tiles';
 
@@ -17,7 +18,11 @@ export const DEFAULT_KICK_GRACE = 15;
  *   1. on the ground, a `turnAt: ledges` type turns round before the edge of a drop (`ledge-turn`);
  *   2. it walks `dir * speed` (its type's `speed`, or its `kickSpeed` once kicked), x then y;
  *   3. a wall turns it round (`walkers-turn`), keeping its speed;
- *   4. in the air `actorGravity` applies, capped at `actorMaxFall` (`gravity`, `fall-cap`).
+ *   4. in the air `actorGravity` applies, capped at `actorMaxFall` (`gravity`, `fall-cap`), but
+ *      not to a `projectile: flies` type (`boss-projectiles`).
+ *
+ * A boss (its type has a `boss` form) starts still; the world sets its `speed` and way each tick
+ * from its pattern (`boss.ts`).
  *
  * An actor waits (does not move) until the world wakes it, near the view (`actors-wake`).
  */
@@ -31,6 +36,8 @@ export class Actor {
   active = false;
   /** Ticks left in which it does not touch the player (after a kick or a stomp). */
   grace = 0;
+  /** Its boss state, when its type has a `boss` form (Engine 0.16 T2), else null. */
+  readonly boss: BossState | null;
 
   /**
    * An actor of `type` with the bottom centre of its box at x/y (sub-pixels), walking `dir`.
@@ -48,6 +55,8 @@ export class Actor {
     this.body = makeBody(x - (px(box.w) >> 1), y - px(box.h), box.w, box.h);
     this.dir = dir;
     this.speed = def.speed;
+    this.boss = def.boss ? new BossState(def.boss) : null;
+    if (this.boss) this.speed = 0;
   }
 
   /** The bottom centre of its box (sub-pixels). */
@@ -78,6 +87,7 @@ export class Actor {
     }
     moveY(b, tiles, b.onGround ? Math.max(velToSub(b.vy), 1) : velToSub(b.vy), true);
     if (b.onGround) b.vy = 0;
+    else if (this.def.projectile === 'flies' && rules.isOn('boss-projectiles')) b.vy = 0;
     else if (rules.isOn('gravity')) {
       b.vy += profile.actorGravity;
       if (rules.isOn('fall-cap') && b.vy > profile.actorMaxFall) b.vy = profile.actorMaxFall;

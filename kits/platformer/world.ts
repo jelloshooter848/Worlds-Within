@@ -13,6 +13,7 @@ import {
 import { Rng } from '@engine/core/rng';
 import { RuleSwitch } from '@engine/core/rules';
 import { Actor, DEFAULT_KICK_GRACE } from './actor';
+import { stepOver, stepSpeed } from './boss';
 import { checkLevel, levelCells, type LevelCell, type LevelDef, type LevelTrigger } from './level';
 import { Player } from './player';
 import type { ProfileDef } from './profile';
@@ -40,7 +41,22 @@ export type PlatformerEvent =
   | { type: 'checkpoint'; col: number; row: number }
   | { type: 'cleared' }
   | { type: 'mini-game'; trigger: number; game: string; attempt: number }
-  | { type: 'mini-game-end'; trigger: number; game: string; result: MiniGameResult };
+  | { type: 'mini-game-end'; trigger: number; game: string; result: MiniGameResult }
+  | { type: 'boss-telegraph'; actor: number; actorType: string; attack: string; ticks: number }
+  | { type: 'boss-attack'; actor: number; actorType: string; attack: BossAttack; projectile?: number }
+  | {
+      type: 'boss-hit';
+      actor: number;
+      actorType: string;
+      hp: number;
+      maxHp: number;
+      phase: number;
+      invuln: number;
+    }
+  | { type: 'boss-defeat'; actor: number; actorType: string; ticks: number };
+
+/** What a boss's `boss-attack` event names: the pattern step that attacks. */
+export type BossAttack = 'charge' | 'leap' | 'shoot' | 'drop';
 
 /** Where the level stands: still being played, cleared at a goal, or failed (no lives left). */
 export type Outcome = 'playing' | 'cleared' | 'failed';
@@ -114,6 +130,11 @@ export interface EndedRound extends MiniGameRun {
  *   6. the player touches tiles: coins (`coins-collect`), checkpoints (`checkpoints`), hazards
  *      (`hazards-kill`) and goals (`goal-clears-level`);
  *   7. a player whose top is below the last row dies (`pits-kill`);
+ *   (a boss, Engine 0.16 T2, takes its turn in 4: its pattern's step starts, moves and ends
+ *   (`boss-pattern`), shoots and drops add projectiles (`boss-projectiles`: gone at a wall, on
+ *   landing or on touching the player), and the end of a defeat sequence may clear the level
+ *   (`boss-defeat-clears`); in 5 a stomp hits it (`boss-stomp-hits`, `boss-hit-invuln`,
+ *   `boss-phases`) instead of `stomping`);
  *   8. a mini-game trigger the player enters starts a round of the mini game it names
  *      (`mini-games`, seeded from `rng`). While it runs, `update` steps the round instead of
  *      the level (through a `RoundInput`: a button held into the trigger is ignored until released,
@@ -235,6 +256,7 @@ export class PlatformerWorld {
     this.holdInView();
     this.scroll();
     this.moveActors();
+    if (this.outcome !== 'playing') return; // a boss's defeat sequence has cleared the level
     this.touchActors(prevBottom);
     if (this.player === p) this.touchTiles();
     if (this.player === p && this.outcome === 'playing' && p.body.y >= tileToSub(this.tiles.rows)) {
@@ -426,18 +448,117 @@ export class PlatformerWorld {
       const b = a.body;
       if (!this.rules.isOn('actors-wake') || (b.x < right && b.x + b.w > left)) a.active = true;
     }
-    for (const a of this.actors) if (a.active) a.step(this.tiles, this.profile, this.rules);
+    // A copy: a boss's attack may add a projectile, which moves from the next tick.
+    for (const a of [...this.actors]) {
+      if (!a.active) continue;
+      if (a.boss) this.bossTurn(a);
+      a.step(this.tiles, this.profile, this.rules);
+      if (a.boss) this.bossStepped(a);
+    }
     const bottom = tileToSub(this.tiles.rows);
     this.remove((a) => a.body.y >= bottom);
+    if (this.rules.isOn('boss-projectiles'))
+      this.remove((a) => a.def.projectile !== undefined && (a.body.hitWall !== 0 || a.body.onGround));
+    this.endDefeats();
     if (!this.rules.isOn('shell-hits-enemies')) return;
     for (const s of [...this.actors]) {
       if (!s.isMovingShell || !this.actors.includes(s)) continue;
       for (const o of [...this.actors]) {
-        if (o === s || !o.active || !overlaps(s.body, o.body)) continue;
+        if (o === s || o.boss || !o.active || !overlaps(s.body, o.body)) continue;
         this.remove((a) => a === o);
         this.emit({ type: 'defeat', actor: o.id, actorType: o.type, by: s.id });
       }
     }
+  }
+
+  /**
+   * A boss's turn before it moves: its hit invulnerability counts down, and on a step's first
+   * tick it faces the player and the step starts (`boss-pattern`): a telegraph announces its
+   * attack, a charge runs, a leap takes off, a shoot or a drop adds a projectile. Its speed is the
+   * step's (`stepSpeed`). In its defeat sequence, or with `boss-pattern` off, it stands.
+   */
+  private bossTurn(a: Actor): void {
+    const s = a.boss!;
+    a.speed = 0;
+    if (s.mode !== 'fight') return;
+    if (s.invuln > 0) s.invuln--;
+    if (!this.rules.isOn('boss-pattern')) return;
+    const step = s.current;
+    if (s.tick === 0) {
+      const pb = this.player.body;
+      a.dir = pb.x + (pb.w >> 1) < a.body.x + (a.body.w >> 1) ? -1 : 1;
+      const who = { actor: a.id, actorType: a.type };
+      if (step.do === 'telegraph') {
+        this.emit({ type: 'boss-telegraph', ...who, attack: step.attack, ticks: step.ticks });
+      } else if (step.do === 'charge') {
+        this.emit({ type: 'boss-attack', ...who, attack: 'charge' });
+      } else if (step.do === 'leap') {
+        a.body.vy = -step.speed;
+        a.body.onGround = false;
+        this.emit({ type: 'boss-attack', ...who, attack: 'leap' });
+      } else if (step.do === 'shoot' || step.do === 'drop') {
+        const p = step.do === 'shoot' ? this.shoot(a, step.actor) : this.drop(step.actor, step.spread ?? 0);
+        this.emit({ type: 'boss-attack', ...who, attack: step.do, projectile: p.id });
+      }
+    }
+    a.speed = stepSpeed(step);
+  }
+
+  /** After a boss moved: the step goes on, or it is over and the next one comes (`boss-pattern`). */
+  private bossStepped(a: Actor): void {
+    const s = a.boss!;
+    if (s.mode === 'defeated') {
+      s.tick++;
+      return;
+    }
+    if (!this.rules.isOn('boss-pattern')) return;
+    if (stepOver(s.current, s.tick, a.body.hitWall, a.body.onGround)) s.next();
+    else s.tick++;
+  }
+
+  /** A projectile of `type` fired ahead of the boss, its box centred on the boss's height. */
+  private shoot(boss: Actor, type: string): Actor {
+    const def = this.profile.actors[type]!;
+    const box = def.box ?? { w: 16, h: 16 };
+    const b = boss.body;
+    const half = px(box.w) >> 1;
+    const x = boss.dir < 0 ? b.x - half : b.x + b.w + half;
+    const y = b.y + (b.h >> 1) + (px(box.h) >> 1);
+    return this.addProjectile(type, x, y, boss.dir);
+  }
+
+  /**
+   * A projectile of `type` dropped from the top of the level over the player's centre, moved
+   * up to `spread` tiles either way by the world's `rng` (no draw when `spread` is 0).
+   */
+  private drop(type: string, spread: number): Actor {
+    const def = this.profile.actors[type]!;
+    const box = def.box ?? { w: 16, h: 16 };
+    const pb = this.player.body;
+    const off = spread > 0 ? this.rng.int(spread * 2 + 1) - spread : 0;
+    const half = px(box.w) >> 1;
+    const x = clamp(pb.x + (pb.w >> 1) + tileToSub(off), half, tileToSub(this.tiles.cols) - half);
+    return this.addProjectile(type, x, px(box.h), this.player.facing);
+  }
+
+  private addProjectile(type: string, x: number, y: number, dir: -1 | 1): Actor {
+    const p = this.addActor(type, x, y, dir);
+    p.active = true;
+    return p;
+  }
+
+  /**
+   * Bosses at the end of their defeat sequence are gone; with `"clear": "boss"`, once the last
+   * boss is gone the level is cleared (`boss-defeat-clears`; a `cleared` event).
+   */
+  private endDefeats(): void {
+    const done = (a: Actor) => a.boss?.mode === 'defeated' && a.boss.tick >= a.boss.def.defeatTicks;
+    if (!this.actors.some(done)) return;
+    this.remove(done);
+    if (this.level.clear !== 'boss' || this.actors.some((a) => a.boss)) return;
+    if (!this.rules.isOn('boss-defeat-clears')) return;
+    this.outcome = 'cleared';
+    this.emit({ type: 'cleared' });
   }
 
   private remove(gone: (a: Actor) => boolean): void {
@@ -451,6 +572,7 @@ export class PlatformerWorld {
     for (const a of [...this.actors]) {
       if (this.player !== p || this.outcome !== 'playing') return;
       if (!a.active || a.grace > 0 || !this.actors.includes(a) || !overlaps(pb, a.body)) continue;
+      if (a.boss?.mode === 'defeated') continue;
       const def = a.def;
       if (def.kickable && a.speed === 0 && this.rules.isOn('shell-kick')) {
         a.dir = pb.x + (pb.w >> 1) < a.body.x + (a.body.w >> 1) ? 1 : -1;
@@ -461,12 +583,46 @@ export class PlatformerWorld {
       }
       // SMBC's stomp test: moving down this tick, with the feet before the move in the top 3/5.
       const fromAbove = pb.y + pb.h > prevBottom && prevBottom <= a.body.y + Math.trunc((a.body.h * 3) / 5);
-      if (fromAbove && def.stompable && this.rules.isOn('stomping')) {
+      if (a.boss && fromAbove && def.stompable && this.rules.isOn('boss-stomp-hits')) {
+        this.hitBoss(a);
+        continue;
+      }
+      if (!a.boss && fromAbove && def.stompable && this.rules.isOn('stomping')) {
         this.stomp(a);
         continue;
       }
       if (def.harms && this.rules.isOn('enemy-touch-hurts')) this.hurt();
+      if (def.projectile !== undefined && this.rules.isOn('boss-projectiles')) this.remove((o) => o === a);
     }
+  }
+
+  /**
+   * A stomp on a boss: the player bounces (`stomp-bounce`); unless the boss is in its hit
+   * invulnerability it takes a hit point (`boss-hit`), starts `hitInvuln` ticks of it
+   * (`boss-hit-invuln`) and, at a phase's hp, starts that phase's pattern (`boss-phases`). At 0
+   * hit points its defeat sequence starts (`boss-defeat`): `defeatTicks` ticks, then it is gone.
+   */
+  private hitBoss(a: Actor): void {
+    const s = a.boss!;
+    if (this.rules.isOn('stomp-bounce')) this.player.bounce(this.profile.player.stompBounce);
+    // As after a stomp that leaves a shell: it leaves the bouncing player alone a few ticks.
+    a.grace = a.def.kickGrace ?? DEFAULT_KICK_GRACE;
+    if (s.invuln > 0) return;
+    s.hp--;
+    const who = { actor: a.id, actorType: a.type };
+    if (s.hp <= 0) {
+      s.mode = 'defeated';
+      s.tick = 0;
+      s.invuln = 0;
+      a.speed = 0;
+      this.emit({ type: 'boss-hit', ...who, hp: 0, maxHp: s.def.hp, phase: s.phase, invuln: 0 });
+      this.emit({ type: 'boss-defeat', ...who, ticks: s.def.defeatTicks });
+      return;
+    }
+    if (this.rules.isOn('boss-hit-invuln')) s.invuln = s.def.hitInvuln;
+    const phase = s.phaseFor(s.hp);
+    if (phase > s.phase && this.rules.isOn('boss-phases')) s.enterPhase(phase);
+    this.emit({ type: 'boss-hit', ...who, hp: s.hp, maxHp: s.def.hp, phase: s.phase, invuln: s.invuln });
   }
 
   /** A stomp: the actor becomes its `stompInto` type (same id, place and way) or is defeated. */

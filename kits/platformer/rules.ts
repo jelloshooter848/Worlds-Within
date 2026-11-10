@@ -71,9 +71,41 @@ export const MINI_GAME_RULES = defineRules([
   },
 ]);
 
+/** The data-driven boss and its projectiles (`boss.ts`, `world.ts`; Engine 0.16 T2). */
+export const BOSS_RULES = defineRules([
+  {
+    id: 'boss-pattern',
+    description: "a boss steps through its pattern's telegraphs and attacks, looping (off: it stands still)",
+  },
+  {
+    id: 'boss-phases',
+    description: "a hit that takes a boss's hp to a phase's hp switches it to that phase's pattern",
+  },
+  {
+    id: 'boss-stomp-hits',
+    description:
+      'a stomp on a boss takes one of its hit points and bounces the player (off: touching it only hurts)',
+  },
+  { id: 'boss-hit-invuln', description: 'after a hit a boss cannot be hit again for its hitInvuln ticks' },
+  {
+    id: 'boss-defeat-clears',
+    description: 'with "clear": "boss", the end of the last boss\'s defeat sequence clears the level',
+  },
+  {
+    id: 'boss-projectiles',
+    description:
+      'a projectile flies straight (or falls) and is gone at a wall, on landing or on touching the player',
+  },
+]);
+
 /**
  * The platformer kit's named rules, for mutant checks (`engine/core/rules.ts`): each one's code is
  * guarded by `rules.isOn(id)`, so a run can switch it off. The kit opts in to strict mutants
  * (`kit.ts`), so every rule listed here must be guarded by a run file.
  */
-export const PLATFORMER_RULES = defineRules([...MOVEMENT_RULES, ...OBJECT_RULES, ...MINI_GAME_RULES]);
+export const PLATFORMER_RULES = defineRules([
+  ...MOVEMENT_RULES,
+  ...OBJECT_RULES,
+  ...MINI_GAME_RULES,
+  ...BOSS_RULES,
+]);

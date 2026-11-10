@@ -1,0 +1,153 @@
+{
+  "id": "lab-boss",
+  "player": {
+    "box": {
+      "w": 12,
+      "h": 16
+    },
+    "minWalk": 304,
+    "walkAccel": 152,
+    "runAccel": 228,
+    "friction": 208,
+    "skid": 416,
+    "skidTurn": 2304,
+    "maxWalk": 6400,
+    "maxRun": 10496,
+    "runHold": 10,
+    "jumps": [
+      {
+        "below": 4096,
+        "speed": 16384,
+        "holdGravity": 512,
+        "gravity": 1792
+      },
+      {
+        "below": 9472,
+        "speed": 16384,
+        "holdGravity": 480,
+        "gravity": 1536
+      },
+      {
+        "speed": 20480,
+        "holdGravity": 640,
+        "gravity": 2304
+      }
+    ],
+    "jumpBuffer": 4,
+    "coyote": 6,
+    "jumpCut": 8192,
+    "maxFall": 18432,
+    "fallReset": 16384,
+    "stompBounce": 16384,
+    "hp": 3,
+    "maxHp": 3,
+    "invulnTicks": 90,
+    "breakBricksAt": 2,
+    "lives": 3
+  },
+  "actorGravity": 1024,
+  "actorMaxFall": 16384,
+  "actors": {
+    "mini-boss": {
+      "box": {
+        "w": 24,
+        "h": 24
+      },
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": true,
+      "kickable": false,
+      "harms": true,
+      "boss": {
+        "hp": 4,
+        "hitInvuln": 40,
+        "defeatTicks": 60,
+        "pattern": [
+          {
+            "do": "idle",
+            "ticks": 30
+          },
+          {
+            "do": "telegraph",
+            "ticks": 30,
+            "attack": "shoot"
+          },
+          {
+            "do": "shoot",
+            "actor": "bolt",
+            "ticks": 10
+          },
+          {
+            "do": "idle",
+            "ticks": 20
+          },
+          {
+            "do": "telegraph",
+            "ticks": 30,
+            "attack": "charge"
+          },
+          {
+            "do": "charge",
+            "speed": 12288
+          }
+        ],
+        "phases": [
+          {
+            "hp": 2,
+            "pattern": [
+              {
+                "do": "idle",
+                "ticks": 15
+              },
+              {
+                "do": "telegraph",
+                "ticks": 15,
+                "attack": "drop"
+              },
+              {
+                "do": "drop",
+                "actor": "rock",
+                "spread": 2,
+                "ticks": 5
+              },
+              {
+                "do": "telegraph",
+                "ticks": 15,
+                "attack": "leap"
+              },
+              {
+                "do": "leap",
+                "speed": 16384,
+                "run": 6144
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "bolt": {
+      "box": {
+        "w": 8,
+        "h": 8
+      },
+      "speed": 12288,
+      "turnAt": "walls",
+      "stompable": false,
+      "kickable": false,
+      "harms": true,
+      "projectile": "flies"
+    },
+    "rock": {
+      "box": {
+        "w": 12,
+        "h": 12
+      },
+      "speed": 0,
+      "turnAt": "walls",
+      "stompable": false,
+      "kickable": false,
+      "harms": true,
+      "projectile": "falls"
+    }
+  }
+}

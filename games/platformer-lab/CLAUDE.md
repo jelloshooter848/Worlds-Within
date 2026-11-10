@@ -30,11 +30,18 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   - `lab-6-feel` (Engine 0.16 T1, profile `lab-feel`): a ledge to walk off and jump from late
     (`coyote-time`) over a three-tile pit, the jump let go early (`variable-jump`'s `jumpCut`), a
     checkpoint `K` and a hazard to die on once (`checkpoints`: the respawn is on the
-    checkpoint), then a jump over the hazard to the goal.
+    checkpoint), then a jump over the hazard to the goal;
+  - `lab-7-boss` (Engine 0.16 T2, profile `lab-boss`, `"clear": "boss"`, no goal): a walled
+    16x15 arena with the `mini-boss` (`b`) at the right; beating it clears the level.
 - `content/profiles/<id>.profile.json`: physics profiles. `runner.profile.json` is the kit's
   fixture profile, byte for byte (tiny uses it); `lab-runner` is the same runner with 3 lives and a
   `ledge-walker` type (the lab's own levels use it); `lab-feel` (Engine 0.16 T1, `lab-6-feel`
-  only) is `lab-runner`'s player with `coyote` 6 and `jumpCut` 8192 and no actor types. The
+  only) is `lab-runner`'s player with `coyote` 6 and `jumpCut` 8192 and no actor types;
+  `lab-boss` (Engine 0.16 T2, `lab-7-boss` only) is `lab-feel`'s player with 3 hit points and
+  90 ticks of invulnerability, and three actor types: `mini-boss` (24x24, a `boss` form: 4 hp,
+  `hitInvuln` 40, `defeatTicks` 60; its pattern idles, telegraphs `shoot`, fires a `bolt`, idles,
+  telegraphs `charge` and charges to the wall; at 2 hp its phase idles 15, telegraphs `drop`,
+  drops a `rock` (spread 2), telegraphs `leap` and leaps), `bolt` (8x8, `projectile: flies` at 12288) and `rock` (12x12, `projectile: falls`). The
   older levels keep `lab-runner`, so their runs and hashes did not move. Profiles are in their own folder, not in
   `content/levels/`, because the `level` glob `content/levels/*.json` would claim them too.
 - `content/sprites/lab-placeholders.txt` (palette `content/palettes/lab-placeholders.json`):
@@ -43,7 +50,13 @@ engine, and nothing in `engine/` or `kits/` depends on it.
 - `content/skins/canvas2d.json`: the skin (format: `engine/core/present/skin.ts`). `kinds` maps
   `runner` (every `RUNNER_ANIMS` state), each actor type of both profiles (every `ACTOR_ANIMS`
   state), `coin`, `goal`, `trigger`, `checkpoint` (a grey pole and flag, `byTag` `active`: the
-  `checkpoint-on` frame, a red flag), `bump-block` and the mini game's `bar-cell` and `bar-marker`;
+  `checkpoint-on` frame, a red flag), `bump-block` and the mini game's `bar-cell` and `bar-marker`,
+  and (Engine 0.16 T2) `mini-boss` (every `BOSS_ANIMS` state: `mini-boss`, `mini-boss-tele` (yellow
+  angry eyes, blinking while it telegraphs), `mini-boss-hurt` (white, flashing), `mini-boss-dead`),
+  `bolt` and `rock` (every `ACTOR_ANIMS` state, one frame each); the `boss-*` events: a yellow
+  tint on a telegraph, a small shake on an attack, a white flash, a shake and a 4-frame
+  `hitPause` on a hit, a long shake, a flash and an 8-frame `hitPause` on the defeat (the same in
+  `three.json`, which has low-poly `mini-boss`, `bolt` and `rock` meshes);
   `tiles` every `PRESENT_TILES` character; `events` every `PlatformerEvent` type (effects only:
   the lab has no sounds); `hud` `hp` (hearts), `coins` and `lives` (icon and number in
   `lab-font`); `camera` follows the runner with a 32x48 deadzone and lerp 0.25 (the kit's hint
@@ -65,8 +78,8 @@ engine, and nothing in `engine/` or `kits/` depends on it.
   - `content.ts`: `labKinds`, `loadLab(files)`, `labStages(content)` (the levels in play order:
     the order of `content/campaigns/main.campaign.json` (Engine 0.10, gap G2): `FIRST_LEVEL`
     (`tiny`) first, then `lab-1-moves` to `lab-5-trigger`, the order the lab played before, so no
-    run file or golden hash moved, and (Engine 0.16 T1) `lab-6-feel` last, after every older
-    run's end; each paired with its profile by the kit's `contentStages`),
+    run file or golden hash moved, and (Engine 0.16 T1) `lab-6-feel`, then (T2) `lab-7-boss`
+    last, after every older run's end; each paired with its profile by the kit's `contentStages`),
     `labSkin`,
     `labSkin3d` (the `three` skin), `mustLoad` (the engine's, naming the lab);
   - `minigame.ts`: `STOP_BAR` (`stop-bar`, "STOP THE BAR"), the lab's one original test mini
@@ -131,6 +144,7 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
 | `walkers`       | 2688  | `lab-4-walkers` cleared (2678) | actors-wake, walkers-turn, ledge-turn, enemy-touch-hurts, invulnerability                                                                |
 | `mini-game`     | 3015  | `lab-5-trigger` cleared (3005) | mini-games (a failed round, then a passed one; each round's last tick read from `endedRound`)                                            |
 | `feel`          | 207   | `lab-6-feel` cleared (198)     | coyote-time, checkpoints, variable-jump (`start: { "stage": 6 }`)                                                                        |
+| `boss`          | 850   | `lab-7-boss` cleared (844)     | boss-pattern, boss-phases, boss-stomp-hits, boss-hit-invuln, boss-defeat-clears, boss-projectiles (`start: { "stage": 7 }`)              |
 
 - `start-to-goal.run.json` checks the coins (1 from the bump block at tick 82, 2 at 193), the
   changed tiles, the position at the goal and `outcome` `cleared`; its invariants hold one life,
@@ -141,6 +155,16 @@ lists the rules it is meant to guard in `guards`; together they guard every kit 
   (`player.vy` -6656: capped at -8192 by `jumpCut`, then one tick of gravity, 1536), touches the checkpoint
   (tick 103, `checkpoint` `{ col: 10, row: 8 }`), dies on the hazard and respawns on the
   checkpoint (tick 134, `player.x` 43008), then jumps the hazard to the goal (tick 198, 2 lives).
+- `boss.run.json` (Engine 0.16 T2) starts on `lab-7-boss` (`start: { "stage": 7 }`). Its input
+  was found by a throwaway reactive bot (walk at the boss, jump when near, back off while it is
+  invulnerable, jump an incoming bolt) and written in as plain steps. The boss telegraphs `shoot`
+  (tick 31), fires bolt 2 (61), which flies level (`actors.1.y` 55296 at 62 and 90: with
+  `boss-projectiles` off it falls) and is gone at the left wall (116); the first stomp (117,
+  `boss-hit` hp 3, `invuln` 40; 36 left at 121, when the charge starts); the second (298, hp 2)
+  starts phase 1 (`phase` 1; a `drop` telegraph at 314, rock 4 dropped at 329 and gone on landing
+  by 331); the third (343, hp 1) and, after leaps, the last (784: `boss-defeat` `ticks` 60, mode
+  `defeated`); the level is still playing at 843 and `cleared` at 844 with no actor left.
+  Invariants: stage 7 and 3 lives (two hurts on the way, never a death).
 - `mini-game-start.run.json` (Engine 0.14, gap G9) is `mini-game`'s own part from the trigger
   level's tick 0 (`start: { "stage": 5 }`; the full run reaches it at tick 2738), with the same
   hashes as the full run from there. `headless.ts` exports `starts(content)` (one stage per level,

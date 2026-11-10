@@ -1,0 +1,465 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": {
+    "stage": 7
+  },
+  "ticks": 850,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["right"]
+      },
+      {
+        "frame": 65,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 66,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 100,
+        "hold": ["right"]
+      },
+      {
+        "frame": 117,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 121,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 128,
+        "hold": []
+      },
+      {
+        "frame": 145,
+        "hold": ["right"]
+      },
+      {
+        "frame": 157,
+        "hold": ["left"]
+      },
+      {
+        "frame": 246,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 247,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 281,
+        "hold": ["left"]
+      },
+      {
+        "frame": 298,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 309,
+        "hold": ["right"]
+      },
+      {
+        "frame": 311,
+        "hold": ["left"]
+      },
+      {
+        "frame": 321,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 332,
+        "hold": ["left"]
+      },
+      {
+        "frame": 338,
+        "hold": ["right"]
+      },
+      {
+        "frame": 343,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 354,
+        "hold": ["left"]
+      },
+      {
+        "frame": 365,
+        "hold": []
+      },
+      {
+        "frame": 371,
+        "hold": ["left"]
+      },
+      {
+        "frame": 383,
+        "hold": ["right"]
+      },
+      {
+        "frame": 411,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 412,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 435,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 436,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 446,
+        "hold": ["left"]
+      },
+      {
+        "frame": 513,
+        "hold": ["left", "jump"]
+      },
+      {
+        "frame": 514,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 527,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 528,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 548,
+        "hold": ["right"]
+      },
+      {
+        "frame": 575,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 576,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 601,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 602,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 610,
+        "hold": ["left"]
+      },
+      {
+        "frame": 679,
+        "hold": ["left", "jump"]
+      },
+      {
+        "frame": 680,
+        "hold": ["jump", "left"]
+      },
+      {
+        "frame": 694,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 696,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 714,
+        "hold": ["right"]
+      },
+      {
+        "frame": 740,
+        "hold": ["right", "jump"]
+      },
+      {
+        "frame": 741,
+        "hold": ["jump", "right"]
+      },
+      {
+        "frame": 766,
+        "hold": ["jump"]
+      },
+      {
+        "frame": 775,
+        "hold": []
+      },
+      {
+        "frame": 778,
+        "hold": ["left"]
+      },
+      {
+        "frame": 782,
+        "hold": []
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 0,
+      "path": "level",
+      "op": "eq",
+      "value": "lab-7-boss"
+    },
+    {
+      "tick": 0,
+      "path": "actors.0.boss",
+      "op": "eq",
+      "value": {
+        "mode": "fight",
+        "hp": 4,
+        "phase": 0,
+        "step": 0,
+        "tick": 0,
+        "invuln": 0
+      }
+    },
+    {
+      "tick": 31,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-telegraph",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "shoot",
+        "ticks": 30
+      }
+    },
+    {
+      "tick": 61,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-attack",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "shoot",
+        "projectile": 2
+      }
+    },
+    {
+      "tick": 62,
+      "path": "actors.1.y",
+      "op": "eq",
+      "value": 55296
+    },
+    {
+      "tick": 90,
+      "path": "actors.1.y",
+      "op": "eq",
+      "value": 55296
+    },
+    {
+      "tick": 90,
+      "path": "actors.1.vx",
+      "op": "eq",
+      "value": -12288
+    },
+    {
+      "tick": 116,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 91,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-telegraph",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "charge",
+        "ticks": 30
+      }
+    },
+    {
+      "tick": 117,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-hit",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "hp": 3,
+        "maxHp": 4,
+        "phase": 0,
+        "invuln": 40
+      }
+    },
+    {
+      "tick": 117,
+      "path": "actors.0.boss.hp",
+      "op": "eq",
+      "value": 3
+    },
+    {
+      "tick": 121,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-attack",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "charge"
+      }
+    },
+    {
+      "tick": 121,
+      "path": "actors.0.boss.invuln",
+      "op": "eq",
+      "value": 36
+    },
+    {
+      "tick": 298,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-hit",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "hp": 2,
+        "maxHp": 4,
+        "phase": 1,
+        "invuln": 40
+      }
+    },
+    {
+      "tick": 298,
+      "path": "actors.0.boss.phase",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 314,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-telegraph",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "drop",
+        "ticks": 15
+      }
+    },
+    {
+      "tick": 329,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-attack",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "drop",
+        "projectile": 4
+      }
+    },
+    {
+      "tick": 331,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 343,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-hit",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "hp": 1,
+        "maxHp": 4,
+        "phase": 1,
+        "invuln": 40
+      }
+    },
+    {
+      "tick": 349,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-attack",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "attack": "leap"
+      }
+    },
+    {
+      "tick": 784,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "boss-defeat",
+        "actor": 1,
+        "actorType": "mini-boss",
+        "ticks": 60
+      }
+    },
+    {
+      "tick": 784,
+      "path": "actors.0.boss.mode",
+      "op": "eq",
+      "value": "defeated"
+    },
+    {
+      "tick": 843,
+      "path": "outcome",
+      "op": "eq",
+      "value": "playing"
+    },
+    {
+      "tick": 844,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "cleared"
+      }
+    },
+    {
+      "tick": 844,
+      "path": "outcome",
+      "op": "eq",
+      "value": "cleared"
+    },
+    {
+      "tick": 844,
+      "path": "actors.length",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "invariants": [
+    {
+      "path": "stage",
+      "op": "eq",
+      "value": 7
+    },
+    {
+      "path": "lives",
+      "op": "eq",
+      "value": 3
+    }
+  ],
+  "hashEvery": 60,
+  "guards": [
+    "boss-pattern",
+    "boss-phases",
+    "boss-stomp-hits",
+    "boss-hit-invuln",
+    "boss-defeat-clears",
+    "boss-projectiles"
+  ]
+}

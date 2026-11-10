@@ -17,7 +17,10 @@ import type { EndedRound, PlatformerEvent, PlatformerWorld } from './world';
  *   `player.hp`, `player.invuln` (ticks left); `player.coyote` (coyote ticks left: only when the
  *   profile gives `coyote` over 0, so other snapshots hash as before);
  * - `actors`: every actor in the level, in spawn order: `id`, `type`, `x`/`y` (bottom centre),
- *   `vx`, `vy`, `dir`, `speed`, `active`, `onGround`, `grace`;
+ *   `vx`, `vy`, `dir`, `speed`, `active`, `onGround`, `grace`, and for a boss (Engine 0.16 T2;
+ *   left out for other actors, so their snapshots hash as before) `boss`: `mode` (`fight` or
+ *   `defeated`), `hp`, `phase` (0 the base pattern), `step` (in the phase's pattern), `tick`
+ *   (ticks into the step, or into the defeat sequence) and `invuln` (hit invulnerability left);
  * - `checkpoint`: the checkpoint the player touched last (`col`, `row`) or null; only in a level
  *   with checkpoint cells (`K`), so other snapshots hash as before;
  * - `tiles`: the cells changed since the start, in reading order (`col`, `row`, `cell`);
@@ -68,6 +71,7 @@ export interface PlatformerSnapshot extends JsonObject {
     active: boolean;
     onGround: boolean;
     grace: number;
+    boss?: { mode: string; hp: number; phase: number; step: number; tick: number; invuln: number };
   }[];
   tiles: { col: number; row: number; cell: string }[];
   triggers: { col: number; row: number; game: string; armed: boolean; attempts: number }[];
@@ -146,6 +150,18 @@ export function snapshotWorld(
       active: a.active,
       onGround: a.body.onGround,
       grace: a.grace,
+      ...(a.boss
+        ? {
+            boss: {
+              mode: a.boss.mode,
+              hp: a.boss.hp,
+              phase: a.boss.phase,
+              step: a.boss.step,
+              tick: a.boss.tick,
+              invuln: a.boss.invuln,
+            },
+          }
+        : {}),
     })),
     tiles: world.tiles.changed().map((c) => ({ ...c })),
     triggers: world.triggers.map((t) => ({

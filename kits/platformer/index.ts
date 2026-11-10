@@ -5,6 +5,7 @@ export * from './profile';
 export * from './rules';
 export * from './schema';
 export * from './actor';
+export * from './boss';
 export * from './body';
 export * from './player';
 export * from './snapshot';

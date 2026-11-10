@@ -119,6 +119,75 @@ const playerSchema = z.strictObject({
     ),
 });
 
+const ticks = (what: string, min = 1) => z.number().int().min(min).max(600).describe(`${what}, in ticks`);
+const attackName = z
+  .string()
+  .regex(/^[a-z][a-z0-9-]*$/)
+  .describe('the attack it announces (a name for the skin: `charge`, `leap`, ...)');
+
+/**
+ * One step of a boss's attack pattern (Engine 0.16 T2). The pattern loops: after its last step
+ * the first comes again. `idle` stands, `telegraph` stands and announces an attack (the
+ * `boss-telegraph` event), `charge` runs at the player's side until a wall, `leap` jumps towards
+ * the player and ends on landing, `shoot` fires a projectile actor ahead, `drop` drops one from
+ * the top of the level over the player.
+ */
+const bossStep = z.discriminatedUnion('do', [
+  z.strictObject({ do: z.literal('idle'), ticks: ticks('how long it stands') }),
+  z.strictObject({
+    do: z.literal('telegraph'),
+    ticks: ticks('how long it announces the attack'),
+    attack: attackName,
+  }),
+  z.strictObject({
+    do: z.literal('charge'),
+    speed: vel('the run towards the side the player is on, until a wall', 1),
+    ticks: ticks('the longest the charge lasts when no wall stops it').exactOptional(),
+  }),
+  z.strictObject({
+    do: z.literal('leap'),
+    speed: vel('the take-off speed upwards', 1),
+    run: vel('the speed towards the player in the air'),
+  }),
+  z.strictObject({
+    do: z.literal('shoot'),
+    actor: z.string().min(1).describe('the projectile actor type it fires ahead, at its own speed'),
+    ticks: ticks('how long it stands after firing (1 when left out)').exactOptional(),
+  }),
+  z.strictObject({
+    do: z.literal('drop'),
+    actor: z.string().min(1).describe('the projectile actor type dropped from the top over the player'),
+    spread: z
+      .number()
+      .int()
+      .min(0)
+      .max(16)
+      .exactOptional()
+      .describe("up to this many tiles either side of the player's column, from the world's rng (0)"),
+    ticks: ticks('how long it stands after dropping (1 when left out)').exactOptional(),
+  }),
+]);
+
+const bossPattern = z.array(bossStep).min(1).max(64);
+
+/** A boss form: hit points, a looping attack pattern and phases (Engine 0.16 T2). */
+const bossSchema = z.strictObject({
+  hp: z.number().int().min(1).max(99).describe('the hits it takes to beat it (a stomp is one)'),
+  hitInvuln: ticks('after a hit, how long a stomp only bounces off it', 0),
+  defeatTicks: ticks('how long its defeat sequence lasts before it is gone'),
+  pattern: bossPattern.describe('its attack steps, looped'),
+  phases: z
+    .array(
+      z.strictObject({
+        hp: z.number().int().min(1).max(98).describe('the phase starts once its hp is this or under'),
+        pattern: bossPattern.describe("the phase's attack steps, looped, from its first"),
+      }),
+    )
+    .max(8)
+    .exactOptional()
+    .describe('later patterns by hit points left, highest hp first (a faster pattern below half hp)'),
+});
+
 /** One actor type's data-set behaviour. */
 const actorSchema = z.strictObject({
   box: box.exactOptional().describe('the hit box in px (16x16 when left out)'),
@@ -144,6 +213,15 @@ const actorSchema = z.strictObject({
     .describe(
       'ticks after a kick (or a stomp that makes it) in which it does not touch the player (15 when left out)',
     ),
+  projectile: z
+    .enum(['flies', 'falls'])
+    .exactOptional()
+    .describe(
+      'a projectile (Engine 0.16 T2): `flies` straight at its speed with no gravity, `falls` with gravity; either is gone at a wall, on landing or on touching the player',
+    ),
+  boss: bossSchema
+    .exactOptional()
+    .describe('a boss form (Engine 0.16 T2): hit points, a looping, telegraphed attack pattern and phases'),
 });
 
 export const profileSchema = z
@@ -190,10 +268,63 @@ export const profileSchema = z
       }
       if (a.kickable && a.kickSpeed === undefined)
         issue(['actors', name, 'kickSpeed'], 'missing_field', 'a kickable actor needs "kickSpeed"');
+      if (a.boss) checkBoss(name, a, p, issue);
     }
   });
 
+type Issue = (path: PropertyKey[], code: string, message: string) => void;
+
+/**
+ * A boss form's checks beyond its shape: not kickable and no `stompInto` (`bad_boss`), phases
+ * under its hp in falling order (`bad_boss`), and every projectile a real, non-boss actor type
+ * (`unknown_actor`).
+ */
+function checkBoss(
+  name: string,
+  a: z.output<typeof actorSchema>,
+  p: { actors: Record<string, unknown> },
+  issue: Issue,
+) {
+  const boss = a.boss!;
+  const at = ['actors', name];
+  if (a.kickable) issue([...at, 'kickable'], 'bad_boss', 'a boss cannot be kickable');
+  if (a.stompInto !== undefined)
+    issue([...at, 'stompInto'], 'bad_boss', 'a boss has no "stompInto": stomps hit it');
+  let above = boss.hp;
+  (boss.phases ?? []).forEach((ph, i) => {
+    if (ph.hp >= above)
+      issue(
+        [...at, 'boss', 'phases', i, 'hp'],
+        'bad_boss',
+        `a phase's hp must be under ${above} (its hp or the last phase's)`,
+      );
+    above = Math.min(above, ph.hp);
+  });
+  const patterns = [boss.pattern, ...(boss.phases ?? []).map((ph) => ph.pattern)];
+  patterns.forEach((pattern, pi) =>
+    pattern.forEach((step, i) => {
+      if (step.do !== 'shoot' && step.do !== 'drop') return;
+      const path =
+        pi === 0
+          ? [...at, 'boss', 'pattern', i, 'actor']
+          : [...at, 'boss', 'phases', pi - 1, 'pattern', i, 'actor'];
+      const type = p.actors[step.actor] as { boss?: unknown } | undefined;
+      if (type === undefined)
+        issue(
+          path,
+          'unknown_actor',
+          `"${step.actor}" is not an actor type here (known: ${Object.keys(p.actors).join(', ')})`,
+        );
+      else if (type.boss !== undefined)
+        issue(path, 'bad_boss', `"${step.actor}" is a boss, not a projectile`);
+    }),
+  );
+}
+
 export type ProfileDef = z.output<typeof profileSchema>;
+/** A boss form (`ActorType.boss`) and one step of its pattern. */
+export type BossDef = NonNullable<ActorType['boss']>;
+export type BossStep = BossDef['pattern'][number];
 export type PlayerPhysics = ProfileDef['player'];
 export type ActorType = ProfileDef['actors'][string];
 

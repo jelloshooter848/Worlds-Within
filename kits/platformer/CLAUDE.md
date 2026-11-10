@@ -23,7 +23,9 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   `checkAll` runs `checkLevel` against the profile each level names.
 - `rules.ts`: `PLATFORMER_RULES`, the kit's named rules: `MOVEMENT_RULES` (under Movement rules
   below), then `OBJECT_RULES` (under Level objects and enemies), then `MINI_GAME_RULES` (under
-  Mini games).
+  Mini games), then `BOSS_RULES` (under Bosses, Engine 0.16 T2).
+- `boss.ts` (Engine 0.16 T2): `BossState` (a boss actor's whole-number state: `mode`, `hp`,
+  `phase`, `step`, `tick`, `invuln`; its place in the pattern), `stepOver` and `stepSpeed`.
 - `tiles.ts`: `TileGrid`, a level's tiles as the world collides with them (a cell kind per tile,
   collision from `CELL_COLLISION` in `legend.ts`; empty outside the grid, so the left and right
   edges are the `level-bounds` rule's). The world changes cells as it plays (`setCell`: a coin
@@ -34,7 +36,8 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   (`Player.atStart(col, row, ...)` centres it in the start tile, feet on its bottom edge).
 - `actor.ts`: `Actor`, one enemy of an actor type from the profile: a body that waits until woken,
   walks `dir * speed`, turns at walls and (for `turnAt: ledges`) at drops, and falls with
-  `actorGravity`; `id` is its number in the level, kept when a stomp changes its type.
+  `actorGravity` (not a `projectile: flies` type); `id` is its number in the level, kept when a
+  stomp changes its type; `boss` its `BossState` when the type has a `boss` form, else null.
 - `world.ts`: `PlatformerWorld(level, profile, { seed, disabledRules, viewWidth, miniGames })`:
   checks the level (`checkLevel`, and that the profile is the one it names; throws otherwise), owns the
   seeded `rng`, the `rules` switch, the tiles, the player, the actors, `coins`, `lives`,
@@ -216,7 +219,8 @@ then starts afresh, with no checkpoint).
 
 Events (`PlatformerEvent`, the last step's in the snapshot): `jump` (tier), `land`, `bump`,
 `block`, `break`, `coin`, `spawn`, `stomp`, `kick`, `defeat`, `hurt`, `died`, `respawn`,
-`checkpoint` (`col`, `row`), `cleared`, `mini-game` and `mini-game-end` (under Mini games). They are deterministic, so they
+`checkpoint` (`col`, `row`), `cleared`, `mini-game` and `mini-game-end` (under Mini games),
+`boss-telegraph`, `boss-attack`, `boss-hit` and `boss-defeat` (under Bosses). They are deterministic, so they
 are part of the hashed snapshot.
 
 Left out for now (simplifications, not SMBC's full behaviour): a power-up is given at once (no
@@ -227,6 +231,66 @@ Object rule ids (`OBJECT_RULES` in `rules.ts`), each made to fail a test in `obj
 off: `coins-collect`, `bump-blocks`, `brick-break`, `hazards-kill`, `pits-kill`,
 `goal-clears-level`, `checkpoints`, `scroll-lock`, `actors-wake`, `walkers-turn`, `ledge-turn`, `stomping`,
 `stomp-bounce`, `shell-kick`, `shell-hits-enemies`, `enemy-touch-hurts`, `invulnerability`.
+
+## Bosses (Engine 0.16 T2)
+
+A boss is an actor type with a `boss` form in the profile; everything it does is data, the kit
+only steps it. The form: `hp` (hits to beat it), `hitInvuln` (ticks after a hit in which a stomp
+only bounces), `defeatTicks` (the defeat sequence), `pattern` (steps, looped) and optional
+`phases` (`[{ hp, pattern }]`, highest hp first: once its hp is a phase's `hp` or under, that
+phase's pattern plays from its first step; a faster pattern below half hp is a phase at half).
+Steps (`do`):
+
+| step        | fields                         | what it does                                                                                    | over when                    |
+| ----------- | ------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------- |
+| `idle`      | `ticks`                        | stands                                                                                          | `ticks` ticks                |
+| `telegraph` | `ticks`, `attack` (a name)     | stands and announces the attack (`boss-telegraph`)                                              | `ticks` ticks                |
+| `charge`    | `speed`, `ticks?`              | runs towards the side the player is on (`boss-attack`)                                          | at a wall (or after `ticks`) |
+| `leap`      | `speed` (up), `run` (sideways) | jumps towards the player (`boss-attack`)                                                        | on landing                   |
+| `shoot`     | `actor`, `ticks?`              | fires a projectile of that type ahead, centred on its height, at the type's `speed`             | `ticks` (1) ticks            |
+| `drop`      | `actor`, `spread?`, `ticks?`   | drops one from the top of the level over the player, up to `spread` tiles off (the world's rng) | `ticks` (1) ticks            |
+
+Every step first turns the boss to face the player. Its turn is in step 4 of the world's tick,
+before it moves (`bossTurn`: hit invulnerability counts down, a step's first tick starts it, the
+speed is the step's), then after it moves (`bossStepped`: the step goes on or the next one
+comes). A drop with `spread` over 0 is the only rng draw; with none the rng is never drawn, so
+other levels hash as before.
+
+- **Projectiles** are plain actor types with `projectile: 'flies'` (straight, no gravity) or
+  `'falls'` (gravity); either is gone at a wall, on landing or on touching the player (after the
+  touch's harm), under `boss-projectiles` (off: an ordinary actor). A `shoot` or `drop` names
+  one; the profile checks it is an actor type (`unknown_actor`) and not a boss (`bad_boss`).
+- **Hits.** A stomp (the same from-above test as `stomping`) on a boss bounces the player
+  (`stomp-bounce`) and gives the boss `kickGrace` ticks (15) in which it does not touch the
+  player; unless it is in its hit invulnerability it takes a hit point (`boss-stomp-hits`; off,
+  touching it only hurts), starts `hitInvuln` ticks of it (`boss-hit-invuln`) and, at a phase's
+  hp, that phase (`boss-phases`). Any other touch hurts the player when the type `harms`. A
+  moving shell never defeats a boss.
+- **Defeat.** At 0 hp the boss enters `defeated` for `defeatTicks` ticks (it stands, touches
+  nothing), then it is gone. **Level clear:** the level header's `clear: "boss"` (decision: a
+  header field, not a goal appearing) makes the end of the last boss's defeat sequence clear the
+  level (`boss-defeat-clears`; a `cleared` event, and nothing else happens that tick). Such a
+  level needs no goal (`no_goal` is not reported) but a boss spawn on its map (`no_boss`); a goal
+  it has still clears it too. Left out (or `goal`), a level clears at a goal only and a beaten
+  boss is just gone.
+- **Events**, each with `actor` and `actorType`: `boss-telegraph` (`attack`, `ticks`: how long
+  the warning lasts, for a flash or a sound timed to it), `boss-attack` (`attack`: `charge`,
+  `leap`, `shoot`, `drop`; `projectile`, the new actor's id), `boss-hit` (`hp` left, `maxHp`,
+  `phase`, `invuln`: the hit invulnerability it starts, for a hit flash and a hit-pause) and
+  `boss-defeat` (`ticks`: the defeat sequence's length, for a shake and the end flash; it comes
+  with the last `boss-hit`, `hp` 0).
+- **Snapshot**: a boss's `actors[]` entry has `boss: { mode, hp, phase, step, tick, invuln }`
+  (whole numbers but `mode`); other actors have no `boss` key, so they hash as before.
+- **Profile checks** (codes): `bad_boss` (a kickable boss, a boss with `stompInto`, a phase's
+  hp not under the boss's hp or the phase before, a boss as a projectile), `unknown_actor` (a
+  projectile type that is not there).
+
+Rule ids (`BOSS_RULES`), each made to fail a test in `boss.test.ts` when off: `boss-pattern`
+(off: it stands), `boss-phases`, `boss-stomp-hits`, `boss-hit-invuln`, `boss-defeat-clears`,
+`boss-projectiles`. `boss.test.ts` also covers the pattern stepping (`BossState`, `stepOver`),
+the phase choice, a leap, a shot and a drop, the seeded spread, whole numbers in the snapshot,
+the profile and level checks and the presentation. `games/platformer-lab`'s `runs/boss.run.json`
+guards them all.
 
 ## Mini games
 
@@ -366,18 +430,19 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   change, else as `{ id, version }`.
 - **Entities**, in draw order, with `layer` from `PF_DEPTH`:
 
-  | id                    | kind                                         | layer | `anim.state` / `t`                                                                          | tags                                    |
-  | --------------------- | -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
-  | `coin@<col>,<row>`    | `coin`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
-  | `goal@<col>,<row>`    | `goal`                                       | 0     | `idle`, `t` = world frame                                                                   |                                         |
-  | `checkpoint@<c>,<r>`  | `checkpoint`                                 | 0     | `idle`, `t` = world frame                                                                   | `active` (the one touched last)         |
-  | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`, `look:<id>`         |
-  | `bump-block@<c>,<r>`  | `bump-block`                                 | 5     | `bump`, `t` 0..7; the box is raised by `BUMP_RISE[t]` px                                    | the cell now: `used`, `bump` or `brick` |
-  | `coin-pop@<c>,<r>`    | `coin`                                       | 5     | `pop`, `t` 0..29 (`COIN_POP_TICKS`), one tile over the block                                | `popped`                                |
-  | `actor#<n>`           | the actor type name (`walker`, `shell`, ...) | 10    | `idle` (asleep or still), `walk`, `run` (faster than its type's `speed`: kicked), `fall`    | `asleep`, `kicked`                      |
-  | `actor#<n>` (remains) | its last type                                | 10    | `stomped` (stomped, no `stompInto`) or `dead` (hit by a shell), `t` 0..29 (`REMAINS_TICKS`) |                                         |
-  | `runner/dead`         | `runner`                                     | 20    | `dead`, `t` 0..59 (`RUNNER_DEAD_TICKS`), where it died                                      |                                         |
-  | `runner`              | `runner`                                     | 20    | see below                                                                                   | `invuln`, `hp:<n>`                      |
+  | id                    | kind                                         | layer | `anim.state` / `t`                                                                          | tags                                                          |
+  | --------------------- | -------------------------------------------- | ----- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+  | `coin@<col>,<row>`    | `coin`                                       | 0     | `idle`, `t` = world frame                                                                   |                                                               |
+  | `goal@<col>,<row>`    | `goal`                                       | 0     | `idle`, `t` = world frame                                                                   |                                                               |
+  | `checkpoint@<c>,<r>`  | `checkpoint`                                 | 0     | `idle`, `t` = world frame                                                                   | `active` (the one touched last)                               |
+  | `trigger@<col>,<row>` | `trigger`                                    | 0     | `idle`, `t` = world frame                                                                   | `armed`, `running`, `look:<id>`                               |
+  | `bump-block@<c>,<r>`  | `bump-block`                                 | 5     | `bump`, `t` 0..7; the box is raised by `BUMP_RISE[t]` px                                    | the cell now: `used`, `bump` or `brick`                       |
+  | `coin-pop@<c>,<r>`    | `coin`                                       | 5     | `pop`, `t` 0..29 (`COIN_POP_TICKS`), one tile over the block                                | `popped`                                                      |
+  | `actor#<n>`           | the actor type name (`walker`, `shell`, ...) | 10    | `idle` (asleep or still), `walk`, `run` (faster than its type's `speed`: kicked), `fall`    | `asleep`, `kicked`                                            |
+  | `actor#<n>` (remains) | its last type                                | 10    | `stomped` (stomped, no `stompInto`) or `dead` (hit by a shell), `t` 0..29 (`REMAINS_TICKS`) |                                                               |
+  | `actor#<n>` (a boss)  | the boss type's name                         | 10    | `bossState`: a `BOSS_ANIMS` state (below)                                                   | `boss`, `hp:<n>`, `phase:<n>`, `invuln`, `telegraph:<attack>` |
+  | `runner/dead`         | `runner`                                     | 20    | `dead`, `t` 0..59 (`RUNNER_DEAD_TICKS`), where it died                                      |                                                               |
+  | `runner`              | `runner`                                     | 20    | see below                                                                                   | `invuln`, `hp:<n>`                                            |
 
   A trigger whose level entry gives a `look` (Engine 0.11, gap G13) is tagged `look:<id>`, so a
   skin's `byTag` (`engine/core/present/CLAUDE.md`) draws it its own way (a door, a pipe, a sign);
@@ -391,6 +456,10 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   its number when a stomp turns it into another type (a `shell-walker` into a `shell`), so a skin
   sees the kind change on the same id. Actors not yet woken are listed with `asleep`.
 
+- **Boss** (`bossState`, Engine 0.16 T2): `defeated` through its defeat sequence, `hurt` for the
+  first `BOSS_HURT_TICKS` (12) of its hit invulnerability, else its step's `do` (`idle`,
+  `telegraph`, `charge`, `leap`, `shoot`, `drop`; `idle` asleep or with `boss-pattern` off).
+  It is tagged `telegraph:<attack>` while it announces one, so a skin's `byTag` can show which.
 - **Runner** (`runnerState`): `dead` (the level is `failed`), `hurt` (the first `HURT_TICKS`, 12,
   of invulnerability), in the air `jump` (rising) or `fall`, on the ground `skid`, `idle` (no
   speed), `run` (over the profile's `maxWalk`) or `walk`. `t` is ticks in the state (with `state`).
@@ -398,14 +467,18 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   remains `runner/dead` show where it died.
 - **Events**: every `PlatformerEvent` field copied. `jump`, `land`, `hurt`, `died`, `respawn`,
   `cleared` sit at the runner's centre with `entity: 'runner'` (`died` where the last frame showed
-  it); `spawn`, `stomp`, `kick`, `defeat` at the actor's centre (the last frame's box when it is
+  it); `spawn`, `stomp`, `kick`, `defeat` and the four `boss-*` events at the actor's centre (the last frame's box when it is
   gone) with `entity: 'actor#<n>'`; `bump`, `block`, `break`, `coin`, `checkpoint` at the tile's
   centre;
   `mini-game`, `mini-game-end` at the trigger's centre.
 - **Status** (`presentStatus`): `coins`, `hp`, `maxHp`, `lives`, `outcome` (`playing`, `cleared`,
   `failed`), `level`, `miniGame` (the running mini game's id, '' when none) and, from Engine 0.16
   T8, `nearestActor` (whole world px from the runner's box centre to the nearest actor's, -1 with
-  none: a skin's music mix plays its danger layer near an enemy).
+  none: a skin's music mix plays its danger layer near an enemy). In a level with a boss (a
+  spawn of a boss type, or `clear: "boss"`; Engine 0.16 T2) also `bossHp`, `bossMaxHp`,
+  `bossPhase`, `bossState` (`bossState`, `asleep` before it wakes, `gone` once its defeat is
+  over, hp 0 then) and `bossTelegraph` (the attack it announces, '' when none): the first boss
+  in spawn order, for a HUD bar. Other levels have none of these keys.
 - **Camera** (`cameraHint`): `follow: 'runner'`; `x`/`y` the centre of the world's own view
   (`scrollX`, `viewWidth`) as the fallback; `bounds` carries the scroll lock: scrolling `right`
   with `scroll-lock` on, `{ x: scrollX px, y: 0, w: level width - that, h: level height }` (the
@@ -424,12 +497,13 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   and must match), `spawns` (`{ "<char>": { actor, facing } }`), `blocks` (what each `?` holds in
   reading order: `coin`, `coins`, `powerup`, `life` or `actor:<type>`; all coins when left out),
   `triggers` (one per `!` in reading order: `game`, `params`, `pass`, `fail`, `quit`, `look`;
-  under Mini games) and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
+  under Mini games), `clear` (`goal`, the default, or `boss`: under Bosses) and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
   character), `size_mismatch`, `wrong_block_count`, `wrong_trigger_count`, `bad_outcome` (an
   `open:<col>:<row>` outside the map), plus the grid's `ragged_row`, `unknown_char`,
   `empty_grid` at the `.map.txt` line.
 - `checkAll` (`checkLevel`), once every file passes its schema: `no_start`, `two_starts` (at each
-  extra `@`, row/col), `no_goal`, `checkpoint_no_ground` (at a `K` with no solid or one-way tile
+  extra `@`, row/col), `no_goal` (not with `clear: "boss"`), `no_boss` (`clear: "boss"` with no
+  boss spawn on the map), `checkpoint_no_ground` (at a `K` with no solid or one-way tile
   under it to respawn on, or in the bottom row; row/col), `missing_profile` (at `profile`) and `unknown_actor` (at each map
   cell using a spawn whose actor the profile lacks, with row/col; at `spawns.<char>.actor` when no
   cell uses it; at `blocks.<n>` for a block's `actor:<type>`).
@@ -443,7 +517,8 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   `breakBricksAt?` (left out: bricks never break), `lives` (1; a death with a life left respawns
   at the current checkpoint, else the start)), `actorGravity`, `actorMaxFall`
   and `actors` by name (`box?`, `speed`, `turnAt` `walls`/`ledges`, `stompable`, `stompInto?`,
-  `kickable`, `kickSpeed?`, `harms`, `kickGrace?` ticks, 15 when left out). Codes:
+  `kickable`, `kickSpeed?`, `harms`, `kickGrace?` ticks, 15 when left out, `projectile?`
+  `flies`/`falls` and `boss?`, the boss form; under Bosses). Codes: `bad_boss`,
   `bad_jump_tiers`, `bad_speed_caps`, `bad_hp` (`maxHp` under `hp`), `unknown_actor` (a
   `stompInto` that is not an actor type) and `missing_field` (a kickable actor with no
   `kickSpeed`).

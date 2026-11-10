@@ -87,6 +87,23 @@ export const HURT_TICKS = 12;
 /** The runner's animation states, and the ones actors and remains use. */
 export const RUNNER_ANIMS = ['idle', 'walk', 'run', 'skid', 'jump', 'fall', 'hurt', 'dead'] as const;
 export const ACTOR_ANIMS = ['idle', 'walk', 'run', 'fall', 'stomped', 'dead'] as const;
+/**
+ * A boss's animation states (Engine 0.16 T2): its pattern step's `do` while it fights (`idle`,
+ * `telegraph`, `charge`, `leap`, `shoot`, `drop`), `hurt` for the first `BOSS_HURT_TICKS` of its
+ * hit invulnerability, `defeated` through its defeat sequence.
+ */
+export const BOSS_ANIMS = [
+  'idle',
+  'telegraph',
+  'charge',
+  'leap',
+  'shoot',
+  'drop',
+  'hurt',
+  'defeated',
+] as const;
+/** Ticks at the start of a boss's hit invulnerability it shows `hurt`. */
+export const BOSS_HURT_TICKS = 12;
 
 /** A presentation-only entity a few ticks long (a bounce, a popped coin, remains). */
 interface Effect {
@@ -190,6 +207,15 @@ export function actorState(a: Actor): (typeof ACTOR_ANIMS)[number] {
   return a.speed > a.def.speed ? 'run' : 'walk';
 }
 
+/** A boss's animation state now (`BOSS_ANIMS`); its rules decide nothing here, the state does. */
+export function bossState(a: Actor, world: PlatformerWorld): (typeof BOSS_ANIMS)[number] {
+  const s = a.boss!;
+  if (s.mode === 'defeated') return 'defeated';
+  if (s.invuln > 0 && s.invuln > s.def.hitInvuln - BOSS_HURT_TICKS) return 'hurt';
+  if (!a.active || !world.rules.isOn('boss-pattern')) return 'idle';
+  return s.current.do;
+}
+
 /** An actor's presented id: `actor#<n>`, its number in the level (kept when a stomp changes it). */
 export const actorId = (a: { id: number }): string => `actor#${a.id}`;
 
@@ -218,13 +244,23 @@ function presentRunner(ctx: Ctx): PresentEntity {
   };
 }
 
-/** An actor: kind its type's name, tags `asleep` (not yet woken) and `kicked` (a moving shell). */
+/**
+ * An actor: kind its type's name, tags `asleep` (not yet woken) and `kicked` (a moving shell). A
+ * boss's state is `bossState`, and it is tagged `boss`, `hp:<n>`, `phase:<n>`, `invuln` (while
+ * a stomp only bounces off) and `telegraph:<attack>` (while it announces one).
+ */
 function presentActor(a: Actor, ctx: Ctx): PresentEntity {
   const id = actorId(a);
-  const state = actorState(a);
+  const state = a.boss ? bossState(a, ctx.world) : actorState(a);
   const tags: string[] = [];
   if (!a.active) tags.push('asleep');
   if (a.isMovingShell) tags.push('kicked');
+  if (a.boss) {
+    tags.push('boss', `hp:${a.boss.hp}`, `phase:${a.boss.phase}`);
+    if (a.boss.invuln > 0) tags.push('invuln');
+    if (a.active && a.boss.telegraph !== '' && ctx.world.rules.isOn('boss-pattern'))
+      tags.push(`telegraph:${a.boss.telegraph}`);
+  }
   return {
     id,
     kind: a.type,
@@ -283,7 +319,16 @@ const centreOf = (e: PresentBox) => ({ x: e.x + (e.w >> 1), y: e.y + (e.h >> 1) 
 /** Events about the runner, placed at its centre with `entity: 'runner'`. */
 const RUNNER_EVENTS = new Set(['jump', 'land', 'hurt', 'died', 'respawn', 'cleared']);
 /** Events about an actor (its `actor` field), placed at its centre with `entity: 'actor#<n>'`. */
-const ACTOR_EVENTS = new Set(['spawn', 'stomp', 'kick', 'defeat']);
+const ACTOR_EVENTS = new Set([
+  'spawn',
+  'stomp',
+  'kick',
+  'defeat',
+  'boss-telegraph',
+  'boss-attack',
+  'boss-hit',
+  'boss-defeat',
+]);
 
 /**
  * The world's events as presented events: their fields copied, placed (see the kit's
@@ -430,6 +475,37 @@ export function presentStatus(world: PlatformerWorld): Record<string, PresentSta
     level: world.level.id,
     miniGame: world.miniGame?.def.id ?? '',
     nearestActor: nearestActor(world),
+    ...(hasBoss(world) ? bossStatus(world) : {}),
+  };
+}
+
+/** A level with a boss: a spawn of a boss actor type, or `"clear": "boss"`. */
+function hasBoss(world: PlatformerWorld): boolean {
+  const actors = world.profile.actors;
+  return (
+    world.level.clear === 'boss' ||
+    Object.values(world.level.spawns).some((s) => actors[s.actor]?.boss !== undefined)
+  );
+}
+
+/**
+ * The boss's HUD values (Engine 0.16 T2), only in a level with one: `bossHp`, `bossMaxHp`,
+ * `bossPhase`, `bossState` (`bossState`, or `gone` once its defeat sequence is over, `asleep`
+ * before it wakes) and `bossTelegraph` (the attack it announces, '' when none). The first boss in
+ * spawn order; once none is left, hp 0.
+ */
+function bossStatus(world: PlatformerWorld): Record<string, PresentStatusValue> {
+  const a = world.actors.find((x) => x.boss);
+  const s = a?.boss;
+  const max = s?.def.hp ?? Object.values(world.profile.actors).find((t) => t.boss)?.boss?.hp ?? 0;
+  if (!a || !s) return { bossHp: 0, bossMaxHp: max, bossPhase: 0, bossState: 'gone', bossTelegraph: '' };
+  const pattern = world.rules.isOn('boss-pattern');
+  return {
+    bossHp: s.hp,
+    bossMaxHp: max,
+    bossPhase: s.phase,
+    bossState: a.active ? bossState(a, world) : 'asleep',
+    bossTelegraph: a.active && pattern ? s.telegraph : '',
   };
 }
 
