@@ -111,10 +111,13 @@ describe('validate', () => {
     writeFileSync(game, JSON.stringify(manifest));
     mkdirSync(join(root, 'games/samples/dungeon/content/skins'), { recursive: true });
     const skinFile = join(root, 'games/samples/dungeon/content/skins/canvas2d.json');
+    // The game's menus name the skin's PNG sheets (`images`), so the test skin keeps them.
+    const { images } = JSON.parse(readFileSync(skinFile, 'utf8')) as { images: unknown };
     const skin = {
       backend: 'canvas2d',
-      sheets: { sheet: 'hero', fallbackColor: '#00a800' },
-      kinds: { hero: { frames: { idle: { down: 'down-0', right: 'side-0' } }, flipFacing: true } },
+      images,
+      sheets: { sheet: 'crypt-art', fallbackColor: '#00a800' },
+      kinds: { hero: { frames: { idle: { down: 'wall-face', right: 'wall-west' } }, flipFacing: true } },
       events: { title: { sound: 'crypt' } },
     };
     writeFileSync(skinFile, JSON.stringify(skin));
@@ -132,7 +135,7 @@ describe('validate', () => {
 
     const cross = {
       ...skin,
-      kinds: { hero: { sheet: 'nobody', frames: { idle: 'down-0' } } },
+      kinds: { hero: { sheet: 'nobody', frames: { idle: 'wall-face' } } },
       events: { hit: { sound: 'boom' } },
     };
     writeFileSync(skinFile, JSON.stringify(cross));
@@ -402,7 +405,7 @@ describe('output cap', () => {
   it('cuts a long result and writes all of it to a file named in the result', async () => {
     const root = demoCopy();
     // Ten unknown fields in one file: ten errors, far over a 600-byte cap.
-    const file = join(root, 'games/samples/dungeon/content/palettes/hero.json');
+    const file = join(root, 'games/samples/dungeon/content/palettes/crypt-art.json');
     const palette = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
     for (let i = 0; i < 10; i++) palette[`extra${i}`] = i;
     writeFileSync(file, JSON.stringify(palette));

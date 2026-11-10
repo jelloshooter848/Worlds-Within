@@ -105,15 +105,15 @@ describe.skipIf(missing !== null)('screenshot (headless Chromium)', () => {
       run: WALK,
       game: 'games/samples/dungeon',
       tick: 60,
-      width: 256,
-      height: 240,
+      width: 320,
+      height: 180,
       matchesHeadless: true,
     });
     expect(a.result.sha256).toMatch(/^[0-9a-f]{64}$/);
     expect(b.result.sha256).toBe(a.result.sha256);
     const pngA = readFileSync(join(dir, 'a.png'));
     expect(pngA.equals(readFileSync(join(dir, 'b.png')))).toBe(true);
-    expect(pngSize(pngA)).toEqual({ width: 256, height: 240 });
+    expect(pngSize(pngA)).toEqual({ width: 320, height: 180 });
     expect(a.result.bytes).toBe(pngA.length);
   }, 120_000);
 
@@ -211,8 +211,8 @@ describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16
     ]);
     expect(six.code).toBe(EXIT.ok);
     expect(six.result).toMatchObject({
-      width: 1536,
-      height: 1440,
+      width: 1920,
+      height: 1080,
       scale: 6,
       overlay: null,
       matchesHeadless: true,
@@ -224,8 +224,8 @@ describe.skipIf(missing !== null)('screenshot --scale and --overlay (Engine 0.16
       [0, 0],
       [17, 33],
       [128, 120],
-      [200, 211],
-      [255, 239],
+      [200, 170],
+      [319, 179],
     ] as const)
       for (const [dx, dy] of [
         [0, 0],

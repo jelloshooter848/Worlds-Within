@@ -61,6 +61,8 @@ color }`, a nine-slice `panel` frame whose insets are the inset, else a one-px `
   icon, rolling over `tween { ticks, ease?, color? }` on the presenter's clock); `panel` (a
   nine-slice of `frame` by `slice`, `fill`); `minimap` (`tiles`, `back`, `dots`, `scale`,
   `border`, from the map the presenter shows). `hudValueText(item, value)`, `borderDraws`.
+  From Engine 0.16 part C T3 an item with `when` (a status key) is left out while that value is
+  falsy (`hudItemShown`, `@engine/core/present`), and `hearts` with `half` count halves.
 
 Part 2 (Engine 0.16 T7):
 

@@ -1,150 +1,1489 @@
 {
   "backend": "canvas2d",
-  "background": "#000000",
-  "sheets": { "sheet": "dungeon", "fallbackColor": "#f878f8" },
-  "camera": { "clamp": false },
-  "kinds": {
-    "hero": {
-      "sheet": "hero",
+  "background": "#141016",
+  "sheets": {
+    "sheet": "crypt-art",
+    "fallbackColor": "#ff00ff"
+  },
+  "camera": {
+    "clamp": false
+  },
+  "images": {
+    "crypt": {
+      "image": "assets/dungeon-tileset-ii/sheet.png",
       "frames": {
-        "walk": {
-          "down": { "frames": ["down-0", "down-1"], "ticks": 8 },
-          "up": { "frames": ["up-0", "up-1"], "ticks": 8 },
-          "right": { "frames": ["side-0", "side-1"], "ticks": 8 }
+        "floor-1": {
+          "x": 16,
+          "y": 64,
+          "w": 16,
+          "h": 16
         },
-        "attack": { "down": "attack-down", "up": "attack-up", "right": "attack-side" },
-        "throw": { "down": "throw-down", "up": "throw-up", "right": "throw-side" },
-        "hold": "hold",
-        "hurt": { "down": "down-0", "up": "up-0", "right": "side-0" },
-        "dying": { "frames": ["down-0", "side-0", "up-0", "side-0"], "ticks": 4 },
-        "poof": { "frames": ["poof-0", "poof-1", "poof-2"], "ticks": 8 }
-      },
-      "flipFacing": true
-    },
-    "held": {
-      "frames": {
-        "heart-pickup": "heart-pickup",
-        "key": "key",
-        "bomb-pickup": "bomb-pickup",
-        "refill-icon": "refill",
-        "map": "map",
-        "compass": "compass",
-        "relic": "relic",
-        "heart-container": "heart-container",
-        "bomb-icon": "bomb-icon",
-        "boomerang-icon": "boomerang-icon",
-        "white-sword-icon": "sword-icon",
-        "idle": "bomb-icon"
+        "floor-2": {
+          "x": 32,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "floor-3": {
+          "x": 48,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "floor-4": {
+          "x": 16,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "floor-5": {
+          "x": 32,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "floor-6": {
+          "x": 48,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "floor-7": {
+          "x": 16,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "floor-8": {
+          "x": 32,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "hole": {
+          "x": 96,
+          "y": 144,
+          "w": 16,
+          "h": 16
+        },
+        "stairs": {
+          "x": 80,
+          "y": 192,
+          "w": 16,
+          "h": 16
+        }
       }
     },
-    "sword": {
-      "sheet": "dungeon",
-      "frames": { "stab": { "down": "sword-v", "up": "sword-v", "right": "sword-h", "left": "sword-h" } }
-    },
-    "poof": { "frames": { "poof": { "frames": ["poof-0", "poof-1", "poof-2"], "ticks": 6 } } },
-    "pickup:heart": { "frames": { "idle": "heart-pickup" } },
-    "pickup:key": { "frames": { "idle": "key" } },
-    "pickup:bombs": { "frames": { "idle": "bomb-pickup" } },
-    "pickup:map": { "frames": { "idle": "map" } },
-    "pickup:compass": { "frames": { "idle": "compass" } },
-    "pickup:relic": { "frames": { "idle": "relic" } },
-    "pickup:heart-container": { "frames": { "idle": "heart-container" } },
-    "pickup:refill": { "frames": { "idle": "refill" } },
-    "pickup:bomb": { "frames": { "idle": "bomb-icon" } },
-    "pickup:boomerang": { "frames": { "idle": "boomerang-icon" } },
-    "pickup:white-sword": { "frames": { "idle": "sword-icon" } },
-    "chest": { "frames": { "closed": "chest", "open": "chest-open" } },
-    "push-block": { "frames": { "idle": "push-block" } },
-    "switch": { "frames": { "up": "switch-up", "down": "switch-down" } },
-    "torch": {
-      "frames": { "off": "torch-off", "lit": { "frames": ["torch-lit-0", "torch-lit-1"], "ticks": 8 } }
-    },
-    "bat": { "frames": { "rest": "bat-0", "fly": { "frames": ["bat-0", "bat-1"], "ticks": 4 } } },
-    "knight": {
+    "crypt-actors": {
+      "image": "assets/dungeon-tileset-ii/sheet.png",
       "frames": {
-        "walk": {
-          "down": { "frames": ["knight-down-0", "knight-down-1"], "ticks": 8 },
-          "up": { "frames": ["knight-up-0", "knight-up-1"], "ticks": 8 },
-          "right": { "frames": ["knight-side-0", "knight-side-1"], "ticks": 8 }
+        "knight-idle-0": {
+          "x": 128,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "knight-run-0": {
+          "x": 192,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "imp-idle-0": {
+          "x": 368,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "imp-run-0": {
+          "x": 432,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "orc-idle-0": {
+          "x": 368,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "orc-run-0": {
+          "x": 432,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "goblin-idle-0": {
+          "x": 368,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "goblin-run-0": {
+          "x": 432,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "knight-idle-1": {
+          "x": 144,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "knight-run-1": {
+          "x": 208,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "imp-idle-1": {
+          "x": 384,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "imp-run-1": {
+          "x": 448,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "orc-idle-1": {
+          "x": 384,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "orc-run-1": {
+          "x": 448,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "goblin-idle-1": {
+          "x": 384,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "goblin-run-1": {
+          "x": 448,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "knight-idle-2": {
+          "x": 160,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "knight-run-2": {
+          "x": 224,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "imp-idle-2": {
+          "x": 400,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "imp-run-2": {
+          "x": 464,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "orc-idle-2": {
+          "x": 400,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "orc-run-2": {
+          "x": 464,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "goblin-idle-2": {
+          "x": 400,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "goblin-run-2": {
+          "x": 464,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "knight-idle-3": {
+          "x": 176,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "knight-run-3": {
+          "x": 240,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "imp-idle-3": {
+          "x": 416,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "imp-run-3": {
+          "x": 480,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "orc-idle-3": {
+          "x": 416,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "orc-run-3": {
+          "x": 480,
+          "y": 177,
+          "w": 16,
+          "h": 23
+        },
+        "goblin-idle-3": {
+          "x": 416,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "goblin-run-3": {
+          "x": 480,
+          "y": 40,
+          "w": 16,
+          "h": 16
+        },
+        "knight-hit": {
+          "x": 256,
+          "y": 100,
+          "w": 16,
+          "h": 28
+        },
+        "blank": {
+          "x": 0,
+          "y": 0,
+          "w": 16,
+          "h": 28
+        },
+        "chest-closed": {
+          "x": 304,
+          "y": 416,
+          "w": 16,
+          "h": 16
+        },
+        "chest-open": {
+          "x": 336,
+          "y": 400,
+          "w": 16,
+          "h": 16
+        },
+        "bomb-0": {
+          "x": 288,
+          "y": 320,
+          "w": 16,
+          "h": 16
+        },
+        "bomb-1": {
+          "x": 304,
+          "y": 320,
+          "w": 16,
+          "h": 16
+        },
+        "bomb-2": {
+          "x": 320,
+          "y": 320,
+          "w": 16,
+          "h": 16
+        },
+        "crate": {
+          "x": 288,
+          "y": 408,
+          "w": 16,
+          "h": 24
+        },
+        "switch-up": {
+          "x": 48,
+          "y": 208,
+          "w": 16,
+          "h": 16
+        },
+        "switch-down": {
+          "x": 64,
+          "y": 208,
+          "w": 16,
+          "h": 16
         }
       },
-      "flipFacing": true
+      "anchor": "bottom"
     },
-    "spitter": {
+    "crypt-items": {
+      "image": "assets/dungeon-tileset-ii/sheet.png",
+      "frames": {
+        "heart": {
+          "x": 289,
+          "y": 370,
+          "w": 13,
+          "h": 12
+        },
+        "heart-half": {
+          "x": 305,
+          "y": 370,
+          "w": 13,
+          "h": 12
+        },
+        "heart-empty": {
+          "x": 321,
+          "y": 370,
+          "w": 13,
+          "h": 12
+        },
+        "flask-red": {
+          "x": 288,
+          "y": 352,
+          "w": 16,
+          "h": 16
+        },
+        "flask-big-red": {
+          "x": 288,
+          "y": 336,
+          "w": 16,
+          "h": 16
+        },
+        "flask-yellow": {
+          "x": 336,
+          "y": 352,
+          "w": 16,
+          "h": 16
+        },
+        "flask-blue": {
+          "x": 304,
+          "y": 352,
+          "w": 16,
+          "h": 16
+        },
+        "gem-sword": {
+          "x": 339,
+          "y": 10,
+          "w": 10,
+          "h": 21
+        },
+        "knight-sword": {
+          "x": 339,
+          "y": 98,
+          "w": 10,
+          "h": 29
+        },
+        "skull": {
+          "x": 288,
+          "y": 432,
+          "w": 16,
+          "h": 16
+        },
+        "bomb": {
+          "x": 288,
+          "y": 320,
+          "w": 16,
+          "h": 16
+        },
+        "axe": {
+          "x": 340,
+          "y": 161,
+          "w": 10,
+          "h": 14
+        },
+        "blank": {
+          "x": 0,
+          "y": 0,
+          "w": 1,
+          "h": 1
+        },
+        "coin-0": {
+          "x": 289,
+          "y": 385,
+          "w": 6,
+          "h": 7
+        },
+        "coin-1": {
+          "x": 297,
+          "y": 385,
+          "w": 6,
+          "h": 7
+        },
+        "coin-2": {
+          "x": 305,
+          "y": 385,
+          "w": 6,
+          "h": 7
+        },
+        "coin-3": {
+          "x": 313,
+          "y": 385,
+          "w": 6,
+          "h": 7
+        }
+      },
+      "anchor": "center"
+    }
+  },
+  "kinds": {
+    "hero": {
+      "sheet": "crypt-actors",
+      "flipFacing": true,
+      "frames": {
+        "idle": {
+          "frames": ["knight-idle-0", "knight-idle-1", "knight-idle-2", "knight-idle-3"],
+          "ticks": [10, 8, 10, 8]
+        },
+        "walk": {
+          "frames": ["knight-run-0", "knight-run-1", "knight-run-2", "knight-run-3"],
+          "ticks": 5,
+          "events": {
+            "1": "footstep",
+            "3": "footstep"
+          }
+        },
+        "attack": {
+          "frames": ["knight-run-2", "knight-run-3"],
+          "ticks": [4, 10],
+          "loop": false
+        },
+        "throw": {
+          "frames": ["knight-idle-1", "knight-run-2"],
+          "ticks": [3, 7],
+          "loop": false
+        },
+        "hold": "knight-idle-0",
+        "hurt": {
+          "frames": ["knight-white", "knight-white"],
+          "ticks": 4,
+          "sheet": "crypt-art"
+        },
+        "dying": {
+          "frames": ["knight-hit", "knight-idle-0"],
+          "ticks": 6
+        },
+        "poof": {
+          "frames": ["skull"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        }
+      },
+      "byTag": [
+        {
+          "tag": "flashing",
+          "frames": {
+            "idle": {
+              "frames": [
+                "knight-idle-0",
+                "blank",
+                "knight-idle-1",
+                "blank",
+                "knight-idle-2",
+                "blank",
+                "knight-idle-3",
+                "blank"
+              ],
+              "ticks": 3
+            },
+            "walk": {
+              "frames": [
+                "knight-run-0",
+                "blank",
+                "knight-run-1",
+                "blank",
+                "knight-run-2",
+                "blank",
+                "knight-run-3",
+                "blank"
+              ],
+              "ticks": [3, 2, 3, 2, 3, 2, 3, 2],
+              "events": {
+                "2": "footstep",
+                "6": "footstep"
+              }
+            },
+            "attack": {
+              "frames": ["knight-run-2", "knight-run-3"],
+              "ticks": [4, 10],
+              "loop": false
+            },
+            "throw": {
+              "frames": ["knight-idle-1", "knight-run-2"],
+              "ticks": [3, 7],
+              "loop": false
+            },
+            "hold": "knight-idle-0",
+            "hurt": {
+              "frames": ["knight-white", "knight-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            },
+            "dying": {
+              "frames": ["knight-hit", "knight-idle-0"],
+              "ticks": 6
+            },
+            "poof": {
+              "frames": ["skull"],
+              "ticks": 8,
+              "sheet": "crypt-items"
+            }
+          }
+        }
+      ]
+    },
+    "held": {
+      "sheet": "crypt-items",
+      "frames": {
+        "heart-pickup": {
+          "frames": ["heart"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "key": {
+          "frames": ["key"],
+          "ticks": 8,
+          "sheet": "crypt-art"
+        },
+        "bomb-pickup": {
+          "frames": ["bomb"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "refill-icon": {
+          "frames": ["flask-red"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "map": {
+          "frames": ["flask-yellow"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "compass": {
+          "frames": ["flask-blue"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "relic": {
+          "frames": ["gem-sword"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "heart-container": {
+          "frames": ["flask-big-red"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "bomb-icon": {
+          "frames": ["bomb"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "boomerang-icon": {
+          "frames": ["axe"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "white-sword-icon": {
+          "frames": ["knight-sword"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        },
+        "idle": {
+          "frames": ["bomb"],
+          "ticks": 8,
+          "sheet": "crypt-items"
+        }
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": 6,
+          "to": 0,
+          "frames": 12,
+          "ease": "backOut"
+        }
+      ]
+    },
+    "sword": {
+      "sheet": "crypt-art",
+      "flipFacing": true,
+      "frames": {
+        "stab": {
+          "up": "sword-up",
+          "down": "sword-down",
+          "right": "sword-right"
+        }
+      }
+    },
+    "sword-beam": {
+      "sheet": "crypt-art",
+      "flipFacing": true,
+      "frames": {
+        "fly": {
+          "up": "beam-up",
+          "down": "beam-down",
+          "right": "beam-right"
+        }
+      }
+    },
+    "beam-shard": {
+      "sheet": "crypt-items",
+      "frames": {
+        "fly": {
+          "frames": ["coin-0", "coin-1", "coin-2", "coin-3"],
+          "ticks": 2
+        }
+      }
+    },
+    "poof": {
+      "sheet": "crypt-items",
+      "frames": {
+        "poof": "blank"
+      },
+      "emit": "poof-smoke"
+    },
+    "chest": {
+      "sheet": "crypt-actors",
+      "frames": {
+        "closed": "chest-closed",
+        "open": "chest-open"
+      }
+    },
+    "push-block": {
+      "sheet": "crypt-actors",
+      "frames": {
+        "idle": "crate",
+        "slide": "crate"
+      }
+    },
+    "switch": {
+      "sheet": "crypt-actors",
+      "frames": {
+        "up": "switch-up",
+        "down": "switch-down"
+      }
+    },
+    "torch": {
+      "sheet": "crypt-art",
+      "offset": {
+        "x": 0,
+        "y": -8
+      },
+      "frames": {
+        "off": "torch-cold",
+        "lit": {
+          "frames": ["torch-lit-0", "torch-lit-1", "torch-lit-2", "torch-lit-3"],
+          "ticks": [6, 5, 6, 5]
+        }
+      }
+    },
+    "bat": {
+      "sheet": "crypt-actors",
+      "flipFacing": true,
+      "frames": {
+        "rest": {
+          "frames": ["imp-idle-0", "imp-idle-1", "imp-idle-2", "imp-idle-3"],
+          "ticks": 10
+        },
+        "fly": {
+          "frames": ["imp-run-0", "imp-run-1", "imp-run-2", "imp-run-3"],
+          "ticks": 4
+        }
+      },
+      "byTag": [
+        {
+          "tag": "flashing",
+          "frames": {
+            "rest": {
+              "frames": ["imp-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            },
+            "fly": {
+              "frames": ["imp-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            }
+          }
+        }
+      ]
+    },
+    "knight": {
+      "sheet": "crypt-actors",
+      "flipFacing": true,
       "frames": {
         "walk": {
-          "down": { "frames": ["spitter-down-0", "spitter-down-1"], "ticks": 8 },
-          "up": { "frames": ["spitter-up-0", "spitter-up-1"], "ticks": 8 },
-          "right": { "frames": ["spitter-side-0", "spitter-side-1"], "ticks": 8 }
+          "frames": ["orc-run-0", "orc-run-1", "orc-run-2", "orc-run-3"],
+          "ticks": 6
         },
-        "spit": { "down": "spitter-down-0", "up": "spitter-up-0", "right": "spitter-side-0" }
+        "idle": {
+          "frames": ["orc-idle-0", "orc-idle-1", "orc-idle-2", "orc-idle-3"],
+          "ticks": 10
+        }
       },
-      "flipFacing": true
+      "byTag": [
+        {
+          "tag": "flashing",
+          "frames": {
+            "walk": {
+              "frames": ["orc-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            },
+            "idle": {
+              "frames": ["orc-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            }
+          }
+        }
+      ]
     },
-    "rock": { "frames": { "fly": "rock" } },
-    "stun": { "frames": { "spin": "stun" } },
-    "boomerang": {
+    "spitter": {
+      "sheet": "crypt-actors",
+      "flipFacing": true,
       "frames": {
-        "spin": { "frames": ["boomerang-0", "boomerang-1", "boomerang-2", "boomerang-3"], "ticks": 4 }
+        "walk": {
+          "frames": ["goblin-run-0", "goblin-run-1", "goblin-run-2", "goblin-run-3"],
+          "ticks": 6
+        },
+        "spit": {
+          "frames": ["goblin-idle-0", "goblin-idle-1", "goblin-idle-2", "goblin-idle-3"],
+          "ticks": 4
+        }
+      },
+      "byTag": [
+        {
+          "tag": "flashing",
+          "frames": {
+            "walk": {
+              "frames": ["goblin-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            },
+            "spit": {
+              "frames": ["goblin-white"],
+              "ticks": 4,
+              "sheet": "crypt-art"
+            }
+          }
+        }
+      ]
+    },
+    "rock": {
+      "sheet": "crypt-art",
+      "frames": {
+        "fly": {
+          "up": "arrow-up",
+          "down": "arrow-down",
+          "right": "arrow-right",
+          "left": "arrow-left"
+        }
+      }
+    },
+    "stun": {
+      "sheet": "crypt-items",
+      "frames": {
+        "spin": {
+          "frames": ["coin-0", "coin-1", "coin-2", "coin-3"],
+          "ticks": 4
+        }
+      }
+    },
+    "boomerang": {
+      "sheet": "crypt-art",
+      "offset": {
+        "x": -3,
+        "y": -3
+      },
+      "frames": {
+        "spin": {
+          "frames": ["axe-0", "axe-1", "axe-2", "axe-3"],
+          "ticks": 3
+        }
       }
     },
     "bomb": {
+      "sheet": "crypt-actors",
+      "emit": "fuse-spark",
       "frames": {
-        "fuse": { "frames": ["bomb-0", "bomb-1"], "ticks": 8 },
-        "fuse-short": { "frames": ["bomb-0", "bomb-1"], "ticks": 4 }
-      }
+        "fuse": {
+          "frames": ["bomb-1", "bomb-2"],
+          "ticks": 8
+        },
+        "fuse-short": {
+          "frames": ["bomb-1", "bomb-2"],
+          "ticks": 3
+        }
+      },
+      "spawnTween": [
+        {
+          "prop": "scaleY",
+          "from": 0.6,
+          "to": 1,
+          "frames": 10,
+          "ease": "backOut"
+        }
+      ]
     },
-    "explosion": { "frames": { "blast": { "frames": ["blast-0", "blast-1", "blast-2"], "ticks": 8 } } },
-    "sword-beam": {
+    "explosion": {
+      "sheet": "crypt-items",
       "frames": {
-        "fly": {
-          "down": { "frames": ["beam-v-0", "beam-v-1"], "ticks": 2 },
-          "up": { "frames": ["beam-v-0", "beam-v-1"], "ticks": 2 },
-          "right": { "frames": ["beam-h-0", "beam-h-1"], "ticks": 2 },
-          "left": { "frames": ["beam-h-0", "beam-h-1"], "ticks": 2 }
+        "blast": "blank"
+      },
+      "emit": ["blast-ring", "blast-fire", "blast-smoke"]
+    },
+    "pickup:heart": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "heart"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:key": {
+      "sheet": "crypt-art",
+      "frames": {
+        "idle": "key"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:bombs": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "bomb"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:map": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "flask-yellow"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:compass": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "flask-blue"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:relic": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "gem-sword"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:heart-container": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "flask-big-red"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:refill": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "flask-red"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:bomb": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "bomb"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:boomerang": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "axe"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    },
+    "pickup:white-sword": {
+      "sheet": "crypt-items",
+      "frames": {
+        "idle": "knight-sword"
+      },
+      "spawnTween": [
+        {
+          "prop": "y",
+          "from": -4,
+          "to": 0,
+          "frames": 14,
+          "ease": "bounceOut"
+        }
+      ]
+    }
+  },
+  "tiles": {
+    "#": {
+      "sheet": "crypt-art",
+      "frame": "wall-void",
+      "join": {
+        "with": ["#", "O", "L", "X", "C", "H", "D", "d", "E"],
+        "frames": {
+          "bottom": "wall-face",
+          "right": "wall-west",
+          "left": "wall-east",
+          "top": "wall-south",
+          "inner-bottom-right": "wall-west",
+          "inner-bottom-left": "wall-east",
+          "inner-top-right": "corner-sw",
+          "inner-top-left": "corner-se"
         }
       }
     },
-    "beam-shard": { "frames": { "fly": "beam-shard" } }
-  },
-  "tiles": {
-    "#": { "frame": "wall" },
-    ".": { "frame": "floor" },
-    ":": { "frame": "floor-alt" },
-    "B": { "frame": "block" },
-    "S": { "frame": "statue" },
-    "~": { "frame": "water" },
-    "=": { "frame": "stairs" },
-    "E": { "frame": "exit" },
-    "O": { "frame": "door-open" },
-    "L": { "frame": "door-locked" },
-    "X": { "frame": "door-shut" },
-    "C": { "frame": "wall-cracked" },
-    "H": { "frame": "wall-hole" },
-    "D": { "frame": "door-boarded" },
-    "d": { "frame": "door-closed" }
+    ".": {
+      "sheet": "crypt-floor",
+      "frame": "floor-1",
+      "join": {
+        "with": [".", ":", "B", "S", "~", "="],
+        "frames": {
+          "top": "floor-shade",
+          "top right": "floor-shade",
+          "top left": "floor-shade",
+          "top right left": "floor-shade"
+        }
+      },
+      "vary": {
+        "frames": ["floor-1", "floor-2", "floor-3", "floor-4", "floor-5", "floor-6", "floor-7", "floor-8"],
+        "weights": [140, 5, 5, 6, 3, 1, 1, 1],
+        "period": {
+          "cols": 16,
+          "rows": 11
+        }
+      }
+    },
+    ":": {
+      "sheet": "crypt",
+      "frame": "floor-4"
+    },
+    "B": {
+      "sheet": "crypt-art",
+      "frame": "crate"
+    },
+    "S": {
+      "sheet": "crypt-art",
+      "frame": "statue"
+    },
+    "~": {
+      "sheet": "crypt",
+      "frame": "hole"
+    },
+    "=": {
+      "sheet": "crypt",
+      "frame": "stairs"
+    },
+    "O": {
+      "sheet": "crypt-art",
+      "frame": "passage",
+      "join": {
+        "with": ["#", "L", "X", "C", "H", "D", "d", "E"],
+        "frames": {
+          "right bottom": "door-open-n-l",
+          "bottom left": "door-open-n-r",
+          "right": "passage-w",
+          "left": "passage-e"
+        }
+      }
+    },
+    "E": {
+      "sheet": "crypt-floor",
+      "frame": "passage-stairs",
+      "join": {
+        "with": ["#", "O", "L", "X", "C", "H", "D", "d"],
+        "frames": {
+          "right bottom": "door-exit-n-l",
+          "bottom left": "door-exit-n-r"
+        }
+      }
+    },
+    "H": {
+      "sheet": "crypt-art",
+      "frame": "passage-rubble",
+      "join": {
+        "with": ["#", "O", "L", "X", "C", "D", "d", "E"],
+        "frames": {
+          "right bottom": "door-blasted-n-l",
+          "bottom left": "door-blasted-n-r"
+        }
+      }
+    },
+    "L": {
+      "sheet": "crypt-art",
+      "frame": "door-locked-n-l",
+      "join": {
+        "with": ["#", "O", "X", "C", "H", "D", "d", "E"],
+        "frames": {
+          "right bottom": "door-locked-n-l",
+          "bottom left": "door-locked-n-r",
+          "top right": "door-locked-s-l",
+          "top left": "door-locked-s-r",
+          "right": "door-locked-w",
+          "left": "door-locked-e"
+        }
+      }
+    },
+    "X": {
+      "sheet": "crypt-art",
+      "frame": "door-shut-n-l",
+      "join": {
+        "with": ["#", "O", "L", "C", "H", "D", "d", "E"],
+        "frames": {
+          "right bottom": "door-shut-n-l",
+          "bottom left": "door-shut-n-r",
+          "top right": "door-shut-s-l",
+          "top left": "door-shut-s-r",
+          "right": "door-shut-w",
+          "left": "door-shut-e"
+        }
+      }
+    },
+    "D": {
+      "sheet": "crypt-art",
+      "frame": "door-shut-n-l",
+      "join": {
+        "with": ["#", "O", "L", "X", "C", "H", "d", "E"],
+        "frames": {
+          "right bottom": "door-shut-n-l",
+          "bottom left": "door-shut-n-r",
+          "top right": "door-shut-s-l",
+          "top left": "door-shut-s-r",
+          "right": "door-shut-w",
+          "left": "door-shut-e"
+        }
+      }
+    },
+    "d": {
+      "sheet": "crypt-art",
+      "frame": "door-locked-n-l",
+      "join": {
+        "with": ["#", "O", "L", "X", "C", "H", "D", "E"],
+        "frames": {
+          "right bottom": "door-locked-n-l",
+          "bottom left": "door-locked-n-r",
+          "top right": "door-locked-s-l",
+          "top left": "door-locked-s-r",
+          "right": "door-locked-w",
+          "left": "door-locked-e"
+        }
+      }
+    },
+    "C": {
+      "sheet": "crypt-art",
+      "frame": "crack-n-l",
+      "join": {
+        "with": ["#", "O", "L", "X", "H", "D", "d", "E"],
+        "frames": {
+          "right bottom": "crack-n-l",
+          "bottom left": "crack-n-r",
+          "top right": "crack-s-l",
+          "top left": "crack-s-r",
+          "right": "crack-w",
+          "left": "crack-e"
+        }
+      }
+    }
   },
   "events": {
-    "room": { "sound": "door" },
-    "unlock": { "sound": "unlock" },
-    "spit": { "sound": "spit" },
-    "hurt": { "sound": "hurt" },
-    "hit": { "sound": "hit" },
-    "sword": { "sound": "sword" },
-    "pickup": { "sound": "pickup" },
-    "chest": { "sound": "chest" },
-    "bomb": { "sound": "fuse" },
+    "room": {
+      "sound": "door"
+    },
+    "unlock": {
+      "sound": "unlock",
+      "emit": "gold-burst",
+      "shake": {
+        "amount": 1.5,
+        "ticks": 8
+      }
+    },
+    "spit": {
+      "sound": "spit",
+      "pitch": [-1, 1]
+    },
+    "hurt": {
+      "sound": "hurt",
+      "emit": "hurt-sparks",
+      "shake": {
+        "amount": 3,
+        "ticks": 12
+      },
+      "hitPause": {
+        "ticks": 5
+      },
+      "flash": {
+        "color": "#c33424",
+        "alpha": 0.25,
+        "ticks": 8
+      }
+    },
+    "hit": {
+      "sound": "hit",
+      "pitch": [-1, 1],
+      "shake": {
+        "amount": 1.5,
+        "ticks": 6
+      },
+      "hitPause": {
+        "ticks": 3
+      }
+    },
+    "sword": {
+      "sound": "sword",
+      "pitch": [-1, 1],
+      "tween": [
+        {
+          "prop": "scaleX",
+          "from": 1.2,
+          "to": 1,
+          "frames": 8,
+          "ease": "quadOut"
+        },
+        {
+          "prop": "scaleY",
+          "from": 0.85,
+          "to": 1,
+          "frames": 8,
+          "ease": "quadOut"
+        }
+      ]
+    },
+    "pickup": {
+      "sound": "pickup",
+      "emit": "gold-burst"
+    },
+    "chest": {
+      "sound": "chest",
+      "emit": "gold-burst"
+    },
+    "bomb": {
+      "sound": "fuse"
+    },
     "kill": {
       "sound": "kill",
-      "effect": { "kind": "particles", "color": "#fcfcfc", "count": 6, "size": 2, "ticks": 12 }
+      "shake": {
+        "amount": 2,
+        "ticks": 8
+      }
     },
-    "blast": { "sound": "blast", "effect": { "kind": "shake", "size": 2, "ticks": 8 } },
-    "dying": { "sound": "fall" },
-    "exit": { "sound": "fanfare", "effect": { "kind": "flash", "color": "#f8d878", "ticks": 12 } }
+    "blast": {
+      "sound": "blast",
+      "shake": {
+        "amount": 5,
+        "ticks": 18
+      },
+      "hitPause": {
+        "ticks": 4
+      },
+      "flash": {
+        "color": "#f6c445",
+        "alpha": 0.35,
+        "ticks": 8
+      }
+    },
+    "dying": {
+      "sound": "fall",
+      "flash": {
+        "color": "#c33424",
+        "alpha": 0.4,
+        "ticks": 16
+      }
+    },
+    "exit": {
+      "sound": "fanfare",
+      "flash": {
+        "color": "#fff1c4",
+        "alpha": 0.6,
+        "ticks": 18
+      }
+    },
+    "footstep": {
+      "emit": "footstep-dust"
+    }
+  },
+  "emitters": {
+    "footstep-dust": {
+      "burst": 2,
+      "life": [10, 16],
+      "speed": [0.15, 0.4],
+      "angle": [200, 340],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 6,
+          "h": 1
+        }
+      },
+      "gravity": -0.01,
+      "drag": 0.06,
+      "size": [2, 1],
+      "color": ["#c9b8a6", "#8e7b6e", "#5b4c47"],
+      "alpha": [0.7, 0]
+    },
+    "poof-smoke": {
+      "burst": 14,
+      "life": [16, 28],
+      "speed": [0.3, 1.1],
+      "angle": [0, 360],
+      "drag": 0.08,
+      "gravity": -0.02,
+      "size": [4, 3, 1],
+      "color": ["#e8e0d8", "#a89a90", "#5b4c47"],
+      "alpha": [0.95, 0]
+    },
+    "blast-fire": {
+      "burst": 56,
+      "life": [12, 28],
+      "speed": [0.8, 3.4],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "shape": {
+        "circle": 6
+      },
+      "size": [7, 4, 1],
+      "color": ["#fff1c4", "#f6c445", "#e8762a", "#c33424", "#3a1c1c"],
+      "alpha": [1, 0.9, 0],
+      "blend": "add",
+      "glow": 6
+    },
+    "blast-ring": {
+      "burst": 24,
+      "life": 12,
+      "speed": 3.2,
+      "angle": [0, 360],
+      "even": true,
+      "drag": 0.18,
+      "size": [3, 1],
+      "color": "#fff1c4",
+      "alpha": [0.9, 0],
+      "blend": "add"
+    },
+    "blast-smoke": {
+      "burst": 16,
+      "life": [26, 44],
+      "speed": [0.3, 1.0],
+      "angle": [0, 360],
+      "drag": 0.05,
+      "gravity": -0.03,
+      "size": [5, 6, 3],
+      "color": ["#6a5f5a", "#3a3236", "#222222"],
+      "alpha": [0.8, 0]
+    },
+    "fuse-spark": {
+      "rate": 0.5,
+      "life": [6, 12],
+      "speed": [0.3, 0.9],
+      "angle": [220, 320],
+      "anchor": "top",
+      "offset": {
+        "x": -3,
+        "y": 2
+      },
+      "gravity": 0.04,
+      "size": [1, 1],
+      "color": ["#fff1c4", "#f6c445", "#e8762a"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "gold-burst": {
+      "burst": 14,
+      "life": [14, 24],
+      "speed": [0.6, 1.6],
+      "angle": [200, 340],
+      "drag": 0.06,
+      "gravity": 0.05,
+      "size": [2, 1],
+      "color": ["#fff1c4", "#f6c445", "#9a6a1c"],
+      "alpha": [1, 1, 0],
+      "blend": "add"
+    },
+    "hurt-sparks": {
+      "burst": 10,
+      "life": [8, 16],
+      "speed": [0.8, 1.8],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "size": [2, 1],
+      "color": ["#ffffff", "#ff8a6a", "#c33424"],
+      "alpha": [1, 0]
+    }
   },
   "hud": [
-    { "status": "hp", "as": "hearts", "x": 8, "y": 52, "frame": "hud-half-heart" },
-    { "status": "keys", "as": "hearts", "x": 48, "y": 52, "frame": "hud-key" },
-    { "status": "item", "as": "icon", "x": 88, "y": 52, "frame": "hud-item" }
+    {
+      "as": "panel",
+      "x": 2,
+      "y": 1,
+      "w": 84,
+      "h": 21,
+      "sheet": "crypt-art",
+      "frame": "panel",
+      "slice": 5
+    },
+    {
+      "status": "maxHp",
+      "as": "hearts",
+      "x": 8,
+      "y": 5,
+      "sheet": "crypt-items",
+      "frame": "heart-empty",
+      "half": "heart-empty"
+    },
+    {
+      "status": "hp",
+      "as": "hearts",
+      "x": 8,
+      "y": 5,
+      "sheet": "crypt-items",
+      "frame": "heart",
+      "half": "heart-half"
+    },
+    {
+      "status": "keys",
+      "as": "counter",
+      "x": 58,
+      "y": 4,
+      "sheet": "crypt-art",
+      "frame": "hud-key",
+      "gap": 3,
+      "format": "x{value}",
+      "font": "crypt-small",
+      "color": "#f6c445",
+      "shadow": "#222222",
+      "tween": {
+        "ticks": 16,
+        "color": "#fff1c4"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 293,
+      "y": 1,
+      "w": 25,
+      "h": 30,
+      "sheet": "crypt-art",
+      "frame": "panel",
+      "slice": 5
+    },
+    {
+      "status": "item",
+      "as": "icon",
+      "x": 297,
+      "y": 4,
+      "sheet": "crypt-items",
+      "frame": "bomb"
+    },
+    {
+      "status": "ammo.bomb",
+      "as": "number",
+      "x": 293,
+      "y": 22,
+      "w": 25,
+      "align": "center",
+      "when": "item",
+      "font": "crypt-small",
+      "color": "#fcfcfc",
+      "shadow": "#222222"
+    }
   ]
 }

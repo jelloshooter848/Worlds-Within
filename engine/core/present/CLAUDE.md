@@ -123,6 +123,19 @@ inner-top-left inner-top-right inner-bottom-right inner-bottom-left`): `"top lef
 col, row)` (the keys looked up, most specific first) and `resolveTileFrame(entry, own, grid,
 col, row)` (`TileGrid`: text rows or rows of ids). The Canvas2D presenter draws tiles through
     it (once per map version, into the map cache). Tested in `tile-join.test.ts`.
+  - Floor variety (Engine 0.16 part C T3, `tile-join.ts`): a 2D tile entry's `vary` `{ frames,
+weights?, period?: { cols, rows } }` (`tileVarySchema`; `bad_weights` when the weights are not one
+    per frame; `wrong_backend_field` on a 3D skin) replaces the entry's own `frame` (shown when no
+    `join` key matched) with one of `frames` picked by a hash of the cell's place
+    (`variedTileFrame(vary, col, row)`: the same cell always the same frame, by the weights;
+    `period` takes the place modulo it first, so a top-down room keeps its look beside another in
+    a slide map). Its frames are checked against the tile's sheet (`missing_frame` at
+    `tiles.<tile>.vary.frames.<i>`). Tested in `tile-join.test.ts`.
+  - HUD halves and conditions (Engine 0.16 part C T3, `hud.ts`): a `hearts` item's `half` (a frame)
+    makes the status count halves, a `frame` per two points and `half` for one left over (checked
+    across files like `frame`; `half` on another type is an error); any item's `when` (a status
+    key) shows it only while that value is truthy (`hudItemShown(item, status)`, used by
+    `layoutHud` and the UI kit's `SkinHud`). Tested in `hud.test.ts`.
   - PNG sheets (Engine 0.16 T10, `engine/core/gfx/image-sheet.ts`): a top-level `images` map,
     image id -> `{ image: "assets/<pack>/<file>.png", frameSize?, grid?, names?, frames?, anchor? }`,
     on 2D and 3D skins. An entry naming the id as its `sheet` uses its frames like a text

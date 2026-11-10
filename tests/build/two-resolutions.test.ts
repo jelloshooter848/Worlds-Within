@@ -12,12 +12,13 @@ import { launchChromium, NoBrowserError, pngSize } from '../../engine/tools/scre
 
 // Two resolutions (docs/ROADMAP.md, 0.4 "Done when"): the demo builds and screenshots at a second
 // picture size when only `screen` in its game.json changes. A copy of games/samples/dungeon (its tests left
-// out) with `screen` set to 320x240 must validate, play walk-east with the same state hashes as the
-// committed golden file, screenshot at 320x240 (the same PNG bytes on two runs) like the demo does
-// at 256x240, and build with Vite. The touch layout follows the new size.
+// out) with `screen` set to 256x240 (its size before Engine 0.16 part C T3 moved it to 16:9,
+// 320x180) must validate, play walk-east with the same state hashes as the committed golden file,
+// screenshot at 256x240 (the same PNG bytes on two runs) like the sample does at 320x180, and
+// build with Vite. The touch layout follows the new size.
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const ALT = { width: 320, height: 240 };
+const ALT = { width: 256, height: 240 };
 const GOLDEN = JSON.parse(
   readFileSync(join(ROOT, 'games/samples/dungeon/runs/walk-east.hashes.json'), 'utf8'),
 ) as {
@@ -67,7 +68,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
     const original = JSON.parse(
       readFileSync(join(ROOT, 'games/samples/dungeon/game.json'), 'utf8'),
     ) as Record<string, unknown>;
-    expect(original.screen).toEqual({ width: 256, height: 240 });
+    expect(original.screen).toEqual({ width: 320, height: 180 });
     expect({ ...manifest, screen: ALT }).toEqual({ ...original, screen: ALT });
   });
 
@@ -77,7 +78,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
     expect(code).toBe(EXIT.ok);
   });
 
-  it('plays walk-east with the same state hashes as at 256x240', async () => {
+  it('plays walk-east with the same state hashes as at 320x180', async () => {
     const { code, result } = await cli(['run', copyRun]);
     expect(code).toBe(EXIT.ok);
     expect(result.hashes).toEqual(GOLDEN.hashes);
@@ -87,7 +88,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
     'screenshots at both sizes: right PNG size, the same bytes twice, the headless hashes',
     async () => {
       for (const [run, size] of [
-        ['games/samples/dungeon/runs/walk-east.run.json', { width: 256, height: 240 }],
+        ['games/samples/dungeon/runs/walk-east.run.json', { width: 320, height: 180 }],
         [copyRun, ALT],
       ] as const) {
         const shots = [];
@@ -128,7 +129,7 @@ describe('the demo at a second resolution (one config value changed)', () => {
       .map((f) => readFileSync(join(outDir, 'assets', f), 'utf8'))
       .join('\n');
     // game.json goes into the bundle as text (virtual:game-files), and main.ts sizes the canvas from it.
-    expect(js).toMatch(/width\\?"\s*:\s*320/);
+    expect(js).toMatch(/width\\?"\s*:\s*256/);
   }, 120_000);
 
   it('lays the touch controls out around the new picture size', () => {
@@ -144,9 +145,9 @@ describe('the demo at a second resolution (one config value changed)', () => {
       const b = fitGame(screen, l.frame.w, l.frame.h, dpr, true, l.fit);
       expect(l.game.w).toBeCloseTo(b.dw / dpr, 6);
       expect(l.game.h).toBeCloseTo(b.dh / dpr, 6);
-      expect(l.game.w / l.game.h).toBeCloseTo(320 / 240, 6);
+      expect(l.game.w / l.game.h).toBeCloseTo(256 / 240, 6);
       for (const id of CONTROL_IDS) expect(overlaps(l.rects[id], l.game), id).toBe(false);
-      expect(layoutScreen({ ...inp, screen: { width: 256, height: 240 } }).game).not.toEqual(l.game);
+      expect(layoutScreen({ ...inp, screen: { width: 320, height: 180 } }).game).not.toEqual(l.game);
     }
   });
 });

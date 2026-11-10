@@ -19,7 +19,7 @@ for `pnpm cli run` and `dump`), `present` (`presentWorld(world, events, opts)`: 
 engine `PresentFrame` (room map with a version that changes with its tiles, the hero and every
 other entity in draw order with `TD_DEPTH` depths, HUD status values, events with positions and a
 camera hint; the kit's `CLAUDE.md` maps old frame names to presented kinds and animations) without drawing and without changing any state;
-`TdPresentState` keeps the `MapTracker` and stable entity ids), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
+`TdPresentState` keeps the `MapTracker` and stable entity ids; from Engine 0.16 part C T3 the opt-in `idle` option presents a hero standing still for more than `IDLE_AFTER` ticks as `idle`), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
 with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full adoption in 0.5)
 `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
 `.map.txt` text grid) and `challenge` (`roomChallenge(opts)`: a one-room challenge as the engine's

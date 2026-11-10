@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 426.** (Last used: 425.)
+**Next unused number: 434.** (Last used: 433.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1676,3 +1676,42 @@ from itch.io; credited in `games/samples/dungeon/assets/CREDITS.md`):
   torches, bats or sounds: torches and bats stay original text art (or come from T4's lighting),
   and the sound stays MML (no CC0 SFX pack was added). OK, or should unused characters be cut
   from the sheet, or a CC0 torch and bat set be found?
+
+**Engine 0.16 part C, T3: The Old Crypt at 16:9 on the CC0 art** (the skin, HUD and menus for the
+existing five rooms; details in `games/samples/dungeon/CLAUDE.md`, "16:9 on the CC0 art"):
+
+- **426.** The screen is 320x180 (6x is exactly 1920x1080, as Hopper's Way), not 384x216 with a
+  40 px HUD band: the 256x176 room fills the height (2 px above and below) with 32 px dark side
+  margins, and the HUD is two framed panels laid over the top wall's corner (hearts and keys) and
+  the right margin (the item and its count). The kit's `top` is 0. OK, or the 384x216 band?
+- **427.** Monsters from the pack: the bat is the `imp` (the pack has no bat; it rests idling and
+  flies with its run cycle), the knight the `orc_warrior`, the rock-spitter a `goblin` whose
+  rocks are short arrows. The hero is `knight_m`, which faces only sideways: walking up or down
+  keeps his last side. OK, or other pack monsters (skeleton, masked orc, chort)?
+- **428.** Pieces the pack has no rectangle for are cut, flipped, turned and pasted from it into
+  two text sheets (`crypt-art`, `crypt-floor`, by a scratch generator, not committed): the wall
+  joins and corners, doors in side walls (the door's middle turned to face the room), the turned
+  blades and arrows, the white hit-flash silhouettes, the statue (the column cut to one tile), the
+  crate on the floor and the floor in the top wall's shadow. A few pieces are original in the
+  pack's colours: the brazier (the torch, cold and lit with a 4-frame flame), the key, the panel
+  frame and the padlock. The pack's PNG itself draws the hero, monsters, chests, bombs, hearts,
+  flasks, coins and the skull. OK?
+- **429.** The relic is the pack's red-gem sword, the heart container and refill its red flasks,
+  the map and compass (unused here) its yellow and blue flasks, the boomerang (unused) its
+  throwing axe, the stun stars its spinning coin, the hero's last poof its skull; the explosion
+  and the enemies' poof are particles only (no pack frames). OK?
+- **430.** Three engine additions for this: a tile's `vary` (floor variety: a frame picked per cell
+  by a hash of its place, with weights and a repeat period so a room keeps its look in a slide),
+  a `hearts` HUD item's `half` (the status counts halves) and any HUD item's `when` (shown only
+  while a status is truthy: the bomb count once an item is owned). The top-down kit's
+  `presentWorld` gained an opt-in `idle` (a standing hero is `idle`, so a skin can breathe him).
+  None moves a hash. OK?
+- **431.** The scene now draws through the page display's presenter (so the settings screen's
+  shake and flashing and the HUD hidden under the title reach the dungeon), and the old debug-font
+  status lines are gone: the HUD shows hearts, keys and the item, and an end banner in a framed
+  panel says how the run ended. The room name and the controls hint are no longer on screen
+  (the controls are on the title's Controls screen). OK?
+- **432.** The old NES-style text sheets (`hero`, `dungeon` and their palettes) were removed, not
+  kept as a fallback; the title's art is now the pack's knight and orc at 3x. OK?
+- **433.** No lighting yet (torches do not glow, no darkness or vignette): that is T4. The
+  footsteps raise dust but make no sound (the sample has no step sfx). OK, or add a step sound?

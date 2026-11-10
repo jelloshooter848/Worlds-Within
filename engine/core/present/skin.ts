@@ -22,7 +22,7 @@ import {
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
-import { tileJoinSchema } from './tile-join';
+import { tileJoinSchema, tileVarySchema } from './tile-join';
 import { missingGlyphs, type FontFile } from '../ui/font';
 import {
   cardinalFacing,
@@ -215,6 +215,7 @@ const SPRITE_FIELDS = [
   'frame',
   'blend',
   'glow',
+  'vary',
 ] as const;
 const MESH_FIELDS = [
   'mesh',
@@ -576,6 +577,7 @@ const tileEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file (default `sheets.sheet`)'),
   frame: id.exactOptional().describe('2D: the frame name in the sheet'),
   join: tileJoinSchema.exactOptional(),
+  vary: tileVarySchema.exactOptional(),
   fallbackColor: color
     .exactOptional()
     .describe('2D: the colour when the frame is missing (default `sheets.fallbackColor`)'),
@@ -762,6 +764,16 @@ const hudItem = z
       .exactOptional()
       .describe('the sprite file for hearts, icons, counters and panels (default `sheets.sheet`)'),
     frame: id.exactOptional().describe("the frame for hearts, icons, a counter's icon and a panel"),
+    when: id
+      .exactOptional()
+      .describe(
+        'a status key: the item shows only while its value is truthy (not 0, false or empty), such as the item count once an item is owned (Engine 0.16 part C T3)',
+      ),
+    half: id
+      .exactOptional()
+      .describe(
+        'hearts: the frame for a last half point (Engine 0.16 part C T3); with it the status counts halves, two points to a `frame`',
+      ),
     font: id
       .exactOptional()
       .describe(
@@ -844,6 +856,8 @@ const hudItem = z
     if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
+    if (v.half !== undefined && v.as !== 'hearts')
+      ctx.addIssue({ code: 'custom', path: ['half'], message: '`half` is for "hearts" only' });
     const statusFree = v.as === 'panel' || v.as === 'minimap' || (v.as === 'text' && v.format !== undefined);
     if (!statusFree && v.status === undefined) need('status', 'a status key');
     if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap') {
@@ -1366,7 +1380,8 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
         frame,
         path: ['join', 'frames', key],
       }));
-      sheetAt([...at, tile], entry.sheet, [...one(entry.frame), ...joined]);
+      const varied = (entry.vary?.frames ?? []).map((frame, i) => ({ frame, path: ['vary', 'frames', i] }));
+      sheetAt([...at, tile], entry.sheet, [...one(entry.frame), ...joined, ...varied]);
     }
   };
   tileRefs(['tiles'], skin.tiles);
@@ -1379,7 +1394,10 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
   issues.push(...checkHudFonts(name, skin, others, sprites));
   issues.push(...checkLabelFonts(name, skin, others));
   (skin.hud ?? []).forEach((item, i) => {
-    sheetAt(['hud', i], item.sheet, one(item.frame));
+    sheetAt(['hud', i], item.sheet, [
+      ...one(item.frame),
+      ...(item.half === undefined ? [] : [{ frame: item.half, path: ['half'] }]),
+    ]);
     if (item.panel !== undefined) sheetAt(['hud', i, 'panel'], item.panel.sheet, one(item.panel.frame));
   });
   const parallaxRefs = (at: FieldPath, layers: SkinFile['parallax']) =>

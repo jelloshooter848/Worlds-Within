@@ -18,6 +18,7 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
   // As `topdownGame` (the headless contract): each step takes the events it emitted.
   let last: object[] = world.events.splice(0);
   let picture: { r: Renderer; p: DungeonPicture } | null = null;
+  let hud = true;
   return {
     step(input) {
       world.update(input);
@@ -27,7 +28,12 @@ export function createView(content: ContentBundle, seed: number, opts: HeadlessO
     screen: look.screen,
     render(r) {
       if (picture?.r !== r) picture = { r, p: new DungeonPicture(r, look) };
+      picture.p.showHud(hud);
       picture.p.draw(world, last);
+    },
+    // The screenshot page's title overlay hides the HUD (Engine 0.16 part C T1).
+    showHud(shown) {
+      hud = shown;
     },
   };
 }

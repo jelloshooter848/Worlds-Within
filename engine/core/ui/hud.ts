@@ -2,6 +2,7 @@ import {
   DEFAULT_HUD_FONT,
   HUD_VALUE_TOKEN,
   hudGlyphs,
+  hudItemShown,
   isClassicHudType,
   layoutHud,
   type DeepReadonly,
@@ -83,6 +84,7 @@ export class SkinHud {
   layout(input: SkinHudInput): UiDraw[] {
     const out: UiDraw[] = [];
     (this.skin.hud ?? []).forEach((item, i) => {
+      if (!hudItemShown(item, input.status)) return;
       if (!this.isUiItem(item)) out.push(...this.classic(item, input));
       else out.push(...this.widget(item, i, input));
     });

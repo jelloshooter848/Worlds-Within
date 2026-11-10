@@ -14,7 +14,7 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // first by the keyboard (ArrowRight held, the walk-east run: the page's state hash at every golden
 // tick is `runs/walk-east.hashes.json`'s), then each run file through the step hook's replay
 // (the way out to the exit and the fall in the guard room, with their golden hashes and their end
-// states). It checks the picture is drawn (the HUD band black, the dungeon's wall colour under it),
+// states). It checks the picture is drawn (the dark side margin of the 16:9 picture, the west wall's ledge),
 // the volume control is there, and the page logged no errors. Skipped where Chromium is not
 // installed (never in CI).
 
@@ -44,7 +44,7 @@ afterAll(async () => {
 /** A new page that collects its errors. */
 async function openPage(): Promise<{ page: Page; errors: string[]; close(): Promise<void> }> {
   const browser = await launch();
-  const page = await browser.newPage({ viewport: { width: 512, height: 480 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 1 });
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
   page.on('console', (msg) => {
@@ -59,7 +59,7 @@ function pixel(page: Page, x: number, y: number): Promise<string> {
   return page.evaluate(
     ({ x, y }) => {
       const canvas = document.getElementById('screen') as HTMLCanvasElement;
-      const s = canvas.width / 256;
+      const s = canvas.width / 320;
       const px = canvas.getContext('2d')!.getImageData(Math.floor(x * s), Math.floor(y * s), 1, 1).data;
       return `${px[0]},${px[1]},${px[2]}`;
     },
@@ -99,9 +99,10 @@ describe.skipIf(missing !== null)('the dungeon sample page (headless Chromium)',
         room: string;
       };
       expect(state.room).toBe('guard-room');
-      // The picture: the black HUD band at the top, the dungeon's wall stone below it.
-      expect(await pixel(page, 250, 20)).toBe('0,0,0');
-      expect(await pixel(page, 2, 66)).toMatch(/^(0,120,124|60,188,188|0,56,64)$/);
+      // The 16:9 picture (Engine 0.16 part C T3): the skin's dark background in the side margin,
+      // the west wall's stone ledge beside the room (the CC0 pack's colours).
+      expect(await pixel(page, 12, 120)).toBe('20,16,22');
+      expect(await pixel(page, 32 + 13, 58)).toMatch(/^(170,141,122|211,191,169)$/);
       expect(errors).toEqual([]);
     } finally {
       await close();

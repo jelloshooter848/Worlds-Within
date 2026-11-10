@@ -54,7 +54,8 @@ export const HUD_FALLBACK_COLOR = '#ff00ff';
  * The HUD's draw items for `status` through `skin.hud`, in the skin's order. A key the status
  * lacks draws nothing. `number` and `text` are one `text` item in `item.font`, else `opts.font`,
  * else `DEFAULT_HUD_FONT`. `hearts` repeat their frame once per whole point (a non-number draws
- * none), `icon` draws it once when the value is truthy; each copy is the frame's width plus 1 px
+ * none; with `half` the value counts halves: a `frame` per two points and `half` for one left
+ * over), `icon` draws it once when the value is truthy; each copy is the frame's width plus 1 px
  * right of the last, from the item's `sheet` (else `sheets.sheet`) in `sheets.palette`. Where the
  * sheet or frame is missing (`frameSize` gives null) each copy is an 8 x 8 box in
  * `sheets.fallbackColor`, else `HUD_FALLBACK_COLOR`, 9 px apart.
@@ -70,36 +71,37 @@ export function layoutHud(
   for (const item of skin.hud ?? []) {
     // Engine 0.16 T6's widgets (`bar`, `counter`, `panel`, `minimap`) are `engine/core/ui`'s.
     if (!isClassicHudType(item.as) || item.status === undefined) continue;
-    if (!Object.hasOwn(status, item.status)) continue;
+    if (!Object.hasOwn(status, item.status) || !hudItemShown(item, status)) continue;
     const value = status[item.status]!;
     if (item.as === 'number' || item.as === 'text') {
       const font = item.font ?? opts.font ?? DEFAULT_HUD_FONT;
       out.push({ kind: 'text', font, text: String(value), x: item.x, y: item.y });
       continue;
     }
-    const count =
+    // With `half` (Engine 0.16 part C T3) a hearts value counts halves: a `frame` per two points,
+    // then `half` for one left over.
+    const halves = item.as === 'hearts' && item.half !== undefined;
+    const points =
       item.as === 'hearts' ? (typeof value === 'number' ? Math.max(0, Math.floor(value)) : 0) : value ? 1 : 0;
+    const frames: string[] = [];
+    const whole = halves ? Math.floor(points / 2) : points;
+    for (let i = 0; i < whole; i++) if (item.frame !== undefined) frames.push(item.frame);
+    if (halves && points % 2 === 1) frames.push(item.half!);
     const sheet = item.sheet ?? defaults?.sheet;
     const palette = defaults?.palette;
-    const size =
-      sheet === undefined || item.frame === undefined ? null : frameSize(sheet, palette, item.frame);
+    const sizeOf = (frame: string | undefined) =>
+      sheet === undefined || frame === undefined ? null : frameSize(sheet, palette, frame);
+    const size = sizeOf(item.frame);
     const step = (size?.w ?? HUD_FALLBACK_SIZE) + 1;
-    for (let i = 0; i < count; i++) {
+    frames.forEach((frame, i) => {
       const x = item.x + i * step;
-      if (size && sheet !== undefined && item.frame !== undefined) {
-        out.push({
-          kind: 'sprite',
-          sheet,
-          ...(palette !== undefined && { palette }),
-          frame: item.frame,
-          x,
-          y: item.y,
-        });
+      if (sizeOf(frame) && sheet !== undefined) {
+        out.push({ kind: 'sprite', sheet, ...(palette !== undefined && { palette }), frame, x, y: item.y });
       } else {
         const color = defaults?.fallbackColor ?? HUD_FALLBACK_COLOR;
         out.push({ kind: 'box', x, y: item.y, w: HUD_FALLBACK_SIZE, h: HUD_FALLBACK_SIZE, color });
       }
-    }
+    });
   }
   return out;
 }
@@ -116,6 +118,17 @@ export function hudGlyphs(item: HudText): HudSprite[] {
     x += HUD_GLYPH_ADVANCE;
   }
   return out;
+}
+
+/**
+ * Whether a HUD item shows for `status`: always, unless it names a `when` status key whose value
+ * is falsy (missing, 0, false or '') (Engine 0.16 part C T3).
+ */
+export function hudItemShown(
+  item: { readonly when?: string | undefined },
+  status: DeepReadonly<PresentFrame['status']>,
+): boolean {
+  return item.when === undefined || Boolean(status[item.when]);
 }
 
 /** Whether a HUD item type is one `layoutHud` draws (the types before Engine 0.16 T6's widgets). */

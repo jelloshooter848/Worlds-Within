@@ -12,7 +12,15 @@ import {
 } from '@engine/core/present';
 import { HUD_H, ROOM_COLS, ROOM_ROWS, ROOM_W, TILE } from './geometry';
 import { HERO_INVULN } from './hero';
-import { cameraHint, presentMap, presentWorld, TdPresentIds, TdPresentState, PRESENT_TILES } from './present';
+import {
+  cameraHint,
+  IDLE_AFTER,
+  presentMap,
+  presentWorld,
+  TdPresentIds,
+  TdPresentState,
+  PRESENT_TILES,
+} from './present';
 import { buildDungeon, type RoomDef } from './room';
 import { snapshotWorld } from './snapshot';
 import { TopDownWorld, type TdEvent } from './world';
@@ -279,6 +287,27 @@ describe('presentWorld', () => {
     expect(presentWorld(world).entities[0]!.anim).toEqual({ state: 'dying', t: 9 });
     world.hero.dead = true;
     expect(presentWorld(world).entities).toEqual([]);
+  });
+
+  it('presents a standing hero as `idle` only when asked, with a stream state (Engine 0.16 part C T3)', () => {
+    const { world, step } = setup();
+    const state = new TdPresentState();
+    const idle = () => hero(presentWorld(world, [], { state, idle: true })).anim;
+    expect(idle()).toEqual({ state: 'idle', t: 0 });
+    expect(hero(presentWorld(world)).anim.state).toBe('walk');
+    step(['right'], 3);
+    expect(idle()).toEqual({ state: 'walk', t: world.hero.walkT });
+    step([], IDLE_AFTER - 1);
+    expect(idle().state).toBe('walk');
+    step([], 1);
+    expect(idle()).toEqual({ state: 'idle', t: 0 });
+    step([], 5);
+    expect(idle()).toEqual({ state: 'idle', t: 5 });
+    // Without a state, or without the option, the hero walks as before.
+    expect(hero(presentWorld(world, [], { idle: true })).anim.state).toBe('walk');
+    expect(hero(presentWorld(world, [], { state })).anim.state).toBe('walk');
+    // The world is never touched: the snapshot is the same with or without it.
+    expect(snapshotWorld(world)).toEqual(snapshotWorld(world));
   });
 
   it('places hero events at the hero and an unlock at its doorway', () => {

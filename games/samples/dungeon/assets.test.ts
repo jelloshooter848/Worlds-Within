@@ -5,9 +5,10 @@ import { assetPacks, checkCredits, isCc0, parseCredits } from '@engine/core/cont
 import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 
 // The CC0 pack in assets/ (Engine 0.16 part C, T2; credited in assets/CREDITS.md): 0x72's
-// DungeonTileset II. No skin uses it yet, so `validate` only checks the credits: this also checks
-// the PNGs read with their expected sizes, every frame of the pack's tile list lies inside its
-// sheet, the frames the art pass will reach for are there, and the folder stays small.
+// DungeonTileset II. Besides the credits `validate` checks, this checks the PNGs read with their
+// expected sizes, every frame of the pack's tile list lies inside its sheet, the frames the art
+// pass reaches for are there, every frame the skin names (part C T3) lies inside the sheet, and
+// the folder stays small.
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
@@ -106,5 +107,20 @@ describe("The Old Crypt's asset pack", () => {
       bytes += p.endsWith('.png') ? dataUrlBytes(text)!.length : text.length;
     }
     expect(bytes).toBeLessThan(100_000);
+  });
+
+  it("keeps every frame of the skin's images inside the sheet (part C T3)", () => {
+    const skin = JSON.parse(FILES['content/skins/canvas2d.json']!) as {
+      images: Record<
+        string,
+        { image: string; frames: Record<string, { x: number; y: number; w: number; h: number }> }
+      >;
+    };
+    expect(Object.keys(skin.images).sort()).toEqual(['crypt', 'crypt-actors', 'crypt-items']);
+    for (const [id, spec] of Object.entries(skin.images)) {
+      expect(spec.image).toBe(`${PACK}/sheet.png`);
+      for (const [name, { x, y, w, h }] of Object.entries(spec.frames))
+        expect(x + w <= 512 && y + h <= 512 && x >= 0 && y >= 0, `${id}.${name}`).toBe(true);
+    }
   });
 });

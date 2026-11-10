@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hudGlyphs, layoutHud, type HudFrameSize } from './hud';
+import { hudGlyphs, hudItemShown, layoutHud, type HudFrameSize } from './hud';
 import type { SkinFile } from './skin';
 
 /** A fixture skin's HUD (inline: core never imports a game). */
@@ -60,6 +60,38 @@ describe('layoutHud (G33)', () => {
     expect(layoutHud(plain, { k: 1 }, SIZES)).toEqual([
       { kind: 'box', x: 1, y: 2, w: 8, h: 8, color: '#ff00ff' },
     ]);
+  });
+
+  it('counts halves with a `half` frame: a frame per two points, then the half (Engine 0.16 part C T3)', () => {
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'hero' },
+      kinds: {},
+      hud: [{ status: 'hp', as: 'hearts', x: 4, y: 2, frame: 'heart', half: 'half' }],
+    };
+    const sizes: HudFrameSize = (_s, _p, frame) =>
+      frame === 'heart' || frame === 'half' ? { w: 7, h: 7 } : null;
+    const at = (hp: number) =>
+      layoutHud(skin, { hp }, sizes).map((d) => (d.kind === 'sprite' ? `${d.frame}@${d.x}` : d.kind));
+    expect(at(5)).toEqual(['heart@4', 'heart@12', 'half@20']);
+    expect(at(4)).toEqual(['heart@4', 'heart@12']);
+    expect(at(1)).toEqual(['half@4']);
+    expect(at(0)).toEqual([]);
+  });
+
+  it('shows an item with `when` only while that status is truthy (Engine 0.16 part C T3)', () => {
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'hero' },
+      kinds: {},
+      hud: [{ status: 'bombs', as: 'number', x: 1, y: 2, when: 'item' }],
+    };
+    expect(layoutHud(skin, { bombs: 0, item: '' }, SIZES)).toEqual([]);
+    expect(layoutHud(skin, { bombs: 0 }, SIZES)).toEqual([]);
+    expect(layoutHud(skin, { bombs: 3, item: 'bomb' }, SIZES)).toEqual([
+      { kind: 'text', font: 'font', text: '3', x: 1, y: 2 },
+    ]);
+    expect(hudItemShown({}, {})).toBe(true);
   });
 
   it('splits text into glyphs 8 px apart, skipping spaces', () => {

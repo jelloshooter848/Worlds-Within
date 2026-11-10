@@ -76,7 +76,11 @@ the golden files (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`) in the same commit.
 no RNG draws, no room memory created, nothing `TdSnapshot` reads, so state hashes are the same with
 or without it (tested per tick, and against the demo's walk-east golden hashes). Options: `size` (the
 picture, `DEFAULT_SCREEN` when left out), `top` (where the play area starts on the picture, `HUD_H`
-by default), `reduceFlashing` and `state` (a `TdPresentState`, one per stream of frames).
+by default), `reduceFlashing`, `state` (a `TdPresentState`, one per stream of frames) and, from
+Engine 0.16 part C T3, `idle` (opt-in, with `state`: a hero in `walk` whose walk counter has not
+moved for more than `IDLE_AFTER` (6) ticks is presented as `idle`, `t` counting from then; the
+state's `stride` remembers the counter, never the world, so no hash moves; off by default, so
+skins without an `idle` state draw as before; tested in `present.test.ts`).
 
 - **Map** (`presentMap`): the room on screen as rows of `PRESENT_TILES` characters (how each cell
   looks now: `O`/`L`/`X` open, locked and shut doors, `C` cracked walls, `H` a blasted doorway,

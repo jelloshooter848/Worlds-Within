@@ -57,6 +57,10 @@ Import from `@engine/core/present` (`index.ts`).
   from T7 a skin's `themes` (map id -> `{ background?, parallax?, tiles? }`, laid over the skin by
   `themedSkin(skin, mapId)`) gives each level its own sky, parallax and ground;
   `resolveTileFrame`, `tileJoinKeys`, `TILE_JOIN_WORDS`, `bad_join_key` (`tile-join.test.ts`).
+  Engine 0.16 part C T3: a 2D tile's `vary` (`{ frames, weights?, period? }`, `variedTileFrame`:
+  floor variety by a hash of the cell's place, after any `join` key), a `hearts` HUD item's `half`
+  (the status counts halves) and any HUD item's `when` (`hudItemShown`: shown only while that
+  status is truthy).
   Engine 0.16 T11: a 3D kind or tile entry may name a
   glTF/GLB `model` in `assets/` with `scale`, `anchor`, `rotate`, `clip` (by animation state)
   and `castShadow`, keeping its text `mesh` as the stand-in while it loads;

@@ -252,6 +252,26 @@ export class TdPresentIds {
 export class TdPresentState {
   readonly maps = new MapTracker();
   readonly ids = new TdPresentIds();
+  /** The hero's walk counter last seen and the world frame it last changed on (`opts.idle`). */
+  stride: { walkT: number; since: number } | null = null;
+}
+
+/** Ticks the hero's walk counter must stand still before `opts.idle` shows him `idle`. */
+export const IDLE_AFTER = 6;
+
+/**
+ * Ticks the hero has stood idle (his walk counter unchanged for more than `IDLE_AFTER` ticks), or
+ * null while he walks. Kept in the stream's state, never in the world: presentation only.
+ */
+function idleTicks(world: TopDownWorld, state: TdPresentState): number | null {
+  const { walkT } = world.hero;
+  const s = state.stride;
+  if (s === null || s.walkT !== walkT || world.frame < s.since) {
+    state.stride = { walkT, since: world.frame };
+    return s === null ? 0 : null;
+  }
+  const still = world.frame - s.since - IDLE_AFTER;
+  return still >= 0 ? still : null;
 }
 
 /**
@@ -306,6 +326,12 @@ export interface TdPresentOptions {
   /** Tag a hurt hero `calm` instead of `flashing` (the reduce-flashing setting). */
   reduceFlashing?: boolean;
   /**
+   * Opt-in (Engine 0.16 part C T3): with `state`, a hero in `walk` whose walk counter has not
+   * moved for more than `IDLE_AFTER` ticks is presented as `idle` (`t` counting from then), so a
+   * skin can play a breathing loop. Off by default: skins without an `idle` state are unchanged.
+   */
+  idle?: boolean;
+  /**
    * The stream's memory (TdPresentState): with it the full map is sent only when the room or its
    * tiles change, and ids stay stable for things not placed by the room text. Without it every
    * frame carries the full map.
@@ -326,11 +352,12 @@ function presentHero(
   at: { x: number; y: number },
   calm: boolean,
   dark: boolean,
+  idle: number | null,
 ): PresentEntity[] {
   const h = world.hero;
   if (h.dead) return [];
-  let state = 'walk';
-  let t = h.walkT;
+  let state = idle === null ? 'walk' : 'idle';
+  let t = idle === null ? h.walkT : idle;
   if (h.dying >= SPIN_FRAMES) [state, t] = ['poof', h.dying - SPIN_FRAMES];
   else if (h.dying > 0) [state, t] = ['dying', h.dying - 1];
   else if (h.attacking) [state, t] = ['attack', ATTACK_FRAMES - h.attackT];
@@ -397,6 +424,8 @@ interface EntityCtx {
   calm: boolean;
   /** The room on screen is dark (things drawn from the tile sheet take its dark palette). */
   dark: boolean;
+  /** Ticks the hero has stood idle (`opts.idle`), or null: he is presented as walking. */
+  idle: number | null;
 }
 
 /** Tags for something that blinks or flickers: `flashing`, or `calm` with reduce flashing. */
@@ -550,7 +579,7 @@ function presentEntities(world: TopDownWorld, ctx: EntityCtx): PresentEntity[] {
     folk.filter((e) => e.y <= heroY),
     TD_DEPTH.folkBehind,
   );
-  out.push(...presentHero(world, ctx.at, ctx.calm, ctx.dark));
+  out.push(...presentHero(world, ctx.at, ctx.calm, ctx.dark, ctx.idle));
   add(
     folk.filter((e) => e.y > heroY),
     TD_DEPTH.folkFront,
@@ -699,6 +728,7 @@ export function presentWorld(
       ids: opts.state?.ids ?? new TdPresentIds(),
       calm: opts.reduceFlashing ?? false,
       dark: world.room.def.dark === true,
+      idle: opts.idle && opts.state ? idleTicks(world, opts.state) : null,
     }),
     map: sent,
     events: presentEvents(world, events, origin),

@@ -12,38 +12,41 @@
     "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 1 },
-  "screen": { "width": 256, "height": 240 },
+  "screen": { "width": 320, "height": 180 },
   "menus": {
     "font": "crypt-small",
     "titleFont": "crypt-title",
     "style": {
-      "text": "#fcfcfc",
-      "shadow": "#000000",
-      "focusText": "#fca044",
-      "disabledText": "#a4a4a4",
-      "back": "#0c0c1c",
-      "focusBack": "#6c0000",
-      "border": "#fcfcfc",
-      "track": "#3c3c3c",
-      "fill": "#d82800",
-      "padding": 6,
-      "gap": 3,
+      "text": "#e8e0d8",
+      "shadow": "#141016",
+      "focusText": "#f6c445",
+      "disabledText": "#8e7b6e",
+      "back": "#1a1219",
+      "focusBack": "#62232f",
+      "border": "#aa8d7a",
+      "track": "#3a3236",
+      "fill": "#e8762a",
+      "padding": 4,
+      "gap": 2,
       "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
-      "heading": "#fca044",
-      "outline": "#000000",
-      "dim": 0.5
+      "heading": "#f6c445",
+      "outline": "#141016",
+      "dim": 0.6,
+      "panel": { "sheet": "crypt-art", "frame": "panel", "slice": 5 },
+      "cursor": ">",
+      "dimColor": "#0c0a10"
     },
     "title": {
       "name": "The Old Crypt",
       "subtitle": "Torches, keys and a relic in the dark",
       "art": [
-        { "sheet": "hero", "frame": "attack-side", "scale": 3, "anchor": "left", "x": 34, "y": -4 },
-        { "sheet": "dungeon", "frame": "knight-side-0", "scale": 3, "anchor": "right", "x": 34, "y": -4 }
+        { "sheet": "crypt-actors", "frame": "knight-idle-0", "scale": 3, "anchor": "left", "x": 30, "y": 8 },
+        { "sheet": "crypt-actors", "frame": "orc-idle-0", "scale": 3, "anchor": "right", "x": 30, "y": 8 }
       ],
       "music": "crypt",
       "footer": "An original game made with the Worlds Within engine",
       "items": ["start", "controls", "settings"],
-      "dim": 0.85
+      "dim": 0.72
     },
     "pause": { "items": ["resume", "controls", "settings", "title"] },
     "controls": [

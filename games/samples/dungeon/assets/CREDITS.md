@@ -4,7 +4,9 @@ Every folder under `assets/` is one pack and has a section here, checked by `pnp
 (`engine/core/content/assets.ts`): its source, author and licence. Only CC0 is allowed unless an
 owner decision is cited (docs/DESIGN.md, item 322). Fetched for Engine 0.16 part C, T2
 (2026-11-10). File names were lower-cased with underscores turned into hyphens; nothing else was
-changed. No skin uses the pack yet (that is part C, T3).
+changed. From part C, T3 the Canvas2D skin draws from `sheet.png`, and the text sheets
+`content/sprites/crypt-art.txt` and `crypt-floor.txt` hold pieces cut, turned and pasted from it
+(CC0 allows it; the few original pieces there are named in their header).
 
 ## dungeon-tileset-ii
 
@@ -27,5 +29,5 @@ changed. No skin uses the pack yet (that is part C, T3).
   - `readme.txt` (`README`): the author's notes on the atlases.
 - Left out: the `frames/` folder (the same art as `sheet.png`) and the macOS `__MACOSX` and
   `.DS_Store` files.
-- Not in the pack: torches, bats and a sound set. The torches and bats stay original text art
-  (or come from the lighting work, part C T4); the music and sound effects stay MML.
+- Not in the pack: torches, bats and a sound set. The bats are the pack's imp, the torches an
+  original brazier in the pack's colours (T3); the music and sound effects stay MML.

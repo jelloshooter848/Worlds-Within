@@ -116,6 +116,67 @@ export const tileJoinSchema = z
 
 export type TileJoin = z.output<typeof tileJoinSchema>;
 
+/**
+ * Floor variety (Engine 0.16 part C T3): a 2D tile entry's `vary` `{ frames, weights?, period? }`
+ * swaps the entry's own `frame` (the one shown when no `join` key matched) for one of `frames`,
+ * picked by a hash of the cell's place: the same cell always shows the same frame, neighbours
+ * differ. `weights` (one whole number per frame, default 1 each) make some frames rarer; `period`
+ * `{ cols, rows }` takes the cell's place modulo it first, so a pattern repeats every room (the
+ * top-down kit's room slide puts two rooms side by side in one map, and each keeps its look).
+ */
+export const tileVarySchema = z
+  .strictObject({
+    frames: z.array(z.string().min(1)).min(1).describe('the frames to pick from'),
+    weights: z
+      .array(z.number().int().min(1))
+      .exactOptional()
+      .describe('one whole number per frame: how often it is picked (default 1 each)'),
+    period: z
+      .strictObject({
+        cols: z.number().int().min(1).describe('columns before the pattern repeats'),
+        rows: z.number().int().min(1).describe('rows before the pattern repeats'),
+      })
+      .exactOptional()
+      .describe("the cell's place is taken modulo this first, so the pattern repeats (default: never)"),
+  })
+  .superRefine((vary, ctx) => {
+    if (vary.weights !== undefined && vary.weights.length !== vary.frames.length)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['weights'],
+        message: `${vary.weights.length} weights for ${vary.frames.length} frames: give one per frame`,
+        params: { code: 'bad_weights' },
+      });
+  })
+  .describe(
+    "2D: vary the tile's own frame by the cell's place: `{ frames, weights?, period?: { cols, rows } }`",
+  );
+
+export type TileVary = z.output<typeof tileVarySchema>;
+
+/** A small integer hash of a cell's place (the same on every machine). */
+function cellHash(col: number, row: number): number {
+  let h = Math.imul(col + 0x9e37, 0x85ebca6b) ^ Math.imul(row + 0x7f4a, 0xc2b2ae35);
+  h ^= h >>> 15;
+  h = Math.imul(h, 0x2c1b3c6d);
+  h ^= h >>> 12;
+  return h >>> 0;
+}
+
+/** The frame `vary` picks for the cell at (col, row). Pure. */
+export function variedTileFrame(vary: DeepReadonly<TileVary>, col: number, row: number): string {
+  const c = vary.period ? ((col % vary.period.cols) + vary.period.cols) % vary.period.cols : col;
+  const r = vary.period ? ((row % vary.period.rows) + vary.period.rows) % vary.period.rows : row;
+  const weights = vary.weights ?? vary.frames.map(() => 1);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let n = cellHash(c, r) % total;
+  for (let i = 0; i < vary.frames.length; i++) {
+    n -= weights[i]!;
+    if (n < 0) return vary.frames[i]!;
+  }
+  return vary.frames[0]!;
+}
+
 /** The map's cells as a backend has them: text rows or rows of tile ids. */
 export type TileGrid = readonly (string | readonly (string | number)[])[];
 
@@ -159,20 +220,25 @@ export function tileJoinKeys(
 
 /**
  * The frame a tile entry shows at (col, row) of `grid` ({@link tileJoinKeys}): the first of its
- * keys `join.frames` has, else the entry's `frame` (undefined when it gives none). Without `join`,
- * the entry's `frame`. Pure.
+ * keys `join.frames` has, else the entry's `frame` (undefined when it gives none), or the one its
+ * `vary` picks for the cell ({@link variedTileFrame}). Pure.
  */
 export function resolveTileFrame(
-  entry: { readonly frame?: string | undefined; readonly join?: DeepReadonly<TileJoin> | undefined },
+  entry: {
+    readonly frame?: string | undefined;
+    readonly join?: DeepReadonly<TileJoin> | undefined;
+    readonly vary?: DeepReadonly<TileVary> | undefined;
+  },
   own: string,
   grid: TileGrid,
   col: number,
   row: number,
 ): string | undefined {
   const join = entry.join;
-  if (join === undefined) return entry.frame;
-  for (const key of tileJoinKeys(join, own, grid, col, row)) {
-    if (Object.hasOwn(join.frames, key)) return join.frames[key];
+  if (join !== undefined) {
+    for (const key of tileJoinKeys(join, own, grid, col, row)) {
+      if (Object.hasOwn(join.frames, key)) return join.frames[key];
+    }
   }
-  return entry.frame;
+  return entry.vary === undefined ? entry.frame : variedTileFrame(entry.vary, col, row);
 }

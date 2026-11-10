@@ -1,7 +1,7 @@
 import type { AudioManager } from '@engine/core/audio/audio-manager';
+import { withContentImages } from '@engine/core/assets/content-images';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { bootBrowserGame } from '@engine/core/shell';
-import { contentFonts } from '@engine/core/ui';
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { DUNGEON_MUSIC, loadDungeon, mustLoad } from './content';
 import { dungeonLook } from './picture';
@@ -10,30 +10,29 @@ import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the dungeon sample in the browser with the engine's `bootBrowserGame`: keyboard,
- * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display, audio with the
- * sample's songs and sfx (the `crypt` song starts on the first key, tap or click), the shell's volume control
- * (stored under `ww:dungeon:volumes`, gap M1) and the step hook with `?debug=step`. The scene
- * draws through its own `DungeonPicture` on the display's renderer, with the shell's `onSound`.
+ * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display at the 16:9
+ * screen (320x180, so 6x fills 1920x1080), the menus, audio with the sample's songs and sfx (the
+ * `crypt` song starts on the first key, tap or click), the shell's volume control (stored under
+ * `ww:dungeon:volumes`, gap M1) and the step hook with `?debug=step`. The skin's PNG sheets (the
+ * CC0 DungeonTileset II in `assets/`) are decoded before the page boots. The scene draws through
+ * the display's own presenter (`DungeonPicture` with `presenter`), so the shell's sounds, hit
+ * pauses, shake and flashing settings and the HUD hidden under the title all reach it.
  */
-const content = mustLoad(loadDungeon(gameFiles));
+const content = await withContentImages(mustLoad(loadDungeon(gameFiles)));
 const look = dungeonLook(content);
-const fonts = contentFonts(content);
-let onSound: (id: string) => void = () => {};
 let audio: AudioManager | null = null;
 
 void bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
   audio: { songs: contentSongs(content), sfx: contentSfx(content), music: DUNGEON_MUSIC },
-  menus: { spec: content.manifest.menus, fonts, sheets: look.sheet },
+  menus: { spec: content.manifest.menus, fonts: look.fonts, sheets: look.sheet },
   displays: {
-    canvas2d: (canvas, shell) => {
-      onSound = (id) => shell.onSound(id);
-      return canvasDisplay(canvas, { ...look, fonts, onSound: shell.onSound });
-    },
+    canvas2d: (canvas, { onSound, hitPause }) =>
+      canvasDisplay(canvas, { ...look, onSound, onHitPause: hitPause }),
   },
-  scene: () =>
-    new DungeonScene(content, look, { onSound: (id) => onSound(id), music: (id) => audio?.playMusic(id) }),
+  scene: (_stack, display) =>
+    new DungeonScene(content, look, { music: (id) => audio?.playMusic(id), presenter: display.presenter }),
 }).then((booted) => {
   audio = booted?.audio ?? null;
 });

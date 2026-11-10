@@ -9,6 +9,9 @@ import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import type { Action } from '@engine/core/input/actions';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
+import { withContentImages } from '@engine/core/assets/content-images';
+import type { ContentBundle } from '@engine/core/content/bundle';
+import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 import { canonicalJson } from '@engine/core/headless';
 import { validate } from '@engine/core/content/validate';
 import { isFullMap, presentFrameSchema } from '@engine/core/present';
@@ -16,7 +19,7 @@ import { PRESENT_TILES, presentWorld, TdPresentState, topdownGame } from '@kits/
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { dungeonRooms, dungeonSkin, loadDungeon, mustLoad } from './content';
 import { createGame, createWorld } from './headless';
-import { DungeonPicture, dungeonEnd, dungeonLook } from './picture';
+import { DungeonPicture, dungeonEnd, dungeonLook, endBanner, endLines, HUD_TOP } from './picture';
 import { DungeonScene, END_HOLD } from './scene';
 
 /** The null renderer, counting the sprites drawn from each sheet. */
@@ -31,7 +34,16 @@ function countingRenderer(): { r: Renderer; sprites: Map<string, number> } {
 }
 
 const FILES = readGameFiles(fileURLToPath(new URL('./', import.meta.url)));
-const content = mustLoad(loadDungeon(FILES));
+const loaded = mustLoad(loadDungeon(FILES));
+/**
+ * The bundle with its skin's PNG sheets "decoded" for Node: each image's size from its header and
+ * no pixels (the recording renderers here never look at them), as `withContentImages` gives the
+ * page and the screenshot tool the real ones.
+ */
+const content: ContentBundle = await withContentImages(loaded, async (url) => {
+  const size = readPngSize(dataUrlBytes(url)!)!;
+  return { image: null, width: size.width, height: size.height, data: null };
+});
 
 /** The sample's files with one file's JSON changed by `edit`. */
 function withJson(path: string, edit: (data: Record<string, unknown>) => void): Record<string, string> {
@@ -51,10 +63,11 @@ describe('the dungeon sample', () => {
       'room:store-room',
       'song:crypt',
       'song:daylight',
-      'palette:dungeon',
-      'palette:hero',
-      'sprite:dungeon',
-      'sprite:hero',
+      // The art pass (Engine 0.16 part C T3): two text sheets derived from the CC0 pack.
+      'palette:crypt-art',
+      'palette:crypt-floor',
+      'sprite:crypt-art',
+      'sprite:crypt-floor',
       'sfx:blast',
       'sfx:chest',
       'sfx:door',
@@ -103,9 +116,11 @@ describe('the dungeon sample', () => {
       picture.draw(world, world.events.splice(0));
     }
     expect(world.room.id).toBe('guard-room');
-    expect(sprites.get('hero')).toBeGreaterThan(0);
-    // The map is drawn from the dungeon sheet (no map surface in Node: tile by tile).
-    expect(sprites.get('dungeon')).toBeGreaterThan(0);
+    // The hero from the CC0 sheet, the map from the text sheets cut from it (no map surface in
+    // Node: tile by tile).
+    expect(sprites.get('crypt-actors')).toBeGreaterThan(0);
+    expect(sprites.get('crypt-art')).toBeGreaterThan(0);
+    expect(sprites.get('crypt-floor')).toBeGreaterThan(0);
   });
 
   it('has songs that compile, every channel of a song as long as the others', () => {
@@ -228,15 +243,15 @@ describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.
       status = frame.status;
     }
     for (const k of kinds) expect(Object.keys(skin.kinds)).toContain(k);
-    for (const item of skin.hud ?? []) expect(Object.keys(status)).toContain(item.status);
+    for (const item of skin.hud ?? [])
+      if (item.status !== undefined) expect(Object.keys(status)).toContain(item.status);
   });
 
-  it("draws the kit's `relic` item as the sample's own relic frame, not a borrowed symbol", () => {
-    expect(skin.kinds['pickup:relic']?.frames).toEqual({ idle: 'relic' });
-    expect(skin.kinds['held']?.frames?.relic).toBe('relic');
-    const sheet = FILES['content/sprites/dungeon.txt']!;
-    expect(sheet).toMatch(/^frame relic$/m);
-    expect(sheet).not.toMatch(/triforce/i);
+  it("draws the kit's `relic` item as a gem-set sword from the CC0 sheet, not a borrowed symbol", () => {
+    expect(skin.kinds['pickup:relic']?.frames).toEqual({ idle: 'gem-sword' });
+    expect(skin.kinds['pickup:relic']?.sheet).toBe('crypt-items');
+    expect(JSON.stringify(skin.kinds['held']?.frames?.relic)).toContain('gem-sword');
+    for (const f of Object.keys(FILES)) expect(FILES[f]!).not.toMatch(/triforce/i);
   });
 
   it("plays the skin's sound for an event in the walk-east run (the room change)", () => {
@@ -267,7 +282,14 @@ describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.
       .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
       .map((f) => readFileSync(`${dir}${f}`, 'utf8'))
       .join('\n');
-    for (const name of ['renderWorld', 'drawTdHud', 'drawRoomTiles', 'drawFrame', 'drawStunned']) {
+    for (const name of [
+      'renderWorld',
+      'drawTdHud',
+      'drawRoomTiles',
+      'drawFrame',
+      'drawStunned',
+      'debugText',
+    ]) {
       expect(code).not.toContain(name);
     }
     expect(code).not.toMatch(/\.render\(r, /);
@@ -378,5 +400,98 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     scene.update(press(['jump']));
     expect(scene.headless().snapshot()).toMatchObject({ exited: false, room: 'courtyard', frame: 0 });
     expect(music.at(-1)).toBe('crypt');
+  });
+});
+
+describe('the dungeon sample: 16:9 on the CC0 art (Engine 0.16 part C T3)', () => {
+  const skin = dungeonSkin(content);
+  const PNG = 'assets/dungeon-tileset-ii/sheet.png';
+
+  it('draws at 320x180, so 6x is 1920x1080, with the room in the middle', () => {
+    expect(content.manifest.screen).toEqual({ width: 320, height: 180 });
+    const frame = presentWorld(createWorld(content), [], { size: content.manifest.screen, top: HUD_TOP });
+    // The 256x176 room is centred: 32 px margins at the sides, 2 px above and below.
+    expect(frame.camera).toEqual({ x: 128, y: 88 });
+  });
+
+  it('takes every sheet from the CC0 pack: its PNG, or the text sheets cut from it', () => {
+    expect(Object.values(skin.images ?? {}).map((i) => i.image)).toEqual([PNG, PNG, PNG]);
+    const sheets = new Set(Object.keys(skin.images ?? {}));
+    const text = new Set(['crypt-art', 'crypt-floor']);
+    const used = new Set<string>();
+    const walk = (v: unknown) => {
+      if (Array.isArray(v)) v.forEach(walk);
+      else if (v && typeof v === 'object')
+        for (const [k, x] of Object.entries(v)) {
+          if (k === 'sheet' && typeof x === 'string') used.add(x);
+          walk(x);
+        }
+    };
+    walk({ kinds: skin.kinds, tiles: skin.tiles, hud: skin.hud });
+    used.add(skin.sheets!.sheet!);
+    for (const s of used) expect(sheets.has(s) || text.has(s), s).toBe(true);
+    expect(FILES['content/sprites/crypt-art.txt']).toMatch(/CC0 DungeonTileset II/);
+  });
+
+  it('joins the walls by their neighbours and varies the floor', () => {
+    const wall = skin.tiles?.['#'];
+    expect(Object.keys(wall?.join?.frames ?? {}).sort()).toEqual(
+      [
+        'bottom',
+        'inner-bottom-left',
+        'inner-bottom-right',
+        'inner-top-left',
+        'inner-top-right',
+        'left',
+        'right',
+        'top',
+      ].sort(),
+    );
+    expect(skin.tiles?.['.']?.vary?.frames).toHaveLength(8);
+    for (const door of ['O', 'L', 'X', 'C', 'H', 'E'])
+      expect(Object.keys(skin.tiles?.[door]?.join?.frames ?? {}), door).toContain('right bottom');
+  });
+
+  it('shows the hero idle, walking with footsteps, and the monsters flashing white when hit', () => {
+    const hero = skin.kinds['hero']!;
+    expect(Object.keys(hero.frames ?? {})).toEqual(
+      expect.arrayContaining(['idle', 'walk', 'attack', 'throw', 'hurt', 'dying', 'poof']),
+    );
+    expect(JSON.stringify(hero.frames?.['walk'])).toContain('footstep');
+    for (const kind of ['bat', 'knight', 'spitter'])
+      expect(skin.kinds[kind]?.byTag?.[0]).toMatchObject({ tag: 'flashing' });
+    const world = createWorld(content);
+    const state = new TdPresentState();
+    const at = () =>
+      presentWorld(world, [], { state, size: content.manifest.screen, idle: true }).entities.find(
+        (e) => e.id === 'hero',
+      )!.anim.state;
+    expect(at()).toBe('idle');
+  });
+
+  it('hides the HUD and the end banner under the title (showHud false)', () => {
+    const drawn = (shown: boolean) => {
+      let n = 0;
+      const r: Renderer = Object.assign(new NullRenderer(), {
+        sprite() {
+          n++;
+        },
+      });
+      const picture = new DungeonPicture(r, dungeonLook(content));
+      picture.showHud(shown);
+      picture.draw(createWorld(content), []);
+      return n;
+    };
+    expect(drawn(false)).toBeLessThan(drawn(true));
+  });
+
+  it('writes the end banner once a run has ended', () => {
+    const look = dungeonLook(content);
+    expect(endBanner(look, null, false)).toEqual([]);
+    expect(endLines('escaped', true)?.[0]).toBe('You escaped with the relic!');
+    expect(endLines('fallen', false)?.[0]).toBe('You fell in the crypt.');
+    const draws = endBanner(look, 'fallen', false);
+    expect(draws.filter((d) => d.kind === 'image').length).toBe(9);
+    expect(draws.some((d) => d.kind === 'glyph')).toBe(true);
   });
 });

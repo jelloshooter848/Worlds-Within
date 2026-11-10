@@ -1,8 +1,8 @@
 # games/samples/dungeon
 
 **The Old Crypt**, the top-down kit's sample game: a short, finished dungeon of five rooms with a
-start, a way through, a goal and two end states, all in data files, with original NES-style pixel
-art, MML music and sound effects. This file is a worked example: it says how the sample was built,
+start, a way through, a goal and two end states, all in data files, drawn at 16:9 on 0x72's CC0
+DungeonTileset II (Engine 0.16 part C T3), with MML music and sound effects. This file is a worked example: it says how the sample was built,
 step by step, so an agent can build the next top-down game the same way. It began as the engine
 demo (a proof-of-life game in its own `demo` folder, Engine 0.2-0.14), moved here at Engine 0.15
 T2 with its run file and golden hashes unchanged, and was finished as a sample in Engine 0.15 T12.
@@ -25,12 +25,12 @@ glue.
    two cold torches, and a cracked east wall (`C` on the border: a doorway that starts shut).
 4. **bat-hall**: reached by bombing the cracked wall (a blast opens both sides); three bats, a
    statue block in the middle, a key (`k`) and a locked east door (`L`).
-5. **crypt**: the goal room (`goal: true`), its chest holding the relic (kit item `relic`, drawn as the original chalice frame `relic`; kept in the
+5. **crypt**: the goal room (`goal: true`), its chest holding the relic (kit item `relic`, drawn as the pack's red-gem sword; kept in the
    world's `found`), and two exit tiles (`E`) on its north border: stepping on one sets the world's
    `exited`, the run's win.
 
 A run ends **escaped** (the hero reached an exit: `exited`) or **fallen** (the hero died after his
-death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the status lines say which
+death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the end banner says which
 and the scene starts a new run on Z or X (below). Both are world state, so run files assert them.
 
 ## How it was built (the worked example)
@@ -56,21 +56,18 @@ and the scene starts a new run on Z or X (below). Both are world state, so run f
 4. **Run files with golden hashes** (below), then `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` to
    write the new `.hashes.json` files (never by hand), and `pnpm -s cli mutants
 games/samples/dungeon --json` to see every kit rule guarded.
-5. **Art as text.** `content/palettes/<id>.json` (NES colours) and `content/sprites/<sheet>.txt`
-   (a `palette` line, a `legend` per character, then `frame <name>` and its rows; format at the top
-   of `engine/core/gfx/sprite-schema.ts`). Two sheets: `hero` (the hero's walk, attack, throw,
-   hold and poof frames, side frames facing right) and `dungeon` (every tile, pickup, chest,
-   switch, torch, monster, shot, effect and HUD icon). Draw tiles opaque (a tile's clear pixels
-   show the background, not the floor), monsters and items with a black outline on clear.
+5. **Art.** Until Engine 0.16 it was original NES-style text art; from part C T3 it is the CC0
+   pack in `assets/` (below, "16:9 on the CC0 art"): the skin's `images` name rectangles of its
+   `sheet.png`, and two text sheets (`content/sprites/crypt-art.txt`, `crypt-floor.txt`, format at
+   the top of `engine/core/gfx/sprite-schema.ts`) hold the pieces cut, turned and pasted from it.
 6. **The skin** (`content/skins/canvas2d.json`, format: `engine/core/present/skin.ts`) maps what
-   the kit presents to the art: `kinds` (each presented kind and animation state to frames, with
-   `{ frames, ticks }` cycles and `flipFacing` for left; the table in `kits/topdown/CLAUDE.md`
-   lists every kind and state), `tiles` (every `PRESENT_TILES` character), `events` (sounds and
-   effects per kit event: `room` door, `unlock`, `sword`, `hit`, `kill` with particles, `pickup`,
-   `chest`, `bomb` fuse, `blast` with a shake, `hurt`, `dying`, `exit` with a gold flash and the
-   fanfare), `hud` (half-heart pips, keys, the item icon), `background` (black, Engine 0.15 gap
-   G36) and `sheets.fallbackColor` (a pink no frame should ever show: the kinds and tiles carry no
-   fallback colour of their own, and `dungeon.test.ts` fails if a run draws one).
+   the kit presents to the art: `images` (the pack's PNG), `kinds` (each presented kind and
+   animation state to frames, with cycles, frame events and `flipFacing` for left; the table in
+   `kits/topdown/CLAUDE.md` lists every kind and state), `tiles` (every `PRESENT_TILES` character,
+   walls and doors joined by their neighbours), `events` (sounds, particles, shakes, flashes and
+   hit-pauses per kit event), `emitters`, `hud` (framed panels, hearts, keys, the item),
+   `background` and `sheets.fallbackColor` (a magenta no frame should ever show: the kinds and
+   tiles carry no fallback colour of their own, and `dungeon.test.ts` fails if a run draws one).
 7. **Music and sound as MML.** `content/songs/crypt.json` (the looping dungeon theme, D minor,
    four channels; every channel the same length so the loop stays in step: the test checks it)
    and `daylight.json` (the short tune for the way out); `content/sfx/*.json`, one per skin sound.
@@ -79,12 +76,13 @@ games/samples/dungeon --json` to see every kit rule guarded.
 ## Files
 
 - `game.json`: the manifest (schema: `engine/core/content/manifest.ts`): kit `topdown`, content
-  globs (`room`, `song`, `palette`, `sprite`, `sfx`, `skin`), seed 1, 256x240, `headless.ts`,
+  globs (`room`, `song`, `palette`, `sprite`, `sfx`, `skin`, `font`), seed 1, **320x180**, `headless.ts`,
   `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
 - `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt` (above).
 - `content/songs/`: `crypt`, `daylight`. `content/sfx/`: `blast`, `chest`, `door`, `fall`,
   `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`, `unlock`.
-- `content/palettes/`: `hero`, `dungeon`. `content/sprites/`: `hero.txt`, `dungeon.txt`.
+- `content/palettes/`: `crypt-art`, `crypt-floor`. `content/sprites/`: `crypt-art.txt`,
+  `crypt-floor.txt` (pieces cut from the CC0 pack, and a few original ones in its colours).
 - `content/skins/canvas2d.json`: the skin (above).
 - `content.ts`: `loadDungeon(files)` (the kit hook's kinds, `kitContentKinds([topdown],
 manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the engine's
@@ -93,20 +91,25 @@ manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the en
   removed the sample's own `dungeonKinds`, `dungeonSongs` and `dungeonSfx` copies).
 - `headless.ts`: `createWorld(content, seed?, disabledRules?)` and `createGame(content, seed,
 opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
-- `picture.ts`: `dungeonLook(content)` (skin, sheets, picture size), `DungeonPicture`
-  (`draw(world, events)`: the kit's `presentWorld`, frozen, to the backend's
-  `SkinnedCanvasPresenter`, plus the status lines), `dungeonEnd(world)` and `drawStatusLines`
-  (title, room, hearts, bombs once found, and the end banner).
-- `view.ts`: `createView(content, seed, opts?)`, the view entry for `pnpm cli screenshot`.
+- `picture.ts`: `dungeonLook(content)` (skin, sheets, fonts, picture size), `HUD_TOP` (0),
+  `DungeonPicture` (`draw(world, events)`: the kit's `presentWorld` with `idle`, frozen, to the
+  backend's `SkinnedCanvasPresenter` or the `presenter` it is given, plus the end banner;
+  `showHud(shown)`), `dungeonEnd(world)`, `endLines` and `endBanner` (a framed panel in the menus'
+  font once the run has ended).
+- `view.ts`: `createView(content, seed, opts?)`, the view entry for `pnpm cli screenshot` (with
+  `showHud`, so the title overlay hides the HUD).
 - `scene.ts`: `DungeonScene`: the world stepped once per loop step, its events drawn through
   `DungeonPicture` with the shell's `onSound`, the `crypt` song on enter and `daylight` on the
   way out; once the run has ended (`dungeonEnd`), Z or X at least `END_HOLD` (60) steps later
   starts a new run seeded from the step count. The world keeps stepping after the end, so until a
   restart the scene is exactly the headless game: `headless()` gives the page's step hook its
   snapshot and hash.
-- `main.ts`: `bootBrowserGame` (keyboard, gamepad, touch pad, loop, `?debug=step` step hook, audio
-  with the songs and sfx and the `crypt` song once unlocked, the shell's volume control stored
-  under `ww:dungeon:volumes`, gap M1) with `canvasDisplay`; the scene draws on its renderer.
+- `main.ts`: awaits `withContentImages` (the PNG decoded before the first frame), then
+  `bootBrowserGame` (keyboard, gamepad, touch pad, loop, `?debug=step` step hook, audio with the
+  songs and sfx and the `crypt` song once unlocked, the shell's volume control stored under
+  `ww:dungeon:volumes`, gap M1, hit-pauses) with `canvasDisplay`; the scene draws through the
+  display's presenter (`DungeonSceneOptions.presenter`), so the settings and the title's hidden HUD
+  reach it.
 - `index.html`: the page (canvas `#screen`); the root launcher lists it.
 - The sample never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's
   `render`): `dungeon.test.ts` fails if its code names one. No rooms, MML or pixel rows in `.ts`
@@ -151,45 +154,51 @@ the golden files with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs` and say why in t
 
 ## Tests
 
-- `dungeon.test.ts` (Node): the content loads (every file by kind), the rooms build, walk-east is
-  drawn through the skin from the `hero` and `dungeon` sheets, the songs compile with channels of
+- `dungeon.test.ts` (Node; the PNG "decoded" from its header, as the platformer's test does): the
+  content loads (every file by kind), the rooms build, walk-east is drawn through the skin from the
+  pack's sheets, the songs compile with channels of
   equal length, every skin sound is an sfx, walk-east's frames and golden hashes, walk-east's
   `door` and `spit` sounds, no placeholder file names and no per-kind fallback colours, **every
   tick of every run file drawn with no fallback box**, the end states of `escape` (escaped, with
   the relic) and `lost-in-the-guard-room` (fallen), `DungeonScene` playing `escape` with the
-  headless game's snapshots, its music, the end held and Z starting over, and broken fields naming
-  their file and field.
+  headless game's snapshots, its music, the end held and Z starting over, broken fields naming
+  their file and field, and (T3) the 16:9 screen with the room centred, every sheet the pack's
+  PNG or a text sheet cut from it, the wall and door joins and the floor variety, the hero's
+  states and the monsters' white flash, no HUD with `showHud(false)` and the end banner.
 - `tests/browser/dungeon.test.ts` (headless Chromium, skipped without it): opens the built games
   index, follows its `games/samples/dungeon/` link, plays walk-east on the keyboard with
   `?debug=step` (the golden hash at every tick of `walk-east.hashes.json`, the guard room, the
-  black HUD band and the wall colour, the volume control), and replays `escape` and
+  dark side margin and the west wall's ledge colour, the volume control), and replays `escape` and
   `lost-in-the-guard-room` through `window.__ww.replay` with their golden hashes and end states.
 - `tests/browser/volume-control.test.ts` checks the volume control and stored volumes here too.
 
 ## Picture size
 
 `screen` in `game.json` is the only value to change for another picture size: the canvas, the
-scaling, the touch layout, the kit's frames and screenshots follow it. The kit's camera hint
-(`cameraHint`, `kits/topdown/present.ts`) keeps the HUD band (64 px) on top and centres the room;
-the skin's HUD and the status lines stay top-left. `tests/build/two-resolutions.test.ts` copies
-this folder at 320x240 and checks `validate`, `run` (the same hashes), `screenshot` and a build.
+scaling, the touch layout, the kit's frames and screenshots follow it. It is 320x180 (16:9; 6x is
+1920x1080). The kit's camera hint (`cameraHint`, `kits/topdown/present.ts`) with `top` 0
+(`HUD_TOP`) centres the room in the picture; the skin's HUD panels are placed for 320x180.
+`tests/build/two-resolutions.test.ts` copies this folder at 256x240 (its old size) and checks
+`validate`, `run` (the same hashes), `screenshot` and a build.
 
 ## How to run
 
 - `pnpm dev` opens the games index; pick `games/samples/dungeon/` (or open it directly).
   Arrows move, X (or Z) the sword, C the item; `?debug=step` for the step hook.
 - `pnpm build` builds it into `dist/games/samples/dungeon/`.
-- `pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 950` shows the crypt.
+- `pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 950 --scale 6` shows the
+  crypt at 1920x1080 (`--overlay title` the title).
 
 ## Title screen, pause menu and settings (Engine 0.16 T9)
 
 `game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
 `engine/core/ui/menus.ts`): the title "The Old Crypt" in `crypt-title` over the game's own
-picture at its start (dimmed 0.85), the subtitle "Torches, keys and a relic in the dark", art (`attack-side` x3, `knight-side-0` x3),
+picture at its start (dimmed 0.72 from T3), the subtitle "Torches, keys and a relic in the dark", art (from T3 the pack's knight and orc, `crypt-actors` `knight-idle-0` and `orc-idle-0`, x3),
 the song `crypt`, a footer and the items start, controls, settings; the pause menu
 (resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing, touch); and the controls screen's
-rows (Walk; Sword; Use item; Next item), shown with the player's keys. Colours: focus bar `#6c0000`,
-headings `#fca044`. Fonts: `content/fonts/crypt-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `crypt-title.txt` (its title font: the small glyphs doubled with Scale2x, cell 10x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
+rows (Walk; Sword; Use item; Next item), shown with the player's keys. Colours (T3): the pack's
+stone and gold, the focus bar `#62232f`, headings `#f6c445`, every panel the skin's stone frame
+(`crypt-art` `panel`, slice 5) with a `>` cursor. Fonts: `content/fonts/crypt-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `crypt-title.txt` (its title font: the small glyphs doubled with Scale2x, cell 10x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
 
 `main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
 and the fonts to the display. Back to title builds the game again from its first scene. The page opens on the title (the game waits
@@ -207,13 +216,62 @@ https://0x72.itch.io/dungeontileset-ii), credited in `assets/CREDITS.md` (source
 frame of the pack), `tile-list.txt` (one `<name> <x> <y> <w> <h>` line per frame of the sheet,
 e.g. `knight_m_run_anim_f0 192 100 16 28`), the autotile atlases `atlas-floor-16x16.png`,
 `atlas-walls-low-16x16.png` and `atlas-walls-high-16x32.png`, and the author's `readme.txt`;
-65 KB in all. No skin uses it yet: the art pass (part C, T3) adds a skin `images` entry for
-`assets/dungeon-tileset-ii/sheet.png` whose `frames` come from `tile-list.txt`. The pack has no
-torches, bats or sounds (item 425): those stay original text art and MML. Binary files live only
+65 KB in all. From T3 the skin's three `images` entries name rectangles of `sheet.png` (from
+`tile-list.txt`); the atlases are not used. The pack has no torches, bats or sounds (item 425): the
+bat is the pack's imp (item 427), the torch an original brazier, the sound MML. Binary files live only
 in `assets/` (`tests/architecture/no-content.test.ts`); `assets.test.ts` checks the credits, the
 file list, each PNG's size, every tile-list frame inside the sheet, the frames the art pass needs,
 and a 100 KB bound. To add a pack: a new `assets/<pack>/` folder, its `## <pack>` section in
 `CREDITS.md` (CC0 only), and its files in `assets.test.ts`.
+
+## 16:9 on the CC0 art (Engine 0.16 part C T3; feedback items 426-433)
+
+Presentation only: no room, rule or run changed, so walk-east, escape and lost-in-the-guard-room
+keep their golden hashes (`dungeon.test.ts` draws every tick of every run with no fallback box).
+How it was built: the screen first (320x180, item 426), then a scratch Python generator (not
+committed, item 428; edit the files by hand now) read the pack's `sheet.png` and wrote the two text
+sheets and the skin; screenshots at 6x of the courtyard, a room slide, the store room's bomb and
+blast, the bat hall, the guard-room fight, the crypt, the end and the title were read and the
+skin tuned from them.
+
+- **The screen.** 320x180, `top` 0: the 256x176 room in the middle, 2 px above and below, 32 px
+  of the skin's dark `background` (`#141016`) at each side.
+- **Walls** (`#`, `crypt-art`, `join` with every wall and door character): the top wall's brick
+  face under its cap (`wall-face`), the side walls' stone ledge beside the room (`wall-west`,
+  `wall-east`), the bottom wall's ledge (`wall-south`) and the corners where the ledges turn
+  (`corner-sw`, `corner-se`); a wall cell with nothing open is clear (the background shows).
+- **Floors** (`.`, `crypt-floor`): `floor-1` with the pack's seven cracked and broken floors now
+  and then (`vary`, weights, a 16x11 period so each room keeps its look during a slide), and
+  `floor-shade` (the top rows darkened) under the top wall (`join` on `top`).
+- **Doors**, each a `join` on the walls round it (its own character left out, so a two-cell door
+  knows its halves): `O` the pack's arched doorway with the floor inside on the top wall, a floor
+  passage with the ledge capped beside it on a side wall, plain floor elsewhere (and in slides);
+  `L` the closed door with a padlock, `X` (and `D`, `d`) the closed door without its ring, both
+  turned to face the room in side walls; `C` the cracked face (`wall_hole_1`/`_2`) or a broken
+  ledge; `H` the arch or a rubble passage; `E` the arch over brightened stairs (`crypt-floor`).
+  `B` a crate on the floor, `S` the pack's column cut to one tile, `~` the hole, `=` the stairs.
+- **The hero** (`knight_m`, `crypt-actors`, anchored at the bottom): `idle` (the kit's opt-in
+  idle state) breathing, `walk` the run cycle with `footstep` frame events (dust), `attack` a
+  lunge (with the sword, `crypt-art` blades turned per facing, and a squash tween on `sword`),
+  `throw`, `hold`, `hurt` white, `dying` the hit frame, `poof` the skull. While `flashing` he
+  flickers (a look whose cycles alternate his frames with a clear `blank`).
+- **Monsters** (item 427): `bat` the imp (`rest` idling, `fly` running), `knight` the orc warrior,
+  `spitter` a goblin (`spit` its idle), `rock` short arrows per direction; each flashes white
+  (`crypt-art` silhouettes) while hit (`byTag` `flashing`).
+- **Things**: chests (closed, opened empty), the bomb with a fuse-spark emitter and a pop-in, the
+  explosion and the enemies' poof as particles only (fire, a ring, smoke), pickups and the held
+  prize from the pack's hearts, flasks, gem sword, axe and coins with a drop-in tween, the torch an
+  original brazier (cold, lit with a flame), the key an original key.
+- **Events**: `hurt` sparks, a red flash, shake and a 5-tick hit-pause; `hit` a small shake and a
+  3-tick hit-pause; `blast` a big shake, a gold flash and a hit-pause; `kill` a shake; `pickup`,
+  `chest`, `unlock` a gold burst; `dying` a red flash; `exit` a warm white flash; `footstep` dust.
+- **HUD** (UI kit items): a stone panel over the top-left corner with the hearts (`ui_heart_*`,
+  `maxHp` empty then `hp` with `half`) and the keys (a counter, `x{value}`), and a panel in the
+  right margin with the item's icon and its count (`when: item`). Hidden under the title.
+- **End banner** (`picture.ts`): a framed panel low in the room, in `crypt-small`: "You escaped
+  with the relic!" / "You fell in the crypt." and "Press Z to ...".
+- **Menus**: restyled in the pack's colours with the stone panel; the title shows the knight and
+  the orc.
 
 ## Imports
 

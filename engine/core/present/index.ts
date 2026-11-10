@@ -127,6 +127,7 @@ export {
   HUD_GLYPH_ADVANCE,
   hudGlyphs,
   isClassicHudType,
+  hudItemShown,
   layoutHud,
   type HudDraw,
   type HudFrameSize,
@@ -166,6 +167,9 @@ export {
   tileJoinKeyProblem,
   tileJoinKeys,
   tileJoinSchema,
+  tileVarySchema,
+  variedTileFrame,
   type TileGrid,
   type TileJoin,
+  type TileVary,
 } from './tile-join';
