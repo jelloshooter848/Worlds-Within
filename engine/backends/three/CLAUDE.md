@@ -266,7 +266,10 @@ its `ThreeScene` (`presenter.scene`) and draws it with `presenter.renderer`, a `
 Options mirror `SkinnedCanvasPresenter` where they apply: `size?` (else `frame.size`),
 `onSound?(id)`, `background?` (default the skin's `background`, else `#000`), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `shakeScale?`, `subPixelShake?`,
 `onHitPause?`, `sheets?`; they are passed on to the scene (and `withSkin`'s scenes);
-`effectSettings(settings)` changes the flashing and shake settings on all of them. Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
+`effectSettings(settings)` changes the flashing and shake settings on all of them;
+`showHud(shown)` (Engine 0.16 part C T1, also `threeDisplay`'s `BrowserDisplay.showHud`) skips the
+HUD pass of every scene it draws from the next frame (the shell's title hides the HUD; the scene
+still syncs it). Each frame draws the scene, then (when it shows any quad) the scene's HUD pass over it
 with `autoClear` off and the depth cleared. So a paused frame draws the same every time on one machine, the renderer is fixed:
 `antialias: false`, `preserveDrawingBuffer: true` (screenshots read the buffer after drawing),
 pixel ratio 1, `SRGBColorSpace` output, no shadows (from Engine 0.16 T12 the scene's `look`

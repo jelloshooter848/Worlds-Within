@@ -145,6 +145,11 @@ format? }` read from the frame status) and `menus.end` (`heading?`, `credits?`, 
   `respawn` frame event (`transitions.events` maps any event to a slot), after its frame is shown
   and holding ticks while it closes like any transition, so no hash moves. `__ww.menus().banner`
   says whether the banner shows. Example: `games/fx-lab/game.json`.
+- **No HUD under the title (Engine 0.16 part C T1)**: `GameMenus.hudShown` is false while the
+  title, or a screen opened from it (settings, controls, the level select), shows over the waiting
+  game; before each draw the boot hands it to `BrowserDisplay.showHud(shown)` (both backends give
+  it; a presenter's optional `showHud`), so the game picture under those screens has no HUD. The
+  pause menu and the end screen keep it. Presentation only: no hash moves.
 
   ```json
   "title": { "items": ["start", "levels", "controls", "settings"], ... },

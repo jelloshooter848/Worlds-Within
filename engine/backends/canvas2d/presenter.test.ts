@@ -126,6 +126,28 @@ describe('SkinnedCanvasPresenter', () => {
     expect(s.screen.at(-1)).toBe('sprite map:room@1:map 0,0');
   });
 
+  it("places a layer tile's anchored frame on its cell, and draws terrain tiles at their corner (0.16 part C T1)", () => {
+    const props: SpriteSheet = {
+      id: 'props',
+      image: null,
+      frames: new Map([
+        ['bush', { x: 0, y: 0, w: 32, h: 24, anchor: 'bottom' as const }],
+        ['tuft', { x: 0, y: 0, w: 16, h: 16 }],
+      ]),
+    };
+    const skin: SkinFile = {
+      ...SKIN,
+      tiles: { ...SKIN.tiles, b: { sheet: 'props', frame: 'bush' }, t: { sheet: 'props', frame: 'tuft' } },
+    };
+    const cache = recorder();
+    const p = new SkinnedCanvasPresenter(recorder().r, skin, (id) => (id === 'props' ? props : lookup(id)), {
+      mapSurface: () => ({ renderer: cache.r, image: null }),
+    });
+    p.present(frame({ map: { ...MAP, layers: [{ name: 'decor', tiles: ['...', 'b.t'] }] } }));
+    // The 32x24 bush stands on cell (0, 1)'s bottom centre; the tuft has no anchor.
+    expect(cache.calls.slice(-2)).toEqual(['sprite props:bush -8,8', 'sprite props:tuft 32,16']);
+  });
+
   it("draws a frame by tag for an entity with that tag, and the kind's frame otherwise (G30)", () => {
     const skin: SkinFile = {
       ...SKIN,
@@ -247,6 +269,16 @@ describe('SkinnedCanvasPresenter', () => {
     const t = setup();
     t.p.present(frame({ status: {} }));
     expect(t.screen.some((c) => c.includes('heart') || c.startsWith('text'))).toBe(false);
+  });
+
+  it('draws no HUD while showHud is off (Engine 0.16 part C T1: under the title), and again once on', () => {
+    const s = setup();
+    s.p.showHud(false);
+    s.p.present(frame({ status: { health: 3, score: 120 } }));
+    expect(s.screen.some((c) => c.includes('heart') || c.startsWith('text'))).toBe(false);
+    s.p.showHud(true);
+    s.p.present(frame({ frame: 1, status: { health: 3, score: 120 } }));
+    expect(s.screen.slice(-1)).toEqual(['text font "120" 200,8']);
   });
 
   it('frames the camera: follows the hint, clamps into the map and centres a small map', () => {

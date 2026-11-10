@@ -376,6 +376,26 @@ describe('presentWorld: mini games', () => {
     expect(isFullMap(next.map!)).toBe(false);
   });
 
+  it("presents a level's decoration as the map layer `decor`, and the snapshot as it was (0.16 part C T1)", () => {
+    const level = tiny();
+    const cols = [...level.map[0]!].length;
+    const decor = level.map.map((_, r) => (r === 0 ? 'f' + '.'.repeat(cols - 1) : '.'.repeat(cols)));
+    const plain = new PlatformerWorld(level, PROFILE, { seed: 1 });
+    const decorated = new PlatformerWorld({ ...level, decor }, PROFILE, { seed: 1 });
+    expect(presentMap(plain).layers).toBeUndefined();
+    expect(presentMap(decorated).layers).toEqual([{ name: 'decor', tiles: decor }]);
+    expect(presentMap(decorated).version).toBe(presentMap(plain).version);
+    const a = new ScriptedInput({ steps: SCRIPT });
+    const b = new ScriptedInput({ steps: SCRIPT });
+    for (let i = 0; i < 120; i++) {
+      a.next();
+      b.next();
+      plain.update(a);
+      decorated.update(b);
+      expect(canonicalJson(snapshotWorld(decorated))).toBe(canonicalJson(snapshotWorld(plain)));
+    }
+  });
+
   it("tags a trigger with its entry's look, and leaves the snapshot as it was (G13)", () => {
     const two = ['.........', '.@.!..!.G', '#########'];
     const looks = { triggers: [{ game: 'hold', look: 'door' }, { game: 'hold' }] };

@@ -143,6 +143,8 @@ enough; silence so far has meant the build kept its default):
   **394** (the owner's screenshot review), **395-399** (the close-out's choices and the looks found
   and left in the screenshots), **400-418** (smaller build choices of T1-T3 and the build
   process, added by the finalize pass).
+- Engine 0.16 part C: **419-424** (T1, Hopper's Way's fixes after the part B review: the title's
+  HUD, the 2.5D portrait, the levels' decoration and new enemies).
 
 ### Items not met, and where they went
 
@@ -226,6 +228,24 @@ screenshot review (item 394), then the build choices 364-392 and 395-418.
   (`tests/architecture/no-content.test.ts`, DESIGN.md, item 395), this section, the roadmap's
   Done when, `llms.txt`, the sample's module page and `CLAUDE.md`, the UI kit's `CLAUDE.md`.
 
+### Fixes after review (0.16 part C T1)
+
+Three issues seen in the review screenshots below were fixed before the dungeon work (items
+419-424): **no HUD under the title** (an engine fix: the shell's `GameMenus.hudShown` is false
+while the title or a screen opened from it shows, and the boot hands it to the display's new
+`showHud` before each draw, both backends; the screenshot tool does the same under its `title`
+and `levels` overlays; guarded by `game-menus.test.ts`, `shell.test.ts` and the presenter
+tests); **a 2.5D portrait of the 2.5D hero** (`three.json`'s lives counter shows original text
+art of Quaternius' blue long-eared character, `sprites/hopper-hero3d.txt`; the 2D HUD keeps the
+frog); and **fuller 2D levels**: a presentation-only decoration grid per level (the platformer
+kit's new optional `decor`, a `.decor.txt` part presented as the map layer `decor`; the Canvas2D
+presenter places a layer's anchored frames on their cells) with original text-art grass,
+flowers, rocks, bushes, trees, night crystals and stones and fossils in the dirt, and Kenney Pixel
+Platformer signs, fences, mushrooms, sprouts and pines, themed per level; and seven more enemies
+(two in level-1, three in level-2, three in level-3, each placed where the existing winning and
+losing inputs still pass, so no run file's steps changed). Screenshots 01-03 and 05-09 were
+retaken with the same commands and ticks (below) and looked at.
+
 ### Choices made
 
 Items 364-392 and 395-399 in [FEEDBACK-LOG.md](FEEDBACK-LOG.md) (Engine 0.16 part B, T4-T11);
@@ -254,6 +274,14 @@ their own commits (416); generators not committed (417); a HUD text item drawn w
 (418).
 
 ### Golden hashes
+
+**Re-recorded in 0.16 part C T1** (with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`; the new
+enemies are in every snapshot's `actors` from tick 0; no run file's steps or checks changed):
+`level-1`, `level-1-lost`, `level-1-hurt` (level-1's third walker and ledge-walker), `level-2`,
+`level-2-lost` (level-2's walker and two ledge-walkers), `level-3`, `level-3-lost` (level-3's
+walker and two ledge-walkers) and `full-game` (it plays all three). The decoration, the HUD
+portrait and the title's HUD moved no hash. `mutants` exits 0 for every one of the sample's ten
+run files.
 
 **None re-recorded in part B.** T1 and T2 added kit fields and rules that default off; T5 moved
 the eight old run files to `games/platformer-classic` with `git mv`, changing only each hashes
@@ -305,14 +333,14 @@ Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-B/`](reports/screenshots/0
 
 | File                                                                                      | What it shows                                                                                   |
 | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [01-2d-level-1-stomp.png](reports/screenshots/0.16-B/01-2d-level-1-stomp.png)             | 2D, level 1 (the meadow): the frog bouncing off the first walker it stomped                     |
+| [01-2d-level-1-stomp.png](reports/screenshots/0.16-B/01-2d-level-1-stomp.png)             | 2D, level 1 (the meadow): the frog bouncing off the first walker it stomped, among the props    |
 | [02-2d-level-2-plank-stomp.png](reports/screenshots/0.16-B/02-2d-level-2-plank-stomp.png) | 2D, level 2 (Autumn Hills): a ledge-walker stomped on its plank over a pit, the checkpoint flag |
 | [03-2d-level-3-coyote-jump.png](reports/screenshots/0.16-B/03-2d-level-3-coyote-jump.png) | 2D, level 3 (Starlit Ridge): the coyote jump off the ledge over the spike field, coins above    |
 | [04-2d-boss-hit.png](reports/screenshots/0.16-B/04-2d-boss-hit.png)                       | 2D, the arena: Burrlock stomped (white flash, ring, dust), the boss bar down, a thorn in flight |
 | [05-3d-level-1.png](reports/screenshots/0.16-B/05-3d-level-1.png)                         | 2.5D, level 1: the hero over the ledge's coins, the checkpoint flag, scenery and fog behind     |
 | [06-3d-boss-telegraph.png](reports/screenshots/0.16-B/06-3d-boss-telegraph.png)           | 2.5D, the arena at dusk: Burrlock's charge telegraph, the hero jumping in, the boss bar         |
-| [07-title.png](reports/screenshots/0.16-B/07-title.png)                                   | The title screen: name, subtitle, the frog and a critter, the menu and key hints                |
-| [08-level-select.png](reports/screenshots/0.16-B/08-level-select.png)                     | The level select ("Pick a level", the four stages, locked ones greyed, Back)                    |
+| [07-title.png](reports/screenshots/0.16-B/07-title.png)                                   | The title screen: name, subtitle, the frog and a critter, the menu and key hints (no HUD)       |
+| [08-level-select.png](reports/screenshots/0.16-B/08-level-select.png)                     | The level select ("Pick a level", the four stages, locked ones greyed, Back; no HUD)            |
 | [09-level-clear.png](reports/screenshots/0.16-B/09-level-clear.png)                       | The level-clear banner at Autumn Hills' trophy: coins, time, deaths                             |
 | [10-end-screen.png](reports/screenshots/0.16-B/10-end-screen.png)                         | The end screen after Burrlock's defeat: heading, credits, stats, Back to title and Levels       |
 
@@ -331,6 +359,11 @@ pnpm -s cli screenshot $R/level-1.run.json   --tick 3 --overlay levels --scale 6
 pnpm -s cli screenshot $R/level-2.run.json   --tick 975 --overlay clear --scale 6 --out $O/09-level-clear.png --json
 pnpm -s cli screenshot $R/full-game.run.json --tick 3648 --overlay end --scale 6 --out $O/10-end-screen.png --json
 ```
+
+Retaken in 0.16 part C T1 with the same commands and ticks (the runs' inputs did not change):
+01-03 (the decoration and new enemies), 05 and 06 (the 2.5D HUD's blue-hero portrait), 07 and
+08 (no HUD under the title and the level select, the meadow's props behind) and 09 (Autumn
+Hills' props behind the banner); 04 and 10 are unchanged. Each was looked at in full.
 
 Each was looked at in full. **Fixed:** the end screen's heading ran over its panel's frame (the
 panel now widens to fit it, item 396; the level select's heading, which touched the frame, got

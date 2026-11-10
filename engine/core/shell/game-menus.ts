@@ -135,6 +135,16 @@ export class GameMenus {
       : this.from;
   }
 
+  /**
+   * Whether the game picture under the menus draws its HUD (Engine 0.16 part C T1): not while the
+   * title, or a screen opened from it (settings, controls, the level select), shows over the
+   * waiting game; the pause menu and the end screen keep it. Presentation only: the boot hands it
+   * to the display (`BrowserDisplay.showHud`) before each draw.
+   */
+  get hudShown(): boolean {
+    return this.state !== 'title';
+  }
+
   /** The screen on top (`title`, `pause`, `settings`, `controls`), or null in play. */
   get screen(): Screen | null {
     return this.open[this.open.length - 1]?.screen ?? null;

@@ -680,6 +680,46 @@
           "h": 24
         }
       }
+    },
+    "props": {
+      "image": "assets/kenney-pixel-platformer/tiles-packed.png",
+      "frames": {
+        "sign": {
+          "x": 90,
+          "y": 72,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "fence": {
+          "x": 108,
+          "y": 90,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "sprout": {
+          "x": 72,
+          "y": 108,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "mushroom-tan": {
+          "x": 162,
+          "y": 108,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        },
+        "pine": {
+          "x": 108,
+          "y": 108,
+          "w": 18,
+          "h": 18,
+          "anchor": "bottom"
+        }
+      }
     }
   },
   "kinds": {
@@ -1376,6 +1416,96 @@
     "^": {
       "sheet": "spikes",
       "frame": "spikes",
+      "fallbackColor": "#ff00ff"
+    },
+    "g": {
+      "sheet": "hopper-props",
+      "frame": "tuft",
+      "fallbackColor": "#ff00ff"
+    },
+    "G": {
+      "sheet": "hopper-props",
+      "frame": "tuft-tall",
+      "fallbackColor": "#ff00ff"
+    },
+    "f": {
+      "sheet": "hopper-props",
+      "frame": "flowers",
+      "fallbackColor": "#ff00ff"
+    },
+    "F": {
+      "sheet": "hopper-props",
+      "frame": "flowers-pink",
+      "fallbackColor": "#ff00ff"
+    },
+    "r": {
+      "sheet": "hopper-props",
+      "frame": "rock-small",
+      "fallbackColor": "#ff00ff"
+    },
+    "R": {
+      "sheet": "hopper-props",
+      "frame": "rock",
+      "fallbackColor": "#ff00ff"
+    },
+    "b": {
+      "sheet": "hopper-props",
+      "frame": "bush",
+      "fallbackColor": "#ff00ff"
+    },
+    "c": {
+      "sheet": "hopper-props",
+      "frame": "crystal",
+      "fallbackColor": "#ff00ff"
+    },
+    "s": {
+      "sheet": "props",
+      "frame": "sign",
+      "fallbackColor": "#ff00ff"
+    },
+    "n": {
+      "sheet": "props",
+      "frame": "fence",
+      "fallbackColor": "#ff00ff"
+    },
+    "M": {
+      "sheet": "props",
+      "frame": "mushroom-tan",
+      "fallbackColor": "#ff00ff"
+    },
+    "k": {
+      "sheet": "props",
+      "frame": "sprout",
+      "fallbackColor": "#ff00ff"
+    },
+    "p": {
+      "sheet": "props",
+      "frame": "pine",
+      "fallbackColor": "#ff00ff"
+    },
+    "T": {
+      "sheet": "hopper-props",
+      "frame": "tree",
+      "fallbackColor": "#ff00ff"
+    },
+    "1": {
+      "sheet": "hopper-props",
+      "frame": "stones",
+      "fallbackColor": "#ff00ff"
+    },
+    "2": {
+      "sheet": "hopper-props",
+      "frame": "fossil",
+      "fallbackColor": "#ff00ff"
+    },
+    "3": {
+      "sheet": "hopper-props",
+      "frame": "pebbles",
+      "fallbackColor": "#ff00ff"
+    },
+    "4": {
+      "sheet": "hopper-props",
+      "frame": "roots",
       "fallbackColor": "#ff00ff"
     }
   },
@@ -2662,6 +2792,41 @@
               "right": "metal-plank-right"
             }
           }
+        },
+        "g": {
+          "sheet": "hopper-props",
+          "frame": "tuft-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "G": {
+          "sheet": "hopper-props",
+          "frame": "tuft-autumn-tall",
+          "fallbackColor": "#ff00ff"
+        },
+        "f": {
+          "sheet": "hopper-props",
+          "frame": "flowers-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "F": {
+          "sheet": "hopper-props",
+          "frame": "leaves",
+          "fallbackColor": "#ff00ff"
+        },
+        "R": {
+          "sheet": "hopper-props",
+          "frame": "rock-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "b": {
+          "sheet": "hopper-props",
+          "frame": "bush-autumn",
+          "fallbackColor": "#ff00ff"
+        },
+        "T": {
+          "sheet": "hopper-props",
+          "frame": "tree-autumn",
+          "fallbackColor": "#ff00ff"
         }
       }
     },
@@ -2771,6 +2936,51 @@
               "right": "gold-plank-right"
             }
           }
+        },
+        "g": {
+          "sheet": "hopper-props",
+          "frame": "tuft-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "G": {
+          "sheet": "hopper-props",
+          "frame": "tuft-night-tall",
+          "fallbackColor": "#ff00ff"
+        },
+        "f": {
+          "sheet": "hopper-props",
+          "frame": "glowflowers",
+          "fallbackColor": "#ff00ff"
+        },
+        "F": {
+          "sheet": "hopper-props",
+          "frame": "crystal-cyan",
+          "fallbackColor": "#ff00ff"
+        },
+        "c": {
+          "sheet": "hopper-props",
+          "frame": "crystal",
+          "fallbackColor": "#ff00ff"
+        },
+        "R": {
+          "sheet": "hopper-props",
+          "frame": "rock-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "r": {
+          "sheet": "hopper-props",
+          "frame": "rock-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "b": {
+          "sheet": "hopper-props",
+          "frame": "bush-night",
+          "fallbackColor": "#ff00ff"
+        },
+        "T": {
+          "sheet": "hopper-props",
+          "frame": "tree-night",
+          "fallbackColor": "#ff00ff"
         }
       }
     },

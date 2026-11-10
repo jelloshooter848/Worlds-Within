@@ -336,6 +336,12 @@ transition, music?, restart, ... })` (`booted.menus`) puts each screen on the st
     the kit's `respawn` event: the frame is shown first (its sounds at once), then the slot starts,
     holding the loop's ticks while it closes as every transition does, so every state hash is the
     run's. A slot without a spec of its own plays nothing on an event unless `events` names it.
+  - **No HUD under the title** (Engine 0.16 part C T1): `GameMenus.hudShown` is false while the
+    title, or a screen opened from it (settings, controls, the level select), shows over the
+    waiting game, true otherwise (play, pause, the end screen). The boot's render hands it to
+    `BrowserDisplay.showHud(shown)` before the scenes draw (both backends give it: the presenters'
+    optional `Presenter.showHud`), so the picture under the title has no HUD. Presentation only.
+    Tested in `game-menus.test.ts` and `shell.test.ts` (a boot with the title shown).
   - Tested in `game-menus.test.ts`, `transitions.test.ts`, `../ui/menus.test.ts`,
     `../save/settings.test.ts`, `tests/runs/stepped-shell-invariance.test.ts` (every run file
     through the shell with the respawn transition, the banner and the end screen, golden hashes

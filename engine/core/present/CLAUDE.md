@@ -25,7 +25,9 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     inside, for a kit-side scroll lock), `layer` (depth, drawn low to high), `fx` (`PresentFx`
     `{ squashX?, squashY?, rotate?, alpha?, tint? }`) and the map's `layers`.
   - `DeepReadonly<T>` and the `Presenter` interface: `present(frame: DeepReadonly<PresentFrame>)`
-    and optional `resize(size)`. Backends implement `Presenter`.
+    and optional `resize(size)`, and from Engine 0.16 part C T1 optional `showHud(shown)`
+    (whether the skin's HUD is drawn from the next frame: the shell hides it under its title;
+    both backends' presenters have it). Backends implement `Presenter`.
 - `freeze.ts`: `freezeFrame(value)` deep-freezes a frame in place and returns it as
   `DeepReadonly`, so a backend that writes to it throws. Use it in tests and dev; it is not needed
   per frame in a release build.

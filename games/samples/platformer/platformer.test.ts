@@ -16,6 +16,7 @@ import {
 import { ModelLibrary, threeScenePresenter } from '@engine/backends/three';
 import { skinSetCanvasPresenter } from '@engine/backends/canvas2d';
 import { withContentImages } from '@engine/core/assets/content-images';
+import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { stateHash } from '@engine/core/state-hash';
@@ -43,6 +44,14 @@ import { createGame, type HopperSnapshot } from './headless';
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
 const content = mustLoad(loadHopper(FILES));
+/** Every prop character the levels' decoration grids (`.decor.txt`, 0.16 part C T1) use. */
+const DECOR_KEYS = [
+  ...new Set(
+    Object.entries(FILES)
+      .filter(([f]) => f.endsWith('.decor.txt'))
+      .flatMap(([, text]) => [...text].filter((c) => c !== '.' && c !== '\n')),
+  ),
+];
 
 /**
  * The bundle with its skins' PNG sheets "decoded" for Node: each image's size from its header and
@@ -96,20 +105,43 @@ describe("Hopper's Way: content", () => {
     for (const tier of player.jumps) expect(tier.holdGravity).toBeLessThan(tier.gravity);
   });
 
-  it('draws level-1 around a checkpoint, coins, a bump block and two walkers', () => {
+  it('draws level-1 around a checkpoint, coins, a bump block, three walkers and a ledge-walker', () => {
     const map = FILES['content/levels/level-1.map.txt']!;
     const count = (ch: string) => [...map].filter((c) => c === ch).length;
-    expect([count('K'), count('?'), count('w'), count('@'), count('G')]).toEqual([1, 1, 2, 1, 1]);
+    // 0.16 part C T1: a walker beside the second one and a ledge-walker by the goal.
+    expect([count('K'), count('?'), count('w'), count('l'), count('@'), count('G')]).toEqual([
+      1, 1, 3, 1, 1, 1,
+    ]);
     expect(count('o')).toBeGreaterThanOrEqual(10);
   });
 
   it('keeps its content as text: pixel art, palettes, fonts, skins and MML only', () => {
     // The CC0 packs in assets/ are the one exception (Engine 0.16 part B, T4): assets.test.ts.
     const allowed =
-      /^(game\.json|content\/[a-z]+\/[a-z0-9-]+(\.profile|\.campaign)?\.(json|txt)|content\/levels\/[a-z0-9-]+\.map\.txt)$/;
+      /^(game\.json|content\/[a-z]+\/[a-z0-9-]+(\.profile|\.campaign)?\.(json|txt)|content\/levels\/[a-z0-9-]+\.(map|decor)\.txt)$/;
     const files = Object.keys(FILES).filter((f) => !f.startsWith('assets/'));
     expect(files.filter((f) => !allowed.test(f))).toEqual([]);
   });
+});
+
+describe("Hopper's Way: decoration (0.16 part C T1)", () => {
+  it.each(['level-1', 'level-2', 'level-3'])(
+    'gives %s a decoration grid of props on its ground and in its dirt, presented as the map layer',
+    (id) => {
+      const map = FILES[`content/levels/${id}.map.txt`]!.trimEnd().split('\n');
+      const decor = FILES[`content/levels/${id}.decor.txt`]!.trimEnd().split('\n');
+      expect([decor.length, decor[0]!.length]).toEqual([map.length, map[0]!.length]);
+      const props = decor.join('').replace(/\./g, '').length;
+      expect(props).toBeGreaterThanOrEqual(map[0]!.length / 4);
+      // Props stand in open air, and the dirt set (1-4) only in the ground.
+      decor.forEach((row, r) =>
+        [...row].forEach((ch, c) => {
+          if (ch === '.') return;
+          expect(map[r]![c], `${id} ${ch} at ${r},${c}`).toBe(/[1-4]/.test(ch) ? '#' : '.');
+        }),
+      );
+    },
+  );
 });
 
 describe("Hopper's Way: headless game", () => {
@@ -188,7 +220,10 @@ describe("Hopper's Way: skins (the art and feel pass, T6)", () => {
   it("the 2D skin maps every tile, the runner's states and every actor type of the profile", () => {
     const skin = look.skin;
     const states = (kind: string) => Object.keys(skin.kinds[kind]?.frames ?? {}).sort();
-    expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(Object.values(PRESENT_TILES).sort());
+    // The terrain's tiles, and (0.16 part C T1) every prop the levels' decoration grids use.
+    expect(Object.keys(skin.tiles ?? {}).sort()).toEqual(
+      [...Object.values(PRESENT_TILES), ...DECOR_KEYS].sort(),
+    );
     // Every state the kit sends, and the skin's own: `breathe` after a landing's crouch, and the
     // dying puff's `vanish` and `gone`.
     expect(states('runner')).toEqual([...RUNNER_ANIMS, 'breathe', 'vanish', 'gone'].sort());
@@ -219,12 +254,32 @@ describe("Hopper's Way: skins (the art and feel pass, T6)", () => {
 
   it('the 3D skin has a mesh for every kind and tile the 2D skin maps, and the same events and HUD', () => {
     const noMesh = Object.keys(look.skin.kinds).filter((k) => look3d.skin.kinds[k]?.mesh === undefined);
-    const tiles = Object.keys(look.skin.tiles ?? {}).filter((t) => t !== PRESENT_TILES.empty);
+    // The levels' decoration (0.16 part C T1) is 2D only: the 2.5D view has its scenery rows.
+    const tiles = Object.keys(look.skin.tiles ?? {}).filter(
+      (t) => t !== PRESENT_TILES.empty && !DECOR_KEYS.includes(t),
+    );
     const noBlock = tiles.filter((t) => look3d.skin.tiles?.[t]?.mesh === undefined);
     expect([...noMesh, ...noBlock]).toEqual([]);
     expect(Object.keys(look3d.skin.events ?? {}).sort()).toEqual(Object.keys(look.skin.events ?? {}).sort());
-    expect(look3d.skin.hud).toEqual(look.skin.hud);
+    // The same HUD but the lives portrait (0.16 part C T1): the 2D frog, the 2.5D blue hero.
+    const portrait = (hud: typeof look.skin.hud) => hud?.find((i) => i.status === 'lives');
+    const rest = (hud: typeof look.skin.hud) => hud?.filter((i) => i.status !== 'lives');
+    expect(rest(look3d.skin.hud)).toEqual(rest(look.skin.hud));
+    expect(portrait(look.skin.hud)).toMatchObject({ sheet: 'frog-fall', frame: 'frog-face' });
+    expect(portrait(look3d.skin.hud)).toMatchObject({ sheet: 'hopper-hero3d', frame: 'face' });
+    expect({ ...portrait(look3d.skin.hud), sheet: 0, frame: 0 }).toEqual({
+      ...portrait(look.skin.hud),
+      sheet: 0,
+      frame: 0,
+    });
     expect(look3d.skin.camera).toEqual(look.skin.camera);
+  });
+
+  it("gives the 2.5D HUD its own hero's portrait, drawn from the text art at the frog's size (0.16 part C T1)", () => {
+    const face = contentPixelSheets(content)('hopper-hero3d');
+    expect(face).not.toBeNull();
+    const rect = face!.frames.get('face');
+    expect([rect?.w, rect?.h]).toEqual([24, 15]);
   });
 
   it.each(RUNS)(

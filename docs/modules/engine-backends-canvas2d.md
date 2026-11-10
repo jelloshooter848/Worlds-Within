@@ -35,6 +35,8 @@ for and holds no game rules.
   0.16 T4 camera effects from the skin's events, a trauma shake on both axes, a zoom punch about
   the camera's target and full-picture flashes (skipped with `reduceFlashing`), on the presenter's
   own clock, the `shakeScale` and `subPixelShake` options, `effectSettings` for a settings screen,
+  `showHud(shown)` (Engine 0.16 part C T1: no HUD while the shell's title shows; the display and
+  the skin set forward it), a map layer's anchored frames placed on their cell (decoration props),
   `onHitPause(ticks)` for an event's `hitPause`, and the skin's `parallax` layers drawn behind the
   map with the core `layoutParallax`; from Engine 0.16 T5 `focus()`, the camera's target on the
   picture, where an iris transition closes), frames the camera through its own `CameraFollower` from

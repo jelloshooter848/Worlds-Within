@@ -78,6 +78,8 @@ export class ThreePresenter implements Presenter {
   readonly overlay: HudLayer;
   /** Whether a frame was drawn since the last overlay (so an overlay never draws over itself). */
   private drewFrame = false;
+  /** Whether the HUD pass is drawn (`showHud`; the shell hides it under the title). */
+  private hudShown = true;
 
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, skin: Skin, opts: ThreePresenterOptions = {}) {
     const background = opts.background ?? skinBackground(skin);
@@ -146,6 +148,15 @@ export class ThreePresenter implements Presenter {
   }
 
   /**
+   * Whether the HUD pass is drawn from the next frame, on this presenter's scene and every
+   * `withSkin` one (Engine 0.16 part C T1: the shell hides it under the title). The scene still
+   * syncs its HUD, so a counter's roll goes on.
+   */
+  showHud(shown: boolean): void {
+    this.hudShown = shown;
+  }
+
+  /**
    * The screen transition to draw over every frame from now on, or null (Engine 0.16 T5; the
    * shell hands it to `threeDisplay`'s `transition`). An iris closes on the drawn scene's `focus()`.
    */
@@ -209,7 +220,7 @@ export class ThreePresenter implements Presenter {
     const shape = view === null ? null : transitionShape(view, size, scene.focus());
     this.transitionLayer.sync(shape, size);
     const labels = scene.labels.quads().length > 0;
-    const hud = scene.hud.quads().length > 0;
+    const hud = this.hudShown && scene.hud.quads().length > 0;
     if (!hud && !labels && shape === null) return;
     r.autoClear = false;
     try {

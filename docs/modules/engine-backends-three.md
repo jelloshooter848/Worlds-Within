@@ -35,7 +35,8 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   effects) as two `Points` buffers, normal and additive, of at most `PARTICLE_POOL` each
   (`particles`, `particleViews()`). Camera effects (Engine 0.16 T4) as in 2D: trauma shake on x
   and y, zoom punches by distance, event flashes on the overlay (skipped with `reduceFlashing`),
-  `onHitPause`, `shakeScale`, `effectSettings`; the skin's `parallax` layers as `ParallaxPlanes`
+  `onHitPause`, `shakeScale`, `effectSettings`, `showHud(shown)` on `ThreePresenter` and the
+  display (Engine 0.16 part C T1: the HUD pass is skipped under the shell's title); the skin's `parallax` layers as `ParallaxPlanes`
   (`parallax.ts`): quads on planes at each layer's `depth`, hung on the camera and drawn first,
   placed where the 2D layout draws them (`parallax.draws()`, `meshes()`). The HUD (Engine 0.15,
   gap G33): `hud`, a `HudLayer` (`hud.ts`) that draws the core `layoutHud` items for

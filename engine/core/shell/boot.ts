@@ -589,6 +589,8 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       },
       render() {
         display.transition?.(transitions.view());
+        // No HUD on the picture under the title or a screen opened from it (Engine 0.16 part C T1).
+        display.showHud?.(menus?.hudShown ?? true);
         scenes.render(display.renderer);
         // The level-clear banner (Engine 0.16 part B) over the game, under no scene.
         const banner = menus?.bannerDraws() ?? [];

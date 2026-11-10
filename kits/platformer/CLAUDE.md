@@ -14,8 +14,10 @@ mini game and acts on its result), and its presentation frames (`present.ts`, T9
   player start, `G` goal, `!` mini-game trigger: what it starts is the next entry of the header's
   `triggers`; `K` checkpoint (Engine 0.16 T1): where a death with lives left respawns the player
   once touched). Enemy spawns have no fixed character: the level header's `spawns` maps characters
-  of its own to actor types.
-- `level.ts`: `levelSchema` (the level header plus its `map`), `LevelDef`, `levelCells`,
+  of its own to actor types. `DECOR_CHARS` (Engine 0.16 part C T1): what a level's decoration
+  grid may hold, `.` and every printable ASCII character but the presented terrain's `#B?u=^`.
+- `level.ts`: `levelSchema` (the level header plus its `map`, and from Engine 0.16 part C T1 its
+  optional `decor`), `LevelDef`, `levelCells`,
   `levelSize` and `checkLevel(level, profile)`, the checks beyond the shape.
 - `profile.ts`: `profileSchema`, `ProfileDef` and `profileKind()`: physics profiles, the player's
   movement numbers and the actor types (`walker`, `shell`, ...) with data-set behaviour.
@@ -420,7 +422,8 @@ top-left tile at 0,0); boxes are whole pixels (the body's sub-pixel box floored)
 `platformerFrames(size?)` (Engine 0.7) wraps it as a `FrameSource` for the engine's `FrameStream`:
 one `PlatformerPresentState` per world, so a new level starts a new stream.
 
-- **Map** (`presentMap`): the terrain only, as rows of `PRESENT_TILES` characters: `.` open air,
+- **Map** (`presentMap`): the terrain, as rows of `PRESENT_TILES` characters (and, for a level
+  with `decor`, the layer `{ name: 'decor', tiles }`, the grid as written; Engine 0.16 part C T1): `.` open air,
   `#` solid, `B` brick, `?` bump block, `u` used bump block, `=` one-way platform, `^` hazard.
   Coins, goals, triggers, checkpoints and the start are `.` (coins, goals, triggers and
   checkpoints are entities). `id` is
@@ -507,7 +510,13 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   and must match), `spawns` (`{ "<char>": { actor, facing } }`), `blocks` (what each `?` holds in
   reading order: `coin`, `coins`, `powerup`, `life` or `actor:<type>`; all coins when left out),
   `triggers` (one per `!` in reading order: `game`, `params`, `pass`, `fail`, `quit`, `look`;
-  under Mini games), `clear` (`goal`, the default, or `boss`: under Bosses) and `map`. Schema codes: `bad_spawn_key` (more than one character, a space or a legend
+  under Mini games), `clear` (`goal`, the default, or `boss`: under Bosses), `map` and (Engine 0.16
+  part C T1) `decor`, usually in `levels/<id>.decor.txt` (the kind's second grid part): a grid the
+  map's size of `DECOR_CHARS`, `.` for nothing. It is presentation only: the kit gives it no
+  meaning and never reads it in play, the snapshot leaves it out (no hash moves), and
+  `presentMap` sends it as the map layer `decor`, which a skin's `tiles` draw over the terrain
+  (`size_mismatch` at `decor` when its size is not the map's; the grid's `ragged_row`,
+  `unknown_char`). Schema codes: `bad_spawn_key` (more than one character, a space or a legend
   character), `size_mismatch`, `wrong_block_count`, `wrong_trigger_count`, `bad_outcome` (an
   `open:<col>:<row>` outside the map), plus the grid's `ragged_row`, `unknown_char`,
   `empty_grid` at the `.map.txt` line.

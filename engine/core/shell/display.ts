@@ -55,6 +55,12 @@ export interface BrowserDisplay {
    * settings screen's screen shake and reduced flashing), from the next frame.
    */
   effectSettings?(settings: CameraFxSettings): void;
+  /**
+   * Whether the game picture's HUD is drawn from the next frame (Engine 0.16 part C T1): the
+   * shell hides it while the title, or a screen opened from it, shows over the waiting game. Both
+   * backends give it; a display without it always draws the HUD.
+   */
+  showHud?(shown: boolean): void;
 }
 
 /** A display, or a sentence saying why it cannot start (no WebGL 2), shown on the page instead. */

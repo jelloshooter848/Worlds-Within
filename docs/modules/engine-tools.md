@@ -171,7 +171,8 @@ hashes, matchesHeadless }` (`hashes`: the state hashes the page saw; all must be
   each pixel an exact N x N block (a 320x180 game at `--scale 6` is exactly 1920x1080), and
   `--overlay <o>` draws one of `sheet`'s overlays over it (`title`, `pause`, `settings`,
   `controls`, `levels`, `clear`, `end`, `ui=<file>[.<widget>]`, a transition), through the same
-  job; the result adds `scale` and `overlay`. Example: `pnpm -s cli screenshot
+  job; the result adds `scale` and `overlay`. Under `title` and `levels` the game picture is drawn
+  without its HUD, as the shell draws it (Engine 0.16 part C T1, `ViewGame.showHud`). Example: `pnpm -s cli screenshot
 games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear --out x.png --json`.
   Needs `pnpm exec playwright install --with-deps chromium`. Details: `engine/tools/CLAUDE.md`
   (Screenshots).

@@ -224,6 +224,12 @@ export interface Presenter {
   present(frame: DeepReadonly<PresentFrame>): void;
   /** The game picture's size changed. */
   resize?(size: ScreenSize): void;
+  /**
+   * Whether the skin's HUD is drawn from the next frame (Engine 0.16 part C T1; default true):
+   * the shell hides it while the title, or a screen opened from it, shows over the waiting game.
+   * Presentation only; a presenter without it always draws its HUD.
+   */
+  showHud?(shown: boolean): void;
 }
 
 /** True when `map` carries its tiles, not only its id and version. */

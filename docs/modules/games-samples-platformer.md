@@ -34,8 +34,10 @@ since T5. It holds only content, skins and thin glue.
   `transitions.respawn` (an iris on the frog), `menus` with (T8) the level-clear banner (`clear`)
   and the end screen (`end`: stats, Back to title, Levels), `headless.ts`, `view.ts`).
 - `content/`: `campaigns/main.campaign.json` (the stage list), `levels/level-1.json` +
-  `level-1.map.txt` (80x12: coins, a bump block, two walkers, a checkpoint, a coyote-time pit, a
-  running-jump gap), `level-2` (T7, Autumn Hills, 100x12: one-way planks over pits, walkers and
+  `level-1.map.txt` (80x12: coins, a bump block, three walkers and a ledge-walker by the goal, a
+  checkpoint, a coyote-time pit, a running-jump gap; from 0.16 part C T1 each of level-1..3 also
+  has a `.decor.txt` grid of presentation-only props: grass, flowers, rocks, bushes, trees, signs,
+  fences, night crystals and stones and fossils in the dirt, drawn by the 2D skin), `level-2` (T7, Autumn Hills, 100x12: one-way planks over pits, walkers and
   ledge-walkers pacing steps and planks, a checkpoint, a high off-path coin cache with a life
   block), `level-3` (T7, Starlit Ridge, 104x12: spikes, a buffered-jump chain over narrow pillars,
   a multi-coin block, a checkpoint, a coyote jump over a spike field, a tunnel coin cache under a
@@ -51,7 +53,10 @@ since T5. It holds only content, skins and thin glue.
   `hopper-fanfare`), `sprites/hopper-sky.txt` with
   `palettes/hopper-sky.json` (T6: the parallax clouds, mountains, hills and bushes),
   `sprites/hopper-autumn.txt` and `hopper-night.txt` with their palettes (T7: those layers
-  recoloured for level-2 and level-3, and a star field with the moon),
+  recoloured for level-2 and level-3, and a star field with the moon), `sprites/hopper-props.txt`
+  with `palettes/hopper-props.json` (0.16 part C T1: the levels' decoration props, original text
+  art) and `sprites/hopper-hero3d.txt` with `palettes/hopper-hero3d.json` (the 2.5D HUD's
+  portrait of Quaternius' blue long-eared hero; the 2D HUD keeps the frog's face),
   `skins/canvas2d.json` (T6: the 2D skin on the PNG packs; its parts are listed in the
   `CLAUDE.md`, "The 2D skin"; from T7 its `themes` give level-2 an autumn sky and ground and
   level-3 a night sky and rose sand; from T8 the boss's telegraph looks, hit and defeat effects,

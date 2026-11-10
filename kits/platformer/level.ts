@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { FieldPath } from '@engine/core/content/validate';
 import { addGridIssues, gridProblems } from '@engine/core/content/text-grid';
-import { LEGEND, legendEntry } from './legend';
+import { DECOR_CHARS, LEGEND, legendEntry } from './legend';
 import type { ProfileDef } from './profile';
 
 /**
@@ -112,6 +112,12 @@ export const levelSchema = z
       .describe(
         'the level grid, top row first, of legend and spawn characters; usually in the `.map.txt` file',
       ),
+    decor: z
+      .array(z.string())
+      .exactOptional()
+      .describe(
+        "decoration (Engine 0.16 part C T1), presentation only: a grid the map's size, `.` for nothing and any other printable character but `#B?u=^` for a prop the skin's `tiles` draw; presented as the map layer `decor`; usually in the `.decor.txt` file",
+      ),
   })
   .superRefine((def, ctx) => {
     const issue = (path: PropertyKey[], code: string, message: string) =>
@@ -129,6 +135,18 @@ export const levelSchema = z
     const rows = def.map.length;
     if (def.size && (def.size[0] !== cols || def.size[1] !== rows))
       issue(['size'], 'size_mismatch', `size is ${def.size.join('x')} but the map is ${cols}x${rows}`);
+    if (def.decor !== undefined) {
+      addGridIssues(ctx, def.decor, DECOR_CHARS, ['decor']);
+      if (
+        gridProblems(def.decor, DECOR_CHARS).length === 0 &&
+        ([...def.decor[0]!].length !== cols || def.decor.length !== rows)
+      )
+        issue(
+          ['decor'],
+          'size_mismatch',
+          `the decoration is ${[...def.decor[0]!].length}x${def.decor.length} but the map is ${cols}x${rows}`,
+        );
+    }
     const bumps = def.map.reduce((n, row) => n + [...row].filter((c) => c === '?').length, 0);
     if (def.blocks && def.blocks.length !== bumps)
       issue(

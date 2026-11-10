@@ -189,7 +189,7 @@ through any `Presenter` (the Three.js backend) instead of drawing it with `rende
 one or the other, never both (each keeps its own stream of frames). Like `render`, it must not
 change the game. The optional `background` (a CSS hex colour) is the colour a presenter of
 `frame()` clears to (`screenshot --backend three`) when it is not the skin's: left out, the skin's
-`background` is used, else black (Engine 0.15, gap G36; no game sets it now). The optional `status()` (Engine 0.16 part B) is the status of the last frame `render` drew or `frame()` gave (null before any), for the screenshot page's stat overlays; `frameView` keeps it when its drawer returns its frame (a `FramePicture` does). `frameView({ game,
+`background` is used, else black (Engine 0.15, gap G36; no game sets it now). The optional `status()` (Engine 0.16 part B) is the status of the last frame `render` drew or `frame()` gave (null before any), for the screenshot page's stat overlays; `frameView` keeps it when its drawer returns its frame (a `FramePicture` does). The optional `showHud(shown)` (Engine 0.16 part C T1) draws the skin's HUD or not from the next `render` (the screenshot page's `title` and `levels` overlays); `frameView` hands it to its drawer's `presenter` (a `FramePicture`'s) through `Presenter.showHud`. `frameView({ game,
 screen, frames, picture, background? })` (Engine 0.7, gap G26) is the one helper there: a
 `ViewGame` over a headless game that shows `world` and its last step's `events` (a kit's level
 sequence), keeping the events between draws in a `PendingEvents` (dropped on a new world), with

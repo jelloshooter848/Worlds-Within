@@ -77,7 +77,11 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
   `{ id, version }` ref reuses it; no `map` draws none. Tiles the skin lists draw their frame, or a
   `fallbackColor` box; unlisted tiles stay empty. Layers draw after `tiles`. A tile entry with a
   `join` (Engine 0.16 part B, T6) draws the frame its neighbours in the same grid pick
-  (`resolveTileFrame` from `@engine/core/present`: grass tops, edges, corners, notches).
+  (`resolveTileFrame` from `@engine/core/present`: grass tops, edges, corners, notches). On a
+  layer (not `tiles`; Engine 0.16 part C T1, the platformer kit's `decor` layer) a frame with an
+  `anchor` (a PNG sheet's) is placed by it on its cell (`anchorOffset` over the tile's box), so a
+  prop taller or wider than a tile stands on the cell's bottom centre; terrain tiles and frames
+  without one draw at the cell's corner as before.
 - Entities by `layer`, then list order (no `y`-sort; the kit emits them in draw order): `resolveSkinFrame` picks the frame and flip
   (all eight facings: a diagonal without a frame uses its horizontal one), from the kind's first
   `byTag` look that matches one of the entity's tags (a whole `tag`, or from Engine 0.15 a `prefix`
@@ -135,6 +139,10 @@ canvas, none in Node) and from Engine 0.16 T13 `maxParticles?` (the particle sys
   sent, else the frame's map id), made once per map id: a skin's `themes` entry for that map
   replaces its `background` and `parallax` and lays its `tiles` over the skin's. Everything else
   (kinds, events, HUD, camera) stays the skin's. Tested in `presenter.test.ts` (`per-map looks`).
+
+`showHud(shown)` (Engine 0.16 part C T1) turns the HUD off and on from the next frame (the
+shell hides it while its title shows); `skinSetCanvasPresenter`'s presenter hands it to every
+skin's presenter and `canvasDisplay` gives it as `BrowserDisplay.showHud`.
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit.
 

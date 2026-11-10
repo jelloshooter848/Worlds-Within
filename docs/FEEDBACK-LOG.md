@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 419.** (Last used: 418.)
+**Next unused number: 425.** (Last used: 424.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1640,3 +1640,28 @@ files")
   committed; the text art, skins and run files they made are now the source. OK, or commit them?
 - **418.** A HUD text item with a format is drawn even when its status is missing, so Burrlock's
   name is a sprite icon instead. Should the engine hide such text when the status is missing?
+
+**Engine 0.16 part C, T1: Hopper's Way fixes** (the title's HUD, the 2.5D portrait, fuller levels;
+details in `docs/BUILD-LOG.md`, Engine 0.16 part B, "Fixes after review"):
+
+- **419.** The game picture under the title, and under a screen opened from it (settings, controls,
+  the level select), is drawn without its HUD; the pause menu and the end screen keep it. The
+  screenshot tool hides it for its `title` and `levels` overlays only (its `settings` and
+  `controls` could be the pause menu's). OK?
+- **420.** The 2.5D HUD's lives portrait is original text art of Quaternius' blue long-eared hero
+  (24x15, like the frog's face), not a picture rendered from its model. OK?
+- **421.** Level decoration is a new optional platformer-kit level field, `decor` (a `.decor.txt`
+  grid the map's size, any printable character but the terrain's `#B?u=^`), presented as the map
+  layer `decor` and drawn by a skin's `tiles`; the kit gives it no meaning and it is not in the
+  snapshot. It is 2D only: the 2.5D view keeps its scenery rows. OK, or should 3D draw it too?
+- **422.** The props are mostly original text art (tufts, flowers, rocks, bushes, trees, crystals,
+  stones and fossils in the dirt) in meadow, autumn and night sets, plus five Kenney Pixel
+  Platformer props from the pack already in `assets/` (sign, fence, tan mushroom, sprout, pine).
+  OK?
+- **423.** In 2D a map layer's frame with an `anchor` (a PNG sheet's) stands on its cell's bottom
+  centre; text sprites have no anchor, so a larger text prop is written at its top-left cell (a
+  tree two rows above its ground). OK, or should text sprites get anchors?
+- **424.** The seven new enemies were placed where a headless search found the existing run
+  inputs still win and lose as before, so no run steps changed (eight run files re-recorded);
+  most are stomped on the hero's existing path. Should the levels instead get enemies that need
+  new routes (and new run inputs)?

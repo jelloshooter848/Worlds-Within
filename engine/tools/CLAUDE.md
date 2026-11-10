@@ -1066,7 +1066,10 @@ games/platformer-lab/runs/start-to-goal.run.json --tick 120 --backend three --al
   `ui=<file>[.<widget>]`, a transition slot or kind, each with `*<n>`), checked with
   `checkOverlay` before Chromium starts (usage error, exit 2, when the game cannot show it) and
   drawn through the same job as `sheet` (`shotSetup` with a one-tile `ShotJob.tiles`); `overlay`
-  in the result is its label (null without one). The `clear` and `end` screens show the status of
+  in the result is its label (null without one). Under `title` and `levels` (Engine 0.16 part C
+  T1) the picture is drawn without its HUD, as the shell draws it (2D: the view's
+  `ViewGame.showHud(false)` and the tick drawn again for those tiles; 3D: `ThreePresenter.showHud`);
+  `settings` and `controls` keep it (they also open from the pause menu). The `clear` and `end` screens show the status of
   the frame drawn at the tick (`ViewGame.status()`, which `frameView` keeps; in 3D the frame's).
   `pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 360 --scale 6 --overlay clear
 --out x.png --json` writes the level-clear banner at 1536x1440.

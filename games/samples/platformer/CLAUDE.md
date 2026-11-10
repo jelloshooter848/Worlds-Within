@@ -23,7 +23,9 @@ level-1 -> level-2 -> level-3 -> boss   (campaign main; LEVEL_PAUSE 60 ticks bet
    `walker` to stomp, a 2-high step, the **checkpoint** (`K`, column 36), a 3-high ledge with
    three coins and a 4-wide pit after it (walk off its edge and jump late: coyote time carries
    the jump), a second `walker` below the far ledge, a 6-wide gap that wants a **running** jump
-   (a walking jump falls short) under an arc of four coins, and the goal. 13 coins in all.
+   (a walking jump falls short) under an arc of four coins, and the goal. 13 coins in all. From
+   0.16 part C T1 a third `walker` beside the second one (one stomp takes both) and a
+   `ledge-walker` (`l`) pacing the goal's ground.
 2. **level-2, Autumn Hills** (T7), 100x12 tiles, autumn ground under a warm late-afternoon sky:
    **one-way platforms and moving threats over pits**. Three coins to jump for, a bump block
    (a coin), a 5-wide pit with a one-way plank in the middle (three coins over it: land on the
@@ -33,7 +35,9 @@ level-1 -> level-2 -> level-3 -> boss   (campaign main; LEVEL_PAUSE 60 ticks bet
    then row 5) to five coins high over a 6-wide pit and a bump block at row 1 holding a **life**
    (jump into it from the high plank); the cache's plank is also the easy way over that pit. Then
    a `walker`, a 3-wide pit under an arc of four coins, and the goal. 16 coins in all (15 on the
-   map, one in a block) and the life.
+   map, one in a block) and the life. From 0.16 part C T1 a `walker` facing right (`v`) at the
+   start of the stretch after the cache, a `ledge-walker` beside the last `walker` and another on
+   the final stretch.
 3. **level-3, Starlit Ridge** (T7), 104x12 tiles, rose-topped sand under a night sky with stars
    and a moon: **spikes and tighter platforming with coyote time and buffered jumps**. Two coins,
    a 2-wide spike patch to jump (`^` kills on touch: `hazards-kill`), a **buffered-jump chain**
@@ -45,7 +49,9 @@ level-1 -> level-2 -> level-3 -> boss   (campaign main; LEVEL_PAUSE 60 ticks bet
    further back does not). A **tunnel cache**: a roof with spikes on top over eight coins in a low
    tunnel (the lower way through), then a spike floor crossed on three one-way gold planks
    (buffered jumps again), a `ledge-walker` on the raised last stretch and the goal. 22 coins in
-   all (21 on the map, one or more from the block).
+   all (21 on the map, one or more from the block). From 0.16 part C T1 a `ledge-walker` behind
+   the first `walker` (the stomp's bounce lands on it), a `walker` before the tunnel and a
+   `ledge-walker` facing right (`m`) pacing under the spike floor.
 4. **boss, Burrlock's Hollow** (T8), 40x12 tiles, the autumn ground under a dusk sky (its own
    `themes` entry): a runway (row 8 ground) with three coins to jump for and the **checkpoint**
    (`K`, column 12, before the arena), then a step down under a wall hanging from the top
@@ -74,6 +80,34 @@ A level is **cleared** at its goal; the next stage starts `LEVEL_PAUSE` (60) tic
 costs a life and puts the player back at the last checkpoint touched (else the start); with no
 life left the level is **failed** and starts afresh, with the profile's lives, 60 ticks later.
 All of it is world state, so run files assert it.
+
+## Fixes after review (Engine 0.16 part C T1; feedback items 419-424)
+
+The three issues seen in the part B review screenshots, fixed before the dungeon work:
+
+1. **No HUD under the title (419).** An engine fix: the shell's `GameMenus.hudShown` is false
+   while the title, or a screen opened from it (settings, controls, the level select), shows, and
+   the boot hands it to the display's `showHud` before each draw (`engine/core/shell/CLAUDE.md`);
+   the screenshot tool does the same for its `title` and `levels` overlays. Presentation only.
+2. **The 2.5D portrait (420).** `three.json`'s lives counter shows `hopper-hero3d`'s `face`
+   (`content/sprites/hopper-hero3d.txt`, original text art of Quaternius' blue long-eared hero,
+   24x15 like the frog's face); the 2D HUD keeps the frog. The rest of the HUD is the same in both
+   skins (tested).
+3. **Fuller levels (421-424).** Each of level-1..3 has a decoration grid,
+   `content/levels/<id>.decor.txt` (the kit's `decor`, presentation only: the map layer `decor`,
+   no hash moved for it), drawn by the 2D skin's `tiles` over the terrain: grass tufts (`g`,
+   `G`), flowers (`f`, `F`), rocks (`r`, `R`), a bush (`b`, 32x16 over two cells), a tree (`T`,
+   32x48, written at its top-left cell two rows above the ground), night crystals (`c`), and in
+   the dirt stones, a fossil, pebbles and roots (`1`-`4`), all original text art
+   (`content/sprites/hopper-props.txt`, from a small generator), plus Kenney Pixel Platformer
+   props from the pack already here (`images.props`, bottom-anchored: a sign `s`, a fence `n`, a
+   tan mushroom `M`, a sprout `k`, a pine `p`). `themes.level-2` swaps them for autumn ones and
+   `themes.level-3` for night ones (dark teal grass, glowing flowers, cyan crystals). The 2.5D view
+   keeps its scenery rows (the decor chars have no 3D entries). New enemies (above, under The
+   game) were placed where a headless search over every standing cell found the existing winning
+   and losing inputs still pass, so no run file's steps changed; the new ones are stomped on the
+   way (level-1's double stomp at 579 and a landing stomp at 685, level-2's at 745, 763 and 844,
+   level-3's at 374) or pace behind. Their hashes were re-recorded (Run files, below).
 
 ## Build choices (T5; feedback items 366-369)
 
@@ -259,10 +293,12 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
 - From T8 `game.json` also has `transitions.respawn` (an iris on the frog, 16 ticks a half, held 6) and `menus.clear` and `menus.end` (the level-clear banner and the end screen).
 - `content/levels/<id>.json` + `<id>.map.txt` (format: `kits/platformer/CLAUDE.md` and `LEGEND` in
   `kits/platformer/legend.ts`): `level-1` (spawns `w`: a `walker` facing left), `level-2` and
-  `level-3` (T7; spawns `w` a `walker` and `l` a `ledge-walker`, both facing left; `blocks`:
+  `level-3` (T7; spawns `w` a `walker` and `l` a `ledge-walker`, both facing left, and from 0.16
+  part C T1 level-2's `v` (a `walker` facing right) and level-3's `m` (a `ledge-walker` facing
+  right); `blocks`:
   level-2 `["life", "coin"]`, level-3 `["coins"]`, in reading order) and `boss` (T8, spawns `b`
   Burrlock facing left, `"clear": "boss"`), all with `profile: "hoppers-way"` and `scroll:
-"right"`.
+"right"`. `level-1`..`level-3` also have `<id>.decor.txt` (0.16 part C T1: the decoration grid).
 - `content/profiles/hoppers-way.profile.json`: the tuned profile (above).
 - `content/sprites/hopper-sky.txt` + `content/palettes/hopper-sky.json` (T6): the parallax
   layers, original text pixel art (below). `hopper-autumn.txt` and `hopper-night.txt` with their
@@ -272,6 +308,9 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   (T10 draws nothing from it: the 3D HUD uses the 2D skin's PNG frames).
   `content/sprites/burrlock.txt` + `palettes/burrlock.json` and `burrlock-angry.json` (T8): the
   boss, its shots and its HUD name plate (The 2D skin, Burrlock, below).
+  `content/sprites/hopper-props.txt` + `palettes/hopper-props.json` (0.16 part C T1): the levels'
+  decoration props in three sets (meadow, autumn, night); `hopper-hero3d.txt` +
+  `palettes/hopper-hero3d.json`: the 2.5D HUD's portrait of the blue hero.
   `content/fonts/hopper-small.txt`, `hopper-title.txt` (the HUD's counters and the menus),
   `content/sfx/*.json` (39 sound effects) and `content/songs/hopper-*.json` (the layered song's
   eight layers, the title tune, the end fanfare): T9, "Music and sound" above.
@@ -315,7 +354,10 @@ second), accelerations in the same unit per tick. "Old" is the classic `hopper` 
   engine and the kit.
 - `main.ts` (T10): the 3D display loads the skin's GLB models (`ModelLibrary.preload`) before
   the first frame.
-- `platformer.test.ts`: content loads; the stage list; the 16:9 screen; the tuned profile's
+- `platformer.test.ts` (0.16 part C T1 adds: each level's decoration grid the map's size, props
+  in the air and the dirt set in the ground; the 2D skin's tiles exactly the terrain's and the
+  props the grids use; the 3D HUD the same but its portrait, `hopper-hero3d`'s 24x15 `face`):
+  content loads; the stage list; the 16:9 screen; the tuned profile's
   fields; level-1's checkpoint, coins, block and walkers; text-only content outside `assets/`;
   the start state, the view width and equal snapshots on two runs; the skins covering every kind,
   state, tag, tile, event and HUD value every run shows, the 3D skin matching the 2D one, the
@@ -588,9 +630,13 @@ by a small script and tuned from screenshots; edit the JSON by hand now.
   edge, or lets go of run (`walkers-turn`, `scroll-lock`, `level-bounds`, `run-hold`). From T8
   the boss runs guard every boss rule, `skid` (`boss`) and `friction` (`boss-lost`).
 - Golden hashes: `runs/<name>.hashes.json`, written with `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`
-  (never by hand). Final hashes: `level-1` `3e3c45961fcf7c2e`, `level-1-lost` `a5217ed93bfcb6e0`,
-  `level-2` `e540c076b331627c`, `level-2-lost` `b157a38e5bf31d31`, `level-3` `7a016596e7df7ec1`, `level-3-lost` `970514d01802edff`, `boss` `87d0244f546e1782`,
-  `boss-lost` `d02efed89cc84eeb`, `full-game` `64466619ac689e09`;
+  (never by hand). Final hashes: `level-1` `3e3c45961fcf7c2e`, `level-1-lost` `1cb0feea58003be2`,
+  `level-1-hurt` `51880c64a404e3c2`, `level-2` `e540c076b331627c`, `level-2-lost`
+  `689827d82de0db2a`, `level-3` `d50a714bfee414cf`, `level-3-lost` `3084734880ea0a49`, `boss`
+  `87d0244f546e1782`, `boss-lost` `d02efed89cc84eeb`, `full-game` `64466619ac689e09`
+  (0.16 part C T1 re-recorded every level-1..3 run and `full-game` for the new enemies: the
+  actors' list is in every snapshot from tick 0; `level-1`, `level-2` and `full-game` end with
+  every enemy gone, so their final hashes are the same as before);
   every hash is the same through the null backend, Canvas2D and the Three.js scene builder.
 - Changing level-1 or the profile moves these hashes: re-find the ticks with `pnpm -s cli trace
 <run> --paths player.x,player.y,events` and `dump`, keep the assertions on what the rules

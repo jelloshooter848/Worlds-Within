@@ -26,6 +26,7 @@ import { HostScene } from './host-scene';
 import { UiScene } from './ui-scene';
 import { VOLUME_CONTROL_ID } from './volume-control';
 import { DEFAULT_VOLUMES, readVolumes, volumesKey } from '../save/settings';
+import { buildFont, KEY_NAME_GLYPHS, menusSchema } from '../ui';
 
 describe('backend choice', () => {
   it('opens in 3D only with ?backend=three, Canvas2D otherwise', () => {
@@ -1018,5 +1019,61 @@ describe('screen transitions in the loop (Engine 0.16 T5)', () => {
     expect(covered).toBe(1);
     expect(booted!.transition({ kind: 'fade', ticks: 3 }, () => covered++)).toBe(true);
     expect(covered).toBe(1);
+  });
+});
+
+describe('bootBrowserGame: no HUD under the title (Engine 0.16 part C T1)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('tells the display to hide the HUD while the title shows, and to draw it in play and pause', async () => {
+    const { byId } = fakeBootPage();
+    // The menus' own pointer listens on the canvas.
+    Object.assign(byId.get('screen')!, { style: {}, removeEventListener() {} });
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    const win = globalThis.window as unknown as DebugWindow & { location: { search: string } };
+    win.location.search = '?debug=step&title=show';
+    const hud: boolean[] = [];
+    const font = buildFont('t', {
+      cell: { w: 3, h: 5 },
+      baseline: 4,
+      glyphs: Object.fromEntries(
+        [
+          ...new Set(
+            `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789<>/':*!${KEY_NAME_GLYPHS}`,
+          ),
+        ].map((c) => [c, { rows: ['###', '###', '###', '###', '...'] }]),
+      ),
+    });
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      menus: {
+        spec: menusSchema.parse({
+          font: 't',
+          title: { name: 'Hop', items: ['start', 'settings'] },
+          pause: { items: ['resume', 'title'] },
+        }),
+        fonts: (id) => (id === 't' ? font : null),
+        sheets: () => null,
+      },
+      displays: {
+        canvas2d: () => ({
+          ...display(),
+          uiPainter: () => ({ fill() {}, image() {}, glyph() {} }),
+          showHud: (shown: boolean) => void hud.push(shown),
+        }),
+      },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    const menus = booted!.menus!;
+    expect(menus.state).toBe('title');
+    win.__ww!.step(2);
+    expect(hud.at(-1)).toBe(false); // the picture under the title has no HUD
+    menus.start(); // no transition specs: the title closes at once
+    win.__ww!.step(2);
+    expect([menus.state, hud.at(-1)]).toEqual(['play', true]);
+    menus.pause();
+    win.__ww!.step(1);
+    expect([menus.state, hud.at(-1)]).toEqual(['pause', true]);
   });
 });

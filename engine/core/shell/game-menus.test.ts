@@ -332,6 +332,31 @@ describe('GameMenus: level select, level clear and end (Engine 0.16 part B, T3)'
     expect(music).toEqual(['fanfare', null]);
   });
 
+  it('hides the HUD under the title and the screens opened from it, never in play, pause or end (0.16 part C T1)', () => {
+    const { menus, press } = partB();
+    expect(menus.hudShown).toBe(true); // in play
+    menus.showTitle();
+    expect([menus.screen, menus.hudShown]).toEqual(['title', false]);
+    press('down');
+    press('jump'); // Levels
+    expect([menus.screen, menus.hudShown]).toEqual(['levels', false]);
+    press('attack');
+    press('down');
+    press('jump'); // Settings, opened from the title
+    expect([menus.state, menus.screen, menus.hudShown]).toEqual(['title', 'settings', false]);
+    menus.pauseKey(); // back to the title
+    press('up');
+    press('up');
+    press('jump'); // Start
+    expect([menus.state, menus.hudShown]).toEqual(['play', true]);
+    menus.pause();
+    expect([menus.state, menus.hudShown]).toEqual(['pause', true]);
+    menus.resume();
+    menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });
+    menus.step();
+    expect([menus.state, menus.hudShown]).toEqual(['end', true]);
+  });
+
   it('closes the end screen with resume (the shell invariance test plays on)', () => {
     const { menus } = partB();
     menus.frameStatus({ level: 'c', outcome: 'cleared', coins: 1, time: 60 });

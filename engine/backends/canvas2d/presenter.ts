@@ -201,6 +201,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   /** The skin's HUD through the UI kit (Engine 0.16 T6), used when it has a UI item. */
   private readonly hud: SkinHud;
   private readonly uiPainter: CanvasUiPainter;
+  /** Whether the HUD is drawn (`showHud`; the shell hides it under the title). */
+  private hudShown = true;
 
   constructor(
     target: Renderer | Ctx,
@@ -248,6 +250,14 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.settings = { ...this.settings, ...settings };
   }
 
+  /**
+   * Whether the skin's HUD is drawn from the next frame (Engine 0.16 part C T1: the shell hides it
+   * while the title, or a screen opened from it, shows over the waiting game).
+   */
+  showHud(shown: boolean): void {
+    this.hudShown = shown;
+  }
+
   /** How many particles are alive now (after the last `present`; Engine 0.16 T13). */
   get particleCount(): number {
     return this.particles.system.count;
@@ -289,7 +299,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     this.drawParticles(view);
     this.drawEffects(frame.frame, size);
     for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
-    this.drawHud(frame);
+    if (this.hudShown) this.drawHud(frame);
   }
 
   // ---- Events ----
@@ -536,7 +546,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   /**
    * Draws the map's tiles and then its layers; a tile the skin does not list is left empty. Each
    * tile spans from its own corner to the next one's (both rounded), so tiles meet without gaps
-   * at any zoom.
+   * at any zoom. A layer's tile whose frame has an `anchor` is placed by it on its cell (a
+   * decoration prop larger than a tile; Engine 0.16 part C T1).
    */
   private drawTiles(r: Renderer, map: DeepReadonly<PresentMap>, view: View): void {
     const tiles = this.look(map.id).tiles ?? {};
@@ -544,7 +555,8 @@ export class SkinnedCanvasPresenter implements Presenter {
     const ts = map.tileSize;
     const { zoom } = view;
     const at = (n: number) => Math.round(n * ts * zoom);
-    for (const grid of [map.tiles, ...(map.layers ?? []).map((l) => l.tiles)]) {
+    const grids = [map.tiles, ...(map.layers ?? []).map((l) => l.tiles)];
+    for (const [g, grid] of grids.entries()) {
       for (let row = 0; row < grid.length; row++) {
         const line = grid[row]!;
         for (let col = 0; col < line.length; col++) {
@@ -557,9 +569,16 @@ export class SkinnedCanvasPresenter implements Presenter {
           const sheet = sheetId === undefined ? null : this.sheet(sheetId, defaults?.palette);
           // A `join` entry (Engine 0.16 part B) picks its frame by the neighbours it joins.
           const frame = resolveTileFrame(entry, key, grid, col, row);
-          if (frame !== undefined && sheet?.frames.has(frame)) {
-            if (zoom === 1) r.sprite(sheet, frame, x, y);
-            else r.sprite(sheet, frame, x, y, false, false, 0, zoom);
+          const rect = frame === undefined ? undefined : sheet?.frames.get(frame);
+          if (frame !== undefined && sheet && rect) {
+            // On a layer (decoration, Engine 0.16 part C T1) a frame's anchor places it on its cell,
+            // so a prop taller or wider than a tile stands on the cell's bottom centre.
+            const a =
+              g > 0 && rect.anchor !== undefined ? anchorOffset(rect.anchor, rect, { w: ts, h: ts }) : null;
+            const ax = a === null ? x : Math.round((col * ts + a.x) * zoom) - view.x;
+            const ay = a === null ? y : Math.round((row * ts + a.y) * zoom) - view.y;
+            if (zoom === 1) r.sprite(sheet, frame, ax, ay);
+            else r.sprite(sheet, frame, ax, ay, false, false, 0, zoom);
           } else {
             const color = entry.fallbackColor ?? entry.color ?? defaults?.fallbackColor;
             if (color !== undefined) r.rect(x, y, at(col + 1) - view.x - x, at(row + 1) - view.y - y, color);

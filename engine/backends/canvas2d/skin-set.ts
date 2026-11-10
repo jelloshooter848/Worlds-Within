@@ -48,7 +48,7 @@ export interface CanvasSkinSetOptions {
 export function skinSetCanvasPresenter(
   r: Renderer,
   opts: CanvasSkinSetOptions,
-): Presenter & { effectSettings(settings: CameraFxSettings): void } {
+): Presenter & { effectSettings(settings: CameraFxSettings): void; showHud(shown: boolean): void } {
   const sound = {
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
@@ -73,6 +73,10 @@ export function skinSetCanvasPresenter(
     effectSettings(settings) {
       for (const p of all)
         (p as { effectSettings?: (s: CameraFxSettings) => void }).effectSettings?.(settings);
+    },
+    // Whether the HUD is drawn (Engine 0.16 part C T1: hidden under the title), on every skin's presenter.
+    showHud(shown) {
+      for (const p of all) p.showHud?.(shown);
     },
   };
 }
