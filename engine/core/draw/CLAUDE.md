@@ -27,14 +27,17 @@ so two backends drawing the same frame get the same calls.
   per-map looks, the map (cached on `opts.mapSurface`, or tiles every frame without one), entities
   by layer, the HUD (`layoutHud`, or the UI kit's `SkinHud` painted by `RendererUiPainter` with
   `opts.glyphSurface`). `SkinnedPresenterOptions` holds every option (`size`, `onSound`,
-  `background`, `font`, `fonts`, `glyphSurface`, `clamp`, `reduceFlashing`, `shakeScale`,
+  `background`, `font`, `fonts`, `glyphSurface`, `tintGlyphs`, `clamp`, `reduceFlashing`, `shakeScale`,
   `subPixelShake`, `onHitPause`, `seed`, `maxParticles`, `mapSurface`); `resize`,
   `effectSettings`, `focus()` and `particleCount`. The defaults here are no surfaces; a backend's
   wrapper passes its own (Canvas2D: offscreen canvases). The full behaviour is described in
   `engine/backends/canvas2d/CLAUDE.md` ("SkinnedCanvasPresenter"), which is this class on a canvas.
-- `ui-painter.ts`: `RendererUiPainter(renderer, sheets, fonts, { glyphSurface? })`, the `UiPainter`
-  on a `Renderer` (fills, whole and part frames scaled with `transformed`, glyphs from a strip of
-  the font drawn once per colour on a glyph surface, else their ink runs as boxes).
+- `ui-painter.ts`: `RendererUiPainter(renderer, sheets, fonts, { glyphSurface?, tintGlyphs? })`,
+  the `UiPainter` on a `Renderer` (fills, whole and part frames scaled with `transformed`, glyphs
+  from a strip of the font drawn once per colour on a glyph surface, else their ink runs as
+  boxes). With `tintGlyphs(whiteImage, color)` (`GlyphTint`; Engine 0.16 T13b-3, PixiJS's sprite
+  tint) each font's strip is drawn once in white and a colour's strip is its frames with the
+  tinted image the backend returns.
 - `skin-set.ts`: `skinSetPresenter(opts, make)`: one presenter over a game's skin and one per mini
   game skin, picked by `status.miniGame`, each made by the backend's `make(skin, sheets, opts)`;
   `effectSettings` reaches every one. `SkinSetPresenterOptions` (`skin`, `rounds?`, `sheet`,

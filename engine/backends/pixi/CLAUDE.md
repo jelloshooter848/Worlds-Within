@@ -7,8 +7,11 @@ particles, additive blending and glow on; this backend is the answer. `pixi.js` 
 exact version in `package.json` and only this folder may import it (`PACKAGES` in
 `config/layers.js`).
 
-So far (T13b-1) it holds `PixiRenderer` (`renderer.ts`); `index.ts` exports it. The presenter, the
-page's display and the shell's backend choice come in later tasks (T13b-2 to T13b-4).
+It holds `PixiRenderer` (`renderer.ts`, T13b-1), and from T13b-3 `PixiPresenter` (`presenter.ts`),
+`PixiSurfaces` (`surface.ts`), `PixiUiPainter` (`ui-painter.ts`), `skinSetPixiPresenter`
+(`skin-set.ts`), `drawTransition` (`transition.ts`) and `pixiDisplay` (`display.ts`); `index.ts`
+exports them all and has no side effects of its own, so a page can `import('@engine/backends/pixi')`
+only when it draws with PixiJS. The shell's backend choice comes in T13b-4.
 
 ## PixiRenderer
 
@@ -47,6 +50,61 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   halo is an ellipse over the box, not the shape's outline: close to the canvas's `shadowBlur`
   on small particles and boxes, softer on large sprites.
 
+- Tinted sheets (T13b-3): a sheet whose `image` is a `TintedImage` (a texture and a colour) draws
+  every sprite with that colour as `tint` (and its alpha as alpha); a sheet whose `image` is a
+  PixiJS `Texture` (a `RenderTexture` surface) is cut from that texture's source. `sourceOf(sheet)`
+  gives a sheet's one texture source, so surface renderers share the main renderer's.
+
+## PixiPresenter, surfaces and the UI painter (T13b-3)
+
+`new PixiPresenter(renderer, skin, sheets, opts?)` is the core `SkinnedPresenter`
+(`@engine/core/draw`, the same walk Canvas2D's `SkinnedCanvasPresenter` draws through) on a
+`PixiRenderer`: every option and method is the core's (`size`/`resize`, `onSound`, `background`,
+`fonts`/`font`, `clamp`, `reduceFlashing`, `seed`, `shakeScale`, `subPixelShake`, `onHitPause`,
+`maxParticles`, `particleCount`, `focus()`, `effectSettings`), with the same observable behaviour
+(sounds once per frame number, hit-pause requests, particles, camera). Change how a feature draws
+in `engine/core/draw`, never here. What it adds is its surfaces (`opts.surfaces`, default a new
+`PixiSurfaces` on the renderer; `.surfaces` reads it):
+
+- `PixiSurfaces.make(w, h)` is the `mapSurface` and `glyphSurface`: a `RenderTexture` and a fresh
+  `PixiRenderer` drawing from the main renderer's sheet sources. The map is drawn on one once per
+  id and version and copied as one sprite each frame. What a surface draws waits (`waiting`) until
+  `flush(gpu)` renders its display list into the texture once and lets it go; the display flushes
+  before each picture. In Node nothing flushes, and tests read `waiting`. Old map textures are not
+  destroyed (one per map version a page shows).
+- `PixiSurfaces.tint` is the core UI painter's `tintGlyphs`: each font's glyphs are drawn once in
+  white, and a colour's strip is that texture as a `TintedImage` (sprite tint), not another
+  texture per colour.
+- `PixiUiPainter(renderer, sheets, fonts, surfaces?)` is the core `RendererUiPainter` with those
+  surfaces and tint (the shell's menus); `skinSetPixiPresenter(renderer, opts, surfaces?)` is the
+  core `skinSetPresenter` with a `PixiPresenter` per skin, sharing the surfaces.
+
+## pixiDisplay (T13b-3)
+
+`await pixiDisplay(canvas, opts)` gives the shell's `BrowserDisplay`, or a sentence (string) when
+WebGL cannot start (as `threeDisplay`). `opts` (`PixiDisplayOptions`) are Canvas2D's
+`CanvasDisplayOptions`: `screen`, `skin` (the game's `canvas2d` skin), `rounds`, `sheet`, `fonts`,
+`background`, `integerScale`, `onSound`, `onHitPause`. It starts PixiJS v8's `autoDetectRenderer`
+with WebGL only (`preference: ['webgl']`: a string preference would fall back to WebGPU or
+PixiJS's canvas renderer), antialias off, `failIfMajorPerformanceCaveat: false` (software WebGL
+such as SwiftShader is allowed, as the 3D view is), resolution 1, then `pixiDisplayOn(gpu, canvas,
+opts)` builds the display (a test passes a recording `DisplayGpu`):
+
+- `renderer` is a `PixiRenderer`; `presenter` the game's `PixiPresenter` and one per round, all on
+  it and sharing one `PixiSurfaces`.
+- `present()`: flush the surfaces; draw the transition (`transitionShape` with the main
+  presenter's `focus()`) on a `Graphics` over the stage; render the stage and the cover into a
+  backbuffer `RenderTexture` at the game's `screen` size (nearest); render that as one sprite on the
+  canvas, placed by `fitGame` (the screen layout's `fit`, `integerScale`) on black, as Canvas2D's
+  `Viewport`. The stage is kept after `present`: a top-level `clear` (the presenter's first call)
+  starts the next frame, so a frame that draws nothing shows the last picture.
+- `drawTransition(graphics, shape, screen)` matches Canvas2D's (`transitionAlphaAt` per pixel):
+  fade one box at its alpha; wipe one opaque box and a 1 px band per pixel of each soft edge
+  (no gradient texture); iris the picture covered with the circle `cut()` as a hole.
+- `uiPainter()` is one `PixiUiPainter` (made once, so glyph strips are drawn once);
+  `effectSettings` reaches every presenter; `toScreen`/`toClient` are the `Viewport`'s maths;
+  `fit(layout)` resizes the drawing buffer to the canvas's CSS size times `devicePixelRatio`.
+
 ## Imports
 
 - Allowed: `@engine/core/*`, files in this folder, `pixi.js`, browser APIs.
@@ -54,6 +112,18 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
 - Draw only what the caller asks for: no game rules here.
 
 ## Testing
+
+`presenter.test.ts` checks the display list `PixiPresenter` leaves on fixture frames and skins
+(inline; never a kit or game skin): the map cached on a surface and copied as one sprite,
+animation frames by their ticks, additive glowing particles and a kind's blend and glow (halo
+behind each), parallax before the map before the entities, a spawn tween's transform container,
+flash and tint overlays (and reduced flashing), the UI kit HUD with one white glyph strip tinted
+per colour, the skin set, and sounds, hit-pauses, particle counts and focus equal to the core
+presenter on another renderer. `transition.test.ts` checks the transition `Graphics` against
+`transitionAlphaAt` per pixel; `display.test.ts` the display's passes, letterbox, pointer maths,
+transition and UI painter on a recording `DisplayGpu`. `tests/browser/pixi-display.test.ts` builds
+a page that imports this backend, starts `pixiDisplay` in headless Chromium (SwiftShader) and reads
+the canvas back (skipped without a browser).
 
 `*.test.ts` here run in Node. `pixi.js` imports and builds display objects (containers, sprites,
 graphics, text, textures) in Node with no DOM adapter and no fake: nothing renders, so no

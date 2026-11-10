@@ -101,6 +101,33 @@ describe('RendererUiPainter (Engine 0.16 T13b)', () => {
     expect(strip.calls).toEqual(['rect 0,0 1x1 #fff', 'rect 0,1 2x1 #fff']);
     expect(calls).toEqual(['sprite font:f##fff:L 4,5', 'sprite font:f##fff:L 9,5']);
   });
+
+  it('with tintGlyphs draws one white strip per font and tints it per colour', () => {
+    const { r } = recorder();
+    const strip = recorder();
+    const drawn: [string, unknown][] = [];
+    let made = 0;
+    const white = { white: true } as unknown as SpriteSheet['image'];
+    const p = new RendererUiPainter(
+      { ...r, sprite: (s, f, x, y) => void drawn.push([`${s.id}:${f} ${x},${y}`, s.image]) },
+      lookup,
+      fonts,
+      {
+        glyphSurface: () => (made++, { renderer: strip.r, image: white }),
+        tintGlyphs: (image, color) => ({ image, color }) as unknown as SpriteSheet['image'],
+      },
+    );
+    p.glyph({ ...glyph, color: '#f00' });
+    p.glyph({ ...glyph, color: '#0f0', x: 9 });
+    p.glyph({ ...glyph, color: '#f00', x: 12 });
+    expect(made).toBe(1);
+    expect(strip.calls).toEqual(['rect 0,0 1x1 #ffffff', 'rect 0,1 2x1 #ffffff']);
+    expect(drawn).toEqual([
+      ['font:f##f00:L 4,5', { image: white, color: '#f00' }],
+      ['font:f##0f0:L 9,5', { image: white, color: '#0f0' }],
+      ['font:f##f00:L 12,5', { image: white, color: '#f00' }],
+    ]);
+  });
 });
 
 describe('skinSetPresenter (Engine 0.16 T13b)', () => {

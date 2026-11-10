@@ -34,11 +34,27 @@ export interface PoolCounts {
 }
 
 /**
- * A sheet's default texture source: its image (`ImageSource`, nearest neighbour), or, for a
- * headless sheet with no image (Node, tests), an empty source as large as its frames, so the
- * display list is still built and checked.
+ * A sheet image drawn tinted (Engine 0.16 T13b-3): a texture (a white glyph strip on a
+ * `RenderTexture`) and the colour each sprite of it gets as its `tint` and alpha. Put in a
+ * `SpriteSheet`'s `image` (`PixiSurfaces.tint`), so one white strip serves every colour.
+ */
+export class TintedImage {
+  constructor(
+    readonly texture: Texture,
+    readonly color: string,
+  ) {}
+}
+
+/**
+ * A sheet's default texture source: a PixiJS `Texture` given as its image (a `RenderTexture`
+ * surface: the cached map, a glyph strip) or a `TintedImage`'s texture as it is; any other image
+ * wrapped (`ImageSource`, nearest neighbour); or, for a headless sheet with no image (Node,
+ * tests), an empty source as large as its frames, so the display list is still built and checked.
  */
 export function sheetSource(sheet: SpriteSheet): TextureSource {
+  const image: unknown = sheet.image;
+  if (image instanceof Texture) return image.source;
+  if (image instanceof TintedImage) return image.texture.source;
   if (sheet.image) {
     return new ImageSource({
       resource: sheet.image as ImageResource,
@@ -120,7 +136,11 @@ interface Glow {
 interface SheetTextures {
   readonly source: TextureSource;
   readonly frames: Map<string, Texture>;
+  /** The tint every sprite of the sheet gets (white but for a `TintedImage`). */
+  readonly tint: Tint;
 }
+
+const NO_TINT: Tint = { rgb: 0xffffff, alpha: 1 };
 
 /** Rotation in radians per quarter turn (Renderer.sprite's `rotate`). */
 const QUARTER = Math.PI / 2;
@@ -155,6 +175,15 @@ export class PixiRenderer implements Renderer {
   constructor(opts: PixiRendererOptions) {
     this.size = opts.size;
     this.sheetSource = opts.sheetSource ?? sheetSource;
+  }
+
+  /**
+   * The texture source a sheet's frames are cut from, made once per sheet (by `sheetSource`).
+   * A surface's renderer draws from its main renderer's sources (`PixiSurfaces`), so a sheet's
+   * image goes to the GPU once.
+   */
+  sourceOf(sheet: SpriteSheet): TextureSource {
+    return this.sheetTextures(sheet).source;
   }
 
   /** Empties the display list for a new frame; its objects go back to their pools. */
@@ -214,7 +243,8 @@ export class PixiRenderer implements Renderer {
     rotate: Rotation = 0,
     scale = 1,
   ): void {
-    const texture = this.frameTexture(sheet, frame);
+    const cached = this.sheetTextures(sheet);
+    const texture = this.frameTexture(sheet, cached, frame);
     if (!texture) return;
     const fw = texture.frame.width;
     const fh = texture.frame.height;
@@ -236,8 +266,8 @@ export class PixiRenderer implements Renderer {
     s.position.set(x0 + bw / 2, y0 + bh / 2);
     s.rotation = (rotate / 90) * QUARTER;
     s.scale.set(((flipX ? -1 : 1) * w) / fw, ((flipY ? -1 : 1) * h) / fh);
-    s.tint = 0xffffff;
-    s.alpha = 1;
+    s.tint = cached.tint.rgb;
+    s.alpha = cached.tint.alpha;
     this.parent.addChild(s);
   }
 
@@ -329,13 +359,20 @@ export class PixiRenderer implements Renderer {
     this.scope(c, () => draw(this));
   }
 
-  /** The cached texture of a sheet frame: a sub-rectangle of the sheet's one texture source. */
-  private frameTexture(sheet: SpriteSheet, frame: string): Texture | undefined {
+  /** A sheet's texture source, frame textures and tint, made the first time it is drawn. */
+  private sheetTextures(sheet: SpriteSheet): SheetTextures {
     let cached = this.sheets.get(sheet);
     if (!cached) {
-      cached = { source: this.sheetSource(sheet), frames: new Map() };
+      const image: unknown = sheet.image;
+      const tint = image instanceof TintedImage ? this.tint(image.color) : NO_TINT;
+      cached = { source: this.sheetSource(sheet), frames: new Map(), tint };
       this.sheets.set(sheet, cached);
     }
+    return cached;
+  }
+
+  /** The cached texture of a sheet frame: a sub-rectangle of the sheet's one texture source. */
+  private frameTexture(sheet: SpriteSheet, cached: SheetTextures, frame: string): Texture | undefined {
     let texture = cached.frames.get(frame);
     if (!texture) {
       const f = sheet.frames.get(frame);

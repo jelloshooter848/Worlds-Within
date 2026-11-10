@@ -11,7 +11,20 @@ export interface RendererUiPainterOptions {
    * offscreen canvas.
    */
   glyphSurface?: SurfaceFactory;
+  /**
+   * Tints glyphs instead of drawing a strip per colour (Engine 0.16 T13b, PixiJS's sprite tint):
+   * given, each font's strip is drawn once in white on the `glyphSurface`, and a colour's strip is
+   * the same frames with `tintGlyphs(whiteImage, color)` as its image (a handle the backend's
+   * renderer draws tinted). Left out, a strip is drawn per colour.
+   */
+  tintGlyphs?: GlyphTint;
 }
+
+/** Makes the image handle of a white glyph strip drawn in `color` (see `tintGlyphs`). */
+export type GlyphTint = (white: SpriteSheet['image'], color: string) => SpriteSheet['image'];
+
+/** The colour a strip is drawn in once when glyphs are tinted. */
+const WHITE = '#ffffff';
 
 /**
  * A `UiPainter` (`../ui`, Engine 0.16 T6) on any `Renderer`, shared by the 2D backends (moved from
@@ -78,11 +91,28 @@ export class RendererUiPainter implements UiPainter {
     for (const run of glyph.runs) this.r.rect(d.x + run.x, d.y + run.y, run.w, 1, d.color);
   }
 
-  /** The font's glyphs side by side in one colour on a surface, or null where there is none. */
+  /**
+   * The font's glyphs side by side in one colour on a surface, or null where there is none. With
+   * `tintGlyphs`, the white strip's frames with a tinted image.
+   */
   private strip(id: string, color: string): SpriteSheet | null {
     const key = `${id}#${color}`;
     const cached = this.strips.get(key);
     if (cached !== undefined) return cached;
+    const tint = this.opts.tintGlyphs;
+    let strip: SpriteSheet | null;
+    if (tint === undefined || color === WHITE) strip = this.drawStrip(id, color);
+    else {
+      const white = this.strip(id, WHITE);
+      strip = white && { id: `font:${key}`, image: tint(white.image, color), frames: white.frames };
+    }
+    this.strips.set(key, strip);
+    return strip;
+  }
+
+  /** Draws the font's glyphs in `color` onto a new glyph surface (null without one). */
+  private drawStrip(id: string, color: string): SpriteSheet | null {
+    const key = `${id}#${color}`;
     const font = this.fonts?.(id);
     let strip: SpriteSheet | null = null;
     const make = this.opts.glyphSurface;
@@ -100,7 +130,6 @@ export class RendererUiPainter implements UiPainter {
         strip = { id: `font:${key}`, image: surface.image, frames };
       }
     }
-    this.strips.set(key, strip);
     return strip;
   }
 }

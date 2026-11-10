@@ -28,8 +28,28 @@ asks for and holds no game rules.
   each glowing shape (cheaper than a filter).
 - `PoolCounts`: the pool counts' shape.
 
-The presenter, the page's display and the shell's backend choice come with later tasks (T13b-2
-to T13b-4).
+- `TintedImage`: a sheet `image` (a texture and a colour) drawn with that sprite tint; a sheet
+  whose `image` is a PixiJS `Texture` is cut from it. `PixiRenderer.sourceOf(sheet)`.
+- `PixiPresenter`, `PixiPresenterOptions` (`presenter.ts`, T13b-3): `new PixiPresenter(renderer,
+skin, sheets, opts?)`, the core `SkinnedPresenter` (`@engine/core/draw`) on a `PixiRenderer`,
+  with Canvas2D's options and behaviour (`size`/`resize`, `onSound`, `background`, `fonts`/`font`,
+  `clamp`, `reduceFlashing`, `seed`, `shakeScale`, `subPixelShake`, `onHitPause`, `maxParticles`,
+  `particleCount`, `focus()`, `effectSettings`), the map cached on a `RenderTexture` and glyphs
+  tinted by sprite tint (`opts.surfaces`).
+- `PixiSurfaces` (`surface.ts`): `make(w, h)` (a `RenderTexture` surface), `tint` (the UI
+  painter's `tintGlyphs`), `waiting`, `flush(gpu)`; `SurfaceTarget`, `PendingSurface`.
+- `PixiUiPainter` (`ui-painter.ts`) and `skinSetPixiPresenter` (`skin-set.ts`): the core UI
+  painter and skin-set presenter on the renderer and shared surfaces.
+- `drawTransition(graphics, shape, screen)` (`transition.ts`): fade, wipe and iris on a PixiJS
+  `Graphics`, matching Canvas2D's per pixel.
+- `pixiDisplay(canvas, opts)` (`display.ts`): async; a `BrowserDisplay` (renderer, presenter,
+  fit, present, toScreen, toClient, transition, uiPainter, effectSettings) on a WebGL-only PixiJS
+  renderer, the picture rendered into a backbuffer at the game's `screen` size and shown scaled and
+  letterboxed like Canvas2D's `Viewport`; or a sentence when WebGL cannot start.
+  `PixiDisplayOptions` are Canvas2D's `CanvasDisplayOptions`. `pixiDisplayOn(gpu, canvas, opts)`
+  builds it on a started renderer (`DisplayGpu`). `index.ts` has no side effects at import.
+
+The shell's backend choice comes with T13b-4.
 
 ## Imports allowed
 
@@ -42,4 +62,10 @@ to T13b-4).
 without a DOM adapter. `renderer.test.ts` checks the display list built for recorded calls (object
 counts, positions, tints, alpha, blend modes, glow halos, clip masks, nesting for transforms), the
 sprite turns and flips against the canvas renderer's texel table, and that the pools reuse the
-same objects frame after frame.
+same objects frame after frame. `presenter.test.ts` checks every 0.16 part A feature through the
+display list `PixiPresenter` leaves (animation frames, add blend, glow halos, parallax order,
+tweens, flash and tint overlays, the UI HUD's tinted glyphs, the cached map) and that its sounds,
+hit-pauses, particle counts and focus equal the core presenter's; `transition.test.ts` and
+`display.test.ts` the transitions and the display on a recording renderer.
+`tests/browser/pixi-display.test.ts` starts `pixiDisplay` in headless Chromium and reads the
+canvas back (skipped without a browser).

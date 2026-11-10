@@ -4,7 +4,7 @@
  * sim may not import it (FORBIDDEN_CORE in config/layers.js).
  */
 export type { DrawSurface, GlyphSurface, MapSurface, SurfaceFactory } from './surface';
-export { RendererUiPainter, type RendererUiPainterOptions } from './ui-painter';
+export { RendererUiPainter, type GlyphTint, type RendererUiPainterOptions } from './ui-painter';
 export { SkinnedPresenter, type SkinnedPresenterOptions } from './skinned-presenter';
 export {
   skinSetPresenter,

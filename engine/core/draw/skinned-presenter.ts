@@ -42,7 +42,7 @@ import {
 } from '../present';
 import { paintUi, SkinHud, type FontLookup } from '../ui';
 import type { SurfaceFactory } from './surface';
-import { RendererUiPainter } from './ui-painter';
+import { RendererUiPainter, type GlyphTint } from './ui-painter';
 
 type Skin = DeepReadonly<SkinFile>;
 type Frame = DeepReadonly<PresentFrame>;
@@ -70,6 +70,11 @@ export interface SkinnedPresenterOptions {
    * drawn as boxes; Canvas2D's `SkinnedCanvasPresenter` passes an offscreen canvas).
    */
   glyphSurface?: SurfaceFactory;
+  /**
+   * Tints one white strip per font instead of drawing a strip per colour (the UI painter's
+   * `tintGlyphs`; Engine 0.16 T13b: the PixiJS presenter passes its sprite tint). Default none.
+   */
+  tintGlyphs?: GlyphTint;
   /**
    * Keep the camera inside the map; a map smaller than the picture is centred (default: the skin's
    * `camera.clamp`, else true).
@@ -212,12 +217,10 @@ export class SkinnedPresenter implements Presenter {
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.font !== undefined && { font: opts.font }),
     });
-    this.uiPainter = new RendererUiPainter(
-      this.r,
-      sheet,
-      opts.fonts,
-      opts.glyphSurface !== undefined ? { glyphSurface: opts.glyphSurface } : {},
-    );
+    this.uiPainter = new RendererUiPainter(this.r, sheet, opts.fonts, {
+      ...(opts.glyphSurface !== undefined && { glyphSurface: opts.glyphSurface }),
+      ...(opts.tintGlyphs !== undefined && { tintGlyphs: opts.tintGlyphs }),
+    });
   }
 
   resize(size: ScreenSize): void {
