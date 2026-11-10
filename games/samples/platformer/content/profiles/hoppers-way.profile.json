@@ -1,0 +1,36 @@
+{
+  "id": "hoppers-way",
+  "player": {
+    "box": { "w": 12, "h": 16 },
+    "minWalk": 384,
+    "walkAccel": 192,
+    "runAccel": 256,
+    "friction": 320,
+    "skid": 512,
+    "skidTurn": 2560,
+    "maxWalk": 6400,
+    "maxRun": 10240,
+    "runHold": 10,
+    "jumps": [
+      { "below": 4096, "speed": 16384, "holdGravity": 512, "gravity": 1920 },
+      { "below": 8192, "speed": 16896, "holdGravity": 512, "gravity": 1920 },
+      { "speed": 19456, "holdGravity": 608, "gravity": 2176 }
+    ],
+    "jumpBuffer": 6,
+    "coyote": 6,
+    "jumpCut": 8192,
+    "maxFall": 17408,
+    "fallReset": 16384,
+    "stompBounce": 16384,
+    "hp": 2,
+    "maxHp": 2,
+    "invulnTicks": 120,
+    "lives": 3
+  },
+  "actorGravity": 1024,
+  "actorMaxFall": 16384,
+  "actors": {
+    "walker": { "speed": 1536, "turnAt": "walls", "stompable": true, "kickable": false, "harms": true },
+    "ledge-walker": { "speed": 1536, "turnAt": "ledges", "stompable": true, "kickable": false, "harms": true }
+  }
+}

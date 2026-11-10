@@ -159,8 +159,8 @@ describe('generated docs: mini games a game defines (gap M11)', () => {
     const docs = await repoMiniGameDocs();
     expect(docs.map((d) => d.page)).toEqual(
       expect.arrayContaining([
-        `${MINI_GAMES_DIR}/platformer-vault.md`,
-        `${MINI_GAMES_DIR}/platformer-cellar.md`,
+        `${MINI_GAMES_DIR}/platformer-classic-vault.md`,
+        `${MINI_GAMES_DIR}/platformer-classic-cellar.md`,
       ]),
     );
     // A kit's fixed-id mini game (the mini siege's mission-room) is the schema reference's own.
@@ -172,15 +172,15 @@ describe('generated docs: mini games a game defines (gap M11)', () => {
       expect(page).toContain('| Field ');
     }
     const vault = docs.find((d) => d.id === 'vault')!;
-    expect(vault.uses).toEqual(['games/samples/platformer/content/levels/level-4.json (triggers.0.params)']);
+    expect(vault.uses).toEqual(['games/platformer-classic/content/levels/level-4.json (triggers.0.params)']);
   });
 
   it('a page edited by hand is stale', async () => {
     const root = tempRepo();
-    const page = join(root, MINI_GAMES_DIR, 'platformer-vault.md');
+    const page = join(root, MINI_GAMES_DIR, 'platformer-classic-vault.md');
     writeFileSync(page, readFileSync(page, 'utf8').replace('VAULT', 'VOLT'));
     const stale = await staleDocs(root, defaultDocSources());
-    expect(stale.map((s) => s.file)).toEqual([`${MINI_GAMES_DIR}/platformer-vault.md`]);
+    expect(stale.map((s) => s.file)).toEqual([`${MINI_GAMES_DIR}/platformer-classic-vault.md`]);
   });
 
   it('finds every game folder under games/', () => {

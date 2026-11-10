@@ -14,14 +14,11 @@ import {
 import { hopperSkins } from './content';
 
 /**
- * Glue between the kits' frames and the Canvas2D backend: no drawing of its own. One stream of
- * frames (the engine's `FrameStream` over the platformer kit's `platformerFrames`; while the
- * door's round runs, the round's own top-down frame with `status.miniGame` set) goes to one
- * presenter per frame source (the backend's `skinSetCanvasPresenter`): the level skin for the
- * levels, the round's skin for the round (gap G14), each framing its map as its skin's `camera`
- * says (the round's `clamp: false` keeps the room under its HUD band; gaps G29 and G34). Shared
- * by the page (`main.ts`), the view (`view.ts`, for `pnpm cli screenshot`) and the tests, so a
- * screenshot is what a player sees. The sheets are the engine's `contentSheets` (gap G35).
+ * Glue between the platformer kit's frames and the Canvas2D backend: no drawing of its own. One
+ * stream of frames (the engine's `FrameStream` over the kit's `platformerFrames`) goes to the
+ * backend's `skinSetCanvasPresenter` with the level skin, framing the map as the skin's `camera`
+ * says. Shared by the page (`main.ts`), the view (`view.ts`, for `pnpm cli screenshot`) and the
+ * tests, so a screenshot is what a player sees. The sheets are the engine's `contentSheets`.
  */
 
 /**

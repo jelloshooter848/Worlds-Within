@@ -35,6 +35,11 @@ export interface LevelSequenceOptions {
    * from any level. Throws when it is not a stage of the sequence.
    */
   start?: number;
+  /**
+   * The view's width in px, given to every level's world for scrolling and waking actors (the
+   * world's 256 when left out; Engine 0.16 part B: a 16:9 game passes its screen's width).
+   */
+  viewWidth?: number;
 }
 
 /**
@@ -117,11 +122,12 @@ export class LevelSequence implements HostedGame<PlatformerWorld, PlatformerEven
     const { level, profile } = this.stages[stage]!;
     this.stage = stage;
     this.pause = 0;
-    const { seed, disabledRules = [], miniGames } = this.opts;
+    const { seed, disabledRules = [], miniGames, viewWidth } = this.opts;
     return new PlatformerWorld(level, profile, {
       seed,
       disabledRules,
       ...(miniGames ? { miniGames } : {}),
+      ...(viewWidth === undefined ? {} : { viewWidth }),
     });
   }
 }

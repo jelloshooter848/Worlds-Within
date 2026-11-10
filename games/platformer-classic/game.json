@@ -1,0 +1,67 @@
+{
+  "id": "platformer-classic",
+  "title": "Platformer classic: the old Hopper's Way, five levels and two doors on two kits (a test game since Engine 0.16 part B), in 2D and 3D",
+  "kit": "platformer",
+  "uses": ["topdown"],
+  "kitOptions": { "topdown": { "rooms": "separate" } },
+  "content": {
+    "level": ["content/levels/*.json"],
+    "campaign": ["content/campaigns/*.campaign.json"],
+    "profile": ["content/profiles/*.profile.json"],
+    "room": ["content/rooms/*.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"],
+    "sfx": ["content/sfx/*.json"],
+    "song": ["content/songs/*.json"],
+    "font": ["content/fonts/*.txt"]
+  },
+  "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
+  "transitions": {
+    "level": { "kind": "fade", "ticks": 20, "hold": 6 },
+    "scene": { "kind": "iris", "ticks": 20, "hold": 4, "ease": "quadIn", "at": "follow" }
+  },
+  "menus": {
+    "font": "hopper-small",
+    "titleFont": "hopper-title",
+    "style": {
+      "text": "#fcfcfc",
+      "shadow": "#000000",
+      "focusText": "#fcd800",
+      "disabledText": "#a4a4a4",
+      "back": "#0c0c1c",
+      "focusBack": "#0058f8",
+      "border": "#fcfcfc",
+      "track": "#3c3c3c",
+      "fill": "#00a800",
+      "padding": 6,
+      "gap": 3,
+      "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
+      "heading": "#fcd800",
+      "outline": "#000000",
+      "dim": 0.5
+    },
+    "title": {
+      "name": "Hopper's Way",
+      "subtitle": "Classic: five levels, two doors, one meadow",
+      "art": [
+        { "sheet": "hopper", "frame": "runner-jump", "scale": 3, "anchor": "left", "x": 30, "y": -6 },
+        { "sheet": "hopper", "frame": "walker-0", "scale": 3, "anchor": "right", "x": 30, "y": 8 }
+      ],
+      "music": "meadow",
+      "footer": "An original game made with the Worlds Within engine",
+      "items": ["start", "controls", "settings"]
+    },
+    "pause": { "items": ["resume", "controls", "settings", "title"] },
+    "controls": [
+      { "actions": ["left", "right"], "label": "Walk" },
+      { "actions": ["attack"], "label": "Run (hold)" },
+      { "actions": ["jump"], "label": "Jump" },
+      { "actions": ["left", "right", "up", "down"], "label": "Move (door rounds)" },
+      { "actions": ["attack"], "label": "Sword (door rounds)" }
+    ]
+  },
+  "headless": "headless.ts",
+  "view": "view.ts"
+}

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "main",
-  "title": "The stacking test: its five levels in order",
+  "title": "Hopper's Way: three levels, then the mini-boss's arena",
   "entries": [
     {
       "level": "level-1"
@@ -13,10 +13,7 @@
       "level": "level-3"
     },
     {
-      "level": "level-4"
-    },
-    {
-      "level": "level-5"
+      "level": "boss"
     }
   ]
 }

@@ -5,12 +5,11 @@ import type { SkinFile } from '@engine/core/present';
 import { hopperSkins } from './content';
 
 /**
- * What showing the platformer sample in 3D needs from its content: the `three` skin for the levels,
- * one per mini game (`three-vault.json` for the door's round), the sprite sheets as decoded pixels
- * for their HUD (gap G33) and the picture size (the sky is the skin's `background`, gap G36), as
- * the 3D backend's `threeDisplay` (the page) and `threeScenePresenter` (Node tests) take them.
- * The frames are the same `hopperFrames` as in 2D. No Three.js here: `picture.ts` and `main.ts`
- * stay free of it, so the 2D page bundles none.
+ * What showing Hopper's Way in 3D needs from its content: the `three` skin, the sprite sheets as
+ * decoded pixels for its HUD and the picture size (the sky is the skin's `background`), as the 3D
+ * backend's `threeDisplay` (the page) and `threeScenePresenter` (Node tests) take them. The
+ * frames are the same `hopperFrames` as in 2D. No Three.js here: `picture.ts` and `main.ts` stay
+ * free of it, so the 2D page bundles none.
  */
 export interface HopperLook3d {
   skin: SkinFile;

@@ -1,7 +1,8 @@
 {
   "id": "level-1",
-  "profile": "hopper",
+  "profile": "hoppers-way",
   "scroll": "right",
-  "spawns": { "w": { "actor": "walker" } },
-  "blocks": ["coin"]
+  "spawns": {
+    "w": { "actor": "walker", "facing": "left" }
+  }
 }

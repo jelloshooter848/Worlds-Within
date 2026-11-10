@@ -1,17 +1,43 @@
 {
   "backend": "canvas2d",
   "background": "#5c94fc",
-  "sheets": { "sheet": "hopper", "fallbackColor": "#ff00ff" },
+  "sheets": {
+    "sheet": "hopper",
+    "fallbackColor": "#ff00ff"
+  },
   "kinds": {
     "runner": {
       "frames": {
-        "idle": { "right": "runner-idle" },
-        "walk": { "right": { "frames": ["runner-walk-0", "runner-walk-1"], "ticks": 6 } },
-        "run": { "right": { "frames": ["runner-walk-0", "runner-walk-1"], "ticks": 3 } },
-        "skid": { "right": "runner-skid" },
-        "jump": { "right": "runner-jump" },
-        "fall": { "right": "runner-fall" },
-        "hurt": { "right": { "frames": ["runner-hurt", "runner-idle"], "ticks": 2 } },
+        "idle": {
+          "right": "runner-idle"
+        },
+        "walk": {
+          "right": {
+            "frames": ["runner-walk-0", "runner-walk-1"],
+            "ticks": 6
+          }
+        },
+        "run": {
+          "right": {
+            "frames": ["runner-walk-0", "runner-walk-1"],
+            "ticks": 3
+          }
+        },
+        "skid": {
+          "right": "runner-skid"
+        },
+        "jump": {
+          "right": "runner-jump"
+        },
+        "fall": {
+          "right": "runner-fall"
+        },
+        "hurt": {
+          "right": {
+            "frames": ["runner-hurt", "runner-idle"],
+            "ticks": 2
+          }
+        },
         "dead": "runner-dead"
       },
       "flipFacing": true
@@ -19,8 +45,14 @@
     "walker": {
       "frames": {
         "idle": "walker-0",
-        "walk": { "frames": ["walker-0", "walker-1"], "ticks": 8 },
-        "run": { "frames": ["walker-0", "walker-1"], "ticks": 4 },
+        "walk": {
+          "frames": ["walker-0", "walker-1"],
+          "ticks": 8
+        },
+        "run": {
+          "frames": ["walker-0", "walker-1"],
+          "ticks": 4
+        },
         "fall": "walker-0",
         "stomped": "walker-flat",
         "dead": "walker-dead"
@@ -29,94 +61,252 @@
     "ledge-walker": {
       "frames": {
         "idle": "ledge-walker-0",
-        "walk": { "frames": ["ledge-walker-0", "ledge-walker-1"], "ticks": 8 },
-        "run": { "frames": ["ledge-walker-0", "ledge-walker-1"], "ticks": 4 },
+        "walk": {
+          "frames": ["ledge-walker-0", "ledge-walker-1"],
+          "ticks": 8
+        },
+        "run": {
+          "frames": ["ledge-walker-0", "ledge-walker-1"],
+          "ticks": 4
+        },
         "fall": "ledge-walker-0",
         "stomped": "ledge-walker-flat",
         "dead": "ledge-walker-dead"
       }
     },
-    "shell-walker": {
-      "frames": {
-        "idle": "shell-walker-0",
-        "walk": { "frames": ["shell-walker-0", "shell-walker-1"], "ticks": 8 },
-        "run": { "frames": ["shell-walker-0", "shell-walker-1"], "ticks": 4 },
-        "fall": "shell-walker-0",
-        "stomped": "shell-walker-0",
-        "dead": "shell-walker-dead"
-      },
-      "flipFacing": true
-    },
-    "shell": {
-      "frames": {
-        "idle": "shell",
-        "walk": "shell",
-        "run": { "frames": ["shell", "shell-spin"], "ticks": 3 },
-        "fall": "shell",
-        "stomped": "shell",
-        "dead": "shell-dead"
-      }
-    },
     "coin": {
       "frames": {
-        "idle": { "frames": ["coin", "coin", "coin-turn"], "ticks": 10 },
-        "pop": { "frames": ["coin", "coin-turn"], "ticks": 3 }
+        "idle": {
+          "frames": ["coin", "coin", "coin-turn"],
+          "ticks": 10
+        },
+        "pop": {
+          "frames": ["coin", "coin-turn"],
+          "ticks": 3
+        }
       }
     },
-    "goal": { "frames": { "idle": "goal" } },
-    "trigger": {
-      "frames": { "idle": "switch" },
-      "byTag": [{ "tag": "look:door", "frames": { "idle": "door" } }]
+    "goal": {
+      "frames": {
+        "idle": "goal"
+      }
     },
     "bump-block": {
-      "frames": { "bump": "used" },
-      "byTag": [{ "tag": "brick", "frames": { "bump": "brick" } }]
+      "frames": {
+        "bump": "used"
+      },
+      "byTag": [
+        {
+          "tag": "brick",
+          "frames": {
+            "bump": "brick"
+          }
+        }
+      ]
+    },
+    "checkpoint": {
+      "frames": {
+        "idle": "checkpoint"
+      },
+      "byTag": [
+        {
+          "tag": "active",
+          "frames": {
+            "idle": "checkpoint-on"
+          }
+        }
+      ]
     }
   },
   "tiles": {
-    ".": { "frame": "sky" },
-    "#": { "frame": "ground" },
-    "B": { "frame": "brick" },
-    "?": { "frame": "bump" },
-    "u": { "frame": "used" },
-    "=": { "frame": "one-way" },
-    "^": { "frame": "hazard" }
+    ".": {
+      "frame": "sky"
+    },
+    "#": {
+      "frame": "ground"
+    },
+    "B": {
+      "frame": "brick"
+    },
+    "?": {
+      "frame": "bump"
+    },
+    "u": {
+      "frame": "used"
+    },
+    "=": {
+      "frame": "one-way"
+    },
+    "^": {
+      "frame": "hazard"
+    }
   },
   "events": {
-    "jump": { "sound": "jump" },
-    "land": { "effect": { "kind": "particles", "color": "#fcbcb0", "count": 3, "size": 1, "ticks": 6 } },
-    "bump": { "effect": { "kind": "shake", "size": 1, "ticks": 4 } },
-    "block": { "effect": { "kind": "particles", "color": "#f8d800", "count": 4, "size": 1 } },
+    "jump": {
+      "sound": "jump"
+    },
+    "land": {
+      "effect": {
+        "kind": "particles",
+        "color": "#fcbcb0",
+        "count": 3,
+        "size": 1,
+        "ticks": 6
+      }
+    },
+    "bump": {
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "block": {
+      "effect": {
+        "kind": "particles",
+        "color": "#f8d800",
+        "count": 4,
+        "size": 1
+      }
+    },
     "break": {
       "sound": "stomp",
-      "effect": { "kind": "particles", "color": "#c84c0c", "count": 8, "size": 2, "ticks": 16 }
+      "effect": {
+        "kind": "particles",
+        "color": "#c84c0c",
+        "count": 8,
+        "size": 2,
+        "ticks": 16
+      }
     },
-    "coin": { "sound": "coin", "effect": { "kind": "particles", "color": "#f8d800", "count": 5, "size": 1 } },
-    "spawn": { "effect": { "kind": "particles", "color": "#fcfcfc", "count": 4, "size": 1 } },
+    "coin": {
+      "sound": "coin",
+      "effect": {
+        "kind": "particles",
+        "color": "#f8d800",
+        "count": 5,
+        "size": 1
+      }
+    },
+    "spawn": {
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 4,
+        "size": 1
+      }
+    },
     "stomp": {
       "sound": "stomp",
-      "effect": { "kind": "particles", "color": "#fcfcfc", "count": 6, "size": 1 }
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 6,
+        "size": 1
+      }
     },
     "kick": {
       "sound": "stomp",
-      "effect": { "kind": "particles", "color": "#fcfcfc", "count": 3, "size": 1 }
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 3,
+        "size": 1
+      }
     },
-    "defeat": { "effect": { "kind": "particles", "color": "#d82800", "count": 6, "size": 1 } },
-    "hurt": { "sound": "hurt", "effect": { "kind": "flash", "color": "#d82800", "ticks": 2 } },
-    "died": { "sound": "fail", "effect": { "kind": "shake", "size": 3, "ticks": 12 } },
-    "respawn": { "effect": { "kind": "particles", "color": "#fcfcfc", "count": 8, "size": 1 } },
-    "cleared": { "sound": "pass", "effect": { "kind": "tint", "color": "#f8d800", "ticks": 20 } },
-    "mini-game": { "sound": "door", "effect": { "kind": "flash", "color": "#fcfcfc", "ticks": 2 } },
-    "mini-game-end:pass": { "sound": "pass", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } },
-    "mini-game-end:fail": { "sound": "fail", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } },
-    "mini-game-end": { "sound": "door", "effect": { "kind": "tint", "color": "#9878f8", "ticks": 10 } }
+    "defeat": {
+      "effect": {
+        "kind": "particles",
+        "color": "#d82800",
+        "count": 6,
+        "size": 1
+      }
+    },
+    "hurt": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "flash",
+        "color": "#d82800",
+        "ticks": 2
+      }
+    },
+    "died": {
+      "sound": "fail",
+      "effect": {
+        "kind": "shake",
+        "size": 3,
+        "ticks": 12
+      }
+    },
+    "respawn": {
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 8,
+        "size": 1
+      }
+    },
+    "cleared": {
+      "sound": "pass",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8d800",
+        "ticks": 20
+      }
+    },
+    "checkpoint": {
+      "sound": "coin",
+      "effect": {
+        "kind": "particles",
+        "color": "#00a800",
+        "count": 6,
+        "size": 1
+      }
+    }
   },
   "hud": [
-    { "status": "hp", "as": "hearts", "x": 8, "y": 8, "frame": "heart" },
-    { "status": "coins", "as": "icon", "x": 40, "y": 8, "frame": "hud-coin" },
-    { "status": "coins", "as": "number", "x": 50, "y": 8, "font": "hopper-font" },
-    { "status": "lives", "as": "icon", "x": 80, "y": 8, "frame": "hud-life" },
-    { "status": "lives", "as": "number", "x": 90, "y": 8, "font": "hopper-font" }
+    {
+      "status": "hp",
+      "as": "hearts",
+      "x": 8,
+      "y": 8,
+      "frame": "heart"
+    },
+    {
+      "status": "coins",
+      "as": "icon",
+      "x": 40,
+      "y": 8,
+      "frame": "hud-coin"
+    },
+    {
+      "status": "coins",
+      "as": "number",
+      "x": 50,
+      "y": 8,
+      "font": "hopper-font"
+    },
+    {
+      "status": "lives",
+      "as": "icon",
+      "x": 80,
+      "y": 8,
+      "frame": "hud-life"
+    },
+    {
+      "status": "lives",
+      "as": "number",
+      "x": 90,
+      "y": 8,
+      "font": "hopper-font"
+    }
   ],
-  "camera": { "follow": "runner", "deadzone": { "w": 32, "h": 48 }, "lerp": 0.25 }
+  "camera": {
+    "follow": "runner",
+    "deadzone": {
+      "w": 32,
+      "h": 48
+    },
+    "lerp": 0.25
+  }
 }

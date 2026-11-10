@@ -94,7 +94,7 @@ result when it ends.
 - Each test game and sample game is also a worked example for LLM users and an integration test.
   Engine 1.0 requires a small sample game for every kit, plus a multi-genre sample (the mini siege),
   in `games/samples/`. Since Engine 0.15 all five are there and finished: `dungeon` (top-down),
-  `platformer` (platformer, in 2D and 3D), `rts-skirmish`, `tower-defense` and `mini-siege`. The 1.0 API is documented as v1 for our own games only; a public API with a
+  `platformer` (platformer, in 2D and 3D; from 0.16 part B the flagship, Hopper's Way, at 16:9), `rts-skirmish`, `tower-defense` and `mini-siege`. The 1.0 API is documented as v1 for our own games only; a public API with a
   promise to outside developers comes later. Samples are games like any other: the engine never imports from them.
 
 ### 5. The dependency rule
@@ -187,8 +187,10 @@ kits/          gameplay rules: topdown, platformer (0.5), rts (0.9), towerdefens
 games/
   samples/           engine sample games, all finished in 0.15: rts-skirmish (0.9), mini-siege
                      (0.11), tower-defense (0.12), dungeon (the old demo) and platformer (the 0.7
-                     stacking test), both moved here in 0.15
+                     stacking test), both moved here in 0.15; platformer became the flagship in
+                     0.16 part B
   platformer-lab/    the platformer kit's test lab (not a sample)
+  platformer-classic/ the old platformer sample's five levels and two doors (a test game, 0.16)
   worlds-within/     the game itself (from Worlds Within 0.1, after Engine 1.0)
 docs/
 ```

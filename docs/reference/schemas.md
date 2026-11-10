@@ -2378,6 +2378,6 @@ Example (`docs/reference/examples/td-defence-params.json`):
 A game's own mini games (`HeadlessEntry.miniGames`, such as a room challenge whose id is
 its room's) each have a params page of their own (gap M11):
 
-- [`cellar` (platformer)](mini-games/platformer-cellar.md): CELLAR
+- [`cellar` (platformer-classic)](mini-games/platformer-classic-cellar.md): CELLAR
+- [`vault` (platformer-classic)](mini-games/platformer-classic-vault.md): VAULT
 - [`stop-bar` (platformer-lab)](mini-games/platformer-lab-stop-bar.md): STOP THE BAR
-- [`vault` (platformer)](mini-games/platformer-vault.md): VAULT

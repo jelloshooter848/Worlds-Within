@@ -1,0 +1,73 @@
+{
+  "run": "games/samples/platformer/runs/level-1-lost.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "1f529be4d0ca7f23"
+    },
+    {
+      "tick": 60,
+      "hash": "12cc099198dd435d"
+    },
+    {
+      "tick": 120,
+      "hash": "32fb73ce38877314"
+    },
+    {
+      "tick": 180,
+      "hash": "5486ec4ff84c4cd7"
+    },
+    {
+      "tick": 240,
+      "hash": "8b43768848b3a445"
+    },
+    {
+      "tick": 300,
+      "hash": "ab2ac872827766c7"
+    },
+    {
+      "tick": 360,
+      "hash": "947f0e606908227f"
+    },
+    {
+      "tick": 420,
+      "hash": "e3baefa644573447"
+    },
+    {
+      "tick": 480,
+      "hash": "7d02a4111dad3b63"
+    },
+    {
+      "tick": 540,
+      "hash": "698910c32b45b3cd"
+    },
+    {
+      "tick": 600,
+      "hash": "04734748265494db"
+    },
+    {
+      "tick": 660,
+      "hash": "9a04a074c97fb9ad"
+    },
+    {
+      "tick": 720,
+      "hash": "e2d49a5dd521c723"
+    },
+    {
+      "tick": 780,
+      "hash": "94f061c5b620d46d"
+    },
+    {
+      "tick": 840,
+      "hash": "06ae3d09a80ea446"
+    },
+    {
+      "tick": 900,
+      "hash": "2e027d9d08f411dd"
+    },
+    {
+      "tick": 910,
+      "hash": "a5217ed93bfcb6e0"
+    }
+  ]
+}

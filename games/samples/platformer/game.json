@@ -1,14 +1,11 @@
 {
   "id": "platformer",
-  "title": "The platformer sample: Hopper's Way, five levels and two doors on the platformer kit, in 2D and 3D",
+  "title": "The platformer sample, Hopper's Way: the flagship platformer (Engine 0.16 part B), three levels and a mini-boss on the platformer kit, in 2D and 2.5D",
   "kit": "platformer",
-  "uses": ["topdown"],
-  "kitOptions": { "topdown": { "rooms": "separate" } },
   "content": {
     "level": ["content/levels/*.json"],
     "campaign": ["content/campaigns/*.campaign.json"],
     "profile": ["content/profiles/*.profile.json"],
-    "room": ["content/rooms/*.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],
@@ -17,10 +14,9 @@
     "font": ["content/fonts/*.txt"]
   },
   "start": { "seed": 1 },
-  "screen": { "width": 256, "height": 240 },
+  "screen": { "width": 320, "height": 180 },
   "transitions": {
-    "level": { "kind": "fade", "ticks": 20, "hold": 6 },
-    "scene": { "kind": "iris", "ticks": 20, "hold": 4, "ease": "quadIn", "at": "follow" }
+    "level": { "kind": "fade", "ticks": 20, "hold": 6 }
   },
   "menus": {
     "font": "hopper-small",
@@ -44,10 +40,10 @@
     },
     "title": {
       "name": "Hopper's Way",
-      "subtitle": "Five levels, two doors, one long meadow",
+      "subtitle": "Three levels and a boss in the long meadow",
       "art": [
-        { "sheet": "hopper", "frame": "runner-jump", "scale": 3, "anchor": "left", "x": 30, "y": -6 },
-        { "sheet": "hopper", "frame": "walker-0", "scale": 3, "anchor": "right", "x": 30, "y": 8 }
+        { "sheet": "hopper", "frame": "runner-jump", "scale": 3, "anchor": "left", "x": 36, "y": -4 },
+        { "sheet": "hopper", "frame": "walker-0", "scale": 3, "anchor": "right", "x": 36, "y": 6 }
       ],
       "music": "meadow",
       "footer": "An original game made with the Worlds Within engine",
@@ -57,9 +53,7 @@
     "controls": [
       { "actions": ["left", "right"], "label": "Walk" },
       { "actions": ["attack"], "label": "Run (hold)" },
-      { "actions": ["jump"], "label": "Jump" },
-      { "actions": ["left", "right", "up", "down"], "label": "Move (door rounds)" },
-      { "actions": ["attack"], "label": "Sword (door rounds)" }
+      { "actions": ["jump"], "label": "Jump (hold for higher)" }
     ]
   },
   "headless": "headless.ts",

@@ -8,7 +8,7 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The stacking test's page in a browser, in 2D and in 3D (docs/ROADMAP.md, 0.7: "playable from a
 // link in both 2D and 3D"). The repo is built as `pnpm build` builds it and served as `pnpm
-// preview` serves it; headless Chromium checks that the launcher lists games/samples/platformer/ and
+// preview` serves it; headless Chromium checks that the launcher lists games/platformer-classic/ and
 // its `3D` link (`?backend=three`), then opens the page with each backend and plays
 // `runs/level-4.run.json` (all four levels, the door's round failed and then passed) through the
 // real page: keyboard, input manager, scene stack, `HostScene`, mini game scene and Canvas2D, or
@@ -21,7 +21,7 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // the round's hearts and time on black), and checks the page logged no errors. Skipped
 // where Chromium is not installed (never in CI).
 
-const GAME = 'games/samples/platformer/';
+const GAME = 'games/platformer-classic/';
 const RUN = JSON.parse(readFileSync(join(ROOT, GAME, 'runs/level-4.run.json'), 'utf8')) as {
   ticks: number;
   input: InputScript;

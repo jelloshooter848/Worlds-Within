@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 366.** (Last used: 365.)
+**Next unused number: 370.** (Last used: 369.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1415,3 +1415,26 @@ owner says otherwise.
   Quaternius's "Ultimate Platformer Pack" (itch.io, CC0): `character.glb` as the player stand-in
   and four animated enemies (1.1 MB). The newer Kit 3.0 on Kenney's itch.io mirror was not used:
   its models name an outside texture file, which the engine's model check refuses. OK?
+
+**Engine 0.16 part B, T5: room for the flagship** (details in `games/samples/platformer/CLAUDE.md`,
+Build choices)
+
+- **366.** The old five levels, the vault and cellar rooms, the old `hopper` profile, their art,
+  sounds, skins and all eight run files moved (with `git mv`) to a new test game,
+  `games/platformer-classic` (id `platformer-classic`, 256x240, its own page, `CLAUDE.md`,
+  `AGENTS.md` and module page), with every golden hash unchanged. Its run files each pass
+  `mutants`; the whole folder lists the kit's new 0.16 part B rules (`coyote-time`,
+  `checkpoints`, `boss-*`) as unguarded, as the old sample folder already did since T1 and T2
+  (the lab guards them). The tests that used the old sample as "the game on two kits" point at
+  it now. OK?
+- **367.** Hopper's Way's screen is 320x180 (16:9; 6x is 1920x1080). The kit's `LevelSequence`
+  took a `viewWidth` option so the level scrolls and wakes actors over 320 px (it defaulted to
+  the NES 256); left out it is 256, so no existing hash moved. OK?
+- **368.** The tuned profile is `hoppers-way` (numbers and reasons in the sample's `CLAUDE.md`):
+  coyote 6, jump buffer 6, jump cut 2 px/tick, quicker walk and run acceleration and stops, a
+  slightly faster run, three jump tiers, fall cap 4.25 px/tick. The campaign lists `level-1`,
+  `level-2`, `level-3` and `boss`; the last three are flat placeholder corridors until T7 and T8
+  fill them. OK?
+- **369.** The placeholder skin is the old hand-drawn `hopper` art copied in, plus a text-art
+  checkpoint (grey pennant, green once touched) and the checkpoint's sound; the shell-walker,
+  shell and door looks were left out (no level uses them). T6 replaces it with the CC0 packs. OK?

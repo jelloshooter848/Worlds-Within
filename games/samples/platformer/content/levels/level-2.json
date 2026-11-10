@@ -1,6 +1,5 @@
 {
   "id": "level-2",
-  "profile": "hopper",
-  "scroll": "right",
-  "spawns": { "w": { "actor": "walker" }, "k": { "actor": "shell-walker" } }
+  "profile": "hoppers-way",
+  "scroll": "right"
 }

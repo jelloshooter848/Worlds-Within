@@ -1,5 +1,5 @@
 {
-  "run": "games/samples/platformer/runs/level-3-start.run.json",
+  "run": "games/platformer-classic/runs/level-3-start.run.json",
   "hashes": [
     {
       "tick": 0,

@@ -10,12 +10,12 @@ import { main } from './main';
  * `validate` checks a game's mini game ids and params with the content (Engine 0.10, gap G16,
  * item 157): the game's headless module exports `miniGames(content)`, and every level trigger's and
  * mission's `game`/`play` and `params` are checked against those defs' `paramsSchema`. The games
- * here are temp copies of games/samples/platformer (its door level, `level-4`, starts the `vault`
+ * here are temp copies of games/platformer-classic (its door level, `level-4`, starts the `vault`
  * room challenge) and games/platformer-lab (`stop-bar`).
  */
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
-const TEST = 'games/samples/platformer';
+const TEST = 'games/platformer-classic';
 const DOOR = `${TEST}/content/levels/level-4.json`;
 const LAB = 'games/platformer-lab';
 
@@ -174,7 +174,7 @@ describe('validate checks mini game params with the content (G16)', () => {
     const headless = join(cwd, TEST, 'headless.ts');
     writeFileSync(
       headless,
-      readFileSync(headless, 'utf8').replace(/export \{ hopperMiniGames as miniGames \};/, ''),
+      readFileSync(headless, 'utf8').replace(/export \{ classicMiniGames as miniGames \};/, ''),
     );
     editJson(join(cwd, DOOR), (level) => {
       (level.triggers as Trigger[])[0]!.params.goal = 'defeat-al';

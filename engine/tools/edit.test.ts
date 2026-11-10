@@ -476,8 +476,8 @@ describe('text maps: ruler, regions and paste (G10)', () => {
     expect(build.out).toMatchObject({ verified: true, changed: true, after: ['BB'] });
     expect((await cli(td, 'validate', 'games/samples/tower-defense')).code).toBe(EXIT.ok);
 
-    const pf = gameCopy('games/samples/platformer');
-    const LEVEL = 'games/samples/platformer/content/levels/level-1.map.txt';
+    const pf = gameCopy('games/platformer-classic');
+    const LEVEL = 'games/platformer-classic/content/levels/level-1.map.txt';
     const rows = (await cli(pf, 'get', LEVEL, 'rows', '--ruler')).out;
     expect(rows.height).toBe((rows.rows as string[]).length);
     const same = await cli(pf, 'paste', LEVEL, 'rows.0.0', (rows.rows as string[]).slice(0, 2).join('\\n'));

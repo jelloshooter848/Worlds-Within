@@ -100,6 +100,7 @@ describe('presentation invariance: presenters and effects never change the state
   it('finds every game with run files, the samples and the lab', () => {
     for (const game of [
       'games/fx-lab',
+      'games/platformer-classic',
       'games/platformer-lab',
       'games/samples/dungeon',
       'games/samples/mini-siege',

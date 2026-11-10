@@ -1,7 +1,7 @@
 {
   "game": "..",
   "seed": 1,
-  "ticks": 520,
+  "ticks": 730,
   "input": {
     "steps": [
       {
@@ -9,60 +9,72 @@
         "hold": ["right"]
       },
       {
-        "frame": 44,
+        "frame": 52,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 60,
+        "frame": 66,
         "hold": ["right"]
       },
       {
-        "frame": 104,
+        "frame": 114,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 124,
+        "frame": 130,
         "hold": ["right"]
       },
       {
-        "frame": 168,
+        "frame": 146,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 184,
+        "frame": 160,
         "hold": ["right"]
       },
       {
-        "frame": 250,
+        "frame": 200,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 268,
+        "frame": 204,
         "hold": ["right"]
       },
       {
-        "frame": 336,
+        "frame": 270,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 346,
+        "frame": 290,
         "hold": ["right"]
       },
       {
-        "frame": 404,
+        "frame": 376,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 420,
+        "frame": 400,
         "hold": ["right"]
       },
       {
-        "frame": 464,
+        "frame": 490,
         "hold": ["right", "jump"]
       },
       {
-        "frame": 472,
+        "frame": 510,
         "hold": ["right"]
+      },
+      {
+        "frame": 604,
+        "hold": ["right", "run"]
+      },
+      {
+        "frame": 632,
+        "hold": ["right", "run", "jump"]
+      },
+      {
+        "frame": 662,
+        "hold": ["right", "run"]
       }
     ]
   },
@@ -80,66 +92,36 @@
       "value": 0
     },
     {
-      "tick": 40,
-      "path": "player.y",
+      "tick": 0,
+      "path": "checkpoint",
       "op": "eq",
-      "value": 36864
+      "value": null
     },
     {
-      "tick": 59,
+      "tick": 58,
       "path": "coins",
       "op": "eq",
-      "value": 1
+      "value": 2
     },
     {
-      "tick": 59,
+      "tick": 123,
       "path": "events",
       "op": "contains",
       "value": {
         "type": "block",
-        "col": 5,
-        "row": 4,
+        "col": 12,
+        "row": 6,
         "content": "coin"
       }
     },
     {
-      "tick": 105,
+      "tick": 123,
       "path": "coins",
       "op": "eq",
-      "value": 3
+      "value": 4
     },
     {
-      "tick": 150,
-      "path": "player.x",
-      "op": "eq",
-      "value": 56936
-    },
-    {
-      "tick": 210,
-      "path": "player.y",
-      "op": "eq",
-      "value": 28672
-    },
-    {
-      "tick": 255,
-      "path": "actors.0.active",
-      "op": "eq",
-      "value": false
-    },
-    {
-      "tick": 282,
-      "path": "actors.0.active",
-      "op": "eq",
-      "value": true
-    },
-    {
-      "tick": 282,
-      "path": "coins",
-      "op": "eq",
-      "value": 6
-    },
-    {
-      "tick": 368,
+      "tick": 214,
       "path": "events",
       "op": "contains",
       "value": {
@@ -150,31 +132,91 @@
       }
     },
     {
-      "tick": 368,
-      "path": "actors.length",
-      "op": "eq",
-      "value": 0
-    },
-    {
-      "tick": 368,
+      "tick": 214,
       "path": "player.vy",
       "op": "eq",
       "value": -16384
     },
     {
-      "tick": 441,
-      "path": "player.y",
-      "op": "eq",
-      "value": 28672
+      "tick": 355,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "checkpoint",
+        "col": 36,
+        "row": 9
+      }
     },
     {
-      "tick": 493,
+      "tick": 355,
+      "path": "checkpoint",
+      "op": "eq",
+      "value": {
+        "col": 36,
+        "row": 9
+      }
+    },
+    {
+      "tick": 485,
+      "path": "player.onGround",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "tick": 485,
+      "path": "player.coyote",
+      "op": "eq",
+      "value": 6
+    },
+    {
+      "tick": 491,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "jump",
+        "tier": 1
+      }
+    },
+    {
+      "tick": 491,
+      "path": "player.coyote",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 579,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "stomp",
+        "actor": 2,
+        "actorType": "walker",
+        "into": null
+      }
+    },
+    {
+      "tick": 633,
+      "path": "player.vx",
+      "op": "eq",
+      "value": 10240
+    },
+    {
+      "tick": 633,
+      "path": "events",
+      "op": "contains",
+      "value": {
+        "type": "jump",
+        "tier": 2
+      }
+    },
+    {
+      "tick": 707,
       "path": "outcome",
       "op": "eq",
       "value": "cleared"
     },
     {
-      "tick": 493,
+      "tick": 707,
       "path": "events",
       "op": "contains",
       "value": {
@@ -182,16 +224,22 @@
       }
     },
     {
-      "tick": 493,
-      "path": "player.x",
+      "tick": 707,
+      "path": "coins",
       "op": "eq",
-      "value": 188648
+      "value": 12
     },
     {
-      "tick": 520,
+      "tick": 707,
+      "path": "scrollX",
+      "op": "eq",
+      "value": 245760
+    },
+    {
+      "tick": 730,
       "path": "pause",
       "op": "eq",
-      "value": 27
+      "value": 23
     }
   ],
   "invariants": [
@@ -215,13 +263,16 @@
   "guards": [
     "gravity",
     "walk",
+    "run-speed",
     "air-control",
     "jump",
     "jump-by-speed",
     "variable-jump",
+    "coyote-time",
     "solid-tiles",
     "coins-collect",
     "bump-blocks",
+    "checkpoints",
     "goal-clears-level",
     "actors-wake",
     "stomping",

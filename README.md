@@ -26,14 +26,17 @@ stored as text:
 - `games/samples/dungeon`: **The Old Crypt**, five top-down rooms (bat-hall, courtyard, guard-room,
   store-room, crypt) with a relic to find and a way out. Arrows move, **X** (or **Z**) uses the
   sword, **C** uses the item.
-- `games/samples/platformer`: **Hopper's Way**, five side-scrolling levels, in 2D and in 3D.
+- `games/samples/platformer`: **Hopper's Way**, the flagship platformer (Engine 0.16 part B, being
+  built): three side-scrolling levels and a mini-boss at 16:9, in 2D and in 3D; level 1 so far.
 - `games/samples/rts-skirmish`: **The River Ford**, a small real-time strategy battle.
 - `games/samples/tower-defense`: **The Winding Road**, one map, two tower types and three waves.
 - `games/samples/mini-siege`: the mini siege, an RTS battle whose missions are played as a
   top-down room or a tower-defense round, or delegated.
 
-`games/platformer-lab` is the platformer kit's test lab and `games/fx-lab` the presentation lab of
-Engine 0.16 (animation sets, frame events and the effects to come), both also on the index.
+`games/platformer-lab` is the platformer kit's test lab, `games/platformer-classic` the old
+five-level Hopper's Way with its two top-down doors (a test game since Engine 0.16 part B) and
+`games/fx-lab` the presentation lab of Engine 0.16 (animation sets, frame events and the effects to
+come), all also on the index.
 
 ## Checks
 

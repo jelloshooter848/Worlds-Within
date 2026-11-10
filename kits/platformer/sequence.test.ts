@@ -137,6 +137,15 @@ describe('LevelSequence', () => {
     expect(() => new LevelSequence(stages.slice(1), { seed: 7 })).toThrow(/hold/);
   });
 
+  it("gives every level the view's width, 256 when left out (Engine 0.16 part B)", () => {
+    const plain = new LevelSequence(STAGES, { seed: 1 });
+    expect(plain.world.viewWidth).toBe(256);
+    const wide = new LevelSequence(STAGES, { seed: 1, viewWidth: 320 });
+    expect(wide.world.viewWidth).toBe(320);
+    finish(wide, 'cleared');
+    expect(wide.world.viewWidth).toBe(320);
+  });
+
   it('gives equal snapshots on two runs', () => {
     const run = () => {
       const seq = new LevelSequence(STAGES, { seed: 5 });
