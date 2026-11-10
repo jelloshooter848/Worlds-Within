@@ -7,7 +7,7 @@ import { contentFonts, paintUi, type FontLookup, type StatValues, type UiFrameSi
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
+import { contentDecor, presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
 import type { PixiRenderer } from '@engine/backends/pixi';
 import { checkGameTexts } from '../game-check';
@@ -247,6 +247,8 @@ async function shootThree(
   // text mesh stand-in.
   const models = new ModelLibrary(content.assets ?? {});
   await models.preload([skins.main, ...Object.values(skins.rounds)]);
+  // The skins' decor grids (Engine 0.16 F3).
+  const decor = contentDecor(content);
   let presenter: InstanceType<typeof ThreePresenter>;
   try {
     presenter = new ThreePresenter(canvas, skins.main, {
@@ -254,6 +256,8 @@ async function shootThree(
       sheets,
       fonts,
       models,
+      decor,
+      ...(job.renderScale !== undefined && { renderScale: job.renderScale }),
       ...(game.background !== undefined && { background: game.background }),
     });
   } catch (error) {
@@ -270,7 +274,7 @@ async function shootThree(
   const draws: Record<string, Presenter> = {};
   const syncs: Record<string, Presenter> = {};
   for (const [id, skin] of Object.entries(skins.rounds)) {
-    const round = presenter.withSkin(skin, { sheets, fonts, models });
+    const round = presenter.withSkin(skin, { sheets, fonts, models, decor });
     draws[id] = round;
     syncs[id] = { present: (f) => round.scene.sync(f) };
   }

@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, relative, resolve } from 'node:path';
 import { z } from 'zod';
 import { MANIFEST_FILE } from '@engine/core/content/manifest';
+import { MAX_RENDER_SCALE } from '@engine/core/present';
 import { contentError, formatErrors, type ContentError } from '@engine/core/content/validate';
 import { EXIT, UsageError } from '../exit-codes';
 import { stateHash } from '../headless-run';
@@ -61,6 +62,12 @@ import { SHOT_BACKENDS, type ShotBackend, type ShotRefusal } from '../screenshot
  * `*<n>`; `sheet-overlay.ts`), through the same job (`shotSetup`, a one-tile `ShotJob.tiles`). An
  * overlay the game cannot show is a usage error before Chromium starts. The result adds `scale`
  * and `overlay` (its label, or null).
+ *
+ * Engine 0.16 F3: with `--backend three` the skin's `scene3d.renderScale` is honoured (the 3D
+ * picture drawn at N x the picture size, supersampled; HUD, labels and menus laid out in picture
+ * px and drawn scaled, nearest neighbour), and `--render-scale N` (whole, 1-8) overrides it: a
+ * 320x180 picture at 6 is 1920x1080, byte-identical on two runs. `--scale` still multiplies the
+ * result, nearest neighbour. The result adds `renderScale` (three only).
  */
 export const screenshotCommand = defineCommand({
   name: 'screenshot',
@@ -97,6 +104,15 @@ export const screenshotCommand = defineCommand({
       .describe(
         'whole-number upscale, nearest neighbour: each pixel becomes N x N (320x180 at 6 is 1920x1080)',
       ),
+    renderScale: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_RENDER_SCALE)
+      .optional()
+      .describe(
+        "three only: draw the 3D picture at N x the picture size, supersampled, HUD and labels scaled with it (default the skin's scene3d.renderScale, else 1): a 320x180 picture at 6 is 1920x1080",
+      ),
     overlay: z
       .string()
       .min(1)
@@ -108,6 +124,8 @@ export const screenshotCommand = defineCommand({
   async run({ args, flags }, ctx) {
     if (flags.allowSoftwareGl && flags.backend !== 'three')
       throw new UsageError('--allow-software-gl is for --backend three only');
+    if (flags.renderScale !== undefined && flags.backend !== 'three')
+      throw new UsageError('--render-scale is for --backend three only');
     if (flags.out !== undefined && !flags.out.toLowerCase().endsWith('.png'))
       throw new UsageError(`--out must name a .png file, not ${flags.out}`);
     const runFile = readRunFile(ctx.cwd, args.runFile);
@@ -135,6 +153,7 @@ export const screenshotCommand = defineCommand({
       if (why !== null) throw new UsageError(`--overlay ${flags.overlay}: ${why}`);
     }
     if (flags.scale > 1) setup.value.request.job.scale = flags.scale;
+    if (flags.renderScale !== undefined) setup.value.request.job.renderScale = flags.renderScale;
     const { request, played, root } = setup.value;
     const { loaded, seed, start, lastTick, snapshot, hashes: headlessHashes } = played;
     const where = `${root}${MANIFEST_FILE}`;
@@ -168,6 +187,9 @@ export const screenshotCommand = defineCommand({
         width: size.width,
         height: size.height,
         scale: flags.scale,
+        ...(flags.backend === 'three' && {
+          renderScale: size.width / flags.scale / setup.value.request.job.screen.width,
+        }),
         overlay: overlay === null ? null : overlayLabel(overlay),
         bytes: png.length,
         sha256: createHash('sha256').update(png).digest('hex'),

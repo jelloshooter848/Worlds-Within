@@ -18,3 +18,11 @@ owner decision is cited (docs/DESIGN.md, item 322).
 - Licence: CC0 1.0 Universal
 - Files: `brazier.glb`, a low-poly brazier (seven flat-shaded parts, about one unit tall) with one
   animation clip, `flicker`
+
+## fx-lab-decor
+
+- Source: games/fx-lab/tools/decor-models.ts (made in this repo by that script; nothing downloaded)
+- Author: the Worlds Within project (own work)
+- Licence: CC0 1.0 Universal
+- Files: `bush.gltf`, `pine.gltf`, `flowers.gltf` and `stone.gltf`, low-poly scenery about one
+  unit tall (embedded `.gltf` text), placed by the ground view's decor grid (Engine 0.16 F3)

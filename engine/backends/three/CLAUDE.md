@@ -9,7 +9,7 @@ backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), t
 `webgl2Available`), the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
 `GeometryCache`), the HUD pass (`hud.ts`: `HudLayer`, `HudQuad`, `frameTexture`), the parallax planes (`parallax.ts`:
 `ParallaxPlanes`, `PARALLAX_DEPTH_STEP`, Engine 0.16 T4), the glTF models (`models.ts`:
-`ModelLibrary`, `ModelInstance`, Engine 0.16 T11) and `PARTICLE_POOL`.
+`ModelLibrary`, `ModelInstance`, Engine 0.16 T11; `modelMeshParts`, F3) and `PARTICLE_POOL`.
 
 Node vs browser: `scene.ts`, `hud.ts` (no canvas: its textures are `DataTexture`s), `models.ts`
 (three's `GLTFLoader` parses a GLB from bytes with no WebGL or DOM), `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
@@ -161,9 +161,10 @@ Engine 0.16 T12). The schema,
   `models.get` has it (`userData.model`), its text mesh until then (`userData.loading`; also
   forever without the option), and rebuilt when it arrives; while it shows the model, `poses`
   frames do not rebuild it, and each frame poses the clip for its `anim.state` at `anim.t` /
-  `MODEL_TICKS_PER_SECOND` (60). A tile with a loaded model is one instance per cell (named
-  `tile:<key>:model`, at the cell's bottom centre) instead of instanced blocks, posed each frame
-  on `frame.frame` / 60; a map built while a tile model was loading is rebuilt once it is there.
+  `MODEL_TICKS_PER_SECOND` (60). A tile with a loaded model and a `clip` is one instance per cell
+  (named `tile:<key>:model`, at the cell's bottom centre) instead of instanced blocks, posed each
+  frame on `frame.frame` / 60 (from Engine 0.16 F3 a model tile without a clip is instanced,
+  below); a map built while a tile model was loading is rebuilt once it is there.
   Entries without a `model` are built exactly as before. `ThreePresenter`, `withSkin`,
   `threeDisplay` and `threeScenePresenter` pass `models` on; the screenshot page and the fx lab's
   page make one from `content.assets` and await `preload` before the first frame.
@@ -254,6 +255,51 @@ scene objects it built before: the side-view code path is unchanged (`scene.test
   Pip and beetles turning, labels, braziers with light and flame); its page
   `games/fx-lab/ground/` is built and shot by `tests/browser/fx-lab-ground.test.ts`.
 
+## Crisp output, instanced tile models and decor (Engine 0.16 F3)
+
+- **Render scale.** `ThreePresenter`'s `renderScale` (a whole number 1-8, `MAX_RENDER_SCALE`;
+  default the skin's `scene3d.renderScale`, else 1; `threeDisplay` passes it on) makes the drawing
+  buffer `size * renderScale` (`setSize(w * s, h * s, false)`): the 3D picture is supersampled,
+  still with `antialias: false`, so software GL stays repeatable. Every other pass (labels, HUD,
+  the shell's menus, transitions) keeps laying out in picture px under its orthographic camera and
+  is drawn over the whole buffer, so its nearest-filtered quads scale crisply. `withSkin` scenes
+  draw at the presenter's scale. `ThreeScene`'s `renderScale` option (read-out `renderScale`) only
+  scales the particles' point size (buffer px); the camera, labels and HUD are the same at any
+  scale (`decor.test.ts`). `pnpm cli screenshot --backend three` honours the skin's value and
+  `--render-scale N` overrides it (a 320x180 picture at 6 is 1920x1080); `--scale` still
+  multiplies the result by nearest neighbour. The fx lab's ground page takes `?scale=<n>`.
+- **Instanced tile models.** A tile whose `model` is loaded is one `InstancedMesh` per tile key
+  and model mesh (`tile:<key>:model:<i>`, one instance per cell; `userData.shared`: the geometry
+  and material are the `ModelLibrary`'s, so `disposeMap` leaves them), placed by
+  `modelMeshParts(model, spec, box)` (`models.ts`: each mesh's matrix exactly where a
+  `ModelInstance` with the same spec puts it, null for a skinned model), with the entry's
+  `castShadow` and `receiveShadow`. A tile model with a `clip` (animated) or skinned meshes keeps
+  T11's copy per cell. The tile entry's `vary` `{ turn?, height?, tint? }` turns each cell by a
+  random quarter turn, stretches its height and tints its brightness (`setColorAt`; a copy's own
+  materials) by `tileVariation` (`@engine/core/present`, `fxRng(seed, 0,
+"tile:<map>:<layer>:<col>,<row>")`); without `vary` nothing changes.
+- **Decor.** The skin's `decor[map.id]` with the `decor` option's grid (`contentDecor(content)`)
+  places `placeDecor(entry, rows, map.id, seed, map size)` on the built map: each placement at
+  its cell's model point (ground view: the cell's centre on the floor; side view: its bottom
+  centre) plus its offset (px right, down/south, toward the camera/up), turned by its yaw
+  (clockwise seen from above), scaled by its scale (px per model unit), the model's `anchor` and
+  `rotate` applied first. Instanced entries are one `InstancedMesh` per character, model and mesh
+  (`decor:<char>:<model>:<i>`); `instanced: false` (or a skinned model) one `ModelInstance` per
+  cell (`decor:<char>`, `userData` `{ decor, model, col, row }`). A decor model still loading is
+  left out and the map rebuilt once it is there. Decor never touches the frame or a state; no
+  grid or no `models` library shows none.
+- **Places.** The skin's `places[map.id]` names are laid out each `sync` before the entities'
+  labels, each a text label (`layoutLabels`, so fonts, colours, outline and shadow draw as a
+  label's) centred on its world point projected through this frame's camera (ground view:
+  `height` px over the floor; side view: z = `height`), plus its `offset`; a point off the
+  picture or behind the camera hides it. `labelViews()` gives them as entity `place:<i>`, kind
+  `place`.
+- `games/fx-lab`'s ground example shows it: `content/decor/meadow.txt` with pines, bushes,
+  flowers (instanced) and stones (one copy each) from `assets/fx-lab-decor/*.gltf`, and places
+  `THE POND`, `THE PATH`, `OLD WALL`. Tested in `decor.test.ts` (a 48 x 32 map's draw objects,
+  instance matrices against a `ModelInstance`, variation per seed, decor batches and copies,
+  places in both views, render scale).
+
 ## ThreePresenter (browser only)
 
 `new ThreePresenter(canvas, skin, opts?)` implements the core `Presenter`: `present(frame)` syncs
@@ -268,7 +314,8 @@ with `autoClear` off and the depth cleared. So a paused frame draws the same eve
 pixel ratio 1, `SRGBColorSpace` output, no shadows (from Engine 0.16 T12 the scene's `look`
 sets shadows, tone mapping and the output colour space before each draw; PCF shadow filtering,
 which honours `shadow.radius`), clear colour `background` (the option, else the skin's, else black). The drawing buffer
-is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
+is the picture size times `renderScale` (`setSize(w * s, h * s, false)`, Engine 0.16 F3: the CSS
+size is left to the page). `rendererInfo()`
 reads the context's renderer (below); `dispose()` frees the scene and the renderer.
 `withSkin(skin, opts?)` (Engine 0.7 T8) is another `Presenter` on the same canvas and renderer
 with a `ThreeScene` of its own (`.scene`; `opts` as above but `size`, which is this presenter's):

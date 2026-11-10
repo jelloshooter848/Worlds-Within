@@ -49,6 +49,9 @@ export const FOG_KINDS = ['linear', 'exp2'] as const;
 /** Output colour spaces. */
 export const OUTPUT_COLOR_SPACES = ['srgb', 'linear'] as const;
 
+/** The largest render scale a skin or page may ask for (8 x 240 px is 1920 px tall). */
+export const MAX_RENDER_SCALE = 8;
+
 const shadowSchema = z.strictObject({
   mapSize: z
     .number()
@@ -144,6 +147,15 @@ export const scene3dSchema = z.strictObject({
     .enum(OUTPUT_COLOR_SPACES)
     .exactOptional()
     .describe('the output colour space (default `srgb`)'),
+  renderScale: z
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_RENDER_SCALE)
+    .exactOptional()
+    .describe(
+      'draw the 3D picture at this many times the picture size (supersampled; the HUD, labels and menus keep their picture-px layout and draw scaled, nearest neighbour): a 320x180 picture at 6 is 1920x1080 (default 1; a page or `screenshot --render-scale` may override it; Engine 0.16 F3)',
+    ),
 });
 
 export type SkinScene3d = z.output<typeof scene3dSchema>;
@@ -243,6 +255,8 @@ export interface Scene3dLook {
     | null;
   toneMapping: { kind: ToneMappingKind; exposure: number };
   colorSpace: (typeof OUTPUT_COLOR_SPACES)[number];
+  /** Drawing-buffer pixels per picture pixel, a whole number (Engine 0.16 F3; default 1). */
+  renderScale: number;
 }
 
 /**
@@ -283,6 +297,7 @@ export function resolveScene3d(
           : { kind: 'exp2', color: fog.color, density: fog.density ?? 0.001 },
     toneMapping: { kind: s.toneMapping?.kind ?? 'none', exposure: s.toneMapping?.exposure ?? 1 },
     colorSpace: s.colorSpace ?? 'srgb',
+    renderScale: s.renderScale ?? 1,
   };
 }
 

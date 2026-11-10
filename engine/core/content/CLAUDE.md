@@ -67,7 +67,9 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
   (`gfx/sprite-schema.ts`, JSON or `.txt`), `font` (`ui/font.ts`, JSON or `.txt`, Engine 0.16 T6:
   a bitmap pixel font, claimed under `content.font`), `skin` (`present/skin.ts`), `ui`
-  (`ui/ui-schema.ts`, JSON, Engine 0.16 T7: a UI screen, claimed under `content.ui`) and `mission`
+  (`ui/ui-schema.ts`, JSON, Engine 0.16 T7: a UI screen, claimed under `content.ui`), `decor`
+  (`present/decor.ts`, `.txt` or JSON, Engine 0.16 F3: a 3D skin's decor grid, claimed under
+  `content.decor`; `DECOR_KIND`) and `mission`
   (`missions.ts`, `*.mission.json`, Engine 0.10: a game claims them under `content.mission`) and
   `campaign` (`campaign.ts`, `*.campaign.json`, Engine 0.10 T10, gap G2: the order a game plays its
   levels or missions in; claimed under `content.campaign`), each also exported (`SONG_KIND`, ...,
@@ -108,7 +110,12 @@ file formats are described at the top of that file).
   named frame past the image), Engine 0.16 T10 (`assets.ts`), and from T11 for a 3D skin's
   `model`s `missing_file` (at `kinds.<kind>.model` or `tiles.<tile>.model`), `bad_model` (not a
   glTF 2.0 GLB or `.gltf`, or one naming another file) and `missing_clip` (a `clip` the model
-  lacks, at `kinds.<kind>.clip.<state>` or `.clip`); and the top-down kit's room codes `wrong_size`
+  lacks, at `kinds.<kind>.clip.<state>` or `.clip`), and from Engine 0.16 F3 the same
+  `missing_file` and `bad_model` for a decor legend's models (at `decor.<map>.legend.<char>.model`,
+  or `.model.<i>` in a list); the decor grid's (`present/decor.ts`) `wrong_size` (the grid is not
+  its map's size), `unknown_char` (a character its skin legend lacks, with row and col),
+  `ragged_row`, and the skin's `bad_legend_key` and `missing_ref` for its `decor` grid, `map` and
+  `places` fonts; and the top-down kit's room codes `wrong_size`
   and `invalid_room` (`kits/topdown/schema.ts`); the platformer kit's level codes `bad_spawn_key`, `size_mismatch`,
   `wrong_block_count`, `no_start`, `two_starts`, `no_goal`, `missing_profile` and `unknown_actor`
   (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,

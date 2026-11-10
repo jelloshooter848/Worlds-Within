@@ -79,6 +79,12 @@ export interface ShotJob {
    * left out: the picture's own size.
    */
   scale?: number;
+  /**
+   * `three` only (Engine 0.16 F3, `screenshot --render-scale`): draw the 3D picture at this many
+   * times the picture size (the `ThreePresenter`'s `renderScale`), HUD and labels scaled with it;
+   * left out: the skin's `scene3d.renderScale`, else 1.
+   */
+  renderScale?: number;
 }
 
 /**

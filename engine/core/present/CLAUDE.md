@@ -221,6 +221,28 @@ status)` (a number, a tag's `n/m`, or a number text; `max` the label's, a status
     tag's `m`, else 100) and `timerText(ticks)` (`m:ss`, seconds rounded up,
     `LABEL_TICKS_PER_SECOND` 60). The UI kit lays labels out (`engine/core/ui/labels.ts`); the 3D
     backend projects and draws them. Tested in `scene3d.test.ts`.
+  - Decor, places and tile variation (Engine 0.16 F3, `decor.ts`): a `three` skin's `decor`
+    (`decorSchema`: map id -> `{ grid, map?, size?, legend: { <char>: { model (a path or a list),
+scale? (number or [min, max]), yaw? (degrees, random, quarter), jitter?, offset?, anchor?, rotate?,
+castShadow?, receiveShadow?, instanced? } } }`; `bad_legend_key` for a key that is not one
+    character or is `.` or space, the empty cells), `places` (`placesSchema`: map id -> `[{ text,
+x, y, height?, font, color?, shadow?, outline?, offset? }]`) and a tile entry's `vary`
+    (`tileVarySchema` `{ turn?, height?, tint? }`). The grid is a `decor` content file
+    (`DECOR_KIND`, `.txt` rows or JSON `{ rows }`, registered with the engine kinds); its
+    `checkAll` (`checkDecorGrids`) checks each grid against every skin entry naming it:
+    `wrong_size` against the entry's `size`, else the content entry `map` names, else the one
+    named like the map id (`contentMapSize` reads a `map` grid or a world scenario's
+    `terrain.rows`), and `unknown_char` at the row and column. `checkDecorRefs` (in
+    `checkSkinRefs`): a grid or `map` the game lacks is `missing_ref`, a place's font
+    `missing_ref` or a character it lacks `missing_glyph`. Legend models go through
+    `skinModelUses` (a list's model at `decor.<map>.legend.<char>.model.<i>`, `field`), so
+    `validate` reports `missing_file` / `bad_model` and `ModelLibrary.preload` loads them.
+    Pure placement: `placeDecor(entry, rows, map, seed, limit?)` (`DecorPlacement`s, picks from
+    `fxRng(seed, 0, decorStream(map, col, row))` in a fixed order), `tileVariation(vary, seed,
+map, layer, col, row)` and `contentDecor(content)` (grid name -> rows, the 3D backend's
+    `decor` option). The model fields shared by kinds, tiles and the decor legend live in
+    `model-fields.ts`. `scene3d.renderScale` (whole, 1 to `MAX_RENDER_SCALE` 8, default 1) is
+    the 3D picture's supersampling (`Scene3dLook.renderScale`). Tested in `decor.test.ts`.
   - `resolveMeshParts(skin, entry, box)` (pure, the one reading of mesh text shared by backends
     and tests): the `MeshPart[]` `{ shape, size, at, color, rotate }` for a kind or tile entry,
     with `box` the entity box or `{ w: tileSize, h: tileSize }`: a primitive is one part filling

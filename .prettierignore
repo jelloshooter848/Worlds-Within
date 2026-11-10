@@ -3,3 +3,6 @@ node_modules
 pnpm-lock.yaml
 .claude
 .ww-out
+# Asset packs (Engine 0.16): generated or third-party files, kept byte for byte
+games/*/assets/**/*.gltf
+games/samples/*/assets/**/*.gltf

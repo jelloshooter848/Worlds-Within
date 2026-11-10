@@ -37,7 +37,11 @@ object.
   `missing_file`, `bad_image` and `frame_outside_image` at a skin's `images.<id>`; from Engine
   0.16 T11 a 3D skin's glTF models (`content/gltf.ts`: GLB and `.gltf` header readers, clip
   names, `encodeGlb`, `lowPolyModel`): `missing_file` and `bad_model` at `kinds.<kind>.model`,
-  `missing_clip` at `kinds.<kind>.clip.<state>`.
+  `missing_clip` at `kinds.<kind>.clip.<state>`; from Engine 0.16 F3 the same for a skin's decor
+  legend models (`decor.<map>.legend.<char>.model`).
+- The `decor` kind (Engine 0.16 F3, `present/decor.ts`, `DECOR_KIND`, registered with the engine
+  kinds): a 3D skin's decor grid as `.txt` rows (or JSON `{ rows }`), checked against each skin
+  entry naming it (`wrong_size` against the map, `unknown_char` at row and column).
 - `gfx/palette-schema.ts`: `paletteSchema` (`{ id, colors }`).
 - `node/game-files.ts` (Node only): `readGameFiles(dir)`, a game's `game.json`, `content/**` and
   (Engine 0.16 T10) `assets/**`.

@@ -253,6 +253,18 @@ the braziers' flames and the labels). Under `pnpm dev` the lab's `virtual:game-f
 does not load at the time of writing (Vite's dev server fails on the plugin's watch of the
 `assets/` folder), so view it through a build.
 
+### Decor and places (Engine 0.16 F3)
+
+`content/decor/meadow.txt` (a `decor` content file, 24 x 18 like the meadow; `.` empty) is the
+ground skin's `decor.meadow` grid (`size` 24 x 18, since the meadow is no content file): `p`
+pines (18-26 px per unit, any yaw, shadows), `b` bushes, `f` flowers or a bush (instanced: one
+`InstancedMesh` per character, model and mesh) and `s` stones (`instanced: false`: a copy per
+cell, quarter turns), every pick from the presentation RNG, so a seed always dresses it the same.
+The models are `assets/fx-lab-decor/{bush,pine,flowers,stone}.gltf`, embedded `.gltf` text made by
+`tools/decor-models.ts` (`fx-lab.test.ts` checks the committed files against it; `.prettierignore`
+keeps them byte for byte). `places.meadow` names `THE POND`, `THE PATH` and `OLD WALL` (off the
+picture at the example's framing until you pan). The page takes `?scale=<n>` (`renderScale`).
+
 ## Run and test
 
 ```sh

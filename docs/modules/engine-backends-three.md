@@ -58,7 +58,9 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
   `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
   `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour (the `background` option, else the skin's, else black), buffer at
-  the picture size), then the scene's labels and HUD passes over it; from Engine 0.16 T12 each
+  the picture size, or from Engine 0.16 F3 that times `renderScale` (the option, else the skin's
+  `scene3d.renderScale`: supersampled, the HUD, labels, menus and transitions laid out in picture
+  px and drawn scaled), then the scene's labels and HUD passes over it; from Engine 0.16 T12 each
   draw sets the renderer from the scene's `look` (shadow map on with PCF filtering when the sun
   casts shadows, ACES or AgX tone mapping and exposure, sRGB or linear output), and HUD, label and
   overlay materials are never tone mapped or fogged; `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
@@ -123,10 +125,27 @@ the text mesh while loading then the model, the clip from the anim state, tile m
 text-mesh kinds unchanged) and `lighting.test.ts` (Engine 0.16 T12: a skin without `scene3d`
 keeping its lights and objects, the sun, ambient, hemisphere, shadows, fog and tone mapping from
 the skin, shadow flags on kinds and tiles, point lights flickering the same each run, labels
-projected to the right picture px, stacked and hidden off screen or behind the camera).
+projected to the right picture px, stacked and hidden off screen or behind the camera) and
+`decor.test.ts` (Engine 0.16 F3: a 48 x 32 map of tile models as one `InstancedMesh` per tile key
+and model mesh, instances placed as a `ModelInstance` would be, `vary` per seed, the skin's decor
+grid instanced per character and model or copied per cell, `places` labels in ground and side
+view, the render scale).
 `tests/runs/presentation-invariance.test.ts` plays every run with the `lighting` switch on.
 `ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
 browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is
 drawn at `?backend=three`.
+
+## Engine 0.16 F3: crisp output, instanced tile models, decor and places
+
+- `ThreePresenter({ renderScale?, decor? })`, `threeDisplay({ renderScale?, decor? })`,
+  `ThreeScene({ renderScale?, decor? })`: the drawing buffer at `size * renderScale` (whole, 1-8;
+  default the skin's `scene3d.renderScale`), every 2D pass still in picture px. `pnpm cli
+screenshot --backend three --render-scale N` (default the skin's) is byte-identical on two runs.
+- `modelMeshParts(model, spec, box)` (`models.ts`): a model's meshes with the matrices that place
+  them as a `ModelInstance` does, for instancing (null for skinned models).
+- Model tiles without a `clip` are one `InstancedMesh` per tile key and mesh, varied per cell by
+  the tile's `vary` (`tileVariation`, the presentation RNG). The skin's `decor` (with
+  `contentDecor(content)` as the `decor` option) places scenery per map id, and its `places`
+  names regions on the label layer. See `engine/backends/three/CLAUDE.md`.

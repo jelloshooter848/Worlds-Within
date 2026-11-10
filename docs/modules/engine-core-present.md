@@ -124,6 +124,12 @@ pitch, yaw, fov })` with `worldToScreen(x, y, h?)`, `screenToGround(sx, sy, h?)`
   `groundFacingTurn`, `GROUND_REACH`; the skin's `camera3d.view` (`CAMERA3D_VIEWS`), `pitch` and
   `yaw`, read by `skinGroundCamera(skin)`. The one camera maths `ThreeScene` draws with and
   `RtsCamera` picks through.
+- Decor and places (`decor.ts`, Engine 0.16 F3): a 3D skin's `decor` (map id -> a `decor`
+  content grid and a legend of models with scale ranges, yaw, jitter, offset, shadows and
+  `instanced`), `places` (world-anchored region names) and a tile's `vary`; the `decor` kind
+  (`DECOR_KIND`, checked against the map: `wrong_size`, `unknown_char`), `checkDecorRefs`,
+  `contentMapSize`, `placeDecor`, `tileVariation`, `contentDecor`. `scene3d.renderScale`
+  (`MAX_RENDER_SCALE`) supersamples the 3D picture.
 - RTS camera control (`rts-camera.ts`, Engine 0.9): `RtsCamera({ view, area, zoom?, minZoom?,
 maxZoom?, centre? })`: position and zoom (0.5 to 2 by default) clamped to the map as the
   follower clamps (`clampCameraAxis`), `panBy`, `zoomBy(factor, at?)` about a picture point,

@@ -596,5 +596,77 @@
         "y": -6
       }
     }
+  },
+  "decor": {
+    "meadow": {
+      "grid": "meadow",
+      "size": {
+        "cols": 24,
+        "rows": 18
+      },
+      "legend": {
+        "p": {
+          "model": "assets/fx-lab-decor/pine.gltf",
+          "scale": [18, 26],
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "b": {
+          "model": "assets/fx-lab-decor/bush.gltf",
+          "scale": [11, 15],
+          "yaw": "random",
+          "jitter": 3,
+          "castShadow": true
+        },
+        "f": {
+          "model": ["assets/fx-lab-decor/flowers.gltf", "assets/fx-lab-decor/bush.gltf"],
+          "scale": [9, 12],
+          "yaw": "random",
+          "jitter": 4
+        },
+        "s": {
+          "model": "assets/fx-lab-decor/stone.gltf",
+          "scale": [10, 13],
+          "yaw": "quarter",
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true,
+          "instanced": false
+        }
+      }
+    }
+  },
+  "places": {
+    "meadow": [
+      {
+        "text": "THE POND",
+        "x": 256,
+        "y": 84,
+        "height": 4,
+        "font": "fx-small",
+        "color": "#fcfcfc",
+        "outline": "#0058f8"
+      },
+      {
+        "text": "THE PATH",
+        "x": 176,
+        "y": 60,
+        "height": 4,
+        "font": "fx-small",
+        "color": "#f8b800",
+        "outline": "#000000"
+      },
+      {
+        "text": "OLD WALL",
+        "x": 96,
+        "y": 40,
+        "height": 16,
+        "font": "fx-small",
+        "color": "#fcfcfc",
+        "outline": "#000000"
+      }
+    ]
   }
 }

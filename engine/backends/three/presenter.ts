@@ -15,12 +15,15 @@ import { HudLayer } from './hud';
 import type { ModelLibrary } from './models';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
+  resolveScene3d,
   skinBackground,
   type DeepReadonly,
   type PresentFrame,
   type Presenter,
   type SkinFile,
   type SoundCue,
+  type DecorLookup,
+  MAX_RENDER_SCALE,
 } from '@engine/core/present';
 import { transitionShape, type CameraFxSettings, type TransitionView } from '@engine/core/fx';
 import { webglRendererInfo, type WebglRendererInfo } from './renderer-info';
@@ -53,6 +56,15 @@ export interface ThreePresenterOptions {
   fonts?: FontLookup;
   /** The game's glTF models (`new ModelLibrary(content.assets)`, Engine 0.16 T11), for every scene. */
   models?: ModelLibrary;
+  /** The game's decor grids (`contentDecor(content)`, Engine 0.16 F3), for every scene. */
+  decor?: DecorLookup;
+  /**
+   * Drawing-buffer px per picture px, a whole number 1-8 (Engine 0.16 F3; default the skin's
+   * `scene3d.renderScale`, else 1): the 3D picture is drawn at `size * renderScale` (supersampled),
+   * and the HUD, labels, menus and transitions keep their picture-px layout and draw scaled
+   * (nearest neighbour). Every scene of this presenter draws at it.
+   */
+  renderScale?: number;
 }
 
 /**
@@ -67,8 +79,10 @@ export class ThreePresenter implements Presenter {
   readonly scene: ThreeScene;
   readonly renderer: WebGLRenderer;
   private size: ScreenSize | undefined;
-  /** The buffer size last given to the renderer. */
+  /** The picture size the buffer was last sized for (picture px; the buffer is this times `renderScale`). */
   private drawn: ScreenSize | null = null;
+  /** Drawing-buffer px per picture px (Engine 0.16 F3). */
+  readonly renderScale: number;
   /** The scenes of the presenters `withSkin` made, freed with this one. */
   private readonly others: ThreeScene[] = [];
   /** The screen transition pass (Engine 0.16 T5), drawn over the picture and the HUD. */
@@ -82,7 +96,12 @@ export class ThreePresenter implements Presenter {
   constructor(canvas: HTMLCanvasElement | OffscreenCanvas, skin: Skin, opts: ThreePresenterOptions = {}) {
     const background = opts.background ?? skinBackground(skin);
     this.size = opts.size;
+    this.renderScale = checkRenderScale(
+      opts.renderScale ?? resolveScene3d(skin.scene3d, { ambient: 0, directional: 0 }).renderScale,
+    );
     this.scene = new ThreeScene(skin, {
+      renderScale: this.renderScale,
+      ...(opts.decor !== undefined && { decor: opts.decor }),
       background,
       ...(opts.size !== undefined && { size: opts.size }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
@@ -160,8 +179,13 @@ export class ThreePresenter implements Presenter {
    * gets the frame. `opts` are the scene's (`size` defaults to this presenter's); `.scene` for
    * read-outs. `dispose()` on this presenter frees its scene too.
    */
-  withSkin(skin: Skin, opts: Omit<ThreePresenterOptions, 'size'> = {}): Presenter & { scene: ThreeScene } {
+  withSkin(
+    skin: Skin,
+    opts: Omit<ThreePresenterOptions, 'size' | 'renderScale'> = {},
+  ): Presenter & { scene: ThreeScene } {
     const scene = new ThreeScene(skin, {
+      renderScale: this.renderScale,
+      ...(opts.decor !== undefined && { decor: opts.decor }),
       ...(this.size !== undefined && { size: this.size }),
       ...(opts.background !== undefined && { background: opts.background }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
@@ -222,12 +246,23 @@ export class ThreePresenter implements Presenter {
     }
   }
 
-  /** Sizes the drawing buffer to the picture (CSS size untouched: the page letterboxes it). */
+  /**
+   * Sizes the drawing buffer to the picture times `renderScale` (CSS size untouched: the page
+   * letterboxes it). Every pass lays out in picture px; the viewport is the whole buffer, so the
+   * 3D picture is supersampled and the HUD's nearest-filtered quads scale with it.
+   */
   private setBuffer(size: ScreenSize): void {
     if (this.drawn?.width === size.width && this.drawn.height === size.height) return;
     this.drawn = { width: size.width, height: size.height };
-    this.renderer.setSize(size.width, size.height, false);
+    this.renderer.setSize(size.width * this.renderScale, size.height * this.renderScale, false);
   }
+}
+
+/** A render scale as given, or an error naming the range (a whole number 1-8). */
+function checkRenderScale(scale: number): number {
+  if (!Number.isInteger(scale) || scale < 1 || scale > MAX_RENDER_SCALE)
+    throw new Error(`renderScale must be a whole number from 1 to ${MAX_RENDER_SCALE}, not ${scale}`);
+  return scale;
 }
 
 /** The presenter options a `ThreeScene` takes for events and camera effects. */

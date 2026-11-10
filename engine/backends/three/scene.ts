@@ -72,11 +72,21 @@ import {
   zoomAbout,
   skinSoundCue,
   type SoundCue,
+  placeDecor,
+  tileVariation,
+  type DecorLookup,
+  type SkinModel,
 } from '@engine/core/present';
 import { GeometryCache } from './geometry';
 import { layoutLabels, type FontLookup, type LabelView, type UiDraw } from '@engine/core/ui';
 import { HudLayer } from './hud';
-import { ModelInstance, type ModelLibrary } from './models';
+import {
+  ModelInstance,
+  modelMeshParts,
+  type LoadedModel,
+  type ModelLibrary,
+  type ModelMeshPart,
+} from './models';
 import { ParallaxPlanes } from './parallax';
 
 type Skin = DeepReadonly<SkinFile>;
@@ -119,6 +129,17 @@ export interface ThreeSceneOptions {
    * entry shows its text mesh.
    */
   models?: ModelLibrary;
+  /**
+   * The game's decor grids (`contentDecor(content)`, Engine 0.16 F3): the skin's `decor` for the
+   * map shown places their models. Without it no decor shows.
+   */
+  decor?: DecorLookup;
+  /**
+   * Drawing-buffer px per picture px (Engine 0.16 F3; default the skin's `scene3d.renderScale`,
+   * else 1): what the presenter draws at. The scene lays out in picture px either way; only the
+   * particles' point size (buffer px) reads it.
+   */
+  renderScale?: number;
 }
 
 /** Ticks an effect lasts when the skin gives none (the same as the Canvas2D presenter). */
@@ -205,8 +226,8 @@ interface EntityNode {
 interface ShownMap {
   map: DeepReadonly<PresentMap>;
   group: Group;
-  /** Tile cells shown as a model, each posed on the frame clock (the tile entry's `clip`). */
-  models: { instance: ModelInstance; tile: string }[];
+  /** Tile cells shown as a model copy, each posed on the frame clock (the tile entry's `clip`; `tile` null: decor, never posed). */
+  models: { instance: ModelInstance; tile: string | null }[];
   /** Model paths that were still loading when it was built: it is rebuilt once they are there. */
   waiting: string[];
 }
@@ -276,6 +297,8 @@ export class ThreeScene {
   readonly hemisphere: HemisphereLight | null;
   /** The skin's scene look with defaults filled (lights, shadows, fog, tone mapping, colour space). */
   readonly look: Scene3dLook;
+  /** Drawing-buffer px per picture px: the option, else the skin's `scene3d.renderScale`, else 1 (Engine 0.16 F3). */
+  readonly renderScale: number;
   /** The world-anchored labels, drawn on the HUD layer between the scene and the HUD (Engine 0.16 T12). */
   readonly labels: HudLayer;
   /** The full-screen flash and tint overlay, a child of the camera; hidden when no effect shows. */
@@ -335,6 +358,7 @@ export class ThreeScene {
     this.scene.background = new Color(opts.background ?? skinBackground(skin));
 
     const look = (this.look = resolveScene3d(skin.scene3d, this.cam3d.lights));
+    this.renderScale = opts.renderScale ?? look.renderScale;
     this.ambient = new AmbientLight(look.ambient.color, look.ambient.intensity);
     this.sun = new DirectionalLight(look.sun.color, look.sun.intensity);
     this.sunFrom = new Vector3(look.sun.direction.x, look.sun.direction.y, look.sun.direction.z);
@@ -519,6 +543,7 @@ export class ThreeScene {
   private updateLabels(frame: Frame, size: ScreenSize): void {
     const draws: UiDraw[] = [];
     const views: LabelView[] = [];
+    this.layoutPlaces(frame, size, draws, views);
     if (this.skin.labels !== undefined) {
       const cam = this.camera;
       const p = new Vector3();
@@ -545,6 +570,65 @@ export class ThreeScene {
     }
     this.labelShown = views;
     this.labels.syncDraws(draws, size);
+  }
+
+  /**
+   * The skin's `places` for the map shown (Engine 0.16 F3): each name centred on its world point
+   * (in ground view `height` px over the floor; in side view at z = `height`) projected through
+   * this frame's camera, laid out as a text label (`layoutLabels`, so it draws like one), under
+   * the entities' labels. A point off the picture or behind the camera hides its name. Its
+   * `LabelView` has entity `place:<i>` and kind `place`.
+   */
+  private layoutPlaces(frame: Frame, size: ScreenSize, draws: UiDraw[], views: LabelView[]): void {
+    const map = this.shown?.map;
+    const list = map === undefined || !this.mapVisible ? undefined : this.skin.places?.[map.id];
+    if (list === undefined) return;
+    const cam = this.camera;
+    const p = new Vector3();
+    list.forEach((place, i) => {
+      const project = () => {
+        const ground = this.groundCamera;
+        let x: number;
+        let y: number;
+        if (ground !== null) {
+          const at = ground.worldToScreen(place.x, place.y, place.height ?? 0);
+          if (at === null) return null;
+          ({ x, y } = at);
+        } else {
+          p.set(place.x, -place.y, place.height ?? 0).applyMatrix4(cam.matrixWorldInverse);
+          if (p.z > -cam.near) return null;
+          p.applyMatrix4(cam.projectionMatrix);
+          x = ((p.x + 1) / 2) * size.width;
+          y = ((1 - p.y) / 2) * size.height;
+        }
+        if (x < 0 || x >= size.width || y < 0 || y >= size.height) return null;
+        return { x, y };
+      };
+      const label: SkinLabel = {
+        as: 'text',
+        format: place.text,
+        font: place.font,
+        anchor: 'center',
+        offset: place.offset ?? { x: 0, y: 0 },
+        ...(place.color !== undefined && { color: place.color }),
+        ...(place.shadow !== undefined && { shadow: place.shadow }),
+        ...(place.outline !== undefined && { outline: place.outline }),
+      };
+      const entity: PresentEntity = {
+        id: `place:${i}`,
+        kind: 'place',
+        x: place.x,
+        y: place.y,
+        w: 0,
+        h: 0,
+        facing: 'down',
+        anim: { state: 'idle', t: 0 },
+        tags: [],
+      };
+      const out = layoutLabels([label], entity, frame.status, project, this.opts.fonts);
+      draws.push(...out.draws);
+      views.push(...out.views);
+    });
   }
 
   /**
@@ -635,7 +719,7 @@ export class ThreeScene {
       const g = points.geometry;
       g.setDrawRange(0, filled[blend]);
       points.visible = filled[blend] > 0;
-      points.material.uniforms['uScale']!.value = scale;
+      points.material.uniforms['uScale']!.value = scale * this.renderScale;
       for (const name of ['position', 'pSize', 'pAlpha', 'pColor']) {
         (g.attributes[name] as BufferAttribute).needsUpdate = true;
       }
@@ -697,14 +781,17 @@ export class ThreeScene {
   private poseTileModels(frame: number): void {
     const tiles = this.skin.tiles ?? {};
     for (const { instance, tile } of this.shown?.models ?? []) {
+      if (tile === null) continue;
       const spec = resolveTileModel(tiles[tile]!, frame);
       instance.pose(spec?.clip ?? null, spec?.time ?? 0);
     }
   }
 
   /**
-   * One `InstancedMesh` per tile key and mesh part, for `tiles` and then each layer; a tile whose
-   * entry has a loaded `model` is one model instance per cell instead (Engine 0.16 T11).
+   * One `InstancedMesh` per tile key and mesh part, for `tiles` and then each layer. A tile whose
+   * entry has a loaded `model` is one `InstancedMesh` per tile key and model mesh (Engine 0.16 F3;
+   * a model with a `clip` or skinned meshes is one model copy per cell instead, as in T11), each
+   * cell turned, stretched and tinted by the entry's `vary`. Then the skin's `decor` for the map.
    */
   private buildMap(map: DeepReadonly<PresentMap>): ShownMap {
     const group = new Group();
@@ -713,6 +800,7 @@ export class ThreeScene {
     group.name = `map:${map.id}@${map.version}`;
     const ts = map.tileSize;
     const tiles = this.skin.tiles ?? {};
+    const seed = this.opts.seed ?? 0;
     const materials = new Map<string, MeshLambertMaterial>();
     const material = (color: string) => {
       let m = materials.get(color);
@@ -735,6 +823,11 @@ export class ThreeScene {
     const one = new Vector3(1, 1, 1);
     const up = new Vector3(0, 1, 0);
     const flat = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
+    /** A model's anchor point for a cell: its bottom centre (side view) or centre on the floor (ground view). */
+    const cellPoint = (col: number, row: number, z: number) =>
+      ground
+        ? new Vector3(col * ts + ts / 2, z, row * ts + ts / 2)
+        : new Vector3(col * ts + ts / 2, -(row + 1) * ts, z);
     for (const grid of grids) {
       const cells = new Map<string, [number, number][]>();
       for (let row = 0; row < grid.tiles.length; row++) {
@@ -748,23 +841,47 @@ export class ThreeScene {
         }
       }
       for (const [key, list] of cells) {
-        const spec = resolveTileModel(tiles[key]!);
+        const entry = tiles[key]!;
+        const spec = resolveTileModel(entry);
         const loaded = spec && this.opts.models ? this.opts.models.get(spec.model) : null;
         if (spec && loaded) {
-          for (const [col, row] of list) {
+          const vary = list.map(([col, row]) =>
+            tileVariation(entry.vary, seed, map.id, grid.layer, col, row),
+          );
+          const parts = entry.clip === undefined ? modelMeshParts(loaded, spec, { w: ts, h: ts }) : null;
+          if (parts) {
+            const cellMatrices = list.map(([col, row], i) =>
+              new Matrix4().compose(
+                cellPoint(col, row, grid.z),
+                new Quaternion().setFromAxisAngle(up, (vary[i]!.turns * Math.PI) / 2),
+                new Vector3(1, vary[i]!.height, 1),
+              ),
+            );
+            const tints = entry.vary?.tint ? vary.map((v) => v.tint) : null;
+            addInstanced(group, parts, cellMatrices, tints, {
+              name: `tile:${key}:model`,
+              userData: { tile: key, layer: grid.layer, model: spec.model },
+              castShadow: spec.castShadow,
+              receiveShadow: entry.receiveShadow === true,
+            });
+            continue;
+          }
+          list.forEach(([col, row], i) => {
             const instance = new ModelInstance(loaded, spec, { w: ts, h: ts });
             instance.object.name = `tile:${key}:model`;
             instance.object.userData = { tile: key, layer: grid.layer, model: spec.model };
-            if (ground) instance.object.position.set(col * ts + ts / 2, grid.z, row * ts + ts / 2);
-            else instance.object.position.set(col * ts + ts / 2, -(row + 1) * ts, grid.z);
-            if (tiles[key]!.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
+            instance.object.position.copy(cellPoint(col, row, grid.z));
+            instance.object.rotation.y = (vary[i]!.turns * Math.PI) / 2;
+            instance.object.scale.y = vary[i]!.height;
+            if (vary[i]!.tint !== 1) tintMaterials(instance.materials, vary[i]!.tint);
+            if (entry.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
             group.add(instance.object);
             models.push({ instance, tile: key });
-          }
+          });
           continue;
         }
         if (spec && this.opts.models) waiting.add(spec.model);
-        const parts = resolveMeshParts(this.skin, tiles[key]!, { w: ts, h: ts });
+        const parts = resolveMeshParts(this.skin, entry, { w: ts, h: ts });
         parts.forEach((part, p) => {
           const blocks = new InstancedMesh(
             this.geometries.get(part.shape, ground ? groundSize(part) : part.size),
@@ -772,8 +889,8 @@ export class ThreeScene {
             list.length,
           );
           blocks.name = `tile:${key}:${p}`;
-          if (tiles[key]!.castShadow === true) blocks.castShadow = true;
-          if (tiles[key]!.receiveShadow === true) blocks.receiveShadow = true;
+          if (entry.castShadow === true) blocks.castShadow = true;
+          if (entry.receiveShadow === true) blocks.receiveShadow = true;
           blocks.userData = { tile: key, part: p, layer: grid.layer };
           turn.setFromAxisAngle(up, (part.rotate * Math.PI) / 2);
           if (ground && part.shape === 'plane') turn.multiply(flat);
@@ -795,7 +912,108 @@ export class ThreeScene {
         });
       }
     }
+    this.buildDecor(map, group, models, waiting, cellPoint);
     return { map, group, models, waiting: [...waiting] };
+  }
+
+  /**
+   * The skin's `decor` for this map (Engine 0.16 F3): each placement (`placeDecor`, from the
+   * presentation RNG) at its cell's model point plus its offset, turned by its yaw (clockwise seen
+   * from above) and scaled; one `InstancedMesh` per legend character, model and mesh
+   * (`decor:<char>:<model>:<i>`), or a model copy per cell for `instanced: false` or a skinned
+   * model (`decor:<char>`). A model still loading shows nothing until it is there (then the map is
+   * rebuilt); a grid the `decor` option lacks shows nothing.
+   */
+  private buildDecor(
+    map: DeepReadonly<PresentMap>,
+    group: Group,
+    models: ShownMap['models'],
+    waiting: Set<string>,
+    cellPoint: (col: number, row: number, z: number) => Vector3,
+  ): void {
+    const entry = this.skin.decor?.[map.id];
+    const rows = entry === undefined ? undefined : this.opts.decor?.[entry.grid];
+    const library = this.opts.models;
+    if (entry === undefined || rows === undefined || library === undefined) return;
+    const ground = this.groundCam !== null;
+    const placed = placeDecor(entry, rows, map.id, this.opts.seed ?? 0, { cols: map.cols, rows: map.rows });
+    const deg = Math.PI / 180;
+    const up = new Vector3(0, 1, 0);
+    const batches = new Map<
+      string,
+      {
+        spec: SkinModel;
+        loaded: LoadedModel;
+        cells: Matrix4[];
+        char: string;
+        cast: boolean;
+        receive: boolean;
+      }
+    >();
+    for (const p of placed) {
+      const loaded = library.get(p.model);
+      if (loaded === null) {
+        if (library.status(p.model) === 'loading') waiting.add(p.model);
+        continue;
+      }
+      const point = cellPoint(p.col, p.row, 0).add(
+        ground
+          ? new Vector3(p.offset.x, p.offset.z, p.offset.y)
+          : new Vector3(p.offset.x, -p.offset.y, p.offset.z),
+      );
+      const yaw = new Quaternion().setFromAxisAngle(up, -p.yaw * deg);
+      const spec: SkinModel = {
+        model: p.model,
+        scale: 1,
+        anchor: p.anchor ?? 'bottom',
+        rotate: p.rotate,
+        castShadow: p.castShadow,
+        clip: null,
+        time: 0,
+        offset: { x: 0, y: 0, z: 0 },
+      };
+      if (!p.instanced) {
+        const instance = new ModelInstance(loaded, { ...spec, scale: p.scale }, { w: 0, h: 0 });
+        instance.object.name = `decor:${p.char}`;
+        instance.object.userData = { decor: p.char, model: p.model, col: p.col, row: p.row };
+        instance.object.position.copy(point);
+        instance.object.quaternion.copy(yaw);
+        if (p.receiveShadow) for (const m of instance.meshes()) m.receiveShadow = true;
+        group.add(instance.object);
+        models.push({ instance, tile: null });
+        continue;
+      }
+      const key = `${p.char}\u0000${p.model}`;
+      let batch = batches.get(key);
+      if (!batch) {
+        batch = { spec, loaded, cells: [], char: p.char, cast: p.castShadow, receive: p.receiveShadow };
+        batches.set(key, batch);
+      }
+      batch.cells.push(new Matrix4().compose(point, yaw, new Vector3(p.scale, p.scale, p.scale)));
+    }
+    for (const b of batches.values()) {
+      const parts = modelMeshParts(b.loaded, b.spec, { w: 0, h: 0 });
+      const userData = { decor: b.char, model: b.spec.model };
+      if (parts) {
+        addInstanced(group, parts, b.cells, null, {
+          name: `decor:${b.char}:${b.spec.model}`,
+          userData,
+          castShadow: b.cast,
+          receiveShadow: b.receive,
+        });
+        continue;
+      }
+      // A skinned model cannot be instanced: a copy per cell, scaled by its cell matrix.
+      for (const cell of b.cells) {
+        const instance = new ModelInstance(b.loaded, b.spec, { w: 0, h: 0 });
+        instance.object.name = `decor:${b.char}`;
+        instance.object.userData = userData;
+        cell.decompose(instance.object.position, instance.object.quaternion, instance.object.scale);
+        if (b.receive) for (const m of instance.meshes()) m.receiveShadow = true;
+        group.add(instance.object);
+        models.push({ instance, tile: null });
+      }
+    }
   }
 
   // ---- Entities ----
@@ -1227,12 +1445,53 @@ function makePoints(blend: 'normal' | 'add'): ParticlePoints {
   return points;
 }
 
+/**
+ * One `InstancedMesh` per model mesh (Engine 0.16 F3), named `<name>:<i>`, with one instance per
+ * cell matrix (the cell's place, turn and scale times the mesh's own placement), each tinted by
+ * `tints` when given (a brightness factor, `setColorAt`). Geometries and materials are the model
+ * library's: `userData.shared` keeps `disposeMap` off them.
+ */
+function addInstanced(
+  group: Group,
+  parts: readonly ModelMeshPart[],
+  cells: readonly Matrix4[],
+  tints: readonly number[] | null,
+  opts: { name: string; userData: Record<string, unknown>; castShadow: boolean; receiveShadow: boolean },
+): void {
+  const m = new Matrix4();
+  const tint = new Color();
+  parts.forEach((part, p) => {
+    const mesh = new InstancedMesh(part.geometry, part.material, cells.length);
+    mesh.name = `${opts.name}:${p}`;
+    mesh.userData = { ...opts.userData, part: p, shared: true };
+    mesh.castShadow = opts.castShadow;
+    mesh.receiveShadow = opts.receiveShadow;
+    cells.forEach((cell, i) => {
+      mesh.setMatrixAt(i, m.multiplyMatrices(cell, part.matrix));
+      if (tints) mesh.setColorAt(i, tint.setScalar(tints[i]!));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    group.add(mesh);
+  });
+}
+
+/** Multiplies each material's colour by `factor` (a model copy's own materials: a `vary.tint`). */
+function tintMaterials(materials: readonly Material[], factor: number): void {
+  for (const m of materials) {
+    const c = (m as Material & { color?: Color }).color;
+    if (c instanceof Color) c.multiplyScalar(factor);
+  }
+}
+
 function disposeMap(shown: ShownMap): void {
   const materials = new Set<Material>();
   for (const { instance } of shown.models) instance.dispose();
   for (const child of shown.group.children) {
     if (child instanceof InstancedMesh) {
-      materials.add(child.material as Material);
+      // A model's instanced meshes share the library's geometry and materials (Engine 0.16 F3).
+      if (child.userData['shared'] !== true) materials.add(child.material as Material);
       child.dispose();
     }
   }
