@@ -435,6 +435,17 @@ function textHeight(fonts: FontLookup, font: string, text: string, width?: numbe
   return layoutText(f, text, width !== undefined ? { width } : {}).height;
 }
 
+/**
+ * A framed screen's width: `width`, widened (up to the picture less 8 px) so the heading in the
+ * title font fits inside the panel with 16 px each side (Engine 0.16 part B, T11: a long end
+ * heading ran over the panel's frame).
+ */
+function headedWidth(menus: MenusSpec, ctx: MenuBuildContext, title: string, width: number): number {
+  const f = ctx.fonts(heading(menus).font);
+  const headW = f === null ? 0 : layoutText(f, title).width + 32;
+  return Math.min(ctx.screen.width - 8, Math.max(width, headW));
+}
+
 function rowHeight(fonts: FontLookup, font: string): number {
   return (fonts(font)?.cell.h ?? 8) + 2;
 }
@@ -847,11 +858,12 @@ export function levelsScreen(
   items.push({ id: 'back', label: menuLabel(menus, 'back') });
   const font = ctx.fonts(menus.font);
   const widest = font === null ? 0 : Math.max(...items.map((i) => layoutText(font, i.label).width));
-  const width = Math.min(ctx.screen.width - 8, Math.max(140, widest + 48));
+  const title = menus.levels?.heading ?? MENU_HEADINGS.levels;
+  const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, Math.max(140, widest + 48)));
   const widgets = framedScreen(
     menus,
     ctx,
-    menus.levels?.heading ?? MENU_HEADINGS.levels,
+    title,
     menuHeight(ctx, menus, items.length),
     width,
     (top) => [{ id: 'main', type: 'menu', anchor: 'top', y: top, w: width - 20, panel: false, items }],
@@ -869,11 +881,12 @@ export function levelsScreen(
 export function clearScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatValues): UiScreenFile {
   const lines = menus.clear?.lines ?? DEFAULT_STAT_LINES;
   const rh = rowHeight(ctx.fonts, menus.font) + 1;
-  const width = Math.min(ctx.screen.width - 8, 160);
+  const title = menus.clear?.heading ?? MENU_HEADINGS.clear;
+  const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, 160));
   const widgets = framedScreen(
     menus,
     ctx,
-    menus.clear?.heading ?? MENU_HEADINGS.clear,
+    title,
     Math.max(0, lines.length * rh - 1),
     width,
     (top) => statRows(menus, ctx, lines, status, top, width),
@@ -891,7 +904,8 @@ export function endScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatV
   const lines = end.lines ?? DEFAULT_STAT_LINES;
   const items = (end.items ?? ['title']) as EndItem[];
   const rh = rowHeight(ctx.fonts, menus.font) + 1;
-  const width = Math.min(ctx.screen.width - 8, 200);
+  const title = end.heading ?? MENU_HEADINGS.end;
+  const width = headedWidth(menus, ctx, title, Math.min(ctx.screen.width - 8, 200));
   const creditsH =
     end.credits === undefined ? 0 : textHeight(ctx.fonts, menus.font, end.credits, width - 24) + 8;
   const statsH = lines.length * rh;
@@ -899,7 +913,7 @@ export function endScreen(menus: MenusSpec, ctx: MenuBuildContext, status: StatV
   const widgets = framedScreen(
     menus,
     ctx,
-    end.heading ?? MENU_HEADINGS.end,
+    title,
     bodyH,
     width,
     (top) => [

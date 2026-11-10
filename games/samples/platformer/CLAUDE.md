@@ -6,7 +6,10 @@ short side-scroller of three levels and a mini-boss, in 2D (Canvas2D) and 2.5D (
 (the old five levels and two doors moved to `games/platformer-classic`, a test game, with their
 run files and hashes unchanged), gave it a tuned profile, its screen, its campaign and its first
 level; T6 is the art and feel pass (the CC0 packs in `assets/`), T7 levels 2 and 3, T8 the
-mini-boss's arena and the end (built), T9 music and sounds (built), T10 the 2.5D view (built). It is content, not engine:
+mini-boss's arena and the end (built), T9 music and sounds (built), T10 the 2.5D view (built), T11
+the close-out (the owner's review screenshots in `docs/reports/screenshots/0.16-B/`, listed with
+the commands that made them in `docs/BUILD-LOG.md`, Engine 0.16 part B; the title font's `W`
+redrawn). It is content, not engine:
 the kit holds the rules, this folder holds levels, the profile, art, sound, skins and thin glue.
 
 ## The game

@@ -16,8 +16,11 @@ Burrlock, the bramble beetle, in an arena at dusk, with telegraphed attacks, a f
 phase, white hit flashes, hit-pauses, a boss bar and a defeat sequence, then the end screen),
 music and sound (T9: one layered MML song, a calm and a drive layer per level and the boss's
 fight and rage layers, mixed from the frame's status and ducked under big hits; a title tune, an
-end fanfare and a varied sound for every kit event, frame event and menu move), and the 2.5D view
-(T10) follows. T6 drew it
+end fanfare and a varied sound for every kit event, frame event and menu move) and the 2.5D view
+(T10: Kenney's and Quaternius' CC0 GLB models, lit, shadowed and fogged, the same camera as 2D);
+T11 closed part B with the owner's review screenshots in
+[`docs/reports/screenshots/0.16-B/`](../reports/screenshots/0.16-B/) (listed in the build log,
+Engine 0.16 part B). T6 drew it
 from the CC0 PNG packs: ground joined by its neighbours, the Ninja Frog with every state (a
 landing crouch, a dying puff), Kenney's critters, a raised checkpoint flag, a trophy goal, four
 parallax layers of original text art, squash and stretch, dust and run particles, hit flashes,
@@ -64,7 +67,7 @@ since T5. It holds only content, skins and thin glue.
   second tile set; PNG), `kenney-platformer-kit` (Kenney, version 1.1: 2.5D terrain blocks,
   platforms, props, coins, flag; GLB) and `quaternius-platformer` (Quaternius: the 2.5D player
   stand-in and enemies, animated; GLB). The 2D skin uses the PNG packs (T6), the 2.5D view (T10)
-  will use the GLBs;
+  the GLBs;
   `assets.test.ts` checks the credits and that every PNG and GLB reads (feedback items 364, 365).
 - `content.ts`: `loadHopper(files)`, `hopperStages(content)` (the kit's `contentStages`: the
   campaign's order), `hopperSkins(content, backend)`, `PLATFORMER_MUSIC`.

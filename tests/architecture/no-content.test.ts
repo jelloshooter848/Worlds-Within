@@ -220,12 +220,15 @@ const BINARY_EXT = /\.(png|jpe?g|gif|webp|bmp|ico|glb|gltf|bin|ogg|wav|mp3|flac|
 /**
  * Where binary files may live: a game's assets folder, the owner's reviewed mockups, and the
  * owner's screenshot review sheets (`docs/reports/<release>-<name>-sheet.png`, made by
- * `pnpm cli sheet`, Engine 0.16 T14).
+ * `pnpm cli sheet`, Engine 0.16 T14) and review screenshots, one folder per release
+ * (`docs/reports/screenshots/<release>/*.png`, made by `pnpm cli screenshot`, Engine 0.16 part B
+ * T11).
  */
 const BINARY_ALLOWED = [
   /^games\/(?:samples\/)?[^/]+\/assets\//,
   /^docs\/reports\/mockups\/[^/]+\.png$/,
   /^docs\/reports\/[^/]+-sheet\.png$/,
+  /^docs\/reports\/screenshots\/[^/]+\/[^/]+\.png$/,
 ];
 
 /** Whether a file is binary: by its extension, or a NUL byte in its first 8 KiB. */
@@ -254,7 +257,7 @@ describe('content rule: binary files only in games/*/assets', () => {
     expect(binary.filter((p) => !allowed(p))).toEqual([]);
   });
 
-  it('allows games/<game>/assets, games/samples/<game>/assets and review sheets, nothing else', () => {
+  it('allows games/<game>/assets, games/samples/<game>/assets, review sheets and screenshots, nothing else', () => {
     expect(allowed('games/fx-lab/assets/pack/a.png')).toBe(true);
     expect(allowed('games/samples/dungeon/assets/tiles/a.png')).toBe(true);
     expect(allowed('games/fx-lab/content/a.png')).toBe(false);
@@ -262,6 +265,10 @@ describe('content rule: binary files only in games/*/assets', () => {
     expect(allowed('games/assets/a.png')).toBe(false);
     expect(allowed('docs/reports/0.16a-effects-sheet.png')).toBe(true);
     expect(allowed('docs/reports/notes.png')).toBe(false);
+    expect(allowed('docs/reports/screenshots/0.16-B/07-title.png')).toBe(true);
+    expect(allowed('docs/reports/screenshots/0.16-B/notes.glb')).toBe(false);
+    expect(allowed('docs/reports/screenshots/a.png')).toBe(false);
+    expect(allowed('docs/reports/screenshots/0.16-B/more/a.png')).toBe(false);
     expect(isBinaryFile('games/fx-lab/game.json')).toBe(false);
   });
 });

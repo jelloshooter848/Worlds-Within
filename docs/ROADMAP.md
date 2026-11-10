@@ -903,15 +903,21 @@ Kit for 2.5D.
   the camera following the same point as in 2D.
 - Music in layers and sounds for every action.
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-b), Engine 0.16 part B,
+Done when)
 
-- [ ] All levels and the mini-boss play from start to end in 2D and in 2.5D, with run files for a
-      win and a loss that pass in CI.
-- [ ] Every existing platformer run file passes, or its hashes were re-recorded for a listed rule
-      change.
-- [ ] Owner playtest: the levels and the boss feel good to play with keyboard and gamepad.
+- [x] All levels and the mini-boss play from start to end in 2D and in 2.5D, with run files for a
+      win and a loss that pass in CI. (`level-1`, `level-2`, `level-3`, `boss` and their `-lost`
+      runs, `full-game` from the first level to the arena cleared; every tick of every run drawn
+      in 3D with the golden hashes in `platformer.test.ts` and `tests/runs/backend-parity.test.ts`.)
+- [x] Every existing platformer run file passes, or its hashes were re-recorded for a listed rule
+      change. (No hash was re-recorded: the old content moved to `games/platformer-classic` with
+      its run files and hashes unchanged; the lab's runs pass unchanged.)
+- [ ] Owner playtest: the levels and the boss feel good to play with keyboard and gamepad. (Open
+      as item 393.)
 - [ ] Owner screenshot review of this part (2D and 2.5D, in play and in menus) is accepted before
-      parts C-F are considered done.
+      parts C-F are considered done. (The screenshots are in `docs/reports/screenshots/0.16-B/`;
+      open as item 394.)
 
 ### 0.16 part C: the top-down dungeon, The Old Crypt
 

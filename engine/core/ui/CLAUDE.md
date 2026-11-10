@@ -164,7 +164,9 @@ Engine 0.16 part B (T3), in `menus.ts`:
   `levelItemId(i)` / `levelItemStage(id)`, `levelLabel`, `CLEARED_MARK` (`*`).
 - `levelsScreen(spec, ctx, choices)` (a framed list, locked levels disabled, then Back),
   `clearScreen(spec, ctx, status)` (a panel with the heading and stat rows, no dim, no menu) and
-  `endScreen(spec, ctx, status)` (heading, credits, stats, its menu). `checkMenus` checks their
+  `endScreen(spec, ctx, status)` (heading, credits, stats, its menu). From T11 each of the three
+  widens its panel (`headedWidth`, up to the picture less 8 px) so its heading in the title font
+  fits with 16 px each side: Hopper's Way's end heading ran over the panel's frame. `checkMenus` checks their
   texts' glyphs (headings in the title font; the mark; labels; the digits and `:`, `/`, `-`).
 - Tested in `menus.test.ts`; the shell side in `../shell/game-menus.test.ts`.
 

@@ -23,6 +23,7 @@ import {
   type MenusSpec,
 } from './menus';
 import { UiScreen } from './screen';
+import { layoutText } from './text';
 
 /** Every glyph a 3x4 block on a 3x5 cell (inline fixture). */
 const CHARS = `ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!?.,'()<>/:${KEY_NAME_GLYPHS}`;
@@ -249,6 +250,21 @@ describe('level select, level clear and end screens (Engine 0.16 part B, T3)', (
       fonts: FONTS,
     });
     expect(title.menu('main')!.items.map((i) => i.id)).toEqual(['start']);
+  });
+
+  it('widens a framed screen so a long heading stays inside its panel (part B, T11)', () => {
+    const panelW = (file: ReturnType<typeof titleScreen>) =>
+      file.widgets.find((w) => w.type === 'panel' && w.anchor === 'top')!.w!;
+    const long = 'A heading far wider than the panel of the end screen';
+    const headW = layoutText(FONT, long).width;
+    expect(headW + 32).toBeGreaterThan(200);
+    const wide = menusSchema.parse({ ...B, end: { heading: long }, clear: { heading: long } });
+    expect(panelW(endScreen(B, CTX, {}))).toBe(200);
+    expect(panelW(endScreen(wide, CTX, {}))).toBe(headW + 32);
+    expect(panelW(clearScreen(wide, CTX, {}))).toBe(headW + 32);
+    // Never wider than the picture less 8 px.
+    const huge = menusSchema.parse({ ...B, end: { heading: long + long } });
+    expect(panelW(endScreen(huge, CTX, {}))).toBe(CTX.screen.width - 8);
   });
 
   it('refuses an unknown end item and a bad stat format', () => {

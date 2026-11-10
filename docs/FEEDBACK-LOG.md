@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 393.** (Last used: 392.)
+**Next unused number: 400.** (Last used: 399.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1561,3 +1561,31 @@ files")
   side view (it also showed through the respawn iris). The GOAL label stays. OK?
 - **392.** No depth of field: the backend has none, and fog on the background does that job. Add
   a depth-of-field pass later (needs a post-processing pass in the 3D backend)?
+
+**Engine 0.16 part B, T11: close-out** (details in `docs/BUILD-LOG.md`, Engine 0.16 part B)
+
+- **393.** Owner playtest (part B's Done when): please play Hopper's Way from the title through
+  the three levels and Burrlock's arena with the keyboard and with a gamepad, in 2D and with
+  `?backend=three`, and say whether the movement, the levels and the boss feel good. Open.
+- **394.** Owner screenshot review (part B's Done when): the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-B/` (2D play in all three levels and the boss's hit, 2.5D play
+  in level 1 and the arena, the title, the level select, the level-clear banner and the end
+  screen). Accepted, or what should change? Parts C-F wait for this.
+- **395.** Review screenshots are kept as binary PNGs in `docs/reports/screenshots/<release>/`
+  (one folder per release; `tests/architecture/no-content.test.ts` and DESIGN.md's binary-files
+  sentence now allow it, PNG only, no subfolders). OK?
+- **396.** Engine fix found in the screenshots: the end screen's heading ("Hopper's Way
+  cleared!") ran over its panel's frame. The level select, level-clear banner and end screen now
+  widen their panel so the heading fits with 16 px each side (never wider than the picture less
+  8 px); no other game's screens change size. OK?
+- **397.** Found in the screenshots: the title font's `W` read as an upside-down `M` ("Hopper's
+  May"). It is redrawn with its middle stroke (`content/fonts/hopper-title.txt`). OK?
+- **398.** Known and left (2.5D): Burrlock is Quaternius' red crab tinted violet, which under the
+  arena's dusk light reads dark maroon in phase 1 rather than the 2D violet (phase 2 reads bright
+  red, so the phases still differ), and the 3D arena's ground is olive-green grass where the 2D
+  arena's is autumn orange. Fix (recolour the crab's material or give the arena an autumn ground
+  tint in 3D), or leave?
+- **399.** Known and left (2D and 2.5D): the HUD panel (top left, about 136x36 picture px) covers
+  the top two rows of the level, so the frog bumping the life block high in Autumn Hills' cache
+  (tick 631) is half behind it. Make the HUD smaller or translucent while the frog is under it,
+  move it, or leave it?
