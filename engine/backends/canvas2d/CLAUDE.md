@@ -27,6 +27,12 @@ canvas, none in Node). Each `present(frame)`, in order:
   `effect` (`flash` full-screen, `tint` translucent full-screen, `particles` from the event's
   `x`/`y` or its `entity`'s centre, `shake` a camera wobble), timed by `frame.frame` and lasting
   `ticks`. A frame with the same `frame` number as the last one does not replay its events.
+- Frame events (Engine 0.16 T2): after the frame's events, the presenter's `FrameEventClock`
+  (`@engine/core/present`) gives the skin's frame events of the frames that started since the
+  last frame (a cycle's `events: { "<frame>": "<type>" }`, such as a footstep), each handled
+  exactly like a frame event through the skin's `events` (sound, effect at the entity's feet,
+  tween); never written into the frame. Per-frame `ticks`, one-shots and `then` come with
+  `resolveSkinFrame`.
 - Camera: the framing maths is `CameraFollower` in `@engine/core/present` (`camera.ts`), shared
   with the 3D backend; change it there, not here. The presenter keeps its own instance (state in
   the presenter only: never in a kit, a frame or a hash) and adds `cameraShake` on top. Target: the
@@ -127,7 +133,9 @@ zoom are drawn.
 the transform (see `renderer.test.ts`). `presenter.test.ts` uses a recording `Renderer`, fixture
 frames and a fixture skin written inline (never import a kit or a game's skin; a `byTag` look is
 drawn for an entity with its tag, the kind's frame otherwise; the skin set block checks each skin
-clearing to its own `background`, black without one, the option first, G36); its `camera`
+clearing to its own `background`, black without one, the option first, G36; the `frame events`
+block plays a cycle's frame event through `onSound` once per frame started, a state's first frame
+when it begins, and never into the frame); its `camera`
 block reads the camera's top-left off the recorded map copy. The recorder writes a sprite's
 `scale` as ` xN` when it is not 1; the `zoom` block checks the map copy, tiles, sprites, boxes
 and squash pivot at zoom 0.5, 1 and 2, the skin's zoom, and that clamping uses the zoomed

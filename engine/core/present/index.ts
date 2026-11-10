@@ -29,6 +29,7 @@ export {
   type CameraPoint,
 } from './camera';
 export { freezeFrame } from './freeze';
+export { FrameEventClock } from './frame-events';
 export { RTS_MAX_ZOOM, RTS_MIN_ZOOM, RtsCamera, type RtsCameraOptions } from './rts-camera';
 export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
 export { hostedSource, type HostedPresentState, type HostedSourceOptions } from './hosted';
@@ -37,20 +38,27 @@ export { presentFrameSchema } from './schema';
 export { presenterByStatus } from './switch';
 export {
   checkSkinRefs,
+  cycleFrameTicks,
+  cycleLength,
+  cyclePosition,
   DEFAULT_BACKGROUND,
   DEFAULT_CAMERA3D,
   DEFAULT_FALLBACK_COLOR,
   DEFAULT_FRAME_TICKS,
   EVENT_KEY_FIELD,
+  FRAME_EVENT_LIMIT,
+  frameEventsBetween,
   LOW_POLY_SEGMENTS,
   MESH_BACKENDS,
   MESH_PRIMITIVES,
   parseEventKey,
   resolveCamera3d,
   resolveMeshParts,
+  resolveSkinAnimation,
   resolveSkinEvent,
   resolveSkinFrame,
   resolveSkinKind,
+  resolveSkinMesh,
   skinBackground,
   skinTagIndex,
   skinTagMatches,
@@ -62,7 +70,9 @@ export {
   type SkinCamera3d,
   type SkinCycle,
   type SkinFile,
+  type SkinAnimation,
   type SkinFrame,
+  type SkinFrameEvent,
   type SkinKindEntry,
   type SkinEntityInput,
   type SkinTagEntry,

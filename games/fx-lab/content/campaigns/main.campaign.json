@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "id": "main",
+  "title": "The fx lab: its two levels in order",
+  "entries": [
+    {
+      "level": "fx-1"
+    },
+    {
+      "level": "fx-2"
+    }
+  ]
+}

@@ -8,6 +8,7 @@ import {
   cameraView,
   cameraZoom,
   CameraFollower,
+  FrameEventClock,
   isFullMap,
   layoutHud,
   resolveSkinEvent,
@@ -131,6 +132,8 @@ export class SkinnedCanvasPresenter implements Presenter {
   private readonly tweens = new Map<string, TweenSet>();
   /** The entity ids the last frame showed, so a new one gets its kind's `spawnTween`. */
   private seen = new Set<string>();
+  /** Frame events of the skin's cycles (`events: { "<frame>": "<type>" }`), presenter state only. */
+  private readonly frameEvents = new FrameEventClock();
 
   constructor(
     target: Renderer | Ctx,
@@ -172,7 +175,9 @@ export class SkinnedCanvasPresenter implements Presenter {
     });
     if (this.lastEvents === frame.frame) return;
     this.lastEvents = frame.frame;
-    for (const ev of frame.events) {
+    // The frame's events, then the skin's frame events (a footstep on a run cycle's frame),
+    // which run through the same `events` entries but never go into the frame.
+    for (const ev of [...frame.events, ...this.frameEvents.next(this.skin, frame.entities)]) {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);

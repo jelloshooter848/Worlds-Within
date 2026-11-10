@@ -1,0 +1,360 @@
+{
+  "backend": "canvas2d",
+  "background": "#6888fc",
+  "sheets": {
+    "sheet": "fx",
+    "fallbackColor": "#ff00ff"
+  },
+  "kinds": {
+    "runner": {
+      "flipFacing": true,
+      "size": {
+        "w": 16,
+        "h": 16
+      },
+      "offset": {
+        "x": -2,
+        "y": 0
+      },
+      "frames": {
+        "idle": {
+          "right": {
+            "frames": ["pip-settle", "pip-idle-0"],
+            "ticks": [5, 1],
+            "loop": false,
+            "then": "breathe"
+          }
+        },
+        "breathe": {
+          "right": {
+            "frames": ["pip-idle-0", "pip-idle-1", "pip-idle-0", "pip-blink", "pip-idle-0", "pip-idle-1"],
+            "ticks": [30, 24, 30, 4, 20, 24]
+          }
+        },
+        "walk": {
+          "right": {
+            "frames": ["pip-walk-0", "pip-walk-1", "pip-walk-2", "pip-walk-3"],
+            "ticks": [7, 5, 7, 5],
+            "events": {
+              "0": "footstep",
+              "2": "footstep"
+            }
+          }
+        },
+        "run": {
+          "right": {
+            "frames": ["pip-run-0", "pip-run-1", "pip-run-2", "pip-run-3"],
+            "ticks": [4, 3, 4, 3],
+            "events": {
+              "0": "footstep",
+              "2": "footstep"
+            }
+          }
+        },
+        "skid": {
+          "right": {
+            "frames": ["pip-skid"],
+            "events": {
+              "0": "skid-dust"
+            }
+          }
+        },
+        "jump": {
+          "right": {
+            "frames": ["pip-jump-0", "pip-jump-1"],
+            "ticks": [3, 1],
+            "loop": false
+          }
+        },
+        "fall": {
+          "right": {
+            "frames": ["pip-fall-0", "pip-fall-1"],
+            "ticks": [5, 5]
+          }
+        },
+        "hurt": {
+          "right": {
+            "frames": ["pip-hurt-1", "pip-hurt-0", "pip-hurt-1", "pip-hurt-0"],
+            "ticks": [2, 2, 2, 6],
+            "loop": false
+          }
+        },
+        "dead": {
+          "frames": ["pip-dead-0", "pip-dead-1", "pip-dead-2"],
+          "ticks": [10, 6, 6],
+          "loop": false,
+          "events": {
+            "1": "tumble"
+          }
+        }
+      }
+    },
+    "beetle": {
+      "flipFacing": true,
+      "frames": {
+        "idle": "beetle-0",
+        "walk": {
+          "frames": ["beetle-0", "beetle-1"],
+          "ticks": [6, 6],
+          "events": {
+            "0": "scuttle"
+          }
+        },
+        "run": {
+          "frames": ["beetle-0", "beetle-1"],
+          "ticks": 3
+        },
+        "fall": "beetle-1",
+        "stomped": {
+          "frames": ["beetle-flat"],
+          "ticks": 1,
+          "loop": false
+        },
+        "dead": "beetle-dead"
+      }
+    },
+    "coin": {
+      "frames": {
+        "idle": {
+          "frames": ["coin-0", "coin-1", "coin-2", "coin-3"],
+          "ticks": [24, 4, 3, 4]
+        },
+        "pop": {
+          "frames": ["coin-0", "coin-1", "coin-2", "coin-3"],
+          "ticks": 2
+        }
+      }
+    },
+    "goal": {
+      "size": {
+        "w": 16,
+        "h": 32
+      },
+      "offset": {
+        "x": 0,
+        "y": -16
+      },
+      "frames": {
+        "idle": {
+          "frames": ["door", "door-glow", "door", "door-lit"],
+          "ticks": [40, 6, 20, 6]
+        }
+      }
+    },
+    "bump-block": {
+      "frames": {
+        "bump": "used"
+      },
+      "byTag": [
+        {
+          "tag": "brick",
+          "frames": {
+            "bump": "brick"
+          }
+        }
+      ]
+    }
+  },
+  "tiles": {
+    "#": {
+      "frame": "ground"
+    },
+    "B": {
+      "frame": "brick"
+    },
+    "?": {
+      "frame": "bump"
+    },
+    "u": {
+      "frame": "used"
+    },
+    "=": {
+      "frame": "one-way"
+    },
+    "^": {
+      "frame": "hazard"
+    }
+  },
+  "events": {
+    "footstep": {
+      "sound": "footstep",
+      "effect": {
+        "kind": "particles",
+        "color": "#bcbcbc",
+        "count": 2,
+        "size": 1,
+        "ticks": 5
+      }
+    },
+    "skid-dust": {
+      "sound": "land",
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 4,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "tumble": {
+      "sound": "whoosh"
+    },
+    "scuttle": {},
+    "jump": {
+      "sound": "jump",
+      "tween": {
+        "prop": "scaleY",
+        "from": 1.25,
+        "to": 1,
+        "frames": 6,
+        "ease": "quadOut"
+      }
+    },
+    "land": {
+      "sound": "land",
+      "effect": {
+        "kind": "particles",
+        "color": "#fcbcb0",
+        "count": 4,
+        "size": 1,
+        "ticks": 6
+      },
+      "tween": {
+        "prop": "scaleY",
+        "from": 0.75,
+        "to": 1,
+        "frames": 6,
+        "ease": "backOut"
+      }
+    },
+    "bump": {
+      "sound": "bump",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "block": {
+      "effect": {
+        "kind": "particles",
+        "color": "#f8b800",
+        "count": 4,
+        "size": 1
+      }
+    },
+    "break": {
+      "sound": "stomp",
+      "effect": {
+        "kind": "particles",
+        "color": "#c84c0c",
+        "count": 8,
+        "size": 2,
+        "ticks": 16
+      }
+    },
+    "coin": {
+      "sound": "coin",
+      "effect": {
+        "kind": "particles",
+        "color": "#f8b800",
+        "count": 5,
+        "size": 1
+      }
+    },
+    "stomp": {
+      "sound": "stomp",
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 6,
+        "size": 1
+      }
+    },
+    "defeat": {
+      "effect": {
+        "kind": "particles",
+        "color": "#d82800",
+        "count": 6,
+        "size": 1
+      }
+    },
+    "hurt": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "flash",
+        "color": "#d82800",
+        "ticks": 2
+      }
+    },
+    "died": {
+      "sound": "fail",
+      "effect": {
+        "kind": "shake",
+        "size": 3,
+        "ticks": 12
+      }
+    },
+    "respawn": {
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 8,
+        "size": 1
+      }
+    },
+    "cleared": {
+      "sound": "door",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 20
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "hp",
+      "as": "hearts",
+      "x": 8,
+      "y": 8,
+      "frame": "heart"
+    },
+    {
+      "status": "coins",
+      "as": "icon",
+      "x": 40,
+      "y": 8,
+      "frame": "hud-coin"
+    },
+    {
+      "status": "coins",
+      "as": "number",
+      "x": 50,
+      "y": 8,
+      "font": "fx-font"
+    },
+    {
+      "status": "lives",
+      "as": "icon",
+      "x": 80,
+      "y": 8,
+      "frame": "hud-life"
+    },
+    {
+      "status": "lives",
+      "as": "number",
+      "x": 90,
+      "y": 8,
+      "font": "fx-font"
+    }
+  ],
+  "camera": {
+    "follow": "runner",
+    "deadzone": {
+      "w": 32,
+      "h": 48
+    },
+    "lerp": 0.25
+  }
+}

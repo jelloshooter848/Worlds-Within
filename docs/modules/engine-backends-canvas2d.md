@@ -23,7 +23,8 @@ for and holds no game rules.
   without one; a `background` option overrides it), caches the map per id and version, draws entities by layer then list order with
   skin frames (`resolveSkinFrame`, a kind's tag look first, by whole tag or, from Engine 0.15, tag prefix
   and whole-number range (gap M2); flipped by facing, a fallback box when art is missing, squash through
-  `transformed()`), frames the camera through its own `CameraFollower` from
+  `transformed()`; from Engine 0.16 T2 per-frame timing, one-shots and `then`, and the cycles' frame
+  events played through the skin's `events` like the frame's own), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
   instance lives in the presenter only), honours `zoom` (the hint's, else the skin's; the map

@@ -1,0 +1,94 @@
+# games/fx-lab
+
+The fx lab (Engine 0.16 part A, T2): a small game on the platformer kit that shows every
+presentation feature of 0.16 part A, one task at a time (T2 adds it with sprite animation states,
+per-frame timing, one-shots and frame events; later tasks add particles, camera effects,
+transitions, UI, audio...). It is a lab, **not a sample**: two short original levels with stomps,
+coins and a door so that events happen, Pip (an original courier) with a full animation set, a 2D
+skin and a low-poly 3D skin, run files with golden hashes and a browser page. Content and glue
+only: nothing in `engine/` or `kits/` depends on it, and every rule is the platformer kit's.
+
+## Files
+
+- `game.json`: the manifest (kit `platformer`, 256x240, seed 1, `headless.ts`, `view.ts`).
+- `content/levels/fx-1.json` + `.map.txt` ("first steps": three coins on the ground, a one-way
+  platform with two coins above it, a `?` block, two beetles, a pit, the door) and `fx-2`
+  ("over the spikes": a floating ledge, coins on a high platform, a spike strip, a brick row with
+  a `?` block, three beetles, the door). 15 rows, so the ground is the picture's bottom row. Map
+  format: `kits/platformer/CLAUDE.md`. The goal `G` is drawn as a door (`goal` kind, 16x32).
+- `content/campaigns/main.campaign.json`: the play order, `fx-1` then `fx-2`.
+- `content/profiles/pip.profile.json`: SMBC-style runner numbers (a copy of the platformer
+  sample's) with one actor type, `beetle` (a slow walker, stompable).
+- `content/sprites/fx.txt` (palette `content/palettes/fx.json`): original NES-style text pixel art.
+  Pip is 16x16 drawn over the 12x16 body (`size` and `offset` in the skin): `pip-idle-0/1`,
+  `pip-blink`, `pip-settle` (a landing squat), `pip-walk-0..3`, `pip-run-0..3`, `pip-skid`,
+  `pip-jump-0` (stretch), `pip-jump-1` (tuck), `pip-fall-0/1` (arms up), `pip-hurt-0/1` (the
+  second a white flash), `pip-dead-0..2` (a tumble). Also `beetle-0/1/flat/dead`, `coin-0..3`
+  (a spin), `door`, `door-glow`, `door-lit` (16x32), the tiles and HUD icons.
+  `content/sprites/fx-font.txt`: the HUD's 8x8 digits.
+- `content/sfx/*.json`: original MML sfx (`footstep`, `jump`, `land`, `coin`, `stomp`, `bump`,
+  `hurt`, `fail`, `door`, `whoosh`). No song yet (the audio mixer is T8).
+- `content/skins/canvas2d.json`: the 2D skin, the worked example of Engine 0.16 T2's animation
+  format (`engine/core/present/CLAUDE.md`):
+  - `runner`: every `RUNNER_ANIMS` state. `idle` is a one-shot (`pip-settle` then `pip-idle-0`,
+    `ticks: [5, 1]`, `loop: false`) whose `then` is `breathe`, a state the kit never sends: a
+    six-frame loop with per-frame ticks (a breath, a blink). `walk` and `run` are four-frame
+    cycles with per-frame ticks and frame events `{ "0": "footstep", "2": "footstep" }`; `skid` a
+    frame event `skid-dust`; `jump` a one-shot (stretch, then tuck held); `fall` a loop; `hurt` a
+    one-shot flash; `dead` a one-shot tumble with a `tumble` frame event.
+  - `beetle` (a `scuttle` frame event with no sound or effect: a silent marker), `coin` (a spin
+    with per-frame ticks), `goal` (the door, glowing now and then), `bump-block`.
+  - `events`: the frame events (`footstep`: a sound and a puff of dust; `skid-dust`; `tumble`)
+    next to the kit's (`jump` and `land` with a squash tween, `coin`, `stomp`, `hurt`, `died`,
+    `cleared` the door's sound). A frame event runs through `events` exactly like a kit event.
+  - `hud` (hearts, coins, lives) and `camera` (follow the runner, 32x48 deadzone, lerp 0.25).
+- `content/skins/three.json`: the 3D skin. Low-poly compound `meshes` for every pose of Pip
+  (`pip-stand`, `pip-walk-a/b/c`, `pip-run-a/b`, `pip-crouch`, `pip-rise`, `pip-fall-a/b`,
+  `pip-hurt`, `pip-down`, ...), the beetle, the coin and the door; `kinds` with `mesh` (the rest
+  pose) and `poses` (Engine 0.16 T2: the same states as the 2D `frames`, with mesh names, the same
+  timing, `then` and frame events), so the 3D scene swaps meshes by animation frame and plays the
+  same footsteps. `camera3d` `layerDepth` 0.25 (the kit's layers stay near the blocks' plane).
+- TypeScript is glue only:
+  - `content.ts`: `loadFxLab(files)`, `mustLoadFxLab(files)`, `fxStages(content)` (the kit's
+    `contentStages`), `fxSkin(content, backend)`.
+  - `headless.ts`: `createGame(content, seed, opts?)` (the kit's `LevelSequence`), `starts`.
+  - `picture.ts`: `fxLook`, `fxFrames`, `fxPicture`, `fxCanvasPicture(r, look, onSound?)`;
+    `picture3d.ts`: `fxLook3d` (no Three.js import). `view.ts`: `createView` (the engine's
+    `frameView`), for `pnpm cli screenshot`.
+  - `main.ts`: `bootBrowserGame` with both displays and the sfx; every sound id the page plays is
+    also pushed to `window.wwFxLab.sounds` (for `tests/browser/fx-lab.test.ts`).
+  - `index.html`: the page (2D/3D toggle, the launcher's 3D link).
+- `runs/level-1.run.json` (fx-1 from the start: three coins, two from the platform, both beetles
+  stomped, the pit jumped, the door at tick ~345) and `runs/level-2.run.json` (`start: { stage: 1
+}`: a stomp, the spikes jumped, a second stomp, a beetle's hit, the door), each with golden
+  `*.hashes.json`.
+- `fx-lab.test.ts`: the level order, Pip's states in both skins, the idle one-shot's `then`, and
+  each run played through a Canvas2D picture and a 3D scene with `onSound`: footsteps (frame
+  events) and the kit's sounds are heard, and drawing never changes the snapshot.
+
+## Making the art
+
+The pixel art was drawn with a small generator (rows composed from shared head, body and leg
+parts) and checked with `pnpm cli screenshot` at ticks mid-walk, mid-run, rising, falling, landing,
+stomping and hurt. Edit `content/sprites/fx.txt` by hand now: one character per pixel, legend at
+the top. Keep each frame's rows the same length.
+
+## Run and test
+
+```sh
+pnpm -s cli validate games/fx-lab --json
+pnpm -s cli run games/fx-lab/runs/level-1.run.json --json     # also level-2
+pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --json   # Pip mid-run
+pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend three --allow-software-gl --json
+pnpm test games/fx-lab tests/runs tests/browser/fx-lab.test.ts
+pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs; ?backend=three for 3D)
+```
+
+The lab's run files are also played by `tests/runs/presentation-invariance.test.ts` with every
+effect switched on. The kit is strict, but the lab is not a kit test: `pnpm cli mutants` is not
+expected to pass here (`games/platformer-lab` guards the kit's rules).
+
+## Imports
+
+- Relative paths inside `games/fx-lab`, `@engine/*` (core and backends) and `@kits/platformer`.
+- Never other games. Nothing in `engine/` or `kits/` imports from here.

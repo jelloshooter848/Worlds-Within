@@ -1,0 +1,18 @@
+{
+  "id": "fx-lab",
+  "title": "The fx lab: two short levels on the platformer kit that show every presentation feature, in 2D and 3D",
+  "kit": "platformer",
+  "content": {
+    "level": ["content/levels/*.json"],
+    "campaign": ["content/campaigns/*.campaign.json"],
+    "profile": ["content/profiles/*.profile.json"],
+    "palette": ["content/palettes/*.json"],
+    "sprite": ["content/sprites/*.txt"],
+    "skin": ["content/skins/*.json"],
+    "sfx": ["content/sfx/*.json"]
+  },
+  "start": { "seed": 1 },
+  "screen": { "width": 256, "height": 240 },
+  "headless": "headless.ts",
+  "view": "view.ts"
+}

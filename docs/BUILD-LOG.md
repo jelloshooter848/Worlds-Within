@@ -85,6 +85,7 @@ the same paths are served from `dist/`; each page takes `?debug=step` for the st
 | The Winding Road (TD)         | `/games/samples/tower-defense/`                     | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends     |
 | The mini siege                | `/games/samples/mini-siege/`                        | Begin, then Launch, Play or Delegate in the bar; rounds by keys or taps          |
 | Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)     | arrows move, Z jumps, X runs                                                     |
+| FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)             | arrows move, Z jumps, X runs                                                     |
 
 Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
 
@@ -95,7 +96,8 @@ pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json     # als
 pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
 pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
 pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
-for f in games/samples/*/runs/*.run.json games/platformer-lab/runs/*.run.json; do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
+pnpm -s cli run games/fx-lab/runs/level-1.run.json --json                  # also level-2
+for f in games/samples/*/runs/*.run.json games/platformer-lab/runs/*.run.json games/fx-lab/runs/*.run.json; do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
 pnpm -s cli validate games/samples/mini-siege --json                         # any game folder
 pnpm -s cli mutants games/samples/dungeon --json                             # which kit rules the runs guard
 pnpm cli debug games/samples/mini-siege/runs/ridge-raid.run.json             # the debugger page; open the URL it prints

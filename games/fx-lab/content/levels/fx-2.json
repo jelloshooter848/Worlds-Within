@@ -1,0 +1,11 @@
+{
+  "id": "fx-2",
+  "profile": "pip",
+  "scroll": "right",
+  "spawns": {
+    "b": {
+      "actor": "beetle"
+    }
+  },
+  "blocks": ["coin"]
+}

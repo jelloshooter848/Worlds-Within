@@ -64,6 +64,53 @@ const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
       ]),
     ),
   }),
+  /**
+   * Sprite animation (T2): every 2D cycle timed per frame with a frame event on its first and
+   * last frame, every 3D kind a two-pose `idle` cycle (every state falls back to it) with a frame
+   * event, and the frame event's particles in the skin's `events`.
+   */
+  animation: (skin) => {
+    const timed = (c: Record<string, unknown>) => {
+      const n = (c['frames'] as unknown[]).length;
+      return {
+        ...c,
+        ticks: Array.from({ length: n }, (_, i) => 2 + (i % 3)),
+        events: { 0: 'fx-frame', [n - 1]: 'fx-frame' },
+      };
+    };
+    const table = (frames: Record<string, unknown>) =>
+      Object.fromEntries(
+        Object.entries(frames).map(([state, spec]) => {
+          if (typeof spec !== 'object' || spec === null) return [state, spec];
+          const s = spec as Record<string, unknown>;
+          if (s['frames'] !== undefined) return [state, timed(s)];
+          return [
+            state,
+            Object.fromEntries(
+              Object.entries(s).map(([f, v]) => [
+                f,
+                typeof v === 'object' && v !== null ? timed(v as Record<string, unknown>) : v,
+              ]),
+            ),
+          ];
+        }),
+      );
+    const mesh3d = skin.backend === 'three';
+    return {
+      ...skin,
+      kinds: Object.fromEntries(
+        Object.entries(skin.kinds).map(([kind, entry]) => {
+          if (mesh3d && entry.mesh !== undefined) {
+            const idle = { frames: [entry.mesh, entry.mesh], ticks: [3, 5], events: { 1: 'fx-frame' } };
+            return [kind, { ...entry, poses: { idle } }];
+          }
+          if (entry.frames === undefined) return [kind, entry];
+          return [kind, { ...entry, frames: table(entry.frames) }];
+        }),
+      ),
+      events: { ...skin.events, 'fx-frame': { effect: { kind: 'particles', count: 2, ticks: 4 } } },
+    } as SkinFile;
+  },
 };
 
 /** The switch sets each run is played with: none (the baseline) and all of them at once. */
@@ -126,6 +173,7 @@ const runFiles = [...gameDirs('games'), ...gameDirs('games/samples')].sort().fla
 describe('presentation invariance: presenters and effects never change the state', () => {
   it('finds every game with run files, the samples and the lab', () => {
     for (const game of [
+      'games/fx-lab',
       'games/platformer-lab',
       'games/samples/dungeon',
       'games/samples/mini-siege',

@@ -32,7 +32,8 @@ stored as text:
 - `games/samples/mini-siege`: the mini siege, an RTS battle whose missions are played as a
   top-down room or a tower-defense round, or delegated.
 
-`games/platformer-lab` is the platformer kit's test lab, also on the index.
+`games/platformer-lab` is the platformer kit's test lab and `games/fx-lab` the presentation lab of
+Engine 0.16 (animation sets, frame events and the effects to come), both also on the index.
 
 ## Checks
 
@@ -56,6 +57,7 @@ numbers in this table are engine releases; the row marked (none) has not arrived
 | `build`                                                                              |                       | Build tooling: finds the game pages for Vite, and the launcher index's small script                 |
 | `games/samples/dungeon`, `platformer`, `rts-skirmish`, `tower-defense`, `mini-siege` |                       | The engine's sample games, one per kit plus the mini siege (content, skins, thin glue), all for 1.0 |
 | `games/platformer-lab`                                                               |                       | The platformer kit's test lab: levels and run files that guard every kit rule                       |
+| `games/fx-lab`                                                                       |                       | The presentation lab (from 0.16): every presentation feature shown on two short platformer levels   |
 | (none)                                                                               | `games/worlds-within` | Worlds Within itself (from Worlds Within 0.1, after Engine 1.0)                                     |
 
 Run the samples with `pnpm dev`: it opens a small index of every game (found from the folders

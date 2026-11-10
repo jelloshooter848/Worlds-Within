@@ -100,18 +100,28 @@ const color = z.string().regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/, {
 });
 const id = z.string().min(1);
 
+const frameTicks = z
+  .union([z.number().int().min(1), z.array(z.number().int().min(1)).min(1)])
+  .describe(
+    `ticks each frame shows: one number for every frame, or one per frame (default ${DEFAULT_FRAME_TICKS})`,
+  );
+
 const cycle = z.strictObject({
   frames: z.array(id).min(1).describe('the frame names, shown in turn'),
-  ticks: z
-    .number()
-    .int()
-    .min(1)
-    .exactOptional()
-    .describe(`ticks each frame shows (default ${DEFAULT_FRAME_TICKS})`),
+  ticks: frameTicks.exactOptional(),
   loop: z
     .boolean()
     .exactOptional()
-    .describe('start again after the last frame (default true); false holds it'),
+    .describe('start again after the last frame (default true); false plays it once and holds the last'),
+  then: id
+    .exactOptional()
+    .describe('with `loop: false`: the state of the same entry to play once this one has finished'),
+  events: z
+    .record(z.string(), id)
+    .exactOptional()
+    .describe(
+      'frame index -> a presentation event type sent when that frame starts (`{ "1": "footstep" }`), played through the skin\'s `events` like a kit event',
+    ),
 });
 
 /** One frame name, or a cycle of frames. */
@@ -129,6 +139,8 @@ const stateFrames = z.union([
       frames: cycle.shape.frames.exactOptional(),
       ticks: cycle.shape.ticks,
       loop: cycle.shape.loop,
+      then: cycle.shape.then,
+      events: cycle.shape.events,
       ...facingFrames,
     })
     .superRefine((v, ctx) => {
@@ -144,7 +156,7 @@ const stateFrames = z.union([
         });
       }
       if (v.frames === undefined) {
-        for (const key of ['ticks', 'loop'] as const) {
+        for (const key of ['ticks', 'loop', 'then', 'events'] as const) {
           if (v[key] !== undefined) {
             ctx.addIssue({ code: 'custom', path: [key], message: `"${key}" goes with "frames"` });
           }
@@ -159,7 +171,7 @@ const offset = z
 
 /** Fields only a sprite (2D) entry has, and only a mesh (3D) entry has. */
 const SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'flipFacing', 'size', 'fallbackColor', 'frame'] as const;
-const MESH_FIELDS = ['mesh', 'color', 'scale', 'depth', 'z'] as const;
+const MESH_FIELDS = ['mesh', 'color', 'poses', 'scale', 'depth', 'z'] as const;
 /** Skin-level fields only a 3D skin has. */
 const MESH_SKIN_FIELDS = ['meshes', 'camera3d'] as const;
 
@@ -335,6 +347,12 @@ const kindEntry = z.strictObject({
     .describe('2D: the box colour when a frame is missing (default `sheets.fallbackColor`)'),
   mesh: meshRef.exactOptional(),
   color: color.exactOptional().describe("3D: the mesh's colour"),
+  poses: z
+    .record(id, stateFrames)
+    .exactOptional()
+    .describe(
+      "3D: animation state -> a mesh (a primitive or a key of `meshes`), a cycle of meshes or a mesh or cycle per facing, read as `frames` is (timing, `loop`, `then`, frame `events`, the `idle` fallback); without `poses` the entry's `mesh` is shown",
+    ),
   scale: z
     .number()
     .positive()
@@ -484,7 +502,10 @@ function checkShapes(
 function checkMeshes(
   skin: {
     backend: string;
-    kinds: Record<string, { mesh?: string; byTag?: { mesh?: string }[] }>;
+    kinds: Record<
+      string,
+      { mesh?: string; poses?: Record<string, SkinStateFrames>; byTag?: { mesh?: string }[] }
+    >;
     tiles?: Record<string, { mesh?: string }>;
     meshes?: Record<string, unknown>;
     camera3d?: unknown;
@@ -520,6 +541,15 @@ function checkMeshes(
   };
   for (const [key, entry] of Object.entries(skin.kinds)) {
     check(['kinds', key], entry.mesh);
+    for (const pose of framesOf(entry.poses ?? {}, 'poses')) {
+      if (isPrimitive(pose.frame) || Object.hasOwn(meshes, pose.frame)) continue;
+      ctx.addIssue({
+        code: 'custom',
+        path: ['kinds', key, ...pose.path],
+        message: `no primitive or mesh "${pose.frame}" (primitives: ${MESH_PRIMITIVES.join(', ')})`,
+        params: { code: 'missing_ref' },
+      });
+    }
     (entry.byTag ?? []).forEach((look, i) => check(['kinds', key, 'byTag', i], look.mesh));
   }
   for (const [key, entry] of Object.entries(skin.tiles ?? {})) check(['tiles', key], entry.mesh);
@@ -649,6 +679,15 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
       sheetAt(at, look.sheet ?? entry.sheet, framesOf(look.frames ?? {}));
     });
   }
+  for (const [kind, entry] of Object.entries(skin.kinds)) {
+    for (const field of ['frames', 'poses'] as const) {
+      issues.push(...checkCycles(name, ['kinds', kind, field], entry[field]));
+      (entry.byTag ?? []).forEach((look, i) => {
+        if (field === 'frames')
+          issues.push(...checkCycles(name, ['kinds', kind, 'byTag', i, field], look.frames));
+      });
+    }
+  }
   for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
     if (entry.mesh === undefined) sheetAt(['tiles', tile], entry.sheet, one(entry.frame));
   }
@@ -661,15 +700,67 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
   return issues;
 }
 
+/** A frame index as an `events` key writes it: a whole number without leading zeros. */
+const FRAME_INDEX = /^(?:0|[1-9]\d*)$/;
+
+/**
+ * The timing problems of an animation table (`frames` or `poses`, at `path`; Engine 0.16 T2): a
+ * per-frame `ticks` list not one entry per frame (`bad_frame_ticks`), a frame event key that is
+ * not a frame index of its cycle (`bad_frame_event`), and a `then` on a looping cycle or naming a
+ * state the table lacks (`bad_then`).
+ */
+function checkCycles(
+  name: string,
+  path: FieldPath,
+  table: Record<string, SkinStateFrames> | undefined,
+): KindIssue[] {
+  const issues: KindIssue[] = [];
+  const check = (c: SkinCycle, at: FieldPath) => {
+    const n = c.frames.length;
+    if (Array.isArray(c.ticks) && c.ticks.length !== n) {
+      issues.push({
+        name,
+        path: [...at, 'ticks'],
+        code: 'bad_frame_ticks',
+        message: `${c.ticks.length} tick counts for ${n} frame${n === 1 ? '' : 's'}: give one per frame, or one number`,
+      });
+    }
+    for (const key of Object.keys(c.events ?? {})) {
+      if (FRAME_INDEX.test(key) && Number(key) < n) continue;
+      issues.push({
+        name,
+        path: [...at, 'events', key],
+        code: 'bad_frame_event',
+        message: `"${key}" is not a frame of this cycle: use a frame index from 0 to ${n - 1}`,
+      });
+    }
+    if (c.then === undefined) return;
+    if (c.loop !== false) {
+      const message = '"then" follows a one-shot: give "loop": false too';
+      issues.push({ name, path: [...at, 'then'], code: 'bad_then', message });
+    } else if (!Object.hasOwn(table ?? {}, c.then)) {
+      const message = `no state "${c.then}" here (states: ${Object.keys(table ?? {}).join(', ')})`;
+      issues.push({ name, path: [...at, 'then'], code: 'bad_then', message });
+    }
+  };
+  for (const [state, spec] of Object.entries(table ?? {})) {
+    const at: FieldPath = [...path, state];
+    if (typeof spec === 'string') continue;
+    if (spec.frames !== undefined) check({ ...spec, frames: spec.frames }, at);
+    else for (const f of FACINGS) if (typeof spec[f] === 'object') check(spec[f], [...at, f]);
+  }
+  return issues;
+}
+
 /** Every frame name in an entry's `frames`, with its path inside the entry. */
-function framesOf(frames: Record<string, SkinStateFrames>): NamedFrame[] {
+function framesOf(frames: Record<string, SkinStateFrames>, field = 'frames'): NamedFrame[] {
   const out: NamedFrame[] = [];
   const add = (spec: string | SkinCycle, path: FieldPath) => {
     if (typeof spec === 'string') out.push({ frame: spec, path });
     else spec.frames.forEach((f, i) => out.push({ frame: f, path: [...path, 'frames', i] }));
   };
   for (const [state, spec] of Object.entries(frames)) {
-    const at: FieldPath = ['frames', state];
+    const at: FieldPath = [field, state];
     if (typeof spec === 'string') add(spec, at);
     else if (spec.frames !== undefined) add({ frames: spec.frames }, at);
     else for (const f of FACINGS) if (spec[f] !== undefined) add(spec[f], [...at, f]);
@@ -823,18 +914,239 @@ export interface SkinFrame {
   offset?: { x: number; y: number };
 }
 
-/** The frame of a cycle at tick `t`. */
-function cycleFrame(spec: string | DeepReadonly<SkinCycle>, t: number): string {
-  if (typeof spec === 'string') return spec;
-  const step = Math.floor(t / (spec.ticks ?? DEFAULT_FRAME_TICKS));
-  const n = spec.frames.length;
-  return spec.frames[spec.loop === false ? Math.min(step, n - 1) : step % n]!;
+// ---- Animation timing (Engine 0.16 T2) ----
+
+/** A cycle as the timing reads it. */
+type Cycle = DeepReadonly<SkinCycle>;
+
+/** The most frame events {@link frameEventsBetween} gives for one entity at once. */
+export const FRAME_EVENT_LIMIT = 16;
+
+/**
+ * Ticks frame `i` of a cycle shows: its `ticks` when that is one number, its entry in a per-frame
+ * list (the list's last entry past its end, which `validate` reports as `bad_frame_ticks`), else
+ * {@link DEFAULT_FRAME_TICKS}. Pure.
+ */
+export function cycleFrameTicks(c: Cycle, i: number): number {
+  const ticks = c.ticks;
+  if (ticks === undefined) return DEFAULT_FRAME_TICKS;
+  if (typeof ticks === 'number') return ticks;
+  return ticks[Math.min(i, ticks.length - 1)] ?? DEFAULT_FRAME_TICKS;
+}
+
+/** Ticks one pass through a cycle takes: every frame's ticks added up. Pure. */
+export function cycleLength(c: Cycle): number {
+  let sum = 0;
+  for (let i = 0; i < c.frames.length; i++) sum += cycleFrameTicks(c, i);
+  return sum;
+}
+
+/**
+ * Which frame of a cycle shows at tick `t` of it: a looping cycle wraps, a one-shot (`loop:
+ * false`) holds its last frame once `t` reaches its length, and is then `done`. Pure.
+ */
+export function cyclePosition(c: Cycle, t: number): { index: number; done: boolean } {
+  const n = c.frames.length;
+  const length = cycleLength(c);
+  if (c.loop === false && t >= length) return { index: n - 1, done: true };
+  let local = c.loop === false ? t : ((t % length) + length) % length;
+  let i = 0;
+  for (; i < n - 1; i++) {
+    const d = cycleFrameTicks(c, i);
+    if (local < d) break;
+    local -= d;
+  }
+  return { index: i, done: false };
+}
+
+/**
+ * One stretch of an entity's animation: a state's frame or cycle for its facing, from tick
+ * `start` of the entity's state until `end` (Infinity for the last).
+ */
+interface AnimSegment {
+  state: string;
+  spec: string | Cycle;
+  flipX: boolean;
+  start: number;
+  end: number;
+}
+
+/** The animation table an entry is drawn from: `poses` (meshes) on a 3D skin, else `frames`. */
+function animTable(
+  skin: DeepReadonly<SkinFile>,
+  entry: DeepReadonly<SkinKindEntry>,
+): DeepReadonly<Record<string, SkinStateFrames>> | undefined {
+  return MESH_BACKENDS.includes(skin.backend) ? entry.poses : entry.frames;
+}
+
+/**
+ * The stretches an entity's animation state plays, in order: its state (`idle` when it is not
+ * listed, else the first), then, while a one-shot cycle with `then` finishes, the state it names,
+ * from the tick the one-shot ended. A `then` back to a state already played holds instead, so the
+ * list is finite.
+ */
+function animSegments(
+  table: DeepReadonly<Record<string, SkinStateFrames>>,
+  entity: Pick<DeepReadonly<PresentEntity>, 'facing' | 'anim'>,
+  flipFacing: boolean,
+): AnimSegment[] {
+  const states = Object.keys(table);
+  let state: string | undefined = Object.hasOwn(table, entity.anim.state)
+    ? entity.anim.state
+    : Object.hasOwn(table, 'idle')
+      ? 'idle'
+      : states[0];
+  const out: AnimSegment[] = [];
+  const played = new Set<string>();
+  let start = 0;
+  while (state !== undefined) {
+    played.add(state);
+    const picked = stateSpec(table[state]!, entity.facing, flipFacing);
+    if (picked === undefined) break;
+    const seg: AnimSegment = { state, ...picked, start, end: Infinity };
+    out.push(seg);
+    const c = picked.spec;
+    if (typeof c === 'string' || c.loop !== false) break;
+    const next = c.then;
+    if (next === undefined || !Object.hasOwn(table, next) || played.has(next)) break;
+    seg.end = start + cycleLength(c);
+    start = seg.end;
+    state = next;
+  }
+  return out;
+}
+
+/** The frame or cycle a state shows for `facing`, and whether it is drawn mirrored. */
+function stateSpec(
+  spec: DeepReadonly<SkinStateFrames>,
+  facing: Facing,
+  flipFacing: boolean,
+): { spec: string | Cycle; flipX: boolean } | undefined {
+  if (typeof spec === 'string') return { spec, flipX: flipFacing && facesLeft(facing) };
+  if (spec.frames !== undefined) {
+    return { spec: { ...spec, frames: spec.frames } as Cycle, flipX: flipFacing && facesLeft(facing) };
+  }
+  const picked = pickFacing(facing, (f) => spec[f] !== undefined, flipFacing);
+  return picked === undefined ? undefined : { spec: spec[picked.facing]!, flipX: picked.flipX };
+}
+
+/** An entity's animation as a skin shows it now ({@link resolveSkinAnimation}). */
+export interface SkinAnimation {
+  /** The state shown: the entity's, else `idle`, else the first, or one a finished one-shot's `then` led to. */
+  state: string;
+  /** The frame name (2D) or mesh name (a 3D skin's `poses`). */
+  frame: string;
+  /** Its index in its cycle (0 for a single frame). */
+  index: number;
+  /** Ticks since the shown state began. */
+  t: number;
+  /** Draw it mirrored left to right (`flipFacing`). */
+  flipX: boolean;
+}
+
+/**
+ * What a skin shows of an entity's animation at its `anim.t` (Engine 0.16 T2): the entry's
+ * (its tag look's) `frames`, or on a 3D skin its `poses`; the state, falling back to `idle`, then
+ * the first; the facing's frame or cycle (with the fallbacks of {@link resolveSkinFrame}); the
+ * cycle's frame by per-frame timing (`ticks`, one number or one per frame), looping or, with
+ * `loop: false`, held on the last frame, or once finished handing over to its `then` state, which
+ * starts from the tick it finished. Undefined for an unlisted kind or an entry without that table.
+ * Pure.
+ */
+export function resolveSkinAnimation(
+  skin: DeepReadonly<SkinFile>,
+  entity: SkinEntityInput & Pick<DeepReadonly<PresentEntity>, 'facing' | 'anim'>,
+): SkinAnimation | undefined {
+  const entry = resolveSkinKind(skin, entity);
+  const table = entry === undefined ? undefined : animTable(skin, entry);
+  if (entry === undefined || table === undefined) return undefined;
+  const segments = animSegments(table, entity, entry.flipFacing === true);
+  const t = entity.anim.t;
+  const seg = segments.find((s) => t < s.end) ?? segments[segments.length - 1];
+  if (seg === undefined) return undefined;
+  const local = t - seg.start;
+  if (typeof seg.spec === 'string') {
+    return { state: seg.state, frame: seg.spec, index: 0, t: local, flipX: seg.flipX };
+  }
+  const { index } = cyclePosition(seg.spec, local);
+  return { state: seg.state, frame: seg.spec.frames[index]!, index, t: local, flipX: seg.flipX };
+}
+
+/** A frame event: a cycle's `events` entry whose frame started ({@link frameEventsBetween}). */
+export interface SkinFrameEvent {
+  /** The event type the skin names (`footstep`), looked up in the skin's `events` like a kit's. */
+  type: string;
+  /** The state whose cycle it is in. */
+  state: string;
+  /** The frame's index in that cycle. */
+  index: number;
+  /** The tick of the entity's state the frame started on. */
+  t: number;
+}
+
+/**
+ * The frame events of an entity whose state ran from tick `prevT` (not included) to `t` (included)
+ * (Engine 0.16 T2): for every frame that started in that window, in time order, its cycle's
+ * `events` entry, across a looping cycle's wraps and into a finished one-shot's `then` state, at
+ * most {@link FRAME_EVENT_LIMIT}. A state that just began (its `t` 0) is asked from `prevT` -1, so
+ * its first frame's event comes too. Backends turn these into presentation-only events
+ * (never into the frame or the kit) and play them through the skin's `events`. Pure.
+ */
+export function frameEventsBetween(
+  skin: DeepReadonly<SkinFile>,
+  entity: SkinEntityInput & Pick<DeepReadonly<PresentEntity>, 'facing' | 'anim'>,
+  prevT: number,
+  t: number,
+): SkinFrameEvent[] {
+  const out: SkinFrameEvent[] = [];
+  if (t <= prevT) return out;
+  const entry = resolveSkinKind(skin, entity);
+  const table = entry === undefined ? undefined : animTable(skin, entry);
+  if (entry === undefined || table === undefined) return out;
+  for (const seg of animSegments(table, entity, entry.flipFacing === true)) {
+    if (seg.start > t) break;
+    const c = seg.spec;
+    if (typeof c === 'string' || c.events === undefined || seg.end <= prevT + 1) continue;
+    const length = cycleLength(c);
+    const offsets: number[] = [];
+    for (let i = 0, at = 0; i < c.frames.length; at += cycleFrameTicks(c, i), i++) offsets.push(at);
+    const laps = c.loop === false ? 1 : Infinity;
+    const first = Math.max(0, Math.floor((prevT + 1 - seg.start) / length));
+    for (let k = first; k < laps; k++) {
+      const lap = seg.start + k * length;
+      if (lap > t || lap >= seg.end) break;
+      for (let i = 0; i < offsets.length; i++) {
+        const at = lap + offsets[i]!;
+        if (at <= prevT || at > t || at >= seg.end) continue;
+        const type = Object.hasOwn(c.events, String(i)) ? c.events[String(i)] : undefined;
+        if (type === undefined) continue;
+        out.push({ type, state: seg.state, index: i, t: at });
+        if (out.length >= FRAME_EVENT_LIMIT) return out;
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * The mesh a 3D skin shows for an entity now: its `poses` frame ({@link resolveSkinAnimation})
+ * when the entry has poses, else its `mesh`; undefined for an unlisted kind. Pure.
+ */
+export function resolveSkinMesh(
+  skin: DeepReadonly<SkinFile>,
+  entity: SkinEntityInput & Pick<DeepReadonly<PresentEntity>, 'facing' | 'anim'>,
+): string | undefined {
+  const entry = resolveSkinKind(skin, entity);
+  if (entry === undefined) return undefined;
+  if (entry.poses !== undefined) return resolveSkinAnimation(skin, entity)?.frame ?? entry.mesh;
+  return entry.mesh;
 }
 
 /**
  * The frame to draw for `entity` with `skin`: its kind's entry, the frames of its animation state
- * (`idle` when the state is not listed, else the first state), the frame of a cycle at `anim.t`,
- * and the facing's frame. A facing the state gives no frame for falls back in turn: a left-hand
+ * (`idle` when the state is not listed, else the first state), the frame of a cycle at `anim.t`
+ * ({@link resolveSkinAnimation}: per-frame timing, one-shots and `then`), and the facing's frame.
+ * A facing the state gives no frame for falls back in turn: a left-hand
  * facing (`left`, `up-left`, `down-left`) uses its right-hand mirror flipped when the entry sets
  * `flipFacing`; a diagonal uses its horizontal part (`up-right` uses `right`, owner answer 128),
  * then that part's own fallback (mirrored `right` for `left`); then `down`, then the first given.
@@ -858,27 +1170,11 @@ export function resolveSkinFrame(
   if (palette !== undefined) out.palette = palette;
   if (entry.size) out.size = { ...entry.size };
   if (entry.offset) out.offset = { ...entry.offset };
-
-  const frames = entry.frames ?? {};
-  const states = Object.keys(frames);
-  const state = Object.hasOwn(frames, entity.anim.state)
-    ? entity.anim.state
-    : 'idle' in frames
-      ? 'idle'
-      : states[0];
-  if (state === undefined) return out;
-  const spec = frames[state]!;
-  const flipFacing = entry.flipFacing === true;
-  if (typeof spec === 'string' || spec.frames !== undefined) {
-    out.frame =
-      typeof spec === 'string' ? spec : cycleFrame({ ...spec, frames: spec.frames! }, entity.anim.t);
-    out.flipX = flipFacing && facesLeft(entity.facing);
-    return out;
-  }
-  const facing = pickFacing(entity.facing, (f) => spec[f] !== undefined, flipFacing);
-  if (facing !== undefined) {
-    out.frame = cycleFrame(spec[facing.facing]!, entity.anim.t);
-    out.flipX = facing.flipX;
+  if (entry.frames === undefined || MESH_BACKENDS.includes(skin.backend)) return out;
+  const anim = resolveSkinAnimation(skin, entity);
+  if (anim !== undefined) {
+    out.frame = anim.frame;
+    out.flipX = anim.flipX;
   }
   return out;
 }

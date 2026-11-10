@@ -24,11 +24,13 @@ import {
   cameraZoom,
   CameraFollower,
   DEFAULT_FALLBACK_COLOR,
+  FrameEventClock,
   facesLeft,
   isFullMap,
   resolveCamera3d,
   resolveMeshParts,
   resolveSkinKind,
+  resolveSkinMesh,
   skinBackground,
   skinTagIndex,
   resolveSkinEvent,
@@ -96,6 +98,8 @@ interface EntityNode {
   h: number;
   /** The `byTag` look it was built with (-1: the kind's own). */
   look: number;
+  /** The mesh it was built with (its `poses` frame, else the entry's `mesh`). */
+  mesh: string | undefined;
   materials: MeshLambertMaterial[];
 }
 
@@ -164,6 +168,8 @@ export class ThreeScene {
   private builds = 0;
   private effects: ActiveEffect[] = [];
   private lastEvents: number | null = null;
+  /** Frame events of the skin's `poses` cycles, scene state only. */
+  private readonly frameEvents = new FrameEventClock();
   private framed: PresentBox | null = null;
   private readonly particleBox = new BoxGeometry(1, 1, 1);
   private readonly particleMaterials = new Map<string, MeshBasicMaterial>();
@@ -262,7 +268,9 @@ export class ThreeScene {
     });
     if (this.lastEvents === frame.frame) return;
     this.lastEvents = frame.frame;
-    for (const ev of frame.events) {
+    // The frame's events, then the skin's frame events (a footstep on a run cycle's frame),
+    // which run through the same `events` entries but never go into the frame.
+    for (const ev of [...frame.events, ...this.frameEvents.next(this.skin, frame.entities)]) {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
       if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
@@ -429,7 +437,11 @@ export class ThreeScene {
       let node = this.nodes.get(e.id);
       if (
         node &&
-        (node.kind !== e.kind || node.w !== e.w || node.h !== e.h || node.look !== this.lookOf(e))
+        (node.kind !== e.kind ||
+          node.w !== e.w ||
+          node.h !== e.h ||
+          node.look !== this.lookOf(e) ||
+          node.mesh !== resolveSkinMesh(this.skin, e))
       ) {
         this.scene.remove(node.root);
         disposeNode(node);
@@ -460,7 +472,10 @@ export class ThreeScene {
   private buildEntity(e: Entity): EntityNode {
     const entry = resolveSkinKind(this.skin, e);
     const box = { w: e.w, h: e.h };
-    let parts: MeshPart[] = entry ? resolveMeshParts(this.skin, entry, box) : [];
+    // A `poses` cycle swaps the mesh by animation state and frame (Engine 0.16 T2).
+    const mesh = resolveSkinMesh(this.skin, e);
+    const shown = entry && mesh !== undefined ? { ...entry, mesh } : entry;
+    let parts: MeshPart[] = shown ? resolveMeshParts(this.skin, shown, box) : [];
     const fallback = parts.length === 0;
     if (fallback) {
       const color = this.skin.sheets?.fallbackColor ?? DEFAULT_FALLBACK_COLOR;
@@ -485,7 +500,7 @@ export class ThreeScene {
       mesh.rotation.y = (part.rotate * Math.PI) / 2;
       root.add(mesh);
     }
-    return { root, kind: e.kind, w: e.w, h: e.h, look: this.lookOf(e), materials };
+    return { root, kind: e.kind, w: e.w, h: e.h, look: this.lookOf(e), mesh, materials };
   }
 
   private place(node: EntityNode, e: Entity): void {

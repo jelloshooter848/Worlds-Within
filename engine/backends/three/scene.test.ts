@@ -528,3 +528,43 @@ describe('ThreeScene: read-only inputs and determinism', () => {
     }
   });
 });
+
+describe('poses and frame events (Engine 0.16 T2)', () => {
+  const skin: SkinFile = {
+    backend: 'three',
+    meshes: {
+      'stride-a': [{ shape: 'box', size: { w: 16, h: 16, d: 8 } }],
+      'stride-b': [
+        { shape: 'box', size: { w: 16, h: 8, d: 8 } },
+        { shape: 'sphere', size: { w: 8, h: 8, d: 8 }, at: { x: 4, y: 8, z: 0 } },
+      ],
+    },
+    kinds: {
+      hero: {
+        mesh: 'box',
+        color: '#d82800',
+        poses: {
+          run: { frames: ['stride-a', 'stride-b'], ticks: [2, 3], events: { 1: 'footstep' } },
+          idle: 'box',
+        },
+      },
+    },
+    events: { footstep: { sound: 'step' } },
+  };
+
+  it('swaps the mesh by pose frame and plays its frame events once', () => {
+    expect(skinSchema.safeParse(skin).success).toBe(true);
+    const sounds: string[] = [];
+    const s = new ThreeScene(skin, { onSound: (id) => sounds.push(id) });
+    const parts: number[] = [];
+    for (let t = 0; t < 8; t++) {
+      const f = freezeFrame(frame({ frame: t, entities: [hero({ anim: { state: 'run', t } })] }));
+      s.sync(f);
+      s.sync(f);
+      parts.push(meshesOf(s, 'p1').length);
+    }
+    expect(parts).toEqual([1, 1, 2, 2, 2, 1, 1, 2]);
+    expect(sounds).toEqual(['step', 'step']);
+    s.dispose();
+  });
+});

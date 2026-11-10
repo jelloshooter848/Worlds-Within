@@ -1,0 +1,33 @@
+{
+  "run": "games/fx-lab/runs/level-1.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "4230a95f19ec6931"
+    },
+    {
+      "tick": 60,
+      "hash": "2087d85d91321646"
+    },
+    {
+      "tick": 120,
+      "hash": "f399e1343393ea4d"
+    },
+    {
+      "tick": 180,
+      "hash": "7425c7e057c7fbb9"
+    },
+    {
+      "tick": 240,
+      "hash": "a90b0b9b789d613e"
+    },
+    {
+      "tick": 300,
+      "hash": "1c38177871d06674"
+    },
+    {
+      "tick": 360,
+      "hash": "e2534d69c3450fd9"
+    }
+  ]
+}

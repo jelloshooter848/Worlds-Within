@@ -63,7 +63,13 @@ color? }`: `tag` matches one whole tag; `prefix` (Engine 0.15, gap M2) any tag s
 event)` gives the entry, the first matching field key in file order, else the bare type's. From
   Engine 0.16 an event entry's `tween` and a kind entry's `spawnTween` (tween specs from
   [`engine/core/fx`](engine-core-fx.md)) animate the event's entity or a newly shown entity in the
-  presenter, never in the frame. Field
+  presenter, never in the frame. From Engine 0.16 T2 a cycle has per-frame `ticks` (one number or
+  one per frame), `loop: false` one-shots with an optional `then` state, and frame `events`
+  (`{ "1": "footstep" }`); a 3D kind's `poses` is the same table with mesh names.
+  `resolveSkinAnimation`, `resolveSkinMesh` and `frameEventsBetween` are the pure readings, and
+  `FrameEventClock` (`frame-events.ts`) turns them into presentation-only events that both
+  presenters play through the skin's `events`; `checkSkinRefs` adds `bad_frame_ticks`,
+  `bad_frame_event` and `bad_then`. `games/fx-lab` is the worked example. Field
   reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named

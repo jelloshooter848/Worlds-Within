@@ -40,7 +40,9 @@ camera.
   them at z = -(i + 1) * `camera3d.layerDepth` (background scenery; in 2D they draw after the
   tiles and still under the entities).
 - Entities: one root `Group` per entity id, made on first sight, updated each frame, removed when
-  the id is gone, rebuilt when its kind, box size or tag look changes. The entry is
+  the id is gone, rebuilt when its kind, box size, tag look or mesh changes. The mesh is
+  `resolveSkinMesh` (Engine 0.16 T2): the kind's `poses` frame (a mesh per animation state and
+  frame, with per-frame timing, one-shots and `then`), else its `mesh`. The entry is
   `resolveSkinKind(skin, entity)`: the kind's, with the first `byTag` look that matches one of the
   entity's tags laid over it (Engine 0.11, gap G30; a `prefix` look with a `min`/`max` range from
   Engine 0.15, gap M2, so a `progress:<n>` tag rebuilds the entity only when it crosses into
@@ -65,7 +67,8 @@ camera.
   `cameraShake` (hint `shake` plus `shake` effects) moves it on x each frame, never stored.
 - Lights: one `AmbientLight` and one `DirectionalLight` (`camera3d.lights`), no shadows.
 - Events: each event with a skin entry (`resolveSkinEvent`: a field key such as
-  `mini-game-end:pass` first, then the bare type; gap G28) calls `onSound(sound)` once; a frame with the same
+  `mini-game-end:pass` first, then the bare type; gap G28), then each frame event of the skin's
+  `poses` cycles (a `FrameEventClock`, Engine 0.16 T2), calls `onSound(sound)` once; a frame with the same
   `frame` number as the last one does not replay them. Effects: `flash` (skipped with
   `reduceFlashing`) and `tint` (fading from 0.4) show on `overlay`, a full-screen plane on the
   camera drawn last; `shake` moves the camera; `particles` (Engine 0.15, gap G33) start at the
@@ -174,7 +177,8 @@ and alpha, the fallback box, a skin's tag look (built for the tag, rebuilt when 
 rebuilt only when a `progress:` value crosses into it, M2), the scene's background (the skin's,
 black without one, the option first; G36), the camera framing the same world box as `CameraFollower` (corners
 projected to the picture's corners), hint framing, zoom, tilt and shake, lights, sounds once per
-event (by the event's `result` field, falling back to the bare type), the flash overlay, frozen frames and skin never changed, and repeatable builds.
+event (by the event's `result` field, falling back to the bare type), `poses` swapping the mesh by
+frame and their frame events played once (Engine 0.16 T2), the flash overlay, frozen frames and skin never changed, and repeatable builds.
 `renderer-info.test.ts` checks `isSoftwareRenderer` on software strings (SwiftShader, ANGLE on
 SwiftShader, llvmpipe, softpipe, Microsoft Basic Render) and typical hardware ones (ANGLE on
 NVIDIA, AMD, Intel and Apple, Mesa, Adreno), and `webglRendererInfo` with a fake context with and

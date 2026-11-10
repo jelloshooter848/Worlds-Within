@@ -731,3 +731,57 @@ describe('skinSetCanvasPresenter (gap G34)', () => {
     expect(over.calls[0]).toBe('clear #fff');
   });
 });
+
+describe('frame events and per-frame timing (Engine 0.16 T2)', () => {
+  const skin: SkinFile = {
+    backend: 'canvas2d',
+    sheets: { sheet: 'hero', fallbackColor: '#00a800' },
+    kinds: {
+      hero: {
+        frames: {
+          run: { frames: ['down-0', 'side-0'], ticks: [2, 3], events: { 1: 'footstep' } },
+          idle: 'down-0',
+        },
+      },
+    },
+    events: { footstep: { sound: 'step', effect: { kind: 'particles', count: 2, ticks: 3 } } },
+  };
+
+  it('plays a frame event through the skin events, once per frame started, never into the frame', () => {
+    const { r, calls } = recorder();
+    const sounds: string[] = [];
+    const p = new SkinnedCanvasPresenter(r, skin, lookup, {
+      mapSurface: () => null,
+      onSound: (id) => sounds.push(id),
+    });
+    const at: number[] = [];
+    for (let t = 0; t < 12; t++) {
+      const f = freezeFrame(frame({ frame: t, entities: [hero({ anim: { state: 'run', t } })] }));
+      const before = sounds.length;
+      p.present(f);
+      // A frame shown twice does not replay its frame events.
+      p.present(f);
+      if (sounds.length > before) at.push(t);
+      expect(f.events).toEqual([]);
+    }
+    // The run cycle is 5 ticks; frame 1 starts at 2, 7.
+    expect(at).toEqual([2, 7]);
+    expect(sounds).toEqual(['step', 'step']);
+    // Its particles were drawn, and the cycle's frames by their own ticks.
+    expect(calls.filter((c) => c.startsWith('rect') && c.endsWith('#fcfcfc')).length).toBeGreaterThan(0);
+    expect(calls.filter((c) => c.startsWith('sprite hero:side-0')).length).toBe(2 * 2 * 3);
+  });
+
+  it('gives a state its first frame event when it begins, not before', () => {
+    const s: SkinFile = structuredClone(skin);
+    (s.kinds['hero']!.frames!['run'] as { events: Record<string, string> }).events = { 0: 'footstep' };
+    const sounds: string[] = [];
+    const p = new SkinnedCanvasPresenter(recorder().r, s, lookup, {
+      mapSurface: () => null,
+      onSound: (id) => sounds.push(id),
+    });
+    p.present(frame({ frame: 0, entities: [hero()] }));
+    p.present(frame({ frame: 1, entities: [hero({ anim: { state: 'run', t: 0 } })] }));
+    expect(sounds).toEqual(['step']);
+  });
+});

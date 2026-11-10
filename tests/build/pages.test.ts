@@ -8,10 +8,11 @@ import { discoverGames, GAME_LIST_MARKER, gameListHtml, pageInputs } from '../..
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
 describe('game page discovery', () => {
-  it('finds games/samples/dungeon and games/platformer-lab in the repo', () => {
+  it('finds games/samples/dungeon, games/platformer-lab and games/fx-lab in the repo', () => {
     const dirs = discoverGames(repoRoot).map((page) => page.dir);
     expect(dirs).toContain('games/samples/dungeon');
     expect(dirs).toContain('games/platformer-lab');
+    expect(dirs).toContain('games/fx-lab');
   });
 
   it('finds the RTS skirmish sample under games/samples (Engine 0.9 T12)', () => {

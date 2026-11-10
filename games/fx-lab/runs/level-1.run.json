@@ -1,0 +1,32 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 360,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["right"] },
+      { "frame": 130, "hold": ["right", "jump"] },
+      { "frame": 140, "hold": ["right"] },
+      { "frame": 186, "hold": [] },
+      { "frame": 192, "hold": ["jump"] },
+      { "frame": 196, "hold": [] },
+      { "frame": 225, "hold": ["right", "run"] },
+      { "frame": 256, "hold": ["right", "run", "jump"] },
+      { "frame": 262, "hold": ["right", "run"] },
+      { "frame": 280, "hold": ["right", "run", "jump"] },
+      { "frame": 284, "hold": ["right"] }
+    ]
+  },
+  "assertions": [
+    { "tick": 0, "path": "level", "op": "eq", "value": "fx-1" },
+    { "tick": 120, "path": "coins", "op": "eq", "value": 3 },
+    { "tick": 160, "path": "coins", "op": "eq", "value": 5 },
+    { "tick": 160, "path": "player.onGround", "op": "eq", "value": true },
+    { "tick": 220, "path": "actors.length", "op": "eq", "value": 1 },
+    { "tick": 320, "path": "actors.length", "op": "eq", "value": 0 },
+    { "tick": 360, "path": "outcome", "op": "eq", "value": "cleared" },
+    { "tick": 360, "path": "lives", "op": "eq", "value": 3 }
+  ],
+  "invariants": [{ "path": "lives", "op": "eq", "value": 3 }],
+  "hashEvery": 60
+}

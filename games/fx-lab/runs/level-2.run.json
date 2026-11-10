@@ -1,0 +1,28 @@
+{
+  "game": "..",
+  "seed": 1,
+  "start": { "stage": 1 },
+  "ticks": 360,
+  "input": {
+    "steps": [
+      { "frame": 0, "hold": ["right"] },
+      { "frame": 90, "hold": ["right", "jump"] },
+      { "frame": 98, "hold": ["right"] },
+      { "frame": 120, "hold": ["right", "run"] },
+      { "frame": 158, "hold": ["right", "run", "jump"] },
+      { "frame": 172, "hold": ["right", "run"] },
+      { "frame": 200, "hold": ["right", "run", "jump"] },
+      { "frame": 204, "hold": ["right", "run"] }
+    ]
+  },
+  "assertions": [
+    { "tick": 0, "path": "level", "op": "eq", "value": "fx-2" },
+    { "tick": 120, "path": "actors.length", "op": "eq", "value": 2 },
+    { "tick": 240, "path": "actors.length", "op": "eq", "value": 1 },
+    { "tick": 240, "path": "player.hp", "op": "eq", "value": 2 },
+    { "tick": 300, "path": "player.hp", "op": "eq", "value": 1 },
+    { "tick": 360, "path": "outcome", "op": "eq", "value": "cleared" }
+  ],
+  "invariants": [{ "path": "lives", "op": "eq", "value": 3 }],
+  "hashEvery": 60
+}

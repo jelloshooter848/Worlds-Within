@@ -58,6 +58,35 @@ tiles?, events?, hud?, camera?, meshes?, camera3d? }`. `background` (Engine 0.15
   (`EVENT_KEY_FIELD`; `mini-game-end:pass`), `type:field=value` any other
   (`mission-commit:outcome=both-burnt`); any other shape is `bad_event_key`; `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`.
+  - Animation states, timing and frame events (Engine 0.16 T2): a cycle (in `frames`, a state's
+    own `{ frames, ... }` or a facing's) is `{ frames, ticks?, loop?, then?, events? }`. `ticks` is
+    one number for every frame or a list, one per frame (`[6, 4, 6, 4]`); `loop: false` plays it
+    once and holds the last frame, and with `then` (a state of the same table, one the kit never
+    sends is fine: `breathe`) hands over to that state from the tick it finished; `events` maps a
+    frame index to a presentation event type (`{ "1": "footstep" }`) sent when that frame starts.
+    Old cycles (one `ticks` number, no `then`) read exactly as before. A 3D kind's `poses` (a
+    `MESH_FIELDS` field; `wrong_backend_field` on a 2D skin) is the same table with mesh names (a
+    primitive or a `meshes` key, else `missing_ref`), so a 3D skin swaps meshes by frame and has
+    the same timing and frame events; without `poses` the entry's `mesh` shows. Checks in
+    `checkSkinRefs` (kinds' `frames` and `poses` and looks' `frames`): a `ticks` list not one per
+    frame `bad_frame_ticks`, an `events` key that is not a frame index of its cycle (`0`..n-1, no
+    leading zeros) `bad_frame_event`, and a `then` on a looping cycle or naming no state of the
+    table `bad_then`. Pure helpers: `cycleFrameTicks(c, i)`, `cycleLength(c)`,
+    `cyclePosition(c, t)` (`{ index, done }`); `resolveSkinAnimation(skin, entity)` (`SkinAnimation`
+    `{ state, frame, index, t, flipX }`: the state shown after any `then`, the frame or mesh name,
+    its index, ticks into the shown state; undefined for an unlisted kind or no table), which
+    `resolveSkinFrame` uses; `resolveSkinMesh(skin, entity)` (the pose's mesh, else `mesh`); and
+    `frameEventsBetween(skin, entity, prevT, t)` (`SkinFrameEvent { type, state, index, t }` for
+    every frame that started in `(prevT, t]`, across a loop's wraps and into a `then` state, at most
+    `FRAME_EVENT_LIMIT`, 16). A `then` back to a state already played holds, so a chain ends.
+    `frame-events.ts`: `FrameEventClock`, one per presenter: `next(skin, entities)` remembers each
+    entity's state and tick and gives the frame events since the last call as synthetic
+    `PresentEvent`s `{ type, entity, x, y (the entity's bottom centre), state, frame, source:
+'frame' }`; a new entity, a new state or a tick that went back counts from just before its tick
+    now (a state's first frame fires, nothing before it does); a skin with no frame events costs one
+    cached lookup. Both presenters run these through the skin's `events` (sound, effect, tween) after
+    the frame's own events, once per frame number, and never write them into the frame, a kit or a
+    hash. `games/fx-lab` is the worked example.
   - Tweens (Engine 0.16 T1, `engine/core/fx`): an event entry's optional `tween` (one tween spec
     or a list, `tweensSchema`) is started on the event's `entity` (ignored for an event with none),
     and a kind entry's optional `spawnTween` on an entity the first frame a presenter shows it.
@@ -220,6 +249,13 @@ skin (content/skins/<backend>.json)`.
 `present.test.ts`: a fixture frame using every field passes the schema, wrong fields are reported
 at their path, `freezeFrame` makes every write throw, and `MapTracker` sends the map on the first
 frame and on a version (or id) change only. `present.test.ts` also checks all eight facings pass the schema and the facing helpers.
+`skin-anim.test.ts` (Engine 0.16 T2): cycle timing (per-frame ticks, wraps, one-shots done),
+`resolveSkinAnimation` (per-frame timing, a one-shot held, `then` from the tick it finished, a
+`then` loop that holds, old one-number cycles unchanged), `frameEventsBetween` (the window, wrapped
+loops, a state's first frame, a one-shot once, into `then`, facings, the limit), `FrameEventClock`
+(each event once, a new entity from its tick now, nothing without frame events), 3D `poses`
+(`resolveSkinMesh`, `missing_ref`, `wrong_backend_field` on 2D) and the checks (`bad_frame_ticks`,
+`bad_frame_event`, `bad_then`, in looks too).
 `skin.test.ts`: its `looks by tag prefix and value (M2)` block covers `skinTagMatches` (whole
 tag, prefix, ranges, non-numbers), file order picking the most specific stage first, the merged
 entry without match fields, and the `bad_tag_look` refusals; `skin background (G36)` covers
