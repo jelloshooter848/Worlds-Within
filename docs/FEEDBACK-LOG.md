@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 340.** (Last used: 339.)
+**Next unused number: 364.** (Last used: 363.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1332,3 +1332,70 @@ A, Choices made). Each is built and kept unless the owner says otherwise.
   flashes and shake, transitions, the UI kit, the title, pause, settings and controls screens, the
   PNG and glTF assets, 3D lighting and shadows) and say whether it is accepted, or name the tiles
   that are not yet at the bar of item 316.
+
+**Engine 0.16 part A, smaller build choices** (the finalize pass; choices from the T1-T14 task
+results, details in `docs/BUILD-LOG.md`, Engine 0.16 part A). Each is built and kept unless the
+owner says otherwise.
+
+- **340.** Tweens (`tween`, `spawnTween`) validate on 2D and 3D skins, but only the Canvas2D
+  presenter plays them; the 3D backend ignores them for now. Add them to 3D later, or now?
+- **341.** A colour tween is a translucent box over the entity, with a new `amount` field (0 to 1,
+  default 0.5) and `from` defaulting to white. OK, or should it recolour the sprite's pixels?
+- **342.** `spawnTween` starts on any entity the presenter did not see the frame before: every
+  entity on the first frame, and one that leaves and comes back. OK?
+- **343.** A 3D kind's animation table is a new field, `poses` (mesh names), not `frames`, because
+  `frames` is already an error on a 3D skin. Tag looks (`byTag`) cannot set `poses` yet. OK?
+- **344.** The new animation checks (`bad_frame_ticks`, `bad_frame_event`, `bad_then`) run in
+  `validate`'s reference check, not in the skin's Zod schema, so a bare schema parse does not
+  report them. A `then` that leads back to a played state holds the last frame. OK?
+- **345.** Particles in a presenter use its own `seed` option (default 0), not the run's seed,
+  because a frame does not carry it; the picture is still the same every time. OK?
+- **346.** The old `effect.kind: particles` is now a built-in emitter drawn exactly as before.
+  Reduced flashing tones down additive particles only, not every burst. When a particle cap is
+  full, new particles are skipped rather than replacing old ones. OK?
+- **347.** 3D particles are screen-facing points (1024 per buffer, was 256 boxes), 12 px in front
+  of the play plane. OK?
+- **348.** Camera effects (shake, zoom, flash) run on each presenter's own clock, not the frame
+  number, so they keep moving through a hit-pause and the pause after a level; and the page loop
+  now draws only after a step (a 120 Hz screen no longer draws each step twice). OK?
+- **349.** A zoom punch zooms about the followed entity, not the view's centre; look-ahead follows
+  the entity's facing; the existing `deadzone.h` serves as the roadmap's vertical deadzone (no new
+  field). OK?
+- **350.** The shell finds a level change by watching each frame's map id (games need no glue);
+  while the cover closes it shows the last frame from before the change. The platformer sample
+  now opts in, so one browser test's sample tick moved from 2900 to 2930. OK?
+- **351.** The pause menu opens on the raw keys Escape and P, pad button 9 and an on-screen button,
+  not the `start` action (tower defense and the fx lab use Enter for their own things). Esc is
+  still bound to `start`, so in menus Esc confirms rather than going back. OK, or make Esc "back"?
+- **352.** "Back to title" reloads the page on the RTS skirmish, tower defense and mini siege
+  (their DOM bars hold the first scene); the platformer, dungeon and fx lab rebuild the scene. OK?
+- **353.** The title's background is the game's own picture at tick 0 under a dim, not a separate
+  title skin. OK, or should each game get its own title art?
+- **354.** The colour-mode setting is built but hidden, because no sample has colour modes yet. OK?
+- **355.** Music ducking scales the music bus gain (no new gain node, so the 0.15 audio tests stay
+  unchanged); UI sounds get their own bus that follows the sfx volume (no separate stored volume).
+  OK, or add a UI volume setting?
+- **356.** For the fx lab's danger music layer the platformer kit's frame status gained
+  `nearestActor` (pixels to the nearest actor, -1 when none). Presentation only; no hash moved.
+  OK for a kit field added for music?
+- **357.** In the 3D HUD every material is now transparent so draw order stacks the quads (the old
+  opaque box hid bar and minimap fills). For old skins this can change pixels only where a
+  missing-frame box overlaps a sprite. OK?
+- **358.** `missing_glyph` checks only the new font files; old sprite fonts are not checked, so no
+  existing game starts failing `validate`. OK?
+- **359.** glTF models: animation clips always loop (no one-shot or `then`), tag looks cannot set
+  a `model`, and a `.gltf` that points at outside files is refused (`bad_model`), since the engine
+  never fetches files. An entry with a model still needs its text `mesh` as the stand-in. OK?
+- **360.** The 3D look: fog's `near`/`far` are measured behind the play plane (zooming does not
+  move the fog); shadows use PCF (not PCF-soft) so `shadow.radius` works; point lights fade with
+  decay 1, so their strengths are in the tens. Camera tilts left at 4 (platformer) and 6 (fx lab)
+  because more tilt showed sky under the ground. OK?
+- **361.** The fx lab gained a third level (`fx-3`) and a harmless still `torch` actor type in its
+  profile, so the torch presets have something to sit on; levels 1 and 2 and their hashes did not
+  change. OK?
+- **362.** T7's finished UI kit work was found uncommitted in the working tree (an interrupted
+  agent); all checks passed on it and it was committed unchanged (9bce7d7) before T8. Please
+  glance at that commit.
+- **363.** The feature benchmark is a new folder, `tests/bench/feature-render/`, using the
+  games' real frames and unit kinds; the 0.9 `tests/bench/rts-render/` is unchanged. The Canvas2D
+  presenter gained `maxParticles` (default 1024) and `particleCount` for it. OK?

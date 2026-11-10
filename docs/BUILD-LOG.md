@@ -114,7 +114,7 @@ for the platformer and the lab). Each game's `CLAUDE.md` lists its run files and
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 339** (next unused 340). Awaiting the owner's answer, by release (an answer by number is
+used is 363** (next unused 364). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -125,6 +125,8 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.11: **172-196**. Engine 0.12: **197-219**. Engine 0.13: **220-246**.
 - Engine 0.14: **247-277**. Engine 0.15: **278-315** (278-291 the decisions before code, 292-303
   the smaller build choices, 304-315 more choices added by the last finalize pass).
+- Engine 0.16 part A: **323** (PixiJS follow-up T13b), **324-338** (choices made), **339** (the
+  owner's screenshot review), **340-363** (smaller build choices added by the finalize pass).
 
 ### Items not met, and where they went
 
@@ -232,6 +234,20 @@ built and kept unless the owner says otherwise:
   as `docs/reports/*-sheet.png`. **336** the stepped-shell invariance test (real boot, fake page,
   rAF loop) instead of `__ww.replay`. **337** the lab's title dim 0.95. **338** the first Done
   when counted with T13b (PixiJS) open.
+- **340-363** (added by the finalize pass, from the task results): tweens 2D only for now (340);
+  the colour tween as an overlay box with `amount` (341); `spawnTween` on any newly seen entity
+  (342); 3D `poses` (343); the animation checks in `validate`, not the schema (344); the
+  presenter's particle `seed` (345); the old particles effect as a built-in emitter, reduced
+  flashing on additive particles only, full caps skip new spawns (346); 3D particles as points
+  (347); camera effects on the presenter's own clock and the loop drawing only after a step (348);
+  zoom about the followed entity, look-ahead and `deadzone.h` (349); level changes found by map
+  id, the platformer browser test's tick 2900 to 2930 (350); pause on Escape/P, not `start`, and
+  Esc confirming in menus (351); "Back to title" reloading three samples (352); the title over the
+  game's tick-0 picture (353); colour mode hidden (354); ducking on the music bus gain and the UI
+  bus on the sfx volume (355); the platformer kit's `nearestActor` (356); transparent 3D HUD
+  materials (357); `missing_glyph` for font files only (358); glTF limits (359); fog, shadow and
+  light units, camera tilt (360); the lab's `fx-3` level and `torch` actor (361); T7's
+  uncommitted work committed as found (362); the new bench folder and `maxParticles` (363).
 
 ### How to try it
 
@@ -308,12 +324,53 @@ picture's centre, not on Pip (item 334; the page's iris follows him, as the 3D t
 `Pip` and `EXIT` labels overlap when Pip stands in the door; the lab's HUD heading and line sit
 over the picture in every tile (they are the lab's, not a sample's).
 
+### Deviations from the roadmap
+
+- **T13b added to the scope:** the benchmark found Canvas2D short of the bar, so (as item 320
+  allowed) a PixiJS v8 backend was added to the roadmap's part A as a follow-up task. It is not
+  built; `pixi.js` is not in `package.json` yet (item 323).
+- **Binary files in the repo:** three, all asked for by the tasks and allowed by
+  `tests/architecture/no-content.test.ts`: the lab's `assets/fx-lab-png/torch.png` and its `.glb`
+  model in `assets/fx-lab-glb/` (each made by a script in `games/fx-lab/tools/`, with a test that
+  the committed file equals the script's output, credited in `CREDITS.md`), and the review sheet
+  `docs/reports/0.16a-effects-sheet.png` (item 335). Owner answer 322 allows assets in a game's
+  `assets/`; the sheet is a new allowance.
+- **Not every feature is in both backends:** tweens play only in 2D (item 340); the lab's own
+  `ui` screens draw only in 2D (the shell's menus draw in both; item 329); glow and additive blend
+  are 2D only (item 326); PNG frames in a 3D HUD are tested through the sheet lookups, not a 3D
+  screenshot.
+- **"Fade between levels" and "iris on the door":** the lab's door is its level change, so the
+  lab uses the iris there and fades for scenes; the platformer sample got the level fade and the
+  iris for its room doors. The wipe is shown only on demand (no game declares one).
+- **glTF:** the lab ships a `.glb` only; the `.gltf` form is covered by inline test fixtures.
+  Clips always loop (item 359).
+- **`pnpm cli mutants games/fx-lab`** is not expected to pass: the lab is not a kit test; the
+  platformer lab guards the platformer kit's rules (the lab's `CLAUDE.md` says so).
+- **A kit field for presentation:** the platformer kit's frame status gained `nearestActor` for
+  the lab's danger music layer (item 356).
+
+### Finalize pass (checks)
+
+Run on the last part A commit before this section was updated: `pnpm lint`, `pnpm typecheck`,
+`pnpm docs:check`, `pnpm test` (252 files, 2867 tests passed and 1 skipped: the opt-in every-tick
+save check of 0.8) and `pnpm build` all pass; all 59 run files in the repo (13 sim fixtures and
+46 game run files: the five samples, the platformer lab and the fx lab) exit 0 through
+`pnpm -s cli run`; `pnpm -s cli validate` passes for all seven game folders; `pnpm -s cli mutants`
+exits 0 for the five samples and the platformer lab. The two fixes after the close-out commit
+(canvas tweens cleared when a new level starts, a model entry's stand-in mesh kept at the box's
+size) are included. Nothing needed fixing in this pass.
+
 ### Outstanding issues
 
 - **T13b, the PixiJS 2D backend:** not built; waits for the owner's answer to item 323.
 - **The owner's screenshot review:** item 339.
 - A 3D tile is drawn on SwiftShader here (no GPU in the build container), as every 3D screenshot
   since 0.6.
+- On the sheet, a 2D iris closes on the picture's centre, not on Pip (item 334), and the `Pip`
+  and `EXIT` labels overlap when Pip stands in the door.
+- The 3D backend ignores tweens, and the lab's own `ui` screens (its lab menu and dialog) draw in
+  2D only (items 340, 329).
+- The build choices of part A (items 323-363) wait for the owner's answers.
 
 ### T13: the 2D feature benchmark and the Canvas2D/PixiJS decision (item 320)
 
