@@ -297,6 +297,8 @@ describe('validate', () => {
     const root = tempDir();
     cpSync(join(ROOT, 'games/fx-lab'), join(root, 'games/fx-lab'), { recursive: true });
     const lab = join(root, 'games/fx-lab');
+    // The ground-view example skin (Engine 0.16 F2) shows the same model; this checks one skin.
+    rmSync(join(lab, 'content/skins/ground.json'));
     const SKIN = 'games/fx-lab/content/skins/three.json';
     const MODEL = join(lab, 'assets/fx-lab-glb/brazier.glb');
     const errors = async () => {

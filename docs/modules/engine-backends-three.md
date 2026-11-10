@@ -35,7 +35,13 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   effects) as two `Points` buffers, normal and additive, of at most `PARTICLE_POOL` each
   (`particles`, `particleViews()`). Camera effects (Engine 0.16 T4) as in 2D: trauma shake on x
   and y, zoom punches by distance, event flashes on the overlay (skipped with `reduceFlashing`),
-  `onHitPause`, `shakeScale`, `effectSettings`; the skin's `parallax` layers as `ParallaxPlanes`
+  `onHitPause`, `shakeScale`, `effectSettings`; from Engine 0.16 F2 a ground view (the skin's
+  `camera3d.view: "ground"`, `pitch`, `yaw`): the map on the floor, entities standing on their
+  box centres turned to their facing about the vertical, the camera from the core
+  `groundProjection` that `RtsCamera` picks through (`groundProjection` read-out; labels at
+  projected anchors, particles over the ground, the sun's shadow camera over the picture's ground
+  footprint, fog and camera effects as in side view; `GROUND_LAYER_LIFT`,
+  `GROUND_PARTICLE_HEIGHT`), side-view skins unchanged; the skin's `parallax` layers as `ParallaxPlanes`
   (`parallax.ts`): quads on planes at each layer's `depth`, hung on the camera and drawn first,
   placed where the 2D layout draws them (`parallax.draws()`, `meshes()`). The HUD (Engine 0.15,
   gap G33): `hud`, a `HudLayer` (`hud.ts`) that draws the core `layoutHud` items for

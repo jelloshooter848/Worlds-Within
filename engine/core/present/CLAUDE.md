@@ -301,6 +301,20 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   inside the view, keeps its place on the picture; else the view's centre), a punch out clamped
   inside `area`. Both presenters frame at the base zoom, then punch.
   The follower lives in a presenter only: never in a kit, a frame or a hash.
+- `ground.ts` (Engine 0.16 F2): the 3D backend's ground-view camera maths, pure numbers, shared
+  by `ThreeScene` and `RtsCamera` so drawing and picking cannot drift. `groundProjection(size,
+zoom, centre, { pitch, yaw, fov })` (degrees; pitch down from the horizon, yaw 0 looks north, 90
+  looks west) gives `eye`, `forward`/`right`/`up`, `distance` (`focal / zoom`, so looking straight
+  down the picture shows `height / zoom` world px as 2D does), `worldToScreen(x, y, h?)` (picture
+  px, unrounded, or null behind the camera), `screenToGround(sx, sy, h?)` (the ray's hit on the
+  plane at height h, or null), `groundAt(sx, sy)` (never null: a ray over the horizon lands
+  `GROUND_REACH` distances out) and `footprint()` (the picture's corners on the ground).
+  `clampGroundCentre(size, zoom, centre, camera, area)` keeps the footprint's bounds inside
+  `area` (centred on an axis where they are wider), `pointsBox`, `inScreenBox(box, p)` and
+  `groundFacingTurn(dir)` (the turn about the vertical for a `facingVector`). The skin's
+  `camera3d` takes `view` (`side` | `ground`, `CAMERA3D_VIEWS`), `pitch` (10-90, default 55) and
+  `yaw` (-180-180, default 0); `resolveCamera3d` fills them and `skinGroundCamera(skin)` gives the
+  ground camera, or null for a side-view skin. `ground.test.ts`.
 - `rts-camera.ts` (Engine 0.9 T5): `RtsCamera({ view, area, zoom?, minZoom?, maxZoom?, centre? })`,
   a scrolling, zoomable view over a map larger than the picture: its position (the top-left in
   world px, kept unrounded so slow pans add up) and zoom (`RTS_MIN_ZOOM` 0.5 to `RTS_MAX_ZOOM` 2 by
@@ -309,7 +323,13 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   picture point `at` still), `centreOn`, `apply(gesture)` (pan and zoom gestures from
   `input/pointer-logic.ts`; false for taps and boxes), `resize(view)`. It clamps to `area` exactly as
   `CameraFollower` does (`clampCameraAxis`, exported from `camera.ts`; an area smaller than the
-  view is centred). `topLeft()` is the whole-pixel top-left; `hint()` is the frame's `CameraHint`
+  view is centred). With `ground: GroundCamera` (Engine 0.16 F2, `skinGroundCamera(skin)`)
+  it is the 3D ground view's camera: `projection()` is `groundProjection` at its `centre()` and
+  zoom, `screenToWorld` is `groundAt`, `worldToScreen(x, y, h?)` the projected point (unrounded),
+  `screenBoxToWorld` the bounds of the ground under the box, `inScreenBox(box, x, y, h?)` whether
+  a world point is drawn inside a picture box, `panBy` moves the ground under the picture's
+  centre with the drag, `zoomTo` keeps the ground point under `at`, and the clamp is
+  `clampGroundCentre` (its `topLeft()` is only rounded). `topLeft()` is the whole-pixel top-left; `hint()` is the frame's `CameraHint`
   `{ x, y, zoom, deadzone: 0x0, lerp: 1, bounds: area }`, which makes the follower (both
   presenters) frame that same top-left whatever the skin's camera says. `worldToScreen(wx, wy)`
   is where the Canvas2D presenter draws a world point (`round(wx * zoom) - round(left * zoom)`,

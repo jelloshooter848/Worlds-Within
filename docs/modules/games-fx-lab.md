@@ -52,6 +52,10 @@ test game, content and glue only.
 games/fx-lab/tools/brazier-model.ts`; own work, CC0, credited), shown for the `torch` kind in
   the 3D skin (`scale` 18, anchored `bottom`, turned 30 degrees, `idle` playing `flicker`) with
   its low-poly text mesh as the stand-in while it loads.
+- `content/skins/ground.json`, `ground.ts` and the page `ground/` (Engine 0.16 F2): the 3D
+  backend's ground view on a hand-made meadow (not the platformer's levels): `groundSkin`,
+  `groundCamera` (an `RtsCamera` with the skin's ground camera) and `groundFrame(n, camera,
+screen)`; `ground.test.ts` and `tests/browser/fx-lab-ground.test.ts`.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
 - The effects sheet (T14): `docs/reports/0.16a-effects-sheet.png`, 24 labelled tiles of these
   run files in 2D and 3D made with `pnpm cli sheet` (every part A feature: particles, flashes and

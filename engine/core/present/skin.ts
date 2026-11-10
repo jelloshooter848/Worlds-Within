@@ -110,7 +110,14 @@ export const DEFAULT_CAMERA3D = {
   tilt: 0,
   layerDepth: 16,
   lights: { ambient: 0.6, directional: 0.8 },
+  view: 'side',
+  pitch: 55,
+  yaw: 0,
 } as const;
+
+/** The 3D backend's two views (Engine 0.16 F2): side-on 2.5D, or a map's ground seen from above. */
+export const CAMERA3D_VIEWS = ['side', 'ground'] as const;
+export type Camera3dView = (typeof CAMERA3D_VIEWS)[number];
 
 /** The colour a backend draws a box in when a kind has no skin entry and the skin gives none. */
 export const DEFAULT_FALLBACK_COLOR = '#ff00ff';
@@ -343,6 +350,28 @@ const camera3d = z.strictObject({
     .min(0)
     .exactOptional()
     .describe(`px toward the camera per entity \`layer\` (default ${DEFAULT_CAMERA3D.layerDepth})`),
+  view: z
+    .enum(CAMERA3D_VIEWS)
+    .exactOptional()
+    .describe(
+      "Engine 0.16 F2: `side` (default) shows world x,y on an upright plane; `ground` lays the map on the floor (world y is depth, a mesh part's z is height) under a pitched camera",
+    ),
+  pitch: z
+    .number()
+    .min(10)
+    .max(90)
+    .exactOptional()
+    .describe(
+      `ground view: degrees down from the horizon, 90 straight down (default ${DEFAULT_CAMERA3D.pitch})`,
+    ),
+  yaw: z
+    .number()
+    .min(-180)
+    .max(180)
+    .exactOptional()
+    .describe(
+      `ground view: degrees the camera turns about the vertical; 0 looks north, 90 looks west from the east (default ${DEFAULT_CAMERA3D.yaw})`,
+    ),
   lights: z
     .strictObject({
       ambient: z
@@ -2166,6 +2195,9 @@ export function resolveCamera3d(skin: DeepReadonly<SkinFile>): {
   tilt: number;
   layerDepth: number;
   lights: { ambient: number; directional: number };
+  view: Camera3dView;
+  pitch: number;
+  yaw: number;
 } {
   const c = skin.camera3d;
   const d = DEFAULT_CAMERA3D;
@@ -2177,5 +2209,20 @@ export function resolveCamera3d(skin: DeepReadonly<SkinFile>): {
       ambient: c?.lights?.ambient ?? d.lights.ambient,
       directional: c?.lights?.directional ?? d.lights.directional,
     },
+    view: c?.view ?? d.view,
+    pitch: c?.pitch ?? d.pitch,
+    yaw: c?.yaw ?? d.yaw,
   };
+}
+
+/**
+ * A skin's ground camera (`camera3d.view` `ground`: its `pitch`, `yaw` and `fov`, defaults
+ * filled), for `groundProjection` and `RtsCamera`'s `ground` option; null for a side-view skin
+ * (Engine 0.16 F2). Pure.
+ */
+export function skinGroundCamera(
+  skin: DeepReadonly<SkinFile>,
+): { pitch: number; yaw: number; fov: number } | null {
+  const c = resolveCamera3d(skin);
+  return c.view === 'ground' ? { pitch: c.pitch, yaw: c.yaw, fov: c.fov } : null;
 }

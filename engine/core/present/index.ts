@@ -35,6 +35,18 @@ export {
 } from './camera';
 export { freezeFrame } from './freeze';
 export { FrameEventClock } from './frame-events';
+export {
+  clampGroundCentre,
+  GROUND_REACH,
+  groundFacingTurn,
+  groundProjection,
+  inScreenBox,
+  pointsBox,
+  type GroundCamera,
+  type GroundPoint,
+  type GroundProjection,
+  type GroundScreenPoint,
+} from './ground';
 export { RTS_MAX_ZOOM, RTS_MIN_ZOOM, RtsCamera, type RtsCameraOptions } from './rts-camera';
 export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
 export { hostedSource, type HostedPresentState, type HostedSourceOptions } from './hosted';
@@ -63,6 +75,9 @@ export {
   skinEmitNames,
   skinSoundCue,
   resolveCamera3d,
+  skinGroundCamera,
+  CAMERA3D_VIEWS,
+  type Camera3dView,
   resolveMeshParts,
   resolveSkinAnimation,
   resolveSkinEvent,

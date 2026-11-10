@@ -212,6 +212,48 @@ labels on one anchor stack away from the box) and gives `UiDraw`s, which `labels
 HUD. `labelViews()` reads what shows (`LabelView`: entity, kind, type, text or bar, box). Text
 needs the `fonts` option (a label whose font is missing draws nothing).
 
+## Ground view (Engine 0.16 F2)
+
+A skin with `camera3d.view: "ground"` (with `pitch`, 10-90 degrees down from the horizon, default
+55, and `yaw`, -180-180 degrees about the vertical, default 0: looking north) shows a top-down map
+as a floor under a pitched camera. A skin without it (`view` defaults to `side`) builds exactly the
+scene objects it built before: the side-view code path is unchanged (`scene.test.ts`,
+`lighting.test.ts` and the rest pass as they were).
+
+- Axes: world (x, y) lies on the ground: Three's `(x, height, y)`. The camera comes from the core
+  `groundProjection(size, zoom, centre, camera)` (`@engine/core/present`'s `ground.ts`): its
+  eye, and its turn as Euler `(-pitch, yaw, 0, 'YXZ')`, looking at the framed view's centre from
+  the distance the zoom gives (the picture's height shows `height / zoom` world px when looking
+  straight down). `RtsCamera` picks through the same function, so drawing and picking cannot
+  drift: `ground.test.ts` checks Three's projected points against the core's within 0.5 px at
+  three yaws and zooms. `groundProjection` (getter) is last frame's projection without shake.
+- Framing: `CameraFollower` with no clamp (a 2D box clamp does not fit a pitched view, so the
+  hint's centre is shown as it is; `RtsCamera` keeps the ground footprint over the map), and no
+  area for zoom punches. Shake moves the centre along the picture's axes on the ground.
+- Map: every layer's cells on the floor (height 0). A tile part's `at.x`, `at.y` place its
+  footprint on the cell, `at.z` is the height of its bottom and its `d` (a primitive's `depth`) its
+  height, so a box tile with `depth: 2` is a 2 px slab and round shapes stay upright; a `plane`
+  lies flat. Tile models stand on the cell's centre.
+- Entities: the root is the box's centre on the ground, lifted `layer` x `GROUND_LAYER_LIFT`
+  (0.05 px, so flat marks over the floor never flicker); parts are placed as tiles' are, about
+  the box's centre. Facing turns the root about the vertical (`groundFacingTurn(facingVector(f))`:
+  `down`, toward a yaw-0 camera, is a model's front, +z; `right` a quarter turn; diagonals in
+  between), never mirrors; `fx.rotate` turns it clockwise seen from above, `squashX` scales width
+  and depth, `squashY` height. Models stand as modelled (y up).
+- Labels: the anchor is over the box's centre at the top of the entity's meshes (its parts' tops,
+  or its model's bounds), half way up (`center`) or on the ground (`bottom`), projected with this
+  frame's projection (shake included).
+- Particles fly at their world (x, y) on the ground, `GROUND_PARTICLE_HEIGHT` (8 px) up: the 2D
+  particle model has no height, so a burst spreads over the ground and a rising flame drifts north.
+- Shadows: the sun shines onto the centre of the picture's ground footprint (`footprint()`: the
+  picture's corners on the ground, a ray over the horizon capped at `GROUND_REACH` camera
+  distances) and its shadow camera covers that footprint's bounds' diagonal plus `SHADOW_MARGIN`.
+  Linear fog is measured from the camera's distance to the centre, as in side view. The overlay,
+  `CameraFx` (flash, zoom punch, trauma shake) and parallax planes work as in side view.
+- `games/fx-lab`'s `content/skins/ground.json` and `ground.ts` are the worked example (a meadow,
+  Pip and beetles turning, labels, braziers with light and flame); its page
+  `games/fx-lab/ground/` is built and shot by `tests/browser/fx-lab-ground.test.ts`.
+
 ## ThreePresenter (browser only)
 
 `new ThreePresenter(canvas, skin, opts?)` implements the core `Presenter`: `present(frame)` syncs

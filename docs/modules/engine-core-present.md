@@ -118,13 +118,22 @@ event)` gives the entry, the first matching field key in file order, else the ba
   pixels, so clamping keeps the zoomed picture inside the map. `cameraShake(frame, extra)` is the shake offset,
   added on top and never stored; `cameraTarget(frame, skin.camera)` the point to keep in view.
   Each presenter owns its follower: camera state is never in a kit, a frame or a hash.
+- Ground view camera (`ground.ts`, Engine 0.16 F2): `groundProjection(size, zoom, centre, {
+pitch, yaw, fov })` with `worldToScreen(x, y, h?)`, `screenToGround(sx, sy, h?)` (ray-plane
+  intersection), `groundAt` and `footprint()`; `clampGroundCentre`, `pointsBox`, `inScreenBox`,
+  `groundFacingTurn`, `GROUND_REACH`; the skin's `camera3d.view` (`CAMERA3D_VIEWS`), `pitch` and
+  `yaw`, read by `skinGroundCamera(skin)`. The one camera maths `ThreeScene` draws with and
+  `RtsCamera` picks through.
 - RTS camera control (`rts-camera.ts`, Engine 0.9): `RtsCamera({ view, area, zoom?, minZoom?,
 maxZoom?, centre? })`: position and zoom (0.5 to 2 by default) clamped to the map as the
   follower clamps (`clampCameraAxis`), `panBy`, `zoomBy(factor, at?)` about a picture point,
   `centreOn`, `apply(gesture)` for pan and zoom gestures (`@engine/core/input/pointer-logic`),
   `hint()` (the frame's `CameraHint` with `x`/`y`/`zoom`, no deadzone or lerp, `bounds` the area),
   and `screenToWorld` / `worldToScreen` / `screenBoxToWorld`, which agree with where the Canvas2D
-  presenter draws at that zoom. Presentation state only, never in a world or a hash.
+  presenter draws at that zoom. Presentation state only, never in a world or a hash. From
+  Engine 0.16 F2 an optional `ground` camera makes it the 3D ground view's: `projection()`,
+  picking through `groundProjection`, `inScreenBox(box, x, y, h?)`, and a clamp that keeps the
+  ground footprint over the area.
 
 - Frame streams (`stream.ts`, Engine 0.7): `FrameSource` (a kit's `start(world)` and
   `present(world, events, state)`), `FrameStream` (`next(world, events)`: frozen frames, fresh

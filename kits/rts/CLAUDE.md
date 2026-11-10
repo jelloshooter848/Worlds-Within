@@ -91,6 +91,11 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   (the ghost's cell), `train`, `stop`, `selectHeroes`, `launchMission(view, id, launcher)` (the
   bar's mission button, `launchMission` above), `placing(view)` (sized from the world's
   types) and `presentOptions(view)` (`selection`, `box`, `placing`, `camera` for `presentWorld`).
+  Through a ground-view camera (`RtsCamera` with `ground`, Engine 0.16 F2: the 3D backend's
+  `camera3d.view: "ground"`) taps and right taps pick the cell under the pointer's ray on the
+  ground (`camera.screenToWorld`), and a box selects the units whose cell centres are drawn inside
+  the dragged picture rectangle (`Selection.boxWhere(view, inside, tileSize, additive?)` with
+  `camera.inScreenBox`), not a world box; the box shown is the bounds of the ground under it.
 - `game.ts`: the headless adapter. `RtsWorldPort { snapshot(), applyOrder(order), step() }` is
   what the game's glue fills with an `engine/sim` world (the kit never imports the sim): since
   Engine 0.15 T6 (gap M27) with `engine/sim`'s `rtsWorldPort(world)`, the one bridge, typed by

@@ -11,7 +11,14 @@ export { applyCanvasBox, canvasToScreen, fitCanvas, type CanvasBox } from './fit
 export { GeometryCache, primitiveGeometry, type PartSize } from './geometry';
 export { frameTexture, HudLayer, type HudQuad } from './hud';
 export { PARALLAX_DEPTH_STEP, ParallaxPlanes } from './parallax';
-export { PARTICLE_POOL, PARTICLE_Z, POINT_LIGHT_DECAY, SHADOW_MARGIN } from './scene';
+export {
+  GROUND_LAYER_LIFT,
+  GROUND_PARTICLE_HEIGHT,
+  PARTICLE_POOL,
+  PARTICLE_Z,
+  POINT_LIGHT_DECAY,
+  SHADOW_MARGIN,
+} from './scene';
 export { threeDisplay, threeScenePresenter, webgl2Available, type ThreeDisplayOptions } from './display';
 export { TransitionLayer } from './transition';
 export { ModelInstance, ModelLibrary, type LoadedModel, type ModelStatus } from './models';

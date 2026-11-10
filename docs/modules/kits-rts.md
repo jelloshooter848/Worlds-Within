@@ -26,7 +26,9 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`
 (`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`),
-`controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders),
+`controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders; from
+Engine 0.16 F2 through a ground-view `RtsCamera` too, a box then selecting what is drawn inside
+the picture rectangle, `Selection.boxWhere`),
 `game` (`rtsGame`, `RtsGame`, a `HeadlessGame` with `order`, `issue`, `recorded`, `log` and
 `refresh`;
 `RtsWorldPort`, filled by `engine/sim`'s `rtsWorldPort(world)`; and from Engine 0.15 T6, gap M18,

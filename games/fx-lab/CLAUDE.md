@@ -231,6 +231,28 @@ door, 6 px above their boxes. Screenshots inspected: `level-3 --tick 60, 120, 20
 three --allow-software-gl` (torch glow, coin and Pip shadows on the slab, the beetle's on the
 ground, fogged mountains, the labels).
 
+## Ground view (Engine 0.16 F2)
+
+`content/skins/ground.json` is a second `three` skin (named `ground`, so `skinSet` takes neither
+it for the lab's own 3D skin nor for a mini game's) in the 3D backend's ground view
+(`camera3d.view: "ground"`, pitch 52, yaw -25, fov 40; `engine/backends/three/CLAUDE.md`). It
+is not for the platformer's levels: `ground.ts` shows it on a hand-made 24 x 18 meadow
+(`GROUND_ROWS`: grass slabs 2 px high, a path, a pond as a flat plane, a wall 12 px high, cone
+trees and rocks) with meshes written for the ground (a part's x, y on the box's footprint, z the
+height of its bottom, d its height): Pip with a cap, satchel and a nose on his front (+y) so his
+facing shows, four beetles facing four ways (one turning), a coin that bursts every 60 frames,
+the door with `EXIT` and its aura, two brazier models with their light, flame and smoke.
+`groundFrame(n, camera, screen)` is frame `n` (Pip and one beetle turn every 30 frames), framed
+by `groundCamera(skin, screen)`, an `RtsCamera` with the skin's ground camera at zoom 2, the same
+camera a ground-view RTS picks through. `ground.test.ts` checks it in Node. The page `ground/`
+(`?frame=70` holds a frame; drag pans, the wheel zooms) is not one of `pnpm build`'s pages:
+`tests/browser/fx-lab-ground.test.ts` builds it alone with Vite and shoots it
+(`WW_SHOTS_DIR=<folder>` keeps `fx-lab-ground.png`; looked at for F2: the meadow, Pip turned
+right with his satchel behind, beetles facing four ways, tree and Pip shadows, the coin burst,
+the braziers' flames and the labels). Under `pnpm dev` the lab's `virtual:game-files` module
+does not load at the time of writing (Vite's dev server fails on the plugin's watch of the
+`assets/` folder), so view it through a build.
+
 ## Run and test
 
 ```sh
