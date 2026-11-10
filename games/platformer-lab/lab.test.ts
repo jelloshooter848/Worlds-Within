@@ -131,7 +131,8 @@ describe('platformer lab skin', () => {
     expect(Object.keys(skin.events ?? {}).sort()).toEqual([...EVENT_TYPES].sort());
     const game = createGame(content, 1);
     const status = presentStatus(game.world);
-    for (const item of skin.hud ?? []) expect(status, item.status).toHaveProperty(item.status);
+    for (const item of skin.hud ?? [])
+      if (item.status !== undefined) expect(status, item.status).toHaveProperty(item.status);
     expect(skin.camera).toMatchObject({ follow: 'runner', deadzone: { w: 32, h: 48 }, lerp: 0.25 });
   });
 

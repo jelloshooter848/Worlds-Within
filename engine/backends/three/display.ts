@@ -1,4 +1,5 @@
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
+import type { FontLookup } from '@engine/core/ui';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { presenterBySkinSet, type DeepReadonly, type Presenter, type SkinFile } from '@engine/core/present';
@@ -33,6 +34,8 @@ export interface ThreeDisplayOptions {
    * HUD (gap G33); without it HUD frames are flat boxes and HUD text draws nothing.
    */
   sheets?: PixelSheetLookup;
+  /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for every skin's HUD. */
+  fonts?: FontLookup;
 }
 
 /** Whether this browser gives a WebGL 2 context (Three.js needs WebGL 2). Browser only. */
@@ -73,6 +76,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
       ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+      ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     });
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
@@ -84,6 +88,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
       ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+      ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     });
   return {
     renderer: NO_DRAW,
@@ -120,12 +125,14 @@ export function threeScenePresenter(
     background?: string;
     rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
     sheets?: PixelSheetLookup;
+    fonts?: FontLookup;
   },
 ): Presenter & { scene: ThreeScene; rounds: Record<string, ThreeScene>; readonly shown: ThreeScene } {
   const scene = new ThreeScene(skin, {
     size: opts.screen,
     ...(opts.background !== undefined && { background: opts.background }),
     ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+    ...(opts.fonts !== undefined && { fonts: opts.fonts }),
   });
   let shown = scene;
   const show = (s: ThreeScene): Presenter => ({ present: (frame) => (shown = s).sync(frame) });
@@ -135,6 +142,7 @@ export function threeScenePresenter(
     rounds[id] = new ThreeScene(roundSkin, {
       size: opts.screen,
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+      ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     });
     roundPresenters[id] = show(rounds[id]);
   }

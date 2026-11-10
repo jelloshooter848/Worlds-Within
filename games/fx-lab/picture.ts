@@ -4,6 +4,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { FramePicture, FrameStream, type Presenter, type SkinFile } from '@engine/core/present';
+import { contentFonts, type FontLookup } from '@engine/core/ui';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import {
   platformerFrames,
@@ -25,14 +26,17 @@ import { fxSkin } from './content';
 export interface FxLook {
   skin: SkinFile;
   sheet: SheetLookup;
+  /** The font files (`content/fonts/`, Engine 0.16 T6) the HUD's text and counters use. */
+  fonts: FontLookup;
   screen: ScreenSize;
 }
 
-/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files) and the picture size. */
+/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files), the fonts and the picture size. */
 export function fxLook(content: ContentBundle): FxLook {
   return {
     skin: fxSkin(content, 'canvas2d'),
     sheet: contentSheets(content),
+    fonts: contentFonts(content),
     screen: content.manifest.screen,
   };
 }
@@ -57,6 +61,7 @@ export function fxPicture(presenter: Presenter, screen: ScreenSize): FxPicture {
 export function fxCanvasPicture(r: Renderer, look: FxLook, onSound?: (id: string) => void): FxPicture {
   const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
     size: look.screen,
+    fonts: look.fonts,
     ...(onSound !== undefined && { onSound }),
   });
   return fxPicture(presenter, look.screen);

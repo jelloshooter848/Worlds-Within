@@ -24,6 +24,7 @@ in `fit.ts` run in Node and are tested there. `ThreePresenter` (it makes a `WebG
 `onSound?(id)`, `background?` (the scene's background; default the skin's `background`, else
 `#000`: `skinBackground`, gap G36), `clamp?` (the skin's `camera.clamp`, else true), `reduceFlashing?`, `seed?` (particles and shake noise),
 `shakeScale?`, `subPixelShake?`, `onHitPause?(ticks)` (Engine 0.16 T4, as the Canvas2D presenter's),
+`fonts?` (Engine 0.16 T6, a `FontLookup`, `contentFonts(content)`: the HUD's font files),
 `sheets?` (a `PixelSheetLookup` from `@engine/core/assets/content-sheets`, the game's sprite files
 as decoded RGBA pixels, `contentPixelSheets(content)`: what the HUD draws; Engine 0.15, gap G33).
 `sync(frame)` brings `scene`, `camera`, `particles` and the HUD pass (`hud`) up to the frame. Read-outs for tests and the presenter:
@@ -109,6 +110,17 @@ camera.
   and text draws nothing. `hud.quads()` lists the quads shown (`HudQuad`: kind, box, sheet,
   palette, frame or colour) for tests. A skin with no `hud` (or a frame with none of its status
   keys) shows no quads.
+  From Engine 0.16 T6 a skin whose `hud` has a UI kit item is laid out whole by `@engine/core/ui`'s
+  `SkinHud` (with the map the scene shows, for a minimap, and the layer's own clock, one tick per
+  `sync`, for a counter's roll) and painted into quads: a fill is a `fill` quad (a flat colour,
+  `opacity` below alpha 1; a classic item's missing-frame stand-in stays a `box`), an image a
+  `sprite` quad whose texture is the frame's part (`part`, cut with `frameTexture`, cached per
+  part) scaled to its box (nine-slice pieces), a glyph a `glyph` quad with a texture of its ink in
+  its colour (cached per font, character and colour). The `fonts` option (`contentFonts(content)`)
+  gives the font files; `ThreePresenter`, `withSkin`, `threeDisplay` and `threeScenePresenter`
+  pass it on, and the screenshot page does. Every HUD material is transparent (in Three's
+  transparent list), so `renderOrder` alone stacks the quads: before, an opaque missing-frame box
+  was drawn before every textured quad.
 
 It never changes the frame or the skin (tested with frozen ones) and knows no game or kit. No
 `Math.random`, `Date.now` or `performance.now` in this folder's code (a test checks); Three's own
@@ -224,7 +236,9 @@ and the no-WebGL 2 message. `hud.test.ts` (gap G33) checks the HUD pass against 
 lookup: one quad per item of `frame.status` where the 2D layout puts it (hearts, an icon, font
 glyphs, a missing frame's box), the orthographic camera, a texture cut from the sheet with its
 rows flipped, quads following the status each frame, boxes without sheets, `threeScenePresenter`
-handing `sheets` to the round scenes, and particles (an old effect flying out for its ticks from a
+handing `sheets` to the round scenes, from Engine 0.16 T6 a UI kit HUD (panel pieces as frame
+parts, fills, a glyph's coloured texture, every material transparent in draw order, and a
+classic skin kept on the old layout), and particles (an old effect flying out for its ticks from a
 point or an entity's centre, each buffer capped at `PARTICLE_POOL`, an additive kind emitter in the
 additive buffer and in the normal one under reduced flashing, stopping when its entity goes).
 `camera-fx.test.ts` (Engine 0.16 T4) checks the scene's trauma shake on both axes decaying (the

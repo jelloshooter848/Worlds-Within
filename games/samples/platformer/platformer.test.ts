@@ -312,7 +312,8 @@ describe('platformer test 2D skins', () => {
           if (skin.kinds[kind]?.frames?.[state] === undefined) missing.push(`${kind} ${state}`);
       for (const t of s.tiles) if (skin.tiles?.[t] === undefined) missing.push(`tile ${t}`);
       for (const e of s.events) if (skin.events?.[e] === undefined) missing.push(`event ${e}`);
-      for (const item of skin.hud ?? []) if (!s.status.has(item.status)) missing.push(`hud ${item.status}`);
+      for (const item of skin.hud ?? [])
+        if (item.status !== undefined && !s.status.has(item.status)) missing.push(`hud ${item.status}`);
       expect(missing).toEqual([]);
     },
   );

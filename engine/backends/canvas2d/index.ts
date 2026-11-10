@@ -5,3 +5,4 @@ export { SkinnedCanvasPresenter, type MapSurface, type SkinnedPresenterOptions }
 export { canvasDisplay, type CanvasDisplayOptions } from './display';
 export { skinSetCanvasPresenter, type CanvasSkinSetOptions } from './skin-set';
 export { drawTransition, type TransitionCtx } from './transition';
+export { CanvasUiPainter, type CanvasUiPainterOptions, type GlyphSurface } from './ui-painter';

@@ -57,7 +57,16 @@ tiles?, events?, hud?, camera?, meshes?, camera3d? }`. `background` (Engine 0.15
   fields (Engine 0.11, gap G28, item 180): `type:value` matches its `result` field
   (`EVENT_KEY_FIELD`; `mini-game-end:pass`), `type:field=value` any other
   (`mission-commit:outcome=both-burnt`); any other shape is `bad_event_key`; `hud` lists `{ status, as: hearts |
-number | text | icon, x, y, sheet?, frame?, font? }`.
+number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 the UI kit's
+  widgets (`as: bar | counter | panel | minimap`, `HUD_WIDGET_TYPES`; `HUD_CLASSIC_TYPES` are the
+  four before) with their fields (`w`, `h`, `color`, `shadow`, `outline`, `align`, `format` with
+  `{value}` (`HUD_VALUE_TOKEN`), `digits`, `gap`, `tween`, `max`, `back`, `border`, `low`,
+  `panel`, `slice`, `fill`, `scale`, `tiles`, `dots`; `status` optional for `panel`, `minimap`
+  and a `text` with a `format`; laid out by `engine/core/ui`'s `SkinHud`). Cross-file:
+  `checkSkinRefs` checks a `panel`'s frame, and the HUD's fonts: a `format` character or (for a
+  number or counter) a digit a font file lacks is `missing_glyph` at `hud.<i>.format` or
+  `hud.<i>.font`, a counter's or styled text's font that is neither a font nor a sprite file
+  `missing_ref`. `SkinHudItem` is one `hud` entry.
   - Animation states, timing and frame events (Engine 0.16 T2): a cycle (in `frames`, a state's
     own `{ frames, ... }` or a facing's) is `{ frames, ticks?, loop?, then?, events? }`. `ticks` is
     one number for every frame or a list, one per frame (`[6, 4, 6, 4]`); `loop: false` plays it
@@ -263,14 +272,17 @@ skin (content/skins/<backend>.json)`.
   draws nothing. `frameSize(sheet, palette, frame)` is the backend's own lookup. `hudGlyphs(text)`
   splits a text item into one sprite per character, `HUD_GLYPH_ADVANCE` (8) px apart, spaces
   skipped (what `Renderer.text` draws). The Canvas2D presenter draws the items with its renderer
-  and the 3D backend as textured quads, so the HUD sits in the same place in both.
+  and the 3D backend as textured quads, so the HUD sits in the same place in both. From Engine
+  0.16 T6 `layoutHud` skips the UI kit's widget types (`isClassicHudType`); a skin with any UI
+  item is laid out whole by `engine/core/ui`'s `SkinHud` (which calls `layoutHud` for its
+  classic items), one without draws exactly as before.
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
 
 - Pure: `engine/core/present/**` is on `PURE_CORE` (`config/layers.js`). No clock, DOM or
   `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types,
-  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs and emitters in skins; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
+  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs and emitters in skins, `../fx/ease` and `../ui/font` for the HUD's widgets and glyph check; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
 - Everything in a frame is plain JSON-safe data: no classes, functions, `Map`s or kit objects. A
   backend never sees kit internals.
 - Frames are read-only to backends. Never add a field a backend would write back to.

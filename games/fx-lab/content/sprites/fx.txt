@@ -827,3 +827,21 @@ kdsksk..
 kr..rk..
 .kkkk...
 ........
+
+frame hud-panel
+.kkkkkkk.
+kttttttdk
+ktddddddk
+ktddddddk
+ktddddddk
+ktddddddk
+ktddddddk
+kdddddddk
+.kkkkkkk.
+
+frame bar-frame
+.kkk.
+klllk
+kl.lk
+klllk
+.kkk.

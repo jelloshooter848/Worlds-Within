@@ -4,6 +4,7 @@ import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-sch
 import { campaignSchema, checkCampaigns, checkMissionCodes } from '../campaign';
 import { missionSchema } from '../missions';
 import { SKIN_KIND } from '../present/skin';
+import { FONT_KIND } from '../ui/font';
 import { ContentKinds, type ContentKind } from './kinds';
 
 /** An MML song (`audio/song-schema.ts`). */
@@ -61,11 +62,11 @@ export const CAMPAIGN_KIND = {
   checkAll: checkCampaigns,
 } satisfies ContentKind<typeof campaignSchema>;
 
-export { SKIN_KIND };
+export { FONT_KIND, SKIN_KIND };
 
 /**
  * A registry holding the content kinds the engine itself defines: `song`, `sfx`, `palette` (JSON),
- * `sprite` (JSON or text-grid `.txt`), `skin` (JSON, `present/skin.ts`), `mission` (JSON,
+ * `sprite` (JSON or text-grid `.txt`), `font` (JSON or `.txt`, Engine 0.16, `ui/font.ts`), `skin` (JSON, `present/skin.ts`), `mission` (JSON,
  * `missions.ts`) and `campaign` (JSON, `campaign.ts`). Games and kits register their own kinds (rooms, levels) on top.
  */
 export function engineContentKinds(): ContentKinds {
@@ -74,6 +75,7 @@ export function engineContentKinds(): ContentKinds {
     .register(SFX_KIND)
     .register(PALETTE_KIND)
     .register(SPRITE_KIND)
+    .register(FONT_KIND)
     .register(SKIN_KIND as unknown as ContentKind)
     .register(MISSION_KIND)
     .register(CAMPAIGN_KIND as unknown as ContentKind);

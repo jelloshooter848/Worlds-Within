@@ -18,12 +18,26 @@ import {
   type DeepReadonly,
   type HudDraw,
   type PresentFrame,
+  type PresentMap,
   type SkinFile,
 } from '@engine/core/present';
+import {
+  paintUi,
+  SkinHud,
+  type FontLookup,
+  type UiFill,
+  type UiGlyph,
+  type UiImage,
+  type UiPainter,
+} from '@engine/core/ui';
 
 /** One quad the HUD pass shows: what it draws and where, in picture pixels (top-left, y down). */
 export interface HudQuad {
-  kind: 'sprite' | 'box';
+  /**
+   * `box` is a flat box standing in for a missing frame; from Engine 0.16 T6 `fill` is a UI kit
+   * box (a bar, a minimap tile) and `glyph` one glyph of a font file in one colour.
+   */
+  kind: 'sprite' | 'box' | 'fill' | 'glyph';
   x: number;
   y: number;
   w: number;
@@ -32,9 +46,18 @@ export interface HudQuad {
   sheet?: string;
   palette?: string;
   frame?: string;
-  /** A box's colour. */
+  /** A box's or glyph's colour. */
   color?: string;
+  /** A box's alpha when below 1 (UI kit fills). */
+  alpha?: number;
+  /** The part of a sprite frame shown when it is not the whole frame (a nine-slice piece). */
+  part?: { x: number; y: number; w: number; h: number };
+  /** A glyph's font and character. */
+  font?: string;
+  ch?: string;
 }
+
+type Placed = { quad: HudQuad; material: MeshBasicMaterial };
 
 /**
  * The 3D backend's HUD (Engine 0.15, gap G33, decision 4): the core `layoutHud` items for a frame's
@@ -55,27 +78,53 @@ export class HudLayer {
   private readonly sprites = new Map<string, MeshBasicMaterial | null>();
   private readonly boxes = new Map<string, MeshBasicMaterial>();
   private shown: HudQuad[] = [];
+  /** The skin's HUD through the UI kit (Engine 0.16 T6), used when it has a UI item. */
+  private readonly ui: SkinHud;
+  /** Display frames synced (a counter's roll clock). */
+  private clock = -1;
 
   constructor(
     private readonly skin: DeepReadonly<SkinFile>,
     private readonly pixels: PixelSheetLookup | undefined,
-  ) {}
+    private readonly fonts?: FontLookup,
+  ) {
+    this.ui = new SkinHud(skin, fonts !== undefined ? { fonts } : {});
+  }
 
-  /** Lays the HUD out for `frame` and places the quads; hides the pass when nothing shows. */
-  sync(frame: DeepReadonly<PresentFrame>, size: ScreenSize): void {
+  /**
+   * Lays the HUD out for `frame` and places the quads; hides the pass when nothing shows. `map` is
+   * the map the scene shows (a minimap's tiles), or null.
+   */
+  sync(
+    frame: DeepReadonly<PresentFrame>,
+    size: ScreenSize,
+    map: DeepReadonly<PresentMap> | null = null,
+  ): void {
     const cam = this.camera;
     if (cam.right !== size.width || cam.bottom !== -size.height) {
       cam.right = size.width;
       cam.bottom = -size.height;
       cam.updateProjectionMatrix();
     }
-    const draws = layoutHud(this.skin, frame.status, (sheet, palette, name) =>
-      this.frameRect(sheet, palette, name),
-    );
-    const quads: { quad: HudQuad; material: MeshBasicMaterial }[] = [];
-    for (const d of draws.flatMap((d) => (d.kind === 'text' ? hudGlyphs(d) : [d]))) {
-      const placed = this.quadOf(d);
-      if (placed) quads.push(placed);
+    this.clock++;
+    const frameSize = (sheet: string, palette: string | undefined, name: string) =>
+      this.frameRect(sheet, palette, name);
+    const quads: Placed[] = [];
+    if (this.ui.usesUi) {
+      const draws = this.ui.layout({
+        status: frame.status,
+        frameSize,
+        map,
+        entities: frame.entities,
+        clock: this.clock,
+      });
+      paintUi(draws, this.painter(quads));
+    } else {
+      const draws = layoutHud(this.skin, frame.status, frameSize);
+      for (const d of draws.flatMap((d) => (d.kind === 'text' ? hudGlyphs(d) : [d]))) {
+        const placed = this.quadOf(d);
+        if (placed) quads.push(placed);
+      }
     }
     while (this.pool.length < quads.length) {
       const mesh = new Mesh(this.geometry, quads[this.pool.length]!.material);
@@ -110,8 +159,113 @@ export class HudLayer {
       m?.dispose();
     }
     for (const m of this.boxes.values()) m.dispose();
+    for (const m of this.glyphs.values()) {
+      m?.map?.dispose();
+      m?.dispose();
+    }
     this.sprites.clear();
     this.boxes.clear();
+    this.glyphs.clear();
+  }
+
+  /** Glyph materials by `font#ch#color` (null: no such font or glyph). */
+  private readonly glyphs = new Map<string, MeshBasicMaterial | null>();
+
+  /** A `UiPainter` that places each UI kit item as one quad in `out`. */
+  private painter(out: Placed[]): UiPainter {
+    return {
+      fill: (d: UiFill) => {
+        if (d.w <= 0 || d.h <= 0) return;
+        const alpha = d.alpha ?? 1;
+        const key = alpha < 1 ? `${d.color}@${alpha}` : d.color;
+        let material = this.boxes.get(key);
+        if (!material) {
+          material = hudMaterial({ color: d.color, ...(alpha < 1 && { opacity: alpha }) });
+          this.boxes.set(key, material);
+        }
+        const quad: HudQuad = {
+          kind: d.missing ? 'box' : 'fill',
+          x: d.x,
+          y: d.y,
+          w: d.w,
+          h: d.h,
+          color: d.color,
+        };
+        if (alpha < 1) quad.alpha = alpha;
+        out.push({ quad, material });
+      },
+      image: (d: UiImage) => {
+        if (d.w <= 0 || d.h <= 0 || d.sw <= 0 || d.sh <= 0) return;
+        const pixels = this.pixels?.(d.sheet, d.palette) ?? null;
+        const rect = pixels?.frames.get(d.frame);
+        if (!pixels || !rect) return;
+        const whole = d.sx === 0 && d.sy === 0 && d.sw === rect.w && d.sh === rect.h;
+        const part = { x: d.sx, y: d.sy, w: d.sw, h: d.sh };
+        const key =
+          `${d.sheet}@${d.palette ?? ''}#${d.frame}` + (whole ? '' : `:${d.sx},${d.sy},${d.sw},${d.sh}`);
+        let material = this.sprites.get(key);
+        if (material === undefined) {
+          const cut = { x: rect.x + d.sx, y: rect.y + d.sy, w: d.sw, h: d.sh };
+          material = hudMaterial({ map: frameTexture(pixels, cut) });
+          this.sprites.set(key, material);
+        }
+        if (material === null) return;
+        const quad: HudQuad = {
+          kind: 'sprite',
+          x: d.x,
+          y: d.y,
+          w: d.w,
+          h: d.h,
+          sheet: d.sheet,
+          ...(d.palette !== undefined && { palette: d.palette }),
+          frame: d.frame,
+          ...(!whole && { part }),
+        };
+        out.push({ quad, material });
+      },
+      glyph: (d: UiGlyph) => {
+        const material = this.glyphMaterial(d.font, d.ch, d.color);
+        const glyph = this.fonts?.(d.font)?.glyphs.get(d.ch);
+        if (!material || !glyph) return;
+        const quad: HudQuad = {
+          kind: 'glyph',
+          x: d.x,
+          y: d.y,
+          w: glyph.w,
+          h: glyph.h,
+          font: d.font,
+          ch: d.ch,
+          color: d.color,
+        };
+        out.push({ quad, material });
+      },
+    };
+  }
+
+  /** One glyph's ink in one colour as a texture, rows flipped for GL; cached. */
+  private glyphMaterial(fontId: string, ch: string, color: string): MeshBasicMaterial | null {
+    const key = `${fontId}#${ch}#${color}`;
+    const cached = this.glyphs.get(key);
+    if (cached !== undefined) return cached;
+    const glyph = this.fonts?.(fontId)?.glyphs.get(ch);
+    let material: MeshBasicMaterial | null = null;
+    if (glyph && glyph.w > 0 && glyph.h > 0) {
+      const rgb = hexBytes(color);
+      const data = new Uint8Array(glyph.w * glyph.h * 4);
+      for (const run of glyph.runs) {
+        const row = glyph.h - 1 - run.y;
+        for (let x = run.x; x < run.x + run.w; x++) data.set([...rgb, 255], (row * glyph.w + x) * 4);
+      }
+      const texture = new DataTexture(data, glyph.w, glyph.h, RGBAFormat, UnsignedByteType);
+      texture.magFilter = NearestFilter;
+      texture.minFilter = NearestFilter;
+      texture.generateMipmaps = false;
+      texture.colorSpace = SRGBColorSpace;
+      texture.needsUpdate = true;
+      material = hudMaterial({ map: texture });
+    }
+    this.glyphs.set(key, material);
+    return material;
   }
 
   private frameRect(
@@ -187,11 +341,23 @@ export function frameTexture(
 }
 
 /** An unlit HUD material: drawn over the picture in order, no depth, fully transparent pixels skipped. */
-function hudMaterial(opts: { color?: string; map?: DataTexture }): MeshBasicMaterial {
+function hudMaterial(opts: { color?: string; map?: DataTexture; opacity?: number }): MeshBasicMaterial {
+  // Every HUD material is in Three's transparent list, so `renderOrder` alone orders the quads
+  // (an opaque box would otherwise be drawn before every textured quad, under a panel).
   return new MeshBasicMaterial({
     ...(opts.color !== undefined && { color: opts.color }),
-    ...(opts.map !== undefined && { map: opts.map, transparent: true, alphaTest: 0.5 }),
+    ...(opts.opacity !== undefined && { opacity: opts.opacity }),
+    ...(opts.map !== undefined && { map: opts.map, alphaTest: 0.5 }),
+    transparent: true,
     depthTest: false,
     depthWrite: false,
   });
+}
+
+/** A `#rgb` or `#rrggbb` colour as its three bytes. */
+function hexBytes(color: string): [number, number, number] {
+  let hex = color.slice(1);
+  if (hex.length === 3) hex = [...hex].map((c) => c + c).join('');
+  const n = Number.parseInt(hex, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }

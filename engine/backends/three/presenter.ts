@@ -1,5 +1,6 @@
 import { Color, SRGBColorSpace, WebGLRenderer } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
+import type { FontLookup } from '@engine/core/ui';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   skinBackground,
@@ -35,6 +36,8 @@ export interface ThreePresenterOptions {
   onHitPause?: (ticks: number) => void;
   /** The game's sprite sheets as decoded pixels, for the HUD (`contentPixelSheets`; gap G33). */
   sheets?: PixelSheetLookup;
+  /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for HUD text and widgets. */
+  fonts?: FontLookup;
 }
 
 /**
@@ -67,6 +70,7 @@ export class ThreePresenter implements Presenter {
       ...(opts.clamp !== undefined && { clamp: opts.clamp }),
       ...sceneEffects(opts),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+      ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     });
     this.renderer = new WebGLRenderer({
       canvas,
@@ -120,6 +124,7 @@ export class ThreePresenter implements Presenter {
       ...(opts.clamp !== undefined && { clamp: opts.clamp }),
       ...sceneEffects(opts),
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
+      ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     });
     this.others.push(scene);
     return {

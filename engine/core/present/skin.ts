@@ -11,6 +11,8 @@ import {
   zoomSpecSchema,
   type EmitterDef,
 } from '../fx/schema';
+import { EASE_NAMES, isEaseName } from '../fx/ease';
+import { missingGlyphs, type FontFile } from '../ui/font';
 import {
   cardinalFacing,
   FACINGS,
@@ -472,19 +474,170 @@ const eventEntry = z.strictObject({
     ),
 });
 
+/** The HUD item types drawn before Engine 0.16 T6, exactly as they were (`layoutHud`). */
+export const HUD_CLASSIC_TYPES = ['hearts', 'number', 'text', 'icon'] as const;
+
+/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`). */
+export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap'] as const;
+
+/** The token a HUD item's `format` replaces with the status value. */
+export const HUD_VALUE_TOKEN = '{value}';
+
+const insets = z.union([
+  z.number().int().min(0),
+  z.strictObject({
+    left: z.number().int().min(0),
+    top: z.number().int().min(0),
+    right: z.number().int().min(0),
+    bottom: z.number().int().min(0),
+  }),
+]);
+
+const hudPanel = z.strictObject({
+  frame: id.describe('the sprite frame cut into nine pieces'),
+  sheet: id.exactOptional().describe('its sprite file (default `sheets.sheet`)'),
+  slice: insets.describe('px kept fixed on each side: one number or `{ left, top, right, bottom }`'),
+  fill: z
+    .enum(['stretch', 'tile'])
+    .exactOptional()
+    .describe('how edges and the centre fill their span (default `stretch`)'),
+});
+
+const minimapDot = z
+  .strictObject({
+    kind: id.exactOptional().describe('entities of this kind'),
+    tag: id.exactOptional().describe('entities with this tag'),
+    color: color.describe('the dot colour'),
+    size: z.number().int().min(1).max(8).exactOptional().describe('the dot side, px (default 2)'),
+  })
+  .refine((d) => (d.kind === undefined) !== (d.tag === undefined), {
+    message: 'a minimap dot names exactly one of "kind" and "tag"',
+    params: { code: 'bad_minimap_dot' },
+  });
+
 const hudItem = z
   .strictObject({
-    status: id.describe('the status key it shows (`health`, `score`)'),
-    as: z.enum(['hearts', 'number', 'text', 'icon']).describe('how it shows'),
+    status: id
+      .exactOptional()
+      .describe(
+        'the status key it shows (`health`, `score`); a key the frame lacks draws nothing. Not needed by `panel`, `minimap` or a `text` with a `format`',
+      ),
+    as: z
+      .enum([...HUD_CLASSIC_TYPES, ...HUD_WIDGET_TYPES])
+      .describe(
+        'how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice) and `minimap`',
+      ),
     x: z.number().int().describe('left edge, screen pixels'),
     y: z.number().int().describe('top edge, screen pixels'),
-    sheet: id.exactOptional().describe('the sprite file for hearts and icons (default `sheets.sheet`)'),
-    frame: id.exactOptional().describe('the frame for hearts and icons'),
-    font: id.exactOptional().describe('the font for numbers and text'),
+    w: z
+      .number()
+      .int()
+      .min(1)
+      .exactOptional()
+      .describe('width, px: a bar, panel or minimap box; a text item wraps and aligns inside it'),
+    h: z.number().int().min(1).exactOptional().describe('height, px: a bar, panel or minimap box'),
+    sheet: id
+      .exactOptional()
+      .describe('the sprite file for hearts, icons, counters and panels (default `sheets.sheet`)'),
+    frame: id.exactOptional().describe("the frame for hearts, icons, a counter's icon and a panel"),
+    font: id
+      .exactOptional()
+      .describe(
+        'the font for numbers, text and counters: a `font` content file (Engine 0.16), else a sprite file with one frame per character',
+      ),
+    color: color.exactOptional().describe("text colour, or a bar's fill (a `font` file's text only)"),
+    shadow: color.exactOptional().describe("a one-px drop shadow in this colour (a `font` file's text)"),
+    outline: color.exactOptional().describe("a one-px outline in this colour (a `font` file's text)"),
+    align: z
+      .enum(['left', 'center', 'right'])
+      .exactOptional()
+      .describe('text alignment inside `w` (default left)'),
+    format: z
+      .string()
+      .exactOptional()
+      .describe(
+        `the text shown, with \`${HUD_VALUE_TOKEN}\` replaced by the status value (\`Coins ${HUD_VALUE_TOKEN}\`); without it, the value`,
+      ),
+    digits: z
+      .number()
+      .int()
+      .min(1)
+      .max(12)
+      .exactOptional()
+      .describe('a number or counter padded with leading zeros to this many digits'),
+    gap: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe("px between a counter's icon and its number (default 2)"),
+    tween: z
+      .strictObject({
+        ticks: z.number().int().min(1).describe('display frames a change rolls over'),
+        ease: z.string().exactOptional().describe('the easing curve (default `cubicOut`)'),
+        color: color.exactOptional().describe("the number's colour while it rolls"),
+      })
+      .exactOptional()
+      .describe("a counter's number rolls to a new value instead of jumping"),
+    max: z
+      .union([z.number().positive(), id])
+      .exactOptional()
+      .describe("a bar's full value: a number or another status key (`maxHp`)"),
+    back: color.exactOptional().describe("a bar's empty part, or a minimap's background"),
+    border: color.exactOptional().describe('a one-px border round a bar or minimap (when it has no `panel`)'),
+    low: z
+      .strictObject({
+        below: z.number().min(0).max(1).describe('the share of `max` at or below which the bar is low'),
+        color: color.describe('the fill colour when low'),
+      })
+      .exactOptional()
+      .describe("a bar's warning colour"),
+    panel: hudPanel
+      .exactOptional()
+      .describe("a bar's frame, a nine-slice panel round its box (drawn under the fill)"),
+    slice: insets.exactOptional().describe("a `panel` item's fixed px on each side (one number or four)"),
+    fill: z.enum(['stretch', 'tile']).exactOptional().describe("how a `panel` item's edges and centre fill"),
+    scale: z
+      .number()
+      .positive()
+      .exactOptional()
+      .describe("a minimap's px per tile (default: the largest that fits `w` x `h`)"),
+    tiles: z
+      .record(z.string().min(1), color)
+      .exactOptional()
+      .describe("a minimap's colour per tile character or id; other tiles show the background"),
+    dots: z
+      .array(minimapDot)
+      .exactOptional()
+      .describe("a minimap's entity dots, drawn in order over the tiles"),
   })
   .superRefine((v, ctx) => {
-    if ((v.as === 'hearts' || v.as === 'icon') && v.frame === undefined) {
+    const need = (field: string, why: string) =>
+      ctx.addIssue({
+        code: 'custom',
+        path: [field],
+        message: `"${v.as}" needs ${why}`,
+        params: { code: 'missing_field' },
+      });
+    if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
+    }
+    const statusFree = v.as === 'panel' || v.as === 'minimap' || (v.as === 'text' && v.format !== undefined);
+    if (!statusFree && v.status === undefined) need('status', 'a status key');
+    if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap') {
+      if (v.w === undefined) need('w', 'a width');
+      if (v.h === undefined) need('h', 'a height');
+    }
+    if (v.as === 'bar' && v.max === undefined) need('max', 'a max (a number or a status key)');
+    if (v.as === 'panel' && v.slice === undefined) need('slice', 'its slice insets');
+    if (v.as === 'counter' && v.font === undefined) need('font', 'a font');
+    if (v.tween?.ease !== undefined && !isEaseName(v.tween.ease)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['tween', 'ease'],
+        message: `unknown ease "${v.tween.ease}"; one of ${EASE_NAMES.join(', ')}`,
+        params: { code: 'bad_ease' },
+      });
     }
   });
 
@@ -741,6 +894,9 @@ export const skinSchema = z
   });
 
 export type SkinFile = z.output<typeof skinSchema>;
+
+/** One entry of a skin's `hud` list. */
+export type SkinHudItem = NonNullable<SkinFile['hud']>[number];
 export type SkinKindEntry = z.output<typeof kindEntry>;
 export type SkinTagEntry = z.output<typeof tagEntry>;
 export type SkinStateFrames = z.output<typeof stateFrames>;
@@ -826,7 +982,11 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
       missing(['events', type, 'sound'], 'song or sfx', entry.sound);
     }
   }
-  (skin.hud ?? []).forEach((item, i) => sheetAt(['hud', i], item.sheet, one(item.frame)));
+  issues.push(...checkHudFonts(name, skin, others, sprites));
+  (skin.hud ?? []).forEach((item, i) => {
+    sheetAt(['hud', i], item.sheet, one(item.frame));
+    if (item.panel !== undefined) sheetAt(['hud', i, 'panel'], item.panel.sheet, one(item.panel.frame));
+  });
   (skin.parallax ?? []).forEach((layer, i) => {
     if (layer.frame === undefined) return;
     if (layer.sheet === undefined && skin.sheets?.sheet === undefined) {
@@ -847,6 +1007,65 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
         missing(['emitters', emitter, 'sheet'], 'sprite', def.sheet);
     }
   }
+  return issues;
+}
+
+/** HUD item fields only the UI kit draws (Engine 0.16 T6). */
+const HUD_TEXT_STYLE_FIELDS = ['color', 'shadow', 'outline', 'align', 'format', 'digits'] as const;
+
+/** The digits a HUD number or counter may show. */
+const HUD_DIGITS = '0123456789';
+
+/**
+ * The HUD's fonts (Engine 0.16 T6): a counter's or styled text's `font` naming neither a font nor
+ * a sprite file of the game is `missing_ref`; a font file must have a glyph for every character of the item's `format`
+ * (`missing_glyph` at `hud.<i>.format`) and, for a number or counter, every digit
+ * (`missing_glyph` at `hud.<i>.font`). Sprite fonts are not checked for glyphs.
+ */
+function checkHudFonts(
+  name: string,
+  skin: SkinFile,
+  others: ContentLookup,
+  sprites: ReadonlyMap<string, unknown>,
+): KindIssue[] {
+  const issues: KindIssue[] = [];
+  const fonts = new Map(others('font').map((e) => [e.name, e.value as FontFile]));
+  (skin.hud ?? []).forEach((item, i) => {
+    if (item.font === undefined) return;
+    const font = fonts.get(item.font);
+    if (font === undefined) {
+      // Classic items keep their old reading (a sprite font, unchecked); a counter or styled text
+      // must name a font file or a sprite.
+      const styled = item.as === 'counter' || HUD_TEXT_STYLE_FIELDS.some((f) => item[f] !== undefined);
+      if (styled && !sprites.has(item.font))
+        issues.push({
+          name,
+          path: ['hud', i, 'font'],
+          code: 'missing_ref',
+          message: `no font or sprite "${item.font}" in the game`,
+        });
+      return;
+    }
+    const glyphs = new Set(Object.keys(font.glyphs));
+    const report = (field: string, chars: string[], what: string) => {
+      if (chars.length === 0) return;
+      const list = chars.map((c) => JSON.stringify(c)).join(', ');
+      issues.push({
+        name,
+        path: ['hud', i, field],
+        code: 'missing_glyph',
+        message: `font "${item.font}" has no glyph for ${list} (${what})`,
+      });
+    };
+    if (item.format !== undefined)
+      report(
+        'format',
+        missingGlyphs(glyphs, item.format.split(HUD_VALUE_TOKEN).join('')),
+        'used in this format',
+      );
+    if (item.as === 'number' || item.as === 'counter')
+      report('font', missingGlyphs(glyphs, HUD_DIGITS), 'a number shows every digit');
+  });
   return issues;
 }
 

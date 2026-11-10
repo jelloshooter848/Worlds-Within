@@ -1,5 +1,6 @@
 import { CanvasRenderer } from '@engine/backends/canvas2d';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
+import { contentFonts } from '@engine/core/ui';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
@@ -138,11 +139,14 @@ async function shootThree(
   const canvas = newCanvas(job);
   // The sprite sheets as decoded pixels, for every skin's HUD (gap G33).
   const sheets = contentPixelSheets(content);
+  // The font files, for HUD text and the UI kit's widgets (Engine 0.16 T6).
+  const fonts = contentFonts(content);
   let presenter: InstanceType<typeof ThreePresenter>;
   try {
     presenter = new ThreePresenter(canvas, skins.main, {
       size: job.screen,
       sheets,
+      fonts,
       ...(game.background !== undefined && { background: game.background }),
     });
   } catch (error) {
@@ -159,7 +163,7 @@ async function shootThree(
   const draws: Record<string, Presenter> = {};
   const syncs: Record<string, Presenter> = {};
   for (const [id, skin] of Object.entries(skins.rounds)) {
-    const round = presenter.withSkin(skin, { sheets });
+    const round = presenter.withSkin(skin, { sheets, fonts });
     draws[id] = round;
     syncs[id] = { present: (f) => round.scene.sync(f) };
   }

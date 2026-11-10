@@ -36,7 +36,9 @@ import {
   type SkinFile,
   zoomAbout,
 } from '@engine/core/present';
+import { paintUi, SkinHud, type FontLookup } from '@engine/core/ui';
 import { CanvasRenderer } from './renderer';
+import { CanvasUiPainter, type GlyphSurface } from './ui-painter';
 
 type Ctx = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 type Skin = DeepReadonly<SkinFile>;
@@ -63,6 +65,13 @@ export interface SkinnedPresenterOptions {
   background?: string;
   /** The bitmap font for HUD numbers and text when an item names none (default `font`). */
   font?: string;
+  /**
+   * The game's `font` content files (`contentFonts(content)`, `@engine/core/ui`; Engine 0.16 T6),
+   * for HUD text in a font file and the UI kit's widgets.
+   */
+  fonts?: FontLookup;
+  /** Makes a surface for one font's glyphs in one colour (default an offscreen canvas, none in Node). */
+  glyphSurface?: (width: number, height: number) => GlyphSurface | null;
   /**
    * Keep the camera inside the map; a map smaller than the picture is centred (default: the skin's
    * `camera.clamp`, else true).
@@ -175,6 +184,9 @@ export class SkinnedCanvasPresenter implements Presenter {
   private fxClock = -1;
   /** Where the camera's target (the followed entity) was on the picture last frame (T5's iris). */
   private focusPoint: { x: number; y: number } | null = null;
+  /** The skin's HUD through the UI kit (Engine 0.16 T6), used when it has a UI item. */
+  private readonly hud: SkinHud;
+  private readonly uiPainter: CanvasUiPainter;
 
   constructor(
     target: Renderer | Ctx,
@@ -195,6 +207,16 @@ export class SkinnedCanvasPresenter implements Presenter {
       ...(opts.reduceFlashing !== undefined && { reduceFlashing: opts.reduceFlashing }),
       ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
     };
+    this.hud = new SkinHud(skin, {
+      ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.font !== undefined && { font: opts.font }),
+    });
+    this.uiPainter = new CanvasUiPainter(
+      this.r,
+      sheet,
+      opts.fonts,
+      opts.glyphSurface !== undefined ? { glyphSurface: opts.glyphSurface } : {},
+    );
   }
 
   resize(size: ScreenSize): void {
@@ -539,10 +561,25 @@ export class SkinnedCanvasPresenter implements Presenter {
 
   // ---- HUD ----
 
-  /** The HUD from `layoutHud` (`@engine/core/present`, shared with the 3D backend), in picture pixels. */
+  /**
+   * The HUD in picture pixels. A skin with a UI kit item (Engine 0.16 T6: a font file's text, a
+   * bar, counter, panel or minimap) is laid out by `SkinHud` and painted by `CanvasUiPainter`;
+   * any other is `layoutHud` (`@engine/core/present`, shared with the 3D backend) drawn as before.
+   */
   private drawHud(frame: Frame): void {
     const r = this.r;
     const frameSize: HudFrameSize = (id, palette, name) => this.sheet(id, palette)?.frames.get(name) ?? null;
+    if (this.hud.usesUi) {
+      const draws = this.hud.layout({
+        status: frame.status,
+        frameSize,
+        map: this.mapVisible ? (this.shown?.map ?? null) : null,
+        entities: frame.entities,
+        clock: this.fxClock,
+      });
+      paintUi(draws, this.uiPainter);
+      return;
+    }
     const font = this.opts.font;
     for (const d of layoutHud(this.skin, frame.status, frameSize, font !== undefined ? { font } : {})) {
       if (d.kind === 'text') r.text(this.sheet(d.font) ?? EMPTY_FONT, d.text, d.x, d.y);

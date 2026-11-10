@@ -40,6 +40,10 @@ Import from `@engine/core/present` (`index.ts`).
   turns a skin's `hud` and a frame's `status` into `HudDraw` items (a sprite frame, bitmap-font
   text or a missing frame's box at a picture pixel, in order), and `hudGlyphs(text)` splits text
   into font glyphs; both backends draw these, so the HUD sits in the same place in 2D and 3D.
+  From Engine 0.16 T6 a skin's `hud` also takes the UI kit's widgets (`bar`, `counter`, `panel`,
+  `minimap`, styled text in a font file; `HUD_WIDGET_TYPES`), laid out by `@engine/core/ui`'s
+  `SkinHud`; `layoutHud` skips them, and the skin check reports `missing_glyph` for HUD text a
+  font file lacks.
 - Skins (`skin.ts`): `skinSchema` and the `skin` content kind (`SKIN_KIND`, one of the engine's
   kinds), a per-backend JSON file mapping each entity kind to a sprite (2D) or mesh (3D), each tile
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file

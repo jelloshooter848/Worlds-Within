@@ -53,6 +53,7 @@ import {
   zoomAbout,
 } from '@engine/core/present';
 import { GeometryCache } from './geometry';
+import type { FontLookup } from '@engine/core/ui';
 import { HudLayer } from './hud';
 import { ParallaxPlanes } from './parallax';
 
@@ -88,6 +89,8 @@ export interface ThreeSceneOptions {
    * and font glyphs (gap G33). Without it a heart or icon is a flat box and text draws nothing.
    */
   sheets?: PixelSheetLookup;
+  /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for HUD text and widgets. */
+  fonts?: FontLookup;
 }
 
 /** Ticks an effect lasts when the skin gives none (the same as the Canvas2D presenter). */
@@ -267,7 +270,7 @@ export class ThreeScene {
     this.points = { normal: makePoints('normal'), add: makePoints('add') };
     this.particles.add(this.points.normal, this.points.add);
     this.scene.add(this.particles);
-    this.hud = new HudLayer(skin, opts.sheets);
+    this.hud = new HudLayer(skin, opts.sheets, opts.fonts);
     this.parallax = new ParallaxPlanes(skin, opts.sheets);
     this.camera.add(this.parallax.group);
     this.cameraFx = new CameraFx({
@@ -302,7 +305,7 @@ export class ThreeScene {
     this.updateOverlay(frame.frame);
     this.skinParticles.update(frame.frame, frame.entities);
     this.updateParticles(size);
-    this.hud.sync(frame, size);
+    this.hud.sync(frame, size, this.mapVisible ? (this.shown?.map ?? null) : null);
   }
 
   // ---- What tests and the presenter read ----

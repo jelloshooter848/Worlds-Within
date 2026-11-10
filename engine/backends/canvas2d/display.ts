@@ -1,4 +1,5 @@
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
+import type { FontLookup } from '@engine/core/ui';
 import { transitionShape, type TransitionView } from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import type { DeepReadonly, SkinFile } from '@engine/core/present';
@@ -20,6 +21,8 @@ export interface CanvasDisplayOptions {
    */
   rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
   sheet: SheetLookup;
+  /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for the HUD. */
+  fonts?: FontLookup;
   /** The colour behind the game's own frames when it is not its skin's `background` (default that, else `#000`). */
   background?: string;
   /** Whole-number scaling only (default false: stretch to fit, letterboxed). */
@@ -53,6 +56,7 @@ export function canvasDisplay(canvas: HTMLCanvasElement, opts: CanvasDisplayOpti
     ...(opts.background !== undefined && { background: opts.background }),
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
+    ...(opts.fonts !== undefined && { fonts: opts.fonts }),
   });
   const presenter = skinSetCanvasPresenter(renderer, { ...opts, main });
   let transition: TransitionView | null = null;

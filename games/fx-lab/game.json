@@ -8,15 +8,34 @@
     "profile": ["content/profiles/*.profile.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
+    "font": ["content/fonts/*.txt"],
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"]
   },
-  "start": { "seed": 1 },
-  "screen": { "width": 256, "height": 240 },
+  "start": {
+    "seed": 1
+  },
+  "screen": {
+    "width": 256,
+    "height": 240
+  },
   "transitions": {
-    "level": { "kind": "iris", "ticks": 28, "hold": 8, "ease": "cubicIn", "at": "follow" },
-    "scene": { "kind": "fade", "ticks": 12 },
-    "default": { "kind": "fade", "ticks": 16, "hold": 4 }
+    "level": {
+      "kind": "iris",
+      "ticks": 28,
+      "hold": 8,
+      "ease": "cubicIn",
+      "at": "follow"
+    },
+    "scene": {
+      "kind": "fade",
+      "ticks": 12
+    },
+    "default": {
+      "kind": "fade",
+      "ticks": 16,
+      "hold": 4
+    }
   },
   "headless": "headless.ts",
   "view": "view.ts"

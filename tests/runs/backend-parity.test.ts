@@ -319,7 +319,12 @@ describe('backend parity: every other game with a view, through null, canvas2d a
       // The HUD (gap G33): a skin with a `hud` showing a status value draws quads, never a
       // missing frame's box.
       const quads = scene.hud.quads();
-      if ((skin.hud ?? []).some((item) => Object.hasOwn(frame.status, item.status)) && quads.length === 0)
+      if (
+        (skin.hud ?? []).some(
+          (item) => item.status !== undefined && Object.hasOwn(frame.status, item.status),
+        ) &&
+        quads.length === 0
+      )
         noHud.add(round ? id : 'main');
       for (const q of quads) if (q.kind === 'box') noHud.add(`${round ? id : 'main'} box at ${q.x},${q.y}`);
       if (quads.length > 0) hudShown.add(round ? id : 'main');

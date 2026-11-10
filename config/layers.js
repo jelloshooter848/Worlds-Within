@@ -82,7 +82,8 @@ export const EXCEPTIONS = [
  * output side of the core. Kits never draw (docs/DESIGN.md): they describe a frame
  * (`engine/core/present`) and a backend draws it through a skin. Neither kits nor the sim may use
  * the presentation effects (`engine/core/fx`, Engine 0.16): its RNG and tweens are for presenters
- * only, so no effect can reach the state. ESLint and
+ * only, so no effect can reach the state. Nor the UI kit (`engine/core/ui`, Engine 0.16 T6): its
+ * fonts, text, panels and HUD widgets are laid out for presenters and painted by backends. ESLint and
  * tests/architecture/dependency-rule.test.ts both read this list through config/deps.js.
  * @type {readonly ForbiddenCore[]}
  */
@@ -106,13 +107,14 @@ export const FORBIDDEN_CORE = [
       'engine/core/loop.ts',
       'engine/core/shell/**',
       'engine/core/fx/**',
+      'engine/core/ui/**',
     ],
   },
   {
     layer: 'engine/sim',
     reason:
-      'the world simulation is headless and deterministic: presentation effects (engine/core/fx, its own RNG, easing and tweens) belong to presenters',
-    targets: ['engine/core/fx/**'],
+      'the world simulation is headless and deterministic: presentation effects (engine/core/fx, its own RNG, easing and tweens) and the UI kit (engine/core/ui) belong to presenters',
+    targets: ['engine/core/fx/**', 'engine/core/ui/**'],
   },
 ];
 
@@ -207,6 +209,7 @@ export const PURE_CORE = [
   'engine/core/content/**',
   'engine/core/present/**',
   'engine/core/fx/**',
+  'engine/core/ui/**',
   'engine/core/assets/sheet-lookup.ts',
 ];
 

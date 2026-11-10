@@ -10,6 +10,7 @@ describe('content kinds', () => {
   it('registers the engine kinds, listed by name', () => {
     expect(kinds.list().map((k) => k.name)).toEqual([
       'campaign',
+      'font',
       'mission',
       'palette',
       'sfx',
@@ -50,7 +51,8 @@ describe('content kinds', () => {
       {
         file: 'r.json',
         code: 'unknown_kind',
-        message: 'unknown content kind "room" (known: campaign, mission, palette, sfx, skin, song, sprite)',
+        message:
+          'unknown content kind "room" (known: campaign, font, mission, palette, sfx, skin, song, sprite)',
       },
     ]);
   });

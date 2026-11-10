@@ -10,6 +10,7 @@ import {
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { Rasterized } from '@engine/core/gfx/pixelart';
 import { freezeFrame, type PresentFrame, type SkinFile } from '@engine/core/present';
+import { buildFont, type FontLookup } from '@engine/core/ui';
 import { threeScenePresenter } from './display';
 import { PARTICLE_POOL, PARTICLE_Z, ThreeScene } from './scene';
 
@@ -124,6 +125,55 @@ describe('ThreeScene: the HUD pass (G33)', () => {
     expect(p.rounds['r']!.hud.quads().map((q) => [q.x, q.y])).toEqual([
       [0, 0],
       [8, 0],
+    ]);
+  });
+});
+
+describe('ThreeScene: the UI kit HUD (Engine 0.16 T6)', () => {
+  /** One 2x2 glyph, an L of three pixels. */
+  const FONT = buildFont('f', { cell: { w: 2, h: 2 }, baseline: 2, glyphs: { L: { rows: ['#.', '##'] } } });
+  const fonts: FontLookup = (id) => (id === 'f' ? FONT : null);
+  const UI: SkinFile = {
+    backend: 'three',
+    sheets: { sheet: 'icons' },
+    kinds: {},
+    hud: [
+      { as: 'panel', x: 0, y: 0, w: 12, h: 6, frame: 'coin', slice: 2 },
+      { status: 'hp', as: 'bar', x: 20, y: 0, w: 10, h: 2, max: 4, back: '#000' },
+      { as: 'text', x: 40, y: 0, font: 'f', format: 'L', color: '#ff0000' },
+      { as: 'minimap', x: 60, y: 0, w: 4, h: 2, tiles: { '#': '#00a800' } },
+    ],
+  };
+
+  it('places panel pieces, fills, glyphs and the minimap as quads in order', () => {
+    const scene = new ThreeScene(UI, { sheets: pixels, fonts });
+    const map = { id: 'm', version: 1, tileSize: 16, cols: 2, rows: 1, tiles: ['#.'] };
+    scene.sync(freezeFrame(frame({ status: { hp: 2 }, map })));
+    const quads = scene.hud.quads();
+    expect(quads.slice(0, 9).every((q) => q.kind === 'sprite' && q.frame === 'coin')).toBe(true);
+    expect(quads[0]).toMatchObject({ x: 0, y: 0, w: 2, h: 2, part: { x: 0, y: 0, w: 2, h: 2 } });
+    expect(quads[4]).toMatchObject({ x: 2, y: 2, w: 8, h: 2, part: { x: 2, y: 2, w: 4, h: 4 } });
+    expect(quads.slice(9)).toEqual([
+      { kind: 'fill', x: 20, y: 0, w: 10, h: 2, color: '#000' },
+      { kind: 'fill', x: 20, y: 0, w: 5, h: 2, color: '#00a800' },
+      { kind: 'glyph', x: 40, y: 0, w: 2, h: 2, font: 'f', ch: 'L', color: '#ff0000' },
+      { kind: 'fill', x: 60, y: 0, w: 2, h: 2, color: '#00a800' },
+    ]);
+    const meshes = scene.hud.scene.children.filter((c): c is Mesh => c instanceof Mesh && c.visible);
+    // Every HUD material is transparent, so draw order alone stacks them (a fill over a panel).
+    expect(meshes.every((m) => (m.material as MeshBasicMaterial).transparent)).toBe(true);
+    expect(meshes.map((m) => m.renderOrder)).toEqual(meshes.map((_, i) => i));
+    // The glyph's texture: its ink in its colour, rows flipped for GL.
+    const glyph = (meshes[11]!.material as MeshBasicMaterial).map!.image as { data: Uint8Array };
+    expect([...glyph.data]).toEqual([255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 0, 0]);
+    scene.dispose();
+  });
+
+  it('keeps a skin with only classic items on the old layout', () => {
+    const scene = new ThreeScene(SKIN, { sheets: pixels, fonts });
+    scene.sync(frame({ status: { hp: 1 } }));
+    expect(scene.hud.quads()).toEqual([
+      { kind: 'sprite', sheet: 'icons', frame: 'heart', x: 8, y: 8, w: 7, h: 6 },
     ]);
   });
 });

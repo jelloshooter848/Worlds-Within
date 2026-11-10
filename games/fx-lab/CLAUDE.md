@@ -3,7 +3,7 @@
 The fx lab (Engine 0.16 part A, T2): a small game on the platformer kit that shows every
 presentation feature of 0.16 part A, one task at a time (T2 adds it with sprite animation states,
 per-frame timing, one-shots and frame events; T3 adds particle emitters, additive blending and
-glow; T4 adds camera effects and parallax; T5 screen transitions; later tasks add UI, audio...). It is a lab, **not a sample**:
+glow; T4 adds camera effects and parallax; T5 screen transitions; T6 the UI kit's HUD; later tasks add menus, audio...). It is a lab, **not a sample**:
 three short original levels with stomps,
 coins and a door so that events happen, Pip (an original courier) with a full animation set, a 2D
 skin and a low-poly 3D skin, run files with golden hashes and a browser page. Content and glue
@@ -32,8 +32,16 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   `pip-jump-0` (stretch), `pip-jump-1` (tuck), `pip-fall-0/1` (arms up), `pip-hurt-0/1` (the
   second a white flash), `pip-dead-0..2` (a tumble). Also `beetle-0/1/flat/dead`, `coin-0..3`
   (a spin), `door`, `door-glow`, `door-lit` (16x32), `torch` (a brazier on a pole) and `sparkle`
-  (5x5, a particle sprite), the tiles and HUD icons.
-  `content/sprites/fx-font.txt`: the HUD's 8x8 digits.
+  (5x5, a particle sprite), the tiles and HUD icons, and (Engine 0.16 T6) `hud-panel` (9x9, a
+  teal panel with a black rim, sliced 2) and `bar-frame` (5x5, the health bar's grey frame).
+- `content/fonts/fx-small.txt` and `fx-title.txt` (Engine 0.16 T6, the `font` kind,
+  `engine/core/ui/CLAUDE.md`): original fonts covering A-Z, a-z, 0-9 and punctuation
+  (`.,!?:;-+=/'"()[]%*#&_<>$@`). `fx-small` is 5 px wide (I, f, i, j, l, r, t and some
+  punctuation narrower), caps 7 px on the baseline, lower case with 2 px descenders, cell 5x9,
+  spacing 1, kerning for `LT`, `TA`, `AT`, `Te`, `To`, `Ty`, `Va`, `Yo`; `fx-title` is the same
+  glyphs doubled with the Scale2x rule (diagonal steps smoothed), cell 10x18, for headings with
+  an outline. Both were written by a small generator (the glyph table, then Scale2x); edit the
+  text by hand now. The old `fx-font.txt` sprite digits are gone.
   `content/sprites/fx-sky.txt` (palette `content/palettes/fx-sky.json`, Engine 0.16 T4): the
   parallax sky, 128 px wide frames that repeat without a seam: `clouds` (128x28), `mountains`
   (128x80, snow-capped, lit from the left) and `hills` (128x56, outlined, with bushes). Drawn with
@@ -53,7 +61,15 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   - `events`: the frame events (`footstep`: a sound and a puff of dust; `skid-dust`; `tumble`)
     next to the kit's (`jump` and `land` with a squash tween, `coin`, `stomp`, `hurt`, `died`,
     `cleared` the door's sound). A frame event runs through `events` exactly like a kit event.
-  - `hud` (hearts, coins, lives) and `camera` (follow the runner, 32x48 deadzone, lerp 0.25,
+  - `hud` (Engine 0.16 T6, the UI kit's worked example): a `panel` (`hud-panel`, slice 2) behind
+    `Pip` (text in `fx-small`, white with a black shadow), a health `bar` (`hp` of `maxHp`, green,
+    red at a third or less, framed by the nine-slice `bar-frame`), a coin `counter` (the
+    `hud-coin` icon and two gold digits rolling to a new count over 24 frames, white while
+    rolling), a lives `counter` (`hud-life`, `x{value}`); a second panel at the top right holding a
+    `minimap` (2 px per tile: ground, platforms, blocks; dots for Pip, coins, beetles and the
+    door); the heading `The Fx Lab` in `fx-title` with a black outline and a lower-case line under
+    it (`Stomp beetles, grab coins & find the door!`). The same `hud` is in `three.json`. Tuned by
+    screenshots at 1x and at page scale in both backends. And `camera` (follow the runner, 32x48 deadzone, lerp 0.25,
     from T4 `lookAhead` 24 px in the facing direction, gliding at 0.08).
   - Camera effects (Engine 0.16 T4): `stomp` shakes (`{ amount: 3, ticks: 14 }`) and asks for a
     4-frame `hitPause`; `hurt` flashes red (`#d82800` at 0.6 over 8 frames; the old flash
@@ -85,8 +101,8 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   - `content.ts`: `loadFxLab(files)`, `mustLoadFxLab(files)`, `fxStages(content)` (the kit's
     `contentStages`), `fxSkin(content, backend)`.
   - `headless.ts`: `createGame(content, seed, opts?)` (the kit's `LevelSequence`), `starts`.
-  - `picture.ts`: `fxLook`, `fxFrames`, `fxPicture`, `fxCanvasPicture(r, look, onSound?)`;
-    `picture3d.ts`: `fxLook3d` (no Three.js import). `view.ts`: `createView` (the engine's
+  - `picture.ts`: `fxLook` (from T6 with `fonts`, `contentFonts(content)`), `fxFrames`, `fxPicture`, `fxCanvasPicture(r, look, onSound?)`;
+    `picture3d.ts`: `fxLook3d` (no Three.js import; with `fonts` from T6). `view.ts`: `createView` (the engine's
     `frameView`), for `pnpm cli screenshot`.
   - `main.ts`: `bootBrowserGame` with both displays and the sfx, each display given the shell's
     `hitPause` as `onHitPause` (Engine 0.16 T4) and `content.manifest.transitions` as
@@ -110,7 +126,10 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
   plays level-1 to the level change in each backend with `?debug=step` and shoots the iris
   mid-close, covered and mid-open, then a wipe and the default fade on demand
   (`__ww.transition`), reading the black share and the sides of each picture
-  (`WW_SHOTS_DIR=<folder>` keeps the shots to look at).
+  (`WW_SHOTS_DIR=<folder>` keeps the shots to look at). From T6 `fx-lab.test.ts` checks both fonts
+  cover A-Z, a-z, 0-9 and the punctuation, both skins have a bar, counter, minimap, panel and
+  text, and level-1 played through the 3D scene shows panel pieces, fills and glyphs (never a
+  missing frame's box) without changing the snapshot.
 
 ## Making the art
 
@@ -130,6 +149,7 @@ pnpm -s cli screenshot games/fx-lab/runs/level-1.run.json --tick 242 --backend t
 # level-3 --tick 120 (coin burst), 305 (torch, door aura)
 # camera effects (T4): level-1 --tick 216 (stomp shake), 352 (door zoom); level-2 --tick 279
 # (hurt flash); parallax at two camera positions: level-1 --tick 120 and 260
+# the HUD (T6): level-1 --tick 300 (counter, minimap), level-2 --tick 300 (half a health bar)
 pnpm test games/fx-lab tests/runs tests/browser/fx-lab.test.ts
 pnpm dev   # then open /games/fx-lab/ (arrows move, Z jumps, X runs; ?backend=three for 3D)
 ```

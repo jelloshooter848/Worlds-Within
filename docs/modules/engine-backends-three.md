@@ -36,7 +36,11 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   `frame.status` through the skin's `hud` as an orthographic pass of textured quads in picture
   pixels (`DataTexture`s cut from the decoded pixel art the `sheets` option gives, a
   `PixelSheetLookup` such as `contentPixelSheets(content)`; nearest-neighbour; no canvas, so it
-  runs in Node); `hud.quads()` lists what it shows.
+  runs in Node); `hud.quads()` lists what it shows. From Engine 0.16 T6 a skin with UI kit items
+  is laid out by `@engine/core/ui`'s `SkinHud` and painted as quads (`fill`, a frame part for a
+  nine-slice piece, a `glyph` texture per font, character and colour; the `fonts` option on the
+  scene, `ThreePresenter`, `threeDisplay` and `threeScenePresenter`); every HUD material is
+  transparent, so `renderOrder` alone stacks them.
 - `ThreePresenter`, `ThreePresenterOptions` (`presenter.ts`, browser only):
   `new ThreePresenter(canvas, skin, { size, onSound, background, clamp, reduceFlashing, sheets })`
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a

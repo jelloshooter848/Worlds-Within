@@ -1,0 +1,30 @@
+; A bitmap font: one-bit glyphs ('#' ink, '.' clear) on a 4x6 cell, baseline 5.
+cell 4 6
+baseline 5
+spacing 1
+space 2
+kern Hi 0
+
+glyph H
+#..#
+#..#
+####
+#..#
+#..#
+....
+
+glyph i advance 2
+#
+.
+#
+#
+#
+.
+
+glyph 1
+.#.
+##.
+.#.
+.#.
+###
+...

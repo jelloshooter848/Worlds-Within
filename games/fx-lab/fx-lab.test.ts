@@ -8,6 +8,7 @@ import { canonicalJson } from '@engine/core/headless';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { resolveSkinAnimation, resolveSkinMesh, skinEmitNames } from '@engine/core/present';
+import { contentFonts, missingGlyphs } from '@engine/core/ui';
 import { RUNNER_ANIMS } from '@kits/platformer';
 import { fxSkin, fxStages, mustLoadFxLab } from './content';
 import { createGame } from './headless';
@@ -187,5 +188,43 @@ describe('fx lab camera effects and parallax (Engine 0.16 T4)', () => {
     // Two stomps in level 1.
     expect(pauses).toEqual([4, 4]);
     expect(Math.min(...widths)).toBeLessThan(look.screen.width);
+  });
+});
+
+describe('fx lab HUD through the UI kit (Engine 0.16 T6)', () => {
+  it('ships two fonts covering upper and lower case, digits and punctuation', () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?:;-+=/\'"()[]%*#&_<>$@';
+    for (const id of ['fx-small', 'fx-title']) {
+      const font = contentFonts(content)(id);
+      expect(font, id).not.toBeNull();
+      expect(missingGlyphs(font!.glyphs, chars), id).toEqual([]);
+    }
+    expect(contentFonts(content)('fx-title')!.cell.h).toBeGreaterThan(
+      contentFonts(content)('fx-small')!.cell.h,
+    );
+  });
+
+  it('shows a health bar, a coin counter and a minimap in both skins, never touching the state', () => {
+    for (const backend of ['canvas2d', 'three'] as const) {
+      const types = (fxSkin(content, backend).hud ?? []).map((item) => item.as);
+      for (const t of ['bar', 'counter', 'minimap', 'panel', 'text']) expect(types, backend).toContain(t);
+    }
+    const look3d = fxLook3d(content);
+    const scene = new ThreeScene(look3d.skin, {
+      size: look3d.screen,
+      sheets: look3d.sheets,
+      fonts: look3d.fonts,
+    });
+    const frames = fxFrames(look3d.screen);
+    const kinds = new Set<string>();
+    play('level-1', (game) => {
+      const before = canonicalJson(game.snapshot());
+      scene.sync(frames.next(game.world, game.events));
+      for (const q of scene.hud.quads()) kinds.add(q.kind);
+      expect(canonicalJson(game.snapshot())).toBe(before);
+    });
+    scene.dispose();
+    // Panel pieces and icons, bar and minimap fills, glyphs; never a missing frame's box.
+    expect([...kinds].sort()).toEqual(['fill', 'glyph', 'sprite']);
   });
 });

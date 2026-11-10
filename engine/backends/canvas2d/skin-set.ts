@@ -2,6 +2,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import { presenterBySkinSet, type DeepReadonly, type Presenter, type SkinFile } from '@engine/core/present';
+import type { FontLookup } from '@engine/core/ui';
 import { SkinnedCanvasPresenter } from './presenter';
 
 /** A game's Canvas2D skins (a `SkinSet` from `@engine/core/present`), its sheets and picture size. */
@@ -11,6 +12,8 @@ export interface CanvasSkinSetOptions {
   /** A skin per mini game, by its id (`canvas2d-<id>.json`); none when left out. */
   rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
   sheet: SheetLookup;
+  /** The game's `font` content files (`contentFonts`, Engine 0.16 T6), for every skin's HUD. */
+  fonts?: FontLookup;
   screen: ScreenSize;
   /**
    * The colour behind the game's own frames when it is not its skin's (default the skin's
@@ -39,6 +42,7 @@ export function skinSetCanvasPresenter(r: Renderer, opts: CanvasSkinSetOptions):
   const sound = {
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     ...(opts.onHitPause !== undefined && { onHitPause: opts.onHitPause }),
+    ...(opts.fonts !== undefined && { fonts: opts.fonts }),
   };
   const main =
     opts.main ??

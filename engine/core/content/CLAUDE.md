@@ -46,7 +46,8 @@ string or an already-parsed object, so the CLI, tests and the browser all share 
   entry's name is its file name up to the first dot; an `id` field must match it.
 - `engine-kinds.ts`: `engineContentKinds()`, a registry with the engine's own kinds: `song` and
   `sfx` (`audio/song-schema.ts`), `palette` (`gfx/palette-schema.ts`), `sprite`
-  (`gfx/sprite-schema.ts`, JSON or `.txt`), `skin` (`present/skin.ts`) and `mission`
+  (`gfx/sprite-schema.ts`, JSON or `.txt`), `font` (`ui/font.ts`, JSON or `.txt`, Engine 0.16 T6:
+  a bitmap pixel font, claimed under `content.font`), `skin` (`present/skin.ts`) and `mission`
   (`missions.ts`, `*.mission.json`, Engine 0.10: a game claims them under `content.mission`) and
   `campaign` (`campaign.ts`, `*.campaign.json`, Engine 0.10 T10, gap G2: the order a game plays its
   levels or missions in; claimed under `content.campaign`), each also exported (`SONG_KIND`, ...,
@@ -86,7 +87,10 @@ file formats are described at the top of that file).
   (`kits/platformer/level.ts`) and profile codes `bad_jump_tiers`, `bad_speed_caps`,
   `unknown_actor` and `missing_field` (`kits/platformer/profile.ts`); the RTS kit's `unknown_type` (a plan naming a type no types table has, `kits/rts/schema.ts`); the tower-defense kit's map codes `bad_legend_char`, `duplicate_tower`, `no_entry`, `two_entries`, `no_exit`, `two_exits`, `path_broken`, `path_branch` and `path_off_walk`, and from its `checkAll` `unknown_tower`, `unknown_waves` and `duplicate_tower` (a tower type in two `td-towers` files) (`kits/towerdefense/schema.ts`); the skin's `wrong_backend_field`, `missing_field`,
   `missing_ref`, `missing_frame` and `bad_event_key` (an `events` key not of the form `type`,
-  `type:value` or `type:field=value`, Engine 0.11) (`present/skin.ts`); the mission's `duplicate_outcome` (an
+  `type:value` or `type:field=value`, Engine 0.11), and from Engine 0.16 T6 `missing_glyph` (HUD
+  text a font file has no glyph for), `bad_minimap_dot` and `bad_ease` (`present/skin.ts`); the
+  font's `bad_font`, `bad_glyph`, `bad_kerning` and its `.txt` reader's `duplicate_glyph`,
+  `row_outside_glyph` and `bad_directive` (`ui/font.ts`); the mission's `duplicate_outcome` (an
   outcome id, or a `playable` id, given twice), `unknown_outcome` (`onQuit` or a `playable` id that
   is not a declared outcome) and `bad_effect` (an `opportunity` effect without exactly one of
   `open` and `close`) (`missions.ts`); the campaign's `bad_entry` (an entry without exactly one of

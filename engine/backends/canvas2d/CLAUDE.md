@@ -94,6 +94,16 @@ canvas, none in Node). Each `present(frame)`, in order:
   layout is the core `layoutHud` (`@engine/core/present`, Engine 0.15, gap G33), shared with the
   3D backend's HUD pass: change it there; this presenter only draws its items (`sprite`, `text`,
   a missing frame's `box`).
+  From Engine 0.16 T6 a skin whose `hud` has a UI kit item (`bar`, `counter`, `panel`, `minimap`,
+  or text in a font file; `SkinHud.usesUi` from `@engine/core/ui`) is laid out whole by `SkinHud`
+  (the map the presenter shows for a minimap, its own clock for a counter's roll) and painted by
+  `CanvasUiPainter` (`ui-painter.ts`, exported): a fill is `rect` (`translucent` below alpha 1); an
+  image is `sprite` of the whole frame, or of a sheet holding only the frame's part (cached per
+  part) scaled with `transformed` when its box is another size (a nine-slice piece); a glyph is a
+  `sprite` from a strip of the font's glyphs drawn once per colour on a `glyphSurface` (an
+  offscreen canvas; option `glyphSurface`), or its ink runs as `rect`s where there is none (Node).
+  The presenter's `fonts` option (`contentFonts(content)`) gives the font files; `canvasDisplay`
+  and `skinSetCanvasPresenter` pass it on. A skin without UI items draws exactly as before.
 - Camera effects and parallax (Engine 0.16 T4, `@engine/core/fx`): an event's skin `shake`,
   `zoom` and `flash` start on a `CameraFx` (seeded by `seed`) timed by the presenter's own clock,
   one tick per `present` call, so they go on while the frame number stands still (a hit-pause,
@@ -192,6 +202,8 @@ fitted to the page. `rts-camera.test.ts` (Engine 0.9 T5) checks that `RtsCamera`
 (`@engine/core/present`) agrees with this presenter: at zoom 0.5, 1 and 2, with a skin deadzone
 and lerp, each entity's box is drawn where `worldToScreen` says and maps back within half a picture
 pixel, and the map copy sits at the camera's top-left, in the middle of the map and clamped at
-its edge. `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
+its edge. `ui-painter.test.ts` (Engine 0.16 T6) checks `CanvasUiPainter`'s fills, whole and
+part frames, glyph runs and the coloured strip drawn once, and the presenter painting a UI HUD.
+`transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
 wipe (its gradient line and stops) and an iris (the even-odd hole on the focus) on a recording
 context, and `presenter.test.ts` the presenter's `focus()` scrolled and clamped.

@@ -1,4 +1,4 @@
-import type { SkinFile } from './skin';
+import { HUD_CLASSIC_TYPES, type SkinFile } from './skin';
 import type { DeepReadonly, PresentFrame } from './types';
 
 /**
@@ -68,6 +68,8 @@ export function layoutHud(
   const out: HudDraw[] = [];
   const defaults = skin.sheets;
   for (const item of skin.hud ?? []) {
+    // Engine 0.16 T6's widgets (`bar`, `counter`, `panel`, `minimap`) are `engine/core/ui`'s.
+    if (!isClassicHudType(item.as) || item.status === undefined) continue;
     if (!Object.hasOwn(status, item.status)) continue;
     const value = status[item.status]!;
     if (item.as === 'number' || item.as === 'text') {
@@ -114,4 +116,9 @@ export function hudGlyphs(item: HudText): HudSprite[] {
     x += HUD_GLYPH_ADVANCE;
   }
   return out;
+}
+
+/** Whether a HUD item type is one `layoutHud` draws (the types before Engine 0.16 T6's widgets). */
+export function isClassicHudType(as: string): as is (typeof HUD_CLASSIC_TYPES)[number] {
+  return (HUD_CLASSIC_TYPES as readonly string[]).includes(as);
 }

@@ -40,7 +40,10 @@ for and holds no game rules.
   instance lives in the presenter only), honours `zoom` (the hint's, else the skin's; the map
   copy, tiles, sprites and boxes are scaled, positions rounded to whole picture pixels, and the
   follower frames and clamps the zoomed view `cameraView(size, zoom)`), draws
-  event effects and the HUD from `status`, and reports skin sounds through `onSound(id)` once per
+  event effects and the HUD from `status` (from Engine 0.16 T6 a skin with UI kit items is laid
+  out by `@engine/core/ui`'s `SkinHud` and painted by `CanvasUiPainter`, `ui-painter.ts`: fills,
+  frame parts scaled for nine-slice panels, and glyphs from a strip of the font drawn once per
+  colour; the `fonts` option, also on `canvasDisplay` and `skinSetCanvasPresenter`), and reports skin sounds through `onSound(id)` once per
   event (the skin entry from `resolveSkinEvent`, so `mini-game-end:pass` can have its own sound). Details in the folder's CLAUDE.md. Its speed on an RTS view is measured by
   `pnpm exec tsx tests/bench/rts-render/run.ts` (Engine 0.9 T3; numbers in the build log).
 

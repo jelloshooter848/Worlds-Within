@@ -3251,39 +3251,137 @@
   },
   "hud": [
     {
+      "as": "panel",
+      "x": 4,
+      "y": 4,
+      "w": 112,
+      "h": 32,
+      "frame": "hud-panel",
+      "slice": 2
+    },
+    {
+      "as": "text",
+      "x": 10,
+      "y": 9,
+      "font": "fx-small",
+      "format": "Pip",
+      "color": "#fcfcfc",
+      "shadow": "#000000"
+    },
+    {
       "status": "hp",
-      "as": "hearts",
-      "x": 8,
-      "y": 8,
-      "frame": "heart"
+      "as": "bar",
+      "x": 30,
+      "y": 9,
+      "w": 56,
+      "h": 8,
+      "max": "maxHp",
+      "color": "#00a800",
+      "back": "#000000",
+      "low": {
+        "below": 0.34,
+        "color": "#d82800"
+      },
+      "panel": {
+        "frame": "bar-frame",
+        "slice": 2
+      }
     },
     {
       "status": "coins",
-      "as": "icon",
-      "x": 40,
-      "y": 8,
-      "frame": "hud-coin"
-    },
-    {
-      "status": "coins",
-      "as": "number",
-      "x": 50,
-      "y": 8,
-      "font": "fx-font"
-    },
-    {
-      "status": "lives",
-      "as": "icon",
-      "x": 80,
-      "y": 8,
-      "frame": "hud-life"
+      "as": "counter",
+      "x": 10,
+      "y": 22,
+      "frame": "hud-coin",
+      "font": "fx-small",
+      "digits": 2,
+      "color": "#f8b800",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 24,
+        "color": "#fcfcfc"
+      }
     },
     {
       "status": "lives",
-      "as": "number",
-      "x": 90,
-      "y": 8,
-      "font": "fx-font"
+      "as": "counter",
+      "x": 46,
+      "y": 22,
+      "frame": "hud-life",
+      "font": "fx-small",
+      "format": "x{value}",
+      "color": "#fcfcfc",
+      "shadow": "#000000"
+    },
+    {
+      "as": "panel",
+      "x": 166,
+      "y": 14,
+      "w": 88,
+      "h": 38,
+      "frame": "hud-panel",
+      "slice": 2
+    },
+    {
+      "as": "text",
+      "x": 0,
+      "y": 82,
+      "w": 256,
+      "align": "center",
+      "font": "fx-small",
+      "format": "Stomp beetles, grab coins & find the door!",
+      "color": "#fcfcfc",
+      "shadow": "#000000"
+    },
+    {
+      "as": "minimap",
+      "x": 170,
+      "y": 18,
+      "w": 80,
+      "h": 30,
+      "scale": 2,
+      "tiles": {
+        "#": "#00a800",
+        "=": "#fce0a8",
+        "?": "#f8b800",
+        "B": "#c84c0c",
+        "u": "#7c7c7c",
+        "^": "#bcbcbc"
+      },
+      "back": "#005858",
+      "dots": [
+        {
+          "kind": "runner",
+          "color": "#fcfcfc",
+          "size": 3
+        },
+        {
+          "kind": "coin",
+          "color": "#f8b800",
+          "size": 2
+        },
+        {
+          "kind": "beetle",
+          "color": "#d82800",
+          "size": 2
+        },
+        {
+          "kind": "goal",
+          "color": "#a4e4fc",
+          "size": 2
+        }
+      ]
+    },
+    {
+      "as": "text",
+      "x": 0,
+      "y": 62,
+      "w": 256,
+      "align": "center",
+      "font": "fx-title",
+      "format": "The Fx Lab",
+      "color": "#fcfcfc",
+      "outline": "#000000"
     }
   ],
   "sheets": {
