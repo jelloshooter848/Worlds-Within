@@ -65,6 +65,19 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   background resumes, or redoes the unlock on the next gesture. The manager is `booted.audio` (null without the option) for volume changes or
   another song. A game writes no audio code. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
   two page helpers it uses.
+- **The audio mixer** (Engine 0.16 T8, `../audio/mixer.ts`): with `audio` the boot makes one
+  `Mixer` over the page's `AudioManager` (`booted.mixer`). `BootAudio` takes `mix` (the skin's
+  `music` section: layered songs; `music` naming one plays its layers) and `seed` (sound
+  variation's `fxRng` seed: the game's start seed). Each display factory's `shell.onSound(id,
+cue?)` goes to `mixer.sound` (a presenter's `SoundCue`: varied, cooled down, ducking); the
+  scene factory's `page.uiSound(id)` (also `booted.uiSound`) plays on the ui bus (a `UiScreen`'s
+  `onSound`). The scenes' presenter (`shown.presenter`) hands every frame's status to
+  `mixer.frameStatus` first; every loop step, held ones too, calls `mixer.tick()` first (mix rules,
+  fades, the duck), and after the scenes update `mixer.dialog(open)` with whether a `UiScene`
+  on the stack shows a dialog (`UiScene.dialogShown()`), so the music ducks under dialog boxes.
+  The step hook's `__ww.mix()` is `mixer.state()` (null without audio). Nothing here reaches
+  the game or a hash. Tested in `shell.test.ts` (a layered song mixed from the presented status
+  in manual mode, a dialog duck, a cue varied, a UI sound on the ui bus).
 - **Hit-pause** (Engine 0.16 T4, `../fx/hit-pause.ts`): the boot keeps one `HitPause`
   (`booted.hitPause`) and gives every display factory `shell.hitPause(ticks)` beside `onSound`;
   a game passes it as the display's `onHitPause`, so a presenter playing a skin event's

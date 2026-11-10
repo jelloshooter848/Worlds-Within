@@ -119,6 +119,15 @@ only: nothing in `engine/` or `kits/` depends on it, and every rule is the platf
     `hitPause` as `onHitPause` (Engine 0.16 T4) and `content.manifest.transitions` as
     `transitions` (T5); every sound id the page plays is
     also pushed to `window.wwFxLab.sounds` (for `tests/browser/fx-lab.test.ts`).
+  - The mixer (Engine 0.16 T8): `content/songs/lab-calm.json` and `lab-danger.json` (132 bpm,
+    768 ticks, looping: the layers must stay in step) are the layers of the canvas2d skin's
+    `music.lab`; its rules play danger at 1 and calm at 0.3 (a 12-tick fade) while the kit's
+    `nearestActor` status is 0..71 px, else calm alone (the entry's 30-tick fade). `main.ts` boots
+    with `songs`, `mix: look.skin.music`, `music: 'lab'` and the start seed, on both backends (the
+    3D skin has no `music` of its own). Both skins: `footstep` varies `pitch [-2, 1.5]`, `volume
+[0.6, 1]` with `cooldown` 4, `jump` `pitch [-1, 1]`, `volume [0.8, 1]`; `stomp` and `hurt`
+    duck the music. The UI's sounds go to `page.uiSound` (the ui bus) and the dialog ducks the
+    music. `tests/browser/fx-lab-mix.test.ts` records `__ww.mix()` over `level-1`.
   - `ui.ts` (Engine 0.16 T7): `fxUiFile(content, name?)`, `sheetFrameSize(sheets)` (a
     `UiFrameSize` from the sheet lookup) and `fxUiScreen(content, { sheets, fonts, onSound?,
 open? })`, the `lab` screen with the menu focused, or with `open: 'dialog'` the dialog alone.

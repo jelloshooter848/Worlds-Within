@@ -35,6 +35,8 @@ import {
   type Presenter,
   type SkinFile,
   zoomAbout,
+  skinSoundCue,
+  type SoundCue,
 } from '@engine/core/present';
 import { paintUi, SkinHud, type FontLookup } from '@engine/core/ui';
 import { CanvasRenderer } from './renderer';
@@ -57,7 +59,7 @@ export interface SkinnedPresenterOptions {
   /** The picture size to frame the camera in; the frame's own `size` when left out. */
   size?: ScreenSize;
   /** Called once for each event this frame whose skin entry names a sound (wire it to the audio). */
-  onSound?: (id: string) => void;
+  onSound?: (id: string, cue?: SoundCue) => void;
   /**
    * The background colour, filled first each frame, when it is not the skin's (default the skin's
    * `background`, else `#000`: `skinBackground`, gap G36).
@@ -281,7 +283,7 @@ export class SkinnedCanvasPresenter implements Presenter {
     for (const ev of [...frame.events, ...this.frameEvents.next(this.skin, frame.entities)]) {
       const entry = resolveSkinEvent(this.skin.events, ev);
       if (entry === undefined) continue;
-      if (entry.sound !== undefined) this.opts.onSound?.(entry.sound);
+      if (entry.sound !== undefined) this.opts.onSound?.(entry.sound, skinSoundCue(entry, frame.frame));
       if (entry.hitPause !== undefined) this.opts.onHitPause?.(entry.hitPause.ticks);
       if (entry.tween !== undefined && ev.entity !== undefined)
         this.tweensOf(ev.entity).add(entry.tween, frame.frame);

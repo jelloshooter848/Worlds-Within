@@ -1,6 +1,7 @@
 import { Apu } from './apu';
 import { compileSong, parseMml, type CompiledSong, type Sfx, type Song, type Track } from './mml';
 import { Sequencer, scheduleOnce } from './sequencer';
+import type { MusicEntry } from './mix';
 import { DEFAULT_MASTER } from '../save/settings';
 
 /**
@@ -45,7 +46,8 @@ export interface AudioSink {
   skipStartFade?(): void;
   /** Play a non-looping jingle; the previous music is not resumed automatically. */
   playJingle(id: string, onEnd?: () => void): void;
-  sfx(id: string): void;
+  /** Plays a sound effect; `opts` (Engine 0.16 T8) shifts its pitch, scales its volume or puts it on the UI bus. */
+  sfx(id: string, opts?: SfxOptions): void;
   setTempoScale(scale: number): void;
   pause(): void;
   resume(): void;
@@ -54,6 +56,26 @@ export interface AudioSink {
    * first (null from it: silence). Null removes the map. Without one every id plays as given.
    */
   setMusicMap?(map: MusicMap | null): void;
+}
+
+/** How one play of a sound effect is varied (Engine 0.16 T8; the mixer draws these). */
+export interface SfxOptions {
+  /** Semitones up (down when negative); a noise channel moves one period step per semitone, rounded. */
+  pitch?: number;
+  /** A factor on every note's volume (0..1). */
+  volume?: number;
+  /** The bus it plays on: `sfx` (default) or `ui` (menus and dialogs, its own voices). */
+  bus?: 'sfx' | 'ui';
+}
+
+/** The music levels the mixer last set (Engine 0.16 T8), for tests and the step hook. */
+export interface MixLevels {
+  /** The layered song playing, or null. */
+  song: string | null;
+  /** Each layer's level. */
+  layers: Record<string, number>;
+  /** The duck's factor on the music (1: none). */
+  duck: number;
 }
 
 /** A song id to the song to play in its place (null: none). */
@@ -108,6 +130,10 @@ export class AudioManager implements AudioSink {
   private fileMusic: AudioBufferSourceNode | null = null;
   /** AudioSink.setMusicMap's map, or null. */
   private musicMap: MusicMap | null = null;
+  /** Layered songs by id (a skin's `music` section, Engine 0.16 T8). */
+  private readonly layered = new Map<string, MusicEntry>();
+  /** The levels the mixer set; applied to the layer gains as they are made. */
+  private levels: MixLevels = { song: null, layers: {}, duck: 1 };
 
   get unlocked(): boolean {
     return this.ctx !== null;
@@ -161,6 +187,53 @@ export class AudioManager implements AudioSink {
   }
   registerSfx(list: Sfx[]): void {
     for (const s of list) this.sfxLib.set(s.id, s);
+  }
+
+  /**
+   * Registers layered songs (a skin's `music` section, Engine 0.16 T8): `playMusic(id)` of one
+   * starts all its layer songs together, in step, each on its own voices at the level the mixer
+   * last set (`setLayerGains`; 1 before it does).
+   */
+  registerMusic(music: Readonly<Record<string, MusicEntry>>): void {
+    for (const [id, entry] of Object.entries(music)) this.layered.set(id, entry);
+  }
+
+  /** The levels the mixer last set (copied). */
+  mixLevels(): MixLevels {
+    return { song: this.levels.song, layers: { ...this.levels.layers }, duck: this.levels.duck };
+  }
+
+  /**
+   * Sets the layer levels (0..1, by layer name; the mixer's `LayerMix`) of the layered song
+   * playing, each ramped over one 60 Hz frame so a crossfade is smooth; kept for a layered song
+   * still to start (it starts at them). Names the song lacks are ignored.
+   */
+  setLayerGains(gains: Readonly<Record<string, number>>): void {
+    this.levels.layers = { ...this.levels.layers, ...gains };
+    const entry = this.levels.song === null ? undefined : this.layered.get(this.levels.song);
+    if (entry === undefined) return;
+    if (!this.ctx || !this.apu) return;
+    Object.keys(entry.layers).forEach((layer, i) => {
+      const v = this.levels.layers[layer];
+      if (v !== undefined) this.rampTo(this.apu!.layer(i).gain.gain, v);
+    });
+  }
+
+  /**
+   * Sets the music's duck factor (1: none; the mixer's `DuckEnvelope`): the music bus plays at
+   * the player's music volume times it, ramped over one frame. The stored volume is untouched.
+   */
+  setDuck(factor: number): void {
+    if (factor === this.levels.duck) return;
+    this.levels.duck = factor;
+    if (this.apu) this.rampTo(this.apu.musicGain.gain, this.volumes.music * factor);
+  }
+
+  private rampTo(param: AudioParam, value: number): void {
+    const now = this.ctx!.currentTime;
+    param.cancelScheduledValues(now);
+    param.setValueAtTime(param.value, now);
+    param.linearRampToValueAtTime(value, now + 1 / 60);
   }
 
   /** Replace the set of file overrides (from enabled asset packs). */
@@ -337,8 +410,16 @@ export class AudioManager implements AudioSink {
     if (!this.apu) return;
     const v = this.volumes;
     this.apu.master.gain.value = v.muted ? 0 : v.master * 0.5;
-    this.apu.musicGain.gain.value = v.music;
+    const music = this.apu.musicGain.gain;
+    if (this.ctx) music.cancelScheduledValues(this.ctx.currentTime);
+    music.value = v.music * this.levels.duck;
     this.apu.sfxGain.gain.value = v.sfx;
+    this.apu.uiGain.gain.value = v.sfx;
+  }
+
+  /** The volumes now (master, music, sfx, mute), for the mixer's buses. */
+  get volumeLevels(): Volumes {
+    return { ...this.volumes };
   }
 
   private song(id: string): CompiledSong | null {
@@ -375,6 +456,8 @@ export class AudioManager implements AudioSink {
     this.unfade();
     if (fadeIn > 0) this.riseFromSilence(fadeIn);
     this.currentMusic = id;
+    this.levels.song = null;
+    if (this.layered.has(id)) return this.playLayered(id);
     if (this.playFile(id, true)) return;
     const s = this.song(id);
     if (!s) return;
@@ -383,10 +466,29 @@ export class AudioManager implements AudioSink {
     this.seq.play(s, undefined, fromLoop);
   }
 
+  /** Starts every layer of a layered song at one audio time, each at its set level. */
+  private playLayered(id: string): void {
+    const entry = this.layered.get(id)!;
+    const apu = this.apu!;
+    const layers = Object.entries(entry.layers).flatMap(([layer, songId], i) => {
+      const song = this.song(songId);
+      if (!song) return [];
+      const { voices, gain } = apu.layer(i);
+      gain.gain.cancelScheduledValues(this.ctx!.currentTime);
+      gain.gain.value = this.levels.layers[layer] ?? 1;
+      return [{ song, voices }];
+    });
+    this.levels = { song: id, layers: this.levels.layers, duck: this.levels.duck };
+    this.seq!.onEnd = null;
+    this.seq!.tempoScale = this.tempoScale;
+    this.seq!.playLayers(layers);
+  }
+
   stopMusic(): void {
     this.cancelCrossfade();
     this.pendingMusic = null;
     this.currentMusic = null;
+    this.levels.song = null;
     this.fileToken++;
     this.seq?.stop();
     this.stopFileMusic();
@@ -460,6 +562,7 @@ export class AudioManager implements AudioSink {
       return;
     }
     this.currentMusic = null;
+    this.levels.song = null;
     this.seq.stop();
     this.stopFileMusic();
     this.unfade();
@@ -480,8 +583,11 @@ export class AudioManager implements AudioSink {
     if (this.fileMusic) this.fileMusic.playbackRate.value = scale;
   }
 
-  sfx(id: string): void {
+  sfx(id: string, opts: SfxOptions = {}): void {
     if (!this.ctx || !this.apu) return;
+    const ui = opts.bus === 'ui';
+    const pitch = opts.pitch ?? 0;
+    const volume = opts.volume ?? 1;
     if (this.overrides.has(id)) {
       const ctx = this.ctx;
       const apu = this.apu;
@@ -489,7 +595,15 @@ export class AudioManager implements AudioSink {
         if (!buf) return;
         const src = ctx.createBufferSource();
         src.buffer = buf;
-        src.connect(apu.sfxGain);
+        src.playbackRate.value = Math.pow(2, pitch / 12);
+        const out = ui ? apu.uiGain : apu.sfxGain;
+        if (volume === 1) src.connect(out);
+        else {
+          const g = ctx.createGain();
+          g.gain.value = volume;
+          src.connect(g);
+          g.connect(out);
+        }
         src.start();
       });
       return;
@@ -510,10 +624,12 @@ export class AudioManager implements AudioSink {
     }
     const v = this.apu.voices;
     const tracks: { track: Track; voice: typeof v.sfxPulse }[] = [];
-    if (c.pulse) tracks.push({ track: c.pulse, voice: v.sfxPulse });
-    if (c.pulse2) tracks.push({ track: c.pulse2, voice: v.sfxPulse2 });
-    if (c.noise) tracks.push({ track: c.noise, voice: v.sfxNoise });
-    if (c.triangle) tracks.push({ track: c.triangle, voice: v.sfxTriangle });
+    const tone = (t: Track) => varied(t, pitch, volume);
+    const noise = (t: Track) => varied(t, -Math.round(pitch), volume);
+    if (c.pulse) tracks.push({ track: tone(c.pulse), voice: ui ? v.uiPulse : v.sfxPulse });
+    if (c.pulse2) tracks.push({ track: tone(c.pulse2), voice: ui ? v.uiPulse2 : v.sfxPulse2 });
+    if (c.noise) tracks.push({ track: noise(c.noise), voice: ui ? v.uiNoise : v.sfxNoise });
+    if (c.triangle) tracks.push({ track: tone(c.triangle), voice: ui ? v.uiTriangle : v.sfxTriangle });
     scheduleOnce(this.ctx, tracks, c.bpm);
   }
 
@@ -525,6 +641,22 @@ export class AudioManager implements AudioSink {
     this.paused = false;
     void this.ctx?.resume().catch(() => undefined);
   }
+}
+
+/**
+ * A track with every note moved `shift` (semitones; noise period steps) and every volume scaled
+ * by `volume`; the track itself when neither changes anything.
+ */
+function varied(track: Track, shift: number, volume: number): Track {
+  if (shift === 0 && volume === 1) return track;
+  return {
+    ...track,
+    events: track.events.map((e) => ({
+      ...e,
+      note: e.note === null ? null : e.note + shift,
+      vol: e.vol * volume,
+    })),
+  };
 }
 
 /** A 50 ms, 8 kHz, 8-bit mono silent WAV as a data URI (built at runtime, so no binary in the repo). */

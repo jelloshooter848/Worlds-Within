@@ -96,6 +96,13 @@ number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 th
     cached lookup. Both presenters run these through the skin's `events` (sound, effect, tween) after
     the frame's own events, once per frame number, and never write them into the frame, a kit or a
     hash. `games/fx-lab` is the worked example.
+  - Audio (Engine 0.16 T8, `engine/core/audio/mix.ts`): an event entry's `pitch` and `volume`
+    (`[min, max]`, `bad_range` when min is above max), `cooldown` (frames) and `duck { amount,
+attack?, hold?, release? }`, and a top-level `music` section of layered songs (`skinMusicSchema`;
+    `missing_ref` for a layer naming no song or a rule naming no layer, `bad_layers` for layers
+    out of step). `skinSoundCue(entry, frame)` is the `SoundCue` both presenters hand `onSound`
+    with the sound (`onSound(id, cue?)`); the shell's mixer varies, rests and ducks. On 2D and 3D
+    skins alike. `SoundCue` is re-exported from `index.ts`.
   - Tweens (Engine 0.16 T1, `engine/core/fx`): an event entry's optional `tween` (one tween spec
     or a list, `tweensSchema`) is started on the event's `entity` (ignored for an event with none),
     and a kind entry's optional `spawnTween` on an entity the first frame a presenter shows it.
@@ -276,13 +283,14 @@ skin (content/skins/<backend>.json)`.
   0.16 T6 `layoutHud` skips the UI kit's widget types (`isClassicHudType`); a skin with any UI
   item is laid out whole by `engine/core/ui`'s `SkinHud` (which calls `layoutHud` for its
   classic items), one without draws exactly as before.
+- Tests for the audio fields: `skin-audio.test.ts` (Engine 0.16 T8).
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 
 ## Rules
 
 - Pure: `engine/core/present/**` is on `PURE_CORE` (`config/layers.js`). No clock, DOM or
   `Math.random`. Import only `zod` and pure core files (`../gfx/screen`, `../headless` types,
-  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs and emitters in skins, `../fx/ease` and `../ui/font` for the HUD's widgets and glyph check; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
+  `../content/bundle` for `skinSet`, `../fx/schema` for tween specs and emitters in skins, `../fx/ease` and `../ui/font` for the HUD's widgets and glyph check, `../audio/mix` and `../audio/mml` for the skin's sound fields and layered music; `import type` of `../input/pointer-logic` for `RtsCamera.apply`).
 - Everything in a frame is plain JSON-safe data: no classes, functions, `Map`s or kit objects. A
   backend never sees kit internals.
 - Frames are read-only to backends. Never add a field a backend would write back to.

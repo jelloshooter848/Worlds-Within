@@ -12,6 +12,14 @@ import {
   type EmitterDef,
 } from '../fx/schema';
 import { EASE_NAMES, isEaseName } from '../fx/ease';
+import {
+  checkMusicLayers,
+  checkSoundRange,
+  skinMusicSchema,
+  soundVariationFields,
+  type SoundCue,
+} from '../audio/mix';
+import { compileSong, type Song } from '../audio/mml';
 import { missingGlyphs, type FontFile } from '../ui/font';
 import {
   cardinalFacing,
@@ -441,6 +449,18 @@ const effect = z.strictObject({
 
 const eventEntry = z.strictObject({
   sound: id.exactOptional().describe('a song or sfx id to play'),
+  pitch: soundVariationFields.pitch.describe(
+    "the sound's pitch shift in semitones, `[min, max]`, drawn per play from the presentation RNG (Engine 0.16)",
+  ),
+  volume: soundVariationFields.volume.describe(
+    "the sound's volume factor (0..1), `[min, max]`, drawn per play from the presentation RNG (Engine 0.16)",
+  ),
+  cooldown: soundVariationFields.cooldown.describe(
+    'frames the same sound rests after it played: a play sooner is dropped (Engine 0.16)',
+  ),
+  duck: soundVariationFields.duck.describe(
+    'music ducking under the sound, `{ amount, attack?, hold?, release? }` in ticks (Engine 0.16)',
+  ),
   emit: emitRefs
     .exactOptional()
     .describe(
@@ -877,9 +897,19 @@ export const skinSchema = z
       .describe(
         'background layers behind the map, back to front (Engine 0.16): `{ frame | gradient, factor, repeat?, x?, y?, sheet?, bands?, height?, depth? }`',
       ),
+    music: skinMusicSchema
+      .exactOptional()
+      .describe(
+        'layered songs (Engine 0.16): id -> `{ layers: { name: song }, fade?, mix?: [{ when?: { status, eq | ne | lt | lte | gt | gte }, layers: { name: level }, fade? }] }`',
+      ),
   })
   .superRefine((skin, ctx) => {
     checkEventKeys(skin.events ?? {}, ctx);
+    for (const [key, entry] of Object.entries(skin.events ?? {})) {
+      checkSoundRange(entry.pitch, ['events', key, 'pitch'], ctx);
+      checkSoundRange(entry.volume, ['events', key, 'volume'], ctx);
+    }
+    checkMusicLayers(skin.music, ctx);
     checkEmitRefs(skin, ctx);
     checkMeshes(skin, ctx);
     checkShapes(skin.backend, skin.sheets, skin.kinds, 'kinds', ['sheet', 'frames', 'fallbackColor'], ctx);
@@ -905,6 +935,7 @@ export type SkinTileEntry = z.output<typeof tileEntry>;
 export type SkinMeshPart = z.output<typeof meshPart>;
 export type SkinCamera3d = z.output<typeof camera3d>;
 export type SkinEffect = z.output<typeof effect>;
+export type SkinEventEntry = z.output<typeof eventEntry>;
 
 // ---- Cross-file checks ----
 
@@ -982,6 +1013,7 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
       missing(['events', type, 'sound'], 'song or sfx', entry.sound);
     }
   }
+  issues.push(...checkMusicSongs(name, skin, others));
   issues.push(...checkHudFonts(name, skin, others, sprites));
   (skin.hud ?? []).forEach((item, i) => {
     sheetAt(['hud', i], item.sheet, one(item.frame));
@@ -1011,6 +1043,68 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
 }
 
 /** HUD item fields only the UI kit draws (Engine 0.16 T6). */
+/**
+ * A `music` entry's layer songs (Engine 0.16 T8): each must be a song of the game (`missing_ref`
+ * at `music.<id>.layers.<layer>`), and together they must stay in step: one tempo, all looping or
+ * none, and one length in ticks (`bad_layers` at `music.<id>.layers`).
+ */
+function checkMusicSongs(name: string, skin: SkinFile, others: ContentLookup): KindIssue[] {
+  const issues: KindIssue[] = [];
+  const songs = new Map(others('song').map((e) => [e.name, e.value as Song]));
+  for (const [music, entry] of Object.entries(skin.music ?? {})) {
+    const found: { layer: string; song: Song }[] = [];
+    for (const [layer, song] of Object.entries(entry.layers)) {
+      const value = songs.get(song);
+      if (value === undefined) {
+        const message = `no song "${song}" in the game`;
+        issues.push({ name, path: ['music', music, 'layers', layer], code: 'missing_ref', message });
+      } else found.push({ layer, song: value });
+    }
+    const shapes = found.flatMap((f) => {
+      const shape = songShape(f.song);
+      return shape === null ? [] : [{ layer: f.layer, shape }];
+    });
+    const first = shapes[0];
+    const odd = shapes.find((f) => f.shape !== first?.shape);
+    if (first !== undefined && odd !== undefined) {
+      issues.push({
+        name,
+        path: ['music', music, 'layers'],
+        code: 'bad_layers',
+        message: `layers must stay in step: "${first.layer}" is ${first.shape}, "${odd.layer}" is ${odd.shape}`,
+      });
+    }
+  }
+  return issues;
+}
+
+/** A song's tempo, loop and length as one line, or null when it does not compile (its file says why). */
+function songShape(song: Song): string | null {
+  try {
+    const c = compileSong(song);
+    const length = Math.max(0, ...Object.values(c.tracks).map((t) => t?.length ?? 0));
+    return `${c.bpm} bpm, ${c.loop ? 'looping' : 'not looping'}, ${length} ticks`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The cue a presenter hands `onSound` with an event entry's sound (Engine 0.16 T8): the frame and
+ * the entry's `pitch`, `volume`, `cooldown` and `duck`. The shell's mixer draws the variation.
+ */
+export function skinSoundCue(
+  entry: DeepReadonly<Pick<SkinEventEntry, 'pitch' | 'volume' | 'cooldown' | 'duck'>>,
+  frame: number,
+): SoundCue {
+  const cue: SoundCue = { frame };
+  if (entry.pitch !== undefined) cue.pitch = [entry.pitch[0]!, entry.pitch[1]!];
+  if (entry.volume !== undefined) cue.volume = [entry.volume[0]!, entry.volume[1]!];
+  if (entry.cooldown !== undefined) cue.cooldown = entry.cooldown;
+  if (entry.duck !== undefined) cue.duck = { ...entry.duck };
+  return cue;
+}
+
 const HUD_TEXT_STYLE_FIELDS = ['color', 'shadow', 'outline', 'align', 'format', 'digits'] as const;
 
 /** The digits a HUD number or counter may show. */

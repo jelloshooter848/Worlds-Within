@@ -2,7 +2,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { FontLookup } from '@engine/core/ui';
 import { transitionShape, type TransitionView } from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import type { DeepReadonly, SkinFile } from '@engine/core/present';
+import type { DeepReadonly, SkinFile, SoundCue } from '@engine/core/present';
 import type { BrowserDisplay } from '@engine/core/shell/display';
 import { CanvasRenderer } from './renderer';
 import { SkinnedCanvasPresenter } from './presenter';
@@ -28,7 +28,7 @@ export interface CanvasDisplayOptions {
   /** Whole-number scaling only (default false: stretch to fit, letterboxed). */
   integerScale?: boolean;
   /** Called for each event whose skin entry names a sound. */
-  onSound?: (id: string) => void;
+  onSound?: (id: string, cue?: SoundCue) => void;
   /**
    * Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4):
    * pass the boot's `shell.hitPause`, which holds the game's ticks.

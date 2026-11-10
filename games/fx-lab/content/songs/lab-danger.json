@@ -1,0 +1,7 @@
+{
+  "id": "lab-danger",
+  "bpm": 132,
+  "loop": true,
+  "pulse2": "v7 @1 l8 o3 L [a a > c < a e e g e]4",
+  "noise": "v6 l8 L [k h s h]8"
+}

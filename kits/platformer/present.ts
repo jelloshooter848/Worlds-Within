@@ -412,7 +412,9 @@ function presentEffects(world: PlatformerWorld, st: PlatformerPresentState): Pre
 
 /**
  * The HUD values: `coins`, `hp`, `maxHp`, `lives`, `outcome` (`playing`, `cleared`, `failed`),
- * `level` (its id) and `miniGame` (the id of the mini game being played, '' when none).
+ * `level` (its id), `miniGame` (the id of the mini game being played, '' when none) and, from
+ * Engine 0.16 T8, `nearestActor`: the whole world px from the runner's box centre to the nearest
+ * actor's (-1 when there is none), for a skin's music mix (danger when an enemy is near).
  */
 export function presentStatus(world: PlatformerWorld): Record<string, PresentStatusValue> {
   const pp = world.profile.player;
@@ -424,7 +426,21 @@ export function presentStatus(world: PlatformerWorld): Record<string, PresentSta
     outcome: world.outcome,
     level: world.level.id,
     miniGame: world.miniGame?.def.id ?? '',
+    nearestActor: nearestActor(world),
   };
+}
+
+/** The whole px from the runner's centre to the nearest actor's, or -1 with no actor. */
+function nearestActor(world: PlatformerWorld): number {
+  const centre = (b: PresentBox) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
+  const me = centre(boxOf(world.player.body));
+  let best = -1;
+  for (const a of world.actors) {
+    const c = centre(boxOf(a.body));
+    const d = Math.round(Math.hypot(c.x - me.x, c.y - me.y));
+    if (best < 0 || d < best) best = d;
+  }
+  return best;
 }
 
 /**

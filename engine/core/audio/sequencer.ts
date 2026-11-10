@@ -1,4 +1,4 @@
-import type { Voice } from './apu';
+import type { MusicVoices, Voice } from './apu';
 import { PPQ, type CompiledSong, type NoteEvent, type Track } from './mml';
 
 const LOOKAHEAD_S = 0.12;
@@ -14,6 +14,12 @@ interface Cursor {
   done: boolean;
 }
 
+/** One layer of a layered song: its compiled song and the voices it plays on (Engine 0.16 T8). */
+export interface SequencerLayer {
+  song: CompiledSong;
+  voices: MusicVoices;
+}
+
 /**
  * Schedules note events ahead of the audio clock ("a tale of two clocks"), independent of the
  * game loop so music stays smooth when frames hitch.
@@ -22,6 +28,8 @@ export class Sequencer {
   private cursors: Cursor[] = [];
   private timer: ReturnType<typeof setInterval> | null = null;
   private song: CompiledSong | null = null;
+  /** The layers of a layered song playing now (`playLayers`), else null. */
+  private layers: readonly SequencerLayer[] | null = null;
   tempoScale = 1;
   onEnd: (() => void) | null = null;
 
@@ -46,6 +54,28 @@ export class Sequencer {
   play(song: CompiledSong, at = this.ctx.currentTime + 0.05, fromLoop = false): void {
     this.stop();
     this.song = song;
+    this.addCursors(song, this.voices, at, fromLoop);
+    this.start();
+  }
+
+  /**
+   * Plays a layered song (Engine 0.16 T8): every layer's tracks start at the same audio time `at`
+   * and are scheduled by this one clock at the first layer's tempo, so a note on tick n of any
+   * layer sounds at exactly `at + n * tickSeconds`: the layers stay sample-aligned, loop after
+   * loop (`validate` keeps their tempo and length equal). Each layer plays on its own voices, whose
+   * gain the mixer sets.
+   */
+  playLayers(layers: readonly SequencerLayer[], at = this.ctx.currentTime + 0.05): void {
+    this.stop();
+    const first = layers[0];
+    if (first === undefined) return;
+    this.song = first.song;
+    this.layers = layers;
+    for (const l of layers) this.addCursors(l.song, l.voices, at, false);
+    this.start();
+  }
+
+  private addCursors(song: CompiledSong, voices: Sequencer['voices'], at: number, fromLoop: boolean): void {
     const t = song.tracks;
     const add = (track: Track | undefined, voice: Voice) => {
       if (track && track.events.length) {
@@ -55,10 +85,13 @@ export class Sequencer {
         this.cursors.push({ track, voice, index, passStart: at, offsetTick, done: false });
       }
     };
-    add(t.pulse1, this.voices.pulse1);
-    add(t.pulse2, this.voices.pulse2);
-    add(t.triangle, this.voices.triangle);
-    add(t.noise, this.voices.noise);
+    add(t.pulse1, voices.pulse1);
+    add(t.pulse2, voices.pulse2);
+    add(t.triangle, voices.triangle);
+    add(t.noise, voices.noise);
+  }
+
+  private start(): void {
     this.schedule();
     this.timer = setInterval(() => this.schedule(), TICK_MS);
   }
@@ -69,14 +102,17 @@ export class Sequencer {
     for (const c of this.cursors) c.voice.stop();
     this.cursors = [];
     this.song = null;
+    this.layers = null;
   }
 
   /** Restart the current song at a new tempo scale (used by the hurry-up music). */
   setTempoScale(scale: number): void {
     if (scale === this.tempoScale) return;
     this.tempoScale = scale;
+    const layers = this.layers;
     const s = this.song;
-    if (s) this.play(s);
+    if (layers) this.playLayers(layers);
+    else if (s) this.play(s);
   }
 
   private schedule(): void {

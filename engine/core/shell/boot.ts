@@ -1,7 +1,9 @@
 import { AudioManager, type Volumes } from '../audio/audio-manager';
+import type { MusicEntry, SoundCue } from '../audio/mix';
+import { Mixer } from '../audio/mixer';
 import { HitPause } from '../fx/hit-pause';
 import type { TransitionsSpec } from '../fx/transition';
-import type { DeepReadonly } from '../present/types';
+import type { DeepReadonly, Presenter } from '../present/types';
 import type { Sfx, Song } from '../audio/mml';
 import type { ScreenSize } from '../gfx/screen';
 import { GamepadSource } from '../input/gamepad';
@@ -18,6 +20,7 @@ import { SceneStack, type Scene } from '../scene';
 import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
 import { PageDebugHook, type PageDebug } from './debug';
 import { ShellTransitions, type TransitionRequest } from './transitions';
+import { UiScene } from './ui-scene';
 import { mountVolumeControl, type VolumeControl } from './volume-control';
 import type { BrowserDisplay, DisplayResult } from './display';
 
@@ -61,9 +64,11 @@ export interface DebugWindow {
 export interface DisplayShell {
   /**
    * Plays a skin's event sound (pass it as the display's `onSound`): the shell's `AudioManager`
-   * with the game's sfx when the boot has `audio`, else it does nothing.
+   * with the game's sfx when the boot has `audio`, else it does nothing. The presenters' `cue`
+   * (Engine 0.16 T8: the frame and the skin entry's `pitch`, `volume`, `cooldown`, `duck`) goes
+   * to the shell's `Mixer`, which varies, rests and ducks.
    */
-  onSound(id: string): void;
+  onSound(id: string, cue?: SoundCue): void;
   /**
    * Holds the game's ticks for `ticks` display frames while the picture keeps drawing (a skin
    * event's `hitPause`, Engine 0.16 T4; pass it as the display's `onHitPause`). The tick sequence
@@ -95,6 +100,13 @@ export interface BootAudio {
    * defaults otherwise. From Engine 0.15 (gap M1) the player's stored volumes win.
    */
   volumes?: Partial<Volumes>;
+  /**
+   * Layered songs (Engine 0.16 T8): the skin's `music` section. `music` naming one of them plays
+   * its layers together, mixed by its rules from each presented frame's status.
+   */
+  mix?: DeepReadonly<Record<string, MusicEntry>> | undefined;
+  /** The seed sound variation draws from (`fxRng`; default 0): the game's start seed. */
+  seed?: number;
 }
 
 /** The DOM events that count as the first gesture: browsers allow sound only after one. */
@@ -166,6 +178,11 @@ export interface BrowserBootOptions {
 export interface BootPage {
   /** Pointer gestures on the canvas, or null when the game did not ask for them. */
   pointer: PointerSource | null;
+  /**
+   * Plays a UI sound (a menu's or dialog's, `UiScreen`'s `onSound`) on the mixer's ui bus
+   * (Engine 0.16 T8); does nothing without `audio`.
+   */
+  uiSound(id: string): void;
 }
 
 /** What a booted page holds, for a game that wants to reach in (audio, debugging). */
@@ -177,6 +194,11 @@ export interface BootedGame extends BootPage {
   loop: FixedLoop;
   /** The page's audio (change volumes, play another song), or null without the `audio` option. */
   audio: AudioManager | null;
+  /**
+   * The page's mixer (Engine 0.16 T8) over `audio`, or null without it: `mixer.play(id)` changes
+   * the music (layered songs mixed from the frames' status), `mixer.state()` reads it.
+   */
+  mixer: Mixer | null;
   /** The step hook (also `window.__ww`) in manual-loop mode or with `?record`, else null. */
   debug: PageDebug | null;
   /** The mute button and volume slider (with `audio`, unless `volumeControl: false`), else null. */
@@ -209,10 +231,11 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const backend: PageBackend = asked === 'three' && opts.displays.three ? 'three' : 'canvas2d';
   showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend');
   const make = backend === 'three' ? opts.displays.three! : opts.displays.canvas2d;
-  const audio = opts.audio ? shellAudio(opts.audio) : null;
+  const audio = opts.audio ? new AudioManager() : null;
+  const mixer = audio && opts.audio ? shellMixer(audio, opts.audio) : null;
   const hitPause = new HitPause();
   const display = await make(canvas, {
-    onSound: (id) => audio?.sfx(id),
+    onSound: (id, cue) => mixer?.sound(id, cue),
     hitPause: (ticks) => {
       if (!manual) hitPause.request(ticks);
     },
@@ -229,7 +252,10 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   // a new map id and holds the old picture while one closes.
   const shown: BrowserDisplay = {
     ...display,
-    presenter: transitions.presenter(display.presenter, (view) => display.transition?.(view)),
+    presenter: mixedPresenter(
+      transitions.presenter(display.presenter, (view) => display.transition?.(view)),
+      mixer,
+    ),
   };
   let volume: VolumeControl | null = null;
   if (audio) {
@@ -284,13 +310,16 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   window.addEventListener('resize', relayout);
 
   const scenes = new SceneStack();
-  scenes.push(opts.scene(scenes, shown, { pointer }));
+  const uiSound = (id: string) => mixer?.uiSound(id);
+  scenes.push(opts.scene(scenes, shown, { pointer, uiSound }));
 
   // In manual-loop mode the clock is the steps taken (a pointer's long press counts game steps).
   let hook: PageDebugHook | null = null;
   const loop: FixedLoop = new FixedLoop(
     {
       step() {
+        // The mixer runs every loop step, held ones too (a duck releases through a hit-pause).
+        mixer?.tick();
         // A closing transition or a hit-pause holds this step: no input frame, no tick; the
         // render still draws the frame. In manual-loop mode transitions play but hold nothing.
         transitions.step();
@@ -302,6 +331,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
         const frame = input.player(0);
         if (pointer) frame.addTaps(tapsOf(pointer.gestures()));
         scenes.update([hook ? hook.frame(frame) : frame]);
+        mixer?.dialog(scenes.find((s) => s instanceof UiScene && s.dialogShown()) !== undefined);
         transitions.scenes(before, { top: scenes.top, depth: scenes.depth });
       },
       render() {
@@ -321,6 +351,7 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       game: () => scenes.find((s) => (s.headless?.() ?? null) !== null)?.headless?.() ?? null,
       toClient: (x, y) => display.toClient!(x, y),
       transition: (what) => transitions.start(what),
+      mix: () => mixer?.state() ?? null,
     });
     if (record) hook.api.record(true);
     (window as DebugWindow).__ww = hook.api;
@@ -337,6 +368,8 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
     loop,
     pointer,
     audio,
+    mixer,
+    uiSound,
     debug: hook?.api ?? null,
     volume,
     hitPause,
@@ -354,14 +387,31 @@ function prefersReducedMotion(): boolean {
   }
 }
 
-/** The boot's `AudioManager`: the songs and sfx registered, the volumes set, the music waiting. */
-function shellAudio(opts: BootAudio): AudioManager {
-  const audio = new AudioManager();
+/**
+ * The boot's `AudioManager` set up and its `Mixer`: the songs, sfx and layered songs registered,
+ * the volumes set, the music waiting.
+ */
+function shellMixer(audio: AudioManager, opts: BootAudio): Mixer {
   audio.registerSongs([...(opts.songs ?? [])]);
   audio.registerSfx([...(opts.sfx ?? [])]);
+  const music = (opts.mix ?? {}) as Readonly<Record<string, MusicEntry>>;
+  audio.registerMusic(music);
   if (opts.volumes) audio.setVolumes(opts.volumes);
-  if (opts.music !== undefined) audio.playMusic(opts.music);
-  return audio;
+  const mixer = new Mixer({ audio, music, ...(opts.seed !== undefined && { seed: opts.seed }) });
+  if (opts.music !== undefined) mixer.play(opts.music);
+  return mixer;
+}
+
+/** The presenter with every frame's status handed to the mixer first (none without one). */
+function mixedPresenter(presenter: Presenter, mixer: Mixer | null): Presenter {
+  if (mixer === null) return presenter;
+  return {
+    present(frame) {
+      mixer.frameStatus(frame.status);
+      presenter.present(frame);
+    },
+    ...(presenter.resize !== undefined && { resize: (size) => presenter.resize!(size) }),
+  };
 }
 
 /** A step's tap gestures as frame taps (Engine 0.15, gap D1): game screen pixels, the button. */

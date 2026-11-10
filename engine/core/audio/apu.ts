@@ -142,6 +142,25 @@ export interface ApuVoices {
   sfxPulse2: Voice;
   sfxNoise: Voice;
   sfxTriangle: Voice;
+  /** The UI bus's voices (Engine 0.16 T8): menu sounds never cut a game sound off. */
+  uiPulse: Voice;
+  uiPulse2: Voice;
+  uiNoise: Voice;
+  uiTriangle: Voice;
+}
+
+/** The four music voices of one song (or of one layer of a layered song). */
+export interface MusicVoices {
+  pulse1: Voice;
+  pulse2: Voice;
+  triangle: Voice;
+  noise: Voice;
+}
+
+/** One layer's voices and the gain the mixer sets its level on (Engine 0.16 T8). */
+export interface LayerVoices {
+  voices: MusicVoices;
+  gain: GainNode;
 }
 
 /** A small, NES-flavoured synth: two pulse voices, a triangle and LFSR noise, plus SFX voices. */
@@ -151,6 +170,8 @@ export class Apu {
   /** The music voices' fade (AudioManager.fadeOutMusic), ahead of the music volume. */
   readonly musicFade: GainNode;
   readonly sfxGain: GainNode;
+  /** The UI bus (Engine 0.16 T8): menu and dialog sounds, at the sfx volume. */
+  readonly uiGain: GainNode;
   /**
    * The start fade-in (0.4.49, AudioManager.fadeInMusic), after the music volume: the music
    * rises from silence when sound starts or comes back. Its own stage, so it never fights the
@@ -165,15 +186,18 @@ export class Apu {
     this.master.connect(ctx.destination);
     this.musicGain = ctx.createGain();
     this.sfxGain = ctx.createGain();
-    // The music: voices -> musicFade (page fade) -> musicGain (volume) -> startFade -> master.
     this.startFade = ctx.createGain();
     this.startFade.gain.value = 1;
     this.startFade.connect(this.master);
     this.musicGain.connect(this.startFade);
+    // The music: voices -> musicFade (page fade) -> musicGain (volume, times the mixer's duck)
+    // -> startFade -> master.
     this.musicFade = ctx.createGain();
     this.musicFade.gain.value = 1;
     this.musicFade.connect(this.musicGain);
     this.sfxGain.connect(this.master);
+    this.uiGain = ctx.createGain();
+    this.uiGain.connect(this.master);
     const waves: Record<Duty, PeriodicWave> = {
       0: makePulseWave(ctx, 0),
       1: makePulseWave(ctx, 1),
@@ -181,11 +205,9 @@ export class Apu {
       3: makePulseWave(ctx, 3),
     };
     const noise = makeNoiseBuffer(ctx);
-    const tri = (out: AudioNode) => {
-      const v = new OscVoice(ctx, null, out);
-      v.gain.gain.value = 0;
-      return v;
-    };
+    this.waves = waves;
+    this.noise = noise;
+    const tri = (out: AudioNode) => this.triangleVoice(out);
     this.voices = {
       pulse1: new OscVoice(ctx, waves, this.musicFade),
       pulse2: new OscVoice(ctx, waves, this.musicFade),
@@ -195,10 +217,48 @@ export class Apu {
       sfxPulse2: new OscVoice(ctx, waves, this.sfxGain),
       sfxNoise: new NoiseVoice(ctx, noise, this.sfxGain),
       sfxTriangle: tri(this.sfxGain),
+      uiPulse: new OscVoice(ctx, waves, this.uiGain),
+      uiPulse2: new OscVoice(ctx, waves, this.uiGain),
+      uiNoise: new NoiseVoice(ctx, noise, this.uiGain),
+      uiTriangle: tri(this.uiGain),
     };
+  }
+
+  private readonly waves: Record<Duty, PeriodicWave>;
+  private readonly noise: AudioBuffer;
+  private readonly layerSets: LayerVoices[] = [];
+
+  private triangleVoice(out: AudioNode): Voice {
+    const v = new OscVoice(this.ctx, null, out);
+    v.gain.gain.value = 0;
+    return v;
+  }
+
+  /**
+   * The voices of layer `index` of a layered song (Engine 0.16 T8): four music voices of its own
+   * through its own level gain into the page fade, made the first time a song has that many
+   * layers and kept (silent) after.
+   */
+  layer(index: number): LayerVoices {
+    while (this.layerSets.length <= index) {
+      const gain = this.ctx.createGain();
+      gain.gain.value = 1;
+      gain.connect(this.musicFade);
+      this.layerSets.push({
+        gain,
+        voices: {
+          pulse1: new OscVoice(this.ctx, this.waves, gain),
+          pulse2: new OscVoice(this.ctx, this.waves, gain),
+          triangle: this.triangleVoice(gain),
+          noise: new NoiseVoice(this.ctx, this.noise, gain),
+        },
+      });
+    }
+    return this.layerSets[index]!;
   }
 
   stopAll(): void {
     for (const v of Object.values(this.voices)) v.stop();
+    for (const l of this.layerSets) for (const v of Object.values(l.voices)) v.stop();
   }
 }

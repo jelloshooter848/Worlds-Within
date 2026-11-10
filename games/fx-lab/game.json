@@ -11,7 +11,8 @@
     "font": ["content/fonts/*.txt"],
     "ui": ["content/ui/*.json"],
     "skin": ["content/skins/*.json"],
-    "sfx": ["content/sfx/*.json"]
+    "sfx": ["content/sfx/*.json"],
+    "song": ["content/songs/*.json"]
   },
   "start": {
     "seed": 1

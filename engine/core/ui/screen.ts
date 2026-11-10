@@ -187,6 +187,12 @@ export class UiScreen {
     return '';
   }
 
+  /** Whether any dialog box shows (Engine 0.16 T8: the shell's mixer ducks the music under one). */
+  get dialogShown(): boolean {
+    for (const l of this.shown) if (l.kind === 'dialog') return true;
+    return false;
+  }
+
   /** Whether a widget shows. */
   visible(id: string): boolean {
     const live = this.ids.get(id);

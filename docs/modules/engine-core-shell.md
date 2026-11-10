@@ -37,7 +37,11 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   (`booted.audio`), unlocks it on every key, tap or click (`AUDIO_UNLOCK_EVENTS`; the first starts
   it), plays `music` once unlocked and hands each display factory `{ onSound }` as its second
   argument (`canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, onSound })`).
-  Without it the page is silent and `onSound` does nothing.
+  Without it the page is silent and `onSound` does nothing. Engine 0.16 T8: with `audio` the
+  boot also makes the page's `Mixer` (`booted.mixer`; `audio.mix`, the skin's `music` section, and
+  `audio.seed`): `onSound(id, cue)` is varied, cooled down and ducks through it, `page.uiSound(id)`
+  plays on the ui bus, every presented frame's status drives the layered song's mix rules, every
+  loop step ticks it, a `UiScene` showing a dialog ducks the music, and `__ww.mix()` reads it.
   Engine 0.16 T4: each display factory also gets `shell.hitPause(ticks)` (pass it as the
   display's `onHitPause`); the loop then holds that many steps (no input, no tick) while the
   picture keeps drawing (`booted.hitPause`, a `HitPause`), with the same per-tick hashes; manual

@@ -197,7 +197,10 @@
   "events": {
     "footstep": {
       "sound": "footstep",
-      "emit": ["run-dust"]
+      "emit": ["run-dust"],
+      "pitch": [-2, 1.5],
+      "volume": [0.6, 1],
+      "cooldown": 4
     },
     "skid-dust": {
       "sound": "land",
@@ -215,7 +218,9 @@
         "to": 1,
         "frames": 6,
         "ease": "quadOut"
-      }
+      },
+      "pitch": [-1, 1],
+      "volume": [0.8, 1]
     },
     "land": {
       "sound": "land",
@@ -267,6 +272,12 @@
       },
       "hitPause": {
         "ticks": 4
+      },
+      "duck": {
+        "amount": 0.6,
+        "attack": 2,
+        "hold": 10,
+        "release": 24
       }
     },
     "defeat": {
@@ -283,6 +294,12 @@
         "color": "#d82800",
         "alpha": 0.6,
         "ticks": 8
+      },
+      "duck": {
+        "amount": 0.5,
+        "attack": 2,
+        "hold": 6,
+        "release": 20
       }
     },
     "died": {
@@ -680,5 +697,34 @@
       "y": 172,
       "depth": 300
     }
-  ]
+  ],
+  "music": {
+    "lab": {
+      "layers": {
+        "calm": "lab-calm",
+        "danger": "lab-danger"
+      },
+      "fade": 30,
+      "mix": [
+        {
+          "when": {
+            "status": "nearestActor",
+            "gte": 0,
+            "lt": 72
+          },
+          "layers": {
+            "calm": 0.3,
+            "danger": 1
+          },
+          "fade": 12
+        },
+        {
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          }
+        }
+      ]
+    }
+  }
 }

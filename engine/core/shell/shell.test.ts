@@ -23,6 +23,7 @@ import { stateHash } from '../state-hash';
 import { MissionHost, type MissionWorldPort } from '../mission-host';
 import type { MissionDef } from '../missions';
 import { HostScene } from './host-scene';
+import { UiScene } from './ui-scene';
 import { VOLUME_CONTROL_ID } from './volume-control';
 import { DEFAULT_VOLUMES, readVolumes, volumesKey } from '../save/settings';
 
@@ -502,6 +503,96 @@ describe('bootBrowserGame with audio (G27)', () => {
     for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click'])
       expect(listeners.has(ev), ev).toBe(false);
     expect(() => onSound!('beep')).not.toThrow();
+  });
+});
+
+describe('bootBrowserGame with the mixer (Engine 0.16 T8)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("mixes the layered song from each presented frame's status, ducks under a dialog, plays UI sounds on the ui bus", async () => {
+    fakeBootPage();
+    vi.stubGlobal(
+      'requestAnimationFrame',
+      vi.fn(() => 0),
+    );
+    const win = globalThis.window as unknown as DebugWindow & { location: { search: string } };
+    win.location.search = '?debug=step';
+    const sfx = vi.spyOn(AudioManager.prototype, 'sfx');
+    let near = 999;
+    let onSound: ((id: string, cue?: { frame: number; volume?: [number, number] }) => void) | null = null;
+    let uiSound: ((id: string) => void) | null = null;
+    let frame = 0;
+    const booted = await bootBrowserGame({
+      screen: { width: 256, height: 240 },
+      touchPad: false,
+      audio: {
+        songs: [
+          { id: 'a', bpm: 120, loop: true, pulse1: 'c' },
+          { id: 'b', bpm: 120, loop: true, pulse1: 'e' },
+        ],
+        sfx: [{ id: 'beep', pulse: 'c' }],
+        mix: {
+          lab: {
+            layers: { calm: 'a', danger: 'b' },
+            mix: [
+              { when: { status: 'near', lt: 50 }, layers: { calm: 0, danger: 1 }, fade: 2 },
+              { layers: { calm: 1, danger: 0 } },
+            ],
+          },
+        },
+        music: 'lab',
+        seed: 5,
+      },
+      displays: {
+        canvas2d: (_canvas, shell) => {
+          onSound = shell.onSound;
+          return display();
+        },
+      },
+      scene: (_stack, shown, page) => {
+        uiSound = page.uiSound;
+        return {
+          update() {},
+          render() {
+            shown.presenter.present({
+              frame: frame++,
+              size: { width: 256, height: 240 },
+              entities: [],
+              events: [],
+              status: { near },
+            });
+          },
+        };
+      },
+    });
+    const mix = () => win.__ww!.mix()!;
+    win.__ww!.step(2);
+    expect(mix()).toMatchObject({ song: 'lab', layers: { calm: 1, danger: 0 }, duck: 1 });
+    near = 10;
+    win.__ww!.step(1); // the frame drawn after this step shows it; the next ticks mix it
+    win.__ww!.step(1);
+    expect(mix().layers).toEqual({ calm: 0.5, danger: 0.5 });
+    win.__ww!.step(1);
+    expect(mix().layers).toEqual({ calm: 0, danger: 1 });
+    // A dialog on the stack ducks the music; closing it releases.
+    const dialog = Object.assign(Object.create(UiScene.prototype) as UiScene, {
+      dialogShown: () => true,
+      update() {},
+      render() {},
+    });
+    booted!.scenes.push(dialog);
+    win.__ww!.step(10);
+    expect(mix()).toMatchObject({ dialog: true, duck: 0.5 });
+    booted!.scenes.pop();
+    win.__ww!.step(30);
+    expect(mix()).toMatchObject({ dialog: false, duck: 1 });
+    // A presenter's cue is varied by the mixer; a UI sound goes to the ui bus.
+    onSound!('beep', { frame: 3, volume: [0.5, 0.6] });
+    expect(sfx.mock.lastCall?.[0]).toBe('beep');
+    expect(sfx.mock.lastCall?.[1]?.volume).toBeGreaterThanOrEqual(0.5);
+    uiSound!('beep');
+    expect(sfx).toHaveBeenLastCalledWith('beep', { bus: 'ui' });
+    expect(booted?.mixer?.state().sounds.played).toBe(2);
   });
 });
 

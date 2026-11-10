@@ -1,7 +1,13 @@
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import { presenterBySkinSet, type DeepReadonly, type Presenter, type SkinFile } from '@engine/core/present';
+import {
+  presenterBySkinSet,
+  type DeepReadonly,
+  type Presenter,
+  type SkinFile,
+  type SoundCue,
+} from '@engine/core/present';
 import type { FontLookup } from '@engine/core/ui';
 import { SkinnedCanvasPresenter } from './presenter';
 
@@ -21,7 +27,7 @@ export interface CanvasSkinSetOptions {
    */
   background?: string;
   /** Called for each event whose skin entry names a sound. */
-  onSound?: (id: string) => void;
+  onSound?: (id: string, cue?: SoundCue) => void;
   /**
    * Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4):
    * pass the boot's `shell.hitPause`, which holds the game's ticks.

@@ -36,6 +36,10 @@ test game, content and glue only.
 - `main.ts` and `index.html`: the page (2D, or 3D with `?backend=three`); the sounds it plays are
   kept in `window.wwFxLab.sounds` for tests; in 2D Enter opens the pause menu, `?ui=menu` or
   `?ui=dialog` opens one at load, and `window.wwFxLab.ui` opens them and reads the screen.
+- `content/songs/` (T8): `lab-calm` and `lab-danger`, the two layers of the 2D skin's layered
+  song `lab` (`music`), danger mixed in while the kit's `nearestActor` status is under 72 px;
+  footsteps and jumps vary in pitch and volume (footsteps rest 4 frames), stomps and hurts duck
+  the music, and so does the dialog box.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
 
 ## Imports allowed
@@ -52,4 +56,6 @@ skins, hit-pause requests on stomps and the 3D zoom on the door); `pnpm -s cli v
 (golden hashes, presentation invariance); `pnpm test tests/browser/fx-lab.test.ts` (the page
 replays `level-1` in 2D and 3D with the golden hashes and plays the frame events' sounds; skipped
 without Chromium); `pnpm test tests/browser/fx-lab-ui.test.ts` (T7: the menu and the dialog by
-keyboard, mouse and touch; `WW_SHOTS_DIR=<folder>` keeps the shots). `pnpm dev` and open `/games/fx-lab/`.
+keyboard, mouse and touch; `WW_SHOTS_DIR=<folder>` keeps the shots); `pnpm test
+tests/browser/fx-lab-mix.test.ts` (T8: the mixer's gains recorded over `level-1`, the same on
+every load, and the dialog's duck). `pnpm dev` and open `/games/fx-lab/`.

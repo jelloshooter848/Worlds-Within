@@ -61,6 +61,7 @@ export {
   particlesEffectEmitter,
   PARTICLES_EFFECT_DEFAULTS,
   skinEmitNames,
+  skinSoundCue,
   resolveCamera3d,
   resolveMeshParts,
   resolveSkinAnimation,
@@ -83,6 +84,7 @@ export {
   type SkinCamera3d,
   type SkinCycle,
   type SkinEffect,
+  type SkinEventEntry,
   type SkinFile,
   type SkinAnimation,
   type SkinFrame,
@@ -94,6 +96,7 @@ export {
   type SkinStateFrames,
   type SkinTileEntry,
 } from './skin';
+export type { SoundCue } from '../audio/mix';
 export {
   MINI_GAME_STATUS,
   mustSkinSet,

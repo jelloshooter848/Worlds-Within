@@ -48,7 +48,11 @@ Import from `@engine/core/present` (`index.ts`).
   kinds), a per-backend JSON file mapping each entity kind to a sprite (2D) or mesh (3D), each tile
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file
   check reports sheets, palettes, sounds and frames the game lacks (`missing_ref`,
-  `missing_frame`). `resolveSkinFrame(skin, entity)` gives the `SkinFrame` to draw (sheet, frame,
+  `missing_frame`). Engine 0.16 T8: an event's sound may vary (`pitch`, `volume` ranges, a
+  `cooldown`) and duck the music (`duck`), and a top-level `music` section names layered songs
+  mixed from status values (`engine/core/audio/mix.ts`); a layer naming no song, or a rule naming
+  no layer, is `missing_ref`, layers out of step `bad_layers`. `skinSoundCue(entry, frame)` is the
+  `SoundCue` presenters hand `onSound(id, cue)`. `resolveSkinFrame(skin, entity)` gives the `SkinFrame` to draw (sheet, frame,
   flip, fallback colour) from the entity's kind, animation state and tick, and facing (a
   diagonal with no frame uses its horizontal part; `flipFacing` mirrors right-hand frames for the
   left-hand facings). A kind's `byTag` list (Engine 0.11, gaps G13 and G30) gives looks by

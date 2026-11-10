@@ -1,6 +1,7 @@
-import { contentSfx } from '@engine/core/content/game-content';
+import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { canvasDisplay, CanvasUiPainter } from '@engine/backends/canvas2d';
 import type { InputFrame } from '@engine/core/input/input-manager';
+import type { SoundCue } from '@engine/core/present';
 import type { SceneStack } from '@engine/core/scene';
 import { backendFromQuery, bootBrowserGame, HostScene, UiScene } from '@engine/core/shell';
 import type { UiEvent, UiScreen } from '@engine/core/ui';
@@ -27,6 +28,12 @@ import gameFiles from 'virtual:game-files';
  * dialog. `?ui=menu` or `?ui=dialog` opens one at load, and `window.wwFxLab.ui` opens them and
  * reads the screen and its events (for `tests/browser/fx-lab-ui.test.ts`). The 3D backend does not
  * draw UI screens yet (Engine 0.16 T9), so there the start key does nothing.
+ *
+ * The mixer (Engine 0.16 T8): the 2D skin's `music` section plays `lab`, a calm and a danger layer
+ * (`content/songs/`) mixed by the kit's `nearestActor` status (danger near a beetle), on both
+ * backends; footsteps and jumps vary in pitch and volume, stomps and hurts duck the music, and
+ * so does the dialog box. UI sounds play on the ui bus (`page.uiSound`). `__ww.mix()` reads it
+ * (`tests/browser/fx-lab-mix.test.ts`).
  */
 const content = mustLoadFxLab(gameFiles);
 const look = fxLook(content);
@@ -43,14 +50,12 @@ interface FxLabWindow {
 
 /** Every sound id the page played, in order (for tests; presentation only). */
 const sounds: string[] = [];
-let playSound: (id: string) => void = () => undefined;
-const heard = (onSound: (id: string) => void) => {
-  playSound = onSound;
-  return (id: string) => {
+const heard =
+  (onSound: (id: string, cue?: SoundCue) => void) =>
+  (id: string, cue?: SoundCue): void => {
     sounds.push(id);
-    onSound(id);
+    onSound(id, cue);
   };
-};
 const uiEvents: UiEvent[] = [];
 const twoD = backendFromQuery(location.search) === 'canvas2d';
 let stack: SceneStack | null = null;
@@ -61,7 +66,7 @@ function openUi(which: 'menu' | 'dialog' = 'menu'): boolean {
   const ui = fxUiScreen(content, {
     sheets: look.sheet,
     fonts: look.fonts,
-    onSound: (id) => heard(playSound)(id),
+    onSound: heard((id) => page?.uiSound(id)),
     open: which,
   });
   const scenes = stack;
@@ -83,7 +88,10 @@ function openUi(which: 'menu' | 'dialog' = 'menu'): boolean {
   return true;
 }
 
-let page: { pointer: { cursor(): { x: number; y: number } | null } | null } | null = null;
+let page: {
+  pointer: { cursor(): { x: number; y: number } | null } | null;
+  uiSound(id: string): void;
+} | null = null;
 const lab: FxLabWindow = {
   sounds,
   ui: {
@@ -107,7 +115,13 @@ const booted = bootBrowserGame({
   pointer: true,
   game: content.manifest.id,
   transitions: content.manifest.transitions,
-  audio: { sfx: contentSfx(content) },
+  audio: {
+    sfx: contentSfx(content),
+    songs: contentSongs(content),
+    mix: look.skin.music,
+    music: 'lab',
+    seed: content.manifest.start.seed,
+  },
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound: heard(onSound), onHitPause: hitPause }),

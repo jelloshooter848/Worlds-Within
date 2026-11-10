@@ -8,6 +8,7 @@ import {
   type PresentFrame,
   type Presenter,
   type SkinFile,
+  type SoundCue,
 } from '@engine/core/present';
 import { transitionShape, type CameraFxSettings, type TransitionView } from '@engine/core/fx';
 import { webglRendererInfo, type WebglRendererInfo } from './renderer-info';
@@ -21,7 +22,7 @@ export interface ThreePresenterOptions {
   /** The picture size to draw at (the canvas buffer's size); the frame's own `size` when left out. */
   size?: ScreenSize;
   /** Called once for each event this frame whose skin entry names a sound (wire it to the audio). */
-  onSound?: (id: string) => void;
+  onSound?: (id: string, cue?: SoundCue) => void;
   /** The clear and background colour when it is not the skin's (default the skin's `background`, else `#000`). */
   background?: string;
   /** Keep the camera inside the map or the hint's `bounds` (default: the skin's `camera.clamp`, else true). */

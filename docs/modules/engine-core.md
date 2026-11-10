@@ -180,7 +180,20 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
   `pointer-logic.ts` (`PointerGestures`: samples in, `tap` / `box` / `pan` / `zoom` gestures out,
   for mouse, pen and touch, with long-press, edge scroll, wheel and pinch; pure) and `pointer.ts`
   (`PointerSource`, its DOM side on the canvas, read per game step with `gestures()`).
-- `audio/`: `mml.ts` (MML compiler), `sequencer.ts`, `apu.ts`, `audio-manager.ts`.
+- `audio/`: `mml.ts` (MML compiler), `sequencer.ts`, `apu.ts`, `audio-manager.ts`. The audio
+  mixer (Engine 0.16 T8): `mix.ts` (pure, on `PURE_CORE`: the skin `music` section's schema
+  `skinMusicSchema` / `musicEntrySchema` / `mixRuleSchema` / `statusCompareSchema`, the event
+  sound fields `soundVariationFields` and `duckSpecSchema`; `statusMatches`, `mixRuleIndex`,
+  `LayerMix` (layer levels tick by tick, crossfaded over a rule's `fade`), `DuckEnvelope`
+  (attack, hold, release; a sustained duck for dialogs; the deepest wins), `soundVariation` and
+  `SoundPicker` (pitch and volume drawn from `fxRng` per seed, frame and sound; `cooldown`),
+  `SoundCue`, `DEFAULT_MIX_FADE`, `DIALOG_DUCK`) and `mixer.ts` (`Mixer`: buses master, music, sfx
+  and ui over the `AudioManager` and the stored volumes; `play(id)`, `frameStatus(status)`,
+  `sound(id, cue?)`, `uiSound(id)`, `dialog(open)`, `tick()`, `state()`). `AudioManager` gained
+  `registerMusic` (layered songs, started together on one clock by `Sequencer.playLayers`, each
+  layer on its own voices from `Apu.layer(i)`), `setLayerGains`, `setDuck` (the music bus at the
+  volume times the duck), `mixLevels`, `volumeLevels` and `sfx(id, { pitch, volume, bus })`
+  (`Apu.uiGain` and the `ui*` voices). Kits and the sim may not import `mix.ts` or `mixer.ts`.
 - `audio/song-schema.ts`, `gfx/sprite-schema.ts`: the song, sound-effect and sprite file schemas.
 - `content/`: reading and checking content files; see [engine/core/content](engine-core-content.md).
 - `present/`: the presentation contract, the read-only frame a backend draws from; see

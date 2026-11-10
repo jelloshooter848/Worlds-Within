@@ -1,3 +1,4 @@
+import type { MixerState } from '../audio/mixer';
 import type { TransitionRequest } from './transitions';
 import type { HeadlessGame, JsonObject, JsonValue, RoundRecording } from '../headless';
 import type { Action } from '../input/actions';
@@ -71,6 +72,11 @@ export interface PageDebug {
    * (manual-loop mode plays transitions without holding ticks). False when none could start.
    */
   transition(what?: TransitionRequest): boolean;
+  /**
+   * The audio mixer now (Engine 0.16 T8): the layered song, its layer levels and rule, the duck,
+   * the buses and the sounds played; null on a page without audio. Read only: it never steps.
+   */
+  mix(): MixerState | null;
 }
 
 /** An order or mission step the game refused during a replay. */
@@ -94,6 +100,8 @@ export interface PageDebugTarget {
   toClient?(x: number, y: number): { x: number; y: number };
   /** Starts a screen transition (the shell's `ShellTransitions.start`), when the page has them. */
   transition?(what: TransitionRequest): boolean;
+  /** The page's mixer state (the shell's `Mixer.state`), when the page has audio. */
+  mix?(): MixerState | null;
 }
 
 /** A replay in progress: the input and the run's entries still to hand over. */
@@ -153,6 +161,7 @@ export class PageDebugHook {
         JSON.parse(JSON.stringify(target.game()?.roundRecordings?.() ?? [])) as RoundRecording[],
       toClient: (x, y) => target.toClient?.(x, y) ?? null,
       transition: (what = 'default') => target.transition?.(what) ?? false,
+      mix: () => target.mix?.() ?? null,
     };
   }
 

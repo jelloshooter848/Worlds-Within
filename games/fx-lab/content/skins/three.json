@@ -3172,14 +3172,19 @@
   "events": {
     "footstep": {
       "sound": "footstep",
-      "emit": ["run-dust"]
+      "emit": ["run-dust"],
+      "pitch": [-2, 1.5],
+      "volume": [0.6, 1],
+      "cooldown": 4
     },
     "tumble": {
       "sound": "whoosh"
     },
     "scuttle": {},
     "jump": {
-      "sound": "jump"
+      "sound": "jump",
+      "pitch": [-1, 1],
+      "volume": [0.8, 1]
     },
     "land": {
       "sound": "land",
@@ -3216,6 +3221,12 @@
       },
       "hitPause": {
         "ticks": 4
+      },
+      "duck": {
+        "amount": 0.6,
+        "attack": 2,
+        "hold": 10,
+        "release": 24
       }
     },
     "hurt": {
@@ -3224,6 +3235,12 @@
         "color": "#d82800",
         "alpha": 0.6,
         "ticks": 8
+      },
+      "duck": {
+        "amount": 0.5,
+        "attack": 2,
+        "hold": 6,
+        "release": 20
       }
     },
     "died": {

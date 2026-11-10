@@ -380,7 +380,9 @@ one `PlatformerPresentState` per world, so a new level starts a new stream.
   gone) with `entity: 'actor#<n>'`; `bump`, `block`, `break`, `coin` at the tile's centre;
   `mini-game`, `mini-game-end` at the trigger's centre.
 - **Status** (`presentStatus`): `coins`, `hp`, `maxHp`, `lives`, `outcome` (`playing`, `cleared`,
-  `failed`), `level` and `miniGame` (the running mini game's id, '' when none).
+  `failed`), `level`, `miniGame` (the running mini game's id, '' when none) and, from Engine 0.16
+  T8, `nearestActor` (whole world px from the runner's box centre to the nearest actor's, -1 with
+  none: a skin's music mix plays its danger layer near an enemy).
 - **Camera** (`cameraHint`): `follow: 'runner'`; `x`/`y` the centre of the world's own view
   (`scrollX`, `viewWidth`) as the fallback; `bounds` carries the scroll lock: scrolling `right`
   with `scroll-lock` on, `{ x: scrollX px, y: 0, w: level width - that, h: level height }` (the

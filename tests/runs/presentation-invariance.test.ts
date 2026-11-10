@@ -9,6 +9,7 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import { transitionShape } from '@engine/core/fx';
 import { skinSchema, skinSet, SKIN_KIND, type SkinFile } from '@engine/core/present';
 import { ShellTransitions } from '@engine/core/shell/transitions';
+import { Mixer, type MixerAudio } from '@engine/core/audio/mixer';
 import { playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { loadRun, playView, viewMaker } from './view-play';
 
@@ -26,6 +27,9 @@ import { loadRun, playView, viewMaker } from './view-play';
 // the 3D presenter is wrapped in the shell's `ShellTransitions` (an iris on every level change, a
 // fade on demand every 90 ticks), stepped once per tick, and each transition shape is synced into
 // a `TransitionLayer`, as the page does; the held frames it shows must not change the state either.
+// The audio mixer (T8) is the shell's too: with the effects on, the 3D presenter's sounds go to a
+// `Mixer` over a recording sink (every event sound varied, cooled down and ducking, a layered song
+// mixed from each frame's status, ticked once per tick); no run reads it, and the hashes hold.
 
 vi.setConfig({ testTimeout: 120_000 });
 
@@ -199,7 +203,51 @@ const EFFECTS: Readonly<Record<string, EffectSwitch>> = {
       ),
     } as SkinFile;
   },
+  /**
+   * The audio mixer (T8): every event sound varies in pitch and volume, rests and ducks the music,
+   * and the skin has a layered song mixed from a status value.
+   */
+  audio: (skin) => ({
+    ...skin,
+    music: {
+      ...skin.music,
+      'fx-mix': {
+        layers: { calm: 'calm', danger: 'danger' },
+        mix: [
+          { when: { status: 'hp', lt: 2 }, layers: { danger: 1, calm: 0.2 }, fade: 6 },
+          { layers: { danger: 0, calm: 1 } },
+        ],
+      },
+    },
+    events: Object.fromEntries(
+      Object.entries(skin.events ?? {}).map(([type, entry]) => [
+        type,
+        {
+          ...entry,
+          pitch: [-3, 3],
+          volume: [0.5, 1],
+          cooldown: 2,
+          duck: { amount: 0.5, attack: 2, hold: 3, release: 6 },
+        },
+      ]),
+    ),
+  }),
 };
+
+/** A mixer sink that only counts: what the page's `AudioManager` would be asked to do. */
+function countingAudio() {
+  const counts = { music: 0, sfx: 0, layers: 0, duck: 0 };
+  const audio: MixerAudio = {
+    playMusic: () => void counts.music++,
+    sfx: () => void counts.sfx++,
+    setLayerGains: () => void counts.layers++,
+    setDuck: (factor) => {
+      if (factor < 1) counts.duck++;
+    },
+    volumeLevels: { master: 1, music: 1, sfx: 1, muted: false },
+  };
+  return { audio, counts };
+}
 
 /** The switch sets each run is played with: none (the baseline) and all of them at once. */
 const SWITCH_SETS: readonly (readonly string[])[] = [[], Object.keys(EFFECTS)];
@@ -343,8 +391,16 @@ describe('presentation invariance: presenters and effects never change the state
       const skins3d = skinSet(shown, 'three');
       if (skins3d.main === null) continue;
       const view3d = make();
+      const mixed = countingAudio();
+      const mixer = new Mixer({
+        audio: mixed.audio,
+        music: skins3d.main.music ?? {},
+        ...(run.seed !== undefined && { seed: run.seed }),
+      });
+      if (switches.includes('audio')) mixer.play('fx-mix');
       const presenter3d = threeScenePresenter(skins3d.main, {
         screen,
+        onSound: (id, cue) => mixer.sound(id, cue),
         rounds: skins3d.rounds,
         sheets: contentPixelSheets(shown),
         ...(view3d.background !== undefined && { background: view3d.background }),
@@ -372,7 +428,10 @@ describe('presentation invariance: presenters and effects never change the state
           transitions.step();
           if (++tick3d % 90 === 0) transitions.start();
         }
-        shown3d.present(view.frame!());
+        mixer.tick();
+        const frame = view.frame!();
+        mixer.frameStatus(frame.status);
+        shown3d.present(frame);
         last3d = stateHash(view.snapshot());
         particles3d = Math.max(particles3d, presenter3d.scene.particleViews().length);
         parallax3d = Math.max(parallax3d, presenter3d.scene.parallax.meshes().length);
@@ -381,6 +440,11 @@ describe('presentation invariance: presenters and effects never change the state
         expect(particles3d, `${label}, three: particles were shown`).toBeGreaterThan(0);
       if (switches.includes('camera'))
         expect(parallax3d, `${label}, three: parallax planes were shown`).toBeGreaterThan(0);
+      if (switches.includes('audio')) {
+        expect(mixed.counts.layers, `${label}, three: the layered song was mixed`).toBeGreaterThan(run.ticks);
+        if (mixed.counts.sfx > 0)
+          expect(mixed.counts.duck, `${label}, three: a sound ducked the music`).toBeGreaterThan(0);
+      }
       if (switches.length > 0 && run.ticks >= 90)
         expect(transitionFrames, `${label}, three: transitions were shown`).toBeGreaterThan(0);
       layer.dispose();

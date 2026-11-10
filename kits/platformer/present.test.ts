@@ -174,6 +174,7 @@ describe('presentWorld: the fixture playthrough', () => {
       outcome: 'playing',
       level: 'tiny',
       miniGame: '',
+      nearestActor: expect.any(Number),
     });
     const block = allEvents(frames, 'block')[0]!;
     expect(block).toMatchObject({ type: 'block', content: 'coin', x: 7 * 16 + 8, y: 3 * 16 + 8 });

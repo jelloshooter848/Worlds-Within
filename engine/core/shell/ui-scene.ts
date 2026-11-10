@@ -55,6 +55,11 @@ export class UiScene implements Scene {
     return this.opts.ui;
   }
 
+  /** Whether the screen shows a dialog box (the boot ducks the music under it, Engine 0.16 T8). */
+  dialogShown(): boolean {
+    return this.opts.ui.dialogShown;
+  }
+
   update(input: InputFrame): void {
     const commands = this.nav.commands(input);
     const taps = frameTaps(input).map((t) => ({ x: t.x, y: t.y }));

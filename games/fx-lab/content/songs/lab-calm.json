@@ -1,0 +1,7 @@
+{
+  "id": "lab-calm",
+  "bpm": 132,
+  "loop": true,
+  "pulse1": "v6 @2 l4 o4 L e g a g e d c d e g a > c < b g e2",
+  "triangle": "l2 o2 L c g a e f c g g"
+}

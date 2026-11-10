@@ -14,6 +14,48 @@ games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`
 [shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content
 files from disk for Node tools and tests.
 
+**Audio and the mixer** (`audio/`; Engine 0.16 part A, T8). `mml.ts` compiles MML, `sequencer.ts`
+schedules notes ahead of the audio clock, `apu.ts` is the NES-style synth and `audio-manager.ts`
+(`AudioManager`) owns the context, the songs and sfx and the player's volumes. The mixer sits on
+top:
+
+- **Buses:** master (`Apu.master`), music (`musicGain`), sfx (`sfxGain`) and ui (`uiGain`, from
+  T8, with its own four `ui*` voices so a menu sound never cuts a game sound off). The stored
+  volumes (`save/settings.ts`) set them (`setVolumes`; ui follows sfx).
+- **Layered music:** a skin's `music` section (`mix.ts`: `skinMusicSchema`) names songs made of
+  layers, `{ layers: { calm: "<song>", danger: "<song>" }, fade?, mix?: [{ when?: { status, eq |
+ne | lt | lte | gt | gte }, layers: { <layer>: 0..1 }, fade? }] }`. `AudioManager.registerMusic`
+  takes them; `playMusic(id)` of one starts every layer song at one audio time on one clock
+  (`Sequencer.playLayers`; each layer on its own voices and gain, `Apu.layer(i)`), so a note on
+  tick n of any layer sounds on the same sample, loop after loop. `LayerMix` evaluates the rules
+  each tick on the last presented frame's status (the first rule that holds wins; a rule without
+  `when` always holds; a layer no rule named plays at 1) and crossfades straight over the rule's
+  `fade` (else the entry's, else `DEFAULT_MIX_FADE`, 30 ticks); the first update snaps.
+  `setLayerGains` ramps each layer's gain over one 60 Hz frame. `validate` (`checkSkinRefs`): a
+  layer naming no song is `missing_ref` at `music.<id>.layers.<layer>`, a rule's layer the entry
+  lacks `missing_ref` at `music.<id>.mix.<i>.layers.<layer>`, and layers of another tempo, loop or
+  length `bad_layers` at `music.<id>.layers`.
+- **Varied sound effects:** a skin event entry's `pitch: [min, max]` (semitones; a noise channel
+  moves one period step per semitone, rounded), `volume: [min, max]` (0..1) and `cooldown`
+  (frames). Presenters hand `onSound(id, cue)` a `SoundCue` (`skinSoundCue(entry, frame)`);
+  `SoundPicker` drops a play within `cooldown` frames of the last one of that sound (a frame number
+  that went back, a new level, starts afresh) and draws pitch and volume from `fxRng(seed, frame,
+"sfx:<sound>:<n>")` (`soundVariation`): the same seed, frame and sound always sound the same.
+- **Ducking:** an event entry's `duck { amount, attack?, hold?, release? }` (ticks; defaults 4, 0, 20) and an open dialog box (`Mixer.dialog`, `DIALOG_DUCK`: half, 6 ticks in, 20 out) feed one
+  `DuckEnvelope` (the deepest duck wins); `AudioManager.setDuck` sets the music bus to the music
+  volume times it, so the stored volume never changes.
+- **`Mixer`** (`mixer.ts`) ties them together: `play(id)`, `frameStatus(status)`, `sound(id,
+cue?)`, `uiSound(id)`, `dialog(open)`, `tick()` once per loop step, `state()` (`MixerState`:
+  song, layers, rule, duck, dialog, buses, sounds played and dropped). The browser shell's boot
+  makes one per page with `audio` (`shell/CLAUDE.md`). `mix.ts` is pure (on `PURE_CORE`); neither
+  file may be imported by kits or the sim (`FORBIDDEN_CORE`), and no headless run makes a mixer:
+  `tests/runs/presentation-invariance.test.ts` plays every run with every sound varied and ducking
+  through a `Mixer` and the hashes hold. Tested in `audio/mix.test.ts` (rules and fades, the duck
+  envelope, variation per seed and frame, cooldowns, layers sample-aligned), `audio/mixer.test.ts`
+  (over a fake `AudioContext`: layer gains, pitch and volume reaching the voices, the duck on the
+  music bus, the dialog duck, the ui bus), `present/skin-audio.test.ts` and `shell/shell.test.ts`;
+  in the browser `tests/browser/fx-lab-mix.test.ts`.
+
 `headless.ts` is the headless game contract: `HeadlessGame` (`step(input)`, `snapshot()` as plain
 JSON-safe data, the optional `order(order)`, and from Engine 0.10 the optional `miniGame()`, the
 round the game is hosting now or null: gap G37, item 159) and `HeadlessEntry` (`createGame(content, seed)`, and from Engine
@@ -479,7 +521,7 @@ never knows which one is drawing.
 - Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
   `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
   `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`, `shell/**`, and from
-  Engine 0.16 `fx/**` and `ui/**`, which `engine/sim` may not import either). A kit describes frames through
+  Engine 0.16 `fx/**`, `ui/**` and the audio mixer's `audio/mix.ts` and `audio/mixer.ts`, which `engine/sim` may not import either). A kit describes frames through
   `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
@@ -489,7 +531,7 @@ Kits and the sim must run the same in Node and in any browser, so the core files
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
 the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
-`audio/mml.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
+`audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, `shell/boot.ts`, the

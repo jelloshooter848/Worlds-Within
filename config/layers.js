@@ -101,6 +101,8 @@ export const FORBIDDEN_CORE = [
       'engine/core/audio/apu.ts',
       'engine/core/audio/audio-manager.ts',
       'engine/core/audio/sequencer.ts',
+      'engine/core/audio/mix.ts',
+      'engine/core/audio/mixer.ts',
       'engine/core/view.ts',
       'engine/core/scene.ts',
       'engine/core/minigame-scene.ts',
@@ -113,8 +115,13 @@ export const FORBIDDEN_CORE = [
   {
     layer: 'engine/sim',
     reason:
-      'the world simulation is headless and deterministic: presentation effects (engine/core/fx, its own RNG, easing and tweens) and the UI kit (engine/core/ui) belong to presenters',
-    targets: ['engine/core/fx/**', 'engine/core/ui/**'],
+      'the world simulation is headless and deterministic: presentation effects (engine/core/fx, its own RNG, easing and tweens), the UI kit (engine/core/ui) and the audio mixer belong to presenters',
+    targets: [
+      'engine/core/fx/**',
+      'engine/core/ui/**',
+      'engine/core/audio/mix.ts',
+      'engine/core/audio/mixer.ts',
+    ],
   },
 ];
 
@@ -205,6 +212,7 @@ export const PURE_CORE = [
   'engine/core/gfx/spritesheet.ts',
   'engine/core/audio/mml.ts',
   'engine/core/audio/song-schema.ts',
+  'engine/core/audio/mix.ts',
   'engine/core/gfx/sprite-schema.ts',
   'engine/core/gfx/palette-schema.ts',
   'engine/core/content/**',

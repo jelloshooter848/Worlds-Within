@@ -2,7 +2,13 @@ import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
 import type { FontLookup } from '@engine/core/ui';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
-import { presenterBySkinSet, type DeepReadonly, type Presenter, type SkinFile } from '@engine/core/present';
+import {
+  presenterBySkinSet,
+  type DeepReadonly,
+  type Presenter,
+  type SkinFile,
+  type SoundCue,
+} from '@engine/core/present';
 import type { DisplayResult } from '@engine/core/shell/display';
 import { applyCanvasBox, fitCanvas } from './fit';
 import { ThreePresenter } from './presenter';
@@ -23,7 +29,7 @@ export interface ThreeDisplayOptions {
   /** Whole-number scaling only (default false: stretch to fit, letterboxed). */
   integerScale?: boolean;
   /** Called for each event whose skin entry names a sound. */
-  onSound?: (id: string) => void;
+  onSound?: (id: string, cue?: SoundCue) => void;
   /**
    * Called with the ticks of each event whose skin entry asks for a `hitPause` (Engine 0.16 T4):
    * pass the boot's `shell.hitPause`, which holds the game's ticks.
@@ -126,6 +132,8 @@ export function threeScenePresenter(
     rounds?: Readonly<Record<string, DeepReadonly<SkinFile>>>;
     sheets?: PixelSheetLookup;
     fonts?: FontLookup;
+    /** Each event sound with its cue (Engine 0.16 T8), as the display's `onSound`. */
+    onSound?: (id: string, cue?: SoundCue) => void;
   },
 ): Presenter & { scene: ThreeScene; rounds: Record<string, ThreeScene>; readonly shown: ThreeScene } {
   const scene = new ThreeScene(skin, {
@@ -133,6 +141,7 @@ export function threeScenePresenter(
     ...(opts.background !== undefined && { background: opts.background }),
     ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+    ...(opts.onSound !== undefined && { onSound: opts.onSound }),
   });
   let shown = scene;
   const show = (s: ThreeScene): Presenter => ({ present: (frame) => (shown = s).sync(frame) });
@@ -143,6 +152,7 @@ export function threeScenePresenter(
       size: opts.screen,
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
+      ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     });
     roundPresenters[id] = show(rounds[id]);
   }
