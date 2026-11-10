@@ -128,7 +128,7 @@ enough; silence so far has meant the build kept its default):
   the smaller build choices, 304-315 more choices added by the last finalize pass).
 - Engine 0.16 part A: **323** (PixiJS follow-up T13b), **324-338** (choices made), **339** (the
   owner's screenshot review), **340-363** (smaller build choices added by the finalize pass),
-  **379-382** (the PixiJS backend's close-out, T13b-9).
+  **419-422** (the PixiJS backend's close-out, T13b-9).
 
 ### Items not met, and where they went
 
@@ -160,7 +160,7 @@ Engine presentation features (docs/ROADMAP.md, 0.16 part A), built on branch
 engine (core, backends or the shell), driven by skins and other text, and none can change a run's
 state: two invariance tests play every run file of every game with every effect on and get the
 golden hashes. **Open for the owner:** the screenshot review of the effects sheet and the PixiJS
-parity sheet (item 339) and the PixiJS close-out choices (items 379-382). The PixiJS follow-up
+parity sheet (item 339) and the PixiJS close-out choices (items 419-422). The PixiJS follow-up
 (item 323, T13b) is built (nine tasks T13b-1 to T13b-9, below).
 
 ### What was built
@@ -378,7 +378,7 @@ size) are included. Nothing needed fixing in this pass.
 
 - **T13b, the PixiJS 2D backend:** built. Open: frame times on a machine with a GPU (this
   container has none: on SwiftShader PixiJS misses the 16.7 ms p95 bar with the features on, and
-  even plain on a loaded machine; item 379); Hopper's Way is not wired to it (item 380).
+  even plain on a loaded machine; item 419); Hopper's Way is not wired to it (item 420).
 - **The owner's screenshot review:** item 339 (the effects sheet and the PixiJS parity sheet).
 - A 3D tile is drawn on SwiftShader here (no GPU in the build container), as every 3D screenshot
   since 0.6.
@@ -386,7 +386,7 @@ size) are included. Nothing needed fixing in this pass.
   and `EXIT` labels overlap when Pip stands in the door.
 - The 3D backend ignores tweens, and the lab's own `ui` screens (its lab menu and dialog) draw in
   2D only (items 340, 329).
-- The build choices of part A (items 323-363 and 379-382) wait for the owner's answers.
+- The build choices of part A (items 323-363 and 419-422) wait for the owner's answers.
 
 ### T13: the 2D feature benchmark and the Canvas2D/PixiJS decision (item 320)
 
@@ -756,14 +756,14 @@ golden hash moved.
   by default and the headless tools stay Canvas2D.
 - **T13b-9 close-out:** the parity sheet, this section, the roadmap. `sheet` tiles may now name a
   run file in another folder by a path relative to the positional run file's folder
-  (`../../samples/rts-skirmish/runs/battle/141`), so one sheet tiles several games (item 382;
+  (`../../samples/rts-skirmish/runs/battle/141`), so one sheet tiles several games (item 422;
   `engine/tools/sheet.test.ts`).
 
 **Parity: the tolerance and where the backends differ.** `tests/browser/pixi-parity.test.ts`
 plays the fx lab's `level-1`, the RTS `battle` and the TD `won` once per backend (both plays give
 the headless run's state hashes) and compares each tick's pictures (particles, flashes, tints,
 shake, parallax, the HUD, a fade, a wipe, the pause menu). A pixel differs when one of R, G, B
-differs by more than the threshold (item 381):
+differs by more than the threshold (item 421):
 
 - RTS and tower defense (no glow, no additive blending): threshold 8, at most 0.1% of the pixels.
   On SwiftShader they are equal to the bit; the margin is for another GPU's rounding.
@@ -836,9 +836,9 @@ Plain, Canvas2D is faster here (its plain scenes need no GL fill), and PixiJS's 
 dominated by SwiftShader's fill and the load (T13b-7's quieter run had them at 8-15 ms p50).
 PixiJS's draw call alone, the part a GPU does not take over, is inside the budget in every case
 at p50. Whether PixiJS holds the bar on real hardware is an estimate until someone measures it
-on a machine with a GPU (item 379).
+on a machine with a GPU (item 419).
 
-**Defaults chosen** (item 379): PixiJS is the default 2D backend of the RTS skirmish and the
+**Defaults chosen** (item 419): PixiJS is the default 2D backend of the RTS skirmish and the
 tower defense, the two maps the bar is about, falling back to Canvas2D where WebGL does not start
 (and `?backend=canvas2d`); every other 2D page stays Canvas2D with PixiJS opt-in
 (`?backend=pixi`); Node tests, `screenshot` and `sheet` default to Canvas2D. The roadmap's "only
@@ -847,35 +847,35 @@ numbers and T13b-7's estimate for a GPU.
 
 **Deviations.**
 
-- **The bar is not shown to be met** on any machine yet (software GL only, above; item 379).
+- **The bar is not shown to be met** on any machine yet (software GL only, above; item 419).
 - **Hopper's Way (`games/samples/platformer`) is not wired to PixiJS:** another build track owns
   that game during 0.16 part B, so its page has no `pixi` display (the old Hopper's Way, now
   `games/platformer-classic`, is wired). Wiring it is the same few lines as the other pages
-  (item 380). Its part B `themes` are drawn by the shared core walk, so they should draw on
+  (item 420). Its part B `themes` are drawn by the shared core walk, so they should draw on
   PixiJS too, but that is not tested.
 - **Glow is not a PixiJS filter**, as the roadmap's scope line says, but a pre-made halo sprite
   (filters cost a pass each and were the slowest path on software GL); it is the one visible
-  difference from Canvas2D (item 381).
-- **`sheet` grammar extended** (relative run paths) for the parity sheet (item 382).
+  difference from Canvas2D (item 421).
+- **`sheet` grammar extended** (relative run paths) for the parity sheet (item 422).
 
-**Owner questions** (numbered after the last number in FEEDBACK-LOG.md when this was written,
-378; this track does not edit that log, so the orchestrator copies them there, renumbering if
-another track took these numbers first):
+**Owner questions** (numbered after the last number in the shared FEEDBACK-LOG.md on
+engine/build-0.15, 418, as part B used 379-418; this track does not edit that log, so the
+orchestrator copies 419-422 there and moves its next unused number to 423 at merge time):
 
-- **379.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
+- **419.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
   the fallback without WebGL), although on this container's software GL it does not hold 16.7 ms
   p95 with every feature on; its draw call does, and T13b-7 estimates a GPU makes the rest
   small. Keep it the default until someone measures frame times on a machine with a GPU
   (`pnpm bench:features`), or go back to Canvas2D by default until then?
-- **380.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
+- **420.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
   in part B); every other 2D page is, opt-in by `?backend=pixi`. Wire Hopper's Way after part B,
   and should any other page default to PixiJS?
-- **381.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
+- **421.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
   additive blending (RTS, tower defense: equal to the bit here), threshold 32 and 1% where glow
   shows (the fx lab), glow drawn as a halo sprite in PixiJS against `shadowBlur` on the canvas
   (the coins' and the door's halo differ a little, as the parity sheet shows), the iris not
   compared. OK?
-- **382.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
+- **422.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
   positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
   parity sheet tiles three games. OK?
 

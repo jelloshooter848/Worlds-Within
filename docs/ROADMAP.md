@@ -863,7 +863,7 @@ other text, so a new game gets it without code of its own.
   with Canvas2D as the fallback, and opt-in (`?backend=pixi`) on the other 2D pages; checked
   against Canvas2D by a parity test and the parity sheet. On this build's software GL neither
   backend holds the bar with every feature on, so a check on a machine with a GPU is open (item
-  379); numbers in the [build log](BUILD-LOG.md#t13b-the-pixijs-v8-2d-backend-item-323).)_
+  419); numbers in the [build log](BUILD-LOG.md#t13b-the-pixijs-v8-2d-backend-item-323).)_
 - **3D backend upgrade:** lighting (sun, ambient and point lights), shadows, fog, tone mapping and
   HUD labels anchored to world positions (names, health bars, timers over buildings).
 
@@ -872,7 +872,7 @@ Done when)
 
 - [x] Each feature above is in the engine with tests, a module page entry and an example in a skin.
       (The PixiJS backend, T13b, is built too and draws the same `canvas2d` skins; items 323,
-      379-382.)
+      419-422.)
 - [x] A test proves presentation does not change state: every existing run file, golden hash and
       mutant check passes unchanged with the new effects on. (`tests/runs/presentation-invariance.test.ts` and, on the stepped shell, `tests/runs/stepped-shell-invariance.test.ts`; T14.)
 - [x] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
