@@ -28,6 +28,10 @@ describe('TOPDOWN_RULES', () => {
       'damage-reduces-hp',
       'keys-open-locked-doors',
       'dash-crosses-pits',
+      'boss-patterns',
+      'boss-phases',
+      'boss-hit-invuln',
+      'boss-seals-room',
     ]);
     for (const r of TOPDOWN_RULES) expect(r.description.length).toBeGreaterThan(0);
   });

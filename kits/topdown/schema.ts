@@ -23,7 +23,144 @@ import { checkDungeon, LEGEND, parseRoom, type LegendEntry, type RoomDef } from 
  * gap G17) each room file is checked alone as its own dungeon.
  */
 
-const cond = z.enum(['clear', 'plates', 'switches', 'torches']);
+const cond = z.enum(['clear', 'plates', 'switches', 'torches', 'boss']);
+
+const ticks = (what: string) => z.number().int().min(1).describe(what);
+const optTicks = (what: string) => z.number().int().min(1).exactOptional().describe(what);
+
+/** A boss step (`BossStep`, `boss.ts`), told apart by `do`. */
+const bossStep = z.discriminatedUnion('do', [
+  z.strictObject({ do: z.literal('idle'), ticks: ticks('ticks it stands') }),
+  z.strictObject({
+    do: z.literal('telegraph'),
+    ticks: ticks('ticks it announces the attack (`boss-telegraph`)'),
+    attack: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]*$/)
+      .describe('the attack announced, usually the next step: presented as `telegraph-<attack>`'),
+  }),
+  z.strictObject({
+    do: z.literal('charge'),
+    speed: z
+      .number()
+      .positive()
+      .max(8)
+      .exactOptional()
+      .describe("pixels a tick (the phase's or boss's speed)"),
+    ticks: optTicks('the longest it runs (90); a wall stops it sooner'),
+  }),
+  z.strictObject({
+    do: z.literal('shoot'),
+    pattern: z.enum(['ring', 'spread']).describe('`ring`: all round; `spread`: a fan at the hero'),
+    count: z.number().int().min(1).max(32).describe('shots in the volley'),
+    speed: z.number().positive().max(8).exactOptional().describe('pixels a tick (2)'),
+    damage: z.number().int().min(1).exactOptional().describe('half hearts a shot takes (1)'),
+    gap: z.number().int().min(1).max(16).exactOptional().describe("a spread's gap in 11.25-degree steps (2)"),
+    start: z
+      .number()
+      .int()
+      .min(0)
+      .max(31)
+      .exactOptional()
+      .describe("a ring's first direction, 0 right, 8 down"),
+    aim: z.boolean().exactOptional().describe('a ring starts at the hero'),
+    jitter: z
+      .number()
+      .int()
+      .min(0)
+      .max(16)
+      .exactOptional()
+      .describe('each volley turned by a random -n..n steps'),
+    ticks: optTicks('ticks the step lasts (1)'),
+  }),
+  z.strictObject({
+    do: z.literal('slam'),
+    radius: z.number().int().min(1).max(256).describe('pixels round its centre the hit reaches'),
+    damage: z.number().int().min(1).exactOptional().describe("half hearts (the boss's contact)"),
+    ticks: optTicks('ticks the step lasts (1)'),
+  }),
+  z.strictObject({
+    do: z.literal('summon'),
+    kinds: z
+      .array(z.string().min(1))
+      .min(1)
+      .describe("spawn kinds to call up (`bat`, `knight`, a game's own), picked by the seeded RNG"),
+    count: z.number().int().min(1).max(4).exactOptional().describe('how many a summon calls (1)'),
+    max: z.number().int().min(1).exactOptional().describe('the most of its minions alive at once (3)'),
+    ticks: optTicks('ticks the step lasts (1)'),
+  }),
+]);
+
+const bossPattern = z.array(bossStep).min(1);
+
+/**
+ * A room's boss (Engine 0.16 part C T6): its whole form as data (`BossDef` in `boss.ts`). Phases
+ * come highest `hp` first, each under the boss's hp and the phase before.
+ */
+export const bossSchema = z
+  .strictObject({
+    id: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]*$/)
+      .describe("names the boss: presented as `boss:<id>`, its events' `boss`"),
+    name: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe('its name for the HUD (`bossName`; the id when left out)'),
+    at: z
+      .tuple([z.number().int().min(0), z.number().int().min(0)])
+      .describe('its top-left cell, [column, row]; its whole box stands on floor'),
+    size: z
+      .tuple([z.number().int().min(8).max(64), z.number().int().min(8).max(64)])
+      .exactOptional()
+      .describe('its box in pixels, [width, height] ([32, 32])'),
+    hp: z.number().int().min(1).describe('hit points'),
+    contact: z.number().int().min(0).exactOptional().describe('half hearts a touch takes (2)'),
+    hitInvuln: z
+      .number()
+      .int()
+      .min(0)
+      .exactOptional()
+      .describe('ticks after a hit it cannot be hit again (30)'),
+    knockResist: z
+      .number()
+      .min(0)
+      .max(1)
+      .exactOptional()
+      .describe('how little the sword pushes it: 0 like a monster, 1 not at all (1)'),
+    speed: z.number().positive().max(8).exactOptional().describe("a charge's pixels a tick (2)"),
+    flies: z.boolean().exactOptional().describe('flies over water, pits and blocks (it walks)'),
+    pattern: bossPattern.describe('its steps, looped: idle, telegraph, charge, shoot, slam, summon'),
+    phases: z
+      .array(
+        z.strictObject({
+          hp: z.number().int().min(1).describe('from this many hit points left (or fewer)'),
+          pattern: bossPattern.describe("the phase's steps, looped from the first"),
+          speed: z.number().positive().max(8).exactOptional().describe("a charge's speed in the phase"),
+        }),
+      )
+      .exactOptional()
+      .describe('later phases, highest hp first'),
+    defeatTicks: z.number().int().min(1).exactOptional().describe('ticks of its defeat sequence (60)'),
+    flag: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe('a world flag its defeat sets (`flags` in the snapshot), e.g. `bossDefeated`'),
+  })
+  .superRefine((b, ctx) => {
+    let above = b.hp;
+    (b.phases ?? []).forEach((ph, i) => {
+      if (ph.hp >= above)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['phases', i, 'hp'],
+          message: `a phase's hp must be under ${above} (the boss's hp or the phase before)`,
+        });
+      above = ph.hp;
+    });
+  });
 
 const entrance = z.strictObject({
   id: z.string().min(1).describe('the door id, unique in the dungeon'),
@@ -81,6 +218,11 @@ export function roomSchema(
         .exactOptional()
         .describe("each cell's tile-sheet frames, bottom to top, in reading order; null draws its tile"),
       entrances: z.array(entrance).exactOptional().describe('building doors inside the room'),
+      boss: bossSchema
+        .exactOptional()
+        .describe(
+          'the room\'s boss, all data (Engine 0.16 part C T6); `shutters: "boss"` seals the room until it is down',
+        ),
     })
     .superRefine((def, ctx) => {
       let problems = 0;

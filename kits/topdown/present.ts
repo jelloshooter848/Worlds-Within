@@ -15,12 +15,13 @@ import { DIR_VEC, HUD_H, ROOM_COLS, ROOM_H, ROOM_ROWS, ROOM_W, SIDE_DIR, TILE, t
 import { ATTACK_FRAMES, HOLD_FRAMES, KNOCK_FRAMES, SPIN_FRAMES, USE_FRAMES, swordAt } from './hero';
 import { Chest, FloorSwitch, Pickup, Poof, PushBlock, TdEnemy, Torch, type TdEntity } from './entity';
 import { Bat, Projectile, Rock, Spitter, Walker } from './enemies';
+import { BOSS_HIT_INVULN, TdBoss, bossesIn } from './boss';
 import { BOMB_FUSE, Bomb, Boomerang, Explosion } from './items';
 import { BeamBurst, SwordBeam } from './beam';
 import { TdPerson } from './person';
 import { typeNameOf } from './type-names';
 import { sideOf, tileAt, type Room, type TileKind } from './room';
-import type { TopDownWorld } from './world';
+import { eventPlace, type TopDownWorld } from './world';
 
 /**
  * The top-down kit's side of the presentation contract (`@engine/core/present`, Engine 0.4): it
@@ -480,6 +481,13 @@ function lookOf(e: TdEntity, ctx: EntityCtx): { state: string; t: number; facing
     if (e.invuln > 0) tags.push('invuln', flicker(ctx));
     if (e.kbT > 0) tags.push('knockback');
     if (e.stunT > 0) tags.push('stunned');
+    if (e instanceof TdBoss) {
+      // Its state (BOSS_ANIMS): `t` ticks into it (into the hit for `hurt`).
+      const state = e.anim;
+      const t = state === 'hurt' ? (e.def.hitInvuln ?? BOSS_HIT_INVULN) - e.invuln : e.tick;
+      tags.push('boss', `phase:${e.phase}`);
+      return look(state, t, tags, e.facing);
+    }
     if (e instanceof Bat) return look(e.resting ? 'rest' : 'fly', e.resting ? 0 : frame, tags, e.facing);
     if (e instanceof Spitter && e.stopT > 0) return look('spit', e.stopT - 1, tags, e.facing);
     if (e instanceof Walker) return look('walk', e.anim, tags, e.facing);
@@ -645,6 +653,14 @@ function presentStatus(world: TopDownWorld, top: number): Record<string, Present
     hasCompass: world.found.has('compass'),
     top,
   });
+  // A boss in the room (Engine 0.16 part C T6): its bar's values; none without one.
+  const boss = bossesIn(world.entities)[0];
+  if (boss) {
+    status['bossHp'] = boss.hp;
+    status['bossMaxHp'] = boss.maxHp;
+    status['bossName'] = boss.name;
+    status['bossPhase'] = boss.phase;
+  }
   if (world.found.has('compass')) {
     for (const r of d.rooms.values())
       if (r.def.goal) {
@@ -676,13 +692,16 @@ const HERO_EVENTS = new Set([
 
 /**
  * The world's events (TdEvents) as presented events: their JSON-safe fields copied, hero events
- * at the hero's centre (`entity: 'hero'`), `unlock` at the middle of its doorway. Events whose
- * place the world does not report (`hit`, `kill`, `room`, ...) carry no position.
+ * at the hero's centre (`entity: 'hero'`), `unlock` at the middle of its doorway, and (Engine 0.16
+ * part C T6) an event raised about an entity (`hit`, `kill`, `stun`, the boss events: the world's
+ * `eventPlace`, kept beside the event, never in it) at that entity's centre when it happened,
+ * with `entity` its presented id. Events with no place (`room`, ...) carry no position.
  */
 function presentEvents(
   world: TopDownWorld,
   events: readonly object[],
   at: { x: number; y: number },
+  ids: TdPresentIds,
 ): PresentEvent[] {
   const h = world.hero;
   return events.map((e) => {
@@ -693,10 +712,15 @@ function presentEvents(
         out[k] = v as JsonValue;
       }
     }
+    const place = eventPlace(e);
     if (HERO_EVENTS.has(out.type)) {
       out.x = at.x + h.x + 8;
       out.y = at.y + h.y + 8;
       out.entity = 'hero';
+    } else if (place) {
+      out.x = at.x + place.x;
+      out.y = at.y + place.y;
+      out.entity = ids.of(place.entity, world.room.id);
     } else if (out.type === 'unlock' && typeof out['side'] === 'string') {
       const side = out['side'] as Side;
       const cells = world.room.doorCells[side] ?? [];
@@ -744,19 +768,20 @@ export function presentWorld(
   const { map, origin, view } = presentMap(world);
   const sent: PresentMap | PresentMapRef = opts.state ? opts.state.maps.next(map) : map;
   const camera = cameraHint(view, size, top);
+  const ids = opts.state?.ids ?? new TdPresentIds();
   return {
     frame: world.frame,
     size: { width: size.width, height: size.height },
     entities: presentEntities(world, {
       world,
       at: origin,
-      ids: opts.state?.ids ?? new TdPresentIds(),
+      ids,
       calm: opts.reduceFlashing ?? false,
       dark: world.room.def.dark === true,
       idle: opts.idle && opts.state ? idleTicks(world, opts.state) : null,
     }),
     map: sent,
-    events: presentEvents(world, events, origin),
+    events: presentEvents(world, events, origin, ids),
     status: presentStatus(world, top),
     camera,
   };

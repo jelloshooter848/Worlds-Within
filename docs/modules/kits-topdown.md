@@ -18,10 +18,22 @@ crosses **pits** (`^`, tile `pit`: they stop walking, walkers and blocks) to flo
 (rule `dash-crosses-pits`). Events `dash` and `dash-end`; the hero is presented in `dash` with a
 `dash` tag; the snapshot gains `hero.dash` only once he owns it.
 
+From Engine 0.16 part C T6 a room may declare a **boss** purely in data (`boss.ts`; the room
+file's `boss` field, `bossSchema` in `schema.ts`): its size, hp, touch damage, hit invulnerability,
+knockback resistance, a looping pattern of steps (`idle`, `telegraph`, `charge`, `shoot` a ring
+or spread, `slam`, `summon` minions of listed spawn kinds), phases by hp with their own patterns
+and speed, a defeat sequence and a world `flag` (the snapshot's `flags`). The room condition
+`boss` (`shutters: "boss"`) seals the boss room until it is down. Randomness only through the
+world's seeded RNG. Events `boss-telegraph`, `boss-attack`, `boss-hit`, `boss-phase`,
+`boss-defeat`, `boss-defeated`; presented as kind `boss:<id>` with its states and tags, and HUD
+status `bossHp`, `bossMaxHp`, `bossName`, `bossPhase`. Rules `boss-patterns`, `boss-phases`,
+`boss-hit-invuln`, `boss-seals-room`. For combat feel, `hit`, `kill`, `stun` and the boss events are
+placed in presented frames at their entity (`eventPlace`, kept beside the event, so no hash moves).
+
 ## Public API entry points
 
 `index.ts`, imported as `@kits/topdown`, re-exports `geometry`, `room` (rooms and the `LEGEND` text
-format), `entity`, `enemies`, `items`, `hero`, `world`, `frames` (tile-sheet text transforms), `walker`,
+format), `entity`, `enemies`, `boss` (`TdBoss`, `BossDef`, `BossShot`, `BOSS_DIRS`), `items`, `hero`, `world`, `frames` (tile-sheet text transforms), `walker`,
 `person`, `snapshot` (`snapshotWorld`, `topdownGame`: the world as the engine's `HeadlessGame`,
 for `pnpm cli run` and `dump`), `present` (`presentWorld(world, events, opts)`: the world as an
 engine `PresentFrame` (room map with a version that changes with its tiles, the hero and every

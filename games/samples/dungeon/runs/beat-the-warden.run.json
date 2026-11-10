@@ -1,0 +1,332 @@
+{
+  "game": "..",
+  "seed": 1,
+  "ticks": 960,
+  "input": {
+    "steps": [
+      {
+        "frame": 0,
+        "hold": ["down"]
+      },
+      {
+        "frame": 117,
+        "hold": ["left"]
+      },
+      {
+        "frame": 165,
+        "hold": ["down"]
+      },
+      {
+        "frame": 176,
+        "hold": []
+      },
+      {
+        "frame": 240,
+        "hold": ["right"]
+      },
+      {
+        "frame": 272,
+        "hold": ["down"]
+      },
+      {
+        "frame": 304,
+        "hold": ["right"]
+      },
+      {
+        "frame": 364,
+        "hold": ["special"]
+      },
+      {
+        "frame": 365,
+        "hold": []
+      },
+      {
+        "frame": 373,
+        "hold": ["right"]
+      },
+      {
+        "frame": 378,
+        "hold": []
+      },
+      {
+        "frame": 380,
+        "hold": ["right"]
+      },
+      {
+        "frame": 485,
+        "hold": []
+      },
+      {
+        "frame": 486,
+        "hold": ["left"]
+      },
+      {
+        "frame": 507,
+        "hold": ["up"]
+      },
+      {
+        "frame": 513,
+        "hold": ["right"]
+      },
+      {
+        "frame": 567,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 568,
+        "hold": []
+      },
+      {
+        "frame": 569,
+        "hold": ["left"]
+      },
+      {
+        "frame": 687,
+        "hold": ["right"]
+      },
+      {
+        "frame": 688,
+        "hold": ["left"]
+      },
+      {
+        "frame": 690,
+        "hold": ["right"]
+      },
+      {
+        "frame": 691,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 692,
+        "hold": []
+      },
+      {
+        "frame": 693,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 694,
+        "hold": []
+      },
+      {
+        "frame": 695,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 696,
+        "hold": []
+      },
+      {
+        "frame": 697,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 698,
+        "hold": []
+      },
+      {
+        "frame": 699,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 700,
+        "hold": []
+      },
+      {
+        "frame": 701,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 702,
+        "hold": []
+      },
+      {
+        "frame": 703,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 704,
+        "hold": []
+      },
+      {
+        "frame": 705,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 706,
+        "hold": []
+      },
+      {
+        "frame": 707,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 708,
+        "hold": []
+      },
+      {
+        "frame": 709,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 710,
+        "hold": []
+      },
+      {
+        "frame": 711,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 712,
+        "hold": []
+      },
+      {
+        "frame": 713,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 714,
+        "hold": []
+      },
+      {
+        "frame": 715,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 716,
+        "hold": []
+      },
+      {
+        "frame": 717,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 718,
+        "hold": []
+      },
+      {
+        "frame": 719,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 720,
+        "hold": []
+      },
+      {
+        "frame": 721,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 722,
+        "hold": []
+      },
+      {
+        "frame": 723,
+        "hold": ["attack"]
+      },
+      {
+        "frame": 724,
+        "hold": []
+      },
+      {
+        "frame": 935,
+        "hold": ["left"]
+      }
+    ]
+  },
+  "assertions": [
+    {
+      "tick": 120,
+      "path": "room",
+      "op": "eq",
+      "value": "chasm"
+    },
+    {
+      "tick": 410,
+      "path": "room",
+      "op": "eq",
+      "value": "warden-hall"
+    },
+    {
+      "tick": 410,
+      "path": "entities.4.kind",
+      "op": "eq",
+      "value": "boss:warden"
+    },
+    {
+      "tick": 510,
+      "path": "room",
+      "op": "eq",
+      "value": "warden-hall"
+    },
+    {
+      "tick": 510,
+      "path": "hero.x",
+      "op": "lte",
+      "value": 16
+    },
+    {
+      "tick": 546,
+      "path": "entities.4.boss.step",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 570,
+      "path": "entities.4.hp",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 570,
+      "path": "entities.4.boss.invuln",
+      "op": "gt",
+      "value": 0
+    },
+    {
+      "tick": 694,
+      "path": "entities.4.hp",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 694,
+      "path": "entities.4.boss.phase",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 726,
+      "path": "entities.4.boss.mode",
+      "op": "eq",
+      "value": "dying"
+    },
+    {
+      "tick": 786,
+      "path": "flags",
+      "op": "eq",
+      "value": ["bossDefeated"]
+    },
+    {
+      "tick": 786,
+      "path": "enemies",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 960,
+      "path": "room",
+      "op": "eq",
+      "value": "chasm"
+    }
+  ],
+  "invariants": [
+    {
+      "path": "hero.dead",
+      "op": "eq",
+      "value": false
+    }
+  ],
+  "hashEvery": 60,
+  "guards": ["boss-patterns", "boss-phases", "boss-hit-invuln", "boss-seals-room"]
+}

@@ -62,6 +62,7 @@ describe('the dungeon sample', () => {
       'room:crypt',
       'room:guard-room',
       'room:store-room',
+      'room:warden-hall',
       'song:crypt',
       'song:daylight',
       // The art pass (Engine 0.16 part C T3): two text sheets derived from the CC0 pack.
@@ -102,6 +103,7 @@ describe('the dungeon sample', () => {
       'crypt',
       'guard-room',
       'store-room',
+      'warden-hall',
     ]);
     expect(d.rooms.get('store-room')?.def.chests).toEqual(['bomb']);
     expect(d.rooms.get('crypt')?.def).toMatchObject({ goal: true, chests: ['relic'] });
@@ -245,8 +247,10 @@ describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.
       status = frame.status;
     }
     for (const k of kinds) expect(Object.keys(skin.kinds)).toContain(k);
+    // The boss bar's values exist only while a boss is in the room (beat-the-warden shows them).
     for (const item of skin.hud ?? [])
-      if (item.status !== undefined) expect(Object.keys(status)).toContain(item.status);
+      if (item.status !== undefined && !item.status.startsWith('boss'))
+        expect(Object.keys(status)).toContain(item.status);
   });
 
   it("draws the kit's `relic` item as a gem-set sword from the CC0 sheet, not a borrowed symbol", () => {
@@ -311,8 +315,9 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as Run;
   const FALLBACK = dungeonSkin(content).sheets?.fallbackColor;
 
-  it('has run files for the walk, the way out, a fall and (0.16 part C T5) the dash over the chasm', () => {
+  it('has run files for the walk, the way out, a fall, (0.16 part C T5) the dash over the chasm and (T6) the boss', () => {
     expect(runs).toEqual([
+      'beat-the-warden.run.json',
       'cross-the-chasm.run.json',
       'escape.run.json',
       'lost-in-the-guard-room.run.json',
@@ -354,6 +359,30 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     }
     expect(sprites).toBeGreaterThan(0);
     expect(fallbacks).toBe(0);
+  });
+
+  it('shows the warden (Engine 0.16 part C T6): its kind, its HUD bar and placed boss events', () => {
+    const run = readRun('beat-the-warden.run.json');
+    const world = createWorld(content, run.seed);
+    const input = new ScriptedInput(run.input);
+    const state = new TdPresentState();
+    const skin = dungeonSkin(content);
+    const seen = new Set<string>();
+    let bar = false;
+    for (let t = 0; t < 800; t++) {
+      input.next();
+      world.update(input);
+      const frame = presentWorld(world, world.events.splice(0), { state });
+      for (const e of frame.entities) seen.add(e.kind);
+      if (frame.status['bossName'] === 'The Bone Warden' && frame.status['bossMaxHp'] === 3) bar = true;
+      for (const e of frame.events)
+        if (String(e.type).startsWith('boss-')) {
+          expect(typeof e.x, e.type).toBe('number');
+          expect(skin.events?.[e.type], e.type).toBeDefined();
+        }
+    }
+    expect(bar).toBe(true);
+    expect([...seen]).toEqual(expect.arrayContaining(['boss:warden', 'boss-shot', 'bat']));
   });
 
   it('ends escaped after the way out and fallen after the guard room', () => {

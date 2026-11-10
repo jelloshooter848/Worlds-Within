@@ -1,3 +1,4 @@
+import type { BossDef } from './boss';
 import { DIR_VEC, OPPOSITE, ROOM_COLS, ROOM_ROWS, TILE, type Dir, type Side } from './geometry';
 
 /**
@@ -41,9 +42,11 @@ export type TileKind =
 export type DoorKind = 'open' | 'locked' | 'shutter' | 'cracked';
 /**
  * A room condition: every enemy gone, every block plate held down by a block, every floor switch
- * pressed, every torch lit. Met once, it stays met for the run (the room remembers).
+ * pressed, every torch lit, or (Engine 0.16 part C T6) the room's boss beaten (`boss`: its defeat
+ * sequence over; `shutters: "boss"` seals a boss room until then). Met once, it stays met for the
+ * run (the room remembers).
  */
-export type Cond = 'clear' | 'plates' | 'switches' | 'torches';
+export type Cond = 'clear' | 'plates' | 'switches' | 'torches' | 'boss';
 
 export interface LegendEntry {
   tile: TileKind;
@@ -124,6 +127,11 @@ export interface RoomDef {
   art?: readonly (readonly string[] | null)[];
   /** Building doors inside the room (TdEntrance). */
   entrances?: readonly TdEntrance[];
+  /**
+   * The room's boss (Engine 0.16 part C T6): its whole form as data (`BossDef`, `boss.ts`), placed
+   * with its top-left cell at `boss.at`. It counts as one of the room's enemies.
+   */
+  boss?: BossDef;
 }
 
 /**
@@ -275,6 +283,9 @@ export function parseRoom(
           throw new Error(
             `room "${def.id}": the ${side} doorway must go through the whole wall (${wall} tiles)`,
           );
+  if (def.boss) checkBossPlace(def, tiles, wall);
+  if ((def.shutters === 'boss' || def.reveal === 'boss') && !def.boss)
+    throw new Error(`room "${def.id}": a \`boss\` condition needs a \`boss\``);
   if (Object.values(doors).includes('shutter') && !def.shutters)
     throw new Error(`room "${def.id}": shutter doors need a \`shutters\` condition`);
   const chests = spawns.filter((s) => s.kind === 'chest').length;
@@ -306,6 +317,27 @@ export function parseRoom(
     start,
     entrances,
   };
+}
+
+/** A boss's box must stand on walkable floor inside the room's wall band. */
+function checkBossPlace(def: RoomDef, tiles: readonly TileKind[], wall: number): void {
+  const boss = def.boss as BossDef;
+  const [col, row] = boss.at;
+  const [w, h] = boss.size ?? [32, 32];
+  const cols = Math.ceil(w / TILE);
+  const rows = Math.ceil(h / TILE);
+  if (col < wall || row < wall || col + cols > ROOM_COLS - wall || row + rows > ROOM_ROWS - wall)
+    throw new Error(
+      `room "${def.id}" row ${row} col ${col}: boss "${boss.id}" does not fit inside the room's walls`,
+    );
+  for (let r = row; r < row + rows; r++)
+    for (let c = col; c < col + cols; c++) {
+      const t = tiles[r * ROOM_COLS + c];
+      if (t !== 'floor' && t !== 'floor-alt' && t !== 'stairs')
+        throw new Error(
+          `room "${def.id}" row ${r} col ${c}: boss "${boss.id}" must stand on floor (got ${t})`,
+        );
+    }
 }
 
 export function tileAt(room: Room, col: number, row: number): TileKind | null {

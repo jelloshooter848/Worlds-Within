@@ -108,7 +108,16 @@ describe('mutants', () => {
       kit: 'topdown',
       baseline: { passed: true, failure: null },
       guarded: ['doors-change-room'],
-      weak: ['walls-block-movement', 'damage-reduces-hp', 'keys-open-locked-doors', 'dash-crosses-pits'],
+      weak: [
+        'walls-block-movement',
+        'damage-reduces-hp',
+        'keys-open-locked-doors',
+        'dash-crosses-pits',
+        'boss-patterns',
+        'boss-phases',
+        'boss-hit-invuln',
+        'boss-seals-room',
+      ],
     });
     const rows = result.rules as Row[];
     expect(rows.map((r) => [r.id, r.passed, r.guarded])).toEqual([
@@ -117,6 +126,10 @@ describe('mutants', () => {
       ['damage-reduces-hp', true, false],
       ['keys-open-locked-doors', true, false],
       ['dash-crosses-pits', true, false],
+      ['boss-patterns', true, false],
+      ['boss-phases', true, false],
+      ['boss-hit-invuln', true, false],
+      ['boss-seals-room', true, false],
     ]);
   });
 

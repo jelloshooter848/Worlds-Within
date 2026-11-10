@@ -1,4 +1,5 @@
 import { BeamBurst, SwordBeam } from './beam';
+import { BossShot, TdBoss } from './boss';
 import { Bat, Knight, Projectile, Rock, Spitter } from './enemies';
 import { Chest, FloorSwitch, Pickup, Poof, PushBlock, Torch, type TdEntity } from './entity';
 import { Bomb, Boomerang, Explosion } from './items';
@@ -29,6 +30,8 @@ const KIT_TYPE_NAMES: ReadonlyMap<unknown, string> = new Map<unknown, string>([
   [Explosion, 'Explosion'],
   [Bomb, 'Bomb'],
   [TdPerson, 'TdPerson'],
+  [TdBoss, 'TdBoss'],
+  [BossShot, 'BossShot'],
 ]);
 
 /**

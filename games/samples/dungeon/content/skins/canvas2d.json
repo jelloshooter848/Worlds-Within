@@ -328,6 +328,54 @@
           "y": 208,
           "w": 16,
           "h": 16
+        },
+        "demon-idle-0": {
+          "x": 16,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-run-0": {
+          "x": 144,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-idle-1": {
+          "x": 48,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-run-1": {
+          "x": 176,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-idle-2": {
+          "x": 80,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-run-2": {
+          "x": 208,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-idle-3": {
+          "x": 112,
+          "y": 428,
+          "w": 32,
+          "h": 36
+        },
+        "demon-run-3": {
+          "x": 240,
+          "y": 428,
+          "w": 32,
+          "h": 36
         }
       },
       "anchor": "bottom"
@@ -1048,6 +1096,79 @@
           "ease": "bounceOut"
         }
       ]
+    },
+    "boss:warden": {
+      "sheet": "crypt-actors",
+      "flipFacing": true,
+      "frames": {
+        "idle": {
+          "frames": ["demon-idle-0", "demon-idle-1", "demon-idle-2", "demon-idle-3"],
+          "ticks": 10
+        },
+        "telegraph-charge": {
+          "frames": ["demon-idle-0", "demon-idle-1", "demon-idle-2", "demon-idle-3"],
+          "ticks": 3
+        },
+        "telegraph-shoot": {
+          "frames": ["demon-idle-0", "demon-idle-1", "demon-idle-2", "demon-idle-3"],
+          "ticks": 3
+        },
+        "telegraph-summon": {
+          "frames": ["demon-idle-0", "demon-idle-1", "demon-idle-2", "demon-idle-3"],
+          "ticks": 3
+        },
+        "telegraph-slam": {
+          "frames": ["demon-idle-0", "demon-idle-1", "demon-idle-2", "demon-idle-3"],
+          "ticks": 3
+        },
+        "charge": {
+          "frames": ["demon-run-0", "demon-run-1", "demon-run-2", "demon-run-3"],
+          "ticks": 4
+        },
+        "shoot": {
+          "frames": ["demon-idle-0"]
+        },
+        "slam": {
+          "frames": ["demon-run-2"]
+        },
+        "summon": {
+          "frames": ["demon-idle-0", "demon-idle-1", "demon-idle-2", "demon-idle-3"],
+          "ticks": 5
+        },
+        "hurt": {
+          "frames": ["demon-idle-0", "blank"],
+          "ticks": 2
+        },
+        "dying": {
+          "frames": ["demon-idle-0", "blank"],
+          "ticks": 4
+        }
+      },
+      "byTag": [
+        {
+          "tag": "flashing",
+          "frames": {
+            "idle": {
+              "frames": ["demon-idle-0", "blank"],
+              "ticks": 2
+            },
+            "charge": {
+              "frames": ["demon-run-0", "blank"],
+              "ticks": 2
+            },
+            "hurt": {
+              "frames": ["demon-idle-0", "blank"],
+              "ticks": 2
+            }
+          }
+        }
+      ]
+    },
+    "boss-shot": {
+      "sheet": "crypt-items",
+      "frames": {
+        "fly": "skull"
+      }
     }
   },
   "tiles": {
@@ -1344,6 +1465,77 @@
     },
     "dash-end": {
       "emit": "footstep-dust"
+    },
+    "boss-telegraph": {
+      "sound": "fuse",
+      "pitch": [-2, 0],
+      "flash": {
+        "color": "#c33424",
+        "alpha": 0.12,
+        "ticks": 6
+      }
+    },
+    "boss-attack": {
+      "sound": "spit",
+      "pitch": [-3, -1],
+      "shake": {
+        "amount": 2,
+        "ticks": 10
+      }
+    },
+    "boss-attack:attack=slam": {
+      "sound": "blast",
+      "emit": "blast-ring",
+      "shake": {
+        "amount": 5,
+        "ticks": 16
+      },
+      "hitPause": {
+        "ticks": 3
+      }
+    },
+    "boss-hit": {
+      "sound": "hit",
+      "pitch": [-2, 0],
+      "emit": "hurt-sparks",
+      "shake": {
+        "amount": 3,
+        "ticks": 10
+      },
+      "hitPause": {
+        "ticks": 6
+      }
+    },
+    "boss-phase": {
+      "flash": {
+        "color": "#f6c445",
+        "alpha": 0.3,
+        "ticks": 10
+      },
+      "shake": {
+        "amount": 4,
+        "ticks": 20
+      }
+    },
+    "boss-defeat": {
+      "sound": "kill",
+      "emit": ["blast-fire", "blast-smoke"],
+      "shake": {
+        "amount": 6,
+        "ticks": 40
+      },
+      "hitPause": {
+        "ticks": 12
+      },
+      "flash": {
+        "color": "#fff1c4",
+        "alpha": 0.5,
+        "ticks": 14
+      }
+    },
+    "boss-defeated": {
+      "sound": "unlock",
+      "emit": "poof-smoke"
     }
   },
   "emitters": {
@@ -1577,6 +1769,29 @@
       "font": "crypt-small",
       "color": "#fcfcfc",
       "shadow": "#222222"
+    },
+    {
+      "status": "bossName",
+      "as": "text",
+      "x": 110,
+      "y": 4,
+      "when": "bossHp",
+      "font": "crypt-small",
+      "color": "#e8e0d8",
+      "shadow": "#141016"
+    },
+    {
+      "status": "bossHp",
+      "as": "bar",
+      "x": 110,
+      "y": 13,
+      "w": 100,
+      "h": 5,
+      "max": "bossMaxHp",
+      "when": "bossHp",
+      "color": "#c33424",
+      "back": "#3a1c1c",
+      "border": "#141016"
     }
   ],
   "lighting": {
@@ -1876,6 +2091,22 @@
           "amount": 0.15,
           "rate": 12
         }
+      },
+      "boss:warden": {
+        "radius": 52,
+        "color": "#c33424",
+        "intensity": 0.75,
+        "glow": 0.12,
+        "flicker": {
+          "amount": 0.1,
+          "rate": 6
+        }
+      },
+      "boss-shot": {
+        "radius": 10,
+        "color": "#a4e4fc",
+        "intensity": 0.35,
+        "glow": 0.15
       }
     },
     "tiles": {

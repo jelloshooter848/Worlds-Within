@@ -16,7 +16,7 @@ glue.
         |                                                                  goal room
  (0,1) courtyard (start)  --open door-->  (1,1) guard-room (a side room full of monsters)
         |
- (0,2) chasm (the dash, Engine 0.16 part C T5)
+ (0,2) chasm (the dash, Engine 0.16 part C T5)  --open door (beyond the pit)-->  (1,2) warden-hall (boss, T6)
 ```
 
 1. **courtyard** (start, `@`): four blocks, a heart; doors north, east and (from Engine 0.16 part C
@@ -35,7 +35,15 @@ glue.
    item (`chests: ["dash"]`), a two-tile pit (`^`) from wall to wall, and a heart beyond it that
    only the dash reaches. The dash's tuning is the kit's default (`kitOptions.topdown.dash` would
    change it; `headless.ts` passes `topdownItems(content.manifest)`). A first room for the new
-   wing T8 builds.
+   wing T8 builds. From Engine 0.16 part C T6 an open east door beyond the pit leads on.
+7. **warden-hall** (Engine 0.16 part C T6, a minimal boss room until T9's): east of the chasm,
+   only reached with the dash. Its `boss` field declares the Bone Warden in data (the kit's boss
+   form, `kits/topdown/CLAUDE.md`, Bosses: 3 hp, a charge and a ring of 8 shots, then at 1 hp a
+   phase that summons bats and slams) and `shutters: "boss"` shuts its west shutter door once the
+   hero is in until the boss is down; its defeat sets the world flag `bossDefeated`. The skin draws
+   it as the pack's big demon (`boss:warden`, blinking on a hit), its shots as skulls, a HUD bar
+   (`bossName`, `bossHp` over `bossMaxHp`, shown `when` `bossHp`) and the boss events' sounds,
+   shakes, flashes, hit-pauses and particles.
 
 A run ends **escaped** (the hero reached an exit: `exited`) or **fallen** (the hero died after his
 death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the end banner says which
@@ -86,7 +94,8 @@ games/samples/dungeon --json` to see every kit rule guarded.
 - `game.json`: the manifest (schema: `engine/core/content/manifest.ts`): kit `topdown`, content
   globs (`room`, `song`, `palette`, `sprite`, `sfx`, `skin`, `font`), seed 1, **320x180**, `headless.ts`,
   `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
-- `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt`, `chasm` (above).
+- `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt`, `chasm`,
+  `warden-hall` (above).
 - `content/songs/`: `crypt`, `daylight`. `content/sfx/`: `blast`, `chest`, `door`, `fall`,
   `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`, `unlock`.
 - `content/palettes/`: `crypt-art`, `crypt-floor`. `content/sprites/`: `crypt-art.txt`,
@@ -159,6 +168,12 @@ games/samples/dungeon/runs/escape.run.json --json` (exit 0 passed, 4 a failed ch
   dash), to the pit's edge (`hero.x` 145), the dash (`hero.dash.t` 8 at tick 365) over it to
   `hero.x` 193 (cooldown 24), and the heart beyond; full hearts throughout; `guards:
 ["dash-crosses-pits"]`. Adding the courtyard's south door moved no other run's hashes.
+- `beat-the-warden` (960 ticks, Engine 0.16 part C T6): cross-the-chasm's input, then east into
+  the warden hall (tick 410), leaning on the shut shutter (still there at 510), the fight (the
+  charge step at 546, hp 2 with hit invulnerability at 570, phase 1 at 694, the defeat sequence
+  from 726), `flags` `["bossDefeated"]` at 786 and out west through the opened shutter (the chasm
+  at 960); `guards: ["boss-patterns", "boss-phases", "boss-hit-invuln", "boss-seals-room"]`.
+  Adding the chasm's east door moved no other run's hashes.
 
 `pnpm -s cli mutants games/samples/dungeon --json`: every `TOPDOWN_RULES` rule is guarded by some
 run, and no run is weak on its own `guards` (`tests/runs/dungeon-mutants.test.ts` holds it to that,

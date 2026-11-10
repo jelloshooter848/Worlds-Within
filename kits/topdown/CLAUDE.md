@@ -2,7 +2,8 @@
 
 The top-down kit: gameplay rules for a room-based action game seen from above. Rooms from text on a
 grid (`room.ts`), the world with tile collision, doors, room slides and conditions (`world.ts`), a
-sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), items
+sword hero with an item slot (`hero.ts`), enemies and objects (`enemies.ts`, `entity.ts`), the
+data-driven boss (`boss.ts`, Engine 0.16 part C T6), items
 such as the boomerang, bombs and the dash (`items.ts`, `beam.ts`), walking townsfolk (`walker.ts`,
 `person.ts`), a scripted test bot (`bot.ts`), its named rules for mutant checks (`rules.ts`), the world's snapshot for the tools (`snapshot.ts`), its presentation frames (`present.ts`), tile-sheet frame helpers (`frames.ts`), the room
 file schema (`schema.ts`), the one-room challenge adapter that hosts the kit as another kit's
@@ -59,7 +60,9 @@ re-export it.
 only once he owns the dash `dash`: `{ t, cooldown, guard }`, Engine 0.16 part C T5, so a world
 without it keeps every hash),
 `inventory` (`owned`, `current`, `ammo`), `entities` (`{ kind, x, y, key, hp? }`, `kind` being the
-enemy or pickup kind or else the class name), `enemies` (living count) and `events`. The class
+enemy or pickup kind or else the class name; a boss's entry adds `boss`: `{ mode, phase, step,
+tick, invuln }`, Engine 0.16 part C T6), `flags` (the world flags, a beaten boss's `flag`, only
+once one is set, so no older hash moves), `enemies` (living count) and `events`. The class
 name is `typeNameOf(e)` (`type-names.ts`, Engine 0.15 T12): the kit's classes by their names
 written out, since a minified page build renames classes and `constructor.name` there would give
 the page another hash than `pnpm cli run` (found replaying the dungeon sample's run files through
@@ -107,11 +110,18 @@ skins without an `idle` state draw as before; tested in `present.test.ts`).
   stabbing there is also `hero/sword` (kind `sword`, the blade's box). A dead hero is not listed.
 - **Status**: `hp`, `maxHp` (half hearts), `keys`, `item` ('' for none), `ammo.<id>` for every item
   with ammo, `room`, `mapX`/`mapY`, `mapCols`/`mapRows`, `visited` (`gx,gy` cells, sorted, joined
-  by spaces), `hasMap`, `hasCompass`, `goalX`/`goalY` (with the compass) and `top`.
+  by spaces), `hasMap`, `hasCompass`, `goalX`/`goalY` (with the compass) and `top`; while a boss
+  is in the room (Engine 0.16 part C T6) also `bossHp`, `bossMaxHp`, `bossName` and `bossPhase`,
+  for a HUD bar (a room without one has none of them).
 - **Events**: the `TdEvent`s' JSON-safe fields; hero events (`sword`, `hurt`, `pickup`, `dash`,
   `dash-end`, ...) get
-  the hero's centre and `entity: 'hero'`, `unlock` its doorway's middle. Events the world gives no
-  place for (`hit`, `kill`, `room`) carry none (adding places to `TdEvent` would change hashes).
+  the hero's centre and `entity: 'hero'`, `unlock` its doorway's middle. From Engine 0.16 part C
+  T6, an event the world raised about an entity (`world.emit(event, entity)`: `hit`, `kill`, `stun`
+  and the boss events) gets that entity's centre when it happened and `entity` its presented id,
+  so a skin can put particles and a hit-pause there. The place is kept beside the event object in
+  a `WeakMap` (`eventPlace(event)`, `world.ts`), never in it: the snapshot's events, and every
+  hash, are unchanged (adding fields to `TdEvent` would have moved them). Events with no place
+  (`room`, ...) carry none.
 - **Ids**: `TdPresentIds` (in `TdPresentState`) names a thing the room text placed
   `<room>/<kind>@<col,row>` and anything else `<kind>#<n>` in the order first seen, kept in a
   `WeakMap`, never in the world. Parts of one thing are `<id>/<part>` (`hero/sword`, `hero/held`,
@@ -169,7 +179,9 @@ What each old `render` method (removed in 0.4-8) drew, so a skin can reproduce i
 `walls-block-movement` (`tileSolid`), `doors-change-room` (`leaving`), `damage-reduces-hp`
 (`TdHero.hurt`), `keys-open-locked-doors` (`tryUnlock`) and (Engine 0.16 part C T5)
 `dash-crosses-pits` (`tileSolid`'s `pit` case for the `dash` mover; tested in `dash.test.ts`, and
-guarded in the dungeon sample by `runs/cross-the-chasm.run.json`). `TdWorldOptions.disabledRules`
+guarded in the dungeon sample by `runs/cross-the-chasm.run.json`) and (Engine 0.16 part C T6) the
+boss rules `boss-patterns`, `boss-phases`, `boss-hit-invuln` and `boss-seals-room` (below, under
+Bosses; guarded by `runs/beat-the-warden.run.json`). `TdWorldOptions.disabledRules`
 switches rules off (an unknown id throws) and the code guards each with
 `world.rules.isOn(id)`. A game's headless `createGame(content, seed, opts)` passes
 `opts.disabledRules` on; `pnpm cli mutants <run-file>` then reports the rules a run file does not
@@ -211,6 +223,68 @@ The one item that changes how the hero moves and fights, and opens new paths.
   the rule on, not with it off, not over a pit too wide, not without the item, the presented state
   and the snapshot field).
 - **Not yet**: `TopDownBot` does not dash; its pathing treats pits as walls.
+
+## Bosses (`boss.ts`, Engine 0.16 part C T6)
+
+A boss is declared purely in data: a room file's `boss` field (`BossDef`, checked by `bossSchema`
+in `schema.ts`; the field table is in `docs/reference/schemas.md`, `room`). The kit only steps it
+(`TdBoss`, a big `TdEnemy`); no game code.
+
+- **The form**: `id` (presented kind `boss:<id>`), `name` (the HUD's `bossName`), `at` (its
+  top-left cell; `parseRoom` checks its whole box stands on floor inside the walls), `size` (px,
+  `[32, 32]`), `hp`, `contact` (half hearts a touch takes, 2), `hitInvuln` (ticks after a hit,
+  30), `knockResist` (0 pushed like a monster .. 1 not at all, the default), `speed` (a charge's,
+  2), `flies`, `pattern` (steps, looped), `phases` (`[{ hp, pattern, speed? }]`, highest `hp`
+  first, each under the one before: at that hp or under, that pattern from its first step, with its
+  charge speed), `defeatTicks` (60) and `flag` (a world flag its defeat sets).
+- **Steps** (`do`): `idle { ticks }`; `telegraph { ticks, attack }` (stands, `boss-telegraph`);
+  `charge { speed?, ticks? }` (aimed at the hero's centre once, at its start; a wall, a sword
+  knockback or `ticks`, 90, ends it); `shoot { pattern: ring | spread, count, speed?, damage?, gap?,
+start?, aim?, jitter?, ticks? }` (`BossShot`s, kind `boss-shot`, flying over water and pits in
+  the 32 `BOSS_DIRS`, written-out constants so no trigonometry decides a path; a `ring` all round
+  from `start` or aimed with `aim`, a `spread` fanned `gap` steps apart round the hero's
+  direction); `slam { radius, damage?, ticks? }` (the hero within `radius` of its centre is hurt);
+  `summon { kinds, count?, max?, ticks? }` (spawn kinds, beside it on open floor: left, right,
+  below, above; never more than `max`, 3, alive; the world refuses at start a kind it has no
+  spawner for). A step starts on its first tick and lasts its `ticks` (1 for shoot, slam, summon).
+- **Randomness**: only a `shoot`'s `jitter` and a `summon` with several `kinds` draw, and only from
+  the world's seeded RNG; any other boss never draws, so it changes no RNG state.
+- **Hits** (`TdBoss.hurt`: the sword, a beam, a bomb): none while in its hit invulnerability or its
+  defeat sequence; else `hp` falls, `hitInvuln` starts, it is pushed by `knockResist` (a push ends a
+  charge), and at a phase's hp that phase starts. It takes no stun and drops no loot. At 0 hp its
+  defeat sequence starts: it stands, touches nothing, its minions and shots vanish; after
+  `defeatTicks` it is gone (a `kill`), the room remembers it beaten (`RoomState.bossDown`, so it
+  never comes back), its `flag` goes into `world.flags` and `boss-defeated` is raised.
+- **The sealed room**: the room condition `boss` (`Cond`) holds once the room's boss is beaten, so
+  `shutters: "boss"` keeps a boss room's shutter doors (`X`) shut from the moment the hero steps
+  in until it is down, then opens them (`met`, `shutters` events); `reveal: "boss"` shows hidden
+  pickups then. Either without a `boss` is a room error. A boss counts as one of the room's
+  enemies (`clear`).
+- **Events** (each with `boss`, its id, and its centre `x`, `y`; placed for presenters too):
+  `boss-telegraph` (`attack`, `ticks`), `boss-attack` (`attack`: `charge`, `shoot` with `pattern`
+  and `count`, `slam` with `radius`, `summon` with `count`), `boss-hit` (`hp`, `maxHp`, `phase`,
+  `invuln`: for a flash and a hit-pause; with a plain `hit` too), `boss-phase` (`phase`, `hp`),
+  `boss-defeat` (`ticks`: the sequence's length, for a shake and a flash) and `boss-defeated`
+  (`flag`). A skin attaches sounds, shakes, flashes, hit-pauses and particles to them (and may key
+  on a field: `boss-attack:attack=slam`).
+- **Present**: kind `boss:<id>`, its box its `size`, `anim.state` (`TdBoss.anim`) `idle`,
+  `telegraph-<attack>`, `charge`, `shoot`, `slam`, `summon`, `hurt` (the first `BOSS_HURT_TICKS`,
+  12, of a hit, `t` ticks into it) and `dying` (`t` ticks into the defeat), else `t` ticks into the
+  step; tags `boss`, `phase:<n>` and, in its hit invulnerability, `invuln` + `flashing` (`calm`
+  with reduce flashing). HUD status `bossHp`, `bossMaxHp`, `bossName`, `bossPhase`.
+- **Snapshot**: its entity entry's `boss` and, once set, `flags`; a world without a boss hashes as
+  before.
+- **Rules** (`rules.ts`): `boss-patterns` (off: it stands), `boss-phases` (off: phase 0 for good),
+  `boss-hit-invuln` (off: no invulnerability after a hit) and `boss-seals-room` (off: the `boss`
+  condition holds from the start, so the room never seals).
+- **Tests**: `boss.test.ts` on a tiny fixture boss (placement, presentation and status, the
+  pattern loop and telegraph, charge to a wall, ring and spread directions, shots hurting, slam in
+  and out of reach, summons beside it with `max` and seeded kinds, the refused spawn kind, a sword
+  hit with its placed event, flash and invulnerability, knockback by `knockResist`, phases and their
+  speed, the sealed room through the defeat sequence and its flag, each rule off, the same fight
+  from a seed and another from another, a room with no boss unchanged, and the schema and room
+  checks). The dungeon sample's `runs/beat-the-warden.run.json` guards every `boss-*` rule (until
+  its boss room of T9).
 
 ## Room files (`schema.ts`)
 
@@ -412,5 +486,5 @@ and the captured.
 
 Tests sit next to the code as `*.test.ts` (`topdown.test.ts`, `town-kit.test.ts`, `items.test.ts`,
 `beam.test.ts`, `schema.test.ts`, `snapshot.test.ts`, `rules.test.ts`, `present.test.ts`,
-`present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`, `dash.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
+`present-entities.test.ts`, `challenge.test.ts`, `mission-room.test.ts`, `dash.test.ts`, `boss.test.ts`) and run in Node with `pnpm test`. They drive the world with `ScriptedInput` and a
 fixed seed, so every run is repeatable.

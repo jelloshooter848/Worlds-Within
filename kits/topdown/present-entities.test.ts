@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { validate } from '@engine/core/content/validate';
 import { presentFrameSchema, type PresentEntity } from '@engine/core/present';
 import { BeamBurst, SwordBeam } from './beam';
+import { BossShot, TdBoss } from './boss';
 import { Bat, Knight, Projectile, Rock, Spitter } from './enemies';
 import { Chest, FloorSwitch, Pickup, Poof, PushBlock, TdEntity, Torch } from './entity';
 import { Bomb, Boomerang, Explosion } from './items';
@@ -54,6 +55,11 @@ const FACTORIES: Record<string, { make: () => TdEntity; kind: string }> = {
     make: () => new TdPerson(32, 32, { id: 'g', name: 'G', frames: 'guard' }),
     kind: 'person:guard',
   },
+  TdBoss: {
+    make: () => new TdBoss(64, 32, { id: 'ogre', at: [4, 2], hp: 3, pattern: [{ do: 'idle', ticks: 9 }] }),
+    kind: 'boss:ogre',
+  },
+  BossShot: { make: () => new BossShot(32, 32, 1, 0), kind: 'boss-shot' },
 };
 
 /** The kit's abstract entity bases: never placed themselves, so never presented. */

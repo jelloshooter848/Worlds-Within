@@ -20,6 +20,7 @@ import { Chest, FloorSwitch, Pickup, PushBlock, TdEnemy, Torch, type TdEntity } 
 import { DEFAULT_ITEMS, Inventory, circleHits, type TdItem } from './items';
 import { Bat, Knight, Projectile, Spitter } from './enemies';
 import { TdHero } from './hero';
+import { TdBoss, type BossDef } from './boss';
 import { TOPDOWN_RULES } from './rules';
 import {
   neighbourCell,
@@ -74,7 +75,32 @@ export type TdEvent =
   | { type: 'whirr' }
   | { type: 'dash'; dir: Dir; distance: number }
   | { type: 'dash-end' }
+  | { type: 'boss-telegraph'; boss: string; attack: string; ticks: number; x: number; y: number }
+  | { type: 'boss-attack'; boss: string; attack: string; x: number; y: number }
+  | { type: 'boss-hit'; boss: string; hp: number; maxHp: number; phase: number; invuln: number }
+  | { type: 'boss-phase'; boss: string; phase: number; hp: number }
+  | { type: 'boss-defeat'; boss: string; ticks: number }
+  | { type: 'boss-defeated'; boss: string; flag?: string }
   | { type: string; [k: string]: unknown };
+
+/**
+ * Where an event happened, for presentation only (Engine 0.16 part C T6): the entity it is about
+ * and its centre when it was raised. Kept beside the event object (a `WeakMap`), never in it, so
+ * a snapshot's events, and every state hash, stay as they were; `presentWorld` reads it to place
+ * `hit`, `kill`, `stun` and the boss events for particles and hit-pauses (`eventPlace`).
+ */
+export interface EventPlace {
+  entity: TdEntity;
+  x: number;
+  y: number;
+}
+
+const PLACES = new WeakMap<object, EventPlace>();
+
+/** Where an event the world raised happened (`TopDownWorld.emit`'s `at`), if it said. */
+export function eventPlace(e: object): EventPlace | undefined {
+  return PLACES.get(e);
+}
 
 /** What a room remembers between visits (for the whole run). */
 export interface RoomState {
@@ -93,6 +119,8 @@ export interface RoomState {
   blasted: Set<string>;
   /** Where the push blocks ended up once the room's plates were solved (else they reset). */
   blocks: Map<string, { x: number; y: number }> | null;
+  /** The room's boss is beaten (its defeat sequence ended): it stays gone. */
+  bossDown: boolean;
 }
 
 /** Builds an entity for a spawn character; null skips it. */
@@ -207,6 +235,11 @@ export class TopDownWorld {
   keys = 0;
   /** The dungeon's treasures found: its map, its compass (and a game's own, e.g. a relic). */
   readonly found = new Set<string>();
+  /**
+   * World flags (Engine 0.16 part C T6): a boss's `flag` once it is beaten (`bossDefeated`), for
+   * the game's end and run files (the snapshot's `flags`, listed only once there is one).
+   */
+  readonly flags = new Set<string>();
   transition: Transition | null = null;
   /**
    * After a slide the hero walks himself in through the doorway, as Link does in a Zelda
@@ -256,11 +289,28 @@ export class TopDownWorld {
     const at = start.start ?? { x: 7 * TILE, y: 5 * TILE };
     this.hero = opts.hero ? opts.hero(at.x, at.y, opts.maxHp) : new TdHero(at.x, at.y, opts.maxHp);
     this.room = start;
+    for (const room of dungeon.rooms.values()) this.checkBoss(room.id, room.def.boss);
     this.enterRoom(start);
   }
 
-  emit(e: TdEvent): void {
+  /** A boss's summons must name spawn kinds this world has. */
+  private checkBoss(room: string, boss: BossDef | undefined): void {
+    if (!boss) return;
+    for (const ph of [{ pattern: boss.pattern }, ...(boss.phases ?? [])])
+      for (const step of ph.pattern)
+        if (step.do === 'summon')
+          for (const kind of step.kinds)
+            if (!this.spawners[kind])
+              throw new Error(`room "${room}": boss "${boss.id}" summons "${kind}", which has no spawner`);
+  }
+
+  /**
+   * Raises an event. `at` (Engine 0.16 part C T6) is the entity it is about: its centre now is
+   * kept beside the event for presentation (`eventPlace`), never in it.
+   */
+  emit(e: TdEvent, at?: TdEntity): void {
     this.events.push(e);
+    if (at) PLACES.set(e, { entity: at, x: at.x + at.w / 2, y: at.y + at.h / 2 });
   }
 
   add(e: TdEntity): void {
@@ -280,6 +330,7 @@ export class TopDownWorld {
         lit: new Set(),
         blasted: new Set(),
         blocks: null,
+        bossDown: false,
       };
       this.states.set(id, s);
     }
@@ -313,6 +364,16 @@ export class TopDownWorld {
       e.key = `${s.col},${s.row}`;
       this.entities.push(e);
     }
+    const boss = room.def.boss;
+    if (boss) {
+      this.hadEnemies = true;
+      if (!cleared && !st.bossDown) {
+        const [col, row] = boss.at;
+        const b = new TdBoss(col * TILE, row * TILE, boss);
+        b.key = `${col},${row}`;
+        this.entities.push(b);
+      }
+    }
     this.syncHidden();
     this.shutWas = this.shuttersShut();
     this.emit({ type: 'room', id: room.id, first });
@@ -342,6 +403,9 @@ export class TopDownWorld {
         const t = es.filter((e): e is Torch => e instanceof Torch);
         return t.length > 0 && t.every((p) => p.lit);
       }
+      case 'boss':
+        // Off, a boss room never seals: its condition holds from the start.
+        return !!this.room.def.boss && (this.state().bossDown || !this.rules.isOn('boss-seals-room'));
     }
   }
 
@@ -723,7 +787,7 @@ export class TopDownWorld {
     const st = this.state();
     for (const e of this.entities)
       if (e instanceof FloorSwitch && e.kind === 'latch' && e.pressed && e.key) st.pressed.add(e.key);
-    for (const cond of ['clear', 'plates', 'switches', 'torches'] as const) {
+    for (const cond of ['clear', 'plates', 'switches', 'torches', 'boss'] as const) {
       if (st.met.has(cond) || !this.metNow(cond)) continue;
       const used = this.room.def.shutters === cond || this.room.def.reveal === cond;
       // 'clear' is remembered for every room that had enemies (they stay gone).
@@ -897,6 +961,19 @@ export class TopDownWorld {
     this.hero.x = x;
     this.hero.y = y;
     this.enterRoom(room);
+  }
+
+  /**
+   * A boss's defeat sequence ended (`TdBoss`): the room remembers it beaten (its `boss`
+   * condition is met, so `shutters: "boss"` open), its `flag` is set and `boss-defeated` raised.
+   */
+  bossDown(boss: TdBoss): void {
+    this.state().bossDown = true;
+    if (boss.def.flag) this.flags.add(boss.def.flag);
+    this.emit(
+      { type: 'boss-defeated', boss: boss.def.id, ...(boss.def.flag ? { flag: boss.def.flag } : {}) },
+      boss,
+    );
   }
 
   /** Living enemies in the room. */
