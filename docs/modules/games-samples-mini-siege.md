@@ -167,6 +167,22 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   Presentation only: no hash moved. `pnpm cli screenshot runs/delegated.run.json --backend three
 --allow-software-gl --tick 80` is the full-HD picture; `tests/browser/mini-siege-shots.test.ts`
   shoots the village, dawn and ridge in 3D twice each (byte-identical).
+- Engine 0.16 F7, **the 3D page**: the page opens in 3D (the shell's `default3d`; 2D where WebGL 2
+  is missing, or with `?backend=canvas2d` / `pixi`), the models preloaded, the render scale the
+  skin's capped to the window (`?scale=<n>`). The `RtsCamera` picks through the skin's ground
+  view (clicks, drags, right clicks, wheel and pinch zoom, edge and drag pan, arrow keys / WASD:
+  `SiegePlay`'s `camera`, `keyPan`). The `three` skin's HUD is the UI kit's in the new 3x5
+  `siege-tiny` font: resource chips, the title bar (the entry's title, `entryTitle` on every
+  frame, and the world clock with its day bar), objectives from the RTS kit's `key.<key>.*`
+  status (hold the hall, keep Hale alive, raise the tower; items shown by `when`), the Ashford
+  Vale minimap, the selected unit (`selectedName`, `selectedType`, `selectedRole`, its health)
+  and key hints. The mission flow is F5's screens in the picture (the card in `siege-tiny`,
+  `MissionScreens`' `card`), no DOM bar in 3D (the 2D page keeps it, with the save-code box).
+  The title shows the village behind it with a slow camera drift (`SiegePlay.drift`); the menus
+  are restyled to the HUD's colours. Music: the skin's layered `music.siege`, calm (`siege`) and
+  danger (`siege-danger`) while a mission is open or raiders are within 3 cells of the village's
+  buildings (`enemyNear`). Presentation only: no hash moved. `tests/browser/mini-siege-page.test.ts`
+  drives the 3D page with software GL (mouse, keys, gamepad, touch); the code box on the 2D page.
 
 ## Imports allowed
 
@@ -194,4 +210,5 @@ To play: `pnpm dev`, then `games/samples/mini-siege/` from the launcher.
 
 `?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
 with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
-`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).
+`?backend=canvas2d` keeps Canvas2D (Engine 0.16 T13b-4). Since Engine 0.16 F7 no query opens the
+page in 3D, Canvas2D where WebGL 2 is missing.

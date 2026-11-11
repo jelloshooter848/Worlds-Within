@@ -32,13 +32,15 @@ describe('game page discovery', () => {
 
   it('finds the mini siege sample under games/samples (Engine 0.11 T9)', () => {
     const siege = discoverGames(repoRoot).find((page) => page.dir === 'games/samples/mini-siege');
+    // Its page opens in 3D (Engine 0.16 F7); the launcher also links the 2D page.
     expect(siege).toEqual({
       dir: 'games/samples/mini-siege',
       name: 'games-samples-mini-siege',
       title: 'The mini siege',
+      alternates: [{ label: '2D', query: '?backend=canvas2d' }],
     });
     expect(gameListHtml(siege ? [siege] : [])).toContain(
-      '<a href="games/samples/mini-siege/">games/samples/mini-siege</a> <span>The mini siege</span>',
+      '<a href="games/samples/mini-siege/">games/samples/mini-siege</a> <a href="games/samples/mini-siege/?backend=canvas2d">2D</a> <span>The mini siege</span>',
     );
     expect(pageInputs(repoRoot)['games-samples-mini-siege']).toBe(
       join(repoRoot, 'games/samples/mini-siege/index.html'),

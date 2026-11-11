@@ -1,7 +1,7 @@
 import type { UiWidgetSpec } from '../ui';
 import { describe, expect, it } from 'vitest';
 import type { JsonObject, MissionStepRefusal } from '../headless';
-import { ActionState, type InputFrame } from '../input/input-manager';
+import { ActionState, frameTaps, type InputFrame } from '../input/input-manager';
 import type { MiniGame } from '../minigame';
 import type { MissionDef, MissionRecord } from '../missions';
 import { buildFont, menusSchema, type UiScreenFile } from '../ui';
@@ -11,6 +11,7 @@ import {
   briefingScreen,
   MissionScreens,
   missionCardScreen,
+  missionScreensScene,
   resultsScreen,
   windowBadgeScreen,
   type MissionScreenContext,
@@ -192,6 +193,32 @@ describe('the mission screens built from menus (Engine 0.16 F5)', () => {
     );
   });
 
+  it("builds the corner cards in the card look's width and font (Engine 0.16 F7)", () => {
+    const tiny = buildFont('tiny', {
+      cell: { w: 2, h: 3 },
+      baseline: 2,
+      glyphs: Object.fromEntries(
+        [...CHARS].filter((c) => c !== ' ').map((c) => [c, { rows: ['##', '##', '..'] }]),
+      ),
+    });
+    const ctx: MissionScreenContext = {
+      ...CTX,
+      fonts: (id) => (id === 'tiny' ? tiny : fonts(id)),
+      card: { width: 100, font: 'tiny' },
+    };
+    const facts = { hero: 'Hale', foes: 'ram', ticksLeft: 5 };
+    const raid = missionCardScreen(ctx, { def: RAID, open: false, canPlay: true, facts, ticksPerHour: 60 });
+    const card = raid.widgets.find((w) => w.id === 'card')!;
+    expect(card.w).toBe(100);
+    expect((card.x ?? 0) + (card.w ?? 0)).toBe(256 - 4);
+    expect(raid.style.font).toBe('tiny');
+    const big = missionCardScreen(CTX, { def: RAID, open: false, canPlay: true, facts, ticksPerHour: 60 });
+    expect(card.h!).toBeLessThan(big.widgets.find((w) => w.id === 'card')!.h!);
+    expect(
+      windowBadgeScreen(ctx, 'Window closes in 5 ticks', { x: 0, y: 100, w: 50, h: 50 })!.style.font,
+    ).toBe('tiny');
+  });
+
   it('cuts the results to the picture, counting the lines left out, and keeps the save code', () => {
     const changes = {
       ...noChanges(0, 100),
@@ -290,6 +317,26 @@ describe('MissionScreens over a MissionLaunch (Engine 0.16 F5)', () => {
     expect(launch.playing()).toBe(true);
     expect(screens.kind()).toBeNull();
     expect(screens.draws()).toEqual([]);
+  });
+
+  it('keeps a tap on a screen from the scene under it, and passes the others (Engine 0.16 F7)', () => {
+    const { screens, step, point } = flow();
+    step();
+    step();
+    const seen: { x: number; y: number }[][] = [];
+    const scene = missionScreensScene(
+      { update: (frame) => void seen.push(frameTaps(frame).map((t) => ({ x: t.x, y: t.y }))), render() {} },
+      screens,
+      () => ({ fill() {}, image() {}, glyph() {} }),
+    );
+    const keys = new ActionState();
+    const tap = (p: { x: number; y: number }) => {
+      keys.beginFrame(new Set(), [{ ...p, button: 'primary' as const }]);
+      scene.update(keys, [keys]);
+    };
+    tap({ x: 2, y: 2 });
+    tap(point('delegate'));
+    expect(seen).toEqual([[{ x: 2, y: 2 }], []]);
   });
 
   it('focuses by the hovering mouse; taps off the card are left to the page', () => {

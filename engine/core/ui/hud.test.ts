@@ -231,6 +231,44 @@ describe('SkinHud (Engine 0.16 T6)', () => {
   });
 });
 
+describe('flat panels and shown-when tests (Engine 0.16 F7)', () => {
+  it('draws a panel with a colour and no frame as a box at its alpha, then its border', () => {
+    const hud = new SkinHud(
+      skin([{ as: 'panel', x: 2, y: 3, w: 10, h: 6, color: '#123', alpha: 0.5, border: '#fff' }]),
+      { fonts: FONTS },
+    );
+    expect(hud.usesUi).toBe(true);
+    const draws = hud.layout(input({}));
+    expect(draws[0]).toEqual({ kind: 'fill', x: 2, y: 3, w: 10, h: 6, color: '#123', alpha: 0.5 });
+    expect(draws.slice(1)).toHaveLength(4);
+    expect(draws.slice(1).every((d) => d.kind === 'fill' && d.color === '#fff')).toBe(true);
+    // Opaque without an alpha, and no border without one.
+    const plain = new SkinHud(skin([{ as: 'panel', x: 0, y: 0, w: 4, h: 4, color: '#123' }]), {
+      fonts: FONTS,
+    });
+    expect(plain.layout(input({}))).toEqual([{ kind: 'fill', x: 0, y: 0, w: 4, h: 4, color: '#123' }]);
+  });
+
+  it('draws an item only while its `when` holds, a classic one too; a missing key never holds', () => {
+    const items: SkinFile['hud'] = [
+      { as: 'panel', x: 0, y: 0, w: 4, h: 4, color: '#0f0', when: { status: 'alive', eq: 1 } },
+      { as: 'panel', x: 0, y: 0, w: 4, h: 4, color: '#f00', when: { status: 'fate', eq: 'captured' } },
+      { as: 'text', x: 0, y: 8, font: 'small', format: 'Hp', when: { status: 'hp', gte: 0 } },
+    ];
+    const hud = new SkinHud(skin(items), { fonts: FONTS });
+    const colours = (status: SkinHudInput['status']) =>
+      hud.layout(input(status)).map((d) => (d.kind === 'fill' ? d.color : d.kind));
+    expect(colours({ alive: 1, hp: 3 })).toEqual(['#0f0', 'glyph', 'glyph']);
+    expect(colours({ alive: 1, fate: 'captured' })).toEqual(['#0f0', '#f00']);
+    expect(colours({ alive: 0 })).toEqual([]);
+    const classic = skin([
+      { status: 'coins', as: 'icon', x: 1, y: 2, frame: 'coin', when: { status: 'coins', gt: 2 } },
+    ]);
+    expect(layoutHud(classic, { coins: 1 }, SIZES)).toEqual([]);
+    expect(layoutHud(classic, { coins: 3 }, SIZES)).toHaveLength(1);
+  });
+});
+
 describe('the clock widget (Engine 0.16 F4)', () => {
   const clock = (day: number, hour: number, minute = 0) => clockStatus(worldClock({ day, hour, minute }, 0));
 

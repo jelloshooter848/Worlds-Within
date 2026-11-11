@@ -42,10 +42,24 @@ export interface BackendLink {
 }
 
 /**
- * The page's toggle to the other backend: its label and a relative link (`./` for 2D, the game's
- * default 2D backend, so the link works under any base path). Both 2D backends link to 3D.
+ * Whether a page URL's query names the 3D backend itself (`?backend=three`), rather than getting
+ * it as the game's default (Engine 0.16 F7).
  */
-export function otherBackendLink(backend: PageBackend): BackendLink {
+export function queryNamesThree(search: string): boolean {
+  return new URLSearchParams(search).get('backend') === 'three';
+}
+
+/**
+ * The page's toggle to the other backend: its label and a relative link (`./` for the game's
+ * default, so the link works under any base path). Both 2D backends link to 3D. For a game that
+ * opens in 3D by default (`default3d`, Engine 0.16 F7: the mini siege), 3D links to
+ * `./?backend=canvas2d` and 2D to `./`.
+ */
+export function otherBackendLink(backend: PageBackend, default3d = false): BackendLink {
+  if (default3d)
+    return backend === 'three'
+      ? { label: '2D', href: `./${CANVAS2D_QUERY}`, title: 'Play in 2D' }
+      : { label: '3D', href: './', title: 'Play in 3D (Three.js backend)' };
   return backend === 'three'
     ? { label: '2D', href: './', title: 'Play in 2D' }
     : { label: '3D', href: `./${THREE_QUERY}`, title: 'Play in 3D (Three.js backend)' };

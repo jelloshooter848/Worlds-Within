@@ -140,6 +140,7 @@ export {
   HUD_FALLBACK_SIZE,
   HUD_GLYPH_ADVANCE,
   hudGlyphs,
+  hudItemShown,
   isClassicHudType,
   layoutHud,
   type HudDraw,

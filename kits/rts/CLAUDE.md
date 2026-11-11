@@ -68,8 +68,8 @@ false, request, code, error }` with `not_offered` (the kit's, without asking the
   randomness through the `Rng` it is given; nearest picks by squared distance, ties to the lowest id.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
 camera?, missions?, events?, state? })`, below. `RtsPresentState` (map tracker, animation starts),
-  `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`,
-  `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
+  `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`, `keyStatus`,
+  `threatStatus` (Engine 0.16 F7), `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
   (`{ id, title, event?, marker? }`; a `MissionDef` fits). `marker` is an entity id or (Engine
   0.15 T7, gap M25) a scenario key, the mission file's `marker`, resolved through the options'
   `keys` (the world's key table: `MissionHost.worldKeys()`); a key the table lacks is ignored.
@@ -181,7 +181,16 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   before): `offers` (how many offered) and `offer` (the first one's title, else its mission id),
   `mission` (the first open mission's title), `missionCommit` (its commit tick) and `missionLeft`
   (world ticks to it), and `captive` (Engine 0.13 T8: the first captured person's name, for a
-  captive marker in the HUD; `snapshot.test.ts` checks both).
+  captive marker in the HUD; `snapshot.test.ts` checks both). Engine 0.16 F7 (a 3D page's HUD
+  objectives and selected-unit panel; presentation only, no hash moved): with one thing
+  selected, `selectedName` (a named person's name, else its type or building kind),
+  `selectedType` and `selectedRole` (a named person's role, else ''); for every key of the
+  options' `keys` (`keyStatus`), `key.<key>.alive` (1 while its entity is in the world and, for a
+  named person, not dead), `key.<key>.hp` / `.maxHp` while it is on the map, `.progress`
+  (0-100) for a building with a construction, `.fate` and `.name` for a named person; and
+  `enemyNear` (`threatStatus`: the fewest cells, Chebyshev, from an enemy unit to one of the
+  player's buildings; left out when either side has none), for a danger music layer. Tested in
+  `present.test.ts`.
 - **Camera**: the given hint (`RtsCamera.hint()`, from `RtsControls.presentOptions`), else the
   map's centre.
 - **Events**: passed through (the world snapshot carries none; `RtsEventTracker` reads them off

@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { mustLoad } from '@engine/core/content/game-content';
 import { readGameFiles } from '@engine/core/node/game-files';
+import { ScriptedInput } from '@engine/core/input/scripted-input';
+import { statusMatches, type MixStatus } from '@engine/core/audio/mix';
 import { contentDecor, skinSet, type PresentMap } from '@engine/core/present';
+import { contentFonts, SkinHud } from '@engine/core/ui';
 import { loadMiniSiege, siegeMap } from './content';
 import { createGame, starts } from './headless';
 import { siegeFrames } from './picture';
@@ -91,5 +94,70 @@ describe('the mini siege in 3D low-poly', () => {
     expect(looks('unit:soldier')).toEqual(['frozen', 'hero']);
     for (const kind of ['unit:raider', 'unit:soldier', 'unit:ram'])
       expect(skin.labels?.[kind], kind).toBeDefined();
+  });
+});
+
+// The 3D page's HUD and music (Engine 0.16 F7): the `three` skin's HUD is the UI kit's (resource
+// chips, the title bar with the entry's title and the world clock, the objectives, the minimap,
+// the selected unit and the key hints), every status key it reads is on the siege's frames, the
+// watchtower's objective shows only where there is one, and the layered song `siege` turns to its
+// danger layer while a mission is open.
+
+const NO_INPUT = new ScriptedInput({ steps: [] });
+
+describe('the 3D page’s HUD and music (Engine 0.16 F7)', () => {
+  const hud = new SkinHud(skin, { fonts: contentFonts(content) });
+  const status = (scenario: string, ticks = 0) => {
+    const game = createGame(content, 11, { start: { entry: scenario } });
+    while (game.sim.tick < ticks) game.step(NO_INPUT);
+    return siegeFrames(content).next(game, []).status;
+  };
+  const texts = (s: Record<string, unknown>) =>
+    hud
+      .layout({ status: s as never, frameSize: () => ({ w: 8, h: 8 }), map: null, entities: [], clock: 0 })
+      .filter((d) => d.kind === 'glyph')
+      .map((d) => (d as { ch: string }).ch)
+      .join('');
+
+  it('is laid out by the UI kit and reads keys the frames carry', () => {
+    expect(hud.usesUi).toBe(true);
+    const s = status('village');
+    for (const key of ['stock.gold', 'units', 'enemyUnits', 'captives', 'entryTitle', 'clock.text'])
+      expect(s, key).toHaveProperty([key]);
+    expect(s).toMatchObject({
+      entryTitle: 'The siege',
+      'key.hall.alive': 1,
+      'key.hall.hp': 400,
+      'key.captain.fate': 'active',
+      'key.watchtower.progress': 0,
+    });
+    for (const item of skin.hud ?? [])
+      if (item.when !== undefined && !item.when.status.startsWith('key.') && item.when.status !== 'selected')
+        expect(s, item.when.status).toHaveProperty([item.when.status]);
+  });
+
+  it('shows the title, the clock and the objectives; the watchtower only where there is one', () => {
+    const siege = texts(status('village'));
+    expect(siege).toContain('Thesiege');
+    expect(siege).toContain('Day214:00');
+    expect(siege).toContain('Holdthehall');
+    expect(siege).toContain('Raisethetower');
+    const dawn = texts(status('dawn'));
+    expect(dawn).toContain('Thedawnassault');
+    expect(dawn).toContain('Day305:30');
+    expect(dawn).not.toContain('Raisethetower');
+  });
+
+  it('plays the danger layer while a mission is open, the calm one before', () => {
+    const music = skin.music?.['siege'];
+    expect(music?.layers).toEqual({ calm: 'siege', danger: 'siege-danger' });
+    const mix = (s: Record<string, unknown>) =>
+      music!.mix!.find((r) => r.when === undefined || statusMatches(r.when, s as MixStatus))!.layers;
+    expect(mix(status('village'))).toEqual({ calm: 1, danger: 0 });
+    const game = createGame(content, 11);
+    while (game.sim.tick < 40) game.step(NO_INPUT);
+    game.mission({ mission: 'sabotage', action: 'open' });
+    game.step(NO_INPUT);
+    expect(mix(siegeFrames(content).next(game, []).status)).toMatchObject({ danger: 1 });
   });
 });

@@ -88,6 +88,17 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   `shell.test.ts` (the query, `pageBackend`, the default, the fallback on a reason and on a throw
   with fake factories) and `tests/browser/pixi-pages.test.ts` (each wired page on both backends
   with the same state hash, and the fallback with WebGL taken away).
+- **Opening in 3D** (Engine 0.16 F7): `default3d: true` (with a `three` display) makes 3D the
+  backend when the query names none. `startDisplay(backend, displays, canvas, shell, { fallback
+})`: when the boot gives a `fallback` (the `default2d`, only when 3D is the default, not when
+  `?backend=three` asked for it: `queryNamesThree`), a 3D display that cannot start (a reason, a
+  rejection or a throw) is replaced by that 2D backend's on a fresh copy of the canvas, with the
+  reason as a `console.warn`. The toggle is set after the display starts, from what runs:
+  `showBackendToggle(backend, id, default3d)` and `otherBackendLink(backend, default3d)` link 3D
+  as `./` and 2D as `./?backend=canvas2d` for such a game; `showDisplayMessage(canvas, text,
+default3d)` the same. Tested in `shell.test.ts` (3D by default, `?backend=canvas2d` over it, the
+  fallback on a reason and on a throw, the reason shown when the query asked for 3D, the links).
+  The mini siege's page uses it.
 - **The audio mixer** (Engine 0.16 T8, `../audio/mixer.ts`): with `audio` the boot makes one
   `Mixer` over the page's `AudioManager` (`booted.mixer`). `BootAudio` takes `mix` (the skin's
   `music` section: layered songs; `music` naming one plays its layers) and `seed` (sound
@@ -285,7 +296,13 @@ changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes
   buildings) as far as the picture has room, `and N more` for the rest, the save code,
   **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 304 px wide with
   the changes down two columns). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
-  `CARD_MARGIN`, `CARD_WIDTH`.
+  `CARD_MARGIN`, `CARD_WIDTH`. Engine 0.16 F7: the context's (and `MissionScreens`') `card`
+  (`MissionCardLook { width?, font? }`) sets the corner cards' widest and their font (text,
+  chips, buttons and the window badge; `cardContext` swaps it into the menus for them), so the
+  mini siege's 3D page draws its card in its HUD's small font. And `missionScreensScene` hands
+  the scene under the screens its frame without the taps a screen covers (`covers`, taken
+  before the screens update), so a round started by a tap on Play never takes, or records, that
+  tap as its own input.
   `MissionScreens<G>({ launch, menus, screen, fonts, frameSize?, keys?(), facts?(game, def),
 changes?(game, sinceTick), ticksPerHour?, uiKeys?, pointer?, onSound?, words? })`: `kind()` is
   `results` (the entry ended), `briefing` (held), `outcome` (a record committed since the last

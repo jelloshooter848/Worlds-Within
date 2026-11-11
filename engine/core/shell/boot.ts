@@ -31,7 +31,13 @@ import { levelChoices, paintUi, type FontLookup, type MenusSpec, type UiFrameSiz
 import type { RunStart } from '../headless';
 import { GameMenus, type MenuSettingsHost } from './game-menus';
 import { SceneStack, type Scene } from '../scene';
-import { backendFromQuery, otherBackendLink, type Page2dBackend, type PageBackend } from './backend-choice';
+import {
+  backendFromQuery,
+  otherBackendLink,
+  queryNamesThree,
+  type Page2dBackend,
+  type PageBackend,
+} from './backend-choice';
 import { PageDebugHook, type MenusView, type PageDebug } from './debug';
 import { ShellTransitions, type TransitionRequest } from './transitions';
 import { UiScene } from './ui-scene';
@@ -211,6 +217,14 @@ export interface BrowserBootOptions {
    */
   default2d?: Page2dBackend;
   /**
+   * Open in 3D when the query names no backend (Engine 0.16 F7, the mini siege; needs a `three`
+   * display). When the 3D display cannot start then (no WebGL 2: its factory returns a reason,
+   * rejects or throws) the page runs on the `default2d` backend instead, with the reason on the
+   * console; a page asked for 3D by `?backend=three` still shows the reason. The toggle's 2D link
+   * is then `./?backend=canvas2d`, its 3D link `./`.
+   */
+  default3d?: boolean;
+  /**
    * The game's first scene, given the stack (to push mini games), the display and the page's
    * extra inputs (`page.pointer`, when `pointer` is on).
    */
@@ -325,8 +339,11 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
   const search = opts.search ?? window.location.search;
   const manual = opts.manual === true || manualFromQuery(search);
   const record = recordFromQuery(search);
-  const wanted = pageBackend(backendFromQuery(search, opts.default2d ?? 'canvas2d'), opts.displays);
-  showBackendToggle(opts.displays.three ? wanted : null, opts.toggleId ?? 'backend');
+  const default2d = opts.default2d ?? 'canvas2d';
+  const default3d = opts.default3d === true && opts.displays.three !== undefined;
+  const wanted = pageBackend(backendFromQuery(search, default3d ? 'three' : default2d), opts.displays);
+  // A 3D page the game opens by default falls back to 2D; one the query asked for says why not.
+  const fallback = default3d && !queryNamesThree(search) ? default2d : null;
   const audio = opts.audio ? new AudioManager() : null;
   const mixer = audio && opts.audio ? shellMixer(audio, opts.audio) : null;
   const hitPause = new HitPause();
@@ -336,9 +353,12 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       if (!manual) hitPause.request(ticks);
     },
   };
-  const { backend, display, canvas } = await startDisplay(wanted, opts.displays, pageCanvas, shell);
+  const { backend, display, canvas } = await startDisplay(wanted, opts.displays, pageCanvas, shell, {
+    fallback,
+  });
+  showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend', default3d);
   if (typeof display === 'string') {
-    showDisplayMessage(canvas, display);
+    showDisplayMessage(canvas, display, default3d);
     return null;
   }
   const transitions = new ShellTransitions({
@@ -817,42 +837,59 @@ export async function startDisplay(
   displays: PageDisplays,
   canvas: HTMLCanvasElement,
   shell: DisplayShell,
+  opts: { fallback?: Page2dBackend | null } = {},
 ): Promise<StartedDisplay> {
-  if (backend === 'pixi' && displays.pixi) {
-    let why: string;
+  /** Tries a WebGL display; its reason (a returned sentence, a rejection or a throw) when it cannot start. */
+  const attempt = async (make: DisplayFactory): Promise<StartedDisplay | string> => {
     try {
-      const display = await displays.pixi(canvas, shell);
-      if (typeof display !== 'string') return { backend, display, canvas };
-      why = display;
+      const display = await make(canvas, shell);
+      return typeof display === 'string' ? display : { backend, display, canvas };
     } catch (error) {
-      why = error instanceof Error ? error.message : String(error);
+      return error instanceof Error ? error.message : String(error);
     }
-    console.warn(`PixiJS could not start, drawing with Canvas2D instead: ${why}`);
-    const fresh = canvas.cloneNode(false) as HTMLCanvasElement;
-    canvas.replaceWith(fresh);
-    return { backend: 'canvas2d', display: await displays.canvas2d(fresh, shell), canvas: fresh };
+  };
+  /** A fresh copy of the canvas in its place: one that gave out a WebGL context cannot give a 2D one. */
+  const fresh = () => {
+    const copy = canvas.cloneNode(false) as HTMLCanvasElement;
+    canvas.replaceWith(copy);
+    return copy;
+  };
+  if (backend === 'pixi' && displays.pixi) {
+    const started = await attempt(displays.pixi);
+    if (typeof started !== 'string') return started;
+    console.warn(`PixiJS could not start, drawing with Canvas2D instead: ${started}`);
+    const copy = fresh();
+    return { backend: 'canvas2d', display: await displays.canvas2d(copy, shell), canvas: copy };
   }
   const three = backend === 'three' && displays.three !== undefined;
+  if (three && opts.fallback) {
+    // Engine 0.16 F7: a game that opens in 3D by default runs in 2D where 3D cannot start.
+    const started = await attempt(displays.three!);
+    if (typeof started !== 'string') return started;
+    const to = pageBackend(opts.fallback, displays);
+    console.warn(`The 3D view could not start, drawing in 2D (${to}) instead: ${started}`);
+    return startDisplay(to, displays, fresh(), shell);
+  }
   const make = three ? displays.three! : displays.canvas2d;
   return { backend: three ? 'three' : 'canvas2d', display: await make(canvas, shell), canvas };
 }
 
 /** Sets the toggle link (`#backend`) to the other backend, or hides it (`backend` null). */
-export function showBackendToggle(backend: PageBackend | null, id = 'backend'): void {
+export function showBackendToggle(backend: PageBackend | null, id = 'backend', default3d = false): void {
   const link = document.getElementById(id) as HTMLAnchorElement | null;
   if (!link) return;
   if (backend === null) {
     link.hidden = true;
     return;
   }
-  const other = otherBackendLink(backend);
+  const other = otherBackendLink(backend, default3d);
   link.textContent = other.label;
   link.href = other.href;
   link.title = other.title;
 }
 
 /** Shows why the picture cannot start (no WebGL), with a way back to 2D, instead of a blank page. */
-export function showDisplayMessage(canvas: HTMLCanvasElement, text: string): void {
+export function showDisplayMessage(canvas: HTMLCanvasElement, text: string, default3d = false): void {
   canvas.hidden = true;
   const box = document.createElement('div');
   box.id = 'message';
@@ -860,7 +897,7 @@ export function showDisplayMessage(canvas: HTMLCanvasElement, text: string): voi
   const line = document.createElement('p');
   line.textContent = text;
   const back = document.createElement('a');
-  back.href = otherBackendLink('three').href;
+  back.href = otherBackendLink('three', default3d).href;
   back.textContent = 'Play in 2D instead';
   box.append(line, back);
   document.body.append(box);

@@ -3,7 +3,8 @@ import { DEFAULT_TICKS_PER_HOUR } from '@engine/core/clock';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { PointerGesture } from '@engine/core/input/pointer-logic';
-import { RtsCamera } from '@engine/core/present';
+import type { InputFrame } from '@engine/core/input/input-manager';
+import { RtsCamera, type CameraPoint, type GroundCamera } from '@engine/core/present';
 import type { SceneStack } from '@engine/core/scene';
 import { CampaignSession } from '@engine/core/shell/campaign-session';
 import type { HostDrawer, HostScene } from '@engine/core/shell/host-scene';
@@ -68,7 +69,24 @@ export interface SiegePlayOptions {
   stepsPerTick?: number;
   /** Hold each campaign entry at tick 0 until `begin` (default true, gap M34). */
   hold?: boolean;
+  /**
+   * The battle's camera (Engine 0.16 F7): the 3D page's ground view (`skinGroundCamera` of the
+   * `three` skin) and its starting zoom (the skin's `camera.zoom`), so picking goes through the
+   * same projection the picture is drawn with. Left out: the flat 2D view at zoom 1.
+   */
+  camera?: { ground: GroundCamera | null; zoom?: number };
 }
+
+/** World px a held arrow (or WASD) key pans the battle per loop step, at zoom 1. */
+export const KEY_PAN_SPEED = 3;
+/** The zoom range from the starting zoom (the whole map in view) to this many times it. */
+export const ZOOM_RANGE = { out: 1, in: 2.5 } as const;
+/**
+ * The title's slow camera drift (presentation only): closer in than play starts (`zoom` times the
+ * starting zoom, so the view has room to move over the map), round the start by `radius` world px,
+ * one turn every `period` loop steps.
+ */
+export const TITLE_DRIFT = { zoom: 1.9, radius: 110, period: 2400 } as const;
 
 export class SiegePlay {
   /** The engine's mission-launch flow over the game. */
@@ -76,6 +94,8 @@ export class SiegePlay {
   readonly session: CampaignSession;
   camera!: RtsCamera;
   controls!: RtsControls;
+  /** Where the camera starts for the entry played now, and its zoom (the title's drift goes round it). */
+  private home: CameraPoint & { zoom: number } = { x: 0, y: 0, zoom: 1 };
 
   constructor(private readonly opts: SiegePlayOptions) {
     const { content } = opts;
@@ -167,14 +187,55 @@ export class SiegePlay {
     const cols = view.terrain?.width ?? 1;
     const rows = view.terrain?.height ?? 1;
     const hall = view.buildings.find((b) => b.faction === PLAYER);
+    const camera = this.opts.camera;
+    const zoom = camera?.zoom ?? 1;
     this.camera = new RtsCamera({
       view: this.opts.content.manifest.screen,
       area: { x: 0, y: 0, w: cols * RTS_TILE_SIZE, h: rows * RTS_TILE_SIZE },
       ...(hall && {
         centre: { x: (hall.x + hall.w / 2 + 6) * RTS_TILE_SIZE, y: (hall.y + hall.h / 2) * RTS_TILE_SIZE },
       }),
+      ...(camera && {
+        ground: camera.ground,
+        zoom,
+        minZoom: zoom * ZOOM_RANGE.out,
+        maxZoom: zoom * ZOOM_RANGE.in,
+      }),
     });
+    this.home = { ...this.camera.centre(), zoom: this.camera.zoom };
     this.controls = new RtsControls(PLAYER, this.camera, RTS_TILE_SIZE, game.rts.rules);
+  }
+
+  /**
+   * Pans the battle by the held arrow (or WASD) keys, faster zoomed out (Engine 0.16 F7). The page
+   * calls it every loop step while no round is played and no mission screen takes the keys.
+   */
+  keyPan(frame: InputFrame): void {
+    const dx = (frame.held('right') ? 1 : 0) - (frame.held('left') ? 1 : 0);
+    const dy = (frame.held('down') ? 1 : 0) - (frame.held('up') ? 1 : 0);
+    if (dx === 0 && dy === 0) return;
+    const step = KEY_PAN_SPEED / this.camera.zoom;
+    const c = this.camera.centre();
+    this.camera.centreOn(c.x + dx * step, c.y + dy * step);
+  }
+
+  /**
+   * The title screen's slow drift (Engine 0.16 F7, presentation only): the camera goes round its
+   * starting point, `steps` loop steps in; 0 puts it back.
+   */
+  drift(steps: number): void {
+    const { home } = this;
+    if (steps === 0) {
+      this.camera.zoomTo(home.zoom);
+      this.camera.centreOn(home.x, home.y);
+      return;
+    }
+    const turn = (steps / TITLE_DRIFT.period) * 2 * Math.PI;
+    this.camera.zoomTo(home.zoom * TITLE_DRIFT.zoom);
+    this.camera.centreOn(
+      home.x + Math.sin(turn) * TITLE_DRIFT.radius,
+      home.y + (1 - Math.cos(turn)) * TITLE_DRIFT.radius * 0.25,
+    );
   }
 
   /** The pointer's gestures this loop step as orders; the last order's refusal ('' when taken). */

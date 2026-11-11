@@ -3,6 +3,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
+import { campaignRun } from '@engine/core/campaign';
 import { clockStatus } from '@engine/core/clock';
 import { missionHostEvents } from '@engine/core/mission-host';
 import {
@@ -101,12 +102,20 @@ export function siegeSource(
   return hostedSource(battle, {
     round: (game) => game.roundFrame(),
     events: missionHostEvents,
+    // The world clock (Engine 0.16 F4) and the campaign entry's title (F7: the HUD's title bar).
     status: (game) => {
       const clock = game.clock();
-      return clock && clockStatus(clock);
+      const title = campaignRun(game.campaign.def, game.campaign.save).entry?.title;
+      return {
+        ...(clock ? clockStatus(clock) : {}),
+        ...(title !== undefined && { [ENTRY_TITLE_STATUS]: title }),
+      };
     },
   });
 }
+
+/** The status key holding the campaign entry's title (`The siege`), for the HUD's title bar. */
+export const ENTRY_TITLE_STATUS = 'entryTitle';
 
 /** The game's missions as the RTS presentation reads them (titles, events, `marker` keys: gap M25). */
 export function siegeMissionInfo(content: ContentBundle): RtsMissionInfo[] {

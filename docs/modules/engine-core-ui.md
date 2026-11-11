@@ -41,7 +41,10 @@ Import from `@engine/core/ui` (`index.ts`).
 - Panels: `nineSlice(frame, insets, box, fill?)`, `sliceInsets`, `panelDraws`.
 - Drawing contract: `UiDraw` (`UiFill`, `UiImage`, `UiGlyph`), `UiPainter`, `paintUi`.
 - Widgets: `barRatio`, `barFill`, `CounterRoll`, `minimapDraws`, `minimapScale`, `SkinHud`
-  (`usesUi`, `layout(input)`), `hudValueText`.
+  (`usesUi`, `layout(input)`), `hudValueText`. Engine 0.16 F7: a `panel` item with a `color`
+  and no `frame` is a flat box (`alpha`, `border`), and any HUD item's `when` (`{ status, eq?,
+ne?, lt?, lte?, gt?, gte? }`, the mixer's status test) draws it only while the test holds
+  (`hudItemShown` in `@engine/core/present`, so classic items honour it too).
 
 - Menus (T9): `menusSchema`, `TITLE_ITEMS`, `PAUSE_ITEMS`, `SETTINGS_ITEMS`, `MENU_LABELS`,
   `titleScreen`, `pauseScreen`, `settingsScreen`, `controlsScreen`, `controlRows`, `menuHint`,

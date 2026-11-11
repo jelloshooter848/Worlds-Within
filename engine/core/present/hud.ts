@@ -1,4 +1,5 @@
-import { HUD_CLASSIC_TYPES, type SkinFile } from './skin';
+import { statusMatches, type MixStatus } from '../audio/mix';
+import { HUD_CLASSIC_TYPES, type SkinFile, type SkinHudItem } from './skin';
 import type { DeepReadonly, PresentFrame } from './types';
 
 /**
@@ -70,7 +71,7 @@ export function layoutHud(
   for (const item of skin.hud ?? []) {
     // Engine 0.16 T6's widgets (`bar`, `counter`, `panel`, `minimap`) are `engine/core/ui`'s.
     if (!isClassicHudType(item.as) || item.status === undefined) continue;
-    if (!Object.hasOwn(status, item.status)) continue;
+    if (!Object.hasOwn(status, item.status) || !hudItemShown(item, status)) continue;
     const value = status[item.status]!;
     if (item.as === 'number' || item.as === 'text') {
       const font = item.font ?? opts.font ?? DEFAULT_HUD_FONT;
@@ -121,4 +122,15 @@ export function hudGlyphs(item: HudText): HudSprite[] {
 /** Whether a HUD item type is one `layoutHud` draws (the types before Engine 0.16 T6's widgets). */
 export function isClassicHudType(as: string): as is (typeof HUD_CLASSIC_TYPES)[number] {
   return (HUD_CLASSIC_TYPES as readonly string[]).includes(as);
+}
+
+/**
+ * Whether a HUD item shows on this status (Engine 0.16 F7): true without a `when`, else whether
+ * its status test holds (a key the status lacks never holds).
+ */
+export function hudItemShown(
+  item: DeepReadonly<Pick<SkinHudItem, 'when'>>,
+  status: DeepReadonly<PresentFrame['status']>,
+): boolean {
+  return item.when === undefined || statusMatches(item.when, status as MixStatus);
 }

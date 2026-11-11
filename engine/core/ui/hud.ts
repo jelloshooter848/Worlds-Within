@@ -5,6 +5,7 @@ import {
   HUD_CLOCK_TOKENS,
   HUD_VALUE_TOKEN,
   hudGlyphs,
+  hudItemShown,
   isClassicHudType,
   layoutHud,
   type DeepReadonly,
@@ -109,6 +110,7 @@ export class SkinHud {
   layout(input: SkinHudInput): UiDraw[] {
     const out: UiDraw[] = [];
     (this.skin.hud ?? []).forEach((item, i) => {
+      if (!hudItemShown(item, input.status)) return;
       if (!this.isUiItem(item)) out.push(...this.classic(item, input));
       else out.push(...this.widget(item, i, input));
     });
@@ -231,6 +233,12 @@ export class SkinHud {
   }
 
   private panel(item: DeepReadonly<SkinHudItem>, box: Box, input: SkinHudInput): UiDraw[] {
+    if (item.frame === undefined && item.color !== undefined) {
+      // A flat panel (Engine 0.16 F7): a box in its colour (at its `alpha`), then its border.
+      const fill: UiFill = { kind: 'fill', ...box, color: item.color };
+      if (item.alpha !== undefined && item.alpha < 1) fill.alpha = item.alpha;
+      return [fill, ...(item.border !== undefined ? borderDraws(box, item.border) : [])];
+    }
     if (item.frame === undefined || item.slice === undefined) return [];
     const sprite = this.sprite({ sheet: item.sheet, frame: item.frame });
     const size = sprite && input.frameSize(sprite.sheet, sprite.palette, sprite.frame);

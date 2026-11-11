@@ -18,6 +18,7 @@ import {
   checkSoundRange,
   skinMusicSchema,
   soundVariationFields,
+  statusCompareSchema,
   type SoundCue,
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
@@ -755,7 +756,9 @@ const hudItem = z
       .describe(
         'the font for numbers, text and counters: a `font` content file (Engine 0.16), else a sprite file with one frame per character',
       ),
-    color: color.exactOptional().describe("text colour, or a bar's fill (a `font` file's text only)"),
+    color: color
+      .exactOptional()
+      .describe("text colour, a bar's fill, or a flat panel's colour (a `font` file's text only)"),
     shadow: color.exactOptional().describe("a one-px drop shadow in this colour (a `font` file's text)"),
     outline: color.exactOptional().describe("a one-px outline in this colour (a `font` file's text)"),
     align: z
@@ -794,7 +797,9 @@ const hudItem = z
       .exactOptional()
       .describe("a bar's full value: a number or another status key (`maxHp`)"),
     back: color.exactOptional().describe("a bar's empty part, or a minimap's background"),
-    border: color.exactOptional().describe('a one-px border round a bar or minimap (when it has no `panel`)'),
+    border: color
+      .exactOptional()
+      .describe('a one-px border round a bar, a minimap or a flat panel (when it has no `panel`)'),
     low: z
       .strictObject({
         below: z.number().min(0).max(1).describe('the share of `max` at or below which the bar is low'),
@@ -825,6 +830,17 @@ const hudItem = z
       .describe(
         "a `clock`'s day bar under its text: the day from midnight to midnight with a marker at the time now (Engine 0.16 F4)",
       ),
+    when: statusCompareSchema
+      .exactOptional()
+      .describe(
+        'draw the item only while this status test holds (`{ status, eq?, ne?, lt?, lte?, gt?, gte? }`; a key the frame lacks never holds; Engine 0.16 F7)',
+      ),
+    alpha: z
+      .number()
+      .min(0)
+      .max(1)
+      .exactOptional()
+      .describe("a flat `panel`'s opacity (default 1; Engine 0.16 F7)"),
   })
   .superRefine((v, ctx) => {
     const need = (field: string, why: string) =>
@@ -834,7 +850,9 @@ const hudItem = z
         message: `"${v.as}" needs ${why}`,
         params: { code: 'missing_field' },
       });
-    if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined) {
+    // A `panel` is a nine-slice of `frame`, or (Engine 0.16 F7) a flat box in `color`.
+    const flatPanel = v.as === 'panel' && v.frame === undefined && v.color !== undefined;
+    if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined && !flatPanel) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
     const statusFree =
@@ -856,7 +874,14 @@ const hudItem = z
       if (v.h === undefined) need('h', 'a height');
     }
     if (v.as === 'bar' && v.max === undefined) need('max', 'a max (a number or a status key)');
-    if (v.as === 'panel' && v.slice === undefined) need('slice', 'its slice insets');
+    if (v.as === 'panel' && v.slice === undefined && !flatPanel) need('slice', 'its slice insets');
+    if (v.alpha !== undefined && !flatPanel)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['alpha'],
+        message: '"alpha" goes with a flat "panel" (a "color" and no "frame") only',
+        params: { code: 'bad_field' },
+      });
     if (v.as === 'counter' && v.font === undefined) need('font', 'a font');
     if (v.tween?.ease !== undefined && !isEaseName(v.tween.ease)) {
       ctx.addIssue({

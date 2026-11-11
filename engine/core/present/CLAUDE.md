@@ -436,7 +436,10 @@ skin (content/skins/<backend>.json)`.
   and the 3D backend as textured quads, so the HUD sits in the same place in both. From Engine
   0.16 T6 `layoutHud` skips the UI kit's widget types (`isClassicHudType`); a skin with any UI
   item is laid out whole by `engine/core/ui`'s `SkinHud` (which calls `layoutHud` for its
-  classic items), one without draws exactly as before.
+  classic items), one without draws exactly as before. Engine 0.16 F7: every `hud` item may have
+  a `when` (`statusCompareSchema` from `../audio/mix`), and `hudItemShown(item, status)` is
+  whether it holds (true without one); `layoutHud` and `SkinHud` skip an item that is not shown.
+  A `panel` may be flat (`color`, optional `alpha` and `border`, no `frame` or `slice`).
 - Tests for the audio fields: `skin-audio.test.ts` (Engine 0.16 T8).
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 

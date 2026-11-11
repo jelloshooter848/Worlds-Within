@@ -25,7 +25,11 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 (`Selection`), `commands` (`commandAt`, `buildCommand`,
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`
-(`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`),
+(`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`;
+from Engine 0.16 F7 the status also names the one selected thing, `selectedName`, `selectedType`,
+`selectedRole`, gives each scenario key's health, progress, fate and life, `keyStatus`:
+`key.<key>.hp`, `.maxHp`, `.progress`, `.fate`, `.name`, `.alive`, and how near the enemy is to
+the player's buildings, `threatStatus`: `enemyNear`, for a 3D page's HUD objectives and music),
 `controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders; from
 Engine 0.16 F2 through a ground-view `RtsCamera` too, a box then selecting what is drawn inside
 the picture rectangle, `Selection.boxWhere`),

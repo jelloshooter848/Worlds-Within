@@ -367,6 +367,8 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     status: {
       ...presentStatus(view, player, [...selected], opts.placing ?? null),
       ...missionStatus(view, opts.missions ?? []),
+      ...keyStatus(view, opts.keys ?? {}),
+      ...threatStatus(view, player),
     },
   };
   if (map !== null) frame.map = state ? state.maps.next(map) : map;
@@ -435,10 +437,66 @@ export function missionStatus(
 }
 
 /**
+ * The HUD values of the world's keyed entities (Engine 0.16 F7: a HUD's objectives), for every
+ * key of `keys` in key order: `key.<key>.alive` (1 while its entity is in the world and, for a
+ * named person, not dead; else 0); while it is on the map, `key.<key>.hp` and `key.<key>.maxHp`,
+ * and for a building with a construction, `key.<key>.progress` (0-100); for a named person,
+ * `key.<key>.fate` (`active`, `injured`, `captured`, `freed`, `dead`) and `key.<key>.name`.
+ * Presentation only, as every status value.
+ */
+export function keyStatus(
+  view: RtsView,
+  keys: Readonly<Record<string, number>>,
+): Record<string, PresentStatusValue> {
+  const status: Record<string, PresentStatusValue> = {};
+  for (const key of Object.keys(keys).sort()) {
+    const id = keys[key]!;
+    const at = `key.${key}`;
+    const unit = view.units.find((u) => u.id === id);
+    const building = view.buildings.find((b) => b.id === id);
+    const named = view.named.find((n) => n.id === id);
+    const here = unit ?? building;
+    if (here !== undefined) {
+      status[`${at}.hp`] = here.hp;
+      status[`${at}.maxHp`] = here.maxHp;
+    }
+    const c = building?.construction ?? null;
+    if (c !== null) status[`${at}.progress`] = c.done ? 100 : Math.floor((c.progress * 100) / c.work);
+    if (named !== undefined) {
+      status[`${at}.fate`] = named.fate;
+      status[`${at}.name`] = named.name;
+    }
+    const alive = named !== undefined ? named.fate !== 'dead' : here !== undefined;
+    status[`${at}.alive`] = alive ? 1 : 0;
+  }
+  return status;
+}
+
+/**
+ * How close the enemy is (Engine 0.16 F7: a music layer or a warning on the HUD):
+ * `enemyNear`, the fewest cells (Chebyshev) from any enemy unit to any of the player's buildings,
+ * left out when either side has none.
+ */
+export function threatStatus(view: RtsView, player: string): Record<string, PresentStatusValue> {
+  const own = view.buildings.filter((b) => b.faction === player);
+  const foes = view.units.filter((u) => u.faction !== null && u.faction !== player);
+  let near = Infinity;
+  for (const u of foes)
+    for (const b of own) {
+      const dx = Math.max(b.x - u.x, 0, u.x - (b.x + b.w - 1));
+      const dy = Math.max(b.y - u.y, 0, u.y - (b.y + b.h - 1));
+      near = Math.min(near, Math.max(dx, dy));
+    }
+  return near === Infinity ? {} : { enemyNear: near };
+}
+
+/**
  * The HUD values: `faction`, `tick`, `stock.<item>` (the player's stockpile), `units` and
  * `enemyUnits` (living counts), `heroes`, `captives` (the player's named people captured) and
  * `captive` (the first one's name, only while there is one; Engine 0.13 T8), `selected` (how many), `selection` (the one type or
- * building kind selected, `mixed`, or ''), `selectedHp` / `selectedMaxHp` (one thing selected),
+ * building kind selected, `mixed`, or ''), `selectedHp` / `selectedMaxHp` (one thing selected;
+ * from Engine 0.16 F7 also `selectedName`, a named person's name else its type or kind,
+ * `selectedType` and `selectedRole`, a named person's role else ''),
  * `queue` (units queued at the selected own buildings), `training` (the first of them, or '') and
  * `trainingProgress` (0-100), `trainButtons` (the unit types the selection can train, space
  * separated) and `placing` (the building being placed, or '').
@@ -470,6 +528,13 @@ export function presentStatus(
   if (one !== null) {
     status['selectedHp'] = one.hp;
     status['selectedMaxHp'] = one.maxHp;
+    // Engine 0.16 F7: who it is, for a HUD's selected-unit panel (a named person's name and role,
+    // else its type or building kind).
+    const kind = units[0] !== undefined ? (units[0].type ?? 'unit') : buildings[0]!.kind;
+    const named = view.named.find((n) => n.id === one.id);
+    status['selectedName'] = named?.name ?? kind;
+    status['selectedType'] = kind;
+    status['selectedRole'] = named?.role ?? '';
   }
   const own = buildings.filter((b) => b.faction === player && b.producer !== null);
   const queued = own.flatMap((b) => b.producer!.queue);

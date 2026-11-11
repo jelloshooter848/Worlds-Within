@@ -1,5 +1,5 @@
 import type { Action } from '../input/actions';
-import { frameTaps, type InputFrame } from '../input/input-manager';
+import { frameTaps, type FrameTap, type InputFrame } from '../input/input-manager';
 import type { PointerGesture } from '../input/pointer-logic';
 import type { Renderer } from '../gfx/renderer';
 import type { MissionDef, MissionRecord } from '../missions';
@@ -114,6 +114,24 @@ export interface MissionScreenContext {
   /** The player's key names by action, for the hint lines (none: no hint). */
   keys?: Partial<Record<Action, string>>;
   words?: Partial<MissionScreenWords>;
+  /**
+   * The corner cards' look (Engine 0.16 F7): their widest (default `CARD_WIDTH`) and the font of
+   * their text, chips, buttons and window badge (default the menus' `font`), so a page with a
+   * small HUD font keeps the card small.
+   */
+  card?: MissionCardLook;
+}
+
+/** How the corner cards (the mission card, the choice list, the mission result) look. */
+export interface MissionCardLook {
+  width?: number;
+  font?: string;
+}
+
+/** The context a corner card is built in: the menus' font swapped for the card's own. */
+function cardContext(ctx: MissionScreenContext): MissionScreenContext {
+  const font = ctx.card?.font;
+  return font === undefined ? ctx : { ...ctx, menus: { ...ctx.menus, font } };
 }
 
 /** The card for one mission. */
@@ -219,13 +237,14 @@ function moved(widgets: UiWidgetSpec[], dx: number, dy: number): UiWidgetSpec[] 
 
 /** A card in the picture's bottom-right corner: a panel with `fill`'s widgets and a menu under them. */
 function cornerCard(
-  ctx: MissionScreenContext,
+  outer: MissionScreenContext,
   fill: (col: Column) => void,
   items: UiMenuItemSpec[],
   direction: 'vertical' | 'horizontal',
 ): UiScreenFile {
+  const ctx = cardContext(outer);
   const p = paletteOf(ctx.menus);
-  const w = Math.min(ctx.screen.width - 2 * CARD_MARGIN, CARD_WIDTH);
+  const w = Math.min(ctx.screen.width - 2 * CARD_MARGIN, ctx.card?.width ?? CARD_WIDTH);
   const pad = p.padding;
   const col = new Column(ctx, pad, pad, w - 2 * pad);
   fill(col);
@@ -292,7 +311,8 @@ export function missionChoiceScreen(ctx: MissionScreenContext, defs: readonly Mi
 }
 
 /** The window badge over the card's top-right corner (`Window closes in 136 ticks`); null without a window. */
-export function windowBadgeScreen(ctx: MissionScreenContext, text: string, card: Box): UiScreenFile | null {
+export function windowBadgeScreen(outer: MissionScreenContext, text: string, card: Box): UiScreenFile | null {
+  const ctx = cardContext(outer);
   const font = ctx.fonts(ctx.menus.font);
   if (text === '' || font === null) return null;
   const p = paletteOf(ctx.menus);
@@ -515,6 +535,8 @@ export interface MissionScreensOptions<G extends LaunchGame> {
   pointer?: { cursor(): UiPoint | null } | null;
   onSound?(id: string): void;
   words?: Partial<MissionScreenWords>;
+  /** The corner cards' width and font (Engine 0.16 F7; default `CARD_WIDTH` and the menus' font). */
+  card?: MissionCardLook;
 }
 
 /** One built screen and what it was built from (to rebuild only when that changes). */
@@ -550,6 +572,7 @@ export class MissionScreens<G extends LaunchGame> {
       fonts: this.opts.fonts,
       ...(keys !== undefined && { keys }),
       ...(this.opts.words !== undefined && { words: this.opts.words }),
+      ...(this.opts.card !== undefined && { card: this.opts.card }),
     };
   }
 
@@ -787,8 +810,12 @@ export function missionScreensScene<G extends LaunchGame>(
   let painted: { r: Renderer; painter: UiPainter } | null = null;
   return {
     update(input, inputs) {
+      // A tap on a screen is the screen's (Engine 0.16 F7): the scene under it never sees it, so a
+      // round started by a tap on Play does not take (or record) that tap as its own input.
+      const taps = frameTaps(input);
+      const kept = taps.filter((t) => !screens.covers(t));
       screens.update(input);
-      scene.update(input, inputs);
+      scene.update(kept.length === taps.length ? input : withTaps(input, kept), inputs);
     },
     render(r) {
       scene.render(r);
@@ -796,5 +823,20 @@ export function missionScreensScene<G extends LaunchGame>(
       paintUi(screens.draws(), painted.painter);
     },
     headless: () => scene.headless?.() ?? null,
+  };
+}
+
+/** An input frame the same as `input` but for its taps (Engine 0.16 F7). */
+function withTaps(input: InputFrame, taps: readonly FrameTap[]): InputFrame {
+  return {
+    held: (a) => input.held(a),
+    pressed: (a) => input.pressed(a),
+    released: (a) => input.released(a),
+    bufferedJump: (n) => input.bufferedJump(n),
+    consumeJumpBuffer: () => input.consumeJumpBuffer(),
+    get dirX() {
+      return input.dirX;
+    },
+    taps: () => taps,
   };
 }

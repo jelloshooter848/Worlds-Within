@@ -39,7 +39,11 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   `startDisplay`). Wired on the rts-skirmish, tower-defense, dungeon and mini-siege samples, the
   fx lab, the platformer lab and Hopper's Way (opt-in; the rts-skirmish and tower-defense pages
   default to PixiJS from Engine 0.16 T13b-8, `?backend=canvas2d` forcing Canvas2D); the platformer sample gets the option
-  when its own track merges. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
+  when its own track merges. Engine 0.16 F7: `default3d: true` opens the page in 3D when the query
+  names no backend, falling back to `default2d` on a fresh canvas when the 3D display cannot start
+  there (no WebGL 2; the reason on the console), while `?backend=three` still shows the reason; the
+  toggle then links 2D as `./?backend=canvas2d` and 3D as `./` (`otherBackendLink(backend,
+default3d)`, `queryNamesThree`). The mini siege's page opens this way. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
   gestures (tap, box, pan, zoom) are made per game step beside the `InputFrame`; the scene factory
   gets it as `scene(stack, display, page)` with `page.pointer`. `touchPad: false` hides the touch
   pad (an RTS page). Both are off/on as before by default, so existing games are unchanged.
@@ -185,12 +189,14 @@ onGame?, status?, campaign?: { session, entryOver, save, summary, hold? } })`: `
 - `mission-screens.ts` (Engine 0.16 F5): the mission flow in the picture with the UI kit, styled
   by `game.json`'s `menus`: `briefingScreen`, `missionCardScreen`, `missionChoiceScreen`,
   `windowBadgeScreen`, `outcomeScreen`, `resultsScreen` (each a `ui` file), and
-  `MissionScreens({ launch, menus, screen, fonts, facts?, changes?, ticksPerHour?, pointer?, keys? })`:
+  `MissionScreens({ launch, menus, screen, fonts, facts?, changes?, ticksPerHour?, pointer?, keys?,
+card? })` (`card`, Engine 0.16 F7, `MissionCardLook { width?, font? }`: the corner cards' width
+  and font, so a page with a small HUD font keeps the card small):
   `kind()` (`briefing`, `card`, `outcome`, `results` or null), `update(input)` (keys, gamepad,
   mouse and taps to `launch.press`), `covers(p)`, `uncovered(gestures)`, `draws()`;
   `missionScreensScene(scene, screens, painter)` draws it over the page's scene. The facts and
   changes come from `engine/sim` (`missionCardFacts`, `worldChanges`). Pure. See
-  `games/samples/mini-siege/main.ts` (`?ui=picture`).
+  `games/samples/mini-siege/main.ts` (its 3D page, and `?ui=picture` in 2D).
 
 Example (`games/platformer-lab/main.ts`):
 

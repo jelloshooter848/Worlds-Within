@@ -869,102 +869,534 @@
   },
   "hud": [
     {
+      "as": "panel",
+      "x": 3,
+      "y": 3,
+      "w": 28,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "counter",
       "status": "stock.gold",
-      "as": "icon",
-      "x": 4,
-      "y": 4,
-      "frame": "icon-gold"
+      "x": 5,
+      "y": 5,
+      "frame": "icon-gold",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
     },
     {
-      "status": "stock.gold",
-      "as": "number",
-      "x": 14,
-      "y": 4,
-      "font": "siege-font"
+      "as": "panel",
+      "x": 33,
+      "y": 3,
+      "w": 22,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
     },
     {
+      "as": "counter",
       "status": "units",
-      "as": "icon",
-      "x": 52,
-      "y": 4,
-      "frame": "icon-units"
+      "x": 35,
+      "y": 5,
+      "frame": "icon-units",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
     },
     {
-      "status": "units",
-      "as": "number",
-      "x": 62,
-      "y": 4,
-      "font": "siege-font"
+      "as": "panel",
+      "x": 57,
+      "y": 3,
+      "w": 22,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
     },
     {
+      "as": "counter",
       "status": "enemyUnits",
-      "as": "icon",
-      "x": 88,
-      "y": 4,
-      "frame": "icon-enemy"
+      "x": 59,
+      "y": 5,
+      "frame": "icon-enemy",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
     },
     {
-      "status": "enemyUnits",
-      "as": "number",
-      "x": 98,
-      "y": 4,
-      "font": "siege-font"
+      "as": "panel",
+      "x": 81,
+      "y": 3,
+      "w": 20,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
     },
     {
-      "status": "missionLeft",
-      "as": "icon",
-      "x": 124,
-      "y": 4,
-      "frame": "icon-time"
+      "as": "counter",
+      "status": "captives",
+      "x": 83,
+      "y": 5,
+      "frame": "icon-captive",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
     },
     {
-      "status": "missionLeft",
-      "as": "number",
-      "x": 134,
-      "y": 4,
-      "font": "siege-font"
+      "as": "panel",
+      "x": 104,
+      "y": 2,
+      "w": 118,
+      "h": 28,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
     },
     {
-      "status": "offer",
-      "as": "icon",
-      "x": 4,
-      "y": 168,
-      "frame": "icon-torch"
-    },
-    {
-      "status": "offer",
       "as": "text",
-      "x": 14,
-      "y": 168,
-      "font": "siege-font"
+      "status": "entryTitle",
+      "x": 104,
+      "y": 5,
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000",
+      "w": 118,
+      "align": "center",
+      "outline": "#000000"
     },
     {
-      "status": "mission",
-      "as": "icon",
-      "x": 4,
-      "y": 168,
-      "frame": "icon-time"
+      "as": "clock",
+      "x": 108,
+      "y": 16,
+      "w": 110,
+      "h": 11,
+      "font": "siege-tiny",
+      "format": "Day {day} {time} {phase}",
+      "color": "#b0a080",
+      "shadow": "#000000",
+      "dayBar": {
+        "h": 3,
+        "back": "#203050",
+        "bands": [
+          {
+            "hour": 0,
+            "color": "#1c2440"
+          },
+          {
+            "hour": 5,
+            "color": "#c07858"
+          },
+          {
+            "hour": 7,
+            "color": "#e8c070"
+          },
+          {
+            "hour": 17,
+            "color": "#e88848"
+          },
+          {
+            "hour": 20,
+            "color": "#1c2440"
+          }
+        ],
+        "marks": [6, 12, 18],
+        "markColor": "#000000",
+        "marker": "#fcfcfc"
+      }
     },
     {
-      "status": "mission",
+      "as": "panel",
+      "x": 226,
+      "y": 2,
+      "w": 91,
+      "h": 45,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
       "as": "text",
-      "x": 14,
-      "y": 168,
-      "font": "siege-font"
+      "x": 230,
+      "y": 5,
+      "format": "OBJECTIVES",
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000",
+      "outline": "#000000"
     },
     {
-      "status": "captive",
-      "as": "icon",
-      "x": 4,
-      "y": 14,
-      "frame": "icon-captive"
+      "as": "panel",
+      "x": 230,
+      "y": 17,
+      "w": 5,
+      "h": 5,
+      "color": "#3c3020"
     },
     {
-      "status": "captive",
+      "as": "panel",
+      "x": 231,
+      "y": 18,
+      "w": 3,
+      "h": 3,
+      "color": "#58c040",
+      "when": {
+        "status": "key.hall.alive",
+        "eq": 1
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 18,
+      "w": 3,
+      "h": 3,
+      "color": "#e03020",
+      "when": {
+        "status": "key.hall.alive",
+        "eq": 0
+      }
+    },
+    {
       "as": "text",
-      "x": 14,
-      "y": 14,
-      "font": "siege-font"
+      "x": 238,
+      "y": 17,
+      "format": "Hold the hall",
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000"
+    },
+    {
+      "as": "bar",
+      "status": "key.hall.hp",
+      "max": "key.hall.maxHp",
+      "x": 292,
+      "y": 18,
+      "w": 21,
+      "h": 3,
+      "color": "#58c040",
+      "back": "#302010",
+      "low": {
+        "below": 0.4,
+        "color": "#e03020"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 230,
+      "y": 26,
+      "w": 5,
+      "h": 5,
+      "color": "#3c3020",
+      "when": {
+        "status": "key.captain.alive",
+        "gte": 0
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 27,
+      "w": 3,
+      "h": 3,
+      "color": "#58c040",
+      "when": {
+        "status": "key.captain.alive",
+        "eq": 1
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 27,
+      "w": 3,
+      "h": 3,
+      "color": "#e03020",
+      "when": {
+        "status": "key.captain.fate",
+        "eq": "captured"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 27,
+      "w": 3,
+      "h": 3,
+      "color": "#e03020",
+      "when": {
+        "status": "key.captain.alive",
+        "eq": 0
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 26,
+      "format": "Keep Hale alive",
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "when": {
+        "status": "key.captain.fate",
+        "ne": "captured"
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 26,
+      "format": "Free Captain Hale",
+      "font": "siege-tiny",
+      "color": "#f08060",
+      "shadow": "#000000",
+      "when": {
+        "status": "key.captain.fate",
+        "eq": "captured"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 230,
+      "y": 35,
+      "w": 5,
+      "h": 5,
+      "color": "#3c3020",
+      "when": {
+        "status": "key.watchtower.progress",
+        "gte": 0
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 36,
+      "w": 3,
+      "h": 3,
+      "color": "#58c040",
+      "when": {
+        "status": "key.watchtower.progress",
+        "eq": 100
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 35,
+      "format": "Raise the tower",
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "when": {
+        "status": "key.watchtower.progress",
+        "gte": 0
+      }
+    },
+    {
+      "as": "bar",
+      "status": "key.watchtower.progress",
+      "max": 100,
+      "x": 300,
+      "y": 36,
+      "w": 13,
+      "h": 3,
+      "color": "#e8b040",
+      "back": "#302010",
+      "when": {
+        "status": "key.watchtower.progress",
+        "lt": 100
+      }
+    },
+    {
+      "as": "panel",
+      "x": 3,
+      "y": 119,
+      "w": 54,
+      "h": 58,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "text",
+      "x": 6,
+      "y": 122,
+      "format": "ASHFORD VALE",
+      "font": "siege-tiny",
+      "color": "#f0c060",
+      "shadow": "#000000"
+    },
+    {
+      "as": "minimap",
+      "x": 6,
+      "y": 131,
+      "w": 48,
+      "h": 32,
+      "scale": 1,
+      "back": "#4c8c34",
+      "border": "#000000",
+      "tiles": {
+        "0": "#8c8478",
+        "1": "#b88048",
+        "2": "#5c9c3c"
+      },
+      "dots": [
+        {
+          "tag": "own",
+          "color": "#4c7cfc",
+          "size": 2
+        },
+        {
+          "tag": "enemy",
+          "color": "#f03828",
+          "size": 2
+        },
+        {
+          "kind": "mission-offer",
+          "color": "#fce468",
+          "size": 2
+        }
+      ]
+    },
+    {
+      "as": "text",
+      "x": 6,
+      "y": 166,
+      "format": "Drag: pan",
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000"
+    },
+    {
+      "as": "panel",
+      "x": 60,
+      "y": 148,
+      "w": 80,
+      "h": 29,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedName",
+      "x": 64,
+      "y": 151,
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      },
+      "outline": "#000000"
+    },
+    {
+      "as": "text",
+      "status": "selectedType",
+      "x": 64,
+      "y": 161,
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedRole",
+      "x": 104,
+      "y": 161,
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "bar",
+      "status": "selectedHp",
+      "max": "selectedMaxHp",
+      "x": 64,
+      "y": 169,
+      "w": 50,
+      "h": 4,
+      "color": "#58c040",
+      "back": "#302010",
+      "border": "#000000",
+      "low": {
+        "below": 0.35,
+        "color": "#e03020"
+      },
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedHp",
+      "x": 118,
+      "y": 168,
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "panel",
+      "x": 234,
+      "y": 166,
+      "w": 83,
+      "h": 11,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "text",
+      "x": 237,
+      "y": 169,
+      "format": "Esc pause  RMB order",
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000"
     }
   ],
   "labels": {
@@ -972,13 +1404,13 @@
       {
         "as": "text",
         "format": "Battering ram",
-        "font": "siege-small",
+        "font": "siege-tiny",
         "color": "#fcfcfc",
         "outline": "#000000",
-        "anchor": "bottom",
+        "anchor": "top",
         "offset": {
           "x": 0,
-          "y": 10
+          "y": -6
         }
       },
       {
@@ -1001,13 +1433,13 @@
       {
         "as": "text",
         "format": "Catapult",
-        "font": "siege-small",
+        "font": "siege-tiny",
         "color": "#fcfcfc",
         "outline": "#000000",
         "anchor": "bottom",
         "offset": {
           "x": 0,
-          "y": 20
+          "y": 5
         }
       },
       {
@@ -1140,7 +1572,7 @@
         },
         "as": "text",
         "format": "Watchtower {value}%",
-        "font": "siege-small",
+        "font": "siege-tiny",
         "color": "#fce0a8",
         "outline": "#000000",
         "offset": {
@@ -3618,5 +4050,44 @@
         "outline": "#000000"
       }
     ]
+  },
+  "music": {
+    "siege": {
+      "layers": {
+        "calm": "siege",
+        "danger": "siege-danger"
+      },
+      "fade": 45,
+      "mix": [
+        {
+          "when": {
+            "status": "missionLeft",
+            "gte": 0
+          },
+          "layers": {
+            "calm": 0.6,
+            "danger": 1
+          },
+          "fade": 30
+        },
+        {
+          "when": {
+            "status": "enemyNear",
+            "lte": 3
+          },
+          "layers": {
+            "calm": 0.6,
+            "danger": 1
+          },
+          "fade": 30
+        },
+        {
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          }
+        }
+      ]
+    }
   }
 }

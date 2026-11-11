@@ -43,7 +43,9 @@ Import from `@engine/core/present` (`index.ts`).
   From Engine 0.16 T6 a skin's `hud` also takes the UI kit's widgets (`bar`, `counter`, `panel`,
   `minimap`, styled text in a font file; `HUD_WIDGET_TYPES`), laid out by `@engine/core/ui`'s
   `SkinHud`; `layoutHud` skips them, and the skin check reports `missing_glyph` for HUD text a
-  font file lacks.
+  font file lacks. Engine 0.16 F7: any item's `when` (a status test, the mixer's
+  `statusCompareSchema`) shows it only while the test holds (`hudItemShown`), and a `panel` may
+  be a flat `color` box (`alpha`, `border`).
 - Skins (`skin.ts`): `skinSchema` and the `skin` content kind (`SKIN_KIND`, one of the engine's
   kinds), a per-backend JSON file mapping each entity kind to a sprite (2D) or mesh (3D), each tile
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file

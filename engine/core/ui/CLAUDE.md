@@ -199,6 +199,16 @@ check) is in `engine/core/present/skin.ts`: a `format`'s characters must all be 
 (`missing_glyph` at `hud.<i>.font`), and a counter's or styled text's font must be a font or a
 sprite file (`missing_ref`). Sprite fonts (the classic 8x8 digits) are not checked for glyphs.
 
+Engine 0.16 F7 (the mini siege's 3D HUD):
+
+- `hud.ts`: a `panel` item with a `color` and no `frame` is a flat box in that colour (its
+  `alpha` below 1 on the fill, then a one-px `border` when given); `SkinHud.layout` skips every
+  item whose `when` does not hold on the status (`hudItemShown`, `@engine/core/present`'s
+  `hud.ts`: the audio mixer's `statusMatches`; a key the status lacks never holds), and
+  `layoutHud` does the same for classic items. The schema (`present/skin.ts`): `when`
+  (`statusCompareSchema`), `alpha` (a flat panel only, `bad_field` otherwise), a flat panel needs
+  no `frame` or `slice`. Tested in `hud.test.ts`.
+
 ## Rules
 
 - Pure: `engine/core/ui/**` is on `PURE_CORE` (`config/layers.js`). No DOM, clock or

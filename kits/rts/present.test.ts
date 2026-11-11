@@ -8,7 +8,15 @@ import {
   type PresentFrame,
 } from '@engine/core/present';
 import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
-import { presentWorld, RTS_DEPTH, RtsPresentState, rtsMissionInfo, unitAnim } from './present';
+import {
+  keyStatus,
+  presentWorld,
+  RTS_DEPTH,
+  RtsPresentState,
+  rtsMissionInfo,
+  threatStatus,
+  unitAnim,
+} from './present';
 import { readWorld } from './snapshot';
 
 const SIZE = { width: 320, height: 240 };
@@ -154,6 +162,50 @@ describe('presentWorld', () => {
     expect(presentWorld(view, { faction: 'red', size: SIZE, selection: [5, 6] }).status['selection']).toBe(
       'mixed',
     );
+  });
+
+  it('names the one selected unit: a named person by name and role, else its type (Engine 0.16 F7)', () => {
+    const one = (id: number) => presentWorld(view, { faction: 'red', size: SIZE, selection: [id] }).status;
+    expect(one(7)).toMatchObject({ selectedName: 'Ada', selectedType: 'soldier', selectedRole: 'hero' });
+    expect(one(6)).toMatchObject({ selectedName: 'soldier', selectedType: 'soldier', selectedRole: '' });
+    expect(one(3)).toMatchObject({ selectedName: 'hall', selectedType: 'hall', selectedRole: '' });
+    expect(presentWorld(view, { faction: 'red', size: SIZE, selection: [5, 6] }).status).not.toHaveProperty(
+      'selectedName',
+    );
+  });
+
+  it("gives each scenario key's health, progress, fate and whether it lives (Engine 0.16 F7)", () => {
+    const keys = { hall: 3, ada: 7, works: 8, gone: 99 };
+    expect(keyStatus(view, keys)).toEqual({
+      'key.ada.hp': 15,
+      'key.ada.maxHp': 30,
+      'key.ada.fate': 'active',
+      'key.ada.name': 'Ada',
+      'key.ada.alive': 1,
+      'key.gone.alive': 0,
+      'key.hall.hp': 400,
+      'key.hall.maxHp': 400,
+      'key.hall.alive': 1,
+      'key.works.hp': 1,
+      'key.works.maxHp': 200,
+      'key.works.progress': 50,
+      'key.works.alive': 1,
+    });
+    // On the frame, beside the other HUD values; none without a key table.
+    expect(presentWorld(view, { faction: 'red', size: SIZE, keys }).status).toMatchObject({
+      'key.hall.hp': 400,
+    });
+    const bare = presentWorld(view, { faction: 'red', size: SIZE }).status;
+    expect(Object.keys(bare).some((k) => k.startsWith('key.'))).toBe(false);
+  });
+
+  it("says how near the enemy is to the side's buildings, in cells (Engine 0.16 F7)", () => {
+    // Blue's soldiers at (6, 4) and (7, 4); red's hall covers (0, 0)-(1, 1).
+    expect(threatStatus(view, 'red')).toEqual({ enemyNear: 5 });
+    // Red's units at (2, 1), (1, 3) and (2, 3); blue's barracks covers (6, 0)-(7, 1).
+    expect(threatStatus(view, 'blue')).toEqual({ enemyNear: 4 });
+    expect(threatStatus(view, 'green')).toEqual({});
+    expect(presentWorld(view, { faction: 'red', size: SIZE }).status['enemyNear']).toBe(5);
   });
 
   it('counts anim t from when a state began, with a state', () => {

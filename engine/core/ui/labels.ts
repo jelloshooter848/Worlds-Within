@@ -48,7 +48,7 @@ export type LabelProject = (anchor: NonNullable<SkinLabel['anchor']>) => { x: nu
 
 /**
  * The draw items and views of an entity's labels: each label with a value (a text label with a
- * `format` needs none) is placed centred on its anchor's projected point plus its `offset`; labels
+ * `format` and no `from` needs none; one whose `from` is missing shows nothing) is placed centred on its anchor's projected point plus its `offset`; labels
  * on one anchor stack in list order, away from the box (`top` upward, `bottom` downward, `center`
  * upward from the centre). A label whose anchor `project` hides is skipped, and so is one with no
  * font for its text. Positions are whole picture px so pixel fonts stay crisp.
@@ -141,7 +141,9 @@ function labelItem(
     if (!Number.isFinite(ticks)) return null;
     shown = timerText(ticks);
   } else {
-    if (value === undefined && label.format === undefined) return null;
+    // A label reading a value the entity or frame lacks shows nothing, `format` or not (Engine
+    // 0.16 F7: a built watchtower's `progress:` label went away with its tag).
+    if (value === undefined && (label.format === undefined || label.from !== undefined)) return null;
     shown = value === undefined ? '' : String(value);
   }
   const text = label.format === undefined ? shown : label.format.split(HUD_VALUE_TOKEN).join(shown);

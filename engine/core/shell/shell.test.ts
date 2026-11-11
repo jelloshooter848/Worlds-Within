@@ -67,6 +67,12 @@ describe('backend choice', () => {
     expect(otherBackendLink('canvas2d')).toMatchObject({ label: '3D', href: './?backend=three' });
     expect(otherBackendLink('three')).toMatchObject({ label: '2D', href: './' });
   });
+
+  it('links a game that opens in 3D to 2D by the query, and back to 3D by ./ (Engine 0.16 F7)', () => {
+    expect(otherBackendLink('three', true)).toMatchObject({ label: '2D', href: './?backend=canvas2d' });
+    expect(otherBackendLink('canvas2d', true)).toMatchObject({ label: '3D', href: './' });
+    expect(otherBackendLink('pixi', true)).toMatchObject({ label: '3D', href: './' });
+  });
 });
 
 /**
@@ -465,6 +471,55 @@ describe('bootBrowserGame choosing the 2D backend (Engine 0.16 T13b-4)', () => {
     expect((await booted)?.backend).toBe('canvas2d');
     expect((body.dataset as Record<string, string>)['backend']).toBe('canvas2d');
     warn.mockRestore();
+  });
+});
+
+describe('bootBrowserGame opening in 3D by default (Engine 0.16 F7)', () => {
+  const boot = (search: string, three: () => unknown) => {
+    const page = fakeBootPage();
+    vi.stubGlobal('performance', { now: () => 0 });
+    const made: { backend: string; canvas: unknown }[] = [];
+    const booted = bootBrowserGame({
+      screen: { width: 320, height: 180 },
+      touchPad: false,
+      search,
+      default3d: true,
+      displays: {
+        canvas2d: (canvas) => (made.push({ backend: 'canvas2d', canvas }), display()),
+        three: (canvas) => (made.push({ backend: 'three', canvas }), three() as ReturnType<typeof display>),
+      },
+      scene: () => ({ update() {}, render() {} }),
+    });
+    return { ...page, made, booted };
+  };
+
+  it('runs 3D when the query names no backend, and ?backend=canvas2d over it', async () => {
+    const first = boot('', () => display());
+    expect((await first.booted)?.backend).toBe('three');
+    expect(first.made.map((m) => m.backend)).toEqual(['three']);
+    const second = boot(CANVAS2D_QUERY, () => display());
+    expect((await second.booted)?.backend).toBe('canvas2d');
+    expect(second.made.map((m) => m.backend)).toEqual(['canvas2d']);
+  });
+
+  it('falls back to 2D on a fresh canvas when 3D cannot start (no WebGL 2), or its factory throws', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { booted, made, body, byId } = boot('', () => 'The 3D view needs WebGL 2');
+    expect((await booted)?.backend).toBe('canvas2d');
+    expect((body.dataset as Record<string, string>)['backend']).toBe('canvas2d');
+    expect(made.map((m) => m.backend)).toEqual(['three', 'canvas2d']);
+    expect(byId.get('screen')).toBe(made[1]?.canvas);
+    expect(warn.mock.calls[0]?.[0]).toContain('The 3D view needs WebGL 2');
+    const thrown = boot('', () => Promise.reject(new Error('no WebGL')));
+    expect((await thrown.booted)?.backend).toBe('canvas2d');
+    warn.mockRestore();
+  });
+
+  it('shows the reason when the query itself asked for 3D', async () => {
+    const { booted, made, body } = boot('?backend=three', () => 'The 3D view needs WebGL 2');
+    expect(await booted).toBeNull();
+    expect(made.map((m) => m.backend)).toEqual(['three']);
+    expect((body.dataset as Record<string, string>)['backend']).toBe('none');
   });
 });
 

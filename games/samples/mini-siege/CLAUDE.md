@@ -180,6 +180,9 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
     walking frames, `heart`, `icon-gold` and `icon-enemy`. `content/palettes/defence-ok.json` and
     `defence-blocked.json` (the ghost tower: green where it may be built, red where not) and
     `defence-hit.json` (a struck raider flashes white) are the same letters in other colours.
+  - `content/fonts/siege-tiny.txt` (Engine 0.16 F7): the 3D HUD's font, 3x5 capitals (the small
+    letters draw as capitals), digits and punctuation, made by a throwaway generator and kept as
+    text.
   - `content/sprites/siege-font.txt`: an 8x8 font (digits, capitals, small letters, `'`, `,`,
     `.`, `-`, `:`), white with a black drop shadow, for the HUD's numbers and the mission title.
 - Skins: `content/skins/canvas2d.json` (the battle): every kind the RTS kit presents here
@@ -215,7 +218,10 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
 - Sound: `content/sfx/` (`sword`, `hurt`, `burn`, `pass`, `fail`, `launch`, `commit`; since
   Engine 0.12 T8 `place`, `arrow`, `bolt`, `leak`, `refused`, `hold`, `breach`; since Engine 0.13
   T8 `freed`, `coins`, `toll`; one line of MML each) and `content/songs/siege.json`, one short original loop in D minor (six bars at 120
-  bpm, two pulses, triangle and noise), played by the page once the first gesture unlocks sound.
+  bpm, two pulses, triangle and noise), played by the page once the first gesture unlocks sound;
+  since Engine 0.16 F7 the calm layer of the `three` skin's layered `music.siege`, whose danger
+  layer is `content/songs/siege-danger.json` (the same six bars: a sixteenth-note pulse on the
+  roots and a driving noise beat).
 - TypeScript is glue:
   - `content.ts`: `loadMiniSiege(files)` (the kinds of `rts`, `topdown` and `towerdefense`),
     `siegeMap(content, name?)` (a map by name, `FIRST_SCENARIO` `village` when left out),
@@ -290,7 +296,8 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     and the rounds' `three-<id>.json`), every model they name preloaded first (`ModelLibrary.preload`)
     and the decor grids passed in (Engine 0.16 F6).
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
-  - `play.ts`: `SiegePlay`, the page's glue without DOM or clock. Since Engine 0.15 T10 (gaps
+  - `play.ts`: `SiegePlay`, the page's glue without DOM or clock (since Engine 0.16 F7 its
+    `camera` option, `keyPan(frame)` and `drift(steps)`: "The 3D page", below). Since Engine 0.15 T10 (gaps
     M26, M34, M36, lesson D14; docs/BUILD-LOG.md, Engine 0.15, decision 11) the page's flow is
     the engine's: `launch` is the shell's `MissionLaunch` (`engine/core/shell/mission-launch.ts`:
     `launchButtons()`, `press({ kind: 'launch' | 'play' | 'delegate' | 'begin' | 'continue' |
@@ -322,21 +329,27 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     results, in the picture with the UI kit, styled by `game.json`'s `menus`), handed the sim's
     `missionCardFacts` and `worldChanges` on `game.sim` and the campaign's `ticksPerHour`: passed
     through, never computed here.
-  - `main.ts`: the boot only: `bootBrowserGame` with Canvas2D (`canvasDisplay` with both skins
-    and the shell's `onSound`), `pointer: true`, the touch pad left on (the round on a phone),
-    `audio` (`contentSfx`, `contentSongs`, music `siege`), `game` (the volume control's storage
-    key, gap M1); then the shell's `mountMissionBar({ launch, input })` (Engine 0.15 T10: `#bar`
-    with `#launches`, `#play`, `#delegate`, `#status`, `#stored`, `#code`, `#resume`; `#briefing`
-    with `#begin`; `#result` with `#result-code` and `#continue`; updated after every draw) and
+  - `main.ts`: the boot only (since Engine 0.16 F7 the page opens **in 3D**; "The 3D page",
+    below): `bootBrowserGame` with `default3d`, the Three.js display (`threeDisplay` with the
+    `three` skins, every model they name preloaded, the decor grids, the pixel sheets and fonts,
+    the render scale) and the 2D ones (`canvasDisplay`, `pixiDisplay`), `pointer: true`, the touch
+    pad left on (the round on a phone), `audio` (`contentSfx`, `contentSongs`, music `siege`, the
+    `three` skin's layered `music`), `game` (the volume control's storage key, gap M1). In 3D the
+    mission flow is in the picture: `SiegePlay.missionScreens` (its keys from the player's
+    bindings, its sounds the shell's ui bus, the card in `siege-tiny`) under the shell's
+    `missionScreensScene`, drawn with the display's `uiPainter`, the pointer's gestures on a
+    screen kept from the battle's controls (`MissionScreens.uncovered`); no bar is mounted. In 2D
+    the shell's `mountMissionBar({ launch, input })` (Engine 0.15 T10: `#bar` with `#launches`,
+    `#play`, `#delegate`, `#status`, `#stored`, `#code`, `#resume`; `#briefing` with `#begin`;
+    `#result` with `#result-code` and `#continue`; updated after every draw), or with
+    `?ui=picture` the picture's screens there too. `body[data-ui]` is `picture` or `bar`. And
     `window.wwSiege` (`tick`, `held`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the
-    hosted round's `kit` summary), `scenario`, `ended`, `named`, `captive`). No launch,
-    campaign-panel, save-code or hint logic of its own. With `?ui=picture` (Engine 0.16 F5) the
-    page shows the flow in the picture instead of the bar: `SiegePlay.missionScreens` (its keys
-    from the player's bindings, its sounds the shell's ui bus) under the shell's
-    `missionScreensScene`, drawn with the display's `uiPainter`, and the pointer's gestures on a
-    screen kept from the battle's controls (`MissionScreens.uncovered`); the bar stays the default
-    until the 3D page (part F, F7). `index.html` is the canvas (leaving the
-    bar's 40 px below it) and the no-display message's style.
+    hosted round's `kit` summary), `scenario`, `ended`, `named`, `captive`; from F7 `ui`,
+    `screen` (the mission screen shown), `itemBox(item)` (a screen item's picture box, for
+    scripts that click it), `worldToScreen` and `camera`). No launch, campaign-panel, save-code
+    or hint logic of its own. `index.html` is the canvas (in 2D leaving the bar's 40 px below
+    it; in 3D the whole window), the 2D/3D toggle (`#backend`), the shell's sound control and
+    pause button moved to the bottom centre in 3D (between the selected unit and the mission card), and the no-display message's style.
 - `mini-siege.test.ts`: the content, the units against their types, the params checks
   (`bad_mini_game_use` at `params.room` and `params.outcomes.0.outcome`), the launch refusals,
   orders refused while the round is hosted, and over whole runs: the battle frozen at every
@@ -717,7 +730,7 @@ hash, save code or path moved; the backend parity test plays every run through i
   rocks moved off bare cells, the characters' black skin and armour recoloured, the tower roofs
   stacked, the engines' names moved under them so the gem shows, the camera pulled back to frame
   the castle and the camp, the dawn's light warmed and filled. Known gaps for later part F
-  tasks: the HUD is still the 2D one in pixel fonts (F7), the ram's cover is the castle kit's
+  tasks: the HUD was still the 2D one in pixel fonts (F7 replaced it), the ram's cover is the castle kit's
   blue, the river is straight, and the map's edge shows in the far corners.
 
 `three.test.ts` checks the picture (320x180 at render scale 6, ground view, shadows, fog, ACES,
@@ -729,6 +742,56 @@ Screenshots: `pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run
 three --allow-software-gl --tick 80` (the village held, late afternoon), `dawn-held.run.json
 --tick 30`, `ridge-raid.run.json --tick 40`; `tests/browser/mini-siege-shots.test.ts` shoots all
 three twice (byte-identical, 1920x1080).
+
+## The 3D page (Engine 0.16 F7)
+
+The page (`index.html`, `main.ts`) opens in 3D by default and runs in 2D where WebGL 2 is missing
+(the shell's `default3d`) or with `?backend=canvas2d` / `?backend=pixi`; the toggle (`#backend`)
+links the other one. Presentation only: no hash, save code or run file moved.
+
+- **The picture** is the `three` skin at the skin's render scale 6, capped to the window's pixels
+  (`?scale=<n>` sets it; the browser tests use 1). Every glTF model the skins name is loaded
+  before the first frame.
+- **Camera and controls**: `SiegePlay`'s `camera` option takes the skin's ground camera
+  (`skinGroundCamera`) and zoom, so the `RtsCamera` picks through F2's ground projection: clicks
+  select, drags box-select what is drawn in the rectangle, right clicks command, the wheel and a
+  pinch zoom (from the whole map, the skin's 0.42, to 2.5 times it, `ZOOM_RANGE`), drags and the
+  picture's edges pan, and the arrow keys or WASD pan (`keyPan`, `KEY_PAN_SPEED`) while no round
+  is played and no mission screen is shown. At the starting zoom the whole map is in view, so
+  panning starts once zoomed in.
+- **HUD** (`three.json`'s `hud`, the UI kit's widgets in the new `content/fonts/siege-tiny.txt`, a
+  3x5 font whose small letters draw as capitals, and `siege-small` for headings; flat panels,
+  F7): resource chips top left (gold, the village's units, the raiders, captives; counters that
+  roll), the title bar top centre (the campaign entry's title, `entryTitle`, put on every frame
+  by `siegeSource`, and the world clock `Day 2 14:00 afternoon` with its day bar), the
+  objectives top right (hold the hall, with its health bar and a box that turns red when it
+  falls; keep Hale alive, a red box and `Free Captain Hale` when he is captured; raise the tower with its progress,
+  only where there is a watchtower: the RTS kit's `key.<key>.*` status and each item's `when`),
+  the minimap bottom left in an Ashford Vale frame (terrain colours, the village's and the
+  raiders' dots, the offer), the selected unit (name, type and role, health bar and number, while
+  one thing is selected: `selectedName`, `selectedType`, `selectedRole`) and the key hints bottom
+  right. The engines' and the watchtower's labels moved to `siege-tiny`.
+- **Time of day**: the campaign's clocks (F4: the siege from 14:00, the dawn at 05:30, the ridge
+  at 10:00; the sabotage's two hours ease over the skin's `timeOfDay` tween) move the light and sky.
+- **Mission flow**: F5's screens in the picture, the briefing (Begin, Carry on), the mission card
+  (Play or Delegate; several offers listed) and its window badge in `siege-tiny` at 124 px
+  (`MissionScreens`' `card`, F7), the outcome card and the entry's results (the save code,
+  Continue), by mouse, keys, gamepad and touch. A save code is typed on the 2D page's bar (the 3D
+  page carries on from the stored save instead; decision in the F7 commit).
+- **Title, pause, settings**: the shell's menus restyled to the HUD's colours (`game.json`'s
+  `menus.style`: dark brown panels, gold headings and borders), the title's pixel art dropped;
+  the title shows the village behind it, the camera drifting slowly closer in round its start
+  (`SiegePlay.drift`, `TITLE_DRIFT`, presentation only, put back when play starts). The mission
+  screens step aside while a menu shows.
+- **Music**: `three.json`'s `music.siege` layers the song `siege` (calm) with
+  `content/songs/siege-danger.json` (danger: a driving pulse and drums in the same six bars), the
+  danger layer up while a mission is open (`missionLeft`) or raiders are within 3 cells of the
+  village's buildings (the RTS kit's `enemyNear`), mixed by the shell's mixer. The title plays
+  the same (calm). Event and UI sounds as before.
+
+`three.test.ts` checks the HUD (the UI kit's, every key it reads on the frames, the title, clock
+and objectives drawn, no watchtower line at the dawn) and the music's danger layer while a
+mission is open. `tests/browser/mini-siege-page.test.ts` drives the 3D page.
 
 ## Asset packs (Engine 0.16 part F, F1)
 
@@ -780,11 +843,11 @@ paths).
 
 `game.json`'s `menus` block (the shell's menus, `engine/core/shell/CLAUDE.md`; schema in
 `engine/core/ui/menus.ts`): the title "The Mini Siege" in `siege-title` over the game's own
-picture at its start (dimmed 0.6), the subtitle "Burn the siege engines before dawn", art (`captain-right-0` x3, `ram-0` x2),
+picture at its start (dimmed 0.35 since Engine 0.16 F7), the subtitle "Burn the siege engines before dawn" (the pixel art went in F7: the village shows behind it),
 the song `siege`, a footer and the items start, continue, controls, settings; the pause menu
 (resume, controls, settings, title); settings (master, music, sfx, mute, shake, flashing); and the controls screen's
-rows (Select, command; Move (rounds); Strike (rounds); Build (walls); Give up a round), shown with the player's keys. Colours: focus bar `#58002c`,
-headings `#fc9838`. Fonts: `content/fonts/siege-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `siege-title.txt` (its title font: the small glyphs made bold and doubled with Scale2x, cell 12x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
+rows (Select, command; Move (rounds); Strike (rounds); Build (walls); Give up a round), shown with the player's keys. Colours (Engine 0.16 F7, the 3D HUD's): dark brown panels `#1a140c`, focus bar `#6c4a1c`,
+borders `#c8a060`, headings `#f0c060`. Fonts: `content/fonts/siege-small.txt` (the menu font: the fx lab's small font, original 5 px glyphs with A-Z, a-z, 0-9, punctuation and, for key names, the four arrows) and `siege-title.txt` (its title font: the small glyphs made bold and doubled with Scale2x, cell 12x18), made by a small generator; edit them by hand now. Claimed as `font` in `game.json`. The `ui-move`, `ui-select` and `ui-back` sfx are the menus' sounds.
 
 `main.ts` passes `menus: { spec: content.manifest.menus, fonts, sheets }` to `bootBrowserGame`
 and the fonts to the display. Back to title reloads the page (`restart: 'reload'`: its bar and `window` hook hold the first scene). Continue shows when this browser kept a campaign save (`launch.storedSave()`) and carries on from it (the bar's Carry on). `index.html` hides the page's bar on the title (`body[data-menu='title']`) and the briefing and result panels on the title and the pause menu. The page opens on the title (the game waits
@@ -805,4 +868,5 @@ start, pause, settings and controls by keyboard and touch, settings kept across 
 
 `?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
 with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
-`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).
+`?backend=canvas2d` keeps Canvas2D (Engine 0.16 T13b-4). Since Engine 0.16 F7 no query opens the
+page in 3D, and Canvas2D is the 2D page where WebGL 2 is missing.
