@@ -145,7 +145,9 @@ enough; silence so far has meant the build kept its default):
   process, added by the finalize pass).
 - Engine 0.16 part C: **419-424** (T1, Hopper's Way's fixes after the part B review: the title's
   HUD, the 2.5D portrait, the levels' decoration and new enemies); **437-440** (T8, The Old Crypt's
-  new wing: the layout, beat-the-warden re-recorded, props as placed lights, the HUD's item icon).
+  new wing: the layout, beat-the-warden re-recorded, props as placed lights, the HUD's item icon);
+  **441-447** (T9, the Bone Warden's fight, the win and loss runs, the three ends, the hero, end
+  music per trigger, per-value HUD icons, room music).
 
 ### Items not met, and where they went
 
@@ -180,6 +182,11 @@ miss:
   (1502 ticks; T6's fight input 542 ticks later). `escape`, `walk-east`,
   `lost-in-the-guard-room` and `cross-the-chasm` kept their hashes; the new run
   `to-the-boss-door` got its first ones. Feedback items 437-440.
+- **T9, golden hashes re-recorded and runs replaced:** `beat-the-warden` was removed (the boss
+  changed: 6 hp and three phases) and replaced by `win` (title to the Warden beaten, from tick 0)
+  and `boss-lost`; `to-the-boss-door` was re-recorded (the warden hall gained two hearts, which
+  its last 40 ticks' snapshots list). Every other dungeon run kept its hashes. Engine additions:
+  `menus.triggers.end[].music` and a HUD icon's `frames`. Feedback items 441-447.
 
 The flagship platformer, **Hopper's Way** (docs/ROADMAP.md, 0.16 part B), built on branch
 `engine/build-0.15` in eleven tasks (T1-T11; not tagged, nothing published). The platformer

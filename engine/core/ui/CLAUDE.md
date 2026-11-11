@@ -177,7 +177,9 @@ Engine 0.16 part C (T7), in `menus.ts`:
 - `dialogs` (`dialogSchema`, `MenuDialog`; ids lower-case letters, digits and `-`): `{ speaker?,
 portrait?: { sheet, frame, palette? } (a sprite file or a skin's PNG image sheet), pages (at
 least one), rate? (frames per character, 0-30), lines? (2-8, default 3) }`, and `triggers`:
-  `intro?` (a dialog id) and `end?: [{ when, dialog?, heading?, credits? }]` (`endTriggerSchema`,
+  `intro?` (a dialog id) and `end?: [{ when, dialog?, heading?, credits?, music? }]` (`music`
+  from Engine 0.16 part C T9: that ending's song, played as it opens; `missing_ref` at
+  `triggers.end.<i>.music` when it names no song) (`endTriggerSchema`,
   `EndTrigger`; `when` is the audio mixer's `mixWhenSchema`, one status test or a list, read with
   `mixWhenHolds`, the one runtime import from `../audio/mix.ts`, pure). The shell
   (`../shell/game-menus.ts`) shows them; nothing here decides when.

@@ -1,0 +1,7 @@
+{
+  "id": "warden-defeat",
+  "bpm": 140,
+  "pulse": "v11 @2 l16 o5 d < a f d < a f d < a f d4",
+  "noise": "v12 l16 k s k s k s s s k k s s k4",
+  "triangle": "l8 o3 d < a f d d2"
+}

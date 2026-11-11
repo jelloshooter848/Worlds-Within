@@ -14,12 +14,14 @@ import type { ContentBundle } from '@engine/core/content/bundle';
 import { dataUrlBytes, readPngSize } from '@engine/core/content/png';
 import { canonicalJson } from '@engine/core/headless';
 import { validate } from '@engine/core/content/validate';
-import { isFullMap, presentFrameSchema } from '@engine/core/present';
+import { isFullMap, presentFrameSchema, resolveSkinEvent, skinSoundCue } from '@engine/core/present';
 import { PRESENT_TILES, presentWorld, TdPresentState, topdownGame } from '@kits/topdown';
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
+import { LayerMix, mixWhenHolds } from '@engine/core/audio/mix';
+import { Mixer, type MixerAudio } from '@engine/core/audio/mixer';
 import { dungeonRooms, dungeonSkin, loadDungeon, mustLoad } from './content';
 import { createGame, createWorld } from './headless';
-import { DungeonPicture, dungeonEnd, dungeonLook, endBanner, endLines, HUD_TOP } from './picture';
+import { bossBeaten, DungeonPicture, dungeonEnd, dungeonLook, endBanner, endLines, HUD_TOP } from './picture';
 import { DungeonScene, END_HOLD } from './scene';
 
 /** The null renderer, counting the sprites drawn from each sheet. */
@@ -66,6 +68,11 @@ describe('the dungeon sample', () => {
       'room:warden-hall',
       'song:crypt',
       'song:daylight',
+      // The boss music (Engine 0.16 part C T9): three layers and the victory tune.
+      'song:warden-calm',
+      'song:warden-falls',
+      'song:warden-fight',
+      'song:warden-rage',
       // The art pass (Engine 0.16 part C T3): two text sheets derived from the CC0 pack.
       'palette:crypt-art',
       'palette:crypt-floor',
@@ -73,6 +80,7 @@ describe('the dungeon sample', () => {
       'sprite:crypt-floor',
       'sfx:blast',
       'sfx:chest',
+      'sfx:dash',
       'sfx:door',
       'sfx:fall',
       'sfx:fanfare',
@@ -87,6 +95,14 @@ describe('the dungeon sample', () => {
       'sfx:ui-move',
       'sfx:ui-select',
       'sfx:unlock',
+      'sfx:warden-charge',
+      'sfx:warden-defeat',
+      'sfx:warden-hit',
+      'sfx:warden-roar',
+      'sfx:warden-shoot',
+      'sfx:warden-slam',
+      'sfx:warden-summon',
+      'sfx:warden-warn',
       'skin:canvas2d',
       // The menus' fonts (Engine 0.16 T9).
       'font:crypt-small',
@@ -149,7 +165,14 @@ describe('the dungeon sample', () => {
 
   it('has songs that compile, every channel of a song as long as the others', () => {
     const songs = contentSongs(content);
-    expect(songs.map((s) => s.id)).toEqual(['crypt', 'daylight']);
+    expect(songs.map((s) => s.id)).toEqual([
+      'crypt',
+      'daylight',
+      'warden-calm',
+      'warden-falls',
+      'warden-fight',
+      'warden-rage',
+    ]);
     for (const song of songs) {
       expect(compileSong(song).length).toBeGreaterThan(0);
       const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).flatMap((ch) =>
@@ -267,7 +290,7 @@ describe('the dungeon sample: drawn by the Canvas2D backend through its skin (0.
       status = frame.status;
     }
     for (const k of kinds) expect(Object.keys(skin.kinds)).toContain(k);
-    // The boss bar's values exist only while a boss is in the room (beat-the-warden shows them).
+    // The boss bar's values exist only while a boss is in the room (the win run shows them).
     for (const item of skin.hud ?? [])
       if (item.status !== undefined && !item.status.startsWith('boss'))
         expect(Object.keys(status)).toContain(item.status);
@@ -335,14 +358,15 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
     JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as Run;
   const FALLBACK = dungeonSkin(content).sheets?.fallbackColor;
 
-  it('has run files for the walk, the way out, a fall, (0.16 part C T5) the dash over the chasm, (T6) the boss and (T8) the way to its door', () => {
+  it('has run files for the walk, the way out, a fall, (0.16 part C T5) the dash over the chasm, (T8) the way to the boss door and (T9) the win and the loss to the boss', () => {
     expect(runs).toEqual([
-      'beat-the-warden.run.json',
+      'boss-lost.run.json',
       'cross-the-chasm.run.json',
       'escape.run.json',
       'lost-in-the-guard-room.run.json',
       'to-the-boss-door.run.json',
       'walk-east.run.json',
+      'win.run.json',
     ]);
   });
 
@@ -383,20 +407,20 @@ describe('the dungeon sample: original art, end states and the scene (Engine 0.1
   });
 
   it('shows the warden (Engine 0.16 part C T6): its kind, its HUD bar and placed boss events', () => {
-    const run = readRun('beat-the-warden.run.json');
+    const run = readRun('win.run.json');
     const world = createWorld(content, run.seed);
     const input = new ScriptedInput(run.input);
     const state = new TdPresentState();
     const skin = dungeonSkin(content);
     const seen = new Set<string>();
     let bar = false;
-    // T8 put the warden behind the ossuary's key and the chasm's locked door: the fight runs past 1300.
+    // T8 put the warden behind the ossuary's key and the chasm's locked door; T9's fight ends at 1879.
     for (let t = 0; t < run.ticks; t++) {
       input.next();
       world.update(input);
       const frame = presentWorld(world, world.events.splice(0), { state });
       for (const e of frame.entities) seen.add(e.kind);
-      if (frame.status['bossName'] === 'The Bone Warden' && frame.status['bossMaxHp'] === 3) bar = true;
+      if (frame.status['bossName'] === 'The Bone Warden' && frame.status['bossMaxHp'] === 6) bar = true;
       for (const e of frame.events)
         if (String(e.type).startsWith('boss-')) {
           expect(typeof e.x, e.type).toBe('number');
@@ -551,5 +575,230 @@ describe('the dungeon sample: 16:9 on the CC0 art (Engine 0.16 part C T3)', () =
     const draws = endBanner(look, 'fallen', false);
     expect(draws.filter((d) => d.kind === 'image').length).toBe(9);
     expect(draws.some((d) => d.kind === 'glyph')).toBe(true);
+  });
+});
+
+describe('the dungeon sample: the boss room, the win and the loss (Engine 0.16 part C T9)', () => {
+  const skin = dungeonSkin(content);
+  const look = dungeonLook(content);
+  const readRun = (name: string) =>
+    JSON.parse(readFileSync(new URL(`./runs/${name}`, import.meta.url), 'utf8')) as {
+      seed: number;
+      ticks: number;
+      input: InputScript;
+    };
+  type Frame = ReturnType<typeof presentWorld>;
+  /** Plays a run file, presenting every tick (as the page does) to `each`; returns the world. */
+  const eachFrame = (name: string, each: (frame: Frame, tick: number) => void) => {
+    const run = readRun(name);
+    const world = createWorld(content, run.seed);
+    const input = new ScriptedInput(run.input);
+    const state = new TdPresentState();
+    world.events.splice(0);
+    for (let tick = 1; tick <= run.ticks; tick++) {
+      input.next();
+      world.update(input);
+      each(presentWorld(world, world.events.splice(0), { state, size: look.screen, top: HUD_TOP }), tick);
+    }
+    return world;
+  };
+  const warden = dungeonRooms(content).rooms.get('warden-hall')!.def;
+
+  it('declares the Bone Warden in data: six hit points, three phases, sealed until beaten, its flag', () => {
+    expect(warden).toMatchObject({ shutters: 'boss', dark: true, music: 'warden' });
+    expect(warden.boss).toMatchObject({ id: 'warden', name: 'The Bone Warden', hp: 6, flag: 'bossDefeated' });
+    expect(warden.boss!.phases!.map((p) => p.hp)).toEqual([4, 2]);
+    // Every attack is announced by a telegraph naming it, in every phase.
+    for (const pattern of [warden.boss!.pattern, ...warden.boss!.phases!.map((p) => p.pattern)])
+      pattern.forEach((step, i) => {
+        if (step.do === 'idle' || step.do === 'telegraph') return;
+        expect(pattern[i - 1], `${step.do} at ${i}`).toMatchObject({ do: 'telegraph', attack: step.do });
+      });
+  });
+
+  it('ends won after the win run, fallen in the boss hall after the loss', () => {
+    const won = eachFrame('win.run.json', () => {});
+    expect(dungeonEnd(won)).toBe('won');
+    expect(bossBeaten(won)).toBe('The Bone Warden');
+    expect([...won.flags]).toEqual(['bossDefeated']);
+    expect(won.hero.dead).toBe(false);
+    expect(endLines('won', false, 'The Bone Warden')?.[0]).toBe('The Bone Warden is at rest!');
+    const lost = eachFrame('boss-lost.run.json', () => {});
+    expect(dungeonEnd(lost)).toBe('fallen');
+    expect(lost.room.id).toBe('warden-hall');
+    expect(bossBeaten(lost)).toBeNull();
+  });
+
+  it("fires the shell's endings from the frame status: the victory dialog and tune after the win, the fall after the loss", () => {
+    const menus = content.manifest.menus!;
+    const ending = (name: string) => {
+      let hit: string | undefined;
+      eachFrame(name, (frame) => {
+        hit ??= menus.triggers!.end!.find((t) => mixWhenHolds(t.when, frame.status))?.dialog;
+      });
+      return hit;
+    };
+    expect(ending('win.run.json')).toBe('victory');
+    expect(ending('boss-lost.run.json')).toBe('fallen');
+    const victory = menus.triggers!.end!.find((t) => t.dialog === 'victory')!;
+    expect(victory.music).toBe('warden-falls');
+    expect(contentSongs(content).find((s) => s.id === 'warden-falls')?.loop).toBe(false);
+    // The intro says who the hero is and why the crypt; the end dialogs have his portrait.
+    expect(menus.triggers!.intro).toBe('intro');
+    expect(menus.dialogs!['intro']!.pages.join(' ')).toMatch(/Edrin.*Bone Warden/s);
+    for (const id of ['intro', 'victory', 'escaped'])
+      expect(menus.dialogs![id]!.portrait).toEqual({ sheet: 'crypt-actors', frame: 'knight-idle-0' });
+    expect(menus.end!.lines!.map((l) => l.status)).toEqual(['time', 'roomsSeen', 'hp']);
+  });
+
+  it('plays the win in its scene with the headless snapshots: the crypt, the warden music, the victory tune', () => {
+    const run = readRun('win.run.json');
+    const music: string[] = [];
+    const scene = new DungeonScene(content, look, { music: (id) => music.push(id) });
+    scene.enter();
+    const game = createGame(content, run.seed);
+    const input = new ScriptedInput(run.input);
+    const r: Renderer = new NullRenderer();
+    for (let t = 1; t <= run.ticks; t++) {
+      input.next();
+      scene.update(input);
+      game.step(input);
+      if (t % 30 === 0) {
+        scene.render(r);
+        expect(scene.headless().snapshot(), `tick ${t}`).toEqual(game.snapshot());
+      }
+    }
+    expect(music).toEqual(['crypt', 'warden', 'warden-falls']);
+    expect(scene.headless().snapshot()['flags']).toEqual(['bossDefeated']);
+    // With the shell's endings the shell plays the victory tune.
+    const shell: string[] = [];
+    const shellScene = new DungeonScene(content, look, { music: (id) => shell.push(id), shellEnds: true });
+    shellScene.enter();
+    const again = new ScriptedInput(run.input);
+    for (let t = 1; t <= run.ticks; t++) {
+      again.next();
+      shellScene.update(again);
+    }
+    expect(shell).toEqual(['crypt', 'warden']);
+  });
+
+  it('shows hearts, keys, the selected item and the boss bar with its name in the HUD', () => {
+    const hud = skin.hud ?? [];
+    const item = (status: string, as: string) => hud.find((h) => h.status === status && h.as === as);
+    expect(item('hp', 'hearts')).toBeDefined();
+    expect(item('keys', 'counter')).toBeDefined();
+    expect(item('item', 'icon')?.frames).toEqual({ bomb: 'bomb', dash: 'flask-big-green' });
+    expect(item('bossHp', 'bar')).toMatchObject({ max: 'bossMaxHp', when: 'bossHp' });
+    expect(item('bossName', 'text')).toMatchObject({ when: 'bossHp' });
+    let fight: Frame['status'] | null = null;
+    eachFrame('win.run.json', (frame, tick) => {
+      if (tick === 1400) fight = frame.status;
+    });
+    expect(fight).toMatchObject({
+      item: 'dash',
+      bossName: 'The Bone Warden',
+      bossHp: 4,
+      bossMaxHp: 6,
+      keys: 0,
+    });
+  });
+
+  it('draws the warden in its own poses: telegraphs, the hit flash and its red-hot last phase', () => {
+    const entry = skin.kinds['boss:warden']!;
+    for (const step of [warden.boss!.pattern, ...warden.boss!.phases!.map((p) => p.pattern)].flat())
+      if (step.do === 'telegraph') expect(Object.keys(entry.frames!)).toContain(`telegraph-${step.attack}`);
+    const rage = entry.byTag!.find((l) => l.prefix === 'phase:')!;
+    expect(rage.min).toBe(2);
+    expect(JSON.stringify(rage.frames)).toContain('demon-rage');
+    const states = new Set<string>();
+    const tags = new Set<string>();
+    eachFrame('win.run.json', (frame) => {
+      for (const e of frame.entities)
+        if (e.kind === 'boss:warden') {
+          states.add(e.anim.state);
+          for (const t of e.tags) tags.add(t);
+        }
+    });
+    expect([...states]).toEqual(
+      expect.arrayContaining(['idle', 'telegraph-charge', 'charge', 'telegraph-shoot', 'hurt', 'dying']),
+    );
+    expect([...tags]).toEqual(expect.arrayContaining(['phase:2', 'flashing']));
+  });
+
+  it('has a sound for every boss action and the dash, and their sfx', () => {
+    const sfx = new Set(contentSfx(content).map((s) => s.id));
+    const attacks = new Set(
+      [warden.boss!.pattern, ...warden.boss!.phases!.map((p) => p.pattern)].flat().map((s) => s.do),
+    );
+    attacks.delete('idle');
+    attacks.delete('telegraph');
+    const sounds = new Set<string>();
+    for (const attack of attacks) {
+      for (const type of ['boss-telegraph', 'boss-attack']) {
+        const entry = resolveSkinEvent(skin.events, { type, attack });
+        expect(entry?.sound, `${type} ${attack}`).toBeDefined();
+        expect(sfx.has(entry!.sound!)).toBe(true);
+        sounds.add(entry!.sound!);
+      }
+    }
+    expect(sounds.size).toBeGreaterThanOrEqual(5); // each attack its own sound, the warnings shared
+    for (const type of ['boss-hit', 'boss-phase', 'boss-defeat', 'boss-defeated', 'dash'])
+      expect(sfx.has(resolveSkinEvent(skin.events, { type })?.sound ?? ''), type).toBe(true);
+  });
+
+  it('mixes the warden music from the frame status: calm at first, the fight on a hit, rage in the last phase, silence once beaten', () => {
+    const music = skin.music!['warden']!;
+    expect(music.layers).toEqual({ calm: 'warden-calm', fight: 'warden-fight', rage: 'warden-rage' });
+    const songs = new Map(contentSongs(content).map((s) => [s.id, s]));
+    const lengths = Object.values(music.layers).map((id) => {
+      const song = songs.get(id)!;
+      expect(song).toMatchObject({ bpm: 132, loop: true });
+      return compileSong(song).length;
+    });
+    expect(new Set(lengths).size).toBe(1);
+    const mix = new LayerMix(music);
+    const seen: { status: Frame['status']; gains: Record<string, number> }[] = [];
+    eachFrame('win.run.json', (frame) => {
+      if (frame.status['room'] === 'warden-hall')
+        seen.push({ status: frame.status, gains: mix.update(frame.status) });
+    });
+    const first = seen[1]!;
+    expect(first.gains).toMatchObject({ calm: 1, rage: 0 });
+    expect(first.gains['fight']!).toBeLessThan(0.5);
+    expect(
+      seen.some((s) => s.status['bossHp'] === 5 && s.gains['fight'] === 1 && s.gains['rage'] === 0),
+    ).toBe(true);
+    expect(seen.some((s) => s.status['bossPhase'] === 2 && s.gains['rage'] === 1)).toBe(true);
+    expect(Math.max(...Object.values(seen.at(-1)!.gains))).toBe(0);
+  });
+
+  it('ducks the music under big hits through the shell mixer: each boss hit, the slam and the defeat', () => {
+    for (const key of ['hurt', 'boss-hit', 'boss-attack:attack=slam', 'boss-defeat'])
+      expect(skin.events![key]!.duck?.amount, key).toBeGreaterThanOrEqual(0.5);
+    const ducks: number[] = [];
+    const played: string[] = [];
+    const audio: MixerAudio = {
+      playMusic: (id) => void played.push(id),
+      sfx: () => {},
+      setLayerGains: () => {},
+      setDuck: (f) => void ducks.push(f),
+      volumeLevels: { master: 1, music: 1, sfx: 1, muted: false },
+    };
+    const mixer = new Mixer({ audio, music: skin.music!, seed: 1 });
+    mixer.play('warden');
+    const hits: number[] = [];
+    eachFrame('win.run.json', (frame, tick) => {
+      mixer.frameStatus(frame.status);
+      for (const ev of frame.events) {
+        const entry = resolveSkinEvent(skin.events, ev as { type: string });
+        if (entry?.sound !== undefined) mixer.sound(entry.sound, skinSoundCue(entry, frame.frame));
+        if (ev.type === 'boss-hit') hits.push(tick);
+      }
+      mixer.tick();
+    });
+    expect(played).toEqual(['warden']);
+    expect(hits.length).toBe(6); // the sixth starts the defeat too
+    for (const tick of hits) expect(Math.min(...ducks.slice(tick - 1, tick + 6))).toBeLessThan(0.6);
+    expect(ducks.slice(hits[0]!, hits[1]!)).toContain(1);
   });
 });

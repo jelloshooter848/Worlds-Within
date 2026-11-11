@@ -261,6 +261,13 @@ const endTriggerSchema = z.strictObject({
     .min(1)
     .exactOptional()
     .describe("the end screen's credits line for this end (else `end.credits`)"),
+  music: z
+    .string()
+    .min(1)
+    .exactOptional()
+    .describe(
+      'a song (or layered music entry) played when this end opens its dialog or end screen (else `end.music`; Engine 0.16 part C T9)',
+    ),
 });
 
 /** The lines the level-clear and end screens show when they give none. */
@@ -1214,6 +1221,10 @@ export function checkMenus(menus: MenusSpec, refs: MenusRefs): Omit<KindIssue, '
     missing(['title', 'music'], 'song', menus.title.music);
   if (menus.end?.music !== undefined && !refs.sounds.has(menus.end.music))
     missing(['end', 'music'], 'song', menus.end.music);
+  (menus.triggers?.end ?? []).forEach((t, i) => {
+    if (t.music !== undefined && !refs.sounds.has(t.music))
+      missing(['triggers', 'end', i, 'music'], 'song', t.music);
+  });
   for (const [key, id] of Object.entries(menus.style?.sounds ?? {}))
     if (id !== undefined && !refs.sounds.has(id)) missing(['style', 'sounds', key], 'sfx or song', id);
   for (const [id, d] of Object.entries(menus.dialogs ?? {}))

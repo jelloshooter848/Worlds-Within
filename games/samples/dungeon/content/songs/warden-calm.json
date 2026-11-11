@@ -1,0 +1,9 @@
+{
+  "id": "warden-calm",
+  "bpm": 132,
+  "loop": true,
+  "pulse1": "v2 @0 L r1 | r1 | r1 | r1 | r1 | r1 | r1 | r1",
+  "pulse2": "v4 @1 q7 L o4f2 o4a2 | o4f2 o4a2 | o4d2 o4f2 | o4e2 o4g2 | o4f2 o4a2 | o4a+2 o4d2 | o4c+2 o4e2 | o4c+2 o4e2",
+  "triangle": "q7 L o2d2 o2d2 | o2d2 o2d2 | o2a+2 o2a+2 | o3c2 o3c2 | o2d2 o2d2 | o2g2 o2g2 | o2a2 o2a2 | o2a2 o2a2",
+  "noise": "v3 L k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2 | k16 r16 k8 r4 r2"
+}

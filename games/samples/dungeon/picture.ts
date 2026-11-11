@@ -76,13 +76,26 @@ export interface DungeonPictureOptions {
   banner?: boolean;
 }
 
-/** How a run has ended, for the banner: out through the exit, fallen, or not yet. */
-export type DungeonEnd = 'escaped' | 'fallen' | null;
+/** How a run has ended, for the banner: a boss beaten, out through the exit, fallen, or not yet. */
+export type DungeonEnd = 'won' | 'escaped' | 'fallen' | null;
 
-/** The world's end state: the exit reached (`exited`) or the hero dead after his spin. */
+/**
+ * The world's end state: a room's boss beaten (its defeat set its `flag`, Engine 0.16 part C T9:
+ * the Bone Warden's `bossDefeated`), the exit reached (`exited`) or the hero dead after his spin.
+ */
 export function dungeonEnd(world: TopDownWorld): DungeonEnd {
+  if (bossBeaten(world) !== null) return 'won';
   if (world.exited) return 'escaped';
   if (world.hero.dead) return 'fallen';
+  return null;
+}
+
+/** The name of the boss whose defeat flag the world holds (from the room files), or null. */
+export function bossBeaten(world: TopDownWorld): string | null {
+  for (const room of world.dungeon.rooms.values()) {
+    const boss = room.def.boss;
+    if (boss?.flag !== undefined && world.flags.has(boss.flag)) return boss.name ?? boss.id;
+  }
   return null;
 }
 
@@ -130,13 +143,21 @@ export class DungeonPicture {
     );
     this.presenter.present(frame);
     if (this.hud && this.banner)
-      paintUi(endBanner(this.look, dungeonEnd(world), world.found.has('relic')), this.painter);
+      paintUi(
+        endBanner(this.look, dungeonEnd(world), world.found.has('relic'), bossBeaten(world)),
+        this.painter,
+      );
     return frame;
   }
 }
 
 /** The end banner's two lines: what happened, and how to play again. */
-export function endLines(end: DungeonEnd, relic: boolean): [string, string] | null {
+export function endLines(
+  end: DungeonEnd,
+  relic: boolean,
+  boss: string | null = null,
+): [string, string] | null {
+  if (end === 'won') return [`${boss ?? 'The boss'} is at rest!`, 'Press Z to play again'];
   if (end === 'escaped')
     return [relic ? 'You escaped with the relic!' : 'You escaped!', 'Press Z to play again'];
   if (end === 'fallen') return ['You fell in the crypt.', 'Press Z to try again'];
@@ -147,8 +168,13 @@ export function endLines(end: DungeonEnd, relic: boolean): [string, string] | nu
  * Once a run has ended, a framed panel low in the room (the skin's `panel` frame) with what
  * happened and how to play again, in the menus' font; nothing while it plays.
  */
-export function endBanner(look: DungeonLook, end: DungeonEnd, relic: boolean): UiDraw[] {
-  const lines = endLines(end, relic);
+export function endBanner(
+  look: DungeonLook,
+  end: DungeonEnd,
+  relic: boolean,
+  boss: string | null = null,
+): UiDraw[] {
+  const lines = endLines(end, relic, boss);
   const font = look.fonts(BANNER_FONT);
   if (lines === null || font === null) return [];
   const width = Math.max(...lines.map((l) => layoutText(font, l).width)) + 24;
@@ -163,7 +189,7 @@ export function endBanner(look: DungeonLook, end: DungeonEnd, relic: boolean): U
   const out: UiDraw[] = panel
     ? panelDraws({ sheet: 'crypt-art', frame: 'panel' }, panel, sliceInsets(5), box)
     : [];
-  const colors = end === 'escaped' ? '#f6c445' : '#ff8a6a';
+  const colors = end === 'fallen' ? '#ff8a6a' : '#f6c445';
   lines.forEach((line, i) => {
     const w = layoutText(font, line).width;
     const x = box.x + Math.round((box.w - w) / 2);

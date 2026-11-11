@@ -184,7 +184,7 @@ What each old `render` method (removed in 0.4-8) drew, so a skin can reproduce i
 `dash-crosses-pits` (`tileSolid`'s `pit` case for the `dash` mover; tested in `dash.test.ts`, and
 guarded in the dungeon sample by `runs/cross-the-chasm.run.json`) and (Engine 0.16 part C T6) the
 boss rules `boss-patterns`, `boss-phases`, `boss-hit-invuln` and `boss-seals-room` (below, under
-Bosses; guarded by `runs/beat-the-warden.run.json`). `TdWorldOptions.disabledRules`
+Bosses; guarded by the dungeon sample's `runs/win.run.json` and `boss-lost.run.json`). `TdWorldOptions.disabledRules`
 switches rules off (an unknown id throws) and the code guards each with
 `world.rules.isOn(id)`. A game's headless `createGame(content, seed, opts)` passes
 `opts.disabledRules` on; `pnpm cli mutants <run-file>` then reports the rules a run file does not
@@ -286,8 +286,8 @@ start?, aim?, jitter?, ticks? }` (`BossShot`s, kind `boss-shot`, flying over wat
   hit with its placed event, flash and invulnerability, knockback by `knockResist`, phases and their
   speed, the sealed room through the defeat sequence and its flag, each rule off, the same fight
   from a seed and another from another, a room with no boss unchanged, and the schema and room
-  checks). The dungeon sample's `runs/beat-the-warden.run.json` guards every `boss-*` rule (until
-  its boss room of T9).
+  checks). The dungeon sample's `runs/win.run.json` and `boss-lost.run.json` (Engine 0.16 part C
+  T9, the Bone Warden's three-phase fight) guard every `boss-*` rule.
 
 ## Room files (`schema.ts`)
 

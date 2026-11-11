@@ -1,5 +1,5 @@
 {
-  "run": "games/samples/dungeon/runs/beat-the-warden.run.json",
+  "run": "games/samples/dungeon/runs/win.run.json",
   "hashes": [
     {
       "tick": 0,
@@ -67,47 +67,75 @@
     },
     {
       "tick": 960,
-      "hash": "6f13e9a3be62f244"
+      "hash": "d59ccca93e8f8fe7"
     },
     {
       "tick": 1020,
-      "hash": "7ef0b0cd194ff017"
+      "hash": "bb99acbbf9d2e0dc"
     },
     {
       "tick": 1080,
-      "hash": "601ca1713905b066"
+      "hash": "b4ff5e8436d350ab"
     },
     {
       "tick": 1140,
-      "hash": "3b675f4748ad1c08"
+      "hash": "7a19c0409b7953f5"
     },
     {
       "tick": 1200,
-      "hash": "547216b30a17d891"
+      "hash": "62f6a06cc313edcc"
     },
     {
       "tick": 1260,
-      "hash": "32c1fd96a7182df6"
+      "hash": "1d1beb7b53bbfcda"
     },
     {
       "tick": 1320,
-      "hash": "b88f77a0f3411902"
+      "hash": "0b835a2a8eb4cfba"
     },
     {
       "tick": 1380,
-      "hash": "9a495dbf8a84c91a"
+      "hash": "144e9a6ffe3a28a8"
     },
     {
       "tick": 1440,
-      "hash": "10a4073e73742923"
+      "hash": "ba093161db1e04f9"
     },
     {
       "tick": 1500,
-      "hash": "70175a489c288b75"
+      "hash": "15c057c26b9f87fc"
     },
     {
-      "tick": 1502,
-      "hash": "89496aa581705a1b"
+      "tick": 1560,
+      "hash": "8a9bb0110c44c9dc"
+    },
+    {
+      "tick": 1620,
+      "hash": "f6671c94500ea406"
+    },
+    {
+      "tick": 1680,
+      "hash": "4dab6e1e558b04bf"
+    },
+    {
+      "tick": 1740,
+      "hash": "c39931653dce195e"
+    },
+    {
+      "tick": 1800,
+      "hash": "73f06ddf8bfba17a"
+    },
+    {
+      "tick": 1860,
+      "hash": "a78e3880cec1e347"
+    },
+    {
+      "tick": 1920,
+      "hash": "6edc432f5f9078f7"
+    },
+    {
+      "tick": 1940,
+      "hash": "119b4b88c67e6fbb"
     }
   ]
 }

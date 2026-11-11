@@ -138,7 +138,10 @@ weights?, period?: { cols, rows } }` (`tileVarySchema`; `bad_weights` when the w
     makes the status count halves, a `frame` per two points and `half` for one left over (checked
     across files like `frame`; `half` on another type is an error); any item's `when` (a status
     key) shows it only while that value is truthy (`hudItemShown(item, status)`, used by
-    `layoutHud` and the UI kit's `SkinHud`). Tested in `hud.test.ts`.
+    `layoutHud` and the UI kit's `SkinHud`). From Engine 0.16 part C T9 an `icon`'s `frames`
+    (status value -> frame, checked across files at `hud.<i>.frames.<value>`; on another type a
+    schema error) picks its frame by the value (the selected item), else `frame`. Tested in
+    `hud.test.ts`.
   - PNG sheets (Engine 0.16 T10, `engine/core/gfx/image-sheet.ts`): a top-level `images` map,
     image id -> `{ image: "assets/<pack>/<file>.png", frameSize?, grid?, names?, frames?, anchor? }`,
     on 2D and 3D skins. An entry naming the id as its `sheet` uses its frames like a text

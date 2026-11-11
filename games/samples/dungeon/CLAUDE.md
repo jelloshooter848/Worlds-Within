@@ -2,7 +2,7 @@
 
 **The Old Crypt**, the top-down kit's sample game: a short dungeon of eight rooms (its final layout
 from Engine 0.16 part C T8) with a start, two ways through (the bombed wall to the relic and the
-exit; the dash over the pits to a key and the boss's locked door), a goal and two end states, all in data files, drawn at 16:9 on 0x72's CC0
+exit; the dash over the pits to a key and the boss's locked door, the Bone Warden's hall), a goal and three end states, all in data files, drawn at 16:9 on 0x72's CC0
 DungeonTileset II (Engine 0.16 part C T3), with MML music and sound effects. This file is a worked example: it says how the sample was built,
 step by step, so an agent can build the next top-down game the same way. It began as the engine
 demo (a proof-of-life game in its own `demo` folder, Engine 0.2-0.14), moved here at Engine 0.15
@@ -17,7 +17,7 @@ glue.
         |   (bomb)                          (key)                         goal room (relic)
  (0,1) courtyard (start)  --open door-->  (1,1) guard-room (a side room full of monsters)
         |
- (0,2) chasm (dash chest | pit ^^ |)  --locked door (beyond the pit)-->  (1,2) warden-hall (boss door)
+ (0,2) chasm (dash chest | pit ^^ |)  --locked door (beyond the pit)-->  (1,2) warden-hall (the Bone Warden)
         |  (the south door is beyond the pit too)
  (0,3) ossuary (pits; the key on a ledge only the dash reaches)
 ```
@@ -53,32 +53,37 @@ keys are counted, not named: either key opens either locked door.
    in its south-west corner a ledge walled off by pits (row 5 and cols 4-5) holding the key: dash
    west over the two-tile pit to it, east back. Three pit rows above the ledge are too wide for
    the dash's 48 px, so it is only reached from the lower hall.
-8. **warden-hall** (Engine 0.16 part C T6, a minimal boss room until T9's): east of the chasm,
-   only reached with the dash and (from T8) the ossuary's key. Its `boss` field declares the Bone Warden in data (the kit's boss
-   form, `kits/topdown/CLAUDE.md`, Bosses: 3 hp, a charge and a ring of 8 shots, then at 1 hp a
-   phase that summons bats and slams) and `shutters: "boss"` shuts its west shutter door once the
-   hero is in until the boss is down; its defeat sets the world flag `bossDefeated`. The skin draws
-   it as the pack's big demon (`boss:warden`, blinking on a hit), its shots as skulls, a HUD bar
-   (`bossName`, `bossHp` over `bossMaxHp`, shown `when` `bossHp`) and the boss events' sounds,
-   shakes, flashes, hit-pauses and particles.
+8. **warden-hall** (Engine 0.16 part C T6, the full boss room from T9): east of the chasm, only
+   reached with the dash and (from T8) the ossuary's key. Two columns (`S`) on its centre line,
+   four torches and two hearts (`h`). Its `boss` field declares **the Bone Warden** in data (the
+   kit's boss form, `kits/topdown/CLAUDE.md`, Bosses; below, "The Bone Warden (T9)") and
+   `shutters: "boss"` shuts its west shutter door once the hero is in until the boss is down; its
+   defeat sets the world flag `bossDefeated`, the run's win. Its `music` is `warden`, the skin's
+   layered boss song.
 
-A run ends **escaped** (the hero reached an exit: `exited`) or **fallen** (the hero died after his
-death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads both; the end banner says which
+A run ends **won** (Engine 0.16 part C T9: a room's boss beaten, its `flag` in `world.flags`:
+`bossDefeated`), **escaped** (the hero reached an exit: `exited`) or **fallen** (the hero died
+after his death spin: `hero.dead`). `dungeonEnd(world)` (`picture.ts`) reads them (`bossBeaten(world)`
+gives the beaten boss's name from the room files); the end banner says which
 and the scene starts a new run on Z or X (below). Both are world state, so run files assert them.
 
 **Dialogs and the end screen** (Engine 0.16 part C T7): `game.json`'s `menus.dialogs` holds
-`intro` (the knight's portrait, `crypt-actors`' `knight-idle-0`, two pages), `escaped` and
-`fallen`, and `menus.triggers` shows `intro` after Start and, on the first presented frame whose
-status says `exited` or `dead` (the kit's status, `kits/topdown/CLAUDE.md`), that end's dialog and
-then `menus.end` ("You escaped!" or "You fell", the credits line, Time and Rooms seen from the
-frame's `time` and `roomsSeen`, Back to title). The menus style's `sounds.type` (`ui-move`) and
-`page` (`ui-select`) blip as the text types and turns. The text is a placeholder until T9. Where
+`intro` (Sir Edrin's portrait, `crypt-actors`' `knight-idle-0`, three pages from T9: who he is,
+why he goes down, how to get on), `victory` (T9), `escaped` and `fallen`, and `menus.triggers`
+shows `intro` after Start and, on the first presented frame whose status says
+`flag.bossDefeated` (T9), `exited` or `dead` (the kit's status, `kits/topdown/CLAUDE.md`), that
+end's dialog and then `menus.end` ("The Warden is at rest", "You escaped!" or "You fell", the
+credits line, Time, Rooms seen and Health from the frame's `time`, `roomsSeen` and `hp`/`maxHp`,
+Back to title). The victory trigger's `music` (`warden-falls`, the engine's per-trigger end music
+from T9) starts with its dialog and plays on under the end screen. The menus style's
+`sounds.type` (`ui-move`) and `page` (`ui-select`) blip as the text types and turns. Where
 the shell shows the end (`page.endings`: dialogs on), the scene gets `shellEnds`: no end banner
 and no Z-to-restart (the end screen's Back to title starts a new run); with `?debug=step` or
 `?record` the dialogs are skipped and the banner shows as before. `view.ts` draws no banner (as
 the page) and gives `status()`, so `pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json
---tick 1060 --overlay end` shows the end screen with its stats and heading, and `--overlay
-dialog:intro` (or `escaped`, `fallen`) a dialog.
+--tick 1060 --overlay end` shows the end screen with its stats and heading (`win.run.json --tick 1900
+--overlay end` the victory's), and `--overlay dialog:intro` (or `victory`, `escaped`, `fallen`)
+a dialog.
 
 ## How it was built (the worked example)
 
@@ -127,14 +132,18 @@ games/samples/dungeon --json` to see every kit rule guarded.
   `view.ts`. Its `title` and `index.html`'s `<title>` are the games index's line.
 - `content/rooms/`: `courtyard`, `guard-room`, `store-room`, `bat-hall`, `crypt`, `chasm`,
   `ossuary`, `warden-hall` (above).
-- `content/songs/`: `crypt`, `daylight`. `content/sfx/`: `blast`, `chest`, `door`, `fall`,
-  `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`, `unlock`.
+- `content/songs/`: `crypt`, `daylight`, and (T9) `warden-calm`, `warden-fight`, `warden-rage`
+  (the boss song's layers) and `warden-falls` (the victory tune). `content/sfx/`: `blast`,
+  `chest`, `door`, `fall`, `fanfare`, `fuse`, `hit`, `hurt`, `kill`, `pickup`, `spit`, `sword`,
+  `unlock`, the menus' `ui-*`, and (T9) `dash` and `warden-warn`, `-charge`, `-shoot`, `-slam`,
+  `-summon`, `-hit`, `-roar`, `-defeat`.
 - `content/palettes/`: `crypt-art`, `crypt-floor`. `content/sprites/`: `crypt-art.txt`,
   `crypt-floor.txt` (pieces cut from the CC0 pack, and a few original ones in its colours).
 - `content/skins/canvas2d.json`: the skin (above).
 - `content.ts`: `loadDungeon(files)` (the kit hook's kinds, `kitContentKinds([topdown],
 manifestOptions(files))`), `mustLoad`, and `dungeonRooms`, `dungeonSkin` (the engine's
-  `mustSkinSet`) over the loaded bundle; `DUNGEON_MUSIC` and `ESCAPE_MUSIC` (song ids). The
+  `mustSkinSet`) over the loaded bundle; `DUNGEON_MUSIC`, `ESCAPE_MUSIC` and (T9)
+  `VICTORY_MUSIC` (song ids). The
   songs and sfx are the engine's `contentSongs` and `contentSfx` (Engine 0.15 T15, the API review
   removed the sample's own `dungeonKinds`, `dungeonSongs` and `dungeonSfx` copies).
 - `headless.ts`: `createWorld(content, seed?, disabledRules?)` (the kit's items from
@@ -143,20 +152,23 @@ opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
 - `picture.ts`: `dungeonLook(content)` (skin, sheets, fonts, picture size), `HUD_TOP` (0),
   `DungeonPicture` (`draw(world, events)`: the kit's `presentWorld` with `idle`, frozen, to the
   backend's `SkinnedCanvasPresenter` or the `presenter` it is given, plus the end banner unless
-  `banner: false`; `showHud(shown)`), `dungeonEnd(world)`, `endLines` and `endBanner` (a framed panel in the menus'
+  `banner: false`; `showHud(shown)`), `dungeonEnd(world)`, `bossBeaten(world)`, `endLines` and `endBanner` (a framed panel in the menus'
   font once the run has ended).
 - `view.ts`: `createView(content, seed, opts?)`, the view entry for `pnpm cli screenshot` (with
   `showHud`, so the title overlay hides the HUD).
 - `scene.ts`: `DungeonScene`: the world stepped once per loop step, its events drawn through
-  `DungeonPicture` with the shell's `onSound`, the `crypt` song on enter and `daylight` on the
-  way out; once the run has ended (`dungeonEnd`), Z or X at least `END_HOLD` (60) steps later
+  `DungeonPicture` with the shell's `onSound`; the room's song (T9: its `music` field, else
+  `crypt`, started when it changes, so the warden hall plays the layered `warden`), `daylight`
+  on the way out and `warden-falls` once the Warden is beaten (not with `shellEnds`: the shell's
+  ending plays it); once the run has ended (`dungeonEnd`), Z or X at least `END_HOLD` (60) steps later
   starts a new run seeded from the step count (not with `shellEnds`, Engine 0.16 part C T7: the
   shell's end screen ends the run). The world keeps stepping after the end, so until a
   restart the scene is exactly the headless game: `headless()` gives the page's step hook its
   snapshot and hash.
 - `main.ts`: awaits `withContentImages` (the PNG decoded before the first frame), then
   `bootBrowserGame` (keyboard, gamepad, touch pad, loop, `?debug=step` step hook, audio with the
-  songs and sfx and the `crypt` song once unlocked, the shell's volume control stored under
+  songs and sfx and the `crypt` song once unlocked, from T9 the skin's layered `music` and the
+  seed through the shell's mixer, which the scene plays songs through, the shell's volume control stored under
   `ww:dungeon:volumes`, gap M1, hit-pauses) with `canvasDisplay`; the scene draws through the
   display's presenter (`DungeonSceneOptions.presenter`), so the settings and the title's hidden HUD
   reach it.
@@ -176,8 +188,9 @@ opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
 4. Add or extend a run file through it (below) and rerun the run files: walk-east, escape and
    lost-in-the-guard-room must keep their hashes unless the room changes a room they play. A
    snapshot holds the room the hero is in (its entities), never another room's map, so changing a
-   room only moves the hashes of runs that walk through it (T8's chasm doors moved only
-   beat-the-warden's, whose path they changed; cross-the-chasm, which never reaches them, kept its).
+   room only moves the hashes of runs that walk through it (T8's chasm doors moved only the old
+   boss run's, whose path they changed; cross-the-chasm, which never reaches them, kept its; T9's
+   hearts in the warden hall moved only to-the-boss-door's last ticks).
 5. Light and dress it in the skin (`lighting.maps.<room>`, below).
 
 ## Run files and what each guards
@@ -213,14 +226,23 @@ games/samples/dungeon/runs/escape.run.json --json` (exit 0 passed, 4 a failed ch
   the boss there with 3 hp at 992). The spitter's rock costs a heart (`hero.hp` at least 4
   throughout, never dead); `guards: ["doors-change-room", "dash-crosses-pits",
 "keys-open-locked-doors"]`.
-- `beat-the-warden` (1502 ticks, Engine 0.16 part C T6; re-recorded in T8): to-the-boss-door's
-  input to the warden hall (tick 952, `keys` 0 at 938), then T6's fight input 542 ticks later than
-  before: leaning on the shut shutter (still there at 1052), the fight (the charge step at 1088,
-  hp 2 with hit invulnerability at 1112, phase 1 at 1236, the defeat sequence from 1268), `flags`
-  `["bossDefeated"]` at 1328 and out west through the opened shutter (the chasm at 1502);
-  `guards: ["boss-patterns", "boss-phases", "boss-hit-invuln", "boss-seals-room"]`. Its hashes
-  were re-recorded in T8 because the chasm's east door became locked (the boss now waits behind
-  the ossuary's key; the fight itself plays as before, the hero entering with one heart less).
+- `win` (1940 ticks, Engine 0.16 part C T9, the whole dungeon: title to the Warden beaten):
+  to-the-boss-door's path from tick 0 (the chasm at 120, the dash owned at 180 and dashing at
+  365, the ossuary at 481, the key at 656, used at 938, the warden hall at 952 with the boss at
+  6 hp), leaning on the shut shutter (`hero.x` 15, `sealed` at 1048), a heart (`hero.hp` 6 at
+  1147), the fight with the boss's hp falling 5 (1195, hit invulnerability), 4 (1303, phase 1),
+  3 (1411), 2 (1615, phase 2), 1 (1663) and 0 (1759, `dying`), `flags` `["bossDefeated"]` and no
+  enemies at 1879, the four rooms `visited`; hp at least 4 and never dead throughout. `guards`:
+  `doors-change-room`, `dash-crosses-pits`, `keys-open-locked-doors` and every `boss-*` rule.
+  It replaces T6's `beat-the-warden` (removed in T9: the boss changed).
+- `boss-lost` (2429 ticks, T9, the loss to the boss): the win's input into the fight until the
+  boss is down to 4 hp in phase 1 (1303), then standing still: hurt (5 at 1341, 4 at 1546, 1 at
+  2132), dying at 2325 and dead at 2420 in the warden hall with the boss still at 4 hp; `guards`
+  every `boss-*` rule and `damage-reduces-hp`.
+- How the fight's input was found: a scratch bot (not committed) stepped clones of the world,
+  tried 12-tick moves, sword swings and dashes, and kept the one whose state scored best (boss hp
+  down, hero hp up and a way out of every attack 40 ticks on); its held keys went into the run
+  files as plain data, so no bot is needed to replay them.
 
 `pnpm -s cli mutants games/samples/dungeon --json`: every `TOPDOWN_RULES` rule is guarded by some
 run, and no run is weak on its own `guards` (`tests/runs/dungeon-mutants.test.ts` holds it to that,
@@ -380,8 +402,7 @@ crypt gained the kit's free `dark` flag (it only tags the map), and no run file'
   (`banner-*`, `fountain-*-0..2`, `basin-*-0..2`, `skull`) are rectangles of the pack's sheet in
   the `crypt-items` image. Kept clear of the HUD panels and the boss bar. Tuned from screenshots
   at 6x (`pnpm -s cli screenshot games/samples/dungeon/runs/to-the-boss-door.run.json --tick 420
---scale 6` the chasm, `--tick 600` the ossuary, `beat-the-warden.run.json --tick 1060` the
-  warden hall).
+--scale 6` the chasm, `--tick 600` the ossuary, `win.run.json --tick 1100` the warden hall).
 - How it was tuned: screenshots at 3x of the courtyard, the store room, the blast, the slide into
   the bat hall, the bat hall with the key, the guard-room fight and the crypt
   (`pnpm -s cli screenshot games/samples/dungeon/runs/escape.run.json --tick 600 --scale 3`), read
@@ -394,3 +415,67 @@ crypt gained the kit's free `dark` flag (it only tags the map), and no run file'
 - Never: other games. Nothing in `engine/` or `kits/` may import from here, and no alias points into
   `games/`.
 - Game rules belong in data (rooms, songs, skin) wherever possible, not code.
+
+## The Bone Warden (Engine 0.16 part C T9; feedback items 441-447)
+
+The boss room, the end and the boss music. Everything is data: the room file, the skin, the
+songs, sfx and `game.json`.
+
+- **The fight** (`content/rooms/warden-hall.json`, the kit's boss form): 6 hit points, touch 1
+  half heart, `hitInvuln` 36, `knockResist` 0.75, `defeatTicks` 120, flag `bossDefeated`.
+
+  | phase      | steps, looped                                                                                                                                      |
+  | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | 0 (6-5 hp) | idle 50, telegraph `charge` 36, charge (2 px/tick, 70), idle 45, telegraph `shoot` 30, a ring of 8, idle 30                                        |
+  | 1 (4-3 hp) | telegraph `shoot` 28, a spread of 5 (gap 3), idle 30, telegraph `charge` 30, charge (2.5), idle 40, telegraph `summon` 26, 2 bats (max 2), idle 36 |
+  | 2 (2-1 hp) | telegraph `slam` 26, slam (radius 40), idle 34, telegraph `shoot` 24, an aimed ring of 12, idle 20, telegraph `charge` 24, charge (3), idle 44     |
+
+  Every attack follows a telegraph naming it (tested); the idles after a charge are the windows
+  to strike.
+
+- **The look** (`kinds["boss:warden"]`, with a red `glow` so its dark body reads on the floor):
+  the pack's big demon (`demon-idle-*`, `demon-run-*` in `crypt-actors`) and text frames cut from
+  it (`crypt-art.txt`, "The Bone Warden": one colour, `#9f294e`, added to `crypt-art.json` as
+  index 31, legend `v`): `demon-crouch` (the charge's wind-up, alternating with burning eyes),
+  `demon-rear` (risen: the slam and the summon), `demon-glare-*` (the shot), `demon-white-*` (the
+  hit flash), and `demon-rage-*` (the red-hot last phase: a `byTag` look on `phase:` 2 and up,
+  after the `flashing` look). `dying` flashes white; the `boss-defeat` event fades it out.
+- **Sounds and feel** (`events`; a field key per attack): `boss-telegraph:attack=<a>` the
+  `warden-warn` rise (higher for the shot, lower for the summon; `warden-roar` and a rising
+  stretch for the slam), a red flash and the boss's red light (`lighting.events`);
+  `boss-attack:attack=charge` `warden-charge` with dust and a shake, `shoot` `warden-shoot`,
+  `slam` `warden-slam` with a ring, smoke, a big shake, a hit-pause and a squash, `summon`
+  `warden-summon` with smoke; `boss-hit` `warden-hit`, sparks, a squash, a warm flash and a
+  6-tick hit-pause; `boss-phase` `warden-roar`; `boss-defeat` `warden-defeat`, fire, smoke, a
+  zoom punch, a long flash of light and the fade; `boss-defeated` `unlock` (the shutter opens).
+  `dash` (the kit's dash event) `dash`, with dust.
+- **Ducking**: `hurt` 0.55, `boss-hit` 0.5, the slam 0.6, `boss-phase` 0.6, `boss-defeat` 0.9 (held
+  100 ticks), and every dialog box (the shell's `DIALOG_DUCK`).
+- **Music** (`music.warden`, the room's `music`): three layers, 132 bpm, 8 bars, looping, every
+  channel the same length (`warden-calm`: a low drone, a slow pad and a heartbeat; `warden-fight`:
+  an eighth arpeggio, a pumping octave bass and a beat; `warden-rage`: a lead melody, 16th
+  shimmer and hats). The mix (first rule that holds): `flag.bossDefeated` -> silent (20 ticks,
+  the victory tune takes over); `bossHp` 0 (the defeat sequence) -> calm 0.5 only (45);
+  `bossPhase` >= 2 -> calm 0.4, fight 1, rage 1 (10); `bossPhase` >= 1 -> calm 0.5, fight 1, rage
+  0.55; `bossHp` >= 6 (untouched) -> calm 1, fight 0.45; any other hp -> calm 0.7, fight 1; no
+  boss -> calm only. `warden-falls` (120 bpm, once) is the victory tune.
+- **HUD**: hearts and keys top left; the item panel's icon follows the selected item (`frames`:
+  `bomb`, or the dash's green flask), its count only with bombs (`when: "ammo.bomb"`); while a
+  boss is in the room a stone panel at the top with its name centred over its red bar.
+- **Screenshots read and iterated** (`pnpm -s cli screenshot games/samples/dungeon/runs/win.run.json
+--tick <n> --scale 3`, and crops of the boss at 4x): 1015 and 1100 (the charge's telegraph:
+  the demon's dark body vanished on the dark floor, so it got a red `glow` and a stronger light),
+  1196 (a hit: the white flash), 1250, 1404, 1440, 1590, 1625 and 1690 (the rage look in phase
+  2), 1765 and 1800 (the defeat), `--tick 0 --overlay dialog:intro`, `--tick 1880 --overlay
+dialog:victory` and `--tick 1900 --overlay end` (a Keys line read 0 at the end and was
+  dropped). The boss bar first lay bare over the wall's fountains; it got its own panel.
+- **Tests** (`dungeon.test.ts`, "the boss room, the win and the loss"): the boss's data and its
+  telegraphs, the end states of `win` (`won`) and `boss-lost` (`fallen` in the hall), the shell's
+  end triggers firing on the runs' frames (the victory dialog and tune, the fall), the intro's
+  text and the portraits, the scene playing `win` with the headless snapshots and its music
+  (`crypt`, `warden`, `warden-falls`; the shell's tune with `shellEnds`), the HUD's items and
+  their status mid-fight, the warden's states and tags in the run, a sound for every boss
+  action and the dash, the layered mix tick by tick and the ducking through a `Mixer`.
+  `tests/browser/menus.test.ts` plays the dungeon by keyboard from the title through the intro
+  to the Warden beaten, the victory dialog (with `__ww.mix().song` `warden-falls`) and the end
+  screen.

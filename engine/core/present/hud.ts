@@ -55,7 +55,8 @@ export const HUD_FALLBACK_COLOR = '#ff00ff';
  * lacks draws nothing. `number` and `text` are one `text` item in `item.font`, else `opts.font`,
  * else `DEFAULT_HUD_FONT`. `hearts` repeat their frame once per whole point (a non-number draws
  * none; with `half` the value counts halves: a `frame` per two points and `half` for one left
- * over), `icon` draws it once when the value is truthy; each copy is the frame's width plus 1 px
+ * over), `icon` draws it once when the value is truthy (its `frames` entry for the value, else
+ * `frame`); each copy is the frame's width plus 1 px
  * right of the last, from the item's `sheet` (else `sheets.sheet`) in `sheets.palette`. Where the
  * sheet or frame is missing (`frameSize` gives null) each copy is an 8 x 8 box in
  * `sheets.fallbackColor`, else `HUD_FALLBACK_COLOR`, 9 px apart.
@@ -85,13 +86,15 @@ export function layoutHud(
       item.as === 'hearts' ? (typeof value === 'number' ? Math.max(0, Math.floor(value)) : 0) : value ? 1 : 0;
     const frames: string[] = [];
     const whole = halves ? Math.floor(points / 2) : points;
-    for (let i = 0; i < whole; i++) if (item.frame !== undefined) frames.push(item.frame);
+    // An icon's frame may follow the value (`frames`, Engine 0.16 part C T9: the selected item).
+    const own = item.as === 'icon' ? (item.frames?.[String(value)] ?? item.frame) : item.frame;
+    for (let i = 0; i < whole; i++) if (own !== undefined) frames.push(own);
     if (halves && points % 2 === 1) frames.push(item.half!);
     const sheet = item.sheet ?? defaults?.sheet;
     const palette = defaults?.palette;
     const sizeOf = (frame: string | undefined) =>
       sheet === undefined || frame === undefined ? null : frameSize(sheet, palette, frame);
-    const size = sizeOf(item.frame);
+    const size = sizeOf(own);
     const step = (size?.w ?? HUD_FALLBACK_SIZE) + 1;
     frames.forEach((frame, i) => {
       const x = item.x + i * step;

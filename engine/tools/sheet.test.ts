@@ -144,9 +144,9 @@ describe('dialog overlays (the dungeon, Engine 0.16 part C T7)', () => {
     expect(checkOverlay(content, parseOverlay('dialog:intro'))).toBeNull();
     expect(checkOverlay(content, parseOverlay('dialog:nope'))).toMatch(/no dialog "nope"; it has intro/);
     // Each typed glyph is drawn twice, its shadow first.
-    expect(glyphs('dialog:intro')).toContain('TThheeoollddccrryypptt');
-    expect(glyphs('dialog:intro')).toContain('rroooomm..');
-    expect(glyphs('dialog:intro')).toContain('Knight');
+    expect(glyphs('dialog:intro')).toContain('oollddccrryyppttbbeelloowwtthheehhiillll..');
+    expect(glyphs('dialog:intro')).toContain('hhiillllwwaattcchh..');
+    expect(glyphs('dialog:intro')).toContain('SirEdrin');
     expect(glyphs('dialog:intro*10').length).toBeLessThan(glyphs('dialog:intro').length);
   });
 

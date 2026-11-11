@@ -1,0 +1,9 @@
+{
+  "id": "warden-falls",
+  "bpm": 120,
+  "loop": false,
+  "pulse1": "v10 @2 o4a8 o5d8 o5f+8 o5a8 o6d4 o5a8 o5f+8 | o5g4 o5b8 o6d8 o6c+4 o5e4 | o6d1",
+  "pulse2": "v6 @1 o4f+8 o4a8 o5d8 o5f+8 o5a4 o5f+8 o5d8 | o5d4 o5g8 o5b8 o5a4 o5c+4 | o5a1",
+  "triangle": "o3d2 o3d2 | o2g2 o2a2 | o3d1",
+  "noise": "v5 k4 h8 h8 s4 h8 h8 | k4 k8 k8 s4 s8 s8 | k1"
+}

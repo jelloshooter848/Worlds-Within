@@ -358,7 +358,9 @@ transition, music?, restart, ... })` (`booted.menus`) puts each screen on the st
     that frame's status. `step()` (each loop step, before the scenes) then shows its `dialog`
     (marked as the ending's) and, when that closes, or at once without one, the end screen
     (`openEnd`: `menus.end` with the trigger's `heading`/`credits`, the stats from the ending's
-    status, its music). `resume()` closes the end screen as before; the ending does not fire
+    status, its music). From Engine 0.16 part C T9 a trigger's own `music` (a victory tune) plays
+    as its ending opens (with its dialog) and stays under the end screen, in place of
+    `menus.end.music`. `resume()` closes the end screen as before; the ending does not fire
     again.
   - **Input:** the dialog takes the UI kit's confirm (Z, Space, Enter, gamepad A or Start) and
     taps or clicks on its box (the menus' pointer); the pause key does nothing over it

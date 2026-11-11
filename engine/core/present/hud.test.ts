@@ -94,6 +94,24 @@ describe('layoutHud (G33)', () => {
     expect(hudItemShown({}, {})).toBe(true);
   });
 
+  it("picks an icon's frame by the status value with `frames`, else `frame` (Engine 0.16 part C T9)", () => {
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      sheets: { sheet: 'items' },
+      kinds: {},
+      hud: [{ status: 'item', as: 'icon', x: 3, y: 4, frame: 'key', frames: { dash: 'boots' } }],
+    };
+    const sizes: HudFrameSize = (_s, _p, frame) =>
+      frame === 'key' || frame === 'boots' ? { w: 8, h: 8 } : null;
+    expect(layoutHud(skin, { item: 'dash' }, sizes)).toEqual([
+      { kind: 'sprite', sheet: 'items', frame: 'boots', x: 3, y: 4 },
+    ]);
+    expect(layoutHud(skin, { item: 'bomb' }, sizes)).toEqual([
+      { kind: 'sprite', sheet: 'items', frame: 'key', x: 3, y: 4 },
+    ]);
+    expect(layoutHud(skin, { item: '' }, sizes)).toEqual([]);
+  });
+
   it('splits text into glyphs 8 px apart, skipping spaces', () => {
     expect(hudGlyphs({ kind: 'text', font: 'f', text: '1 2', x: 10, y: 4 })).toEqual([
       { kind: 'sprite', sheet: 'f', frame: '1', x: 10, y: 4 },

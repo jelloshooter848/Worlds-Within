@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 441.** (Last used: 440.)
+**Next unused number: 448.** (Last used: 447.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1760,3 +1760,34 @@ door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files
 - **440.** The HUD's item panel always shows the bomb icon and `ammo.bomb` (0 with the dash): the
   skin's `icon` HUD item has one frame and no per-value frames. Left for T10's polish pass (a
   per-value icon in the UI kit, or two items keyed on a status). OK?
+
+**Engine 0.16 part C, T9: the boss room, the win and loss runs, dialogs and the boss music**
+(details in `games/samples/dungeon/CLAUDE.md`, "The Bone Warden (T9)"):
+
+- **441.** The Bone Warden keeps T6's name and the pack's big demon, now a three-phase fight in
+  data: 6 hit points; phase 1 a charge and a ring of 8 shots; at 4 hp a spread of 5, a faster
+  charge and two summoned bats; at 2 hp a slam, an aimed ring of 12 and the fastest charge;
+  every attack after a telegraph naming it. The hall gained two columns and two hearts. Its
+  telegraph poses (a crouch before the charge, risen before the slam and summon, burning eyes
+  before a shot), a white hit flash and a red-hot last phase are text frames cut from the pack's
+  demon by a small generator (`crypt-art.txt`, one colour added to its palette). OK, or harder?
+- **442.** `beat-the-warden` is gone: `win` (the whole dungeon from tick 0 to the Warden beaten and
+  its flag, 1940 ticks) and `boss-lost` (the hero dies in the fight, 2429 ticks) replace it, both
+  found by a scratch search bot (greedy over cloned worlds, not committed) whose held keys went
+  into the run files as plain data. `to-the-boss-door` was re-recorded (the hall's new hearts
+  are in its last ticks' snapshots). OK?
+- **443.** The game now has three ends: the Warden beaten (`flag.bossDefeated`: the victory dialog,
+  the `warden-falls` tune and the end screen "The Warden is at rest"), the old escape with the
+  relic (its dialog now says the Warden still stirs) and a fall. OK, or should the escape go?
+- **444.** The hero is named: Sir Edrin, last knight of the hill watch, going down to put the Bone
+  Warden to rest because it wakes the dead each night. Intro of three pages. OK?
+- **445.** Engine addition: an end trigger may give its own `music` (`menus.triggers.end[].music`,
+  played when that ending opens and kept under the end screen; else `menus.end.music`), so the
+  victory tune never plays after a fall. OK?
+- **446.** Engine addition: a HUD `icon`'s `frames` (a frame per status value, else `frame`), so the
+  item panel shows the dash (the pack's green flask, as its pickup) or the bomb; the bomb count
+  shows only with bombs. Closes item 440. OK?
+- **447.** Room music from data: the scene plays a room's `music` (else `crypt`); the warden
+  hall's is the skin's layered `warden` (calm, fight and rage layers, 132 bpm, 8 bars, mixed
+  from the frame's `bossHp`/`bossPhase`/`flag.bossDefeated`, ducking under hits, the slam, the
+  phase change, the defeat and dialogs). The page now plays music through the shell's mixer. OK?

@@ -3,35 +3,57 @@
   "at": [1, 2],
   "shutters": "boss",
   "dark": true,
-  "hint": "A sealed hall beyond the chasm. The Bone Warden rises from its throne.",
+  "music": "warden",
+  "hint": "The Bone Warden's hall, sealed behind you. It rises from its throne: watch how it gets ready, then strike.",
   "boss": {
     "id": "warden",
     "name": "The Bone Warden",
     "at": [10, 4],
-    "hp": 3,
+    "hp": 6,
     "contact": 1,
-    "hitInvuln": 30,
-    "defeatTicks": 60,
+    "hitInvuln": 36,
+    "knockResist": 0.75,
+    "speed": 2,
+    "defeatTicks": 120,
     "flag": "bossDefeated",
     "pattern": [
-      { "do": "idle", "ticks": 40 },
-      { "do": "telegraph", "ticks": 30, "attack": "charge" },
-      { "do": "charge", "speed": 2, "ticks": 60 },
-      { "do": "idle", "ticks": 30 },
-      { "do": "telegraph", "ticks": 24, "attack": "shoot" },
-      { "do": "shoot", "pattern": "ring", "count": 8 }
+      { "do": "idle", "ticks": 50 },
+      { "do": "telegraph", "ticks": 36, "attack": "charge" },
+      { "do": "charge", "ticks": 70 },
+      { "do": "idle", "ticks": 45 },
+      { "do": "telegraph", "ticks": 30, "attack": "shoot" },
+      { "do": "shoot", "pattern": "ring", "count": 8 },
+      { "do": "idle", "ticks": 30 }
     ],
     "phases": [
       {
-        "hp": 1,
+        "hp": 4,
+        "speed": 2.5,
+        "pattern": [
+          { "do": "telegraph", "ticks": 28, "attack": "shoot" },
+          { "do": "shoot", "pattern": "spread", "count": 5, "gap": 3, "speed": 2.25 },
+          { "do": "idle", "ticks": 30 },
+          { "do": "telegraph", "ticks": 30, "attack": "charge" },
+          { "do": "charge", "ticks": 70 },
+          { "do": "idle", "ticks": 40 },
+          { "do": "telegraph", "ticks": 26, "attack": "summon" },
+          { "do": "summon", "kinds": ["bat"], "count": 2, "max": 2 },
+          { "do": "idle", "ticks": 36 }
+        ]
+      },
+      {
+        "hp": 2,
         "speed": 3,
         "pattern": [
-          { "do": "telegraph", "ticks": 20, "attack": "summon" },
-          { "do": "summon", "kinds": ["bat"], "count": 2, "max": 2 },
-          { "do": "idle", "ticks": 30 },
-          { "do": "telegraph", "ticks": 20, "attack": "slam" },
-          { "do": "slam", "radius": 36 },
-          { "do": "idle", "ticks": 40 }
+          { "do": "telegraph", "ticks": 26, "attack": "slam" },
+          { "do": "slam", "radius": 40 },
+          { "do": "idle", "ticks": 34 },
+          { "do": "telegraph", "ticks": 24, "attack": "shoot" },
+          { "do": "shoot", "pattern": "ring", "count": 12, "aim": true, "speed": 2.5 },
+          { "do": "idle", "ticks": 20 },
+          { "do": "telegraph", "ticks": 24, "attack": "charge" },
+          { "do": "charge", "ticks": 60 },
+          { "do": "idle", "ticks": 44 }
         ]
       }
     ]

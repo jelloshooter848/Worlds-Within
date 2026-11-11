@@ -1,6 +1,6 @@
 {
   "id": "dungeon",
-  "title": "The dungeon sample: The Old Crypt, eight rooms, a dash over the pits and a boss door on the top-down kit",
+  "title": "The dungeon sample: The Old Crypt, eight rooms, a dash over the pits and the Bone Warden on the top-down kit",
   "kit": "topdown",
   "content": {
     "room": ["content/rooms/*.json"],
@@ -44,7 +44,7 @@
     },
     "title": {
       "name": "The Old Crypt",
-      "subtitle": "Torches, keys and a relic in the dark",
+      "subtitle": "A knight, a dark crypt and the Bone Warden",
       "art": [
         { "sheet": "crypt-actors", "frame": "knight-idle-0", "scale": 3, "anchor": "left", "x": 30, "y": 8 },
         { "sheet": "crypt-actors", "frame": "orc-idle-0", "scale": 3, "anchor": "right", "x": 30, "y": 8 }
@@ -66,29 +66,47 @@
       "credits": "Art: 0x72's DungeonTileset II (CC0)",
       "lines": [
         { "label": "Time", "status": "time", "format": "time" },
-        { "label": "Rooms seen", "status": "roomsSeen" }
+        { "label": "Rooms seen", "status": "roomsSeen" },
+        { "label": "Health", "status": "hp", "of": "maxHp" }
       ],
       "items": ["title"]
     },
     "dialogs": {
       "intro": {
-        "speaker": "Knight",
+        "speaker": "Sir Edrin",
         "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
         "pages": [
-          "The old crypt lies under the hill. They say a relic waits in its deepest room.",
-          "Keys open locked doors, and a cracked wall may give way to a bomb. Find the way out."
+          "I am Edrin, last knight of the hill watch. Each night the dead walk out of the old crypt below the hill.",
+          "Something down there wakes them: the Bone Warden, the old keeper of the tombs. Tonight I go down to put it to rest.",
+          "Keys open locked doors, a cracked wall may give way to a bomb, and a light step crosses a pit. Into the dark."
+        ]
+      },
+      "victory": {
+        "speaker": "Sir Edrin",
+        "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
+        "pages": [
+          "The Bone Warden falls to dust, and the torches burn steady again.",
+          "No more dead will walk out of the crypt. The hill can sleep, and so can I."
         ]
       },
       "escaped": {
-        "speaker": "Knight",
+        "speaker": "Sir Edrin",
         "portrait": { "sheet": "crypt-actors", "frame": "knight-idle-0" },
-        "pages": ["Daylight at last. The crypt is behind me."]
+        "pages": [
+          "Daylight at last, and the relic with me. But the Bone Warden still stirs below. Another night."
+        ]
       },
-      "fallen": { "pages": ["The torches gutter out. The crypt keeps its secrets for now."] }
+      "fallen": { "pages": ["The torches gutter out. The crypt keeps its secrets, and its Warden, for now."] }
     },
     "triggers": {
       "intro": "intro",
       "end": [
+        {
+          "when": { "status": "flag.bossDefeated", "eq": true },
+          "dialog": "victory",
+          "heading": "The Warden is at rest",
+          "music": "warden-falls"
+        },
         { "when": { "status": "exited", "eq": true }, "dialog": "escaped", "heading": "You escaped!" },
         { "when": { "status": "dead", "eq": true }, "dialog": "fallen", "heading": "You fell" }
       ]

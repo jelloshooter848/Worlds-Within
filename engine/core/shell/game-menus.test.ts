@@ -485,6 +485,30 @@ describe('GameMenus: dialogs and the end of a top-down game (Engine 0.16 part C 
     expect(menus.state).toBe('end');
   });
 
+  it("plays an ending's own music with its dialog, kept under the end screen (Engine 0.16 part C T9)", () => {
+    const spec = menusSchema.parse({
+      ...DIALOGS,
+      end: { ...DIALOGS.end, music: 'end-tune' },
+      triggers: {
+        end: [
+          { when: { status: 'won', eq: true }, dialog: 'won', music: 'victory' },
+          { when: { status: 'dead', eq: true } },
+        ],
+      },
+    });
+    const won = setup({ spec });
+    won.menus.frameStatus({ won: true, time: 60 });
+    won.menus.step();
+    expect(won.music).toEqual(['victory']);
+    won.press('jump'); // the dialog closes: the end screen, the victory tune still playing
+    expect(won.menus.state).toBe('end');
+    expect(won.music).toEqual(['victory']);
+    const fell = setup({ spec });
+    fell.menus.frameStatus({ dead: true, time: 60 });
+    fell.menus.step();
+    expect(fell.music).toEqual(['end-tune']); // no music of its own: the end screen's
+  });
+
   it('the end screen shows the ending frame status and the trigger heading', () => {
     const ctx = {
       screen: { width: 256, height: 240 },

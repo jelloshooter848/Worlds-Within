@@ -766,6 +766,12 @@ const hudItem = z
       .exactOptional()
       .describe('the sprite file for hearts, icons, counters and panels (default `sheets.sheet`)'),
     frame: id.exactOptional().describe("the frame for hearts, icons, a counter's icon and a panel"),
+    frames: z
+      .record(z.string().min(1), id)
+      .exactOptional()
+      .describe(
+        'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9)',
+      ),
     when: id
       .exactOptional()
       .describe(
@@ -858,6 +864,8 @@ const hudItem = z
     if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
+    if (v.frames !== undefined && v.as !== 'icon')
+      ctx.addIssue({ code: 'custom', path: ['frames'], message: '`frames` is for "icon" only' });
     if (v.half !== undefined && v.as !== 'hearts')
       ctx.addIssue({ code: 'custom', path: ['half'], message: '`half` is for "hearts" only' });
     const statusFree = v.as === 'panel' || v.as === 'minimap' || (v.as === 'text' && v.format !== undefined);
@@ -1468,6 +1476,7 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     sheetAt(['hud', i], item.sheet, [
       ...one(item.frame),
       ...(item.half === undefined ? [] : [{ frame: item.half, path: ['half'] }]),
+      ...Object.entries(item.frames ?? {}).map(([value, frame]) => ({ frame, path: ['frames', value] })),
     ]);
     if (item.panel !== undefined) sheetAt(['hud', i, 'panel'], item.panel.sheet, one(item.panel.frame));
   });

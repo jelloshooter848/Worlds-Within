@@ -638,7 +638,7 @@ describe.skipIf(missing !== null)(
         await key(page, 'Enter'); // Start
         await until(page, 'dialog');
         let view = await menus(page);
-        expect(view.dialog).toMatchObject({ id: 'intro', page: 0, pages: 2, typed: false });
+        expect(view.dialog).toMatchObject({ id: 'intro', page: 0, pages: 3, typed: false });
         expect(await page.evaluate(() => document.body.dataset.menu)).toBe('dialog');
         expect(await page.isVisible('#ww-pause')).toBe(false);
         const held = await hash(page);
@@ -651,10 +651,13 @@ describe.skipIf(missing !== null)(
         await key(page, 'Enter'); // skip: the page whole
         view = await menus(page);
         expect(view.dialog).toMatchObject({ page: 0, typed: true });
-        expect(view.dialog!.text).toContain('The old crypt');
+        expect(view.dialog!.text).toContain('I am Edrin');
         await key(page, 'Enter'); // the next page
         view = await menus(page);
         expect(view.dialog).toMatchObject({ page: 1, typed: false });
+        await key(page, 'Enter'); // skip
+        await key(page, 'Enter'); // the last page (T9: who the hero is, why the crypt, how to get on)
+        expect((await menus(page)).dialog).toMatchObject({ page: 2, typed: false });
         await key(page, 'Enter'); // skip
         // The run's first keys go down before the box closes, so they are held on the game's tick 0.
         for (const a of steps[0]!.hold) await page.keyboard.down(KEYS[a]!);
@@ -696,5 +699,58 @@ describe.skipIf(missing !== null)(
         await browser.close();
       }
     }, 240_000);
+
+    // Engine 0.16 part C T9: the whole dungeon from the title, through the intro, the win run's
+    // input on the keys to the Bone Warden's defeat, the victory dialog with its tune and the
+    // end screen.
+    it('by keyboard: from the title through the intro to the Bone Warden beaten, the victory dialog and the end screen', async () => {
+      const win = (
+        JSON.parse(readFileSync(join(ROOT, DG, 'runs', 'win.run.json'), 'utf8')) as {
+          input: { steps: { frame: number; hold: string[] }[] };
+        }
+      ).input.steps;
+      const server = await serve();
+      const browser = await launch();
+      try {
+        const { page, errors } = await open(browser, `${server.url}${DG}?debug=step&title=show`);
+        await step(page, 20);
+        await key(page, 'Enter'); // Start
+        await until(page, 'dialog');
+        for (let i = 0; i < 5; i++) await key(page, 'Enter'); // skip and page through the intro
+        for (const a of win[0]!.hold) await page.keyboard.down(KEYS[a]!);
+        await key(page, 'Enter'); // closed: play
+        expect((await menus(page)).state).toBe('play');
+        const down = new Set(win[0]!.hold.map((a) => KEYS[a]!));
+        let hall = false;
+        for (let i = 1; i < win.length; i++) {
+          const { frame } = await world(page);
+          if (win[i]!.frame > frame) await step(page, win[i]!.frame - frame);
+          if (!hall && (await page.evaluate(() => (window as DebugWindow).__ww!.mix()?.song)) === 'warden')
+            hall = true;
+          const want = new Set(win[i]!.hold.map((a) => KEYS[a]!));
+          for (const k of down) if (!want.has(k)) await page.keyboard.up(k);
+          for (const k of want) if (!down.has(k)) await page.keyboard.down(k);
+          down.clear();
+          for (const k of want) down.add(k);
+        }
+        for (const k of down) await page.keyboard.up(k);
+        expect(hall).toBe(true); // the boss hall's layered music
+        for (let i = 0; i < 20 && (await menus(page)).state === 'play'; i++) await step(page, 20);
+        const view = await menus(page);
+        expect(view.dialog?.id).toBe('victory');
+        expect(await page.evaluate(() => (window as DebugWindow).__ww!.snapshot())).toMatchObject({
+          flags: ['bossDefeated'],
+        });
+        expect(await page.evaluate(() => (window as DebugWindow).__ww!.mix()?.song)).toBe('warden-falls');
+        await page.screenshot({ path: join(shots, 'menus-dungeon-victory.png') });
+        for (let i = 0; i < 6 && (await menus(page)).state === 'dialog'; i++) await key(page, 'Enter');
+        expect([(await menus(page)).state, (await menus(page)).screen]).toEqual(['end', 'end']);
+        await page.screenshot({ path: join(shots, 'menus-dungeon-won.png') });
+        expect(errors).toEqual([]);
+        await page.close();
+      } finally {
+        await browser.close();
+      }
+    }, 300_000);
   },
 );

@@ -107,8 +107,8 @@ describe('get, set, add, remove', () => {
     const before = read(cwd, PALETTE);
     const add = await cli(cwd, 'add', PALETTE, 'colors', '#ffffff');
     expect(add.code).toBe(EXIT.ok);
-    expect(add.out).toMatchObject({ verified: true, path: 'colors.31', before: null, after: '#ffffff' });
-    expect((await cli(cwd, 'get', PALETTE, 'colors.31')).out.value).toBe('#ffffff');
+    expect(add.out).toMatchObject({ verified: true, path: 'colors.32', before: null, after: '#ffffff' });
+    expect((await cli(cwd, 'get', PALETTE, 'colors.32')).out.value).toBe('#ffffff');
     const insert = await cli(cwd, 'add', PALETTE, 'colors.0', '#123456');
     expect(insert.out).toMatchObject({ verified: true, path: 'colors.0' });
     expect((await cli(cwd, 'get', PALETTE, 'colors.1')).out.value).toBe('#222222');
@@ -116,7 +116,7 @@ describe('get, set, add, remove', () => {
       verified: true,
       before: '#123456',
     });
-    const remove = await cli(cwd, 'remove', PALETTE, 'colors.31');
+    const remove = await cli(cwd, 'remove', PALETTE, 'colors.32');
     expect(remove.out).toMatchObject({ verified: true, before: '#ffffff', after: null });
     expect(read(cwd, PALETTE)).toBe(before);
   });

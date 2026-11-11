@@ -451,6 +451,8 @@ export class GameMenus {
     if (this.open.length > 0 || this.busy) return false;
     if (this.endingDue) {
       this.endingDue = false;
+      // An ending's own music (a victory tune, a lament) starts with its dialog.
+      if (this.ending?.music !== undefined) this.opts.music?.(this.ending.music);
       const id = this.ending?.dialog;
       if (id !== undefined && this.showDialog(id)) {
         this.endingDialog = true;
@@ -469,7 +471,9 @@ export class GameMenus {
     this.banner = null;
     this.from = 'end';
     this.push('end');
-    if (this.opts.spec.end.music !== undefined) this.opts.music?.(this.opts.spec.end.music);
+    // An ending with music of its own keeps it playing under the end screen.
+    if (this.ending?.music === undefined && this.opts.spec.end.music !== undefined)
+      this.opts.music?.(this.opts.spec.end.music);
     return true;
   }
 
