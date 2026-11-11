@@ -1,0 +1,166 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 160,
+  "orders": [
+    {
+      "tick": 0,
+      "ui": "click",
+      "at": {
+        "x": 136,
+        "y": 264
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "build",
+      "building": "barracks",
+      "cell": {
+        "x": 18,
+        "y": 16
+      }
+    },
+    {
+      "tick": 1,
+      "ui": "stop"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 1,
+      "path": "ui.selection",
+      "op": "eq",
+      "value": [11]
+    },
+    {
+      "tick": 1,
+      "path": "sides.red.sites",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "world.key.worker-1.Worker.job",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.gold.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.barracks.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.scout.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 2,
+      "path": "world.key.worker-1.Worker.job",
+      "op": "eq",
+      "value": null
+    },
+    {
+      "tick": 70,
+      "path": "kit.seen.buildings.0.id",
+      "op": "eq",
+      "value": 20
+    },
+    {
+      "tick": 80,
+      "path": "sides.red.sites",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 80,
+      "path": "world.id.20.Health.hp",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 81,
+      "path": "sides.red.sites",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 82,
+      "path": "kit.seen.buildings",
+      "op": "eq",
+      "value": []
+    },
+    {
+      "tick": 82,
+      "path": "kit.enemy.scout.fired",
+      "op": "eq",
+      "value": 2
+    },
+    {
+      "tick": 160,
+      "path": "sides.red.stock.gold",
+      "op": "eq",
+      "value": 80
+    }
+  ],
+  "invariants": [
+    {
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "path": "sides.red.units",
+      "op": "eq",
+      "value": 4
+    }
+  ],
+  "hashEvery": 20,
+  "guards": ["enemy-follows-plan", "enemy-waits-for-trigger", "enemy-knows-only-what-it-saw"],
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "b2946d6420569da2"
+    },
+    {
+      "tick": 20,
+      "hash": "4265bbc2e1c4903a"
+    },
+    {
+      "tick": 40,
+      "hash": "80ab17930f96b678"
+    },
+    {
+      "tick": 60,
+      "hash": "90a1675d64ce46d4"
+    },
+    {
+      "tick": 80,
+      "hash": "f72d4dffd95086b9"
+    },
+    {
+      "tick": 100,
+      "hash": "3fbc1ee7c7d6bce9"
+    },
+    {
+      "tick": 120,
+      "hash": "7780a8857f427178"
+    },
+    {
+      "tick": 140,
+      "hash": "06276da56c5c205f"
+    },
+    {
+      "tick": 160,
+      "hash": "3c8ae6c8450507ff"
+    }
+  ]
+}

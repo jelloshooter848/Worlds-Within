@@ -124,7 +124,7 @@ Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSO
 ```sh
 pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json          # also walk-east, lost-in-the-guard-room
 pnpm -s cli run games/samples/platformer/runs/full-game.run.json --json    # also level-1..3, boss, each *-lost, level-1-hurt
-pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json     # also commands, economy, hold, lost
+pnpm -s cli run games/samples/rts-skirmish/runs/fog.run.json --json        # also opening, ai-barracks, razed
 pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
 pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
 pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
@@ -196,6 +196,26 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
   `1.0-11`).
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
+
+## Engine 0.16 part D (build notes, in progress; D10 writes this part up)
+
+### D8: The River Ford match (golden hashes)
+
+`games/samples/rts-skirmish` became the match against an AI base across the river (a 64x40
+point-symmetric map with three fords, the kit's fog AI in `content/enemy/blue.json`, the end rule
+in `content/end/ford.json`, archers, barks, the clickable minimap). Its 0.15 map, raiders plan and
+run files were removed (they live on unchanged in `games/rts-classic`, D2), with their golden
+hashes:
+
+- Removed (final hashes): `battle` `588fe33bb3ecfcfd`, `commands` `9f8fc0dc11549b95`, `hold`
+  `dcf2c02f2cb6d266`, `economy` `34bf04d6b067075d`, `lost` `2cc7b6a08b67cdfd`.
+- New (final hashes): `opening` (200 ticks) `ba3cccd15c1aa5de`, `ai-barracks` (400)
+  `c5f146d0b4836da5`, `fog` (480) `82fc61891e2e80b8`, `razed` (160) `3c8ae6c8450507ff`.
+- No other golden hash moved (rts-classic's are its own files; fog, markers, barks, the minimap
+  and the stats are presentation, and every new run gives its golden hashes with the page's fog
+  drawn on and off, `skirmish.test.ts`). `mutants` now guards all six kit rules on the sample
+  (`enemy-knows-only-what-it-saw` through the AI's `scout` step), so
+  `tests/runs/rts-skirmish-mutants.test.ts` lists none unguarded.
 
 ## Engine 0.16 part C
 

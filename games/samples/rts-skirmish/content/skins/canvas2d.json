@@ -142,6 +142,46 @@
           "w": 44,
           "h": 36,
           "anchor": "bottom"
+        },
+        "archer-red": {
+          "x": 513,
+          "y": 136,
+          "w": 20,
+          "h": 26,
+          "anchor": {
+            "x": 10,
+            "y": 26
+          }
+        },
+        "archer-red-step": {
+          "x": 513,
+          "y": 136,
+          "w": 20,
+          "h": 26,
+          "anchor": {
+            "x": 10,
+            "y": 27
+          }
+        },
+        "archer-blue": {
+          "x": 496,
+          "y": 514,
+          "w": 20,
+          "h": 26,
+          "anchor": {
+            "x": 10,
+            "y": 26
+          }
+        },
+        "archer-blue-step": {
+          "x": 496,
+          "y": 514,
+          "w": 20,
+          "h": 26,
+          "anchor": {
+            "x": 10,
+            "y": 27
+          }
         }
       }
     },
@@ -749,6 +789,84 @@
       },
       "outline": "team"
     },
+    "unit:archer": {
+      "sheet": "rts",
+      "frames": {
+        "idle": {
+          "down": "archer-red",
+          "up": "archer-red",
+          "right": "archer-red"
+        },
+        "walk": {
+          "down": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 3
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["archer-red-step", "archer-red"],
+            "ticks": [2, 4]
+          },
+          "up": {
+            "frames": ["archer-red-step", "archer-red"],
+            "ticks": [2, 4]
+          },
+          "right": {
+            "frames": ["archer-red-step", "archer-red"],
+            "ticks": [2, 4]
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["archer-red", "archer-red-step"],
+            "ticks": 8
+          }
+        }
+      },
+      "flipFacing": true,
+      "team": {
+        "colors": {
+          "red": "#e0442c",
+          "blue": "#1e8ce1"
+        },
+        "hue": {
+          "min": 5,
+          "max": 22
+        }
+      },
+      "outline": "team"
+    },
     "unit:soldier:enemy": {
       "sheet": "rts",
       "frames": {
@@ -810,6 +928,84 @@
           },
           "right": {
             "frames": ["soldier-blue", "soldier-blue-step"],
+            "ticks": 8
+          }
+        }
+      },
+      "flipFacing": true,
+      "team": {
+        "colors": {
+          "red": "#e0442c",
+          "blue": "#1e8ce1"
+        },
+        "hue": {
+          "min": 190,
+          "max": 206
+        }
+      },
+      "outline": "team"
+    },
+    "unit:archer:enemy": {
+      "sheet": "rts",
+      "frames": {
+        "idle": {
+          "down": "archer-blue",
+          "up": "archer-blue",
+          "right": "archer-blue"
+        },
+        "walk": {
+          "down": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 3
+          },
+          "up": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 3
+          },
+          "right": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 3
+          }
+        },
+        "attack": {
+          "down": {
+            "frames": ["archer-blue-step", "archer-blue"],
+            "ticks": [2, 4]
+          },
+          "up": {
+            "frames": ["archer-blue-step", "archer-blue"],
+            "ticks": [2, 4]
+          },
+          "right": {
+            "frames": ["archer-blue-step", "archer-blue"],
+            "ticks": [2, 4]
+          }
+        },
+        "build": {
+          "down": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 6
+          },
+          "up": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 6
+          },
+          "right": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 6
+          }
+        },
+        "gather": {
+          "down": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 8
+          },
+          "up": {
+            "frames": ["archer-blue", "archer-blue-step"],
+            "ticks": 8
+          },
+          "right": {
+            "frames": ["archer-blue", "archer-blue-step"],
             "ticks": 8
           }
         }
@@ -1389,6 +1585,26 @@
         "color": "#a80020",
         "ticks": 20
       }
+    },
+    "bark:unitType=worker": {
+      "sound": "bark-worker",
+      "pitch": [-1, 1],
+      "cooldown": 6
+    },
+    "bark:unitType=soldier": {
+      "sound": "bark-soldier",
+      "pitch": [-1, 1],
+      "cooldown": 6
+    },
+    "bark:unitType=archer": {
+      "sound": "bark-archer",
+      "pitch": [-1, 1],
+      "cooldown": 6
+    },
+    "bark:unitType=hero": {
+      "sound": "bark-hero",
+      "pitch": [-1, 1],
+      "cooldown": 6
     }
   },
   "hud": [
@@ -1436,10 +1652,10 @@
     },
     {
       "as": "minimap",
-      "x": 394,
-      "y": 216,
-      "w": 82,
-      "h": 50,
+      "x": 348,
+      "y": 186,
+      "w": 128,
+      "h": 80,
       "scale": 2,
       "back": "#0c0c1c",
       "border": "#fcfcfc",
@@ -1496,6 +1712,16 @@
           "size": 2
         },
         {
+          "kind": "unit:archer",
+          "color": "#fcfcfc",
+          "size": 2
+        },
+        {
+          "kind": "unit:archer:enemy",
+          "color": "#fcfcfc",
+          "size": 2
+        },
+        {
           "kind": "unit:hero",
           "color": "#fcfcfc",
           "size": 2
@@ -1526,6 +1752,84 @@
       "x": 160,
       "y": 111,
       "frame": "banner-lost"
+    },
+    {
+      "as": "text",
+      "x": 4,
+      "y": 256,
+      "format": "On my way!",
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "bark",
+        "eq": "move"
+      }
+    },
+    {
+      "as": "text",
+      "x": 4,
+      "y": 256,
+      "format": "To arms!",
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "bark",
+        "eq": "attack"
+      }
+    },
+    {
+      "as": "text",
+      "x": 4,
+      "y": 256,
+      "format": "Off to the gold.",
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "bark",
+        "eq": "gather"
+      }
+    },
+    {
+      "as": "text",
+      "x": 4,
+      "y": 256,
+      "format": "We will build it.",
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "bark",
+        "eq": "build"
+      }
+    },
+    {
+      "as": "text",
+      "x": 4,
+      "y": 256,
+      "format": "Training begins.",
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "bark",
+        "eq": "train"
+      }
+    },
+    {
+      "as": "text",
+      "x": 4,
+      "y": 256,
+      "format": "Holding here.",
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "bark",
+        "eq": "stop"
+      }
     }
   ],
   "camera": {

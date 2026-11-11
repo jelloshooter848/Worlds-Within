@@ -1,0 +1,105 @@
+{
+  "run": "games/samples/rts-skirmish/runs/fog.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "b2946d6420569da2"
+    },
+    {
+      "tick": 20,
+      "hash": "f83bd7f6f8988d95"
+    },
+    {
+      "tick": 40,
+      "hash": "6240857ba82c5fea"
+    },
+    {
+      "tick": 60,
+      "hash": "ddf6787345a68837"
+    },
+    {
+      "tick": 80,
+      "hash": "48611b2b644270b2"
+    },
+    {
+      "tick": 100,
+      "hash": "22ab6b3dd0a09c76"
+    },
+    {
+      "tick": 120,
+      "hash": "00c543a60b2b5750"
+    },
+    {
+      "tick": 140,
+      "hash": "97cb7ec546bf013b"
+    },
+    {
+      "tick": 160,
+      "hash": "8c13fba43d7bbfd9"
+    },
+    {
+      "tick": 180,
+      "hash": "26daff34477cccea"
+    },
+    {
+      "tick": 200,
+      "hash": "8b8d17293165b4cf"
+    },
+    {
+      "tick": 220,
+      "hash": "073472f494fa1463"
+    },
+    {
+      "tick": 240,
+      "hash": "6501752b152172fb"
+    },
+    {
+      "tick": 260,
+      "hash": "0b1595bf51e19d6b"
+    },
+    {
+      "tick": 280,
+      "hash": "163d2bc5c58e3a86"
+    },
+    {
+      "tick": 300,
+      "hash": "61b6a6cf2b62659c"
+    },
+    {
+      "tick": 320,
+      "hash": "a6db3db2ab8ab728"
+    },
+    {
+      "tick": 340,
+      "hash": "75c8fee5526c2e5e"
+    },
+    {
+      "tick": 360,
+      "hash": "ae94d60633890636"
+    },
+    {
+      "tick": 380,
+      "hash": "161796722aea3852"
+    },
+    {
+      "tick": 400,
+      "hash": "a898423893a47f84"
+    },
+    {
+      "tick": 420,
+      "hash": "8f2ae0a662ccfe3c"
+    },
+    {
+      "tick": 440,
+      "hash": "dfef73699ace708e"
+    },
+    {
+      "tick": 460,
+      "hash": "f0f33284bfa8d3c3"
+    },
+    {
+      "tick": 480,
+      "hash": "82fc61891e2e80b8"
+    }
+  ]
+}

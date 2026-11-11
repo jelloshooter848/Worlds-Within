@@ -1,0 +1,240 @@
+{
+  "faction": "blue",
+  "knowledge": "fog",
+  "steps": [
+    {
+      "id": "gold",
+      "repeat": {
+        "every": 10,
+        "times": null
+      },
+      "order": {
+        "type": "gather",
+        "units": {
+          "type": "worker",
+          "idle": true
+        },
+        "resource": "gold"
+      }
+    },
+    {
+      "id": "scout",
+      "when": {
+        "count": "buildings",
+        "side": "enemy",
+        "op": "lte",
+        "value": 0
+      },
+      "repeat": {
+        "every": 40,
+        "times": null
+      },
+      "order": {
+        "type": "scout",
+        "units": {
+          "type": "soldier",
+          "idle": true,
+          "max": 1
+        },
+        "areas": [
+          {
+            "x": 0,
+            "y": 10,
+            "w": 20,
+            "h": 20
+          },
+          {
+            "x": 0,
+            "y": 0,
+            "w": 31,
+            "h": 40
+          }
+        ]
+      }
+    },
+    {
+      "id": "barracks",
+      "when": {
+        "count": "units",
+        "side": "self",
+        "type": "worker",
+        "op": "gte",
+        "value": 5
+      },
+      "repeat": {
+        "every": 30,
+        "times": null
+      },
+      "order": {
+        "type": "build",
+        "units": {
+          "type": "worker",
+          "max": 2
+        },
+        "building": "barracks",
+        "cells": [
+          {
+            "x": 51,
+            "y": 22
+          },
+          {
+            "x": 51,
+            "y": 15
+          }
+        ]
+      }
+    },
+    {
+      "id": "workers",
+      "repeat": {
+        "every": 10,
+        "times": null
+      },
+      "order": {
+        "type": "train",
+        "building": "town-centre",
+        "unit": "worker",
+        "upTo": 7
+      }
+    },
+    {
+      "id": "soldiers",
+      "repeat": {
+        "every": 10,
+        "times": null
+      },
+      "order": {
+        "type": "train",
+        "building": "barracks",
+        "unit": "soldier",
+        "upTo": 6
+      }
+    },
+    {
+      "id": "archers",
+      "repeat": {
+        "every": 10,
+        "times": null
+      },
+      "order": {
+        "type": "train",
+        "building": "barracks",
+        "unit": "archer",
+        "upTo": 3
+      }
+    },
+    {
+      "id": "defend",
+      "when": {
+        "count": "units",
+        "side": "enemy",
+        "op": "gte",
+        "value": 1
+      },
+      "repeat": {
+        "every": 20,
+        "times": null
+      },
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "soldier",
+          "idle": true,
+          "min": 2,
+          "max": 3
+        },
+        "target": "nearest-enemy"
+      }
+    },
+    {
+      "id": "rally",
+      "when": {
+        "count": "buildings",
+        "side": "enemy",
+        "op": "gte",
+        "value": 1
+      },
+      "repeat": {
+        "every": 40,
+        "times": null
+      },
+      "order": {
+        "type": "move",
+        "units": {
+          "type": "soldier",
+          "idle": true
+        },
+        "cell": {
+          "x": 48,
+          "y": 20
+        }
+      }
+    },
+    {
+      "id": "wave",
+      "at": 1800,
+      "repeat": {
+        "every": 1500,
+        "times": null
+      },
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "soldier",
+          "idle": true,
+          "min": 4
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "wave-archers",
+      "at": 1800,
+      "repeat": {
+        "every": 1500,
+        "times": null
+      },
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "archer",
+          "idle": true,
+          "min": 2
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "push",
+      "at": 4800,
+      "repeat": {
+        "every": 100,
+        "times": null
+      },
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "soldier",
+          "idle": true
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "push-archers",
+      "at": 4800,
+      "repeat": {
+        "every": 100,
+        "times": null
+      },
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "archer",
+          "idle": true
+        },
+        "target": "enemy-base"
+      }
+    }
+  ]
+}

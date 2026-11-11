@@ -362,7 +362,7 @@ with `"systems": "rts"`; a game run hands them to the game's `order` method), an
 [{ "tick": 20, "hash": "..." }]` are sync hashes `run` checks, stopping at the first that differs
 (exit 4, naming that tick and the last that matched). A battle played in the RTS sample's page
 exports as such a run file. Samples: `engine/sim/__fixtures__/battle.run.json`,
-`games/samples/rts-skirmish/runs/battle.run.json`.
+`games/rts-classic/runs/battle.run.json`.
 
 Missions (Engine 0.10): a world run's `"missions": [{ "tick": 5, "mission": "raid", "action":
 "open" }, { "tick": 5, "mission": "raid", "action": "play", "outcome": "partial",

@@ -1,0 +1,49 @@
+{
+  "run": "games/samples/rts-skirmish/runs/opening.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "b2946d6420569da2"
+    },
+    {
+      "tick": 20,
+      "hash": "d5becd08942d276a"
+    },
+    {
+      "tick": 40,
+      "hash": "f4c766658a242956"
+    },
+    {
+      "tick": 60,
+      "hash": "b2107165b48f38d0"
+    },
+    {
+      "tick": 80,
+      "hash": "181623ce1ee904a2"
+    },
+    {
+      "tick": 100,
+      "hash": "68bc205592d933d8"
+    },
+    {
+      "tick": 120,
+      "hash": "4e7566769c55cf2e"
+    },
+    {
+      "tick": 140,
+      "hash": "139fb3db45236cb2"
+    },
+    {
+      "tick": 160,
+      "hash": "617e32c6bab6ba5f"
+    },
+    {
+      "tick": 180,
+      "hash": "56bd561aebfe1b4f"
+    },
+    {
+      "tick": 200,
+      "hash": "ba3cccd15c1aa5de"
+    }
+  ]
+}

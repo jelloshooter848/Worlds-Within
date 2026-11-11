@@ -83,11 +83,11 @@ const CASES: Case[] = [
     bound: STRICT,
   },
   {
-    name: 'the RTS skirmish on its CC0 pack at 16:9 (The River Ford, Engine 0.16 part D, D7)',
-    run: 'games/samples/rts-skirmish/runs/battle.run.json',
+    name: 'the RTS skirmish on its CC0 pack at 16:9 (The River Ford, Engine 0.16 part D; the match, D8)',
+    run: 'games/samples/rts-skirmish/runs/fog.run.json',
     // The pack's sprites with team colours and outlines, the made ground sheet, zoom-stable bars,
-    // the minimap; a building done (flash), units going down (particles), the battle won (banner).
-    tiles: ['19', '124', '141', '160', '141+fade*10'],
+    // fog of war and the minimap; the hero struck (sparks) and falling (particles) by the barracks.
+    tiles: ['20', '300', '444', '466', '444+fade*10'],
     bound: STRICT,
   },
   {

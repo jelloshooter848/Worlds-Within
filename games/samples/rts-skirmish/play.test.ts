@@ -8,18 +8,20 @@ import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { PointerGesture } from '@engine/core/input/pointer-logic';
 import { readGameFiles } from '@engine/core/node/game-files';
+import { skinMinimap } from '@engine/core/ui';
 import { RTS_TILE_SIZE } from '@kits/rts';
 import { loadSkirmish } from './content';
 import { createGame } from './headless';
-import { skirmishPicture } from './picture';
+import { skirmishLook, skirmishPicture } from './picture';
 import { SkirmishPlay, STEPS_PER_TICK, TICKS_PER_SECOND } from './play';
 import { stateHash } from '@engine/core/state-hash';
 import { BattleRecorder, type RecordedRun } from './recording';
 
 // The page's side of the skirmish without a browser (Engine 0.9 T12): the recorder hashes as `run`
 // does, and `SkirmishPlay` driven by scripted pointer gestures and buttons records orders whose
-// run file replays headless to the same hashes. The real page is played by
-// tests/browser/rts-skirmish.test.ts.
+// run file replays headless to the same hashes. Engine 0.16 part D (D8): the picture is fogged,
+// accepted orders show a marker and bark, a tap on the minimap moves the camera, and the match's
+// stats are counted. The real page is played by tests/browser/rts-skirmish.test.ts.
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const content = mustLoad(loadSkirmish(readGameFiles(ROOT)));
@@ -63,7 +65,8 @@ function newPlay(pointer: ScriptedPointer, stepsPerTick = 1) {
     content,
     seed: 9,
     pointer,
-    picture: (_r, ui) => skirmishPicture(presenter, content.manifest.screen, ui),
+    picture: (_r, opts) => skirmishPicture(presenter, content.manifest.screen, opts),
+    minimap: skinMinimap(skirmishLook(content).skin),
     stepsPerTick,
   });
   return { play, presenter };
@@ -95,22 +98,28 @@ describe('the recorder', () => {
     expect(stateHash(snapshot)).toBe(toolsHash(canonicalJson(snapshot)));
   });
 
-  it("gives battle.run.json's hashes for its orders, and a run file of them", async () => {
-    const run = JSON.parse(
-      readFileSync(new URL('./runs/battle.run.json', import.meta.url), 'utf8'),
-    ) as RecordedRun;
+  it("gives fog.run.json's hashes for its interface actions, and a run file of their orders", async () => {
+    const run = JSON.parse(readFileSync(new URL('./runs/fog.run.json', import.meta.url), 'utf8')) as {
+      ticks: number;
+      orders: ({ tick: number } & JsonObject)[];
+      hashes: { tick: number; hash: string }[];
+    };
     const game = createGame(content, 9);
     const recorder = new BattleRecorder(9);
     recorder.reached(0, () => game.snapshot());
     for (let t = 0; t < run.ticks; t++) {
-      for (const { tick, ...o } of run.orders) if (tick === t) game.order(o as unknown as JsonObject);
+      for (const { tick, ...o } of run.orders) if (tick === t) game.order(o);
       game.step(NO_INPUT);
       recorder.reached(game.rts.tick, () => game.snapshot());
     }
     const out = await recorder.runFile(game.rts.recorded());
     expect(out?.hashes).toEqual(run.hashes);
-    expect(out?.orders).toEqual(run.orders);
-    expect(out).toMatchObject({ game: '..', seed: 9, ticks: 240, hashEvery: 20 });
+    expect(out?.orders.map((o) => [o.tick, o.type])).toEqual([
+      [0, 'move'],
+      [420, 'move'],
+      [430, 'attack'],
+    ]);
+    expect(out).toMatchObject({ game: '..', seed: 9, ticks: 480, hashEvery: 20 });
   });
 
   it('has nothing to export before tick 20, and leaves out orders of the last tick', async () => {
@@ -122,7 +131,7 @@ describe('the recorder', () => {
       game.step(NO_INPUT);
       recorder.reached(t, () => game.snapshot());
     }
-    game.rts.issue({ faction: 'red', type: 'stop', units: [7] });
+    game.rts.issue({ faction: 'red', type: 'stop', units: [11] });
     const out = await recorder.runFile(game.rts.recorded());
     expect(out?.ticks).toBe(20);
     expect(out?.orders).toEqual([]);
@@ -139,62 +148,110 @@ describe('SkirmishPlay (the page without the DOM)', () => {
 
   it('starts with the camera on the player’s base and draws through the picture', () => {
     const { play, presenter } = newPlay(new ScriptedPointer());
-    expect(play.camera.topLeft()).toEqual({ x: 0, y: 33 });
+    // The town centre (4,18, 3x3) centred, held at the map's west edge.
+    expect(play.camera.topLeft()).toEqual({ x: 0, y: 177 });
     play.render(new NullRenderer());
     expect(presenter.frames).toBe(1);
     expect(presenter.last?.camera).toMatchObject({ zoom: 1 });
   });
 
-  it('builds, trains and attacks from gestures and buttons, and the export replays to its hashes', async () => {
+  it('draws the player’s picture through fog of war', () => {
+    const { play, presenter } = newPlay(new ScriptedPointer());
+    play.render(new NullRenderer());
+    const fog = presenter.last?.fog;
+    expect(fog?.cols).toBe(64);
+    expect(fog?.rows).toBe(40);
+    // Red's base is seen, blue's town centre (57,19) is not, nor drawn.
+    expect(fog?.cells[19]![5]).toBe('2');
+    expect(fog?.cells[20]![58]).toBe('0');
+    expect(presenter.last?.entities.some((e) => e.kind.startsWith('building:town-centre:enemy'))).toBe(false);
+  });
+
+  it('moves the camera to a tap on the minimap, and gives no order for it', () => {
+    const pointer = new ScriptedPointer();
+    const { play } = newPlay(pointer);
+    const spec = skinMinimap(skirmishLook(content).skin)!;
+    const scale = spec.scale!;
+    // Blue's town centre (57,19, 3x3) on the minimap.
+    const tapAt = { x: spec.box.x + 58.5 * scale, y: spec.box.y + 20.5 * scale };
+    pointer.next = [{ type: 'tap', button: 'primary', kind: 'touch', ...tapAt }];
+    play.update(NO_INPUT);
+    expect(play.camera.centre()).toEqual({ x: 1024 - 240, y: 20.5 * RTS_TILE_SIZE });
+    expect(play.minimapPoint(spec.box.x - 1, spec.box.y)).toBeNull();
+    // A drag from the minimap follows the pointer; a right tap there is still a command.
+    pointer.next = [
+      {
+        type: 'box',
+        phase: 'move',
+        kind: 'mouse',
+        x0: tapAt.x,
+        y0: tapAt.y,
+        x1: spec.box.x + 4,
+        y1: spec.box.y + 4,
+      },
+    ];
+    play.update(NO_INPUT);
+    expect(play.camera.centre().x).toBe(240);
+    expect(play.controls.selection.ids()).toEqual([]);
+    expect(play.game.rts.recorded()).toEqual([]);
+  });
+
+  it('builds, trains and moves from gestures and buttons, with markers, barks and stats, and the export replays', async () => {
     const pointer = new ScriptedPointer();
     const { play, presenter } = newPlay(pointer);
     const step = (gestures: PointerGesture[] = []) => {
       pointer.next = gestures;
       play.update(NO_INPUT);
     };
-    // Tick 0: box workers 7 and 8 (cells 7,9 and 7,10), place a barracks at 10,9.
-    step([box(play, 7, 9, 7, 10)]);
-    expect(play.controls.selection.ids()).toEqual([7, 8]);
+    // Tick 0: box workers 11-13 (cells 8,16; 9,21; 8,22), place a barracks at 11,17.
+    step([box(play, 8, 16, 9, 22)]);
+    expect(play.controls.selection.ids()).toEqual([11, 12, 13]);
     expect(play.buttons().build).toEqual(['town-centre', 'barracks']);
     play.press({ kind: 'build', building: 'barracks' });
-    pointer.hover = at(play, 10, 9);
+    pointer.hover = at(play, 11, 17);
     step();
     expect(play.buttons().placing).toBe('barracks');
     play.render(new NullRenderer());
     expect(presenter.last?.entities.some((e) => e.id === 'placing')).toBe(true);
-    // Worker 9 gathers at the southern gold (8,15) with a right click.
-    step([tap(play, 10, 9), tap(play, 7, 12)]);
+    step([tap(play, 11, 17)]);
     expect(play.buttons().placing).toBeNull();
-    step([tap(play, 8, 15, 'secondary')]);
+    // The accepted build shows its marker and barks (a worker's voice, the HUD's line).
+    play.render(new NullRenderer());
+    expect(presenter.last?.entities.some((e) => e.kind === 'order-marker' && e.anim.state === 'build')).toBe(
+      true,
+    );
+    expect(presenter.last?.events.some((e) => e.type === 'bark' && e['unitType'] === 'worker')).toBe(true);
+    expect(presenter.last?.status['bark']).toBe('build');
+    // Worker 13 gathers at the southern gold (10,25) with a right click.
+    play.controls.selection.set([13]);
+    step([tap(play, 10, 25, 'secondary')]);
     while (play.sides().red?.buildings['barracks'] !== 1) step();
-    // The barracks (16) trains three soldiers.
-    step([tap(play, 10, 9)]);
-    expect(play.buttons().train).toEqual(['soldier']);
-    for (let i = 0; i < 3; i++) play.press({ kind: 'train', unit: 'soldier' });
+    // The barracks trains a soldier; its progress shows under it.
+    const barracks = play.view().buildings.find((b) => b.faction === 'red' && b.kind === 'barracks')!;
+    step([tap(play, barracks.x, barracks.y)]);
+    expect(play.buttons().train).toEqual(['soldier', 'archer']);
+    play.press({ kind: 'train', unit: 'soldier' });
     step();
-    while ((play.sides().red?.unitTypes['soldier'] ?? 0) < 3) step();
-    // Soldiers and the hero attack blue's nearest soldier.
-    const soldiers = play.view().units.filter((u) => u.faction === 'red' && u.type === 'soldier');
-    play.controls.selection.set(soldiers.map((u) => u.id));
+    play.render(new NullRenderer());
+    expect(presenter.last?.entities.some((e) => e.id === `building-${barracks.id}/train`)).toBe(true);
+    while ((play.sides().red?.unitTypes['soldier'] ?? 0) < 1) step();
+    // The hero walks to the centre ford.
     play.press({ kind: 'heroes' });
     step();
-    expect(play.controls.selection.ids()).toEqual([15]);
-    play.controls.selection.set([...soldiers.map((u) => u.id), 15]);
-    const enemy = play.view().units.find((u) => u.faction === 'blue')!;
-    step([tap(play, enemy.x, enemy.y, 'secondary')]);
-    expect(play.result()).toBeNull();
-    while (play.tick < 300 && (play.sides().blue?.units ?? 0) > 0) step();
-    expect(play.sides().blue?.units).toBe(0);
-    // The end (Engine 0.15 T14): won, and the frame carries the banner's status.
-    expect(play.result()).toBe('won');
+    expect(play.controls.selection.ids()).toEqual([19]);
+    step([tap(play, 20, 19, 'secondary')]);
     play.render(new NullRenderer());
-    expect(presenter.last?.status['won']).toBe(true);
+    expect(presenter.last?.status['bark']).toBe('move');
+    expect(presenter.last?.entities.some((e) => e.kind === 'path-dot')).toBe(true);
+    expect(play.result()).toBeNull();
+    expect(play.stats()).toMatchObject({ trained: 1, built: 1, lost: 0 });
+    expect(play.stats().gold).toBeGreaterThan(0);
     while (play.tick % 20 !== 0) step();
 
     const run = await play.exportRun();
     expect(run).not.toBeNull();
     const types = run!.orders.map((o) => o.type);
-    expect(types).toEqual(['build', 'gather', 'train', 'train', 'train', 'attack']);
+    expect(types).toEqual(['build', 'gather', 'train', 'move']);
     expect(await replay(run!)).toEqual(run!.hashes);
     expect(run!.hashes.at(-1)?.tick).toBe(play.tick);
   });

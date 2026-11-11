@@ -13,8 +13,9 @@ owner decision is cited (docs/DESIGN.md, item 322). Fetched for Engine 0.16 part
 - Author: Kenney (Kenney Vleugels, www.kenney.nl)
 - Licence: CC0 1.0 Universal (the pack's `License.txt`, kept as `license.txt`, and the OpenGameArt
   page)
-- Use: the 2D art pass of The River Ford: the workers (villagers), soldiers (sword and shield) and
-  the hero (the king) in the pack's red for the player and blue for the raiders; the town centre
+- Use: the 2D art pass of The River Ford: the workers (villagers), soldiers (sword and shield),
+  archers (the bowmen, from D8) and the hero (the king) in the pack's red for the player and blue
+  for the AI's side; the town centre
   (the stone keep with a banner) and the barracks (the green-roofed hall, its roof in the team
   colour); the ground, roads, river, rocks, trees and gold; the building sites (the pack's crates
   and plank floors) and the placing ghost.

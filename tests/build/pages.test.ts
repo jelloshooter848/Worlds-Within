@@ -20,10 +20,10 @@ describe('game page discovery', () => {
     expect(rts).toEqual({
       dir: 'games/samples/rts-skirmish',
       name: 'games-samples-rts-skirmish',
-      title: 'RTS skirmish: The River Ford, hold the ford against a raiding party',
+      title: 'RTS skirmish: The River Ford, take the far bank from an AI base',
     });
     expect(gameListHtml(rts ? [rts] : [])).toContain(
-      '<a href="games/samples/rts-skirmish/">games/samples/rts-skirmish</a> <span>RTS skirmish: The River Ford, hold the ford against a raiding party</span>',
+      '<a href="games/samples/rts-skirmish/">games/samples/rts-skirmish</a> <span>RTS skirmish: The River Ford, take the far bank from an AI base</span>',
     );
     expect(pageInputs(repoRoot)['games-samples-rts-skirmish']).toBe(
       join(repoRoot, 'games/samples/rts-skirmish/index.html'),

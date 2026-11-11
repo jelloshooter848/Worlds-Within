@@ -1,0 +1,89 @@
+{
+  "run": "games/samples/rts-skirmish/runs/ai-barracks.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "b2946d6420569da2"
+    },
+    {
+      "tick": 20,
+      "hash": "e3494e042a933fec"
+    },
+    {
+      "tick": 40,
+      "hash": "e6b2c3f83939596f"
+    },
+    {
+      "tick": 60,
+      "hash": "88c1484192496441"
+    },
+    {
+      "tick": 80,
+      "hash": "1430b2ddcf4c6646"
+    },
+    {
+      "tick": 100,
+      "hash": "96ac82d0aa584aae"
+    },
+    {
+      "tick": 120,
+      "hash": "9875ec8a742b3cbd"
+    },
+    {
+      "tick": 140,
+      "hash": "ef605e8e7fdd63da"
+    },
+    {
+      "tick": 160,
+      "hash": "479deb9c559d391e"
+    },
+    {
+      "tick": 180,
+      "hash": "9872bbb43fb117f2"
+    },
+    {
+      "tick": 200,
+      "hash": "63f5c493de5e275c"
+    },
+    {
+      "tick": 220,
+      "hash": "9f0d8f1b1d386a6e"
+    },
+    {
+      "tick": 240,
+      "hash": "9a768cfbe0b69fb7"
+    },
+    {
+      "tick": 260,
+      "hash": "247f88cb213311e5"
+    },
+    {
+      "tick": 280,
+      "hash": "bb795d6f08942148"
+    },
+    {
+      "tick": 300,
+      "hash": "04db8022a059adb5"
+    },
+    {
+      "tick": 320,
+      "hash": "540ec365d0fce6f4"
+    },
+    {
+      "tick": 340,
+      "hash": "ec52809ebea60c31"
+    },
+    {
+      "tick": 360,
+      "hash": "aa641bd14ffe20c0"
+    },
+    {
+      "tick": 380,
+      "hash": "7c04dfbff0516ef7"
+    },
+    {
+      "tick": 400,
+      "hash": "c5f146d0b4836da5"
+    }
+  ]
+}

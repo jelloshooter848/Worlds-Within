@@ -1,0 +1,177 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 200,
+  "orders": [
+    {
+      "tick": 0,
+      "ui": "box",
+      "box": {
+        "x": 128,
+        "y": 256,
+        "w": 32,
+        "h": 112
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "command",
+      "at": {
+        "x": 168,
+        "y": 232
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "click",
+      "at": {
+        "x": 88,
+        "y": 312
+      }
+    },
+    {
+      "tick": 0,
+      "ui": "train",
+      "unit": "worker"
+    }
+  ],
+  "assertions": [
+    {
+      "tick": 1,
+      "path": "ui.selection",
+      "op": "eq",
+      "value": [3]
+    },
+    {
+      "tick": 1,
+      "path": "world.key.worker-1.Gatherer.node",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 1,
+      "path": "world.key.worker-3.Gatherer.node",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 1,
+      "path": "world.id.3.Producer.queue.length",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.gold.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.barracks.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.scout.fired",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "tick": 1,
+      "path": "kit.enemy.defend.fired",
+      "op": "eq",
+      "value": 0
+    },
+    {
+      "tick": 50,
+      "path": "sides.red.unitTypes.worker",
+      "op": "eq",
+      "value": 4
+    },
+    {
+      "tick": 200,
+      "path": "sides.red.stock.gold",
+      "op": "eq",
+      "value": 270
+    },
+    {
+      "tick": 200,
+      "path": "sides.red.units",
+      "op": "eq",
+      "value": 5
+    },
+    {
+      "tick": 200,
+      "path": "kit.enemy.defend.fired",
+      "op": "eq",
+      "value": 0
+    }
+  ],
+  "invariants": [
+    {
+      "path": "sides.red.buildings.town-centre",
+      "op": "eq",
+      "value": 1
+    },
+    {
+      "path": "sides.red.unitTypes.hero",
+      "op": "eq",
+      "value": 1
+    }
+  ],
+  "hashEvery": 20,
+  "guards": [
+    "command-gathers-resources",
+    "enemy-follows-plan",
+    "enemy-waits-for-trigger",
+    "enemy-knows-only-what-it-saw"
+  ],
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "b2946d6420569da2"
+    },
+    {
+      "tick": 20,
+      "hash": "d5becd08942d276a"
+    },
+    {
+      "tick": 40,
+      "hash": "f4c766658a242956"
+    },
+    {
+      "tick": 60,
+      "hash": "b2107165b48f38d0"
+    },
+    {
+      "tick": 80,
+      "hash": "181623ce1ee904a2"
+    },
+    {
+      "tick": 100,
+      "hash": "68bc205592d933d8"
+    },
+    {
+      "tick": 120,
+      "hash": "4e7566769c55cf2e"
+    },
+    {
+      "tick": 140,
+      "hash": "139fb3db45236cb2"
+    },
+    {
+      "tick": 160,
+      "hash": "617e32c6bab6ba5f"
+    },
+    {
+      "tick": 180,
+      "hash": "56bd561aebfe1b4f"
+    },
+    {
+      "tick": 200,
+      "hash": "ba3cccd15c1aa5de"
+    }
+  ]
+}

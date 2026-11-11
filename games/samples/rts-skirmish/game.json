@@ -1,11 +1,12 @@
 {
   "id": "rts-skirmish",
-  "title": "The River Ford: an RTS skirmish against a scripted raiding party",
+  "title": "The River Ford: an RTS skirmish against an AI base across the river",
   "kit": "rts",
   "content": {
     "rts-map": ["content/maps/*.world.json"],
     "rts-types": ["content/types/*.json"],
     "rts-enemy": ["content/enemy/*.json"],
+    "rts-end": ["content/end/*.json"],
     "palette": ["content/palettes/*.json"],
     "sprite": ["content/sprites/*.txt"],
     "skin": ["content/skins/*.json"],
@@ -37,7 +38,7 @@
     },
     "title": {
       "name": "The River Ford",
-      "subtitle": "Hold the crossing against the raiders",
+      "subtitle": "Take the far bank of the river",
       "art": [
         { "sheet": "rts", "frame": "hero-red", "scale": 3, "anchor": "left", "x": 44, "y": -4 },
         { "sheet": "rts", "frame": "worker-red", "scale": 2, "anchor": "left", "x": 104, "y": 14 },
@@ -56,7 +57,8 @@
       { "label": "Select many", "tap": "drag a box" },
       { "label": "Command", "tap": "right click or long-press" },
       { "label": "Pan", "tap": "edge, middle drag or two fingers" },
-      { "label": "Zoom", "tap": "wheel or pinch" }
+      { "label": "Zoom", "tap": "wheel or pinch" },
+      { "label": "Jump", "tap": "click or tap the minimap" }
     ]
   },
   "headless": "headless.ts",

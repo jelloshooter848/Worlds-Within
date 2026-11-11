@@ -10,10 +10,9 @@ import { main } from '../../engine/tools/main';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
-// The one exception, for now, is `enemy-knows-only-what-it-saw` (Engine 0.16 part D, D6): it only
-// changes a plan with `knowledge: "fog"`, which this sample's raiders do not have yet; the full
-// match (D8, D9) gives the sample a fog opponent and a run file guarding it, and empties this list.
-const UNGUARDED = ['enemy-knows-only-what-it-saw'];
+// Since the full match (Engine 0.16 part D, D8) every kit rule is guarded, the AI opponent's
+// `enemy-knows-only-what-it-saw` too (its fog plan scouts only while it knows no red building).
+const UNGUARDED: string[] = [];
 
 interface GameMutants {
   runs: { run: string; baseline: { passed: boolean }; weak: string[] }[];
@@ -21,7 +20,7 @@ interface GameMutants {
 }
 
 describe('rts-skirmish mutants', () => {
-  it('guards every kit rule but the listed one, and no run is weak', async () => {
+  it('guards every kit rule, and no run is weak', async () => {
     let stdout = '';
     const code = await main(['mutants', 'games/samples/rts-skirmish', '--json'], {
       stdout: (t) => void (stdout += t),

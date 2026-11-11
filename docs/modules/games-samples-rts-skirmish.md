@@ -4,65 +4,55 @@ Folder: `games/samples/rts-skirmish`. Detailed rules: [`games/samples/rts-skirmi
 
 ## Purpose
 
-The first RTS sample (Engine 0.9) and the first folder under `games/samples/`: one 40x24 map
-written as a world scenario, one side (workers, a town centre, a hero) against a scripted raiding
-party, on `kits/rts` over an `engine/sim` world. Build a barracks, train soldiers and beat the
-raid, headless from recorded orders with the same state hashes every time. It holds only content
-(map, unit and building types, the enemy's plan, text pixel art, a Canvas2D skin) and thin glue.
-Since Engine 0.9 T12 it plays in the browser (mouse and touch), and a battle played there
-exports as a run file that `pnpm -s cli run` replays to the same state hashes. Since Engine 0.15
-T14 it is **finished** as **The River Ford** (docs/BUILD-LOG.md, Engine 0.15, decision 13): sfx
-for the battle's events and an MML song, no placeholder look left, a win and a loss with an end
-banner and an end screen, and a `lost` run file. Its `CLAUDE.md` is the worked example of an RTS
-game on the kit. From Engine 0.16 part D (D7) it draws on a CC0 pack, Kenney's Medieval RTS
-(`assets/kenney-medieval-rts/`, credited in `assets/CREDITS.md`), at 16:9 (480x270, 4x is
-1920x1080), with team colours, team outlines, zoom-stable bars and a minimap; text sprites remain
-only where the pack has nothing (ring, bars, box, path dots, order markers, HUD icons, banners).
-Presentation only: no hash moved.
+The first RTS sample (Engine 0.9) and the first folder under `games/samples/`, **The River Ford**
+(finished in Engine 0.15 T14; docs/BUILD-LOG.md, Engine 0.15, decision 13). From Engine 0.16 part
+D it is the full skirmish: on a CC0 pack, Kenney's Medieval RTS (D7: `assets/kenney-medieval-rts/`,
+credited in `assets/CREDITS.md`), at 16:9 (480x270, 4x is 1920x1080), and since D8 **one map
+for a match against an AI base across the river**: a 64x40 map (point-symmetric, a river down
+columns 31-32 with three fords), red (three workers, a town centre, the hero Wren) against blue,
+an AI opponent written as data (`content/enemy/blue.json`, the kit's skirmish plan with knowledge
+`fog`: it gathers, builds a barracks, trains soldiers and archers, scouts until it finds red,
+answers what it sees and sends waves at red's base a few minutes apart, then a final push), and
+the end as data (`content/end/ford.json`: win by razing blue's town centre; lose your town centre
+or every unit). The page plays it with fog of war, a clickable minimap, order markers, path dots,
+barks (a sfx per unit type and a short line in the HUD), build and train progress in the world,
+and an end screen with the match's stats. It holds only content and thin glue, and its
+`CLAUDE.md` is the worked example of an RTS game on the kit. The 0.15 battle (the 40x24 map, the
+raiding party, its five run files) lives on unchanged as `games/rts-classic` (D2).
 
 ## Public API entry points
 
-- `game.json`: kit `rts`, 480x270 (16:9, Engine 0.16 part D, D7; 320x240 before), seed 9,
-  `headless.ts`, `view.ts`; the title's art is the pack's hero and soldiers.
-- `assets/kenney-medieval-rts/` (D7): the pack's sheet `medieval-rts-sheet.png` and its atlas
-  (`medieval-rts-sheet-atlas.txt`), `license.txt`, and `ford-tiles.png`, the ground, roads, river
-  banks, rocks, trees, gold, sites and ghost cut and scaled from the pack for 16 px cells by
-  `tools/ford-tiles.ts` (`fordTiles`, `FORD_FRAMES`); `assets/CREDITS.md`.
-- `content/`: `maps/skirmish.world.json` (`rts-map`), `types/skirmish.json` (`rts-types`),
-  `enemy/raiders.json` (`rts-enemy`), `sprites/skirmish.txt` (what the pack lacks: ring, bars,
-  box, path dots, order markers, HUD icons, the end banners `banner-won` and `banner-lost`) and
-  `skirmish-font.txt`, `palettes/skirmish.json`, `skins/canvas2d.json` (images `rts` and `ford`;
-  every kind the kit presents with team colours and outlines; tiles with `join` roads and banks
-  and `vary` ground; `fog` colours; its `events`: sounds and effects for the kit's
-  `RtsEventTracker` events and `battle-end`; its HUD: the counters, a minimap and the banners),
-  `sfx/*.json` (nine) and `songs/ford.json` (Engine 0.15 T14).
-- `headless.ts`: `createGame(content, seed, opts?)` (a `SkirmishGame`: the kit's `rtsGame` on
-  the sim's `rtsWorldPort(world)` (Engine 0.15 T6, gap M27), taking
-  recorded orders and interface actions; snapshot `{ world, kit, sides, ui }`; Engine 0.14 T7:
-  `worldEvents(sinceTick)` and `timeline()` over its world), `createWorld`,
-  `sidesOf` (the kit's, re-exported), `skirmishResult(view)` (`won`, `lost` or null; the
-  sample's end rule, kept out of the snapshot).
-- `actions.ts`: interface actions (`click`, `box`, `command`, `build`, `train`, `stop`) through
-  the kit's selection and command mapper.
-- `index.html`, `main.ts` (the page: `bootBrowserGame` with the song `ford`, the skin's event
-  sounds through the display's `onSound` and the shell's volume control (gap M1), the button bar,
-  Export, the end screen `#end` with Play again, the `window.wwSkirmish` hook with `result()` and
-  `clientAt` through the display's `toClient`), `play.ts` (`SkirmishPlay`, the page's scene:
-  camera, controls, buttons, `result()`, `TICKS_PER_SECOND` 10), `recording.ts`
-  (`BattleRecorder`: sync hashes every 20 ticks and the battle as a run file); the data files come
-  from `virtual:game-files`.
-- `content.ts` (`SKIRMISH_MUSIC`), `picture.ts` (`skirmishLook`, `sideKinds`,
-  `SkirmishPresentState`, `skirmishFrames`, `skirmishCanvasPicture(r, look, ui?, onSound?)`: each
-  frame carries the tick's events and, once over, `won` or `lost` in its status),
-  `view.ts` (`createView`).
-- `runs/battle.run.json` (barracks, soldiers, the raid beaten), `commands.run.json` (the same
-  battle through interface actions), `hold.run.json`, `economy.run.json`, `lost.run.json` (Engine
-  0.15 T14: every red unit sent at the raiders falls by tick 80), each with sync
-  `hashes` and golden `<name>.hashes.json`; together they guard all five kit rules, with no run weak
-  (`tests/runs/rts-skirmish-mutants.test.ts`; the kit is not strict, so `mutants` alone would not
-  fail).
-- Engine 0.15 T7: `SkirmishGame.worldKeys()`, so `commands` checks `world.key.worker-3.Gatherer.node`
-  and, for entities made in play, `world.id.<n>...` (no positional component path).
+- `game.json`: kit `rts`, 480x270, seed 9, `headless.ts`, `view.ts`; content kinds `rts-map`,
+  `rts-types`, `rts-enemy`, `rts-end` (D8), `palette`, `sprite`, `skin`, `sfx`, `song`, `font`;
+  the title "The River Ford" ("Take the far bank of the river") and the controls screen's rows
+  (with Jump: the minimap).
+- `assets/kenney-medieval-rts/` (D7): the pack's sheet and atlas, `license.txt`, and
+  `ford-tiles.png` made by `tools/ford-tiles.ts`; `assets/CREDITS.md`.
+- `content/`: `maps/ford.world.json` (`rts-map`, D8), `types/skirmish.json` (`rts-types`:
+  worker, soldier, archer, hero; town centre, barracks; buildings with `sight`),
+  `enemy/blue.json` (`rts-enemy`, knowledge `fog`), `end/ford.json` (`rts-end`),
+  `sprites/skirmish.txt` and `skirmish-font.txt`, `palettes/skirmish.json`, `skins/canvas2d.json`
+  (images `rts` and `ford`; every kind the kit presents, archers too; `fog`; `events` with the
+  barks `bark:unitType=<type>`; the HUD: counters, a 128x80 minimap with fog and team dots, the
+  bark lines (`text` items `when: { status: "bark", eq: <order> }`) and the banners),
+  `sfx/*.json` (thirteen: the battle's nine and four barks) and `songs/ford.json`.
+- `headless.ts`: `createGame(content, seed, opts?)` (a `SkirmishGame`: the kit's `rtsGame` on the
+  sim's `rtsWorldPort(world)`, taking recorded orders and interface actions; snapshot `{ world,
+kit, sides, ui }`, the kit part with the AI's memory `seen`; `view()`, `result()`,
+  `worldEvents`, `timeline`, `worldKeys`), `createWorld`, `sidesOf`, `skirmishResult(view, end)`
+  (the kit's `matchResult` under the end rule; kept out of the snapshot).
+- `actions.ts`: interface actions (`click`, `box`, `command`, `build`, `train`, `stop`).
+- `picture.ts`: `skirmishLook`, `sideKinds`, `heardEvents` (an unseen side's events left out),
+  `SkirmishPresentState`, `SkirmishFrameOptions` (`ui`, `fog` default on, `feedback`),
+  `skirmishFrames`, `skirmishPicture`, `skirmishCanvasPicture(r, look, opts?, onSound?)`,
+  `BARK_TICKS`.
+- `play.ts` (`SkirmishPlay`: camera, controls, buttons, the minimap's taps
+  (`minimapPoint`), order feedback to the picture, `result()`, `stats()` (`MatchStats`),
+  `TICKS_PER_SECOND` 10), `main.ts` + `index.html` (the page; `window.wwSkirmish` with
+  `minimapClientAt` and `stats`), `recording.ts` (`BattleRecorder`), `view.ts` (`createView`).
+- `runs/` (D8): `opening`, `ai-barracks`, `fog` and `razed`, each with sync `hashes` and golden
+  `<name>.hashes.json`; together they guard all six kit rules with no run weak
+  (`tests/runs/rts-skirmish-mutants.test.ts`). The full win and loss runs come with D9.
 
 ## Imports allowed
 
@@ -72,16 +62,16 @@ Presentation only: no hash moved.
 
 ## How to test
 
-`pnpm test games/samples/rts-skirmish` (`assets.test.ts`: the credits, the made sheet against
-its script, the frames against the pack's atlas), `pnpm -s cli validate games/samples/rts-skirmish --json`,
-`pnpm -s cli run games/samples/rts-skirmish/runs/battle.run.json --json`,
-`pnpm -s cli mutants games/samples/rts-skirmish --json` (exit 0), `pnpm test tests/runs` (golden
-hashes and backend parity through null and Canvas2D), `pnpm -s cli screenshot
-games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json`,
-`pnpm vitest run tests/browser/rts-skirmish.test.ts` (the page followed from the games index's
-link in headless Chromium: the volume control, a battle by mouse and touch, the end screen on the
-win, its export replayed with `pnpm -s cli run` to the same hashes), `pnpm vitest run
-tests/browser/pixi-parity.test.ts` (the sample's battle on Canvas2D and PixiJS, strict bound).
+`pnpm test games/samples/rts-skirmish` (`skirmish.test.ts`: the map, the AI and end rule, the art,
+sound, barks and the end, and every run's golden hashes with the page's fog drawn on and off;
+`play.test.ts`: the page's scene; `assets.test.ts`), `pnpm -s cli validate
+games/samples/rts-skirmish --json`, `pnpm -s cli run games/samples/rts-skirmish/runs/fog.run.json
+--json` (any run file), `pnpm -s cli mutants games/samples/rts-skirmish --json` (no rule
+unguarded, no run weak), `pnpm test tests/runs` (golden hashes, backend parity, fog on and off),
+`pnpm -s cli screenshot games/samples/rts-skirmish/runs/fog.run.json --tick 444 --json`,
+`pnpm vitest run tests/browser/rts-skirmish.test.ts` (the opening by mouse and touch in headless
+Chromium, the minimap click, its export replayed), `pnpm vitest run
+tests/browser/pixi-parity.test.ts` (the fog run on Canvas2D and PixiJS, strict bound).
 
 ## 2D backend choice
 

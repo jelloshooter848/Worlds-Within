@@ -36,8 +36,8 @@ let hidden = 0;
 describe('RTS fog of war never changes the state', () => {
   it('finds the rts-classic and rts-skirmish runs', () => {
     expect(runFiles).toContain('games/rts-classic/runs/battle.run.json');
-    expect(runFiles).toContain('games/samples/rts-skirmish/runs/lost.run.json');
-    expect(runFiles.length).toBe(10);
+    expect(runFiles).toContain('games/samples/rts-skirmish/runs/fog.run.json');
+    expect(runFiles.length).toBe(9);
   });
 
   it.each(runFiles)('%s: the same hashes with fog off and on', async (file) => {

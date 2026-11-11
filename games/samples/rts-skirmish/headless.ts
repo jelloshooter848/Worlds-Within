@@ -9,15 +9,25 @@ import {
   worldTimeline,
   type World,
 } from '@engine/sim/index';
-import { rtsGame, sidesOf, type RtsGame, type RtsView, type SideSummary } from '@kits/rts';
+import {
+  matchResult,
+  rtsGame,
+  sidesOf,
+  type MatchResult,
+  type RtsEnd,
+  type RtsGame,
+  type RtsView,
+  type SideSummary,
+} from '@kits/rts';
 import { interfaceActionSchema, PlayerInterface } from './actions';
-import { PLAYER, skirmishEnemy, skirmishScenario } from './content';
+import { PLAYER, skirmishEnd, skirmishEnemy, skirmishScenario } from './content';
 
 /**
  * The skirmish's headless entry (named by `headless` in `game.json`): thin glue joining an
  * `engine/sim` world built from the map to the RTS kit's `rtsGame`, which takes the player's
- * recorded orders and runs the scripted enemy. No browser, no drawing. The world's rules
- * (movement, combat, building, training, gathering) are the sim's; the kit only gives orders.
+ * recorded orders and runs the AI opponent (the kit's scripted enemy with a fog plan: it knows
+ * only what its side has seen). No browser, no drawing. The world's rules (movement, combat,
+ * building, training, gathering) are the sim's; the kit only gives orders.
  */
 
 /** The sim world built from the map, the types and `seed` (the world's and the enemy's seed). */
@@ -28,21 +38,18 @@ export function createWorld(content: ContentBundle, seed: number): World {
 /** Every side at a glance (the kit's `sidesOf`), re-exported for the page and the tests. */
 export { sidesOf, type SideSummary };
 
-/** How the skirmish has ended for the player, or null while it goes on. */
-export type SkirmishResult = 'won' | 'lost' | null;
+/** How the match has ended for the player, or null while it goes on. */
+export type SkirmishResult = MatchResult;
 
 /**
- * The skirmish's end (Engine 0.15 T14), the sample's own rule, read off the view and kept out of
- * the snapshot (so no hash moves): `lost` once the player has no unit left, `won` once no other
- * side has a unit or a building, else null. The page shows the end screen and the skin plays its
- * jingle from it; run files check the same through `sides` (`sides.red.units`, `sides.blue.units`).
+ * The match's end (Engine 0.16 part D, D8): the kit's `matchResult` under the game's end rule
+ * (`content/end/ford.json`: won once blue's town centre is down; lost once red's town centre is
+ * down or red has no unit left), read off the whole view (the game knows; fog is the player's
+ * picture). It is kept out of the snapshot, so no hash depends on it; run files check the same
+ * through `sides`. Before D8 it was code (`won` once no enemy unit or building stood).
  */
-export function skirmishResult(view: RtsView): SkirmishResult {
-  if (!view.units.some((u) => u.faction === PLAYER)) return 'lost';
-  const enemy = (f: string | null) => f !== null && f !== PLAYER;
-  if (!view.units.some((u) => enemy(u.faction)) && !view.buildings.some((b) => enemy(b.faction)))
-    return 'won';
-  return null;
+export function skirmishResult(view: RtsView, end: RtsEnd): SkirmishResult {
+  return matchResult(view, end);
 }
 
 /**
@@ -61,12 +68,24 @@ export class SkirmishGame implements HeadlessGame {
     readonly factions: readonly string[],
     /** The sim world the kit plays (for the event log and the timeline, Engine 0.14 T7). */
     readonly world: World,
+    /** The end rule (`content/end/`), for `result()`. */
+    readonly end: RtsEnd,
   ) {
     this.player = new PlayerInterface(PLAYER, rts.rules);
   }
 
   step(input: InputFrame): void {
     this.rts.step(input);
+  }
+
+  /** The world as the kit reads it now. */
+  view(): RtsView {
+    return this.rts.view();
+  }
+
+  /** How the match stands now (`skirmishResult`): `won`, `lost`, or null while it goes on. */
+  result(): SkirmishResult {
+    return skirmishResult(this.rts.view(), this.end);
   }
 
   order(order: JsonObject): string | null {
@@ -119,5 +138,6 @@ export function createGame(content: ContentBundle, seed: number, opts: HeadlessO
     }),
     [PLAYER, enemy.faction],
     world,
+    skirmishEnd(content),
   );
 }

@@ -259,7 +259,7 @@ describe('backend parity: every other game with a view, through null, canvas2d a
   it('finds the platformer test runs, the 0.15 RTS battle and the RTS skirmish sample runs', () => {
     expect(viewRuns).toContain('games/platformer-classic/runs/level-4.run.json');
     expect(viewRuns).toContain('games/rts-classic/runs/battle.run.json');
-    expect(viewRuns).toContain('games/samples/rts-skirmish/runs/battle.run.json');
+    expect(viewRuns).toContain('games/samples/rts-skirmish/runs/fog.run.json');
   });
 
   it.each(viewRuns)('%s', async (file) => {

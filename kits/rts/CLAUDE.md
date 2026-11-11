@@ -329,17 +329,18 @@ its mission tests use the siege fixture (`engine/sim/__fixtures__/siege.world.js
 `MissionHost`: the offer read and marked, a launch through the host, the frozen event tagged while
 the site keeps going up, the HUD's commit tick, refusals as results, and the thaw at the commit.
 The first game on the kit is `games/samples/rts-skirmish` (Engine 0.9 T11): its run files guard
-all five rules (`mutants games/samples/rts-skirmish`; the interface rules through its interface
-actions), with no run weak; the kit is not strict, so `tests/runs/rts-skirmish-mutants.test.ts`
-holds the sample to that. From Engine 0.16 part D (D2) the same battle is kept unchanged as the
+every rule (`mutants games/samples/rts-skirmish`; the interface rules through its interface
+actions; since Engine 0.16 part D, D8, its fog AI's `scout` step guards
+`enemy-knows-only-what-it-saw` too), with no run weak; the kit is not strict, so
+`tests/runs/rts-skirmish-mutants.test.ts` holds the sample to that. From Engine 0.16 part D (D2) the same battle is kept unchanged as the
 test game `games/rts-classic`, whose run files never move, held the same way by
 `tests/runs/rts-classic-mutants.test.ts`, so the sample can become the full match.
 `tests/kits/rts-ai.test.ts` (Engine 0.16 part D, D6) plays a fog opponent over a small sim field
 (`tests/kits/__fixtures__/skirmish-ai.world.json`): it gathers, builds a barracks, trains, scouts,
 sends a wave at red's base, attacks only what its side sees, and the data end rule decides the
-match (red `lost`, blue reading its own knowledge `won`), the same hashes every run. Both mutants
-tests list `enemy-knows-only-what-it-saw` as the one rule their run files cannot guard (their
-raiders know all), until the full match (D8, D9) gives the sample a fog run file.
+match (red `lost`, blue reading its own knowledge `won`), the same hashes every run.
+`tests/runs/rts-classic-mutants.test.ts` lists `enemy-knows-only-what-it-saw` as the one rule the
+0.15 battle's run files cannot guard (its raiders know all); the skirmish's (D8) guard it.
 `tests/runs/rts-fog.test.ts` (Engine 0.16 part D, D5) plays every rts-classic and rts-skirmish run
 through the game's view with the kit's frames made with fog off and on: the same golden hashes and
 final state each way, the fogged frames passing the schema and hiding enemies out of sight.
