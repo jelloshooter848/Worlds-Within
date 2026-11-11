@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { RtsCamera } from '@engine/core/present';
 import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
+import { validate } from '@engine/core/content/validate';
+import { presentFrameSchema, RtsCamera } from '@engine/core/present';
 import { RtsControls } from './controls';
+import { presentWorld, RtsPresentState } from './present';
 import { readWorld } from './snapshot';
 
 const TS = 16;
@@ -155,5 +157,62 @@ describe('RtsControls through a ground view (Engine 0.16 F2)', () => {
     ).toBe(false);
     controls.gesture({ type: 'box', phase: 'end', x0: 0, y0: 0, x1: 1, y1: 1, kind: 'mouse' }, view);
     expect(controls.selection.ids()).toEqual([]);
+  });
+
+  it('gives an accepted order its marker and bark, which the present state carries into frames', () => {
+    const { controls, view } = setup();
+    controls.selection.set([6]);
+    const move = controls.gesture({ type: 'tap', button: 'secondary', ...px(3, 2), kind: 'mouse' }, view)!;
+    const fb = controls.feedback(move, view);
+    expect(fb.marker).toEqual({ kind: 'move', x: 3, y: 2, w: 1, h: 1, entity: null });
+    expect(fb.events).toEqual([
+      { type: 'bark', side: 'own', order: 'move', unitType: 'soldier', entity: 'unit-6', x: 24, y: 56 },
+    ]);
+    // On an enemy: an attack marker on its box, following it.
+    const attack = controls.gesture({ type: 'tap', button: 'secondary', ...px(7, 4), kind: 'mouse' }, view)!;
+    expect(controls.feedback(attack, view).marker).toEqual({
+      kind: 'attack',
+      x: 7,
+      y: 4,
+      w: 1,
+      h: 1,
+      entity: 10,
+    });
+    // A build marks the footprint; stop and train bark with no marker.
+    controls.selection.set([5]);
+    expect(controls.feedback(controls.stop(view)!, view)).toMatchObject({
+      marker: null,
+      events: [{ order: 'stop' }],
+    });
+    const build = controls.feedback(
+      { faction: 'red', type: 'build', units: [5], target: { x: 4, y: 3 }, building: 'barracks' },
+      view,
+    );
+    expect(build.marker).toEqual({ kind: 'build', x: 4, y: 3, w: 2, h: 2, entity: null });
+    expect(build.events[0]).toMatchObject({ order: 'build', unitType: 'worker', kind: 'barracks' });
+    controls.selection.set([3]);
+    const train = controls.feedback(controls.train(view, 'worker')!, view);
+    expect(train.marker).toBeNull();
+    expect(train.events).toEqual([
+      {
+        type: 'bark',
+        side: 'own',
+        order: 'train',
+        unitType: 'worker',
+        kind: 'hall',
+        entity: 'building-3',
+        x: 16,
+        y: 16,
+      },
+    ]);
+    // Through the present state: the marker drawn, the bark sent once, passing the schema.
+    const state = new RtsPresentState();
+    state.accept(fb, view.tick);
+    const frame = presentWorld(view, { faction: 'red', size: { width: 128, height: 96 }, state });
+    expect(validate('frame.json', frame, presentFrameSchema).errors).toEqual([]);
+    expect(frame.entities.filter((e) => e.kind === 'order-marker').map((e) => e.anim.state)).toEqual([
+      'move',
+    ]);
+    expect(frame.events.map((e) => e.type)).toEqual(['bark']);
   });
 });

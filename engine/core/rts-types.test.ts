@@ -20,6 +20,15 @@ describe('rts types', () => {
     });
   });
 
+  it("keeps a building's optional sight with no default (Engine 0.16 part D, D5)", () => {
+    const hut = { health: 50, size: { w: 1, h: 1 }, work: 10 };
+    const table = rtsTypesSchema.parse({ units: {}, buildings: { tower: { ...hut, sight: 7 }, hut } });
+    expect(table.buildings.tower!.sight).toBe(7);
+    expect(Object.hasOwn(table.buildings.hut!, 'sight')).toBe(false);
+    const bad = rtsTypesSchema.safeParse({ units: {}, buildings: { hut: { ...hut, sight: -1 } } });
+    expect(bad.error?.issues.map((i) => i.path.join('.'))).toEqual(['buildings.hut.sight']);
+  });
+
   it('refuses a building that trains an unknown unit, and bad numbers, naming the field', () => {
     const result = rtsTypesSchema.safeParse({
       units: { scout: { ...UNIT, speed: 0, cost: { gold: 0 } } },

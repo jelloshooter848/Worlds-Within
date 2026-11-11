@@ -54,6 +54,18 @@ faction)`): what changed between two views as presentation events, each with its
   so a 3D skin's per-map `decor` and `places` dress each scenario; a unit or building whose
   health bar shows also carries `hp:<hp>/<max>`, the numbers a 3D skin's bar label reads.
 
+- Engine 0.16 part D (D5): `fog` (`visibility(view, faction)`, `fogView`, `RtsFogMemory`,
+  `unitSight`, `buildingSight`): fog of war as presentation and AI knowledge only (a building
+  type's optional `sight` in `engine/core/rts-types.ts`, no default, so no hash moves);
+  `presentWorld`'s `fog: true` fills the frame's `fog`, hides other sides' units out of sight and
+  shows other buildings and nodes as last seen (`last-seen`), the memory in `RtsPresentState`.
+  `feedback` (`orderMarker`, `RtsOrderFeedback`) and `barkEvent` (`events`): `RtsControls.feedback`
+  gives an accepted order's marker and `bark`, which `RtsPresentState.accept` carries into frames
+  (`order-marker`, fading); a selected own unit shows `path-dot`s from its task's `goal`/`path`
+  (new optional `RtsUnitView` fields with `sight`); an own building training shows a `train`
+  `progress-bar` tagged with its queue count (`queue:<n>`). `tests/runs/rts-fog.test.ts` proves the same hashes with fog
+  on and off over every rts-classic and rts-skirmish run.
+
 ## Imports allowed
 
 - `@engine/core/*` except its drawing and output side (`FORBIDDEN_CORE` in `config/layers.js`),

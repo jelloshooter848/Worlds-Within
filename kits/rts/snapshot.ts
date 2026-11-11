@@ -75,6 +75,12 @@ export interface RtsUnitView {
   event: string | null;
   /** True while its event is frozen (an open mission holds it). */
   frozen: boolean;
+  /** How far it sees in whole cells (`Unit.sight`), when the snapshot has it (Engine 0.16 part D). */
+  sight?: number;
+  /** Its move task's goal cell (`Task.goal`), when it has one (Engine 0.16 part D, path dots). */
+  goal?: { x: number; y: number };
+  /** The cells still to enter on its A* way (`Task.path`), when not empty (Engine 0.16 part D). */
+  path?: { x: number; y: number }[];
 }
 
 /** A building as the view sees it. */
@@ -198,9 +204,17 @@ const snapshotSchema = z.looseObject({
     Position: rows(Cell),
     Owner: rows(z.looseObject({ faction: z.string() })),
     Health: rows(z.looseObject({ hp: z.int(), max: z.int() })),
-    Unit: rows(z.looseObject({ type: z.string().nullable().default(null) })),
+    Unit: rows(
+      z.looseObject({ type: z.string().nullable().default(null), sight: z.int().min(0).optional() }),
+    ),
     Facing8: rows(z.looseObject({ dir: z.int().min(0).max(7) })),
-    Task: rows(z.looseObject({ kind: z.enum(['move', 'attack', 'build', 'gather']) })),
+    Task: rows(
+      z.looseObject({
+        kind: z.enum(['move', 'attack', 'build', 'gather']),
+        goal: Cell.nullable().optional(),
+        path: z.array(Cell).optional(),
+      }),
+    ),
     Target: rows(z.looseObject({ entity: Id })),
     Cooldown: rows(z.looseObject({ move: z.int(), attack: z.int() })),
     Worker: rows(z.looseObject({})),
@@ -309,6 +323,7 @@ export function readWorld(json: unknown): RtsView {
     if (!p || lost(id)) continue;
     const h = health.get(id);
     const cd = cooldown.get(id);
+    const tk = task.get(id);
     units.push({
       id,
       type: unit.type,
@@ -318,7 +333,7 @@ export function readWorld(json: unknown): RtsView {
       hp: h?.hp ?? 1,
       maxHp: h?.max ?? 1,
       dir: facing.get(id)?.dir ?? null,
-      task: task.get(id)?.kind ?? null,
+      task: tk?.kind ?? null,
       target: target.get(id)?.entity ?? null,
       moveWait: cd?.move ?? 0,
       attackWait: cd?.attack ?? 0,
@@ -327,6 +342,9 @@ export function readWorld(json: unknown): RtsView {
       carry: gatherer.get(id)?.carry ?? 0,
       role: member.get(id)?.role ?? null,
       ...membership(id),
+      ...(unit.sight !== undefined && { sight: unit.sight }),
+      ...(tk?.goal != null && { goal: { x: tk.goal.x, y: tk.goal.y } }),
+      ...(tk?.path !== undefined && tk.path.length > 0 && { path: tk.path.map((c) => ({ x: c.x, y: c.y })) }),
     });
   }
 

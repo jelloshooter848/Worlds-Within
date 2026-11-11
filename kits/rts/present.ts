@@ -8,8 +8,17 @@ import {
   type PresentMap,
   type PresentStatusValue,
 } from '@engine/core/present';
+import { RTS_MARKER_MAX, RTS_MARKER_TICKS, type RtsOrderFeedback, type RtsOrderMarker } from './feedback';
+import { fogView, RtsFogMemory } from './fog';
 import type { WorldBox } from './selection';
-import { facingOfDir, isFinished, type RtsUnitView, type RtsView } from './snapshot';
+import {
+  facingOfDir,
+  isFinished,
+  type RtsBuildingView,
+  type RtsResourceView,
+  type RtsUnitView,
+  type RtsView,
+} from './snapshot';
 
 /**
  * The RTS kit's presentation (Engine 0.9, the RTS view): a world snapshot read by `readWorld`
@@ -32,15 +41,26 @@ import { facingOfDir, isFinished, type RtsUnitView, type RtsView } from './snaps
  * (the mini siege's burnt siege engines). From Engine 0.16 F6 one whose health bar shows (selected,
  * or below its full hp) also gets `hp:<hp>/<max>`, the bar's numbers for a 3D skin's label, and
  * `mapId` names the map (default `rts`), so a 3D skin dresses each scenario's map its own way.
+ *
+ * Fog of war and feedback (Engine 0.16 part D, D5; presentation only, no hash moves): with `fog`
+ * the frame carries the player's `fog` grid and shows only what the player knows (`fogView`,
+ * `fog.ts`): other sides' units on cells seen now, other buildings and resource nodes as last seen
+ * (tag `last-seen`, no bars) in explored cells, and the HUD's enemy counts from what is seen; the
+ * memory lives in `RtsPresentState`. Accepted orders leave a fading `order-marker` at their target
+ * and a `bark` event (`RtsPresentState.accept`, from `RtsControls.feedback`); a selected own unit
+ * with a way to walk shows `path-dot`s; an own building training shows a `train` progress bar under
+ * it, tagged with the queue's length (`queue:<n>`).
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
 export const RTS_DEPTH = Object.freeze({
   resource: 5,
+  path: 6,
   building: 8,
   ring: 9,
   unit: 10,
   bar: 20,
+  marker: 24,
   offer: 25,
   ghost: 30,
   box: 40,
@@ -52,10 +72,54 @@ export const RTS_TILE_SIZE = 16;
 /** Bars are drawn in eighths: `hp-0` .. `hp-8`, `p-0` .. `p-8`. */
 const BAR_STEPS = 8;
 
-/** One stream's presentation state: the map tracker and when each entity's animation began. */
+/** A selected unit shows at most this many path dots. */
+const PATH_DOTS_MAX = 32;
+
+/** A marker the state keeps: the order's target and the tick it was accepted at. */
+interface KeptMarker {
+  n: number;
+  marker: RtsOrderMarker;
+  since: number;
+}
+
+/**
+ * One stream's presentation state: the map tracker, when each entity's animation began, and
+ * (Engine 0.16 part D) the player's fog memory (`fog`), the order markers and the barks waiting
+ * for the next frame. Never part of a snapshot.
+ */
 export class RtsPresentState {
   readonly maps = new MapTracker();
+  /** The player's explored cells and last-seen buildings and nodes (with `presentWorld`'s `fog`). */
+  readonly fog = new RtsFogMemory();
   private readonly anims = new Map<string, { state: string; since: number }>();
+  private markerList: KeptMarker[] = [];
+  private markerCount = 0;
+  private pending: PresentEvent[] = [];
+
+  /** Keeps an order marker from world tick `tick` (it fades over `RTS_MARKER_TICKS`). */
+  mark(marker: RtsOrderMarker, tick: number): void {
+    this.markerList.push({ n: ++this.markerCount, marker: { ...marker }, since: tick });
+    if (this.markerList.length > RTS_MARKER_MAX) this.markerList.shift();
+  }
+
+  /** An accepted order's feedback (`RtsControls.feedback`): its marker kept, its barks sent with the next frame. */
+  accept(feedback: RtsOrderFeedback, tick: number): void {
+    if (feedback.marker !== null) this.mark(feedback.marker, tick);
+    this.pending.push(...feedback.events);
+  }
+
+  /** The markers still shown at `tick`, oldest first, with their number and age (ticks); older ones are dropped. */
+  markers(tick: number): { n: number; marker: RtsOrderMarker; age: number }[] {
+    this.markerList = this.markerList.filter((m) => m.since <= tick && tick - m.since < RTS_MARKER_TICKS);
+    return this.markerList.map((m) => ({ n: m.n, marker: m.marker, age: tick - m.since }));
+  }
+
+  /** The barks waiting for the next frame (taken: the next call gives none). */
+  takeEvents(): PresentEvent[] {
+    const out = this.pending;
+    this.pending = [];
+    return out;
+  }
 
   /** Ticks `id` has been in `state` at `tick` (0 on a change of state). */
   ticksIn(id: string, state: string, tick: number): number {
@@ -130,6 +194,12 @@ export interface RtsPresentOptions {
    * names each, so a 3D skin's `decor` and `places` (keyed by map id) dress each one its own way.
    */
   mapId?: string;
+  /**
+   * Fog of war for `faction` (Engine 0.16 part D, D5; default off): the frame's `fog` grid, other
+   * sides' units only where seen now, other buildings and nodes as last seen (with `state`, which
+   * keeps the memory), and the HUD's enemy counts from what is seen.
+   */
+  fog?: boolean;
 }
 
 /** The id of the map `presentWorld` sends when its options name none. */
@@ -243,19 +313,36 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
       layer: RTS_DEPTH.ring,
     });
 
-  for (const r of view.resources) {
+  // What the player is shown: everything, or under fog what they know (Engine 0.16 part D, D5).
+  const known = opts.fog ? fogView(view, player, state?.fog ?? null) : null;
+  const shownResources: { thing: RtsResourceView; remembered: boolean }[] =
+    known?.resources ?? view.resources.map((thing) => ({ thing, remembered: false }));
+  const shownBuildings: { thing: RtsBuildingView; remembered: boolean }[] =
+    known?.buildings ?? view.buildings.map((thing) => ({ thing, remembered: false }));
+  const shownUnits = known?.units ?? view.units;
+  // The view the HUD reads: under fog, only the units seen and the buildings shown now.
+  const seen: RtsView =
+    known === null
+      ? view
+      : {
+          ...view,
+          units: shownUnits,
+          buildings: shownBuildings.filter((b) => !b.remembered).map((b) => b.thing),
+        };
+
+  for (const { thing: r, remembered } of shownResources) {
     entities.push({
       id: `resource-${r.id}`,
       kind: `resource:${r.item}`,
       ...box(r.x, r.y, 1, 1),
       facing: 'down',
       anim: { state: r.amount > 0 ? 'idle' : 'empty', t: 0 },
-      tags: [`amount:${r.amount}`],
+      tags: [`amount:${r.amount}`, ...(remembered ? ['last-seen'] : [])],
       layer: RTS_DEPTH.resource,
     });
   }
 
-  for (const b of view.buildings) {
+  for (const { thing: b, remembered } of shownBuildings) {
     const id = `building-${b.id}`;
     const s = side(b.faction, player);
     const built = isFinished(b);
@@ -269,10 +356,11 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (selected.has(b.id)) tags.push('selected');
     if (built && b.hp < b.maxHp) tags.push('damaged');
     if (b.frozen) tags.push('frozen');
+    if (remembered) tags.push('last-seen');
     // The health a bar shows, as `hp:<hp>/<max>` (Engine 0.16 F6: a 3D skin's label reads it).
-    if (built && (selected.has(b.id) || b.hp < b.maxHp)) tags.push(`hp:${b.hp}/${b.maxHp}`);
+    if (built && !remembered && (selected.has(b.id) || b.hp < b.maxHp)) tags.push(`hp:${b.hp}/${b.maxHp}`);
     const where = box(b.x, b.y, b.w, b.h);
-    if (selected.has(b.id)) ring(`${id}/ring`, [s, 'building'], where);
+    if (selected.has(b.id) && !remembered) ring(`${id}/ring`, [s, 'building'], where);
     entities.push({
       id,
       kind: `building:${b.kind}`,
@@ -282,14 +370,32 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
       tags,
       layer: RTS_DEPTH.building,
     });
+    if (remembered) continue;
     if (b.construction !== null && !b.construction.done) {
       bar(`${id}/progress`, 'progress-bar', 'p', b.construction.progress, b.construction.work, b.x, b.y, b.w);
     } else if (selected.has(b.id) || b.hp < b.maxHp) {
       bar(`${id}/hp`, 'health-bar', 'hp', b.hp, b.maxHp, b.x, b.y, b.w);
     }
+    // Training in the world (Engine 0.16 part D, D5): the own building's first unit's progress
+    // under it, tagged with how many are queued (`queue:<n>`, a skin's label reads it).
+    const head = queue[0];
+    if (built && s === 'own' && head !== undefined && b.producer !== null) {
+      entities.push({
+        id: `${id}/train`,
+        kind: 'progress-bar',
+        x: b.x * ts,
+        y: (b.y + b.h) * ts + 1,
+        w: b.w * ts,
+        h: 2,
+        facing: 'down',
+        anim: { state: `p-${eighths(b.producer.progress, head.ticks)}`, t: 0 },
+        tags: ['train', `training:${head.unit}`, `queue:${queue.length}`],
+        layer: RTS_DEPTH.bar,
+      });
+    }
   }
 
-  for (const u of view.units) {
+  for (const u of shownUnits) {
     const id = `unit-${u.id}`;
     const s = side(u.faction, player);
     const anim = unitAnim(u);
@@ -312,6 +418,52 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
       layer: RTS_DEPTH.unit,
     });
     if (selected.has(u.id) || u.hp < u.maxHp) bar(`${id}/hp`, 'health-bar', 'hp', u.hp, u.maxHp, u.x, u.y, 1);
+    // Path dots (Engine 0.16 part D, D5): a selected own unit's way, from its task's path, else its goal.
+    if (selected.has(u.id) && s === 'own') {
+      const cells = (u.path ?? (u.goal !== undefined ? [u.goal] : [])).slice(0, PATH_DOTS_MAX);
+      const dot = Math.max(2, Math.floor(ts / 4));
+      cells.forEach((c, i) => {
+        if (c.x === u.x && c.y === u.y) return;
+        const last = i === cells.length - 1;
+        entities.push({
+          id: `${id}/path-${i}`,
+          kind: 'path-dot',
+          x: c.x * ts + Math.floor((ts - dot) / 2),
+          y: c.y * ts + Math.floor((ts - dot) / 2),
+          w: dot,
+          h: dot,
+          facing: 'down',
+          anim: { state: last ? 'goal' : 'idle', t: 0 },
+          tags: ['own', ...(last ? ['goal'] : [])],
+          layer: RTS_DEPTH.path,
+        });
+      });
+    }
+  }
+
+  // Order markers (Engine 0.16 part D, D5): each accepted command's target, fading in eighths; an
+  // attack's or gather's follows its entity while it is shown.
+  for (const { n, marker: m, age } of state?.markers(tick) ?? []) {
+    const followed =
+      m.entity === null
+        ? null
+        : (shownUnits.find((u) => u.id === m.entity) ??
+          shownBuildings.find((b) => b.thing.id === m.entity)?.thing);
+    const at =
+      followed === undefined || followed === null
+        ? m
+        : 'w' in followed
+          ? { x: followed.x, y: followed.y, w: followed.w, h: followed.h }
+          : { x: followed.x, y: followed.y, w: 1, h: 1 };
+    entities.push({
+      id: `marker-${n}`,
+      kind: 'order-marker',
+      ...box(at.x, at.y, at.w, at.h),
+      facing: 'down',
+      anim: { state: m.kind, t: age },
+      tags: [m.kind, `fade:${Math.ceil(((RTS_MARKER_TICKS - age) * BAR_STEPS) / RTS_MARKER_TICKS)}`],
+      layer: RTS_DEPTH.marker,
+    });
   }
 
   for (const offer of view.missions.offered) {
@@ -363,14 +515,15 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     frame: tick,
     size: { width: opts.size.width, height: opts.size.height },
     entities,
-    events: opts.events ? [...opts.events] : [],
+    events: [...(opts.events ?? []), ...(state?.takeEvents() ?? [])],
     status: {
-      ...presentStatus(view, player, [...selected], opts.placing ?? null),
+      ...presentStatus(seen, player, [...selected], opts.placing ?? null),
       ...missionStatus(view, opts.missions ?? []),
       ...keyStatus(view, opts.keys ?? {}),
-      ...threatStatus(view, player),
+      ...threatStatus(seen, player),
     },
   };
+  if (known?.fog) frame.fog = known.fog;
   if (map !== null) frame.map = state ? state.maps.next(map) : map;
   if (opts.camera) frame.camera = { ...opts.camera };
   else if (view.terrain !== null)

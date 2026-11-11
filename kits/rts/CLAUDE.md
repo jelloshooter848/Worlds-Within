@@ -23,7 +23,9 @@ frozen: [event ids] }` (from `Opportunities`, `Missions` and `WorldTime.frozen`,
   the data), so they vanish from the view, `thingAt` and `sidesOf`, and an injured one stays at
   their current hp; `view.named` lists every named person ascending by id as `RtsNamedView { id,
 name, role, faction, fate (active, injured, captured, freed or dead), hp, maxHp, x, y }` (`x`/`y`
-  null off the map) for a HUD. Drawing rules are unchanged. Helpers: `isFinished(building)`, `DIR_FACINGS` / `facingOfDir(dir)`
+  null off the map) for a HUD. Since Engine 0.16 part D (D5) a unit also has, each only when the
+  snapshot gives it, `sight` (`Unit.sight`), `goal` (its move task's `Task.goal`) and `path` (the
+  cells still to enter, `Task.path`, when not empty), for fog of war and path dots. Drawing rules are unchanged. Helpers: `isFinished(building)`, `DIR_FACINGS` / `facingOfDir(dir)`
   (`Facing8.dir` 0 north ... 7 north-west to the eight presentation facings) and
   `thingAt(view, x, y, faction?)` (a unit, own first then lowest id; else a building whose
   footprint covers the cell; else a resource node).
@@ -67,12 +69,31 @@ false, request, code, error }` with `not_offered` (the kit's, without asking the
   `frozen` flag; Engine 0.15 T9, gap M20), so no order goes to a unit an open mission holds. All
   randomness through the `Rng` it is given; nearest picks by squared distance, ties to the lowest id.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
-camera?, missions?, events?, state? })`, below. `RtsPresentState` (map tracker, animation starts),
+camera?, missions?, events?, state?, fog? })`, below. `RtsPresentState` (map tracker, animation starts,
+  fog memory, markers),
   `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`, `keyStatus`,
   `threatStatus` (Engine 0.16 F7), `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
   (`{ id, title, event?, marker? }`; a `MissionDef` fits). `marker` is an entity id or (Engine
   0.15 T7, gap M25) a scenario key, the mission file's `marker`, resolved through the options'
   `keys` (the world's key table: `MissionHost.worldKeys()`); a key the table lacks is ignored.
+- `fog.ts` (Engine 0.16 part D, D5): fog of war for one side, presentation and AI knowledge only
+  (no hash moves). `visibility(view, faction)` gives the cells it sees now (`RtsVisibility {
+width, height, cells }`, `isVisible`, `seesBox`): a unit sees `unitSight` cells (its `sight`,
+  else its type's, else `RTS_UNIT_SIGHT` 4), a building `buildingSight` cells from its whole
+  footprint (its type's optional `sight`, `rtsBuildingTypeSchema` in `engine/core/rts-types.ts`
+  with no default so no types table or hash changes, else `max(w, h) + RTS_BUILDING_SIGHT_EXTRA`
+  2), sites included; a cell is seen when `dx² + dy² < (sight + 1)²` (the sim's floored-distance
+  range rule, integers). `RtsFogMemory` is a side's memory (explored cells, other sides' buildings
+  and the resource nodes as last seen; a remembered one seen again is updated, or forgotten when
+  gone; a view of another faction, map size or an earlier tick starts it afresh), kept in
+  `RtsPresentState.fog`, never in a snapshot. `fogView(view, faction, memory?)` is what the side
+  may be shown (`units`: own, and others on seen cells; `buildings` and `resources` as
+  `{ thing, remembered }`; `fog`: the frame's `PresentFog`, `2` seen, `1` explored, `0` not).
+- `feedback.ts` (Engine 0.16 part D, D5): `orderMarker(view, draft)` (`RtsOrderMarker { kind:
+move | attack | gather | build, x, y, w, h, entity }` in cells: a move's cell, a build's
+  footprint, an attack's target or a gather's node box with its entity; null for `stop`, `train`
+  or a target not in the view), `entityBox`, `RtsOrderFeedback { marker, events }`,
+  `RTS_MARKER_TICKS` (8) and `RTS_MARKER_MAX` (8).
 - `events.ts` (Engine 0.15 T14): `RtsEventTracker(faction, tileSize?)`: `next(view)` gives the
   presentation events between the last view it saw and this one (none for the first view or
   another view of the same tick, as a page draws many frames a tick), `reset()`; `rtsEvents(before,
@@ -83,6 +104,10 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   `stock-up` (`item`, `amount`; no `entity`), in that order, each ascending by id. It only reads
   views (the snapshot has no events; the sim's rules announce nothing), so it holds no world rule;
   a game hands them to `presentWorld`'s `events` (the RTS skirmish does). `events.test.ts`.
+  `barkEvent(view, draft, faction, tileSize?)` (Engine 0.16 part D, D5): an accepted order's
+  `bark` (`side`, `order` the order type, `unitType` the first unit's type or for `train` the type
+  trained, `kind` the building for `train` and `build`, `entity`, `x`/`y`), null when no ordered
+  unit or building is in the view.
 - `controls.ts`: `RtsControls(faction, camera, tileSize, rules?)`, the pointer glue a page uses:
   `gesture(g, view, additive?)` takes `PointerGesture`s (`engine/core/input/pointer-logic.ts`):
   pan and zoom move the `RtsCamera`, a primary tap selects (or places the building being placed),
@@ -96,6 +121,9 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   ground (`camera.screenToWorld`), and a box selects the units whose cell centres are drawn inside
   the dragged picture rectangle (`Selection.boxWhere(view, inside, tileSize, additive?)` with
   `camera.inScreenBox`), not a world box; the box shown is the bounds of the ground under it.
+  `feedback(draft, view)` (Engine 0.16 part D, D5) is an accepted order's `RtsOrderFeedback`
+  (`orderMarker` and `barkEvent` with side `own`); the page hands it to
+  `RtsPresentState.accept(feedback, view.tick)` once `RtsGame.issue` accepted the draft.
 - `game.ts`: the headless adapter. `RtsWorldPort { snapshot(), applyOrder(order), step() }` is
   what the game's glue fills with an `engine/sim` world (the kit never imports the sim): since
   Engine 0.15 T6 (gap M27) with `engine/sim`'s `rtsWorldPort(world)`, the one bridge, typed by
@@ -148,6 +176,18 @@ docs:gen` after changing it). `index.ts` does not re-export it.
 
 `presentWorld` only reads the view; positions are world pixels (cell x, y is the box `x *
 tileSize, y * tileSize`). Without `state` the full map goes in every frame and `anim.t` is the tick.
+`RtsPresentState` also keeps (Engine 0.16 part D, D5) the fog memory (`fog`), the order markers
+(`mark(marker, tick)`, `accept(feedback, tick)`, `markers(tick)`) and the barks waiting for the
+next frame (`takeEvents()`; `presentWorld` appends them to the frame's events once).
+
+- **Fog** (`fog: true`, default off; Engine 0.16 part D, D5): the frame's `fog` is the player's
+  grid (`fogView`; with `state` explored cells and last-seen things are remembered, without it
+  explored means seen now); other sides' units show only on cells seen now; other sides'
+  buildings and resource nodes show when seen now, else as last seen with the tag `last-seen` and
+  no bars or ring; the status's `enemyUnits`, `enemyNear` and selection values read only what is
+  seen now (`keyStatus` and the offer markers read the whole view: missions are the game's own
+  knowledge). The minimap (D3) draws the frame's entities and fog, so it shows the same
+  knowledge. Fog off, the frame is exactly what it was.
 
 - **Map**: `id` `rts` (or the options' `mapId`, Engine 0.16 F6: a game with several scenarios
   names each, so a 3D skin's `decor` and `places` dress each one; `RTS_MAP_ID`), the terrain as a grid of type indexes, `tags` `type:<i>:<name>` (plus
@@ -173,6 +213,19 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   entity, else the lowest-id enemy unit in its event, else its lowest-id member; only for an
   offered mission the game's `missions` names; 25); `placing`
   (`ghost:<kind>`, tag `ghost`; 30); `select-box` (`selection-box`, the dragged box normalised; 40).
+- **Feedback** (Engine 0.16 part D, D5; skin kinds a game maps): `building-<id>/train`
+  (`progress-bar`, `p-0`..`p-8` of the first queued unit's ticks, tags `train`,
+  `training:<unit>` and the queue count `queue:<n>` (a 3D skin's label reads it with
+  `{ from: { tag: "queue:" } }`), a 2 px bar just under the footprint, for an own finished
+  building with a queue; it is a `progress-bar`, so every skin that draws construction draws it; 20);
+  `unit-<id>/path-<i>` (`path-dot`, `idle` or `goal` for the last, tags `own` and `goal`, a
+  `max(2, tileSize / 4)` px box centred in each cell of a selected own unit's `path`, else its
+  `goal`, at most 32, its own cell skipped; `RTS_DEPTH.path` 6); `marker-<n>` (`order-marker`,
+  `anim.state` the order kind `move`, `attack`, `gather` or `build`, `anim.t` its age in ticks,
+  tags the kind and `fade:<8..1>` (eighths left of `RTS_MARKER_TICKS`), over the target's box,
+  an attack's or gather's following its entity while shown; `RTS_DEPTH.marker` 24). Events:
+  `bark` (`barkEvent`) for a skin's `events` (`bark:order=attack`, `bark:unitType=worker`) to a
+  voice-like sfx and a short text.
 - **Status**: `faction`, `tick`, `stock.<item>`, `units`, `enemyUnits`, `heroes`, `captives`
   (Engine 0.13 T8: the player's named people captured, from `view.named`), `selected`,
   `selection` (the one type or kind, `mixed`, ''), `selectedHp`/`selectedMaxHp` (one selected),
@@ -222,7 +275,10 @@ and no run file could guard it. A game's headless `createGame` passes `opts.disa
 `pnpm test kits/rts`: `snapshot.test.ts`, `sides.test.ts`, `selection.test.ts` (click, box, hero alone, the rule
 off), `commands.test.ts` (each command to its order, checked by `parseOrder`), `enemy.test.ts`
 (same seed and snapshots give the same orders, ticks, repeats, triggers, the rules off),
-`present.test.ts` (frames pass `presentFrameSchema`), `controls.test.ts`, `game.test.ts` (ids
+`present.test.ts` (frames pass `presentFrameSchema`; Engine 0.16 part D: the train bar and queue
+count, path dots, markers fading and following, barks sent once), `fog.test.ts` (sight radius and
+fallbacks, explored memory, last-seen buildings and nodes, enemies hidden, the fog frame),
+`controls.test.ts` (and `feedback`), `game.test.ts` (ids
 across sides, a replay of the recorded orders gives the same snapshots) and `kit.test.ts` (the
 kinds through `loadContent`), on the tiny fixture `__fixtures__/world.ts` (`battleSnapshot`, and
 `siegeSnapshot` with an offered or open mission and its frozen event, for the mission tests in
@@ -241,3 +297,6 @@ actions), with no run weak; the kit is not strict, so `tests/runs/rts-skirmish-m
 holds the sample to that. From Engine 0.16 part D (D2) the same battle is kept unchanged as the
 test game `games/rts-classic`, whose run files never move, held the same way by
 `tests/runs/rts-classic-mutants.test.ts`, so the sample can become the full match.
+`tests/runs/rts-fog.test.ts` (Engine 0.16 part D, D5) plays every rts-classic and rts-skirmish run
+through the game's view with the kit's frames made with fog off and on: the same golden hashes and
+final state each way, the fogged frames passing the schema and hiding enemies out of sight.

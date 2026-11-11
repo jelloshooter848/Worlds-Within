@@ -530,7 +530,9 @@ imports it at run time; `engine/sim` imports only its types).
 data, for the same reason: `rtsTypesSchema` `{ units, buildings }` (a unit type: `health`,
 `speed`, `attack`, `range`, `cooldown`, `sight`, `cost`, `trainTicks`, and `work` for builders and
 `gather` `{ capacity, ticks }` for gatherers, null when left out; a building type: `health`,
-`size` `{ w, h }`, `work`, `cost`, `trains` (unit type ids, checked) and `dropoff`),
+`size` `{ w, h }`, `work`, `cost`, `trains` (unit type ids, checked), `dropoff` and, from Engine
+0.16 part D (D5), an optional `sight` with no default, for the view and fog of war only, so a table
+without it parses and hashes as before),
 `rtsUnitTypeSchema`, `rtsBuildingTypeSchema`, `rtsCostSchema` and the types. The sim keeps the
 table in the world (`RtsTypes`); a kit can read the same file as content. Pure (on `PURE_CORE`);
 tested in `rts-types.test.ts`; in `docs/reference/schemas.md`.
