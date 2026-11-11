@@ -668,7 +668,7 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
             'Missions',
             '  The ram burnt, the catapult saved by its crew (delegated)',
             'Losses',
-            '  Village: 2 soldier',
+            '  Village: 2 soldiers',
             'People',
             'Buildings',
             '  Hall: 120 hp lost (280/400)',

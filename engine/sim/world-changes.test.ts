@@ -136,7 +136,7 @@ describe('missionCardFacts', () => {
     const { w } = world();
     w.step();
     w.step();
-    expect(missionCardFacts(w, RAID)).toEqual({ hero: null, foes: '3 engine', ticksLeft: 58 });
+    expect(missionCardFacts(w, RAID)).toEqual({ hero: null, foes: '3 engines', ticksLeft: 58 });
   });
 
   it('names the hero the params pick, and none for params of another shape', () => {
@@ -151,7 +151,7 @@ describe('missionCardFacts', () => {
         foes: [{ select: { types: ['engine'] } }],
       },
     };
-    expect(missionCardFacts(w, hero)).toMatchObject({ hero: 'Sergeant Ash', foes: '3 engine' });
+    expect(missionCardFacts(w, hero)).toMatchObject({ hero: 'Sergeant Ash', foes: '3 engines' });
     expect(missionCardFacts(w, { ...RAID, id: 'other', params: { waves: 3 } })).toEqual({
       hero: null,
       foes: '',

@@ -354,12 +354,15 @@ mission card, for the shell's in-picture mission screens (`shell/mission-screens
 `WorldChanges { since, tick, losses: FactionLosses[], people: PersonChange[], buildings:
 BuildingChange[], records }`, `LostUnit`, `noChanges(since, tick?)`, `changeSections(changes, {
 title? })` (`Missions`, `Losses`, `People`, `Buildings`, empty ones left out), `changeLines`,
-`lossText` (`2 raider, ram, Grell`), `personText` (`Captain Hale: captured by raiders`),
+`lossText` (`2 raiders, ram, Grell`; plurals from `plural.ts`),
+`personText` (`Captain Hale: captured by raiders`),
 `buildingText` (`Hall: 120 hp lost (280/400)`, `North wall: destroyed`), `recordText`,
 `displayName` (`north-wall` -> `North wall`); `MissionCardFacts { hero, foes, ticksLeft }`,
 `NO_CARD_FACTS`, `missionChips(def, facts, ticksPerHour?)` (`Costs 2 hours of world time`, `Hero
 Captain Hale`, `Foes ram, catapult, Grell, Vosk`) and `windowText` (`Window closes in 136
-ticks`). `engine/sim` computes the values (`worldChanges`, `missionCardFacts`); the core only
+ticks`). `plural.ts` (Engine 0.16 P8): `plural(word)` (+s, consonant + y -> ies, s/x/ch/sh -> es)
+and `countText(n, word, plural?)` (`ram`, `2 soldiers`), presentation only.
+`engine/sim` computes the values (`worldChanges`, `missionCardFacts`); the core only
 writes them. Pure (on `PURE_CORE`); tested in `world-changes.test.ts`.
 `campaignOrder(campaign)`is the entries from`start`and then round to the ones before it;`campaignLevels(campaign)`the level ids in that order;`entryKind`, `entryId`. The platformer
 kit's `contentStages` plays the level entries.

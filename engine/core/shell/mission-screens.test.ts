@@ -134,7 +134,7 @@ function flow(
     pointer: { cursor: () => cursor },
     facts: (game, def) => ({
       hero: 'Hale',
-      foes: '2 raider',
+      foes: '2 raiders',
       ticksLeft: def.id === 'raid' ? 20 - game.tick : null,
     }),
     changes: (game, since) => ({ ...noChanges(since, game.tick), records: game.records() }),

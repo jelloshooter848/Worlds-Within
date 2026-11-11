@@ -101,7 +101,7 @@ describe('the changes as text', () => {
   };
 
   it('counts units of a type and names people, factions and keys as words', () => {
-    expect(lossText(changes.losses[0]!.units)).toBe('2 raider, ram, Grell');
+    expect(lossText(changes.losses[0]!.units)).toBe('2 raiders, ram, Grell');
     expect(displayName('north-wall')).toBe('North wall');
     expect(personText(changes.people[0]!)).toBe('Captain Hale: captured by raiders');
     expect(personText(changes.people[1]!)).toBe('Mara: freed');
@@ -109,10 +109,28 @@ describe('the changes as text', () => {
     expect(buildingText(changes.buildings[1]!)).toBe('North wall: destroyed');
   });
 
+  it('writes one unit of a type bare, more with a count and the plural, and never counts named people', () => {
+    const u = (entity: number, type: string, name: string | null = null) => ({
+      entity,
+      key: null,
+      name,
+      type,
+    });
+    expect(lossText([u(1, 'soldier')])).toBe('soldier');
+    expect(lossText([u(1, 'soldier'), u(2, 'soldier')])).toBe('2 soldiers');
+    expect(lossText([u(1, 'raider'), u(2, 'ram'), u(3, 'raider'), u(4, 'raider'), u(5, 'raider')])).toBe(
+      '4 raiders, ram',
+    );
+    expect(lossText([u(1, 'raider', 'Grell'), u(2, 'raider', 'Grell'), u(3, 'raider')])).toBe(
+      'Grell, Grell, raider',
+    );
+    expect(lossText([])).toBe('');
+  });
+
   it('gives the sections in order with the outcome titles, leaving empty ones out', () => {
     expect(changeSections(changes, { title: () => 'Driven off' })).toEqual([
       { heading: 'Missions', lines: ['Driven off (quit)'] },
-      { heading: 'Losses', lines: ['Raiders: 2 raider, ram, Grell'] },
+      { heading: 'Losses', lines: ['Raiders: 2 raiders, ram, Grell'] },
       { heading: 'People', lines: ['Captain Hale: captured by raiders', 'Mara: freed'] },
       { heading: 'Buildings', lines: ['Hall: 120 hp lost (280/400)', 'North wall: destroyed'] },
     ]);

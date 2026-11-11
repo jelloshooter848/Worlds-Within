@@ -297,6 +297,17 @@ dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but lit a
   sound button over an upright slider), about 52 px wide, so they fit the picture's side margin
   beside the 256 px round (a tenth of the picture's width) on windows down to 640 px wide; the
   page test checks the boxes at 640x520 and at a 16:9 960x540.
+- **P-8.** F4: counted units take English plurals from a small pure helper,
+  `engine/core/plural.ts` (`plural`: + s, consonant + y -> ies, s/x/ch/sh -> es; `countText(n,
+word, plural?)`), used by `lossText` and so by the mission card's foes. No unit type in any game
+  needs another plural (soldier, raider, worker, captain, engine, ram, hero, catapult, archer), so
+  no data field for one was added. Named people are never counted, even two of one name. The
+  longer line `Raiders: 4 raiders, Grell, Vosk` no longer fit a 140 px column of the quit siege's
+  results and pushed `Vosk: dead` and the hall off the screen (`and 2 more`), so the wide results
+  panel goes from 304 to 312 px (`WIDE_RESULTS_WIDTH`, 144 px columns on the 320 px picture).
+  The delegated siege's longer line still wraps `Vosk` as before. After shot:
+  `after-15-results-losses.png` (P11 retakes it with the rest). No text with the counts is in a
+  run file, golden hash or save code.
 - Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
   left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
 

@@ -365,8 +365,12 @@ export function outcomeScreen(
 
 /** A centred screen's panel width at most. */
 const CENTRED_WIDTH = 232;
-/** The results panel's width at most on a wide picture (Engine 0.16 F6: a 16:9 picture has room for two columns). */
-const WIDE_RESULTS_WIDTH = 304;
+/**
+ * The results panel's width at most on a wide picture (Engine 0.16 F6: a 16:9 picture has room for
+ * two columns). 312 on a 320 px picture (Engine 0.16 P8): each column is 144 px, room for a losses
+ * line with its plurals (`Raiders: 4 raiders, Grell, Vosk`) on one line.
+ */
+const WIDE_RESULTS_WIDTH = 312;
 /** A picture at least this wide shows the results' changes in two columns. */
 const TWO_COLUMNS_FROM = 300;
 

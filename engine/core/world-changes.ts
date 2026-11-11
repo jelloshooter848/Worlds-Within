@@ -1,5 +1,6 @@
 import { DEFAULT_TICKS_PER_HOUR, durationText } from './clock';
 import type { MissionDef, MissionRecord } from './missions';
+import { countText } from './plural';
 
 /**
  * What changed in a world over a stretch of ticks, and what a mission card shows of a mission
@@ -10,7 +11,7 @@ import type { MissionDef, MissionRecord } from './missions';
  * glue. Pure; nothing here is world state, a frame or a hash.
  *
  *   changeLines(worldChanges(world, 0), { title: (m, o) => outcomeTitle(m, o) })
- *   // ['Burn the siege engines: The ram burnt, ... (delegated)', 'Lost (village): 2 soldier', ...]
+ *   // ['Burn the siege engines: The ram burnt, ... (delegated)', 'Village: 2 soldiers', ...]
  */
 
 /** One unit lost: destroyed, or a named person who died. */
@@ -97,11 +98,20 @@ function unitText(u: LostUnit): string {
   return u.name ?? u.type ?? u.key ?? `#${u.entity}`;
 }
 
-/** `2 soldier, raider, Captain Hale`: the same type counted, named people by name, in list order. */
+/**
+ * `2 soldiers, raider, Captain Hale`: units of the same type counted with the plural
+ * (`plural.ts`), named people by name and never counted, in list order.
+ */
 export function lossText(units: readonly LostUnit[]): string {
-  const counts = new Map<string, number>();
-  for (const u of units) counts.set(unitText(u), (counts.get(unitText(u)) ?? 0) + 1);
-  return [...counts].map(([text, n]) => (n === 1 ? text : `${n} ${text}`)).join(', ');
+  const entries: { text: string; n: number; counted: boolean }[] = [];
+  for (const u of units) {
+    const text = unitText(u);
+    const counted = u.name === null;
+    const same = counted ? entries.find((e) => e.counted && e.text === text) : undefined;
+    if (same !== undefined) same.n += 1;
+    else entries.push({ text, n: 1, counted });
+  }
+  return entries.map((e) => (e.counted ? countText(e.n, e.text) : e.text)).join(', ');
 }
 
 /** A person's change: `Captain Hale: captured by raiders`. */

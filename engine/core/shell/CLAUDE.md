@@ -309,7 +309,7 @@ changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes
   opened, **Continue**) and `resultsScreen(ctx, { title, verdict, changes, outcomeTitle, code })`
   (the entry's results: each section of `changeSections` (missions, losses by faction, people,
   buildings) as far as the picture has room, `and N more` for the rest, the save code,
-  **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 304 px wide with
+  **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 312 px wide (304 until Engine 0.16 P8) with
   the changes down two columns; Engine 0.16 F9, gap M39: there the first section spans the panel
   and the rest flow down the columns, a heading never ends a column, and the save code shares its
   label's row when it fits). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
