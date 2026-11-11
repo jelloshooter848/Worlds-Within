@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 516.** (Last used: 515.)
+**Next unused number: 533.** (Last used: 532.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2076,3 +2076,69 @@ Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
   whole picture white for 2 ticks (the skin's `building-done:side=own` `flash`, `#fcfcfc`; the
   shell's "flashing" setting reduces flashes): (a) leave all; (b) soften the flash (a lower
   alpha or a warm tint) and leave the rest. Recommended (b).
+
+**Engine 0.16 part D: build decisions of D1-D8 not yet numbered** (recorded at part D's
+finalize pass; details in `docs/BUILD-LOG.md`, Engine 0.16 part D and part A2's merge notes):
+
+- **516.** D1, the merge: part C's lighting, `showHud` and anchored layer frames now live in the
+  shared core `SkinnedPresenter` (Canvas2D passes its canvas as `lightSurface`, so its pictures
+  are unchanged), and PixiJS draws the lighting too (`PixiRenderer.gradient`,
+  `PixiSurfaces.makeLive`), which the fx-lab parity and PixiJS screenshot tests needed. This
+  delivers item 434's PixiJS lighting pass, outside part D's scope. Item 434 is left open: OK to
+  close it as done?
+- **517.** D1: one `vary` field serves part C's 2D tile variety (`frames`, `weights`, `period`)
+  and part F's 3D model-tile variety (`turn`, `height`, `tint`); the shape not of the skin's
+  backend is `wrong_backend_field`. Likewise a HUD `when` may be a status key (part C) or a
+  status test (part F). OK, or split them into two named fields?
+- **518.** D1: in the 3D scene a skin with both `themes` and a `timeOfDay` uses the time of day
+  (no skin has both yet); without a time of day a theme also sets exposure and clear colour. OK?
+- **519.** D2: the copied `games/rts-classic` keeps the sample's content ids (`skirmish`, `ford`,
+  `raiders`) and glue names (`loadSkirmish`, `SkirmishPlay`, `window.wwSkirmish`) and PixiJS as
+  its default backend; it has no browser test of its own (covered by the pages, pixi-pages and
+  in-folder play tests). OK, or rename its glue as part B did?
+- **520.** D6/D8: `tests/runs/rts-classic-mutants.test.ts` accepts one unguarded rule,
+  `enemy-knows-only-what-it-saw`: the 0.15 raiders know everything, so no rts-classic run can
+  guard it without changing frozen hashes (the sample's `fog` and `ai-barracks` runs and
+  `rts-ai.test.ts` guard it). OK?
+- **521.** D3: fog cells are plain string rows (no run-length encoding), about 4 KB per frame on a
+  64x64 map; a skin without a `fog` look uses black (opaque unexplored, half explored, no edge);
+  the soft edge is one step of plain fills (no gradient) so both backends match; fog is drawn
+  after the lighting, so it hides lights too. OK?
+- **522.** D3: the minimap's camera box is the box actually framed (clamped, no shake), named
+  `view`; `teams` only recolours dots a `dots` entry already matches. OK?
+- **523.** D4: team recolours and outlines need pixel access through a `recolor` presenter option
+  (default `canvasRecolor`, in `engine/core/assets`); without a DOM (Node, headless sheets)
+  sprites draw with neither, plain boxes still get both. Outlines are 4-neighbour, one picture
+  pixel at any zoom; mask colours match exact RGB; the hue mode skips greys. OK?
+- **524.** D4: the backend parity test is strict at zoom 1 and 2 only; at 0.5 the two backends
+  pick different pixels when halving a sprite (Canvas2D from the pixel corner, the GPU from the
+  texel centre), so it checks only the zoom-stable bar's size there. Not checked against an older
+  commit. OK?
+- **525.** D5: sight is `dx*dx + dy*dy < (sight+1)^2` to the nearest footprint cell, a unit's
+  default 4 and a building's `max(w, h) + 2`; under fog the HUD's enemy counts and selection read
+  only what is seen now, while `keyStatus` and mission markers read the whole view (the game's
+  own knowledge). OK?
+- **526.** D5/D8: the training queue is a `queue:<n>` tag on the train bar (no new kind, so no
+  skin needs new art), the bar only on the player's own buildings; the optional rally or target
+  line was not built. Other sides' placed events are heard only on cells seen now
+  (`heardEvents`, D8). OK?
+- **527.** D6: the AI keeps a memory (and `kit.seen` in the snapshot) for a plan with
+  `knowledge: "fog"` or any `scout` step (the task said fog only; scouting needs explored
+  cells). Under fog it never attacks a building it only remembers, it walks to it to look;
+  resource nodes are never hidden from it; a scout target may be unreachable (the unit idles and
+  retries). OK?
+- **528.** D6 review (after D10): with a side's knowledge, an "enemy has at most N" end condition
+  holds only once that side has seen an enemy thing of that type (`RtsKnowledge.hasSeen`), so an
+  unscouted base never reads as a win. No hash moved. OK?
+- **529.** D7: map cells stay 16 px and the pack's units (about 16x24) and buildings are drawn at
+  the pack's size, a building up to 6 px past its footprint. The cut tile sheet `ford-tiles.png`
+  is a derived binary in the pack folder, made by `tools/ford-tiles.ts` and checked byte for
+  byte; the atlas is kept as text. OK?
+- **530.** D8: two AI plan steps beyond the task text: `defend` (attack seen red units only with
+  at least 2 idle soldiers, so the lone scout does not chase) and `rally` (idle soldiers go home
+  once red's base is known, so the scout does not camp at red's town centre). Blue builds up to
+  two barracks. OK?
+- **531.** D8: the minimap is 128x80 at 348,186 so the whole 64x40 map fits at scale 2 and every
+  cell is clickable (the old 82x50 box left most of the map unclickable). OK?
+- **532.** D10: the roadmap's "expand" is gathering at the far gold node; neither the AI nor the
+  bots ever build a second town centre. OK, or should the AI expand with a second town centre?

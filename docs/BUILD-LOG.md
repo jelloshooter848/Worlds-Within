@@ -156,7 +156,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 515** (next unused 516). Awaiting the owner's answer, by release (an answer by number is
+used is 532** (next unused 533). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -188,7 +188,8 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.16 part D: **489** (D2, `games/rts-classic`), **490-503** (D9, balance and feel),
   **504** (the owner's playtest), **505** (the owner's screenshot review), **506-508** (D10: the
   screenshot view, the stale victory line, waves unseen at the fords), **509-514** (smaller build
-  choices of D3-D8), **515** (looks left in the screenshots).
+  choices of D3-D8), **515** (looks left in the screenshots), **516-532** (more build choices of
+  D1-D8 and the D6 review fix, added by the finalize pass).
 
 ### Items not met, and where they went
 
@@ -223,7 +224,7 @@ RTS art at 16:9 (480x270; 4x is 1920x1080), under fog of war, with a clickable m
 markers, path dots, unit barks, build and train progress in the world, an AI that plays by what
 its side has seen, a data-driven end rule and a layered score. Its 0.15 battle is the test game
 `games/rts-classic`. **Open for the owner:** the playtest (item 504) and the screenshot review
-(item 505), then the build choices 489-503 and 506-515.
+(item 505), then the build choices 489-503 and 506-532.
 
 ### What was built
 
@@ -296,7 +297,21 @@ Recorded by this close-out for D3-D8, which had no items of their own: the fog l
 minimap (509), the readability fields and units scaling with the zoom (510), the kit's fog,
 markers, barks and path dots (511), the AI's memory only in plans that keep one and a loss
 checked first (512), the art pack and the tiles made from it (513), the map and the guard runs
-(514).
+(514). The finalize pass added the build choices that still had no number: the D1 merge
+(shared lighting and PixiJS lighting, item 434's follow-up delivered early, 516; one `vary` and
+one HUD `when` for two shapes, 517; time of day over themes in 3D, 518), the copy's names and
+backend (519), rts-classic's one unguarded rule (520), the fog's format, default look, edge and
+order (521), the minimap's camera box and team dots (522), recolouring needing a canvas (523),
+parity at zoom 0.5 (524), the sight rule and HUD reads under fog (525), the queue tag, train bar
+and heard events (526), the AI's memory with `scout` and its rules under fog (527), the end rule
+needing the enemy seen first (528, the D6 review fix below), cell and sprite sizes and the derived
+tile sheet (529), the AI's `defend` and `rally` steps (530), the minimap's size (531) and
+"expand" as the far gold node (532).
+
+**After D10 (D6 review fix, commit `dd491de`):** `matchResult` read through a side's knowledge no
+longer counts an unscouted enemy base as beaten: an enemy-side "at most N" condition on units or
+buildings holds only once that side has seen an enemy thing of that type
+(`RtsKnowledge.hasSeen`). Tests in `tests/kits/rts-ai.test.ts`; no hash moved. Item 528.
 
 ### Golden hashes
 
@@ -421,10 +436,23 @@ above reported `matchesHeadless: true` at 1920x1080. The agent-docs test passes:
 module (the RTS sample) keeps its `CLAUDE.md`, `AGENTS.md` and `llms.txt` page, both updated for
 the view.
 
+**Second finalize pass** (after the D6 review fix `dd491de`, on the committed tree, nothing red,
+no code changed): `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`, `pnpm test` (300 files, 3649
+tests passed and 1 skipped) and `pnpm build` pass; all 81 run files exit 0 through
+`pnpm -s cli run`; `pnpm -s cli validate` passes for all nine game folders (only the tower-defense
+kit's deliberately bad fixture fails, as it should); `pnpm -s cli mutants
+games/samples/rts-skirmish` exits 0 with no unguarded rule. Each Done when was rechecked (above).
+This pass added items 516-532 to the feedback log.
+
 ### Outstanding issues
 
 - **The owner's playtest and screenshot review:** items 504 and 505.
-- The build choices of part D (items 489-503, 506-515) wait for the owner's answers.
+- The build choices of part D (items 489-503, 506-532) wait for the owner's answers.
+- Item 434 (PixiJS lighting) is done by D1's merge but left open for the owner to close (516).
+- `games/rts-classic` cannot guard `enemy-knows-only-what-it-saw` with its frozen runs (520).
+- Under heavy machine load (load average about 12) one `pnpm test` run of this pass failed
+  `presentation-invariance.test.ts`'s platformer `full-game` case on its timeout (121 s); the rerun
+  passed. The long presentation tests are slow on a busy container.
 - The victory banner's stale line (507) and waves unseen at the fords (508).
 - Part F (the mini siege in 3D) from F8 on, merged in D1 up to F7, is not built yet.
 - From parts B and C: the owner's playtests and screenshot reviews (393, 394, 455, 456).
