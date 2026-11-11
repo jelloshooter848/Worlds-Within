@@ -585,6 +585,8 @@ export class MissionScreens<G extends LaunchGame> {
   /** The game the records were counted in, and how many of its records were shown. */
   private seenGame: G | null = null;
   private seen = 0;
+  /** What the screen covered when the last `update` took its step's taps (null before any). */
+  private stepCover: ((p: UiPoint) => boolean) | null = null;
   /** The events of the last update (for tests and page hooks). */
   last: UiEvent[] = [];
 
@@ -756,23 +758,31 @@ export class MissionScreens<G extends LaunchGame> {
 
   /** Whether a picture point is on a screen's panel or the badge (a page leaves such taps to the screens). */
   covers(p: UiPoint): boolean {
+    return this.cover()(p);
+  }
+
+  /** What the screen showing now covers (after a `sync`). */
+  private cover(): (p: UiPoint) => boolean {
     const ui = this.sync();
-    if (ui === null) return false;
-    if (this.built?.kind === 'briefing' || this.built?.kind === 'results') return true;
+    if (ui === null) return () => false;
+    if (this.built?.kind === 'briefing' || this.built?.kind === 'results') return () => true;
     const box = ui.box(CARD_PANEL);
     const badge = this.badge?.ui.box('badge');
-    return (box !== undefined && inBox(box, p)) || (badge !== undefined && inBox(badge, p));
+    return (p) => (box !== undefined && inBox(box, p)) || (badge !== undefined && inBox(badge, p));
   }
 
   /**
    * The page's pointer gestures without those on a screen (a tap, or a box dragged from one), so a
    * kit's pointer controls under the card never take the card's taps; every gesture while no
-   * screen shows.
+   * screen shows. After an `update` it is the screen that took that step's taps that covers them,
+   * not the one its presses left (a tap on Continue, Delegate or Begin closes the screen before
+   * the battle reads its gestures, and must not then reach the battle as an order).
    */
   uncovered(gestures: readonly PointerGesture[]): PointerGesture[] {
+    const covers = this.stepCover ?? this.cover();
     return gestures.filter((g) => {
-      if (g.type === 'tap') return !this.covers(g);
-      if (g.type === 'box') return !this.covers({ x: g.x0, y: g.y0 });
+      if (g.type === 'tap') return !covers(g);
+      if (g.type === 'box') return !covers({ x: g.x0, y: g.y0 });
       return true;
     });
   }
@@ -784,7 +794,8 @@ export class MissionScreens<G extends LaunchGame> {
    */
   update(input: InputFrame): UiEvent[] {
     const commands = this.nav.commands(input);
-    const ui = this.sync();
+    this.stepCover = this.cover();
+    const ui = this.ui;
     if (ui === null || this.built === null) {
       this.last = [];
       return this.last;

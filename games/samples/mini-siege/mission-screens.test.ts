@@ -7,6 +7,7 @@ import { mustLoad } from '@engine/core/content/game-content';
 import { canonicalJson } from '@engine/core/headless';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ActionState, InputManager, type InputFrame } from '@engine/core/input/input-manager';
+import type { PointerGesture } from '@engine/core/input/pointer-logic';
 import type { Action } from '@engine/core/input/actions';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
@@ -16,7 +17,7 @@ import { contentFonts, type UiDraw, type UiPainter, type UiScreen } from '@engin
 import { loadMiniSiege } from './content';
 import type { MiniSiegeGame } from './headless';
 import { siegePicture } from './picture';
-import { SiegePlay } from './play';
+import { SiegePlay, type GestureFeed } from './play';
 
 // The mission flow in the picture (Engine 0.16 F5): the shell's `MissionScreens` over the mini
 // siege's `MissionLaunch`, as a page draws it over the battle: the briefing, the mission card with
@@ -44,15 +45,28 @@ const recordedRound = () =>
   ).missions.find((m) => m.action === 'play')!.input!;
 
 /** The page: the battle's scene with the mission screens over it, drawing every step. */
-function page(hold = true, cursor: () => { x: number; y: number } | null = () => null) {
+function page(
+  hold = true,
+  cursor: () => { x: number; y: number } | null = () => null,
+  source: GestureFeed | null = null,
+) {
+  // As on the page: the battle reads the pointer's gestures without those on a screen.
+  let screens: MissionScreens<MiniSiegeGame> | null = null;
+  const reached: PointerGesture[] = [];
   const play = new SiegePlay({
     content,
     seed: content.manifest.start.seed,
-    pointer: null,
+    pointer: source && {
+      gestures: () => {
+        const kept = screens?.uncovered(source.gestures()) ?? source.gestures();
+        reached.push(...kept);
+        return kept;
+      },
+    },
     stepsPerTick: 1,
     hold,
   });
-  const screens = play.missionScreens({
+  screens = play.missionScreens({
     fonts,
     pointer: { cursor },
     keys: () => ({ up: '↑', down: '↓', jump: 'Z', attack: 'X' }),
@@ -79,7 +93,7 @@ function page(hold = true, cursor: () => { x: number; y: number } | null = () =>
     stack.render({} as Renderer);
     drawn.push(frame);
   };
-  return { play, screens, stack, step, drawn };
+  return { play, screens: screens as MissionScreens<MiniSiegeGame>, stack, step, drawn, reached };
 }
 type Page = ReturnType<typeof page>;
 
@@ -255,6 +269,42 @@ describe('the mission screens in the picture (Engine 0.16 F5)', () => {
     expect(p.play.launch.playing()).toBe(true);
     expect(p.screens.kind()).toBeNull();
     expect(p.drawn.at(-1)!.length).toBe(0);
+  });
+
+  it("keeps the taps that close a screen from the battle's controls: Begin, Delegate and Continue", () => {
+    // The pointer's gestures for the next step: the battle reads them after the screens took the
+    // frame's taps, when a press may already have closed the screen under them.
+    let pending: PointerGesture[] = [];
+    const p = page(true, () => null, {
+      gestures: () => {
+        const out = pending;
+        pending = [];
+        return out;
+      },
+    });
+    const keys = new ActionState();
+    const tap = (at: { x: number; y: number }, button: 'primary' | 'secondary' = 'primary') => {
+      pending = [{ type: 'tap', button, ...at, kind: 'mouse' }];
+      p.step(frameOf(keys, [], [at]));
+    };
+    p.step();
+    expect(p.screens.kind()).toBe('briefing');
+    tap(itemPoint(p.screens, 'begin'));
+    expect(p.play.launch.held()).toBe(false);
+    while (p.play.tick < 40) p.step();
+    expect(p.screens.kind()).toBe('card');
+    const issue = vi.spyOn(p.play.game.rts, 'issue');
+    // A long-press (secondary) on Delegate would be an order to the selection if it reached the battle.
+    tap(itemPoint(p.screens, 'delegate'), 'secondary');
+    expect(p.play.launch.choice()).toBeNull();
+    while (p.screens.kind() !== 'outcome') p.step();
+    tap(itemPoint(p.screens, 'continue'));
+    expect(p.screens.kind()).not.toBe('outcome');
+    expect(p.reached).toEqual([]);
+    expect(issue).not.toHaveBeenCalled();
+    // A tap off the screens is still the battle's.
+    tap({ x: 4, y: 4 });
+    expect(p.reached).toEqual([{ type: 'tap', button: 'primary', x: 4, y: 4, kind: 'mouse' }]);
   });
 
   it('keeps Play disabled for a choice without a round: the dawn lists the captive choices', () => {

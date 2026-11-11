@@ -417,6 +417,19 @@ describe('MissionScreens over a MissionLaunch (Engine 0.16 F5)', () => {
     expect(seen).toEqual([[{ x: 2, y: 2 }], []]);
   });
 
+  it("covers a step's gestures by the screen that took its taps, not the one its press left (F5 review)", () => {
+    const { launch, screens, step, point } = flow();
+    step();
+    step();
+    const at = point('delegate');
+    step([], [at]);
+    expect(launch.choice()).toBeNull();
+    expect(screens.covers(at)).toBe(false);
+    expect(screens.uncovered([{ type: 'tap', button: 'secondary', ...at, kind: 'touch' }])).toEqual([]);
+    step();
+    expect(screens.uncovered([{ type: 'tap', button: 'secondary', ...at, kind: 'touch' }])).toHaveLength(1);
+  });
+
   it('focuses by the hovering mouse; taps off the card are left to the page', () => {
     const { screens, step, point, hover } = flow();
     step();
