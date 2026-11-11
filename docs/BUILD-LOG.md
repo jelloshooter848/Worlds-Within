@@ -81,7 +81,7 @@ the API review listed (`1.0-1` to `1.0-11`).
   the ridge in 3D after the mockup (CC0 Kenney and Quaternius packs, a ground view, decor, the
   time of day by the world clock), the 3D page with its HUD and the mission flow in the picture
   (briefing, Play or Delegate, results), the hosted rounds in 2D over it; no hash moved. Not
-  met: the owner's playtest and screenshot review (decision F-21; nine screenshots and the
+  met: the owner's playtest and screenshot review (decision F-21; ten screenshots and the
   mockup comparison in its section).
 
 ### How to try each sample
@@ -136,7 +136,7 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.16 part A: **323** (PixiJS follow-up T13b), **324-338** (choices made), **339** (the
   owner's screenshot review), **340-363** (smaller build choices added by the finalize pass),
   **419-422** (the PixiJS backend's close-out, T13b-9).
-- Engine 0.16 part F: **F-1 to F-21** in its section (F-21 the owner's playtest and screenshot
+- Engine 0.16 part F: **F-1 to F-22** in its section (F-21 the owner's playtest and screenshot
   review), to be numbered into FEEDBACK-LOG.md at merge.
 
 ### Items not met, and where they went
@@ -258,26 +258,35 @@ Play or Delegate (click, Enter, a gamepad or a tap). Arrow keys or WASD pan, the
 Nine full-HD (1920x1080) shots of the 3D page, in `docs/reports/screenshots/0.16-F/`, taken
 with the repo's browser tools (`tests/browser/serve.ts`'s build and server, headless Chromium
 with software WebGL, the page's step hook `?debug=step` and its `wwSiege` hooks, at the skin's
-render scale 6 on a 1920x1080 window; seed 11). Each was looked at.
+render scale 6 on a 1920x1080 window; seed 11), and a tenth at the mockup's angle (below). Each
+was looked at.
 
-The siege at the mockup's angle beside the mockup:
+The siege at the mockup's angle beside the mockup. The skin's own camera (`three.json`'s
+`camera3d`: pitch 60, yaw -8, fov 35) is higher and flatter than the mockup's, so this shot was
+taken with the camera lowered to the mockup's pitch: `pitch` set to 42 in a scratch copy of
+`three.json` (not committed), then `pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run.json
+--tick 30 --backend three --allow-software-gl` (its state hash matches the headless run's). The
+CLI's view has no mission screens, so the sabotage's card is not drawn here; `04-mission-card.png`
+shows the card on the page.
 
-| The mockup (target)                          | Built (world tick 30, the sabotage's card open)                |
+| The mockup (target)                          | Built at the mockup's pitch (world tick 30, day 2 14:30)       |
 | -------------------------------------------- | -------------------------------------------------------------- |
-| ![mockup](reports/mockups/mini-siege-3d.png) | ![siege](reports/screenshots/0.16-F/01-siege-mockup-angle.png) |
+| ![mockup](reports/mockups/mini-siege-3d.png) | ![siege](reports/screenshots/0.16-F/10-siege-mockup-angle.png) |
 
-What matches: the layout (the castle ring with blue roofs on the west, the road east over the
-bridge to the raiders, the fields, windmill and sheep pen south), the HUD's places (resources top
-left, the title and clock top centre, objectives top right, the minimap bottom left, the mission
-card bottom right with Play and Delegate) and the card's facts. What differs, for the owner's
-review: the HUD is in pixel fonts, not the mockup's serif; the camera is higher and flatter
-(pitch 60, the whole map in view); the grass is a flatter, brighter green with fewer props; the
-units read small at this zoom; the raiders' camp is mostly past the right edge; no unit is
-selected, so the bottom panel is empty.
+What matches: the angle (a low perspective view over the hall to the bridge and the raiders'
+camp), the layout (the castle ring with blue roofs on the west, the road east over the bridge to
+the raiders' tents, the river north to south, the sheep pen and windmill south), and the HUD's
+places (resources top left, the title and clock top centre, objectives top right, the minimap
+bottom left). What differs, for the owner's review: the HUD is in pixel fonts, not the mockup's
+serif; the camera is farther out (the skin's zoom), so the hall is cut at the left edge and the
+units read small; the grass is a flatter, brighter green with fewer props; no unit is selected,
+so the bottom panel is empty; the page's own camera stays at the skin's pitch 60
+(`01-siege-skin-camera.png`, the whole map in view, the raiders' camp mostly past the right edge):
+whether to lower it to the mockup's pitch is decision F-22.
 
 | File                        | What it shows                                                                                           |
 | --------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `01-siege-mockup-angle.png` | The siege at day 2, 14:30, the sabotage's card (Play, Delegate), beside the mockup above                |
+| `01-siege-skin-camera.png`  | The siege at day 2, 14:30 at the skin's own camera (pitch 60), the sabotage's card (Play, Delegate)     |
 | `02-title.png`              | The title screen over the village (`?title=show`), Start, Controls, Settings                            |
 | `03-briefing.png`           | The siege's briefing card (Begin) over the held map, tick 0                                             |
 | `04-mission-card.png`       | The walls' card at world tick 10: "Man the walls", 30 min of world time, Play or Delegate               |
@@ -286,6 +295,7 @@ selected, so the bottom panel is empty.
 | `07-siege-evening.png`      | The siege later in the day (17:50, late afternoon): lower, warmer light, long shadows; the tower raised |
 | `08-results.png`            | The siege's results: both engines burnt (played), losses, people, the save code, Continue               |
 | `09-dawn-assault.png`       | The dawn assault at day 3, 06:00: the dawn light, the raiders' second band crossing the bridge          |
+| `10-siege-mockup-angle.png` | The siege at day 2, 14:30 at the mockup's pitch (42), beside the mockup above (no mission screens)      |
 
 Seen in the shots and not fixed here (listed under outstanding issues): the page's pause, 2D and
 sound controls sit over the bottom of a round's picture (05, 06); a white `mission-open` flash
@@ -304,7 +314,8 @@ Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
   path. All 15 mini-siege run files (and all 55 game run files) pass through `pnpm -s cli run`
   with their golden hashes; **no hash was re-recorded** in part F.
 - **A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
-  log: met** (the table above).
+  log: met** (the table above: `10-siege-mockup-angle.png`, taken at the mockup's pitch with a
+  scratch camera override; the page's own camera is higher, decision F-22).
 - **Owner playtest and screenshot review are accepted: not met.** Waiting for the owner (F-21
   below).
 - **The release's Done when** (parts A to F done, the checks pass, the owner has playtested every
@@ -393,10 +404,14 @@ numbers at merge (this track does not edit it, as for T2-17).
   the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
   at 640x520.
 - **F-20.** Review screenshots may be committed as PNGs in `docs/reports/screenshots/<part>/`
-  (3.5 MB for these nine); `no-content.test.ts` and DESIGN.md allow that folder. OK, or keep
+  (4.3 MB for these ten); `no-content.test.ts` and DESIGN.md allow that folder. OK, or keep
   them out of git?
 - **F-21 (owner review).** Playtest the mini siege in 3D from the title through the dawn, and
-  review the nine screenshots and the mockup comparison above: accept, or list what to change.
+  review the ten screenshots and the mockup comparison above: accept, or list what to change.
+- **F-22.** The page's 3D camera is the skin's pitch 60 (the whole map in view, flatter than the
+  mockup); the mockup comparison (`10-siege-mockup-angle.png`) was shot at pitch 42 through a
+  scratch override. Keep pitch 60 for play, or lower the page's camera to the mockup's angle
+  (`three.json`'s `camera3d.pitch`, with the zoom brought closer)?
 
 ## Engine 0.16 part A2: the PixiJS v8 2D backend (T13b, item 323)
 

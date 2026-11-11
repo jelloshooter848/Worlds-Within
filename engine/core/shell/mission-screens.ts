@@ -1,10 +1,11 @@
-import type { Action } from '../input/actions';
+import { Actions, type Action } from '../input/actions';
 import { frameTaps, type FrameTap, type InputFrame } from '../input/input-manager';
 import type { PointerGesture } from '../input/pointer-logic';
 import type { Renderer } from '../gfx/renderer';
 import type { MissionDef, MissionRecord } from '../missions';
 import type { Scene } from '../scene';
 import {
+  DEFAULT_UI_KEYS,
   inBox,
   layoutText,
   Menu,
@@ -12,10 +13,12 @@ import {
   menusUiStyle,
   paintUi,
   uiLook,
+  UI_COMMANDS,
   UiNav,
   UiScreen,
   type Box,
   type FontLookup,
+  type UiCommand,
   type MenusSpec,
   type UiDraw,
   type UiEvent,
@@ -587,11 +590,24 @@ export class MissionScreens<G extends LaunchGame> {
   private seen = 0;
   /** What the screen covered when the last `update` took its step's taps (null before any). */
   private stepCover: ((p: UiPoint) => boolean) | null = null;
+  /** The actions the last `update` took as its screen's commands (hidden from the scene below). */
+  private stepKeys: ReadonlySet<Action> = new Set();
   /** The events of the last update (for tests and page hooks). */
   last: UiEvent[] = [];
 
   constructor(private readonly opts: MissionScreensOptions<G>) {
     this.nav = new UiNav(opts.uiKeys);
+  }
+
+  /**
+   * Whether the last `update` took action `a` as its screen's command, so the scene below must not
+   * see it pressed (Engine 0.16 F review): a key or pad press that takes Play, Begin or Continue
+   * starts the round, and its first step must not read that same press as its own (`jump` places a
+   * tower, `start` starts a wave). The full screens (briefing, results) take every UI key they
+   * read; the cards take only the confirm and back keys, and only on a step they took an item.
+   */
+  took(a: Action): boolean {
+    return this.stepKeys.has(a);
   }
 
   private get launch(): MissionLaunch<G> {
@@ -795,6 +811,7 @@ export class MissionScreens<G extends LaunchGame> {
   update(input: InputFrame): UiEvent[] {
     const commands = this.nav.commands(input);
     this.stepCover = this.cover();
+    this.stepKeys = new Set();
     const ui = this.ui;
     if (ui === null || this.built === null) {
       this.last = [];
@@ -806,7 +823,17 @@ export class MissionScreens<G extends LaunchGame> {
     this.last = ui.update({ commands, taps, pointer });
     this.badge?.ui.update({ commands: [], taps: [], pointer: null });
     for (const e of this.last) if (e.type === 'activate' && e.item !== undefined) this.activate(kind, e.item);
+    this.stepKeys = this.takenKeys(kind, input);
     return this.last;
+  }
+
+  /** The actions pressed this step that the screen `kind` took (see `took`). */
+  private takenKeys(kind: MissionScreenKind, input: InputFrame): ReadonlySet<Action> {
+    const keys = this.opts.uiKeys ?? DEFAULT_UI_KEYS;
+    const full = kind === 'briefing' || kind === 'results';
+    const tookItem = this.last.some((e) => e.type === 'activate' || e.type === 'back' || e.type === 'choice');
+    const commands: readonly UiCommand[] = full ? UI_COMMANDS : tookItem ? ['confirm', 'back'] : [];
+    return new Set(commands.flatMap((c) => keys[c]).filter((a) => input.pressed(a)));
   }
 
   /** Presses an item: what the launch does with it. */
@@ -858,7 +885,11 @@ export function missionScreensScene<G extends LaunchGame>(
       const taps = frameTaps(input);
       const kept = taps.filter((t) => !screens.covers(t));
       screens.update(input);
-      scene.update(kept.length === taps.length ? input : withTaps(input, kept), inputs);
+      // So is a key or pad press the screen took (Engine 0.16 F review): Z or Enter on Play must
+      // not also place a tower or start a wave on the round's first step.
+      const took = (a: Action) => screens.took(a);
+      const masked = kept.length !== taps.length || Actions.some(took);
+      scene.update(masked ? withoutTaken(input, kept, took) : input, inputs);
     },
     render(r) {
       scene.render(r);
@@ -869,13 +900,20 @@ export function missionScreensScene<G extends LaunchGame>(
   };
 }
 
-/** An input frame the same as `input` but for its taps (Engine 0.16 F7). */
-function withTaps(input: InputFrame, taps: readonly FrameTap[]): InputFrame {
+/**
+ * An input frame the same as `input` but for its taps, and without the presses the screens took
+ * (Engine 0.16 F7 and F review).
+ */
+function withoutTaken(
+  input: InputFrame,
+  taps: readonly FrameTap[],
+  took: (a: Action) => boolean,
+): InputFrame {
   return {
     held: (a) => input.held(a),
-    pressed: (a) => input.pressed(a),
+    pressed: (a) => !took(a) && input.pressed(a),
     released: (a) => input.released(a),
-    bufferedJump: (n) => input.bufferedJump(n),
+    bufferedJump: (n) => !took('jump') && input.bufferedJump(n),
     consumeJumpBuffer: () => input.consumeJumpBuffer(),
     get dirX() {
       return input.dirX;

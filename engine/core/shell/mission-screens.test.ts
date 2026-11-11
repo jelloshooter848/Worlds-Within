@@ -417,6 +417,37 @@ describe('MissionScreens over a MissionLaunch (Engine 0.16 F5)', () => {
     expect(seen).toEqual([[{ x: 2, y: 2 }], []]);
   });
 
+  it('keeps the keys a screen took from the scene under it, and passes the others (F review)', () => {
+    const { launch, screens, step } = flow();
+    step();
+    step();
+    const seen: string[][] = [];
+    const scene = missionScreensScene(
+      {
+        update: (frame) => {
+          seen.push((['right', 'jump', 'start'] as const).filter((a) => frame.pressed(a)));
+          launch.update(frame);
+        },
+        render() {},
+      },
+      screens,
+      () => ({ fill() {}, image() {}, glyph() {} }),
+    );
+    const keys = new ActionState();
+    const press = (held: string[]) => {
+      keys.beginFrame(new Set(held as never[]), []);
+      scene.update(keys, [keys]);
+      keys.beginFrame(new Set(), []);
+      scene.update(keys, [keys]);
+    };
+    // A move on the card is still the scene's; the press that takes Delegate is not.
+    press(['right']);
+    expect(screens.ui!.menu('main')!.focused).toBe('delegate');
+    press(['jump', 'start']);
+    expect(launch.game.steps.map((s) => s['action'])).toEqual(['open', 'delegate']);
+    expect(seen.filter((s) => s.length > 0)).toEqual([['right']]);
+  });
+
   it("covers a step's gestures by the screen that took its taps, not the one its press left (F5 review)", () => {
     const { launch, screens, step, point } = flow();
     step();

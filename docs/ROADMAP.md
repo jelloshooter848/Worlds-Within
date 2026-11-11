@@ -1016,7 +1016,8 @@ is [the chosen mockup](reports/mockups/mini-siege-3d.png) (the 2D pixel mockup,
       page test; no hash was re-recorded in part F.)
 - [x] A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
       log. ([BUILD-LOG.md, Engine 0.16 part F](BUILD-LOG.md#engine-016-part-f-the-mini-siege-in-3d-low-poly),
-      nine screenshots in `docs/reports/screenshots/0.16-F/`.)
+      `10-siege-mockup-angle.png` shot at the mockup's pitch 42 through a scratch camera override;
+      the page's own camera stays at pitch 60, owner decision F-22.)
 - [ ] Owner playtest and screenshot review are accepted. (Open: decision F-21 in the build log,
       numbered into FEEDBACK-LOG.md at merge.)
 

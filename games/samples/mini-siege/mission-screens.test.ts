@@ -255,6 +255,21 @@ describe('the mission screens in the picture (Engine 0.16 F5)', () => {
     }
   });
 
+  it("keeps the key or pad press that takes Play from the round's first step (F review)", () => {
+    // Z, Space or pad A (jump) places a tower in the walls round, Enter or pad Start starts the
+    // wave: the press that takes Play on the card must start the round and nothing more.
+    for (const key of ['jump', 'start'] as const) {
+      const p = page(false);
+      while (p.play.tick < 11) p.step();
+      expect(p.screens.cardMissions(), key).toEqual(['fortify']);
+      expect(p.screens.ui!.menu('main')!.focused, key).toBe('play');
+      p.step(frameOf(new ActionState(), [key]));
+      expect(p.play.launch.playing(), key).toBe(true);
+      const kit = p.play.game.miniGame()!.snapshot()['kit'] as Record<string, unknown>;
+      expect(kit, key).toMatchObject({ gold: 100, towers: 0, wave: 0 });
+    }
+  });
+
   it('plays by a mouse click on Play (hover then tap): the round starts and the screens step aside', () => {
     let cursor: { x: number; y: number } | null = null;
     const p = page(true, () => cursor);
