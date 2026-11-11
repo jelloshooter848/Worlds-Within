@@ -24,6 +24,7 @@ import {
   type SoundCue,
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
+import { fogLookSchema } from './fog';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
 import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema as modelTileVarySchema } from './decor';
 import { checkVaryWeights, tileJoinSchema, tileVaryShape, type TileVary } from './tile-join';
@@ -927,6 +928,23 @@ const hudItem = z
       .array(minimapDot)
       .exactOptional()
       .describe("a minimap's entity dots, drawn in order over the tiles"),
+    fog: z
+      .boolean()
+      .exactOptional()
+      .describe(
+        "a minimap: show the frame's fog of war over its tiles, in the skin's `fog` colours (Engine 0.16 part D)",
+      ),
+    teams: z
+      .record(id, color)
+      .exactOptional()
+      .describe(
+        'a minimap: tag -> dot colour (`{ "own": "#3cbcfc", "enemy": "#f83800" }`); a dot\'s entity with one of these tags (the first in the table) takes its colour over the dot entry\'s (Engine 0.16 part D)',
+      ),
+    view: color
+      .exactOptional()
+      .describe(
+        "a minimap: the one-px outline, in this colour, of the world box the picture shows (the camera's view; Engine 0.16 part D)",
+      ),
     dayBar: dayBar
       .exactOptional()
       .describe(
@@ -976,6 +994,14 @@ const hudItem = z
         message: '"dayBar" goes with a "clock" item only',
         params: { code: 'bad_field' },
       });
+    for (const field of ['fog', 'teams', 'view'] as const)
+      if (v[field] !== undefined && v.as !== 'minimap')
+        ctx.addIssue({
+          code: 'custom',
+          path: [field],
+          message: `"${field}" goes with a "minimap" item only`,
+          params: { code: 'bad_field' },
+        });
     if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap' || v.as === 'clock') {
       if (v.w === undefined) need('w', 'a width');
       if (v.h === undefined) need('h', 'a height');
@@ -1410,6 +1436,11 @@ export const skinSchema = z
       .exactOptional()
       .describe(
         '2D lighting and mood (Engine 0.16 part C): `{ ambient?, tags?, maps?: { id: { ambient?, lights? } }, kinds?, tiles?, events?, vignette?, bands?, particles? }`: darkness per map tag or id, lights per kind and state, tile, place and event (radius, colour, intensity, glow, flicker), a vignette and room-wide particles',
+      ),
+    fog: fogLookSchema
+      .exactOptional()
+      .describe(
+        "fog of war's look (Engine 0.16 part D): `{ unexplored?: { color?, alpha? }, explored?: { color?, alpha? }, edge? }`, laid over a frame's `fog` cells by the 2D backends and on a minimap with `fog: true`; a frame without `fog` draws none",
       ),
     themes: z
       .record(id, themeSchema)

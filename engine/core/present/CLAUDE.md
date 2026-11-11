@@ -4,7 +4,8 @@ The presentation contract (docs/DESIGN.md, section 6; docs/ROADMAP.md, Engine 0.
 snapshot a backend gets each frame. A kit describes what is there; a backend decides how it looks,
 from the frame and a skin. Types and small pure helpers only: no drawing, no kit or backend code.
 
-- `types.ts`: `PresentFrame` `{ frame, size, entities, map?, events, status, camera? }`.
+- `types.ts`: `PresentFrame` `{ frame, size, entities, map?, events, status, camera?, fog? }`
+  (`fog`, Engine 0.16 part D, D3: `PresentFog`, see `fog.ts` below).
   - `PresentEntity` `{ id, kind, x, y, w, h, facing, anim: { state, t }, tags, layer?, fx? }`:
     `id` is stable across frames; `x`/`y`/`w`/`h` are the box in world pixels (top-left); `facing`
     is one of `FACINGS`: `up | down | left | right` or (Engine 0.9, owner answer 128 to item 48)
@@ -31,6 +32,25 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
     and optional `resize(size)`, and from Engine 0.16 part C T1 optional `showHud(shown)`
     (whether the skin's HUD is drawn from the next frame: the shell hides it under its title;
     both backends' presenters have it). Backends implement `Presenter`.
+- `fog.ts` (Engine 0.16 part D, D3): fog of war as presentation. A frame's optional `fog`
+  (`PresentFog` `{ cols, rows, cells }`, in `types.ts`): `rows` strings of `cols` characters, one
+  per map tile, `0` unexplored, `1` explored (seen before), `2` visible (`FOG_CELLS`,
+  `FOG_CELL_CHARS`); `presentFrameSchema` checks the characters and the grid's size (each field
+  `.describe`d). Plain string rows, not run-length: a 64 x 64 map is 4 KB a frame, and a kit
+  diffing it is not worth the reader's trouble. A skin's top-level `fog` (`fogLookSchema`, on any
+  backend; only the 2D walk and the minimap draw it): `{ unexplored?: { color?, alpha? }, explored?:
+{ color?, alpha? }, edge? (0-FOG_EDGE_MAX 16 world px) }`; a bad field is a schema error at its
+  path (`fog.explored.alpha`). `resolveFogLook(look)` fills `DEFAULT_FOG_LOOK` (unexplored
+  `#000000` at 1, explored `#000000` at 0.5, no edge), so a frame with `fog` and a skin without
+  one still shows it. `fogState(fog, col, row)` (outside the grid or another character:
+  `visible`), `fogShade(look, state)` and `fogBoxes(fog, look, tileSize)`: the boxes to lay over
+  the picture in world px, each row's run of one state merged; with an `edge` (cut to half a
+  tile) a cell beside a lighter one (four sides; outside the grid counts as the same) is nine
+  boxes that never overlap: the middle at its alpha, each strip toward a lighter neighbour at the
+  alpha halfway to it, corners at the lower of their two strips'. Alpha 0 boxes are left out.
+  The 2D walk (`engine/core/draw`) draws them; nothing here draws. A `minimap` HUD item's `fog`
+  (boolean), `teams` (tag -> colour) and `view` (a colour) are schema fields of `skin.ts`
+  (`bad_field` on another item); the UI kit draws them. Tested in `fog.test.ts`.
 - `freeze.ts`: `freezeFrame(value)` deep-freezes a frame in place and returns it as
   `DeepReadonly`, so a backend that writes to it throws. Use it in tests and dev; it is not needed
   per frame in a release build.

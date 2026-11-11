@@ -8,7 +8,9 @@ Folder: `engine/core/draw` (part of `engine/core`). Detailed rules:
 The skinned presenter walk the 2D backends share (Engine 0.16 T13b, item 323): one `Presenter`
 that draws any `PresentFrame` through a skin onto any core `Renderer` (events, frame events,
 tweens, particles, camera follow and zoom, camera effects, parallax, per-map looks, the map,
-tiles, entities and the HUD through the UI kit). Canvas2D's `SkinnedCanvasPresenter` and the
+tiles, entities, from Engine 0.16 part D (D3) a frame's `fog` (after the entities, particles and
+lighting, under effects and the HUD; none without it) and the HUD through the UI kit, its
+minimap given the frame's fog and the camera's view box). Canvas2D's `SkinnedCanvasPresenter` and the
 PixiJS presenter are thin wrappers that supply a renderer and surfaces, so both draw every
 feature through exactly the same code. It lives in its own core folder, not in `present/`
 (which kits import), so the dependency table can keep kits and the sim off it whole.
@@ -37,5 +39,6 @@ Import from `@engine/core/draw` (`index.ts`).
 
 `pnpm test`: `engine/core/draw/draw.test.ts` (surfaces off and on, the skin set's factory) and,
 for the whole walk, Canvas2D's `presenter.test.ts`, `ui-painter.test.ts`, `rts-camera.test.ts`
-and `display.test.ts`, plus `tests/runs/presentation-invariance.test.ts` and
-`tests/runs/stepped-shell-invariance.test.ts`.
+and `display.test.ts`, Canvas2D's `fog.test.ts` (the fog's pixels), plus `tests/runs/presentation-invariance.test.ts` and
+`tests/runs/stepped-shell-invariance.test.ts`; the fog and minimap on Canvas2D and PixiJS
+side by side in `tests/browser/fog-parity.test.ts` (skipped without Chromium).

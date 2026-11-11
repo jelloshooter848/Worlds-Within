@@ -1,5 +1,6 @@
 import { ease, isEaseName, type EaseName } from '../fx/ease';
-import type { DeepReadonly, PresentEntity, PresentMap } from '../present/types';
+import { fogShade, fogState, type ResolvedFogLook } from '../present/fog';
+import type { DeepReadonly, PresentBox, PresentEntity, PresentFog, PresentMap } from '../present/types';
 import type { Box } from './nine-slice';
 import type { UiFill } from './paint';
 
@@ -80,6 +81,20 @@ export interface MinimapSpec {
   back?: string;
   dots: readonly { kind?: string; tag?: string; color: string; size?: number }[];
   scale?: number;
+  /** The fog's look: with it a frame's fog is drawn over the tiles (Engine 0.16 part D). */
+  fog?: ResolvedFogLook;
+  /** Tag -> dot colour, over a dot entry's own colour (the first tag of the table an entity has). */
+  teams?: Readonly<Record<string, string>>;
+  /** The camera view's outline colour: with it the shown world box is outlined. */
+  view?: string;
+}
+
+/** What a minimap reads besides the map and the entities (Engine 0.16 part D). */
+export interface MinimapExtras {
+  /** The frame's fog, drawn when the spec has a `fog` look. */
+  fog?: DeepReadonly<PresentFog> | null;
+  /** The world box the picture shows (the camera's view), outlined when the spec has a `view`. */
+  view?: PresentBox | null;
 }
 
 /** A minimap dot's side when it gives none. */
@@ -102,6 +117,7 @@ export function minimapDraws(
   spec: MinimapSpec,
   map: DeepReadonly<PresentMap> | null,
   entities: readonly DeepReadonly<PresentEntity>[],
+  extras: MinimapExtras = {},
 ): UiFill[] {
   const { box } = spec;
   const out: UiFill[] = [];
@@ -134,6 +150,7 @@ export function minimapDraws(
       }
     }
   }
+  if (spec.fog !== undefined && extras.fog != null) out.push(...minimapFog(spec.fog, extras.fog, box, span));
   const ts = map.tileSize;
   for (const e of entities) {
     const dot = spec.dots.find((d) => (d.kind !== undefined ? d.kind === e.kind : e.tags.includes(d.tag!)));
@@ -143,9 +160,112 @@ export function minimapDraws(
     const cy = ((e.y + e.h / 2) / ts) * scale;
     const x = Math.min(box.w - size, Math.max(0, Math.round(cx - size / 2)));
     const y = Math.min(box.h - size, Math.max(0, Math.round(cy - size / 2)));
-    out.push({ kind: 'fill', x: box.x + x, y: box.y + y, w: size, h: size, color: dot.color });
+    out.push({
+      kind: 'fill',
+      x: box.x + x,
+      y: box.y + y,
+      w: size,
+      h: size,
+      color: teamColor(spec, e) ?? dot.color,
+    });
+  }
+  if (spec.view !== undefined && extras.view != null)
+    out.push(...minimapView(spec.view, extras.view, box, scale / ts));
+  return out;
+}
+
+/** The colour `spec.teams` gives an entity: the first tag of the table it has, or undefined. */
+function teamColor(spec: MinimapSpec, e: DeepReadonly<PresentEntity>): string | undefined {
+  if (spec.teams === undefined) return undefined;
+  for (const [tag, color] of Object.entries(spec.teams)) if (e.tags.includes(tag)) return color;
+  return undefined;
+}
+
+/**
+ * The fog over a minimap's tiles: each unexplored or explored cell's span (the tiles' own spans)
+ * as a fill at its shade's alpha, a row's run of one state merged, cut to the box.
+ */
+function minimapFog(
+  look: ResolvedFogLook,
+  fog: DeepReadonly<PresentFog>,
+  box: Box,
+  span: (n: number) => number,
+): UiFill[] {
+  const out: UiFill[] = [];
+  for (let r = 0; r < fog.rows; r++) {
+    const y0 = span(r);
+    const y1 = Math.min(span(r + 1), box.h);
+    if (y1 <= y0) continue;
+    let run: UiFill | null = null;
+    let runState: string | null = null;
+    for (let c = 0; c < fog.cols; c++) {
+      const x0 = span(c);
+      if (x0 >= box.w) break;
+      const x1 = Math.min(span(c + 1), box.w);
+      if (x1 <= x0) continue;
+      const state = fogState(fog, c, r);
+      const shade = fogShade(look, state);
+      if (shade === null || shade.alpha <= 0) {
+        run = null;
+        continue;
+      }
+      if (run !== null && runState === state && run.x + run.w === box.x + x0) run.w += x1 - x0;
+      else {
+        run = { kind: 'fill', x: box.x + x0, y: box.y + y0, w: x1 - x0, h: y1 - y0, color: shade.color };
+        if (shade.alpha < 1) run.alpha = shade.alpha;
+        runState = state;
+        out.push(run);
+      }
+    }
   }
   return out;
+}
+
+/** A one-px outline of the world box `view` on the minimap (`k` minimap px per world px), cut to the box. */
+function minimapView(color: string, view: PresentBox, box: Box, k: number): UiFill[] {
+  const x0 = Math.max(0, Math.floor(view.x * k));
+  const y0 = Math.max(0, Math.floor(view.y * k));
+  const x1 = Math.min(box.w, Math.ceil((view.x + view.w) * k));
+  const y1 = Math.min(box.h, Math.ceil((view.y + view.h) * k));
+  const w = x1 - x0;
+  const h = y1 - y0;
+  if (w <= 0 || h <= 0) return [];
+  const fill = (x: number, y: number, fw: number, fh: number): UiFill => ({
+    kind: 'fill',
+    x: box.x + x,
+    y: box.y + y,
+    w: fw,
+    h: fh,
+    color,
+  });
+  const out = [fill(x0, y0, w, 1)];
+  if (h > 1) out.push(fill(x0, y1 - 1, w, 1));
+  if (h > 2) out.push(fill(x0, y0 + 1, 1, h - 2));
+  if (h > 2 && w > 1) out.push(fill(x1 - 1, y0 + 1, 1, h - 2));
+  return out;
+}
+
+/**
+ * The world point under picture point (`x`, `y`) on a minimap (Engine 0.16 part D), for a page's
+ * click or tap: the inverse of the minimap's tile spans (world px, unrounded), or null when the
+ * point is outside the box or the drawn map. Pure.
+ */
+export function minimapPointToWorld(
+  spec: { box: Box; scale?: number },
+  map: { cols: number; rows: number; tileSize: number },
+  x: number,
+  y: number,
+): { x: number; y: number } | null {
+  const { box } = spec;
+  const lx = x - box.x;
+  const ly = y - box.y;
+  if (lx < 0 || ly < 0 || lx >= box.w || ly >= box.h) return null;
+  const scale = spec.scale ?? minimapScale(map, box);
+  if (!(scale > 0)) return null;
+  const wx = (lx / scale) * map.tileSize;
+  const wy = (ly / scale) * map.tileSize;
+  if (wx >= map.cols * map.tileSize || wy >= map.rows * map.tileSize) return null;
+  return { x: wx, y: wy };
 }
 
 /** A clock's day bar (Engine 0.16 F4): the colours, tick marks and marker a skin gives it. */

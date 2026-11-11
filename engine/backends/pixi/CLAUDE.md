@@ -170,6 +170,12 @@ opts)` builds the display (a test passes a recording `DisplayGpu`):
   this test green; if a looser bound is needed, say why in this file and in
   `engine/tools/CLAUDE.md` (Visual parity).
 
+- `tests/browser/fog-parity.test.ts` (Engine 0.16 part D, D3) draws a frame with `fog` (soft
+  edge, zoom 1.5) and a minimap with fog, team dots and the camera's view through Canvas2D and
+  `pixiDisplay` at the picture's size and holds them within the strict bound (threshold 8, at
+  most 0.1%), with fog and without; the fog is the core walk's boxes, so nothing in this folder
+  changed for it.
+
 ## Performance: the 2D feature benchmark (T13b-6)
 
 `pnpm bench:features` (`tests/bench/feature-render/`) draws the RTS and tower-defense feature

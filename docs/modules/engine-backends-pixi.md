@@ -33,6 +33,9 @@ backdrop? })` implements the core `Renderer` contract (`clear`, `rect`, `sprite`
   cached radial gradient textures, what a skin's lighting draws (with `PixiSurfaces.makeLive`,
   the light map surface rendered every frame).
 - `PoolCounts`: the pool counts' shape.
+- Fog of war (Engine 0.16 part D, D3): drawn by the core walk (translucent boxes, a minimap's
+  fills), so nothing here is new; `tests/browser/fog-parity.test.ts` holds it to Canvas2D's
+  picture within the strict parity bound.
 
 - `TintedImage`: a sheet `image` (a texture and a colour) drawn with that sprite tint; a sheet
   whose `image` is a PixiJS `Texture` is cut from it. `PixiRenderer.sourceOf(sheet)`.

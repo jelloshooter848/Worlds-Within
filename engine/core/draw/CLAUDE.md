@@ -29,7 +29,13 @@ so two backends drawing the same frame get the same calls.
   T4, merged into the walk in part D, D1: placed lights' sprites under the entities, then the
   darkness on `opts.lightSurface` with the lights erased by `radialFilled`, or a flat translucent
   box without one, the glows and the vignette; a renderer without `gradient` draws no radial
-  fills), entities by layer, the HUD (skipped while `showHud(false)`, part C T1; `layoutHud`, or
+  fills), entities by layer, the frame's `fog` (Engine 0.16 part D, D3: `drawFog`, after the
+  particles and the lighting and before effects, flashes and the HUD; the skin's `fog` look
+  through `fogBoxes`, each box from its rounded corner to the next at the zoom so cells meet,
+  cut to the picture, off-picture boxes skipped, opaque boxes as plain `rect`s and the rest in
+  `translucent`; no `fog` or no map shown draws nothing, so every other frame's calls are as
+  before), the HUD (its minimap given the frame's fog and the framed view box, `viewBox`, the
+  camera's world box without shake) (skipped while `showHud(false)`, part C T1; `layoutHud`, or
   the UI kit's `SkinHud` painted by `RendererUiPainter` with
   `opts.glyphSurface`). `SkinnedPresenterOptions` holds every option (`size`, `onSound`,
   `background`, `font`, `fonts`, `glyphSurface`, `tintGlyphs`, `clamp`, `reduceFlashing`, `shakeScale`,
@@ -65,4 +71,6 @@ invariance tests green unchanged.
 every frame), a cached map and glyph strip with one, and `skinSetPresenter`'s factory calls,
 routing and `effectSettings`. Everything else is tested through Canvas2D's thin wrapper
 (`engine/backends/canvas2d/presenter.test.ts`, `ui-painter.test.ts`, `rts-camera.test.ts`,
-`display.test.ts`) and the presentation invariance tests in `tests/runs/`.
+`display.test.ts`, and the fog's pixels in `fog.test.ts`) and the presentation invariance tests
+in `tests/runs/`; the fog and the minimap on both 2D backends in
+`tests/browser/fog-parity.test.ts` (the parity harness's strict bound).

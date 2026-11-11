@@ -113,8 +113,15 @@ event)` gives the entry, the first matching field key in file order, else the ba
   top-level `lighting` block (darkness per map tag or id, lights per kind and state, tile, place
   and event with flicker, a vignette and room-wide particles; `engine/core/fx`'s `SkinLighting`),
   its references checked (`missing_ref`, `bad_event_key`, a placed sprite's frames across files)
-  and `wrong_backend_field` on a 3D skin. Field
-  reference: `docs/reference/schemas.md`, section `skin`.
+  and `wrong_backend_field` on a 3D skin. From Engine 0.16 part D (D3) a frame may carry `fog`
+  (`PresentFog` `{ cols, rows, cells }`: one character per map tile, `0` unexplored, `1`
+  explored, `2` visible, `FOG_CELLS`; presentation only) and a skin a `fog` look (`fogLookSchema`:
+  `{ unexplored?: { color?, alpha? }, explored?: { color?, alpha? }, edge? }`, defaults
+  `DEFAULT_FOG_LOOK`, `resolveFogLook`); `fogState`, `fogShade` and `fogBoxes(fog, look, tileSize)`
+  (the translucent world boxes the 2D walk draws, a row's runs merged, a soft edge as nine boxes
+  that never overlap) are in `fog.ts`. A `minimap` HUD item takes `fog: true`, `teams` (tag ->
+  dot colour) and `view` (the camera view's outline colour); on another item they are
+  `bad_field`. Field reference: `docs/reference/schemas.md`, section `skin`.
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named
   compound mesh in the skin's `meshes` (a list of `{ shape, size, at?, color?, rotate? }` parts in
@@ -189,4 +196,4 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`; `engine/core/present/camera.test.ts`
 covers `CameraFollower` and `cameraShake`; `engine/core/present/rts-camera.test.ts` covers
 `RtsCamera` (clamping, zoom limits, round trips at zoom 0.5, 1, 1.5 and 2, its hint through the
-follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams.
+follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams; `engine/core/present/fog.test.ts` (Engine 0.16 part D, D3) a frame's fog in the schema (bad cells and rows named), the skin's `fog` look (defaults, a bad field named at its path, the minimap fields on another item) and `fogBoxes` (runs, a soft edge covering every px once).

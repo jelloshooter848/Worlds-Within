@@ -118,6 +118,7 @@ export class HudLayer {
         map,
         entities: frame.entities,
         clock: this.clock,
+        fog: frame.fog ?? null,
       });
       paintUi(draws, this.painter(quads));
     } else {

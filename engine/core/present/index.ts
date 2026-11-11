@@ -7,6 +7,7 @@ export type {
   PresentEntity,
   PresentEvent,
   PresentFrame,
+  PresentFog,
   PresentFx,
   PresentMap,
   PresentMapLayer,
@@ -53,6 +54,22 @@ export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './st
 export { hostedSource, type HostedPresentState, type HostedSourceOptions } from './hosted';
 export { MapTracker } from './map-tracker';
 export { presentFrameSchema } from './schema';
+export {
+  DEFAULT_FOG_LOOK,
+  FOG_CELL_CHARS,
+  FOG_CELLS,
+  FOG_EDGE_MAX,
+  fogBoxes,
+  fogLookSchema,
+  fogShade,
+  fogState,
+  resolveFogLook,
+  type FogBox,
+  type FogLook,
+  type FogShade,
+  type FogState,
+  type ResolvedFogLook,
+} from './fog';
 export { presenterByStatus } from './switch';
 export {
   checkSkinRefs,

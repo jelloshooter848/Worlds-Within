@@ -175,6 +175,11 @@ map's surface, below). `particleCount` is the particles alive after the last `pr
   presenter passes it the map shown) and are drawn with the other particles. The walk is the
   core's (merged in Engine 0.16 part D, D1), so the PixiJS backend runs it too, with its own
   `gradient` (radial sprites) and a light map surface (feedback item 434's follow-up).
+- Fog of war (Engine 0.16 part D, D3): a frame's `fog` is laid over the map, the entities, the
+  particles and the lighting, under effects, flashes and the HUD: the skin's `fog` look
+  (`fogBoxes`, `@engine/core/present`) as `rect`s, translucent below alpha 1, at the zoom and
+  cut to the picture. A frame without `fog` draws exactly the calls it did. A HUD `minimap` with
+  `fog: true`, `teams` or `view` shows the fog, team-coloured dots and the camera's view box.
 - Per-map looks (Engine 0.16 part B, T7): the clear colour, the parallax layers and the tiles come
   from `themedSkin(skin, mapId)` (`@engine/core/present`) for the map shown (the full map last
   sent, else the frame's map id), made once per map id: a skin's `themes` entry for that map
@@ -309,6 +314,12 @@ the flat box without a surface, nothing for a skin without lighting and the same
 These tests drive the shared walk in `@engine/core/draw` through the thin wrappers here (Engine
 0.16 T13b moved the code, not the tests); `engine/core/draw/draw.test.ts` checks the core's own
 defaults (no surfaces) and the skin set's factory.
+`fog.test.ts` (Engine 0.16 part D, D3) draws a fogged frame through `CanvasRenderer` onto a
+small software 2D context (`fillRect` with `globalAlpha`) and reads the pixels: unexplored grass
+black, an explored unit half dark, visible grass as it is; a frame without fog (or an
+all-visible one) records the same calls; the fog placed at a camera and zoom, cut to the picture.
+`tests/browser/fog-parity.test.ts` draws a fogged frame with a minimap through this presenter and
+PixiJS in Chromium and holds them within the parity harness's strict bound.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
 wipe (its gradient line and stops) and an iris (the even-odd hole on the focus) on a recording
 context, and `presenter.test.ts` the presenter's `focus()` scrolled and clamped.

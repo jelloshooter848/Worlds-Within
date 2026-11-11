@@ -48,15 +48,18 @@ export {
   dayBarX,
   MINIMAP_DOT,
   minimapDraws,
+  minimapPointToWorld,
   minimapScale,
   ROLL_DEFAULT_EASE,
   type DayBarSpec,
+  type MinimapExtras,
   type MinimapSpec,
   type RollSpec,
 } from './widgets';
 export {
   borderDraws,
   clockHudText,
+  skinMinimap,
   DEFAULT_BAR_COLOR,
   DEFAULT_COUNTER_GAP,
   hudValueText,

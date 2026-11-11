@@ -23,6 +23,8 @@ import {
   cameraView,
   cameraZoom,
   CameraFollower,
+  fogBoxes,
+  resolveFogLook,
   FrameEventClock,
   isFullMap,
   layoutHud,
@@ -34,6 +36,7 @@ import {
   themedSkin,
   type DeepReadonly,
   type HudFrameSize,
+  type PresentBox,
   type PresentEntity,
   type PresentFrame,
   type PresentMap,
@@ -204,6 +207,10 @@ export class SkinnedPresenter implements Presenter {
   private hudShown = true;
   /** The skin's `lighting` (Engine 0.16 part C T4): darkness, lights, flicker, vignette. */
   private readonly lighting: SkinLighting;
+  /** The skin's `fog` look, defaults filled (Engine 0.16 part D, D3). */
+  private readonly fogLook: ReturnType<typeof resolveFogLook>;
+  /** The world box the picture showed this frame (shake aside), for a minimap's `view`. */
+  private viewBox: PresentBox | null = null;
   /** The light map's surface and its size (made on the first lit frame, again on a resize). */
   private lightMap: { surface: MapSurface | null; w: number; h: number } | null = null;
 
@@ -230,6 +237,7 @@ export class SkinnedPresenter implements Presenter {
       ...(opts.shakeScale !== undefined && { shakeScale: opts.shakeScale }),
     };
     this.lighting = new SkinLighting(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
+    this.fogLook = resolveFogLook(skin.fog);
     this.hud = new SkinHud(skin, {
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.font !== undefined && { font: opts.font }),
@@ -301,6 +309,7 @@ export class SkinnedPresenter implements Presenter {
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawParticles(view);
     this.drawLighting(frame, view, size);
+    this.drawFog(frame, view, size);
     this.drawEffects(frame.frame, size);
     for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
     if (this.hudShown) this.drawHud(frame);
@@ -569,6 +578,31 @@ export class SkinnedPresenter implements Presenter {
     translucent(r, dark.level, () => r.sprite(sheet, 'light', 0, 0));
   }
 
+  // ---- Fog of war (Engine 0.16 part D, D3) ----
+
+  /**
+   * The frame's `fog` over the map, the entities and the lighting, under effects and the HUD: the
+   * skin's `fog` look as translucent boxes (`fogBoxes`), each from its corner to the next one's
+   * (both rounded at the zoom) so cells meet without gaps; boxes off the picture are skipped. A
+   * frame without `fog`, or with no map shown, draws nothing.
+   */
+  private drawFog(frame: Frame, view: View, size: ScreenSize): void {
+    const fog = frame.fog;
+    const map = this.mapVisible ? (this.shown?.map ?? null) : null;
+    if (fog === undefined || map === null) return;
+    const r = this.r;
+    const { zoom } = view;
+    for (const b of fogBoxes(fog, this.fogLook, map.tileSize)) {
+      const x0 = Math.max(0, Math.round(b.x * zoom) - view.x);
+      const y0 = Math.max(0, Math.round(b.y * zoom) - view.y);
+      const x1 = Math.min(size.width, Math.round((b.x + b.w) * zoom) - view.x);
+      const y1 = Math.min(size.height, Math.round((b.y + b.h) * zoom) - view.y);
+      if (x1 <= x0 || y1 <= y0) continue;
+      if (b.alpha >= 1) r.rect(x0, y0, x1 - x0, y1 - y0, b.color);
+      else translucent(r, b.alpha, () => r.rect(x0, y0, x1 - x0, y1 - y0, b.color));
+    }
+  }
+
   // ---- Camera ----
 
   /**
@@ -586,6 +620,7 @@ export class SkinnedPresenter implements Presenter {
     const focus = cameraTarget(frame, this.skin.camera);
     const { cam } = zoomAbout(framed, cameraView(size, base), fx.zoom, area, focus);
     const zoom = base * fx.zoom;
+    this.viewBox = { x: cam.x, y: cam.y, w: size.width / zoom, h: size.height / zoom };
     return {
       x: Math.round(cam.x * zoom) + this.shake(frame) + fx.shakeX,
       y: Math.round(cam.y * zoom) + fx.shakeY,
@@ -772,6 +807,8 @@ export class SkinnedPresenter implements Presenter {
         map: this.mapVisible ? (this.shown?.map ?? null) : null,
         entities: frame.entities,
         clock: this.fxClock,
+        fog: frame.fog ?? null,
+        view: this.viewBox,
       });
       paintUi(draws, this.uiPainter);
       return;

@@ -240,6 +240,27 @@ Engine 0.16 F7 (the mini siege's 3D HUD):
   (`statusCompareSchema`), `alpha` (a flat panel only, `bad_field` otherwise), a flat panel needs
   no `frame` or `slice`. Tested in `hud.test.ts`.
 
+Engine 0.16 part D (D3), the fuller minimap:
+
+- `widgets.ts`: `MinimapSpec` takes `fog` (a `ResolvedFogLook`), `teams` (tag -> colour) and
+  `view` (a colour); `minimapDraws(spec, map, entities, extras?)` with `MinimapExtras` `{ fog?,
+view? }` (the frame's fog, the world box the picture shows) draws, after the tiles, each
+  unexplored or explored cell's span at its shade (a row's run merged, `alpha` below 1), then the
+  dots (a dot's entity with a `teams` tag, the first in the table, takes that colour over the
+  entry's), then a one-px outline of `view` (floor and ceil of its corners at the minimap's px
+  per world px, cut to the box; top and bottom, then the sides). Without those spec fields, or
+  without the extras, the draws are exactly the old ones. `minimapPointToWorld(spec, map, x, y)`
+  is the inverse of the tile spans: a picture point on the minimap to world px (unrounded), null
+  outside the box or past the map's drawn tiles, for a page's click or tap.
+- `hud.ts`: `SkinHudInput` takes `fog?` and `view?`; a `minimap` item's `fog: true` uses the
+  skin's `fog` look (`resolveFogLook`), `teams` and `view` pass through. `skinMinimap(skin)` is
+  the first minimap item's `{ box, scale? }` (null without one), what `minimapPointToWorld` takes.
+  The 2D walk passes the frame's fog and its framed view box (shake aside); the 3D HUD passes the
+  fog only (no view box: a pitched view is no rectangle).
+- Tested in `hud.test.ts` (unchanged draws without the fields, fog runs under the dots, team
+  colours, the view outline cut to the box, `minimapPointToWorld`, `SkinHud` and `skinMinimap`)
+  and in the browser `tests/browser/fog-parity.test.ts` (both 2D backends).
+
 ## Rules
 
 - Pure: `engine/core/ui/**` is on `PURE_CORE` (`config/layers.js`). No DOM, clock or

@@ -50,7 +50,9 @@ shell's fallback), `?backend=canvas2d` and the other 2D pages' default.
   particles a picture-sized light map, option `lightSurface`, filled with the darkness and each
   light erased out of it as a radial gradient, laid over at the darkness level, the lights' glows
   added and the vignette, all before effects and the HUD; `Renderer.gradient`, implemented by
-  `CanvasRenderer`); from Engine 0.16 T5 `focus()`, the camera's target on the
+  `CanvasRenderer`); from Engine 0.16 part D (D3) a frame's `fog`, the skin's `fog` look as
+  translucent boxes over the map, entities and lighting and under effects and the HUD, and a
+  minimap's fog, team dots and camera view; from Engine 0.16 T5 `focus()`, the camera's target on the
   picture, where an iris transition closes), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
@@ -95,5 +97,6 @@ checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCa
 order after the entities and before the HUD, glows and the vignette, states, placed sprites, event
 flashes fading and with reduced flashing, the surface made once and on a resize, the flat box
 without one and the same calls per seed.
+`fog.test.ts` (Engine 0.16 part D, D3) draws a fogged frame onto a small software 2D context and reads its pixels (hidden, half dark, clear), checks a frame without fog draws the same calls and the fog placed at a camera and zoom; `tests/browser/fog-parity.test.ts` compares it with PixiJS in Chromium.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for each kind on a recording
 context; `tests/browser/fx-lab.test.ts` shoots an iris, a wipe and a fade mid-transition.

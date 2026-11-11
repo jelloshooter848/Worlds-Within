@@ -11,7 +11,10 @@ import {
   type DeepReadonly,
   type HudDraw,
   type HudFrameSize,
+  resolveFogLook,
+  type PresentBox,
   type PresentEntity,
+  type PresentFog,
   type PresentFrame,
   type PresentMap,
   type SkinFile,
@@ -43,6 +46,21 @@ export interface SkinHudInput {
   entities: readonly DeepReadonly<PresentEntity>[];
   /** The presenter's display-frame count (it only goes up): a counter rolls on it. */
   clock: number;
+  /** The frame's fog of war (Engine 0.16 part D), for a minimap with `fog: true`. */
+  fog?: DeepReadonly<PresentFog> | null;
+  /** The world box the picture shows (the camera's view), for a minimap with a `view` colour. */
+  view?: PresentBox | null;
+}
+
+/**
+ * The first `minimap` item of a skin's HUD as `{ box, scale? }` (Engine 0.16 part D), what
+ * `minimapPointToWorld` takes for a page's clicks on it; null when the HUD has none.
+ */
+export function skinMinimap(skin: DeepReadonly<SkinFile>): { box: Box; scale?: number } | null {
+  const item = (skin.hud ?? []).find((i) => i.as === 'minimap');
+  if (item === undefined) return null;
+  const box: Box = { x: item.x, y: item.y, w: item.w ?? 0, h: item.h ?? 0 };
+  return item.scale === undefined ? { box } : { box, scale: item.scale };
 }
 
 export interface SkinHudOptions {
@@ -178,9 +196,13 @@ export class SkinHud {
               ...(item.back !== undefined && { back: item.back }),
               dots: item.dots ?? [],
               ...(item.scale !== undefined && { scale: item.scale }),
+              ...(item.fog === true && { fog: resolveFogLook(this.skin.fog) }),
+              ...(item.teams !== undefined && { teams: item.teams as Readonly<Record<string, string>> }),
+              ...(item.view !== undefined && { view: item.view }),
             },
             input.map,
             input.entities,
+            { fog: input.fog ?? null, view: input.view ?? null },
           ),
           ...(item.border !== undefined ? borderDraws(box, item.border) : []),
         ];
