@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { conditionHolds, planConditionSchema } from './enemy';
+import { conditionHolds, planConditionSchema, type PlanCondition } from './enemy';
 import type { RtsKnowledge } from './knowledge';
 import type { RtsView } from './snapshot';
 
@@ -18,7 +18,10 @@ import type { RtsView } from './snapshot';
  * null (still playing). `self` is `faction`, `enemy` every other faction, as in a plan. With
  * `knowledge` (the side's `RtsKnowledge`, kept up to date by its owner), conditions read only what
  * that side knows (`knowledge.known(view)`): a win declared on enemy buildings counts the ones it
- * has seen and remembers. Pure: it reads the view and holds no world rule.
+ * has seen and remembers. An enemy-side `lte` condition on units or buildings ("the enemy has
+ * none left") holds through knowledge only once the side has seen at least one enemy thing of that
+ * kind and type (`knowledge.hasSeen`), so a side that has not yet found the enemy base never reads
+ * an empty map as a win. Pure: it reads the view and holds no world rule.
  */
 
 const Id = z
@@ -49,7 +52,13 @@ export type MatchResult = 'won' | 'lost' | null;
 /** How the match stands on `view` under the end rule (see the file comment). */
 export function matchResult(view: RtsView, end: RtsEnd, knowledge: RtsKnowledge | null = null): MatchResult {
   const known = knowledge === null ? view : knowledge.known(view);
-  if (end.lost.some((c) => conditionHolds(known, end.faction, c))) return 'lost';
-  if (end.won.some((c) => conditionHolds(known, end.faction, c))) return 'won';
+  const holds = (c: PlanCondition) => {
+    if (knowledge !== null && c.count !== 'stock' && c.side === 'enemy' && c.op === 'lte') {
+      if (!knowledge.hasSeen(c.count, c.type)) return false;
+    }
+    return conditionHolds(known, end.faction, c);
+  };
+  if (end.lost.some(holds)) return 'lost';
+  if (end.won.some(holds)) return 'won';
   return null;
 }

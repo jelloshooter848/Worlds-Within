@@ -11,6 +11,7 @@ import {
   sidesOf,
   visibility,
   isVisible,
+  RtsKnowledge,
   type MatchResult,
   type RtsGame,
 } from '@kits/rts';
@@ -90,7 +91,8 @@ interface Played {
   firstAttack: number | null;
   result: MatchResult;
   endTick: number;
-  blueSaw: MatchResult;
+  /** What blue's end rule, read through blue's knowledge, said on each tick played. */
+  blueSaw: MatchResult[];
 }
 
 /** Plays up to `ticks` ticks, or until the end rule decides the match. */
@@ -101,14 +103,14 @@ function play(g: RtsGame, ticks: number): Played {
     firstAttack: null,
     result: null,
     endTick: 0,
-    blueSaw: null,
+    blueSaw: [],
   };
   for (let t = 0; t < ticks; t++) {
     const view = g.view();
     const blue = sidesOf(view, ['blue'])['blue']!;
     if (out.barracksAt === null && (blue.buildings['barracks'] ?? 0) > 0) out.barracksAt = t;
     out.result = matchResult(view, RED_END);
-    out.blueSaw = matchResult(view, BLUE_END, g.scriptedEnemy()!.knowledge());
+    out.blueSaw.push(matchResult(view, BLUE_END, g.scriptedEnemy()!.knowledge()));
     out.endTick = t;
     if (out.result !== null) break;
     g.step();
@@ -127,8 +129,11 @@ describe('the RTS kit skirmish opponent over a sim world (D6)', () => {
     expect(p.firstAttack).not.toBeNull();
     expect(p.barracksAt!).toBeLessThan(p.firstAttack!);
     expect(p.result).toBe('lost');
-    // blue, reading only what it knows, sees the same end: red's hall gone where it looked
-    expect(p.blueSaw).toBe('won');
+    // blue, reading only what it knows, does not call the match won before it has found red's
+    // hall, and sees the same end once the hall is gone where it looked
+    expect(p.blueSaw.slice(0, 2)).toEqual([null, null]);
+    expect(p.blueSaw.slice(0, -1).every((r) => r === null)).toBe(true);
+    expect(p.blueSaw.at(-1)).toBe('won');
     // every enemy attack named a target blue's side saw on that tick (fog knowledge)
     const log = g.log().filter((e) => e.source === 'enemy');
     expect(log.some((e) => e.order.type === 'build' && e.error === null)).toBe(true);
@@ -163,6 +168,49 @@ describe('the RTS kit skirmish opponent over a sim world (D6)', () => {
       }
       if (matchResult(g.view(), RED_END) !== null) break;
     }
+  });
+
+  it('reads the end rule on the full view, or through knowledge only once the enemy was seen', () => {
+    const view = game().view();
+    const redHall = view.buildings.find((b) => b.faction === 'red' && b.kind === 'hall')!;
+    const blueHall = view.buildings.find((b) => b.faction === 'blue' && b.kind === 'hall')!;
+    const without = (...ids: number[]) => ({
+      ...view,
+      buildings: view.buildings.filter((b) => !ids.includes(b.id)),
+    });
+
+    // the full view: both halls stand, then red's falls, then both (lost is checked first)
+    expect(matchResult(view, BLUE_END)).toBeNull();
+    expect(matchResult(without(redHall.id), BLUE_END)).toBe('won');
+    expect(matchResult(without(redHall.id), RED_END)).toBe('lost');
+    expect(matchResult(without(redHall.id, blueHall.id), BLUE_END)).toBe('lost');
+
+    // through knowledge at tick 0: blue has not seen red's hall, so "red has no hall" is no win
+    const fresh = new RtsKnowledge('blue');
+    fresh.update(view);
+    expect(fresh.hasSeen('buildings', 'hall')).toBe(false);
+    expect(matchResult(view, BLUE_END, fresh)).toBeNull();
+    expect(matchResult(without(redHall.id), BLUE_END, fresh)).toBeNull();
+    expect(matchResult(without(redHall.id, blueHall.id), BLUE_END, fresh)).toBe('lost');
+
+    // a blue scout stands by red's hall: once seen, the hall gone where blue looks is a win
+    const scout = view.units.find((u) => u.faction === 'blue')!;
+    const near = { ...scout, x: redHall.x, y: Math.max(0, redHall.y - 1) };
+    const scouted = { ...view, units: view.units.map((u) => (u.id === scout.id ? near : u)) };
+    const known = new RtsKnowledge('blue');
+    known.update(scouted);
+    expect(known.hasSeen('buildings', 'hall')).toBe(true);
+    expect(matchResult(scouted, BLUE_END, known)).toBeNull();
+    const fallen = { ...scouted, buildings: scouted.buildings.filter((b) => b.id !== redHall.id) };
+    known.update(fallen);
+    expect(matchResult(fallen, BLUE_END, known)).toBe('won');
+    expect(
+      matchResult(
+        { ...fallen, buildings: fallen.buildings.filter((b) => b.id !== blueHall.id) },
+        BLUE_END,
+        known,
+      ),
+    ).toBe('lost');
   });
 
   it('plays the same match every run (the same hashes)', () => {

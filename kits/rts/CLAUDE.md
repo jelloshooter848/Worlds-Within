@@ -101,7 +101,9 @@ faction, x, y, w, h, seen }] }`.
   `{ faction, won: [condition], lost: [condition] }` in the plan's condition shape.
   `matchResult(view, end, knowledge?)`: `lost` when any `lost` condition holds (checked first),
   else `won` when any `won` holds, else null; with `knowledge` (kept up to date by its owner) the
-  conditions read `knowledge.known(view)`.
+  conditions read `knowledge.known(view)`, and an enemy-side `lte` condition on units or
+  buildings holds only once the side has seen an enemy thing of that type (`knowledge.hasSeen`),
+  so an unscouted enemy base is never a win.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
 camera?, missions?, events?, state?, fog? })`, below. `RtsPresentState` (map tracker, animation starts,
   fog memory, markers),

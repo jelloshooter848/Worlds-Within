@@ -25,6 +25,7 @@ export class RtsKnowledge {
   private height = 0;
   private explored = new Uint8Array(0);
   private readonly buildings = new Map<number, { building: RtsBuildingView; seen: number }>();
+  private readonly everSeen = new Set<string>();
 
   constructor(readonly faction: string) {}
 
@@ -36,13 +37,20 @@ export class RtsKnowledge {
       this.height = vis.height;
       this.explored = new Uint8Array(vis.width * vis.height);
       this.buildings.clear();
+      this.everSeen.clear();
     }
     for (let i = 0; i < vis.cells.length; i++) if (vis.cells[i] === 1) this.explored[i] = 1;
     const seen = new Set<number>();
     for (const b of view.buildings) {
       if (b.faction === this.faction || !seesBox(vis, b.x, b.y, b.w, b.h)) continue;
       this.buildings.set(b.id, { building: b, seen: view.tick });
+      if (b.faction !== null) this.everSeen.add(`buildings:${b.kind}`);
       seen.add(b.id);
+    }
+    for (const u of view.units) {
+      if (u.faction !== null && u.faction !== this.faction && isVisible(vis, u.x, u.y)) {
+        this.everSeen.add(`units:${u.type}`);
+      }
     }
     for (const [id, r] of [...this.buildings]) {
       const b = r.building;
@@ -55,6 +63,18 @@ export class RtsKnowledge {
   isExplored(x: number, y: number): boolean {
     if (x < 0 || y < 0 || x >= this.width || y >= this.height) return false;
     return this.explored[y * this.width + x] === 1;
+  }
+
+  /**
+   * Whether the side has ever seen another side's unit (`units`) or building (`buildings`) of
+   * `type` (any type when undefined). Kept so an end rule read through knowledge never counts
+   * "the enemy has none" before the side has seen any (`end.ts`). Not in `snapshot()`: it only
+   * steers `matchResult`, never the plan's orders.
+   */
+  hasSeen(count: 'units' | 'buildings', type?: string): boolean {
+    if (type !== undefined) return this.everSeen.has(`${count}:${type}`);
+    for (const k of this.everSeen) if (k.startsWith(`${count}:`)) return true;
+    return false;
   }
 
   /** The tick another side's building was last seen at, or null when it is not remembered. */
