@@ -20,14 +20,20 @@ pnpm install
 pnpm dev          # opens http://localhost:5173, a list of every game
 ```
 
-The index lists five engine samples, each with original NES-style pixel art and MML music, all
-stored as text:
+The index lists five engine samples, each with MML music and sfx. Their own art is original
+NES-style pixel art stored as text, and the two Engine 0.16 samples also use third-party CC0 art
+packs, kept as binary files in the game's `assets/` folder with a `CREDITS.md`:
 
-- `games/samples/dungeon`: **The Old Crypt**, five top-down rooms (bat-hall, courtyard, guard-room,
-  store-room, crypt) with a relic to find and a way out. Arrows move, **X** (or **Z**) uses the
-  sword, **C** uses the item.
-- `games/samples/platformer`: **Hopper's Way**, the flagship platformer (Engine 0.16 part B, being
-  built): three side-scrolling levels and a mini-boss at 16:9, in 2D and in 3D; level 1 so far.
+- `games/samples/dungeon`: **The Old Crypt** (Engine 0.16 part C), eight top-down rooms at 16:9 on
+  the CC0 DungeonTileset II: the courtyard, guard room, store room, bat hall and crypt with the
+  relic and the way out, and a new wing (the chasm, the ossuary and the warden hall) where the
+  dash crosses pits to a key that opens the locked door of the Bone Warden, a three-phase boss.
+  An intro dialog, an end dialog and an end screen frame the run. Arrows move, **X** uses the
+  sword, **C** uses the item (the bombs or the dash), **Right Shift** picks the next item and
+  **Esc** or **P** pauses.
+- `games/samples/platformer`: **Hopper's Way** (Engine 0.16 part B), the flagship platformer:
+  three side-scrolling levels and Burrlock's arena (a mini-boss) at 16:9, with a level select and
+  an end screen, in 2D and in a lit, fogged 2.5D view.
 - `games/samples/rts-skirmish`: **The River Ford**, a small real-time strategy battle.
 - `games/samples/tower-defense`: **The Winding Road**, one map, two tower types and three waves.
 - `games/samples/mini-siege`: the mini siege, an RTS battle whose missions are played as a
