@@ -12,7 +12,9 @@ import { markModels } from './tools/mark-models';
 // (`mini-siege-marks`, made by `tools/mark-models.ts`). `validate` checks the credits and every
 // model a skin names; this checks every model is a self-contained glTF 2.0 file that three's
 // GLTFLoader parses in Node (ModelLibrary, as the page and the screenshot tool load it), and lists
-// its clips.
+// its clips. Since F8 two 2D packs draw the hosted rounds (`canvas2d-mission-room.json`,
+// `canvas2d-td-defence.json`): their PNGs are the only other binary files, each one a sheet a skin
+// names.
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 const FILES = readGameFiles(ROOT);
@@ -21,18 +23,27 @@ const MODELS = Object.keys(ASSETS)
   .filter((p) => p.endsWith('.glb') || p.endsWith('.gltf'))
   .sort();
 const PACKS = [
+  'dungeon-tileset-ii',
   'kenney-castle-kit',
   'kenney-nature-kit',
+  'kenney-tower-defense',
   'mini-siege-marks',
   'quaternius-characters',
   'quaternius-farm-animals',
   'quaternius-medieval-village',
 ];
+/** The rounds' PNG sheets (Engine 0.16 F8), each named by a 2D round skin's `images`. */
+const ROUND_SHEETS = [
+  'assets/dungeon-tileset-ii/tileset.png',
+  'assets/kenney-tower-defense/tilesheet-16.png',
+  'assets/kenney-tower-defense/tilesheet-24.png',
+  'assets/kenney-tower-defense/tilesheet-32.png',
+];
 /** The clips every character keeps (assets/CREDITS.md: Defeat stands in for a death, Punch for an attack). */
 const CHARACTER_CLIPS = ['Defeat', 'Idle', 'PickUp', 'Punch', 'RecieveHit', 'Victory', 'Walk', 'Walk_Carry'];
 
 describe('mini siege asset packs', () => {
-  it('has the five packs and the marks, each credited as CC0 with a source and an author', () => {
+  it('has the five 3D packs, the two round packs and the marks, each credited as CC0 with a source and an author', () => {
     expect(assetPacks(Object.keys(ASSETS))).toEqual(PACKS);
     expect(checkCredits(ASSETS, (p) => p)).toEqual([]);
     const credits = parseCredits(ASSETS['assets/CREDITS.md']!);
@@ -44,9 +55,15 @@ describe('mini siege asset packs', () => {
     }
   });
 
-  it('holds only GLB models, the packs’ own licence files and the marks the script makes', () => {
+  it('holds only GLB models, the rounds’ sheets, the packs’ own licence files and the marks the script makes', () => {
     const other = Object.keys(ASSETS).filter((p) => !p.endsWith('.glb') && !/\/license\.txt$/.test(p));
-    expect(other.sort()).toEqual(['assets/CREDITS.md', ...Object.keys(markModels())].sort());
+    expect(other.sort()).toEqual(['assets/CREDITS.md', ...ROUND_SHEETS, ...Object.keys(markModels())].sort());
+    const named = new Set(
+      Object.values(FILES)
+        .filter((t) => typeof t === 'string' && t.includes('"images"'))
+        .flatMap((t) => [...(t as string).matchAll(/"image": "([^"]+)"/g)].map((m) => m[1])),
+    );
+    for (const sheet of ROUND_SHEETS) expect(named.has(sheet), sheet).toBe(true);
     // The marks are text, exactly what `tools/mark-models.ts` writes.
     for (const [path, text] of Object.entries(markModels())) {
       const read = readModelAsset(path, ASSETS[path]!);

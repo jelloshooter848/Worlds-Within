@@ -211,6 +211,16 @@ describe('skin models (Engine 0.16 T11)', () => {
     expect(errors[0]!.message).toBe('"assets/p/m.glb" has no clip "stride" (its clips: spin)');
   });
 
+  it('reports a bad model shared by two entries at each, and reads it once', () => {
+    const s = skin({ model: 'assets/p/m.glb' }, { model: 'assets/p/m.glb' });
+    const errors = checkSkinModels(file, s, { 'assets/p/m.glb': PNG });
+    expect(errors.map((e) => [e.path, e.code])).toEqual([
+      ['kinds.torch.model', 'bad_model'],
+      ['tiles["#"].model', 'bad_model'],
+    ]);
+    expect(errors[1]!.message).toBe(errors[0]!.message);
+  });
+
   it('runs with the credits: a model pack needs its CREDITS.md section like any pack', () => {
     const s = skin({ model: 'assets/models/m.glb' });
     const errors = checkGameAssets(

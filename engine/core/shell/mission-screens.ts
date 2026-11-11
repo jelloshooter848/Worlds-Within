@@ -1,10 +1,11 @@
-import type { Action } from '../input/actions';
+import { Actions, type Action } from '../input/actions';
 import { frameTaps, type FrameTap, type InputFrame } from '../input/input-manager';
 import type { PointerGesture } from '../input/pointer-logic';
 import type { Renderer } from '../gfx/renderer';
 import type { MissionDef, MissionRecord } from '../missions';
 import type { Scene } from '../scene';
 import {
+  DEFAULT_UI_KEYS,
   inBox,
   layoutText,
   Menu,
@@ -12,10 +13,12 @@ import {
   menusUiStyle,
   paintUi,
   uiLook,
+  UI_COMMANDS,
   UiNav,
   UiScreen,
   type Box,
   type FontLookup,
+  type UiCommand,
   type MenusSpec,
   type UiDraw,
   type UiEvent,
@@ -449,7 +452,8 @@ export interface ResultsView {
  * The entry's results: its title and verdict, then each section of the changes (missions, losses,
  * people, buildings) as far as the picture has room (the rest counted, `and 3 more`), the save
  * code and Continue. On a picture at least {@link TWO_COLUMNS_FROM} px wide (Engine 0.16 F6, the
- * 16:9 pictures) the panel is wider and the changes flow down a left column, then a right one.
+ * 16:9 pictures) the panel is wider: the first section spans it, the others flow down a left
+ * column, then a right one, a heading never ending a column (Engine 0.16 F9).
  */
 export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiScreenFile {
   const words = wordsOf(ctx);
@@ -459,34 +463,57 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
     ctx,
     view.title,
     (col, bottom) => {
+      const two = ctx.screen.width >= TWO_COLUMNS_FROM;
       col.text(view.verdict, { color: p.dim, align: 'center' });
-      col.gap(4);
+      col.gap(two ? 2 : 4);
+      // On a wide picture the save code shares its label's row when it fits (Engine 0.16 F9).
+      const face = ctx.fonts(ctx.menus.font);
+      const labelW = face === null ? 0 : layoutText(face, words.code).width + (face.cell.w ?? 4);
+      const codeRow =
+        two && face !== null && view.code !== '' && labelW + layoutText(face, view.code).width <= col.w;
+      const codeGap = two ? 2 : 4;
       const codeH =
         view.code === ''
           ? 0
-          : heightOf(ctx.fonts, ctx.menus.font, words.code, col.w) +
-            heightOf(ctx.fonts, ctx.menus.font, view.code, col.w) +
-            4;
+          : codeRow
+            ? heightOf(ctx.fonts, ctx.menus.font, view.code, col.w) + codeGap
+            : heightOf(ctx.fonts, ctx.menus.font, words.code, col.w) +
+              heightOf(ctx.fonts, ctx.menus.font, view.code, col.w) +
+              codeGap;
       const limit = bottom - codeH;
-      const rows = sections.flatMap((s) => [
-        { text: s.heading, heading: true },
-        ...s.lines.map((text) => ({ text: `  ${text}`, heading: false })),
+      const rows = sections.flatMap((s, section) => [
+        { text: s.heading, heading: true, section },
+        ...s.lines.map((text) => ({ text: `  ${text}`, heading: false, section })),
       ]);
       const font = ctx.menus.font;
       const lineH = (ctx.fonts(font)?.line ?? 10) + 0;
-      const two = ctx.screen.width >= TWO_COLUMNS_FROM;
       const half = Math.floor((col.w - 8) / 2);
-      const columns = two
-        ? [new Column(ctx, col.x, col.y, half), new Column(ctx, col.x + half + 8, col.y, half)]
-        : [col];
+      const halves = () => [
+        new Column(ctx, col.x, col.y, half),
+        new Column(ctx, col.x + half + 8, col.y, half),
+      ];
+      // On a wide picture the first section (the missions' records, the longest lines) spans the
+      // panel and the rest flow down a left column, then a right one (Engine 0.16 F9, gap M39: a
+      // record wrapped over three lines of a half column left no room for the people).
+      let spanning = two && sections.length > 1;
+      let columns = two && !spanning ? halves() : [col];
       let at = 0;
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i]!;
+        if (spanning && row.section > 0) {
+          spanning = false;
+          columns = halves();
+          at = 0;
+        }
         const c = columns[at]!;
         const h = heightOf(ctx.fonts, font, row.text, c.w);
+        // A heading stays with its first line: it never ends a column (gap M39).
+        const next = rows[i + 1];
+        const keep =
+          row.heading && next !== undefined && !next.heading ? heightOf(ctx.fonts, font, next.text, c.w) : 0;
         const left = rows.length - i;
         const last = at === columns.length - 1;
-        if (c.y + h + (left > 1 && last ? lineH : 0) > limit && left > 1) {
+        if (c.y + h + Math.max(keep, left > 1 && last ? lineH : 0) > limit && left > 1) {
           if (!last) {
             // The column is full: this row starts the next one.
             at++;
@@ -498,14 +525,22 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
         }
         c.text(row.text, row.heading ? { color: p.heading } : {});
       }
-      if (two) {
+      if (columns.length > 1) {
         for (const c of columns) col.widgets.push(...c.widgets);
         col.y = Math.max(...columns.map((c) => c.y));
       }
       if (view.code !== '') {
-        col.gap(4);
-        col.text(words.code, { color: p.heading });
-        col.text(view.code, { color: p.dim });
+        col.gap(codeGap);
+        if (codeRow) {
+          const row = new Column(ctx, col.x + labelW, col.y, col.w - labelW);
+          col.widgets.push({ type: 'text', x: col.x, y: col.y, text: words.code, color: p.heading });
+          row.text(view.code, { color: p.dim });
+          col.widgets.push(...row.widgets);
+          col.y = row.y;
+        } else {
+          col.text(words.code, { color: p.heading });
+          col.text(view.code, { color: p.dim });
+        }
       }
     },
     [{ id: 'continue', label: words.continue }],
@@ -553,11 +588,26 @@ export class MissionScreens<G extends LaunchGame> {
   /** The game the records were counted in, and how many of its records were shown. */
   private seenGame: G | null = null;
   private seen = 0;
+  /** What the screen covered when the last `update` took its step's taps (null before any). */
+  private stepCover: ((p: UiPoint) => boolean) | null = null;
+  /** The actions the last `update` took as its screen's commands (hidden from the scene below). */
+  private stepKeys: ReadonlySet<Action> = new Set();
   /** The events of the last update (for tests and page hooks). */
   last: UiEvent[] = [];
 
   constructor(private readonly opts: MissionScreensOptions<G>) {
     this.nav = new UiNav(opts.uiKeys);
+  }
+
+  /**
+   * Whether the last `update` took action `a` as its screen's command, so the scene below must not
+   * see it pressed (Engine 0.16 F review): a key or pad press that takes Play, Begin or Continue
+   * starts the round, and its first step must not read that same press as its own (`jump` places a
+   * tower, `start` starts a wave). The full screens (briefing, results) take every UI key they
+   * read; the cards take only the confirm and back keys, and only on a step they took an item.
+   */
+  took(a: Action): boolean {
+    return this.stepKeys.has(a);
   }
 
   private get launch(): MissionLaunch<G> {
@@ -724,23 +774,31 @@ export class MissionScreens<G extends LaunchGame> {
 
   /** Whether a picture point is on a screen's panel or the badge (a page leaves such taps to the screens). */
   covers(p: UiPoint): boolean {
+    return this.cover()(p);
+  }
+
+  /** What the screen showing now covers (after a `sync`). */
+  private cover(): (p: UiPoint) => boolean {
     const ui = this.sync();
-    if (ui === null) return false;
-    if (this.built?.kind === 'briefing' || this.built?.kind === 'results') return true;
+    if (ui === null) return () => false;
+    if (this.built?.kind === 'briefing' || this.built?.kind === 'results') return () => true;
     const box = ui.box(CARD_PANEL);
     const badge = this.badge?.ui.box('badge');
-    return (box !== undefined && inBox(box, p)) || (badge !== undefined && inBox(badge, p));
+    return (p) => (box !== undefined && inBox(box, p)) || (badge !== undefined && inBox(badge, p));
   }
 
   /**
    * The page's pointer gestures without those on a screen (a tap, or a box dragged from one), so a
    * kit's pointer controls under the card never take the card's taps; every gesture while no
-   * screen shows.
+   * screen shows. After an `update` it is the screen that took that step's taps that covers them,
+   * not the one its presses left (a tap on Continue, Delegate or Begin closes the screen before
+   * the battle reads its gestures, and must not then reach the battle as an order).
    */
   uncovered(gestures: readonly PointerGesture[]): PointerGesture[] {
+    const covers = this.stepCover ?? this.cover();
     return gestures.filter((g) => {
-      if (g.type === 'tap') return !this.covers(g);
-      if (g.type === 'box') return !this.covers({ x: g.x0, y: g.y0 });
+      if (g.type === 'tap') return !covers(g);
+      if (g.type === 'box') return !covers({ x: g.x0, y: g.y0 });
       return true;
     });
   }
@@ -752,7 +810,9 @@ export class MissionScreens<G extends LaunchGame> {
    */
   update(input: InputFrame): UiEvent[] {
     const commands = this.nav.commands(input);
-    const ui = this.sync();
+    this.stepCover = this.cover();
+    this.stepKeys = new Set();
+    const ui = this.ui;
     if (ui === null || this.built === null) {
       this.last = [];
       return this.last;
@@ -763,7 +823,17 @@ export class MissionScreens<G extends LaunchGame> {
     this.last = ui.update({ commands, taps, pointer });
     this.badge?.ui.update({ commands: [], taps: [], pointer: null });
     for (const e of this.last) if (e.type === 'activate' && e.item !== undefined) this.activate(kind, e.item);
+    this.stepKeys = this.takenKeys(kind, input);
     return this.last;
+  }
+
+  /** The actions pressed this step that the screen `kind` took (see `took`). */
+  private takenKeys(kind: MissionScreenKind, input: InputFrame): ReadonlySet<Action> {
+    const keys = this.opts.uiKeys ?? DEFAULT_UI_KEYS;
+    const full = kind === 'briefing' || kind === 'results';
+    const tookItem = this.last.some((e) => e.type === 'activate' || e.type === 'back' || e.type === 'choice');
+    const commands: readonly UiCommand[] = full ? UI_COMMANDS : tookItem ? ['confirm', 'back'] : [];
+    return new Set(commands.flatMap((c) => keys[c]).filter((a) => input.pressed(a)));
   }
 
   /** Presses an item: what the launch does with it. */
@@ -815,7 +885,11 @@ export function missionScreensScene<G extends LaunchGame>(
       const taps = frameTaps(input);
       const kept = taps.filter((t) => !screens.covers(t));
       screens.update(input);
-      scene.update(kept.length === taps.length ? input : withTaps(input, kept), inputs);
+      // So is a key or pad press the screen took (Engine 0.16 F review): Z or Enter on Play must
+      // not also place a tower or start a wave on the round's first step.
+      const took = (a: Action) => screens.took(a);
+      const masked = kept.length !== taps.length || Actions.some(took);
+      scene.update(masked ? withoutTaken(input, kept, took) : input, inputs);
     },
     render(r) {
       scene.render(r);
@@ -826,13 +900,20 @@ export function missionScreensScene<G extends LaunchGame>(
   };
 }
 
-/** An input frame the same as `input` but for its taps (Engine 0.16 F7). */
-function withTaps(input: InputFrame, taps: readonly FrameTap[]): InputFrame {
+/**
+ * An input frame the same as `input` but for its taps, and without the presses the screens took
+ * (Engine 0.16 F7 and F review).
+ */
+function withoutTaken(
+  input: InputFrame,
+  taps: readonly FrameTap[],
+  took: (a: Action) => boolean,
+): InputFrame {
   return {
     held: (a) => input.held(a),
-    pressed: (a) => input.pressed(a),
+    pressed: (a) => !took(a) && input.pressed(a),
     released: (a) => input.released(a),
-    bufferedJump: (n) => input.bufferedJump(n),
+    bufferedJump: (n) => !took('jump') && input.bufferedJump(n),
     consumeJumpBuffer: () => input.consumeJumpBuffer(),
     get dirX() {
       return input.dirX;

@@ -1,7 +1,477 @@
 {
   "backend": "canvas2d",
+  "background": "#0c0a10",
+  "images": {
+    "dungeon": {
+      "image": "assets/dungeon-tileset-ii/tileset.png",
+      "frames": {
+        "column": {
+          "x": 80,
+          "y": 80,
+          "w": 16,
+          "h": 48
+        },
+        "column_wall": {
+          "x": 96,
+          "y": 80,
+          "w": 16,
+          "h": 48
+        },
+        "floor_1": {
+          "x": 16,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "floor_2": {
+          "x": 32,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "floor_3": {
+          "x": 48,
+          "y": 64,
+          "w": 16,
+          "h": 16
+        },
+        "floor_4": {
+          "x": 16,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "floor_5": {
+          "x": 32,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "floor_6": {
+          "x": 48,
+          "y": 80,
+          "w": 16,
+          "h": 16
+        },
+        "floor_7": {
+          "x": 16,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "floor_8": {
+          "x": 32,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "floor_ladder": {
+          "x": 48,
+          "y": 96,
+          "w": 16,
+          "h": 16
+        },
+        "floor_spikes_f0": {
+          "x": 16,
+          "y": 192,
+          "w": 16,
+          "h": 16
+        },
+        "floor_spikes_f1": {
+          "x": 32,
+          "y": 192,
+          "w": 16,
+          "h": 16
+        },
+        "floor_spikes_f2": {
+          "x": 48,
+          "y": 192,
+          "w": 16,
+          "h": 16
+        },
+        "floor_spikes_f3": {
+          "x": 64,
+          "y": 192,
+          "w": 16,
+          "h": 16
+        },
+        "floor_stairs": {
+          "x": 80,
+          "y": 192,
+          "w": 16,
+          "h": 16
+        },
+        "knight_m_hit_f0": {
+          "x": 256,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_idle_f0": {
+          "x": 128,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_idle_f1": {
+          "x": 144,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_idle_f2": {
+          "x": 160,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_idle_f3": {
+          "x": 176,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_run_f0": {
+          "x": 192,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_run_f1": {
+          "x": 208,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_run_f2": {
+          "x": 224,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "knight_m_run_f3": {
+          "x": 240,
+          "y": 100,
+          "w": 16,
+          "h": 28,
+          "anchor": "bottom"
+        },
+        "masked_orc_idle_f0": {
+          "x": 368,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_idle_f1": {
+          "x": 384,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_idle_f2": {
+          "x": 400,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_idle_f3": {
+          "x": 416,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_run_f0": {
+          "x": 432,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_run_f1": {
+          "x": 448,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_run_f2": {
+          "x": 464,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "masked_orc_run_f3": {
+          "x": 480,
+          "y": 153,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_idle_f0": {
+          "x": 368,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_idle_f1": {
+          "x": 384,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_idle_f2": {
+          "x": 400,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_idle_f3": {
+          "x": 416,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_run_f0": {
+          "x": 432,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_run_f1": {
+          "x": 448,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_run_f2": {
+          "x": 464,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "orc_warrior_run_f3": {
+          "x": 480,
+          "y": 177,
+          "w": 16,
+          "h": 23,
+          "anchor": "bottom"
+        },
+        "skull": {
+          "x": 288,
+          "y": 432,
+          "w": 16,
+          "h": 16,
+          "anchor": "center"
+        },
+        "ui_heart_empty": {
+          "x": 321,
+          "y": 370,
+          "w": 13,
+          "h": 12,
+          "anchor": "center"
+        },
+        "ui_heart_full": {
+          "x": 289,
+          "y": 370,
+          "w": 13,
+          "h": 12,
+          "anchor": "center"
+        },
+        "ui_heart_half": {
+          "x": 305,
+          "y": 370,
+          "w": 13,
+          "h": 12,
+          "anchor": "center"
+        },
+        "wall_banner_red": {
+          "x": 16,
+          "y": 32,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_bottom_left": {
+          "x": 32,
+          "y": 168,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_bottom_right": {
+          "x": 48,
+          "y": 168,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_left": {
+          "x": 32,
+          "y": 136,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_mid_left": {
+          "x": 32,
+          "y": 152,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_mid_right": {
+          "x": 48,
+          "y": 152,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_right": {
+          "x": 48,
+          "y": 136,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_top_left": {
+          "x": 31,
+          "y": 120,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_top_right": {
+          "x": 48,
+          "y": 120,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_tshape_bottom_left": {
+          "x": 80,
+          "y": 152,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_tshape_bottom_right": {
+          "x": 64,
+          "y": 152,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_tshape_left": {
+          "x": 80,
+          "y": 168,
+          "w": 16,
+          "h": 16
+        },
+        "wall_edge_tshape_right": {
+          "x": 64,
+          "y": 168,
+          "w": 16,
+          "h": 16
+        },
+        "wall_left": {
+          "x": 16,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "wall_mid": {
+          "x": 32,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "wall_outer_front_left": {
+          "x": 0,
+          "y": 168,
+          "w": 16,
+          "h": 16
+        },
+        "wall_outer_front_right": {
+          "x": 16,
+          "y": 168,
+          "w": 16,
+          "h": 16
+        },
+        "wall_outer_mid_left": {
+          "x": 0,
+          "y": 152,
+          "w": 16,
+          "h": 16
+        },
+        "wall_outer_mid_right": {
+          "x": 16,
+          "y": 152,
+          "w": 16,
+          "h": 16
+        },
+        "wall_outer_top_left": {
+          "x": 0,
+          "y": 136,
+          "w": 16,
+          "h": 16
+        },
+        "wall_outer_top_right": {
+          "x": 16,
+          "y": 136,
+          "w": 16,
+          "h": 16
+        },
+        "wall_right": {
+          "x": 48,
+          "y": 16,
+          "w": 16,
+          "h": 16
+        },
+        "wall_top_left": {
+          "x": 16,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "wall_top_mid": {
+          "x": 32,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "wall_top_right": {
+          "x": 48,
+          "y": 0,
+          "w": 16,
+          "h": 16
+        },
+        "weapon_regular_sword": {
+          "x": 323,
+          "y": 10,
+          "w": 10,
+          "h": 21,
+          "anchor": "center"
+        },
+        "wall_capped": {
+          "x": 32,
+          "y": 12,
+          "w": 16,
+          "h": 16
+        }
+      }
+    }
+  },
   "sheets": {
-    "sheet": "camp",
+    "sheet": "dungeon",
     "fallbackColor": "#fcfcfc"
   },
   "camera": {
@@ -10,55 +480,60 @@
   "kinds": {
     "hero": {
       "frames": {
+        "idle": {
+          "frames": ["knight_m_idle_f0", "knight_m_idle_f1", "knight_m_idle_f2", "knight_m_idle_f3"],
+          "ticks": 8
+        },
         "walk": {
-          "down": {
-            "frames": ["hero-down-0", "hero-down-1"],
-            "ticks": 8
-          },
-          "up": {
-            "frames": ["hero-up-0", "hero-up-1"],
-            "ticks": 8
-          },
-          "right": {
-            "frames": ["hero-side-0", "hero-side-1"],
-            "ticks": 8
+          "frames": ["knight_m_run_f0", "knight_m_run_f1", "knight_m_run_f2", "knight_m_run_f3"],
+          "ticks": 5,
+          "events": {
+            "1": "footstep",
+            "3": "footstep"
           }
         },
         "attack": {
-          "down": "hero-attack-down",
-          "up": "hero-attack-up",
-          "right": "hero-attack-side"
+          "frames": ["knight_m_run_f2", "knight_m_idle_f0"],
+          "ticks": [3, 20],
+          "loop": false
         },
-        "hurt": {
-          "down": "hero-down-0",
-          "up": "hero-up-0",
-          "right": "hero-side-0"
-        },
+        "hurt": "knight_m_hit_f0",
         "dying": {
-          "frames": ["hero-down-0", "hero-side-0", "hero-up-0", "hero-side-0"],
-          "ticks": 4
+          "frames": ["knight_m_hit_f0", "knight_m_idle_f0"],
+          "ticks": 3
         },
         "poof": {
+          "sheet": "camp",
           "frames": ["poof-0", "poof-1", "poof-2"],
           "ticks": 8,
           "loop": false
         }
       },
       "flipFacing": true,
+      "hitFlash": {
+        "tag": "flashing",
+        "color": "#ffffff",
+        "blink": 3
+      },
       "fallbackColor": "#0058f8"
     },
     "sword": {
       "frames": {
-        "stab": {
-          "down": "sword-down",
-          "up": "sword-up",
-          "right": "sword-right"
-        }
+        "stab": "weapon_regular_sword"
       },
-      "flipFacing": true,
+      "turnToFacing": "up",
+      "spawnTween": {
+        "prop": "scale",
+        "from": 0.6,
+        "to": 1,
+        "frames": 4,
+        "ease": "backOut"
+      },
       "fallbackColor": "#fcfcfc"
     },
     "poof": {
+      "sheet": "camp",
+      "emit": ["embers", "smoke"],
       "frames": {
         "poof": {
           "frames": ["poof-0", "poof-1", "poof-2"],
@@ -71,25 +546,30 @@
     "knight": {
       "frames": {
         "walk": {
-          "down": {
-            "frames": ["guard-down-0", "guard-down-1"],
-            "ticks": 8
-          },
-          "up": {
-            "frames": ["guard-up-0", "guard-up-1"],
-            "ticks": 8
-          },
-          "right": {
-            "frames": ["guard-side-0", "guard-side-1"],
-            "ticks": 8
-          }
+          "frames": ["orc_warrior_run_f0", "orc_warrior_run_f1", "orc_warrior_run_f2", "orc_warrior_run_f3"],
+          "ticks": 7
+        },
+        "idle": {
+          "frames": [
+            "orc_warrior_idle_f0",
+            "orc_warrior_idle_f1",
+            "orc_warrior_idle_f2",
+            "orc_warrior_idle_f3"
+          ],
+          "ticks": 8
         }
       },
       "flipFacing": true,
+      "hitFlash": {
+        "tag": "flashing",
+        "color": "#ffffff",
+        "blink": 2
+      },
       "fallbackColor": "#a80020",
       "byTag": [
         {
           "tag": "foe:ram",
+          "sheet": "camp",
           "frames": {
             "walk": {
               "right": {
@@ -101,6 +581,7 @@
         },
         {
           "tag": "foe:catapult",
+          "sheet": "camp",
           "frames": {
             "walk": {
               "right": {
@@ -109,57 +590,217 @@
               }
             }
           }
+        },
+        {
+          "tag": "foe:28",
+          "frames": {
+            "walk": {
+              "frames": ["masked_orc_run_f0", "masked_orc_run_f1", "masked_orc_run_f2", "masked_orc_run_f3"],
+              "ticks": 7
+            },
+            "idle": {
+              "frames": [
+                "masked_orc_idle_f0",
+                "masked_orc_idle_f1",
+                "masked_orc_idle_f2",
+                "masked_orc_idle_f3"
+              ],
+              "ticks": 8
+            }
+          }
+        },
+        {
+          "tag": "foe:15",
+          "frames": {
+            "walk": {
+              "frames": ["masked_orc_run_f0", "masked_orc_run_f1", "masked_orc_run_f2", "masked_orc_run_f3"],
+              "ticks": 7
+            },
+            "idle": {
+              "frames": [
+                "masked_orc_idle_f0",
+                "masked_orc_idle_f1",
+                "masked_orc_idle_f2",
+                "masked_orc_idle_f3"
+              ],
+              "ticks": 8
+            }
+          }
         }
       ]
     },
     "pickup:heart": {
       "frames": {
-        "idle": "heart"
+        "idle": "ui_heart_full"
+      },
+      "spawnTween": {
+        "prop": "y",
+        "from": -2,
+        "to": 0,
+        "frames": 20,
+        "ease": "sineInOut",
+        "yoyo": true,
+        "repeat": "forever"
       },
       "fallbackColor": "#f83800"
     }
   },
   "tiles": {
     "#": {
-      "frame": "wall",
-      "fallbackColor": "#503000"
+      "frame": "wall_mid",
+      "join": {
+        "edge": "join",
+        "frames": {
+          "top": "wall_capped",
+          "top right": "wall_capped",
+          "top bottom": "wall_capped",
+          "top left": "wall_capped",
+          "top right bottom": "wall_capped",
+          "top right left": "wall_capped",
+          "top bottom left": "wall_capped",
+          "top right bottom left": "wall_capped"
+        }
+      },
+      "fallbackColor": "#3c3040"
     },
     ".": {
-      "frame": "floor",
-      "fallbackColor": "#3c1c00"
+      "frame": "floor_1",
+      "fallbackColor": "#3c3040"
+    }
+  },
+  "emitters": {
+    "dust": {
+      "burst": 2,
+      "life": [10, 16],
+      "speed": [0.15, 0.4],
+      "angle": [200, 340],
+      "anchor": "feet",
+      "shape": {
+        "box": {
+          "w": 6,
+          "h": 1
+        }
+      },
+      "gravity": -0.01,
+      "drag": 0.06,
+      "size": [2, 1],
+      "color": ["#8c7c70", "#5c5058"],
+      "alpha": [0.8, 0]
+    },
+    "slash": {
+      "burst": 6,
+      "life": [6, 10],
+      "speed": [0.8, 1.6],
+      "angle": [0, 360],
+      "drag": 0.15,
+      "size": [2, 1],
+      "color": ["#ffffff", "#c8e0ff"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "blood": {
+      "burst": 10,
+      "life": [10, 18],
+      "speed": [0.6, 1.6],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "gravity": 0.06,
+      "size": [2, 1],
+      "color": ["#f83800", "#a80020"],
+      "alpha": [1, 0]
+    },
+    "embers": {
+      "rate": 1.2,
+      "life": [14, 26],
+      "speed": [0.3, 0.9],
+      "angle": [240, 300],
+      "shape": {
+        "circle": 6
+      },
+      "gravity": -0.02,
+      "size": [2, 1],
+      "color": ["#fce0a8", "#f8b800", "#f83800"],
+      "alpha": [1, 0],
+      "blend": "add"
+    },
+    "smoke": {
+      "rate": 0.5,
+      "life": [20, 34],
+      "speed": [0.2, 0.5],
+      "angle": [250, 290],
+      "shape": {
+        "circle": 5
+      },
+      "gravity": -0.01,
+      "size": [3, 5],
+      "color": ["#5c5058", "#2c2830"],
+      "alpha": [0.7, 0]
     }
   },
   "events": {
+    "footstep": {
+      "emit": "dust"
+    },
     "sword": {
-      "sound": "sword"
+      "sound": "sword",
+      "pitch": [-1, 1],
+      "emit": "slash",
+      "tween": [
+        {
+          "prop": "scaleX",
+          "from": 1.25,
+          "to": 1,
+          "frames": 6,
+          "ease": "quadOut"
+        }
+      ]
     },
     "hit": {
-      "effect": {
-        "kind": "shake",
-        "size": 1,
-        "ticks": 4
+      "shake": {
+        "amount": 1.5,
+        "ticks": 6
+      },
+      "hitPause": {
+        "ticks": 3
       }
     },
     "kill": {
       "sound": "burn",
-      "effect": {
-        "kind": "particles",
-        "color": "#f83800",
-        "count": 6,
-        "size": 2,
-        "ticks": 12
+      "shake": {
+        "amount": 3,
+        "ticks": 10
+      },
+      "hitPause": {
+        "ticks": 5
+      },
+      "zoom": {
+        "to": 1.05,
+        "ticks": 10,
+        "ease": "quadOut"
       }
     },
     "hurt": {
       "sound": "hurt",
-      "effect": {
-        "kind": "flash",
+      "emit": "blood",
+      "shake": {
+        "amount": 3,
+        "ticks": 10
+      },
+      "hitPause": {
+        "ticks": 4
+      },
+      "flash": {
         "color": "#a80020",
-        "ticks": 2
+        "alpha": 0.35,
+        "ticks": 6
       }
     },
     "dying": {
-      "sound": "fail"
+      "sound": "fail",
+      "shake": {
+        "amount": 2,
+        "ticks": 12
+      }
     },
     "dead": {
       "effect": {
@@ -171,32 +812,45 @@
   },
   "hud": [
     {
+      "as": "panel",
+      "x": 32,
+      "y": 3,
+      "w": 256,
+      "h": 16,
+      "color": "#1a140c",
+      "border": "#c8a060"
+    },
+    {
       "status": "host:mission",
       "as": "text",
-      "x": 16,
-      "y": 12,
-      "font": "siege-font"
+      "x": 37,
+      "y": 8,
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000"
     },
     {
       "status": "hp",
       "as": "hearts",
-      "x": 16,
-      "y": 32,
-      "frame": "heart"
+      "x": 205,
+      "y": 5,
+      "frame": "ui_heart_full"
     },
     {
       "status": "timeLeft",
-      "as": "icon",
-      "x": 184,
-      "y": 32,
-      "frame": "hourglass"
-    },
-    {
-      "status": "timeLeft",
-      "as": "number",
-      "x": 196,
-      "y": 32,
-      "font": "siege-font"
+      "as": "bar",
+      "x": 40,
+      "y": 171,
+      "w": 240,
+      "h": 4,
+      "max": 1500,
+      "color": "#f0c060",
+      "back": "#1a140c",
+      "border": "#000000",
+      "low": {
+        "below": 0.25,
+        "color": "#f83800"
+      }
     }
   ]
 }

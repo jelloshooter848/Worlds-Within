@@ -211,6 +211,17 @@ describe('SkinLighting', () => {
     const out = l.layout({ frame: 0, entities: [], map: null, view: VIEW, size: SIZE })!;
     expect(out.vignette).toEqual({ color: '#000000', strength: 0.4, inner: 0.45 });
     expect(out.bands).toBe(4);
+    expect(out.dither).toBe(0);
+    expect(
+      new SkinLighting(skin({ dither: 8 })).layout({
+        frame: 0,
+        entities: [],
+        map: null,
+        view: VIEW,
+        size: SIZE,
+      })!.dither,
+    ).toBe(8);
+    expect(lightingSchema.safeParse({ dither: 3 }).error?.issues[0]?.path).toEqual(['dither']);
     const none = new SkinLighting(skin({ vignette: { strength: 0 } }));
     expect(none.layout({ frame: 0, entities: [], map: null, view: VIEW, size: SIZE })!.vignette).toBeNull();
     expect(

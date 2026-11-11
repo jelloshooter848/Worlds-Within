@@ -272,6 +272,17 @@ parallax?, tiles? }` (a platformer level's id is its map's), so one skin gives e
     theme may also give `scene3d` (that map's lights, fog and tone mapping) and `scenery` (its
     scenery rows), both replacing the skin's. Tested in
     `skin.test.ts` (`per-map looks`).
+  - Hosted rounds and top-down looks (Engine 0.16 F8, the mini siege's rounds): a 3D skin's
+    `rounds2d` (mini game ids; `wrong_backend_field` on a 2D skin) says a 3D page draws those
+    rounds in 2D with the game's `canvas2d-<id>` skins (the shell's `rounds2d`, `roundLayerDisplay`
+    in `engine/core/shell`; `pnpm cli screenshot --backend three` does the same); `labels` are
+    allowed on 2D skins (the 2D presenter draws them: enemies' health bars); 2D kind fields
+    (`SPRITE_FIELDS`) `turnToFacing` (`true` or the way the art faces: the frame turned to the
+    entity's facing about the box centre), `ring` `{ radius, color, alpha?, edge? }` (a disc under
+    the sprite: a tower's range while placing) and `hitFlash` `{ tag, color, blink? }` (the frame as a
+    silhouette in the colour while the entity has the tag). A palette that is a colour (`#fff`,
+    `isSilhouettePalette`) is never a palette file: `checkSkinRefs` accepts it and the 2D sheet
+    lookup (`contentSheets`, `silhouetteSheet`) draws the sheet as a silhouette in it.
   - 3D (Engine 0.6; owner answer 22: procedural low-poly meshes written in the skin). A `mesh`
     is a primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`;
     round ones use `LOW_POLY_SEGMENTS`) that fills the entity box (or tile) and is `depth` px
@@ -519,6 +530,10 @@ skin (content/skins/<backend>.json)`.
   a `when` (`statusCompareSchema` from `../audio/mix`), and `hudItemShown(item, status)` is
   whether it holds (true without one); `layoutHud` and `SkinHud` skip an item that is not shown.
   A `panel` may be flat (`color`, optional `alpha` and `border`, no `frame` or `slice`).
+  Engine 0.16 F9: `HUD_HIDDEN_STATUS` (`hudHidden(status)`): a frame whose status sets it to a
+  truthy value shows no HUD item (`hudItemShown` is false for all; the 3D backend shows no labels
+  either), for a page's title screen; `hudPanelBoxes(skin, status)` lists the shown `panel` and
+  `minimap` boxes (what 3D labels keep out of) and `boxesOverlap(a, b)` tests two boxes.
 - Tests for the audio fields: `skin-audio.test.ts` (Engine 0.16 T8).
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 

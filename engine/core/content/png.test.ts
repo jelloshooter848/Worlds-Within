@@ -73,4 +73,11 @@ describe('asset files as strings', () => {
     expect(assetDataUrl('a.glb', '')).toBe('data:model/gltf-binary;base64,');
     expect(dataUrlBytes('# Credits')).toBeNull();
   });
+
+  it('decodes every byte value, and a large file, as Node does', () => {
+    const every = Uint8Array.from({ length: 256 * 3 }, (_, i) => (i * 7) % 256);
+    expect(dataUrlBytes(assetDataUrl('x.bin', Buffer.from(every).toString('base64')))).toEqual(every);
+    const large = Uint8Array.from({ length: 200_001 }, (_, i) => (i * 31 + (i >> 8)) % 256);
+    expect(dataUrlBytes(assetDataUrl('x.glb', Buffer.from(large).toString('base64')))).toEqual(large);
+  });
 });

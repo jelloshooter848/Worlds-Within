@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Renderer } from '@engine/core/gfx/renderer';
+import { LIGHT_DITHER_STOPS } from '@engine/core/fx';
+import type { RadialFill, Renderer } from '@engine/core/gfx/renderer';
 import type { SpriteSheet } from '@engine/core/gfx/spritesheet';
 import { freezeFrame, type PresentFrame, type PresentMap, type SkinFile } from '@engine/core/present';
 import { SkinnedCanvasPresenter, type MapSurface } from './presenter';
@@ -1378,6 +1379,28 @@ describe('lighting (Engine 0.16 part C T4)', () => {
     );
     const at = calls.indexOf('<alpha 0.8>');
     expect(calls[at + 1]).toBe('rect 0,0 48x32 #000010');
+  });
+
+  it("passes the skin's dither to every light's fill (erase and glow), smooth in finer stops; the vignette stays smooth", () => {
+    const dithered: SkinFile = { ...skin, lighting: { ...skin.lighting, bands: 6, dither: 4 } };
+    const screen = lit();
+    const light = lit();
+    const fills: RadialFill[] = [];
+    for (const r of [screen.r, light.r]) {
+      const record = r.gradient!;
+      r.gradient = (g) => (fills.push(g), record(g));
+    }
+    new SkinnedCanvasPresenter(screen.r, dithered, lookup, {
+      mapSurface: () => null,
+      lightSurface: () => ({ renderer: light.r, image: null }),
+    }).present(freezeFrame(frame({ entities: [hero(), torch('lit')] })));
+    const lights = fills.filter((g) => g.mode !== 'normal');
+    expect(lights.map((g) => g.mode)).toEqual(['erase', 'erase', 'add']);
+    for (const g of lights) {
+      expect(g.dither).toEqual({ size: 4, levels: 6 });
+      expect(g.stops).toHaveLength(LIGHT_DITHER_STOPS + 1);
+    }
+    expect(fills.find((g) => g.mode === 'normal')!.dither).toBeUndefined();
   });
 
   it('draws nothing for a skin without lighting, and the same calls for the same seed', () => {

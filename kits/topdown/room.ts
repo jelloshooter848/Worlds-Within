@@ -90,6 +90,20 @@ export const LEGEND: Readonly<Record<string, LegendEntry>> = {
   D: { tile: 'floor' },
 };
 
+/**
+ * The characters a room's decoration grid (`decor`, its `.decor.txt`; Engine 0.16 polish P4) may
+ * hold: `.` for nothing and any other printable ASCII character that is not a kit `LEGEND`
+ * character nor a presented tile (`PRESENT_TILES` in present.ts: `d`, a shut building door, is the
+ * only one not in `LEGEND`), so a skin's `tiles` can map each to a prop without clashing with the
+ * map. The kit gives them no meaning: they are presentation only (the map layer `decor`), never
+ * part of the world's state.
+ */
+export const DECOR_CHARS: ReadonlySet<string> = new Set(
+  Array.from({ length: 126 - 33 + 1 }, (_, i) => String.fromCharCode(33 + i)).filter(
+    (c) => c === '.' || !(Object.hasOwn(LEGEND, c) || c === 'd'),
+  ),
+);
+
 export interface RoomDef {
   id: string;
   /** The room's cell on the dungeon map (column, row); neighbours share an edge. */
@@ -132,6 +146,12 @@ export interface RoomDef {
    * with its top-left cell at `boss.at`. It counts as one of the room's enemies.
    */
   boss?: BossDef;
+  /**
+   * Decoration (Engine 0.16 polish P4), presentation only: 11 rows of 16 `DECOR_CHARS`, `.` for
+   * nothing, each other character a prop the skin's `tiles` draw over the floor (the presented map
+   * layer `decor`). No rule reads it: no collision, nothing in the snapshot.
+   */
+  decor?: readonly string[];
 }
 
 /**

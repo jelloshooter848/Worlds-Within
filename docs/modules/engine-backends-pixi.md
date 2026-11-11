@@ -31,7 +31,9 @@ backdrop? })` implements the core `Renderer` contract (`clear`, `rect`, `sprite`
   each glowing shape (cheaper than a filter).
 - `radialTexture(stops)`, `GRADIENT_SIZE` (Engine 0.16 part D, D1): `PixiRenderer.gradient`'s
   cached radial gradient textures, what a skin's lighting draws (with `PixiSurfaces.makeLive`,
-  the light map surface rendered every frame).
+  the light map surface rendered every frame). A dithered fill (Engine 0.16 polish P, a skin's
+  `lighting.dither`) is one whole-pixel sprite of `ditheredRadial`'s bytes from a per-frame pool
+  of buffer textures, the same bytes the Canvas2D backend draws.
 - `PoolCounts`: the pool counts' shape.
 - Fog of war (Engine 0.16 part D, D3): drawn by the core walk (translucent boxes, a minimap's
   fills), so nothing here is new; `tests/browser/fog-parity.test.ts` holds it to Canvas2D's

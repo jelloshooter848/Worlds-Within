@@ -9,7 +9,8 @@ self-contained `.glb` with plain material or vertex colours and no texture, as t
 check and `ModelLibrary` in Node need; `assets.test.ts` parses each one. The roadmap names three
 packs; the other two are substitutes for what those three lack (people and sheep), and the
 Quaternius village pack is the 2020 "Medieval Village Pack", not the newer textured MegaKit; these
-choices are owner items (`docs/FEEDBACK-LOG.md`).
+choices are owner item 534 (`docs/FEEDBACK-LOG.md`; details in `docs/BUILD-LOG.md`, Engine 0.16
+part F).
 
 ## kenney-castle-kit
 
@@ -121,3 +122,38 @@ choices are owner items (`docs/FEEDBACK-LOG.md`).
 - Files: `offer-gem.gltf` (a golden octahedron lit from within, one unit tall) and
   `raider-banner.gltf` (a pole, a red cloth and a gold tip, 1.75 units tall), embedded `.gltf` text.
 - Changed: nothing (made by the script; `assets.test.ts` checks the files against it).
+
+## dungeon-tileset-ii
+
+- Source: https://0x72.itch.io/dungeontileset-ii (the free `0x72_DungeonTilesetII_v1.7.zip`,
+  version 1.7; fetched 2026-11-11 for Engine 0.16 part F, F8)
+- Author: 0x72 (https://0x72.itch.io)
+- Licence: CC0 1.0 Universal (stated as the asset licence on the itch.io page, "Creative Commons
+  Zero v1.0 Universal"; the zip holds no licence file)
+- Use: the hosted top-down rounds drawn in 2D on the 3D page (F8, after part C's The Old Crypt,
+  whose roadmap entry names this pack): the raiders' camp and the stockade's floors and walls,
+  the hero (`knight_m`), the guards (`orc_warrior`, `masked_orc`), the sword, the hearts and the
+  skull of a beaten guard. The siege engines in the room stay the game's own text sprites (the pack
+  has none).
+- Files (1 PNG, 39 KB): `tileset.png`, the zip's whole 512 x 512 sheet
+  (`0x72_DungeonTilesetII_v1.7.png`, renamed); its frames are named in the skin
+  (`content/skins/canvas2d-mission-room.json`, `images.dungeon`) with the rectangles of the zip's
+  `tile_list_v1.7`.
+- Changed: nothing but the name.
+
+## kenney-tower-defense
+
+- Source: https://opengameart.org/content/tower-defense-300-tilessprites
+  (https://opengameart.org/sites/default/files/Tower%20Defense%20%28top-down%29.zip; Kenney's
+  "Tower Defense (top-down)", fetched 2026-11-11 for Engine 0.16 part F, F8)
+- Author: Kenney (www.kenney.nl)
+- Licence: CC0 1.0 Universal (the pack's `License.txt`, kept as `license.txt`)
+- Use: the walls' tower-defense round drawn in 2D on the 3D page (F8, after part E's The Winding
+  Road, whose roadmap entry names this pack): grass, the road, the build plots, the towers (the
+  archers and the ballista), the raiders (soldiers seen from above), arrows, bolts, impacts,
+  smoke and fire.
+- Files (2 PNGs, 124 KB, and `license.txt`): `tilesheet-16.png` and `tilesheet-24.png`, the pack's
+  `Tilesheet/towerDefense_tilesheet.png` (23 x 13 tiles of 64 px) scaled down to 16 and 24 px tiles
+  (a box filter, alpha kept), for the round's 16-px cells (ground) and its towers, raiders and
+  shots drawn a little larger than a cell, centred on it.
+- Changed: scaled down as above; nothing else.

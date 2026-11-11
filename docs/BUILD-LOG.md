@@ -1,8 +1,9 @@
 # Build log
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
-PixiJS backend), B, C and D on branch `engine/build-0.15`, for the owner's review. Nothing in it is
-merged to `master`, tagged or published.
+PixiJS backend), B, C, D and F (the mini siege in 3D), with the polish pass P in progress, on
+branch `engine/build-0.15`, for the owner's review. Nothing in it is merged to `master`, tagged or
+published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
 release is in [ROADMAP.md](ROADMAP.md); this file records what actually happened, so the owner can
@@ -104,13 +105,19 @@ the API review listed (`1.0-1` to `1.0-11`).
   `docs/reports/screenshots/0.16-D/`. Hashes moved only for the sample's new map and balance
   (listed in its section). Not met: the owner's playtest (item 504) and screenshot review (item
   505).
-- **0.16 part F The mini siege in 3D low-poly: in progress.** Built on the track branch
-  `engine/0.16-track2` and merged in part D, D1, not extended since: the CC0 low-poly packs (F1),
-  the 3D backend's ground view with shared picking (F2), crisp output, instanced tile models and
-  decor (F3), the world clock and time of day (F4), the in-picture mission card, briefing and
-  results screens (F5), the siege map in 3D (F6) and its HUD, clock, mission UI and 3D page
-  (F7); presentation only, no golden hash moved. Not built yet: the rest of part F (from F8,
-  the rounds' presentation) and its close-out, so it has no section and no items of its own yet.
+- **0.16 part F The mini siege in 3D low-poly: built, awaiting review.** Built on the track
+  branch `engine/0.16-track2` (F1-F7 merged in part D, D1; F8-F10 and the review fixes merged in
+  part E, E1): the siege, the dawn and the ridge in 3D after the mockup (CC0 Kenney and
+  Quaternius packs, a ground view, decor, the time of day by the world clock), the 3D page with
+  its HUD and the mission flow in the picture (briefing, Play or Delegate, results), the hosted
+  rounds in 2D over it on the Kenney Tower Defense pack, with 2D looks (`ring`, world labels,
+  `hitFlash`, `turnToFacing`); no hash moved. Not met: the owner's playtest and screenshot
+  review (item 553; ten screenshots and the mockup comparison in its section).
+- **0.16 polish P Parts C and F review notes: in progress.** On the track branch: P1 (parts B
+  and C merged into the track), P2 (fifteen before shots) and P3 (The Old Crypt's lights drawn
+  with a dithered falloff, no rings) and P4's first step (a presentation-only decoration grid
+  for top-down rooms, `.decor.txt`, not yet used by a room) merged in part E, E1; the rest of P4
+  and P5-P11 not built yet. No hash moved.
 
 ### How to try each sample
 
@@ -118,17 +125,17 @@ Install once with `pnpm install`. In the browser: `pnpm dev`, then open
 `http://localhost:5173/` (the games index) or a page directly (with `pnpm build && pnpm preview`
 the same paths are served from `dist/`; each page takes `?debug=step` for the step hook):
 
-| Game                          | `pnpm dev` path                                     | Controls                                                                         |
-| ----------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------- |
-| The Old Crypt (dungeon)       | `/games/samples/dungeon/`                           | arrows move, X or Z the sword, C the item; Z or X after the end starts a new run |
-| Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`) | arrows move, Z jumps (hold for higher), X runs; Esc or P pauses                  |
-| The River Ford (RTS)          | `/games/samples/rts-skirmish/`                      | mouse or touch: click selects, drag boxes, right click commands, wheel zooms     |
-| The Winding Road (TD)         | `/games/samples/tower-defense/`                     | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends     |
-| The mini siege                | `/games/samples/mini-siege/`                        | Begin, then Launch, Play or Delegate in the bar; rounds by keys or taps          |
-| Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)     | arrows move, Z jumps, X runs                                                     |
-| Platformer classic (test)     | `/games/platformer-classic/` (3D: `?backend=three`) | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs               |
-| RTS classic (test)            | `/games/rts-classic/`                               | mouse or touch: click selects, drag boxes, right click commands, wheel zooms     |
-| FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)             | arrows move, Z jumps, X runs                                                     |
+| Game                          | `pnpm dev` path                                        | Controls                                                                                |
+| ----------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| The Old Crypt (dungeon)       | `/games/samples/dungeon/`                              | arrows move, X or Z the sword, C the item; Z or X after the end starts a new run        |
+| Hopper's Way (platformer)     | `/games/samples/platformer/` (3D: `?backend=three`)    | arrows move, Z jumps (hold for higher), X runs; Esc or P pauses                         |
+| The River Ford (RTS)          | `/games/samples/rts-skirmish/`                         | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
+| The Winding Road (TD)         | `/games/samples/tower-defense/`                        | arrows or taps pick a cell, Z builds, X switches tower, C sells, Enter sends            |
+| The mini siege (3D)           | `/games/samples/mini-siege/` (2D: `?backend=canvas2d`) | Begin, then Play or Delegate on the card; mouse pans and orders; rounds by keys or taps |
+| Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)        | arrows move, Z jumps, X runs                                                            |
+| Platformer classic (test)     | `/games/platformer-classic/` (3D: `?backend=three`)    | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs                      |
+| RTS classic (test)            | `/games/rts-classic/`                                  | mouse or touch: click selects, drag boxes, right click commands, wheel zooms            |
+| FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)                | arrows move, Z jumps, X runs                                                            |
 
 Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
 
@@ -156,7 +163,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 532** (next unused 533). Awaiting the owner's answer, by release (an answer by number is
+used is 584** (next unused 585). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -190,6 +197,11 @@ enough; silence so far has meant the build kept its default):
   screenshot view, the stale victory line, waves unseen at the fords), **509-514** (smaller build
   choices of D3-D8), **515** (looks left in the screenshots), **516-532** (more build choices of
   D1-D8 and the D6 review fix, added by the finalize pass).
+- Engine 0.16 part F (merged in part E, E1; `F-n` and `T2-n` on the track): **533-554** (part
+  F's build decisions; **553** the owner's playtest and screenshot review), **555-579** (the
+  smaller build choices of F1-F10).
+- Engine 0.16 polish P (P1-P3 merged in part E, E1; `P-n` on the track): **580-584** (the before
+  shots and the crypt's dithered light).
 
 ### Items not met, and where they went
 
@@ -213,6 +225,470 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
   `1.0-11`).
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
+
+## Engine 0.16 polish P
+
+A polish pass on the orchestrator's review notes on parts C and F (the roadmap's "0.16 polish P:
+parts C and F review notes": C1, C2 and F1 to F6), on branch `engine/0.16-track2` in tasks P1 to
+P11. Presentation and data only: no golden hash, save code or run file is to move. In progress:
+this section is a stub until P11.
+
+### Before shots (P2)
+
+Fifteen 1920x1080 PNGs in [`docs/reports/screenshots/0.16-P/`](reports/screenshots/0.16-P/),
+taken before any change (at `5be26ee`), each looked at in full and showing its problem. The
+after shots (P11) take the same names with `after-` and the same commands.
+
+| File                                    | Item | What it shows                                                                                           |
+| --------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `before-01-crypt-lighting.png`          | C1   | The crypt (0.16-C's 03, escape at 950): hard rings in the braziers' and the hero's light                |
+| `before-02-warden-hall-lighting.png`    | C1   | The warden hall (0.16-C's 07, win at 1085): rings round the four torches and the Warden's glow          |
+| `before-03-courtyard.png`               | C2   | The courtyard, room-wide (win at 30): four crates and a heart on bare floor                             |
+| `before-04-guard-room.png`              | C2   | The guard room (lost-in-the-guard-room at 345): the orcs and bats on bare floor                         |
+| `before-05-chasm.png`                   | C2   | The chasm (win at 130): the pits, a chest and two skulls; the rest bare                                 |
+| `before-06-ossuary.png`                 | C2   | The ossuary (win at 490): pits, a few skulls, the key; the south half bare                              |
+| `before-07-store-room.png`              | C2   | The store room (escape at 120): a chest and two empty braziers on bare floor                            |
+| `before-08-bat-hall.png`                | C2   | The bat hall (escape at 560): four pillars and the key, the room mostly dark bare floor                 |
+| `before-09-label-cut-at-edge.png`       | F1   | The siege at 14:30 (delegated at 30, CLI 3D): "WATCHTOWER 37%" cut at the left edge ("CHTOWER")         |
+| `before-10-siege-fields.png`            | F6   | The siege at 14:00 (delegated at 0, CLI 3D): plain grass between the village, the river and the camp    |
+| `before-11-dawn-skirt.png`              | F5   | The page at the dawn, day 3 06:00 (F's 09 state): the skirt past the map's bottom-right edge is lighter |
+| `before-12-fortify-round-controls.png`  | F2   | The page's walls round mid-wave: the pause, 2D and sound controls over the round's bottom panel         |
+| `before-13-sabotage-round-controls.png` | F2   | The page's sabotage room mid-round: the controls over the room's progress bar and bottom wall           |
+| `before-14-mission-open-flash.png`      | F3   | The page at the first loop step of world tick 41 after Delegate at 40: the 3D picture all white         |
+| `before-15-results-losses.png`          | F4   | The page's siege results at 260: "Raiders: 4 raider, ram, Grell, Vosk", "Village: 2 soldier"            |
+
+Made with (from the repo root). The CLI shots (01-10) repeat byte for byte when rerun (09 was
+rerun and compared by its sha256):
+
+```sh
+D=games/samples/dungeon/runs; S=games/samples/mini-siege/runs; O=docs/reports/screenshots/0.16-P
+pnpm -s cli screenshot $D/escape.run.json --tick 950 --scale 6 --out $O/before-01-crypt-lighting.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 1085 --scale 6 --out $O/before-02-warden-hall-lighting.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 30 --scale 6 --out $O/before-03-courtyard.png --json
+pnpm -s cli screenshot $D/lost-in-the-guard-room.run.json --tick 345 --scale 6 --out $O/before-04-guard-room.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 130 --scale 6 --out $O/before-05-chasm.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 490 --scale 6 --out $O/before-06-ossuary.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 120 --scale 6 --out $O/before-07-store-room.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 560 --scale 6 --out $O/before-08-bat-hall.png --json
+pnpm -s cli screenshot $S/delegated.run.json --tick 30 --backend three --allow-software-gl --out $O/before-09-label-cut-at-edge.png --json
+pnpm -s cli screenshot $S/delegated.run.json --tick 0 --backend three --allow-software-gl --out $O/before-10-siege-fields.png --json
+# 11-15, the 3D page (seed 11, 1920x1080 window, the skin's render scale 6, software WebGL):
+pnpm exec tsx tests/browser/siege-review-shots.ts $O before
+```
+
+`tests/browser/siege-review-shots.ts` (added in P2) builds and serves the repo with
+`tests/browser/serve.ts`, opens the 3D page with `?debug=step` and drives it with the `wwSiege`
+hooks: Begin, then the walls' card at 10 played with `fortify-played`'s recorded keys for 100
+loop steps (12); the sabotage's card at 40 played with `played`'s keys for 160 steps (13);
+Delegate at 40, the first step of tick 41 (14), on to the results at 260 (15), Continue, Begin
+and the dawn at tick 30 (11). The page shots are not checked to repeat byte for byte (the page's
+loop steps, not run ticks; 581).
+
+### Build decisions to review (polish P)
+
+Labelled `P-1` to `P-5` on the track; the merge into `engine/build-0.15` (Engine 0.16 part E, E1)
+copied them into FEEDBACK-LOG.md as items 580-584 (`P-n` is item 579+n). The merge itself is described under part F
+([The merge into engine/build-0.15 (Engine 0.16 part E, E1)](#the-merge-into-enginebuild-015-engine-016-part-e-e1)).
+
+- **580.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
+dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but lit and framed
+  nearly as the afternoon (a closer camera than the page's, the map running past the picture), so
+  the darkened map and the lighter skirt do not show in it. P9's after shot uses the page too.
+- **581.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
+  (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (551), so P11 retakes the
+  after shots with the same steps.
+- **582.** The flash shot (F3) is the first loop step of world tick 41 after Delegate at 40: the
+  white `mission-open` flash lasts 12 loop steps (ticks 41 and 42), not one frame as part F's
+  notes say.
+- **583.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
+  show those two), more than the four the task asked for.
+- **584 (revisits item 436).** C1: The Old Crypt's skin goes from `lighting.bands: 6` (item 436's
+  stepped pixel-art falloff, which showed as hard rings round every torch) to `bands: 0` with
+  the new `lighting.dither: 8`: each light's falloff is drawn smooth (32 stops) and quantized by
+  picture pixel to 64 alpha steps with an 8x8 Bayer matrix (`LIGHT_DITHER_LEVELS`), no RNG, the
+  same in Canvas2D and PixiJS. 16 and 32 steps were tried and looked at full size: a strong
+  checker in the half-lit floor (16) and a busy one (32); at 64 the dither is a faint pixel
+  texture and no ring shows. A skin that wants the stepped look back with soft edges can give
+  `bands` with `dither` (it dithers between its bands). The smooth falloff ends darker towards
+  the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
+  darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
+  undithered falloff (it had no bands and shows no rings).
+- Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
+  left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
+
+## Engine 0.16 part F: the mini siege in 3D low-poly
+
+Built on branch `engine/0.16-track2` in ten tasks (F1-F10; not tagged, nothing published) for the
+orchestrator to merge into `engine/build-0.15`. The mini siege's overworld now draws in the 3D
+backend in a low-poly look after [the chosen mockup](reports/mockups/mini-siege-3d.png) (item
+319), its page opens in 3D, the mission flow (briefing, the card with Play or Delegate, the
+outcome and the results) is drawn in the picture, the world clock moves the light through the
+day, and the hosted rounds are drawn in 2D over the 3D picture. **Presentation only: no golden
+hash, save code or run file moved** in part F (`git diff 0311d86^ 04f496a -- '*.hashes.json'
+'*.run.json'` is empty). **Open for the owner:** the playtest and the screenshot review below
+(item 553), the build decisions 533 to 554 and 555 to 579 (`F-n` and `T2-n` on the track,
+numbered at the merge, E1).
+
+### What was built
+
+- **F1, CC0 packs** (`games/samples/mini-siege/assets/`, credited in `assets/CREDITS.md`): Kenney
+  Castle Kit 2.0 and Nature Kit 2.1, Quaternius Medieval Village, and, for the people and sheep
+  the named packs lack, Quaternius Ultimate Animated Character Pack (four characters) and Farm
+  Animals; 221 GLB files, about 8.7 MB. `assets.test.ts` parses every GLB in Node and checks the
+  credits.
+- **F2, a ground view for the 3D backend** (`camera3d.view: "ground"`, pitch and yaw): the map on
+  the floor, entities on their box centres turned to their facing. One pure core function,
+  `groundProjection` (`engine/core/present/ground.ts`), is used by `ThreeScene` and by the RTS
+  kit's `RtsCamera`, so drawing and picking cannot drift (parity test within 0.5 px).
+- **F3, crisp output, instanced tiles and decor**: the 3D picture at a `renderScale` (HUD and
+  labels kept in picture px), model tiles as one `InstancedMesh` per tile and mesh, and a skin
+  `decor` layer (a text grid plus a legend, drawn from the presentation RNG; `validate` checks it).
+- **F4, the world clock and time of day** (`engine/core/clock.ts`): a campaign entry's clock
+  (the siege from day 2, 14:00; 60 ticks an hour), carried on every frame; a 3D skin's
+  `scene3d.timeOfDay` keyframes move the sun, ambient, hemisphere, fog, sky and exposure; the UI
+  kit's clock widget with a day bar.
+- **F5, the mission screens in the picture** (`engine/core/shell`'s `MissionScreens`): the
+  entry's briefing (Begin, Carry on), the mission card (cost in hours, hero, foes, the window's
+  ticks left, Play, Delegate; the dawn's captive choices), the outcome and the entry's results
+  (missions, losses, people, buildings, the save code, Continue), from `engine/sim`'s
+  `worldChanges` and `missionCardFacts`; keys, gamepad, mouse and taps. Missions gained a
+  presentation-only `text`.
+- **F6, the siege map in 3D** (`content/skins/three.json`): the picture is 320x180 (16:9) at render
+  scale 6, so 1920x1080; every RTS kind a model with team colours, burnt engines, the
+  watchtower's scaffold, the frozen tint and a glowing offer gem; health and progress bars as
+  labels; decor grids for the village, the dawn and the ridge (the castle ring, houses, the river
+  and bridge, fields, windmill, sheep pen, woods, the raiders' camp with flickering, smoking
+  fires); THE HALL and RAIDERS' CAMP; sun, soft shadows, fog, ACES tone mapping and the time of
+  day. The Canvas2D skins were re-laid for 16:9.
+- **F7, the HUD and the 3D page**: the page opens in 3D (2D where WebGL 2 is missing), the
+  `RtsCamera` picks through the ground view (click, drag, right click, wheel and pinch, edge and
+  key pan); the HUD in a new 3x5 `siege-tiny` font (resource chips, the title bar with the
+  entry's title and the clock, objectives, the Ashford Vale minimap, the selected unit, key
+  hints); F5's screens in the picture (the DOM bar stays for 2D); the title over the village with
+  a slow camera drift; layered music (calm, and danger while a mission is open or raiders are at
+  the walls).
+- **F8, the hosted rounds in 2D on the 3D page**: the sabotage and rescue rooms and the walls'
+  round draw with the `canvas2d-*` round skins on a 2D layer over the 3D picture
+  (`roundLayerDisplay`), with an iris in and out and a round music layer. The rooms use the CC0
+  0x72 DungeonTileset II, the walls the CC0 Kenney Tower Defense pack; new 2D looks
+  (`turnToFacing`, range rings, hit flashes, 2D labels), hit-pause, shake, zoom punches and
+  particles. `pnpm cli screenshot --backend three` draws a round in 2D scaled to full HD.
+- **F9, the whole campaign in 3D, tested end to end**: the browser test plays the 3D page from
+  the title through the siege on both captain paths, each results screen, the dawn and its
+  results, the stored save and a save code in the link (`?code=`); `--backend three` shots of
+  the campaign match the headless hashes and repeat byte for byte; the invariance tests present
+  the game as the 3D page does. Gaps M39-M44 found and fixed at 1080p; M45 open.
+- **F10, this write-up**: nine full-HD screenshots, this section, the roadmap's Done when and the
+  agent docs. `tests/architecture/no-content.test.ts` and DESIGN.md now allow a part's review
+  screenshots, `docs/reports/screenshots/<part>/*.png`, as review pictures beside the mockups and
+  sheets (item 552).
+
+### Choices made
+
+Each is a build decision for the owner (533 to 554 below, and the smaller ones 555 to
+579). The main ones: the picture is 320x180 so it scales whole to 1920x1080 (533); the
+hosted rounds stay 2D on a layer over the 3D world rather than getting 3D skins (540); since parts C and E are not on this branch, the rounds
+were brought to their bar with the same CC0 packs (541); the people and sheep come from two
+Quaternius packs the roadmap does not name (534); the 3D page has no text box, so a save code
+goes in the link (546).
+
+### How to try it
+
+```sh
+pnpm install
+pnpm dev
+# then open http://localhost:5173/games/samples/mini-siege/           (3D by default)
+#   ...?title=show (start on the title)   ...?backend=canvas2d (the 2D page with the DOM bar)
+#   ...?code=<save code> (resume a campaign)   ...?scale=1 (lighter 3D on a slow machine)
+pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run.json --tick 80 \
+  --backend three --allow-software-gl --json        # the village held, 1920x1080
+pnpm vitest run tests/browser/mini-siege-page.test.ts tests/browser/mini-siege-shots.test.ts
+```
+
+Begin starts the siege; at world tick 5 the walls' card and at 20 the sabotage's card offer
+Play or Delegate (click, Enter, a gamepad or a tap). Arrow keys or WASD pan, the wheel zooms.
+
+### Screenshots (owner review)
+
+Nine full-HD (1920x1080) shots of the 3D page, in `docs/reports/screenshots/0.16-F/`, taken
+with the repo's browser tools (`tests/browser/serve.ts`'s build and server, headless Chromium
+with software WebGL, the page's step hook `?debug=step` and its `wwSiege` hooks, at the skin's
+render scale 6 on a 1920x1080 window; seed 11), and a tenth at the mockup's angle (below). Each
+was looked at.
+
+The siege at the mockup's angle beside the mockup. The skin's own camera (`three.json`'s
+`camera3d`: pitch 60, yaw -8, fov 35) is higher and flatter than the mockup's, so this shot was
+taken with the camera lowered to the mockup's pitch: `pitch` set to 42 in a scratch copy of
+`three.json` (not committed), then `pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run.json
+--tick 30 --backend three --allow-software-gl` (its state hash matches the headless run's). The
+CLI's view has no mission screens, so the sabotage's card is not drawn here; `04-mission-card.png`
+shows the card on the page.
+
+| The mockup (target)                          | Built at the mockup's pitch (world tick 30, day 2 14:30)       |
+| -------------------------------------------- | -------------------------------------------------------------- |
+| ![mockup](reports/mockups/mini-siege-3d.png) | ![siege](reports/screenshots/0.16-F/10-siege-mockup-angle.png) |
+
+What matches: the angle (a low perspective view over the hall to the bridge and the raiders'
+camp), the layout (the castle ring with blue roofs on the west, the road east over the bridge to
+the raiders' tents, the river north to south, the sheep pen and windmill south), and the HUD's
+places (resources top left, the title and clock top centre, objectives top right, the minimap
+bottom left). What differs, for the owner's review: the HUD is in pixel fonts, not the mockup's
+serif; the camera is farther out (the skin's zoom), so the hall is cut at the left edge and the
+units read small; the grass is a flatter, brighter green with fewer props; no unit is selected,
+so the bottom panel is empty; the page's own camera stays at the skin's pitch 60
+(`01-siege-skin-camera.png`, the whole map in view, the raiders' camp mostly past the right edge):
+whether to lower it to the mockup's pitch is item 554.
+
+| File                        | What it shows                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `01-siege-skin-camera.png`  | The siege at day 2, 14:30 at the skin's own camera (pitch 60), the sabotage's card (Play, Delegate)     |
+| `02-title.png`              | The title screen over the village (`?title=show`), Start, Controls, Settings                            |
+| `03-briefing.png`           | The siege's briefing card (Begin) over the held map, tick 0                                             |
+| `04-mission-card.png`       | The walls' card at world tick 10: "Man the walls", 30 min of world time, Play or Delegate               |
+| `05-fortify-round.png`      | The fortify round (`td-defence`) mid-wave on its 2D layer, the Kenney tower-defense tiles, a range ring |
+| `06-sabotage-room.png`      | The sabotage room (`mission-room`) mid-round in the 0x72 tiles: the knight, the ram and the catapult    |
+| `07-siege-evening.png`      | The siege later in the day (17:50, late afternoon): lower, warmer light, long shadows; the tower raised |
+| `08-results.png`            | The siege's results: both engines burnt (played), losses, people, the save code, Continue               |
+| `09-dawn-assault.png`       | The dawn assault at day 3, 06:00: the dawn light, the raiders' second band crossing the bridge          |
+| `10-siege-mockup-angle.png` | The siege at day 2, 14:30 at the mockup's pitch (42), beside the mockup above (no mission screens)      |
+
+Seen in the shots and not fixed here (listed under outstanding issues): the page's pause, 2D and
+sound controls sit over the bottom of a round's picture (05, 06); a white `mission-open` flash
+fills one frame of the 3D picture after a Delegate (the skin's flash effect, two ticks); the
+results write "4 raider", "2 soldier" (no plural); at dawn the skirt past the map's bottom-right
+edge is a lighter green than the map (09).
+
+### Done when
+
+Checked against "0.16 part F: the mini siege in 3D low-poly" in the roadmap.
+
+- **The campaign plays from the title through the siege and the dawn follow-up in 3D, and every
+  mini-siege run file passes, or its hashes were re-recorded: met.** `tests/browser/mini-siege-page.test.ts`
+  plays the 3D page from the title through the siege on both captain paths, each results screen,
+  the dawn and its results (and the ridge camp after it); screenshots 02-09 were taken on that
+  path. All 15 mini-siege run files (and all 55 game run files) pass through `pnpm -s cli run`
+  with their golden hashes; **no hash was re-recorded** in part F.
+- **A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
+  log: met** (the table above: `10-siege-mockup-angle.png`, taken at the mockup's pitch with a
+  scratch camera override; the page's own camera is higher, item 554).
+- **Owner playtest and screenshot review are accepted: not met.** Waiting for the owner (553
+  below).
+- **The release's Done when** (parts A to F done, the checks pass, the owner has playtested every
+  sample): not met; parts B to E are other tracks', and the owner's playtest is open.
+
+### Deviations from the roadmap
+
+- **The hosted rounds use parts C and E's presentation**: parts C and E are not on this branch,
+  so the rounds use the same CC0 packs and part A's features to their bar, to be re-pointed at C
+  and E's skins when those merge (541).
+- **Two CC0 packs beyond the roadmap's three**: Quaternius Ultimate Animated Character Pack and
+  Farm Animals, for the people and the sheep the named packs lack (534).
+- **The rounds are 2D on the 3D page**, not 3D: the first 3D round skins of F6 were removed in F8
+  (540).
+
+### Outstanding issues
+
+- **M45**: a world label whose anchor is in the picture but whose box runs past its edge is cut
+  at the edge (left for the owner's review).
+- The page's controls (pause, 2D, sound) sit at the bottom centre over a round's picture (the
+  room's bar, the walls' panel); F9 moved them to the corner only over the centred screens.
+- The `mission-open` flash (`three.json`'s events, `#fcfcfc` for 2 ticks) whites out the whole
+  3D picture for a frame after Delegate; harsh at 1080p, an owner call to keep, dim or drop it.
+- The results' losses have no plurals ("4 raider", "2 soldier"; the results screen's wording,
+  asserted as is by the page test).
+- At dawn the skirt (`scene3d.skirt`) is lighter than the darkened map past its bottom-right
+  edge.
+- The look against the mockup (the HUD's pixel fonts, the flatter camera, the plainer grass)
+  waits for the owner's review; nothing was changed for it in F10.
+- 3D frames on hardware WebGL are not measured (no GPU here; item 75); every shot uses
+  SwiftShader.
+
+### Finalize pass (checks)
+
+`pnpm lint`, `pnpm typecheck`, `pnpm docs:check` and `pnpm build` pass; `pnpm test`: 282 files,
+3288 passed, 1 skipped (the browser tests included, on a machine at load 15-20). All 55 game run
+files and the 13 `engine/sim` fixtures exit 0 through `pnpm -s cli run` (the loop under "How to try each
+sample"). The screenshots were taken with a scratch script on the repo's browser helpers (not
+committed; 551); `WW_SHOTS_DIR=<dir> pnpm vitest run tests/browser/mini-siege-page.test.ts`
+shoots the same screens at the test's 640x520.
+
+### Build decisions to review (part F)
+
+Labelled `F-1` to `F-22` on the track; the merge into `engine/build-0.15` (Engine 0.16 part E,
+E1) copied them into FEEDBACK-LOG.md as items 533-554 (`F-n` is item 532+n).
+
+- **533.** The mini siege's picture is 320x180 (16:9; 256x240 before), so six times is
+  1920x1080; the Canvas2D skins and the tests' sizes moved with it (F6).
+- **534.** The people and the sheep come from Quaternius Ultimate Animated Character Pack and
+  Farm Animals (CC0), not named by the roadmap, with `Defeat` as the death clip (the pack has no
+  death) and `Punch` as the attack; the Quaternius village pack is the 2020 OBJ "Medieval Village
+  Pack", not the newer textured MegaKit (the model check refuses textures in other files); FBX
+  and OBJ converted to GLB, the Castle Kit's colour map baked into vertex colours (F1).
+- **535.** The 3D packs are about 8.7 MB of GLB in the game's `assets/`, all 221 files kept
+  (F1).
+- **536.** The ground view's camera maths is one core function shared by drawing and picking
+  (`groundProjection`); side-view skins are unchanged (F2).
+- **537.** Decor is presentation: drawn from the presentation RNG, never in the sim, so a decor
+  grid can change without moving a hash (F3).
+- **538.** The world clock: 60 ticks an hour, the siege from day 2, 14:00, the dawn day 3, 05:30,
+  the ridge day 3, 10:00; the sabotage's 120 ticks read as two hours (F4).
+- **539.** A mission's `text` (the card's description) is presentation only, never stored, so no
+  save code moved (F5).
+- **540.** The hosted rounds are drawn in 2D on a layer over the 3D picture (the shell's
+  `roundLayerDisplay`, the game's 2D backend) with an iris, not with 3D round skins; F6's 3D
+  round skins were removed (F8).
+- **541.** Parts C and E are not on this branch: the rounds were brought to their bar with the
+  0x72 DungeonTileset II and Kenney Tower Defense packs; re-point them at C and E's skins when
+  those merge (F8).
+- **542.** The ground camera: pitch 60, yaw -8, fov 35, zoom 0.42 (the whole village, river and
+  camp in view), render scale 6 (F6).
+- **543.** Health and progress bars are world labels, not 3D meshes (F6).
+- **544.** The 3D page is the default; 2D only where WebGL 2 is missing or by the query (F7).
+- **545.** The HUD is the UI kit's in a new 3x5 pixel font (`siege-tiny`), not the mockup's
+  serif (F7).
+- **546.** The 3D page has no text box: a save code goes in the link, `?code=<code>` (gap M42;
+  F9).
+- **547.** The title hides the HUD and the world labels; labels that would cover a HUD panel
+  are left out (gap M40; F9).
+- **548.** The page's controls move to the bottom-right corner over a centred screen and the
+  title (gap M41; F9), but not over the rounds (outstanding above).
+- **549.** A skirt of grass is laid past the map's edges (`scene3d.skirt`), and the night keys
+  of the time of day were lightened so the dawn's start reads (gaps M43, M44; F9).
+- **550.** M45 (labels cut at the picture's edge) is left open for the owner's review (F9).
+- **551.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
+  the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
+  at 640x520.
+- **552.** Review screenshots may be committed as PNGs in `docs/reports/screenshots/<part>/`
+  (4.3 MB for these ten); `no-content.test.ts` and DESIGN.md allow that folder. OK, or keep
+  them out of git?
+- **553 (owner review).** Playtest the mini siege in 3D from the title through the dawn, and
+  review the ten screenshots and the mockup comparison above: accept, or list what to change.
+- **554.** The page's 3D camera is the skin's pitch 60 (the whole map in view, flatter than the
+  mockup); the mockup comparison (`10-siege-mockup-angle.png`) was shot at pitch 42 through a
+  scratch override. Keep pitch 60 for play, or lower the page's camera to the mockup's angle
+  (`three.json`'s `camera3d.pitch`, with the zoom brought closer)?
+
+### Build decisions to review (track 2)
+
+Smaller choices the F1-F10 builders reported, for the owner to check; labelled `T2-18` to
+`T2-42` on the track (after `T2-17`, item 484) and copied into FEEDBACK-LOG.md at the merge (E1)
+as items 555-579 (`T2-n` is item 537+n). Those already covered by an item 533-554 above are not
+repeated.
+
+- **555.** Google Drive refused the pack downloads (quota) and poly.pizza is behind Cloudflare,
+  so every pack came from OpenGameArt mirrors; no pack was left out.
+- **556.** The OBJ, FBX and colour-map conversions to GLB were done by scratch scripts that are
+  not in the repo (a prebuilt FBX2glTF was blocked); `assets/CREDITS.md` describes each change.
+  Re-converting a pack needs those scripts rewritten.
+- **557.** Characters: `knight-male` soldiers, `knight-golden-male` Captain Hale, `viking-male`
+  raiders and guards, `worker-male` workers; `Soldier_Male` dropped (looks modern). Quaternius
+  files renamed lower-case with hyphens; Kenney names kept. The windmill's sails are part of its
+  one mesh and do not turn.
+- **558.** Ground view conventions (engine): zoom is camera distance (straight down shows
+  height/zoom world px, as in 2D); yaw 0 looks north; pitch is degrees below the horizon (10 to
+  90); a mesh part's `at.z` is the height of its bottom and `d` its height.
+- **559.** In ground view the map clamp is done by `RtsCamera` (the picture's four ground
+  corners kept inside the map), not by the scene's follower; a game that follows an entity in
+  ground view without `RtsCamera` is not clamped.
+- **560.** Clicks and box select pick the ground cell under the pointer, not the upright unit
+  body drawn above it.
+- **561.** 2D particles have no height, so in ground view they sit on the ground 8 px up (a
+  burst spreads over the ground, a rising flame drifts north).
+- **562.** Decor is a new engine content kind `decor` (text rows) with its legend in the skin.
+  The RTS kit gives every map the id `rts`, so a decor entry names its map with `map`.
+- **563.** Per-cell tile variation is opt-in (a tile's `vary`), so no existing picture moved;
+  its stream is `fxRng(seed, 0, ...)` (frame fixed at 0).
+- **564.** Render scale is a whole number 1-8 so pixel fonts stay sharp; the CLI's new
+  `--render-scale` is separate from `--scale` (a nearest-neighbour upscale on top). The page's
+  render scale is the skin's 6, capped to the window; `?scale=<n>` overrides it.
+- **565.** A clock is allowed on scenario entries only; the game puts it on frames through a
+  new `hostedSource` `status(world)` option, so no RTS kit rule changed. The day's parts start at
+  5, 7, 12, 15, 18 and 21 o'clock.
+- **566.** Time of day: the sky is one colour per key, not a gradient; a clock jump of more
+  than half an hour eases over 45 display frames (through the night for an overnight gap). The
+  optional Canvas2D/PixiJS evening tint was not done: the 2D page does not darken.
+- **567.** On the mission card, choosing Play or Delegate on an offer (or picking one of several
+  offers) launches it at once; there is no cancel. A small "mission result" card follows each
+  mission while the world keeps running.
+- **568.** The results' change lists (`worldChanges`) count a named death both as a loss and a
+  fate change and leave out scenario, carry and load changes; the card's hero and foes read only
+  the rooms' selector params (fortify's card shows none).
+- **569.** The scenery (decor) cannot change paths, so it is kept off the roads, every starting
+  cell and the battle rows; the castle ring is open to the east. `three.test.ts` checks this.
+- **570.** Engine features added that the tasks did not list: model recolour and tint, tag
+  looks that swap the model, decor stack, light and emit, `hitFlash`, HUD items shown by a
+  `when` test, and a presentation-only RTS status `key.<key>.hp|maxHp|progress|fate|name|alive`.
+  All optional.
+- **571.** The gem and the red banner are this build's own CC0 models
+  (`assets/mini-siege-marks`, text glTF from a script): the packs have no gem and their banners
+  are blue. `*.gltf` in games' assets is in `.prettierignore`, so the text stays as written.
+- **572.** The results screen's layout changed for every 16:9 picture in the engine (first
+  section full width, the code beside its label, two columns); at 320x180 the overflow still
+  reads "and N more".
+- **573.** No gold income is shown (the RTS kit has none; gold changes only through missions);
+  no new world-event sounds (no offer event to hang one on); no line from the offer marker to the
+  card (it needs 3D-to-UI projection).
+- **574.** Music: a `siege-danger` layer while a mission is open or raiders are within 3 cells
+  of a building, and a `siege-round` layer under the rounds (calm 0.35, danger 0.7, round 1). The
+  title plays the calm layer.
+- **575.** The title drifts by zooming in 1.9 times and circling, because at the start zoom the
+  whole map shows and the clamp leaves no room to move. The menus were restyled to the HUD's
+  colours and the title's 2D pixel art removed, which also changes the 2D page.
+- **576.** Kenney Tower Defense ships only 64/128 px tiles; they were scaled down to 16, 24 and
+  32 px with a box filter. The rooms' siege engines and the walls' gate and camp keep the game's
+  own text sprites; the old NES-style round art is kept but unused until C and E merge. Both
+  rooms use the `knight_m` hero, so Sergeant Mara Venn looks like the sabotage hero.
+- **577.** The iris into a round is started by the game's `main.ts` when `launch.playing()`
+  changes (the shell's push/pop transition does not fire under the 3D page's screens); an
+  engine-level fix could come later.
+- **578.** Changes outside part F's modules: `vite.config.ts` sets a global `testTimeout` of
+  20 s (CLI-heavy mini-siege tests sat just over 5 s under the full suite);
+  `engine/tools/main.test.ts` deletes the fx lab's `ground.json` from its copy;
+  `tests/build/game-files.test.ts` leaves `assets/` out of its glob comparison; `clock.ts` and
+  `round-layer.ts` joined `PURE_CORE` in `config/layers.js`.
+- **579.** 533 to 550 were written from F1-F9's commit messages and module docs, not from
+  those tasks' own decision lists; the orchestrator should check them against what F1-F9
+  reported.
+
+### The merge into engine/build-0.15 (Engine 0.16 part E, E1)
+
+The track's twelve commits after part D's D1 merge base (`22e7706`) were merged into the build
+branch with a merge commit, no rebase: F8-F10, the four review fixes, part F's finalize pass,
+and polish P's P1-P3 with P4's room decoration grid (the track's P1 had already merged D1 back,
+so parts B and C came in unchanged). Part D (D2-D10) had changed the same files. What the merge
+had to decide:
+
+- **The shared 2D walk** (`engine/core/draw/skinned-presenter.ts`) keeps both parts: part D's
+  `outline`, `team` and `screenScale` and F8's `turnToFacing`, `ring` and `hitFlash` in
+  `drawEntity`; after the lighting the world labels (F8) are drawn, then part D's fog, so fog of
+  war covers labels as it covers the entities (nothing unseen is named). A hit flash's silhouette
+  is not recoloured by a kind's `team`. No skin uses both `team` and `hitFlash` today.
+- **Skin fields** (`engine/core/present/skin.ts`): the sprite-only list and the kind entry take
+  both sets of fields; `docs/reference/schemas.md` was regenerated with `pnpm docs:gen`.
+- **Agent docs and the cheat sheet**: the canvas2d and draw module pages and `CLAUDE.md`s, the
+  tools' `CLAUDE.md` (F8's `rounds2d` rule beside D9's 600-tick presented runs) and `llms.txt`
+  (part D's River Ford and `games/rts-classic` lines with part F's mini siege line) say both; the
+  cheat sheet's `room` row is the track's (with `.decor.txt`) beside part D's `rts-end`.
+- **Merged without conflicts**: the shell's boot and round layer, `vite.config.ts` (the track's
+  30 s `testTimeout`, the larger), `config/layers.js` (`clock.ts` and `round-layer.ts` on
+  `PURE_CORE` beside part D's entries) and the roadmap.
+- **Numbering.** Every track label in the merged docs became a feedback item from 533 on and
+  was copied into FEEDBACK-LOG.md (next unused 585); `T2-17`, already numbered, is item 484.
+  The labels were replaced by their numbers in this log, the roadmap, the mini siege's
+  `CLAUDE.md`, `assets/CREDITS.md`, module page and `tests/browser/siege-review-shots.ts`:
+
+  | Track labels       | Items   | Rule                 |
+  | ------------------ | ------- | -------------------- |
+  | `F-1` to `F-22`    | 533-554 | `F-n` is item 532+n  |
+  | `T2-18` to `T2-42` | 555-579 | `T2-n` is item 537+n |
+  | `P-1` to `P-5`     | 580-584 | `P-n` is item 579+n  |
+
+No golden hash moved in the merge: no `*.hashes.json` or `*.run.json` differs from either
+parent's copy (none differs from part D's at all), all 81 run files exit 0 through
+`pnpm -s cli run`, every game folder passes `pnpm -s cli validate`, and the checks were run on
+the merged tree. In the full `pnpm test` (303 files, 3695 passed, 1 skipped, on a machine at
+load 15-17) one case timed out, the dungeon's `boss-lost` presentation invariance (120 s); it
+passes alone.
 
 ## Engine 0.16 part D
 
@@ -454,7 +930,8 @@ This pass added items 516-532 to the feedback log.
   `presentation-invariance.test.ts`'s platformer `full-game` case on its timeout (121 s); the rerun
   passed. The long presentation tests are slow on a busy container.
 - The victory banner's stale line (507) and waves unseen at the fords (508).
-- Part F (the mini siege in 3D) from F8 on, merged in D1 up to F7, is not built yet.
+- Part F (the mini siege in 3D) from F8 on was not on the build branch at part D's close; it was
+  merged in part E, E1.
 - From parts B and C: the owner's playtests and screenshot reviews (393, 394, 455, 456).
 
 ## Engine 0.16 part C

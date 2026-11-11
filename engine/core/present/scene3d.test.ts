@@ -71,18 +71,20 @@ describe('scene3d in skins', () => {
     ).toEqual([]);
   });
 
-  it('refuses them on a 2D skin and bad values at their field', () => {
+  it('refuses them on a 2D skin (labels are allowed there since Engine 0.16 F8) and bad values at their field', () => {
     const flat = {
       backend: 'canvas2d',
       sheets: { sheet: 's', fallbackColor: '#000000' },
       kinds: { hero: { frames: { idle: 'a' }, receiveShadow: true } },
       scene3d: {},
       labels: { hero: { as: 'text', format: 'x' } },
+      rounds2d: ['vault'],
     };
+    expect(issues(flat).some((i) => i.path === 'labels')).toBe(false);
     expect(issues(flat)).toEqual(
       expect.arrayContaining([
         { path: 'scene3d', code: 'wrong_backend_field' },
-        { path: 'labels', code: 'wrong_backend_field' },
+        { path: 'rounds2d', code: 'wrong_backend_field' },
         { path: 'kinds.hero.receiveShadow', code: 'wrong_backend_field' },
       ]),
     );

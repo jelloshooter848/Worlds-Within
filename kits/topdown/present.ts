@@ -145,6 +145,26 @@ function liveRows(world: TopDownWorld): string[] {
   );
 }
 
+/**
+ * A room's decoration (`RoomDef.decor`, Engine 0.16 polish P4) as rows of the `decor` map layer:
+ * each prop character as it is and every empty cell (`.`, or a room without `decor`) a space, which
+ * no skin lists, so the layer never draws the floor's `.` over the map.
+ */
+function decorRows(room: Room): string[] {
+  const decor = room.def.decor ?? [];
+  const rows: string[] = [];
+  for (let row = 0; row < ROOM_ROWS; row++) {
+    const line = [...(decor[row] ?? '')];
+    let out = '';
+    for (let col = 0; col < ROOM_COLS; col++) {
+      const ch = line[col];
+      out += ch === undefined || ch === '.' ? ' ' : ch;
+    }
+    rows.push(out);
+  }
+  return rows;
+}
+
 /** A room's tags on the map: `dark` (RoomDef.dark) and `wall:<n>` (its wall band's thickness). */
 function roomTags(room: Room, prefix = ''): string[] {
   const tags = [`${prefix}wall:${room.wall}`];
@@ -176,7 +196,9 @@ export interface TdPresentedMap {
  * room slide, both rooms in one map (id `<from>><to>`, 32x11 or 16x22) with the old room where the
  * hero left it and the new one beyond the edge, tagged `slide`, `slide:<side>` and the old room's
  * tags with a `from-` prefix. `version` is a hash of the tiles and tags, so it changes whenever a
- * door opens, a shutter shuts, a wall is blasted or a building door opens.
+ * door opens, a shutter shuts, a wall is blasted or a building door opens. A room with `decor`
+ * (Engine 0.16 polish P4) adds it as the layer `decor`, drawn over the tiles (it never changes, so
+ * it is not in `version`); during a slide the layer holds both rooms' decoration, each in its part.
  */
 export function presentMap(world: TopDownWorld): TdPresentedMap {
   const room = world.room;
@@ -192,6 +214,8 @@ export function presentMap(world: TopDownWorld): TdPresentedMap {
       rows: ROOM_ROWS,
       tiles,
       tags,
+      // The room's decoration (Engine 0.16 polish P4): a layer drawn over the tiles, presentation only.
+      ...(room.def.decor !== undefined && { layers: [{ name: 'decor', tiles: decorRows(room) }] }),
     };
     return { map, origin: { x: 0, y: 0 }, view: { x: 0, y: 0 } };
   }
@@ -208,7 +232,13 @@ export function presentMap(world: TopDownWorld): TdPresentedMap {
   const forward = v.dx > 0 || v.dy > 0;
   const [first, second] = forward ? [old, now] : [now, old];
   const across = v.dx !== 0;
-  const tiles = across ? first.map((row, i) => row + (second[i] ?? '')) : [...first, ...second];
+  const join = (a: string[], b: string[]) => (across ? a.map((row, i) => row + (b[i] ?? '')) : [...a, ...b]);
+  const tiles = join(first, second);
+  // Both rooms' decoration slides with them, laid out as their tiles are (Engine 0.16 polish P4).
+  const decorated = tr.from.def.decor !== undefined || room.def.decor !== undefined;
+  const decor = forward
+    ? join(decorRows(tr.from), decorRows(room))
+    : join(decorRows(room), decorRows(tr.from));
   const tags = ['slide', `slide:${tr.side}`, ...roomTags(room), ...roomTags(tr.from, 'from-')];
   const span = across ? ROOM_W : ROOM_H;
   const shift = Math.round((tr.t / tr.frames) * span);
@@ -223,6 +253,7 @@ export function presentMap(world: TopDownWorld): TdPresentedMap {
     rows: across ? ROOM_ROWS : ROOM_ROWS * 2,
     tiles,
     tags,
+    ...(decorated && { layers: [{ name: 'decor', tiles: decor }] }),
     // Each room's place in the slide map, for a skin's per-room looks (Engine 0.16 part C T4).
     parts: [
       {

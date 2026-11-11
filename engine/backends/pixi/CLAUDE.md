@@ -72,6 +72,12 @@ painting; a PixiJS renderer then renders `stage` (the display, T13b-3).
   `erase` (`'erase'`: a hole in the light map) or with the scope's mode. A `box` smaller than the
   circle's bounds that does not cover the picture clips it (a pooled mask); outside the circle
   nothing is drawn (the vignette's circle reaches the picture's corners). Culled like a box.
+  A fill with `dither` (Engine 0.16 polish P, C1: a skin's `lighting.dither`) is instead one
+  sprite at scale 1 and whole pixels of `ditheredRadial`'s alpha bytes (`@engine/core/fx`, the
+  same bytes the Canvas2D backend puts), written as premultiplied white into a pooled
+  `DitherStamp` (a `BufferImageSource`, nearest filtering, rounded up to 32 texels a side, its
+  frame cut to the fill; one per dithered fill in the frame, reset by `beginFrame` and rewritten
+  next frame, so a flickering light makes no new texture), tinted and blended as above.
 
 - Tinted sheets (T13b-3): a sheet whose `image` is a `TintedImage` (a texture and a colour) draws
   every sprite with that colour as `tint` (and its alpha as alpha); a sheet whose `image` is a
@@ -235,4 +241,6 @@ graphics, text, textures) in Node with no DOM adapter and no fake: nothing rende
 set of calls builds: object counts, positions, sizes, tints, alpha, blend modes, the halo sprites
 of a glow, the mask of a clip and the nesting of transforms and scopes; quarter turns and flips
 against the same texel table as `canvas2d/renderer.test.ts`; and that the pools hand back the same
-objects frame after frame, reset.
+objects frame after frame, reset. Its dithered block (polish P) checks a dithered fill's sprite
+(whole-pixel place and size, blend, tint), its texture holding `ditheredRadial`'s bytes, reused and
+resized next frame and byte-identical for the same fill.

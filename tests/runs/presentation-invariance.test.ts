@@ -3,15 +3,15 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CanvasRenderer } from '@engine/backends/canvas2d';
-import { threeScenePresenter, TransitionLayer } from '@engine/backends/three';
-import { contentPixelSheets } from '@engine/core/assets/content-sheets';
-import { contentFonts } from '@engine/core/ui';
+import { TransitionLayer } from '@engine/backends/three';
 import { transitionShape } from '@engine/core/fx';
 import { skinSchema, skinSet, SKIN_KIND } from '@engine/core/present';
+import { isLayerRound } from '@engine/core/shell';
 import { ShellTransitions } from '@engine/core/shell/transitions';
 import { Mixer, type MixerAudio } from '@engine/core/audio/mixer';
 import { playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { EFFECTS, SWITCH_SETS, withEffects } from './effects';
+import { pageThree } from './three-page';
 import { loadRun, playView, viewMaker } from './view-play';
 
 // Presentation never changes state (docs/ROADMAP.md, 0.16 part A, "Done when"): every game's run
@@ -33,6 +33,10 @@ import { loadRun, playView, viewMaker } from './view-play';
 // mixed from each frame's status, ticked once per tick); no run reads it, and the hashes hold.
 // The 3D scene look (T12: lights, shadows, fog, tone mapping, point lights and world-anchored
 // labels) is the `lighting` switch; the 3D presenter gets the game's fonts so labels draw.
+// Engine 0.16 F9: the 3D presenter is the one the game's 3D page builds (`three-page.ts`: its glTF
+// models loaded, its decor grids, and the rounds its 3D skin draws in 2D, the mini siege's rooms
+// and walls, through the shell's round layer to the Canvas2D skins), so the mini siege's run
+// files hold their hashes with everything its 3D page shows.
 
 vi.setConfig({ testTimeout: 120_000 });
 
@@ -187,14 +191,14 @@ describe('presentation invariance: presenters and effects never change the state
         ...(run.seed !== undefined && { seed: run.seed }),
       });
       if (switches.includes('audio')) mixer.play('fx-mix');
-      const presenter3d = threeScenePresenter(skins3d.main, {
+      // The 3D page's presenter (Engine 0.16 F9): models, decor, and the `rounds2d` rounds in 2D.
+      const page = await pageThree(shown, {
         screen,
+        ctx: stubContext(screen.width, screen.height).ctx,
         onSound: (id, cue) => mixer.sound(id, cue),
-        rounds: skins3d.rounds,
-        sheets: contentPixelSheets(shown),
-        fonts: contentFonts(shown),
         ...(view3d.background !== undefined && { background: view3d.background }),
       });
+      const presenter3d = page.three;
       let last3d = '';
       let particles3d = 0;
       let labels3d = 0;
@@ -208,13 +212,15 @@ describe('presentation invariance: presenters and effects never change the state
       let transitionFrames = 0;
       const shown3d =
         switches.length === 0
-          ? presenter3d
-          : transitions.presenter(presenter3d, (v) => {
+          ? page.presenter
+          : transitions.presenter(page.presenter, (v) => {
               const shape = v && transitionShape(v, screen, presenter3d.scene.focus());
               layer.sync(shape, screen);
               if (shape) transitionFrames++;
             });
       let tick3d = 0;
+      const rounds2d = skins3d.main.rounds2d ?? [];
+      let roundFrames = 0;
       const viaThree = playView(view3d, run, (view) => {
         if (switches.length > 0) {
           transitions.step();
@@ -223,6 +229,7 @@ describe('presentation invariance: presenters and effects never change the state
         mixer.tick();
         const frame = view.frame!();
         mixer.frameStatus(frame.status);
+        if (isLayerRound(frame, rounds2d)) roundFrames++;
         shown3d.present(frame);
         last3d = stateHash(view.snapshot());
         particles3d = Math.max(particles3d, presenter3d.scene.particleViews().length);
@@ -245,9 +252,10 @@ describe('presentation invariance: presenters and effects never change the state
       }
       if (switches.length > 0 && run.ticks >= 90)
         expect(transitionFrames, `${label}, three: transitions were shown`).toBeGreaterThan(0);
+      // A round the 3D skin draws in 2D went to the page's round layer.
+      expect(page.layered() > 0, `${label}, three: the 2D round layer drew the rounds`).toBe(roundFrames > 0);
       layer.dispose();
-      presenter3d.scene.dispose();
-      for (const scene of Object.values(presenter3d.rounds)) scene.dispose();
+      page.dispose();
       expect(viaThree, `${label}, three`).toEqual(golden);
       expect(last3d, `${label}, three: final state`).toBe(finalHash);
     }

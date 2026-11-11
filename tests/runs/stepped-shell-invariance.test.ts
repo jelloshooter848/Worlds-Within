@@ -3,8 +3,6 @@ import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CanvasRenderer, SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
-import { threeScenePresenter } from '@engine/backends/three';
-import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import { contentSfx, contentSongs } from '@engine/core/content/game-content';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
 import {
@@ -14,11 +12,12 @@ import {
   type Presenter,
   type PresentFrame,
 } from '@engine/core/present';
-import { bootBrowserGame, HostScene } from '@engine/core/shell';
+import { bootBrowserGame, HostScene, isLayerRound } from '@engine/core/shell';
 import { contentFonts, type UiPainter } from '@engine/core/ui';
 import { missionOf, orderOf, playRun, stateHash, type TickHash } from '../../engine/tools/headless-run';
 import { sheetLevels } from '../../engine/tools/sheet-overlay';
 import { SWITCH_SETS, withEffects } from './effects';
+import { pageThree, type PageThree } from './three-page';
 import { loadRun, viewMaker } from './view-play';
 
 // The final presentation invariance proof (docs/ROADMAP.md, 0.16 part A, Done when; Engine 0.16
@@ -36,7 +35,9 @@ import { loadRun, viewMaker } from './view-play';
 // holds the game until the test closes it). The run's input drives the game in place of
 // the keyboard, one tick per step the loop takes. Every tick's state hash is the headless run's
 // (the golden hashes) and the final state is `pnpm cli run`'s, while the loop draws more frames
-// than it takes ticks.
+// than it takes ticks. Engine 0.16 F9: a game with a `three` skin is presented in 3D as its 3D
+// page presents it (`three-page.ts`: models, decor, and its `rounds2d` rounds on the 2D round
+// layer), the mini siege's rounds checked to reach that layer.
 
 vi.setConfig({ testTimeout: 180_000 });
 
@@ -217,6 +218,9 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
     let transitionFrames = 0;
     let respawnFrames = 0;
     let drawn = 0;
+    let three: PageThree | null = null;
+    const rounds2d = skinSet(shown, 'three').main?.rounds2d ?? [];
+    let roundFrames = 0;
     const transitions = {
       level: { kind: 'iris', ticks: 16, hold: 4 },
       default: { kind: 'fade', ticks: 10 },
@@ -240,7 +244,7 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
       },
       menus: { spec: content.manifest.menus, fonts, sheets: () => null, levels: sheetLevels(content) },
       displays: {
-        canvas2d: (_canvas, shell) => {
+        canvas2d: async (_canvas, shell) => {
           const skins2d = skinSet(shown, 'canvas2d');
           const skins3d = skinSet(shown, 'three');
           const presenters: Presenter[] = [];
@@ -258,16 +262,15 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
             );
             presenters.push(presenterBySkinSet(make2d(skins2d.main), rounds));
           }
-          if (skins3d.main !== null)
-            presenters.push(
-              threeScenePresenter(skins3d.main, {
-                screen,
-                rounds: skins3d.rounds,
-                sheets: contentPixelSheets(shown),
-                fonts,
-                onSound: shell.onSound,
-              }),
-            );
+          // The 3D page's presenter (Engine 0.16 F9): models, decor, the `rounds2d` rounds in 2D.
+          if (skins3d.main !== null) {
+            three = await pageThree(shown, {
+              screen,
+              ctx: stubContext(screen.width, screen.height),
+              onSound: shell.onSound,
+            });
+            presenters.push(three.presenter);
+          }
           return {
             renderer,
             presenter: { present: (f) => presenters.forEach((p) => p.present(f)) },
@@ -293,8 +296,11 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
           miniGame: () => null,
           picture: (r) => ({
             draw: () => {
-              if (frame !== undefined) display.presenter.present(frame() as DeepReadonly<PresentFrame>);
-              else view.render(r);
+              if (frame !== undefined) {
+                const shown = frame() as DeepReadonly<PresentFrame>;
+                if (isLayerRound(shown, rounds2d)) roundFrames++;
+                display.presenter.present(shown);
+              } else view.render(r);
             },
           }),
         }),
@@ -336,6 +342,12 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
       expect(booted.mixer?.state().song, 'the layered song played').toBe(endSong ?? song);
     // Part B's screens and the respawn transition: what showed is checked over every run below
     // (a respawn that comes as a round's outcome plays under the round scene's own transition).
+    // A round the 3D skin draws in 2D went to the page's round layer (Engine 0.16 F9).
+    const page3d = three as PageThree | null;
+    if (page3d !== null) {
+      expect(page3d.layered() > 0, 'the 2D round layer drew the rounds').toBe(roundFrames > 0);
+      page3d.dispose();
+    }
     stats.push({ file, respawned, respawnFrames, bannerFrames, ends });
   });
 

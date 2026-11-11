@@ -1598,6 +1598,7 @@
       }
     ]
   },
+  "rounds2d": ["mission-room", "td-defence"],
   "camera": {
     "zoom": 0.42
   },
@@ -1650,6 +1651,9 @@
     },
     "colorSpace": "srgb",
     "renderScale": 6,
+    "skirt": {
+      "color": "#497018"
+    },
     "timeOfDay": {
       "tween": 45,
       "ease": "sineInOut",
@@ -1658,7 +1662,7 @@
           "hour": 3.5,
           "sun": {
             "color": "#4058a0",
-            "intensity": 0.5,
+            "intensity": 0.7,
             "direction": {
               "x": 1.2,
               "y": 2.4,
@@ -1667,12 +1671,12 @@
           },
           "ambient": {
             "color": "#5060a0",
-            "intensity": 0.7
+            "intensity": 0.95
           },
           "hemisphere": {
             "sky": "#384870",
             "ground": "#181820",
-            "intensity": 0.9
+            "intensity": 1.1
           },
           "fog": {
             "color": "#1c2440"
@@ -1814,7 +1818,7 @@
           "hour": 21,
           "sun": {
             "color": "#5068b0",
-            "intensity": 0.5,
+            "intensity": 0.7,
             "direction": {
               "x": 1.6,
               "y": 2.4,
@@ -1823,12 +1827,12 @@
           },
           "ambient": {
             "color": "#5060a0",
-            "intensity": 0.7
+            "intensity": 0.95
           },
           "hemisphere": {
             "sky": "#384870",
             "ground": "#181820",
-            "intensity": 0.9
+            "intensity": 1.1
           },
           "fog": {
             "color": "#1c2440"
@@ -4055,10 +4059,23 @@
     "siege": {
       "layers": {
         "calm": "siege",
-        "danger": "siege-danger"
+        "danger": "siege-danger",
+        "round": "siege-round"
       },
       "fade": 45,
       "mix": [
+        {
+          "when": {
+            "status": "miniGame",
+            "ne": ""
+          },
+          "layers": {
+            "calm": 0.35,
+            "danger": 0.7,
+            "round": 1
+          },
+          "fade": 20
+        },
         {
           "when": {
             "status": "missionLeft",
@@ -4066,7 +4083,8 @@
           },
           "layers": {
             "calm": 0.6,
-            "danger": 1
+            "danger": 1,
+            "round": 0
           },
           "fade": 30
         },
@@ -4077,14 +4095,16 @@
           },
           "layers": {
             "calm": 0.6,
-            "danger": 1
+            "danger": 1,
+            "round": 0
           },
           "fade": 30
         },
         {
           "layers": {
             "calm": 1,
-            "danger": 0
+            "danger": 0,
+            "round": 0
           }
         }
       ]

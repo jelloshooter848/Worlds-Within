@@ -278,6 +278,84 @@ describe('the mission screens built from menus (Engine 0.16 F5)', () => {
   });
 });
 
+describe('the results in two columns on a wide picture (Engine 0.16 F9, gap M39)', () => {
+  const record = (outcome: string): MissionRecord => ({
+    mission: 'raid',
+    outcome,
+    effects: [],
+    resolution: 'delegated',
+    openTick: 0,
+    commitTick: 90,
+    experienceTicks: 0,
+    skipped: [],
+  });
+  const person = (i: number) => ({
+    entity: i,
+    key: null,
+    name: `Person ${i}`,
+    faction: 'village',
+    was: 'active',
+    fate: 'dead',
+    by: null,
+  });
+  const view = (people: number) => ({
+    title: 'The siege',
+    verdict: 'held',
+    changes: {
+      ...noChanges(0, 100),
+      records: [record('won')],
+      people: Array.from({ length: people }, (_, i) => person(i)),
+      buildings: [
+        {
+          entity: 99,
+          key: 'hall',
+          kind: 'hall',
+          faction: null,
+          lost: 40,
+          hp: 360,
+          max: 400,
+          destroyed: false,
+        },
+      ],
+    },
+    outcomeTitle: () => 'The ram and the catapult burnt down to their axles',
+    code: 'ABCDE-12345',
+  });
+  const wide = { ...CTX, screen: { width: 320, height: 180 } };
+  const textWidgets = (file: UiScreenFile) =>
+    file.widgets.filter((w): w is UiWidgetSpec & { text: string } => w.type === 'text');
+
+  it('spans the missions across the panel, then flows the rest down two columns', () => {
+    const shown = textWidgets(resultsScreen(wide, view(3)));
+    const at = (text: string) => shown.find((w) => w.text === text)!;
+    const record = at('  The ram and the catapult burnt down to their axles (delegated)');
+    expect(record.w).toBe(at('Missions').w);
+    expect(at('People').w).toBeLessThan(record.w!);
+    expect(at('People').y).toBeGreaterThan(record.y!);
+    // Everything fits: no line counted out.
+    expect(shown.some((w) => w.text.startsWith('and '))).toBe(false);
+    // The save code shares its label's row, to its right.
+    expect(at('ABCDE-12345').y).toBe(at('Save code').y);
+    expect(at('ABCDE-12345').x).toBeGreaterThan(at('Save code').x!);
+    // A 4:3 picture keeps one column, the code under its label.
+    const narrow = textWidgets(resultsScreen(CTX, view(3)));
+    const code = narrow.find((w) => w.text === 'ABCDE-12345')!;
+    expect(code.y).toBeGreaterThan(narrow.find((w) => w.text === 'Save code')!.y!);
+  });
+
+  it('never ends a column with a heading: it moves on with its first line', () => {
+    for (let people = 1; people < 24; people++) {
+      const shown = textWidgets(resultsScreen(wide, view(people)));
+      shown.forEach((w, i) => {
+        if (!['Missions', 'People', 'Buildings'].includes(w.text)) return;
+        const next = shown[i + 1]!;
+        expect([w.text, next.x], `${people} people`).toEqual([w.text, w.x]);
+        expect(next.text.startsWith('  ') || next.text.startsWith('and '), `${people}: ${w.text}`).toBe(true);
+      });
+    }
+  });
+});
+
 describe('MissionScreens over a MissionLaunch (Engine 0.16 F5)', () => {
   it('shows nothing until a mission is offered, then the card with its window', () => {
     const { screens, step } = flow();
@@ -337,6 +415,50 @@ describe('MissionScreens over a MissionLaunch (Engine 0.16 F5)', () => {
     tap({ x: 2, y: 2 });
     tap(point('delegate'));
     expect(seen).toEqual([[{ x: 2, y: 2 }], []]);
+  });
+
+  it('keeps the keys a screen took from the scene under it, and passes the others (F review)', () => {
+    const { launch, screens, step } = flow();
+    step();
+    step();
+    const seen: string[][] = [];
+    const scene = missionScreensScene(
+      {
+        update: (frame) => {
+          seen.push((['right', 'jump', 'start'] as const).filter((a) => frame.pressed(a)));
+          launch.update(frame);
+        },
+        render() {},
+      },
+      screens,
+      () => ({ fill() {}, image() {}, glyph() {} }),
+    );
+    const keys = new ActionState();
+    const press = (held: string[]) => {
+      keys.beginFrame(new Set(held as never[]), []);
+      scene.update(keys, [keys]);
+      keys.beginFrame(new Set(), []);
+      scene.update(keys, [keys]);
+    };
+    // A move on the card is still the scene's; the press that takes Delegate is not.
+    press(['right']);
+    expect(screens.ui!.menu('main')!.focused).toBe('delegate');
+    press(['jump', 'start']);
+    expect(launch.game.steps.map((s) => s['action'])).toEqual(['open', 'delegate']);
+    expect(seen.filter((s) => s.length > 0)).toEqual([['right']]);
+  });
+
+  it("covers a step's gestures by the screen that took its taps, not the one its press left (F5 review)", () => {
+    const { launch, screens, step, point } = flow();
+    step();
+    step();
+    const at = point('delegate');
+    step([], [at]);
+    expect(launch.choice()).toBeNull();
+    expect(screens.covers(at)).toBe(false);
+    expect(screens.uncovered([{ type: 'tap', button: 'secondary', ...at, kind: 'touch' }])).toEqual([]);
+    step();
+    expect(screens.uncovered([{ type: 'tap', button: 'secondary', ...at, kind: 'touch' }])).toHaveLength(1);
   });
 
   it('focuses by the hovering mouse; taps off the card are left to the page', () => {

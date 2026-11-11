@@ -65,6 +65,13 @@ Import from `@engine/core/present` (`index.ts`).
   floor variety by a hash of the cell's place, after any `join` key), a `hearts` HUD item's `half`
   (the status counts halves) and any HUD item's `when` (`hudItemShown`: shown only while that
   status is truthy).
+  Engine 0.16 F8: a 3D skin's `rounds2d` (the rounds a 3D page draws in 2D), `labels` on 2D skins,
+  2D kind fields `turnToFacing`, `ring` and `hitFlash`, and colour palettes (`#fff`,
+  `isSilhouettePalette`: a silhouette, for hit flashes).
+  Engine 0.16 F9: `HUD_HIDDEN_STATUS` (`hudHidden`): a frame whose status sets it shows no HUD
+  item (and in 3D no label or place name), for a page's title screen; `hudPanelBoxes` (the shown
+  `panel` and `minimap` boxes) and `boxesOverlap`; `scene3d.skirt` (`{ color, margin? }`,
+  `DEFAULT_SKIRT_MARGIN`): a ground view's flat ground past the map's edges.
   Engine 0.16 T11: a 3D kind or tile entry may name a
   glTF/GLB `model` in `assets/` with `scale`, `anchor`, `rotate`, `clip` (by animation state)
   and `castShadow`, keeping its text `mesh` as the stand-in while it loads;

@@ -99,3 +99,9 @@ export { MISSION_BAR_HEIGHT, mountMissionBar, type MissionBar, type MissionBarOp
 export { ShellTransitions, type ShellTransitionOptions, type TransitionRequest } from './transitions';
 export { UiScene, type UiSceneOptions } from './ui-scene';
 export { GameMenus, type GameMenusOptions, type MenuSettingsHost, type MenusState } from './game-menus';
+export {
+  isLayerRound,
+  roundLayerDisplay,
+  type RoundLayerDisplay,
+  type RoundLayerOptions,
+} from './round-layer';

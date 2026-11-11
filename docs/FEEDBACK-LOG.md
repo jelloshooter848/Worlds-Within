@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 533.** (Last used: 532.)
+**Next unused number: 585.** (Last used: 584.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2142,3 +2142,162 @@ finalize pass; details in `docs/BUILD-LOG.md`, Engine 0.16 part D and part A2's 
   cell is clickable (the old 82x50 box left most of the map unclickable). OK?
 - **532.** D10: the roadmap's "expand" is gathering at the far gold node; neither the AI nor the
   bots ever build a second town centre. OK, or should the AI expand with a second town centre?
+
+**Engine 0.16 part F: the mini siege in 3D low-poly** (F1-F10, built on the track branch
+`engine/0.16-track2`; F1-F7 merged into `engine/build-0.15` in part D, D1, and F8-F10 with the
+review fixes in part E, E1; details in `docs/BUILD-LOG.md`, Engine 0.16 part F). Labelled `F-1`
+to `F-22` on the track; the merge numbered them 533-554 (`F-n` is item 532+n).
+
+- **533.** The mini siege's picture is 320x180 (16:9; 256x240 before), so six times is
+  1920x1080; the Canvas2D skins and the tests' sizes moved with it (F6).
+- **534.** The people and the sheep come from Quaternius Ultimate Animated Character Pack and
+  Farm Animals (CC0), not named by the roadmap, with `Defeat` as the death clip (the pack has no
+  death) and `Punch` as the attack; the Quaternius village pack is the 2020 OBJ "Medieval Village
+  Pack", not the newer textured MegaKit (the model check refuses textures in other files); FBX
+  and OBJ converted to GLB, the Castle Kit's colour map baked into vertex colours (F1).
+- **535.** The 3D packs are about 8.7 MB of GLB in the game's `assets/`, all 221 files kept
+  (F1).
+- **536.** The ground view's camera maths is one core function shared by drawing and picking
+  (`groundProjection`); side-view skins are unchanged (F2).
+- **537.** Decor is presentation: drawn from the presentation RNG, never in the sim, so a decor
+  grid can change without moving a hash (F3).
+- **538.** The world clock: 60 ticks an hour, the siege from day 2, 14:00, the dawn day 3, 05:30,
+  the ridge day 3, 10:00; the sabotage's 120 ticks read as two hours (F4).
+- **539.** A mission's `text` (the card's description) is presentation only, never stored, so no
+  save code moved (F5).
+- **540.** The hosted rounds are drawn in 2D on a layer over the 3D picture (the shell's
+  `roundLayerDisplay`, the game's 2D backend) with an iris, not with 3D round skins; F6's 3D
+  round skins were removed (F8).
+- **541.** Parts C and E are not on this branch: the rounds were brought to their bar with the
+  0x72 DungeonTileset II and Kenney Tower Defense packs; re-point them at C and E's skins when
+  those merge (F8).
+- **542.** The ground camera: pitch 60, yaw -8, fov 35, zoom 0.42 (the whole village, river and
+  camp in view), render scale 6 (F6).
+- **543.** Health and progress bars are world labels, not 3D meshes (F6).
+- **544.** The 3D page is the default; 2D only where WebGL 2 is missing or by the query (F7).
+- **545.** The HUD is the UI kit's in a new 3x5 pixel font (`siege-tiny`), not the mockup's
+  serif (F7).
+- **546.** The 3D page has no text box: a save code goes in the link, `?code=<code>` (gap M42;
+  F9).
+- **547.** The title hides the HUD and the world labels; labels that would cover a HUD panel
+  are left out (gap M40; F9).
+- **548.** The page's controls move to the bottom-right corner over a centred screen and the
+  title (gap M41; F9), but not over the rounds (outstanding above).
+- **549.** A skirt of grass is laid past the map's edges (`scene3d.skirt`), and the night keys
+  of the time of day were lightened so the dawn's start reads (gaps M43, M44; F9).
+- **550.** M45 (labels cut at the picture's edge) is left open for the owner's review (F9).
+- **551.** The F10 screenshots were taken with a scratch script on `tests/browser/serve.ts` and
+  the page's hooks, not a committed tool; the page test's `WW_SHOTS_DIR` shoots the same screens
+  at 640x520.
+- **552.** Review screenshots may be committed as PNGs in `docs/reports/screenshots/<part>/`
+  (4.3 MB for these ten); `no-content.test.ts` and DESIGN.md allow that folder. OK, or keep
+  them out of git?
+- **553 (owner review).** Playtest the mini siege in 3D from the title through the dawn, and
+  review the ten screenshots and the mockup comparison above: accept, or list what to change.
+- **554.** The page's 3D camera is the skin's pitch 60 (the whole map in view, flatter than the
+  mockup); the mockup comparison (`10-siege-mockup-angle.png`) was shot at pitch 42 through a
+  scratch override. Keep pitch 60 for play, or lower the page's camera to the mockup's angle
+  (`three.json`'s `camera3d.pitch`, with the zoom brought closer)?
+
+**Engine 0.16 part F: smaller build choices of F1-F10** (track 2, after its `T2-17`, item 484).
+Labelled `T2-18` to `T2-42` on the track; the merge numbered them 555-579 (`T2-n` is item 537+n).
+
+- **555.** Google Drive refused the pack downloads (quota) and poly.pizza is behind Cloudflare,
+  so every pack came from OpenGameArt mirrors; no pack was left out.
+- **556.** The OBJ, FBX and colour-map conversions to GLB were done by scratch scripts that are
+  not in the repo (a prebuilt FBX2glTF was blocked); `assets/CREDITS.md` describes each change.
+  Re-converting a pack needs those scripts rewritten.
+- **557.** Characters: `knight-male` soldiers, `knight-golden-male` Captain Hale, `viking-male`
+  raiders and guards, `worker-male` workers; `Soldier_Male` dropped (looks modern). Quaternius
+  files renamed lower-case with hyphens; Kenney names kept. The windmill's sails are part of its
+  one mesh and do not turn.
+- **558.** Ground view conventions (engine): zoom is camera distance (straight down shows
+  height/zoom world px, as in 2D); yaw 0 looks north; pitch is degrees below the horizon (10 to
+  90); a mesh part's `at.z` is the height of its bottom and `d` its height.
+- **559.** In ground view the map clamp is done by `RtsCamera` (the picture's four ground
+  corners kept inside the map), not by the scene's follower; a game that follows an entity in
+  ground view without `RtsCamera` is not clamped.
+- **560.** Clicks and box select pick the ground cell under the pointer, not the upright unit
+  body drawn above it.
+- **561.** 2D particles have no height, so in ground view they sit on the ground 8 px up (a
+  burst spreads over the ground, a rising flame drifts north).
+- **562.** Decor is a new engine content kind `decor` (text rows) with its legend in the skin.
+  The RTS kit gives every map the id `rts`, so a decor entry names its map with `map`.
+- **563.** Per-cell tile variation is opt-in (a tile's `vary`), so no existing picture moved;
+  its stream is `fxRng(seed, 0, ...)` (frame fixed at 0).
+- **564.** Render scale is a whole number 1-8 so pixel fonts stay sharp; the CLI's new
+  `--render-scale` is separate from `--scale` (a nearest-neighbour upscale on top). The page's
+  render scale is the skin's 6, capped to the window; `?scale=<n>` overrides it.
+- **565.** A clock is allowed on scenario entries only; the game puts it on frames through a
+  new `hostedSource` `status(world)` option, so no RTS kit rule changed. The day's parts start at
+  5, 7, 12, 15, 18 and 21 o'clock.
+- **566.** Time of day: the sky is one colour per key, not a gradient; a clock jump of more
+  than half an hour eases over 45 display frames (through the night for an overnight gap). The
+  optional Canvas2D/PixiJS evening tint was not done: the 2D page does not darken.
+- **567.** On the mission card, choosing Play or Delegate on an offer (or picking one of several
+  offers) launches it at once; there is no cancel. A small "mission result" card follows each
+  mission while the world keeps running.
+- **568.** The results' change lists (`worldChanges`) count a named death both as a loss and a
+  fate change and leave out scenario, carry and load changes; the card's hero and foes read only
+  the rooms' selector params (fortify's card shows none).
+- **569.** The scenery (decor) cannot change paths, so it is kept off the roads, every starting
+  cell and the battle rows; the castle ring is open to the east. `three.test.ts` checks this.
+- **570.** Engine features added that the tasks did not list: model recolour and tint, tag
+  looks that swap the model, decor stack, light and emit, `hitFlash`, HUD items shown by a
+  `when` test, and a presentation-only RTS status `key.<key>.hp|maxHp|progress|fate|name|alive`.
+  All optional.
+- **571.** The gem and the red banner are this build's own CC0 models
+  (`assets/mini-siege-marks`, text glTF from a script): the packs have no gem and their banners
+  are blue. `*.gltf` in games' assets is in `.prettierignore`, so the text stays as written.
+- **572.** The results screen's layout changed for every 16:9 picture in the engine (first
+  section full width, the code beside its label, two columns); at 320x180 the overflow still
+  reads "and N more".
+- **573.** No gold income is shown (the RTS kit has none; gold changes only through missions);
+  no new world-event sounds (no offer event to hang one on); no line from the offer marker to the
+  card (it needs 3D-to-UI projection).
+- **574.** Music: a `siege-danger` layer while a mission is open or raiders are within 3 cells
+  of a building, and a `siege-round` layer under the rounds (calm 0.35, danger 0.7, round 1). The
+  title plays the calm layer.
+- **575.** The title drifts by zooming in 1.9 times and circling, because at the start zoom the
+  whole map shows and the clamp leaves no room to move. The menus were restyled to the HUD's
+  colours and the title's 2D pixel art removed, which also changes the 2D page.
+- **576.** Kenney Tower Defense ships only 64/128 px tiles; they were scaled down to 16, 24 and
+  32 px with a box filter. The rooms' siege engines and the walls' gate and camp keep the game's
+  own text sprites; the old NES-style round art is kept but unused until C and E merge. Both
+  rooms use the `knight_m` hero, so Sergeant Mara Venn looks like the sabotage hero.
+- **577.** The iris into a round is started by the game's `main.ts` when `launch.playing()`
+  changes (the shell's push/pop transition does not fire under the 3D page's screens); an
+  engine-level fix could come later.
+- **578.** Changes outside part F's modules: `vite.config.ts` sets a global `testTimeout` of
+  20 s (CLI-heavy mini-siege tests sat just over 5 s under the full suite);
+  `engine/tools/main.test.ts` deletes the fx lab's `ground.json` from its copy;
+  `tests/build/game-files.test.ts` leaves `assets/` out of its glob comparison; `clock.ts` and
+  `round-layer.ts` joined `PURE_CORE` in `config/layers.js`.
+- **579.** 533 to 550 were written from F1-F9's commit messages and module docs, not from
+  those tasks' own decision lists; the orchestrator should check them against what F1-F9
+  reported.
+
+**Engine 0.16 polish P: parts C and F review notes, P1-P3** (on the track branch, merged in part
+E, E1; details in `docs/BUILD-LOG.md`, Engine 0.16 polish P). Labelled `P-1` to `P-5` on the
+track; the merge numbered them 580-584 (`P-n` is item 579+n).
+
+- **580.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
+- **581.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
+  (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (551), so P11 retakes the
+  after shots with the same steps.
+- **582.** The flash shot (F3) is the first loop step of world tick 41 after Delegate at 40: the
+  white `mission-open` flash lasts 12 loop steps (ticks 41 and 42), not one frame as part F's
+  notes say.
+- **583.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
+  show those two), more than the four the task asked for.
+- **584 (revisits item 436).** C1: The Old Crypt's skin goes from `lighting.bands: 6` (item 436's
+  stepped pixel-art falloff, which showed as hard rings round every torch) to `bands: 0` with
+  the new `lighting.dither: 8`: each light's falloff is drawn smooth (32 stops) and quantized by
+  picture pixel to 64 alpha steps with an 8x8 Bayer matrix (`LIGHT_DITHER_LEVELS`), no RNG, the
+  same in Canvas2D and PixiJS. 16 and 32 steps were tried and looked at full size: a strong
+  checker in the half-lit floor (16) and a busy one (32); at 64 the dither is a faint pixel
+  texture and no ring shows. A skin that wants the stepped look back with soft edges can give
+  `bands` with `dither` (it dithers between its bands). The smooth falloff ends darker towards
+  the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
+  darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
+  undithered falloff (it had no bands and shows no rings).

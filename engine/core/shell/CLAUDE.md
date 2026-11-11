@@ -99,6 +99,20 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
 default3d)` the same. Tested in `shell.test.ts` (3D by default, `?backend=canvas2d` over it, the
   fallback on a reason and on a throw, the reason shown when the query asked for 3D, the links).
   The mini siege's page uses it.
+- **Hosted rounds in 2D on a 3D page** (Engine 0.16 F8; `round-layer.ts`, pure, on
+  `PURE_CORE`): `rounds2d` (mini game ids; the mini siege passes its `three` skin's `rounds2d`)
+  makes a page that runs in 3D also start the game's `default2d` display (PixiJS where it starts,
+  else Canvas2D: the shell's choice) on a canvas layered over the 3D one (`#<canvas id>-rounds`,
+  class `ww-round-layer`, fixed over the window, no pointer events, hidden while the world shows;
+  `body[data-round]` is `layer` while it shows), and wraps both in `roundLayerDisplay({ world,
+round, ids, show, worldBox? })`: a frame whose `status.miniGame` is one of `ids`
+  (`isLayerRound`) goes to the round display and shows the layer, any other to the world display
+  and hides it. `present()`, `toScreen`, `toClient` and `uiPainter` follow the display shown (the
+  menus and mission screens paint over the round; taps map through its letterbox, the same box as
+  the 3D canvas's), `fit`, `transition` and `effectSettings` go to both (a transition closes over
+  one canvas and opens over the other), `renderer` is the world's. `showing` says which shows.
+  When the layer's display cannot start, the rounds stay in 3D. Tested in `round-layer.test.ts`;
+  the mini siege's page test plays its rounds through it.
 - **The audio mixer** (Engine 0.16 T8, `../audio/mixer.ts`): with `audio` the boot makes one
   `Mixer` over the page's `AudioManager` (`booted.mixer`). `BootAudio` takes `mix` (the skin's
   `music` section: layered songs; `music` naming one plays its layers) and `seed` (sound
@@ -296,7 +310,9 @@ changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes
   (the entry's results: each section of `changeSections` (missions, losses by faction, people,
   buildings) as far as the picture has room, `and N more` for the rest, the save code,
   **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 304 px wide with
-  the changes down two columns). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
+  the changes down two columns; Engine 0.16 F9, gap M39: there the first section spans the panel
+  and the rest flow down the columns, a heading never ends a column, and the save code shares its
+  label's row when it fits). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
   `CARD_MARGIN`, `CARD_WIDTH`. Engine 0.16 F7: the context's (and `MissionScreens`') `card`
   (`MissionCardLook { width?, font? }`) sets the corner cards' widest and their font (text,
   chips, buttons and the window badge; `cardContext` swaps it into the menus for them), so the
@@ -473,7 +489,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts`, `game-menus.ts` and `round-layer.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`

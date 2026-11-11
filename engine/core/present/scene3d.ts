@@ -53,6 +53,9 @@ export const OUTPUT_COLOR_SPACES = ['srgb', 'linear'] as const;
 /** The largest render scale a skin or page may ask for (8 x 240 px is 1920 px tall). */
 export const MAX_RENDER_SCALE = 8;
 
+/** How far a ground view's `skirt` reaches past each map edge by default, px (Engine 0.16 F9). */
+export const DEFAULT_SKIRT_MARGIN = 2048;
+
 const shadowSchema = z.strictObject({
   mapSize: z
     .number()
@@ -158,6 +161,20 @@ export const scene3dSchema = z
       .describe(
         'draw the 3D picture at this many times the picture size (supersampled; the HUD, labels and menus keep their picture-px layout and draw scaled, nearest neighbour): a 320x180 picture at 6 is 1920x1080 (default 1; a page or `screenshot --render-scale` may override it; Engine 0.16 F3)',
       ),
+    skirt: z
+      .strictObject({
+        color: color.describe('its colour (lit as the map is)'),
+        margin: z
+          .number()
+          .int()
+          .positive()
+          .exactOptional()
+          .describe(`px it reaches past each map edge (default ${DEFAULT_SKIRT_MARGIN})`),
+      })
+      .exactOptional()
+      .describe(
+        'ground view: a flat ground of this colour under the map reaching past its edges, so a view wider than the map shows ground there, not the background (Engine 0.16 F9)',
+      ),
     timeOfDay: timeOfDaySchema
       .exactOptional()
       .describe(
@@ -256,7 +273,9 @@ export type SkinLabel = z.output<typeof labelSchema>;
 
 export const labelsSchema = z
   .record(z.string().min(1), z.union([labelSchema, z.array(labelSchema).min(1)]))
-  .describe('3D: entity kind -> a label or a list, drawn over each entity on the HUD layer');
+  .describe(
+    'entity kind -> a label or a list, drawn over each entity (3D: on the HUD layer; 2D from Engine 0.16 F8: over the entities, before the HUD)',
+  );
 
 /** The scene look with every default filled in. */
 export interface Scene3dLook {

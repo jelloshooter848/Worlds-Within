@@ -7,6 +7,7 @@ import { mustLoad } from '@engine/core/content/game-content';
 import { canonicalJson } from '@engine/core/headless';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import { ActionState, InputManager, type InputFrame } from '@engine/core/input/input-manager';
+import type { PointerGesture } from '@engine/core/input/pointer-logic';
 import type { Action } from '@engine/core/input/actions';
 import { ScriptedInput, type InputScript } from '@engine/core/input/scripted-input';
 import { readGameFiles } from '@engine/core/node/game-files';
@@ -16,7 +17,7 @@ import { contentFonts, type UiDraw, type UiPainter, type UiScreen } from '@engin
 import { loadMiniSiege } from './content';
 import type { MiniSiegeGame } from './headless';
 import { siegePicture } from './picture';
-import { SiegePlay } from './play';
+import { SiegePlay, type GestureFeed } from './play';
 
 // The mission flow in the picture (Engine 0.16 F5): the shell's `MissionScreens` over the mini
 // siege's `MissionLaunch`, as a page draws it over the battle: the briefing, the mission card with
@@ -44,15 +45,28 @@ const recordedRound = () =>
   ).missions.find((m) => m.action === 'play')!.input!;
 
 /** The page: the battle's scene with the mission screens over it, drawing every step. */
-function page(hold = true, cursor: () => { x: number; y: number } | null = () => null) {
+function page(
+  hold = true,
+  cursor: () => { x: number; y: number } | null = () => null,
+  source: GestureFeed | null = null,
+) {
+  // As on the page: the battle reads the pointer's gestures without those on a screen.
+  let screens: MissionScreens<MiniSiegeGame> | null = null;
+  const reached: PointerGesture[] = [];
   const play = new SiegePlay({
     content,
     seed: content.manifest.start.seed,
-    pointer: null,
+    pointer: source && {
+      gestures: () => {
+        const kept = screens?.uncovered(source.gestures()) ?? source.gestures();
+        reached.push(...kept);
+        return kept;
+      },
+    },
     stepsPerTick: 1,
     hold,
   });
-  const screens = play.missionScreens({
+  screens = play.missionScreens({
     fonts,
     pointer: { cursor },
     keys: () => ({ up: '↑', down: '↓', jump: 'Z', attack: 'X' }),
@@ -79,7 +93,7 @@ function page(hold = true, cursor: () => { x: number; y: number } | null = () =>
     stack.render({} as Renderer);
     drawn.push(frame);
   };
-  return { play, screens, stack, step, drawn };
+  return { play, screens: screens as MissionScreens<MiniSiegeGame>, stack, step, drawn, reached };
 }
 type Page = ReturnType<typeof page>;
 
@@ -241,6 +255,21 @@ describe('the mission screens in the picture (Engine 0.16 F5)', () => {
     }
   });
 
+  it("keeps the key or pad press that takes Play from the round's first step (F review)", () => {
+    // Z, Space or pad A (jump) places a tower in the walls round, Enter or pad Start starts the
+    // wave: the press that takes Play on the card must start the round and nothing more.
+    for (const key of ['jump', 'start'] as const) {
+      const p = page(false);
+      while (p.play.tick < 11) p.step();
+      expect(p.screens.cardMissions(), key).toEqual(['fortify']);
+      expect(p.screens.ui!.menu('main')!.focused, key).toBe('play');
+      p.step(frameOf(new ActionState(), [key]));
+      expect(p.play.launch.playing(), key).toBe(true);
+      const kit = p.play.game.miniGame()!.snapshot()['kit'] as Record<string, unknown>;
+      expect(kit, key).toMatchObject({ gold: 100, towers: 0, wave: 0 });
+    }
+  });
+
   it('plays by a mouse click on Play (hover then tap): the round starts and the screens step aside', () => {
     let cursor: { x: number; y: number } | null = null;
     const p = page(true, () => cursor);
@@ -255,6 +284,42 @@ describe('the mission screens in the picture (Engine 0.16 F5)', () => {
     expect(p.play.launch.playing()).toBe(true);
     expect(p.screens.kind()).toBeNull();
     expect(p.drawn.at(-1)!.length).toBe(0);
+  });
+
+  it("keeps the taps that close a screen from the battle's controls: Begin, Delegate and Continue", () => {
+    // The pointer's gestures for the next step: the battle reads them after the screens took the
+    // frame's taps, when a press may already have closed the screen under them.
+    let pending: PointerGesture[] = [];
+    const p = page(true, () => null, {
+      gestures: () => {
+        const out = pending;
+        pending = [];
+        return out;
+      },
+    });
+    const keys = new ActionState();
+    const tap = (at: { x: number; y: number }, button: 'primary' | 'secondary' = 'primary') => {
+      pending = [{ type: 'tap', button, ...at, kind: 'mouse' }];
+      p.step(frameOf(keys, [], [at]));
+    };
+    p.step();
+    expect(p.screens.kind()).toBe('briefing');
+    tap(itemPoint(p.screens, 'begin'));
+    expect(p.play.launch.held()).toBe(false);
+    while (p.play.tick < 40) p.step();
+    expect(p.screens.kind()).toBe('card');
+    const issue = vi.spyOn(p.play.game.rts, 'issue');
+    // A long-press (secondary) on Delegate would be an order to the selection if it reached the battle.
+    tap(itemPoint(p.screens, 'delegate'), 'secondary');
+    expect(p.play.launch.choice()).toBeNull();
+    while (p.screens.kind() !== 'outcome') p.step();
+    tap(itemPoint(p.screens, 'continue'));
+    expect(p.screens.kind()).not.toBe('outcome');
+    expect(p.reached).toEqual([]);
+    expect(issue).not.toHaveBeenCalled();
+    // A tap off the screens is still the battle's.
+    tap({ x: 4, y: 4 });
+    expect(p.reached).toEqual([{ type: 'tap', button: 'primary', x: 4, y: 4, kind: 'mouse' }]);
   });
 
   it('keeps Play disabled for a choice without a round: the dawn lists the captive choices', () => {
@@ -353,17 +418,30 @@ describe('the results screen: what changed in the world (Engine 0.16 F5)', () =>
       const shown = texts(p.screens.ui);
       const ended = p.play.launch.ended()!;
       expect(shown.slice(0, 2)).toEqual(['The siege', ended.verdict]);
-      // The 16:9 picture (Engine 0.16 F6) has room for the first lines, in two columns; the rest
-      // are counted (`and 2 more`), in order.
+      // The 16:9 picture (Engine 0.16 F6) has room for every line (Engine 0.16 F9, gap M39: the
+      // missions span the panel, the rest flow down two columns and no heading ends a column), the
+      // captain's fate among them.
       const all = [...c.records, ...c.losses, ...c.people, ...c.buildings];
-      const listed = all.filter((line) => shown.includes(`  ${line}`));
-      expect(listed, 'the first lines, in order').toEqual(all.slice(0, listed.length));
-      expect(listed.length).toBeGreaterThanOrEqual(c.records.length + c.losses.length);
-      const more = shown.find((t) => t.startsWith('and '));
-      expect(more ?? 'and 0 more').toBe(`and ${all.length - listed.length} more`);
-      expect(shown.filter((t) => ['Missions', 'Losses', 'People', 'Buildings'].includes(t))).toEqual(
-        ['Missions', 'Losses', 'People', 'Buildings'].slice(0, listed.length === all.length ? 4 : 3),
-      );
+      expect(all.filter((line) => shown.includes(`  ${line}`))).toEqual(all);
+      expect(shown.find((t) => t.startsWith('and '))).toBeUndefined();
+      expect(shown.filter((t) => ['Missions', 'Losses', 'People', 'Buildings'].includes(t))).toEqual([
+        'Missions',
+        'Losses',
+        'People',
+        'Buildings',
+      ]);
+      const at = (text: string) =>
+        p.screens.ui!.file.widgets.find((w) => w.type === 'text' && w.text === text)!;
+      // The record spans the panel; each heading sits in the column of its first line.
+      expect(at(`  ${c.records[0]}`).w).toBeGreaterThan(at(`  ${c.losses[0]}`).w!);
+      for (const [heading, line] of [
+        ['Losses', c.losses[0]],
+        ['People', c.people[0]],
+        ['Buildings', c.buildings[0]],
+      ] as const)
+        expect(at(heading).x, heading).toBe(at(`  ${line}`).x);
+      // The save code shares its label's row.
+      expect(at(ended.code!).y).toBe(at('Save code').y);
       expect(shown.slice(-3, -1)).toEqual(['Save code', ended.code]);
       expect(shown.at(-1)).toBe('↑↓ choose   Z select');
       expect(p.screens.ui!.menu('main')!.items.map((i) => i.id)).toEqual(['continue']);

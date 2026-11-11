@@ -199,20 +199,18 @@ member: "captain" }`, `hpPer` 20, so his 120 hp start the round on 6 half hearts
   `mission-commit:outcome=<id>` (`burn` for an outcome that burns an engine; since Engine 0.13 T8
   the dawn's: `freed` (`freed`, a gold tint), `paid` (`coins`), `failed` (`fail`, a red tint) and
   `left` (`toll`, a grey tint)) and bare `mission-commit`. `content/skins/canvas2d-mission-room.json` (the round, mini game
-  `mission-room`): `hero`, `sword`, `poof`, `pickup:heart` and `knight` (the guards) with looks by
-  tag `foe:ram` and `foe:catapult` (the topdown kit tags each placed foe with its world name);
-  tiles `#` and `.`; the camera unclamped (the room under its HUD band); HUD the host's
-  `host:mission` title (G19), hearts, the time left; sounds for `sword`, `kill` (`burn`), `hurt`,
-  `dying`. `content/skins/canvas2d-td-defence.json` (Engine 0.12 T8, the walls' round, mini game
-  `td-defence`, sheet `defence` with `siege` per entry): `tower:archers`, `tower:ballista` (`idle`,
-  `fire`), `enemy:raider` (the raiders' `walk` in three facings, mirrored for left; `hit` in
-  `defence-hit`), `shot:archers`, `shot:ballista`, `ghost:<type>` (`ok` / `blocked` palettes) and
-  `cursor`; tiles `.` grass, `#` road, `B` the wall cell, `S` the camp, `X` the gate (the 16x7 map
-  centred on the picture, black above and below); HUD the host's `host:mission` title, `gold`,
-  `lives`, `enemies` and at the bottom the chosen `tower` and its `towerCost`; sounds `td-place`
-  and `td-sell` (`place`), `td-refused` (`refused`), `td-wave-start` (`launch`),
-  `td-shot:tower=ballista` (`bolt`) and `td-shot` (`arrow`), `td-kill` (`hurt`), `td-leak`
-  (`leak`); `td-end:won` / `:lost` only tint (the battle's `mini-game-end` sounds the end). The
+  `mission-room`; since Engine 0.16 F8 drawn from the CC0 0x72 DungeonTileset II, `images.dungeon`,
+  below): `hero`, `sword`, `poof`, `pickup:heart` and `knight` (the guards) with looks by
+  tag `foe:ram` and `foe:catapult` (the topdown kit tags each placed foe with its world name; the
+  engines keep `camp.txt`'s frames); tiles `#` and `.`; the camera unclamped; HUD the host's
+  `host:mission` title, hearts, the time left. `content/skins/canvas2d-td-defence.json` (Engine
+  0.12 T8, the walls' round, mini game `td-defence`; since F8 drawn from the CC0 Kenney Tower
+  Defense pack, below): `tower:archers`, `tower:ballista` (`idle`, `fire`), `enemy:raider`,
+  `shot:archers`, `shot:ballista`, `ghost:<type>` and `cursor`; tiles `.` grass, `#` road, `B` the
+  wall cell, `S` the camp, `X` the gate (the 16x7 map centred on the picture); HUD the host's
+  `host:mission` title, `gold`, `lives`, `enemies`, the wave and at the bottom the chosen `tower`
+  and its `towerCost`. Both rounds' looks are in "The hosted rounds in 2D" below; `td-end:won` /
+  `:lost` only tint (the battle's `mini-game-end` sounds the end). The
   battle's skin sounds the fortify commit: `mission-commit:outcome=held-cheap` / `held` /
   `held-bloodied` (`hold`, a gold tint) and `overrun` (`breach`, a shake).
 - Sound: `content/sfx/` (`sword`, `hurt`, `burn`, `pass`, `fail`, `launch`, `commit`; since
@@ -346,7 +344,12 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     `window.wwSiege` (`tick`, `held`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the
     hosted round's `kit` summary), `scenario`, `ended`, `named`, `captive`; from F7 `ui`,
     `screen` (the mission screen shown), `itemBox(item)` (a screen item's picture box, for
-    scripts that click it), `worldToScreen` and `camera`). No launch, campaign-panel, save-code
+    scripts that click it), `worldToScreen` and `camera`; from F9 `texts` (the shown screen's
+    texts, in order)). Engine 0.16 F9: under the title the frames carry `HUD_HIDDEN_STATUS` (no HUD
+    or labels behind the title, gap M40); `body[data-screen]` is the mission screen shown (the
+    page's CSS moves its controls to the bottom-right corner over a centred screen, the pause menu
+    and the title, gap M41); a save code in the link (`?code=<code>`, gap M42) is pressed as the
+    bar's code box would (the 3D page has no text box). No launch, campaign-panel, save-code
     or hint logic of its own. `index.html` is the canvas (in 2D leaving the bar's 40 px below
     it; in 3D the whole window), the 2D/3D toggle (`#backend`), the shell's sound control and
     pause button moved to the bottom centre in 3D (between the selected unit and the mission card), and the no-display message's style.
@@ -720,10 +723,8 @@ hash, save code or path moved; the backend parity test plays every run through i
 - **Light**: a warm sun with soft shadows (2048 map, radius 4), an ambient and a hemisphere light,
   linear distance fog, ACES tone mapping, and a `timeOfDay` (F4) moving them with the world clock:
   the siege from mid-afternoon to sunset, the dawn's pink morning, the ridge's late morning.
-- **The hosted rounds** have first 3D skins, `three-mission-room.json` (the raiders' camp at
-  night: the captain and the raiders as models, wooden walls) and `three-td-defence.json` (the
-  walls' round: towers, the ballista, raiders, the gate), so every frame of every run has a mesh;
-  F8 gives them parts C and E's presentation.
+- **The hosted rounds** had first 3D skins (`three-mission-room.json`, `three-td-defence.json`)
+  until F8, which removed them: the 3D page draws the rounds in 2D (below).
 - **Iterated against the mockup**: screenshots at this angle were taken and looked at beside the
   mockup about a dozen times (`pnpm cli screenshot ... --backend three --allow-software-gl`):
   the Nature Kit's teal colours recoloured, the river's banks turned, the ford tiles dropped,
@@ -793,6 +794,94 @@ links the other one. Presentation only: no hash, save code or run file moved.
 and objectives drawn, no watchtower line at the dawn) and the music's danger layer while a
 mission is open. `tests/browser/mini-siege-page.test.ts` drives the 3D page.
 
+## The hosted rounds in 2D (Engine 0.16 F8)
+
+The sabotage and rescue rooms (`mission-room`) and the walls' round (`td-defence`) play from the 3D
+page in 2D, with the presentation parts C and E set for the top-down and tower-defense samples.
+Presentation only: `fortify-played`, `played`, `dawn-rescue-played` and every other run keep their
+hashes.
+
+- **How the 3D page draws them** (owner item, decision in the F8 commit): `three.json`'s
+  `rounds2d` lists both rounds, so the page's shell (`bootBrowserGame`'s `rounds2d`, from
+  `main.ts`) starts the game's 2D display (its `default2d`, Canvas2D; the shell picks) on a canvas
+  layered over the 3D one (`roundLayerDisplay` in `engine/core/shell`): a round's frames are drawn
+  there with the `canvas2d-*` round skins, while the world stays in Three.js. The alternative, a
+  3D skin per round, was F6's first look; the round packs are 2D pixel art, so 2D draws them as
+  they are. The 3D round skins were removed. `pnpm cli screenshot --backend three` draws a
+  round's frames the same way (the 2D picture scaled to 1920x1080).
+- **Transition**: `game.json`'s `transitions.mission`, an iris (28 frames, 6 held), closes over
+  the 3D world, opens on the round, and closes and opens again on the way back (the shell plays
+  the `mission` slot when the round's scene is pushed and popped; it holds the game's ticks while
+  it closes, so no state moves). The world clock stands still while the round is played; at the
+  commit it jumps by the mission's cost, which the `three` skin's `timeOfDay` eases (F4).
+- **The rooms** (`canvas2d-mission-room.json`, `images.dungeon` over
+  `assets/dungeon-tileset-ii/tileset.png`, the frames' rectangles from the pack's tile list): brick
+  walls (`wall_mid`; `wall_capped`, the cap over the bricks, where the floor is above: the tile's
+  `join`), `floor_1`, the hero `knight_m` (idle, run with footstep dust as frame events, a lunge
+  on `attack`, `hit` on `hurt`), the sword `weapon_regular_sword` turned to the facing
+  (`turnToFacing: "up"`) with a pop-in, the guards `orc_warrior` (`masked_orc` for the second
+  guard of each room), hearts `ui_heart_full`. Feel: the kit's knockback, a white hit flash while
+  a foe or the hero is `flashing` (`hitFlash`, blinking), hit-pause and shake on `hit`, `kill`
+  (also a zoom punch) and `hurt` (also a red flash and blood), slash sparks on `sword`, embers and
+  smoke from a beaten foe's poof. The kit frames the room 2 px from the picture's top
+  (`ROOM_TOP` in `headless.ts`, with the picture's size): the whole room shows, its HUD band (the
+  title in `siege-small` and the hearts on a dark panel with the menus' gold border) over the top
+  wall and the time bar over the bottom wall.
+- **The walls** (`canvas2d-td-defence.json`, `images.td16`/`td24`/`td32` over
+  `assets/kenney-tower-defense/tilesheet-16/24/32.png`, grid frames by tile index): grass `157`,
+  road `158`, plots `64`; towers (`226`, `206`, firing `203`/`205`) turned toward their target
+  (`turnToFacing`) with a pop-in; raiders (`247`, 32-px tiles) turned along the road, a white hit
+  flash on `hit` and a health bar over each (a 2D `labels` bar from the kit's `hp:` tag, max 3);
+  shots (`274`, `251`) with sparks, impacts on `td-shot`, smoke and shake on `td-kill`, hit-pause
+  on the ballista; the ghost tower shows its **range** (`ring`: 40 px for the archers' 2 cells,
+  56 px for the ballista's 3) and turns red where it cannot be built (`hitFlash` on `blocked`). The
+  gate and the camp keep `defence.txt`'s frames; the HUD is two dark panels (top: title, gold,
+  lives, raiders, wave; bottom: the tower and its cost).
+- **Sound**: the rounds' event sounds as before (`sword`, `burn`, `hurt`, `fail`; `place`,
+  `coins`, `refused`, `launch`, `arrow`, `bolt`, `leak`), and the music's third layer,
+  `content/songs/siege-round.json` (a driving pulse, triangle and drums in the same six bars),
+  up while a round's frames show (`three.json`'s `music.siege` rule on `miniGame`), with the danger
+  layer under it.
+- **Parts C and E are not on this branch**: these skins were brought to their bar with the packs
+  their roadmap entries name and the engine's part A features (owner item). When The Old Crypt
+  and The Winding Road merge, re-point the rounds at their skins and art (copied into this
+  game's `assets/` with credits: games never import a sibling) and drop what they replace here.
+  The old NES-style round frames in `camp.txt` and `defence.txt` (and the `defence-*` palettes)
+  are kept, unused but the engines', gate's and camp's, until then.
+
+`play.test.ts` checks the round skins (the 2D layer's rounds, their packs' sheets, the features
+above); `tests/browser/mini-siege-page.test.ts` plays each round from the 3D page (keys and taps)
+and checks the layer shows and hides with the transition; `tests/browser/mini-siege-shots.test.ts`
+shoots the rooms and the walls in 2D and in 3D (`--backend three`), each byte-repeatable.
+
+## The whole campaign in 3D (Engine 0.16 F9)
+
+- `tests/browser/mini-siege-page.test.ts` plays the 3D page from the title (`&title=show`) through
+  the siege along both captain fates (Delegate; Play then Backspace), each results screen's
+  texts (the record, losses, people, buildings, the save code, nothing cut), Continue, the dawn
+  (the captive choices when the captain was taken) to its results, the stored save, and the
+  captured siege's save code in a fresh page's link (`?code=`; a bad code leaves the siege),
+  with no page errors. `tests/browser/mini-siege-shots.test.ts` shoots the campaign through
+  `--backend three` (the siege, the freeze, each path's end, the dawn's start and end), each
+  matching the headless hashes and byte-identical twice. The run tests (presentation invariance
+  and the stepped shell's) present the game as this page does (`tests/runs/three-page.ts`).
+- Found while playing at 1080p and fixed (gaps M39-M44 in `docs/reports/mini-siege.md`): the
+  results' columns (the engine's `resultsScreen`), the title over the HUD, labels under the HUD's
+  panels, the page's controls over the key hint, the view's corners showing the background past
+  the map (`three.json`'s `scene3d.skirt`, grass matched to the tiles as drawn) and the night too
+  dark to read (the 3.5 and 21 hour keys' lights raised). Presentation only: no hash moved.
+
+## Part F's review screenshots (Engine 0.16 F10)
+
+`docs/reports/screenshots/0.16-F/` holds nine 1920x1080 shots of the 3D page for the owner's
+review (the siege at the mockup's angle, the title, the briefing, the walls' card, the fortify
+round, the sabotage room, the siege at 17:50, the results, the dawn), each listed in
+`docs/BUILD-LOG.md`, "Engine 0.16 part F", where the first sits beside the mockup. They were taken
+on the page's step hook and `wwSiege` hooks (seed 11) over `tests/browser/serve.ts`'s build, so a
+change to the skins or the page makes them stale: retake them when the look changes, and only
+PNGs go in that folder (`tests/architecture/no-content.test.ts`). The page test's
+`WW_SHOTS_DIR=<dir>` shoots the same screens at 640x520. No hash moved in part F.
+
 ## Asset packs (Engine 0.16 part F, F1)
 
 `assets/` is the one place binary files may live (docs/DESIGN.md, item 322): five CC0 low-poly
@@ -816,7 +905,11 @@ kept and what was changed; checked by `validate`), 221 GLB models, about 8.7 MB 
 - `quaternius-farm-animals` (Quaternius, Farm Animals, 1 GLB, 0.2 MB): `sheep` (`Idle`, `Jump`),
   converted from FBX.
 
-The named packs have no people or sheep, hence the last two (owner items). Since F6 a sixth
+The named packs have no people or sheep, hence the last two (owner item 534 in `docs/BUILD-LOG.md`,
+Engine 0.16 part F, which also covers the 2020 village pack and the clips). Since F8 two 2D packs
+draw the hosted rounds: `dungeon-tileset-ii` (0x72, DungeonTileset II 1.7, one 512x512 PNG) and
+`kenney-tower-defense` (Kenney, Tower Defense top-down, its tile sheet scaled to 16, 24 and 32 px
+tiles; `license.txt`). Since F6 a sixth
 folder, `mini-siege-marks`, holds the game's own models (the offer gem, the raiders' banner), made
 by `tools/mark-models.ts` as embedded `.gltf` text. The `three` skins use them (above):
 `assets.test.ts` checks the credits, that every model is self-contained with no texture, that

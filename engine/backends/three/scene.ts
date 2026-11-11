@@ -60,6 +60,10 @@ import {
   resolveCamera3d,
   resolveMeshParts,
   resolveScene3d,
+  DEFAULT_SKIRT_MARGIN,
+  boxesOverlap,
+  hudHidden,
+  hudPanelBoxes,
   baseDayLook,
   DayClockTween,
   statusHours,
@@ -673,12 +677,26 @@ export class ThreeScene {
   /**
    * Lays the skin's `labels` out over the entities: each label's anchor on the entity box, at
    * its layer's depth, projected through the camera to picture px; a point behind the camera or
-   * off the picture hides that label. Drawn by the `labels` layer's quads.
+   * off the picture hides that label. Drawn by the `labels` layer's quads. An entity's labels (or
+   * a place's name) any of which would cover a shown HUD panel are left out, so no label shows
+   * through or under the HUD; a frame that hides the HUD (`HUD_HIDDEN_STATUS`) shows none
+   * (Engine 0.16 F9).
    */
   private updateLabels(frame: Frame, size: ScreenSize): void {
     const draws: UiDraw[] = [];
     const views: LabelView[] = [];
-    this.layoutPlaces(frame, size, draws, views);
+    if (hudHidden(frame.status)) {
+      this.labelShown = views;
+      this.labels.syncDraws(draws, size);
+      return;
+    }
+    const panels = hudPanelBoxes(this.skin, frame.status);
+    const keep = (out: { draws: UiDraw[]; views: LabelView[] }) => {
+      if (out.views.some((v) => panels.some((b) => boxesOverlap(v.box, b)))) return;
+      draws.push(...out.draws);
+      views.push(...out.views);
+    };
+    this.layoutPlaces(frame, size, keep);
     if (this.skin.labels !== undefined) {
       const cam = this.camera;
       const p = new Vector3();
@@ -698,9 +716,7 @@ export class ThreeScene {
           if (x < 0 || x >= size.width || sy < 0 || sy >= size.height) return null;
           return { x, y: sy };
         };
-        const out = layoutLabels(list, e, frame.status, project, this.opts.fonts);
-        draws.push(...out.draws);
-        views.push(...out.views);
+        keep(layoutLabels(list, e, frame.status, project, this.opts.fonts));
       }
     }
     this.labelShown = views;
@@ -714,7 +730,11 @@ export class ThreeScene {
    * the entities' labels. A point off the picture or behind the camera hides its name. Its
    * `LabelView` has entity `place:<i>` and kind `place`.
    */
-  private layoutPlaces(frame: Frame, size: ScreenSize, draws: UiDraw[], views: LabelView[]): void {
+  private layoutPlaces(
+    frame: Frame,
+    size: ScreenSize,
+    keep: (out: { draws: UiDraw[]; views: LabelView[] }) => void,
+  ): void {
     const map = this.shown?.map;
     const list = map === undefined || !this.mapVisible ? undefined : this.skin.places?.[map.id];
     if (list === undefined) return;
@@ -760,9 +780,7 @@ export class ThreeScene {
         anim: { state: 'idle', t: 0 },
         tags: [],
       };
-      const out = layoutLabels([label], entity, frame.status, project, this.opts.fonts);
-      draws.push(...out.draws);
-      views.push(...out.views);
+      keep(layoutLabels([label], entity, frame.status, project, this.opts.fonts));
     });
   }
 
@@ -1055,6 +1073,8 @@ export class ThreeScene {
         });
       }
     }
+    const skirt = ground ? this.skin.scene3d?.skirt : undefined;
+    if (skirt !== undefined) group.add(groundSkirt(map, skirt.color, skirt.margin ?? DEFAULT_SKIRT_MARGIN));
     this.buildDecor(map, group, models, waiting, cellPoint, fixtures);
     const scenery = this.buildScenery(map, group, waiting);
     return { map, group, models, scenery, waiting: [...waiting], fixtures };
@@ -1880,6 +1900,9 @@ function disposeMap(shown: ShownMap): void {
       if (child.userData['shared'] !== true || child.userData['ownMaterials'] === true)
         for (const m of Array.isArray(child.material) ? child.material : [child.material]) materials.add(m);
       child.dispose();
+    } else if (child instanceof Mesh && child.name === 'skirt') {
+      child.geometry.dispose();
+      materials.add(child.material as Material);
     }
   }
   for (const m of materials) m.dispose();
@@ -1889,3 +1912,25 @@ function disposeNode(node: EntityNode): void {
   if (node.model) node.model.dispose();
   else for (const m of node.materials) m.dispose();
 }
+
+/**
+ * A ground view's skirt (Engine 0.16 F9, the skin's `scene3d.skirt`): one flat plane of `color`
+ * a little under the floor, covering the map and `margin` px past each of its edges, so a view
+ * wider than the map (or one tilted toward its corners) shows ground there, lit and fogged as the
+ * map is, not the background. Named `skirt`; it takes shadows and casts none.
+ */
+export function groundSkirt(map: DeepReadonly<PresentMap>, color: string, margin: number): Mesh {
+  const rows = map.tiles.length;
+  const cols = Math.max(0, ...map.tiles.map((line) => line.length));
+  const w = cols * map.tileSize + 2 * margin;
+  const h = rows * map.tileSize + 2 * margin;
+  const mesh = new Mesh(new PlaneGeometry(w, h), new MeshLambertMaterial({ color }));
+  mesh.name = 'skirt';
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set((cols * map.tileSize) / 2, -SKIRT_DEPTH, (rows * map.tileSize) / 2);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+/** How far under the floor (px) the skirt lies, so it never fights a floor tile. */
+const SKIRT_DEPTH = 0.5;

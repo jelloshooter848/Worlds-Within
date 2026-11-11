@@ -2,6 +2,8 @@ import type { ContentBundle } from '../content/bundle';
 import { contentArt } from '../content/game-content';
 import { resolvePalette } from '../gfx/palette';
 import { rasterizeToBuffer, type Rasterized } from '../gfx/pixelart';
+import type { SpriteSheet } from '../gfx/spritesheet';
+import { isSilhouettePalette } from '../present/skin';
 import { AssetRegistry } from './registry';
 import { sheetLookup, type SheetLookup } from './sheet-lookup';
 
@@ -22,9 +24,44 @@ export function contentSheets(content: ContentBundle): SheetLookup {
   const images = content.images;
   // A skin's PNG sheet (Engine 0.16 T10), once `withContentImages` decoded it, by its image id.
   // A palette does not recolour a PNG: the image is drawn as it is.
-  return images === undefined || images.size === 0
-    ? sprites
-    : (id, palette) => images.get(id)?.sheet ?? sprites(id, palette);
+  const plain: SheetLookup =
+    images === undefined || images.size === 0
+      ? sprites
+      : (id, palette) => images.get(id)?.sheet ?? sprites(id, palette);
+  // A colour as the palette (Engine 0.16 F8) draws the sheet as a silhouette in it: a hit flash.
+  const silhouettes = new Map<string, SpriteSheet | null>();
+  return (id, palette) => {
+    if (palette === undefined || !isSilhouettePalette(palette)) return plain(id, palette);
+    const key = `${id}@${palette}`;
+    if (!silhouettes.has(key)) {
+      const base = plain(id, undefined);
+      silhouettes.set(key, base === null ? null : silhouetteSheet(base, palette));
+    }
+    return silhouettes.get(key)!;
+  };
+}
+
+/**
+ * A copy of `sheet` whose every opaque pixel is `color` (keeping its alpha), drawn once on a
+ * canvas: the frames' silhouettes, for a hit flash. Where there is no canvas (Node) or no image,
+ * the sheet itself.
+ */
+export function silhouetteSheet(sheet: SpriteSheet, color: string): SpriteSheet {
+  const image = sheet.image as (CanvasImageSource & { width?: unknown; height?: unknown }) | null;
+  if (image === null || typeof document === 'undefined') return sheet;
+  const width = Number(image.width);
+  const height = Number(image.height);
+  if (!(width > 0 && height > 0)) return sheet;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (ctx === null) return sheet;
+  ctx.drawImage(image, 0, 0);
+  ctx.globalCompositeOperation = 'source-in';
+  ctx.fillStyle = color;
+  ctx.fillRect(0, 0, width, height);
+  return { id: `${sheet.id}@${color}`, image: canvas, frames: sheet.frames };
 }
 
 /**

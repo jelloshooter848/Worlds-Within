@@ -43,7 +43,10 @@ camera hint; the kit's `CLAUDE.md` maps old frame names to presented kinds and a
 `TdPresentState` keeps the `MapTracker` and stable entity ids; from Engine 0.16 part C T3 the opt-in `idle` option presents a hero standing still for more than `IDLE_AFTER` ticks as `idle`), `rules` (`TOPDOWN_RULES`: the named rules a run can switch off
 with `disabledRules`, for `pnpm cli mutants`; a first few in Engine 0.3, full adoption in 0.5)
 `schema` (`roomSchema`, `roomKind`: the room file schema, with the map in a
-`.map.txt` text grid) and `challenge` (`roomChallenge(opts)`: a one-room challenge as the engine's
+`.map.txt` text grid and, from Engine 0.16 polish P4, an optional presentation-only decoration grid
+`decor` in a `.decor.txt` one: `.` for nothing, any `DECOR_CHARS` character for a prop the skin's
+`tiles` draw over the floor, presented as the map layer `decor` (both rooms' during a slide), never
+in the state; `unknown_char`, `ragged_row` and `size_mismatch` when it is wrong) and `challenge` (`roomChallenge(opts)`: a one-room challenge as the engine's
 `MiniGameDef`, for a host from another kit such as a platformer level's door; the game gives the
 room (its title from the room file's `title`, Engine 0.7 T9), the trigger's params give `goal` (`defeat-all` or `reach`), `ticks` and `hp` (shape: `challengeParamsSchema`, the def's `paramsSchema`, so `validate` checks them with the content, Engine 0.10); a round passes
 on its goal, fails on the hero's death or time-out and quits on select; `snapshot()` is

@@ -2,6 +2,7 @@ import type { SheetLookup } from '../assets/sheet-lookup';
 import {
   CameraFx,
   layoutParallax,
+  lightDither,
   lightStops,
   REST_STATE,
   SkinLighting,
@@ -33,6 +34,7 @@ import {
   resolveSkinKind,
   resolveTileFrame,
   skinBackground,
+  skinLabels,
   themedSkin,
   type DeepReadonly,
   type HudFrameSize,
@@ -50,7 +52,7 @@ import {
   skinSoundCue,
   type SoundCue,
 } from '../present';
-import { paintUi, SkinHud, type FontLookup } from '../ui';
+import { layoutLabels, paintUi, SkinHud, type FontLookup, type UiDraw } from '../ui';
 import { RecolorCache, type ImageRecolor, type RecolorSpec } from './recolor';
 import type { MapSurface, SurfaceFactory } from './surface';
 import { RendererUiPainter, type GlyphTint } from './ui-painter';
@@ -331,7 +333,10 @@ export class SkinnedPresenter implements Presenter {
     this.drawLightProps(view, frame.frame);
     for (const e of depthOrder(frame.entities)) this.drawEntity(e, view, frame.frame);
     this.drawParticles(view);
+    // The light map darkens the world; the world labels go over it, readable in the dark.
     this.drawLighting(frame, view, size);
+    this.drawLabels(frame, view, size);
+    // Fog of war (part D) covers the world and its labels, so nothing unseen is named.
     this.drawFog(frame, view, size);
     this.drawEffects(frame.frame, size);
     for (const f of fx.flashes) translucent(r, f.alpha, () => r.rect(0, 0, size.width, size.height, f.color));
@@ -517,7 +522,8 @@ export class SkinnedPresenter implements Presenter {
   /**
    * The skin's lighting over the picture (after the entities and particles, before effects and
    * the HUD): the darkness drawn on the light map with each light erased out of it as a radial
-   * gradient (`lightStops`: smooth or in `bands`), the map laid over the picture at the darkness
+   * gradient (`lightStops`: smooth or in `bands`; dithered by picture pixel with the skin's
+   * `dither`, `lightDither`), the map laid over the picture at the darkness
    * level, then each light's colour added (`add`), then the vignette.
    */
   private drawLighting(frame: Frame, view: View, size: ScreenSize): void {
@@ -534,6 +540,7 @@ export class SkinnedPresenter implements Presenter {
     if (layout === null) return;
     const r = this.r;
     if (layout.darkness !== null) this.drawDarkness(layout, size);
+    const dither = lightDither(layout);
     for (const l of layout.lights) {
       if (l.glow <= 0) continue;
       radialFilled(r, {
@@ -541,8 +548,9 @@ export class SkinnedPresenter implements Presenter {
         y: l.y,
         radius: l.radius,
         color: l.color,
-        stops: lightStops(l.glow, layout.bands),
+        stops: lightStops(l.glow, layout.bands, layout.dither),
         mode: 'add',
+        ...(dither && { dither }),
       });
     }
     const v = layout.vignette;
@@ -582,6 +590,7 @@ export class SkinnedPresenter implements Presenter {
     }
     const s = surface.renderer;
     s.clear(dark.color);
+    const dither = lightDither(layout);
     for (const l of layout.lights) {
       if (l.intensity <= 0) continue;
       radialFilled(s, {
@@ -589,8 +598,9 @@ export class SkinnedPresenter implements Presenter {
         y: l.y,
         radius: l.radius,
         color: '#000000',
-        stops: lightStops(l.intensity, layout.bands),
+        stops: lightStops(l.intensity, layout.bands, layout.dither),
         mode: 'erase',
+        ...(dither && { dither }),
       });
     }
     const sheet: SpriteSheet = {
@@ -774,7 +784,14 @@ export class SkinnedPresenter implements Presenter {
     const tw: TweenState = this.tweens.get(e.id)?.state(tick) ?? REST_STATE;
     const sf = resolveSkinFrame(this.skin, e);
     const entry = resolveSkinKind(this.skin, e);
-    const sheet = sf.sheet === null || sf.frame === null ? null : this.sheet(sf.sheet, sf.palette);
+    // A kind's `hitFlash` (Engine 0.16 F8) draws the frame as a silhouette in its colour.
+    const flash = entry?.hitFlash;
+    const flashing =
+      flash !== undefined &&
+      e.tags.includes(flash.tag) &&
+      (flash.blink === undefined || Math.floor(tick / flash.blink) % 2 === 0);
+    const palette = flashing ? flash.color : sf.palette;
+    const sheet = sf.sheet === null || sf.frame === null ? null : this.sheet(sf.sheet, palette);
     const rect = sf.frame === null ? undefined : sheet?.frames.get(sf.frame);
     // The drawn scale: the zoom, or for a `screenScale` look the zoom held in its range (D4).
     const scale = screenScaleAt(entry?.screenScale, zoom);
@@ -794,8 +811,9 @@ export class SkinnedPresenter implements Presenter {
     // Outline and team colour (D4): recoloured copies of the sheet, made once and kept.
     const team = skinTeamColor(entry, e.tags);
     const outline = skinOutlineColor(entry, e.tags);
+    // A hit flash's silhouette is not team-coloured over.
     const teamSpec: RecolorSpec | null =
-      team === null || entry?.team === undefined
+      team === null || entry?.team === undefined || flashing
         ? null
         : entry.team.mask !== undefined
           ? { kind: 'mask', mask: entry.team.mask, color: team }
@@ -827,13 +845,25 @@ export class SkinnedPresenter implements Presenter {
     const fx = e.fx;
     const sx = (fx?.squashX ?? 1) * tw.scaleX;
     const sy = (fx?.squashY ?? 1) * tw.scaleY;
-    const turn = (fx?.rotate ?? 0) + tw.rotate;
+    // Top-down art (`turnToFacing`, Engine 0.16 F8) is turned to the facing about its centre.
+    const turning = entry?.turnToFacing;
+    const facingTurn =
+      turning === undefined || turning === false
+        ? 0
+        : FACING_TURN[e.facing] - FACING_TURN[turning === true ? 'right' : turning];
+    const turn = (fx?.rotate ?? 0) + tw.rotate + facingTurn;
     const body = () => {
+      if (turning !== undefined && turning !== false) {
+        transformed(r, x + w / 2, y + h / 2, (turn * Math.PI) / 180, sx, sy, (l) => draw(l, -w / 2, -h / 2));
+        return;
+      }
       // Squash, stretch and turns pivot on the bottom centre, so feet stay on the ground.
       if (sx !== 1 || sy !== 1 || turn !== 0) {
         transformed(r, x + w / 2, y + h, (turn * Math.PI) / 180, sx, sy, (l) => draw(l, -w / 2, -h));
       } else draw(r, x, y);
     };
+    // A kind's `ring` (2D, Engine 0.16 F8: a tower's range while placing) lies under the sprite.
+    if (entry?.ring !== undefined) this.drawRing(entry.ring, e, view);
     // A kind's `blend` and `glow` (2D) wrap the whole drawing.
     const glow = entry?.glow;
     blended(r, entry?.blend ?? 'normal', () =>
@@ -841,6 +871,64 @@ export class SkinnedPresenter implements Presenter {
         translucent(r, Math.min(1, Math.max(0, (fx?.alpha ?? 1) * tw.alpha)), body),
       ),
     );
+  }
+
+  /**
+   * A flat disc of `radius` world px centred on the entity's box, drawn as one-pixel rows (crisp
+   * at any zoom) at the ring's `alpha`, with its `edge` (the rows' end pixels and the top and
+   * bottom rows) opaque.
+   */
+  private drawRing(
+    ring: NonNullable<DeepReadonly<SkinFile['kinds'][string]['ring']>>,
+    e: DeepReadonly<PresentEntity>,
+    view: View,
+  ): void {
+    const r = this.r;
+    const cx = Math.round((e.x + e.w / 2) * view.zoom) - view.x;
+    const cy = Math.round((e.y + e.h / 2) * view.zoom) - view.y;
+    const radius = Math.max(1, Math.round(ring.radius * view.zoom));
+    const rows = discRows(radius);
+    const alpha = ring.alpha ?? DEFAULT_RING_ALPHA;
+    translucent(r, alpha, () => {
+      for (const row of rows) r.rect(cx - row.half, cy + row.dy, row.half * 2, 1, ring.color);
+    });
+    if (ring.edge === undefined) return;
+    // The rim: on each row the pixels the next row out does not cover (at least one each end).
+    rows.forEach((row, i) => {
+      const outer =
+        row.dy === 0
+          ? Math.max(rows[i - 1]?.half ?? 0, rows[i + 1]?.half ?? 0)
+          : (rows[row.dy < 0 ? i - 1 : i + 1]?.half ?? 0);
+      const run = Math.min(row.half, Math.max(1, row.half - outer));
+      r.rect(cx - row.half, cy + row.dy, run, 1, ring.edge!);
+      r.rect(cx + row.half - run, cy + row.dy, run, 1, ring.edge!);
+    });
+  }
+
+  // ---- Labels ----
+
+  /**
+   * The skin's `labels` over the entities (Engine 0.16 F8: the 3D backend's world-anchored labels
+   * on a 2D skin, such as enemies' health bars): each label's anchor is the box's top centre,
+   * centre or bottom centre on the picture, laid out by the UI kit's `layoutLabels` and painted
+   * like the HUD; an anchor off the picture hides the label.
+   */
+  private drawLabels(frame: Frame, view: View, size: ScreenSize): void {
+    const labels = this.skin.labels;
+    if (labels === undefined) return;
+    const draws: UiDraw[] = [];
+    for (const e of frame.entities) {
+      const list = skinLabels(labels, e.kind);
+      if (list.length === 0) continue;
+      const project = (anchor: 'top' | 'center' | 'bottom') => {
+        const wy = anchor === 'top' ? e.y : anchor === 'center' ? e.y + e.h / 2 : e.y + e.h;
+        const x = Math.round((e.x + e.w / 2) * view.zoom) - view.x;
+        const y = Math.round(wy * view.zoom) - view.y;
+        return x < 0 || x >= size.width || y < 0 || y >= size.height ? null : { x, y };
+      };
+      draws.push(...layoutLabels(list, e, frame.status, project, this.opts.fonts).draws);
+    }
+    if (draws.length > 0) paintUi(draws, this.uiPainter);
   }
 
   // ---- HUD ----
@@ -876,6 +964,29 @@ export class SkinnedPresenter implements Presenter {
       }
     }
   }
+}
+
+/** A ring's fill opacity when the skin gives none. */
+export const DEFAULT_RING_ALPHA = 0.25;
+
+/** Degrees clockwise from facing right, for `turnToFacing` art (drawn facing right). */
+const FACING_TURN: Readonly<Record<PresentEntity['facing'], number>> = {
+  right: 0,
+  'down-right': 45,
+  down: 90,
+  'down-left': 135,
+  left: 180,
+  'up-left': 225,
+  up: 270,
+  'up-right': 315,
+};
+
+/** A disc of `radius` px as rows: each row's offset from the centre and half its width (whole px). */
+function discRows(radius: number): { dy: number; half: number }[] {
+  const rows: { dy: number; half: number }[] = [];
+  for (let dy = -radius; dy <= radius; dy++)
+    rows.push({ dy, half: Math.max(1, Math.round(Math.sqrt(radius * radius - dy * dy))) });
+  return rows;
 }
 
 /** Entities by `layer` (0 when absent), keeping list order on ties (a stable sort), as `PresentFrame` says. */

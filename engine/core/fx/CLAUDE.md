@@ -148,12 +148,15 @@ x, y }` (an animated frame drawn under the darkness before the entities: a wall 
   `missing_ref` at `lighting.maps.<id>.lights.<i>.emit` for an unknown one). `maps.<id>.ambient` beats the first `tags` key (file order) the map has, which
   beats `ambient`. `vignette` `{ color?, strength 0-1, inner? (0.45, where it starts as a share of
 the centre-to-corner distance) }`; `bands` (0-16, default 0 smooth) steps each falloff;
+  `dither` (0, 4 or 8; Engine 0.16 polish P, C1) dithers each light's falloff with a 4x4 or 8x8
+  Bayer matrix: drawn smooth and quantized by picture pixel to `bands` alpha steps, or
+  `LIGHT_DITHER_LEVELS` (64) with no `bands`, so it shows no rings;
   `particles` lists room-wide emitters `{ emit, tags?, maps?, prewarm? (120) }`.
 - `lighting.ts` (Engine 0.16 part C T4): `SkinLighting(skin, { seed? })`, one presenter's
   lighting, the part every 2D backend shares. `event(ev, entities, frame)` starts an event's
   flash (at its `x`/`y`, else its entity's centre); `layout({ frame, entities, map, view, size,
 reduceFlashing? })` gives the `LightingLayout` in picture px `{ darkness: { color, level } | null,
-lights: LightDraw[] { key, x, y, radius, color, intensity, glow }, vignette, bands }` (null for a
+lights: LightDraw[] { key, x, y, radius, color, intensity, glow }, vignette, bands, dither }` (null for a
   skin without `lighting`): placed lights (each map part's at its place), tile lights (found once
   per map version), kind lights by state, then event flashes fading linearly; a light wholly off
   the picture is left out; `reduceFlashing` halves flashes and flicker. `props(map, frame)` gives
@@ -164,7 +167,21 @@ lights: LightDraw[] { key, x, y, radius, color, intensity, glow }, vignette, ban
 'light:<key>')` every `rate` frames, smoothstepped between, applied by `flickered` (radius and
   glow times `1 + amount * n`, intensity half that). `lightStops(intensity, bands)` is the falloff
   a backend draws: smoothstep from the intensity to 0 in `LIGHT_SMOOTH_STOPS` (8) stops, or
-  `bands` flat steps with hard edges then 0 past the radius.
+  `bands` flat steps with hard edges then 0 past the radius; `lightStops(intensity, bands,
+dither)` with a dither is always the smooth ease, in `LIGHT_DITHER_STOPS` (32) stops, and
+  `lightDither(layout)` is the `RadialDither` `{ size, levels }` the presenter puts on each
+  light's fill (`RadialFill.dither` in `../gfx/renderer.ts`), or undefined.
+- `dither.ts` (Engine 0.16 polish P, C1): the threshold maths of ordered dithering, pure and with
+  no RNG. `bayerRank(x, y, size)` (the 4x4 or 8x8 Bayer matrix, tiled over the picture),
+  `bayerThreshold` (`(rank + 0.5) / size²`), `ditherValue(value, x, y, { size, levels })` (the
+  value clamped and quantized to a multiple of `1 / levels`: the step above where its share past
+  the step below beats the pixel's threshold; 0 and 1 exact, a tile averages to the value),
+  `stopsAlpha(stops, d)` (a canvas radial gradient's linear stops, the PixiJS gradient texture
+  uses it too) and `ditheredRadial(fill, dither, bounds?)`, a radial fill's `DitheredStamp`
+  `{ x, y, w, h, alpha }`: the whole picture pixels of its box (cut to `bounds`), each alpha byte
+  the stops' value at the pixel centre's distance, dithered at the pixel's own picture position
+  (so two stamps agree where they overlap and the same frame gives the same bytes). Both 2D
+  backends draw these bytes, so they draw the same pixels.
 - `skin-particles.ts` (Engine 0.16 part C T4): `update(frame, entities, map?)` with the full map
   shown also runs the skin's `lighting.particles` on their own `ambient` system: each entry whose
   `tags` (one of the map's) and `maps` (its id or a part's) fit spawns its emitters over the whole
@@ -209,7 +226,7 @@ lights: LightDraw[] { key, x, y, radius, color, intensity, glow }, vignette, ban
 - Pure: `engine/core/fx/**` is on `PURE_CORE` (`config/layers.js`): no `Math.random` (use
   `fxRng`), no `Date.now`/`performance.now` (time is presentation frames), no DOM. Import only
   `zod` and pure core files (`../rng`; `../present/skin` and `../present/types` for
-  `skin-particles.ts`, `camera-fx.ts`, `parallax.ts` and `lighting.ts`; `../gfx/screen` types).
+  `skin-particles.ts`, `camera-fx.ts`, `parallax.ts` and `lighting.ts`; `../gfx/screen` types). `../gfx/renderer.ts` imports the `RadialDither` type from `dither.ts`.
 - Presenters only: kits and `engine/sim` may not import it (`FORBIDDEN_CORE` in
   `config/layers.js`; checked by `tests/architecture/eslint-deps.test.ts` and
   `dependency-rule.test.ts`). Nothing here may reach a world, a frame or a hash. `present/skin.ts`
@@ -234,6 +251,9 @@ shake scale; zoom punch values with an ease, hold and the way back, punches mult
 fading and reduced flashing; clearing on an earlier frame; `HitPause` frame counting; the
 schemas), `parallax.test.ts` (factors and origins, gradient bands, layers moving at their own
 rates between two camera positions, repeats, a missing frame, the layer schema),
+`dither.test.ts` (polish P: the Bayer ranks and tiling, quantized values keeping 0, 1 and exact
+steps and averaging to the value over a tile, `stopsAlpha`, a stamp's box, steps and picture-pixel
+phase, the same fill twice byte-identical, the dithered `lightStops` and `lightDither`),
 `lighting.test.ts` (Engine 0.16 part C T4: smooth and banded falloffs, flicker determinism by
 seed and light and its scaling, darkness by map, tag and skin and blended over a slide's parts,
 the layout of kind lights by state, tile lights and placed lights in picture px, culling, event

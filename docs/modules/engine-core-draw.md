@@ -8,13 +8,15 @@ Folder: `engine/core/draw` (part of `engine/core`). Detailed rules:
 The skinned presenter walk the 2D backends share (Engine 0.16 T13b, item 323): one `Presenter`
 that draws any `PresentFrame` through a skin onto any core `Renderer` (events, frame events,
 tweens, particles, camera follow and zoom, camera effects, parallax, per-map looks, the map,
-tiles, entities, from Engine 0.16 part D (D3) a frame's `fog` (after the entities, particles and
-lighting, under effects and the HUD; none without it) and the HUD through the UI kit, its
-minimap given the frame's fog and the camera's view box; from D4 a kind's `outline` (its sheet's
-silhouette drawn one picture pixel each way under it), `team` colour (a recoloured copy of the
-sheet) and `screenScale` (the drawn scale held in a range about the box's anchor), the recoloured
-sheets made once per sheet and colour through the `recolor` option, an `ImageRecolor`; `recolor.ts`
-holds the pure pixel maths, `recolorPixels`, and `RecolorCache`). Canvas2D's `SkinnedCanvasPresenter` and the
+tiles, entities, from Engine 0.16 F8 top-down looks (frames turned to the facing, range rings,
+silhouette hit flashes and world-anchored labels such as health bars), from Engine 0.16 part D
+(D3) a frame's `fog` (after the entities, particles, lighting and labels, under effects and the
+HUD; none without it) and the HUD through the UI kit, its minimap given the frame's fog and the
+camera's view box; from D4 a kind's `outline` (its sheet's silhouette drawn one picture pixel each
+way under it), `team` colour (a recoloured copy of the sheet) and `screenScale` (the drawn scale
+held in a range about the box's anchor), the recoloured sheets made once per sheet and colour
+through the `recolor` option, an `ImageRecolor`; `recolor.ts` holds the pure pixel maths,
+`recolorPixels`, and `RecolorCache`). Canvas2D's `SkinnedCanvasPresenter` and the
 PixiJS presenter are thin wrappers that supply a renderer and surfaces, so both draw every
 feature through exactly the same code. It lives in its own core folder, not in `present/`
 (which kits import), so the dependency table can keep kits and the sim off it whole.
