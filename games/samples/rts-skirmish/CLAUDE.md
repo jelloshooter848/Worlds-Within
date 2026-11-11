@@ -96,7 +96,9 @@ rows, stats, plan steps or pixel rows in `.ts` files (`tests/architecture/no-con
   `progress-bar`, `ghost:barracks`, `selection-box`) and the enemy's `unit:<type>:enemy` /
   `building:<kind>:enemy` in the blue palette; unit states `idle`, `walk`, `attack`, `build`,
   `gather`; tiles `0`-`3`; HUD gold, own units and enemy units (icon and number) and (Engine 0.15
-  T14) the end banner, `won` / `lost` as `icon` items at 80,96 (the picture's centre). No look
+  T14) the end banner, `won` / `lost` as `icon` items at 80,96 (the picture's centre). From Engine
+  0.16 part D (D4) `health-bar` and `progress-bar` are zoom-stable (`screenScale { min: 1, max: 1
+}`): the same pixels at zoom 1, the bars' own size when the camera zooms out to 0.5 or in to 2. No look
   has a `fallbackColor` of its own (only the sheet's `#ff00ff`, so a missing frame shows).
   `events` (Engine 0.15 T14), keyed by the event's `side` (`type:side=own`): `unit-down` (`fall`
   for own, `slain` for the enemy, with particles in the side's colour), `unit-hit` (`clash`, a

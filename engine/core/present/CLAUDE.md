@@ -51,6 +51,19 @@ from the frame and a skin. Types and small pure helpers only: no drawing, no kit
   The 2D walk (`engine/core/draw`) draws them; nothing here draws. A `minimap` HUD item's `fog`
   (boolean), `teams` (tag -> colour) and `view` (a colour) are schema fields of `skin.ts`
   (`bad_field` on another item); the UI kit draws them. Tested in `fog.test.ts`.
+- `readability.ts` (Engine 0.16 part D, D4: readable at every zoom): three 2D kind fields, all
+  default off, in `SPRITE_FIELDS` (`wrong_backend_field` on a 3D skin), each `.describe`d:
+  `outline` (`outlineSchema`: a colour or `"team"`, `OUTLINE_TEAM`; also on a `byTag` look,
+  `TAG_SPRITE_FIELDS`), `team` (`teamSchema`: `{ prefix? (default `DEFAULT_TEAM_PREFIX`,
+`faction:`; `""`reads whole tags such as`own`), colors: { <name>: colour } (at least one),
+mask? | hue?: { min, max } (degrees, wrapping when min > max) }`; both `mask` and `hue` is
+  `bad_team`) and `screenScale` (`screenScaleSchema`: `{ min?, max?, anchor? }`, `anchor` one of
+  `SCREEN_SCALE_ANCHORS` `center` (default), `top`, `bottom`; `min` above `max` is `bad_range`).
+  `skinSchema` adds `checkTeamOutlines`: `outline: "team"` on a kind (or look) whose kind has no
+  `team` is `missing_field`. Pure readings: `skinTeamColor(entry, tags)` (the first of the
+  entity's tags `<prefix><name>` with a colour, else null), `skinOutlineColor(entry, tags)`,
+  `screenScaleAt(spec, zoom)` (the zoom held in `[min, max]`) and `screenScalePivot(anchor, box)`.
+  The 2D walk (`engine/core/draw`) draws them; tested in `readability.test.ts`.
 - `freeze.ts`: `freezeFrame(value)` deep-freezes a frame in place and returns it as
   `DeepReadonly`, so a backend that writes to it throws. Use it in tests and dev; it is not needed
   per frame in a release build.

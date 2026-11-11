@@ -52,7 +52,8 @@ shell's fallback), `?backend=canvas2d` and the other 2D pages' default.
   added and the vignette, all before effects and the HUD; `Renderer.gradient`, implemented by
   `CanvasRenderer`); from Engine 0.16 part D (D3) a frame's `fog`, the skin's `fog` look as
   translucent boxes over the map, entities and lighting and under effects and the HUD, and a
-  minimap's fog, team dots and camera view; from Engine 0.16 T5 `focus()`, the camera's target on the
+  minimap's fog, team dots and camera view; from D4 a kind's `outline`, `team` colour (sheets
+  recoloured once through `canvasRecolor`, the default `recolor`) and `screenScale`; from Engine 0.16 T5 `focus()`, the camera's target on the
   picture, where an iris transition closes), frames the camera through its own `CameraFollower` from
   `@engine/core/present` (the shared framing maths: hint or skin follow with a deadzone and
   integer lerp, clamped to the map or the hint's `bounds`, small maps centred; the follower
@@ -97,6 +98,6 @@ checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCa
 order after the entities and before the HUD, glows and the vignette, states, placed sprites, event
 flashes fading and with reduced flashing, the surface made once and on a resize, the flat box
 without one and the same calls per seed.
-`fog.test.ts` (Engine 0.16 part D, D3) draws a fogged frame onto a small software 2D context and reads its pixels (hidden, half dark, clear), checks a frame without fog draws the same calls and the fog placed at a camera and zoom; `tests/browser/fog-parity.test.ts` compares it with PixiJS in Chromium.
+`fog.test.ts` (Engine 0.16 part D, D3) draws a fogged frame onto a small software 2D context and reads its pixels (hidden, half dark, clear), checks a frame without fog draws the same calls and the fog placed at a camera and zoom; `tests/browser/fog-parity.test.ts` compares it with PixiJS in Chromium. `readability.test.ts` (Engine 0.16 part D, D4) draws outlined, team-coloured sprites onto a software context with `drawImage` and reads the pixels (mask, tint, a team outline, a box, each sheet recoloured once, nothing without a recolour) and checks zoom-stable bars keep 16x2 at zoom 0.5, 1 and 2; `tests/browser/readability-parity.test.ts` compares both backends.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for each kind on a recording
 context; `tests/browser/fx-lab.test.ts` shoots an iris, a wipe and a fade mid-transition.

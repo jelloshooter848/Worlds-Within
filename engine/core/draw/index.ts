@@ -12,3 +12,15 @@ export {
   type SkinSetPresenter,
   type SkinSetPresenterOptions,
 } from './skin-set';
+export {
+  HUE_MIN_SATURATION,
+  hexRgb,
+  hslToRgb,
+  hueInRange,
+  RecolorCache,
+  recolorKey,
+  recolorPixels,
+  rgbToHsl,
+  type ImageRecolor,
+  type RecolorSpec,
+} from './recolor';

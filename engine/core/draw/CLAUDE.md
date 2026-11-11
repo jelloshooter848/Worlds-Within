@@ -39,10 +39,27 @@ so two backends drawing the same frame get the same calls.
   the UI kit's `SkinHud` painted by `RendererUiPainter` with
   `opts.glyphSurface`). `SkinnedPresenterOptions` holds every option (`size`, `onSound`,
   `background`, `font`, `fonts`, `glyphSurface`, `tintGlyphs`, `clamp`, `reduceFlashing`, `shakeScale`,
-  `subPixelShake`, `onHitPause`, `seed`, `maxParticles`, `mapSurface`, `lightSurface`); `resize`,
+  `subPixelShake`, `onHitPause`, `seed`, `maxParticles`, `mapSurface`, `lightSurface`, `recolor`); `resize`,
   `effectSettings`, `showHud`, `focus()` and `particleCount`. The defaults here are no surfaces; a backend's
   wrapper passes its own (Canvas2D: offscreen canvases). The full behaviour is described in
   `engine/backends/canvas2d/CLAUDE.md` ("SkinnedCanvasPresenter"), which is this class on a canvas.
+- Readable at every zoom (Engine 0.16 part D, D4), in `drawEntity`: a kind's (or its tag look's)
+  `outline` draws the sheet's silhouette (every pixel with alpha, in the outline colour) one
+  picture pixel left, right, up and down under the sprite, or a box one pixel larger under a box;
+  `team` draws the sprite from a recoloured copy of its sheet (`mask`, `hue` or a tint, by the
+  entity's team tag) and a box in the team colour; `screenScale` draws at `screenScaleAt(spec,
+zoom)` instead of the zoom, the box's `screenScalePivot` kept where the zoom puts it and the
+  sprite laid out round it at its own scale (at a scale equal to the zoom the calls are exactly
+  the plain ones). Recoloured sheets come from `RecolorCache` (`recolor.ts`), made once per sheet
+  object and spec through `opts.recolor` (`ImageRecolor`: the backend copies the image and hands
+  its RGBA pixels to `recolorPixels`); without `recolor`, or where it gives null (no canvas, a
+  headless sheet), sprites draw without outline or team colour. A skin without the fields draws
+  exactly the calls it did.
+- `recolor.ts` (D4, pure): `RecolorSpec` (`silhouette`, `mask`, `hue`, `tint`), `recolorPixels`
+  (RGBA in place; clear pixels untouched; `hue` leaves greys below `HUE_MIN_SATURATION` and keeps
+  lightness), `recolorKey`, `hexRgb`, `rgbToHsl`, `hslToRgb`, `hueInRange` (wraps through 360),
+  `ImageRecolor` and `RecolorCache`. The browser side is `canvasRecolor`
+  (`engine/core/assets/canvas-recolor.ts`), which both 2D backends pass.
 - `ui-painter.ts`: `RendererUiPainter(renderer, sheets, fonts, { glyphSurface?, tintGlyphs? })`,
   the `UiPainter` on a `Renderer` (fills, whole and part frames scaled with `transformed`, glyphs
   from a strip of the font drawn once per colour on a glyph surface, else their ink runs as
@@ -73,4 +90,8 @@ routing and `effectSettings`. Everything else is tested through Canvas2D's thin 
 (`engine/backends/canvas2d/presenter.test.ts`, `ui-painter.test.ts`, `rts-camera.test.ts`,
 `display.test.ts`, and the fog's pixels in `fog.test.ts`) and the presentation invariance tests
 in `tests/runs/`; the fog and the minimap on both 2D backends in
-`tests/browser/fog-parity.test.ts` (the parity harness's strict bound).
+`tests/browser/fog-parity.test.ts` (the parity harness's strict bound). D4: `recolor.test.ts` (each
+spec's pixels, the colour helpers, the cache once per spec and null without a recolour), Canvas2D's
+`readability.test.ts` (outline, mask, tint and box pixels; zoom-stable bars 16x2 at zoom 0.5, 1
+and 2) and `tests/browser/readability-parity.test.ts` (both backends; strict bound at zoom 1 and
+2, where half-size sprites sample differently at 0.5, and the bar's size at all three).

@@ -25,6 +25,7 @@ import {
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
 import { fogLookSchema } from './fog';
+import { OUTLINE_TEAM, outlineSchema, screenScaleSchema, teamSchema } from './readability';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
 import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema as modelTileVarySchema } from './decor';
 import { checkVaryWeights, tileJoinSchema, tileVaryShape, type TileVary } from './tile-join';
@@ -236,6 +237,9 @@ const SPRITE_FIELDS = [
   'frame',
   'blend',
   'glow',
+  'outline',
+  'team',
+  'screenScale',
 ] as const;
 const MESH_FIELDS = [
   'mesh',
@@ -437,6 +441,7 @@ const tagEntry = z
     fallbackColor: color
       .exactOptional()
       .describe("2D: the box colour when a frame is missing (default the kind's)"),
+    outline: outlineSchema.exactOptional(),
     mesh: meshRef.exactOptional(),
     color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
     model: modelPath
@@ -490,7 +495,7 @@ const tagEntry = z
 const TAG_MATCH_FIELDS = ['tag', 'prefix', 'min', 'max'] as const;
 
 /** The fields a tag entry may give, of each shape. */
-const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
+const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor', 'outline'] as const;
 const TAG_MESH_FIELDS = [
   'mesh',
   'color',
@@ -593,6 +598,9 @@ const kindEntry = z.strictObject({
     })
     .exactOptional()
     .describe('2D: a soft glow round the sprite'),
+  outline: outlineSchema.exactOptional(),
+  team: teamSchema.exactOptional(),
+  screenScale: screenScaleSchema.exactOptional(),
   byTag: z
     .array(tagEntry)
     .exactOptional()
@@ -1478,7 +1486,36 @@ export const skinSchema = z
       checkShapes(skin.backend, skin.sheets, theme.tiles ?? {}, at, ['sheet', 'frame', 'fallbackColor'], ctx);
     }
     checkJoinTiles(skin, ctx);
+    checkTeamOutlines(skin, ctx);
   });
+
+/**
+ * An `outline: "team"` (on a kind or one of its looks) needs the kind's `team`, which gives the
+ * colour (Engine 0.16 part D, D4): `missing_field` at the outline otherwise. 2D skins only (on a
+ * 3D skin both are `wrong_backend_field` already).
+ */
+function checkTeamOutlines(
+  skin: { backend: string; kinds: Record<string, SkinKindEntry> },
+  ctx: z.RefinementCtx,
+): void {
+  if (MESH_BACKENDS.includes(skin.backend)) return;
+  for (const [kind, entry] of Object.entries(skin.kinds)) {
+    if (entry.team !== undefined) continue;
+    const at: (string | number)[][] = [];
+    if (entry.outline === OUTLINE_TEAM) at.push(['kinds', kind, 'outline']);
+    (entry.byTag ?? []).forEach((look, i) => {
+      if (look.outline === OUTLINE_TEAM) at.push(['kinds', kind, 'byTag', i, 'outline']);
+    });
+    for (const path of at) {
+      ctx.addIssue({
+        code: 'custom',
+        path,
+        message: '"outline": "team" needs the kind\'s "team" (its colours)',
+        params: { code: 'missing_field' },
+      });
+    }
+  }
+}
 
 /**
  * In a 3D skin a tile's `join` picks another `tiles` entry by key (Engine 0.16 part B, T10: a

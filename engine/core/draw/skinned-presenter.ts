@@ -43,10 +43,15 @@ import {
   type Presenter,
   type SkinFile,
   zoomAbout,
+  screenScaleAt,
+  screenScalePivot,
+  skinOutlineColor,
+  skinTeamColor,
   skinSoundCue,
   type SoundCue,
 } from '../present';
 import { paintUi, SkinHud, type FontLookup } from '../ui';
+import { RecolorCache, type ImageRecolor, type RecolorSpec } from './recolor';
 import type { MapSurface, SurfaceFactory } from './surface';
 import { RendererUiPainter, type GlyphTint } from './ui-painter';
 
@@ -121,7 +126,22 @@ export interface SkinnedPresenterOptions {
    * where the browser has one (null in Node).
    */
   lightSurface?: SurfaceFactory;
+  /**
+   * Makes a recoloured copy of a sheet image, for a kind's `outline` (its silhouette) and `team`
+   * colour (Engine 0.16 part D, D4); each sheet and colour is recoloured once and kept. Default
+   * none: sprites are drawn without outline or team colour (boxes still get both). Both 2D
+   * backends pass `canvasRecolor` (`@engine/core/assets/canvas-recolor`).
+   */
+  recolor?: ImageRecolor;
 }
+
+/** Where an outline's silhouette is drawn round a sprite: one picture pixel each way. */
+const OUTLINE_STEPS: readonly (readonly [number, number])[] = [
+  [-1, 0],
+  [1, 0],
+  [0, -1],
+  [0, 1],
+];
 
 /** Ticks an effect lasts when the skin gives none. */
 const EFFECT_TICKS: Record<Effect['kind'], number> = { flash: 2, particles: 12, shake: 8, tint: 6 };
@@ -213,6 +233,8 @@ export class SkinnedPresenter implements Presenter {
   private viewBox: PresentBox | null = null;
   /** The light map's surface and its size (made on the first lit frame, again on a resize). */
   private lightMap: { surface: MapSurface | null; w: number; h: number } | null = null;
+  /** Sheets recoloured for outlines and team colours, once per sheet and colour (D4). */
+  private readonly recolored: RecolorCache;
 
   constructor(
     target: Renderer,
@@ -238,6 +260,7 @@ export class SkinnedPresenter implements Presenter {
     };
     this.lighting = new SkinLighting(skin, opts.seed !== undefined ? { seed: opts.seed } : {});
     this.fogLook = resolveFogLook(skin.fog);
+    this.recolored = new RecolorCache(opts.recolor);
     this.hud = new SkinHud(skin, {
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.font !== undefined && { font: opts.font }),
@@ -750,21 +773,52 @@ export class SkinnedPresenter implements Presenter {
     const { zoom } = view;
     const tw: TweenState = this.tweens.get(e.id)?.state(tick) ?? REST_STATE;
     const sf = resolveSkinFrame(this.skin, e);
+    const entry = resolveSkinKind(this.skin, e);
     const sheet = sf.sheet === null || sf.frame === null ? null : this.sheet(sf.sheet, sf.palette);
     const rect = sf.frame === null ? undefined : sheet?.frames.get(sf.frame);
-    // The drawn size in picture pixels: the sprite's or box's size times the zoom.
-    const scaled = (n: number) => (zoom === 1 ? n : Math.max(1, Math.round(n * zoom)));
+    // The drawn scale: the zoom, or for a `screenScale` look the zoom held in its range (D4).
+    const scale = screenScaleAt(entry?.screenScale, zoom);
+    // The drawn size in picture pixels: the sprite's or box's size times the scale.
+    const scaled = (n: number) => (scale === 1 ? n : Math.max(1, Math.round(n * scale)));
     const w = scaled(rect?.w ?? sf.size?.w ?? e.w);
     const h = scaled(rect?.h ?? sf.size?.h ?? e.h);
     // A PNG sheet's frame anchor (Engine 0.16 T10) places it on the entity box; text sprites have none.
     const anchor = rect?.anchor === undefined ? null : anchorOffset(rect.anchor, rect, e, sf.flipX);
-    const x = Math.round((e.x + tw.x + (sf.offset?.x ?? 0) + (anchor?.x ?? 0)) * zoom) - view.x;
-    const y = Math.round((e.y + tw.y + (sf.offset?.y ?? 0) + (anchor?.y ?? 0)) * zoom) - view.y;
+    const wx = e.x + tw.x + (sf.offset?.x ?? 0) + (anchor?.x ?? 0);
+    const wy = e.y + tw.y + (sf.offset?.y ?? 0) + (anchor?.y ?? 0);
+    // A world point at the zoom; a `screenScale` look keeps its box's pivot there and is laid out
+    // round it at its own scale (at scale === zoom both are the plain `round(w * zoom)`).
+    const pivot = scale === zoom ? null : screenScalePivot(entry?.screenScale?.anchor, e);
+    const x = (pivot ? Math.round(pivot.x * zoom + (wx - pivot.x) * scale) : Math.round(wx * zoom)) - view.x;
+    const y = (pivot ? Math.round(pivot.y * zoom + (wy - pivot.y) * scale) : Math.round(wy * zoom)) - view.y;
+    // Outline and team colour (D4): recoloured copies of the sheet, made once and kept.
+    const team = skinTeamColor(entry, e.tags);
+    const outline = skinOutlineColor(entry, e.tags);
+    const teamSpec: RecolorSpec | null =
+      team === null || entry?.team === undefined
+        ? null
+        : entry.team.mask !== undefined
+          ? { kind: 'mask', mask: entry.team.mask, color: team }
+          : entry.team.hue !== undefined
+            ? { kind: 'hue', min: entry.team.hue.min, max: entry.team.hue.max, color: team }
+            : { kind: 'tint', color: team };
+    const bodySheet = rect && sheet && teamSpec ? (this.recolored.get(sheet, teamSpec) ?? sheet) : sheet;
+    const edge =
+      rect && sheet && outline !== null
+        ? this.recolored.get(sheet, { kind: 'silhouette', color: outline })
+        : null;
+    const sprite = (to: Renderer, from: SpriteSheet, dx: number, dy: number) => {
+      if (scale === 1) to.sprite(from, sf.frame!, dx, dy, sf.flipX);
+      else to.sprite(from, sf.frame!, dx, dy, sf.flipX, false, 0, scale);
+    };
     const draw = (to: Renderer, dx: number, dy: number) => {
-      if (rect && sheet) {
-        if (zoom === 1) to.sprite(sheet, sf.frame!, dx, dy, sf.flipX);
-        else to.sprite(sheet, sf.frame!, dx, dy, sf.flipX, false, 0, zoom);
-      } else to.rect(dx, dy, w, h, sf.fallbackColor);
+      if (rect && bodySheet) {
+        if (edge) for (const [ox, oy] of OUTLINE_STEPS) sprite(to, edge, dx + ox, dy + oy);
+        sprite(to, bodySheet, dx, dy);
+      } else {
+        if (outline !== null) to.rect(dx - 1, dy - 1, w + 2, h + 2, outline);
+        to.rect(dx, dy, w, h, team ?? sf.fallbackColor);
+      }
       // A colour tween's overlay over the drawn box.
       if (tw.color !== null && tw.colorAmount > 0)
         translucent(to, tw.colorAmount, () => to.rect(dx, dy, w, h, tw.color!));
@@ -781,7 +835,6 @@ export class SkinnedPresenter implements Presenter {
       } else draw(r, x, y);
     };
     // A kind's `blend` and `glow` (2D) wrap the whole drawing.
-    const entry = resolveSkinKind(this.skin, e);
     const glow = entry?.glow;
     blended(r, entry?.blend ?? 'normal', () =>
       glowing(r, glow?.color ?? '#000', glow?.radius ?? 0, () =>

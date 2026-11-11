@@ -1,3 +1,4 @@
+import { canvasRecolor } from '@engine/core/assets/canvas-recolor';
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import { SkinnedPresenter, type SkinnedPresenterOptions } from '@engine/core/draw';
 import type { Renderer } from '@engine/core/gfx/renderer';
@@ -19,7 +20,8 @@ function isRenderer(target: Renderer | Ctx): target is Renderer {
  * `Renderer` given), with offscreen canvases as its default `mapSurface` (the cached map) and
  * `glyphSurface` (UI font strips) and `lightSurface` (the skin's lighting's light map, Engine 0.16
  * part C T4); none in Node, where the map's tiles and glyphs' ink runs are
- * drawn every frame. Every option and method is the core presenter's.
+ * drawn every frame. Its default `recolor` is `canvasRecolor` (Engine 0.16 part D, D4: outline
+ * silhouettes and team colours, null in Node). Every option and method is the core presenter's.
  */
 export class SkinnedCanvasPresenter extends SkinnedPresenter {
   constructor(
@@ -33,6 +35,7 @@ export class SkinnedCanvasPresenter extends SkinnedPresenter {
       mapSurface: opts.mapSurface ?? canvasSurface,
       glyphSurface: opts.glyphSurface ?? canvasSurface,
       lightSurface: opts.lightSurface ?? canvasSurface,
+      recolor: opts.recolor ?? canvasRecolor,
     });
   }
 }

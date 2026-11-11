@@ -10,7 +10,11 @@ that draws any `PresentFrame` through a skin onto any core `Renderer` (events, f
 tweens, particles, camera follow and zoom, camera effects, parallax, per-map looks, the map,
 tiles, entities, from Engine 0.16 part D (D3) a frame's `fog` (after the entities, particles and
 lighting, under effects and the HUD; none without it) and the HUD through the UI kit, its
-minimap given the frame's fog and the camera's view box). Canvas2D's `SkinnedCanvasPresenter` and the
+minimap given the frame's fog and the camera's view box; from D4 a kind's `outline` (its sheet's
+silhouette drawn one picture pixel each way under it), `team` colour (a recoloured copy of the
+sheet) and `screenScale` (the drawn scale held in a range about the box's anchor), the recoloured
+sheets made once per sheet and colour through the `recolor` option, an `ImageRecolor`; `recolor.ts`
+holds the pure pixel maths, `recolorPixels`, and `RecolorCache`). Canvas2D's `SkinnedCanvasPresenter` and the
 PixiJS presenter are thin wrappers that supply a renderer and surfaces, so both draw every
 feature through exactly the same code. It lives in its own core folder, not in `present/`
 (which kits import), so the dependency table can keep kits and the sim off it whole.
@@ -41,4 +45,4 @@ Import from `@engine/core/draw` (`index.ts`).
 for the whole walk, Canvas2D's `presenter.test.ts`, `ui-painter.test.ts`, `rts-camera.test.ts`
 and `display.test.ts`, Canvas2D's `fog.test.ts` (the fog's pixels), plus `tests/runs/presentation-invariance.test.ts` and
 `tests/runs/stepped-shell-invariance.test.ts`; the fog and minimap on Canvas2D and PixiJS
-side by side in `tests/browser/fog-parity.test.ts` (skipped without Chromium).
+side by side in `tests/browser/fog-parity.test.ts` (skipped without Chromium); outlines, team colours and zoom-stable bars in `engine/core/draw/recolor.test.ts` (the pixel maths and the cache), Canvas2D's `readability.test.ts` (pixels; a bar's size at zoom 0.5, 1 and 2) and `tests/browser/readability-parity.test.ts` (both backends).

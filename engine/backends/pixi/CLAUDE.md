@@ -176,6 +176,14 @@ opts)` builds the display (a test passes a recording `DisplayGpu`):
   most 0.1%), with fog and without; the fog is the core walk's boxes, so nothing in this folder
   changed for it.
 
+- `tests/browser/readability-parity.test.ts` (Engine 0.16 part D, D4) draws team-coloured,
+  outlined units (mask, hue and tint from one canvas-drawn sprite), an outlined box and a
+  zoom-stable bar at zoom 0.5, 1 and 2 through Canvas2D and `pixiDisplay`: the strict bound at
+  zoom 1 and 2 (at 0.5 half-size sprites sample texels differently on the two backends, as any
+  sprite does there) and the bar 16x2 on both at every zoom. `PixiPresenter` passes
+  `canvasRecolor` (`@engine/core/assets/canvas-recolor`) as its default `recolor`, so a recoloured
+  sheet is a canvas the renderer wraps like any sheet image; nothing else here changed.
+
 ## Performance: the 2D feature benchmark (T13b-6)
 
 `pnpm bench:features` (`tests/bench/feature-render/`) draws the RTS and tower-defense feature

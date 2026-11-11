@@ -121,7 +121,30 @@ event)` gives the entry, the first matching field key in file order, else the ba
   (the translucent world boxes the 2D walk draws, a row's runs merged, a soft edge as nine boxes
   that never overlap) are in `fog.ts`. A `minimap` HUD item takes `fog: true`, `teams` (tag ->
   dot colour) and `view` (the camera view's outline colour); on another item they are
-  `bad_field`. Field reference: `docs/reference/schemas.md`, section `skin`.
+  `bad_field`. From Engine 0.16 part D (D4, readable at every zoom; `readability.ts`) a 2D kind
+  may give `outline` (a colour or `"team"`: a one-pixel outline round the sprite's alpha, or a box
+  one pixel larger; also on a `byTag` look), `team` (`{ prefix? (default `faction:`, `""` for whole
+tags), colors: { <name>: colour }, mask? | hue?: { min, max } }`: the entity's `<prefix><name>`
+  tag picks a colour that replaces the `mask` colour, or the hue range keeping lightness, or tints
+  the whole sprite; a box is filled with it) and `screenScale` (`{ min?, max?, anchor?: center |
+top | bottom }`: drawn at the zoom held in that range, `{ min: 1, max: 1 }` fully zoom-stable),
+  all default off and `wrong_backend_field` on a 3D skin; `bad_team` (both `mask` and `hue`),
+  `bad_range` (`min` above `max`) and `missing_field` (`outline: "team"` on a kind without
+  `team`). Readings: `skinTeamColor`, `skinOutlineColor`, `screenScaleAt`, `screenScalePivot`.
+  Example:
+
+  ```json
+  "unit:soldier": {
+    "frames": { "idle": "soldier" },
+    "outline": "team",
+    "team": { "prefix": "", "colors": { "own": "#3c7cfc", "enemy": "#f83800" }, "mask": "#ff00ff" }
+  },
+  "health-bar": { "frames": { "hp-4": "hp-4" }, "screenScale": { "min": 1, "max": 1 } }
+  ```
+
+  The RTS skirmish's skin makes its health and progress bars zoom-stable. Field reference:
+  `docs/reference/schemas.md`, section `skin`.
+
 - 3D skins (`backend: "three"`): every kind and tile is a text-defined low-poly mesh, either a
   primitive (`MESH_PRIMITIVES`: `box`, `wedge`, `cylinder`, `cone`, `sphere`, `plane`) or a named
   compound mesh in the skin's `meshes` (a list of `{ shape, size, at?, color?, rotate? }` parts in
@@ -196,4 +219,4 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `resolveSkinFrame`, `resolveMeshParts` and `resolveCamera3d`; `engine/core/present/camera.test.ts`
 covers `CameraFollower` and `cameraShake`; `engine/core/present/rts-camera.test.ts` covers
 `RtsCamera` (clamping, zoom limits, round trips at zoom 0.5, 1, 1.5 and 2, its hint through the
-follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams; `engine/core/present/fog.test.ts` (Engine 0.16 part D, D3) a frame's fog in the schema (bad cells and rows named), the skin's `fog` look (defaults, a bad field named at its path, the minimap fields on another item) and `fogBoxes` (runs, a soft edge covering every px once).
+follower) and `engine/backends/canvas2d/rts-camera.test.ts` its agreement with the presenter; `engine/core/present/stream.test.ts` the frame streams; `engine/core/present/fog.test.ts` (Engine 0.16 part D, D3) a frame's fog in the schema (bad cells and rows named), the skin's `fog` look (defaults, a bad field named at its path, the minimap fields on another item) and `fogBoxes` (runs, a soft edge covering every px once); `engine/core/present/readability.test.ts` (Engine 0.16 part D, D4) the `outline`, `team` and `screenScale` fields (accepted on 2D, refused on 3D, bad values at their path, a team outline without `team`) and their readings.
