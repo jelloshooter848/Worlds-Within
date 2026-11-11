@@ -354,8 +354,10 @@ numbers at merge (this track does not edit it, as for T2-17).
 - **F-1.** The mini siege's picture is 320x180 (16:9; 256x240 before), so six times is
   1920x1080; the Canvas2D skins and the tests' sizes moved with it (F6).
 - **F-2.** The people and the sheep come from Quaternius Ultimate Animated Character Pack and
-  Farm Animals (CC0), not named by the roadmap; FBX and OBJ converted to GLB, the Castle Kit's
-  colour map baked into vertex colours (F1).
+  Farm Animals (CC0), not named by the roadmap, with `Defeat` as the death clip (the pack has no
+  death) and `Punch` as the attack; the Quaternius village pack is the 2020 OBJ "Medieval Village
+  Pack", not the newer textured MegaKit (the model check refuses textures in other files); FBX
+  and OBJ converted to GLB, the Castle Kit's colour map baked into vertex colours (F1).
 - **F-3.** The 3D packs are about 8.7 MB of GLB in the game's `assets/`, all 221 files kept
   (F1).
 - **F-4.** The ground view's camera maths is one core function shared by drawing and picking

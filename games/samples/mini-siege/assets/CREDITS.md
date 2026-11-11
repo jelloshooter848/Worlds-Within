@@ -9,7 +9,8 @@ self-contained `.glb` with plain material or vertex colours and no texture, as t
 check and `ModelLibrary` in Node need; `assets.test.ts` parses each one. The roadmap names three
 packs; the other two are substitutes for what those three lack (people and sheep), and the
 Quaternius village pack is the 2020 "Medieval Village Pack", not the newer textured MegaKit; these
-choices are owner items (`docs/FEEDBACK-LOG.md`).
+choices are owner item F-2 (`docs/BUILD-LOG.md`, Engine 0.16 part F; numbered into
+`docs/FEEDBACK-LOG.md` when the branch is merged).
 
 ## kenney-castle-kit
 
