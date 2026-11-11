@@ -72,6 +72,9 @@ Import from `@engine/core/present` (`index.ts`).
   item (and in 3D no label or place name), for a page's title screen; `hudPanelBoxes` (the shown
   `panel` and `minimap` boxes) and `boxesOverlap`; `scene3d.skirt` (`{ color, margin? }`,
   `DEFAULT_SKIRT_MARGIN`): a ground view's flat ground past the map's edges.
+  Engine 0.16 polish P6 (gap M45): `clampBoxInside(box, picture, margin?)`, `LABEL_EDGE_MARGIN`
+  (2), `unionBox`, `PictureBox`: a world label's box moved inside the picture, shared by every
+  backend through `layoutLabels`.
   Engine 0.16 T11: a 3D kind or tile entry may name a
   glTF/GLB `model` in `assets/` with `scale`, `anchor`, `rotate`, `clip` (by animation state)
   and `castShadow`, keeping its text `mesh` as the stand-in while it loads;

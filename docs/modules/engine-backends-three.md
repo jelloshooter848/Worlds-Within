@@ -191,3 +191,6 @@ screenshot --backend three --render-scale N` (default the skin's) is byte-identi
 - An entity's labels (or a place's name) any of which would cover a shown HUD `panel` or
   `minimap` are left out (`hudPanelBoxes`), and a frame whose status sets `HUD_HIDDEN_STATUS`
   shows no labels (a page's title screen).
+- Engine 0.16 polish P6 (gap M45): labels and place names whose anchor is in the picture but
+  whose box runs past an edge are moved inside it as one box (`layoutLabels` with the picture
+  size, `clampBoxInside`), before the HUD-panel check.

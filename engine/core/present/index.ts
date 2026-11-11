@@ -157,6 +157,7 @@ export {
   type HudSprite,
   type HudText,
 } from './hud';
+export { clampBoxInside, LABEL_EDGE_MARGIN, unionBox, type PictureBox } from './label-clamp';
 export {
   DEFAULT_SHADOW,
   DEFAULT_SUN_DIRECTION,

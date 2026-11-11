@@ -677,7 +677,9 @@ export class ThreeScene {
   /**
    * Lays the skin's `labels` out over the entities: each label's anchor on the entity box, at
    * its layer's depth, projected through the camera to picture px; a point behind the camera or
-   * off the picture hides that label. Drawn by the `labels` layer's quads. An entity's labels (or
+   * off the picture hides that label; one whose anchor shows but whose box runs past an edge is
+   * moved inside the picture with the entity's other labels (Engine 0.16 polish P6, gap M45:
+   * `layoutLabels` with the picture size). Drawn by the `labels` layer's quads. An entity's labels (or
    * a place's name) any of which would cover a shown HUD panel are left out, so no label shows
    * through or under the HUD; a frame that hides the HUD (`HUD_HIDDEN_STATUS`) shows none
    * (Engine 0.16 F9).
@@ -716,7 +718,7 @@ export class ThreeScene {
           if (x < 0 || x >= size.width || sy < 0 || sy >= size.height) return null;
           return { x, y: sy };
         };
-        keep(layoutLabels(list, e, frame.status, project, this.opts.fonts));
+        keep(layoutLabels(list, e, frame.status, project, this.opts.fonts, size));
       }
     }
     this.labelShown = views;
@@ -780,7 +782,7 @@ export class ThreeScene {
         anim: { state: 'idle', t: 0 },
         tags: [],
       };
-      keep(layoutLabels([label], entity, frame.status, project, this.opts.fonts));
+      keep(layoutLabels([label], entity, frame.status, project, this.opts.fonts, size));
     });
   }
 

@@ -96,6 +96,7 @@ checks `canvasDisplay` on fake canvases. `rts-camera.test.ts` checks that `RtsCa
 `presenter.test.ts`'s `lighting` block (Engine 0.16 part C T4) checks the light map's holes, its
 order after the entities and before the HUD, glows and the vignette, states, placed sprites, event
 flashes fading and with reduced flashing, the surface made once and on a resize, the flat box
-without one and the same calls per seed.
+without one and the same calls per seed. Its `world labels inside the picture` block (Engine
+0.16 polish P6, gap M45) checks labels near the picture's edges moved inside it.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for each kind on a recording
 context; `tests/browser/fx-lab.test.ts` shoots an iris, a wipe and a fade mid-transition.

@@ -80,7 +80,8 @@ sprite turns and flips against the canvas renderer's texel table, and that the p
 same objects frame after frame. `presenter.test.ts` checks every 0.16 part A feature through the
 display list `PixiPresenter` leaves (animation frames, add blend, glow halos, parallax order,
 tweens, flash and tint overlays, the UI HUD's tinted glyphs, the cached map) and that its sounds,
-hit-pauses, particle counts and focus equal the core presenter's; `transition.test.ts` and
+hit-pauses, particle counts and focus equal the core presenter's, and world labels near the
+picture's edges moved inside it as on the canvas (Engine 0.16 polish P6, gap M45); `transition.test.ts` and
 `display.test.ts` the transitions and the display on a recording renderer.
 `tests/browser/pixi-display.test.ts` starts `pixiDisplay` in headless Chromium and reads the
 canvas back (skipped without a browser). Screenshots and parity (T13b-5): `pnpm cli screenshot

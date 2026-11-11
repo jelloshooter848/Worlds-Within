@@ -305,6 +305,9 @@ and lerp, each entity's box is drawn where `worldToScreen` says and maps back wi
 pixel, and the map copy sits at the camera's top-left, in the middle of the map and clamped at
 its edge. `ui-painter.test.ts` (Engine 0.16 T6) checks `CanvasUiPainter`'s fills, whole and
 part frames, glyph runs and the coloured strip drawn once, and the presenter painting a UI HUD.
+The `world labels inside the picture` block of `presenter.test.ts` (Engine 0.16 polish P6, gap
+M45) checks health bars whose anchors are near the left and right edges drawn 2 px inside the
+picture (the shared walk's `layoutLabels` with the picture size).
 The `lighting (Engine 0.16 part C T4)` block of `presenter.test.ts` records `gradient`
 calls on the screen and on a recording light surface: the darkness cleared and each light erased,
 the light map laid over at the darkness level after the entities and before the HUD, glows added,

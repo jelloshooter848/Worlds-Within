@@ -189,6 +189,11 @@ are no longer 3D only: the 2D presenter draws a skin's `labels` too (`engine/cor
   no label shows through or under the HUD; a frame whose status sets `HUD_HIDDEN_STATUS` (a
   page's title screen) shows none, and its HUD hides too (`hudItemShown`). Tests:
   `decor.test.ts`.
+- From Engine 0.16 polish P6 (gap M45), `updateLabels` and `layoutPlaces` pass the picture size to
+  `layoutLabels`, so an entity's labels (or a place's name) whose anchor is in the picture but
+  whose box runs past an edge are moved inside it as one box (`clampBoxInside`, 2 px clear); the
+  HUD-panel rule above is checked on the moved boxes. Tests: `ground.test.ts` (labels near the
+  left and right edges), `decor.test.ts` (a place name in the corner, then under a panel).
 
 ## Tweens, per-map looks, 3D joins, scenery and model looks (Engine 0.16 part B, T10)
 

@@ -283,6 +283,13 @@ status)` (a number, a tag's `n/m`, or a number text; `max` the label's, a status
     tag's `m`, else 100) and `timerText(ticks)` (`m:ss`, seconds rounded up,
     `LABEL_TICKS_PER_SECOND` 60). The UI kit lays labels out (`engine/core/ui/labels.ts`); the 3D
     backend projects and draws them. Tested in `scene3d.test.ts`.
+  - Labels inside the picture (Engine 0.16 polish P6, gap M45, `label-clamp.ts`):
+    `clampBoxInside(box, picture, margin?)` gives a box (`PictureBox { x, y, w, h }`, picture px)
+    shifted the least so it sits `margin` (default `LABEL_EDGE_MARGIN`, 2) px inside each edge of
+    `picture { width, height }`, its size kept; on an axis where it is bigger than the picture
+    less the margins it starts on the left or top margin. `unionBox(boxes)` (null for none). Pure;
+    the UI kit's `layoutLabels` moves an entity's labels by it as one box, so every backend keeps
+    world labels inside the picture the same way. Tested in `label-clamp.test.ts`.
   - Decor, places and tile variation (Engine 0.16 F3, `decor.ts`): a `three` skin's `decor`
     (`decorSchema`: map id -> `{ grid, map?, size?, legend: { <char>: { model (a path or a list),
 scale? (number or [min, max]), yaw? (degrees, random, quarter), jitter?, offset?, anchor?, rotate?,

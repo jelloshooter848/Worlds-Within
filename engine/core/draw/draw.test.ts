@@ -253,6 +253,28 @@ describe('top-down looks (Engine 0.16 F8): turnToFacing, ring and 2D labels', ()
     // Half full: 4 px of 8, just above the box (top at y 6, 2 px up, 2 px high).
     expect(calls[bar]).toBe('rect 8,2 4x2 #f00');
   });
+
+  it('keeps a 2D label inside the picture when its anchor is near an edge (polish P6, M45)', () => {
+    const { r, calls } = recorder();
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      kinds: { tank: { sheet: 'unit', frames: { idle: 'tank' }, fallbackColor: '#000' } },
+      labels: { tank: { from: { tag: 'hp:' }, as: 'bar', max: 4, w: 12, h: 2, color: '#f00', back: '#111' } },
+    };
+    new SkinnedPresenter(r, skin, sheets, { clamp: false }).present(
+      at({
+        entities: [
+          entity({ id: 'a', tags: ['hp:2'], x: 0, y: 6 }), // anchor x 4: the bar would start at -2
+          entity({ id: 'b', tags: ['hp:2'], x: 24, y: 6 }), // anchor x 28: it would end at 34
+          entity({ id: 'c', tags: ['hp:2'], x: 30, y: 6 }), // anchor x 34: off the picture, hidden
+        ],
+        camera: { x: 16, y: 8 },
+      }),
+    );
+    // The 32 px picture keeps 2 px clear: the bars start at 2 and end at 30.
+    expect(calls.filter((c) => c.endsWith('#111'))).toEqual(['rect 2,2 12x2 #111', 'rect 18,2 12x2 #111']);
+    expect(calls.filter((c) => c.endsWith('#f00'))).toEqual(['rect 2,2 6x2 #f00', 'rect 18,2 6x2 #f00']);
+  });
 });
 
 describe('hitFlash (Engine 0.16 F8)', () => {

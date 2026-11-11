@@ -46,7 +46,10 @@ so two backends drawing the same frame get the same calls.
   silhouette: `contentSheets` makes it; blinking every `blink` frames by the frame number), and
   the skin's `labels` (the 3D backend's world-anchored labels, `layoutLabels`) are drawn on a 2D
   skin too, after the entities and particles and before the HUD, anchored on the box's top
-  centre, centre or bottom centre on the picture (an anchor off the picture hides the label).
+  centre, centre or bottom centre on the picture (an anchor off the picture hides the label);
+  from Engine 0.16 polish P6 (gap M45) `layoutLabels` gets the picture size, so a label whose
+  anchor is in the picture but whose box runs past an edge is moved inside it (with its bar, as
+  one box), as in 3D.
 - `ui-painter.ts`: `RendererUiPainter(renderer, sheets, fonts, { glyphSurface?, tintGlyphs? })`,
   the `UiPainter` on a `Renderer` (fills, whole and part frames scaled with `transformed`, glyphs
   from a strip of the font drawn once per colour on a glyph surface, else their ink runs as

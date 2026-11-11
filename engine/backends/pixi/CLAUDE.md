@@ -213,7 +213,8 @@ animation frames by their ticks, additive glowing particles and a kind's blend a
 behind each), parallax before the map before the entities, a spawn tween's transform container,
 flash and tint overlays (and reduced flashing), the UI kit HUD with one white glyph strip tinted
 per colour, the skin set, and sounds, hit-pauses, particle counts and focus equal to the core
-presenter on another renderer. `transition.test.ts` checks the transition `Graphics` against
+presenter on another renderer, and (Engine 0.16 polish P6, gap M45) world labels near the
+picture's edges moved inside it as on the canvas. `transition.test.ts` checks the transition `Graphics` against
 `transitionAlphaAt` per pixel; `display.test.ts` the display's passes, letterbox, pointer maths,
 transition and UI painter on a recording `DisplayGpu`, both `upscale` paths and the backdrop
 clear colour. `tests/browser/pixi-display.test.ts` builds
