@@ -1,0 +1,25 @@
+{
+  "run": "games/td-classic/runs/build.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "3f3e14aefc1b4bad"
+    },
+    {
+      "tick": 10,
+      "hash": "1a8bc0084f8df65f"
+    },
+    {
+      "tick": 20,
+      "hash": "1929c011fa9eb42d"
+    },
+    {
+      "tick": 30,
+      "hash": "0095fb758bf91770"
+    },
+    {
+      "tick": 40,
+      "hash": "c0f414299bc01881"
+    }
+  ]
+}

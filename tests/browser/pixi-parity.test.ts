@@ -99,8 +99,8 @@ const CASES: Case[] = [
     bound: STRICT,
   },
   {
-    name: 'the tower defense',
-    run: 'games/samples/tower-defense/runs/won.run.json',
+    name: 'the tower defense (the 0.15 Winding Road, kept as games/td-classic)',
+    run: 'games/td-classic/runs/won.run.json',
     // A wave starting (flash), kills (particles), cannon shots (shake), the round won (tint).
     tiles: ['26', '63', '180', '455', '482', '674', '455+fade*10', '300+wipe*8'],
     bound: STRICT,

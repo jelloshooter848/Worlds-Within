@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 585.** (Last used: 584.)
+**Next unused number: 586.** (Last used: 585.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2301,3 +2301,19 @@ track; the merge numbered them 580-584 (`P-n` is item 579+n).
   the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
   darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
   undithered falloff (it had no bands and shows no rings).
+
+**Engine 0.16 part E, E2: the 0.15 Winding Road kept as `games/td-classic`**
+
+- **585.** Before the tower-defense sample becomes the ten-wave map of 0.16 (E8), its 0.15 round
+  (map, towers, waves, text art, skin, songs, sfx, fonts, title and menus, the page and the five
+  run files `build`, `won`, `target`, `leaked`, `tapped`) was **copied** to a new test game,
+  `games/td-classic` (id `td-classic`, its own page in the games index, `CLAUDE.md`, `AGENTS.md`
+  and module page), with every golden hash unchanged (only each `.hashes.json`'s `run` path
+  differs), as D2 did with `games/rts-classic`. The copy keeps the sample's content ids and glue
+  names (`loadTowerDefense`, `TdPlay`, `window.wwTd`) and PixiJS as its default backend; its test
+  file is renamed `td-classic.test.ts`. New: `tests/runs/td-classic-mutants.test.ts` (strict, no
+  weak run, and an `UNGUARDED` list, empty today, for kit rules E3 and E4 add that the classic
+  road cannot reach; with any listed the command exits 4, which the test expects), entries in
+  presentation invariance, backend parity, `tests/build/pages.test.ts`, the PixiJS pages and lazy
+  tests, and the PixiJS parity test's tower-defense case now plays `games/td-classic/runs/won`
+  (the sample's `won` will change in E8). The sample's own mutants test stays on the sample. OK?

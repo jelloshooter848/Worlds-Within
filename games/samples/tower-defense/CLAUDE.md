@@ -12,7 +12,10 @@ kind, tile, event and HUD item drawn from its own art; no look with a `fallbackC
 a test draws every tick of every run without a fallback box; an sfx for every sound the skin
 names and the song's channels one length), its page uses the shell's tick rate and frame taps
 (gaps D1, D2) and its tests tap through the kit's `screenAtCell` (gap D13), and the browser test
-follows the games index's link. Its run files and their hashes did not change. This file is the
+follows the games index's link. Its run files and their hashes did not change. At Engine 0.16
+part E (E2), before this sample becomes the ten-wave map of 0.16 (E8), its 0.15 round (content,
+art, skin, songs, sfx, fonts, menus, page and the five run files with their golden hashes) is
+kept unchanged as the test game `games/td-classic`. This file is the
 worked example of a tower-defense game on the kit ("How it was built", below).
 
 ## How to play

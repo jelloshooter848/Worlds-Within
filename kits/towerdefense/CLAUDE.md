@@ -271,7 +271,10 @@ kit itself is unchanged: `stats.killed` and `stats.fallen` were already world na
 where it is decided; `world.test.ts` has one case per rule that changes when it is off (and fails
 when a rule has no case). The kit is strict: the run files of `games/samples/tower-defense` guard
 every rule (`pnpm cli mutants games/samples/tower-defense`, `tests/runs/tower-defense-mutants.test.ts`),
-so a new rule needs a run there that fails without it.
+so a new rule needs a run there that fails without it. From Engine 0.16 part E (E2) the same
+0.15 round is kept unchanged as the test game `games/td-classic`, whose run files never move,
+held the same way by `tests/runs/td-classic-mutants.test.ts`; a rule added after the copy that
+its road cannot reach is listed there by name, not guarded by a re-recorded run.
 
 ## Rules
 

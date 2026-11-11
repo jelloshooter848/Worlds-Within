@@ -22,6 +22,7 @@ const PIXI_PAGES = [
   'games/platformer-lab',
   'games/platformer-classic',
   'games/rts-classic',
+  'games/td-classic',
 ];
 
 /** Every non-test TypeScript file under `dir`, as repo paths. */

@@ -72,6 +72,19 @@ describe('game page discovery', () => {
     );
   });
 
+  it('finds the 0.15 Winding Road kept as games/td-classic (Engine 0.16 part E, E2)', () => {
+    const classic = discoverGames(repoRoot).find((page) => page.dir === 'games/td-classic');
+    expect(classic).toEqual({
+      dir: 'games/td-classic',
+      name: 'games-td-classic',
+      title: 'TD classic: the 0.15 Winding Road, hold it against three waves',
+    });
+    expect(gameListHtml(classic ? [classic] : [])).toContain(
+      '<a href="games/td-classic/">games/td-classic</a> <span>TD classic: the 0.15 Winding Road, hold it against three waves</span>',
+    );
+    expect(pageInputs(repoRoot)['games-td-classic']).toBe(join(repoRoot, 'games/td-classic/index.html'));
+  });
+
   it("reads the platformer lab's 3D link from its ww-alternate meta tag", () => {
     const lab = discoverGames(repoRoot).find((page) => page.dir === 'games/platformer-lab');
     expect(lab?.alternates).toEqual([{ label: '3D', query: '?backend=three' }]);
