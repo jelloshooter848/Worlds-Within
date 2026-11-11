@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 490.** (Last used: 489.)
+**Next unused number: 504.** (Last used: 503.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1951,3 +1951,61 @@ Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
   alternative was to keep both maps in one game (the sample with a second map and the old run
   files beside the match's), which keeps one folder but ties the old hashes to every change of
   the match's glue, skin and end rule. OK to keep it as its own test game?
+
+**Engine 0.16 part D, D9: the ten-minute win and loss, balance and feel**
+
+- **490.** Balance, in data only: the AI keeps up to 16 soldiers and 8 archers (6 and 3 before),
+  defends with up to 6 (3), and sends three one-shot waves of growing size from 1800, 3000 and
+  4200 ticks (5+2, 8+3, 10+4 at most; before: 4+2 every 1500 from 1800) and everything it has
+  every 100 ticks from 5400 (4800). The town centre has 1600 hp (800: eight soldiers razed it in
+  30 ticks, so a careless rush won) and the gold nodes hold 1000 at home and 2400 on the far node
+  (800 and 1200: both sides ran dry by tick 4500). It moved every rts-skirmish hash; the four
+  guard runs' assertions held. OK, or tune toward a harder AI?
+- **491.** The town centre now costs 300 gold (it cost nothing, so the bar's Build town-centre
+  put one up for free). OK?
+- **492.** The win and loss were recorded by a throwaway headless bot, not kept: the win is a
+  tidy player (nine workers, two barracks, the army held at a rally point and fighting what comes
+  within 14 cells, crossing at 5700) whose army grows to about 56 and loses little; the loss is a
+  careless one (six workers, a late barracks, eight soldiers thrown at blue's town centre at
+  4600, the hero wandering off). A human will have a closer match. Keep the bot as a tool (like
+  the kits' round bots) or leave it out as now?
+- **493.** The two matches hash every 100 ticks (the guard runs every 20) and open with interface
+  actions that fail every kit rule by tick 2 (a drag over the enemy's sentry that selects nothing,
+  a command on it with the hero), so `mutants` plays them whole only once each. The win keeps one
+  refused order (a barracks it could not yet pay for at tick 110). OK?
+- **494.** The presentation tests (drawing every tick, fog on and off, backend parity, the
+  stepped shell, presentation invariance) play runs of 5000 ticks or more only for their first
+  600 ticks, against their golden hashes up to there; the run-file tests and `mutants` play them
+  whole. OK, or draw them whole at the cost of minutes per test?
+- **495.** For speed, with no hash moved: `World.peek()` (the snapshot without copies, read by the
+  RTS kit's view), the kit's `readWorld` parsing each frozen component value once, the attack
+  system reading its candidate targets once a tick, and `pnpm cli run` snapshotting only on the
+  ticks it reads. A ten-minute match runs in about 9 s headless (about 35 s before). OK?
+- **496.** The skirmish page in manual-loop mode (`?debug=step`) plays one game tick per loop step
+  (6 in real time) and reports its game to the step hook, so `__ww.replay` replays a run file tick
+  for tick and `__ww.hash()` is the run's. The browser test's opening now steps one tick a step.
+  OK?
+- **497.** `SkirmishGame.recorded()` puts every interface action handed to `order` back in its
+  place, and the page exports that, so a replay of a run with `ui` entries exports as itself (the
+  selection is in the snapshot, so the plain orders alone hashed differently). OK?
+- **498.** The danger layer: `ford-danger` (an original G minor sixteenth ostinato, pedal bass and
+  busier drums, the calm song's tempo and length), up (calm at 0.6) within 20 frames while a
+  seen enemy is 8 cells or fewer from one of the player's buildings (`enemyNear`), down over 90
+  frames. OK, or another distance or mix?
+- **499.** Sounds: every event has one (new `crumble` for a building down on either side, `alarm`
+  for the player's building hit, at most every 45 frames, and `clash` pitched down for hitting an
+  enemy building); hits and barks vary by -2 to 2 semitones (barks also in volume), coins by 0 to
+  2; the music ducks under the ends' jingles and the player's building falling. The enemy's
+  training and building stay silent. OK?
+- **500.** The HUD: a selected-unit panel at the bottom left (name, health bar and number, a
+  building's training and its progress) when one thing is selected; the own-units counter is the
+  population (no cap, as the kit has none). OK, or a population cap as a rule?
+- **501.** The camera's feel: an 8 px edge band (32 CSS px at 1920x1080) scrolling 6 px a step
+  (the map's width in about 3 s), and 400 px of wheel per halving or doubling of the zoom (0.5 to
+  2). Tuned from reasoning and the CLI's 4x screenshots, not yet from a playtest. OK?
+- **502.** PixiJS parity on match frames: `match-won` at 1920 and 1940 (the first wave on red's
+  ground) on both 2D backends, strict bound; it adds about 2-3 minutes to the browser tests here.
+  The Canvas2D fallback stays checked by `pixi-pages.test.ts`. OK, or a cheaper earlier frame?
+- **503.** The 1920x1080 screenshot tuning of the HUD was done on the CLI's 4x pictures (the view's
+  camera on the map's centre, no selection), so the selected-unit panel's place was set by its
+  numbers and not yet seen on a page shot; D10's screenshots are where to review it.

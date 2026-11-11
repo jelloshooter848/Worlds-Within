@@ -90,8 +90,8 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   the committed records, for the host's `mission-commit` events; from T7 `keys()` and `open`'s
   `keys`, the world's key table, see "Key table"), and `roundSeed(seed, id)`.
 - `rts-port.ts` (Engine 0.15 T6, gap M27, decision 7): `rtsWorldPort(world)`, the one bridge
-  from a world to the RTS kit's `RtsWorldPort` (`snapshot`, `applyOrder` with only the refusal's
-  `error` kept, `step`), typed by shape as `RtsPort` because the sim may not import the kit;
+  from a world to the RTS kit's `RtsWorldPort` (`snapshot`, from Engine 0.16 part D, D9 `peek`,
+  `applyOrder` with only the refusal's `error` kept, `step`), typed by shape as `RtsPort` because the sim may not import the kit;
   `tests/kits/rts-sim.test.ts` checks the two types fit each other both ways. The mini siege, the
   RTS skirmish and the kit tests use it: `rtsGame({ world: rtsWorldPort(world), ... })`.
 - `opportunity.ts`: opportunities (Engine 0.10 T5): `Opportunities` (`OPPORTUNITY_COMPONENTS`),
@@ -156,7 +156,10 @@ need a living world use it; simple games never touch it. The ECS is our own smal
   `rng`, `entities`, and per component kind a list of `[id, data]` in id order), copied from the
   live state. Every registered kind is listed, empty or not, except one defined with
   `omitWhenEmpty: true` that no entity has (`registered(c)` says whether a kind is registered). `canonical()` is that snapshot as canonical JSON (`canonicalJson` from
-  `engine/core/headless.ts`). Hashing stays in the tools (`node:crypto`); the sim never hashes.
+  `engine/core/headless.ts`). Hashing stays in the tools (`node:crypto`); the sim never hashes. `peek()` (Engine 0.16 part D, D9) is the same
+  snapshot without the copies: the component values are the world's own deep-frozen stored values,
+  so it is read-only; `rtsWorldPort` hands it to the RTS kit's view, read once per tick, where
+  copying every component was most of a big battle's tick.
 
 ## Event log
 
@@ -846,7 +849,10 @@ components. Run it with `components: [...STANDARD_COMPONENTS, Terrain, ...RTS_CO
   a move task, it hits its `Target` when within range: `Health.hp - attack` (not below 0), faces
   it, and starts its cooldown. A unit with no task keeps a target only while it is in range and
   otherwise picks the nearest enemy within range (another faction's living entity with `Owner`;
-  nearest by squared distance, ties to the lowest id). Hits land at once, in id order.
+  nearest by squared distance, ties to the lowest id). Hits land at once, in id order. The
+  possible targets (entities with `Owner`, `Health` and `Position`, with their faction and cell)
+  are read once per run (Engine 0.16 part D, D9: a query per unit per tick was most of a big
+  battle's tick); whether each still fights is asked at each look, so the result is the same.
 - `deathSystem` (`death`, in `fate.ts` since Engine 0.13): every `Unit` or `Building` at 0 hp
   without `Member` is destroyed (each removal and the destroy are logged under `death`). A named
   person (`Member`) at 0 hp is kept as a dead record instead: they leave their squad

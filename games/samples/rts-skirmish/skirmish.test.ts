@@ -58,12 +58,23 @@ interface RunEntry extends JsonObject {
   tick: number;
 }
 
-/** A run file's orders (recorded orders or interface actions) and length. */
-function runFile(name: string): { ticks: number; orders?: RunEntry[] } {
-  return JSON.parse(readFileSync(new URL(`./runs/${name}.run.json`, import.meta.url), 'utf8')) as {
+/**
+ * The ticks the drawing tests here play of a long run (D9: the ten-minute `match-won` and
+ * `match-lost`, ~6000 ticks, are checked whole headless by `pnpm cli run`, the run-file tests and
+ * `mutants`; drawing every tick of them here would take minutes), as `tests/runs/view-play.ts`'s
+ * `presentedRun` cuts them for the presentation tests.
+ */
+const LONG_RUN_TICKS = 5000;
+const PRESENTED_TICKS = 600;
+
+/** A run file's orders (recorded orders or interface actions) and length (cut when long). */
+function runFile(name: string): { ticks: number; hashEvery: number; orders?: RunEntry[] } {
+  const run = JSON.parse(readFileSync(new URL(`./runs/${name}.run.json`, import.meta.url), 'utf8')) as {
     ticks: number;
+    hashEvery: number;
     orders?: RunEntry[];
   };
+  return run.ticks < LONG_RUN_TICKS ? run : { ...run, ticks: PRESENTED_TICKS };
 }
 
 /**
@@ -316,8 +327,8 @@ describe('the finished skirmish: art, sound and its end (Engine 0.15 T14; the ma
   const { skin } = skirmishLook(content);
   const FALLBACK = skin.sheets?.fallbackColor;
 
-  it('has the guard run files (D8; the full win and loss come with D9)', () => {
-    expect(runs).toEqual(['ai-barracks', 'fog', 'opening', 'razed']);
+  it('has the guard run files (D8) and the full win and loss (D9)', () => {
+    expect(runs).toEqual(['ai-barracks', 'fog', 'match-lost', 'match-won', 'opening', 'razed']);
   });
 
   it('names no placeholder look: no kind, tag look or tile has its own fallback colour', () => {
@@ -411,19 +422,45 @@ describe('the finished skirmish: art, sound and its end (Engine 0.15 T14; the ma
       expect(kinds).toContain(k);
   });
 
-  it('has one song, its channels the same length, and an sfx for every sound the skin names', () => {
+  it('has the layered song (calm and danger, D9), its channels the same length, and an sfx for every sound the skin names', () => {
     const songs = contentSongs(content);
-    expect(songs.map((s) => s.id)).toEqual([SKIRMISH_MUSIC]);
-    const song = songs[0]!;
-    expect(compileSong(song).length).toBeGreaterThan(0);
-    const lengths = (['pulse1', 'pulse2', 'triangle', 'noise'] as const).map(
-      (ch) => parseMml(song[ch]!, ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length,
-    );
+    expect(songs.map((s) => s.id).sort()).toEqual([SKIRMISH_MUSIC, `${SKIRMISH_MUSIC}-danger`]);
+    const lengths = songs.flatMap((song) => {
+      expect(compileSong(song).length).toBeGreaterThan(0);
+      return (['pulse1', 'pulse2', 'triangle', 'noise'] as const).map(
+        (ch) => parseMml(song[ch]!, ch.startsWith('pulse') ? 'pulse' : (ch as 'triangle' | 'noise')).length,
+      );
+    });
     expect(new Set(lengths).size).toBe(1);
+    expect(new Set(songs.map((s) => s.bpm)).size).toBe(1);
+    // The skin's music plays both as layers of `ford`: the danger layer while a seen enemy is near.
+    const music = skin.music?.[SKIRMISH_MUSIC];
+    expect(music?.layers).toEqual({ calm: SKIRMISH_MUSIC, danger: `${SKIRMISH_MUSIC}-danger` });
+    expect(music?.mix?.[0]?.when).toEqual({ status: 'enemyNear', lte: 8 });
     const sfx = new Set(contentSfx(content).map((s) => s.id));
     const sounds = Object.values(skin.events ?? {}).flatMap((e) => (e.sound ? [e.sound] : []));
     expect(sounds.length).toBeGreaterThanOrEqual(9);
     for (const sound of sounds) expect(sfx.has(sound), sound).toBe(true);
+    // D9: every presentation event the kit sends has a sound for the player's side (the enemy's
+    // training and building stay silent; its losses are heard).
+    for (const type of [
+      'unit-ready',
+      'unit-down',
+      'unit-hit',
+      'site-placed',
+      'building-done',
+      'building-down',
+      'building-hit',
+      'stock-up',
+    ])
+      expect(resolveSkinEvent(skin.events, { type, side: 'own' })?.sound, type).toBeTruthy();
+    for (const type of ['unit-down', 'unit-hit', 'building-down', 'building-hit'])
+      expect(resolveSkinEvent(skin.events, { type, side: 'enemy' })?.sound, type).toBeTruthy();
+    for (const unitType of ['worker', 'soldier', 'archer', 'hero']) {
+      const bark = resolveSkinEvent(skin.events, { type: 'bark', side: 'own', unitType });
+      expect(bark?.sound, unitType).toBe(`bark-${unitType}`);
+      expect(bark?.pitch, unitType).toEqual([-2, 2]);
+    }
   });
 
   /** Every event the frames of `name` carry, as `type:side` (or `type:result`), with the last frame's status. */
@@ -578,16 +615,17 @@ describe("fog of war is the picture and the AI's knowledge only (Engine 0.16 par
         hashes: { tick: number; hash: string }[];
       }
     ).hashes;
-    const ticks = runFile(name).ticks;
+    const { ticks, hashEvery } = runFile(name);
+    const expected = golden.filter((h) => h.tick <= ticks);
     for (const fog of [true, false]) {
       const picture = skirmishCanvasPicture(new NullRenderer(), skirmishLook(content), { fog });
       const hashes: { tick: number; hash: string }[] = [];
       const game = play(name, undefined, (g) => {
         picture.draw(g, []);
-        if (g.rts.tick % 20 === 0) hashes.push({ tick: g.rts.tick, hash: stateHash(g.snapshot()) });
+        if (g.rts.tick % hashEvery === 0) hashes.push({ tick: g.rts.tick, hash: stateHash(g.snapshot()) });
       });
-      if (ticks % 20 === 0) hashes.push({ tick: ticks, hash: stateHash(game.snapshot()) });
-      expect(hashes, `fog ${fog ? 'on' : 'off'}`).toEqual(golden);
+      if (ticks % hashEvery === 0) hashes.push({ tick: ticks, hash: stateHash(game.snapshot()) });
+      expect(hashes, `fog ${fog ? 'on' : 'off'}`).toEqual(expected);
     }
   });
 });

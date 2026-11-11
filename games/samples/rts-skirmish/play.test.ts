@@ -120,6 +120,9 @@ describe('the recorder', () => {
       [430, 'attack'],
     ]);
     expect(out).toMatchObject({ game: '..', seed: 9, ticks: 480, hashEvery: 20 });
+    // D9: the game's own `recorded()` keeps the interface actions in their place, so a run that
+    // came in through `ui` entries exports as itself (its `ui.selection` hashes the same).
+    expect(game.recorded()).toEqual(run.orders);
   });
 
   it('has nothing to export before tick 20, and leaves out orders of the last tick', async () => {

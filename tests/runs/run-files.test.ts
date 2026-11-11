@@ -6,7 +6,9 @@ import { main } from '../../engine/tools/main';
 
 // Runs with `from` (the mini siege's dawn) replay their source run first, so a test here can
 // take more than vitest's default 5 s on a busy machine.
-vi.setConfig({ testTimeout: 60_000 });
+// The River Ford's ten-minute matches (Engine 0.16 part D, D9) play ~6000 ticks twice: about 20 s
+// alone, more with every core busy.
+vi.setConfig({ testTimeout: 120_000 });
 
 // Every game's run files (games/**/runs/*.run.json), and the engine's world run files
 // (engine/**/__fixtures__/*.run.json, Engine 0.8), through `pnpm cli run`, as CI sees them: each

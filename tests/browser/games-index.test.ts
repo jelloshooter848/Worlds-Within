@@ -47,10 +47,11 @@ async function openPage(): Promise<{ page: Page; errors: string[]; close(): Prom
 
 /**
  * The samples whose page steps a headless game through the shell (`__ww.hash()` is its state
- * hash). The RTS skirmish's page steps its own scene (`SkirmishPlay`, the game a tick every six
- * loop steps), so it is checked through its own hook, `window.wwSkirmish.tick()`.
+ * hash). The RTS skirmish's page steps its own scene (`SkirmishPlay`), which from Engine 0.16
+ * part D, D9 reports its game to the hook and, in manual-loop mode, plays a tick per loop step;
+ * its tick is also read through its own hook, `window.wwSkirmish.tick()`.
  */
-const HEADLESS: readonly string[] = ['dungeon', 'platformer', 'tower-defense', 'mini-siege'];
+const HEADLESS: readonly string[] = ['dungeon', 'platformer', 'rts-skirmish', 'tower-defense', 'mini-siege'];
 
 /** The backend each sample's page opens with when the query names none (the mini siege: 3D). */
 const DEFAULT_BACKEND: Partial<Record<string, string>> = {
@@ -121,12 +122,13 @@ describe.skipIf(missing !== null)('the games index over the built site (headless
       const after = await stepPage(page, 60, headless);
       expect(after.tick).toBe(start.tick + 60);
       if (headless) expect(after.hash).toMatch(/^[0-9a-f]{16}$/);
-      else {
-        // 60 loop steps are 10 game ticks on the skirmish's page (`STEPS_PER_TICK` 6).
+      if (sample === 'rts-skirmish') {
+        // In manual-loop mode the skirmish's page plays one game tick per loop step (D9; six in
+        // real time), and reports its game to the step hook.
         const tick = await page.evaluate(() =>
           (window as unknown as { wwSkirmish: { tick(): number } }).wwSkirmish.tick(),
         );
-        expect(tick).toBe(10);
+        expect(tick).toBe(60);
       }
       expect(errors).toEqual([]);
     } finally {

@@ -15,8 +15,11 @@ workers, a town centre and a sentry soldier) played by the kit's skirmish AI und
 end as data, and the page with fog, a clickable minimap, order markers, path dots, barks and build
 and train progress (below). The 0.15 battle (the 40x24 map, the raiding party, its five run
 files) is kept unchanged as `games/rts-classic` (D2). This file is the worked example of an RTS
-game on the kit: "How it was built" below is the order to follow for a new one. D9 balances the
-ten-minute match and adds its win and loss run files.
+game on the kit: "How it was built" below is the order to follow for a new one. **D9 balanced the
+ten-minute match** (data only: the AI's waves, the town centre, the gold) and added its win and
+loss run files (`match-won`, `match-lost`, about 6000 ticks each at the page's 10 ticks a second),
+the layered music with a danger layer, more sounds, the selected-unit panel and the camera's feel
+("The ten-minute match (D9)" below).
 
 ## How it was built (the worked example)
 
@@ -84,8 +87,8 @@ AI's knowledge only: no world rule reads it.
   39-y), so neither side starts better placed. Terrain types are numbered in sorted character
   order: 0 rock, 1 dirt, 2 grass, 3 water (the skin's `tiles` keys). Roads join each base to all
   three fords. Red's town centre is 3x3 at 4,18 (stockpile, 200 gold), blue's at 57,19 (200);
-  gold: each side two home nodes (800; red 10,14 and 10,25) and one far node on its own bank
-  (1200; 24,3 and 39,36). Red: three workers (8,16; 9,21; 8,22) and the `guard` squad with one
+  gold: each side two home nodes (1000, D9; 800 before; red 10,14 and 10,25) and one far node on
+  its own bank (2400, D9; 1200 before; 24,3 and 39,36). Red: three workers (8,16; 9,21; 8,22) and the `guard` squad with one
   named member, the hero Wren (`role: hero`, at 6,22); blue: three workers (the mirror cells) and
   the soldier `sentry` (57,17), its first scout. Every unit and building carries its type's
   numbers (`skirmish.test.ts` fails when they drift from the types file). The map holds no
@@ -94,22 +97,28 @@ AI's knowledge only: no world rule reads it.
   ticks, builds at 2 work a tick, 50 gold, 50 ticks), `soldier` (40 hp, hits 4 every 3 ticks,
   sight 5, 60 gold, 60 ticks), `archer` (24 hp, hits 3 every 4 ticks at range 4, sight 6, 70 gold,
   70 ticks; D8, the pack's bowman), `hero` (100 hp, hits 6, sight 7; trained nowhere),
-  `town-centre` (3x3, 800 hp, sight 7, drop-off, trains workers) and `barracks` (2x2, 400 hp,
-  sight 5, 120 gold, 80 work, trains soldiers and archers). D9 tunes the numbers.
+  `town-centre` (3x3, 1600 hp (D9; 800 before, when eight soldiers razed it in 30 ticks), 300
+  gold (D9; it cost nothing, so a player could put up town centres for free), 200 work, sight 7,
+  drop-off, trains workers) and `barracks` (2x2, 400 hp, sight 5, 120 gold, 80 work, trains
+  soldiers and archers).
 - `content/enemy/blue.json` (`rts-enemy`, D8): the AI, `knowledge: "fog"` (it targets and counts
   red only as its side has seen it; the kit's rule `enemy-knows-only-what-it-saw`). Steps in
   order: `gold` (every 10 ticks, idle workers gather the nearest gold), `scout` (while it knows no
   red building, every 40 ticks one idle soldier walks to the nearest unexplored cell, first in
   red's home box 0,10 20x20, then anywhere west of the river), `barracks` (once it has 5 workers,
   every 30 ticks two workers build a barracks at 51,22, then a second at 51,15), `workers` (train
-  up to 7), `soldiers` (up to 6), `archers` (up to 3), `defend` (once it sees a red unit, every 20
-  ticks two or three idle soldiers attack the nearest it sees: `min: 2`, so the lone scout never
-  starts a chase), `rally` (once it knows a red building, idle soldiers walk to 48,20 in front of
-  its base, which brings the scout home), `wave` and `wave-archers` (from tick 1800, every 1500:
-  four idle soldiers, two idle archers, at red's base, the town centre it knows; walked to when
-  only remembered) and `push` and `push-archers` (from tick 4800, every 100: every idle soldier
-  and archer at red's base). At the page's 10 ticks a second the waves come at 3, 5.5 and 8
-  minutes and the push from 8. The AI's memory (explored cells, red buildings as last seen) is
+  up to 7), `soldiers` (up to 16; 6 before D9), `archers` (up to 8; 3 before), `defend` (once it
+  sees a red unit, every 20 ticks two to six idle soldiers attack the nearest it sees: `min: 2`,
+  so the lone scout never starts a chase; `max` 6 from D9, 3 before), `rally` (once it knows a red
+  building, idle soldiers walk to 48,20 in front of its base, which brings the scout home), three
+  waves (D9; each fires once, from its tick, as soon as enough are idle, at red's base, the town
+  centre it knows, walked to when only remembered): `wave-1` / `wave-1-archers` from 1800 (4 to 5
+  soldiers, 2 archers), `wave-2` / `wave-2-archers` from 3000 (6 to 8, 3) and `wave-3` /
+  `wave-3-archers` from 4200 (8 to 10, 4), and `push` and `push-archers` (from tick 5400, every
+  100: every idle soldier and archer at red's base). At the page's 10 ticks a second the waves
+  come from 3, 5 and 7 minutes and the push from 9. Before D9: `wave` and `wave-archers` every
+  1500 ticks from 1800 (four soldiers, two archers) and the push from 4800, which a defended base
+  shrugged off while a passive one fell at 3.8 minutes. The AI's memory (explored cells, red buildings as last seen) is
   the kit snapshot's `seen`, so it is in the hashes.
 - `content/end/ford.json` (`rts-end`, D8): red wins once blue has no `town-centre`, and loses once
   red has no `town-centre` or no unit (`lost` is checked first).
@@ -158,16 +167,30 @@ AI's knowledge only: no world rule reads it.
   spark), `unit-ready:side=own` (`ready`), `site-placed:side=own` (`placed`),
   `building-done:side=own` (`built`, a flash), `building-hit:side=own` (`clash`),
   `stock-up:side=own` (`coin`), `battle-end:won` (`victory`, a gold tint) and `battle-end:lost`
-  (`defeat`, a red tint); the enemy's training and building are silent. D8: `bark:unitType=<type>`
+  (`defeat`, a red tint); the enemy's training and building are silent. D9: every event has a
+  sound and a varied one: `unit-hit` (pitch -2 to 2, resting 2 frames), `building-hit:side=own`
+  (`alarm`, at most every 45 frames, amber sparks), `building-hit:side=enemy` (`clash` pitched
+  down), `building-down` (`crumble`, grey dust; the player's ducks the music), `stock-up` (pitch 0
+  to 2), the ends' jingles duck the music, and the barks vary by -2 to 2 semitones and in volume.
+  The skin's `music` (D9): `ford`, layers `calm` (`ford`) and `danger` (`ford-danger`), the
+  danger layer up (calm at 0.6) within 20 frames while the frame's `enemyNear` (the kit's
+  `threatStatus`: the fewest cells from an enemy unit the player sees to one of its buildings) is
+  8 or less, down over 90 frames once it is not. HUD (D9): the selected-unit panel at the bottom
+  left (a flat panel with the selected thing's name, its health bar and number, and a selected
+  building's training and its progress bar), shown when one thing is selected; the own-units
+  counter at the top left is the population. D8: `bark:unitType=<type>`
   for worker, soldier, archer and hero (`bark-<type>`, a pitch of -1 to 1 semitone, resting 6
   frames). D8 also added the archers: `archer-red` (the pack's `medievalUnit_07`) and
   `archer-blue` (`medievalUnit_01`), each with a `-step` copy, as `unit:archer` and
   `unit:archer:enemy` (the soldier's states and team colours) and their minimap dots.
 - Sound (Engine 0.15 T14): `content/sfx/` (`ready`, `fall`, `slain`, `clash`, `placed`,
-  `built`, `coin`, `victory`, `defeat`, and from D8 the barks `bark-worker`, `bark-soldier`,
-  `bark-archer`, `bark-hero`; one line of MML each) and `content/songs/ford.json`, "The
-  River Ford", an original looping march in G (126 bpm, two pulses, triangle and noise, every
-  channel 1536 ticks), played by the page from the first click, tap or key.
+  `built`, `coin`, `victory`, `defeat`, from D8 the barks `bark-worker`, `bark-soldier`,
+  `bark-archer`, `bark-hero`, from D9 `crumble` and `alarm`; one line of MML each) and
+  `content/songs/ford.json`, "The River Ford", an original looping march in G (126 bpm, two
+  pulses, triangle and noise, every channel 1536 ticks), played by the page from the first click,
+  tap or key, with (D9) its danger layer `content/songs/ford-danger.json` (the same tempo and
+  length: a driving sixteenth ostinato in G minor, a pedal bass and a busier drum line), mixed by
+  the shell's mixer from the skin's `music`.
 - TypeScript is glue:
   - `content.ts`: `loadSkirmish(files)`, `skirmishMap`, `skirmishTypes`, `skirmishEnemy`,
     `skirmishEnd` (D8),
@@ -188,7 +211,10 @@ opts?)`: the kit's `rtsGame` with the world behind its port (`engine/sim`'s
     Engine 0.15 T14: `skirmishResult`, the game's end, kept out of the snapshot. From D8
     `skirmishResult(view, end)` is the kit's `matchResult` under `content/end/ford.json` (before:
     code, `lost` with no red unit, `won` with no blue unit or building), and `SkirmishGame` has
-    `end`, `view()` and `result()`.
+    `end`, `view()` and `result()`. D9: `recorded()` (`RecordedEntry[]`) is the kit's recorded
+    orders with every interface action handed to `order` put back in its place (in place of the
+    order it gave): the page's export of a run replayed through the step hook keeps its `ui`
+    entries, so the export hashes the same (`ui.selection` is in the snapshot).
   - `actions.ts`: interface actions (`interfaceActionSchema`, `PlayerInterface`): `click`,
     `box` (world px, `additive`), `command` (a world point), `build`, `train`, `stop`, carried
     out by the kit's `Selection`, `commandAt`, `buildCommand`, `trainCommand`, `stopCommand` with
@@ -233,7 +259,7 @@ ticks, orders, hashEvery, hashes }`, ending at the last hash tick, with the orde
     buttons (`press`: `build`, `train`, `stop`, `heroes`, `cancel`) and the pointer's gestures
     (an order goes to `RtsGame.issue`), hovers the placing ghost, and every `STEPS_PER_TICK` (6)
     steps the game one tick (`TICKS_PER_SECOND` 10 on the page; the tools play ticks as fast as
-    they can). `buttons()` is what the bar shows (`build` for selected builders, `train` from
+    they can; `stepsPerTick` 1 in manual-loop mode, D9, below). `buttons()` is what the bar shows (`build` for selected builders, `train` from
     the kit's `trainButtons`, `stop`, `placing`); `exportRun(game?)`; `message` is the last
     refusal; `result()` (Engine 0.15 T14) is the game's `result()`. The controls' selection is
     the page's own: the game's `ui.selection` stays `[]`, as in a replay of the recorded orders,
@@ -258,7 +284,12 @@ ticks, orders, hashEvery, hashes }`, ending at the last hash tick, with the orde
 wy)` (world px to client px through the camera and the display's `toClient`, Engine 0.15 gap
     D13), `message`, `result`, (D8) `stats` and `minimapClientAt(wx, wy)` (where a world point
     is on the minimap, client px), `exportRun(game?)`) for the browser test. D8: the minimap's
-    spec goes to `SkirmishPlay`.
+    spec goes to `SkirmishPlay`. D9: `audio` takes the skin's `music` (`mix`) and the start seed
+    (sound variation); the scene reports its game (`headless()`), so the step hook's `hash()`,
+    `snapshot()` and `replay(run)` work; in manual-loop mode (`?debug=step`) one loop step is one
+    game tick (`stepsPerTick: 1`), so a run file replays tick for tick; and the pointer's feel:
+    an 8 px edge band (32 CSS px at 1920x1080) scrolling 6 px a step, 400 px of wheel per halving
+    or doubling of the zoom.
 - `skirmish.test.ts`: content (D8: the 64x40 map, its three fords and point symmetry, four unit
   types, the fog plan and the end rule), the units' numbers against the types, the hero, `sides`,
   determinism, the `fog` run's interface actions recorded as orders that replay to the same world,
@@ -289,19 +320,25 @@ it: re-record the run files (below).
 ## Run files
 
 The 0.15 runs (`battle`, `commands`, `hold`, `economy`, `lost`) were removed in D8; they live on,
-unchanged, in `games/rts-classic`. D8's runs are short guards of the AI and the interface; D9 adds
+unchanged, in `games/rts-classic`. D8's runs are short guards of the AI and the interface; D9 added
 the ten-minute win and loss.
 
-| run           | ticks | what happens                                                                                                                                                                                                                                   | guards                         |
-| ------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| `opening`     | 200   | the opening economy: a box over red's workers sends them to the northern gold (5), a click on the town centre and Train worker; gold 200 to 270, four workers                                                                                  | gathers, the three enemy rules |
-| `ai-barracks` | 400   | no orders: blue gathers, its sentry scouts red's home box (19,17; 19,11; 13,11; 7,11; 7,17) and finds the town centre at 209, then rallies home; blue's barracks (22) is placed by 110 and done by 130; three soldiers by 400                  | the three enemy rules          |
-| `fog`         | 480   | the hero walks to 40,8, near blue's base but out of its sight: by 420 blue has three idle soldiers and has not attacked him; he steps into sight (46,17), a box there selects only him, he attacks soldier 17, `defend` fires at 439, he falls | all six but gathers            |
-| `razed`       | 160   | a worker places a barracks site (20) on the scout's first cell (18,16) and stops; the sentry finds it at 69 and razes it at 80 (hp 1); blue forgets it and scouts on                                                                           | the three enemy rules          |
+| run           | ticks | what happens                                                                                                                                                                                                                                                                                                 | guards                         |
+| ------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------ |
+| `opening`     | 200   | the opening economy: a box over red's workers sends them to the northern gold (5), a click on the town centre and Train worker; gold 200 to 270, four workers                                                                                                                                                | gathers, the three enemy rules |
+| `ai-barracks` | 400   | no orders: blue gathers, its sentry scouts red's home box (19,17; 19,11; 13,11; 7,11; 7,17) and finds the town centre at 209, then rallies home; blue's barracks (22) is placed by 110 and done by 130; three soldiers by 400                                                                                | the three enemy rules          |
+| `fog`         | 480   | the hero walks to 40,8, near blue's base but out of its sight: by 420 blue has three idle soldiers and has not attacked him; he steps into sight (46,17), a box there selects only him, he attacks soldier 17, `defend` fires at 439, he falls                                                               | all six but gathers            |
+| `razed`       | 160   | a worker places a barracks site (20) on the scout's first cell (18,16) and stops; the sentry finds it at 69 and razes it at 80 (hp 1); blue forgets it and scouts on                                                                                                                                         | the three enemy rules          |
+| `match-won`   | 5900  | D9, a reasonable player: the opening through the interface, nine workers, two barracks, soldiers and archers held at a rally point (13,19) that fight what comes within 14 cells, all three waves and the push beaten at home, the army over the centre ford at 5700, blue's town centre down at 5803 (9:40) | all six                        |
+| `match-lost`  | 5700  | D9, a careless player: six workers, one barracks late (900), eight soldiers, the hero off to the far gold, the soldiers thrown at blue's town centre at 4600; the push takes red's town centre at 5681 (9:28) with seven units still standing                                                                | all six                        |
 
-- Every run file carries its sync `hashes` (every 20 ticks) and has golden `<name>.hashes.json`;
-  final hashes: `opening` `ba3cccd15c1aa5de`, `ai-barracks` `c5f146d0b4836da5`, `fog`
-  `82fc61891e2e80b8`, `razed` `3c8ae6c8450507ff` (new in D8). Removed with the 0.15 map: `battle`
+- Every run file carries its sync `hashes` (every 20 ticks; every 100 for the two matches, D9) and
+  has golden `<name>.hashes.json`; final hashes (D9, after the balance moved every one: the
+  types, the map's gold and the plan's steps are in the world and the kit's snapshot):
+  `opening` `5f5724b4b03cbf28`, `ai-barracks` `19b073e4e362ab13`, `fog` `606269cfac74a8bb`,
+  `razed` `bf1f52ad343cbbe3`, `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`.
+  D8's were `opening` `ba3cccd15c1aa5de`, `ai-barracks` `c5f146d0b4836da5`, `fog`
+  `82fc61891e2e80b8`, `razed` `3c8ae6c8450507ff`; every assertion of the four held. Removed with the 0.15 map: `battle`
   `588fe33bb3ecfcfd`, `commands` `9f8fc0dc11549b95`, `hold` `dcf2c02f2cb6d266`, `economy`
   `34bf04d6b067075d`, `lost` `2cc7b6a08b67cdfd` (the same files and hashes are rts-classic's).
 - Checks read `sides.<faction>.*`, `kit.enemy.<step>.fired` / `.last` (the plan's progress),
@@ -317,11 +354,49 @@ the ten-minute win and loss.
   it knows no red building, and with the whole view it knows them all:
   `enemy-knows-only-what-it-saw`), `world.key.worker-1.Gatherer.node` 5 in `opening`
   (`command-gathers-resources`), and in `fog` `ui.selection` `[19]` and the hero's `Target` 17 at
-  tick 431 (`box-selects-own-units`, `command-attacks-enemies`; nothing changed before 430).
+  tick 431 (`box-selects-own-units`, `command-attacks-enemies`; nothing changed before 430). The
+  two matches (D9) open with interface actions that fail every rule by tick 2: at tick 0 a box
+  over the workers, a command on the northern gold, a click on the hero and a command on the
+  sentry (17, across the map), then a drag over the sentry (it selects none of blue's: `ui.selection`
+  `[]` at tick 1), at tick 1 a click on the town centre and Train worker (`[3]` at tick 2); so a
+  switched-off rule stops them within two ticks and only their baselines play the whole match
+  (`mutants` on the game takes about 25 s alone).
+- **Recording the matches** (D9): a throwaway headless bot (not kept) played the game through
+  `SkirmishGame.order` (the opening as interface actions, then recorded orders every 10 ticks:
+  idle workers to the nearest gold, workers and barracks while they can be paid for, soldiers and
+  archers two to one, the army's defence and attack); its entries are the run's `orders`, its
+  assertions read off `trace` at 1800, 2400, 3600 and 4800 (red's buildings and units, the three
+  waves' `fired`) and around the end (the town centre's last hp, the side without it), and
+  `sides.<own>.buildings.town-centre` 1 every 600 ticks in place of an invariant (an invariant
+  takes the snapshot every tick, which doubled the run's time). A passive player (no orders)
+  loses at 2025, every unit killed by the first wave.
 - Recording a run: write its `orders` as interface actions (world px, as the page gives them),
   read the values off `pnpm -s cli trace <run> --paths ... --every n --json` or `dump`, write the
   assertions, copy the run's `hashes` from `run --json`, then `WW_UPDATE_GOLDEN=1 pnpm test
 tests/runs/run-files.test.ts`.
+
+## The ten-minute match (D9)
+
+- **Balance, data only**: the AI's plan (bigger caps, three one-shot waves of growing size, the
+  push at 9 minutes), the town centre (1600 hp, 300 gold) and the gold (1000 at home, 2400 on the
+  far node, so the far bank's node is worth expanding to); no code. A reasonable player wins in
+  about 9.7 minutes (`match-won`), a careless one loses in about 9.5 (`match-lost`), a passive
+  one in 3.4.
+- **Long runs in the tests**: the two matches play whole in `pnpm cli run`, the run-file tests and
+  `mutants`; the presentation tests (`skirmish.test.ts`'s drawing and fog tests, backend parity,
+  presentation invariance, the stepped shell, `rts-fog.test.ts`) play their first 600 ticks
+  (`tests/runs/view-play.ts`: `presentedRun`, runs of 5000 ticks or more), with the golden hashes
+  up to there. `pixi-parity.test.ts` draws `match-won` at 1920 and 1940 (the first wave on red's
+  ground) on both 2D backends.
+- **The sim got faster for it** (no hash moved): `World.peek()` (the snapshot without copies,
+  for the kit's view), `readWorld` parsing each frozen component value once, the attack system
+  reading its candidate targets once a tick, and `pnpm cli run` taking a snapshot only on a tick
+  something reads it. The win plays in about 9 s headless here.
+- **The browser test** (`tests/browser/rts-skirmish.test.ts`) starts from the games index and the
+  title (Start), plays the opening by mouse and touch, exports and replays it, then replays
+  `match-won` through a fresh page's step hook (its hashes the golden file's every 100 ticks, the
+  one refused order the CLI refuses too) to the end screen, and its export replays headless with
+  no hash mismatch.
 
 ## Playing in the browser
 
@@ -345,15 +420,17 @@ preview`). The picture is 480x270 over a 1024x640 map; the bar under it holds th
   at the bottom left), and a training building shows its progress bar under it.
 - **Fog**: you see what your units and buildings see now; explored ground stays half dark, and
   blue's buildings stay where you last saw them. Blue's AI knows only what its side has seen too.
-- **Sound**: the song starts with the first click, tap or key; the shell's mute button and volume
+- **Sound**: the song starts with the first click, tap or key; a danger layer comes in while an
+  enemy you can see is within 8 cells of one of your buildings; the shell's mute button and volume
   slider (top right) keep the player's volumes in this browser.
 - **The end**: raze blue's town centre (57,19, across the centre ford) to win; lose your town
   centre or every unit and it is over. The picture shows the banner, the jingle plays and the end
   screen opens with the time, the stats and Play again.
 - An opening: box the three workers (just east of the town centre), build a barracks east of
   them, send one to the southern gold and the rest to the northern gold, train soldiers and
-  archers; blue's scout comes over the river within half a minute, its first wave at about three
-  minutes.
+  archers; blue's scout comes over the river within half a minute, its waves from about three,
+  five and seven minutes, and everything it has from nine. Hold the waves at home, then cross the
+  centre ford with the army before the push.
 
 ## Exporting and replaying a battle
 

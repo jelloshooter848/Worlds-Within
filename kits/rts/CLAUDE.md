@@ -28,7 +28,11 @@ name, role, faction, fate (active, injured, captured, freed or dead), hp, maxHp,
   cells still to enter, `Task.path`, when not empty), for fog of war and path dots. Drawing rules are unchanged. Helpers: `isFinished(building)`, `DIR_FACINGS` / `facingOfDir(dir)`
   (`Facing8.dir` 0 north ... 7 north-west to the eight presentation facings) and
   `thingAt(view, x, y, faction?)` (a unit, own first then lowest id; else a building whose
-  footprint covers the cell; else a resource node).
+  footprint covers the cell; else a resource node). Engine 0.16 part D, D9 (speed, no hash
+  moved): each component kind's rows are parsed by their own schema (`ROW_DATA`), and a value
+  that comes frozen (a world's `peek()`, below) is parsed once and its parsed form, frozen too,
+  kept in a `WeakMap` by identity, so the terrain, the types and every unit that did not change
+  are not parsed again each tick; a bad snapshot still throws naming the field.
 - `sides.ts` (Engine 0.11 T8, gap M15; it was the RTS skirmish's glue): `sidesOf(view,
 factions?)`, every side at a glance (`SideSummary`: `units`, `unitTypes`, finished `buildings`
   by kind, `sites`, `stock`), `factions` always listed (empty once beaten), for run-file checks
@@ -158,6 +162,8 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   what the game's glue fills with an `engine/sim` world (the kit never imports the sim): since
   Engine 0.15 T6 (gap M27) with `engine/sim`'s `rtsWorldPort(world)`, the one bridge, typed by
   shape on the sim's side (`tests/kits/rts-sim.test.ts` checks the two fit).
+  The port's optional `peek()` (Engine 0.16 part D, D9; `rtsWorldPort` gives the sim's
+  `World.peek()`) is the snapshot without copies, which `view()` reads when there is one.
   `rtsMissionHooks(game)` (Engine 0.15 T6, gap M18) gives a `MissionHost`'s options `canOpen`
   (`missionRequest`: `not_offered` while no opportunity offers the mission) and `onChange`
   (`refresh()`), so a host over an `RtsGame` needs no wrapper (the mini siege spreads them into

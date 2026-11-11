@@ -1,6 +1,6 @@
 import { withContentImages } from '@engine/core/assets/content-images';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
-import { bootBrowserGame } from '@engine/core/shell';
+import { bootBrowserGame, manualFromQuery } from '@engine/core/shell';
 import { contentFonts, skinMinimap } from '@engine/core/ui';
 import { canvasDisplay } from '@engine/backends/canvas2d';
 import { RTS_TILE_SIZE } from '@kits/rts';
@@ -78,6 +78,7 @@ window.addEventListener('keyup', (e) => (shift = e.shiftKey));
 window.addEventListener('blur', () => (shift = false));
 
 let play: SkirmishPlay | null = null;
+const manual = manualFromQuery(location.search);
 const bar = document.getElementById('bar') as HTMLElement;
 const status = document.getElementById('status') as HTMLElement;
 const end = document.getElementById('end') as HTMLElement;
@@ -88,7 +89,16 @@ const booted = await bootBrowserGame({
   game: content.manifest.id,
   // The song and the skin's event sounds (Engine 0.15 T14); the shell's volume control keeps the
   // player's volumes (gap M1).
-  audio: { songs: contentSongs(content), sfx: contentSfx(content), music: SKIRMISH_MUSIC },
+  // D9: the music is the skin's layered `ford` (calm, and a danger layer while an enemy the
+  // player sees is near one of its buildings, the frame status `enemyNear`), and every event
+  // sound is varied by the start seed.
+  audio: {
+    songs: contentSongs(content),
+    sfx: contentSfx(content),
+    music: SKIRMISH_MUSIC,
+    mix: look.skin.music,
+    seed: content.manifest.start.seed,
+  },
   // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
   // bar and hook hold on to the first scene.
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
@@ -101,7 +111,10 @@ const booted = await bootBrowserGame({
   // PixiJS by default (Engine 0.16 T13b-8), Canvas2D where WebGL is missing or with
   // `?backend=canvas2d`.
   default2d: 'pixi',
-  pointer: true,
+  // D9: the camera's feel at page scale (4x at 1920x1080): the edge band is 8 picture px (32 CSS
+  // px), scrolled at 6 px a step (the 64x40 map's width in about 3 seconds), and 400 px of wheel
+  // halve or double the zoom (0.5 to 2).
+  pointer: { edgeMargin: 8, edgeSpeed: 6, wheelPerDouble: 400 },
   touchPad: false,
   scene(_stack, display, page) {
     const scene = new SkirmishPlay({
@@ -111,10 +124,14 @@ const booted = await bootBrowserGame({
       picture: (_r, opts) => skirmishPicture(display.presenter, look.screen, opts),
       minimap,
       additive: () => shift,
+      // In manual-loop mode (`?debug=step`) one loop step is one game tick, so the step hook's
+      // `replay` hands a run file's orders over at its ticks and `__ww.hash()` is the run's (D9).
+      ...(manual && { stepsPerTick: 1 }),
     });
     play = scene;
     makeButtons(scene);
     return {
+      headless: () => scene.game,
       update: (input) => scene.update(input),
       render: (r) => {
         scene.render(r);

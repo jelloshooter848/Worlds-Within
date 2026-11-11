@@ -53,12 +53,15 @@
   },
   "buildings": {
     "town-centre": {
-      "health": 800,
+      "health": 1600,
       "size": {
         "w": 3,
         "h": 3
       },
       "work": 200,
+      "cost": {
+        "gold": 300
+      },
       "dropoff": true,
       "trains": ["worker"],
       "sight": 7

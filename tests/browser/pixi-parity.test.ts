@@ -91,6 +91,14 @@ const CASES: Case[] = [
     bound: STRICT,
   },
   {
+    name: "the River Ford match (D9: match-won, blue's first wave crossing the centre ford)",
+    run: 'games/samples/rts-skirmish/runs/match-won.run.json',
+    // A match frame: the first wave (six blue units) coming over red's explored ground at the edge of the fog, the minimap
+    // with red's explored half; a fade over it.
+    tiles: ['1920', '1940', '1940+fade*10'],
+    bound: STRICT,
+  },
+  {
     name: 'the tower defense',
     run: 'games/samples/tower-defense/runs/won.run.json',
     // A wave starting (flash), kills (particles), cannon shots (shake), the round won (tint).

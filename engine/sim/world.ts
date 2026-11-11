@@ -128,6 +128,12 @@ export interface World {
    * registered kind is listed, except an `omitWhenEmpty` kind that no entity has.
    */
   snapshot(): WorldSnapshot;
+  /**
+   * The same snapshot without the copies (Engine 0.16 part D, D9): the component values are the
+   * world's own stored values, which are deep-frozen, so it is read-only. For readers that only
+   * read it once per tick (the RTS kit's view), where copying every component was most of a tick.
+   */
+  peek(): WorldSnapshot;
   /** The snapshot as canonical JSON (sorted keys): equal worlds give equal text, for hashing. */
   canonical(): string;
 }
@@ -226,6 +232,19 @@ export function makeWorld(seed: number, options: WorldOptions, restored?: Restor
 
   const mustLive = (id: Entity): void => {
     if (!liveSet.has(id)) throw new Error(`no entity ${id}`);
+  };
+
+  // The snapshot with each stored value passed through `copy` (a deep copy, or the frozen value).
+  const snapshotOf = (copy: (value: JsonValue) => JsonValue): WorldSnapshot => {
+    const components: WorldSnapshot['components'] = {};
+    for (const name of [...stores.keys()].sort()) {
+      const store = stores.get(name) as Store;
+      if (store.size === 0 && (defs.get(name) as AnyComponent).omitWhenEmpty) continue;
+      components[name] = live
+        .filter((id) => store.has(id))
+        .map((id): [number, JsonValue] => [id, copy(store.get(id) as JsonValue)]);
+    }
+    return { seed, tick, nextId, rng: rng.state(), entities: live.slice(), components };
   };
 
   const world: World = {
@@ -397,15 +416,11 @@ export function makeWorld(seed: number, options: WorldOptions, restored?: Restor
     },
 
     snapshot() {
-      const components: WorldSnapshot['components'] = {};
-      for (const name of [...stores.keys()].sort()) {
-        const store = stores.get(name) as Store;
-        if (store.size === 0 && (defs.get(name) as AnyComponent).omitWhenEmpty) continue;
-        components[name] = live
-          .filter((id) => store.has(id))
-          .map((id): [number, JsonValue] => [id, structuredClone(store.get(id) as JsonValue)]);
-      }
-      return { seed, tick, nextId, rng: rng.state(), entities: live.slice(), components };
+      return snapshotOf((value) => structuredClone(value));
+    },
+
+    peek() {
+      return snapshotOf((value) => value);
     },
 
     canonical() {

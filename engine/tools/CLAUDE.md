@@ -66,7 +66,9 @@ content)`, which imports the game's headless module by path for its optional
   `stateHash(snapshot)` (re-exported from `engine/core/state-hash.ts` since Engine 0.14 T8, so a
   browser page's step hook hashes with the same code), `orderOf(entry)`, `saveCodeNow(save, ctx)`. From Engine 0.13 it starts a
   game run from its `from` and checks its `codes` (Campaign runs and save codes, below).
-  `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
+  The snapshot of a tick is taken only when something reads it (a check, a hash, `onTick`, the
+  last tick; Engine 0.16 part D, D9), so a long run that hashes every 100 ticks does not copy the
+  world every tick (an invariant still reads every tick's). `onTick(tick, snapshot)` (Engine 0.14) sees every tick's snapshot as it is played, so a command
   that reads the state per tick (`trace`) uses the one playing loop. A game run's `start` (Engine
   0.14, gap G9) is checked against the game's `starts(content)` and handed to `createGame` as
   `HeadlessOptions.start` (Start levels and entries, below); `PlayedRun.start` is it, or null.
@@ -486,7 +488,11 @@ opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` onl
   (`games/<g>/` and `games/samples/<g>/`; recorded `orders` go to the view's `order` at their
   ticks, as `run` hands them over) through `frame()` into null, `render` into Canvas2D and, when the game has a `three` skin,
   `frame()` into `threeScenePresenter` with its `skinSet` (Engine 0.7 T8: no fallback boxes, a
-  block for every tile shown), and requires every hash list to equal the golden file.
+  block for every tile shown), and requires every hash list to equal the golden file. A run of
+  5000 ticks or more (the RTS sample's ten-minute matches, Engine 0.16 part D, D9) is played
+  through views and presenters only for its first 600 ticks, against its golden hashes up to
+  there (`tests/runs/view-play.ts`: `loadRun` cuts it with `presentedRun`, `full: true` keeps it);
+  the run-file tests and `mutants` play it whole.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`

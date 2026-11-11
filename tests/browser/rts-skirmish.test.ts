@@ -1,10 +1,10 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import type { CDPSession, Page } from 'playwright';
-import type { DebugWindow } from '@engine/core/shell';
+import type { DebugWindow, MenusView } from '@engine/core/shell';
 import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 // The RTS skirmish's page in a browser (docs/ROADMAP.md, 0.9 "done when": build a barracks, train
@@ -16,9 +16,12 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // a right click to gather, a touch tap on the barracks, a Train soldier click, a touch box and a
 // touch long-press to send the builders to gather, a middle-drag pan, a wheel zoom out, a click on
 // the minimap that moves the camera to blue's base, a box and a Shift+click for the army and a
-// right click that sends it to the centre ford (the whole match to its end is D9's). The page's
-// loop is the test's (`?debug=step`, one loop step per `window.__ww.step(1)`), so the battle is the
-// same every time. It then exports the recording (`window.wwSkirmish.exportRun`) and replays it
+// right click that sends it to the centre ford. From D9 it starts from the title (Start, with
+// `?debug=step&title=show`), and after the opening a fresh page replays the whole ten-minute win
+// (`runs/match-won.run.json`) through the step hook (`__ww.replay`) to the end screen, its hashes
+// the golden file's, and its own export replays headless. The page's loop is the test's
+// (`?debug=step`: one loop step per `window.__ww.step(1)`, one game tick each), so the battle is
+// the same every time. It then exports the recording (`window.wwSkirmish.exportRun`) and replays it
 // headless with `pnpm -s cli run`, which must pass with every sync hash equal. Where things are on
 // the page comes from the hook (`clientAt`, `units`), never from fixed pixels, so the camera can
 // move. The page runs on its default backend, PixiJS (Engine 0.16 T13b-8). Skipped where Chromium
@@ -26,8 +29,12 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 
 const GAME = 'games/samples/rts-skirmish/';
 const TILE = 16;
-/** Loop steps per game tick (`STEPS_PER_TICK` in play.ts). */
-const STEPS_PER_TICK = 6;
+/**
+ * Loop steps per game tick in manual-loop mode: one (D9; `STEPS_PER_TICK`, 6, is the real-time
+ * page's), so the step hook's `replay` hands a run file's orders over at its own ticks.
+ */
+const STEPS_PER_TICK = 1;
+const WON = 'games/samples/rts-skirmish/runs/match-won.run.json';
 
 interface Unit {
   id: number;
@@ -122,10 +129,20 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
       expect(new URL(page.url()).pathname).toBe(`/${GAME}`);
 
-      // The page in manual-loop mode (`?debug=step`): `window.__ww.step(n)` takes n loop steps
-      // (see platformer.test.ts).
-      await page.goto(`${page.url()}?debug=step`);
+      // The page in manual-loop mode with its title shown (`?debug=step&title=show`):
+      // `window.__ww.step(n)` takes n loop steps (see platformer.test.ts), one game tick each.
+      await page.goto(`${page.url()}?debug=step&title=show`);
       await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      const menus = () => page.evaluate(() => (window as DebugWindow).__ww!.menus()) as Promise<MenusView>;
+      const steps = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
+      // D9: the match starts from the title: The River Ford, Start focused; Enter starts it.
+      await steps(30);
+      const title = await menus();
+      expect([title.state, title.screen, title.focused]).toEqual(['title', 'title', 'start']);
+      expect(await hook(page, 'tick')).toBe(0); // the title holds the game at its start
+      await page.keyboard.press('Enter');
+      for (let i = 0; i < 120 && (await menus()).state !== 'play'; i++) await steps(1);
+      expect((await menus()).state).toBe('play');
       // PixiJS by default (Engine 0.16 T13b-8; headless Chromium's SwiftShader counts as WebGL), so
       // the selection, orders and touch below go through the PixiJS display's letterbox maths.
       expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('pixi');
@@ -278,10 +295,73 @@ describe.skipIf(missing !== null)('the RTS skirmish page (headless Chromium)', (
       expect(replay).toMatchObject({ ok: true, passed: true, hashMismatch: null });
       expect(replay.hashesChecked).toBe(run!.hashes.length);
       expect(replay.finalHash).toBe(run!.hashes.at(-1)?.hash);
+
+      // D9: the whole ten-minute win replayed through the page with the step hook (a fresh page,
+      // `?debug=step`), its state hash equal to the golden file's every 100 ticks, to the end
+      // screen; the page's own export of it then replays headless with no hash mismatch.
+      const won = JSON.parse(readFileSync(join(ROOT, WON), 'utf8')) as { ticks: number };
+      const golden = (
+        JSON.parse(readFileSync(join(ROOT, WON.replace('.run.json', '.hashes.json')), 'utf8')) as {
+          hashes: { tick: number; hash: string }[];
+        }
+      ).hashes;
+      const match = await context.newPage();
+      match.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+      await match.goto(`${server.url}${GAME}?debug=step`);
+      await match.waitForSelector('body[data-backend]', { timeout: 60_000 });
+      expect(await match.evaluate((run) => (window as DebugWindow).__ww!.replay(run), won)).toEqual({
+        ticks: won.ticks,
+      });
+      const pageHashes: { tick: number; hash: string }[] = [];
+      for (const { tick: at } of golden) {
+        const now = await match.evaluate(() => (window as DebugWindow).__ww!.tick);
+        await match.evaluate((n) => void (window as DebugWindow).__ww!.step(n), at - now);
+        pageHashes.push({
+          tick: at,
+          hash: (await match.evaluate(() => (window as DebugWindow).__ww!.hash()))!,
+        });
+      }
+      expect(pageHashes).toEqual(golden);
+      // The page refuses what `pnpm cli run` refuses: the run's one early barracks it cannot pay for.
+      expect(await match.evaluate(() => (window as DebugWindow).__ww!.refused)).toEqual([
+        {
+          tick: 110,
+          kind: 'order',
+          error: 'order 18: faction "red" cannot afford barracks: needs 120 gold, has 115',
+        },
+      ]);
+      expect(await hook(match, 'result')).toBe('won');
+      expect(await match.isVisible('#end')).toBe(true);
+      expect(await match.textContent('#end-title')).toContain('Victory');
+      expect(await match.textContent('#end-text')).toMatch(
+        /^The enemy town centre fell at 9:\d\d \(tick \d+\)\. Trained \d+/,
+      );
+      const whole = await hook(match, 'exportRun', relative(temp, join(ROOT, GAME)));
+      expect(whole!.ticks).toBe(won.ticks);
+      const wholeFile = join(temp, 'match.run.json');
+      writeFileSync(wholeFile, `${JSON.stringify(whole, null, 2)}\n`);
+      // `spawnSync`, not `execFileSync`: a failed run exits 4, and its result says why.
+      const replayed = JSON.parse(
+        spawnSync('pnpm', ['-s', 'cli', 'run', wholeFile, '--json', '--max-output', '1000000'], {
+          cwd: ROOT,
+          encoding: 'utf8',
+        }).stdout,
+      ) as {
+        passed: boolean;
+        hashesChecked: number;
+        hashMismatch: unknown;
+        failure: unknown;
+        errors?: unknown;
+      };
+      expect(replayed, JSON.stringify([replayed.errors, replayed.failure])).toMatchObject({
+        passed: true,
+        hashMismatch: null,
+      });
+      expect(replayed.hashesChecked).toBe(whole!.hashes.length);
       expect(errors).toEqual([]);
     } finally {
       await browser.close();
       await server.close();
     }
-  }, 300_000);
+  }, 600_000);
 });

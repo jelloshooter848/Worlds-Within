@@ -1534,7 +1534,9 @@
         "count": 3,
         "size": 1,
         "ticks": 4
-      }
+      },
+      "pitch": [-2, 2],
+      "cooldown": 2
     },
     "unit-ready:side=own": {
       "sound": "ready",
@@ -1565,10 +1567,20 @@
       }
     },
     "building-hit:side=own": {
-      "sound": "clash"
+      "sound": "alarm",
+      "cooldown": 45,
+      "effect": {
+        "kind": "particles",
+        "color": "#fcbc3c",
+        "count": 3,
+        "size": 1,
+        "ticks": 6
+      }
     },
     "stock-up:side=own": {
-      "sound": "coin"
+      "sound": "coin",
+      "pitch": [0, 2],
+      "cooldown": 3
     },
     "battle-end:won": {
       "sound": "victory",
@@ -1576,6 +1588,10 @@
         "kind": "tint",
         "color": "#f8b800",
         "ticks": 20
+      },
+      "duck": {
+        "amount": 0.2,
+        "hold": 60
       }
     },
     "battle-end:lost": {
@@ -1584,27 +1600,101 @@
         "kind": "tint",
         "color": "#a80020",
         "ticks": 20
+      },
+      "duck": {
+        "amount": 0.2,
+        "hold": 60
       }
     },
     "bark:unitType=worker": {
       "sound": "bark-worker",
-      "pitch": [-1, 1],
-      "cooldown": 6
+      "pitch": [-2, 2],
+      "cooldown": 6,
+      "volume": [0.8, 1]
     },
     "bark:unitType=soldier": {
       "sound": "bark-soldier",
-      "pitch": [-1, 1],
-      "cooldown": 6
+      "pitch": [-2, 2],
+      "cooldown": 6,
+      "volume": [0.8, 1]
     },
     "bark:unitType=archer": {
       "sound": "bark-archer",
-      "pitch": [-1, 1],
-      "cooldown": 6
+      "pitch": [-2, 2],
+      "cooldown": 6,
+      "volume": [0.8, 1]
     },
     "bark:unitType=hero": {
       "sound": "bark-hero",
-      "pitch": [-1, 1],
-      "cooldown": 6
+      "pitch": [-2, 2],
+      "cooldown": 6,
+      "volume": [0.8, 1]
+    },
+    "building-hit:side=enemy": {
+      "sound": "clash",
+      "pitch": [-3, -1],
+      "cooldown": 3,
+      "effect": {
+        "kind": "particles",
+        "color": "#fcfcfc",
+        "count": 3,
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "building-down:side=own": {
+      "sound": "crumble",
+      "duck": {
+        "amount": 0.5,
+        "hold": 10
+      },
+      "effect": {
+        "kind": "particles",
+        "color": "#7c7c7c",
+        "count": 16,
+        "size": 2,
+        "ticks": 20
+      }
+    },
+    "building-down:side=enemy": {
+      "sound": "crumble",
+      "pitch": [1, 2],
+      "effect": {
+        "kind": "particles",
+        "color": "#7c7c7c",
+        "count": 16,
+        "size": 2,
+        "ticks": 20
+      }
+    }
+  },
+  "music": {
+    "ford": {
+      "layers": {
+        "calm": "ford",
+        "danger": "ford-danger"
+      },
+      "fade": 40,
+      "mix": [
+        {
+          "when": {
+            "status": "enemyNear",
+            "lte": 8
+          },
+          "layers": {
+            "calm": 0.6,
+            "danger": 1
+          },
+          "fade": 20
+        },
+        {
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          },
+          "fade": 90
+        }
+      ]
     }
   },
   "hud": [
@@ -1752,6 +1842,95 @@
       "x": 160,
       "y": 111,
       "frame": "banner-lost"
+    },
+    {
+      "as": "panel",
+      "x": 4,
+      "y": 214,
+      "w": 120,
+      "h": 36,
+      "color": "#0c0c1c",
+      "alpha": 0.8,
+      "border": "#fcfcfc",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedName",
+      "x": 8,
+      "y": 217,
+      "font": "ford-small",
+      "color": "#fcbc3c",
+      "outline": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "bar",
+      "status": "selectedHp",
+      "max": "selectedMaxHp",
+      "x": 8,
+      "y": 228,
+      "w": 64,
+      "h": 4,
+      "color": "#58c040",
+      "back": "#302010",
+      "border": "#000000",
+      "low": {
+        "below": 0.35,
+        "color": "#e03020"
+      },
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedHp",
+      "x": 78,
+      "y": 227,
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "training",
+      "x": 8,
+      "y": 237,
+      "font": "ford-small",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "when": {
+        "status": "queue",
+        "gte": 1
+      }
+    },
+    {
+      "as": "bar",
+      "status": "trainingProgress",
+      "max": 100,
+      "x": 64,
+      "y": 239,
+      "w": 56,
+      "h": 3,
+      "color": "#f8b800",
+      "back": "#302010",
+      "border": "#000000",
+      "when": {
+        "status": "queue",
+        "gte": 1
+      }
     },
     {
       "as": "text",

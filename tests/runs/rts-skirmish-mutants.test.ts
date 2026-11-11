@@ -12,6 +12,9 @@ const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
 // Since the full match (Engine 0.16 part D, D8) every kit rule is guarded, the AI opponent's
 // `enemy-knows-only-what-it-saw` too (its fog plan scouts only while it knows no red building).
+// The ten-minute `match-won` and `match-lost` (D9) guard all six with checks at ticks 1 and 2, so
+// each switched-off rule stops them within a hash or two; only their baselines play the whole
+// match (the command takes about 25 s alone).
 const UNGUARDED: string[] = [];
 
 interface GameMutants {
@@ -34,5 +37,5 @@ describe('rts-skirmish mutants', () => {
       expect(r.baseline.passed, r.run).toBe(true);
       expect(r.weak, r.run).toEqual([]);
     }
-  }, 120_000);
+  }, 300_000);
 });

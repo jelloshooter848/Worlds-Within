@@ -171,9 +171,10 @@ describe('presentation invariance on the stepped shell: every effect on, the sta
   });
 
   it.each(runFiles)('%s', async (file) => {
-    const { content, run, golden } = loadRun(ROOT, file);
+    const { content, run, golden, cut } = loadRun(ROOT, file);
     let respawned = false;
     const played = await playRun(ROOT, file, {
+      ...(cut && { untilTick: run.ticks }),
       onTick: (_tick, snapshot) => {
         const events = (snapshot as { events?: unknown }).events;
         if (Array.isArray(events) && events.some((e) => (e as { type?: unknown }).type === 'respawn'))

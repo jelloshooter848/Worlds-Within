@@ -217,6 +217,29 @@ hashes:
   (`enemy-knows-only-what-it-saw` through the AI's `scout` step), so
   `tests/runs/rts-skirmish-mutants.test.ts` lists none unguarded.
 
+### D9: the ten-minute win and loss, balance and feel (golden hashes, items 490-503)
+
+The match was balanced in data only (`content/enemy/blue.json`, `content/types/skirmish.json`,
+`content/maps/ford.world.json`) and recorded as two run files with a throwaway headless bot (not
+kept): `match-won` (5900 ticks, hashes every 100; blue's town centre down at 5803, 9:40 at the
+page's 10 ticks a second) and `match-lost` (5700; red's town centre taken by the push at 5681,
+9:28). A passive player loses at 2025 (3:22). Both pass `pnpm -s cli run` with their golden
+hashes; `mutants` on the game guards all six kit rules with no run weak (about 25 s alone).
+
+- Moved (the types, the map's gold and the plan's steps are world and kit state): `opening`
+  `ba3cccd15c1aa5de` to `5f5724b4b03cbf28`, `ai-barracks` `c5f146d0b4836da5` to
+  `19b073e4e362ab13`, `fog` `82fc61891e2e80b8` to `606269cfac74a8bb`, `razed`
+  `3c8ae6c8450507ff` to `bf1f52ad343cbbe3`; every assertion of the four held unchanged.
+- New: `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`.
+- No other golden hash moved: the engine changes for speed (`World.peek()`, the kit's
+  `readWorld` caching parsed frozen values, the attack system's candidate list, `pnpm cli run`'s
+  lazy snapshots) give the same states; every run file of every game passes with its golden file.
+- Feel: the danger music layer (`ford-danger`, mixed on the kit's `enemyNear`), a varied sfx for
+  every event (`crumble`, `alarm` new), barks with pitch -2 to 2, the selected-unit panel, the
+  camera's edge band and wheel; the page in `?debug=step` plays one tick per loop step and
+  reports its game to the step hook, and the browser test replays `match-won` through it to the
+  end screen with the golden hashes, its export replaying headless with no mismatch.
+
 ## Engine 0.16 part C
 
 The top-down dungeon, **The Old Crypt** (docs/ROADMAP.md, 0.16 part C), built on branch

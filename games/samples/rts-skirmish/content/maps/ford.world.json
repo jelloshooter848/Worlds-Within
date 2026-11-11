@@ -129,8 +129,8 @@
           "dropoff": true
         },
         "Health": {
-          "hp": 800,
-          "max": 800
+          "hp": 1600,
+          "max": 1600
         },
         "Producer": {
           "trains": ["worker"],
@@ -162,8 +162,8 @@
           "dropoff": true
         },
         "Health": {
-          "hp": 800,
-          "max": 800
+          "hp": 1600,
+          "max": 1600
         },
         "Producer": {
           "trains": ["worker"],
@@ -189,7 +189,7 @@
           "item": "gold"
         },
         "Inventory": {
-          "gold": 800
+          "gold": 1000
         }
       }
     },
@@ -204,7 +204,7 @@
           "item": "gold"
         },
         "Inventory": {
-          "gold": 800
+          "gold": 1000
         }
       }
     },
@@ -219,7 +219,7 @@
           "item": "gold"
         },
         "Inventory": {
-          "gold": 800
+          "gold": 1000
         }
       }
     },
@@ -234,7 +234,7 @@
           "item": "gold"
         },
         "Inventory": {
-          "gold": 800
+          "gold": 1000
         }
       }
     },
@@ -249,7 +249,7 @@
           "item": "gold"
         },
         "Inventory": {
-          "gold": 1200
+          "gold": 2400
         }
       }
     },
@@ -264,7 +264,7 @@
           "item": "gold"
         },
         "Inventory": {
-          "gold": 1200
+          "gold": 2400
         }
       }
     },

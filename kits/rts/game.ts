@@ -43,6 +43,11 @@ import { readWorld, type RtsView } from './snapshot';
 export interface RtsWorldPort {
   /** `World.snapshot()`: the whole world as plain JSON. */
   snapshot(): unknown;
+  /**
+   * The same snapshot, read-only and not copied (`World.peek()`, Engine 0.16 part D, D9), when the
+   * world can give it: the view reads it once per change, which with copies was most of a tick.
+   */
+  peek?(): unknown;
   /** `applyOrder(world, order)`: applies it between ticks or refuses it with a reason. */
   applyOrder(order: Order): { ok: true } | { ok: false; error: string };
   /** `World.step()`. */
@@ -89,7 +94,7 @@ export class RtsGame implements HeadlessGame {
 
   /** The world as the kit reads it now (read once per change). */
   view(): RtsView {
-    this.cached ??= readWorld(this.world.snapshot());
+    this.cached ??= readWorld(this.world.peek?.() ?? this.world.snapshot());
     return this.cached;
   }
 

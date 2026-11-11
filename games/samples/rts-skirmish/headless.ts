@@ -59,8 +59,17 @@ export function skirmishResult(view: RtsView, end: RtsEnd): SkirmishResult {
  * kit, sides, ui }`: `sides` from `sidesOf` (so a run file can check `sides.blue.units` instead of
  * counting components) and `ui.selection`, the selected ids.
  */
+/** An entry of a run file's `orders`: a recorded order or an interface action, with its tick. */
+export type RecordedEntry = JsonObject & { tick: number };
+
 export class SkirmishGame implements HeadlessGame {
   readonly player: PlayerInterface;
+  /**
+   * The interface actions taken (D9), in order: each with the length of the kit's `recorded()` when
+   * it came (`at`) and whether it gave an order (`made`, recorded there at `at`), so `recorded()`
+   * can put the action back in the order's place.
+   */
+  private readonly actions: { at: number; made: boolean; entry: RecordedEntry }[] = [];
 
   constructor(
     readonly rts: RtsGame,
@@ -93,9 +102,32 @@ export class SkirmishGame implements HeadlessGame {
     const parsed = interfaceActionSchema.safeParse(order);
     if (!parsed.success)
       return `not an interface action: ${parsed.error.issues.map((i) => i.message).join('; ')}`;
+    const entry = { tick: this.rts.tick, ...order } as RecordedEntry;
+    const at = this.rts.recorded().length;
     const result = this.player.act(this.rts.view(), parsed.data);
-    if (result === null || typeof result === 'string') return result;
+    const made = result !== null && typeof result !== 'string';
+    this.actions.push({ at, made, entry });
+    if (!made) return result;
     return this.rts.issue(result).error;
+  }
+
+  /**
+   * Everything handed to `order` and the page's own commands, as a run file's `orders` (D9): the
+   * kit's recorded orders, with each interface action in its place (in place of the order it gave),
+   * so a replay of a match that came in through `ui` entries (the step hook's `replay` of
+   * `match-won`) makes the same selections and hashes the same (`ui.selection` is in the snapshot).
+   */
+  recorded(): RecordedEntry[] {
+    const orders = this.rts.recorded() as unknown as RecordedEntry[];
+    const out: RecordedEntry[] = [];
+    let i = 0;
+    for (const { at, made, entry } of this.actions) {
+      while (i < at) out.push(orders[i++]!);
+      out.push({ ...entry });
+      if (made) i++;
+    }
+    while (i < orders.length) out.push(orders[i++]!);
+    return out;
   }
 
   /** The world's event log from world tick `sinceTick` (`HeadlessGame.worldEvents`); never in the snapshot. */

@@ -365,6 +365,27 @@ function samePath(a: readonly Cell[], b: readonly Cell[]): boolean {
  * The nearest living entity of another faction within `range` of `from` (by squared distance; ties
  * go to the lowest id), or null. Only entities with an `Owner` count as enemies.
  */
+/** A possible target of `nearestEnemy`: an entity with `Owner`, `Health` and `Position`. */
+interface Candidate {
+  id: Entity;
+  faction: string;
+  at: Cell;
+}
+
+/**
+ * The entities `nearestEnemy` looks through, in id order, read once per attack run (Engine 0.16
+ * part D, D9: a query per unit per tick was most of a big battle's tick). The attack system adds
+ * or removes no `Owner`, `Health` or `Position` and moves no one, so the list stays right for the
+ * whole run; whether each is still fighting is asked at each look, as hits land at once.
+ */
+function candidatesOf(world: World): Candidate[] {
+  return world.query(Owner, Health, Position).map((id) => ({
+    id,
+    faction: (world.get(id, Owner) as { faction: string }).faction,
+    at: world.get(id, Position) as Cell,
+  }));
+}
+
 function nearestEnemy(
   world: World,
   self: Entity,
@@ -372,14 +393,13 @@ function nearestEnemy(
   faction: string | null,
   range: number,
   frozen: (id: Entity) => boolean,
+  candidates: readonly Candidate[],
 ): Entity | null {
   let best: Entity | null = null;
   let bestDist = 0;
-  for (const id of world.query(Owner, Health, Position)) {
-    if (id === self || !fighting(world, id) || frozen(id)) continue;
-    if ((world.get(id, Owner) as { faction: string }).faction === faction) continue;
-    const at = world.get(id, Position) as Cell;
-    if (!inRange(from, at, range)) continue;
+  for (const { id, faction: theirs, at } of candidates) {
+    if (id === self || theirs === faction || !inRange(from, at, range)) continue;
+    if (!fighting(world, id) || frozen(id)) continue;
     const d = distSq(from.x, from.y, at.x, at.y);
     if (best === null || d < bestDist) {
       best = id;
@@ -405,6 +425,7 @@ export const attackSystem: System = {
   name: 'attack',
   run(world) {
     const frozen = frozenCheck(world);
+    let candidates: Candidate[] | null = null;
     for (const id of world.query(Unit, Position)) {
       if (!fighting(world, id) || frozen(id)) continue;
       let cool = world.get(id, Cooldown);
@@ -423,7 +444,8 @@ export const attackSystem: System = {
         target = null;
       }
       if (target === null && task === undefined) {
-        target = nearestEnemy(world, id, pos, factionOf(world, id), unit.range, frozen);
+        candidates ??= candidatesOf(world);
+        target = nearestEnemy(world, id, pos, factionOf(world, id), unit.range, frozen, candidates);
         if (target !== null) world.add(id, Target, { entity: target });
       }
       if (target === null || frozen(target)) continue;

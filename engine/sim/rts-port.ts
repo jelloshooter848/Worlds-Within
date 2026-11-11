@@ -16,6 +16,8 @@ import type { World } from './world';
  */
 export interface RtsPort {
   snapshot(): unknown;
+  /** `World.peek()`: the same snapshot, read-only and not copied (Engine 0.16 part D, D9). */
+  peek?(): unknown;
   applyOrder(order: Order): { ok: true } | { ok: false; error: string };
   step(): void;
 }
@@ -24,6 +26,7 @@ export interface RtsPort {
 export function rtsWorldPort(world: World): RtsPort {
   return {
     snapshot: () => world.snapshot(),
+    peek: () => world.peek(),
     applyOrder(order) {
       const applied = applyOrder(world, order);
       return applied.ok ? { ok: true } : { ok: false, error: applied.error };

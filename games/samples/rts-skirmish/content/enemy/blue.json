@@ -107,7 +107,7 @@
         "type": "train",
         "building": "barracks",
         "unit": "soldier",
-        "upTo": 6
+        "upTo": 16
       }
     },
     {
@@ -120,7 +120,7 @@
         "type": "train",
         "building": "barracks",
         "unit": "archer",
-        "upTo": 3
+        "upTo": 8
       }
     },
     {
@@ -141,7 +141,7 @@
           "type": "soldier",
           "idle": true,
           "min": 2,
-          "max": 3
+          "max": 6
         },
         "target": "nearest-enemy"
       }
@@ -171,42 +171,92 @@
       }
     },
     {
-      "id": "wave",
+      "id": "wave-1",
       "at": 1800,
-      "repeat": {
-        "every": 1500,
-        "times": null
-      },
       "order": {
         "type": "attack",
         "units": {
           "type": "soldier",
           "idle": true,
-          "min": 4
+          "min": 4,
+          "max": 5
         },
         "target": "enemy-base"
       }
     },
     {
-      "id": "wave-archers",
+      "id": "wave-1-archers",
       "at": 1800,
-      "repeat": {
-        "every": 1500,
-        "times": null
-      },
       "order": {
         "type": "attack",
         "units": {
           "type": "archer",
           "idle": true,
-          "min": 2
+          "min": 2,
+          "max": 2
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "wave-2",
+      "at": 3000,
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "soldier",
+          "idle": true,
+          "min": 6,
+          "max": 8
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "wave-2-archers",
+      "at": 3000,
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "archer",
+          "idle": true,
+          "min": 3,
+          "max": 3
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "wave-3",
+      "at": 4200,
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "soldier",
+          "idle": true,
+          "min": 8,
+          "max": 10
+        },
+        "target": "enemy-base"
+      }
+    },
+    {
+      "id": "wave-3-archers",
+      "at": 4200,
+      "order": {
+        "type": "attack",
+        "units": {
+          "type": "archer",
+          "idle": true,
+          "min": 4,
+          "max": 4
         },
         "target": "enemy-base"
       }
     },
     {
       "id": "push",
-      "at": 4800,
+      "at": 5400,
       "repeat": {
         "every": 100,
         "times": null
@@ -222,7 +272,7 @@
     },
     {
       "id": "push-archers",
-      "at": 4800,
+      "at": 5400,
       "repeat": {
         "every": 100,
         "times": null

@@ -262,7 +262,7 @@ export class SkirmishPlay implements Scene {
 
   /** The battle so far as a run file (`recording.ts`), or null before tick 20. */
   exportRun(game?: string): Promise<RecordedRun | null> {
-    return this.recorder.runFile(this.game.rts.recorded(), game);
+    return this.recorder.runFile(this.game.recorded(), game);
   }
 
   private button(b: PageButton): void {
