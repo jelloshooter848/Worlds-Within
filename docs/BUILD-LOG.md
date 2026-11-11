@@ -198,6 +198,84 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
 
+## Engine 0.16 polish P
+
+A polish pass on the orchestrator's review notes on parts C and F (the roadmap's "0.16 polish P:
+parts C and F review notes": C1, C2 and F1 to F6), on branch `engine/0.16-track2` in tasks P1 to
+P11. Presentation and data only: no golden hash, save code or run file is to move. In progress:
+this section is a stub until P11.
+
+### Before shots (P2)
+
+Fifteen 1920x1080 PNGs in [`docs/reports/screenshots/0.16-P/`](reports/screenshots/0.16-P/),
+taken before any change (at `5be26ee`), each looked at in full and showing its problem. The
+after shots (P11) take the same names with `after-` and the same commands.
+
+| File                                    | Item | What it shows                                                                                           |
+| --------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------- |
+| `before-01-crypt-lighting.png`          | C1   | The crypt (0.16-C's 03, escape at 950): hard rings in the braziers' and the hero's light                |
+| `before-02-warden-hall-lighting.png`    | C1   | The warden hall (0.16-C's 07, win at 1085): rings round the four torches and the Warden's glow          |
+| `before-03-courtyard.png`               | C2   | The courtyard, room-wide (win at 30): four crates and a heart on bare floor                             |
+| `before-04-guard-room.png`              | C2   | The guard room (lost-in-the-guard-room at 345): the orcs and bats on bare floor                         |
+| `before-05-chasm.png`                   | C2   | The chasm (win at 130): the pits, a chest and two skulls; the rest bare                                 |
+| `before-06-ossuary.png`                 | C2   | The ossuary (win at 490): pits, a few skulls, the key; the south half bare                              |
+| `before-07-store-room.png`              | C2   | The store room (escape at 120): a chest and two empty braziers on bare floor                            |
+| `before-08-bat-hall.png`                | C2   | The bat hall (escape at 560): four pillars and the key, the room mostly dark bare floor                 |
+| `before-09-label-cut-at-edge.png`       | F1   | The siege at 14:30 (delegated at 30, CLI 3D): "WATCHTOWER 37%" cut at the left edge ("CHTOWER")         |
+| `before-10-siege-fields.png`            | F6   | The siege at 14:00 (delegated at 0, CLI 3D): plain grass between the village, the river and the camp    |
+| `before-11-dawn-skirt.png`              | F5   | The page at the dawn, day 3 06:00 (F's 09 state): the skirt past the map's bottom-right edge is lighter |
+| `before-12-fortify-round-controls.png`  | F2   | The page's walls round mid-wave: the pause, 2D and sound controls over the round's bottom panel         |
+| `before-13-sabotage-round-controls.png` | F2   | The page's sabotage room mid-round: the controls over the room's progress bar and bottom wall           |
+| `before-14-mission-open-flash.png`      | F3   | The page at the first loop step of world tick 41 after Delegate at 40: the 3D picture all white         |
+| `before-15-results-losses.png`          | F4   | The page's siege results at 260: "Raiders: 4 raider, ram, Grell, Vosk", "Village: 2 soldier"            |
+
+Made with (from the repo root). The CLI shots (01-10) repeat byte for byte when rerun (09 was
+rerun and compared by its sha256):
+
+```sh
+D=games/samples/dungeon/runs; S=games/samples/mini-siege/runs; O=docs/reports/screenshots/0.16-P
+pnpm -s cli screenshot $D/escape.run.json --tick 950 --scale 6 --out $O/before-01-crypt-lighting.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 1085 --scale 6 --out $O/before-02-warden-hall-lighting.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 30 --scale 6 --out $O/before-03-courtyard.png --json
+pnpm -s cli screenshot $D/lost-in-the-guard-room.run.json --tick 345 --scale 6 --out $O/before-04-guard-room.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 130 --scale 6 --out $O/before-05-chasm.png --json
+pnpm -s cli screenshot $D/win.run.json --tick 490 --scale 6 --out $O/before-06-ossuary.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 120 --scale 6 --out $O/before-07-store-room.png --json
+pnpm -s cli screenshot $D/escape.run.json --tick 560 --scale 6 --out $O/before-08-bat-hall.png --json
+pnpm -s cli screenshot $S/delegated.run.json --tick 30 --backend three --allow-software-gl --out $O/before-09-label-cut-at-edge.png --json
+pnpm -s cli screenshot $S/delegated.run.json --tick 0 --backend three --allow-software-gl --out $O/before-10-siege-fields.png --json
+# 11-15, the 3D page (seed 11, 1920x1080 window, the skin's render scale 6, software WebGL):
+pnpm exec tsx tests/browser/siege-review-shots.ts $O before
+```
+
+`tests/browser/siege-review-shots.ts` (added in P2) builds and serves the repo with
+`tests/browser/serve.ts`, opens the 3D page with `?debug=step` and drives it with the `wwSiege`
+hooks: Begin, then the walls' card at 10 played with `fortify-played`'s recorded keys for 100
+loop steps (12); the sabotage's card at 40 played with `played`'s keys for 160 steps (13);
+Delegate at 40, the first step of tick 41 (14), on to the results at 260 (15), Continue, Begin
+and the dawn at tick 30 (11). The page shots are not checked to repeat byte for byte (the page's
+loop steps, not run ticks; P-2).
+
+### Build decisions to review (polish P)
+
+Numbered `P-n` on this track; the orchestrator copies them into FEEDBACK-LOG.md with owner
+numbers at merge (this track does not edit it).
+
+- **P-1.** The dawn skirt's before shot is a page shot, not a CLI one: `pnpm cli screenshot
+dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but lit and framed
+  nearly as the afternoon (a closer camera than the page's, the map running past the picture), so
+  the darkened map and the lighter skirt do not show in it. P9's after shot uses the page too.
+- **P-2.** The page shots come from a committed script, `tests/browser/siege-review-shots.ts`
+  (run with `pnpm exec tsx`, not a test), not a scratch one as in F10 (F-19), so P11 retakes the
+  after shots with the same steps.
+- **P-3.** The flash shot (F3) is the first loop step of world tick 41 after Delegate at 40: the
+  white `mission-open` flash lasts 12 loop steps (ticks 41 and 42), not one frame as part F's
+  notes say.
+- **P-4.** C2's shots cover all six rooms other than the crypt and the warden hall (01 and 02
+  show those two), more than the four the task asked for.
+- Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
+  left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
+
 ## Engine 0.16 part F: the mini siege in 3D low-poly
 
 Built on branch `engine/0.16-track2` in ten tasks (F1-F10; not tagged, nothing published) for the

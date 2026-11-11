@@ -1034,6 +1034,49 @@ is [the chosen mockup](reports/mockups/mini-siege-3d.png) (the 2D pixel mockup,
 - [ ] Owner playtest and screenshot review are accepted. (Open: decision F-21 in the build log,
       numbered into FEEDBACK-LOG.md at merge.)
 
+### 0.16 polish P: parts C and F review notes
+
+A polish pass on the orchestrator's review notes on parts C and F, built on track 2 (tasks P1 to
+P11). The [build log](BUILD-LOG.md#engine-016-polish-p) has the before and after shots of every
+item, in `docs/reports/screenshots/0.16-P/`.
+
+**Scope:**
+
+- **C1 light banding:** the 2D lights' falloff shows hard rings (the crypt, the warden hall);
+  smooth it with deterministic dithering in the engine's lighting, in both 2D backends.
+- **C2 bare rooms:** The Old Crypt's rooms are mostly bare floor (the courtyard, the guard room,
+  the chasm, the ossuary and the rest); dress all eight from data, through an optional,
+  presentation-only decoration grid per room in the top-down kit.
+- **F1 labels cut at the picture edge (M45):** a world label whose anchor is in the picture but
+  whose box runs past its edge is cut; keep world labels inside the picture.
+- **F2 page controls over a round:** the page's pause, 2D and sound controls sit over the bottom
+  of a hosted round's picture (the walls' panel, the room's bar); keep them clear of it.
+- **F3 the mission-open white flash:** after Delegate the `mission-open` flash whites out the
+  whole 3D picture for two world ticks; make it gentle.
+- **F4 plurals in losses:** the results write "4 raider", "2 soldier"; use plurals.
+- **F5 the lighter skirt at dawn:** past the map's edge the skirt stays lighter than the darkened
+  map at dawn; match the map's light.
+- **F6 sparse siege fields:** the open grass between the village, the river and the camp is
+  plain; fill it from decor data.
+
+**Rules:** presentation and data only: no golden hash, save code or run file moves.
+`games/rts`, `games/rts-classic`, `kits/rts`, `kits/towerdefense` and the tower-defense sample
+are not touched.
+
+**Done when:**
+
+- [ ] C1: the crypt's and the warden hall's lights fall off without visible rings, the same on
+      every run, in both 2D backends.
+- [ ] C2: each of the crypt's eight rooms is dressed from its data, and no dungeon hash moved.
+- [ ] F1: no world label is cut at the picture's edge (M45 closed).
+- [ ] F2: the page's controls do not cover a round's picture (the fortify and sabotage rounds).
+- [ ] F3: the mission-open flash after Delegate no longer whites out the picture.
+- [ ] F4: the results' losses use plurals ("4 raiders", "2 soldiers").
+- [ ] F5: at dawn the skirt matches the map's light past its edges.
+- [ ] F6: the siege's open fields are fuller, from decor data, with no hash moved.
+- [ ] Before and after shots of every item sit side by side in the build log, and the checks
+      pass: `pnpm lint && pnpm typecheck && pnpm docs:check && pnpm test && pnpm build`.
+
 **Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
 pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.
 
