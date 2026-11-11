@@ -517,7 +517,9 @@ pass unchanged).
   length) and mixes the danger in while the kit's new `enemies` status is at least 1 (30 ticks in,
   90 out). The title and every room without a `music` field play it.
 - **HUD:** the item panel moved to the bottom-right of the right margin (`y` 149): the page's
-  volume control and pause button sat over its old place.
+  volume control and pause button sat over its old place. From T11 the panel has `when: "item"`:
+  it shows only once an item is owned (the review screenshots showed an empty frame before, and
+  its edge peeking out behind the intro dialog).
 - **Accessibility:** shakes follow the player's shake setting and flashes (the screen flashes,
   the room dip) are skipped with reduced flashing, the additive particles halved (the engine's
   rules); the white blink of a hit enemy or hero uses the kit's `calm` tag instead.
@@ -537,3 +539,12 @@ pass unchanged).
   `win` and `boss-lost` through the built page with their golden hashes and end states (and
   steps walk-east's picture 16 single ticks on before reading its pixels, past the room dip).
   `engine/tools/edit.test.ts` sets `crypt-danger`'s tempo with `crypt`'s: the layers keep one.
+
+## Review screenshots (Engine 0.16 part C T11; feedback items 455-462)
+
+Ten 1920x1080 PNGs in `docs/reports/screenshots/0.16-C/` (title, intro dialog, the lit crypt, a
+hurt in the guard room, the dash over the chasm, the key and the locked boss door, the Warden's
+telegraph and a hit, the victory dialog and the end screen), each `pnpm -s cli screenshot <run>
+--tick N --scale 6` with `matchesHeadless: true`; the exact commands are in `docs/BUILD-LOG.md`
+(Engine 0.16 part C, Review screenshots). Retake them with the same commands after a change to
+the skin, the menus or the rooms.

@@ -703,6 +703,9 @@ describe('the dungeon sample: the boss room, the win and the loss (Engine 0.16 p
     expect(item('hp', 'hearts')).toBeDefined();
     expect(item('keys', 'counter')).toBeDefined();
     expect(item('item', 'icon')?.frames).toEqual({ bomb: 'bomb', dash: 'flask-big-green' });
+    // The item panel shows only once an item is owned (0.16 part C T11: no empty frame before).
+    const itemPanel = hud.find((h) => h.as === 'panel' && h.y === 149);
+    expect(itemPanel).toMatchObject({ when: 'item' });
     expect(item('bossHp', 'bar')).toMatchObject({ max: 'bossMaxHp', when: 'bossHp' });
     expect(item('bossName', 'text')).toMatchObject({ when: 'bossHp' });
     let fight: Frame['status'] | null = null;

@@ -26,7 +26,7 @@ or X where the shell does not show the end itself; from Engine 0.16 part C T7 `g
 falls, a dialog and the end screen (`menus.end`: time, rooms seen and health); from T9 the hero
 Sir Edrin's intro, the victory dialog and tune when the Warden falls (`flag.bossDefeated`), the
 room's own music (the warden hall's layered `warden`, mixed by the shell's mixer from the frame
-status) and a HUD with hearts, keys, the selected item and the boss bar. Its `CLAUDE.md` is a worked example of
+status) and a HUD with hearts, keys, the selected item (its panel shown once an item is owned, T11) and the boss bar; T10 the combat feel (sparks, knockback dust, soul wisps, hit-pauses, dash afterimages, torch embers, a danger music layer). The part's review screenshots are in `docs/reports/screenshots/0.16-C/` (docs/BUILD-LOG.md, Engine 0.16 part C). Its `CLAUDE.md` is a worked example of
 building a top-down game on the engine.
 
 ## Public API entry points

@@ -1,6 +1,6 @@
 # Build log
 
-This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A and B on branch `engine/build-0.15`, for the
+This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A, B and C on branch `engine/build-0.15`, for the
 owner's review. Nothing in it is merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
@@ -83,6 +83,15 @@ the API review listed (`1.0-1` to `1.0-11`).
   game, ten review screenshots in `docs/reports/screenshots/0.16-B/`; no golden hash moved (the
   old sample is `games/platformer-classic`, hashes unchanged). Not met: the owner's playtest
   (item 393) and screenshot review (item 394).
+- **0.16 part C The top-down dungeon, The Old Crypt: built, awaiting review.** Hopper's Way's
+  fixes from the part B review; the dungeon redrawn at 16:9 on 0x72's CC0 DungeonTileset II;
+  2D lighting and mood in skins (darkness, lights, flicker, vignette, dust); the top-down kit's
+  dash and pits and a data-driven boss; dialog boxes and an end screen in the shell; a new wing
+  (eight rooms in all), the Bone Warden's three-phase fight, win and loss run files from tick 0,
+  layered boss music and a combat-feel pass; ten review screenshots in
+  `docs/reports/screenshots/0.16-C/`. Hashes re-recorded only for T1's new Hopper's Way enemies
+  and the part's own new runs (listed in its section). Not met: the owner's playtest (item 455)
+  and screenshot review (item 456).
 
 ### How to try each sample
 
@@ -126,7 +135,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 399** (next unused 400). Awaiting the owner's answer, by release (an answer by number is
+used is 462** (next unused 463). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -144,10 +153,14 @@ enough; silence so far has meant the build kept its default):
   and left in the screenshots), **400-418** (smaller build choices of T1-T3 and the build
   process, added by the finalize pass).
 - Engine 0.16 part C: **419-424** (T1, Hopper's Way's fixes after the part B review: the title's
-  HUD, the 2.5D portrait, the levels' decoration and new enemies); **437-440** (T8, The Old Crypt's
-  new wing: the layout, beat-the-warden re-recorded, props as placed lights, the HUD's item icon);
-  **441-447** (T9, the Bone Warden's fight, the win and loss runs, the three ends, the hero, end
-  music per trigger, per-value HUD icons, room music).
+  HUD, the 2.5D portrait, the levels' decoration and new enemies); **425** (T2, the CC0 pack);
+  **426-433** (T3, 16:9 on the CC0 art); **434-436** (T4, lighting; 434 the PixiJS follow-up);
+  **437-440** (T8, The Old Crypt's new wing: the layout, beat-the-warden re-recorded, props as
+  placed lights, the HUD's item icon); **441-447** (T9, the Bone Warden's fight, the win and loss
+  runs, the three ends, the hero, end music per trigger, per-value HUD icons, room music);
+  **448-454** (T10, the combat feel and polish); **455** (the owner's playtest), **456** (the
+  owner's screenshot review), **457-462** (T11: the item panel fix, two looks left, and the
+  smaller choices of T5-T7).
 
 ### Items not met, and where they went
 
@@ -171,22 +184,248 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
 
-## Engine 0.16 part C (in progress)
+## Engine 0.16 part C
 
-Written up in full by the part's finalize task (T11); until then, the changes a reviewer must not
-miss:
+The top-down dungeon, **The Old Crypt** (docs/ROADMAP.md, 0.16 part C), built on branch
+`engine/build-0.15` in eleven tasks (T1-T11; not tagged, nothing published). The top-down sample
+became a short dungeon of eight rooms at 16:9 (320x180; 6x is 1920x1080) on 0x72's CC0
+DungeonTileset II, lit by torches with darkness at the edges, with a dash that opens new paths,
+a key and a locked boss door, the Bone Warden (a three-phase boss in data), an intro and an end
+in dialog boxes, an end screen, layered boss music and a combat-feel pass. T1 first fixed three
+things the part B review screenshots showed in Hopper's Way. **Open for the owner:** the
+playtest (item 455) and the screenshot review (item 456), then the build choices 419-454 and
+457-462.
 
-- **T8, golden hashes re-recorded:** `games/samples/dungeon/runs/beat-the-warden` only (with
-  `WW_UPDATE_GOLDEN=1 pnpm test tests/runs`). Reason: the chasm's east door into the warden hall
-  became a locked door whose key lies in the new ossuary, so the run's input now fetches it first
-  (1502 ticks; T6's fight input 542 ticks later). `escape`, `walk-east`,
-  `lost-in-the-guard-room` and `cross-the-chasm` kept their hashes; the new run
-  `to-the-boss-door` got its first ones. Feedback items 437-440.
-- **T9, golden hashes re-recorded and runs replaced:** `beat-the-warden` was removed (the boss
-  changed: 6 hp and three phases) and replaced by `win` (title to the Warden beaten, from tick 0)
-  and `boss-lost`; `to-the-boss-door` was re-recorded (the warden hall gained two hearts, which
-  its last 40 ticks' snapshots list). Every other dungeon run kept its hashes. Engine additions:
-  `menus.triggers.end[].music` and a HUD icon's `frames`. Feedback items 441-447.
+### What was built
+
+- **T1 Hopper's Way fixes** (part B's sample; written up in part B's "Fixes after review",
+  below): no HUD under the title and the screens opened from it (engine: the shell's
+  `GameMenus.hudShown` and the displays' `showHud`, both backends, and the screenshot tool's
+  `title` and `levels` overlays), a 2.5D portrait of the 2.5D hero, and fuller 2D levels (the
+  platformer kit's optional presentation-only `decor` grid, original and Kenney props, seven more
+  enemies). Eight golden hash files re-recorded (below). Items 419-424.
+- **T2 the CC0 art pack:** 0x72's DungeonTileset II v1.7 in
+  `games/samples/dungeon/assets/dungeon-tileset-ii/` (its one 512x512 sheet with the tile list,
+  three autotile atlases, 65 KB), credited in `assets/CREDITS.md`, checked by `assets.test.ts`.
+  Item 425.
+- **T3 The Old Crypt at 16:9 on the CC0 art:** the 320x180 screen with the 256x176 room centred,
+  the skin on the pack's PNG plus two text sheets cut, turned and pasted from it (wall joins,
+  side doors, blades, hit-flash silhouettes, the statue, shaded floors) and a few original pieces
+  in its colours (the brazier, key, panel and padlock), particles, shakes, flashes and hit-pauses
+  on the kit's events, a framed HUD (hearts, keys, the item), the end banner and restyled menus;
+  engine additions a tile's `vary`, a hearts item's `half`, any HUD item's `when` and the kit's
+  opt-in `idle` hero state (no hash moved). Items 426-433.
+- **T4 engine: 2D lighting and mood in skins** (`engine/core/fx/lighting.ts`, drawn by Canvas2D):
+  a skin's `lighting` block with darkness per map tag or id (blended across a room slide's map
+  `parts`), lights per kind, state, tile, fixed place (with an animated sprite) and event,
+  flicker from the presentation RNG, banded falloff, a vignette and room-wide ambient dust; the
+  `Renderer.gradient` call; the fx lab's night level and The Old Crypt's torch-lit rooms. No hash
+  moved. Items 434-436 (434: the PixiJS backend's lighting pass, a follow-up).
+- **T5 top-down kit: the dash** (`kits/topdown`, `items.ts`): the kit's third item, a burst along
+  the facing tuned in data (`kitOptions.topdown.dash`: 8 ticks, 48 px, cooldown 24, guard 6),
+  unhurtable while it lasts, that crosses the new pit tile (`^`) under the new rule
+  `dash-crosses-pits`; events `dash` and `dash-end`; `hero.dash` in the snapshot only once owned,
+  so no existing hash moved. The chasm room and the `cross-the-chasm` run. Item 459.
+- **T6 top-down kit: a data-driven boss and combat-feel events:** a room's `boss` field (size,
+  hp, contact, hit invulnerability, knock resistance, a looping pattern of idle, telegraph,
+  charge, shoot (ring or spread), slam and summon steps, phases by hp, a defeat sequence and a
+  world flag), the `shutters: "boss"` room seal, six boss events and the rules `boss-patterns`,
+  `boss-phases`, `boss-hit-invuln` and `boss-seals-room`; `hit`, `kill`, `stun` and boss events
+  placed for presenters beside the event (a `WeakMap`), never in the snapshot. A first warden
+  hall and `beat-the-warden` run (both replaced by T9). Item 460.
+- **T7 engine shell: dialog boxes and the end screen for top-down games:** `game.json`'s
+  `menus.dialogs` (speaker, portrait, pages, rate, lines) and `menus.triggers` (an intro after
+  Start; end triggers, a status test each, showing their dialog and then the end screen with
+  their heading), the game's ticks held under a dialog, dialogs skipped with `?debug=step` and
+  `?record`; the kit's `time`, `roomsSeen`, `exited`, `dead` and `flag.<id>` status;
+  `screenshot --overlay dialog:<id>`; `validate` checks portraits, glyphs and trigger ids.
+  Item 461.
+- **T8 the new wing:** eight rooms in all: the five old ones unchanged, the chasm (the dash), a
+  new ossuary (a pit band, monsters and a key on a ledge only the dash reaches) and the warden
+  hall behind the chasm's now locked east door; the `to-the-boss-door` run; the chasm, ossuary
+  and hall lit and dressed with the pack's banners, fountains and skulls. Items 437-440.
+- **T9 the boss room, the win and the loss:** the Bone Warden (the pack's big demon, 6 hp, three
+  phases, every attack after a telegraph, telegraph and rage poses cut from the pack), Sir
+  Edrin's three-page intro, a victory dialog and tune on `flag.bossDefeated`, three ends,
+  layered MML boss music (calm, fight, rage) mixed from the frame status through the shell's
+  mixer, sounds for every boss action and the dash, the HUD's item icon per value and the boss
+  bar's panel; engine additions `menus.triggers.end[].music` and a HUD icon's `frames`; runs `win`
+  and `boss-lost` replace `beat-the-warden`. Items 441-447.
+- **T10 combat feel and polish, browser play test:** hit sparks and knockback dust with
+  hit-pauses, soul wisps and bone bits on kills, a sword trail, dash afterimages, chest rays and
+  pickup rings, torch embers (engine: a placed light's `emit`), the room slide with a dip to dark
+  (engine: `transitions.level: false`), fades on Start, Back to title and the fall, a sound for
+  every action with pitch variation, a danger music layer (the kit's new `enemies` status), the
+  item panel moved clear of the page's volume control; the browser test replays `win` and
+  `boss-lost` through the built page. Items 448-454.
+- **T11 close-out:** the ten review screenshots (below), one fix found in them (the item panel
+  shown only once an item is owned, item 457), this section, the restored `## Engine 0.16 part B`
+  heading below (T8 had replaced it with the in-progress note, breaking the roadmap's link), the
+  roadmap's Done when, the feedback items 455-462, the dungeon's module page and `CLAUDE.md`.
+
+### Choices made
+
+Each is built and kept unless the owner says otherwise; the full text is in
+[FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part C").
+
+1. Hopper's Way's fixes: the HUD hidden under the title only (419), the text-art 2.5D portrait
+   (420), the kit's `decor` grid for 2D props (421-423), new enemies placed so no run's input
+   changed (424).
+2. The CC0 pack kept as its one sheet with a tile list; torches and bats from it or original art
+   (425).
+3. 320x180 with HUD panels over the room's corners rather than a HUD band (426); the pack's
+   monsters for the old ones (427); pieces cut from the pack as text sheets (428, 429); four
+   small engine additions (430); the scene through the page's presenter and the old status
+   lines gone (431, 432); no step sound (433).
+4. Lighting: PixiJS left for later (434), the torches placed by the skin rather than the rooms
+   (435), the darkness levels and banded falloff (436).
+5. The wing: two ways through and counted keys (437), `beat-the-warden` re-recorded then replaced
+   (438, 442), props as placed lights (439), the item icon per value (440, 446).
+6. The Warden's fight and look (441), three ends (443), Sir Edrin (444), per-ending music (445),
+   room music and the layered boss song (447).
+7. The feel pass: its strength (448), the afterimages (449), embers (450), the slide kept for room
+   changes (451), the danger layer (452), sounds (453), the item panel's place (454).
+8. The close-out: the item panel hidden until an item is owned (457); a dialog box over the item
+   panel's corner left for the owner (458); the end screen's "Rooms seen" without the total
+   (462).
+
+### Smaller build choices
+
+Recorded by this close-out for T5-T7, which had no items of their own: the dash's default
+tuning, its invulnerability and `hero.dash` only once owned (459); the boss in a room's data and
+event places kept beside the snapshot, never in it (460); dialogs as a shell feature that holds
+the game and is skipped under the step hook and the recorder, so every run replays unchanged
+(461).
+
+### Golden hashes
+
+Re-recorded with the repo's tools (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`), never by hand:
+
+- **T1, Hopper's Way** (the new enemies are in every snapshot's `actors` from tick 0; no run
+  file's steps or checks changed): `level-1`, `level-1-lost`, `level-1-hurt`, `level-2`,
+  `level-2-lost`, `level-3`, `level-3-lost` and `full-game`. The decoration, the portrait and the
+  title's HUD moved no hash.
+- **T8, `beat-the-warden`** (T6's own run): the chasm's east door became locked, so its input
+  fetches the ossuary's key first (1502 ticks). Removed in T9.
+- **T9, `to-the-boss-door`** (T8's own run): the warden hall gained two hearts, which its last
+  ticks' snapshots list.
+- **New runs got their first hashes:** `cross-the-chasm` (T5), `beat-the-warden` (T6, gone),
+  `to-the-boss-door` (T8), `win` and `boss-lost` (T9).
+- **Unchanged through the whole part:** the dungeon's `walk-east`, `escape` and
+  `lost-in-the-guard-room` (no change to `escape`'s file or hashes: the five old rooms were never
+  edited, the dash's snapshot field appears only once owned and the boss and dialog work moved
+  no state), every other game's run files and the world fixtures. T2-T4, T7 and T10-T11 are
+  presentation or shell only (`tests/runs/presentation-invariance.test.ts` and
+  `stepped-shell-invariance.test.ts` pass unchanged).
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/dungeon/
+           # arrows walk, X (or Z) the sword, C the item (bombs, the dash); Escape or P pauses
+pnpm -s cli run games/samples/dungeon/runs/win.run.json --json        # tick 0 to the Warden beaten
+pnpm -s cli run games/samples/dungeon/runs/boss-lost.run.json --json  # also escape, walk-east, lost-in-the-guard-room, cross-the-chasm, to-the-boss-door
+pnpm -s cli mutants games/samples/dungeon --json                      # every top-down kit rule guarded
+pnpm -s cli validate games/samples/dungeon --json
+pnpm -s cli screenshot games/samples/dungeon/runs/win.run.json --tick 1085 --scale 6 --json
+pnpm test games/samples/dungeon tests/runs tests/browser/dungeon.test.ts tests/browser/menus.test.ts
+```
+
+### Done when
+
+- **The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
+  that pass in CI: met.** `win` plays the whole dungeon from tick 0 (the courtyard) through the
+  chasm's dash, the ossuary's key and the locked door to the Bone Warden beaten
+  (`flags` `["bossDefeated"]` at 1879); `boss-lost` dies in the fight; both exit 0 through
+  `pnpm -s cli run`, match their golden hashes in `tests/runs/run-files.test.ts` and
+  `backend-parity.test.ts`, and replay through the built page in `tests/browser/dungeon.test.ts`;
+  `tests/browser/menus.test.ts` plays from the title by keyboard through the intro to the Warden
+  beaten, the victory dialog and the end screen. The old ends keep their runs (`escape`,
+  `lost-in-the-guard-room`).
+- **Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
+  change: met.** `walk-east`, `escape` and `lost-in-the-guard-room` pass with their hashes from
+  before the part; the part's own `beat-the-warden` and `to-the-boss-door` were re-recorded for
+  the changes listed above; `mutants` exits 0 for the dungeon.
+- **Owner playtest and screenshot review of the dungeon: open (items 455 and 456).** The
+  screenshots are below.
+
+### Review screenshots (item 456)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-C/`](reports/screenshots/0.16-C/), each
+320x180 at `--scale 6`, the picture's state hash matching the headless run's
+(`matchesHeadless: true`):
+
+| File                                                                        | What it shows                                                                                      |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-C/01-title.png)                     | The title: name, subtitle, the knight and the orc, the menu over the dimmed courtyard (no HUD)     |
+| [02-intro-dialog.png](reports/screenshots/0.16-C/02-intro-dialog.png)       | Sir Edrin's intro dialog over the courtyard: speaker tab, portrait, typed page, the more mark      |
+| [03-lit-crypt.png](reports/screenshots/0.16-C/03-lit-crypt.png)             | The crypt lit by two braziers, darkness at the edges, dust, the hero raising the relic             |
+| [04-combat-hurt.png](reports/screenshots/0.16-C/04-combat-hurt.png)         | The guard room's fight: the knight hit by the orc (white flash, red screen flash), the bats about  |
+| [05-dash-over-chasm.png](reports/screenshots/0.16-C/05-dash-over-chasm.png) | The dash over the chasm's pits: the afterimage, the flask in the item panel, the locked door ahead |
+| [06-key-locked-door.png](reports/screenshots/0.16-C/06-key-locked-door.png) | Back in the chasm with the ossuary's key (x1), at the warden hall's locked door                    |
+| [07-boss-telegraph.png](reports/screenshots/0.16-C/07-boss-telegraph.png)   | The Bone Warden's charge telegraph (burning eyes, red glow), the boss bar, the hall's four torches |
+| [08-boss-hit.png](reports/screenshots/0.16-C/08-boss-hit.png)               | A sword hit on the Warden: its white flash, the warm screen flash, the bar down a point            |
+| [09-victory-dialog.png](reports/screenshots/0.16-C/09-victory-dialog.png)   | The victory dialog after the Warden's defeat                                                       |
+| [10-end-screen.png](reports/screenshots/0.16-C/10-end-screen.png)           | The end screen: "The Warden is at rest", the art credit, time, rooms seen, health, Back to title   |
+
+Made with (from the repo root):
+
+```sh
+R=games/samples/dungeon/runs; O=docs/reports/screenshots/0.16-C
+pnpm -s cli screenshot $R/win.run.json --tick 3 --overlay title --scale 6 --out $O/01-title.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 0 --overlay dialog:intro --scale 6 --out $O/02-intro-dialog.png --json
+pnpm -s cli screenshot $R/escape.run.json --tick 950 --scale 6 --out $O/03-lit-crypt.png --json
+pnpm -s cli screenshot $R/lost-in-the-guard-room.run.json --tick 408 --scale 6 --out $O/04-combat-hurt.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 368 --scale 6 --out $O/05-dash-over-chasm.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 936 --scale 6 --out $O/06-key-locked-door.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1085 --scale 6 --out $O/07-boss-telegraph.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1196 --scale 6 --out $O/08-boss-hit.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1880 --overlay dialog:victory --scale 6 --out $O/09-victory-dialog.png --json
+pnpm -s cli screenshot $R/win.run.json --tick 1900 --overlay end --scale 6 --out $O/10-end-screen.png --json
+```
+
+Each was looked at in full. **Fixed:** the item panel showed as an empty frame before an item is
+owned (04) and its edge peeked out past the intro dialog's corner (02); it now shows only once an
+item is owned (`when: "item"`, item 457), and 02 and 04 were retaken. **Recorded, not fixed:**
+once an item is owned the panel's right edge and bottom still show past a dialog box's
+lower-right corner (09; item 458); the end screen's "Rooms seen 4" has no total (the win's route
+sees four of eight rooms; item 462); no run has the hero striking an ordinary monster, so the
+monsters' white flash is shown on the Warden (08) and the guard room's shot is the hero's own
+hurt (04); `pnpm cli screenshot` draws only the effects alive at the shot tick, so a hit's sparks
+and dust, which start on the hit's tick, show only as their first frame (as T10 noted).
+
+### Deviations from the roadmap
+
+- **Assets:** the named pack (0x72's DungeonTileset II) has no torches, bats or sounds: the
+  brazier, the key, the panel and the padlock are original art in its colours, the bat is the
+  pack's imp, and the sound stays our MML (items 425, 427, 428).
+- **PixiJS lighting:** the PixiJS backend (part A's T13b, item 323) does not draw a skin's
+  `lighting` yet; it needs the same pass when that backend is built (item 434). The game plays on
+  Canvas2D, which draws it.
+- **Binary files:** the CC0 pack in the dungeon's `assets/` (allowed by item 322) and the ten
+  review screenshots (allowed since part B, item 395).
+
+### Finalize pass (checks)
+
+Run on the T11 tree before committing: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`,
+`pnpm test` (261 files, 3226 tests passed and 1 skipped: the opt-in every-tick save check of
+0.8) and `pnpm build` all pass; all 75 run files in the repo (`git ls-files '*.run.json'`) exit 0
+through `pnpm -s cli run`; `pnpm -s cli validate` passes for all eight game folders and the
+tower-defense kit's good fixture (`kits/towerdefense/__fixtures__/bad` fails, as it must);
+`pnpm -s cli mutants games/samples/dungeon` exits 0 (all seven run files pass as they are, no
+rule unguarded, no run weak on its `guards`). The agent-docs test passes: the touched modules
+(the dungeon sample) keep their `CLAUDE.md`, `AGENTS.md` and `llms.txt` page.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 455 and 456.
+- The build choices of part C (items 419-454, 457-462) wait for the owner's answers.
+- A dialog box over the item panel's corner (458); the end screen's rooms without a total (462).
+- The PixiJS backend's lighting pass (434), with part A's PixiJS backend (T13b, item 323).
+- From part B: the owner's playtest and screenshot review (393, 394), which parts C-F wait for,
+  and the looks recorded there (398, 399).
+
+## Engine 0.16 part B
 
 The flagship platformer, **Hopper's Way** (docs/ROADMAP.md, 0.16 part B), built on branch
 `engine/build-0.15` in eleven tasks (T1-T11; not tagged, nothing published). The platformer

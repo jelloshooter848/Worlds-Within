@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 455.** (Last used: 454.)
+**Next unused number: 463.** (Last used: 462.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1818,3 +1818,35 @@ door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files
   pitches. OK?
 - **454.** The item panel moved from the top-right to the bottom-right corner of the right margin:
   the page's volume control and pause button covered it. OK?
+
+**Engine 0.16 part C, T11: close-out** (details in `docs/BUILD-LOG.md`, Engine 0.16 part C):
+
+- **455.** Owner playtest (part C's Done when): please play The Old Crypt
+  (`pnpm dev`, then `/games/samples/dungeon/`) from the title through the intro, the dash, the
+  ossuary's key and the locked door to the Bone Warden's defeat and the end screen, with keyboard
+  and, if you have one, a gamepad. Does it feel good to play (the dash, the fight, the lighting,
+  the sound)? Accepted, or what should change?
+- **456.** Owner screenshot review (part C's Done when): the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-C/` (title, intro dialog, the lit crypt, a hurt in the guard
+  room, the dash, the key and the locked door, the Warden's telegraph and a hit, the victory
+  dialog and the end screen), listed with their commands in the build log. Accepted?
+- **457.** The HUD's item panel (bottom right) now shows only once an item is owned (`when:
+"item"`): before, it was an empty frame from the start and its edge peeked out past the intro
+  dialog's corner. OK?
+- **458.** Once an item is owned, the item panel's right edge and bottom still show past a dialog
+  box's lower-right corner (the victory dialog, screenshot 09): the box spans the picture less a
+  margin and the panel sits in that margin. Options: (a) leave it; (b) hide the HUD while a shell
+  dialog shows (an engine change, every game); (c) a narrower dialog box for this game (a new
+  `menus.dialogs` field). Which?
+- **459.** The dash (T5): default tuning 8 ticks, 48 px, cooldown 24 and 6 ticks of guard after
+  it, the hero unhurtable while dashing, the pit tile `^`, and `hero.dash` in the snapshot only
+  once the dash is owned, so no older run's hash moved. OK?
+- **460.** The boss (T6): declared in a room's `boss` field (pattern steps, phases by hp, a
+  defeat flag), with `shutters: "boss"` to seal the room; where hits, kills and boss events
+  happened is kept beside the event for presenters (a `WeakMap`), never in the snapshot, so the
+  feel events moved no hash. OK?
+- **461.** Dialogs (T7) are a shell feature in `game.json` that holds the game's ticks while a box
+  shows; with `?debug=step` or `?record` they are skipped (the old end banner shows), so every run
+  file replays through the page unchanged. OK, or should the step hook show them too?
+- **462.** The end screen's "Rooms seen" shows the rooms entered (4 on the win's route, of 8)
+  without the total. OK, or show `4/8`?

@@ -2354,6 +2354,7 @@
       "y": 149,
       "w": 25,
       "h": 30,
+      "when": "item",
       "sheet": "crypt-art",
       "frame": "panel",
       "slice": 5

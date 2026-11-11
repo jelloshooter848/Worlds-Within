@@ -934,13 +934,20 @@ A short dungeon: 6-8 rooms, a key, an item that opens new paths, and a boss.
 - Combat feel: attack animations, knockback, hit flashes, hit-pause, screen shake and particles.
 - Dialog boxes for a short intro and the end; a HUD with health, key and item.
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-c), Engine 0.16 part C,
+Done when)
 
-- [ ] The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
-      that pass in CI.
-- [ ] Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
-      change.
-- [ ] Owner playtest and screenshot review of the dungeon are accepted.
+- [x] The dungeon plays from the title to the boss's defeat, with run files for a win and a loss
+      that pass in CI. (`win`, from tick 0 to the Bone Warden beaten, and `boss-lost`, with
+      their golden hashes in `tests/runs`; both replayed through the built page in
+      `tests/browser/dungeon.test.ts`, and `tests/browser/menus.test.ts` plays from the title
+      to the end screen by keyboard.)
+- [x] Every existing dungeon run file passes, or its hashes were re-recorded for a listed rule
+      change. (`walk-east`, `escape` and `lost-in-the-guard-room` unchanged; the part's own
+      `beat-the-warden` (T8, then replaced in T9) and `to-the-boss-door` (T9) re-recorded for the
+      changes listed in the build log.)
+- [ ] Owner playtest and screenshot review of the dungeon are accepted. (The screenshots are in
+      `docs/reports/screenshots/0.16-C/`; open as items 455 and 456.)
 
 ### 0.16 part D: the RTS skirmish, The River Ford
 
