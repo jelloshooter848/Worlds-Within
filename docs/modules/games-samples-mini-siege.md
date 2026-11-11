@@ -196,6 +196,19 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   item: re-point them at C and E's skins when those merge). The 3D round skins were removed;
   `pnpm cli screenshot --backend three` draws a round in 2D scaled to 1920x1080. Presentation
   only: no hash moved (the room is framed 2 px from the top, `ROOM_TOP`).
+- Engine 0.16 F9, **the whole campaign in 3D, tested end to end**: the browser test plays the
+  title, the siege (Delegate; and Play then quit, the captain taken), each results screen with
+  the world's changes (`wwSiege.texts()`), Continue, the dawn (the captive choices on the captured
+  path) and its results, the stored save and the save code round trip; the save code can be put
+  in the page's link (`?code=<code>`, gap M42: the 3D page has no text box). Found and fixed while
+  playing at 1080p (gaps M39-M44 in `docs/reports/mini-siege.md`): the results' first section
+  spans the panel and no heading ends a column (every line fits, the captain's fate among them;
+  the save code on its label's row); the title hides the HUD and the labels
+  (`HUD_HIDDEN_STATUS`); labels that would cover a HUD panel are left out; the page's controls
+  move to the bottom-right corner over a centred screen and the title; `three.json`'s
+  `scene3d.skirt` lays grass past the map's edges (the view showed the background at its
+  corners); the night keys are lighter. The run tests present the mini siege as its 3D page does
+  (`tests/runs/three-page.ts`). Presentation only: no hash moved.
 
 ## Imports allowed
 

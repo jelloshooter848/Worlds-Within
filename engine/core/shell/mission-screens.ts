@@ -449,7 +449,8 @@ export interface ResultsView {
  * The entry's results: its title and verdict, then each section of the changes (missions, losses,
  * people, buildings) as far as the picture has room (the rest counted, `and 3 more`), the save
  * code and Continue. On a picture at least {@link TWO_COLUMNS_FROM} px wide (Engine 0.16 F6, the
- * 16:9 pictures) the panel is wider and the changes flow down a left column, then a right one.
+ * 16:9 pictures) the panel is wider: the first section spans it, the others flow down a left
+ * column, then a right one, a heading never ending a column (Engine 0.16 F9).
  */
 export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiScreenFile {
   const words = wordsOf(ctx);
@@ -459,34 +460,57 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
     ctx,
     view.title,
     (col, bottom) => {
+      const two = ctx.screen.width >= TWO_COLUMNS_FROM;
       col.text(view.verdict, { color: p.dim, align: 'center' });
-      col.gap(4);
+      col.gap(two ? 2 : 4);
+      // On a wide picture the save code shares its label's row when it fits (Engine 0.16 F9).
+      const face = ctx.fonts(ctx.menus.font);
+      const labelW = face === null ? 0 : layoutText(face, words.code).width + (face.cell.w ?? 4);
+      const codeRow =
+        two && face !== null && view.code !== '' && labelW + layoutText(face, view.code).width <= col.w;
+      const codeGap = two ? 2 : 4;
       const codeH =
         view.code === ''
           ? 0
-          : heightOf(ctx.fonts, ctx.menus.font, words.code, col.w) +
-            heightOf(ctx.fonts, ctx.menus.font, view.code, col.w) +
-            4;
+          : codeRow
+            ? heightOf(ctx.fonts, ctx.menus.font, view.code, col.w) + codeGap
+            : heightOf(ctx.fonts, ctx.menus.font, words.code, col.w) +
+              heightOf(ctx.fonts, ctx.menus.font, view.code, col.w) +
+              codeGap;
       const limit = bottom - codeH;
-      const rows = sections.flatMap((s) => [
-        { text: s.heading, heading: true },
-        ...s.lines.map((text) => ({ text: `  ${text}`, heading: false })),
+      const rows = sections.flatMap((s, section) => [
+        { text: s.heading, heading: true, section },
+        ...s.lines.map((text) => ({ text: `  ${text}`, heading: false, section })),
       ]);
       const font = ctx.menus.font;
       const lineH = (ctx.fonts(font)?.line ?? 10) + 0;
-      const two = ctx.screen.width >= TWO_COLUMNS_FROM;
       const half = Math.floor((col.w - 8) / 2);
-      const columns = two
-        ? [new Column(ctx, col.x, col.y, half), new Column(ctx, col.x + half + 8, col.y, half)]
-        : [col];
+      const halves = () => [
+        new Column(ctx, col.x, col.y, half),
+        new Column(ctx, col.x + half + 8, col.y, half),
+      ];
+      // On a wide picture the first section (the missions' records, the longest lines) spans the
+      // panel and the rest flow down a left column, then a right one (Engine 0.16 F9, gap M39: a
+      // record wrapped over three lines of a half column left no room for the people).
+      let spanning = two && sections.length > 1;
+      let columns = two && !spanning ? halves() : [col];
       let at = 0;
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i]!;
+        if (spanning && row.section > 0) {
+          spanning = false;
+          columns = halves();
+          at = 0;
+        }
         const c = columns[at]!;
         const h = heightOf(ctx.fonts, font, row.text, c.w);
+        // A heading stays with its first line: it never ends a column (gap M39).
+        const next = rows[i + 1];
+        const keep =
+          row.heading && next !== undefined && !next.heading ? heightOf(ctx.fonts, font, next.text, c.w) : 0;
         const left = rows.length - i;
         const last = at === columns.length - 1;
-        if (c.y + h + (left > 1 && last ? lineH : 0) > limit && left > 1) {
+        if (c.y + h + Math.max(keep, left > 1 && last ? lineH : 0) > limit && left > 1) {
           if (!last) {
             // The column is full: this row starts the next one.
             at++;
@@ -498,14 +522,22 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
         }
         c.text(row.text, row.heading ? { color: p.heading } : {});
       }
-      if (two) {
+      if (columns.length > 1) {
         for (const c of columns) col.widgets.push(...c.widgets);
         col.y = Math.max(...columns.map((c) => c.y));
       }
       if (view.code !== '') {
-        col.gap(4);
-        col.text(words.code, { color: p.heading });
-        col.text(view.code, { color: p.dim });
+        col.gap(codeGap);
+        if (codeRow) {
+          const row = new Column(ctx, col.x + labelW, col.y, col.w - labelW);
+          col.widgets.push({ type: 'text', x: col.x, y: col.y, text: words.code, color: p.heading });
+          row.text(view.code, { color: p.dim });
+          col.widgets.push(...row.widgets);
+          col.y = row.y;
+        } else {
+          col.text(words.code, { color: p.heading });
+          col.text(view.code, { color: p.dim });
+        }
       }
     },
     [{ id: 'continue', label: words.continue }],

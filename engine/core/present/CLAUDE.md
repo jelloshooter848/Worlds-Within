@@ -451,6 +451,10 @@ skin (content/skins/<backend>.json)`.
   a `when` (`statusCompareSchema` from `../audio/mix`), and `hudItemShown(item, status)` is
   whether it holds (true without one); `layoutHud` and `SkinHud` skip an item that is not shown.
   A `panel` may be flat (`color`, optional `alpha` and `border`, no `frame` or `slice`).
+  Engine 0.16 F9: `HUD_HIDDEN_STATUS` (`hudHidden(status)`): a frame whose status sets it to a
+  truthy value shows no HUD item (`hudItemShown` is false for all; the 3D backend shows no labels
+  either), for a page's title screen; `hudPanelBoxes(skin, status)` lists the shown `panel` and
+  `minimap` boxes (what 3D labels keep out of) and `boxesOverlap(a, b)` tests two boxes.
 - Tests for the audio fields: `skin-audio.test.ts` (Engine 0.16 T8).
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 

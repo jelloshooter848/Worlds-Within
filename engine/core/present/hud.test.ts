@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { hudGlyphs, layoutHud, type HudFrameSize } from './hud';
+import {
+  boxesOverlap,
+  hudGlyphs,
+  hudItemShown,
+  hudPanelBoxes,
+  HUD_HIDDEN_STATUS,
+  layoutHud,
+  type HudFrameSize,
+} from './hud';
 import type { SkinFile } from './skin';
 
 /** A fixture skin's HUD (inline: core never imports a game). */
@@ -67,5 +75,35 @@ describe('layoutHud (G33)', () => {
       { kind: 'sprite', sheet: 'f', frame: '1', x: 10, y: 4 },
       { kind: 'sprite', sheet: 'f', frame: '2', x: 26, y: 4 },
     ]);
+  });
+});
+
+describe('hiding the HUD and its panel boxes (Engine 0.16 F9)', () => {
+  const skin = {
+    backend: 'canvas2d',
+    hud: [
+      { as: 'panel', x: 2, y: 2, w: 40, h: 10 },
+      { as: 'panel', x: 50, y: 2, w: 20, h: 10, when: { status: 'open', eq: 1 } },
+      { as: 'minimap', x: 0, y: 140, w: 40, h: 40 },
+      { as: 'text', status: 'score', x: 4, y: 4 },
+    ],
+  } as unknown as SkinFile;
+
+  it('shows no item while the status hides the HUD', () => {
+    expect(hudItemShown({}, {})).toBe(true);
+    expect(hudItemShown({}, { [HUD_HIDDEN_STATUS]: 1 })).toBe(false);
+    expect(hudItemShown({}, { [HUD_HIDDEN_STATUS]: 0 })).toBe(true);
+    expect(layoutHud(skin, { score: 3, [HUD_HIDDEN_STATUS]: 1 }, () => null)).toEqual([]);
+  });
+
+  it('lists the boxes of the shown panels and minimaps', () => {
+    expect(hudPanelBoxes(skin, {})).toEqual([
+      { x: 2, y: 2, w: 40, h: 10 },
+      { x: 0, y: 140, w: 40, h: 40 },
+    ]);
+    expect(hudPanelBoxes(skin, { open: 1 })).toHaveLength(3);
+    expect(hudPanelBoxes(skin, { [HUD_HIDDEN_STATUS]: 1 })).toEqual([]);
+    expect(boxesOverlap({ x: 0, y: 0, w: 10, h: 10 }, { x: 9, y: 9, w: 5, h: 5 })).toBe(true);
+    expect(boxesOverlap({ x: 0, y: 0, w: 10, h: 10 }, { x: 10, y: 0, w: 5, h: 5 })).toBe(false);
   });
 });

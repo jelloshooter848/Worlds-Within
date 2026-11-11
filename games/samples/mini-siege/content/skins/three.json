@@ -1651,6 +1651,9 @@
     },
     "colorSpace": "srgb",
     "renderScale": 6,
+    "skirt": {
+      "color": "#497018"
+    },
     "timeOfDay": {
       "tween": 45,
       "ease": "sineInOut",
@@ -1659,7 +1662,7 @@
           "hour": 3.5,
           "sun": {
             "color": "#4058a0",
-            "intensity": 0.5,
+            "intensity": 0.7,
             "direction": {
               "x": 1.2,
               "y": 2.4,
@@ -1668,12 +1671,12 @@
           },
           "ambient": {
             "color": "#5060a0",
-            "intensity": 0.7
+            "intensity": 0.95
           },
           "hemisphere": {
             "sky": "#384870",
             "ground": "#181820",
-            "intensity": 0.9
+            "intensity": 1.1
           },
           "fog": {
             "color": "#1c2440"
@@ -1815,7 +1818,7 @@
           "hour": 21,
           "sun": {
             "color": "#5068b0",
-            "intensity": 0.5,
+            "intensity": 0.7,
             "direction": {
               "x": 1.6,
               "y": 2.4,
@@ -1824,12 +1827,12 @@
           },
           "ambient": {
             "color": "#5060a0",
-            "intensity": 0.7
+            "intensity": 0.95
           },
           "hemisphere": {
             "sky": "#384870",
             "ground": "#181820",
-            "intensity": 0.9
+            "intensity": 1.1
           },
           "fog": {
             "color": "#1c2440"

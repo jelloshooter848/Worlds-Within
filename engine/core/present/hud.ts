@@ -125,12 +125,59 @@ export function isClassicHudType(as: string): as is (typeof HUD_CLASSIC_TYPES)[n
 }
 
 /**
+ * The status key that hides the whole HUD (Engine 0.16 F9): a frame whose status has it set to a
+ * truthy value shows no HUD item and, in 3D, no world-anchored label or place name. A page sets it
+ * on the frames it draws under a title screen, so the title is not drawn over the HUD.
+ */
+export const HUD_HIDDEN_STATUS = 'hudHidden';
+
+/** Whether a frame's status hides the HUD ({@link HUD_HIDDEN_STATUS}). */
+export function hudHidden(status: DeepReadonly<PresentFrame['status']>): boolean {
+  return Boolean(status[HUD_HIDDEN_STATUS]);
+}
+
+/**
  * Whether a HUD item shows on this status (Engine 0.16 F7): true without a `when`, else whether
- * its status test holds (a key the status lacks never holds).
+ * its status test holds (a key the status lacks never holds); never while the status hides the
+ * HUD ({@link HUD_HIDDEN_STATUS}, Engine 0.16 F9).
  */
 export function hudItemShown(
   item: DeepReadonly<Pick<SkinHudItem, 'when'>>,
   status: DeepReadonly<PresentFrame['status']>,
 ): boolean {
+  if (hudHidden(status)) return false;
   return item.when === undefined || statusMatches(item.when, status as MixStatus);
+}
+
+/** A HUD box in picture px. */
+export interface HudBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * The boxes the HUD's shown `panel` and `minimap` items cover on this status (Engine 0.16 F9), in
+ * picture px: what a 3D scene keeps its world-anchored labels out of, so a label never shows
+ * through or under a panel (none while the status hides the HUD).
+ */
+export function hudPanelBoxes(
+  skin: DeepReadonly<SkinFile>,
+  status: DeepReadonly<PresentFrame['status']>,
+): HudBox[] {
+  const out: HudBox[] = [];
+  for (const item of skin.hud ?? []) {
+    if (item.as !== 'panel' && item.as !== 'minimap') continue;
+    const w = item.w ?? 0;
+    const h = item.h ?? 0;
+    if (w <= 0 || h <= 0 || !hudItemShown(item, status)) continue;
+    out.push({ x: item.x, y: item.y, w, h });
+  }
+  return out;
+}
+
+/** Whether two boxes overlap (touching edges do not). */
+export function boxesOverlap(a: HudBox, b: HudBox): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }

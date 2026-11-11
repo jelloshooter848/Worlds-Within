@@ -43,6 +43,12 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // the rescue in the campaign) opens with the iris transition, shows the layer while it is played
 // (`wwSiege.layer()`), and closes back on the 3D world with the commit applied.
 //
+// Engine 0.16 F9: the whole campaign in 3D, tested end to end. The delegated path starts on the
+// title screen (`&title=show`: Start, then the siege's briefing); each results screen lists what
+// changed in the world (`wwSiege.texts()`: the record, losses, people, buildings and the save code,
+// none cut); and the captured siege's code from its results, put in a fresh 3D page's link
+// (`?code=`, gap M42), resumes the dawn with the captain held (a bad one leaves the siege).
+//
 // In 2D (`?backend=canvas2d`, and wherever WebGL 2 is missing: the page falls back by itself) the
 // shell's DOM bar stays: a save code typed in its box is refused with its reason when bad and
 // resumes the dawn from the quit siege's code.
@@ -80,7 +86,13 @@ interface Hook {
   tick(): number;
   held(): boolean;
   scenario(): string;
-  ended(): { code: string | null; next: string | null; done: boolean; people: string[] } | null;
+  ended(): {
+    code: string | null;
+    next: string | null;
+    done: boolean;
+    people: string[];
+    verdict: string;
+  } | null;
   named(): Record<string, { alive: boolean; hp: number | null; fate?: string }>;
   captive(): string;
   choice(): string | null;
@@ -93,6 +105,7 @@ interface Hook {
   itemBox(item: string): Box | null;
   layer(): 'world' | 'round';
   transitioning(): boolean;
+  texts(): string[];
 }
 
 /**
@@ -309,6 +322,31 @@ async function carded(
   expect(await hook(o.page, 'screen')).toBe('card');
   expect(await hook(o.page, 'itemBox', 'play')).not.toBeNull();
   expect(await hook(o.page, 'itemBox', 'delegate')).not.toBeNull();
+  return o;
+}
+
+/**
+ * A fresh 3D page opened on its title screen (`&title=show`; Engine 0.16 F9): the title holds the
+ * game, Start (Enter) closes it on the siege's briefing, Begin starts the clock and the page is
+ * stepped to the sabotage's card.
+ */
+async function titled(browser: Browser, url: string, errors: string[]): Promise<Opened> {
+  const o = await opened(browser, url, errors, { query: `${QUERY_3D}&title=show` });
+  const { page, frames } = o;
+  const menus = () => page.evaluate(() => (window as DebugWindow).__ww!.menus()!);
+  await frames(5);
+  expect(await menus()).toMatchObject({ state: 'title', screen: 'title', focused: 'start' });
+  expect(await page.evaluate(() => document.body.dataset.menu)).toBe('title');
+  expect(await hook(page, 'tick')).toBe(0);
+  await shoot(page, 'title');
+  await page.keyboard.press('Enter');
+  for (let i = 0; i < 60 && (await menus()).state !== 'play'; i++) await frames(1);
+  expect((await menus()).state).toBe('play');
+  expect(await hook(page, 'scenario')).toBe('village');
+  await shoot(page, 'briefing');
+  await begin(o);
+  await toTick(o, SABOTAGE.tick);
+  expect(await hook(page, 'screen')).toBe('card');
   return o;
 }
 
@@ -562,15 +600,18 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
     }
   }, 900_000);
 
-  it('plays the campaign in 3D along both captain fates, and resumes from a save code in 2D', async () => {
+  it('plays the campaign in 3D from the title along both captain fates, and resumes from a save code', async () => {
     const dist = join(temp, 'dist-campaign');
     const server = await serveBuilt('/', dist);
     const browser = await launch();
     const errors: string[] = [];
+    /** The captured siege's save code, as its results screen showed it. */
+    let code: string | undefined;
     try {
-      // The captain kept: the sabotage delegated, the siege ends at 260 with the delegated run's code.
+      // The captain kept: from the title, the sabotage delegated, the siege ends at 260 with the
+      // delegated run's code, and its results list what changed in the world (Engine 0.16 F9).
       {
-        const o = await carded(browser, server.url, errors);
+        const o = await titled(browser, server.url, errors);
         await shoot(o.page, 'afternoon');
         await press(o, 'delegate');
         expect(await toEntryEnd(o)).toBe(260);
@@ -578,12 +619,32 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         const ended = await hook(o.page, 'ended');
         expect(ended?.code).toBe(pinnedCode('delegated'));
         expect(ended?.people).toContain('Captain Hale: active, 110/120 hp');
+        expect(await hook(o.page, 'texts')).toEqual(
+          expect.arrayContaining([
+            'The siege',
+            ended!.verdict,
+            'Missions',
+            '  The ram burnt, the catapult saved by its crew (delegated)',
+            'Losses',
+            '  Village: 2 soldier',
+            'People',
+            'Buildings',
+            '  Hall: 120 hp lost (280/400)',
+            'Save code',
+            ended!.code!,
+          ]),
+        );
+        expect((await hook(o.page, 'texts')).some((t) => t.startsWith('and '))).toBe(false);
         await shoot(o.page, 'results');
         await toNext(o, 'dawn');
         expect((await hook(o.page, 'named'))['captain']).toMatchObject({ alive: true, hp: 110 });
         expect(await hook(o.page, 'captive')).toBe('');
         await shoot(o.page, 'dawn');
         expect(await toEntryEnd(o)).toBe(200);
+        // The dawn's own results, its title and verdict first.
+        const dawn = await hook(o.page, 'ended');
+        expect((await hook(o.page, 'texts')).slice(0, 2)).toEqual(['The dawn assault', dawn!.verdict]);
+        await shoot(o.page, 'dawn-results');
         // Every entry after the dawn (Engine 0.14 T12: a scenario added with data files only,
         // gap M37) is continued to and played to its end, read from the campaign file.
         for (const entry of AFTER_DAWN) {
@@ -608,6 +669,16 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         const ended = await hook(page, 'ended');
         expect(ended?.code).toBe(pinnedCode('quit'));
         expect(ended?.people).toContain('Captain Hale: captured, 90/120 hp');
+        expect(await hook(page, 'texts')).toEqual(
+          expect.arrayContaining([
+            '  Driven off, the captain wounded and taken (quit)',
+            '  Captain Hale: captured by raiders',
+            '  Hall: 288 hp lost (112/400)',
+            ended!.code!,
+          ]),
+        );
+        await shoot(page, 'results-captured');
+        code = ended!.code!;
 
         // Another page in the same browser offers the stored campaign on the briefing: Carry on.
         {
@@ -638,6 +709,37 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await hook(page, 'captive')).toBe('');
         await press(o, 'continue');
         expect(await toEntryEnd(o)).toBe(200);
+        expect(await hook(page, 'screen')).toBe('results');
+        await shoot(page, 'dawn-results-captured');
+      }
+
+      // The captured siege's save code round trip in 3D (gap M42): the code its results showed, in
+      // the link of a fresh page in a new browser context (no stored save), resumes the dawn with
+      // the captain held, at tick 0 with its briefing; a bad code leaves the siege's.
+      {
+        const fresh = await browser.newContext({
+          viewport: { width: 640, height: 520 },
+          deviceScaleFactor: 1,
+        });
+        const o = await opened(browser, server.url, errors, {
+          context: fresh,
+          query: `${QUERY_3D}&code=${encodeURIComponent(code!.toLowerCase())}`,
+        });
+        await o.frames(1);
+        expect(await hook(o.page, 'scenario')).toBe('dawn');
+        expect(await hook(o.page, 'captive')).toBe('Captain Hale');
+        expect(await hook(o.page, 'tick')).toBe(0);
+        await begin(o);
+        expect(await hook(o.page, 'screen')).toBe('card');
+        expect(await hook(o.page, 'itemBox', 'launch:exchange-captain')).not.toBeNull();
+        const bad = await opened(browser, server.url, errors, {
+          context: fresh,
+          query: `${QUERY_3D}&code=NOT-A-USABLE-CODE`,
+        });
+        await bad.frames(1);
+        expect(await hook(bad.page, 'scenario')).toBe('village');
+        expect(await hook(bad.page, 'screen')).toBe('briefing');
+        await fresh.close();
       }
 
       // A save code typed on a fresh 2D page (the DOM bar's code box): a bad one refused with its

@@ -28,6 +28,10 @@ import { launchChromium, NoBrowserError } from '../../engine/tools/screenshot';
 // sabotage, and the rescue of dawn-rescue-played at 60) and the walls are shot in 2D and through
 // `--backend three`, where a round's frame is the 2D picture scaled to 1920x1080; each
 // byte-repeatable, and the 3D shot of a round is the 2D one scaled up.
+// Engine 0.16 F9: the whole campaign in 3D, through `--backend three`: the siege before the
+// sabotage, the freeze on the captured path, each path's siege end (the world its results screen
+// lists) and the dawn at its start and its end, each matching the headless hashes and
+// byte-identical on a second run.
 // Skipped where Chromium is not installed (never in CI).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -159,4 +163,30 @@ describe.skipIf(missing !== null)('the hosted rounds in 2D on the 3D page (Engin
     },
     240_000,
   );
+});
+
+describe.skipIf(missing !== null)('the whole campaign in 3D (Engine 0.16 F9)', () => {
+  const sha: Record<string, unknown> = {};
+  it.each([
+    ['delegated', 20, 'the siege before the sabotage, its mission offered'],
+    ['quit', 100, 'the freeze on the captured path: the round given up, the raid still open'],
+    ['delegated', 260, "the siege's end on the delegated path: the ram burnt (what its results show)"],
+    ['quit', 261, "the siege's end on the captured path: the captain taken"],
+    ['dawn-captured', 10, 'the dawn with the captain held, night giving way'],
+    ['dawn-held', 200, "the dawn's end with the captain on the map"],
+  ] as [string, number, string][])(
+    '%s at tick %i (%s) matches the headless hashes and is byte-identical twice',
+    async (run, tick) => {
+      const first = await shot(run, tick, 1, true);
+      const second = await shot(run, tick, 2, true);
+      expect(first).toMatchObject({ backend: 'three', renderScale: 6 });
+      expect(second.sha256).toBe(first.sha256);
+      sha[`${run}-${tick}`] = first.sha256;
+    },
+    240_000,
+  );
+
+  it('shows a different picture at each', () => {
+    expect(new Set(Object.values(sha)).size).toBe(6);
+  });
 });

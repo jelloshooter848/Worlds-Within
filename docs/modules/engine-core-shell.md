@@ -216,6 +216,9 @@ Example (`games/platformer-lab/main.ts`):
 
 - Engine 0.16 F6: on a picture at least 300 px wide (the 16:9 pictures) `resultsScreen` widens
   its panel and flows the world's changes down two columns before counting the rest.
+- Engine 0.16 F9 (gap M39): there the first section (the missions' records) spans the panel and
+  the rest flow down the two columns; a heading never ends a column (it moves on with its first
+  line); the save code shares its label's row when it fits.
 
 ## Imports allowed
 

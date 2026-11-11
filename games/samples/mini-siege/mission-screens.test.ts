@@ -353,17 +353,30 @@ describe('the results screen: what changed in the world (Engine 0.16 F5)', () =>
       const shown = texts(p.screens.ui);
       const ended = p.play.launch.ended()!;
       expect(shown.slice(0, 2)).toEqual(['The siege', ended.verdict]);
-      // The 16:9 picture (Engine 0.16 F6) has room for the first lines, in two columns; the rest
-      // are counted (`and 2 more`), in order.
+      // The 16:9 picture (Engine 0.16 F6) has room for every line (Engine 0.16 F9, gap M39: the
+      // missions span the panel, the rest flow down two columns and no heading ends a column), the
+      // captain's fate among them.
       const all = [...c.records, ...c.losses, ...c.people, ...c.buildings];
-      const listed = all.filter((line) => shown.includes(`  ${line}`));
-      expect(listed, 'the first lines, in order').toEqual(all.slice(0, listed.length));
-      expect(listed.length).toBeGreaterThanOrEqual(c.records.length + c.losses.length);
-      const more = shown.find((t) => t.startsWith('and '));
-      expect(more ?? 'and 0 more').toBe(`and ${all.length - listed.length} more`);
-      expect(shown.filter((t) => ['Missions', 'Losses', 'People', 'Buildings'].includes(t))).toEqual(
-        ['Missions', 'Losses', 'People', 'Buildings'].slice(0, listed.length === all.length ? 4 : 3),
-      );
+      expect(all.filter((line) => shown.includes(`  ${line}`))).toEqual(all);
+      expect(shown.find((t) => t.startsWith('and '))).toBeUndefined();
+      expect(shown.filter((t) => ['Missions', 'Losses', 'People', 'Buildings'].includes(t))).toEqual([
+        'Missions',
+        'Losses',
+        'People',
+        'Buildings',
+      ]);
+      const at = (text: string) =>
+        p.screens.ui!.file.widgets.find((w) => w.type === 'text' && w.text === text)!;
+      // The record spans the panel; each heading sits in the column of its first line.
+      expect(at(`  ${c.records[0]}`).w).toBeGreaterThan(at(`  ${c.losses[0]}`).w!);
+      for (const [heading, line] of [
+        ['Losses', c.losses[0]],
+        ['People', c.people[0]],
+        ['Buildings', c.buildings[0]],
+      ] as const)
+        expect(at(heading).x, heading).toBe(at(`  ${line}`).x);
+      // The save code shares its label's row.
+      expect(at(ended.code!).y).toBe(at('Save code').y);
       expect(shown.slice(-3, -1)).toEqual(['Save code', ended.code]);
       expect(shown.at(-1)).toBe('↑↓ choose   Z select');
       expect(p.screens.ui!.menu('main')!.items.map((i) => i.id)).toEqual(['continue']);

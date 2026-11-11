@@ -4,7 +4,13 @@ import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-co
 import type { JsonObject } from '@engine/core/headless';
 import type { InputFrame, InputManager } from '@engine/core/input/input-manager';
 import { keyHintMap } from '@engine/core/input/key-hints';
-import { contentDecor, skinGroundCamera, skinSet } from '@engine/core/present';
+import {
+  contentDecor,
+  HUD_HIDDEN_STATUS,
+  skinGroundCamera,
+  skinSet,
+  type Presenter,
+} from '@engine/core/present';
 import {
   bootBrowserGame,
   missionScreensScene,
@@ -96,6 +102,8 @@ export interface SiegeHook {
   layer(): 'world' | 'round';
   /** True while a screen transition (the iris into a round and back) plays. */
   transitioning(): boolean;
+  /** The texts of the mission screen shown in the picture, in order (none while none shows). */
+  texts(): string[];
 }
 
 // The rounds' PNG sheets (Engine 0.16 F8: the dungeon and tower-defense packs) decoded before boot.
@@ -195,7 +203,17 @@ booted = await bootBrowserGame({
       ...(in3d && { camera: { ground: skinGroundCamera(skin3d), zoom: skin3d.camera?.zoom ?? 1 } }),
     });
     play = scene;
-    const host = scene.scene(stack, () => siegePicture(display.presenter, content, scene.ui));
+    // Under the title the picture shows the village alone: no HUD and no labels (Engine 0.16 F9,
+    // gap M40: the title's name and menu were drawn over the HUD's panels).
+    const shown: Presenter = {
+      present: (frame) =>
+        display.presenter.present(
+          booted?.menus?.state === 'title'
+            ? { ...frame, status: { ...frame.status, [HUD_HIDDEN_STATUS]: 1 } }
+            : frame,
+        ),
+    };
+    const host = scene.scene(stack, () => siegePicture(shown, content, scene.ui));
     const painter = display.uiPainter?.bind(display);
     // The arrow keys pan the battle while no round is played and no mission screen is shown.
     const pan = (frame: InputFrame) => {
@@ -242,6 +260,9 @@ booted = await bootBrowserGame({
           drifting();
           if (menuShown()) host.render(r);
           else over.render(r);
+          // The page's CSS lifts its controls over a centred screen's key hint (gap M41).
+          const kind = menuShown() ? '' : (screens?.kind() ?? '');
+          if (document.body.dataset['screen'] !== kind) document.body.dataset['screen'] = kind;
         },
       };
     }
@@ -286,6 +307,15 @@ if (booted && play) {
     camera: () => ({ ...scene.camera.centre(), zoom: scene.camera.zoom }),
     layer: () => (document.body.dataset['round'] === 'layer' ? 'round' : 'world'),
     transitioning: () => booted?.transitions.view() != null,
+    texts: () =>
+      screens?.kind() == null
+        ? []
+        : (screens.ui?.file.widgets ?? []).flatMap((w) => (w.type === 'text' ? [w.text] : [])),
   };
   (window as unknown as { wwSiege: SiegeHook }).wwSiege = hook;
+  // A save code in the link (`?code=<code>`, Engine 0.16 F9, gap M42) resumes its campaign entry
+  // as the 2D bar's code box does: the 3D page has no text box. A bad code is refused (its reason
+  // in the launch's status) and the siege starts as without it.
+  const linked = query.get('code');
+  if (linked !== null && linked !== '') launch.press({ kind: 'code', text: linked });
 }

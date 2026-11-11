@@ -172,3 +172,12 @@ screenshot --backend three --render-scale N` (default the skin's) is byte-identi
   flickering `PointLight` per cell and its `emit` runs emitters there (`SkinParticles.update`'s
   `fixed` emitters; `ThreeScene.decorLights()`). Used by the mini siege's `three.json`. See
   `engine/backends/three/CLAUDE.md`.
+
+## Engine 0.16 F9: the skirt and labels clear of the HUD
+
+- A ground-view skin's `scene3d.skirt` lays one flat plane (`skirt`, `groundSkirt`) of its colour
+  under the map, reaching `margin` px (default 2048) past each edge, so a view tilted toward the
+  map's corners shows ground, lit and fogged, not the background.
+- An entity's labels (or a place's name) any of which would cover a shown HUD `panel` or
+  `minimap` are left out (`hudPanelBoxes`), and a frame whose status sets `HUD_HIDDEN_STATUS`
+  shows no labels (a page's title screen).

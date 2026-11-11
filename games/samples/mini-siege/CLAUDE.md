@@ -344,7 +344,12 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     `window.wwSiege` (`tick`, `held`, `choice`, `playing`, `outcomes`, `miniGame`, `round` (the
     hosted round's `kit` summary), `scenario`, `ended`, `named`, `captive`; from F7 `ui`,
     `screen` (the mission screen shown), `itemBox(item)` (a screen item's picture box, for
-    scripts that click it), `worldToScreen` and `camera`). No launch, campaign-panel, save-code
+    scripts that click it), `worldToScreen` and `camera`; from F9 `texts` (the shown screen's
+    texts, in order)). Engine 0.16 F9: under the title the frames carry `HUD_HIDDEN_STATUS` (no HUD
+    or labels behind the title, gap M40); `body[data-screen]` is the mission screen shown (the
+    page's CSS moves its controls to the bottom-right corner over a centred screen, the pause menu
+    and the title, gap M41); a save code in the link (`?code=<code>`, gap M42) is pressed as the
+    bar's code box would (the 3D page has no text box). No launch, campaign-panel, save-code
     or hint logic of its own. `index.html` is the canvas (in 2D leaving the bar's 40 px below
     it; in 3D the whole window), the 2D/3D toggle (`#backend`), the shell's sound control and
     pause button moved to the bottom centre in 3D (between the selected unit and the mission card), and the no-display message's style.
@@ -848,6 +853,23 @@ hashes.
 above); `tests/browser/mini-siege-page.test.ts` plays each round from the 3D page (keys and taps)
 and checks the layer shows and hides with the transition; `tests/browser/mini-siege-shots.test.ts`
 shoots the rooms and the walls in 2D and in 3D (`--backend three`), each byte-repeatable.
+
+## The whole campaign in 3D (Engine 0.16 F9)
+
+- `tests/browser/mini-siege-page.test.ts` plays the 3D page from the title (`&title=show`) through
+  the siege along both captain fates (Delegate; Play then Backspace), each results screen's
+  texts (the record, losses, people, buildings, the save code, nothing cut), Continue, the dawn
+  (the captive choices when the captain was taken) to its results, the stored save, and the
+  captured siege's save code in a fresh page's link (`?code=`; a bad code leaves the siege),
+  with no page errors. `tests/browser/mini-siege-shots.test.ts` shoots the campaign through
+  `--backend three` (the siege, the freeze, each path's end, the dawn's start and end), each
+  matching the headless hashes and byte-identical twice. The run tests (presentation invariance
+  and the stepped shell's) present the game as this page does (`tests/runs/three-page.ts`).
+- Found while playing at 1080p and fixed (gaps M39-M44 in `docs/reports/mini-siege.md`): the
+  results' columns (the engine's `resultsScreen`), the title over the HUD, labels under the HUD's
+  panels, the page's controls over the key hint, the view's corners showing the background past
+  the map (`three.json`'s `scene3d.skirt`, grass matched to the tiles as drawn) and the night too
+  dark to read (the 3.5 and 21 hour keys' lights raised). Presentation only: no hash moved.
 
 ## Asset packs (Engine 0.16 part F, F1)
 

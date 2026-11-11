@@ -309,7 +309,9 @@ changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes
   (the entry's results: each section of `changeSections` (missions, losses by faction, people,
   buildings) as far as the picture has room, `and N more` for the rest, the save code,
   **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 304 px wide with
-  the changes down two columns). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
+  the changes down two columns; Engine 0.16 F9, gap M39: there the first section spans the panel
+  and the rest flow down the columns, a heading never ends a column, and the save code shares its
+  label's row when it fits). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
   `CARD_MARGIN`, `CARD_WIDTH`. Engine 0.16 F7: the context's (and `MissionScreens`') `card`
   (`MissionCardLook { width?, font? }`) sets the corner cards' widest and their font (text,
   chips, buttons and the window badge; `cardContext` swaps it into the menus for them), so the

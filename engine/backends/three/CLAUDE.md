@@ -177,6 +177,19 @@ game whose `three` skin lists a round in `rounds2d` has it drawn in 2D instead: 
 frames there (`roundLayerDisplay` in `engine/core/shell`); this backend never sees them. Labels
 are no longer 3D only: the 2D presenter draws a skin's `labels` too (`engine/core/draw`).
 
+## The skirt and labels clear of the HUD (Engine 0.16 F9)
+
+- A ground-view skin's `scene3d.skirt` (`{ color, margin? }`) adds one flat plane (`skirt`,
+  `groundSkirt` in `scene.ts`) to the map group, a little under the floor, covering the map and
+  `margin` px (default `DEFAULT_SKIRT_MARGIN`, 2048) past each edge: a view tilted toward the map's
+  corners shows ground there, lit, shadowed and fogged as the map, not the background. Side view
+  and skins without it: none. Disposed with the map.
+- `updateLabels` leaves out an entity's labels (or a place's name) when any of them would cover a
+  shown HUD `panel` or `minimap` (`hudPanelBoxes`, `boxesOverlap` from `@engine/core/present`), so
+  no label shows through or under the HUD; a frame whose status sets `HUD_HIDDEN_STATUS` (a
+  page's title screen) shows none, and its HUD hides too (`hudItemShown`). Tests:
+  `decor.test.ts`.
+
 ## Lights, shadows, fog, tone mapping and labels (Engine 0.16 T12)
 
 The skin's `scene3d` (`@engine/core/present`'s `scene3d.ts`: `resolveScene3d(skin.scene3d,

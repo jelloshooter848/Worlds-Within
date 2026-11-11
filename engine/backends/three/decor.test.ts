@@ -399,3 +399,39 @@ describe('render scale (Engine 0.16 F3)', () => {
     expect(at(6)).toEqual(at(1));
   });
 });
+
+describe('the whole campaign in 3D: skirt and labels clear of the HUD (Engine 0.16 F9)', () => {
+  it('lays a skirt under a ground-view map, reaching its margin past every edge, lit and shadowed', () => {
+    const scene = new ThreeScene(skin({ scene3d: { skirt: { color: '#497018', margin: 100 } } }));
+    scene.sync(frame(0));
+    const skirt = scene.map!.getObjectByName('skirt') as Mesh;
+    expect(skirt).toBeInstanceOf(Mesh);
+    expect(skirt.receiveShadow).toBe(true);
+    expect(skirt.castShadow).toBe(false);
+    const b = new Box3().setFromObject(skirt);
+    expect([b.min.x, b.max.x, b.min.z, b.max.z]).toEqual([-100, 48 * 16 + 100, -100, 32 * 16 + 100]);
+    expect(b.max.y).toBeLessThan(0); // under the floor
+    // Without `skirt`, or in side view, there is none.
+    const plain = new ThreeScene(skin());
+    plain.sync(frame(0));
+    expect(plain.map!.getObjectByName('skirt')).toBeUndefined();
+    const side = new ThreeScene(
+      skinSchema.parse({ backend: 'three', kinds: {}, scene3d: { skirt: { color: '#000000' } } }) as SkinFile,
+    );
+    side.sync(frame(0));
+    expect(side.map!.getObjectByName('skirt')).toBeUndefined();
+  });
+
+  it('keeps labels out of the HUD panels and shows none while the frame hides the HUD', () => {
+    const hud = (y: number) => [{ as: 'panel', x: 0, y, w: 320, h: 20, color: '#000000' }];
+    const shown = (y: number, status: Record<string, number> = {}) => {
+      const scene = new ThreeScene(skin({ places: PLACES, hud: hud(y) }), { fonts });
+      scene.sync(freezeFrame<PresentFrame>({ ...(structuredClone(frame(0)) as PresentFrame), status }));
+      return scene.labelViews().map((v) => v.text);
+    };
+    // THE HALL sits at the picture's centre (90 px down): a panel over it hides it.
+    expect(shown(0)).toEqual(['THE HALL']);
+    expect(shown(80)).toEqual([]);
+    expect(shown(0, { hudHidden: 1 })).toEqual([]);
+  });
+});
