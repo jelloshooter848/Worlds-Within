@@ -348,7 +348,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     texts, in order)). Engine 0.16 F9: under the title the frames carry `HUD_HIDDEN_STATUS` (no HUD
     or labels behind the title, gap M40); `body[data-screen]` is the mission screen shown (the
     page's CSS moves its controls to the bottom-right corner over a centred screen, the pause menu
-    and the title, gap M41); a save code in the link (`?code=<code>`, gap M42) is pressed as the
+    and the title, gap M41, and while a hosted round shows on the shell's 2D layer,
+    `body[data-round='layer']`, Engine 0.16 polish P7: there in one narrow column, the sound
+    button over an upright slider, in the picture's side margin beside the 256 px round, clear of
+    its bar and panel); a save code in the link (`?code=<code>`, gap M42) is pressed as the
     bar's code box would (the 3D page has no text box). No launch, campaign-panel, save-code
     or hint logic of its own. `index.html` is the canvas (in 2D leaving the bar's 40 px below
     it; in 3D the whole window), the 2D/3D toggle (`#backend`), the shell's sound control and
@@ -789,6 +792,11 @@ links the other one. Presentation only: no hash, save code or run file moved.
   danger layer up while a mission is open (`missionLeft`) or raiders are within 3 cells of the
   village's buildings (the RTS kit's `enemyNear`), mixed by the shell's mixer. The title plays
   the same (calm). Event and UI sounds as before.
+- **Mission-open flash** (Engine 0.16 polish P7, F3): `three.json`'s `mission-open` gives an
+  event `flash` (`#fce0a8`, a warm cream, at alpha 0.25 fading over 18 presentation frames, three
+  world ticks on the page) in place of the 2D skin's full-white two-tick `effect` flash, which
+  whited out the whole 3D picture after Delegate. Like every flash it is skipped with the
+  player's reduced-flashing setting.
 
 `three.test.ts` checks the HUD (the UI kit's, every key it reads on the frames, the title, clock
 and objectives drawn, no watchtower line at the dawn) and the music's danger layer while a

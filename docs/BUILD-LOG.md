@@ -284,6 +284,19 @@ dawn-fresh.run.json --tick 30 --backend three` draws the dawn at 06:00 but lit a
   the radius than the banded one (a band kept its inner edge's value), so the rooms read a little
   darker at their edges; no radius was changed. The fx lab's night level keeps its smooth,
   undithered falloff (it had no bands and shows no rings).
+- **P-6.** F3: the 3D skin's `mission-open` keeps its `launch` sound and swaps the full-white
+  two-tick `effect` flash for an event `flash` (`#fce0a8`, a warm cream, at alpha 0.25 fading
+  linearly over 18 presentation frames, three world ticks on the page): kept rather than dropped,
+  so opening a mission still reads as a beat, but the picture stays readable under it.
+  Reduced flashing skips it as it skips every flash. The 2D skin (`canvas2d.json`) keeps its
+  white two-tick flash (the task names the 3D picture only).
+- **P-7.** F2: the controls' rule stays in the page's CSS, not the shell: the shell already marks
+  a round on its 2D layer (`body[data-round='layer']`) and places its controls top right by
+  default; the bottom-centre placement they move away from is the mini siege's own. While a
+  round shows, the controls stand in one narrow column in the bottom-right corner (pause, 2D, the
+  sound button over an upright slider), about 52 px wide, so they fit the picture's side margin
+  beside the 256 px round (a tenth of the picture's width) on windows down to 640 px wide; the
+  page test checks the boxes at 640x520 and at a 16:9 960x540.
 - Seen in the shots and not in P's scope: the results' losses wrap "Vosk" onto its own line in the
   left column (15); at the dawn an empty black bar floats over a soldier by the hall (11).
 

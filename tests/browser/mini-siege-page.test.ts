@@ -391,10 +391,43 @@ async function typeRound(
       expect(
         await page.locator('canvas.ww-round-layer').evaluate((c) => getComputedStyle(c).visibility),
       ).toBe('visible');
+      // The page's controls stand clear of the round's picture (Engine 0.16 polish P7).
+      await controlsClear(page);
     } else if (!(await hook(page, 'playing'))) break;
   }
   for (const k of held) await page.keyboard.up(k);
   return ticks + 1;
+}
+
+/**
+ * The hosted rounds' picture (the sabotage and rescue rooms, the walls' map with its bar and
+ * panel): 256 picture px wide, centred in the 320x180 picture (Engine 0.16 F6), its full height.
+ */
+const ROUND_PICTURE: Box = { x: 32, y: 0, w: 256, h: 180 };
+/** The page's controls: the shell's sound control and pause button, and the 2D link. */
+const CONTROLS = ['#ww-volume', '#ww-pause', '#backend'];
+
+/**
+ * The page's controls are clear of a round's picture while it shows on its 2D layer (Engine 0.16
+ * polish P7, F2): each shown control's box (client px) shares no pixel with the round's.
+ */
+async function controlsClear(page: Page): Promise<void> {
+  expect(await page.evaluate(() => document.body.dataset.round)).toBe('layer');
+  const a = await toClient(page, ROUND_PICTURE.x, ROUND_PICTURE.y);
+  const b = await toClient(page, ROUND_PICTURE.x + ROUND_PICTURE.w, ROUND_PICTURE.y + ROUND_PICTURE.h);
+  const shown = await page.evaluate(
+    (ids) =>
+      ids.flatMap((id) => {
+        const r = document.querySelector(id)?.getBoundingClientRect();
+        return r && r.width > 0 && r.height > 0 ? [{ id, x: r.x, y: r.y, w: r.width, h: r.height }] : [];
+      }),
+    CONTROLS,
+  );
+  expect(shown.map((c) => c.id)).toEqual(CONTROLS);
+  for (const c of shown) {
+    const over = c.x < b.x && c.x + c.w > a.x && c.y < b.y && c.y + c.h > a.y;
+    expect(over, `${c.id} at ${JSON.stringify(c)} over the round at ${JSON.stringify({ a, b })}`).toBe(false);
+  }
 }
 
 /** Loop steps after a round starts by which the iris has opened on it (`game.json`'s 28 + 6 + 28). */
@@ -567,6 +600,15 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await hook(page, 'layer')).toBe('round');
         expect(await hook(page, 'round')).toMatchObject({ gold: 100, towers: 0 });
         await shoot(page, 'walls');
+        // Clear of it on a 16:9 window too, where the picture fills the window and only its side
+        // margins are left (Engine 0.16 polish P7).
+        await controlsClear(page);
+        await page.setViewportSize({ width: 960, height: 540 });
+        await frames(1);
+        await controlsClear(page);
+        await shoot(page, 'walls-16x9');
+        await page.setViewportSize({ width: 640, height: 520 });
+        await frames(1);
         const at = await wallsCellClient(page, 11, 1);
         await page.mouse.click(at.x, at.y);
         await frames(1);

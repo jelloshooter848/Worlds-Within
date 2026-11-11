@@ -215,6 +215,12 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   `docs/BUILD-LOG.md`, "Engine 0.16 part F", with the Done when, the outstanding issues and the
   build decisions F-1 to F-21 (F-21: the owner's playtest and screenshot review, open). No hash
   moved in part F.
+- Engine 0.16 polish P7 (F2, F3): on the 3D page the controls also move to the bottom-right
+  corner while a hosted round shows on its 2D layer (`body[data-round='layer']`), in one narrow
+  column in the picture's side margin, clear of the round's bar and panel (the page test checks
+  the boxes at 640x520 and 960x540); `three.json`'s `mission-open` flash is a warm, low-alpha
+  event `flash` (`#fce0a8` at 0.25, fading over 18 frames) instead of a full-white picture.
+  Presentation only: no hash moved.
 
 ## Imports allowed
 

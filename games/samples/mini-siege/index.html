@@ -51,12 +51,15 @@
       }
       /* Over a centred mission screen (the briefing, the results), the pause menu and the title,
          whose key hint and footer run along the picture's bottom, the controls sit in the
-         bottom-right corner, clear of them (Engine 0.16 F9, gap M41). */
+         bottom-right corner, clear of them (Engine 0.16 F9, gap M41). So too while a hosted round
+         shows on the shell's 2D layer (`body[data-round='layer']`, Engine 0.16 polish P7): its
+         bar and panel run along the picture's bottom, between the 256 px round's own edges. */
       body[data-backend='three']:is(
           [data-screen='briefing'],
           [data-screen='results'],
           [data-menu='title'],
-          [data-menu='pause']
+          [data-menu='pause'],
+          [data-round='layer']
         )
         #ww-volume {
         left: auto;
@@ -67,7 +70,8 @@
           [data-screen='briefing'],
           [data-screen='results'],
           [data-menu='title'],
-          [data-menu='pause']
+          [data-menu='pause'],
+          [data-round='layer']
         )
         #ww-pause {
         left: auto;
@@ -77,11 +81,34 @@
           [data-screen='briefing'],
           [data-screen='results'],
           [data-menu='title'],
-          [data-menu='pause']
+          [data-menu='pause'],
+          [data-round='layer']
         )
         #backend {
         left: auto;
         right: 8px;
+      }
+      /* Over a round the corner is only the picture's side margin (a tenth of its width beside
+         the 256 px round), so the controls stand in one narrow column there: the sound button over
+         an upright slider, the 2D link and the pause button above them (Engine 0.16 polish P7). */
+      body[data-backend='three'][data-round='layer'] #ww-volume {
+        right: 4px;
+        flex-direction: column;
+        padding: 2px;
+      }
+      body[data-backend='three'][data-round='layer'] #ww-master {
+        width: 16px;
+        height: 56px;
+        writing-mode: vertical-lr;
+        direction: rtl;
+      }
+      body[data-backend='three'][data-round='layer'] #backend {
+        right: 4px;
+        bottom: 104px;
+      }
+      body[data-backend='three'][data-round='layer'] #ww-pause {
+        right: 4px;
+        bottom: 134px;
       }
       #backend {
         position: fixed;
