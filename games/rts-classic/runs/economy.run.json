@@ -1,0 +1,39 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 200,
+  "orders": [
+    { "tick": 0, "id": 1, "faction": "red", "type": "gather", "units": [7, 8, 9], "target": 4 },
+    { "tick": 0, "id": 2, "faction": "red", "type": "train", "units": [3], "target": "worker" },
+    { "tick": 40, "id": 4, "faction": "red", "type": "gather", "units": [16], "target": 5 },
+    { "tick": 40, "id": 5, "faction": "red", "type": "move", "units": [15], "target": { "x": 16, "y": 11 } }
+  ],
+  "assertions": [
+    { "tick": 1, "path": "kit.enemy.camp.fired", "op": "eq", "value": 1 },
+    { "tick": 1, "path": "sides.red.stock.gold", "op": "eq", "value": 200 },
+    { "tick": 40, "path": "sides.red.unitTypes.worker", "op": "eq", "value": 4 },
+    { "tick": 100, "path": "sides.red.stock.gold", "op": "eq", "value": 320 },
+    { "tick": 200, "path": "sides.red.stock.gold", "op": "eq", "value": 460 },
+    { "tick": 200, "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 }
+  ],
+  "invariants": [
+    { "path": "sides.blue.units", "op": "eq", "value": 4 },
+    { "path": "sides.red.unitTypes.hero", "op": "eq", "value": 1 },
+    { "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 }
+  ],
+  "hashEvery": 20,
+  "guards": ["enemy-follows-plan", "enemy-waits-for-trigger"],
+  "hashes": [
+    { "tick": 0, "hash": "d63065c87e8ab781" },
+    { "tick": 20, "hash": "b89712727e51a5e2" },
+    { "tick": 40, "hash": "f607813ca46733f2" },
+    { "tick": 60, "hash": "66220210c15640e0" },
+    { "tick": 80, "hash": "12eb32564f6e6900" },
+    { "tick": 100, "hash": "edd792b676fd1177" },
+    { "tick": 120, "hash": "478feaa0e3d0d97f" },
+    { "tick": 140, "hash": "b802ba5e25d9e95b" },
+    { "tick": 160, "hash": "d3f0922cf0ecbbd0" },
+    { "tick": 180, "hash": "171c6a410b5b02aa" },
+    { "tick": 200, "hash": "34bf04d6b067075d" }
+  ]
+}

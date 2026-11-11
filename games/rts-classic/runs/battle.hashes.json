@@ -1,0 +1,57 @@
+{
+  "run": "games/rts-classic/runs/battle.run.json",
+  "hashes": [
+    {
+      "tick": 0,
+      "hash": "d63065c87e8ab781"
+    },
+    {
+      "tick": 20,
+      "hash": "170a7e4cc0357435"
+    },
+    {
+      "tick": 40,
+      "hash": "201ad7df0359cce9"
+    },
+    {
+      "tick": 60,
+      "hash": "73a750d11e73d0e7"
+    },
+    {
+      "tick": 80,
+      "hash": "3a5573bafb240dbe"
+    },
+    {
+      "tick": 100,
+      "hash": "40f4a93936e0d050"
+    },
+    {
+      "tick": 120,
+      "hash": "02fdb440434ed174"
+    },
+    {
+      "tick": 140,
+      "hash": "1ff9857931463c95"
+    },
+    {
+      "tick": 160,
+      "hash": "42adcc210ee2a5ff"
+    },
+    {
+      "tick": 180,
+      "hash": "1837608fdb4f0317"
+    },
+    {
+      "tick": 200,
+      "hash": "190f0e9c61e6734c"
+    },
+    {
+      "tick": 220,
+      "hash": "7c5be3e3eda849fd"
+    },
+    {
+      "tick": 240,
+      "hash": "588fe33bb3ecfcfd"
+    }
+  ]
+}

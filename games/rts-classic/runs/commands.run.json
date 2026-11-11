@@ -1,0 +1,65 @@
+{
+  "game": "..",
+  "seed": 9,
+  "ticks": 240,
+  "orders": [
+    { "tick": 0, "ui": "box", "box": { "x": 112, "y": 144, "w": 16, "h": 32 } },
+    { "tick": 0, "ui": "build", "building": "barracks", "cell": { "x": 10, "y": 9 } },
+    { "tick": 0, "ui": "click", "at": { "x": 120, "y": 200 } },
+    { "tick": 0, "ui": "command", "at": { "x": 136, "y": 248 } },
+    { "tick": 20, "ui": "box", "box": { "x": 512, "y": 160, "w": 48, "h": 48 } },
+    { "tick": 30, "ui": "click", "at": { "x": 168, "y": 152 } },
+    { "tick": 30, "ui": "train", "unit": "soldier" },
+    { "tick": 30, "ui": "train", "unit": "soldier" },
+    { "tick": 30, "ui": "train", "unit": "soldier" },
+    { "tick": 30, "ui": "box", "box": { "x": 144, "y": 144, "w": 16, "h": 32 } },
+    { "tick": 30, "ui": "command", "at": { "x": 136, "y": 104 } },
+    { "tick": 95, "ui": "box", "box": { "x": 128, "y": 160, "w": 48, "h": 48 } },
+    { "tick": 95, "ui": "click", "at": { "x": 88, "y": 216 }, "additive": true },
+    { "tick": 100, "ui": "command", "at": { "x": 456, "y": 248 } }
+  ],
+  "assertions": [
+    { "tick": 1, "path": "ui.selection", "op": "eq", "value": [9] },
+    { "tick": 1, "path": "sides.red.sites", "op": "eq", "value": 1 },
+    { "tick": 1, "path": "world.key.worker-3.Gatherer.node", "op": "eq", "value": 5 },
+    { "tick": 1, "path": "kit.enemy.camp.fired", "op": "eq", "value": 1 },
+    { "tick": 1, "path": "kit.enemy.raid.fired", "op": "eq", "value": 0 },
+    { "tick": 21, "path": "ui.selection", "op": "eq", "value": [] },
+    { "tick": 31, "path": "ui.selection", "op": "eq", "value": [7, 8] },
+    { "tick": 31, "path": "world.id.16.Producer.queue.length", "op": "eq", "value": 3 },
+    { "tick": 31, "path": "world.key.worker-1.Gatherer.node", "op": "eq", "value": 4 },
+    { "tick": 96, "path": "ui.selection", "op": "eq", "value": [15, 17, 18, 19] },
+    { "tick": 101, "path": "kit.nextOrder", "op": "eq", "value": 10 },
+    { "tick": 101, "path": "world.id.15.Target.entity", "op": "eq", "value": 10 },
+    { "tick": 240, "path": "sides.blue.units", "op": "eq", "value": 0 },
+    { "tick": 240, "path": "sides.red.unitTypes.soldier", "op": "eq", "value": 2 },
+    { "tick": 240, "path": "sides.red.stock.gold", "op": "eq", "value": 215 }
+  ],
+  "invariants": [
+    { "path": "sides.red.buildings.town-centre", "op": "eq", "value": 1 },
+    { "path": "sides.red.unitTypes.hero", "op": "eq", "value": 1 }
+  ],
+  "hashEvery": 20,
+  "guards": [
+    "box-selects-own-units",
+    "command-attacks-enemies",
+    "command-gathers-resources",
+    "enemy-follows-plan",
+    "enemy-waits-for-trigger"
+  ],
+  "hashes": [
+    { "tick": 0, "hash": "d63065c87e8ab781" },
+    { "tick": 20, "hash": "ba53cd4fa6f41ac9" },
+    { "tick": 40, "hash": "000e9962a5b0cfca" },
+    { "tick": 60, "hash": "25ecdb86d6170b6d" },
+    { "tick": 80, "hash": "ca7e91f611c5cb06" },
+    { "tick": 100, "hash": "c8c958e70ba6a042" },
+    { "tick": 120, "hash": "73f9280cbcc585ac" },
+    { "tick": 140, "hash": "85bd0a515bfbe6b1" },
+    { "tick": 160, "hash": "1af6cfd977dbf221" },
+    { "tick": 180, "hash": "fc29da49f32abdbe" },
+    { "tick": 200, "hash": "b86fc58248ca6c10" },
+    { "tick": 220, "hash": "2bc115fe6614f944" },
+    { "tick": 240, "hash": "9f8fc0dc11549b95" }
+  ]
+}

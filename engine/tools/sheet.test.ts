@@ -62,13 +62,13 @@ describe('sheet tiles', () => {
   });
 
   it("reads a run file of another folder, relative to the run file's own", () => {
-    expect(parseTiles('../../samples/rts-skirmish/runs/battle/141+pause@pixi')).toEqual([
+    expect(parseTiles('../../rts-classic/runs/battle/141+pause@pixi')).toEqual([
       {
-        run: '../../samples/rts-skirmish/runs/battle',
+        run: '../../rts-classic/runs/battle',
         tick: 141,
         overlay: { kind: 'menu', screen: 'pause', frames: 30 },
         backend: 'pixi',
-        text: '../../samples/rts-skirmish/runs/battle/141+pause@pixi',
+        text: '../../rts-classic/runs/battle/141+pause@pixi',
       },
     ]);
   });

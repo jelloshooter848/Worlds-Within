@@ -256,8 +256,9 @@ describe('backend parity: the platformer lab through null, canvas2d and three', 
 });
 
 describe('backend parity: every other game with a view, through null, canvas2d and three', () => {
-  it('finds the platformer test runs and the RTS skirmish sample runs', () => {
+  it('finds the platformer test runs, the 0.15 RTS battle and the RTS skirmish sample runs', () => {
     expect(viewRuns).toContain('games/platformer-classic/runs/level-4.run.json');
+    expect(viewRuns).toContain('games/rts-classic/runs/battle.run.json');
     expect(viewRuns).toContain('games/samples/rts-skirmish/runs/battle.run.json');
   });
 

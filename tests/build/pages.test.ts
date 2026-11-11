@@ -30,6 +30,16 @@ describe('game page discovery', () => {
     );
   });
 
+  it('finds the 0.15 River Ford kept as games/rts-classic (Engine 0.16 part D, D2)', () => {
+    const classic = discoverGames(repoRoot).find((page) => page.dir === 'games/rts-classic');
+    expect(classic).toEqual({
+      dir: 'games/rts-classic',
+      name: 'games-rts-classic',
+      title: 'RTS classic: the 0.15 River Ford, hold the ford against a raiding party',
+    });
+    expect(pageInputs(repoRoot)['games-rts-classic']).toBe(join(repoRoot, 'games/rts-classic/index.html'));
+  });
+
   it('finds the mini siege sample under games/samples (Engine 0.11 T9)', () => {
     const siege = discoverGames(repoRoot).find((page) => page.dir === 'games/samples/mini-siege');
     // Its page opens in 3D (Engine 0.16 F7); the launcher also links the 2D page.

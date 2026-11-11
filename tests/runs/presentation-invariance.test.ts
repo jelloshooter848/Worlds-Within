@@ -102,6 +102,7 @@ describe('presentation invariance: presenters and effects never change the state
       'games/fx-lab',
       'games/platformer-classic',
       'games/platformer-lab',
+      'games/rts-classic',
       'games/samples/dungeon',
       'games/samples/mini-siege',
       'games/samples/platformer',

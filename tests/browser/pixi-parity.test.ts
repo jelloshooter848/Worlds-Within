@@ -76,8 +76,8 @@ const CASES: Case[] = [
     strictRegion: { x: 0, y: 0, w: 256, h: 120 },
   },
   {
-    name: 'the RTS skirmish',
-    run: 'games/samples/rts-skirmish/runs/battle.run.json',
+    name: 'the RTS skirmish (the 0.15 battle, kept as games/rts-classic)',
+    run: 'games/rts-classic/runs/battle.run.json',
     // A building done (flash), units going down (particles), hits, the battle won (tint, banner).
     tiles: ['19', '124', '127', '141', '148', '160', '127+fade*10', '141+wipe*8'],
     bound: STRICT,

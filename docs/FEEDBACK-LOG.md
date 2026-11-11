@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 489.** (Last used: 488.)
+**Next unused number: 490.** (Last used: 489.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1935,3 +1935,19 @@ Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
 - **488.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
   positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
   parity sheet tiles three games. OK?
+
+**Engine 0.16 part D, D2: the 0.15 skirmish kept as `games/rts-classic`**
+
+- **489.** Before the RTS sample becomes the full ten-minute match (D8), its 0.15 battle (the
+  map, the raiders' plan, text art, skin, sounds, title and menus, the page and the five run
+  files `battle`, `commands`, `hold`, `economy`, `lost`) was **copied** to a new test game,
+  `games/rts-classic` (id `rts-classic`, its own page in the games index, `CLAUDE.md`,
+  `AGENTS.md` and module page), with every golden hash unchanged (only each `.hashes.json`'s
+  `run` path differs). Unlike part B's `git mv`, the sample folder stays as it was until D8
+  replaces it, so both play meanwhile. The tests that guard the 0.15 battle point at the copy:
+  `tests/runs/rts-classic-mutants.test.ts` (no unguarded rule, no weak run), backend parity and
+  presentation invariance list it, the PixiJS parity test's RTS case and the parity sheet's RTS
+  tile path (`../../rts-classic/runs/battle/141`) and `world-data.test.ts`'s events use it. The
+  alternative was to keep both maps in one game (the sample with a second map and the old run
+  files beside the match's), which keeps one folder but ties the old hashes to every change of
+  the match's glue, skin and end rule. OK to keep it as its own test game?

@@ -238,4 +238,6 @@ the site keeps going up, the HUD's commit tick, refusals as results, and the tha
 The first game on the kit is `games/samples/rts-skirmish` (Engine 0.9 T11): its run files guard
 all five rules (`mutants games/samples/rts-skirmish`; the interface rules through its interface
 actions), with no run weak; the kit is not strict, so `tests/runs/rts-skirmish-mutants.test.ts`
-holds the sample to that.
+holds the sample to that. From Engine 0.16 part D (D2) the same battle is kept unchanged as the
+test game `games/rts-classic`, whose run files never move, held the same way by
+`tests/runs/rts-classic-mutants.test.ts`, so the sample can become the full match.
