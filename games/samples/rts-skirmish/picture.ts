@@ -12,6 +12,7 @@ import {
   type Presenter,
   type SkinFile,
 } from '@engine/core/present';
+import { contentFonts, type FontLookup } from '@engine/core/ui';
 import { SkinnedCanvasPresenter } from '@engine/backends/canvas2d';
 import {
   presentWorld,
@@ -64,14 +65,17 @@ export interface SkirmishLook {
   skin: SkinFile;
   sheet: SheetLookup;
   screen: ScreenSize;
+  /** The game's fonts, for the HUD's text (the bark line, the selected-unit panel; D10). */
+  fonts: FontLookup;
 }
 
-/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files) and size. */
+/** The `canvas2d` skin, the sprite sheets (from the sprite and palette files), size and fonts. */
 export function skirmishLook(content: ContentBundle): SkirmishLook {
   return {
     skin: skirmishSkin(content, 'canvas2d'),
     sheet: contentSheets(content),
     screen: content.manifest.screen,
+    fonts: contentFonts(content),
   };
 }
 
@@ -196,6 +200,7 @@ export function skirmishCanvasPicture(
 ): SkirmishPicture {
   const presenter = new SkinnedCanvasPresenter(r, look.skin, look.sheet, {
     size: look.screen,
+    fonts: look.fonts,
     ...(onSound && { onSound }),
   });
   return skirmishPicture(presenter, look.screen, opts);

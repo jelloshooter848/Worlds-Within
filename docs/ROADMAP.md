@@ -971,13 +971,22 @@ A 10-minute skirmish against an AI opponent.
   voice-like sounds or text on orders), and build and train progress shown in the world.
 - Readable at every zoom: unit outlines, team colours and health bars.
 
-**Done when:**
+**Done when:** (checked in the [build log](BUILD-LOG.md#engine-016-part-d), Engine 0.16 part D,
+Done when)
 
-- [ ] A full match plays from the title to a win or a loss in about 10 minutes, with run files for a
-      win and a loss that pass in CI.
-- [ ] Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
-      listed rule change needs it.
-- [ ] Owner playtest and screenshot review of the skirmish are accepted.
+- [x] A full match plays from the title to a win or a loss in about 10 minutes, with run files for a
+      win and a loss that pass in CI. (`match-won`, blue's town centre down at tick 5803, 9:40 at
+      the page's 10 ticks a second, and `match-lost`, red's taken at 5681, 9:28, with their golden
+      hashes in `tests/runs`; `tests/browser/rts-skirmish.test.ts` starts from the games index and
+      the title and replays `match-won` through the page to the end screen.)
+- [x] Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
+      listed rule change needs it. (Every rts-classic and rts-skirmish run gives its golden hashes
+      with the fog drawn on and off, `tests/runs/rts-fog.test.ts` and `skirmish.test.ts`; the AI's
+      memory is in the kit snapshot only for a plan that keeps one, so no 0.15 hash moved; the
+      sample's hashes moved only for the new map (D8) and the balance (D9), listed in the build
+      log.)
+- [ ] Owner playtest and screenshot review of the skirmish are accepted. (The screenshots are in
+      `docs/reports/screenshots/0.16-D/`; open as items 504 and 505.)
 
 ### 0.16 part E: the tower defense, The Winding Road
 

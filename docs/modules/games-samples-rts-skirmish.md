@@ -60,7 +60,9 @@ kit, sides, ui }`, the kit part with the AI's memory `seen`; `view()`, `result()
   `TICKS_PER_SECOND` 10; `stepsPerTick` 1 in manual-loop mode, D9), `main.ts` + `index.html` (the
   page; `window.wwSkirmish` with `minimapClientAt` and `stats`; D9: the layered music, the scene's
   `headless()` for the step hook, the pointer's edge scroll and wheel), `recording.ts`
-  (`BattleRecorder`), `view.ts` (`createView`).
+  (`BattleRecorder`), `view.ts` (`createView`; D10: the run's selection drawn, interface
+  commands' markers and barks, and `directorCamera`, which frames the fight, else the selection,
+  else the player's units, zoomed out to fit, for `pnpm cli screenshot`).
 - `runs/` (D8): `opening`, `ai-barracks`, `fog` and `razed`, each with sync `hashes` and golden
   `<name>.hashes.json`; together they guard all six kit rules with no run weak
   (`tests/runs/rts-skirmish-mutants.test.ts`). D9: `match-won` (5900 ticks, blue's town centre

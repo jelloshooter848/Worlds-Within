@@ -37,7 +37,7 @@ import {
   skirmishLook,
   type ShowsWorld,
 } from './picture';
-import { createView } from './view';
+import { createView, directorCamera } from './view';
 
 const ROOT = fileURLToPath(new URL('./', import.meta.url));
 /**
@@ -316,6 +316,50 @@ describe('the skirmish picture', () => {
     const snapshot = canonicalJson(view.snapshot());
     view.render(r);
     expect(canonicalJson(view.snapshot())).toBe(snapshot);
+  });
+
+  it("shows the run's selection, its commands' markers and barks, and frames the action (D10)", () => {
+    const view = createView(content, 9);
+    const run = runFile('fog');
+    const frames: PresentFrame[] = [];
+    for (let t = 0; t <= 436; t++) {
+      for (const { tick, ...o } of run.orders ?? []) if (tick === t) view.order(o as JsonObject);
+      frames.push(view.frame!() as PresentFrame);
+      view.step(NO_INPUT);
+    }
+    // Tick 0: the hero clicked and sent off: selected, its marker and bark, the camera on him.
+    const first = frames[0]!;
+    expect(first.entities.some((e) => e.kind === 'selection-ring')).toBe(true);
+    expect(first.entities.some((e) => e.kind === 'order-marker')).toBe(true);
+    expect(first.status['bark']).toBe('move');
+    // Tick 436: the hero's attack on the sentry: its marker, the path dots, "To arms!".
+    const last = frames[436]!;
+    expect(last.entities.filter((e) => e.kind === 'order-marker').map((e) => e.anim.state)).toContain(
+      'attack',
+    );
+    expect(last.entities.some((e) => e.kind === 'path-dot')).toBe(true);
+    expect(last.status['bark']).toBe('attack');
+  });
+
+  it('the director frames the fight, else the selection, else the own units, zoomed out to fit (D10)', () => {
+    const game = createGame(content, 9);
+    const screen = content.manifest.screen;
+    const v = game.view();
+    // Nothing selected and no fight: red's units round its base, at zoom 1.
+    const home = directorCamera(v, screen, [])!;
+    expect(home.zoom).toBe(1);
+    expect(home.x).toBeLessThan(400);
+    // The hero alone selected: centred on him.
+    const hero = v.units.find((u) => u.id === 19)!;
+    const onHero = directorCamera(v, screen, [19])!;
+    expect(onHero.x).toBe(Math.max(screen.width / 2, hero.x * RTS_TILE_SIZE + RTS_TILE_SIZE / 2));
+    // A red worker and the far sentry selected: zoomed out to fit both, never below 0.5.
+    const wide = directorCamera(v, screen, [11, 19])!;
+    expect(wide.zoom).toBeLessThanOrEqual(1);
+    const fight = { ...v, units: v.units.map((u) => (u.id === 19 ? { ...u, target: 17 } : u)) };
+    const onFight = directorCamera(fight, screen, [])!;
+    expect(onFight.zoom).toBeLessThan(1);
+    expect(onFight.zoom).toBeGreaterThanOrEqual(0.5);
   });
 });
 

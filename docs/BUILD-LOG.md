@@ -1,7 +1,7 @@
 # Build log
 
 This is the log of the autonomous build of Engine 0.2–0.15 and 0.16 parts A (with part A2, the
-PixiJS backend), B and C on branch `engine/build-0.15`, for the owner's review. Nothing in it is
+PixiJS backend), B, C and D on branch `engine/build-0.15`, for the owner's review. Nothing in it is
 merged to `master`, tagged or published.
 
 What each engine release built and the choices made along the way, newest first. The plan for each
@@ -94,6 +94,16 @@ the API review listed (`1.0-1` to `1.0-11`).
   `docs/reports/screenshots/0.16-C/`. Hashes re-recorded only for T1's new Hopper's Way enemies
   and the part's own new runs (listed in its section). Not met: the owner's playtest (item 455)
   and screenshot review (item 456).
+- **0.16 part D The RTS skirmish, The River Ford: built, awaiting review.** The PixiJS track
+  merged (D1); the 0.15 battle kept as `games/rts-classic`; engine fog layer, minimap and
+  readability fields (outlines, team colours, zoom-stable bars); the RTS kit's fog of war, order
+  markers, path dots, barks and train progress, a fog-aware AI and a data end rule; the sample
+  rebuilt on Kenney's CC0 Medieval RTS at 16:9 as a ten-minute match against an AI base across a
+  river, balanced in data, with `match-won` (9:40) and `match-lost` (9:28) and four guard runs,
+  a danger music layer and sounds; ten review screenshots in
+  `docs/reports/screenshots/0.16-D/`. Hashes moved only for the sample's new map and balance
+  (listed in its section). Not met: the owner's playtest (item 504) and screenshot review (item
+  505).
 - **0.16 part F The mini siege in 3D low-poly: in progress.** Built on the track branch
   `engine/0.16-track2` and merged in part D, D1, not extended since: the CC0 low-poly packs (F1),
   the 3D backend's ground view with shared picking (F2), crisp output, instanced tile models and
@@ -117,6 +127,7 @@ the same paths are served from `dist/`; each page takes `?debug=step` for the st
 | The mini siege                | `/games/samples/mini-siege/`                        | Begin, then Launch, Play or Delegate in the bar; rounds by keys or taps          |
 | Platformer lab (not a sample) | `/games/platformer-lab/` (3D: `?backend=three`)     | arrows move, Z jumps, X runs                                                     |
 | Platformer classic (test)     | `/games/platformer-classic/` (3D: `?backend=three`) | arrows move, Z jumps, X runs; in the rooms arrows walk and X stabs               |
+| RTS classic (test)            | `/games/rts-classic/`                               | mouse or touch: click selects, drag boxes, right click commands, wheel zooms     |
 | FX lab (not a sample)         | `/games/fx-lab/` (3D: `?backend=three`)             | arrows move, Z jumps, X runs                                                     |
 
 Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSON result):
@@ -124,12 +135,13 @@ Headless, every run file through the CLI (exit 0 is a pass; `--json` for one JSO
 ```sh
 pnpm -s cli run games/samples/dungeon/runs/escape.run.json --json          # also walk-east, lost-in-the-guard-room
 pnpm -s cli run games/samples/platformer/runs/full-game.run.json --json    # also level-1..3, boss, each *-lost, level-1-hurt
-pnpm -s cli run games/samples/rts-skirmish/runs/fog.run.json --json        # also opening, ai-barracks, razed
+pnpm -s cli run games/samples/rts-skirmish/runs/match-won.run.json --json  # also match-lost, opening, ai-barracks, fog, razed
 pnpm -s cli run games/samples/tower-defense/runs/won.run.json --json       # also build, leaked, tapped, target
 pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json       # also delegated, quit, fortify-*, dawn-*, ridge-raid
 pnpm -s cli run games/platformer-lab/runs/start-to-goal.run.json --json    # also mini-game, mini-game-start, moves, objects, shells, walkers
 pnpm -s cli run games/fx-lab/runs/level-1.run.json --json                  # also level-2, level-3
 pnpm -s cli run games/platformer-classic/runs/level-4.run.json --json      # also level-1..3, level-2..5-start
+pnpm -s cli run games/rts-classic/runs/battle.run.json --json              # also commands, hold, economy, lost
 for f in $(git ls-files '*.run.json'); do pnpm -s cli run "$f" > /dev/null && echo "ok $f"; done
 pnpm -s cli validate games/samples/mini-siege --json                         # any game folder
 pnpm -s cli mutants games/samples/dungeon --json                             # which kit rules the runs guard
@@ -144,7 +156,7 @@ its run files and what each checks.
 ### Open feedback items
 
 Every build decision is a numbered item in [FEEDBACK-LOG.md](FEEDBACK-LOG.md); **the last number
-used is 488** (next unused 489). Awaiting the owner's answer, by release (an answer by number is
+used is 515** (next unused 516). Awaiting the owner's answer, by release (an answer by number is
 enough; silence so far has meant the build kept its default):
 
 - Before the build: **17** (approve the roadmap and merge to `master`: "owner still revising").
@@ -173,6 +185,10 @@ enough; silence so far has meant the build kept its default):
   **448-454** (T10, the combat feel and polish); **455** (the owner's playtest), **456** (the
   owner's screenshot review), **457-462** (T11: the item panel fix, two looks left, and the
   smaller choices of T5-T7), **463-467** (the final review's five more build choices).
+- Engine 0.16 part D: **489** (D2, `games/rts-classic`), **490-503** (D9, balance and feel),
+  **504** (the owner's playtest), **505** (the owner's screenshot review), **506-508** (D10: the
+  screenshot view, the stale victory line, waves unseen at the fords), **509-514** (smaller build
+  choices of D3-D8), **515** (looks left in the screenshots).
 
 ### Items not met, and where they went
 
@@ -197,48 +213,221 @@ No Done when of 0.2-0.15 is unmet; these scope items or parts were not built as 
 - **Publishing**: every "plays from a link" item was checked on a local build (the games index
   over a Pages-style build in 0.15); nothing is published until the owner tags a release.
 
-## Engine 0.16 part D (build notes, in progress; D10 writes this part up)
+## Engine 0.16 part D
 
-### D8: The River Ford match (golden hashes)
+The RTS skirmish, **The River Ford** (docs/ROADMAP.md, 0.16 part D), built on branch
+`engine/build-0.15` in ten tasks (D1-D10; not tagged, nothing published). D1 first merged the
+PixiJS track (part A2, and part F up to F7) into the build branch. The RTS sample became a
+ten-minute match against an AI base across a river with three fords, on Kenney's CC0 Medieval
+RTS art at 16:9 (480x270; 4x is 1920x1080), under fog of war, with a clickable minimap, order
+markers, path dots, unit barks, build and train progress in the world, an AI that plays by what
+its side has seen, a data-driven end rule and a layered score. Its 0.15 battle is the test game
+`games/rts-classic`. **Open for the owner:** the playtest (item 504) and the screenshot review
+(item 505), then the build choices 489-503 and 506-515.
 
-`games/samples/rts-skirmish` became the match against an AI base across the river (a 64x40
-point-symmetric map with three fords, the kit's fog AI in `content/enemy/blue.json`, the end rule
-in `content/end/ford.json`, archers, barks, the clickable minimap). Its 0.15 map, raiders plan and
-run files were removed (they live on unchanged in `games/rts-classic`, D2), with their golden
-hashes:
+### What was built
 
-- Removed (final hashes): `battle` `588fe33bb3ecfcfd`, `commands` `9f8fc0dc11549b95`, `hold`
-  `dcf2c02f2cb6d266`, `economy` `34bf04d6b067075d`, `lost` `2cc7b6a08b67cdfd`.
-- New (final hashes): `opening` (200 ticks) `ba3cccd15c1aa5de`, `ai-barracks` (400)
-  `c5f146d0b4836da5`, `fog` (480) `82fc61891e2e80b8`, `razed` (160) `3c8ae6c8450507ff`.
-- No other golden hash moved (rts-classic's are its own files; fog, markers, barks, the minimap
-  and the stats are presentation, and every new run gives its golden hashes with the page's fog
-  drawn on and off, `skirmish.test.ts`). `mutants` now guards all six kit rules on the sample
-  (`enemy-knows-only-what-it-saw` through the AI's `scout` step), so
-  `tests/runs/rts-skirmish-mutants.test.ts` lists none unguarded.
+- **D1 the PixiJS track merged** (`engine/0.16-track2` into `engine/build-0.15`): the PixiJS v8
+  2D backend (part A2, T13b-1..9; its own section below) and part F's F1-F7; part C's lighting,
+  `showHud` and decoration moved into the shared core walk so PixiJS draws them too. The track's
+  decisions became items 468-488. No hash moved.
+- **D2 the 0.15 skirmish kept as `games/rts-classic`**: its map, raiders plan, art, page and five
+  run files copied with every golden hash unchanged, with its own mutants test, agent docs and
+  index link. Item 489.
+- **D3 engine: a fog layer and a fuller minimap for 2D frames**: a frame's `fog` (string rows,
+  one cell per tile: unexplored, explored, seen) and a skin's `fog` look, drawn by the shared 2D
+  walk over the map, entities and lighting and under the HUD on both 2D backends; the UI kit's
+  minimap with fog, team-coloured dots and the camera's box, and `minimapPointToWorld`. Item 509.
+- **D4 engine: readable at every zoom**: the skin kind fields `outline` (a colour or "team"),
+  `team` (a recolour by tag prefix) and `screenScale` (zoom-stable bars and rings), default off,
+  recoloured sheets made once (`engine/core/draw/recolor.ts`), a Canvas2D/PixiJS parity test at
+  zoom 0.5, 1 and 2. Item 510.
+- **D5 RTS kit: fog of war and in-world feedback**: `visibility(view, faction)` from units' and
+  buildings' sight, explored cells and last-seen buildings in `RtsPresentState`, `presentWorld`'s
+  `fog`; order markers and `bark` events from `RtsControls.feedback`, path dots for selected own
+  units, a train progress bar; every rts-classic and rts-skirmish run hashing the same with fog
+  off and on (`tests/runs/rts-fog.test.ts`). Item 511.
+- **D6 RTS kit: an AI that plays under fog and a data-driven end rule**: the enemy plan's
+  `knowledge: "fog"` (`RtsKnowledge`, rule `enemy-knows-only-what-it-saw`), `scout`, `enemy-base`
+  and `last-seen-building` targets, a selector's `min`, `build` at the first free of `cells`,
+  `train` `upTo`; the `rts-end` kind and `matchResult`; a kit-over-sim match test. Item 512.
+- **D7 the CC0 art pack and a 16:9 skin**: Kenney's Medieval RTS in
+  `games/samples/rts-skirmish/assets/kenney-medieval-rts/` (credited), the units and buildings in
+  team colours with team outlines, ground, roads, river banks and fords cut for 16 px cells by
+  `tools/ford-tiles.ts` (checked byte for byte), zoom-stable bars, path dots, markers, fog colours
+  and the minimap; the menus at 16:9. No hash moved. Item 513.
+- **D8 the match**: a 64x40 point-symmetric map with three fords, red (three workers, a town
+  centre, the hero Wren) against blue (the kit's fog AI in `content/enemy/blue.json`), archers,
+  the end rule `content/end/ford.json`, the page with fog, the clickable minimap, markers, path
+  dots, barks (a sound and a HUD line) and an end screen with the match's stats; four guard runs.
+  Item 514.
+- **D9 the ten-minute win and loss, balance and feel**: balance in data only, `match-won` (9:40)
+  and `match-lost` (9:28) recorded with a throwaway bot, the danger music layer, a varied sound
+  for every event, the selected-unit panel, the camera's edge band and wheel, the page's step mode
+  replaying a run tick for tick, speed-ups with no hash moved (a match in about 9 s headless).
+  Items 490-503.
+- **D10 close-out**: the ten review screenshots (below), the view changes they needed (the run's
+  selection, its interface commands' markers and barks, the HUD's fonts and a director's camera,
+  item 506; presentation only), this section, the roadmap's Done when, the feedback items 504-515,
+  the README's sample list.
 
-### D9: the ten-minute win and loss, balance and feel (golden hashes, items 490-503)
+### Choices made
 
-The match was balanced in data only (`content/enemy/blue.json`, `content/types/skirmish.json`,
-`content/maps/ford.world.json`) and recorded as two run files with a throwaway headless bot (not
-kept): `match-won` (5900 ticks, hashes every 100; blue's town centre down at 5803, 9:40 at the
-page's 10 ticks a second) and `match-lost` (5700; red's town centre taken by the push at 5681,
-9:28). A passive player loses at 2025 (3:22). Both pass `pnpm -s cli run` with their golden
-hashes; `mutants` on the game guards all six kit rules with no run weak (about 25 s alone).
+Each is built and kept unless the owner says otherwise; the full text is in
+[FEEDBACK-LOG.md](FEEDBACK-LOG.md) ("Engine 0.16 part D").
 
-- Moved (the types, the map's gold and the plan's steps are world and kit state): `opening`
-  `ba3cccd15c1aa5de` to `5f5724b4b03cbf28`, `ai-barracks` `c5f146d0b4836da5` to
-  `19b073e4e362ab13`, `fog` `82fc61891e2e80b8` to `606269cfac74a8bb`, `razed`
-  `3c8ae6c8450507ff` to `bf1f52ad343cbbe3`; every assertion of the four held unchanged.
-- New: `match-won` `b55be4ea560a4f79`, `match-lost` `02facfba6cc041cc`.
-- No other golden hash moved: the engine changes for speed (`World.peek()`, the kit's
-  `readWorld` caching parsed frozen values, the attack system's candidate list, `pnpm cli run`'s
-  lazy snapshots) give the same states; every run file of every game passes with its golden file.
-- Feel: the danger music layer (`ford-danger`, mixed on the kit's `enemyNear`), a varied sfx for
-  every event (`crumble`, `alarm` new), barks with pitch -2 to 2, the selected-unit panel, the
-  camera's edge band and wheel; the page in `?debug=step` plays one tick per loop step and
-  reports its game to the step hook, and the browser test replays `match-won` through it to the
-  end screen with the golden hashes, its export replaying headless with no mismatch.
+1. The 0.15 battle copied to its own test game rather than kept as a second map in the sample
+   (489).
+2. Balance in data only: three one-shot waves and a push, a 1600 hp town centre costing 300 gold,
+   more gold (490, 491); the matches recorded by a throwaway bot, not kept (492); their hashes
+   every 100 ticks and an opening that guards every kit rule by tick 2 (493).
+3. Long runs presented for their first 600 ticks in the presentation tests (494); speed-ups with
+   no hash moved (495); the page's step mode a tick per step and exports that keep `ui` entries
+   (496, 497).
+4. Feel: the danger layer (498), sounds (499), the selected-unit panel and the population counter
+   (500), the camera's edge band and wheel (501), PixiJS parity on match frames (502), the HUD
+   tuned on CLI pictures and reviewed here (503).
+5. The close-out: the screenshot view (506); the stale victory line (507); waves never seen at the
+   fords under fog (508); the looks left (515).
+
+### Smaller build choices
+
+Recorded by this close-out for D3-D8, which had no items of their own: the fog layer and the
+minimap (509), the readability fields and units scaling with the zoom (510), the kit's fog,
+markers, barks and path dots (511), the AI's memory only in plans that keep one and a loss
+checked first (512), the art pack and the tiles made from it (513), the map and the guard runs
+(514).
+
+### Golden hashes
+
+Re-recorded with the repo's tools (`WW_UPDATE_GOLDEN=1 pnpm test tests/runs`), never by hand:
+
+- **Moved to `games/rts-classic` unchanged (D2):** the 0.15 sample runs `battle`, `commands`,
+  `hold`, `economy` and `lost`, with the same hashes (only each `.hashes.json`'s `run` path
+  differs).
+- **Removed from the sample with its 0.15 map (D8; final hashes):** `battle` `588fe33bb3ecfcfd`,
+  `commands` `9f8fc0dc11549b95`, `hold` `dcf2c02f2cb6d266`, `economy` `34bf04d6b067075d`, `lost`
+  `2cc7b6a08b67cdfd` (the same files and hashes live on in `games/rts-classic`).
+- **New (D8):** `opening` (200 ticks), `ai-barracks` (400), `fog` (480) and `razed` (160), first
+  recorded as `ba3cccd15c1aa5de`, `c5f146d0b4836da5`, `82fc61891e2e80b8` and `3c8ae6c8450507ff`.
+- **Moved (D9, the balance: the types, the map's gold and the plan's steps are world and kit
+  state):** `opening` to `5f5724b4b03cbf28`, `ai-barracks` to `19b073e4e362ab13`, `fog` to
+  `606269cfac74a8bb`, `razed` to `bf1f52ad343cbbe3`; every assertion of the four held unchanged.
+- **New (D9):** `match-won` `b55be4ea560a4f79` (5900 ticks), `match-lost` `02facfba6cc041cc`
+  (5700).
+- **Unchanged through the whole part:** every other game's run files and the world fixtures; D1
+  (the merge), D3-D5, D7 and D10 are presentation only (fog on and off give the same hashes,
+  `rts-fog.test.ts`; `presentation-invariance.test.ts` and `stepped-shell-invariance.test.ts`
+  pass unchanged), and D6's AI additions are optional, so no older plan's orders or snapshot
+  changed. D9's speed-ups (`World.peek()`, cached view parsing, the attack system's candidate
+  list, lazy snapshots in `pnpm cli run`) give the same states.
+
+### How to try it
+
+```sh
+pnpm dev   # then http://localhost:5173/games/samples/rts-skirmish/
+           # click selects, drag boxes, right click commands, the wheel zooms, the minimap jumps
+pnpm -s cli run games/samples/rts-skirmish/runs/match-won.run.json --json   # the win, 5900 ticks
+pnpm -s cli run games/samples/rts-skirmish/runs/match-lost.run.json --json  # also opening, ai-barracks, fog, razed
+pnpm -s cli mutants games/samples/rts-skirmish --json                       # all six kit rules guarded
+pnpm -s cli validate games/samples/rts-skirmish --json
+pnpm -s cli screenshot games/samples/rts-skirmish/runs/match-won.run.json --tick 4535 --scale 4 --json
+pnpm test games/samples/rts-skirmish tests/runs/rts-fog.test.ts tests/browser/rts-skirmish.test.ts
+```
+
+### Done when
+
+- **A full match plays from the title to a win or a loss in about 10 minutes, with run files for
+  a win and a loss that pass in CI: met.** `match-won` takes blue's town centre at tick 5803
+  (9:40 at the page's 10 ticks a second) and `match-lost` loses red's at 5681 (9:28); both exit 0
+  through `pnpm -s cli run` and match their golden hashes in `tests/runs/run-files.test.ts`;
+  `tests/browser/rts-skirmish.test.ts` starts from the games index and the title, plays the
+  opening by mouse and touch and replays `match-won` through the page's step hook to the end
+  screen, its export replaying headless with no mismatch. A passive player loses at 2025 (3:22).
+- **Fog of war is presentation and AI knowledge only, and no existing hash moves for it unless a
+  listed rule change needs it: met.** Every rts-classic and rts-skirmish run gives its golden
+  hashes with the page's fog drawn on and off (`tests/runs/rts-fog.test.ts`, `skirmish.test.ts`);
+  the AI's knowledge is the kit's `RtsKnowledge`, in the kit snapshot only for a plan with
+  `knowledge: "fog"` or `scout`, so no 0.15 hash moved; the sample's hashes moved only for the new
+  map (D8) and the balance (D9), listed above. `mutants` guards `enemy-knows-only-what-it-saw`
+  through the AI's `scout` step.
+- **Owner playtest and screenshot review of the skirmish: open (items 504 and 505).** The
+  screenshots are below.
+
+### Review screenshots (item 505)
+
+Ten 1920x1080 PNGs in [`docs/reports/screenshots/0.16-D/`](reports/screenshots/0.16-D/), each
+480x270 drawn by the **Canvas2D** backend (the CLI's default; the page plays on PixiJS, item
+485, which `pixi-parity.test.ts` holds to the same picture) at `--scale 4`, the picture's state
+hashes matching the headless run's (`matchesHeadless: true`). The camera is the view's director
+(item 506): it frames the fight, else the run's selection, else red's units.
+
+| File                                                                                  | What it shows                                                                                                                           |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [01-title.png](reports/screenshots/0.16-D/01-title.png)                               | The title: name, subtitle, Wren and a worker against two blue soldiers, the menu over the dimmed opening                                |
+| [02-orders-and-bark.png](reports/screenshots/0.16-D/02-orders-and-bark.png)           | Tick 4: the gather marker on the northern gold, the town centre selected and training (panel and bar), the bark line "Training begins." |
+| [03-building-site.png](reports/screenshots/0.16-D/03-building-site.png)               | Tick 164: the barracks half built (the pack's fresh boards) with its progress bar, two workers building, Wren back from the scout       |
+| [04-fog-and-minimap.png](reports/screenshots/0.16-D/04-fog-and-minimap.png)           | `fog`, tick 420: Wren alone on blue's bank, the explored road behind him dimmed, unexplored dark, the minimap's explored trail          |
+| [05-attack-marker-path.png](reports/screenshots/0.16-D/05-attack-marker-path.png)     | `fog`, tick 436: the attack marker on the sentry, Wren's path dots, "To arms!", the Wren panel                                          |
+| [06-wave-from-the-ford.png](reports/screenshots/0.16-D/06-wave-from-the-ford.png)     | `match-lost`, tick 4270: the AI's third wave on the road from the centre ford, met by red's first soldier                               |
+| [07-defending-home.png](reports/screenshots/0.16-D/07-defending-home.png)             | `match-won`, tick 4535: red's army and barracks holding the third wave at home, health bars on the hurt                                 |
+| [08-big-fight-zoomed-out.png](reports/screenshots/0.16-D/08-big-fight-zoomed-out.png) | `match-won`, tick 5790, zoomed out (about 0.6): red's assault on blue's town centre across the centre ford, a raider at home            |
+| [09-victory.png](reports/screenshots/0.16-D/09-victory.png)                           | `match-won`, tick 5806: blue's town centre down, the gold tint and the VICTORY banner                                                   |
+| [10-defeat.png](reports/screenshots/0.16-D/10-defeat.png)                             | `match-lost`, tick 5690: red's town centre taken by the push, the red tint and the DEFEAT banner                                        |
+
+Made with (from the repo root):
+
+```sh
+R=games/samples/rts-skirmish/runs; O=docs/reports/screenshots/0.16-D
+pnpm -s cli screenshot $R/match-won.run.json --tick 0 --overlay title --scale 4 --out $O/01-title.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 4 --scale 4 --out $O/02-orders-and-bark.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 164 --scale 4 --out $O/03-building-site.png --json
+pnpm -s cli screenshot $R/fog.run.json --tick 420 --scale 4 --out $O/04-fog-and-minimap.png --json
+pnpm -s cli screenshot $R/fog.run.json --tick 436 --scale 4 --out $O/05-attack-marker-path.png --json
+pnpm -s cli screenshot $R/match-lost.run.json --tick 4270 --scale 4 --out $O/06-wave-from-the-ford.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 4535 --scale 4 --out $O/07-defending-home.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 5790 --scale 4 --out $O/08-big-fight-zoomed-out.png --json
+pnpm -s cli screenshot $R/match-won.run.json --tick 5806 --scale 4 --out $O/09-victory.png --json
+pnpm -s cli screenshot $R/match-lost.run.json --tick 5690 --scale 4 --out $O/10-defeat.png --json
+```
+
+Each was looked at in full. **Fixed:** before D10 the CLI's view sat on the map's centre (neither
+base, mostly fog), showed no selection, markers or barks, and drew no HUD text (no fonts); it
+now does all of these (item 506). **Recorded, not fixed:** the victory banner's second line
+still reads "THE RAIDERS ARE BEATEN" (09; item 507); under red's fog no wave is ever seen at a
+ford, only on the road near red's base (06; item 508); the gold counter is gone once red's town
+centre falls (10), the held army stands in one blob (07) and the matches keep the town centre
+selected all match, and a finished building flashes the whole picture white for 2 ticks (seen
+at tick 168 while choosing the shots; item 515). `pnpm cli screenshot` draws only the effects alive at the shot tick, so a
+hit's sparks show only as their first frame.
+
+### Deviations from the roadmap
+
+- **Assets:** Kenney Medieval RTS, one of the two named packs, fetched from its OpenGameArt mirror
+  (item 513); text sprites where it has nothing (rings, bars, markers, banners).
+- **Binary files:** the CC0 pack in the sample's `assets/` (allowed by item 322) and the ten
+  review screenshots (allowed since part B, item 395).
+- **The CLI's view** changed for the screenshots (item 506), presentation only.
+
+### Finalize pass (checks)
+
+Run on the D10 tree before committing: `pnpm lint`, `pnpm typecheck`, `pnpm docs:check`,
+`pnpm test` (300 files, 3648 tests passed and 1 skipped: the opt-in every-tick save check of
+0.8; it includes the two new view tests in `skirmish.test.ts`) and `pnpm build` all pass; all 81
+run files in the repo (`git ls-files '*.run.json'`) exit 0 through `pnpm -s cli run`;
+`pnpm -s cli validate` passes for all nine game folders; `pnpm -s cli mutants
+games/samples/rts-skirmish` exits 0 (all six kit rules guarded, no run weak); every screenshot
+above reported `matchesHeadless: true` at 1920x1080. The agent-docs test passes: the touched
+module (the RTS sample) keeps its `CLAUDE.md`, `AGENTS.md` and `llms.txt` page, both updated for
+the view.
+
+### Outstanding issues
+
+- **The owner's playtest and screenshot review:** items 504 and 505.
+- The build choices of part D (items 489-503, 506-515) wait for the owner's answers.
+- The victory banner's stale line (507) and waves unseen at the fords (508).
+- Part F (the mini siege in 3D) from F8 on, merged in D1 up to F7, is not built yet.
+- From parts B and C: the owner's playtests and screenshot reviews (393, 394, 455, 456).
 
 ## Engine 0.16 part C
 

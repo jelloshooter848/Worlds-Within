@@ -230,7 +230,8 @@ onSound?)`); `feedback()` hands the page's accepted orders' `RtsOrderFeedback` (
     event, and the last bark's order is the status `bark` for `BARK_TICKS` (15) ticks (the HUD's
     line); `heardEvents(frame)` drops another side's events on cells not seen now, so no sound
     gives away what the fog hides; `ShowsWorld` is `{ view(), result() }` (a `SkirmishGame`).
-    Before D8: `skirmishLook(content)` (skin, the engine's `contentSheets`, size; the grass
+    Before D8: `skirmishLook(content)` (skin, the engine's `contentSheets`, size, and from D10
+    `fonts`, `contentFonts`, so the Canvas2D picture of the tools draws the HUD's text; the grass
     colour is the skin's `background`, Engine 0.15 gap G36), `sideKinds(frame)` (enemy units and buildings get the kind `<kind>:enemy`: a
     skin picks frames by kind only, and the kit tells sides apart by tag), `skirmishFrames(screen,
 ui?)` (the engine's `FrameStream` over the kit's `presentWorld` for red; `ui` adds the
@@ -240,8 +241,15 @@ ui?)` (the engine's `FrameStream` over the kit's `presentWorld` for red; `ui` ad
     `result` on the tick the battle ends (once per stream), and from then on `won: true` or
     `lost: true` in its status (the banner).
   - `view.ts`: `createView` for `pnpm cli screenshot` and the parity test: `render` (Canvas2D),
-    `frame()`, and `order` (the same orders as the headless game). The camera is the map's
-    centre, and the picture the player's, fogged.
+    `frame()`, and `order` (the same orders as the headless game). The picture is the player's,
+    fogged. D10 (for the review screenshots, presentation only, no hash moved): the view draws the
+    run's own interface state (the game's `ui.selection` selected: rings, path dots, the
+    selected-unit panel), an interface command the game accepts gives its order marker and bark
+    (the kit's `orderMarker` and `barkEvent`, as `RtsControls.feedback`), and the camera is a
+    director's, `directorCamera(view, screen, selection)`: it frames the fight (units with a
+    target where one side is the player's, and what they fight), else the selected units, else
+    all the player's units, with a 48 px margin, zoomed out to fit (1 down to 0.5); before D10 it
+    was the map's centre, which showed neither base.
   - `tools/ford-tiles.ts` (D7): `fordTiles(packSheet)` makes `ford-tiles.png` from the pack's
     sheet (`FORD_FRAMES`, `FORD_SIZE`, `SIDE_KEYS`, `CORNER_KEYS`; `pnpm exec tsx
 games/samples/rts-skirmish/tools/ford-tiles.ts` writes it); the same bytes every run.

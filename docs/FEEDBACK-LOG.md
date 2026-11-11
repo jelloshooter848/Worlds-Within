@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 504.** (Last used: 503.)
+**Next unused number: 516.** (Last used: 515.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -2009,3 +2009,70 @@ Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
 - **503.** The 1920x1080 screenshot tuning of the HUD was done on the CLI's 4x pictures (the view's
   camera on the map's centre, no selection), so the selected-unit panel's place was set by its
   numbers and not yet seen on a page shot; D10's screenshots are where to review it.
+
+**Engine 0.16 part D, D10: close-out** (details in `docs/BUILD-LOG.md`, Engine 0.16 part D):
+
+- **504.** Owner playtest (part D's Done when): please play The River Ford (`pnpm dev`, then
+  `/games/samples/rts-skirmish/`) from the title to a win and to a loss, with a mouse (and, if you
+  can, touch): gather, build barracks, train soldiers and archers, hold off the AI's three waves
+  (from about 3, 5 and 7 minutes) and its push (9), and take blue's town centre across a ford.
+  Does a match take about ten minutes and feel good (the fog, the minimap, markers and barks, the
+  zoom, the music's danger layer)? Accepted, or what should change?
+- **505.** Owner screenshot review (part D's Done when): the ten 1920x1080 screenshots in
+  `docs/reports/screenshots/0.16-D/` (title, orders and a bark, a barracks going up, fog and the
+  minimap, an attack's marker and path, the AI's wave from the centre ford, the defence at home,
+  a fight zoomed out, victory, defeat), listed with their commands in the build log. Accepted?
+- **506.** For the screenshots the skirmish's view (`view.ts`, used only by `pnpm cli screenshot`,
+  `sheet` and the tests) changed, presentation only and no hash moved: it draws the run's own
+  selection (`ui.selection`: rings, path dots, the selected-unit panel), gives an accepted
+  interface command its order marker and bark, draws the HUD's text (its fonts were missing, so
+  the bark line and the panel's words never showed in a CLI picture) and its camera is a
+  director's: it frames the fight (units with a target where one side is red), else the selected
+  units, else all red's units, zoomed out to fit (1 down to 0.5). Before, the camera sat on the
+  map's centre, which shows neither base. OK, or should a run file name the camera (an engine
+  change to the run-file schema)?
+- **507.** The victory banner's second line still reads "THE RAIDERS ARE BEATEN" (the 0.15
+  battle's words; the banner is a 160x48 text sprite, `banner-won`), though the match is now
+  against a base across the river (screenshot 09; the page's end screen says "Victory: the far
+  bank is yours"). Options: (a) redraw the line as "THE FAR BANK IS YOURS"; (b) leave it.
+  Recommended (a), a small text-art change with no hash moved. Which?
+- **508.** Under red's fog the AI's waves are never seen in the river: red has no sight of the
+  fords, so a wave first shows on the road west of the centre ford, a few cells from red's base
+  (screenshot 06, wave 3 at 4270 in `match-lost`), and the match-won player meets every wave at
+  home. Options: (a) leave it (scouting is the player's job); (b) a sight post at each ford on
+  red's bank (map data); (c) a longer sight for archers. Which?
+- **509.** D3 (engine): fog of war is a frame field (`fog`, string rows of 0 unexplored, 1
+  explored, 2 seen, one cell per map tile) drawn by the shared 2D walk over the map, entities and
+  lighting and under the HUD, alike on Canvas2D and PixiJS, with the skin's `fog` look (colours,
+  alpha, soft edge); the UI kit's minimap shows the fog, team-coloured dots and the camera's box,
+  and `minimapPointToWorld` maps a tap back to the world. OK?
+- **510.** D4 (engine): readability as three skin kind fields, all off by default: `outline` (a
+  colour or "team"), `team` (a tag prefix picks a colour that replaces a hue range or mask colour,
+  or tints) and `screenScale` (the drawn scale held in min..max whatever the zoom: the skirmish's
+  health, progress and train bars stay the same size at every zoom, markers and path dots never
+  shrink below one picture px per sprite px); recoloured sheets are made once per sheet and
+  colour. Units themselves scale with the zoom. OK, or should units also keep a minimum size?
+- **511.** D5 (kit): fog is presentation and AI knowledge only: a unit's sight from its `sight`,
+  else its type's, else 4; a building's from its type's optional `sight`, else its size plus 2;
+  explored cells and last-seen buildings kept per frame stream (never hashed); enemy units shown
+  only on cells seen now, enemy buildings and gold as last seen. Feedback: an accepted order's
+  marker (8 ticks, fading) and bark (an event and a HUD line for 15 ticks), path dots only for
+  selected own units, a train bar under a training building. OK?
+- **512.** D6 (kit): the AI's memory (explored cells, buildings as last seen) is in the kit's
+  snapshot only for a plan that keeps one, so every older hash stayed; the end rule is data
+  (`rts-end`), `lost` checked first, so both town centres falling on one tick is a loss. OK?
+- **513.** D7: Kenney's Medieval RTS (CC0) fetched from its OpenGameArt mirror; only four files
+  kept; the river, banks, roads and plaza pieces made for 16 px cells by
+  `tools/ford-tiles.ts` from the pack's sheet (checked byte for byte); blue keeps the pack's own
+  blue units, red its red ones, both with team colours and outlines; text sprites only where the
+  pack has nothing (rings, bars, markers, banners). OK?
+- **514.** D8: the map is 64x40, point-symmetric, with three fords; the sample's 0.15 run files
+  were removed (they live, unchanged, in `games/rts-classic`) and four short guard runs
+  (`opening`, `ai-barracks`, `fog`, `razed`) guard all six kit rules. OK?
+- **515.** Looks found in the screenshots and left: the gold counter is hidden once red's town
+  centre (its stockpile) is gone (10); a held army stands in one overlapping blob (07); the
+  selected town centre stays in the panel the whole match because the matches' runs select it at
+  tick 1 (the page's player changes selection); and the player's finished building flashes the
+  whole picture white for 2 ticks (the skin's `building-done:side=own` `flash`, `#fcfcfc`; the
+  shell's "flashing" setting reduces flashes): (a) leave all; (b) soften the flash (a lower
+  alpha or a warm tint) and leave the rest. Recommended (b).
