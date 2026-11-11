@@ -4,7 +4,13 @@ import { canvasDisplay, CanvasUiPainter } from '@engine/backends/canvas2d';
 import type { InputFrame } from '@engine/core/input/input-manager';
 import type { SoundCue } from '@engine/core/present';
 import type { SceneStack } from '@engine/core/scene';
-import { backendFromQuery, bootBrowserGame, HostScene, UiScene } from '@engine/core/shell';
+import {
+  backendFromQuery,
+  bootBrowserGame,
+  HostScene,
+  UiScene,
+  type BrowserDisplay,
+} from '@engine/core/shell';
 import type { UiEvent, UiScreen } from '@engine/core/ui';
 import { stageNames } from '@kits/platformer';
 import { fxStages, mustLoadFxLab } from './content';
@@ -16,7 +22,8 @@ import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the fx lab in the browser with the engine's `bootBrowserGame`: Canvas2D by default, the
- * Three.js backend with `?backend=three` (imported only then). Sounds come from the skins: the
+ * Three.js backend with `?backend=three` and the PixiJS one with `?backend=pixi` (each imported
+ * only then; PixiJS falls back to Canvas2D without WebGL). Sounds come from the skins: the
  * kit's events and the frame events of Pip's animation cycles (footsteps on the walk and run
  * frames) both reach the shell's `onSound`, which plays the game's sfx. Every sound id played is
  * also kept in `window.wwFxLab.sounds`, so a browser test can check the frame events' sounds
@@ -29,7 +36,7 @@ import gameFiles from 'virtual:game-files';
  * touch (the boot's `pointer` gives taps and hover in picture pixels); "Talk to Pip" opens the
  * dialog. `?ui=menu` or `?ui=dialog` opens one at load, and `window.wwFxLab.ui` opens them and
  * reads the screen and its events (for `tests/browser/fx-lab-ui.test.ts`). The lab's menu is drawn
- * with `CanvasUiPainter`, so in 3D the start key does nothing.
+ * with the 2D display's UI painter (Canvas2D's or PixiJS's), so in 3D the start key does nothing.
  *
  * The menus (Engine 0.16 T9): `game.json`'s `menus` gives the lab a title screen, the shell's
  * pause menu (Escape, P, pad Start, the on-screen button), settings and controls, in both
@@ -68,8 +75,10 @@ const heard =
     onSound(id, cue);
   };
 const uiEvents: UiEvent[] = [];
-const twoD = backendFromQuery(location.search) === 'canvas2d';
+const twoD = backendFromQuery(location.search) !== 'three';
 let stack: SceneStack | null = null;
+/** The page's display, for its UI painter. */
+let shown: BrowserDisplay | null = null;
 
 /** Pushes the lab's UI over the level (2D only); false when one is open already or in 3D. */
 function openUi(which: 'menu' | 'dialog' = 'menu'): boolean {
@@ -84,7 +93,8 @@ function openUi(which: 'menu' | 'dialog' = 'menu'): boolean {
   scenes.push(
     new UiScene({
       ui,
-      painter: (r) => new CanvasUiPainter(r, look.sheet, look.fonts),
+      // The display's own painter (Canvas2D's or PixiJS's), else Canvas2D's on the renderer.
+      painter: (r) => shown?.uiPainter?.() ?? new CanvasUiPainter(r, look.sheet, look.fonts),
       pointer: page?.pointer ?? null,
       onEvent: (e, scene) => {
         uiEvents.push(e);
@@ -143,6 +153,13 @@ const booted = bootBrowserGame({
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound: heard(onSound), onHitPause: hitPause }),
+    // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
+    pixi: async (canvas, { onSound, hitPause }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, {
+        ...look,
+        onSound: heard(onSound),
+        onHitPause: hitPause,
+      }),
     three: async (canvas, { onSound, hitPause }) => {
       const three = await import('@engine/backends/three');
       const look3d = fxLook3d(content);
@@ -154,6 +171,7 @@ const booted = bootBrowserGame({
   },
   scene: (scenes, display, booted) => {
     stack = scenes;
+    shown = display;
     page = booted;
     return new FxLabScene({
       stack: scenes,

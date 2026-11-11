@@ -147,3 +147,59 @@ export function minimapDraws(
   }
   return out;
 }
+
+/** A clock's day bar (Engine 0.16 F4): the colours, tick marks and marker a skin gives it. */
+export interface DayBarSpec {
+  /** Where no band covers the bar (default {@link DAY_BAR_BACK}). */
+  back?: string;
+  /** Colours along the day, each from its hour to the next band's (the last to midnight). */
+  bands?: readonly { hour: number; color: string }[];
+  /** Hours with a one-px tick mark. */
+  marks?: readonly number[];
+  /** The tick marks' colour (default `#000000`). */
+  markColor?: string;
+  /** The marker at the time now (default {@link DAY_BAR_MARKER}). */
+  marker?: string;
+}
+
+/** A day bar's colour where no band covers it, when the skin gives none. */
+export const DAY_BAR_BACK = '#203050';
+
+/** A day bar's marker colour when the skin gives none. */
+export const DAY_BAR_MARKER = '#fcfcfc';
+
+/** The px of a day bar `width` wide at `hour` (0 at the left edge, midnight at the right). */
+export function dayBarX(hour: number, width: number): number {
+  return Math.min(width - 1, Math.max(0, Math.round((hour / 24) * (width - 1))));
+}
+
+/**
+ * A day bar's fills in `box` (Engine 0.16 F4): the back, each band from its hour to the next's,
+ * the tick marks, and the marker at `fraction` of the day (0 up to 1) one px wide, standing a px
+ * above and below the bar; no marker when `fraction` is null. Pure.
+ */
+export function dayBarDraws(spec: DayBarSpec, box: Box, fraction: number | null): UiFill[] {
+  if (box.w <= 0 || box.h <= 0) return [];
+  const out: UiFill[] = [{ kind: 'fill', ...box, color: spec.back ?? DAY_BAR_BACK }];
+  const bands = spec.bands ?? [];
+  bands.forEach((band, i) => {
+    const from = dayBarX(band.hour, box.w);
+    const to = i + 1 < bands.length ? dayBarX(bands[i + 1]!.hour, box.w) : box.w;
+    if (to > from)
+      out.push({ kind: 'fill', x: box.x + from, y: box.y, w: to - from, h: box.h, color: band.color });
+  });
+  for (const hour of spec.marks ?? [])
+    out.push({
+      kind: 'fill',
+      x: box.x + dayBarX(hour, box.w),
+      y: box.y,
+      w: 1,
+      h: box.h,
+      color: spec.markColor ?? '#000000',
+    });
+  if (fraction !== null && Number.isFinite(fraction)) {
+    const x = box.x + dayBarX(Math.min(1, Math.max(0, fraction)) * 24, box.w);
+    out.push({ kind: 'fill', x, y: box.y - 1, w: 1, h: box.h + 2, color: spec.marker ?? DAY_BAR_MARKER });
+  }
+  return out;
+}

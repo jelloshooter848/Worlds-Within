@@ -88,15 +88,27 @@ export class Selection {
     const x1 = Math.max(box.x, box.x + box.w);
     const y0 = Math.min(box.y, box.y + box.h);
     const y1 = Math.max(box.y, box.y + box.h);
+    return this.boxWhere(view, (cx, cy) => cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1, tileSize, additive);
+  }
+
+  /**
+   * A box selection by any test (Engine 0.16 F2): selects the units whose cell centre (world px)
+   * passes `inside`, by the same rules as `box` (own units only unless `box-selects-own-units` is
+   * off). A ground view tests whether the centre projects inside the dragged picture rectangle.
+   */
+  boxWhere(
+    view: RtsView,
+    inside: (cx: number, cy: number) => boolean,
+    tileSize: number,
+    additive = false,
+  ): number[] {
     const ownOnly = this.rules === null || this.rules.isOn('box-selects-own-units');
-    const inside = view.units.filter((u) => {
+    const picked = view.units.filter((u) => {
       if (ownOnly && u.faction !== this.faction) return false;
-      const cx = (u.x + 0.5) * tileSize;
-      const cy = (u.y + 0.5) * tileSize;
-      return cx >= x0 && cx <= x1 && cy >= y0 && cy <= y1;
+      return inside((u.x + 0.5) * tileSize, (u.y + 0.5) * tileSize);
     });
     this.set(
-      inside.map((u) => u.id),
+      picked.map((u) => u.id),
       additive,
     );
     return this.ids();

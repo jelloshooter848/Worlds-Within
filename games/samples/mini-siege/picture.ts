@@ -3,6 +3,8 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
+import { campaignRun } from '@engine/core/campaign';
+import { clockStatus } from '@engine/core/clock';
 import { missionHostEvents } from '@engine/core/mission-host';
 import {
   FramePicture,
@@ -39,7 +41,9 @@ import type { MiniSiegeGame } from './headless';
  * in with each draw (`draw(game, events)`, the host's `events` of the steps since the last frame)
  * and put on the frame by `missionHostEvents`: `mission-open`, `mini-game-end` with the round's
  * `result` (`mini-game-end:pass` / `fail` / `quit`) and `mission-commit` with the record's
- * `outcome` and `resolution` (`mission-commit:outcome=both-burnt`). Shared by the page
+ * `outcome` and `resolution` (`mission-commit:outcome=both-burnt`). Every frame also carries the
+ * world clock (Engine 0.16 F4: `clock.day`, `clock.time`, `clock.text`, `clock.phase`,
+ * `clock.fraction`, from the campaign entry's `clock` and the world tick). Shared by the page
  * (`main.ts`), the view (`view.ts`, for `pnpm cli screenshot`) and the tests, so a screenshot is
  * what a player sees.
  */
@@ -90,11 +94,28 @@ export function siegeSource(
         size: screen,
         missions,
         keys: game.worldKeys(),
+        // Each scenario's map by its own id (Engine 0.16 F6), so the 3D skin dresses each one.
+        mapId: game.campaign.scenario,
         state,
       }),
   };
-  return hostedSource(battle, { round: (game) => game.roundFrame(), events: missionHostEvents });
+  return hostedSource(battle, {
+    round: (game) => game.roundFrame(),
+    events: missionHostEvents,
+    // The world clock (Engine 0.16 F4) and the campaign entry's title (F7: the HUD's title bar).
+    status: (game) => {
+      const clock = game.clock();
+      const title = campaignRun(game.campaign.def, game.campaign.save).entry?.title;
+      return {
+        ...(clock ? clockStatus(clock) : {}),
+        ...(title !== undefined && { [ENTRY_TITLE_STATUS]: title }),
+      };
+    },
+  });
 }
+
+/** The status key holding the campaign entry's title (`The siege`), for the HUD's title bar. */
+export const ENTRY_TITLE_STATUS = 'entryTitle';
 
 /** The game's missions as the RTS presentation reads them (titles, events, `marker` keys: gap M25). */
 export function siegeMissionInfo(content: ContentBundle): RtsMissionInfo[] {

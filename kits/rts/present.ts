@@ -29,7 +29,9 @@ import { facingOfDir, isFinished, type RtsUnitView, type RtsView } from './snaps
  * open mission (`offer`, `offers`, `mission`, `missionCommit`, `missionLeft`), each key only while
  * there is one, so a world without missions gives the same frames as before. A unit or finished
  * building below its full hp gets the tag `damaged` (Engine 0.11 T9), for a skin's `byTag` look
- * (the mini siege's burnt siege engines).
+ * (the mini siege's burnt siege engines). From Engine 0.16 F6 one whose health bar shows (selected,
+ * or below its full hp) also gets `hp:<hp>/<max>`, the bar's numbers for a 3D skin's label, and
+ * `mapId` names the map (default `rts`), so a 3D skin dresses each scenario's map its own way.
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
@@ -123,7 +125,15 @@ export interface RtsPresentOptions {
   events?: PresentEvent[];
   /** The stream's state (map tracker, animation starts); without it the map is always sent and `t` is the tick. */
   state?: RtsPresentState;
+  /**
+   * The map's id (default `RTS_MAP_ID`, `rts`; Engine 0.16 F6): a game with several scenarios
+   * names each, so a 3D skin's `decor` and `places` (keyed by map id) dress each one its own way.
+   */
+  mapId?: string;
 }
+
+/** The id of the map `presentWorld` sends when its options name none. */
+export const RTS_MAP_ID = 'rts';
 
 /** A 32-bit FNV-1a hash of the terrain cells and size: the map's version. */
 function terrainVersion(view: RtsView): number {
@@ -143,14 +153,14 @@ function terrainVersion(view: RtsView): number {
   return h;
 }
 
-/** The terrain as a present map: tile ids are the terrain type indexes; tags `type:<i>:<name>`. */
-export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE): PresentMap | null {
+/** The terrain as a present map (id `id`): tile ids are the terrain type indexes; tags `type:<i>:<name>`. */
+export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE, id = RTS_MAP_ID): PresentMap | null {
   const t = view.terrain;
   if (t === null) return null;
   const tiles: number[][] = [];
   for (let y = 0; y < t.height; y++) tiles.push(t.cells.slice(y * t.width, (y + 1) * t.width));
   return {
-    id: 'rts',
+    id,
     version: terrainVersion(view),
     tileSize,
     cols: t.width,
@@ -259,6 +269,8 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (selected.has(b.id)) tags.push('selected');
     if (built && b.hp < b.maxHp) tags.push('damaged');
     if (b.frozen) tags.push('frozen');
+    // The health a bar shows, as `hp:<hp>/<max>` (Engine 0.16 F6: a 3D skin's label reads it).
+    if (built && (selected.has(b.id) || b.hp < b.maxHp)) tags.push(`hp:${b.hp}/${b.maxHp}`);
     const where = box(b.x, b.y, b.w, b.h);
     if (selected.has(b.id)) ring(`${id}/ring`, [s, 'building'], where);
     entities.push({
@@ -287,6 +299,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (selected.has(u.id)) tags.push('selected');
     if (u.hp < u.maxHp) tags.push('damaged');
     if (u.frozen) tags.push('frozen');
+    if (selected.has(u.id) || u.hp < u.maxHp) tags.push(`hp:${u.hp}/${u.maxHp}`);
     const where = box(u.x, u.y, 1, 1);
     if (selected.has(u.id)) ring(`${id}/ring`, [s, ...(u.role === 'hero' ? ['hero'] : [])], where);
     entities.push({
@@ -345,7 +358,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     });
   }
 
-  const map = presentMap(view, ts);
+  const map = presentMap(view, ts, opts.mapId);
   const frame: PresentFrame = {
     frame: tick,
     size: { width: opts.size.width, height: opts.size.height },
@@ -354,6 +367,8 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     status: {
       ...presentStatus(view, player, [...selected], opts.placing ?? null),
       ...missionStatus(view, opts.missions ?? []),
+      ...keyStatus(view, opts.keys ?? {}),
+      ...threatStatus(view, player),
     },
   };
   if (map !== null) frame.map = state ? state.maps.next(map) : map;
@@ -422,10 +437,66 @@ export function missionStatus(
 }
 
 /**
+ * The HUD values of the world's keyed entities (Engine 0.16 F7: a HUD's objectives), for every
+ * key of `keys` in key order: `key.<key>.alive` (1 while its entity is in the world and, for a
+ * named person, not dead; else 0); while it is on the map, `key.<key>.hp` and `key.<key>.maxHp`,
+ * and for a building with a construction, `key.<key>.progress` (0-100); for a named person,
+ * `key.<key>.fate` (`active`, `injured`, `captured`, `freed`, `dead`) and `key.<key>.name`.
+ * Presentation only, as every status value.
+ */
+export function keyStatus(
+  view: RtsView,
+  keys: Readonly<Record<string, number>>,
+): Record<string, PresentStatusValue> {
+  const status: Record<string, PresentStatusValue> = {};
+  for (const key of Object.keys(keys).sort()) {
+    const id = keys[key]!;
+    const at = `key.${key}`;
+    const unit = view.units.find((u) => u.id === id);
+    const building = view.buildings.find((b) => b.id === id);
+    const named = view.named.find((n) => n.id === id);
+    const here = unit ?? building;
+    if (here !== undefined) {
+      status[`${at}.hp`] = here.hp;
+      status[`${at}.maxHp`] = here.maxHp;
+    }
+    const c = building?.construction ?? null;
+    if (c !== null) status[`${at}.progress`] = c.done ? 100 : Math.floor((c.progress * 100) / c.work);
+    if (named !== undefined) {
+      status[`${at}.fate`] = named.fate;
+      status[`${at}.name`] = named.name;
+    }
+    const alive = named !== undefined ? named.fate !== 'dead' : here !== undefined;
+    status[`${at}.alive`] = alive ? 1 : 0;
+  }
+  return status;
+}
+
+/**
+ * How close the enemy is (Engine 0.16 F7: a music layer or a warning on the HUD):
+ * `enemyNear`, the fewest cells (Chebyshev) from any enemy unit to any of the player's buildings,
+ * left out when either side has none.
+ */
+export function threatStatus(view: RtsView, player: string): Record<string, PresentStatusValue> {
+  const own = view.buildings.filter((b) => b.faction === player);
+  const foes = view.units.filter((u) => u.faction !== null && u.faction !== player);
+  let near = Infinity;
+  for (const u of foes)
+    for (const b of own) {
+      const dx = Math.max(b.x - u.x, 0, u.x - (b.x + b.w - 1));
+      const dy = Math.max(b.y - u.y, 0, u.y - (b.y + b.h - 1));
+      near = Math.min(near, Math.max(dx, dy));
+    }
+  return near === Infinity ? {} : { enemyNear: near };
+}
+
+/**
  * The HUD values: `faction`, `tick`, `stock.<item>` (the player's stockpile), `units` and
  * `enemyUnits` (living counts), `heroes`, `captives` (the player's named people captured) and
  * `captive` (the first one's name, only while there is one; Engine 0.13 T8), `selected` (how many), `selection` (the one type or
- * building kind selected, `mixed`, or ''), `selectedHp` / `selectedMaxHp` (one thing selected),
+ * building kind selected, `mixed`, or ''), `selectedHp` / `selectedMaxHp` (one thing selected;
+ * from Engine 0.16 F7 also `selectedName`, a named person's name else its type or kind,
+ * `selectedType` and `selectedRole`, a named person's role else ''),
  * `queue` (units queued at the selected own buildings), `training` (the first of them, or '') and
  * `trainingProgress` (0-100), `trainButtons` (the unit types the selection can train, space
  * separated) and `placing` (the building being placed, or '').
@@ -457,6 +528,13 @@ export function presentStatus(
   if (one !== null) {
     status['selectedHp'] = one.hp;
     status['selectedMaxHp'] = one.maxHp;
+    // Engine 0.16 F7: who it is, for a HUD's selected-unit panel (a named person's name and role,
+    // else its type or building kind).
+    const kind = units[0] !== undefined ? (units[0].type ?? 'unit') : buildings[0]!.kind;
+    const named = view.named.find((n) => n.id === one.id);
+    status['selectedName'] = named?.name ?? kind;
+    status['selectedType'] = kind;
+    status['selectedRole'] = named?.role ?? '';
   }
   const own = buildings.filter((b) => b.faction === player && b.producer !== null);
   const queued = own.flatMap((b) => b.producer!.queue);

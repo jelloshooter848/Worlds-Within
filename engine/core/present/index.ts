@@ -36,6 +36,18 @@ export {
 } from './camera';
 export { freezeFrame } from './freeze';
 export { FrameEventClock } from './frame-events';
+export {
+  clampGroundCentre,
+  GROUND_REACH,
+  groundFacingTurn,
+  groundProjection,
+  inScreenBox,
+  pointsBox,
+  type GroundCamera,
+  type GroundPoint,
+  type GroundProjection,
+  type GroundScreenPoint,
+} from './ground';
 export { RTS_MAX_ZOOM, RTS_MIN_ZOOM, RtsCamera, type RtsCameraOptions } from './rts-camera';
 export { FramePicture, FrameStream, PendingEvents, type FrameSource } from './stream';
 export { hostedSource, type HostedPresentState, type HostedSourceOptions } from './hosted';
@@ -64,6 +76,9 @@ export {
   skinEmitNames,
   skinSoundCue,
   resolveCamera3d,
+  skinGroundCamera,
+  CAMERA3D_VIEWS,
+  type Camera3dView,
   resolveMeshParts,
   resolveSkinAnimation,
   resolveSkinEvent,
@@ -81,6 +96,8 @@ export {
   HUD_CLASSIC_TYPES,
   HUD_VALUE_TOKEN,
   HUD_WIDGET_TYPES,
+  HUD_CLOCK_FORMAT,
+  HUD_CLOCK_TOKENS,
   type SkinHudItem,
   skinSchema,
   type EventKey,
@@ -127,8 +144,8 @@ export {
   HUD_FALLBACK_SIZE,
   HUD_GLYPH_ADVANCE,
   hudGlyphs,
-  isClassicHudType,
   hudItemShown,
+  isClassicHudType,
   layoutHud,
   type HudDraw,
   type HudFrameSize,
@@ -143,6 +160,7 @@ export {
   LABEL_ANCHORS,
   LABEL_TICKS_PER_SECOND,
   LABEL_TYPES,
+  MAX_RENDER_SCALE,
   labelBar,
   labelSchema,
   labelsSchema,
@@ -159,6 +177,46 @@ export {
   type SkinScene3d,
   type ToneMappingKind,
 } from './scene3d';
+export {
+  baseDayLook,
+  DayClockTween,
+  DEFAULT_TIME_EASE,
+  DEFAULT_TIME_TWEEN,
+  keyDayLook,
+  lerpDayLook,
+  statusHours,
+  TIME_JUMP_HOURS,
+  TimeOfDayLook,
+  timeOfDayKeySchema,
+  timeOfDaySchema,
+  type DayLook,
+  type SkinTimeOfDay,
+  type TimeOfDayKey,
+} from './time-of-day';
+export {
+  checkDecorGrids,
+  checkDecorRefs,
+  contentDecor,
+  contentMapSize,
+  DECOR_EMPTY,
+  DECOR_KIND,
+  DECOR_YAWS,
+  decorSchema,
+  decorStream,
+  NO_TILE_VARIATION,
+  placeDecor,
+  placesSchema,
+  readDecorText,
+  tileVariation,
+  type DecorFile,
+  type DecorLookup,
+  type DecorPlacement,
+  type SkinDecor,
+  type SkinDecorLegend,
+  type SkinPlace,
+  type SkinTileVary,
+  type TileVariation,
+} from './decor';
 export {
   resolveTileFrame,
   TILE_INNER_CORNERS,

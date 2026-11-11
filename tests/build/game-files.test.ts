@@ -61,15 +61,16 @@ describe('virtual:game-files (Engine 0.14 T2, G5)', () => {
     ['games/samples/mini-siege', SIEGE_GLOB],
   ])("gives %s the old glob's keys and texts", (dir, glob) => {
     const old = relativeTo(dir, glob);
-    // The old glob had no `assets/` (the dungeon's CC0 pack, Engine 0.16 part C T2): compare the
-    // rest, and check the assets reach the game too.
+    // The old glob had no `assets/` (the dungeon's CC0 pack, Engine 0.16 part C T2; the mini
+    // siege's CC0 packs since Engine 0.16 part F): compare the rest, and check the assets reach
+    // the game too.
     const all = readGameFolder(at(dir));
-    const files = Object.fromEntries(Object.entries(all).filter(([k]) => !k.startsWith('./assets/')));
+    const content = Object.fromEntries(Object.entries(all).filter(([k]) => !k.startsWith('./assets/')));
     if (dir === 'games/samples/dungeon') expect(all).toHaveProperty(['./assets/CREDITS.md']);
     // In the glob's order too (sorted, so game.json comes after content/).
-    expect(Object.keys(files)).toEqual(Object.keys(old));
-    expect(files).toEqual(old);
-    expect(Object.keys(files)).toContain('./game.json');
+    expect(Object.keys(content)).toEqual(Object.keys(old));
+    expect(content).toEqual(old);
+    expect(Object.keys(all)).toContain('./game.json');
     // The same files Node tools read (readGameFiles lists game.json first), with a leading `./`.
     const node = readGameFiles(at(dir));
     expect(Object.keys(all).sort()).toEqual(

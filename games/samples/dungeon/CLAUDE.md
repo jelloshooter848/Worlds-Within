@@ -169,9 +169,11 @@ opts?)`, the engine's headless contract (`pnpm cli run`, `dump`, `mutants`).
   `bootBrowserGame` (keyboard, gamepad, touch pad, loop, `?debug=step` step hook, audio with the
   songs and sfx and the `crypt` song once unlocked, from T9 the skin's layered `music` and the
   seed through the shell's mixer, which the scene plays songs through, the shell's volume control stored under
-  `ww:dungeon:volumes`, gap M1, hit-pauses) with `canvasDisplay`; the scene draws through the
+  `ww:dungeon:volumes`, gap M1, hit-pauses) with `canvasDisplay` (or `pixiDisplay` with `?backend=pixi`, Engine 0.16 T13b-4; the lighting draws
+  there too since part D, D1); the scene draws through the
   display's presenter (`DungeonSceneOptions.presenter`), so the settings and the title's hidden HUD
   reach it.
+  Without one (the view, the tests) `DungeonPicture` makes its own `SkinnedCanvasPresenter`.
 - `index.html`: the page (canvas `#screen`); the root launcher lists it.
 - The sample never calls a kit drawing function (`renderWorld`, `drawTdHud`, an entity's
   `render`): `dungeon.test.ts` fails if its code names one. No rooms, MML or pixel rows in `.ts`
@@ -548,3 +550,9 @@ telegraph and a hit, the victory dialog and the end screen), each `pnpm -s cli s
 --tick N --scale 6` with `matchesHeadless: true`; the exact commands are in `docs/BUILD-LOG.md`
 (Engine 0.16 part C, Review screenshots). Retake them with the same commands after a change to
 the skin, the menus or the rooms.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

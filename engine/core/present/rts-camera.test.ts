@@ -146,3 +146,69 @@ describe('RtsCamera', () => {
     expect(c.viewSize()).toEqual({ width: 640, height: 480 });
   });
 });
+
+describe('RtsCamera with a ground view (Engine 0.16 F2)', () => {
+  const GROUND = { pitch: 55, yaw: 20, fov: 45 };
+  const ground = (over: Partial<ConstructorParameters<typeof RtsCamera>[0]> = {}) =>
+    cam({ ground: GROUND, centre: { x: 1000, y: 1000 }, ...over });
+
+  it('picks through the same projection it reports, and round-trips', () => {
+    const c = ground();
+    const g = c.projection()!;
+    expect(g.centre).toEqual(c.centre());
+    for (const [sx, sy] of [
+      [160, 120],
+      [5, 235],
+      [310, 20],
+    ] as const) {
+      const w = c.screenToWorld(sx, sy);
+      expect(w).toEqual(g.groundAt(sx, sy));
+      const back = c.worldToScreen(w.x, w.y);
+      expect(back.x).toBeCloseTo(sx, 6);
+      expect(back.y).toBeCloseTo(sy, 6);
+    }
+    expect(cam().projection()).toBeNull();
+  });
+
+  it('its hint frames the same centre through CameraFollower (no clamp, as the ground view uses it)', () => {
+    const c = ground();
+    c.panBy(37, -11);
+    const top = followed(c, 0, new CameraFollower({ clamp: false }));
+    const v = c.viewSize();
+    expect({ x: top.x + v.width / 2, y: top.y + v.height / 2 }).toEqual(c.centre());
+  });
+
+  it('pans with the ground under the picture centre and zooms about a picture point', () => {
+    const c = ground();
+    const before = c.screenToWorld(160, 120);
+    c.panBy(40, 25);
+    const after = c.screenToWorld(200, 145);
+    expect(Math.abs(after.x - before.x)).toBeLessThan(1.5);
+    expect(Math.abs(after.y - before.y)).toBeLessThan(1.5);
+    const under = c.screenToWorld(80, 60);
+    c.zoomTo(2, { x: 80, y: 60 });
+    expect(c.zoom).toBe(2);
+    const now = c.screenToWorld(80, 60);
+    expect(Math.abs(now.x - under.x)).toBeLessThan(1.5);
+    expect(Math.abs(now.y - under.y)).toBeLessThan(1.5);
+  });
+
+  it('keeps the ground footprint over the area', () => {
+    const c = ground({ ground: { ...GROUND, yaw: 0 } });
+    c.panBy(1e6, 1e6);
+    const box = c.screenBoxToWorld({ x: 0, y: 0, w: VIEW.width, h: VIEW.height });
+    expect(box.x).toBeGreaterThanOrEqual(-1);
+    expect(box.y).toBeGreaterThanOrEqual(-1);
+    c.panBy(-1e7, -1e7);
+    const far = c.screenBoxToWorld({ x: 0, y: 0, w: VIEW.width, h: VIEW.height });
+    expect(far.x + far.w).toBeLessThanOrEqual(2049);
+    expect(far.y + far.h).toBeLessThanOrEqual(2049);
+  });
+
+  it('tells whether a world point is drawn inside a picture box', () => {
+    const c = ground();
+    const p = c.worldToScreen(1010, 990);
+    expect(c.inScreenBox({ x: p.x - 2, y: p.y - 2, w: 4, h: 4 }, 1010, 990)).toBe(true);
+    expect(c.inScreenBox({ x: p.x + 2, y: p.y + 2, w: 4, h: 4 }, 1010, 990)).toBe(false);
+  });
+});

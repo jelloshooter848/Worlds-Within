@@ -63,11 +63,15 @@ tiles?, events?, hud?, camera?, meshes?, camera3d? }`. `background` (Engine 0.15
   (`EVENT_KEY_FIELD`; `mini-game-end:pass`), `type:field=value` any other
   (`mission-commit:outcome=both-burnt`); any other shape is `bad_event_key`; `hud` lists `{ status, as: hearts |
 number | text | icon, x, y, sheet?, frame?, font? }`, and from Engine 0.16 T6 the UI kit's
-  widgets (`as: bar | counter | panel | minimap`, `HUD_WIDGET_TYPES`; `HUD_CLASSIC_TYPES` are the
+  widgets (`as: bar | counter | panel | minimap`, and from F4 `clock`, `HUD_WIDGET_TYPES`; `HUD_CLASSIC_TYPES` are the
   four before) with their fields (`w`, `h`, `color`, `shadow`, `outline`, `align`, `format` with
   `{value}` (`HUD_VALUE_TOKEN`), `digits`, `gap`, `tween`, `max`, `back`, `border`, `low`,
-  `panel`, `slice`, `fill`, `scale`, `tiles`, `dots`; `status` optional for `panel`, `minimap`
-  and a `text` with a `format`; laid out by `engine/core/ui`'s `SkinHud`). Cross-file:
+  `panel`, `slice`, `fill`, `scale`, `tiles`, `dots`, and F4's `dayBar` `{ h?, back?, bands?, marks?,
+markColor?, marker? }` (a `clock` item only, else `bad_field`); `status` optional for `panel`, `minimap`, `clock`
+  (there the clock's status prefix, default `clock`) and a `text` with a `format`; a `clock` needs
+  `w`, `h` and a `font`, and its `format` (default `HUD_CLOCK_FORMAT`, `Day {day} {time}`) takes
+  the tokens `HUD_CLOCK_TOKENS` (`{day}`, `{time}`, `{phase}`, `{text}`; `{value}` is the text),
+  checked for every glyph they can show; laid out by `engine/core/ui`'s `SkinHud`). Cross-file:
   `checkSkinRefs` checks a `panel`'s frame, and the HUD's fonts: a `format` character or (for a
   number or counter) a digit a font file lacks is `missing_glyph` at `hud.<i>.format` or
   `hud.<i>.font`, a counter's or styled text's font that is neither a font nor a sprite file
@@ -250,7 +254,8 @@ rotate? }` in world px (x right, y down, z toward the camera; `at` is the top-le
 `DEFAULT_SUN_DIRECTION`), shadow?: { mapSize?, bias?, radius? } (`DEFAULT_SHADOW`) },
 ambient?: { color?, intensity? }, hemisphere?: { sky, ground, intensity? }, fog?: { kind:
 linear | exp2, color, near?, far? (px behind the z = 0 plane), density? }, toneMapping?: { kind:
-aces | agx | none, exposure? }, colorSpace?: srgb | linear }`; a kind's `light`
+aces | agx | none, exposure? }, colorSpace?: srgb | linear, timeOfDay? (Engine 0.16 F4,
+`time-of-day.ts`) }`; a kind's `light`
     (`kindLightSchema`: `{ kind: point, color, intensity, distance, decay?, offset? { x, y, z } (y
 down, from the box's centre), flicker? 0..1 }`) and `receiveShadow` on kinds and tiles (beside
     T11's `castShadow`); and a skin-level `labels` (`labelsSchema`: kind -> a label or a list,
@@ -267,6 +272,40 @@ status)` (a number, a tag's `n/m`, or a number text; `max` the label's, a status
     tag's `m`, else 100) and `timerText(ticks)` (`m:ss`, seconds rounded up,
     `LABEL_TICKS_PER_SECOND` 60). The UI kit lays labels out (`engine/core/ui/labels.ts`); the 3D
     backend projects and draws them. Tested in `scene3d.test.ts`.
+  - Decor, places and tile variation (Engine 0.16 F3, `decor.ts`): a `three` skin's `decor`
+    (`decorSchema`: map id -> `{ grid, map?, size?, legend: { <char>: { model (a path or a list),
+scale? (number or [min, max]), yaw? (degrees, random, quarter), jitter?, offset?, anchor?, rotate?,
+castShadow?, receiveShadow?, instanced? } } }`; `bad_legend_key` for a key that is not one
+    character or is `.` or space, the empty cells), `places` (`placesSchema`: map id -> `[{ text,
+x, y, height?, font, color?, shadow?, outline?, offset? }]`) and a tile entry's `vary`
+    (`tileVarySchema` `{ turn?, height?, tint? }`). The grid is a `decor` content file
+    (`DECOR_KIND`, `.txt` rows or JSON `{ rows }`, registered with the engine kinds); its
+    `checkAll` (`checkDecorGrids`) checks each grid against every skin entry naming it:
+    `wrong_size` against the entry's `size`, else the content entry `map` names, else the one
+    named like the map id (`contentMapSize` reads a `map` grid or a world scenario's
+    `terrain.rows`), and `unknown_char` at the row and column. `checkDecorRefs` (in
+    `checkSkinRefs`): a grid or `map` the game lacks is `missing_ref`, a place's font
+    `missing_ref` or a character it lacks `missing_glyph`. Legend models go through
+    `skinModelUses` (a list's model at `decor.<map>.legend.<char>.model.<i>`, `field`), so
+    `validate` reports `missing_file` / `bad_model` and `ModelLibrary.preload` loads them.
+    Pure placement: `placeDecor(entry, rows, map, seed, limit?)` (`DecorPlacement`s, picks from
+    `fxRng(seed, 0, decorStream(map, col, row))` in a fixed order), `tileVariation(vary, seed,
+map, layer, col, row)` and `contentDecor(content)` (grid name -> rows, the 3D backend's
+    `decor` option). The model fields shared by kinds, tiles and the decor legend live in
+    `model-fields.ts`. `scene3d.renderScale` (whole, 1 to `MAX_RENDER_SCALE` 8, default 1) is
+    the 3D picture's supersampling (`Scene3dLook.renderScale`). Tested in `decor.test.ts`.
+    Engine 0.16 F6: a legend entry's `stack` (`[{ model, height }]`, more models on its cells,
+    placed after the cell's own with the same picks, `height` px higher grown with the cell's
+    scale; its models in `skinModelUses` at `stack.<i>.model`), `materials` and `tint` (colours,
+    as a kind's), `light` (a kind light's fields: a point light per cell) and `emit` (emitters
+    run on each cell; `validate`'s `missing_ref` for one the skin lacks), each carried on the
+    `DecorPlacement` (`materials`, `tint`, `light`, `emit`).
+  - Model colours and tag-look models (Engine 0.16 F6, `skin.ts`): a kind's or tile's
+    `materials` (material name -> colour) and `tint` (multiplies every colour) are model fields
+    (`missing_field` without `model`, `wrong_backend_field` on a 2D skin) carried on `SkinModel`
+    (`materials`, `tint`); a `byTag` look may give `model`, `scale`, `materials` and `tint`
+    (merged by `resolveSkinKind`, so `resolveSkinModel` reads them), and `skinModelUses` lists a
+    look's model at `kinds.<kind>.byTag.<i>` with the kind's clips.
   - `resolveMeshParts(skin, entry, box)` (pure, the one reading of mesh text shared by backends
     and tests): the `MeshPart[]` `{ shape, size, at, color, rotate }` for a kind or tile entry,
     with `box` the entity box or `{ w: tileSize, h: tileSize }`: a primitive is one part filling
@@ -347,6 +386,20 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   inside the view, keeps its place on the picture; else the view's centre), a punch out clamped
   inside `area`. Both presenters frame at the base zoom, then punch.
   The follower lives in a presenter only: never in a kit, a frame or a hash.
+- `ground.ts` (Engine 0.16 F2): the 3D backend's ground-view camera maths, pure numbers, shared
+  by `ThreeScene` and `RtsCamera` so drawing and picking cannot drift. `groundProjection(size,
+zoom, centre, { pitch, yaw, fov })` (degrees; pitch down from the horizon, yaw 0 looks north, 90
+  looks west) gives `eye`, `forward`/`right`/`up`, `distance` (`focal / zoom`, so looking straight
+  down the picture shows `height / zoom` world px as 2D does), `worldToScreen(x, y, h?)` (picture
+  px, unrounded, or null behind the camera), `screenToGround(sx, sy, h?)` (the ray's hit on the
+  plane at height h, or null), `groundAt(sx, sy)` (never null: a ray over the horizon lands
+  `GROUND_REACH` distances out) and `footprint()` (the picture's corners on the ground).
+  `clampGroundCentre(size, zoom, centre, camera, area)` keeps the footprint's bounds inside
+  `area` (centred on an axis where they are wider), `pointsBox`, `inScreenBox(box, p)` and
+  `groundFacingTurn(dir)` (the turn about the vertical for a `facingVector`). The skin's
+  `camera3d` takes `view` (`side` | `ground`, `CAMERA3D_VIEWS`), `pitch` (10-90, default 55) and
+  `yaw` (-180-180, default 0); `resolveCamera3d` fills them and `skinGroundCamera(skin)` gives the
+  ground camera, or null for a side-view skin. `ground.test.ts`.
 - `rts-camera.ts` (Engine 0.9 T5): `RtsCamera({ view, area, zoom?, minZoom?, maxZoom?, centre? })`,
   a scrolling, zoomable view over a map larger than the picture: its position (the top-left in
   world px, kept unrounded so slow pans add up) and zoom (`RTS_MIN_ZOOM` 0.5 to `RTS_MAX_ZOOM` 2 by
@@ -355,7 +408,13 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   picture point `at` still), `centreOn`, `apply(gesture)` (pan and zoom gestures from
   `input/pointer-logic.ts`; false for taps and boxes), `resize(view)`. It clamps to `area` exactly as
   `CameraFollower` does (`clampCameraAxis`, exported from `camera.ts`; an area smaller than the
-  view is centred). `topLeft()` is the whole-pixel top-left; `hint()` is the frame's `CameraHint`
+  view is centred). With `ground: GroundCamera` (Engine 0.16 F2, `skinGroundCamera(skin)`)
+  it is the 3D ground view's camera: `projection()` is `groundProjection` at its `centre()` and
+  zoom, `screenToWorld` is `groundAt`, `worldToScreen(x, y, h?)` the projected point (unrounded),
+  `screenBoxToWorld` the bounds of the ground under the box, `inScreenBox(box, x, y, h?)` whether
+  a world point is drawn inside a picture box, `panBy` moves the ground under the picture's
+  centre with the drag, `zoomTo` keeps the ground point under `at`, and the clamp is
+  `clampGroundCentre` (its `topLeft()` is only rounded). `topLeft()` is the whole-pixel top-left; `hint()` is the frame's `CameraHint`
   `{ x, y, zoom, deadzone: 0x0, lerp: 1, bounds: area }`, which makes the follower (both
   presenters) frame that same top-left whatever the skin's camera says. `worldToScreen(wx, wy)`
   is where the Canvas2D presenter draws a world point (`round(wx * zoom) - round(left * zoom)`,
@@ -375,7 +434,7 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   gives each frame source its own presenter (own skin, camera and map cache): the platformer
   kit's `status.miniGame` is the running round's id, '' on the level.
 - `hosted.ts` (Engine 0.15 T6, gap M6, decision 7, item 284): one round picture for every hosted
-  mission. `hostedSource(main, { round, events? })` is a `FrameSource` over a game's own source
+  mission. `hostedSource(main, { round, events?, status? })` is a `FrameSource` over a game's own source
   (`main`): while `round(world)` gives a frame (`MissionHost.roundFrame()`: the hosted round's own
   frame, `status.miniGame` already set by the host, gap D9) it is shown, its map through a
   `MapTracker` of its own that is reset when the round ends; otherwise `main`'s frame with
@@ -383,7 +442,23 @@ palette?, fallbackColor, size?, offset? }` for an entity's kind (its tag look, i
   is shown (`missionHostEvents` for a `MissionHost`'s `mission-open`, `mini-game-end` and
   `mission-commit`, gap M21); left out, none. With a skin set (`presenterBySkinSet`) a page writes
   this one call instead of the battle-or-round switch. `HostedPresentState<S>` is its stream
-  state (`main`, `roundMaps`, `inRound`).
+  state (`main`, `roundMaps`, `inRound`). From Engine 0.16 F4 `status(world)` adds the game's own
+  status to every frame, its own and a round's (the world clock, `clockStatus(...)` from
+  `engine/core/clock.ts`); null or left out adds nothing.
+- `time-of-day.ts` (Engine 0.16 F4): a `three` skin's `scene3d.timeOfDay` (`timeOfDaySchema`)
+  `{ status? (the clock prefix, default `clock`), tween? (display frames a jump eases over,
+default `DEFAULT_TIME_TWEEN`45; 0 snaps), ease? (default`DEFAULT_TIME_EASE` sineInOut), keys:
+[{ hour (0 up to 24), sun?: { color?, intensity?, direction? }, ambient?: { color?, intensity? },
+hemisphere?: { sky?, ground?, intensity? }, fog?: { color?, near?, far?, density? }, background?,
+exposure? }] }`: keys in rising hour order (`bad_time_key`), a key's `fog` needs the skin's own
+  `scene3d.fog` (`missing_field`), an unknown ease is `bad_ease`. A key's missing field is the
+  skin's own value (`baseDayLook(look, background)`, `keyDayLook`); `TimeOfDayLook(spec,
+base).at(hour)` interpolates between the keys round the 24-hour day (colours by channel,
+  `lerpDayLook`) and `.base` is the skin's own look, shown on frames without the clock.
+  `statusHours(status, prefix?)` reads `<prefix>.day` and `.fraction` as hours since day 1;
+  `DayClockTween({ ticks?, ease? }).shown(hours)` follows a steady clock and eases a move larger
+  than `TIME_JUMP_HOURS` (0.5) over its ticks (a mission's commit cost). Pure; the 3D backend
+  applies it (`engine/backends/three`).
 - `skin-set.ts` (Engine 0.7 T8, gap G32): `skinSet(content, backend)` gives one backend's skins
   for a game by file name: `main` (`content/skins/<backend>.json`, else the first skin of that
   backend that is not a mini game's; null when none) and `rounds` (`<backend>-<id>.json`, by the
@@ -407,7 +482,10 @@ skin (content/skins/<backend>.json)`.
   and the 3D backend as textured quads, so the HUD sits in the same place in both. From Engine
   0.16 T6 `layoutHud` skips the UI kit's widget types (`isClassicHudType`); a skin with any UI
   item is laid out whole by `engine/core/ui`'s `SkinHud` (which calls `layoutHud` for its
-  classic items), one without draws exactly as before.
+  classic items), one without draws exactly as before. Engine 0.16 F7: every `hud` item may have
+  a `when` (`statusCompareSchema` from `../audio/mix`), and `hudItemShown(item, status)` is
+  whether it holds (true without one); `layoutHud` and `SkinHud` skip an item that is not shown.
+  A `panel` may be flat (`color`, optional `alpha` and `border`, no `frame` or `slice`).
 - Tests for the audio fields: `skin-audio.test.ts` (Engine 0.16 T8).
 - `index.ts`: re-exports all of the above; import from `@engine/core/present` (or `./present`).
 

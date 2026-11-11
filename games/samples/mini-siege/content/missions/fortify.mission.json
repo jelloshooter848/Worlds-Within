@@ -1,6 +1,7 @@
 {
   "id": "fortify",
   "title": "Man the walls",
+  "text": "Man the walls with the hall's gold before the raiders reach the village.",
   "event": "siege",
   "worldTimeCost": 30,
   "play": "td-defence",

@@ -1,5 +1,8 @@
+import { CLOCK_STATUS } from '../clock';
 import {
   DEFAULT_HUD_FONT,
+  HUD_CLOCK_FORMAT,
+  HUD_CLOCK_TOKENS,
   HUD_VALUE_TOKEN,
   hudGlyphs,
   hudItemShown,
@@ -17,13 +20,13 @@ import {
 import type { Font, FontLookup } from './font';
 import { sliceInsets, type Box } from './nine-slice';
 import { DEFAULT_TEXT_COLOR, panelDraws, textDraws, type TextStyle, type UiDraw, type UiFill } from './paint';
-import { barFill, barRatio, CounterRoll, minimapDraws } from './widgets';
+import { barFill, barRatio, CounterRoll, dayBarDraws, minimapDraws } from './widgets';
 
 /**
  * The skin's HUD through the UI kit (Engine 0.16 T6): every `hud` item of a skin as `UiDraw`
  * items, in order. The classic items (`hearts`, `icon`, and `number` / `text` in a sprite font)
  * come from `layoutHud` unchanged; text in a `font` content file, and the widgets `bar`,
- * `counter`, `panel` and `minimap`, are laid out here. One per presenter: a counter's roll is its
+ * `counter`, `panel`, `minimap` and (Engine 0.16 F4) `clock`, are laid out here. One per presenter: a counter's roll is its
  * state (presentation only, never in a frame or a hash).
  *
  * A backend whose skin has no UI item (`usesUi` false) keeps drawing `layoutHud`'s items itself,
@@ -66,6 +69,29 @@ export function hudValueText(item: Pick<SkinHudItem, 'digits' | 'format'>, value
     text = value < 0 ? `-${digits}` : digits;
   }
   return item.format === undefined ? text : item.format.split(HUD_VALUE_TOKEN).join(text);
+}
+
+/** The day bar's height when a `clock` item gives none. */
+export const DEFAULT_DAY_BAR_HEIGHT = 3;
+
+/**
+ * A `clock` item's text (Engine 0.16 F4): its `format` (default `Day {day} {time}`) with each
+ * token (`{day}`, `{time}`, `{phase}`, `{text}`, and `{value}` for the text) replaced by the clock
+ * status field under `prefix`; null when the status has no clock (`<prefix>.text` missing).
+ */
+export function clockHudText(
+  format: string | undefined,
+  status: DeepReadonly<PresentFrame['status']>,
+  prefix: string = CLOCK_STATUS,
+): string | null {
+  if (!Object.hasOwn(status, `${prefix}.text`)) return null;
+  const field = (name: string) => {
+    const v = status[`${prefix}.${name}`];
+    return v === undefined ? '' : String(v);
+  };
+  let text = format ?? HUD_CLOCK_FORMAT;
+  for (const [token, name] of Object.entries(HUD_CLOCK_TOKENS)) text = text.split(token).join(field(name));
+  return text.split(HUD_VALUE_TOKEN).join(field('text'));
 }
 
 export class SkinHud {
@@ -139,6 +165,8 @@ export class SkinHud {
     const value = has ? status[item.status!] : undefined;
     const box: Box = { x: item.x, y: item.y, w: item.w ?? 0, h: item.h ?? 0 };
     switch (item.as) {
+      case 'clock':
+        return this.clock(item, box, input);
       case 'panel':
         return this.panel(item, box, input);
       case 'minimap':
@@ -205,11 +233,47 @@ export class SkinHud {
   }
 
   private panel(item: DeepReadonly<SkinHudItem>, box: Box, input: SkinHudInput): UiDraw[] {
+    if (item.frame === undefined && item.color !== undefined) {
+      // A flat panel (Engine 0.16 F7): a box in its colour (at its `alpha`), then its border.
+      const fill: UiFill = { kind: 'fill', ...box, color: item.color };
+      if (item.alpha !== undefined && item.alpha < 1) fill.alpha = item.alpha;
+      return [fill, ...(item.border !== undefined ? borderDraws(box, item.border) : [])];
+    }
     if (item.frame === undefined || item.slice === undefined) return [];
     const sprite = this.sprite({ sheet: item.sheet, frame: item.frame });
     const size = sprite && input.frameSize(sprite.sheet, sprite.palette, sprite.frame);
     if (!sprite || !size) return [];
     return panelDraws(sprite, size, sliceInsets(item.slice), box, item.fill ?? 'stretch');
+  }
+
+  /**
+   * The world clock (Engine 0.16 F4): its text (`clockHudText`) at the top of the box, centred
+   * unless `align` says otherwise, and the day bar along the bottom with the marker at
+   * `<status>.fraction`. Nothing without the clock in the status.
+   */
+  private clock(item: DeepReadonly<SkinHudItem>, box: Box, input: SkinHudInput): UiDraw[] {
+    const prefix = item.status ?? CLOCK_STATUS;
+    const text = clockHudText(item.format, input.status, prefix);
+    if (text === null) return [];
+    const font = this.fontOf(item);
+    const out: UiDraw[] =
+      font === null
+        ? []
+        : textDraws(font, text, box.x, box.y, this.style(item), {
+            width: box.w,
+            align: item.align ?? 'center',
+          });
+    const spec = item.dayBar ?? {};
+    const h = Math.min(box.h, spec.h ?? DEFAULT_DAY_BAR_HEIGHT);
+    const fraction = input.status[`${prefix}.fraction`];
+    out.push(
+      ...dayBarDraws(
+        spec,
+        { x: box.x, y: box.y + box.h - h, w: box.w, h },
+        typeof fraction === 'number' ? fraction : null,
+      ),
+    );
+    return out;
   }
 
   private bar(item: DeepReadonly<SkinHudItem>, box: Box, value: unknown, input: SkinHudInput): UiDraw[] {

@@ -1,0 +1,7 @@
+{
+  "id": "siege-danger",
+  "bpm": 120,
+  "loop": true,
+  "pulse1": "v7 @0 l16 o3 L [d > d <]16 [< b- > b-]16 [< g > g]8 [< a > a]8",
+  "noise": "v7 l16 L [k r h h s r h h]12"
+}

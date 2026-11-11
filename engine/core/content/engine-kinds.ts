@@ -3,6 +3,7 @@ import { paletteSchema } from '../gfx/palette-schema';
 import { readSpriteText, spriteSchema, writeSpriteText } from '../gfx/sprite-schema';
 import { campaignSchema, checkCampaigns, checkMissionCodes } from '../campaign';
 import { missionSchema } from '../missions';
+import { DECOR_KIND } from '../present/decor';
 import { SKIN_KIND } from '../present/skin';
 import { FONT_KIND } from '../ui/font';
 import { UI_KIND } from '../ui/ui-schema';
@@ -63,11 +64,11 @@ export const CAMPAIGN_KIND = {
   checkAll: checkCampaigns,
 } satisfies ContentKind<typeof campaignSchema>;
 
-export { FONT_KIND, SKIN_KIND, UI_KIND };
+export { DECOR_KIND, FONT_KIND, SKIN_KIND, UI_KIND };
 
 /**
  * A registry holding the content kinds the engine itself defines: `song`, `sfx`, `palette` (JSON),
- * `sprite` (JSON or text-grid `.txt`), `font` (JSON or `.txt`, Engine 0.16, `ui/font.ts`), `skin` (JSON, `present/skin.ts`), `ui` (JSON, Engine 0.16 T7, `ui/ui-schema.ts`), `mission` (JSON,
+ * `sprite` (JSON or text-grid `.txt`), `font` (JSON or `.txt`, Engine 0.16, `ui/font.ts`), `skin` (JSON, `present/skin.ts`), `decor` (`.txt` or JSON, Engine 0.16 F3, `present/decor.ts`: a skin's decor grid), `ui` (JSON, Engine 0.16 T7, `ui/ui-schema.ts`), `mission` (JSON,
  * `missions.ts`) and `campaign` (JSON, `campaign.ts`). Games and kits register their own kinds (rooms, levels) on top.
  */
 export function engineContentKinds(): ContentKinds {
@@ -78,6 +79,7 @@ export function engineContentKinds(): ContentKinds {
     .register(SPRITE_KIND)
     .register(FONT_KIND)
     .register(SKIN_KIND as unknown as ContentKind)
+    .register(DECOR_KIND as unknown as ContentKind)
     .register(UI_KIND as unknown as ContentKind)
     .register(MISSION_KIND)
     .register(CAMPAIGN_KIND as unknown as ContentKind);

@@ -9,7 +9,7 @@ backend and holds no game rules. `index.ts` exports `ThreeScene` (`scene.ts`), t
 `webgl2Available`), the primitive geometry helpers (`geometry.ts`: `primitiveGeometry(shape, size)`,
 `GeometryCache`), the HUD pass (`hud.ts`: `HudLayer`, `HudQuad`, `frameTexture`), the parallax planes (`parallax.ts`:
 `ParallaxPlanes`, `PARALLAX_DEPTH_STEP`, Engine 0.16 T4), the glTF models (`models.ts`:
-`ModelLibrary`, `ModelInstance`, Engine 0.16 T11) and `PARTICLE_POOL`.
+`ModelLibrary`, `ModelInstance`, Engine 0.16 T11; `modelMeshParts`, F3) and `PARTICLE_POOL`.
 
 Node vs browser: `scene.ts`, `hud.ts` (no canvas: its textures are `DataTexture`s), `models.ts`
 (three's `GLTFLoader` parses a GLB from bytes with no WebGL or DOM), `geometry.ts`, `renderer-info.ts` and `fitCanvas` / `canvasToScreen`
@@ -161,9 +161,10 @@ Engine 0.16 T12). The schema,
   `models.get` has it (`userData.model`), its text mesh until then (`userData.loading`; also
   forever without the option), and rebuilt when it arrives; while it shows the model, `poses`
   frames do not rebuild it, and each frame poses the clip for its `anim.state` at `anim.t` /
-  `MODEL_TICKS_PER_SECOND` (60). A tile with a loaded model is one instance per cell (named
-  `tile:<key>:model`, at the cell's bottom centre) instead of instanced blocks, posed each frame
-  on `frame.frame` / 60; a map built while a tile model was loading is rebuilt once it is there.
+  `MODEL_TICKS_PER_SECOND` (60). A tile with a loaded model and a `clip` is one instance per cell
+  (named `tile:<key>:model`, at the cell's bottom centre) instead of instanced blocks, posed each
+  frame on `frame.frame` / 60 (from Engine 0.16 F3 a model tile without a clip is instanced,
+  below); a map built while a tile model was loading is rebuilt once it is there.
   Entries without a `model` are built exactly as before. `ThreePresenter`, `withSkin`,
   `threeDisplay` and `threeScenePresenter` pass `models` on; the screenshot page and the fx lab's
   page make one from `content.assets` and await `preload` before the first frame.
@@ -232,7 +233,8 @@ intensity }` (a `HemisphereLight`, `hemisphere`, added only when given).
 density }` (`FogExp2`). It shows on the blocks far behind and on the parallax planes (their
   `MeshBasicMaterial`s take fog); the overlay, particles, HUD and labels never.
 - `toneMapping` `{ kind: aces | agx | none, exposure }` and `colorSpace` (`srgb` | `linear`): read
-  by the presenter (`applyLook`) before each draw of that scene. HUD, label and overlay materials
+  by the presenter (`applyLook`) before each draw of that scene (the exposure from
+  `scene.exposure`, which a time of day moves, Engine 0.16 F4). HUD, label and overlay materials
   have `toneMapped: false`, so the HUD keeps its colours under any tone mapping.
 - A kind's `light` `{ kind: point, color, intensity, distance, decay? (POINT_LIGHT_DECAY, 1),
 offset? (mesh space from the box's centre, y down), flicker? }` is a `PointLight` child of each
@@ -258,6 +260,142 @@ labels on one anchor stack away from the box) and gives `UiDraw`s, which `labels
 HUD. `labelViews()` reads what shows (`LabelView`: entity, kind, type, text or bar, box). Text
 needs the `fonts` option (a label whose font is missing draws nothing).
 
+## Ground view (Engine 0.16 F2)
+
+A skin with `camera3d.view: "ground"` (with `pitch`, 10-90 degrees down from the horizon, default
+55, and `yaw`, -180-180 degrees about the vertical, default 0: looking north) shows a top-down map
+as a floor under a pitched camera. A skin without it (`view` defaults to `side`) builds exactly the
+scene objects it built before: the side-view code path is unchanged (`scene.test.ts`,
+`lighting.test.ts` and the rest pass as they were).
+
+- Axes: world (x, y) lies on the ground: Three's `(x, height, y)`. The camera comes from the core
+  `groundProjection(size, zoom, centre, camera)` (`@engine/core/present`'s `ground.ts`): its
+  eye, and its turn as Euler `(-pitch, yaw, 0, 'YXZ')`, looking at the framed view's centre from
+  the distance the zoom gives (the picture's height shows `height / zoom` world px when looking
+  straight down). `RtsCamera` picks through the same function, so drawing and picking cannot
+  drift: `ground.test.ts` checks Three's projected points against the core's within 0.5 px at
+  three yaws and zooms. `groundProjection` (getter) is last frame's projection without shake.
+- Framing: `CameraFollower` with no clamp (a 2D box clamp does not fit a pitched view, so the
+  hint's centre is shown as it is; `RtsCamera` keeps the ground footprint over the map), and no
+  area for zoom punches. Shake moves the centre along the picture's axes on the ground.
+- Map: every layer's cells on the floor (height 0). A tile part's `at.x`, `at.y` place its
+  footprint on the cell, `at.z` is the height of its bottom and its `d` (a primitive's `depth`) its
+  height, so a box tile with `depth: 2` is a 2 px slab and round shapes stay upright; a `plane`
+  lies flat. Tile models stand on the cell's centre.
+- Entities: the root is the box's centre on the ground, lifted `layer` x `GROUND_LAYER_LIFT`
+  (0.05 px, so flat marks over the floor never flicker); parts are placed as tiles' are, about
+  the box's centre. Facing turns the root about the vertical (`groundFacingTurn(facingVector(f))`:
+  `down`, toward a yaw-0 camera, is a model's front, +z; `right` a quarter turn; diagonals in
+  between), never mirrors; `fx.rotate` turns it clockwise seen from above, `squashX` scales width
+  and depth, `squashY` height. Models stand as modelled (y up).
+- Labels: the anchor is over the box's centre at the top of the entity's meshes (its parts' tops,
+  or its model's bounds), half way up (`center`) or on the ground (`bottom`), projected with this
+  frame's projection (shake included).
+- Particles fly at their world (x, y) on the ground, `GROUND_PARTICLE_HEIGHT` (8 px) up: the 2D
+  particle model has no height, so a burst spreads over the ground and a rising flame drifts north.
+- Shadows: the sun shines onto the centre of the picture's ground footprint (`footprint()`: the
+  picture's corners on the ground, a ray over the horizon capped at `GROUND_REACH` camera
+  distances) and its shadow camera covers that footprint's bounds' diagonal plus `SHADOW_MARGIN`.
+  Linear fog is measured from the camera's distance to the centre, as in side view. The overlay,
+  `CameraFx` (flash, zoom punch, trauma shake) and parallax planes work as in side view.
+- `games/fx-lab`'s `content/skins/ground.json` and `ground.ts` are the worked example (a meadow,
+  Pip and beetles turning, labels, braziers with light and flame); its page
+  `games/fx-lab/ground/` is built and shot by `tests/browser/fx-lab-ground.test.ts`.
+
+## The time of day (Engine 0.16 F4)
+
+A skin's `scene3d.timeOfDay` (`@engine/core/present`'s `time-of-day.ts`) moves the scene's look
+with the world clock the frame carries (`clock.day` and `clock.fraction`, or the prefix its
+`status` names; `clockStatus` in `@engine/core/clock`). Each `sync` first runs the clock through
+the scene's `DayClockTween` (a steady clock is followed at once; a jump of more than half an hour,
+such as a mission's two-hour commit cost, eases over the skin's `tween` display frames), takes
+`TimeOfDayLook.at(hour)` and sets the sun's colour, strength and direction (`sunFrom`; the shadow
+placement reads it each frame), the ambient, the hemisphere light (made at strength 0 when only
+the keys bring one in), the fog's colour (and `near`/`far` or `density`), the background colour
+and the exposure (`scene.exposure`, which the presenter's `applyLook` hands the renderer). A frame
+without the clock shows the skin's own look (`TimeOfDayLook.base`); a skin without `timeOfDay`
+never changes (its `exposure` is `look.toneMapping.exposure`). Read-outs: `dayLook` (the look
+shown now) and `dayHour` (hours since day 1, 00:00, eased; null without a clock). Presentation
+state only, no clock or randomness: the same frames give the same picture. Tested in
+`time-of-day.test.ts`; the fx lab's ground skin has one (with a `clock` HUD item), shown by
+`games/fx-lab/ground/?hour=<h>[&jump=<n>]` and shot at 13:00, 20:30 and ten frames into a jump by
+`tests/browser/fx-lab-ground.test.ts`.
+
+## Crisp output, instanced tile models and decor (Engine 0.16 F3)
+
+- **Render scale.** `ThreePresenter`'s `renderScale` (a whole number 1-8, `MAX_RENDER_SCALE`;
+  default the skin's `scene3d.renderScale`, else 1; `threeDisplay` passes it on) makes the drawing
+  buffer `size * renderScale` (`setSize(w * s, h * s, false)`): the 3D picture is supersampled,
+  still with `antialias: false`, so software GL stays repeatable. Every other pass (labels, HUD,
+  the shell's menus, transitions) keeps laying out in picture px under its orthographic camera and
+  is drawn over the whole buffer, so its nearest-filtered quads scale crisply. `withSkin` scenes
+  draw at the presenter's scale. `ThreeScene`'s `renderScale` option (read-out `renderScale`) only
+  scales the particles' point size (buffer px); the camera, labels and HUD are the same at any
+  scale (`decor.test.ts`). `pnpm cli screenshot --backend three` honours the skin's value and
+  `--render-scale N` overrides it (a 320x180 picture at 6 is 1920x1080); `--scale` still
+  multiplies the result by nearest neighbour. The fx lab's ground page takes `?scale=<n>`.
+- **Instanced tile models.** A tile whose `model` is loaded is one `InstancedMesh` per tile key
+  and model mesh (`tile:<key>:model:<i>`, one instance per cell; `userData.shared`: the geometry
+  and material are the `ModelLibrary`'s, so `disposeMap` leaves them), placed by
+  `modelMeshParts(model, spec, box)` (`models.ts`: each mesh's matrix exactly where a
+  `ModelInstance` with the same spec puts it, null for a skinned model), with the entry's
+  `castShadow` and `receiveShadow`. A tile model with a `clip` (animated) or skinned meshes keeps
+  T11's copy per cell. The tile entry's `vary` `{ turn?, height?, tint? }` turns each cell by a
+  random quarter turn, stretches its height and tints its brightness (`setColorAt`; a copy's own
+  materials) by `tileVariation` (`@engine/core/present`, `fxRng(seed, 0,
+"tile:<map>:<layer>:<col>,<row>")`); without `vary` nothing changes.
+- **Decor.** The skin's `decor[map.id]` with the `decor` option's grid (`contentDecor(content)`)
+  places `placeDecor(entry, rows, map.id, seed, map size)` on the built map: each placement at
+  its cell's model point (ground view: the cell's centre on the floor; side view: its bottom
+  centre) plus its offset (px right, down/south, toward the camera/up), turned by its yaw
+  (clockwise seen from above), scaled by its scale (px per model unit), the model's `anchor` and
+  `rotate` applied first. Instanced entries are one `InstancedMesh` per character, model and mesh
+  (`decor:<char>:<model>:<i>`); `instanced: false` (or a skinned model) one `ModelInstance` per
+  cell (`decor:<char>`, `userData` `{ decor, model, col, row }`). A decor model still loading is
+  left out and the map rebuilt once it is there. Decor never touches the frame or a state; no
+  grid or no `models` library shows none.
+- **Places.** The skin's `places[map.id]` names are laid out each `sync` before the entities'
+  labels, each a text label (`layoutLabels`, so fonts, colours, outline and shadow draw as a
+  label's) centred on its world point projected through this frame's camera (ground view:
+  `height` px over the floor; side view: z = `height`), plus its `offset`; a point off the
+  picture or behind the camera hides it. `labelViews()` gives them as entity `place:<i>`, kind
+  `place`.
+- `games/fx-lab`'s ground example shows it: `content/decor/meadow.txt` with pines, bushes,
+  flowers (instanced) and stones (one copy each) from `assets/fx-lab-decor/*.gltf`, and places
+  `THE POND`, `THE PATH`, `OLD WALL`. Tested in `decor.test.ts` (a 48 x 32 map's draw objects,
+  instance matrices against a `ModelInstance`, variation per seed, decor batches and copies,
+  places in both views, render scale).
+
+## Model colours, tag-look models, decor stacks, lights and smoke (Engine 0.16 F6)
+
+For the mini siege's low-poly map (its `three.json`); a skin without these fields builds exactly
+what it did.
+
+- **Colours.** A kind's or tile's (or a decor legend entry's) `materials` (material name ->
+  colour) sets those materials' colours on its copies, then `tint` multiplies every colour
+  (`recolorMaterials` in `models.ts`, on a `ModelInstance`'s own materials). Instanced tiles and
+  decor batches with colours draw with the batch's own recoloured copies of the library's
+  materials (`userData.ownMaterials`, freed with the map); without them they share the
+  library's, as before. Team colours on one shared model; the held look of a frozen unit.
+- **Tag looks with a model.** A kind's `byTag` look may give `model`, `scale`, `materials` and
+  `tint` (merged over the kind by `resolveSkinKind`, so `resolveSkinModel` reads them): a burnt
+  siege engine, a scaffold by `progress:` range. The look index already rebuilds the entity when
+  it changes; `skinModelUses` lists the looks' models (preloaded, checked by `validate`).
+- **Decor stacks.** A legend entry's `stack` (`[{ model, height }]`) puts more models on each of
+  its cells with the same picks (`placeDecor` adds a placement per stack model, `height` px
+  higher, grown with the cell's scale): a tower's roof on its base.
+- **Decor lights and emitters.** A legend entry's `light` (a kind light's fields) is a
+  `PointLight` per cell (`light:decor:<map>:<col>,<row>`, in the map's group, at the cell's model
+  point plus the light's offset, y down), flickering per frame from `fxRng(seed, frame,
+"light:decor:...")` like a kind's; its `emit` runs those emitters on the cell's box (the core
+  `SkinParticles.update`'s `fixed` emitters, `FixedEmitters`). A hidden map lights and smokes
+  nothing. `decorLights()` lists them for tests.
+
+Tested in `models.test.ts` (materials and tint on a copy, the library's left alone, a tag look's
+model and scale swapped and its tint over the kind's colours, the fields refused without a model
+and on a 2D skin) and `decor.test.ts` (a lit, smoking cell: its light placed, flickering the same
+each build, smoke at the cell, nothing on a hidden map; an unknown emitter refused).
+
 ## ThreePresenter (browser only)
 
 `new ThreePresenter(canvas, skin, opts?)` implements the core `Presenter`: `present(frame)` syncs
@@ -275,7 +413,8 @@ with `autoClear` off and the depth cleared. So a paused frame draws the same eve
 pixel ratio 1, `SRGBColorSpace` output, no shadows (from Engine 0.16 T12 the scene's `look`
 sets shadows, tone mapping and the output colour space before each draw; PCF shadow filtering,
 which honours `shadow.radius`), clear colour `background` (the option, else the skin's, else black). The drawing buffer
-is the picture size (`setSize(w, h, false)`: the CSS size is left to the page). `rendererInfo()`
+is the picture size times `renderScale` (`setSize(w * s, h * s, false)`, Engine 0.16 F3: the CSS
+size is left to the page). `rendererInfo()`
 reads the context's renderer (below); `dispose()` frees the scene and the renderer.
 `withSkin(skin, opts?)` (Engine 0.7 T8) is another `Presenter` on the same canvas and renderer
 with a `ThreeScene` of its own (`.scene`; `opts` as above but `size`, which is this presenter's):

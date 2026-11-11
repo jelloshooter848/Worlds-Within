@@ -9,6 +9,7 @@ import {
   type Presenter,
   type SkinFile,
   type SoundCue,
+  type DecorLookup,
 } from '@engine/core/present';
 import type { DisplayResult } from '@engine/core/shell/display';
 import { applyCanvasBox, fitCanvas } from './fit';
@@ -45,6 +46,13 @@ export interface ThreeDisplayOptions {
   fonts?: FontLookup;
   /** The game's glTF models (`new ModelLibrary(content.assets)`, Engine 0.16 T11), for every scene. */
   models?: ModelLibrary;
+  /** The game's decor grids (`contentDecor(content)`, Engine 0.16 F3), for every scene. */
+  decor?: DecorLookup;
+  /**
+   * Drawing-buffer px per picture px (Engine 0.16 F3; default the skin's `scene3d.renderScale`,
+   * else 1): the canvas buffer is the picture times this, and CSS still fits the picture.
+   */
+  renderScale?: number;
 }
 
 /** Whether this browser gives a WebGL 2 context (Three.js needs WebGL 2). Browser only. */
@@ -87,6 +95,8 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.models !== undefined && { models: opts.models }),
+      ...(opts.decor !== undefined && { decor: opts.decor }),
+      ...(opts.renderScale !== undefined && { renderScale: opts.renderScale }),
     });
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error);
@@ -100,6 +110,7 @@ export function threeDisplay(canvas: HTMLCanvasElement, opts: ThreeDisplayOption
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.models !== undefined && { models: opts.models }),
+      ...(opts.decor !== undefined && { decor: opts.decor }),
     });
   // UI screens (Engine 0.16 T9: the shell's menus) are collected while the scenes draw and drawn
   // over the frame as an overlay pass on `present`.
@@ -151,6 +162,8 @@ export function threeScenePresenter(
     sheets?: PixelSheetLookup;
     fonts?: FontLookup;
     models?: ModelLibrary;
+    /** The game's decor grids (`contentDecor(content)`, Engine 0.16 F3). */
+    decor?: DecorLookup;
     /** Each event sound with its cue (Engine 0.16 T8), as the display's `onSound`. */
     onSound?: (id: string, cue?: SoundCue) => void;
   },
@@ -161,6 +174,7 @@ export function threeScenePresenter(
     ...(opts.sheets !== undefined && { sheets: opts.sheets }),
     ...(opts.fonts !== undefined && { fonts: opts.fonts }),
     ...(opts.models !== undefined && { models: opts.models }),
+    ...(opts.decor !== undefined && { decor: opts.decor }),
     ...(opts.onSound !== undefined && { onSound: opts.onSound }),
   });
   let shown = scene;
@@ -173,6 +187,7 @@ export function threeScenePresenter(
       ...(opts.sheets !== undefined && { sheets: opts.sheets }),
       ...(opts.fonts !== undefined && { fonts: opts.fonts }),
       ...(opts.models !== undefined && { models: opts.models }),
+      ...(opts.decor !== undefined && { decor: opts.decor }),
       ...(opts.onSound !== undefined && { onSound: opts.onSound }),
     });
     roundPresenters[id] = show(rounds[id]);

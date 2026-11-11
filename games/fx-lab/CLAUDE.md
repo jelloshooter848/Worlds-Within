@@ -242,6 +242,56 @@ door, 6 px above their boxes. Screenshots inspected: `level-3 --tick 60, 120, 20
 three --allow-software-gl` (torch glow, coin and Pip shadows on the slab, the beetle's on the
 ground, fogged mountains, the labels).
 
+## Ground view (Engine 0.16 F2)
+
+`content/skins/ground.json` is a second `three` skin (named `ground`, so `skinSet` takes neither
+it for the lab's own 3D skin nor for a mini game's) in the 3D backend's ground view
+(`camera3d.view: "ground"`, pitch 52, yaw -25, fov 40; `engine/backends/three/CLAUDE.md`). It
+is not for the platformer's levels: `ground.ts` shows it on a hand-made 24 x 18 meadow
+(`GROUND_ROWS`: grass slabs 2 px high, a path, a pond as a flat plane, a wall 12 px high, cone
+trees and rocks) with meshes written for the ground (a part's x, y on the box's footprint, z the
+height of its bottom, d its height): Pip with a cap, satchel and a nose on his front (+y) so his
+facing shows, four beetles facing four ways (one turning), a coin that bursts every 60 frames,
+the door with `EXIT` and its aura, two brazier models with their light, flame and smoke.
+`groundFrame(n, camera, screen)` is frame `n` (Pip and one beetle turn every 30 frames), framed
+by `groundCamera(skin, screen)`, an `RtsCamera` with the skin's ground camera at zoom 2, the same
+camera a ground-view RTS picks through. `ground.test.ts` checks it in Node. The page `ground/`
+(`?frame=70` holds a frame; drag pans, the wheel zooms) is not one of `pnpm build`'s pages:
+`tests/browser/fx-lab-ground.test.ts` builds it alone with Vite and shoots it
+(`WW_SHOTS_DIR=<folder>` keeps `fx-lab-ground.png`; looked at for F2: the meadow, Pip turned
+right with his satchel behind, beetles facing four ways, tree and Pip shadows, the coin burst,
+the braziers' flames and the labels). Under `pnpm dev` the lab's `virtual:game-files` module
+does not load at the time of writing (Vite's dev server fails on the plugin's watch of the
+`assets/` folder), so view it through a build.
+
+### Decor and places (Engine 0.16 F3)
+
+`content/decor/meadow.txt` (a `decor` content file, 24 x 18 like the meadow; `.` empty) is the
+ground skin's `decor.meadow` grid (`size` 24 x 18, since the meadow is no content file): `p`
+pines (18-26 px per unit, any yaw, shadows), `b` bushes, `f` flowers or a bush (instanced: one
+`InstancedMesh` per character, model and mesh) and `s` stones (`instanced: false`: a copy per
+cell, quarter turns), every pick from the presentation RNG, so a seed always dresses it the same.
+The models are `assets/fx-lab-decor/{bush,pine,flowers,stone}.gltf`, embedded `.gltf` text made by
+`tools/decor-models.ts` (`fx-lab.test.ts` checks the committed files against it; `.prettierignore`
+keeps them byte for byte). `places.meadow` names `THE POND`, `THE PATH` and `OLD WALL` (off the
+picture at the example's framing until you pan). The page takes `?scale=<n>` (`renderScale`).
+
+### Time of day (Engine 0.16 F4)
+
+The ground skin's `scene3d.timeOfDay` has keys at 03:00 (night: a dim blue moon from the right,
+dark navy sky and fog), 06:30 (dawn: a low orange sun from the left, peach sky and fog), 13:00
+(the skin's own look), 17:30 (warm late light), 19:30 (dusk: a low red sun from the right) and
+22:00 (night), eased over 45 frames (`sineInOut`) on a jump. Its `hud` is one `clock` item at the
+top centre (`Day {day} {time} {phase}` in `fx-small` with a black outline over a 3 px day bar:
+night, dawn, day, late light and dusk bands, marks at 6, 12 and 18, a white marker).
+`groundClock(hour, n, jump?)` gives frame `n` the world clock (`clockStatus`) at `hour` of day 1,
+two hours later from frame `jump` (a mission's commit cost); `groundFrame(n, camera, screen,
+clock?)` adds it to the status (none by default: the skin's own look and no clock HUD). The page
+takes `?hour=<h>&jump=<n>`; `tests/browser/fx-lab-ground.test.ts` shoots 13:00, 20:30 and ten
+frames into a jump from 13:00 (`fx-lab-ground-13h.png`, `-20h30.png`, `-jump.png` under
+`WW_SHOTS_DIR`; looked at for F4: the evening picture dark blue-green with the braziers glowing,
+the clock reading `Day 1 20:30 evening` with its marker in the dusk band).
+
 ## Run and test
 
 ```sh
@@ -303,3 +353,9 @@ heading showed through the subtitle).
 
 - Relative paths inside `games/fx-lab`, `@engine/*` (core and backends) and `@kits/platformer`.
 - Never other games. Nothing in `engine/` or `kits/` imports from here.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

@@ -341,6 +341,80 @@ describe.skipIf(missing !== null)('screenshot --backend three (headless Chromium
   }, 120_000);
 });
 
+describe.skipIf(missing !== null)('screenshot --backend pixi (headless Chromium, T13b-5)', () => {
+  const FX = 'games/fx-lab/runs/level-1.run.json';
+
+  it('takes a byte-identical PixiJS PNG on software WebGL, naming the renderer', async () => {
+    const dir = tempDir();
+    const argv = (name: string) => [
+      'screenshot',
+      FX,
+      '--tick',
+      '154',
+      '--backend',
+      'pixi',
+      '--out',
+      join(dir, name),
+    ];
+    const a = await cli(argv('a.png'));
+    expect(a.code, JSON.stringify(a.result)).toBe(EXIT.ok);
+    expect(a.result).toMatchObject({
+      ok: true,
+      backend: 'pixi',
+      tick: 154,
+      width: 256,
+      height: 240,
+      matchesHeadless: true,
+    });
+    // Software WebGL is not refused for PixiJS: the result names it.
+    expect(a.result.renderer).toEqual(expect.stringMatching(/\S/));
+    const png = readFileSync(join(dir, 'a.png'));
+    expect(pngSize(png)).toEqual({ width: 256, height: 240 });
+    const b = await cli(argv('b.png'));
+    expect(b.result.sha256).toBe(a.result.sha256);
+
+    // The same tick through Canvas2D is a different file of nearly the same picture (the parity
+    // test, tests/browser/pixi-parity.test.ts, measures how near).
+    const flat = await cli(['screenshot', FX, '--tick', '154', '--out', join(dir, 'flat.png')]);
+    expect(flat.result).toMatchObject({ backend: 'canvas2d', renderer: null, hash: a.result.hash });
+    const p = decodeRgbaPng(png);
+    const c = decodeRgbaPng(readFileSync(join(dir, 'flat.png')));
+    // The HUD's corner is the same pixel in both.
+    expect(p.pixel(4, 4)).toEqual(c.pixel(4, 4));
+  }, 180_000);
+
+  it('draws an overlay with the PixiJS UI painter', async () => {
+    const dir = tempDir();
+    const bare = await cli([
+      'screenshot',
+      FX,
+      '--tick',
+      '40',
+      '--backend',
+      'pixi',
+      '--out',
+      join(dir, 'a.png'),
+    ]);
+    const paused = await cli([
+      'screenshot',
+      FX,
+      '--tick',
+      '40',
+      '--backend',
+      'pixi',
+      '--overlay',
+      'pause',
+      '--out',
+      join(dir, 'b.png'),
+    ]);
+    expect(paused.code, JSON.stringify(paused.result)).toBe(EXIT.ok);
+    expect(paused.result).toMatchObject({ backend: 'pixi', overlay: 'pause' });
+    expect(paused.result.sha256).not.toBe(bare.result.sha256);
+    // The overlay is taken off again: the state and the hashes are the bare run's.
+    expect(paused.result.hash).toBe(bare.result.hash);
+  }, 180_000);
+});
+
 describe('screenshot (no browser needed)', () => {
   it('refuses a tick after the run and an --out that is not a PNG', async () => {
     expect((await cli(['screenshot', WALK, '--tick', '9999'])).code).toBe(EXIT.usage);
@@ -354,7 +428,9 @@ describe('screenshot (no browser needed)', () => {
 
   it('refuses --allow-software-gl without --backend three, and an unknown backend', async () => {
     expect((await cli(['screenshot', WALK, '--tick', '1', '--allow-software-gl'])).code).toBe(EXIT.usage);
-    expect((await cli(['screenshot', WALK, '--tick', '1', '--backend', 'pixi'])).code).toBe(EXIT.usage);
+    const pixiGl = ['screenshot', WALK, '--tick', '1', '--backend', 'pixi', '--allow-software-gl'];
+    expect((await cli(pixiGl)).code).toBe(EXIT.usage);
+    expect((await cli(['screenshot', WALK, '--tick', '1', '--backend', 'webgpu'])).code).toBe(EXIT.usage);
   });
 
   it('reports a game with no three skin as invalid content at content.skin, naming its skins', async () => {
@@ -371,13 +447,18 @@ describe('screenshot (no browser needed)', () => {
     expect(errors[0]!.message).toContain('games/samples/dungeon/content/skins/canvas2d.json (canvas2d)');
   });
 
-  it('turns the GPU off for canvas2d and picks the WebGL flags for three', () => {
+  it('turns the GPU off for canvas2d and picks the WebGL flags for three and pixi', () => {
     expect(chromiumArgs()).toContain('--disable-gpu');
     expect(chromiumArgs({ backend: 'three' })).not.toContain('--disable-gpu');
     expect(chromiumArgs({ backend: 'three' })).not.toContain('--use-angle=swiftshader');
     expect(chromiumArgs({ backend: 'three', allowSoftwareGl: true })).toEqual(
       expect.arrayContaining(['--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
     );
+    // PixiJS always draws on SwiftShader, so its PNGs are the same on every run (T13b-5).
+    expect(chromiumArgs({ backend: 'pixi' })).toEqual(
+      expect.arrayContaining(['--use-angle=swiftshader', '--enable-unsafe-swiftshader']),
+    );
+    expect(chromiumArgs({ backend: 'pixi' })).not.toContain('--disable-gpu');
   });
 
   it('serves files in the repo by their path and others through /@fs/', () => {

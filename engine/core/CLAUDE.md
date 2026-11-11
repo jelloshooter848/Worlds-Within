@@ -8,7 +8,7 @@ asset packs (`assets/`), accessibility (`a11y/`), platform detection (`platform.
 data: palettes, sprite sheets, text pixel art, animation and the screen size and fit maths
 (`gfx/`), and the content core (`content/`: Zod schemas, text grids and content errors; see
 [content/CLAUDE.md](content/CLAUDE.md)), presentation effects (`fx/`, Engine 0.16: the
-presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; from T4 camera effects, the hit-pause counter and parallax layouts; from T5 screen transitions' timing and shapes; see [fx/CLAUDE.md](fx/CLAUDE.md)), the UI kit (`ui/`, Engine 0.16 T6: bitmap pixel fonts as the `font` content kind, text layout, nine-slice panels and the HUD widgets a skin declares, painted by backends through `UiPainter`; from T7 buttons, menus, dialog boxes and UI screens as the `ui` content kind, driven by actions, hover and taps; see [ui/CLAUDE.md](ui/CLAUDE.md)), the presentation contract (`present/`: the read-only
+presentation-only RNG `fxRng`, easing curves, tweens and, from T3, the particle system and emitters; from T4 camera effects, the hit-pause counter and parallax layouts; from T5 screen transitions' timing and shapes; see [fx/CLAUDE.md](fx/CLAUDE.md)), the UI kit (`ui/`, Engine 0.16 T6: bitmap pixel fonts as the `font` content kind, text layout, nine-slice panels and the HUD widgets a skin declares, painted by backends through `UiPainter`; from T7 buttons, menus, dialog boxes and UI screens as the `ui` content kind, driven by actions, hover and taps; see [ui/CLAUDE.md](ui/CLAUDE.md)), the skinned presenter walk the 2D backends share (`draw/`, Engine 0.16 T13b: `SkinnedPresenter`, `RendererUiPainter` and `skinSetPresenter` on any `Renderer` with injectable map and glyph surfaces, moved out of Canvas2D so the PixiJS presenter draws through the same code; backends only; see [draw/CLAUDE.md](draw/CLAUDE.md)), the presentation contract (`present/`: the read-only
 per-frame snapshot a backend draws from; see [present/CLAUDE.md](present/CLAUDE.md)), the browser shell
 games share (`shell/`: the `?backend=` choice, `HostScene` and `bootBrowserGame`; see
 [shell/CLAUDE.md](shell/CLAUDE.md)), with `node/game-files.ts` reading a game's content
@@ -286,7 +286,7 @@ bad field (`units: units must not repeat`). Pure (on `PURE_CORE`); tested in `or
 for the same reason: `engine/sim` runs the lifecycle (open, play or delegate, commit, frozen
 events) and kits play missions, and neither imports the other. `missionSchema` is a mission
 definition and the `mission` content kind (`*.mission.json`, `content/engine-kinds.ts`): `id`,
-`title`, `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
+`title`, `text?` (Engine 0.16 F5: a short description the in-picture mission card shows; presentation only, the sim never stores it, so it moves no hash), `event?` (the event frozen while it is open), `worldTimeCost` (whole ticks, at least 1,
 fixed when it opens), `play?` (the mini game or kit round a player plays it with; from Engine 0.13
 optional: a mission without it is a choice with a record, such as paying a ransom, only delegated,
 and `missionMiniGameUses` and `MissionHost` skip it, a host `play` step refused `not_playable`), `params?` (JSON,
@@ -328,9 +328,40 @@ content lacks (`missing_level`, `missing_mission`, `missing_scenario`, at `entri
 `.mission` or `.scenario`; scenarios are found by shape through `others(ANY_KIND)`,
 `campaignScenarios`), and a scenario entry whose scenario has a `from` naming anything but the
 scenario entry just before it in play order (`bad_from`; the first scenario entry may have a `from`
-and then starts as written), so `pnpm cli validate` names the file and field.
-`campaignOrder(campaign)` is the entries from `start` and then round to the ones before it;
-`campaignLevels(campaign)` the level ids in that order; `entryKind`, `entryId`. The platformer
+and then starts as written), so `pnpm cli validate` names the file and field. From Engine 0.16
+F4 a scenario entry may give a `clock` (`{ day, hour, minute? }`, what the world clock reads at
+its world tick 0; on another entry `bad_entry` at `clock`) and the campaign `ticksPerHour` (1-3600,
+default 60: a tick a minute); `checkCampaigns` reports an entry whose clock reads before that of
+the clocked entry played before it (`clock_backwards`, at `entries.<i>.clock`), and
+`entryWorldClock(campaign, entry, worldTick)` gives the entry's clock at a tick (null without
+one).
+
+`clock.ts` (Engine 0.16 F4): the world clock, presentation only (derived from the campaign entry
+and the world tick, never in a world, hash or save code). `clockTimeSchema` (`{ day >= 1, hour
+0-23, minute? 0-59 }`), `worldClock(start, worldTick, ticksPerHour = DEFAULT_TICKS_PER_HOUR)` ->
+`WorldClock` `{ day, hour, minute, time ('15:04'), text ('Day 2 15:04'), phase, fraction (0 up to
+
+1. }`(whole minutes, rounded down),`clockAt(minutes)`, `clockMinutes(time)`, `dayPhase(hour)`
+(`DAY_PHASES`: dawn from 5, morning 7, afternoon 12, late afternoon 15, evening 18, night 21;
+`DAY_PHASE_STARTS`) and `clockStatus(clock, prefix = 'clock')`, the frame status a skin reads
+(`clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`; `CLOCK_STATUS_FIELDS`).
+A game hands it to `hostedSource`'s `status`(the mini siege does). Pure (on`PURE_CORE`);
+tested in `clock.test.ts`. `durationText(ticks, ticksPerHour?)` (Engine 0.16 F5) writes world
+ticks as a duration on the clock (`2 hours`, `1 hour 30 min`, `40 min`), the mission card's cost.
+
+`world-changes.ts` (Engine 0.16 F5): the types and text of what changed in a world and of a
+mission card, for the shell's in-picture mission screens (`shell/mission-screens.ts`):
+`WorldChanges { since, tick, losses: FactionLosses[], people: PersonChange[], buildings:
+BuildingChange[], records }`, `LostUnit`, `noChanges(since, tick?)`, `changeSections(changes, {
+title? })` (`Missions`, `Losses`, `People`, `Buildings`, empty ones left out), `changeLines`,
+`lossText` (`2 raider, ram, Grell`), `personText` (`Captain Hale: captured by raiders`),
+`buildingText` (`Hall: 120 hp lost (280/400)`, `North wall: destroyed`), `recordText`,
+`displayName` (`north-wall` -> `North wall`); `MissionCardFacts { hero, foes, ticksLeft }`,
+`NO_CARD_FACTS`, `missionChips(def, facts, ticksPerHour?)` (`Costs 2 hours of world time`, `Hero
+Captain Hale`, `Foes ram, catapult, Grell, Vosk`) and `windowText` (`Window closes in 136
+ticks`). `engine/sim` computes the values (`worldChanges`, `missionCardFacts`); the core only
+writes them. Pure (on `PURE_CORE`); tested in `world-changes.test.ts`.
+`campaignOrder(campaign)`is the entries from`start`and then round to the ones before it;`campaignLevels(campaign)`the level ids in that order;`entryKind`, `entryId`. The platformer
 kit's `contentStages` plays the level entries.
 
 **Played in order** (Engine 0.13, closing the 0.10 leftover): a campaign run's state is its
@@ -548,7 +579,7 @@ never knows which one is drawing.
 - Kits may import core, but not its drawing and output side (`FORBIDDEN_CORE` in
   `config/layers.js`: `gfx/renderer`, `gfx/spritesheet`, `gfx/pixelart`, `gfx/animation`,
   `assets/**`, audio output, `view.ts`, `scene.ts`, `minigame-scene.ts`, `loop.ts`, `shell/**`, and from
-  Engine 0.16 `fx/**`, `ui/**` and the audio mixer's `audio/mix.ts` and `audio/mixer.ts`, which `engine/sim` may not import either). A kit describes frames through
+  Engine 0.16 `fx/**`, `ui/**`, `draw/**` (T13b) and the audio mixer's `audio/mix.ts` and `audio/mixer.ts`, which `engine/sim` may not import either). A kit describes frames through
   `present/`; backends draw them. Keep anything a kit needs out of those files.
 
 ## The pure core
@@ -556,9 +587,9 @@ never knows which one is drawing.
 Kits and the sim must run the same in Node and in any browser, so the core files they use are
 **pure**: no `Math.random`, `Date.now`, `performance.now` or DOM globals (`document`, `window`,
 `localStorage`, `requestAnimationFrame`, ...). The list is `PURE_CORE` in `config/layers.js`, next to
-the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
+the layer table (today: `rng.ts`, `headless.ts`, `rules.ts`, `kit.ts`, `orders.ts`, `missions.ts`, `campaign.ts`, `clock.ts`, `world-changes.ts`, `campaign-code.ts`, `carried.ts`, `rts-types.ts`, `minigame.ts`, `minigame-params.ts`, `minigame-scene.ts`, `mission-adapter.ts`, `shell/backend-choice.ts`, `shell/host-scene.ts`, `shell/debug.ts`, `shell/mission-launch.ts`, `shell/mission-screens.ts`, `shell/transitions.ts`, `shell/ui-scene.ts`, `state-hash.ts`, `math/**`, `scene.ts`, the input actions, bindings, input manager,
 scripted input, input recorder and merged input, `input/pointer-logic.ts`, the renderer contract, palette, animation, screen and sprite sheet data,
-`audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
+`audio/mml.ts`, `audio/mix.ts`, the song, sprite and palette schemas, `content/**`, `present/**`, `fx/**`, `ui/**`, `draw/**` and `assets/sheet-lookup.ts`). ESLint enforces the rule on those
 files; `tests/architecture/purity.test.ts` follows every run-time import (not `import type`) from
 kits, the sim and the pure core itself into core and fails if a file it reaches is not on the list. When a kit or the sim starts importing another core file, make
 that file pure and add it to `PURE_CORE`. Wall-clock time and the DOM belong in `loop.ts`, `shell/boot.ts`, the

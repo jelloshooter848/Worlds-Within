@@ -16,7 +16,8 @@ is byte-stable and presenting never changes the state.
   between; `step` is 0 until 1) and `isEaseName`.
 - `color.ts`: `parseHexColor('#rgb' | '#rrggbb')` (null for anything else) and
   `lerpColor(a, b, t)` (`#rrggbb`, channels rounded and clamped, so an overshooting ease stays a
-  colour).
+  colour). It runs per particle per frame, so it keeps the colours it has parsed (up to 1024)
+  and builds its text from a byte table (Engine 0.16 T13b-7); same output as before.
 - `schema.ts`: tween specs as text, `tweenSpecSchema` (a union on `prop`) and `tweensSchema` (one
   spec or a non-empty list): `{ prop, from?, to, frames, delay?, ease?, yoyo?, repeat?, amount? }`.
   `prop` is `x`/`y` (world px added), `scale`/`scaleX`/`scaleY`/`alpha` (factors multiplied),
@@ -60,14 +61,16 @@ color, alpha, blend, glow, frame?, sheet?, age, life }`. Draws come from
   Positions are a closed form of age (start point and velocity, `drag`, `gravity`), so stepping
   frame by frame or skipping lands in the same place. Caps: each emitter's `max` and the
   system's `max` (`PARTICLE_SYSTEM_MAX`, 1024); a spawn over a cap is skipped (never replaces).
-  `keyframeAt(keys, t, lerp)` and `anchorPoint(box, anchor)` are the pure helpers.
+  `keyframeAt(keys, t, lerp)` and `anchorPoint(box, anchor)` are the pure helpers; `keyframeAt`
+  reads the keyframes in place (no array per call: it runs three times per particle per frame).
 - `skin-particles.ts` (Engine 0.16 T3): `SkinParticles(skin, { seed?, max? })`, the part both
   backends share. `event(entry, ev, entities, frame)` starts an event entry's `emit` (at the
   event's `x`/`y`, else its entity's centre, or the emitter's `anchor` on the entity when it
   gives one; following the entity when the emitter says `follow`) and an old `effect.kind:
 particles` as an implicit emitter (`particlesEffectEmitter`, a ring flying out 1 px a frame, as
-  before); `update(frame, entities)` attaches each kind's `emit` to its entities and steps the
-  system; `particles({ reduceFlashing? })` gives what to draw, with `reduceFlashing` drawing
+  before); `update(frame, entities, fixed?)` attaches each kind's `emit` to its entities (and,
+  Engine 0.16 F6, each `FixedEmitters` `{ id, box, emit }`'s emitters where it stands: a 3D
+  skin's decor campfire) and steps the system; `particles({ reduceFlashing? })` gives what to draw, with `reduceFlashing` drawing
   additive particles with normal blending at `REDUCED_FLASH_ALPHA` (0.5) and no glow.
 - `schema.ts` (Engine 0.16 T4) also holds the camera effects a skin's event entry writes:
   `shakeSpecSchema` `{ amount, ticks }` (the largest offset in picture px, decaying over

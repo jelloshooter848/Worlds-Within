@@ -804,9 +804,10 @@ describe("Hopper's Way: the 2.5D view (T10)", () => {
               `${String(data['kind'])}${data['fallback'] === true ? ' (fallback box)' : ' (no model)'}`,
             );
         }
-        // Every tile is a model per cell: an instanced block would be a tile with no model.
+        // Every tile is a model (a copy per cell, or from Engine 0.16 F3 instanced per model mesh,
+        // `tile:<key>:model:<i>`): an instanced block would be a tile with no model.
         for (const child of scene.map?.children ?? [])
-          if (child.name.startsWith('tile:') && !child.name.endsWith(':model')) missing.add(child.name);
+          if (child.name.startsWith('tile:') && !/:model(?::\d+)?$/.test(child.name)) missing.add(child.name);
         if (frame.map && isFullMap(frame.map)) {
           maps.add(frame.map.id);
           expect(scene.sceneryObjects().length, `${frame.map.id}: scenery`).toBeGreaterThan(20);

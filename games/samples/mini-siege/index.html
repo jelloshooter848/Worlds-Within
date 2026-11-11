@@ -8,6 +8,7 @@
     />
     <meta name="theme-color" content="#000000" />
     <title>The mini siege</title>
+    <meta name="ww-alternate" content="2D ?backend=canvas2d" />
     <style>
       html,
       body {
@@ -28,6 +29,49 @@
         height: calc(100vh - 40px);
         image-rendering: pixelated;
         image-rendering: crisp-edges;
+      }
+      /* In 3D (Engine 0.16 F7) the mission flow is in the picture: no bar, the whole window. */
+      body[data-backend='three'] #screen {
+        height: 100vh;
+      }
+      /* In 3D the shell's sound control, pause button and the 2D link sit at the bottom centre,
+         between the HUD's selected unit and the mission card (or in the letterbox under them). */
+      body[data-backend='three'] #ww-volume {
+        top: auto;
+        right: auto;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      body[data-backend='three'] #ww-pause {
+        top: auto;
+        right: auto;
+        bottom: 40px;
+        left: calc(50% - 48px);
+      }
+      #backend {
+        position: fixed;
+        bottom: 40px;
+        left: calc(50% + 4px);
+        z-index: 10;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        font:
+          bold 14px/1.4 system-ui,
+          sans-serif;
+        text-decoration: none;
+      }
+      /* In 2D the bar takes the bottom: the link sits over the picture's right edge. */
+      body:not([data-backend='three']) #backend {
+        bottom: auto;
+        left: auto;
+        top: 50%;
+        right: 4px;
+      }
+      #message a {
+        color: #8cf;
       }
       #message {
         position: fixed;
@@ -55,7 +99,9 @@
   </head>
   <body>
     <canvas id="screen"></canvas>
-    <!-- The bar along the bottom (40 px), the briefing and the result panel are the shell's
+    <!-- The toggle to the other backend; the shell sets its label and link (3D by default, 2D). -->
+    <a id="backend" href="./?backend=canvas2d">2D</a>
+    <!-- In 2D, the bar along the bottom (40 px), the briefing and the result panel are the shell's
          (`mountMissionBar` in engine/core/shell/mission-bar.ts; main.ts mounts them). -->
     <script type="module" src="./main.ts"></script>
   </body>

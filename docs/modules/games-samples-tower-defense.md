@@ -59,3 +59,14 @@ right click sells, Enter or the Wave button sends a wave. The page and the art:
 (deterministic PNG), `tests/browser/tower-defense-page.test.ts` (the built page opened from the
 games index's link, the volume control, played by taps and by keys, no page errors) and `tests/browser/tower-defense-shots.test.ts`
 (headless Chromium; skipped where none is installed), `tests/build/pages.test.ts` (the launcher).
+
+## 2D backend choice
+
+The page draws through the PixiJS (WebGL) backend by default (`default2d: 'pixi'` in `main.ts`,
+Engine 0.16 T13b-8; `@engine/backends/pixi`, loaded with a dynamic `import()`, its own chunk) and
+falls back to Canvas2D where WebGL is missing (`body[data-backend]` says which runs; software
+WebGL, such as headless Chromium's SwiftShader, counts as WebGL). `?backend=canvas2d` forces
+Canvas2D (exact Canvas2D output, a machine whose WebGL misbehaves); `?backend=pixi` names the
+default. `pnpm cli screenshot` and the run files' backend parity still draw through Canvas2D
+(`view.ts`). Tested in `tests/browser/pixi-pages.test.ts` (the default, the fallback with WebGL
+taken away, `?backend=canvas2d`); the page and menus browser tests play on PixiJS.

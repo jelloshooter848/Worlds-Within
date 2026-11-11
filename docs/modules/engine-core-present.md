@@ -45,7 +45,9 @@ Import from `@engine/core/present` (`index.ts`).
   From Engine 0.16 T6 a skin's `hud` also takes the UI kit's widgets (`bar`, `counter`, `panel`,
   `minimap`, styled text in a font file; `HUD_WIDGET_TYPES`), laid out by `@engine/core/ui`'s
   `SkinHud`; `layoutHud` skips them, and the skin check reports `missing_glyph` for HUD text a
-  font file lacks.
+  font file lacks. Engine 0.16 F7: any item's `when` (a status test, the mixer's
+  `statusCompareSchema`) shows it only while the test holds (`hudItemShown`), and a `panel` may
+  be a flat `color` box (`alpha`, `border`).
 - Skins (`skin.ts`): `skinSchema` and the `skin` content kind (`SKIN_KIND`, one of the engine's
   kinds), a per-backend JSON file mapping each entity kind to a sprite (2D) or mesh (3D), each tile
   to a frame, each event to a sound and effect, and status values to HUD items. Its cross-file
@@ -128,13 +130,28 @@ event)` gives the entry, the first matching field key in file order, else the ba
   pixels, so clamping keeps the zoomed picture inside the map. `cameraShake(frame, extra)` is the shake offset,
   added on top and never stored; `cameraTarget(frame, skin.camera)` the point to keep in view.
   Each presenter owns its follower: camera state is never in a kit, a frame or a hash.
+- Ground view camera (`ground.ts`, Engine 0.16 F2): `groundProjection(size, zoom, centre, {
+pitch, yaw, fov })` with `worldToScreen(x, y, h?)`, `screenToGround(sx, sy, h?)` (ray-plane
+  intersection), `groundAt` and `footprint()`; `clampGroundCentre`, `pointsBox`, `inScreenBox`,
+  `groundFacingTurn`, `GROUND_REACH`; the skin's `camera3d.view` (`CAMERA3D_VIEWS`), `pitch` and
+  `yaw`, read by `skinGroundCamera(skin)`. The one camera maths `ThreeScene` draws with and
+  `RtsCamera` picks through.
+- Decor and places (`decor.ts`, Engine 0.16 F3): a 3D skin's `decor` (map id -> a `decor`
+  content grid and a legend of models with scale ranges, yaw, jitter, offset, shadows and
+  `instanced`), `places` (world-anchored region names) and a tile's `vary`; the `decor` kind
+  (`DECOR_KIND`, checked against the map: `wrong_size`, `unknown_char`), `checkDecorRefs`,
+  `contentMapSize`, `placeDecor`, `tileVariation`, `contentDecor`. `scene3d.renderScale`
+  (`MAX_RENDER_SCALE`) supersamples the 3D picture.
 - RTS camera control (`rts-camera.ts`, Engine 0.9): `RtsCamera({ view, area, zoom?, minZoom?,
 maxZoom?, centre? })`: position and zoom (0.5 to 2 by default) clamped to the map as the
   follower clamps (`clampCameraAxis`), `panBy`, `zoomBy(factor, at?)` about a picture point,
   `centreOn`, `apply(gesture)` for pan and zoom gestures (`@engine/core/input/pointer-logic`),
   `hint()` (the frame's `CameraHint` with `x`/`y`/`zoom`, no deadzone or lerp, `bounds` the area),
   and `screenToWorld` / `worldToScreen` / `screenBoxToWorld`, which agree with where the Canvas2D
-  presenter draws at that zoom. Presentation state only, never in a world or a hash.
+  presenter draws at that zoom. Presentation state only, never in a world or a hash. From
+  Engine 0.16 F2 an optional `ground` camera makes it the 3D ground view's: `projection()`,
+  picking through `groundProjection`, `inScreenBox(box, x, y, h?)`, and a clamp that keeps the
+  ground footprint over the area.
 
 - Frame streams (`stream.ts`, Engine 0.7): `FrameSource` (a kit's `start(world)` and
   `present(world, events, state)`), `FrameStream` (`next(world, events)`: frozen frames, fresh
@@ -153,6 +170,11 @@ maxZoom?, centre? })`: position and zoom (0.5 to 2 by default) clamped to the ma
 Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs
 `validate('frame', frame, presentFrameSchema)` and hands `freezeFrame(frame)` to a presenter.
+
+- Engine 0.16 F6: the skin schema's model colours (`materials`, `tint` on kinds, tiles and decor
+  legends; `SkinModel.materials` and `.tint`), tag looks with `model`, `scale`, `materials` and
+  `tint`, and the decor legend's `stack`, `light` and `emit` (`DecorPlacement.light`, `.emit`,
+  `.materials`, `.tint`; `validate` checks a legend's emitters name the skin's).
 
 ## Imports allowed
 

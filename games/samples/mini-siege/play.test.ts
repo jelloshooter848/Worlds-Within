@@ -258,18 +258,19 @@ describe('the page glue, headless', () => {
     const kit = () => p.play.game.miniGame()!.snapshot()['kit'] as Record<string, unknown>;
     const cursor = () => p.play.game.miniGame()!.snapshot()['controls'] as Record<string, unknown>;
     expect(kit()).toMatchObject({ gold: 100, towers: 0 });
-    // The 16x7 map is centred on the 256x240 picture: its top-left at picture (0, 64). The north
-    // tower's cell (11, 1) has its centre at picture (184, 88), the kit's `screenAtCell`.
+    // The 16x7 map is centred on the 320x180 picture (Engine 0.16 F6): its top-left at picture
+    // (32, 34). The north tower's cell (11, 1) has its centre at picture (216, 58), the kit's
+    // `screenAtCell`.
     expect(
       screenAtCell({ col: 11, row: 1 }, { size: content.manifest.screen }, { cols: 16, rows: 7 }),
     ).toEqual({
-      x: 184,
-      y: 88,
+      x: 216,
+      y: 58,
     });
-    p.step(tap(184, 88));
+    p.step(tap(216, 58));
     expect(cursor()).toMatchObject({ col: 11, row: 1 });
     expect(kit()['towers']).toBe(0);
-    p.step(tap(184, 88));
+    p.step(tap(216, 58));
     expect(kit()).toMatchObject({ gold: 80, towers: 1 });
     const tower = p.frames.at(-1)!.entities.find((e) => e.kind === 'tower:archers');
     expect(tower).toMatchObject({ x: 176, y: 16 });
@@ -277,7 +278,7 @@ describe('the page glue, headless', () => {
     // A tap off the map does nothing; a secondary tap sells (half the cost back).
     p.step(tap(10, 10));
     expect(kit()['towers']).toBe(1);
-    p.step(tap(184, 88, 'secondary'));
+    p.step(tap(216, 58, 'secondary'));
     expect(kit()).toMatchObject({ gold: 90, towers: 0 });
     // Select gives up: the mission's onQuit outcome lands at the commit tick.
     const quit = new ScriptedInput({ steps: [{ frame: 0, hold: ['select'] }] });

@@ -859,6 +859,11 @@ other text, so a new game gets it without code of its own.
   feature benchmark (`pnpm bench:features`) gains a PixiJS column, and PixiJS becomes the default
   2D backend only where it holds the bar; Canvas2D stays for Node tests, screenshots and machines
   without WebGL.
+  _(Built, T13b-1 to T13b-9: PixiJS is the default for the RTS skirmish and the tower defense,
+  with Canvas2D as the fallback, and opt-in (`?backend=pixi`) on the other 2D pages; checked
+  against Canvas2D by a parity test and the parity sheet. On this build's software GL neither
+  backend holds the bar with every feature on, so a check on a machine with a GPU is open (item
+  485); numbers in the [build log](BUILD-LOG.md#t13b-the-pixijs-v8-2d-backend-item-323).)_
 - **3D backend upgrade:** lighting (sun, ambient and point lights), shadows, fog, tone mapping and
   HUD labels anchored to world positions (names, health bars, timers over buildings).
 
@@ -866,8 +871,8 @@ other text, so a new game gets it without code of its own.
 Done when)
 
 - [x] Each feature above is in the engine with tests, a module page entry and an example in a skin.
-      (All but the PixiJS backend, T13b, which waits for the owner's answer to item 323; item
-      338.)
+      (The PixiJS backend, T13b, is built too and draws the same `canvas2d` skins; items 323,
+      468-488.)
 - [x] A test proves presentation does not change state: every existing run file, golden hash and
       mutant check passes unchanged with the new effects on. (`tests/runs/presentation-invariance.test.ts` and, on the stepped shell, `tests/runs/stepped-shell-invariance.test.ts`; T14.)
 - [x] The 2D benchmark and feature test is written up with numbers, and the Canvas2D or PixiJS choice
@@ -876,7 +881,8 @@ Done when)
 - [x] `validate` checks PNG and glTF/GLB references in skins (file present, frames inside the image)
       and that each game with an `assets/` folder has a `CREDITS.md` naming every pack.
 - [ ] Owner screenshot review: a sheet of the effects (particles, flashes, UI kit, 3D lighting and
-      shadows) is accepted. (The sheet is `docs/reports/0.16a-effects-sheet.png`, made by
+      shadows) is accepted. (The sheets are `docs/reports/0.16a-effects-sheet.png` and the
+      Canvas2D/PixiJS side-by-side `docs/reports/0.16a-pixi-parity-sheet.png`, made by
       `pnpm cli sheet`; open as item 339.)
 
 ### 0.16 part B: the flagship platformer, Hopper's Way
@@ -1188,7 +1194,8 @@ whose only difference is that hero's fate.
 - **An MCP server.** A thin wrapper over the CLI, generated from the same schema. The CLI stays the
   real interface.
 - More backends: isometric. (PixiJS was not adopted at 0.9; 0.16 part A's feature benchmark found
-  Canvas2D short of the bar, so a PixiJS v8 backend is 0.16 part A's follow-up task T13b, item 323.)
+  Canvas2D short of the bar, so a PixiJS v8 backend was built as 0.16 part A's follow-up task T13b,
+  item 323.)
 - More kits and modes: a true 3D kit (Mario 64-like), a shmup, a rail shooter, a racer. Each new kit
   comes with its own sample game.
 - A public API with a stability promise to outside developers, a package format for third-party

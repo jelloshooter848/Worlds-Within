@@ -1,0 +1,848 @@
+{
+  "backend": "three",
+  "background": "#a4e4fc",
+  "meshes": {
+    "pip-ground": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 3,
+          "h": 4,
+          "d": 5
+        },
+        "at": {
+          "x": 2,
+          "y": 4,
+          "z": 0
+        },
+        "color": "#0058f8"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 3,
+          "h": 4,
+          "d": 5
+        },
+        "at": {
+          "x": 7,
+          "y": 4,
+          "z": 0
+        },
+        "color": "#0058f8"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 8,
+          "h": 5,
+          "d": 6
+        },
+        "at": {
+          "x": 2,
+          "y": 3.5,
+          "z": 5
+        },
+        "color": "#f87858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 2,
+          "d": 4
+        },
+        "at": {
+          "x": 3,
+          "y": 1.5,
+          "z": 6
+        },
+        "color": "#ac7c00"
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 7,
+          "h": 7,
+          "d": 7
+        },
+        "at": {
+          "x": 2.5,
+          "y": 2.5,
+          "z": 10
+        },
+        "color": "#fcbcb0"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 4
+        },
+        "at": {
+          "x": 2,
+          "y": 2,
+          "z": 16
+        },
+        "color": "#d82800"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2,
+          "h": 2,
+          "d": 2
+        },
+        "at": {
+          "x": 5,
+          "y": 9,
+          "z": 12
+        },
+        "color": "#fcbcb0"
+      }
+    ],
+    "beetle-ground": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 10,
+          "h": 10,
+          "d": 6
+        },
+        "at": {
+          "x": 1,
+          "y": 0,
+          "z": 1
+        },
+        "color": "#d82800"
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 6,
+          "h": 4,
+          "d": 4
+        },
+        "at": {
+          "x": 3,
+          "y": 8,
+          "z": 1
+        },
+        "color": "#000000"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 12,
+          "h": 2,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 3,
+          "z": 0
+        },
+        "color": "#000000"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 12,
+          "h": 2,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 7,
+          "z": 0
+        },
+        "color": "#000000"
+      }
+    ],
+    "coin-ground": [
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 2
+        },
+        "at": {
+          "x": 2,
+          "y": 2,
+          "z": 6
+        },
+        "color": "#f8b800"
+      }
+    ],
+    "door-ground": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 4,
+          "d": 24
+        },
+        "at": {
+          "x": 0,
+          "y": 6,
+          "z": 0
+        },
+        "color": "#7c7c7c"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 10,
+          "h": 1,
+          "d": 16
+        },
+        "at": {
+          "x": 3,
+          "y": 10,
+          "z": 0
+        },
+        "color": "#3c3c3c"
+      }
+    ],
+    "torch-ground": [
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 2,
+          "h": 2,
+          "d": 10
+        },
+        "at": {
+          "x": 5,
+          "y": 5,
+          "z": 0
+        },
+        "color": "#503000"
+      },
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 6,
+          "h": 6,
+          "d": 4
+        },
+        "at": {
+          "x": 3,
+          "y": 3,
+          "z": 10
+        },
+        "color": "#7c7c7c"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 4,
+          "h": 4,
+          "d": 5
+        },
+        "at": {
+          "x": 4,
+          "y": 4,
+          "z": 14
+        },
+        "color": "#f8b800"
+      }
+    ],
+    "tree": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#00a800"
+      },
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 4,
+          "h": 4,
+          "d": 8
+        },
+        "at": {
+          "x": 6,
+          "y": 6,
+          "z": 2
+        },
+        "color": "#7c4c20"
+      },
+      {
+        "shape": "cone",
+        "size": {
+          "w": 14,
+          "h": 14,
+          "d": 16
+        },
+        "at": {
+          "x": 1,
+          "y": 1,
+          "z": 8
+        },
+        "color": "#005800"
+      }
+    ],
+    "rock": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#00a800"
+      },
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 14,
+          "h": 12,
+          "d": 10
+        },
+        "at": {
+          "x": 1,
+          "y": 2,
+          "z": 2
+        },
+        "color": "#7c7c7c"
+      }
+    ]
+  },
+  "kinds": {
+    "runner": {
+      "mesh": "pip-ground",
+      "color": "#f87858",
+      "castShadow": true
+    },
+    "beetle": {
+      "mesh": "beetle-ground",
+      "color": "#d82800",
+      "castShadow": true
+    },
+    "coin": {
+      "mesh": "coin-ground",
+      "color": "#f8b800",
+      "castShadow": true
+    },
+    "goal": {
+      "mesh": "door-ground",
+      "color": "#7c7c7c",
+      "emit": "magic-aura",
+      "castShadow": true
+    },
+    "torch": {
+      "mesh": "torch-ground",
+      "color": "#503000",
+      "model": "assets/fx-lab-glb/brazier.glb",
+      "scale": 18,
+      "anchor": "bottom",
+      "clip": {
+        "idle": "flicker"
+      },
+      "castShadow": true,
+      "emit": ["torch-smoke", "torch-flame"],
+      "light": {
+        "kind": "point",
+        "color": "#ffa040",
+        "intensity": 40,
+        "distance": 96,
+        "offset": {
+          "x": 0,
+          "y": -12,
+          "z": 6
+        },
+        "flicker": 0.3
+      }
+    }
+  },
+  "tiles": {
+    ".": {
+      "mesh": "box",
+      "color": "#00a800",
+      "depth": 2,
+      "receiveShadow": true
+    },
+    ",": {
+      "mesh": "box",
+      "color": "#008800",
+      "depth": 2,
+      "receiveShadow": true
+    },
+    "=": {
+      "mesh": "box",
+      "color": "#c89c58",
+      "depth": 1,
+      "receiveShadow": true
+    },
+    "~": {
+      "mesh": "plane",
+      "color": "#3cbcfc",
+      "receiveShadow": true
+    },
+    "#": {
+      "mesh": "box",
+      "color": "#bcbcbc",
+      "depth": 12,
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    "T": {
+      "mesh": "tree",
+      "color": "#005800",
+      "castShadow": true,
+      "receiveShadow": true
+    },
+    "o": {
+      "mesh": "rock",
+      "color": "#7c7c7c",
+      "castShadow": true,
+      "receiveShadow": true
+    }
+  },
+  "events": {
+    "coin": {
+      "emit": ["coin-burst"]
+    }
+  },
+  "emitters": {
+    "torch-flame": {
+      "rate": 0.8,
+      "life": [8, 14],
+      "speed": [0.25, 0.6],
+      "angle": [255, 285],
+      "shape": {
+        "circle": 2
+      },
+      "anchor": "top",
+      "offset": {
+        "x": 0,
+        "y": -1
+      },
+      "gravity": -0.02,
+      "size": [3, 3, 1],
+      "color": ["#fce0a8", "#f8b800", "#d82800"],
+      "alpha": [1, 0.9, 0]
+    },
+    "torch-smoke": {
+      "rate": 0.25,
+      "life": [36, 52],
+      "speed": [0.2, 0.4],
+      "angle": [262, 278],
+      "anchor": "top",
+      "offset": {
+        "x": 0,
+        "y": -6
+      },
+      "gravity": -0.004,
+      "drag": 0.01,
+      "size": [2, 4, 7],
+      "color": ["#7c7c7c", "#bcbcbc"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.15,
+          "value": 0.55
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    },
+    "coin-burst": {
+      "burst": 10,
+      "life": [12, 18],
+      "speed": [1.2, 2.2],
+      "angle": [0, 360],
+      "drag": 0.1,
+      "gravity": 0.06,
+      "size": [2, 2, 1],
+      "color": ["#fce0a8", "#f8b800", "#ac7c00"],
+      "alpha": [1, 1, 0]
+    },
+    "magic-aura": {
+      "rate": 1,
+      "life": [30, 48],
+      "speed": [0.1, 0.3],
+      "angle": [258, 282],
+      "shape": {
+        "box": {
+          "w": 20,
+          "h": 32
+        }
+      },
+      "gravity": -0.004,
+      "size": [2, 2, 2, 1],
+      "color": ["#fcfcfc", "#a4e4fc", "#00a8a8"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.2,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    }
+  },
+  "camera3d": {
+    "fov": 40,
+    "view": "ground",
+    "pitch": 52,
+    "yaw": -25,
+    "lights": {
+      "ambient": 0.75,
+      "directional": 0.7
+    }
+  },
+  "scene3d": {
+    "sun": {
+      "color": "#fff0d0",
+      "intensity": 1.5,
+      "direction": {
+        "x": -1.6,
+        "y": 2.4,
+        "z": 1.2
+      },
+      "shadow": {
+        "mapSize": 1024,
+        "radius": 2
+      }
+    },
+    "ambient": {
+      "color": "#a8b8e8",
+      "intensity": 0.35
+    },
+    "hemisphere": {
+      "sky": "#a4e4fc",
+      "ground": "#7c4c20",
+      "intensity": 0.5
+    },
+    "fog": {
+      "kind": "linear",
+      "color": "#a4e4fc",
+      "near": 120,
+      "far": 700
+    },
+    "toneMapping": {
+      "kind": "aces",
+      "exposure": 1.3
+    },
+    "colorSpace": "srgb",
+    "timeOfDay": {
+      "tween": 45,
+      "ease": "sineInOut",
+      "keys": [
+        {
+          "hour": 3,
+          "sun": {
+            "color": "#4058a0",
+            "intensity": 0.15,
+            "direction": {
+              "x": 1.2,
+              "y": 2.4,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#5060a0",
+            "intensity": 0.2
+          },
+          "hemisphere": {
+            "sky": "#203058",
+            "ground": "#101018",
+            "intensity": 0.25
+          },
+          "fog": {
+            "color": "#141c34"
+          },
+          "background": "#0c1428",
+          "exposure": 1.0
+        },
+        {
+          "hour": 6.5,
+          "sun": {
+            "color": "#ffa060",
+            "intensity": 0.8,
+            "direction": {
+              "x": -3,
+              "y": 1,
+              "z": 0.6
+            }
+          },
+          "ambient": {
+            "color": "#c8a0a0",
+            "intensity": 0.3
+          },
+          "hemisphere": {
+            "sky": "#f8b890",
+            "ground": "#503020",
+            "intensity": 0.4
+          },
+          "fog": {
+            "color": "#f0b898"
+          },
+          "background": "#f0b898",
+          "exposure": 1.2
+        },
+        {
+          "hour": 13
+        },
+        {
+          "hour": 17.5,
+          "sun": {
+            "color": "#ffc080",
+            "intensity": 1.2,
+            "direction": {
+              "x": 2.2,
+              "y": 1.6,
+              "z": 1
+            }
+          },
+          "hemisphere": {
+            "sky": "#f8d0a0",
+            "ground": "#704020",
+            "intensity": 0.45
+          },
+          "fog": {
+            "color": "#f8d0a8"
+          },
+          "background": "#f8d0a8"
+        },
+        {
+          "hour": 19.5,
+          "sun": {
+            "color": "#ff6830",
+            "intensity": 0.6,
+            "direction": {
+              "x": 3,
+              "y": 0.8,
+              "z": 0.6
+            }
+          },
+          "ambient": {
+            "color": "#a080b0",
+            "intensity": 0.3
+          },
+          "hemisphere": {
+            "sky": "#c06850",
+            "ground": "#402030",
+            "intensity": 0.35
+          },
+          "fog": {
+            "color": "#a05848"
+          },
+          "background": "#a05848",
+          "exposure": 1.15
+        },
+        {
+          "hour": 22,
+          "sun": {
+            "color": "#5068b0",
+            "intensity": 0.2,
+            "direction": {
+              "x": 1.6,
+              "y": 2.4,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#5060a0",
+            "intensity": 0.2
+          },
+          "hemisphere": {
+            "sky": "#283860",
+            "ground": "#101018",
+            "intensity": 0.25
+          },
+          "fog": {
+            "color": "#18203c"
+          },
+          "background": "#101830",
+          "exposure": 1.0
+        }
+      ]
+    }
+  },
+  "hud": [
+    {
+      "as": "clock",
+      "x": 63,
+      "y": 4,
+      "w": 130,
+      "h": 15,
+      "font": "fx-small",
+      "format": "Day {day} {time} {phase}",
+      "color": "#fcfcfc",
+      "outline": "#000000",
+      "dayBar": {
+        "h": 3,
+        "back": "#101830",
+        "bands": [
+          {
+            "hour": 5,
+            "color": "#f0a070"
+          },
+          {
+            "hour": 7,
+            "color": "#88c8f0"
+          },
+          {
+            "hour": 17,
+            "color": "#f0b070"
+          },
+          {
+            "hour": 19.5,
+            "color": "#a05848"
+          },
+          {
+            "hour": 21,
+            "color": "#101830"
+          }
+        ],
+        "marks": [6, 12, 18],
+        "markColor": "#000000",
+        "marker": "#fcfcfc"
+      }
+    }
+  ],
+  "labels": {
+    "runner": [
+      {
+        "as": "text",
+        "format": "Pip",
+        "font": "fx-small",
+        "color": "#fcfcfc",
+        "outline": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -6
+        }
+      },
+      {
+        "from": {
+          "status": "hp"
+        },
+        "as": "bar",
+        "max": "maxHp",
+        "w": 16,
+        "h": 4,
+        "color": "#00a800",
+        "back": "#000000",
+        "border": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -6
+        }
+      }
+    ],
+    "goal": {
+      "as": "text",
+      "format": "EXIT",
+      "font": "fx-small",
+      "color": "#f8b800",
+      "outline": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -6
+      }
+    }
+  },
+  "decor": {
+    "meadow": {
+      "grid": "meadow",
+      "size": {
+        "cols": 24,
+        "rows": 18
+      },
+      "legend": {
+        "p": {
+          "model": "assets/fx-lab-decor/pine.gltf",
+          "scale": [18, 26],
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "b": {
+          "model": "assets/fx-lab-decor/bush.gltf",
+          "scale": [11, 15],
+          "yaw": "random",
+          "jitter": 3,
+          "castShadow": true
+        },
+        "f": {
+          "model": ["assets/fx-lab-decor/flowers.gltf", "assets/fx-lab-decor/bush.gltf"],
+          "scale": [9, 12],
+          "yaw": "random",
+          "jitter": 4
+        },
+        "s": {
+          "model": "assets/fx-lab-decor/stone.gltf",
+          "scale": [10, 13],
+          "yaw": "quarter",
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true,
+          "instanced": false
+        }
+      }
+    }
+  },
+  "places": {
+    "meadow": [
+      {
+        "text": "THE POND",
+        "x": 256,
+        "y": 84,
+        "height": 4,
+        "font": "fx-small",
+        "color": "#fcfcfc",
+        "outline": "#0058f8"
+      },
+      {
+        "text": "THE PATH",
+        "x": 176,
+        "y": 60,
+        "height": 4,
+        "font": "fx-small",
+        "color": "#f8b800",
+        "outline": "#000000"
+      },
+      {
+        "text": "OLD WALL",
+        "x": 96,
+        "y": 40,
+        "height": 16,
+        "font": "fx-small",
+        "color": "#fcfcfc",
+        "outline": "#000000"
+      }
+    ]
+  }
+}

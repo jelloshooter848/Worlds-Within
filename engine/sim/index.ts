@@ -257,6 +257,7 @@ export {
 } from './mission';
 export { missionPort, roundSeed } from './mission-port';
 export { keyAlive, worldKeys } from './keys';
+export { SETUP_CAUSES, missionCardFacts, worldChanges } from './world-changes';
 export { rtsWorldPort, type RtsPort } from './rts-port';
 export type {
   CommitResult,

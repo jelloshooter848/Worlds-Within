@@ -25,8 +25,14 @@ It never draws and never imports the sim: a game's glue fills its `RtsWorldPort`
 (`Selection`), `commands` (`commandAt`, `buildCommand`,
 `trainCommand`, `stopCommand`, `trainButtons`, `OrderDraft`, `stampOrder`; missions:
 `missionRequest`, `missionButtons`, `launchMission`, `MissionLauncher`), `enemy`
-(`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`),
-`controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders),
+(`enemyPlanSchema`, `ScriptedEnemy`), `present` (`presentWorld`, `RtsPresentState`, `RTS_DEPTH`;
+from Engine 0.16 F7 the status also names the one selected thing, `selectedName`, `selectedType`,
+`selectedRole`, gives each scenario key's health, progress, fate and life, `keyStatus`:
+`key.<key>.hp`, `.maxHp`, `.progress`, `.fate`, `.name`, `.alive`, and how near the enemy is to
+the player's buildings, `threatStatus`: `enemyNear`, for a 3D page's HUD objectives and music),
+`controls` (`RtsControls`: pointer gestures through `RtsCamera` into selection and orders; from
+Engine 0.16 F2 through a ground-view `RtsCamera` too, a box then selecting what is drawn inside
+the picture rectangle, `Selection.boxWhere`),
 `game` (`rtsGame`, `RtsGame`, a `HeadlessGame` with `order`, `issue`, `recorded`, `log` and
 `refresh`;
 `RtsWorldPort`, filled by `engine/sim`'s `rtsWorldPort(world)`; and from Engine 0.15 T6, gap M18,
@@ -43,6 +49,10 @@ faction)`): what changed between two views as presentation events, each with its
   `unit-hit`, `site-placed`, `building-done`, `building-down`, `building-hit`, `stock-up`. The
   world snapshot carries no events, so this is how a game on the kit gets battle sounds (the RTS
   skirmish passes them to `presentWorld`'s `events`). It reads views only: no world rule.
+
+- Engine 0.16 F6: `presentWorld`'s `mapId` option names the map (default `RTS_MAP_ID`, `rts`),
+  so a 3D skin's per-map `decor` and `places` dress each scenario; a unit or building whose
+  health bar shows also carries `hp:<hp>/<max>`, the numbers a 3D skin's bar label reads.
 
 ## Imports allowed
 

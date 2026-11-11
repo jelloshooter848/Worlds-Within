@@ -11,6 +11,7 @@
     "font": ["content/fonts/*.txt"],
     "ui": ["content/ui/*.json"],
     "skin": ["content/skins/*.json"],
+    "decor": ["content/decor/*.txt"],
     "sfx": ["content/sfx/*.json"],
     "song": ["content/songs/*.json"]
   },

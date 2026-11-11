@@ -160,7 +160,7 @@ export function checkSkinModels(
   const errors: ContentError[] = [];
   for (const use of skinModelUses(skin)) {
     const data = assets[use.model];
-    const at = [...use.path, 'model'];
+    const at = use.field ?? [...use.path, 'model'];
     if (data === undefined) {
       errors.push(contentError(file, at, 'missing_file', `no file "${use.model}" in the game folder`));
       continue;

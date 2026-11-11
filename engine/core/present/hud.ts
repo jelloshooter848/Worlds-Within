@@ -1,4 +1,5 @@
-import { HUD_CLASSIC_TYPES, type SkinFile } from './skin';
+import { statusMatches, type MixStatus } from '../audio/mix';
+import { HUD_CLASSIC_TYPES, type SkinFile, type SkinHudItem } from './skin';
 import type { DeepReadonly, PresentFrame } from './types';
 
 /**
@@ -123,18 +124,22 @@ export function hudGlyphs(item: HudText): HudSprite[] {
   return out;
 }
 
-/**
- * Whether a HUD item shows for `status`: always, unless it names a `when` status key whose value
- * is falsy (missing, 0, false or '') (Engine 0.16 part C T3).
- */
-export function hudItemShown(
-  item: { readonly when?: string | undefined },
-  status: DeepReadonly<PresentFrame['status']>,
-): boolean {
-  return item.when === undefined || Boolean(status[item.when]);
-}
-
 /** Whether a HUD item type is one `layoutHud` draws (the types before Engine 0.16 T6's widgets). */
 export function isClassicHudType(as: string): as is (typeof HUD_CLASSIC_TYPES)[number] {
   return (HUD_CLASSIC_TYPES as readonly string[]).includes(as);
+}
+
+/**
+ * Whether a HUD item shows on this status: true without a `when`; a status key (Engine 0.16 part
+ * C T3) while its value is truthy (missing, 0, false and '' are not); a status test (Engine 0.16
+ * F7) while it holds (a key the status lacks never holds).
+ */
+export function hudItemShown(
+  item: DeepReadonly<Pick<SkinHudItem, 'when'>> | { readonly when?: string | undefined },
+  status: DeepReadonly<PresentFrame['status']>,
+): boolean {
+  const when = item.when;
+  if (when === undefined) return true;
+  if (typeof when === 'string') return Boolean(status[when]);
+  return statusMatches(when, status as MixStatus);
 }

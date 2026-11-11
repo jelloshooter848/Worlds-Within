@@ -10,9 +10,10 @@ import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the dungeon sample in the browser with the engine's `bootBrowserGame`: keyboard,
- * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display at the 16:9
- * screen (320x180, so 6x fills 1920x1080), the menus, audio with the sample's songs and sfx (the
- * `crypt` song starts on the first key, tap or click), the shell's volume control (stored under
+ * gamepad, the touch pad, the scene stack, the fixed loop, the Canvas2D display (or the PixiJS
+ * one with `?backend=pixi`, imported only then, falling back to Canvas2D without WebGL) at the
+ * 16:9 screen (320x180, so 6x fills 1920x1080), the menus, audio with the sample's songs and sfx
+ * (the `crypt` song starts on the first key, tap or click), the shell's volume control (stored under
  * `ww:dungeon:volumes`, gap M1), the shell's mixer (Engine 0.16 part C T9: the skin's layered
  * `warden` music in the boss room, mixed from each frame's status, every event's sound varied by
  * the seed, big hits and dialogs ducking the music) and the step hook with `?debug=step`. The skin's PNG sheets (the
@@ -44,6 +45,8 @@ void bootBrowserGame({
   displays: {
     canvas2d: (canvas, { onSound, hitPause }) =>
       canvasDisplay(canvas, { ...look, onSound, onHitPause: hitPause }),
+    pixi: async (canvas, { onSound, hitPause }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, onSound, onHitPause: hitPause }),
   },
   scene: (_stack, display, page) =>
     new DungeonScene(content, look, {

@@ -8,7 +8,15 @@ import {
   type PresentFrame,
 } from '@engine/core/present';
 import { battleSnapshot, siegeSnapshot } from './__fixtures__/world';
-import { presentWorld, RTS_DEPTH, RtsPresentState, rtsMissionInfo, unitAnim } from './present';
+import {
+  keyStatus,
+  presentWorld,
+  RTS_DEPTH,
+  RtsPresentState,
+  rtsMissionInfo,
+  threatStatus,
+  unitAnim,
+} from './present';
 import { readWorld } from './snapshot';
 
 const SIZE = { width: 320, height: 240 };
@@ -99,6 +107,24 @@ describe('presentWorld', () => {
     expect(e('resource-4')).toMatchObject({ kind: 'resource:gold', tags: ['amount:30'] });
   });
 
+  it('tags what shows a health bar with its numbers, and names the map by mapId (Engine 0.16 F6)', () => {
+    const frame = presentWorld(view, { faction: 'red', size: SIZE, selection: [6] });
+    const e = (id: string) => frame.entities.find((x) => x.id === id)!;
+    // a hurt unit, and a selected one at full health: `hp:<hp>/<max>`, as their bars show
+    const hurt = e('unit-7').tags.find((t) => t.startsWith('hp:'));
+    expect(hurt).toMatch(/^hp:\d+\/\d+$/);
+    expect(e('unit-7/hp')).toBeDefined();
+    expect(e('unit-6').tags.filter((t) => t.startsWith('hp:'))).toEqual([
+      expect.stringMatching(/^hp:(\d+)\/\1$/),
+    ]);
+    // no bar, no tag
+    expect(e('unit-9').tags.some((t) => t.startsWith('hp:'))).toBe(false);
+    expect(frame.map).toMatchObject({ id: 'rts' });
+    expect(presentWorld(view, { faction: 'red', size: SIZE, mapId: 'village' }).map).toMatchObject({
+      id: 'village',
+    });
+  });
+
   it('presents selection rings, the box and the placing ghost as entities', () => {
     const frame = presentWorld(view, {
       faction: 'red',
@@ -136,6 +162,50 @@ describe('presentWorld', () => {
     expect(presentWorld(view, { faction: 'red', size: SIZE, selection: [5, 6] }).status['selection']).toBe(
       'mixed',
     );
+  });
+
+  it('names the one selected unit: a named person by name and role, else its type (Engine 0.16 F7)', () => {
+    const one = (id: number) => presentWorld(view, { faction: 'red', size: SIZE, selection: [id] }).status;
+    expect(one(7)).toMatchObject({ selectedName: 'Ada', selectedType: 'soldier', selectedRole: 'hero' });
+    expect(one(6)).toMatchObject({ selectedName: 'soldier', selectedType: 'soldier', selectedRole: '' });
+    expect(one(3)).toMatchObject({ selectedName: 'hall', selectedType: 'hall', selectedRole: '' });
+    expect(presentWorld(view, { faction: 'red', size: SIZE, selection: [5, 6] }).status).not.toHaveProperty(
+      'selectedName',
+    );
+  });
+
+  it("gives each scenario key's health, progress, fate and whether it lives (Engine 0.16 F7)", () => {
+    const keys = { hall: 3, ada: 7, works: 8, gone: 99 };
+    expect(keyStatus(view, keys)).toEqual({
+      'key.ada.hp': 15,
+      'key.ada.maxHp': 30,
+      'key.ada.fate': 'active',
+      'key.ada.name': 'Ada',
+      'key.ada.alive': 1,
+      'key.gone.alive': 0,
+      'key.hall.hp': 400,
+      'key.hall.maxHp': 400,
+      'key.hall.alive': 1,
+      'key.works.hp': 1,
+      'key.works.maxHp': 200,
+      'key.works.progress': 50,
+      'key.works.alive': 1,
+    });
+    // On the frame, beside the other HUD values; none without a key table.
+    expect(presentWorld(view, { faction: 'red', size: SIZE, keys }).status).toMatchObject({
+      'key.hall.hp': 400,
+    });
+    const bare = presentWorld(view, { faction: 'red', size: SIZE }).status;
+    expect(Object.keys(bare).some((k) => k.startsWith('key.'))).toBe(false);
+  });
+
+  it("says how near the enemy is to the side's buildings, in cells (Engine 0.16 F7)", () => {
+    // Blue's soldiers at (6, 4) and (7, 4); red's hall covers (0, 0)-(1, 1).
+    expect(threatStatus(view, 'red')).toEqual({ enemyNear: 5 });
+    // Red's units at (2, 1), (1, 3) and (2, 3); blue's barracks covers (6, 0)-(7, 1).
+    expect(threatStatus(view, 'blue')).toEqual({ enemyNear: 4 });
+    expect(threatStatus(view, 'green')).toEqual({});
+    expect(presentWorld(view, { faction: 'red', size: SIZE }).status['enemyNear']).toBe(5);
   });
 
   it('counts anim t from when a state began, with a state', () => {

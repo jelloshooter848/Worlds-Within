@@ -18,6 +18,10 @@ import { launchChromium, NoBrowserError } from '../../engine/tools/screenshot';
 // Engine 0.13 T8 adds the follow-up, started from its run's `from` as `pnpm cli run` starts it
 // (gap M33): the dawn with the captain held (dawn-captured at 10: the captive marker in the HUD and
 // the choices' offer) and with him on the map beside the sergeant (dawn-held at 30).
+// Engine 0.16 F6: the picture is 320x180 (16:9), and the siege map in 3D low-poly
+// (`--backend three`, the `three` skin at render scale 6: 1920x1080) is shot for the village held
+// during the freeze, the dawn and the ridge camp, each byte-identical on a second run (SwiftShader
+// allowed: the renderer is pinned, so the picture repeats on one machine).
 // Skipped where Chromium is not installed (never in CI).
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
@@ -37,7 +41,7 @@ async function browserMissing(): Promise<string | null> {
 const missing = await browserMissing();
 if (missing) console.warn(`skipping the mini siege screenshots: ${missing}`);
 
-async function shot(run: string, tick: number, n: number): Promise<Record<string, unknown>> {
+async function shot(run: string, tick: number, n: number, three = false): Promise<Record<string, unknown>> {
   let stdout = '';
   const code = await main(
     [
@@ -46,15 +50,16 @@ async function shot(run: string, tick: number, n: number): Promise<Record<string
       '--tick',
       String(tick),
       '--out',
-      join(temp, `${run}-${tick}-${n}.png`),
+      join(temp, `${run}-${tick}-${n}${three ? '-3d' : ''}.png`),
       '--json',
+      ...(three ? ['--backend', 'three', '--allow-software-gl'] : []),
     ],
     { stdout: (t) => void (stdout += t), stderr: () => {}, cwd: ROOT, outDir: join(temp, 'out') },
   );
   const result = JSON.parse(stdout) as Record<string, unknown>;
   expect(code, JSON.stringify(result)).toBe(EXIT.ok);
   expect(result.matchesHeadless).toBe(true);
-  expect(result).toMatchObject({ width: 256, height: 240 });
+  expect(result).toMatchObject(three ? { width: 1920, height: 1080 } : { width: 320, height: 180 });
   return result;
 }
 
@@ -82,5 +87,28 @@ describe.skipIf(missing !== null)('the mini siege through pnpm cli screenshot', 
 
   it('shows different pictures at each', () => {
     expect(new Set(Object.values(sha)).size).toBe(8);
+  });
+});
+
+describe.skipIf(missing !== null)('the siege map in 3D low-poly (Engine 0.16 F6)', () => {
+  const sha: Record<string, unknown> = {};
+  it.each([
+    ['delegated', 80, 'the village held during the freeze, late afternoon'],
+    ['dawn-held', 30, 'the dawn assault, at dawn'],
+    ['ridge-raid', 40, 'the ridge camp, in the morning'],
+  ] as [string, number, string][])(
+    '%s at tick %i (%s) is full HD and byte-repeatable',
+    async (run, tick) => {
+      const first = await shot(run, tick, 1, true);
+      const second = await shot(run, tick, 2, true);
+      expect(first).toMatchObject({ backend: 'three', renderScale: 6 });
+      expect(second.sha256).toBe(first.sha256);
+      sha[run] = first.sha256;
+    },
+    240_000,
+  );
+
+  it('shows a different picture for each map', () => {
+    expect(new Set(Object.values(sha)).size).toBe(3);
   });
 });

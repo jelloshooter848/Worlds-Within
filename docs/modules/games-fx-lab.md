@@ -52,6 +52,17 @@ test game, content and glue only.
 games/fx-lab/tools/brazier-model.ts`; own work, CC0, credited), shown for the `torch` kind in
   the 3D skin (`scale` 18, anchored `bottom`, turned 30 degrees, `idle` playing `flicker`) with
   its low-poly text mesh as the stand-in while it loads.
+- `content/skins/ground.json`, `ground.ts` and the page `ground/` (Engine 0.16 F2): the 3D
+  backend's ground view on a hand-made meadow (not the platformer's levels): `groundSkin`,
+  `groundCamera` (an `RtsCamera` with the skin's ground camera) and `groundFrame(n, camera,
+screen)`; `ground.test.ts` and `tests/browser/fx-lab-ground.test.ts`. From Engine 0.16 F3 the
+  meadow is dressed by a decor grid (`content/decor/meadow.txt`, the skin's `decor` legend:
+  pines, bushes and flowers instanced, stones one copy each, from `assets/fx-lab-decor/*.gltf`,
+  made by `tools/decor-models.ts`) and names its places (`THE POND`, `THE PATH`, `OLD WALL`);
+  the page takes `?scale=<n>` for the render scale. From Engine 0.16 F4 the ground skin has a
+  `scene3d.timeOfDay` (night, dawn, day, late afternoon, dusk and night keys) and a `clock` HUD
+  item (`Day 1 20:30 evening` over a day bar); `groundClock(hour, n, jump?)` gives a frame the
+  world clock, and the page's `?hour=<h>&jump=<n>` shows an hour and a two-hour jump eased.
 - `runs/level-1.run.json`, `runs/level-2.run.json`, `runs/level-3.run.json` with golden hashes.
 - The effects sheet (T14): `docs/reports/0.16a-effects-sheet.png`, 24 labelled tiles of these
   run files in 2D and 3D made with `pnpm cli sheet` (every part A feature: particles, flashes and
@@ -81,3 +92,9 @@ without Chromium); `pnpm test tests/browser/fx-lab-ui.test.ts` (T7: the menu and
 keyboard, mouse and touch; `WW_SHOTS_DIR=<folder>` keeps the shots); `pnpm test
 tests/browser/fx-lab-mix.test.ts` (T8: the mixer's gains recorded over `level-1`, the same on
 every load, and the dialog's duck). `pnpm dev` and open `/games/fx-lab/`.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

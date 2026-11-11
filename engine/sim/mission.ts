@@ -232,7 +232,8 @@ export function openMission(world: World, def: unknown, options: OpenOptions = {
   if (stepping) return stepping;
   const parsed = parseMission(def);
   if (!parsed.ok) return refuse('bad_mission', parsed.error.split('\n').join('; '));
-  const mission = parsed.mission;
+  // The card's `text` is presentation (Engine 0.16 F5): never stored, so it moves no hash.
+  const { text: _text, ...mission } = parsed.mission;
   const id = mission.id;
   const s = stateOf(world);
   if (s.committed.some((r) => r.mission === id))

@@ -167,6 +167,10 @@ frame))`): a button held into the round (held, not pressed, on its first tick) i
   (`shell/`) pushes it for a game. Pure.
 - `gfx/renderer.ts`: the drawing interface (`Renderer`, `Rotation`, `transformed`,
   `translucent`, `clipped`, `OffsetRenderer`). Backends implement it.
+- `draw/` (Engine 0.16 T13b, its own page [engine/core/draw](engine-core-draw.md)): the skinned
+  presenter walk the 2D backends share, `SkinnedPresenter` on any `Renderer` with injectable map
+  and glyph surfaces, `RendererUiPainter` and `skinSetPresenter`. Backends only (kits and the sim
+  may not import it).
 - `gfx/`: `palette.ts` (the `NES` colour names), `spritesheet.ts`, `pixelart.ts`, `animation.ts`,
   `screen.ts` (`ScreenSize`, `DEFAULT_SCREEN` 256x240, `SCREEN_MIN` / `SCREEN_MAX`, `fitGame(size, ...)`).
 - `input/`: actions, bindings, `input-manager.ts`, `scripted-input.ts` (`ScriptedInput` for repeatable
@@ -229,9 +233,23 @@ keys?)` and `playMissionRound`'s `keys`, a mission file's optional `marker` (a s
 worldTick, missionsOpen })`, the one entry-end rule; save code v2 (`SAVE_CODE_VERSION` 2,
   `saveCodeId(id)`: campaigns and missions by stable 12-bit id code; v1 codes still read;
   `code_collision` from `validate` and on encoding).
+- The world clock (Engine 0.16 F4, `clock.ts`): `worldClock(start, worldTick, ticksPerHour?)` ->
+  `{ day, hour, minute, time, text, phase, fraction }`, `clockStatus(clock, prefix?)` (the frame
+  status `clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`), `dayPhase`,
+  `DAY_PHASES`, `clockTimeSchema`; a campaign entry's `clock: { day, hour, minute? }` and the
+  campaign's `ticksPerHour` (default 60), `entryWorldClock(campaign, entry, worldTick)`, and
+  `validate`'s `clock_backwards`. Presentation only: derived from the entry and the world tick,
+  never in a world, hash or save code. Example: `clockStatus(worldClock({ day: 2, hour: 14 },
+64))['clock.text']` is `Day 2 15:04`.
 
 ## Imports allowed
 
+- The world's changes and the mission card's text (Engine 0.16 F5, `world-changes.ts`):
+  `WorldChanges` (losses by faction, people whose fate moved, buildings damaged or destroyed,
+  records), `changeSections`, `changeLines`, `MissionCardFacts`, `missionChips` and `windowText`;
+  `durationText(ticks, ticksPerHour?)` in `clock.ts`. `engine/sim` computes the values
+  (`worldChanges`, `missionCardFacts`); the shell's `MissionScreens` shows them. A mission's
+  `text` is presentation only (never stored by the sim).
 - Other files in `engine/core` (relative paths) and npm packages.
 - Never `engine/backends`, `engine/sim`, `engine/tools`, kits or games.
 - Files on `PURE_CORE` in `config/layers.js` must stay pure: no `Math.random`, `Date.now`,

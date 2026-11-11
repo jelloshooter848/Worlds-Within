@@ -18,41 +18,38 @@
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"],
     "song": ["content/songs/*.json"],
-    "font": ["content/fonts/*.txt"]
+    "font": ["content/fonts/*.txt"],
+    "decor": ["content/decor/*.txt"]
   },
   "start": { "seed": 11 },
-  "screen": { "width": 256, "height": 240 },
+  "screen": { "width": 320, "height": 180 },
   "menus": {
     "font": "siege-small",
     "titleFont": "siege-title",
     "style": {
-      "text": "#fcfcfc",
+      "text": "#f4e8cc",
       "shadow": "#000000",
-      "focusText": "#fc9838",
-      "disabledText": "#a4a4a4",
-      "back": "#0c0c1c",
-      "focusBack": "#58002c",
-      "border": "#fcfcfc",
-      "track": "#3c3c3c",
-      "fill": "#d82800",
+      "focusText": "#fce8a8",
+      "disabledText": "#8c8070",
+      "back": "#1a140c",
+      "focusBack": "#6c4a1c",
+      "border": "#c8a060",
+      "track": "#3c3020",
+      "fill": "#e8b040",
       "padding": 6,
       "gap": 3,
       "sounds": { "move": "ui-move", "select": "ui-select", "back": "ui-back" },
-      "heading": "#fc9838",
+      "heading": "#f0c060",
       "outline": "#000000",
-      "dim": 0.5
+      "dim": 0.45
     },
     "title": {
       "name": "The Mini Siege",
       "subtitle": "Burn the siege engines before dawn",
-      "art": [
-        { "sheet": "siege", "frame": "captain-right-0", "scale": 3, "anchor": "left", "x": 40, "y": -6 },
-        { "sheet": "siege", "frame": "ram-0", "scale": 2, "anchor": "right", "x": 32, "y": -6 }
-      ],
       "music": "siege",
       "footer": "An original game made with the Worlds Within engine",
       "items": ["start", "continue", "controls", "settings"],
-      "dim": 0.6
+      "dim": 0.35
     },
     "pause": { "items": ["resume", "controls", "settings", "title"] },
     "settings": { "items": ["master", "music", "sfx", "mute", "shake", "flashing"] },

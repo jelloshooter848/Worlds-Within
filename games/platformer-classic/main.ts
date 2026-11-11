@@ -36,6 +36,9 @@ void bootBrowserGame({
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet },
   displays: {
     canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
+    // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
+    pixi: async (canvas, { onSound }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
     three: async (canvas, { onSound }) =>
       (await import('@engine/backends/three')).threeDisplay(canvas, {
         ...classicLook3d(content),

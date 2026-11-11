@@ -20,12 +20,23 @@ import {
   checkSoundRange,
   skinMusicSchema,
   soundVariationFields,
+  statusCompareSchema,
   type SoundCue,
 } from '../audio/mix';
 import { compileSong, type Song } from '../audio/mml';
 import { kindLightSchema, labelsSchema, scene3dSchema, skinLabels } from './scene3d';
-import { tileJoinSchema, tileVarySchema } from './tile-join';
+import { checkDecorRefs, decorSchema, placesSchema, tileVarySchema as modelTileVarySchema } from './decor';
+import { checkVaryWeights, tileJoinSchema, tileVaryShape, type TileVary } from './tile-join';
+import {
+  DEFAULT_MODEL_ANCHOR,
+  MODEL_TICKS_PER_SECOND,
+  modelAnchor,
+  modelPath,
+  modelRotate,
+  type ModelAnchorName,
+} from './model-fields';
 import { missingGlyphs, type FontFile } from '../ui/font';
+import { DAY_PHASES } from '../clock';
 import {
   cardinalFacing,
   FACINGS,
@@ -112,7 +123,14 @@ export const DEFAULT_CAMERA3D = {
   tilt: 0,
   layerDepth: 16,
   lights: { ambient: 0.6, directional: 0.8 },
+  view: 'side',
+  pitch: 55,
+  yaw: 0,
 } as const;
+
+/** The 3D backend's two views (Engine 0.16 F2): side-on 2.5D, or a map's ground seen from above. */
+export const CAMERA3D_VIEWS = ['side', 'ground'] as const;
+export type Camera3dView = (typeof CAMERA3D_VIEWS)[number];
 
 /** The colour a backend draws a box in when a kind has no skin entry and the skin gives none. */
 export const DEFAULT_FALLBACK_COLOR = '#ff00ff';
@@ -217,7 +235,6 @@ const SPRITE_FIELDS = [
   'frame',
   'blend',
   'glow',
-  'vary',
 ] as const;
 const MESH_FIELDS = [
   'mesh',
@@ -236,9 +253,13 @@ const MESH_FIELDS = [
   'tint',
   'stretch',
   'clipHold',
+  'materials',
 ] as const;
-/** The model fields that mean nothing without a `model` (Engine 0.16 T11; `tint`, `stretch` part B T10). */
-const MODEL_FIELDS = ['anchor', 'rotate', 'clip', 'tint', 'stretch', 'clipHold'] as const;
+/**
+ * The model fields that mean nothing without a `model` (Engine 0.16 T11; `tint`, `stretch` and
+ * `clipHold` part B T10; `materials` F6).
+ */
+const MODEL_FIELDS = ['anchor', 'rotate', 'clip', 'tint', 'stretch', 'clipHold', 'materials'] as const;
 /** Skin-level fields only a 3D skin has. */
 const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'labels', 'scenery'] as const;
 
@@ -255,44 +276,13 @@ const zOffset = z
   .exactOptional()
   .describe('3D: px toward the camera from the depth plane (default 0)');
 
-/** Where a model sits on its box when a skin gives no `anchor` (Engine 0.16 T11). */
-export const DEFAULT_MODEL_ANCHOR = 'bottom';
-/** Ticks per second of a model's animation clips: an entity's `anim.t` / 60 is the clip time. */
-export const MODEL_TICKS_PER_SECOND = 60;
-/** The named model anchors: the bounding box's bottom centre, its centre, or the model's origin. */
-export const MODEL_ANCHORS = ['bottom', 'center', 'origin'] as const;
-export type ModelAnchorName = (typeof MODEL_ANCHORS)[number];
+export {
+  DEFAULT_MODEL_ANCHOR,
+  MODEL_ANCHORS,
+  MODEL_TICKS_PER_SECOND,
+  type ModelAnchorName,
+} from './model-fields';
 
-const modelPath = z
-  .string()
-  .regex(/^assets\/[^/]+\/[^/]+(?:\/[^/]+)*\.(?:glb|gltf)$/i, {
-    message: 'a glTF model in a pack folder of the game\'s assets: "assets/<pack>/<file>.glb" (or .gltf)',
-  })
-  .describe(
-    "3D: a glTF/GLB model, `assets/<pack>/<file>.glb` or `.gltf` relative to the game folder (Engine 0.16); the entry's `mesh` shows while it loads",
-  );
-const modelAnchor = z
-  .union([
-    z.enum(MODEL_ANCHORS),
-    z.strictObject({
-      x: z.number().describe('model units right'),
-      y: z.number().describe('model units up'),
-      z: z.number().describe('model units toward the viewer'),
-    }),
-  ])
-  .describe(
-    "3D model: the model point put on the box's bottom centre: `bottom` (its bounding box's bottom centre, the default), `center` (its centre, put on the box's centre), `origin` (the model's own origin) or a point `{ x, y, z }` in model units",
-  );
-const modelRotate = z
-  .strictObject({
-    x: z.number().exactOptional().describe('degrees about x'),
-    y: z.number().exactOptional().describe('degrees about y (upright); 90 turns its front to the right'),
-    z: z.number().exactOptional().describe('degrees about z'),
-  })
-  .describe('3D model: a turn applied before `scale` and `anchor`, in degrees (x, then y, then z)');
-const modelTint = color.describe(
-  "3D model: a colour multiplied into every material's colour (`#ffffff` changes nothing; Engine 0.16 part B)",
-);
 const modelStretch = z
   .strictObject({
     x: z
@@ -318,6 +308,16 @@ const receiveShadow = z
   .describe(
     "3D: shadows fall on the mesh (or model) when the skin's `scene3d.sun` has a `shadow` (default false)",
   );
+
+/** A model's material colours by material name (Engine 0.16 F6): team colours on a shared model. */
+const modelMaterials = z
+  .record(z.string().min(1), color)
+  .describe(
+    "3D model: material name -> colour, replacing that material's colour on this entry's copies (team colours); a name the model lacks changes nothing",
+  );
+const modelTint = color.describe(
+  "3D model: a colour every material's colour is multiplied by (`#ffffff` changes nothing), after `materials`: a frozen or held look",
+);
 
 const meshPart = z.strictObject({
   shape: z.enum(MESH_PRIMITIVES).describe('the primitive'),
@@ -364,6 +364,28 @@ const camera3d = z.strictObject({
     .min(0)
     .exactOptional()
     .describe(`px toward the camera per entity \`layer\` (default ${DEFAULT_CAMERA3D.layerDepth})`),
+  view: z
+    .enum(CAMERA3D_VIEWS)
+    .exactOptional()
+    .describe(
+      "Engine 0.16 F2: `side` (default) shows world x,y on an upright plane; `ground` lays the map on the floor (world y is depth, a mesh part's z is height) under a pitched camera",
+    ),
+  pitch: z
+    .number()
+    .min(10)
+    .max(90)
+    .exactOptional()
+    .describe(
+      `ground view: degrees down from the horizon, 90 straight down (default ${DEFAULT_CAMERA3D.pitch})`,
+    ),
+  yaw: z
+    .number()
+    .min(-180)
+    .max(180)
+    .exactOptional()
+    .describe(
+      `ground view: degrees the camera turns about the vertical; 0 looks north, 90 looks west from the east (default ${DEFAULT_CAMERA3D.yaw})`,
+    ),
   lights: z
     .strictObject({
       ambient: z
@@ -432,6 +454,7 @@ const tagEntry = z
       .describe("3D model: the clips for this look, as the kind's `clip`"),
     tint: modelTint.exactOptional(),
     stretch: modelStretch.exactOptional(),
+    materials: modelMaterials.exactOptional(),
   })
   .superRefine((v, ctx) => {
     if ((v.tag === undefined) === (v.prefix === undefined)) {
@@ -477,6 +500,7 @@ const TAG_MESH_FIELDS = [
   'clip',
   'tint',
   'stretch',
+  'materials',
 ] as const;
 
 /** One emitter name or a list of them: what an event's or a kind's `emit` takes (Engine 0.16 T3). */
@@ -544,6 +568,7 @@ const kindEntry = z.strictObject({
   receiveShadow,
   tint: modelTint.exactOptional(),
   stretch: modelStretch.exactOptional(),
+  materials: modelMaterials.exactOptional(),
   light: kindLightSchema.exactOptional(),
   offset: offset.exactOptional(),
   spawnTween: tweensSchema
@@ -579,7 +604,15 @@ const tileEntry = z.strictObject({
   sheet: id.exactOptional().describe('2D: the sprite file (default `sheets.sheet`)'),
   frame: id.exactOptional().describe('2D: the frame name in the sheet'),
   join: tileJoinSchema.exactOptional(),
-  vary: tileVarySchema.exactOptional(),
+  vary: z
+    .union([tileVaryShape, modelTileVarySchema])
+    .superRefine((v, ctx) => {
+      if ('frames' in v) checkVaryWeights(v, ctx);
+    })
+    .exactOptional()
+    .describe(
+      "per-cell variety: 2D `{ frames, weights?, period? }` picks the tile's frame by the cell's place (Engine 0.16 part C T3); 3D `{ turn?, height?, tint? }` turns, stretches and tints a model tile's cells (Engine 0.16 F3)",
+    ),
   fallbackColor: color
     .exactOptional()
     .describe('2D: the colour when the frame is missing (default `sheets.fallbackColor`)'),
@@ -606,6 +639,7 @@ const tileEntry = z.strictObject({
   receiveShadow,
   tint: modelTint.exactOptional(),
   stretch: modelStretch.exactOptional(),
+  materials: modelMaterials.exactOptional(),
 });
 
 /**
@@ -703,8 +737,23 @@ const eventEntry = z.strictObject({
 /** The HUD item types drawn before Engine 0.16 T6, exactly as they were (`layoutHud`). */
 export const HUD_CLASSIC_TYPES = ['hearts', 'number', 'text', 'icon'] as const;
 
-/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`). */
-export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap'] as const;
+/** The HUD widget types Engine 0.16 T6 adds (`engine/core/ui`), and F4's world `clock`. */
+export const HUD_WIDGET_TYPES = ['bar', 'counter', 'panel', 'minimap', 'clock'] as const;
+
+/**
+ * The tokens a `clock` HUD item's `format` replaces (Engine 0.16 F4), each with the clock status
+ * field it reads (`<status>.<field>`, `clockStatus` in `engine/core/clock.ts`); `{value}` is the
+ * text too.
+ */
+export const HUD_CLOCK_TOKENS = {
+  '{day}': 'day',
+  '{time}': 'time',
+  '{phase}': 'phase',
+  '{text}': 'text',
+} as const;
+
+/** A `clock` HUD item's text when it gives no `format`. */
+export const HUD_CLOCK_FORMAT = 'Day {day} {time}';
 
 /** The token a HUD item's `format` replaces with the status value. */
 export const HUD_VALUE_TOKEN = '{value}';
@@ -741,6 +790,33 @@ const minimapDot = z
     params: { code: 'bad_minimap_dot' },
   });
 
+const dayBar = z.strictObject({
+  h: z
+    .number()
+    .int()
+    .min(1)
+    .exactOptional()
+    .describe("the bar's height, px (default 3), at the bottom of the box"),
+  back: color.exactOptional().describe("the bar's colour where no band covers it (default `#203050`)"),
+  bands: z
+    .array(
+      z.strictObject({
+        hour: z.number().min(0).lt(24).describe('the hour the band starts at'),
+        color: color.describe('its colour'),
+      }),
+    )
+    .exactOptional()
+    .describe(
+      "colours along the day, each from its hour to the next band's (the last to midnight): night, dawn, day, dusk",
+    ),
+  marks: z
+    .array(z.number().min(0).lt(24))
+    .exactOptional()
+    .describe('hours with a one-px tick mark on the bar'),
+  markColor: color.exactOptional().describe("the tick marks' colour (default `#000000`)"),
+  marker: color.exactOptional().describe('the marker at the time now (default `#fcfcfc`)'),
+});
+
 const hudItem = z
   .strictObject({
     status: id
@@ -751,7 +827,7 @@ const hudItem = z
     as: z
       .enum([...HUD_CLASSIC_TYPES, ...HUD_WIDGET_TYPES])
       .describe(
-        'how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice) and `minimap`',
+        "how it shows: `hearts`, `number`, `text`, `icon`, and from Engine 0.16 `bar`, `counter` (icon + number), `panel` (nine-slice), `minimap` and (F4) `clock` (the world clock's text and a day bar; `status` is its prefix, default `clock`)",
       ),
     x: z.number().int().describe('left edge, screen pixels'),
     y: z.number().int().describe('top edge, screen pixels'),
@@ -772,11 +848,6 @@ const hudItem = z
       .describe(
         'an icon\'s frame per status value (`{ "bomb": "bomb", "dash": "boots" }`; a value not listed shows `frame`), such as the selected item (Engine 0.16 part C T9)',
       ),
-    when: id
-      .exactOptional()
-      .describe(
-        'a status key: the item shows only while its value is truthy (not 0, false or empty), such as the item count once an item is owned (Engine 0.16 part C T3)',
-      ),
     half: id
       .exactOptional()
       .describe(
@@ -787,7 +858,9 @@ const hudItem = z
       .describe(
         'the font for numbers, text and counters: a `font` content file (Engine 0.16), else a sprite file with one frame per character',
       ),
-    color: color.exactOptional().describe("text colour, or a bar's fill (a `font` file's text only)"),
+    color: color
+      .exactOptional()
+      .describe("text colour, a bar's fill, or a flat panel's colour (a `font` file's text only)"),
     shadow: color.exactOptional().describe("a one-px drop shadow in this colour (a `font` file's text)"),
     outline: color.exactOptional().describe("a one-px outline in this colour (a `font` file's text)"),
     align: z
@@ -826,7 +899,9 @@ const hudItem = z
       .exactOptional()
       .describe("a bar's full value: a number or another status key (`maxHp`)"),
     back: color.exactOptional().describe("a bar's empty part, or a minimap's background"),
-    border: color.exactOptional().describe('a one-px border round a bar or minimap (when it has no `panel`)'),
+    border: color
+      .exactOptional()
+      .describe('a one-px border round a bar, a minimap or a flat panel (when it has no `panel`)'),
     low: z
       .strictObject({
         below: z.number().min(0).max(1).describe('the share of `max` at or below which the bar is low'),
@@ -852,6 +927,23 @@ const hudItem = z
       .array(minimapDot)
       .exactOptional()
       .describe("a minimap's entity dots, drawn in order over the tiles"),
+    dayBar: dayBar
+      .exactOptional()
+      .describe(
+        "a `clock`'s day bar under its text: the day from midnight to midnight with a marker at the time now (Engine 0.16 F4)",
+      ),
+    when: z
+      .union([id, statusCompareSchema])
+      .exactOptional()
+      .describe(
+        "draw the item only while a status key's value is truthy (not 0, false or empty; such as the item count once an item is owned; Engine 0.16 part C T3) or while a status test holds (`{ status, eq?, ne?, lt?, lte?, gt?, gte? }`; a key the frame lacks never holds; Engine 0.16 F7)",
+      ),
+    alpha: z
+      .number()
+      .min(0)
+      .max(1)
+      .exactOptional()
+      .describe("a flat `panel`'s opacity (default 1; Engine 0.16 F7)"),
   })
   .superRefine((v, ctx) => {
     const need = (field: string, why: string) =>
@@ -861,21 +953,42 @@ const hudItem = z
         message: `"${v.as}" needs ${why}`,
         params: { code: 'missing_field' },
       });
-    if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined) {
+    // A `panel` is a nine-slice of `frame`, or (Engine 0.16 F7) a flat box in `color`.
+    const flatPanel = v.as === 'panel' && v.frame === undefined && v.color !== undefined;
+    if ((v.as === 'hearts' || v.as === 'icon' || v.as === 'panel') && v.frame === undefined && !flatPanel) {
       ctx.addIssue({ code: 'custom', path: ['frame'], message: `"${v.as}" needs a frame` });
     }
     if (v.frames !== undefined && v.as !== 'icon')
       ctx.addIssue({ code: 'custom', path: ['frames'], message: '`frames` is for "icon" only' });
     if (v.half !== undefined && v.as !== 'hearts')
       ctx.addIssue({ code: 'custom', path: ['half'], message: '`half` is for "hearts" only' });
-    const statusFree = v.as === 'panel' || v.as === 'minimap' || (v.as === 'text' && v.format !== undefined);
+    const statusFree =
+      v.as === 'panel' ||
+      v.as === 'minimap' ||
+      v.as === 'clock' ||
+      (v.as === 'text' && v.format !== undefined);
     if (!statusFree && v.status === undefined) need('status', 'a status key');
-    if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap') {
+    if (v.as === 'clock' && v.font === undefined) need('font', 'a font');
+    if (v.dayBar !== undefined && v.as !== 'clock')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['dayBar'],
+        message: '"dayBar" goes with a "clock" item only',
+        params: { code: 'bad_field' },
+      });
+    if (v.as === 'bar' || v.as === 'panel' || v.as === 'minimap' || v.as === 'clock') {
       if (v.w === undefined) need('w', 'a width');
       if (v.h === undefined) need('h', 'a height');
     }
     if (v.as === 'bar' && v.max === undefined) need('max', 'a max (a number or a status key)');
-    if (v.as === 'panel' && v.slice === undefined) need('slice', 'its slice insets');
+    if (v.as === 'panel' && v.slice === undefined && !flatPanel) need('slice', 'its slice insets');
+    if (v.alpha !== undefined && !flatPanel)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['alpha'],
+        message: '"alpha" goes with a flat "panel" (a "color" and no "frame") only',
+        params: { code: 'bad_field' },
+      });
     if (v.as === 'counter' && v.font === undefined) need('font', 'a font');
     if (v.tween?.ease !== undefined && !isEaseName(v.tween.ease)) {
       ctx.addIssue({
@@ -962,6 +1075,18 @@ function checkShapes(
         });
       }
     });
+    // A tile's `vary` is either shape: frames (2D) or a model tile's turn, height and tint (3D).
+    const vary = entry['vary'];
+    if (vary !== undefined && isFrameVary(vary as SkinTileEntry['vary']) === mesh) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [...where, key, 'vary'],
+        message: mesh
+          ? `"vary" with "frames" is a 2D field; backend "${backend}" takes \`{ turn?, height?, tint? }\``
+          : `"vary" without "frames" is a 3D field; backend "${backend}" takes \`{ frames, weights?, period? }\``,
+        params: { code: 'wrong_backend_field' },
+      });
+    }
     for (const field of wrong) {
       if (entry[field] === undefined) continue;
       const msg = `"${field}" is a ${mesh ? '2D' : '3D'} field; backend "${backend}" takes ${mesh ? 'meshes' : 'sprites'}`;
@@ -1089,6 +1214,7 @@ function checkEmitRefs(
     emitters?: Record<string, unknown>;
     events?: Record<string, { emit?: string | string[] }>;
     kinds: Record<string, { emit?: string | string[] }>;
+    decor?: Record<string, { legend: Record<string, { emit?: string | string[] }> }>;
   },
   ctx: z.RefinementCtx,
 ): void {
@@ -1109,6 +1235,8 @@ function checkEmitRefs(
   };
   for (const [type, entry] of Object.entries(skin.events ?? {})) check(['events', type], entry.emit);
   for (const [kind, entry] of Object.entries(skin.kinds)) check(['kinds', kind], entry.emit);
+  for (const [map, decor] of Object.entries(skin.decor ?? {}))
+    for (const [ch, entry] of Object.entries(decor.legend)) check(['decor', map, 'legend', ch], entry.emit);
 }
 
 /**
@@ -1184,6 +1312,13 @@ function checkLighting(
     });
 }
 
+/** Whether a tile's `vary` is the 2D shape (`{ frames, ... }`), not a 3D model tile's. */
+export function isFrameVary(
+  vary: DeepReadonly<SkinTileEntry['vary']> | undefined,
+): vary is DeepReadonly<TileVary> {
+  return vary !== undefined && 'frames' in vary;
+}
+
 function isPrimitive(name: string): name is MeshPrimitive {
   return (MESH_PRIMITIVES as readonly string[]).includes(name);
 }
@@ -1257,6 +1392,8 @@ export const skinSchema = z
       .describe(
         '3D: rows of scenery models along the map, in front of or behind the blocks (Engine 0.16 part B): `{ model, scale?, stretch?, rotate?, tint?, every, from?, z, y?, jitter?: { x?, y?, z?, scale?, turn? }, castShadow?, receiveShadow? }`',
       ),
+    decor: decorSchema.exactOptional(),
+    places: placesSchema.exactOptional(),
     emitters: z
       .record(id, emitterSchema)
       .exactOptional()
@@ -1469,7 +1606,10 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
         frame,
         path: ['join', 'frames', key],
       }));
-      const varied = (entry.vary?.frames ?? []).map((frame, i) => ({ frame, path: ['vary', 'frames', i] }));
+      const varied = (isFrameVary(entry.vary) ? entry.vary.frames : []).map((frame, i) => ({
+        frame,
+        path: ['vary', 'frames', i],
+      }));
       sheetAt([...at, tile], entry.sheet, [...one(entry.frame), ...joined, ...varied]);
     }
   };
@@ -1482,6 +1622,7 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
   issues.push(...checkMusicSongs(name, skin, others));
   issues.push(...checkHudFonts(name, skin, others, sprites));
   issues.push(...checkLabelFonts(name, skin, others));
+  issues.push(...checkDecorRefs(name, skin, others));
   (skin.hud ?? []).forEach((item, i) => {
     sheetAt(['hud', i], item.sheet, [
       ...one(item.frame),
@@ -1650,6 +1791,14 @@ function checkHudFonts(
         message: `font "${item.font}" has no glyph for ${list} (${what})`,
       });
     };
+    if (item.as === 'clock') {
+      report(
+        'format',
+        missingGlyphs(glyphs, clockFormatChars(item.format ?? HUD_CLOCK_FORMAT)),
+        'a clock shows them',
+      );
+      return;
+    }
     if (item.format !== undefined)
       report(
         'format',
@@ -1660,6 +1809,23 @@ function checkHudFonts(
       report('font', missingGlyphs(glyphs, HUD_DIGITS), 'a number shows every digit');
   });
   return issues;
+}
+
+/**
+ * Every character a `clock` item's `format` can show (Engine 0.16 F4): its own text and, for each
+ * token, what that field can hold (digits, `:` for the time, `Day ` for the text, the part-of-day
+ * names for `{phase}`).
+ */
+function clockFormatChars(format: string): string {
+  let chars = format;
+  for (const token of [...Object.keys(HUD_CLOCK_TOKENS), HUD_VALUE_TOKEN])
+    chars = chars.split(token).join('');
+  const has = (t: string) => format.includes(t);
+  if (has('{day}')) chars += HUD_DIGITS;
+  if (has('{time}')) chars += `${HUD_DIGITS}:`;
+  if (has('{text}') || has(HUD_VALUE_TOKEN)) chars += `Day ${HUD_DIGITS}:`;
+  if (has('{phase}')) chars += DAY_PHASES.join('');
+  return chars;
 }
 
 /**
@@ -2347,7 +2513,9 @@ export interface SkinModel {
   offset: { x: number; y: number; z: number };
   /** Factors per axis on top of `scale` (Engine 0.16 part B; 1 each by default). */
   stretch: { x: number; y: number; z: number };
-  /** A colour multiplied into the model's materials, or null (Engine 0.16 part B). */
+  /** Material name -> colour, replacing those materials' colours (Engine 0.16 F6; empty: none). */
+  materials: Record<string, string>;
+  /** A colour every material's colour is multiplied by, or null (Engine 0.16 part B and F6). */
   tint: string | null;
 }
 
@@ -2386,6 +2554,7 @@ function modelOf(
     hold,
     offset: { x: offset?.x ?? 0, y: offset?.y ?? 0, z: entry.z ?? 0 },
     stretch: { x: entry.stretch?.x ?? 1, y: entry.stretch?.y ?? 1, z: entry.stretch?.z ?? 1 },
+    materials: entry.materials !== undefined ? { ...entry.materials } : {},
     tint: entry.tint ?? null,
   };
 }
@@ -2406,6 +2575,7 @@ export function sceneryModel(row: DeepReadonly<SkinSceneryRow>): SkinModel {
     hold: false,
     offset: { x: 0, y: 0, z: 0 },
     stretch: { x: row.stretch?.x ?? 1, y: row.stretch?.y ?? 1, z: row.stretch?.z ?? 1 },
+    materials: {},
     tint: row.tint ?? null,
   };
 }
@@ -2434,6 +2604,8 @@ export function resolveTileModel(entry: DeepReadonly<SkinTileEntry>, frame = 0):
 /** One place a skin names a model: the entry's path (`kinds.torch`) and its clips by field path. */
 export interface SkinModelUse {
   path: FieldPath;
+  /** The model field itself when it is not `<path>.model` (a decor legend's list, Engine 0.16 F3). */
+  field?: FieldPath;
   model: string;
   clips: { path: FieldPath; clip: string }[];
 }
@@ -2441,7 +2613,8 @@ export interface SkinModelUse {
 /**
  * Every model a skin names, in file order, with the clips each asks for: kinds (each kind, then
  * its tag looks; a look without its own `model` that gives `clip` is checked against the kind's),
- * tiles, scenery rows, then each theme's tiles and scenery (Engine 0.16 part B). Pure.
+ * tiles, scenery rows, each theme's tiles and scenery (Engine 0.16 part B), then decor legends
+ * (Engine 0.16 F3; each model at its own field, then its stack, F6). Pure.
  */
 export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
   const out: SkinModelUse[] = [];
@@ -2484,6 +2657,20 @@ export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
     tilesOf(['themes', map, 'tiles'], theme.tiles);
     sceneryOf(['themes', map, 'scenery'], theme.scenery);
   }
+  // Decor legends (Engine 0.16 F3): each model of each entry, at its own field; then its stack (F6).
+  for (const [map, decor] of Object.entries(skin.decor ?? {})) {
+    for (const [ch, entry] of Object.entries(decor.legend)) {
+      const at: FieldPath = ['decor', map, 'legend', ch];
+      if (typeof entry.model === 'string') out.push({ path: at, model: entry.model, clips: [] });
+      else
+        entry.model.forEach((model, i) =>
+          out.push({ path: at, field: [...at, 'model', i], model, clips: [] }),
+        );
+      (entry.stack ?? []).forEach((top, i) =>
+        out.push({ path: at, field: [...at, 'stack', i, 'model'], model: top.model, clips: [] }),
+      );
+    }
+  }
   return out;
 }
 
@@ -2493,6 +2680,9 @@ export function resolveCamera3d(skin: DeepReadonly<SkinFile>): {
   tilt: number;
   layerDepth: number;
   lights: { ambient: number; directional: number };
+  view: Camera3dView;
+  pitch: number;
+  yaw: number;
 } {
   const c = skin.camera3d;
   const d = DEFAULT_CAMERA3D;
@@ -2504,5 +2694,20 @@ export function resolveCamera3d(skin: DeepReadonly<SkinFile>): {
       ambient: c?.lights?.ambient ?? d.lights.ambient,
       directional: c?.lights?.directional ?? d.lights.directional,
     },
+    view: c?.view ?? d.view,
+    pitch: c?.pitch ?? d.pitch,
+    yaw: c?.yaw ?? d.yaw,
   };
+}
+
+/**
+ * A skin's ground camera (`camera3d.view` `ground`: its `pitch`, `yaw` and `fov`, defaults
+ * filled), for `groundProjection` and `RtsCamera`'s `ground` option; null for a side-view skin
+ * (Engine 0.16 F2). Pure.
+ */
+export function skinGroundCamera(
+  skin: DeepReadonly<SkinFile>,
+): { pitch: number; yaw: number; fov: number } | null {
+  const c = resolveCamera3d(skin);
+  return c.view === 'ground' ? { pitch: c.pitch, yaw: c.yaw, fov: c.fov } : null;
 }

@@ -760,28 +760,28 @@
       "status": "offer",
       "as": "icon",
       "x": 4,
-      "y": 228,
+      "y": 168,
       "frame": "icon-torch"
     },
     {
       "status": "offer",
       "as": "text",
       "x": 14,
-      "y": 228,
+      "y": 168,
       "font": "siege-font"
     },
     {
       "status": "mission",
       "as": "icon",
       "x": 4,
-      "y": 228,
+      "y": 168,
       "frame": "icon-time"
     },
     {
       "status": "mission",
       "as": "text",
       "x": 14,
-      "y": 228,
+      "y": 168,
       "font": "siege-font"
     },
     {

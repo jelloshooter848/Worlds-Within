@@ -333,6 +333,13 @@ export const missionSchema = z
       .record(z.string(), z.json())
       .exactOptional()
       .describe('data handed to the mini game, checked by its params schema'),
+    text: z
+      .string()
+      .min(1)
+      .exactOptional()
+      .describe(
+        'a short description the in-picture mission card shows (Engine 0.16 F5); presentation only: the world never stores it, so adding it moves no hash',
+      ),
     hint: z
       .string()
       .min(1)

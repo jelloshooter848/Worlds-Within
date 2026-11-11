@@ -544,7 +544,7 @@ describe('the dungeon sample: 16:9 on the CC0 art (Engine 0.16 part C T3)', () =
         'top',
       ].sort(),
     );
-    expect(skin.tiles?.['.']?.vary?.frames).toHaveLength(8);
+    expect((skin.tiles?.['.']?.vary as { frames?: unknown[] } | undefined)?.frames).toHaveLength(8);
     for (const door of ['O', 'L', 'X', 'C', 'H', 'E'])
       expect(Object.keys(skin.tiles?.[door]?.join?.frames ?? {}), door).toContain('right bottom');
   });

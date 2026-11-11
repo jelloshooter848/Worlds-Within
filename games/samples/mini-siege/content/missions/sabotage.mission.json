@@ -1,6 +1,7 @@
 {
   "id": "sabotage",
   "title": "Burn the siege engines",
+  "text": "Slip out under the walls with Captain Hale and burn the raiders' ram and catapult before they breach the hall.",
   "event": "siege",
   "marker": "ram",
   "worldTimeCost": 120,

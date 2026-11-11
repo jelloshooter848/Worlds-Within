@@ -96,6 +96,7 @@ describe('skin models (Engine 0.16 T11)', () => {
       hold: false,
       offset: { x: 1, y: -2, z: 3 },
       stretch: { x: 1, y: 1, z: 1 },
+      materials: {},
       tint: null,
     });
     expect(resolveSkinModel(skin, entity('torch', 'fall', 6))).toMatchObject({ clip: 'flicker', time: 0.1 });

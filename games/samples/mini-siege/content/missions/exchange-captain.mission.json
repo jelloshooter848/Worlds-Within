@@ -1,6 +1,7 @@
 {
   "id": "exchange-captain",
   "title": "Pay for the captain",
+  "text": "Pay the raiders 80 gold to send the captain back.",
   "worldTimeCost": 10,
   "onQuit": "paid",
   "outcomes": [

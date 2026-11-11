@@ -229,6 +229,11 @@ n)` and `lossOrder(world, squad)`. Loss order: unnamed first, then regulars, her
   held by one entity; `flatTerrain`, `terrainOf`, `terrainEntity`, `heightAt(t, x, y)` (integer
   elevation), `typeAt`, `moveCost` (null when impassable or off the grid), `passable`, `inBounds`,
   `cellIndex`, `cellAt`. Height is data only (0.8, and still in 0.9); line of sight comes later.
+- What changed (`world-changes.ts`, Engine 0.16 F5): `worldChanges(world, sinceTick)` (losses by
+  faction, people whose fate moved, buildings damaged or destroyed, records since the tick, from the
+  event log, its causes and the key table; the world's own build left out) and
+  `missionCardFacts(world, def)` (the hero, the foes and the window's ticks left a mission card
+  shows). Read only. A mission's `text` is never stored when it opens.
 - The key table (`keys.ts`, Engine 0.15 T7, gaps M10, D6, M28): `worldKeys(world)` is every
   scenario key and its entity id, kept beside the world by `worldFromScenario` and `loadWorld`
   (the save's optional `keys`), never in the snapshot, so no hash moves. `missionPort(world)`

@@ -69,3 +69,14 @@ games/samples/rts-skirmish/runs/battle.run.json --tick 140 --json`,
 `pnpm vitest run tests/browser/rts-skirmish.test.ts` (the page followed from the games index's
 link in headless Chromium: the volume control, a battle by mouse and touch, the end screen on the
 win, its export replayed with `pnpm -s cli run` to the same hashes).
+
+## 2D backend choice
+
+The page draws through the PixiJS (WebGL) backend by default (`default2d: 'pixi'` in `main.ts`,
+Engine 0.16 T13b-8; `@engine/backends/pixi`, loaded with a dynamic `import()`, its own chunk) and
+falls back to Canvas2D where WebGL is missing (`body[data-backend]` says which runs; software
+WebGL, such as headless Chromium's SwiftShader, counts as WebGL). `?backend=canvas2d` forces
+Canvas2D (exact Canvas2D output, a machine whose WebGL misbehaves); `?backend=pixi` names the
+default. `pnpm cli screenshot` and the run files' backend parity still draw through Canvas2D
+(`view.ts`). Tested in `tests/browser/pixi-pages.test.ts` (the default, the fallback with WebGL
+taken away, `?backend=canvas2d`); the page and menus browser tests play on PixiJS.

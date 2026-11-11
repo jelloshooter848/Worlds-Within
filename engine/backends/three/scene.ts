@@ -2,6 +2,7 @@ import {
   AdditiveBlending,
   AmbientLight,
   BufferAttribute,
+  Box3,
   BufferGeometry,
   Color,
   DirectionalLight,
@@ -33,6 +34,7 @@ import {
   SkinParticles,
   TweenSet,
   type CameraFxSettings,
+  type FixedEmitters,
   type ParticleView,
   type TweenState,
 } from '@engine/core/fx';
@@ -47,10 +49,22 @@ import {
   DEFAULT_FALLBACK_COLOR,
   FrameEventClock,
   facesLeft,
+  facingVector,
+  groundFacingTurn,
+  groundProjection,
+  pointsBox,
+  skinGroundCamera,
+  type GroundCamera,
+  type GroundProjection,
   isFullMap,
   resolveCamera3d,
   resolveMeshParts,
   resolveScene3d,
+  baseDayLook,
+  DayClockTween,
+  statusHours,
+  TimeOfDayLook,
+  type DayLook,
   skinLabels,
   type Scene3dLook,
   type SkinKindLight,
@@ -76,11 +90,23 @@ import {
   zoomAbout,
   skinSoundCue,
   type SoundCue,
+  placeDecor,
+  tileVariation,
+  type DecorLookup,
+  type SkinModel,
 } from '@engine/core/present';
+import { CLOCK_STATUS } from '@engine/core/clock';
 import { GeometryCache } from './geometry';
 import { layoutLabels, type FontLookup, type LabelView, type UiDraw } from '@engine/core/ui';
 import { HudLayer } from './hud';
-import { ModelInstance, type ModelLibrary } from './models';
+import {
+  ModelInstance,
+  modelMeshParts,
+  recolorMaterials,
+  type LoadedModel,
+  type ModelLibrary,
+  type ModelMeshPart,
+} from './models';
 import { ParallaxPlanes } from './parallax';
 
 type Skin = DeepReadonly<SkinFile>;
@@ -123,6 +149,17 @@ export interface ThreeSceneOptions {
    * entry shows its text mesh.
    */
   models?: ModelLibrary;
+  /**
+   * The game's decor grids (`contentDecor(content)`, Engine 0.16 F3): the skin's `decor` for the
+   * map shown places their models. Without it no decor shows.
+   */
+  decor?: DecorLookup;
+  /**
+   * Drawing-buffer px per picture px (Engine 0.16 F3; default the skin's `scene3d.renderScale`,
+   * else 1): what the presenter draws at. The scene lays out in picture px either way; only the
+   * particles' point size (buffer px) reads it.
+   */
+  renderScale?: number;
 }
 
 /** Ticks an effect lasts when the skin gives none (the same as the Canvas2D presenter). */
@@ -142,6 +179,12 @@ export const PARTICLE_POOL = 1024;
 
 /** How far in front of the z = 0 plane particles are drawn (world px), so blocks do not hide them. */
 export const PARTICLE_Z = 12;
+
+/** Ground view (Engine 0.16 F2): how high over the ground particles fly (world px). */
+export const GROUND_PARTICLE_HEIGHT = 8;
+
+/** Ground view: how far each entity `layer` lifts it (world px), so flat marks on the floor never flicker. */
+export const GROUND_LAYER_LIFT = 0.05;
 
 /** Particles as screen-facing squares: `pSize` world px wide at any depth, `pColor`, `pAlpha`. */
 const PARTICLE_VERTEX = /* glsl */ `
@@ -195,18 +238,27 @@ interface EntityNode {
   materials: Material[];
   /** The kind's point light (Engine 0.16 T12), or null. */
   light: { light: PointLight; spec: DeepReadonly<SkinKindLight> } | null;
+  /** Ground view: the top of its meshes over the ground (world px), where a `top` label goes. */
+  height: number;
 }
 
 /** The map being shown, its built blocks, and whether this frame shows it. */
 interface ShownMap {
   map: DeepReadonly<PresentMap>;
   group: Group;
-  /** Tile cells shown as a model, each posed on the frame clock (the tile entry's `clip`). */
-  models: { instance: ModelInstance; tile: string }[];
+  /** Tile cells shown as a model copy, each posed on the frame clock (the tile entry's `clip`; `tile` null: decor, never posed). */
+  models: { instance: ModelInstance; tile: string | null }[];
   /** Scenery copies (Engine 0.16 part B, T10). */
   scenery: ModelInstance[];
   /** Model paths that were still loading when it was built: it is rebuilt once they are there. */
   waiting: string[];
+  /** Decor cells with a light or emitters (Engine 0.16 F6): lit and smoking where they stand. */
+  fixtures: DecorFixture[];
+}
+
+/** A decor cell's light and emitters (a campfire): its id, its cell's world box, the light and its spec. */
+interface DecorFixture extends FixedEmitters {
+  light: { light: PointLight; spec: DeepReadonly<SkinKindLight> } | null;
 }
 
 /**
@@ -246,6 +298,22 @@ interface ShownMap {
  * - HUD (Engine 0.15, gap G33): `hud`, a `HudLayer` (the core `layoutHud` drawn as an orthographic
  *   pass of textured quads, picture pixels), which the presenter draws after `scene`.
  *
+ * Ground view (Engine 0.16 F2, the skin's `camera3d.view` `ground`): world (x, y) lies on the
+ * floor, Three's (x, height, y), seen through `groundProjection` (`@engine/core/present`, the
+ * camera `RtsCamera` picks through) at the skin's `pitch` and `yaw`, at the distance the zoom
+ * gives, looking at the framed view's centre (`CameraFollower` with no clamp: `RtsCamera` keeps
+ * the ground footprint over the map). Tiles lie on the floor (a part's x, y are its place on the
+ * cell, its z the height of its bottom, its `d` its height; a `plane` lies flat), all layers at
+ * height 0; an entity's root is its box's centre on the ground (lifted `layer` x
+ * {@link GROUND_LAYER_LIFT}), its parts placed the same way, models upright, and its facing turns
+ * it about the vertical (`groundFacingTurn`: `down`, toward the camera at yaw 0, is the model's
+ * front, +z) instead of mirroring; `rotate` turns it clockwise seen from above, squash scales the
+ * width and depth by `squashX` and the height by `squashY`. Labels anchor at the meshes' top,
+ * middle or the ground, particles fly {@link GROUND_PARTICLE_HEIGHT} px over the ground, the
+ * sun's shadow camera covers the ground footprint of the picture (`footprint()`), linear fog is
+ * measured from the camera's distance to the centre as in side view, and shake moves the centre
+ * along the picture's axes on the ground. A side-view skin builds exactly what it did before.
+ *
  * It never changes the frame or the skin, and uses no clock or unseeded randomness (Three's own
  * object UUIDs never reach any state).
  */
@@ -261,6 +329,8 @@ export class ThreeScene {
    * skin's, or from Engine 0.16 part B the shown map's `themes` entry's `scene3d`.
    */
   look: Scene3dLook;
+  /** Drawing-buffer px per picture px: the option, else the skin's `scene3d.renderScale`, else 1 (Engine 0.16 F3). */
+  readonly renderScale: number;
   /** The world-anchored labels, drawn on the HUD layer between the scene and the HUD (Engine 0.16 T12). */
   readonly labels: HudLayer;
   /** The full-screen flash and tint overlay, a child of the camera; hidden when no effect shows. */
@@ -278,6 +348,12 @@ export class ThreeScene {
   private readonly skin: Skin;
   private readonly opts: ThreeSceneOptions;
   private readonly cam3d: ReturnType<typeof resolveCamera3d>;
+  /** The ground view's camera (Engine 0.16 F2), or null in side view. */
+  private readonly groundCam: GroundCamera | null;
+  /** The ground view's projection last frame, without shake (what `RtsCamera` picks through). */
+  private groundShown: GroundProjection | null = null;
+  /** The same with this frame's shake: the camera the picture is drawn with. */
+  private groundCamera: GroundProjection | null = null;
   private readonly geometries = new GeometryCache();
   private readonly follower: CameraFollower;
   private readonly nodes = new Map<string, EntityNode>();
@@ -311,6 +387,16 @@ export class ThreeScene {
   private seen = new Set<string>();
   /** The last frame number synced: a lower one is a new level (tweens start over). */
   private lastFrame: number | null = null;
+  /** The skin's `scene3d.timeOfDay` over its own look, or null (Engine 0.16 F4). */
+  private readonly timeOfDay: TimeOfDayLook | null;
+  /** Eases a jump in world time (presentation state only). */
+  private readonly dayTween: DayClockTween | null;
+  /** The status prefix the time of day reads the clock from. */
+  private readonly clockPrefix: string;
+  /** The look the scene shows now: the skin's own, or the time of day's (Engine 0.16 F4). */
+  private day: DayLook;
+  /** The hour the time of day shows (hours since day 1, 00:00), or null without a clock. */
+  private dayHours: number | null = null;
 
   constructor(skin: Skin, opts: ThreeSceneOptions = {}) {
     this.skin = skin;
@@ -318,10 +404,25 @@ export class ThreeScene {
     this.opts = opts;
     this.size = opts.size;
     this.cam3d = resolveCamera3d(skin);
-    this.follower = new CameraFollower({ clamp: (opts.clamp ?? skin.camera?.clamp) !== false });
+    this.groundCam = skinGroundCamera(skin);
+    // A ground view is not a 2D box, so the follower does not clamp it (RtsCamera keeps it over the map).
+    const clamp = this.groundCam === null && (opts.clamp ?? skin.camera?.clamp) !== false;
+    this.follower = new CameraFollower({ clamp });
     this.scene.background = new Color(opts.background ?? skinBackground(skin));
 
     const look = (this.look = resolveScene3d(skin.scene3d, this.cam3d.lights));
+    this.day = baseDayLook(look, opts.background ?? skinBackground(skin));
+    const timeOfDay = skin.scene3d?.timeOfDay;
+    this.timeOfDay = timeOfDay === undefined ? null : new TimeOfDayLook(timeOfDay, this.day);
+    this.dayTween =
+      timeOfDay === undefined
+        ? null
+        : new DayClockTween({
+            ...(timeOfDay.tween !== undefined && { ticks: timeOfDay.tween }),
+            ...(timeOfDay.ease !== undefined && { ease: timeOfDay.ease }),
+          });
+    this.clockPrefix = timeOfDay?.status ?? CLOCK_STATUS;
+    this.renderScale = opts.renderScale ?? look.renderScale;
     this.ambient = new AmbientLight(look.ambient.color, look.ambient.intensity);
     this.sun = new DirectionalLight(look.sun.color, look.sun.intensity);
     this.sunFrom = new Vector3(look.sun.direction.x, look.sun.direction.y, look.sun.direction.z);
@@ -336,8 +437,9 @@ export class ThreeScene {
     }
     this.scene.add(this.ambient, this.sun);
     this.hemisphere = null;
-    if (look.hemisphere !== null) {
-      const { sky, ground, intensity } = look.hemisphere;
+    // A time of day that brings a hemisphere light in needs one, at strength 0 where the skin has none.
+    if (look.hemisphere !== null || timeOfDay?.keys.some((k) => k.hemisphere !== undefined)) {
+      const { sky, ground, intensity } = this.day.hemisphere;
       this.hemisphere = new HemisphereLight(sky, ground, intensity);
       this.scene.add(this.hemisphere);
     }
@@ -398,6 +500,7 @@ export class ThreeScene {
     const size = this.size ?? frame.size;
     this.fxClock++;
     this.updateTheme(frame);
+    this.updateTimeOfDay(frame);
     this.restartOnNewLevel(frame);
     this.takeEvents(frame);
     this.updateMap(frame);
@@ -407,7 +510,7 @@ export class ThreeScene {
     this.cameraFx.update(this.fxClock);
     this.updateCamera(frame, size);
     this.updateOverlay(frame.frame);
-    this.skinParticles.update(frame.frame, frame.entities);
+    this.skinParticles.update(frame.frame, frame.entities, undefined, this.shownFixtures());
     this.updateParticles(size);
     this.updateLights(frame.frame);
     this.updateLabels(frame, size);
@@ -424,6 +527,24 @@ export class ThreeScene {
   /** The ids of the entities in the scene. */
   entityIds(): string[] {
     return [...this.nodes.keys()];
+  }
+
+  /**
+   * The look shown now (Engine 0.16 F4): the skin's own, or its `scene3d.timeOfDay` at the hour
+   * {@link dayHour} gives. Read it for tests; the lights, fog and background already show it.
+   */
+  get dayLook(): Readonly<DayLook> {
+    return this.day;
+  }
+
+  /** The hour the time of day shows (hours since day 1, 00:00; eased over a jump), or null. */
+  get dayHour(): number | null {
+    return this.dayHours;
+  }
+
+  /** The tone mapping exposure to draw with: the skin's, or its time of day's now. */
+  get exposure(): number {
+    return this.day.exposure;
   }
 
   /** The map's blocks, or null when no map has been built (it may be hidden this frame). */
@@ -443,6 +564,14 @@ export class ThreeScene {
    */
   focus(): { x: number; y: number } | null {
     return this.focusPoint === null ? null : { ...this.focusPoint };
+  }
+
+  /**
+   * The ground view's projection last frame, without shake (Engine 0.16 F2), or null in side
+   * view: the same numbers `RtsCamera.projection()` gives for the same centre and zoom.
+   */
+  get groundProjection(): GroundProjection | null {
+    return this.groundShown;
   }
 
   /** The world box (px, y down) the camera framed on the z = 0 plane last frame, without shake. */
@@ -483,14 +612,62 @@ export class ThreeScene {
   // ---- Lights and labels (Engine 0.16 T12) ----
 
   /** Each entity's point light: its intensity, flickering by the presentation RNG when its spec asks. */
-  private updateLights(frame: number): void {
-    for (const [id, node] of this.nodes) {
-      if (!node.light) continue;
-      const { light, spec } = node.light;
-      const flicker = spec.flicker ?? 0;
-      const amount = flicker > 0 ? fxRng(this.opts.seed ?? 0, frame, `light:${id}`).float() : 0;
-      light.intensity = spec.intensity * (1 - flicker * amount);
+  /**
+   * The skin's time of day (Engine 0.16 F4): the frame's clock (`<prefix>.day` and `.fraction`)
+   * through the tween (a jump eases), the look at that hour, onto the lights, fog and background.
+   * A frame without the clock shows the skin's own look.
+   */
+  private updateTimeOfDay(frame: Frame): void {
+    if (this.timeOfDay === null || this.dayTween === null) return;
+    const hours = this.dayTween.shown(statusHours(frame.status, this.clockPrefix));
+    if (hours === this.dayHours) return;
+    this.dayHours = hours;
+    this.applyDay(hours === null ? this.timeOfDay.base : this.timeOfDay.at(hours));
+  }
+
+  private applyDay(day: DayLook): void {
+    this.day = day;
+    this.sun.color.set(day.sun.color);
+    this.sun.intensity = day.sun.intensity;
+    this.sunFrom.set(day.sun.direction.x, day.sun.direction.y, day.sun.direction.z);
+    // With shadows the sun is placed each frame from `sunFrom`; without, only its direction matters.
+    if (this.look.sun.shadow === null) this.sun.position.copy(this.sunFrom);
+    this.ambient.color.set(day.ambient.color);
+    this.ambient.intensity = day.ambient.intensity;
+    if (this.hemisphere !== null) {
+      this.hemisphere.color.set(day.hemisphere.sky);
+      this.hemisphere.groundColor.set(day.hemisphere.ground);
+      this.hemisphere.intensity = day.hemisphere.intensity;
     }
+    const fog = this.scene.fog;
+    if (day.fog !== null && fog !== null) {
+      fog.color.set(day.fog.color);
+      if (fog instanceof FogExp2) fog.density = day.fog.density;
+    }
+    if (this.scene.background instanceof Color) this.scene.background.set(day.background);
+  }
+
+  private updateLights(frame: number): void {
+    const flicker = (
+      id: string,
+      { light, spec }: { light: PointLight; spec: DeepReadonly<SkinKindLight> },
+    ) => {
+      const share = spec.flicker ?? 0;
+      const amount = share > 0 ? fxRng(this.opts.seed ?? 0, frame, `light:${id}`).float() : 0;
+      light.intensity = spec.intensity * (1 - share * amount);
+    };
+    for (const [id, node] of this.nodes) if (node.light) flicker(id, node.light);
+    for (const f of this.shownFixtures()) if (f.light) flicker(f.id, f.light);
+  }
+
+  /** The shown map's decor fixtures (none while the map is hidden). */
+  private shownFixtures(): readonly DecorFixture[] {
+    return this.shown && this.mapVisible ? this.shown.fixtures : [];
+  }
+
+  /** The point lights of the shown map's decor (Engine 0.16 F6), by fixture id, for tests. */
+  decorLights(): { id: string; light: PointLight }[] {
+    return this.shownFixtures().flatMap((f) => (f.light ? [{ id: f.id, light: f.light.light }] : []));
   }
 
   /**
@@ -501,6 +678,7 @@ export class ThreeScene {
   private updateLabels(frame: Frame, size: ScreenSize): void {
     const draws: UiDraw[] = [];
     const views: LabelView[] = [];
+    this.layoutPlaces(frame, size, draws, views);
     if (this.skin.labels !== undefined) {
       const cam = this.camera;
       const p = new Vector3();
@@ -508,7 +686,9 @@ export class ThreeScene {
         const list = skinLabels(this.skin.labels, e.kind);
         if (list.length === 0) continue;
         const z = (e.layer ?? 0) * this.cam3d.layerDepth;
+        const ground = this.groundCamera;
         const project = (anchor: NonNullable<SkinLabel['anchor']>) => {
+          if (ground !== null) return this.groundLabelPoint(ground, e, anchor, size);
           const y = anchor === 'top' ? e.y : anchor === 'center' ? e.y + e.h / 2 : e.y + e.h;
           p.set(e.x + e.w / 2, -y, z).applyMatrix4(cam.matrixWorldInverse);
           if (p.z > -cam.near) return null;
@@ -525,6 +705,86 @@ export class ThreeScene {
     }
     this.labelShown = views;
     this.labels.syncDraws(draws, size);
+  }
+
+  /**
+   * The skin's `places` for the map shown (Engine 0.16 F3): each name centred on its world point
+   * (in ground view `height` px over the floor; in side view at z = `height`) projected through
+   * this frame's camera, laid out as a text label (`layoutLabels`, so it draws like one), under
+   * the entities' labels. A point off the picture or behind the camera hides its name. Its
+   * `LabelView` has entity `place:<i>` and kind `place`.
+   */
+  private layoutPlaces(frame: Frame, size: ScreenSize, draws: UiDraw[], views: LabelView[]): void {
+    const map = this.shown?.map;
+    const list = map === undefined || !this.mapVisible ? undefined : this.skin.places?.[map.id];
+    if (list === undefined) return;
+    const cam = this.camera;
+    const p = new Vector3();
+    list.forEach((place, i) => {
+      const project = () => {
+        const ground = this.groundCamera;
+        let x: number;
+        let y: number;
+        if (ground !== null) {
+          const at = ground.worldToScreen(place.x, place.y, place.height ?? 0);
+          if (at === null) return null;
+          ({ x, y } = at);
+        } else {
+          p.set(place.x, -place.y, place.height ?? 0).applyMatrix4(cam.matrixWorldInverse);
+          if (p.z > -cam.near) return null;
+          p.applyMatrix4(cam.projectionMatrix);
+          x = ((p.x + 1) / 2) * size.width;
+          y = ((1 - p.y) / 2) * size.height;
+        }
+        if (x < 0 || x >= size.width || y < 0 || y >= size.height) return null;
+        return { x, y };
+      };
+      const label: SkinLabel = {
+        as: 'text',
+        format: place.text,
+        font: place.font,
+        anchor: 'center',
+        offset: place.offset ?? { x: 0, y: 0 },
+        ...(place.color !== undefined && { color: place.color }),
+        ...(place.shadow !== undefined && { shadow: place.shadow }),
+        ...(place.outline !== undefined && { outline: place.outline }),
+      };
+      const entity: PresentEntity = {
+        id: `place:${i}`,
+        kind: 'place',
+        x: place.x,
+        y: place.y,
+        w: 0,
+        h: 0,
+        facing: 'down',
+        anim: { state: 'idle', t: 0 },
+        tags: [],
+      };
+      const out = layoutLabels([label], entity, frame.status, project, this.opts.fonts);
+      draws.push(...out.draws);
+      views.push(...out.views);
+    });
+  }
+
+  /**
+   * Ground view: a label's anchor over the entity's box centre at the top of its meshes, half
+   * way up or on the ground, projected through this frame's camera (shake included, as the
+   * picture is), or null when it is behind the camera or off the picture.
+   */
+  private groundLabelPoint(
+    ground: GroundProjection,
+    e: Entity,
+    anchor: NonNullable<SkinLabel['anchor']>,
+    size: ScreenSize,
+  ): { x: number; y: number } | null {
+    const top = this.nodes.get(e.id)?.height ?? e.h;
+    const h = anchor === 'top' ? top : anchor === 'center' ? top / 2 : 0;
+    const lift = (e.layer ?? 0) * GROUND_LAYER_LIFT;
+    const p = ground.worldToScreen(e.x + e.w / 2, e.y + e.h / 2, h + lift);
+    if (p === null) return null;
+    const { x, y } = p;
+    if (x < 0 || x >= size.width || y < 0 || y >= size.height) return null;
+    return { x, y };
   }
 
   // ---- Events ----
@@ -562,7 +822,8 @@ export class ThreeScene {
 
   /**
    * Writes the live particles (world px, y flipped, {@link PARTICLE_Z} in front of the z = 0
-   * plane) into the two `Points` buffers by blend, at most {@link PARTICLE_POOL} each. Colours
+   * plane; in ground view at (x, y) on the ground, {@link GROUND_PARTICLE_HEIGHT} up) into the
+   * two `Points` buffers by blend, at most {@link PARTICLE_POOL} each. Colours
    * are converted to the renderer's working space; a sprite `frame` shows as a square in its
    * colour (3D draws no particle sprites).
    */
@@ -577,7 +838,9 @@ export class ThreeScene {
       if (i >= PARTICLE_POOL) continue;
       filled[p.blend] = i + 1;
       const g = points.geometry;
-      (g.attributes['position'] as BufferAttribute).setXYZ(i, p.x, -p.y, PARTICLE_Z);
+      if (this.groundCam)
+        (g.attributes['position'] as BufferAttribute).setXYZ(i, p.x, GROUND_PARTICLE_HEIGHT, p.y);
+      else (g.attributes['position'] as BufferAttribute).setXYZ(i, p.x, -p.y, PARTICLE_Z);
       (g.attributes['pSize'] as BufferAttribute).setX(i, p.size);
       (g.attributes['pAlpha'] as BufferAttribute).setX(i, p.alpha);
       this.tmpColor.set(p.color);
@@ -593,7 +856,7 @@ export class ThreeScene {
       const g = points.geometry;
       g.setDrawRange(0, filled[blend]);
       points.visible = filled[blend] > 0;
-      points.material.uniforms['uScale']!.value = scale;
+      points.material.uniforms['uScale']!.value = scale * this.renderScale;
       for (const name of ['position', 'pSize', 'pAlpha', 'pColor']) {
         (g.attributes[name] as BufferAttribute).needsUpdate = true;
       }
@@ -655,33 +918,40 @@ export class ThreeScene {
   private poseTileModels(frame: number): void {
     const tiles = this.themed.tiles ?? {};
     for (const { instance, tile } of this.shown?.models ?? []) {
+      if (tile === null) continue;
       const spec = resolveTileModel(tiles[tile]!, frame);
       instance.pose(spec?.clip ?? null, spec?.time ?? 0);
     }
   }
 
   /**
-   * One `InstancedMesh` per tile key and mesh part, for `tiles` and then each layer; a tile whose
-   * entry has a loaded `model` is one model instance per cell instead (Engine 0.16 T11).
+   * One `InstancedMesh` per tile key and mesh part, for `tiles` and then each layer. A tile whose
+   * entry has a loaded `model` is one `InstancedMesh` per tile key and model mesh (Engine 0.16 F3;
+   * a model with a `clip` or skinned meshes is one model copy per cell instead, as in T11), each
+   * cell turned, stretched and tinted by the entry's `vary`. Then the skin's `decor` for the map.
    */
   private buildMap(map: DeepReadonly<PresentMap>): ShownMap {
     const group = new Group();
     const models: ShownMap['models'] = [];
     const waiting = new Set<string>();
+    const fixtures: DecorFixture[] = [];
     group.name = `map:${map.id}@${map.version}`;
     const ts = map.tileSize;
     const tiles = this.themed.tiles ?? {};
+    const seed = this.opts.seed ?? 0;
     const materials = new Map<string, MeshLambertMaterial>();
     const material = (color: string) => {
       let m = materials.get(color);
       if (!m) materials.set(color, (m = new MeshLambertMaterial({ color })));
       return m;
     };
+    const ground = this.groundCam !== null;
+    // Side view: layers behind the tiles. Ground view: every layer on the floor (height 0).
     const grids: { tiles: DeepReadonly<PresentMapLayer['tiles']>; z: number; layer: string }[] = [
       { tiles: map.tiles, z: 0, layer: 'tiles' },
       ...(map.layers ?? []).map((l, i) => ({
         tiles: l.tiles,
-        z: -(i + 1) * this.cam3d.layerDepth,
+        z: ground ? 0 : -(i + 1) * this.cam3d.layerDepth,
         layer: l.name,
       })),
     ];
@@ -690,6 +960,12 @@ export class ThreeScene {
     const turn = new Quaternion();
     const one = new Vector3(1, 1, 1);
     const up = new Vector3(0, 1, 0);
+    const flat = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -Math.PI / 2);
+    /** A model's anchor point for a cell: its bottom centre (side view) or centre on the floor (ground view). */
+    const cellPoint = (col: number, row: number, z: number) =>
+      ground
+        ? new Vector3(col * ts + ts / 2, z, row * ts + ts / 2)
+        : new Vector3(col * ts + ts / 2, -(row + 1) * ts, z);
     for (const grid of grids) {
       const cells = new Map<string, [number, number][]>();
       for (let row = 0; row < grid.tiles.length; row++) {
@@ -706,39 +982,71 @@ export class ThreeScene {
         }
       }
       for (const [key, list] of cells) {
-        const spec = resolveTileModel(tiles[key]!);
+        const entry = tiles[key]!;
+        const spec = resolveTileModel(entry);
         const loaded = spec && this.opts.models ? this.opts.models.get(spec.model) : null;
         if (spec && loaded) {
-          for (const [col, row] of list) {
+          const vary = list.map(([col, row]) =>
+            tileVariation(entry.vary, seed, map.id, grid.layer, col, row),
+          );
+          const parts = entry.clip === undefined ? modelMeshParts(loaded, spec, { w: ts, h: ts }) : null;
+          if (parts) {
+            const cellMatrices = list.map(([col, row], i) =>
+              new Matrix4().compose(
+                cellPoint(col, row, grid.z),
+                new Quaternion().setFromAxisAngle(up, (vary[i]!.turns * Math.PI) / 2),
+                new Vector3(1, vary[i]!.height, 1),
+              ),
+            );
+            const tinted = entry.vary !== undefined && 'tint' in entry.vary && entry.vary.tint !== undefined;
+            const tints = tinted ? vary.map((v) => v.tint) : null;
+            addInstanced(group, parts, cellMatrices, tints, {
+              name: `tile:${key}:model`,
+              userData: { tile: key, layer: grid.layer, model: spec.model },
+              castShadow: spec.castShadow,
+              receiveShadow: entry.receiveShadow === true,
+              colors: spec,
+            });
+            continue;
+          }
+          list.forEach(([col, row], i) => {
             const instance = new ModelInstance(loaded, spec, { w: ts, h: ts });
             instance.object.name = `tile:${key}:model`;
             instance.object.userData = { tile: key, layer: grid.layer, model: spec.model };
-            instance.object.position.set(col * ts + ts / 2, -(row + 1) * ts, grid.z);
-            if (tiles[key]!.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
+            instance.object.position.copy(cellPoint(col, row, grid.z));
+            instance.object.rotation.y = (vary[i]!.turns * Math.PI) / 2;
+            instance.object.scale.y = vary[i]!.height;
+            if (vary[i]!.tint !== 1) tintMaterials(instance.materials, vary[i]!.tint);
+            if (entry.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
             group.add(instance.object);
             models.push({ instance, tile: key });
-          }
+          });
           continue;
         }
         if (spec && this.opts.models) waiting.add(spec.model);
-        const parts = resolveMeshParts(this.skin, tiles[key]!, { w: ts, h: ts });
+        const parts = resolveMeshParts(this.skin, entry, { w: ts, h: ts });
         parts.forEach((part, p) => {
           const blocks = new InstancedMesh(
-            this.geometries.get(part.shape, part.size),
+            this.geometries.get(part.shape, ground ? groundSize(part) : part.size),
             material(part.color),
             list.length,
           );
           blocks.name = `tile:${key}:${p}`;
-          if (tiles[key]!.castShadow === true) blocks.castShadow = true;
-          if (tiles[key]!.receiveShadow === true) blocks.receiveShadow = true;
+          if (entry.castShadow === true) blocks.castShadow = true;
+          if (entry.receiveShadow === true) blocks.receiveShadow = true;
           blocks.userData = { tile: key, part: p, layer: grid.layer };
           turn.setFromAxisAngle(up, (part.rotate * Math.PI) / 2);
+          if (ground && part.shape === 'plane') turn.multiply(flat);
           list.forEach(([col, row], i) => {
-            at.set(
-              col * ts + part.at.x + part.size.w / 2,
-              -(row * ts + part.at.y + part.size.h / 2),
-              grid.z + part.at.z,
-            );
+            if (ground) {
+              const off = groundOffset(part, { w: 0, h: 0 });
+              at.set(col * ts + off.x, grid.z + off.y, row * ts + off.z);
+            } else
+              at.set(
+                col * ts + part.at.x + part.size.w / 2,
+                -(row * ts + part.at.y + part.size.h / 2),
+                grid.z + part.at.z,
+              );
             blocks.setMatrixAt(i, matrix.compose(at, turn, one));
           });
           blocks.instanceMatrix.needsUpdate = true;
@@ -747,8 +1055,9 @@ export class ThreeScene {
         });
       }
     }
+    this.buildDecor(map, group, models, waiting, cellPoint, fixtures);
     const scenery = this.buildScenery(map, group, waiting);
-    return { map, group, models, scenery, waiting: [...waiting] };
+    return { map, group, models, scenery, waiting: [...waiting], fixtures };
   }
 
   /**
@@ -857,6 +1166,10 @@ export class ThreeScene {
     if (fog === null) this.scene.fog = null;
     else if (fog.kind === 'linear') this.scene.fog = new Fog(fog.color, fog.near, fog.far);
     else this.scene.fog = new FogExp2(fog.color, fog.density);
+    // The exposure and clear colour follow the theme's look; a skin with a `timeOfDay` keeps its
+    // clock's look over its own (themes and a time of day are not combined).
+    if (this.timeOfDay === null)
+      this.day = baseDayLook(look, this.opts.background ?? skinBackground(this.themed));
   }
 
   // ---- Tweens (Engine 0.16 part B, T10; item 340) ----
@@ -899,6 +1212,140 @@ export class ThreeScene {
   /** The tween state an entity shows at `frame` (the rest state when none runs), for tests. */
   tweenState(id: string, frame: number): TweenState {
     return this.tweens.get(id)?.state(frame) ?? { ...REST_STATE };
+  }
+
+  /**
+   * The skin's `decor` for this map (Engine 0.16 F3): each placement (`placeDecor`, from the
+   * presentation RNG) at its cell's model point plus its offset, turned by its yaw (clockwise seen
+   * from above) and scaled; one `InstancedMesh` per legend character, model and mesh
+   * (`decor:<char>:<model>:<i>`), or a model copy per cell for `instanced: false` or a skinned
+   * model (`decor:<char>`). A model still loading shows nothing until it is there (then the map is
+   * rebuilt); a grid the `decor` option lacks shows nothing. A legend entry's `light` and `emit`
+   * (Engine 0.16 F6) make a fixture per cell: a `PointLight` (`light:decor:<map>:<col>,<row>`) at
+   * the cell's model point plus the light's offset, and its emitters on the cell's box.
+   */
+  private buildDecor(
+    map: DeepReadonly<PresentMap>,
+    group: Group,
+    models: ShownMap['models'],
+    waiting: Set<string>,
+    cellPoint: (col: number, row: number, z: number) => Vector3,
+    fixtures: DecorFixture[],
+  ): void {
+    const entry = this.skin.decor?.[map.id];
+    const rows = entry === undefined ? undefined : this.opts.decor?.[entry.grid];
+    const library = this.opts.models;
+    if (entry === undefined || rows === undefined || library === undefined) return;
+    const ground = this.groundCam !== null;
+    const placed = placeDecor(entry, rows, map.id, this.opts.seed ?? 0, { cols: map.cols, rows: map.rows });
+    const deg = Math.PI / 180;
+    const up = new Vector3(0, 1, 0);
+    const batches = new Map<
+      string,
+      {
+        spec: SkinModel;
+        loaded: LoadedModel;
+        cells: Matrix4[];
+        char: string;
+        cast: boolean;
+        receive: boolean;
+      }
+    >();
+    const ts = map.tileSize;
+    for (const p of placed) {
+      if (p.light !== null || p.emit.length > 0) {
+        const id = `decor:${map.id}:${p.col},${p.row}`;
+        const box = { x: p.col * ts + p.offset.x, y: p.row * ts + p.offset.y, w: ts, h: ts };
+        let light: DecorFixture['light'] = null;
+        if (p.light !== null) {
+          const spec = p.light;
+          const shown = new PointLight(
+            spec.color,
+            spec.intensity,
+            spec.distance,
+            spec.decay ?? POINT_LIGHT_DECAY,
+          );
+          shown.name = `light:${id}`;
+          const off = spec.offset ?? { x: 0, y: 0, z: 0 };
+          const base = cellPoint(p.col, p.row, 0);
+          shown.position.copy(
+            ground
+              ? base.add(new Vector3(p.offset.x + off.x, p.offset.z - off.y, p.offset.y + off.z))
+              : base.add(new Vector3(p.offset.x + off.x, -p.offset.y - off.y, p.offset.z + off.z)),
+          );
+          group.add(shown);
+          light = { light: shown, spec };
+        }
+        fixtures.push({ id, box, emit: p.emit, light });
+      }
+      const loaded = library.get(p.model);
+      if (loaded === null) {
+        if (library.status(p.model) === 'loading') waiting.add(p.model);
+        continue;
+      }
+      const point = cellPoint(p.col, p.row, 0).add(
+        ground
+          ? new Vector3(p.offset.x, p.offset.z, p.offset.y)
+          : new Vector3(p.offset.x, -p.offset.y, p.offset.z),
+      );
+      const yaw = new Quaternion().setFromAxisAngle(up, -p.yaw * deg);
+      const spec: SkinModel = {
+        model: p.model,
+        scale: 1,
+        anchor: p.anchor ?? 'bottom',
+        rotate: p.rotate,
+        castShadow: p.castShadow,
+        clip: null,
+        time: 0,
+        hold: false,
+        offset: { x: 0, y: 0, z: 0 },
+        stretch: { x: 1, y: 1, z: 1 },
+        materials: { ...p.materials },
+        tint: p.tint,
+      };
+      if (!p.instanced) {
+        const instance = new ModelInstance(loaded, { ...spec, scale: p.scale }, { w: 0, h: 0 });
+        instance.object.name = `decor:${p.char}`;
+        instance.object.userData = { decor: p.char, model: p.model, col: p.col, row: p.row };
+        instance.object.position.copy(point);
+        instance.object.quaternion.copy(yaw);
+        if (p.receiveShadow) for (const m of instance.meshes()) m.receiveShadow = true;
+        group.add(instance.object);
+        models.push({ instance, tile: null });
+        continue;
+      }
+      const key = `${p.char}\u0000${p.model}`;
+      let batch = batches.get(key);
+      if (!batch) {
+        batch = { spec, loaded, cells: [], char: p.char, cast: p.castShadow, receive: p.receiveShadow };
+        batches.set(key, batch);
+      }
+      batch.cells.push(new Matrix4().compose(point, yaw, new Vector3(p.scale, p.scale, p.scale)));
+    }
+    for (const b of batches.values()) {
+      const parts = modelMeshParts(b.loaded, b.spec, { w: 0, h: 0 });
+      const userData = { decor: b.char, model: b.spec.model };
+      if (parts) {
+        addInstanced(group, parts, b.cells, null, {
+          name: `decor:${b.char}:${b.spec.model}`,
+          userData,
+          castShadow: b.cast,
+          receiveShadow: b.receive,
+          colors: b.spec,
+        });
+        continue;
+      }
+      // A skinned model cannot be instanced: a copy per cell, scaled by its cell matrix.
+      for (const cell of b.cells) {
+        const instance = new ModelInstance(b.loaded, b.spec, { w: 0, h: 0 });
+        instance.object.name = `decor:${b.char}`;
+        instance.object.userData = userData;
+        cell.decompose(instance.object.position, instance.object.quaternion, instance.object.scale);
+        if (b.receive) for (const m of instance.meshes()) m.receiveShadow = true;
+        group.add(instance.object);
+        models.push({ instance, tile: null });
+      }
+    }
   }
 
   // ---- Entities ----
@@ -968,6 +1415,7 @@ export class ThreeScene {
       root.add(instance.object);
       if (entry?.receiveShadow === true) for (const m of instance.meshes()) m.receiveShadow = true;
       const look = this.lookOf(e);
+      const bounds = this.groundCam ? new Box3().setFromObject(instance.object, true) : null;
       return {
         root,
         kind: e.kind,
@@ -978,6 +1426,7 @@ export class ThreeScene {
         model: instance,
         materials: instance.materials,
         light: this.lightFor(root, e),
+        height: bounds === null || bounds.isEmpty() ? e.h : bounds.max.y,
       };
     }
     // A `poses` cycle swaps the mesh by animation state and frame (Engine 0.16 T2).
@@ -996,19 +1445,29 @@ export class ThreeScene {
     // While its model loads (or without a model library) an entry shows its text mesh.
     root.userData = { id: e.id, kind: e.kind, fallback, ...(spec && { model: spec.model, loading: true }) };
     const materials: Material[] = [];
+    const ground = this.groundCam !== null;
+    let height = 0;
     for (const part of parts) {
       const material = new MeshLambertMaterial({ color: part.color });
       materials.push(material);
-      const mesh = new Mesh(this.geometries.get(part.shape, part.size), material);
+      const mesh = new Mesh(this.geometries.get(part.shape, ground ? groundSize(part) : part.size), material);
       if (entry?.castShadow === true) mesh.castShadow = true;
       if (entry?.receiveShadow === true) mesh.receiveShadow = true;
-      // Parts are placed from the box's top-left (y down); the root is its bottom centre (y up).
-      mesh.position.set(
-        part.at.x + part.size.w / 2 - box.w / 2,
-        box.h - part.at.y - part.size.h / 2,
-        part.at.z,
-      );
-      mesh.rotation.y = (part.rotate * Math.PI) / 2;
+      if (ground) {
+        // Ground view: x, y on the box's footprint about its centre, z the height of the bottom.
+        const off = groundOffset(part, box);
+        mesh.position.set(off.x, off.y, off.z);
+        mesh.rotation.set(part.shape === 'plane' ? -Math.PI / 2 : 0, (part.rotate * Math.PI) / 2, 0, 'YXZ');
+        height = Math.max(height, part.at.z + (part.shape === 'plane' ? 0 : part.size.d));
+      } else {
+        // Parts are placed from the box's top-left (y down); the root is its bottom centre (y up).
+        mesh.position.set(
+          part.at.x + part.size.w / 2 - box.w / 2,
+          box.h - part.at.y - part.size.h / 2,
+          part.at.z,
+        );
+        mesh.rotation.y = (part.rotate * Math.PI) / 2;
+      }
       root.add(mesh);
     }
     return {
@@ -1021,6 +1480,7 @@ export class ThreeScene {
       model: null,
       materials,
       light: this.lightFor(root, e),
+      height: ground ? height : e.h,
     };
   }
 
@@ -1050,11 +1510,8 @@ export class ThreeScene {
   private place(node: EntityNode, e: Entity, frame: number): void {
     const fx = e.fx;
     const tw = this.tweens.get(e.id)?.state(frame) ?? REST_STATE;
-    const mirror = facesLeft(e.facing) ? -1 : 1;
-    node.root.position.set(e.x + tw.x + e.w / 2, -(e.y + tw.y + e.h), (e.layer ?? 0) * this.cam3d.layerDepth);
-    node.root.scale.set(mirror * (fx?.squashX ?? 1) * tw.scaleX, (fx?.squashY ?? 1) * tw.scaleY, tw.scaleX);
-    // `rotate` is clockwise on screen; with y up that is a negative turn about z.
-    node.root.rotation.z = (-((fx?.rotate ?? 0) + tw.rotate) * Math.PI) / 180;
+    if (this.groundCam) this.placeOnGround(node, e, tw);
+    else this.placeSide(node, e, tw);
     if (node.model) {
       const spec = resolveSkinModel(this.skin, e);
       node.model.pose(spec?.clip ?? null, spec?.time ?? 0, spec?.hold ?? false);
@@ -1069,6 +1526,31 @@ export class ThreeScene {
       m.opacity = alpha;
       flashMaterial(m, tw);
     }
+  }
+
+  /** Ground view: the root on the box's centre on the floor, turned to its facing about the vertical. */
+  private placeOnGround(node: EntityNode, e: Entity, tw: TweenState): void {
+    const fx = e.fx;
+    // A tween's `y` moves along the ground (world y is south on the floor).
+    node.root.position.set(e.x + tw.x + e.w / 2, (e.layer ?? 0) * GROUND_LAYER_LIFT, e.y + tw.y + e.h / 2);
+    const across = (fx?.squashX ?? 1) * tw.scaleX;
+    node.root.scale.set(across, (fx?.squashY ?? 1) * tw.scaleY, across);
+    // `rotate` is clockwise seen from above: a negative turn about the vertical.
+    node.root.rotation.set(
+      0,
+      groundFacingTurn(facingVector(e.facing)) - (((fx?.rotate ?? 0) + tw.rotate) * Math.PI) / 180,
+      0,
+    );
+  }
+
+  /** Side view: the root on the box's bottom centre, mirrored for a left-hand facing. */
+  private placeSide(node: EntityNode, e: Entity, tw: TweenState): void {
+    const fx = e.fx;
+    const mirror = facesLeft(e.facing) ? -1 : 1;
+    node.root.position.set(e.x + tw.x + e.w / 2, -(e.y + tw.y + e.h), (e.layer ?? 0) * this.cam3d.layerDepth);
+    node.root.scale.set(mirror * (fx?.squashX ?? 1) * tw.scaleX, (fx?.squashY ?? 1) * tw.scaleY, tw.scaleX);
+    // `rotate` is clockwise on screen; with y up that is a negative turn about z.
+    node.root.rotation.z = (-((fx?.rotate ?? 0) + tw.rotate) * Math.PI) / 180;
   }
 
   // ---- Camera ----
@@ -1097,13 +1579,107 @@ export class ThreeScene {
     shadowCam.updateProjectionMatrix();
   }
 
+  /**
+   * Ground view (Engine 0.16 F2): the camera from `groundProjection` at the framed view's centre
+   * (shake moves it along the picture's axes on the ground), the overlay, the sun's shadow camera
+   * over the ground footprint, linear fog from the camera's distance, and the parallax planes.
+   */
+  private updateGroundCamera(
+    size: ScreenSize,
+    zoom: number,
+    top: { x: number; y: number },
+    view: ScreenSize,
+    shakeX: number,
+    shakeY: number,
+    focus: { x: number; y: number } | null,
+  ): void {
+    const camera = this.groundCam!;
+    const centre = { x: top.x + view.width / 2, y: top.y + view.height / 2 };
+    this.groundShown = groundProjection(size, zoom, centre, camera);
+    // Picture right and down along the ground (the camera's right, and its view flattened).
+    const r = this.groundShown.right;
+    const f = this.groundShown.forward;
+    const flat = Math.hypot(f.x, f.y);
+    const down =
+      flat > 1e-9
+        ? { x: -f.x / flat, y: -f.y / flat }
+        : { x: -this.groundShown.up.x, y: -this.groundShown.up.y };
+    const shaken = {
+      x: centre.x + (r.x * shakeX + down.x * shakeY) / zoom,
+      y: centre.y + (r.y * shakeX + down.y * shakeY) / zoom,
+    };
+    const g = (this.groundCamera =
+      shakeX === 0 && shakeY === 0 ? this.groundShown : groundProjection(size, zoom, shaken, camera));
+    const { fov } = this.cam3d;
+    const distance = g.distance;
+    const cam = this.camera;
+    cam.fov = fov;
+    cam.aspect = size.width / size.height;
+    cam.near = Math.max(0.1, distance / 100);
+    cam.far = distance * 10 + 1000;
+    cam.position.set(g.eye.x, g.eye.h, g.eye.y);
+    cam.rotation.set((-camera.pitch * Math.PI) / 180, (camera.yaw * Math.PI) / 180, 0, 'YXZ');
+    cam.updateProjectionMatrix();
+    cam.updateMatrixWorld();
+    if (focus === null) this.focusPoint = null;
+    else {
+      const p = g.worldToScreen(focus.x, focus.y);
+      this.focusPoint = p === null ? null : { x: p.x, y: p.y };
+    }
+
+    const at = cam.near * 2;
+    const h = 2 * at * Math.tan((fov * Math.PI) / 360);
+    this.overlay.position.set(0, 0, -at);
+    this.overlay.scale.set(h * cam.aspect * 1.01, h * 1.01, 1);
+
+    this.updateGroundSun(g);
+    const fog = this.day.fog;
+    if (fog !== null && this.scene.fog instanceof Fog) {
+      this.scene.fog.near = distance + fog.near;
+      this.scene.fog.far = distance + fog.far;
+    }
+    const picture = { x: Math.round(top.x * zoom) + shakeX, y: Math.round(top.y * zoom) + shakeY };
+    this.parallax.sync(picture, size, cam, distance);
+  }
+
+  /**
+   * Ground view: with shadows on, the sun shines from its direction onto the centre of the
+   * picture's ground footprint (`footprint()`, far rays capped at `GROUND_REACH` distances) and
+   * its shadow camera covers that footprint and a margin, whatever way the sun turns it.
+   */
+  private updateGroundSun(g: GroundProjection): void {
+    if (this.look.sun.shadow === null) return;
+    const box = pointsBox(g.footprint());
+    const cx = box.x + box.w / 2;
+    const cz = box.y + box.h / 2;
+    const half = Math.hypot(box.w, box.h) / 2 + SHADOW_MARGIN;
+    const reach = half * 2 + g.distance;
+    SUN_DIR.copy(this.sunFrom).normalize();
+    this.sun.target.position.set(cx, 0, cz);
+    this.sun.position.set(cx + SUN_DIR.x * reach, SUN_DIR.y * reach, cz + SUN_DIR.z * reach);
+    this.sun.target.updateMatrixWorld();
+    this.sun.updateMatrixWorld();
+    const shadowCam = this.sun.shadow.camera;
+    shadowCam.left = -half;
+    shadowCam.right = half;
+    shadowCam.top = half;
+    shadowCam.bottom = -half;
+    shadowCam.near = 1;
+    shadowCam.far = reach * 2;
+    shadowCam.updateProjectionMatrix();
+  }
+
   private updateCamera(frame: Frame, size: ScreenSize): void {
     const base = cameraZoom(frame, this.skin.camera);
     const map = this.mapVisible ? (this.shown?.map ?? null) : null;
     const framedTop = this.follower.update(frame, this.skin.camera, cameraView(size, base), map);
     // A zoom punch zooms the framed view about its centre, as the Canvas2D presenter does.
     const fx = this.cameraFx.state(this.fxClock, this.settings);
-    const area = cameraArea(frame, map, (this.opts.clamp ?? this.skin.camera?.clamp) !== false);
+    const area = cameraArea(
+      frame,
+      map,
+      this.groundCam === null && (this.opts.clamp ?? this.skin.camera?.clamp) !== false,
+    );
     const focus = cameraTarget(frame, this.skin.camera);
     const { cam: top, view } = zoomAbout(framedTop, cameraView(size, base), fx.zoom, area, focus);
     const zoom = base * fx.zoom;
@@ -1114,6 +1690,12 @@ export class ThreeScene {
     const scale = Math.min(1, Math.max(0, this.settings.shakeScale ?? 1));
     const shakeX = Math.round(cameraShake(frame, shakes) * scale) + fx.shakeX;
     const shakeY = fx.shakeY;
+    if (this.groundCam) {
+      this.updateGroundCamera(size, zoom, top, view, shakeX, shakeY, focus);
+      return;
+    }
+    this.groundShown = null;
+    this.groundCamera = null;
     const { fov, tilt } = this.cam3d;
     const distance = view.height / (2 * Math.tan((fov * Math.PI) / 360));
     const pitch = (tilt * Math.PI) / 180;
@@ -1143,8 +1725,8 @@ export class ThreeScene {
 
     this.updateSun(cx, cy, view, distance);
     // Linear fog is measured from the camera; the skin gives it behind the z = 0 plane.
-    const fog = this.look.fog;
-    if (fog !== null && fog.kind === 'linear' && this.scene.fog instanceof Fog) {
+    const fog = this.day.fog;
+    if (fog !== null && this.scene.fog instanceof Fog) {
       this.scene.fog.near = distance + fog.near;
       this.scene.fog.far = distance + fog.far;
     }
@@ -1176,6 +1758,29 @@ function flashMaterial(m: Material, tw: Readonly<TweenState>): void {
 /** Scratch vector for the sun's direction (one scene updates at a time). */
 const SUN_DIR = new Vector3();
 
+/**
+ * Ground view: a part's geometry size in Three's axes. Its `d` is its height (Three's y) and its
+ * `h` its depth along the map (Three's z), so round shapes stay upright; a `plane` keeps `w` x `h`
+ * and is laid flat by its turn.
+ */
+function groundSize(part: MeshPart): { w: number; h: number; d: number } {
+  if (part.shape === 'plane') return part.size;
+  return { w: part.size.w, h: part.size.d, d: part.size.h };
+}
+
+/**
+ * Ground view: a part's centre from the centre of `box` on the floor (Three's axes): `at.x` and
+ * `at.y` place its footprint from the box's top-left, `at.z` is the height of its bottom.
+ */
+function groundOffset(part: MeshPart, box: { w: number; h: number }): { x: number; y: number; z: number } {
+  const up = part.shape === 'plane' ? 0 : part.size.d / 2;
+  return {
+    x: part.at.x + part.size.w / 2 - box.w / 2,
+    y: part.at.z + up,
+    z: part.at.y + part.size.h / 2 - box.h / 2,
+  };
+}
+
 /** One blend's particle buffers, {@link PARTICLE_POOL} points, drawn as screen-facing squares. */
 function makePoints(blend: 'normal' | 'add'): ParticlePoints {
   const g = new BufferGeometry();
@@ -1201,13 +1806,79 @@ function makePoints(blend: 'normal' | 'add'): ParticlePoints {
   return points;
 }
 
+/**
+ * One `InstancedMesh` per model mesh (Engine 0.16 F3), named `<name>:<i>`, with one instance per
+ * cell matrix (the cell's place, turn and scale times the mesh's own placement), each tinted by
+ * `tints` when given (a brightness factor, `setColorAt`). Geometries and materials are the model
+ * library's: `userData.shared` keeps `disposeMap` off them.
+ */
+function addInstanced(
+  group: Group,
+  parts: readonly ModelMeshPart[],
+  cells: readonly Matrix4[],
+  tints: readonly number[] | null,
+  opts: {
+    name: string;
+    userData: Record<string, unknown>;
+    castShadow: boolean;
+    receiveShadow: boolean;
+    /** Material colours and a tint (Engine 0.16 F6): the batch then draws with its own recoloured copies. */
+    colors?: DeepReadonly<Pick<SkinModel, 'materials' | 'tint'>>;
+  },
+): void {
+  const m = new Matrix4();
+  const tint = new Color();
+  const colors = opts.colors;
+  const recolor = colors !== undefined && (colors.tint !== null || Object.keys(colors.materials).length > 0);
+  const copies = new Map<Material, Material>();
+  const own = (mat: Material) => {
+    let c = copies.get(mat);
+    if (!c) {
+      copies.set(mat, (c = mat.clone()));
+      recolorMaterials([c], colors!);
+    }
+    return c;
+  };
+  parts.forEach((part, p) => {
+    const material = !recolor
+      ? part.material
+      : Array.isArray(part.material)
+        ? part.material.map(own)
+        : own(part.material);
+    const mesh = new InstancedMesh(part.geometry, material, cells.length);
+    mesh.name = `${opts.name}:${p}`;
+    // The geometry is the library's; the materials too, unless recoloured (then the batch's own).
+    mesh.userData = { ...opts.userData, part: p, shared: true, ...(recolor && { ownMaterials: true }) };
+    mesh.castShadow = opts.castShadow;
+    mesh.receiveShadow = opts.receiveShadow;
+    cells.forEach((cell, i) => {
+      mesh.setMatrixAt(i, m.multiplyMatrices(cell, part.matrix));
+      if (tints) mesh.setColorAt(i, tint.setScalar(tints[i]!));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.computeBoundingSphere();
+    group.add(mesh);
+  });
+}
+
+/** Multiplies each material's colour by `factor` (a model copy's own materials: a `vary.tint`). */
+function tintMaterials(materials: readonly Material[], factor: number): void {
+  for (const m of materials) {
+    const c = (m as Material & { color?: Color }).color;
+    if (c instanceof Color) c.multiplyScalar(factor);
+  }
+}
+
 function disposeMap(shown: ShownMap): void {
   const materials = new Set<Material>();
   for (const { instance } of shown.models) instance.dispose();
   for (const instance of shown.scenery) instance.dispose();
   for (const child of shown.group.children) {
     if (child instanceof InstancedMesh) {
-      materials.add(child.material as Material);
+      // A model's instanced meshes share the library's geometry and materials (Engine 0.16 F3).
+      if (child.userData['shared'] !== true || child.userData['ownMaterials'] === true)
+        for (const m of Array.isArray(child.material) ? child.material : [child.material]) materials.add(m);
       child.dispose();
     }
   }

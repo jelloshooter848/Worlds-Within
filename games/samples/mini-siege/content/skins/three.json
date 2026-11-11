@@ -1,0 +1,4093 @@
+{
+  "backend": "three",
+  "background": "#b8c09c",
+  "meshes": {
+    "unit-stand": [
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 14
+        },
+        "at": {
+          "x": 4,
+          "y": 4,
+          "z": 0
+        },
+        "color": "#7c7c7c"
+      }
+    ],
+    "engine": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 10,
+          "d": 8
+        },
+        "at": {
+          "x": 1,
+          "y": 3,
+          "z": 0
+        },
+        "color": "#7c4c20"
+      }
+    ],
+    "block": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 16
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#a87c50"
+      }
+    ],
+    "nothing": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 0.01,
+          "h": 0.01,
+          "d": 0.01
+        },
+        "at": {
+          "x": 8,
+          "y": 1,
+          "z": -4
+        },
+        "color": "#000000"
+      }
+    ],
+    "gem": [
+      {
+        "shape": "sphere",
+        "size": {
+          "w": 6,
+          "h": 6,
+          "d": 8
+        },
+        "at": {
+          "x": 5,
+          "y": 5,
+          "z": 20
+        },
+        "color": "#f8c838"
+      }
+    ],
+    "box-mark": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 1,
+          "h": 1,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#fcfcfc"
+      }
+    ],
+    "ring": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 15.7,
+          "y": 6.7,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 14.49,
+          "y": 11.2,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 11.2,
+          "y": 14.49,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 6.7,
+          "y": 15.7,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 2.2,
+          "y": 14.49,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": -1.09,
+          "y": 11.2,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": -2.3,
+          "y": 6.7,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": -1.09,
+          "y": 2.2,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 2.2,
+          "y": -1.09,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 6.7,
+          "y": -2.3,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 11.2,
+          "y": -1.09,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2.6,
+          "h": 2.6,
+          "d": 0.6
+        },
+        "at": {
+          "x": 14.49,
+          "y": 2.2,
+          "z": 0.4
+        },
+        "color": "#58f858"
+      }
+    ],
+    "flat": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#58a830"
+      }
+    ]
+  },
+  "kinds": {
+    "unit:worker": {
+      "mesh": "unit-stand",
+      "color": "#7c7c7c",
+      "model": "assets/quaternius-characters/worker-male.glb",
+      "scale": 0.07,
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "attack": "Punch",
+        "build": "PickUp",
+        "gather": "PickUp"
+      },
+      "materials": {
+        "Shirt": "#5a86e0",
+        "Vest": "#6a4a2a",
+        "Skin": "#e8b890",
+        "Pants": "#4a3a2a",
+        "Hat": "#c8a040"
+      },
+      "castShadow": true,
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "unit:soldier": {
+      "mesh": "unit-stand",
+      "color": "#7c7c7c",
+      "model": "assets/quaternius-characters/knight-male.glb",
+      "scale": 0.07,
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "attack": "Punch",
+        "build": "PickUp",
+        "gather": "PickUp"
+      },
+      "materials": {
+        "Red": "#2f5fd0",
+        "Detail": "#1d3a8a",
+        "Skin": "#e8b890",
+        "Armor": "#c0c4cc",
+        "Armor_Dark": "#6a7488"
+      },
+      "castShadow": true,
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        },
+        {
+          "tag": "hero",
+          "materials": {
+            "Red": "#58a8f8",
+            "Detail": "#1d3a8a",
+            "Skin": "#e8b890",
+            "Armor": "#d8dce8",
+            "Armor_Dark": "#3a5fb0"
+          }
+        }
+      ]
+    },
+    "unit:captain": {
+      "mesh": "unit-stand",
+      "color": "#7c7c7c",
+      "model": "assets/quaternius-characters/knight-golden-male.glb",
+      "scale": 0.07,
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "attack": "Punch",
+        "build": "PickUp",
+        "gather": "PickUp"
+      },
+      "materials": {
+        "Red": "#2f5fd0",
+        "Detail": "#1d3a8a",
+        "Skin": "#e8b890",
+        "Armor": "#e0b040",
+        "Armor_Dark": "#6a5020"
+      },
+      "castShadow": true,
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "unit:raider": {
+      "mesh": "unit-stand",
+      "color": "#7c7c7c",
+      "model": "assets/quaternius-characters/viking-male.glb",
+      "scale": 0.07,
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "attack": "Punch",
+        "build": "PickUp",
+        "gather": "PickUp"
+      },
+      "materials": {
+        "Main": "#c0281c",
+        "Pants": "#6c1410",
+        "Skin": "#e0a880",
+        "Hair": "#8a4a20",
+        "Light": "#c8a878"
+      },
+      "castShadow": true,
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "unit:ram": {
+      "mesh": "engine",
+      "color": "#7c4c20",
+      "model": "assets/kenney-castle-kit/siege-ram.glb",
+      "scale": 13,
+      "rotate": {
+        "y": 90
+      },
+      "castShadow": true,
+      "byTag": [
+        {
+          "tag": "damaged",
+          "model": "assets/kenney-castle-kit/siege-ram-demolished.glb"
+        },
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "unit:catapult": {
+      "mesh": "engine",
+      "color": "#7c4c20",
+      "model": "assets/kenney-castle-kit/siege-catapult.glb",
+      "scale": 13,
+      "rotate": {
+        "y": 90
+      },
+      "castShadow": true,
+      "byTag": [
+        {
+          "tag": "damaged",
+          "model": "assets/kenney-castle-kit/siege-catapult-demolished.glb"
+        },
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "building:hall": {
+      "mesh": "block",
+      "color": "#a87c50",
+      "model": "assets/quaternius-medieval-village/inn.glb",
+      "scale": 13,
+      "castShadow": true,
+      "receiveShadow": true,
+      "materials": {
+        "RoofTiles_Red": "#2a4fa8"
+      },
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "building:watchtower": {
+      "mesh": "block",
+      "color": "#7c7c7c",
+      "model": "assets/kenney-castle-kit/tower-slant-roof.glb",
+      "scale": 14,
+      "castShadow": true,
+      "receiveShadow": true,
+      "byTag": [
+        {
+          "prefix": "progress:",
+          "min": 0,
+          "max": 32,
+          "model": "assets/kenney-castle-kit/tower-square-base-border.glb"
+        },
+        {
+          "prefix": "progress:",
+          "min": 33,
+          "max": 65,
+          "model": "assets/kenney-castle-kit/tower-square-mid-open-simple.glb"
+        },
+        {
+          "prefix": "progress:",
+          "min": 66,
+          "max": 99,
+          "model": "assets/kenney-castle-kit/tower-square-mid-open.glb"
+        },
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "building:wall": {
+      "mesh": "block",
+      "color": "#bcbcbc",
+      "model": "assets/kenney-castle-kit/wall.glb",
+      "scale": 16,
+      "castShadow": true,
+      "receiveShadow": true,
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "building:wall-tower": {
+      "mesh": "block",
+      "color": "#bcbcbc",
+      "model": "assets/kenney-castle-kit/tower-base.glb",
+      "scale": 18,
+      "castShadow": true,
+      "receiveShadow": true,
+      "byTag": [
+        {
+          "tag": "frozen",
+          "tint": "#8ca8ff"
+        }
+      ]
+    },
+    "resource:gold": {
+      "mesh": "block",
+      "color": "#f8b800",
+      "model": "assets/kenney-nature-kit/rock_largeB.glb",
+      "scale": 14,
+      "castShadow": true,
+      "materials": {
+        "dirt": "#e8a820",
+        "_defaultMat": "#ffd860",
+        "grass": "#8cc24a"
+      },
+      "byTag": [
+        {
+          "prefix": "amount:",
+          "min": 0,
+          "max": 0,
+          "tint": "#606060"
+        }
+      ]
+    },
+    "selection-ring": {
+      "mesh": "ring",
+      "color": "#58f858"
+    },
+    "health-bar": {
+      "mesh": "nothing",
+      "color": "#000000"
+    },
+    "progress-bar": {
+      "mesh": "nothing",
+      "color": "#000000"
+    },
+    "mission-offer": {
+      "mesh": "gem",
+      "color": "#f8c838",
+      "model": "assets/mini-siege-marks/offer-gem.gltf",
+      "scale": 24,
+      "offset": {
+        "x": 0,
+        "y": -34
+      },
+      "emit": "offer-sparkle",
+      "light": {
+        "kind": "point",
+        "color": "#ffd060",
+        "intensity": 60,
+        "distance": 70,
+        "offset": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "flicker": 0.15
+      }
+    },
+    "selection-box": {
+      "mesh": "box-mark",
+      "color": "#fcfcfc"
+    }
+  },
+  "tiles": {
+    "0": {
+      "mesh": "flat",
+      "color": "#58a830",
+      "model": "assets/kenney-nature-kit/ground_grass.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "vary": {
+        "tint": 0.05
+      },
+      "materials": {
+        "grass": "#8cc24a",
+        "leafsGreen": "#4e9a34",
+        "leafsDark": "#2f7434",
+        "leafsFall": "#e09a30",
+        "woodBark": "#7a5034",
+        "woodBarkDark": "#5e3e2a",
+        "woodBirch": "#e8dcc8",
+        "dirt": "#c8925a",
+        "dirtDark": "#9a6a44",
+        "water": "#58a8d8",
+        "stone": "#a8acb0",
+        "stoneDark": "#80868c",
+        "wood": "#a8744a",
+        "woodDark": "#7a5034",
+        "colorRed": "#c8302a",
+        "colorRedDark": "#8a1e1a",
+        "_defaultMat": "#b0b0a8"
+      }
+    },
+    "1": {
+      "mesh": "flat",
+      "color": "#c89c58",
+      "model": "assets/kenney-nature-kit/ground_pathOpen.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "vary": {
+        "tint": 0.06
+      },
+      "materials": {
+        "grass": "#8cc24a",
+        "leafsGreen": "#4e9a34",
+        "leafsDark": "#2f7434",
+        "leafsFall": "#e09a30",
+        "woodBark": "#7a5034",
+        "woodBarkDark": "#5e3e2a",
+        "woodBirch": "#e8dcc8",
+        "dirt": "#c8925a",
+        "dirtDark": "#9a6a44",
+        "water": "#58a8d8",
+        "stone": "#a8acb0",
+        "stoneDark": "#80868c",
+        "wood": "#a8744a",
+        "woodDark": "#7a5034",
+        "colorRed": "#c8302a",
+        "colorRedDark": "#8a1e1a",
+        "_defaultMat": "#b0b0a8"
+      }
+    },
+    "2": {
+      "mesh": "flat",
+      "color": "#58a830",
+      "model": "assets/kenney-nature-kit/ground_grass.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "vary": {
+        "tint": 0.05
+      },
+      "materials": {
+        "grass": "#8cc24a",
+        "leafsGreen": "#4e9a34",
+        "leafsDark": "#2f7434",
+        "leafsFall": "#e09a30",
+        "woodBark": "#7a5034",
+        "woodBarkDark": "#5e3e2a",
+        "woodBirch": "#e8dcc8",
+        "dirt": "#c8925a",
+        "dirtDark": "#9a6a44",
+        "water": "#58a8d8",
+        "stone": "#a8acb0",
+        "stoneDark": "#80868c",
+        "wood": "#a8744a",
+        "woodDark": "#7a5034",
+        "colorRed": "#c8302a",
+        "colorRedDark": "#8a1e1a",
+        "_defaultMat": "#b0b0a8"
+      }
+    }
+  },
+  "events": {
+    "mission-open": {
+      "sound": "launch",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "mini-game-end:pass": {
+      "sound": "pass",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mini-game-end:fail": {
+      "sound": "fail",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 10
+      }
+    },
+    "mini-game-end": {
+      "sound": "fail",
+      "effect": {
+        "kind": "tint",
+        "color": "#7c7c7c",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=both-burnt": {
+      "sound": "burn",
+      "effect": {
+        "kind": "shake",
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "mission-commit:outcome=ram-burnt": {
+      "sound": "burn",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=catapult-burnt": {
+      "sound": "burn",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=held-cheap": {
+      "sound": "hold",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=held": {
+      "sound": "hold",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=held-bloodied": {
+      "sound": "hold",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=overrun": {
+      "sound": "breach",
+      "effect": {
+        "kind": "shake",
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "mission-commit:outcome=freed": {
+      "sound": "freed",
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=paid": {
+      "sound": "coins",
+      "effect": {
+        "kind": "tint",
+        "color": "#fce0a8",
+        "ticks": 8
+      }
+    },
+    "mission-commit:outcome=failed": {
+      "sound": "fail",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 10
+      }
+    },
+    "mission-commit:outcome=left": {
+      "sound": "toll",
+      "effect": {
+        "kind": "tint",
+        "color": "#7c7c7c",
+        "ticks": 12
+      }
+    },
+    "mission-commit": {
+      "sound": "commit",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 8
+      }
+    }
+  },
+  "emitters": {
+    "offer-sparkle": {
+      "rate": 0.25,
+      "life": [24, 40],
+      "speed": [0.1, 0.3],
+      "angle": [250, 290],
+      "shape": {
+        "circle": 4
+      },
+      "gravity": -0.01,
+      "size": [2, 1],
+      "color": ["#fcf0b0", "#f8c838"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.2,
+          "value": 1
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ],
+      "blend": "add"
+    },
+    "camp-smoke": {
+      "rate": 0.3,
+      "life": [50, 80],
+      "speed": [0.15, 0.35],
+      "angle": [262, 278],
+      "gravity": -0.004,
+      "drag": 0.01,
+      "size": [3, 5, 8],
+      "color": ["#5c5c5c", "#9c9c9c"],
+      "alpha": [
+        {
+          "at": 0,
+          "value": 0
+        },
+        {
+          "at": 0.15,
+          "value": 0.6
+        },
+        {
+          "at": 1,
+          "value": 0
+        }
+      ]
+    },
+    "camp-flame": {
+      "rate": 0.7,
+      "life": [8, 14],
+      "speed": [0.2, 0.5],
+      "angle": [255, 285],
+      "shape": {
+        "circle": 2
+      },
+      "gravity": -0.02,
+      "size": [3, 2, 1],
+      "color": ["#fce0a8", "#f8b800", "#d82800"],
+      "alpha": [1, 0.9, 0],
+      "blend": "add"
+    }
+  },
+  "hud": [
+    {
+      "as": "panel",
+      "x": 3,
+      "y": 3,
+      "w": 28,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "counter",
+      "status": "stock.gold",
+      "x": 5,
+      "y": 5,
+      "frame": "icon-gold",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 33,
+      "y": 3,
+      "w": 22,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "counter",
+      "status": "units",
+      "x": 35,
+      "y": 5,
+      "frame": "icon-units",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 57,
+      "y": 3,
+      "w": 22,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "counter",
+      "status": "enemyUnits",
+      "x": 59,
+      "y": 5,
+      "frame": "icon-enemy",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 81,
+      "y": 3,
+      "w": 20,
+      "h": 12,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "counter",
+      "status": "captives",
+      "x": 83,
+      "y": 5,
+      "frame": "icon-captive",
+      "font": "siege-tiny",
+      "gap": 3,
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "tween": {
+        "ticks": 20,
+        "color": "#f0c060"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 104,
+      "y": 2,
+      "w": 118,
+      "h": 28,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "text",
+      "status": "entryTitle",
+      "x": 104,
+      "y": 5,
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000",
+      "w": 118,
+      "align": "center",
+      "outline": "#000000"
+    },
+    {
+      "as": "clock",
+      "x": 108,
+      "y": 16,
+      "w": 110,
+      "h": 11,
+      "font": "siege-tiny",
+      "format": "Day {day} {time} {phase}",
+      "color": "#b0a080",
+      "shadow": "#000000",
+      "dayBar": {
+        "h": 3,
+        "back": "#203050",
+        "bands": [
+          {
+            "hour": 0,
+            "color": "#1c2440"
+          },
+          {
+            "hour": 5,
+            "color": "#c07858"
+          },
+          {
+            "hour": 7,
+            "color": "#e8c070"
+          },
+          {
+            "hour": 17,
+            "color": "#e88848"
+          },
+          {
+            "hour": 20,
+            "color": "#1c2440"
+          }
+        ],
+        "marks": [6, 12, 18],
+        "markColor": "#000000",
+        "marker": "#fcfcfc"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 226,
+      "y": 2,
+      "w": 91,
+      "h": 45,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "text",
+      "x": 230,
+      "y": 5,
+      "format": "OBJECTIVES",
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000",
+      "outline": "#000000"
+    },
+    {
+      "as": "panel",
+      "x": 230,
+      "y": 17,
+      "w": 5,
+      "h": 5,
+      "color": "#3c3020"
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 18,
+      "w": 3,
+      "h": 3,
+      "color": "#58c040",
+      "when": {
+        "status": "key.hall.alive",
+        "eq": 1
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 18,
+      "w": 3,
+      "h": 3,
+      "color": "#e03020",
+      "when": {
+        "status": "key.hall.alive",
+        "eq": 0
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 17,
+      "format": "Hold the hall",
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000"
+    },
+    {
+      "as": "bar",
+      "status": "key.hall.hp",
+      "max": "key.hall.maxHp",
+      "x": 292,
+      "y": 18,
+      "w": 21,
+      "h": 3,
+      "color": "#58c040",
+      "back": "#302010",
+      "low": {
+        "below": 0.4,
+        "color": "#e03020"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 230,
+      "y": 26,
+      "w": 5,
+      "h": 5,
+      "color": "#3c3020",
+      "when": {
+        "status": "key.captain.alive",
+        "gte": 0
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 27,
+      "w": 3,
+      "h": 3,
+      "color": "#58c040",
+      "when": {
+        "status": "key.captain.alive",
+        "eq": 1
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 27,
+      "w": 3,
+      "h": 3,
+      "color": "#e03020",
+      "when": {
+        "status": "key.captain.fate",
+        "eq": "captured"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 27,
+      "w": 3,
+      "h": 3,
+      "color": "#e03020",
+      "when": {
+        "status": "key.captain.alive",
+        "eq": 0
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 26,
+      "format": "Keep Hale alive",
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "when": {
+        "status": "key.captain.fate",
+        "ne": "captured"
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 26,
+      "format": "Free Captain Hale",
+      "font": "siege-tiny",
+      "color": "#f08060",
+      "shadow": "#000000",
+      "when": {
+        "status": "key.captain.fate",
+        "eq": "captured"
+      }
+    },
+    {
+      "as": "panel",
+      "x": 230,
+      "y": 35,
+      "w": 5,
+      "h": 5,
+      "color": "#3c3020",
+      "when": {
+        "status": "key.watchtower.progress",
+        "gte": 0
+      }
+    },
+    {
+      "as": "panel",
+      "x": 231,
+      "y": 36,
+      "w": 3,
+      "h": 3,
+      "color": "#58c040",
+      "when": {
+        "status": "key.watchtower.progress",
+        "eq": 100
+      }
+    },
+    {
+      "as": "text",
+      "x": 238,
+      "y": 35,
+      "format": "Raise the tower",
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "when": {
+        "status": "key.watchtower.progress",
+        "gte": 0
+      }
+    },
+    {
+      "as": "bar",
+      "status": "key.watchtower.progress",
+      "max": 100,
+      "x": 300,
+      "y": 36,
+      "w": 13,
+      "h": 3,
+      "color": "#e8b040",
+      "back": "#302010",
+      "when": {
+        "status": "key.watchtower.progress",
+        "lt": 100
+      }
+    },
+    {
+      "as": "panel",
+      "x": 3,
+      "y": 119,
+      "w": 54,
+      "h": 58,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "text",
+      "x": 6,
+      "y": 122,
+      "format": "ASHFORD VALE",
+      "font": "siege-tiny",
+      "color": "#f0c060",
+      "shadow": "#000000"
+    },
+    {
+      "as": "minimap",
+      "x": 6,
+      "y": 131,
+      "w": 48,
+      "h": 32,
+      "scale": 1,
+      "back": "#4c8c34",
+      "border": "#000000",
+      "tiles": {
+        "0": "#8c8478",
+        "1": "#b88048",
+        "2": "#5c9c3c"
+      },
+      "dots": [
+        {
+          "tag": "own",
+          "color": "#4c7cfc",
+          "size": 2
+        },
+        {
+          "tag": "enemy",
+          "color": "#f03828",
+          "size": 2
+        },
+        {
+          "kind": "mission-offer",
+          "color": "#fce468",
+          "size": 2
+        }
+      ]
+    },
+    {
+      "as": "text",
+      "x": 6,
+      "y": 166,
+      "format": "Drag: pan",
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000"
+    },
+    {
+      "as": "panel",
+      "x": 60,
+      "y": 148,
+      "w": 80,
+      "h": 29,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedName",
+      "x": 64,
+      "y": 151,
+      "font": "siege-small",
+      "color": "#f0c060",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      },
+      "outline": "#000000"
+    },
+    {
+      "as": "text",
+      "status": "selectedType",
+      "x": 64,
+      "y": 161,
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedRole",
+      "x": 104,
+      "y": 161,
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "bar",
+      "status": "selectedHp",
+      "max": "selectedMaxHp",
+      "x": 64,
+      "y": 169,
+      "w": 50,
+      "h": 4,
+      "color": "#58c040",
+      "back": "#302010",
+      "border": "#000000",
+      "low": {
+        "below": 0.35,
+        "color": "#e03020"
+      },
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "text",
+      "status": "selectedHp",
+      "x": 118,
+      "y": 168,
+      "font": "siege-tiny",
+      "color": "#f4e8cc",
+      "shadow": "#000000",
+      "when": {
+        "status": "selected",
+        "eq": 1
+      }
+    },
+    {
+      "as": "panel",
+      "x": 234,
+      "y": 166,
+      "w": 83,
+      "h": 11,
+      "color": "#1a140c",
+      "alpha": 0.84,
+      "border": "#6c5634"
+    },
+    {
+      "as": "text",
+      "x": 237,
+      "y": 169,
+      "format": "Esc pause  RMB order",
+      "font": "siege-tiny",
+      "color": "#b0a080",
+      "shadow": "#000000"
+    }
+  ],
+  "labels": {
+    "unit:ram": [
+      {
+        "as": "text",
+        "format": "Battering ram",
+        "font": "siege-tiny",
+        "color": "#fcfcfc",
+        "outline": "#000000",
+        "anchor": "top",
+        "offset": {
+          "x": 0,
+          "y": -6
+        }
+      },
+      {
+        "from": {
+          "tag": "hp:"
+        },
+        "as": "bar",
+        "w": 14,
+        "h": 2,
+        "color": "#e83020",
+        "back": "#301010",
+        "border": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -3
+        }
+      }
+    ],
+    "unit:catapult": [
+      {
+        "as": "text",
+        "format": "Catapult",
+        "font": "siege-tiny",
+        "color": "#fcfcfc",
+        "outline": "#000000",
+        "anchor": "bottom",
+        "offset": {
+          "x": 0,
+          "y": 5
+        }
+      },
+      {
+        "from": {
+          "tag": "hp:"
+        },
+        "as": "bar",
+        "w": 14,
+        "h": 2,
+        "color": "#e83020",
+        "back": "#301010",
+        "border": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -3
+        }
+      }
+    ],
+    "unit:raider": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "w": 14,
+      "h": 2,
+      "color": "#e83020",
+      "back": "#301010",
+      "border": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -3
+      }
+    },
+    "unit:soldier": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "w": 14,
+      "h": 2,
+      "color": "#40d040",
+      "back": "#301010",
+      "border": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -3
+      }
+    },
+    "unit:worker": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "w": 14,
+      "h": 2,
+      "color": "#40d040",
+      "back": "#301010",
+      "border": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -3
+      }
+    },
+    "unit:captain": [
+      {
+        "from": {
+          "tag": "hp:"
+        },
+        "as": "bar",
+        "w": 14,
+        "h": 2,
+        "color": "#40d040",
+        "back": "#301010",
+        "border": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -3
+        }
+      }
+    ],
+    "building:hall": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "w": 28,
+      "h": 3,
+      "color": "#40d040",
+      "back": "#301010",
+      "border": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -3
+      }
+    },
+    "building:wall": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "w": 14,
+      "h": 2,
+      "color": "#40d040",
+      "back": "#301010",
+      "border": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -3
+      }
+    },
+    "building:wall-tower": {
+      "from": {
+        "tag": "hp:"
+      },
+      "as": "bar",
+      "w": 14,
+      "h": 2,
+      "color": "#40d040",
+      "back": "#301010",
+      "border": "#000000",
+      "offset": {
+        "x": 0,
+        "y": -3
+      }
+    },
+    "building:watchtower": [
+      {
+        "from": {
+          "tag": "progress:"
+        },
+        "as": "text",
+        "format": "Watchtower {value}%",
+        "font": "siege-tiny",
+        "color": "#fce0a8",
+        "outline": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -4
+        }
+      },
+      {
+        "from": {
+          "tag": "progress:"
+        },
+        "as": "bar",
+        "max": 100,
+        "w": 22,
+        "h": 2,
+        "color": "#f8b800",
+        "back": "#301800",
+        "border": "#000000",
+        "offset": {
+          "x": 0,
+          "y": -3
+        }
+      }
+    ]
+  },
+  "camera": {
+    "zoom": 0.42
+  },
+  "sheets": {
+    "sheet": "siege",
+    "fallbackColor": "#ff00ff"
+  },
+  "camera3d": {
+    "fov": 35,
+    "view": "ground",
+    "pitch": 60,
+    "yaw": -8,
+    "lights": {
+      "ambient": 0.6,
+      "directional": 0.8
+    }
+  },
+  "scene3d": {
+    "sun": {
+      "color": "#ffdca8",
+      "intensity": 2.4,
+      "direction": {
+        "x": -2.4,
+        "y": 2.2,
+        "z": 1.3
+      },
+      "shadow": {
+        "mapSize": 2048,
+        "radius": 4
+      }
+    },
+    "ambient": {
+      "color": "#d0c8e0",
+      "intensity": 0.75
+    },
+    "hemisphere": {
+      "sky": "#f4e4cc",
+      "ground": "#706040",
+      "intensity": 1.35
+    },
+    "fog": {
+      "kind": "linear",
+      "color": "#c8c8a8",
+      "near": 60,
+      "far": 700
+    },
+    "toneMapping": {
+      "kind": "aces",
+      "exposure": 1.1
+    },
+    "colorSpace": "srgb",
+    "renderScale": 6,
+    "timeOfDay": {
+      "tween": 45,
+      "ease": "sineInOut",
+      "keys": [
+        {
+          "hour": 3.5,
+          "sun": {
+            "color": "#4058a0",
+            "intensity": 0.5,
+            "direction": {
+              "x": 1.2,
+              "y": 2.4,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#5060a0",
+            "intensity": 0.7
+          },
+          "hemisphere": {
+            "sky": "#384870",
+            "ground": "#181820",
+            "intensity": 0.9
+          },
+          "fog": {
+            "color": "#1c2440"
+          },
+          "background": "#1c2440",
+          "exposure": 1.0
+        },
+        {
+          "hour": 5.5,
+          "sun": {
+            "color": "#ffd0a8",
+            "intensity": 2.3,
+            "direction": {
+              "x": 3,
+              "y": 1.9,
+              "z": 0.9
+            }
+          },
+          "ambient": {
+            "color": "#d8d0e0",
+            "intensity": 0.8
+          },
+          "hemisphere": {
+            "sky": "#ece4dc",
+            "ground": "#6a5040",
+            "intensity": 1.45
+          },
+          "fog": {
+            "color": "#e0c4b0"
+          },
+          "background": "#e0c4b0",
+          "exposure": 1.15
+        },
+        {
+          "hour": 8,
+          "sun": {
+            "color": "#ffe8c0",
+            "intensity": 2.2,
+            "direction": {
+              "x": 2.4,
+              "y": 2.2,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#d0d8f0",
+            "intensity": 0.75
+          },
+          "hemisphere": {
+            "sky": "#d8e8ff",
+            "ground": "#706040",
+            "intensity": 1.35
+          },
+          "fog": {
+            "color": "#c8d0b8"
+          },
+          "background": "#c8d0b8",
+          "exposure": 1.1
+        },
+        {
+          "hour": 12,
+          "sun": {
+            "color": "#fff4e0",
+            "intensity": 2.3,
+            "direction": {
+              "x": -0.6,
+              "y": 3,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#d0d8f0",
+            "intensity": 0.75
+          },
+          "hemisphere": {
+            "sky": "#d8e8ff",
+            "ground": "#706040",
+            "intensity": 1.35
+          },
+          "fog": {
+            "color": "#c8d0b4"
+          },
+          "background": "#c8d0b4",
+          "exposure": 1.05
+        },
+        {
+          "hour": 15.5,
+          "sun": {
+            "color": "#ffdca8",
+            "intensity": 2.4,
+            "direction": {
+              "x": -2.4,
+              "y": 2.2,
+              "z": 1.3
+            }
+          },
+          "ambient": {
+            "color": "#d0c8e0",
+            "intensity": 0.75
+          },
+          "hemisphere": {
+            "sky": "#f4e4cc",
+            "ground": "#706040",
+            "intensity": 1.35
+          },
+          "fog": {
+            "color": "#ccc8a8"
+          },
+          "background": "#ccc8a8",
+          "exposure": 1.1
+        },
+        {
+          "hour": 18.5,
+          "sun": {
+            "color": "#ffa868",
+            "intensity": 2.0,
+            "direction": {
+              "x": -3,
+              "y": 1.2,
+              "z": 0.8
+            }
+          },
+          "ambient": {
+            "color": "#c0b0d0",
+            "intensity": 0.75
+          },
+          "hemisphere": {
+            "sky": "#ecc8b0",
+            "ground": "#504050",
+            "intensity": 1.3
+          },
+          "fog": {
+            "color": "#b88878"
+          },
+          "background": "#b88878",
+          "exposure": 1.15
+        },
+        {
+          "hour": 21,
+          "sun": {
+            "color": "#5068b0",
+            "intensity": 0.5,
+            "direction": {
+              "x": 1.6,
+              "y": 2.4,
+              "z": 1.2
+            }
+          },
+          "ambient": {
+            "color": "#5060a0",
+            "intensity": 0.7
+          },
+          "hemisphere": {
+            "sky": "#384870",
+            "ground": "#181820",
+            "intensity": 0.9
+          },
+          "fog": {
+            "color": "#1c2440"
+          },
+          "background": "#1c2440",
+          "exposure": 1.0
+        }
+      ]
+    }
+  },
+  "decor": {
+    "village": {
+      "grid": "village",
+      "legend": {
+        "w": {
+          "model": "assets/kenney-castle-kit/wall.glb",
+          "scale": 16,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "W": {
+          "model": "assets/kenney-castle-kit/wall.glb",
+          "scale": 16,
+          "yaw": 90,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "T": {
+          "model": "assets/kenney-castle-kit/tower-base.glb",
+          "scale": 18,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true,
+          "stack": [
+            {
+              "model": "assets/kenney-castle-kit/tower-hexagon-roof.glb",
+              "height": 23.6
+            }
+          ]
+        },
+        "h": {
+          "model": [
+            "assets/quaternius-medieval-village/house-1.glb",
+            "assets/quaternius-medieval-village/house-2.glb",
+            "assets/quaternius-medieval-village/house-3.glb",
+            "assets/quaternius-medieval-village/house-4.glb"
+          ],
+          "scale": 9,
+          "yaw": "quarter",
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "H": {
+          "model": "assets/quaternius-medieval-village/blacksmith.glb",
+          "scale": 8,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "m": {
+          "model": [
+            "assets/quaternius-medieval-village/market-stand-1.glb",
+            "assets/quaternius-medieval-village/market-stand-2.glb"
+          ],
+          "scale": 11,
+          "yaw": "quarter",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "b": {
+          "model": [
+            "assets/quaternius-medieval-village/barrel.glb",
+            "assets/quaternius-medieval-village/crate.glb",
+            "assets/quaternius-medieval-village/hay.glb",
+            "assets/quaternius-medieval-village/bags.glb"
+          ],
+          "scale": 22,
+          "yaw": "random",
+          "jitter": 4,
+          "castShadow": true
+        },
+        "l": {
+          "model": "assets/quaternius-medieval-village/well.glb",
+          "scale": 10,
+          "yaw": 0,
+          "castShadow": true
+        },
+        "a": {
+          "model": "assets/quaternius-medieval-village/cart.glb",
+          "scale": 12,
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "~": {
+          "model": "assets/kenney-nature-kit/ground_riverOpen.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "r": {
+          "model": "assets/kenney-nature-kit/ground_riverSide.glb",
+          "scale": 16,
+          "yaw": 270,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "R": {
+          "model": "assets/kenney-nature-kit/ground_riverSide.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "f": {
+          "model": "assets/kenney-nature-kit/ground_riverRocks.glb",
+          "scale": 16,
+          "yaw": "quarter",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "B": {
+          "model": "assets/kenney-nature-kit/bridge_wood.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#6a4228",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#8a6040",
+            "stoneDark": "#80868c",
+            "wood": "#b07a4a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "t": {
+          "model": [
+            "assets/kenney-nature-kit/tree_default.glb",
+            "assets/kenney-nature-kit/tree_oak.glb",
+            "assets/kenney-nature-kit/tree_fat.glb",
+            "assets/kenney-nature-kit/tree_detailed.glb"
+          ],
+          "scale": [13, 17],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "p": {
+          "model": [
+            "assets/kenney-nature-kit/tree_pineDefaultA.glb",
+            "assets/kenney-nature-kit/tree_pineRoundA.glb",
+            "assets/kenney-nature-kit/tree_pineTallA.glb",
+            "assets/kenney-nature-kit/tree_pineSmallA.glb",
+            "assets/kenney-nature-kit/tree_cone.glb"
+          ],
+          "scale": [13, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "y": {
+          "model": [
+            "assets/kenney-nature-kit/tree_default_fall.glb",
+            "assets/kenney-nature-kit/tree_oak_fall.glb",
+            "assets/kenney-nature-kit/tree_fat_fall.glb"
+          ],
+          "scale": [13, 16],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "K": {
+          "model": [
+            "assets/kenney-nature-kit/rock_largeA.glb",
+            "assets/kenney-nature-kit/rock_largeC.glb",
+            "assets/kenney-nature-kit/rock_largeD.glb",
+            "assets/kenney-nature-kit/rock_largeE.glb",
+            "assets/kenney-nature-kit/rock_tallA.glb",
+            "assets/kenney-nature-kit/rock_tallB.glb"
+          ],
+          "scale": [16, 20],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#9a9890",
+            "dirtDark": "#7a7870",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b4b2aa"
+          },
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "k": {
+          "model": [
+            "assets/kenney-nature-kit/rock_smallA.glb",
+            "assets/kenney-nature-kit/rock_smallB.glb",
+            "assets/kenney-nature-kit/rock_smallD.glb",
+            "assets/kenney-nature-kit/rock_smallE.glb",
+            "assets/kenney-nature-kit/rock_largeA.glb"
+          ],
+          "scale": [12, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#9a9890",
+            "dirtDark": "#7a7870",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b4b2aa"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "o": {
+          "model": [
+            "assets/kenney-nature-kit/plant_bush.glb",
+            "assets/kenney-nature-kit/plant_bushDetailed.glb",
+            "assets/kenney-nature-kit/plant_bushLarge.glb"
+          ],
+          "scale": [14, 20],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "g": {
+          "model": [
+            "assets/kenney-nature-kit/grass_large.glb",
+            "assets/kenney-nature-kit/grass.glb",
+            "assets/kenney-nature-kit/flower_yellowA.glb",
+            "assets/kenney-nature-kit/flower_redA.glb",
+            "assets/kenney-nature-kit/flower_purpleA.glb"
+          ],
+          "scale": [12, 16],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 5
+        },
+        "q": {
+          "model": "assets/kenney-nature-kit/crops_wheatStageB.glb",
+          "scale": 17,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 2,
+          "castShadow": true
+        },
+        "u": {
+          "model": "assets/kenney-nature-kit/crops_cornStageD.glb",
+          "scale": 15,
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        },
+        "d": {
+          "model": "assets/kenney-nature-kit/crops_dirtDoubleRow.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0.9
+          }
+        },
+        "M": {
+          "model": "assets/quaternius-medieval-village/mill.glb",
+          "scale": 7,
+          "yaw": 200,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "e": {
+          "model": "assets/kenney-nature-kit/fence_simple.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true
+        },
+        "E": {
+          "model": "assets/kenney-nature-kit/fence_simple.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true
+        },
+        "s": {
+          "model": "assets/quaternius-farm-animals/sheep.glb",
+          "scale": [0.018, 0.022],
+          "yaw": "random",
+          "jitter": 4,
+          "castShadow": true,
+          "instanced": false
+        },
+        "n": {
+          "model": [
+            "assets/kenney-nature-kit/tent_detailedClosed.glb",
+            "assets/kenney-nature-kit/tent_detailedOpen.glb",
+            "assets/kenney-nature-kit/tent_smallClosed.glb"
+          ],
+          "scale": [19, 23],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 2,
+          "castShadow": true
+        },
+        "F": {
+          "model": "assets/mini-siege-marks/raider-banner.gltf",
+          "scale": 16,
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "c": {
+          "model": "assets/quaternius-medieval-village/bonfire-lit.glb",
+          "scale": 16,
+          "yaw": "random",
+          "castShadow": true,
+          "light": {
+            "kind": "point",
+            "color": "#ff9a40",
+            "intensity": 90,
+            "distance": 110,
+            "offset": {
+              "x": 0,
+              "y": -8,
+              "z": 0
+            },
+            "flicker": 0.35
+          },
+          "emit": ["camp-smoke", "camp-flame"]
+        },
+        "L": {
+          "model": [
+            "assets/kenney-nature-kit/log_stack.glb",
+            "assets/kenney-nature-kit/log_stackLarge.glb",
+            "assets/kenney-nature-kit/log.glb"
+          ],
+          "scale": [14, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        },
+        "x": {
+          "model": "assets/kenney-nature-kit/stump_old.glb",
+          "scale": 14,
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        }
+      }
+    },
+    "dawn": {
+      "grid": "dawn",
+      "legend": {
+        "w": {
+          "model": "assets/kenney-castle-kit/wall.glb",
+          "scale": 16,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "W": {
+          "model": "assets/kenney-castle-kit/wall.glb",
+          "scale": 16,
+          "yaw": 90,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "T": {
+          "model": "assets/kenney-castle-kit/tower-base.glb",
+          "scale": 18,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true,
+          "stack": [
+            {
+              "model": "assets/kenney-castle-kit/tower-hexagon-roof.glb",
+              "height": 23.6
+            }
+          ]
+        },
+        "h": {
+          "model": [
+            "assets/quaternius-medieval-village/house-1.glb",
+            "assets/quaternius-medieval-village/house-2.glb",
+            "assets/quaternius-medieval-village/house-3.glb",
+            "assets/quaternius-medieval-village/house-4.glb"
+          ],
+          "scale": 9,
+          "yaw": "quarter",
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "H": {
+          "model": "assets/quaternius-medieval-village/blacksmith.glb",
+          "scale": 8,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "m": {
+          "model": [
+            "assets/quaternius-medieval-village/market-stand-1.glb",
+            "assets/quaternius-medieval-village/market-stand-2.glb"
+          ],
+          "scale": 11,
+          "yaw": "quarter",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "b": {
+          "model": [
+            "assets/quaternius-medieval-village/barrel.glb",
+            "assets/quaternius-medieval-village/crate.glb",
+            "assets/quaternius-medieval-village/hay.glb",
+            "assets/quaternius-medieval-village/bags.glb"
+          ],
+          "scale": 22,
+          "yaw": "random",
+          "jitter": 4,
+          "castShadow": true
+        },
+        "l": {
+          "model": "assets/quaternius-medieval-village/well.glb",
+          "scale": 10,
+          "yaw": 0,
+          "castShadow": true
+        },
+        "a": {
+          "model": "assets/quaternius-medieval-village/cart.glb",
+          "scale": 12,
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "~": {
+          "model": "assets/kenney-nature-kit/ground_riverOpen.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "r": {
+          "model": "assets/kenney-nature-kit/ground_riverSide.glb",
+          "scale": 16,
+          "yaw": 270,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "R": {
+          "model": "assets/kenney-nature-kit/ground_riverSide.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "f": {
+          "model": "assets/kenney-nature-kit/ground_riverRocks.glb",
+          "scale": 16,
+          "yaw": "quarter",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "B": {
+          "model": "assets/kenney-nature-kit/bridge_wood.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#6a4228",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#8a6040",
+            "stoneDark": "#80868c",
+            "wood": "#b07a4a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "t": {
+          "model": [
+            "assets/kenney-nature-kit/tree_default.glb",
+            "assets/kenney-nature-kit/tree_oak.glb",
+            "assets/kenney-nature-kit/tree_fat.glb",
+            "assets/kenney-nature-kit/tree_detailed.glb"
+          ],
+          "scale": [13, 17],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "p": {
+          "model": [
+            "assets/kenney-nature-kit/tree_pineDefaultA.glb",
+            "assets/kenney-nature-kit/tree_pineRoundA.glb",
+            "assets/kenney-nature-kit/tree_pineTallA.glb",
+            "assets/kenney-nature-kit/tree_pineSmallA.glb",
+            "assets/kenney-nature-kit/tree_cone.glb"
+          ],
+          "scale": [13, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "y": {
+          "model": [
+            "assets/kenney-nature-kit/tree_default_fall.glb",
+            "assets/kenney-nature-kit/tree_oak_fall.glb",
+            "assets/kenney-nature-kit/tree_fat_fall.glb"
+          ],
+          "scale": [13, 16],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "K": {
+          "model": [
+            "assets/kenney-nature-kit/rock_largeA.glb",
+            "assets/kenney-nature-kit/rock_largeC.glb",
+            "assets/kenney-nature-kit/rock_largeD.glb",
+            "assets/kenney-nature-kit/rock_largeE.glb",
+            "assets/kenney-nature-kit/rock_tallA.glb",
+            "assets/kenney-nature-kit/rock_tallB.glb"
+          ],
+          "scale": [16, 20],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#9a9890",
+            "dirtDark": "#7a7870",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b4b2aa"
+          },
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "k": {
+          "model": [
+            "assets/kenney-nature-kit/rock_smallA.glb",
+            "assets/kenney-nature-kit/rock_smallB.glb",
+            "assets/kenney-nature-kit/rock_smallD.glb",
+            "assets/kenney-nature-kit/rock_smallE.glb",
+            "assets/kenney-nature-kit/rock_largeA.glb"
+          ],
+          "scale": [12, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#9a9890",
+            "dirtDark": "#7a7870",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b4b2aa"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "o": {
+          "model": [
+            "assets/kenney-nature-kit/plant_bush.glb",
+            "assets/kenney-nature-kit/plant_bushDetailed.glb",
+            "assets/kenney-nature-kit/plant_bushLarge.glb"
+          ],
+          "scale": [14, 20],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "g": {
+          "model": [
+            "assets/kenney-nature-kit/grass_large.glb",
+            "assets/kenney-nature-kit/grass.glb",
+            "assets/kenney-nature-kit/flower_yellowA.glb",
+            "assets/kenney-nature-kit/flower_redA.glb",
+            "assets/kenney-nature-kit/flower_purpleA.glb"
+          ],
+          "scale": [12, 16],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 5
+        },
+        "q": {
+          "model": "assets/kenney-nature-kit/crops_wheatStageB.glb",
+          "scale": 17,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 2,
+          "castShadow": true
+        },
+        "u": {
+          "model": "assets/kenney-nature-kit/crops_cornStageD.glb",
+          "scale": 15,
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        },
+        "d": {
+          "model": "assets/kenney-nature-kit/crops_dirtDoubleRow.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0.9
+          }
+        },
+        "M": {
+          "model": "assets/quaternius-medieval-village/mill.glb",
+          "scale": 7,
+          "yaw": 200,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "e": {
+          "model": "assets/kenney-nature-kit/fence_simple.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true
+        },
+        "E": {
+          "model": "assets/kenney-nature-kit/fence_simple.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true
+        },
+        "s": {
+          "model": "assets/quaternius-farm-animals/sheep.glb",
+          "scale": [0.018, 0.022],
+          "yaw": "random",
+          "jitter": 4,
+          "castShadow": true,
+          "instanced": false
+        },
+        "n": {
+          "model": [
+            "assets/kenney-nature-kit/tent_detailedClosed.glb",
+            "assets/kenney-nature-kit/tent_detailedOpen.glb",
+            "assets/kenney-nature-kit/tent_smallClosed.glb"
+          ],
+          "scale": [19, 23],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 2,
+          "castShadow": true
+        },
+        "F": {
+          "model": "assets/mini-siege-marks/raider-banner.gltf",
+          "scale": 16,
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "c": {
+          "model": "assets/quaternius-medieval-village/bonfire-lit.glb",
+          "scale": 16,
+          "yaw": "random",
+          "castShadow": true,
+          "light": {
+            "kind": "point",
+            "color": "#ff9a40",
+            "intensity": 90,
+            "distance": 110,
+            "offset": {
+              "x": 0,
+              "y": -8,
+              "z": 0
+            },
+            "flicker": 0.35
+          },
+          "emit": ["camp-smoke", "camp-flame"]
+        },
+        "L": {
+          "model": [
+            "assets/kenney-nature-kit/log_stack.glb",
+            "assets/kenney-nature-kit/log_stackLarge.glb",
+            "assets/kenney-nature-kit/log.glb"
+          ],
+          "scale": [14, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        },
+        "x": {
+          "model": "assets/kenney-nature-kit/stump_old.glb",
+          "scale": 14,
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        }
+      }
+    },
+    "ridge": {
+      "grid": "ridge",
+      "legend": {
+        "w": {
+          "model": "assets/kenney-castle-kit/wall.glb",
+          "scale": 16,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "W": {
+          "model": "assets/kenney-castle-kit/wall.glb",
+          "scale": 16,
+          "yaw": 90,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "T": {
+          "model": "assets/kenney-castle-kit/tower-base.glb",
+          "scale": 18,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true,
+          "stack": [
+            {
+              "model": "assets/kenney-castle-kit/tower-hexagon-roof.glb",
+              "height": 23.6
+            }
+          ]
+        },
+        "h": {
+          "model": [
+            "assets/quaternius-medieval-village/house-1.glb",
+            "assets/quaternius-medieval-village/house-2.glb",
+            "assets/quaternius-medieval-village/house-3.glb",
+            "assets/quaternius-medieval-village/house-4.glb"
+          ],
+          "scale": 9,
+          "yaw": "quarter",
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "H": {
+          "model": "assets/quaternius-medieval-village/blacksmith.glb",
+          "scale": 8,
+          "yaw": 0,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "m": {
+          "model": [
+            "assets/quaternius-medieval-village/market-stand-1.glb",
+            "assets/quaternius-medieval-village/market-stand-2.glb"
+          ],
+          "scale": 11,
+          "yaw": "quarter",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "b": {
+          "model": [
+            "assets/quaternius-medieval-village/barrel.glb",
+            "assets/quaternius-medieval-village/crate.glb",
+            "assets/quaternius-medieval-village/hay.glb",
+            "assets/quaternius-medieval-village/bags.glb"
+          ],
+          "scale": 22,
+          "yaw": "random",
+          "jitter": 4,
+          "castShadow": true
+        },
+        "l": {
+          "model": "assets/quaternius-medieval-village/well.glb",
+          "scale": 10,
+          "yaw": 0,
+          "castShadow": true
+        },
+        "a": {
+          "model": "assets/quaternius-medieval-village/cart.glb",
+          "scale": 12,
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "~": {
+          "model": "assets/kenney-nature-kit/ground_riverOpen.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "r": {
+          "model": "assets/kenney-nature-kit/ground_riverSide.glb",
+          "scale": 16,
+          "yaw": 270,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "R": {
+          "model": "assets/kenney-nature-kit/ground_riverSide.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "f": {
+          "model": "assets/kenney-nature-kit/ground_riverRocks.glb",
+          "scale": 16,
+          "yaw": "quarter",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "B": {
+          "model": "assets/kenney-nature-kit/bridge_wood.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#6a4228",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#8a6040",
+            "stoneDark": "#80868c",
+            "wood": "#b07a4a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true,
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 1.2
+          }
+        },
+        "t": {
+          "model": [
+            "assets/kenney-nature-kit/tree_default.glb",
+            "assets/kenney-nature-kit/tree_oak.glb",
+            "assets/kenney-nature-kit/tree_fat.glb",
+            "assets/kenney-nature-kit/tree_detailed.glb"
+          ],
+          "scale": [13, 17],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "p": {
+          "model": [
+            "assets/kenney-nature-kit/tree_pineDefaultA.glb",
+            "assets/kenney-nature-kit/tree_pineRoundA.glb",
+            "assets/kenney-nature-kit/tree_pineTallA.glb",
+            "assets/kenney-nature-kit/tree_pineSmallA.glb",
+            "assets/kenney-nature-kit/tree_cone.glb"
+          ],
+          "scale": [13, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "y": {
+          "model": [
+            "assets/kenney-nature-kit/tree_default_fall.glb",
+            "assets/kenney-nature-kit/tree_oak_fall.glb",
+            "assets/kenney-nature-kit/tree_fat_fall.glb"
+          ],
+          "scale": [13, 16],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "K": {
+          "model": [
+            "assets/kenney-nature-kit/rock_largeA.glb",
+            "assets/kenney-nature-kit/rock_largeC.glb",
+            "assets/kenney-nature-kit/rock_largeD.glb",
+            "assets/kenney-nature-kit/rock_largeE.glb",
+            "assets/kenney-nature-kit/rock_tallA.glb",
+            "assets/kenney-nature-kit/rock_tallB.glb"
+          ],
+          "scale": [16, 20],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#9a9890",
+            "dirtDark": "#7a7870",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b4b2aa"
+          },
+          "jitter": 2,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "k": {
+          "model": [
+            "assets/kenney-nature-kit/rock_smallA.glb",
+            "assets/kenney-nature-kit/rock_smallB.glb",
+            "assets/kenney-nature-kit/rock_smallD.glb",
+            "assets/kenney-nature-kit/rock_smallE.glb",
+            "assets/kenney-nature-kit/rock_largeA.glb"
+          ],
+          "scale": [12, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#9a9890",
+            "dirtDark": "#7a7870",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b4b2aa"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "o": {
+          "model": [
+            "assets/kenney-nature-kit/plant_bush.glb",
+            "assets/kenney-nature-kit/plant_bushDetailed.glb",
+            "assets/kenney-nature-kit/plant_bushLarge.glb"
+          ],
+          "scale": [14, 20],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 4,
+          "castShadow": true
+        },
+        "g": {
+          "model": [
+            "assets/kenney-nature-kit/grass_large.glb",
+            "assets/kenney-nature-kit/grass.glb",
+            "assets/kenney-nature-kit/flower_yellowA.glb",
+            "assets/kenney-nature-kit/flower_redA.glb",
+            "assets/kenney-nature-kit/flower_purpleA.glb"
+          ],
+          "scale": [12, 16],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 5
+        },
+        "q": {
+          "model": "assets/kenney-nature-kit/crops_wheatStageB.glb",
+          "scale": 17,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 2,
+          "castShadow": true
+        },
+        "u": {
+          "model": "assets/kenney-nature-kit/crops_cornStageD.glb",
+          "scale": 15,
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        },
+        "d": {
+          "model": "assets/kenney-nature-kit/crops_dirtDoubleRow.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "receiveShadow": true,
+          "offset": {
+            "x": 0,
+            "y": 0,
+            "z": 0.9
+          }
+        },
+        "M": {
+          "model": "assets/quaternius-medieval-village/mill.glb",
+          "scale": 7,
+          "yaw": 200,
+          "castShadow": true,
+          "receiveShadow": true
+        },
+        "e": {
+          "model": "assets/kenney-nature-kit/fence_simple.glb",
+          "scale": 16,
+          "yaw": 0,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true
+        },
+        "E": {
+          "model": "assets/kenney-nature-kit/fence_simple.glb",
+          "scale": 16,
+          "yaw": 90,
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "castShadow": true
+        },
+        "s": {
+          "model": "assets/quaternius-farm-animals/sheep.glb",
+          "scale": [0.018, 0.022],
+          "yaw": "random",
+          "jitter": 4,
+          "castShadow": true,
+          "instanced": false
+        },
+        "n": {
+          "model": [
+            "assets/kenney-nature-kit/tent_detailedClosed.glb",
+            "assets/kenney-nature-kit/tent_detailedOpen.glb",
+            "assets/kenney-nature-kit/tent_smallClosed.glb"
+          ],
+          "scale": [19, 23],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 2,
+          "castShadow": true
+        },
+        "F": {
+          "model": "assets/mini-siege-marks/raider-banner.gltf",
+          "scale": 16,
+          "yaw": "random",
+          "jitter": 2,
+          "castShadow": true
+        },
+        "c": {
+          "model": "assets/quaternius-medieval-village/bonfire-lit.glb",
+          "scale": 16,
+          "yaw": "random",
+          "castShadow": true,
+          "light": {
+            "kind": "point",
+            "color": "#ff9a40",
+            "intensity": 90,
+            "distance": 110,
+            "offset": {
+              "x": 0,
+              "y": -8,
+              "z": 0
+            },
+            "flicker": 0.35
+          },
+          "emit": ["camp-smoke", "camp-flame"]
+        },
+        "L": {
+          "model": [
+            "assets/kenney-nature-kit/log_stack.glb",
+            "assets/kenney-nature-kit/log_stackLarge.glb",
+            "assets/kenney-nature-kit/log.glb"
+          ],
+          "scale": [14, 18],
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        },
+        "x": {
+          "model": "assets/kenney-nature-kit/stump_old.glb",
+          "scale": 14,
+          "yaw": "random",
+          "materials": {
+            "grass": "#8cc24a",
+            "leafsGreen": "#4e9a34",
+            "leafsDark": "#2f7434",
+            "leafsFall": "#e09a30",
+            "woodBark": "#7a5034",
+            "woodBarkDark": "#5e3e2a",
+            "woodBirch": "#e8dcc8",
+            "dirt": "#c8925a",
+            "dirtDark": "#9a6a44",
+            "water": "#58a8d8",
+            "stone": "#a8acb0",
+            "stoneDark": "#80868c",
+            "wood": "#a8744a",
+            "woodDark": "#7a5034",
+            "colorRed": "#c8302a",
+            "colorRedDark": "#8a1e1a",
+            "_defaultMat": "#b0b0a8"
+          },
+          "jitter": 3,
+          "castShadow": true
+        }
+      }
+    }
+  },
+  "places": {
+    "village": [
+      {
+        "text": "THE HALL",
+        "x": 120.0,
+        "y": 192,
+        "height": 40,
+        "font": "siege-small",
+        "color": "#fce0a8",
+        "outline": "#000000"
+      },
+      {
+        "text": "RAIDERS' CAMP",
+        "x": 656,
+        "y": 144,
+        "height": 30,
+        "font": "siege-small",
+        "color": "#fce0a8",
+        "outline": "#000000"
+      }
+    ],
+    "dawn": [
+      {
+        "text": "THE HALL",
+        "x": 120.0,
+        "y": 192,
+        "height": 40,
+        "font": "siege-small",
+        "color": "#fce0a8",
+        "outline": "#000000"
+      },
+      {
+        "text": "RAIDERS' CAMP",
+        "x": 656,
+        "y": 144,
+        "height": 30,
+        "font": "siege-small",
+        "color": "#fce0a8",
+        "outline": "#000000"
+      }
+    ],
+    "ridge": [
+      {
+        "text": "THE HALL",
+        "x": 120.0,
+        "y": 192,
+        "height": 40,
+        "font": "siege-small",
+        "color": "#fce0a8",
+        "outline": "#000000"
+      },
+      {
+        "text": "RAIDERS' CAMP",
+        "x": 656,
+        "y": 144,
+        "height": 30,
+        "font": "siege-small",
+        "color": "#fce0a8",
+        "outline": "#000000"
+      }
+    ]
+  },
+  "music": {
+    "siege": {
+      "layers": {
+        "calm": "siege",
+        "danger": "siege-danger"
+      },
+      "fade": 45,
+      "mix": [
+        {
+          "when": {
+            "status": "missionLeft",
+            "gte": 0
+          },
+          "layers": {
+            "calm": 0.6,
+            "danger": 1
+          },
+          "fade": 30
+        },
+        {
+          "when": {
+            "status": "enemyNear",
+            "lte": 3
+          },
+          "layers": {
+            "calm": 0.6,
+            "danger": 1
+          },
+          "fade": 30
+        },
+        {
+          "layers": {
+            "calm": 1,
+            "danger": 0
+          }
+        }
+      ]
+    }
+  }
+}

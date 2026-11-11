@@ -36,7 +36,13 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   (`particles`, `particleViews()`). Camera effects (Engine 0.16 T4) as in 2D: trauma shake on x
   and y, zoom punches by distance, event flashes on the overlay (skipped with `reduceFlashing`),
   `onHitPause`, `shakeScale`, `effectSettings`, `showHud(shown)` on `ThreePresenter` and the
-  display (Engine 0.16 part C T1: the HUD pass is skipped under the shell's title); the skin's `parallax` layers as `ParallaxPlanes`
+  display (Engine 0.16 part C T1: the HUD pass is skipped under the shell's title); from Engine 0.16 F2 a ground view (the skin's
+  `camera3d.view: "ground"`, `pitch`, `yaw`): the map on the floor, entities standing on their
+  box centres turned to their facing about the vertical, the camera from the core
+  `groundProjection` that `RtsCamera` picks through (`groundProjection` read-out; labels at
+  projected anchors, particles over the ground, the sun's shadow camera over the picture's ground
+  footprint, fog and camera effects as in side view; `GROUND_LAYER_LIFT`,
+  `GROUND_PARTICLE_HEIGHT`), side-view skins unchanged; the skin's `parallax` layers as `ParallaxPlanes`
   (`parallax.ts`): quads on planes at each layer's `depth`, hung on the camera and drawn first,
   placed where the 2D layout draws them (`parallax.draws()`, `meshes()`). The HUD (Engine 0.15,
   gap G33): `hud`, a `HudLayer` (`hud.ts`) that draws the core `layoutHud` items for
@@ -62,7 +68,9 @@ there; a WebGL presenter draws it in the browser. It holds no game rules.
   implements the core `Presenter`; `present(frame)` syncs a `ThreeScene` and draws it with a
   `WebGLRenderer` set up to draw a paused frame the same every time on one machine (no antialias,
   `preserveDrawingBuffer`, pixel ratio 1, sRGB output, fixed clear colour (the `background` option, else the skin's, else black), buffer at
-  the picture size), then the scene's labels and HUD passes over it; from Engine 0.16 T12 each
+  the picture size, or from Engine 0.16 F3 that times `renderScale` (the option, else the skin's
+  `scene3d.renderScale`: supersampled, the HUD, labels, menus and transitions laid out in picture
+  px and drawn scaled), then the scene's labels and HUD passes over it; from Engine 0.16 T12 each
   draw sets the renderer from the scene's `look` (shadow map on with PCF filtering when the sun
   casts shadows, ACES or AgX tone mapping and exposure, sRGB or linear output), and HUD, label and
   overlay materials are never tone mapped or fogged; `resize(size)`; `rendererInfo()`; `dispose()`; `withSkin(skin, opts?)`
@@ -127,10 +135,50 @@ the text mesh while loading then the model, the clip from the anim state, tile m
 text-mesh kinds unchanged) and `lighting.test.ts` (Engine 0.16 T12: a skin without `scene3d`
 keeping its lights and objects, the sun, ambient, hemisphere, shadows, fog and tone mapping from
 the skin, shadow flags on kinds and tiles, point lights flickering the same each run, labels
-projected to the right picture px, stacked and hidden off screen or behind the camera).
+projected to the right picture px, stacked and hidden off screen or behind the camera) and
+`decor.test.ts` (Engine 0.16 F3: a 48 x 32 map of tile models as one `InstancedMesh` per tile key
+and model mesh, instances placed as a `ModelInstance` would be, `vary` per seed, the skin's decor
+grid instanced per character and model or copied per cell, `places` labels in ground and side
+view, the render scale).
 `tests/runs/presentation-invariance.test.ts` plays every run with the `lighting` switch on.
 `ThreePresenter` and
 `applyCanvasBox` are browser only: in Node they only typecheck. They are exercised in Playwright
 Chromium by the 3D play page and `pnpm cli screenshot --backend three`, which skip cleanly where no
 browser is installed; `tests/browser/platformer.test.ts` checks the platformer sample's HUD is
 drawn at `?backend=three`.
+
+## Engine 0.16 F4: the time of day
+
+- A skin's `scene3d.timeOfDay` (`{ status?, tween?, ease?, keys: [{ hour, sun?, ambient?,
+hemisphere?, fog?, background?, exposure? }] }`) is applied by `ThreeScene` each `sync` from the
+  frame's world clock (`clock.day`, `clock.fraction`): the sun's colour, strength and direction,
+  the ambient, the hemisphere light, the fog, the background and the exposure (`scene.exposure`,
+  read by the presenter), interpolated between the keys round the day. A jump in world time of
+  more than half an hour eases over `tween` display frames (`DayClockTween`). A frame without the
+  clock, or a skin without `timeOfDay`, looks as before. Read-outs `dayLook` and `dayHour`.
+  Tested in `engine/backends/three/time-of-day.test.ts`; the fx lab's ground page
+  (`?hour=<h>&jump=<n>`) is shot by `tests/browser/fx-lab-ground.test.ts`.
+
+## Engine 0.16 F3: crisp output, instanced tile models, decor and places
+
+- `ThreePresenter({ renderScale?, decor? })`, `threeDisplay({ renderScale?, decor? })`,
+  `ThreeScene({ renderScale?, decor? })`: the drawing buffer at `size * renderScale` (whole, 1-8;
+  default the skin's `scene3d.renderScale`), every 2D pass still in picture px. `pnpm cli
+screenshot --backend three --render-scale N` (default the skin's) is byte-identical on two runs.
+- `modelMeshParts(model, spec, box)` (`models.ts`): a model's meshes with the matrices that place
+  them as a `ModelInstance` does, for instancing (null for skinned models).
+- Model tiles without a `clip` are one `InstancedMesh` per tile key and mesh, varied per cell by
+  the tile's `vary` (`tileVariation`, the presentation RNG). The skin's `decor` (with
+  `contentDecor(content)` as the `decor` option) places scenery per map id, and its `places`
+  names regions on the label layer. See `engine/backends/three/CLAUDE.md`.
+
+## Engine 0.16 F6: model colours, tag-look models, decor stacks, lights and smoke
+
+- A kind's, tile's or decor legend entry's `materials` (material name -> colour) and `tint`
+  recolour its model's copies (`recolorMaterials` in `models.ts`; instanced batches get their own
+  material copies). A kind's `byTag` look may swap `model` and `scale` and set `materials` and
+  `tint` (a burnt engine, a scaffold, the frozen look); `skinModelUses` lists the looks' models.
+- A decor legend entry's `stack` puts more models on its cells (a tower's roof); its `light` is a
+  flickering `PointLight` per cell and its `emit` runs emitters there (`SkinParticles.update`'s
+  `fixed` emitters; `ThreeScene.decorLights()`). Used by the mini siege's `three.json`. See
+  `engine/backends/three/CLAUDE.md`.

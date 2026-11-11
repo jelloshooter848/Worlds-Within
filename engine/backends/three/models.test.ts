@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Box3, InstancedMesh, Mesh, Vector3, type Group } from 'three';
+import { Box3, Color, InstancedMesh, Mesh, Vector3, type Group } from 'three';
 import { base64, encodeGlb, encodeGltfEmbedded, lowPolyModel } from '@engine/core/content/gltf';
 import { assetDataUrl } from '@engine/core/content/png';
 import {
@@ -78,6 +78,7 @@ const spec = (over: Partial<SkinModel> = {}): SkinModel => ({
   hold: false,
   offset: { x: 0, y: 0, z: 0 },
   stretch: { x: 1, y: 1, z: 1 },
+  materials: {},
   tint: null,
   ...over,
 });
@@ -217,6 +218,97 @@ describe('ModelInstance', () => {
     expect(a.meshes()[0]!.geometry).toBe(b.meshes()[0]!.geometry);
     expect(a.meshes().every((m) => m.castShadow)).toBe(true);
     expect(b.meshes().some((m) => m.castShadow)).toBe(false);
+  });
+});
+
+describe('ModelInstance colours (Engine 0.16 F6)', () => {
+  /** A material's colour as `#rrggbb` (sRGB). */
+  const hex = (i: ModelInstance, name: string) =>
+    `#${(i.materials.find((m) => m.name === name) as unknown as { color: Color }).color.getHexString()}`;
+
+  it('sets named materials, multiplies every colour by the tint, and leaves the library alone', async () => {
+    const lib = await library();
+    const plain = new ModelInstance(lib.get(GLB)!, spec(), { w: 16, h: 16 });
+    expect(hex(plain, '#806040')).toBe('#806040');
+    const team = new ModelInstance(
+      lib.get(GLB)!,
+      spec({ materials: { '#806040': '#2050d0', none: '#fff' } }),
+      {
+        w: 16,
+        h: 16,
+      },
+    );
+    expect(hex(team, '#806040')).toBe('#2050d0');
+    expect(hex(team, '#f8b800')).toBe('#f8b800');
+    const held = new ModelInstance(
+      lib.get(GLB)!,
+      spec({ materials: { '#806040': '#ffffff' }, tint: '#808080' }),
+      { w: 16, h: 16 },
+    );
+    // white tinted by mid grey (sRGB #808080, linear 0.216): every channel the same, darker
+    const body = (held.materials.find((m) => m.name === '#806040') as unknown as { color: Color }).color;
+    expect(body.r).toBeCloseTo(new Color('#808080').r, 5);
+    expect(body.r).toBe(body.g);
+    // the library's own materials keep their colours
+    const again = new ModelInstance(lib.get(GLB)!, spec(), { w: 16, h: 16 });
+    expect(hex(again, '#806040')).toBe('#806040');
+  });
+
+  it("swaps a kind's model, scale and colours by tag look, rebuilding only when the look changes", async () => {
+    const skin = skinSchema.parse({
+      backend: 'three',
+      kinds: {
+        thing: {
+          mesh: 'box',
+          color: '#d82800',
+          model: GLB,
+          scale: 8,
+          materials: { '#806040': '#2050d0' },
+          byTag: [
+            { tag: 'damaged', model: GLTF, scale: 4 },
+            { tag: 'frozen', tint: '#a0c0ff' },
+          ],
+        },
+      },
+    }) as SkinFile;
+    const models = new ModelLibrary(ASSETS);
+    await models.preload([skin]);
+    expect(models.status(GLTF)).toBe('ready'); // the look's model is preloaded too
+    const scene = new ThreeScene(skin, { models });
+    scene.sync(frame(0, [thing()]));
+    const plain = scene.entity('t1')!;
+    expect(plain.userData).toMatchObject({ model: GLB });
+    expect(bounds(plain).max.y - bounds(plain).min.y).toBeCloseTo(16);
+    scene.sync(frame(1, [thing({ tags: ['damaged'] })]));
+    const burnt = scene.entity('t1')!;
+    expect(burnt).not.toBe(plain);
+    expect(burnt.userData).toMatchObject({ model: GLTF });
+    expect(bounds(burnt).max.y - bounds(burnt).min.y).toBeCloseTo(8);
+    scene.sync(frame(2, [thing({ tags: ['frozen'] })]));
+    const held = scene.entity('t1')!;
+    const colours: string[] = [];
+    held.traverse((o) => {
+      if (o instanceof Mesh) colours.push((o.material as unknown as { color: Color }).color.getHexString());
+    });
+    // the kind's team colour stays under the look's tint
+    const blue = new Color('#2050d0').multiply(new Color('#a0c0ff')).getHexString();
+    expect(colours).toContain(blue);
+    scene.sync(frame(3, [thing({ tags: ['frozen'] })]));
+    expect(scene.entity('t1')).toBe(held);
+  });
+
+  it('refuses the colour fields without a model, and on a 2D skin', () => {
+    const noModel = skinSchema.safeParse({
+      backend: 'three',
+      kinds: { a: { mesh: 'box', color: '#000', tint: '#fff' } },
+    });
+    expect(noModel.success).toBe(false);
+    const flat = skinSchema.safeParse({
+      backend: 'canvas2d',
+      sheets: { sheet: 's', fallbackColor: '#000' },
+      kinds: { a: { frames: { idle: 'x' }, byTag: [{ tag: 'b', model: GLB }] } },
+    });
+    expect(flat.success).toBe(false);
   });
 });
 

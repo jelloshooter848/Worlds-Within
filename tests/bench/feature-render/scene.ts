@@ -364,8 +364,13 @@ export function withoutFeatures(skin: SkinFile, without: readonly FeatureName[])
 }
 
 /** One case: a map, its unit count, the camera's zoom and whether the 0.16 features are on. */
+/** The 2D backend a case is drawn with (Engine 0.16 T13b-6): Canvas2D or PixiJS (WebGL). */
+export type FeatureBackend = 'canvas2d' | 'pixi';
+
 export interface FeatureCase {
   map: FeatureMap;
+  /** Default `canvas2d`. The scene and skin are the same on both. */
+  backend?: FeatureBackend;
   units: number;
   zoom: number;
   /** Default true; false draws the game's own skin with the same units and nothing added. */

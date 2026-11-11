@@ -52,15 +52,29 @@ describe('sheet tiles', () => {
       },
       { run: null, tick: 200, overlay: null, backend: 'three', text: '200@3d' },
     ]);
-    expect(parseTiles('1@2d,2@canvas2d,3@three').map((t) => t.backend)).toEqual([
+    expect(parseTiles('1@2d,2@canvas2d,3@three,4@3d,5@pixi').map((t) => t.backend)).toEqual([
       'canvas2d',
       'canvas2d',
       'three',
+      'three',
+      'pixi',
+    ]);
+  });
+
+  it("reads a run file of another folder, relative to the run file's own", () => {
+    expect(parseTiles('../../samples/rts-skirmish/runs/battle/141+pause@pixi')).toEqual([
+      {
+        run: '../../samples/rts-skirmish/runs/battle',
+        tick: 141,
+        overlay: { kind: 'menu', screen: 'pause', frames: 30 },
+        backend: 'pixi',
+        text: '../../samples/rts-skirmish/runs/battle/141+pause@pixi',
+      },
     ]);
   });
 
   it('refuses a bad tile with a usage error naming it', () => {
-    for (const bad of ['', 'abc', '12+nope', '12@4d', '12+ui=', '12+pause*x'])
+    for (const bad of ['', 'abc', '12+nope', '12@4d', '12@webgl', '12+ui=', '12+pause*x'])
       expect(() => parseTiles(bad), bad).toThrow(UsageError);
     expect(() => parseOverlay('ui=lab.')).toThrow(/widget id/);
   });
@@ -246,6 +260,29 @@ describe.skipIf(missing !== null)('sheet (headless Chromium)', () => {
     expect(a.result).toMatchObject({ width, height, bytes: png.length });
     const b = await cli(argv('b.png'));
     expect(b.result.sha256).toBe(a.result.sha256);
+  }, 300_000);
+
+  it('puts Canvas2D and PixiJS pictures of the same ticks side by side (T13b-5)', async () => {
+    const r = await cli([
+      'sheet',
+      LEVEL1,
+      '--ticks',
+      '154@canvas2d,154@pixi,100+wipe*12@2d,100+wipe*12@pixi',
+      '--columns',
+      '2',
+    ]);
+    expect(r.code, JSON.stringify(r.result)).toBe(EXIT.ok);
+    expect(r.result).toMatchObject({ matchesHeadless: true, width: 8 + 2 * (256 + 8) });
+    const plays = r.result.plays as { backend: string; renderer: string | null }[];
+    expect(plays.map((p) => p.backend)).toEqual(['canvas2d', 'pixi']);
+    expect(plays[0]!.renderer).toBeNull();
+    expect(plays[1]!.renderer).toEqual(expect.any(String));
+    expect((r.result.tiles as { label: string }[]).map((t) => t.label)).toEqual([
+      'level-1 t154 [2D]',
+      'level-1 t154 [PixiJS]',
+      'level-1 t100 + wipe frame 12 [2D]',
+      'level-1 t100 + wipe frame 12 [PixiJS]',
+    ]);
   }, 300_000);
 
   it('refuses 3D tiles on software WebGL without --allow-software-gl', async () => {

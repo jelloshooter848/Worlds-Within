@@ -20,7 +20,7 @@ from T4 lighting and mood: dark rooms with brazier pools, the hero's small light
 crypt darker, blasts lighting the room, a vignette and dust in the air, all in the skin's
 `lighting` block).
 A thin scene runs the kit's world, hands the kit's presentation frames to the page display's
-presenter (or its own `SkinnedCanvasPresenter`), shows the end banner and starts a new run on Z
+presenter (Canvas2D by default, PixiJS with `?backend=pixi`; or its own `SkinnedCanvasPresenter` for the view and screenshots), shows the end banner and starts a new run on Z
 or X where the shell does not show the end itself; from Engine 0.16 part C T7 `game.json`'s
 `menus.dialogs` and `triggers` give an intro dialog after Start and, when the hero escapes or
 falls, a dialog and the end screen (`menus.end`: time, rooms seen and health); from T9 the hero
@@ -76,3 +76,9 @@ with no fallback box, the end states, the scene against the headless game (T9: t
 games index and plays it (headless Chromium, skipped without one). `pnpm -s cli validate
 games/samples/dungeon --json` checks every data file. `pnpm dev` and open
 `/games/samples/dungeon/` to play it.
+
+## 2D backend choice
+
+`?backend=pixi` draws the page through the PixiJS (WebGL) backend (`@engine/backends/pixi`, loaded
+with a dynamic `import()`, its own chunk) and falls back to Canvas2D where WebGL is missing;
+`?backend=canvas2d` or no query keeps Canvas2D, the default (Engine 0.16 T13b-4).

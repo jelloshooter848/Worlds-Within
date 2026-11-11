@@ -95,3 +95,65 @@ describe('RtsControls: the mission button (Engine 0.11)', () => {
     ).toMatchObject({ ok: false, code: 'not_offered' });
   });
 });
+
+describe('RtsControls through a ground view (Engine 0.16 F2)', () => {
+  /** Controls with a pitched, turned 3D camera over the fixture map (8 x 6 cells of 16 px). */
+  function ground() {
+    const camera = new RtsCamera({
+      view: { width: 160, height: 120 },
+      area: { x: 0, y: 0, w: 128, h: 96 },
+      zoom: 1.5,
+      centre: { x: 64, y: 48 },
+      ground: { pitch: 50, yaw: 30, fov: 45 },
+    });
+    return { camera, controls: new RtsControls('red', camera, TS), view: readWorld(battleSnapshot()) };
+  }
+  /** The picture point over the centre of cell (x, y) on the ground. */
+  const over = (camera: RtsCamera, x: number, y: number) =>
+    camera.worldToScreen((x + 0.5) * TS, (y + 0.5) * TS);
+
+  it('a tap selects the thing on the cell under it, and a right tap orders to that cell', () => {
+    const { camera, controls, view } = ground();
+    controls.gesture({ type: 'tap', button: 'primary', ...over(camera, 1, 1), kind: 'mouse' }, view);
+    expect(controls.selection.ids()).toEqual([3]);
+    controls.gesture({ type: 'tap', button: 'primary', ...over(camera, 2, 1), kind: 'mouse' }, view);
+    expect(controls.selection.ids()).toEqual([5]);
+    expect(
+      controls.gesture({ type: 'tap', button: 'secondary', ...over(camera, 3, 2), kind: 'mouse' }, view),
+    ).toEqual({ faction: 'red', type: 'move', units: [5], target: { x: 3, y: 2 } });
+    controls.startPlacing('barracks');
+    controls.hover(over(camera, 4, 3));
+    expect(controls.placing(view)).toMatchObject({ cell: { x: 4, y: 3 } });
+  });
+
+  it('a box selects the units drawn inside the picture rectangle', () => {
+    const { camera, controls, view } = ground();
+    const a = over(camera, 1, 3);
+    const b = over(camera, 2, 3);
+    const rect = {
+      x0: Math.min(a.x, b.x) - 3,
+      y0: Math.min(a.y, b.y) - 3,
+      x1: Math.max(a.x, b.x) + 3,
+      y1: Math.max(a.y, b.y) + 3,
+    };
+    controls.gesture({ type: 'box', phase: 'move', ...rect, kind: 'mouse' }, view);
+    // The box shown is the ground patch under the rectangle.
+    const shown = controls.presentOptions(view).box!;
+    expect(shown).toEqual(
+      camera.screenBoxToWorld({ x: rect.x0, y: rect.y0, w: rect.x1 - rect.x0, h: rect.y1 - rect.y0 }),
+    );
+    controls.gesture({ type: 'box', phase: 'end', ...rect, kind: 'mouse' }, view);
+    expect(controls.selection.ids()).toEqual([6, 7]);
+    // The worker at (2, 1) is not drawn inside it.
+    const worker = { x: 2.5 * TS, y: 1.5 * TS };
+    expect(
+      camera.inScreenBox(
+        { x: rect.x0, y: rect.y0, w: rect.x1 - rect.x0, h: rect.y1 - rect.y0 },
+        worker.x,
+        worker.y,
+      ),
+    ).toBe(false);
+    controls.gesture({ type: 'box', phase: 'end', x0: 0, y0: 0, x1: 1, y1: 1, kind: 'mouse' }, view);
+    expect(controls.selection.ids()).toEqual([]);
+  });
+});

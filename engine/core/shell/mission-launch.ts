@@ -138,6 +138,7 @@ export class MissionLaunch<G extends LaunchGame> {
   private readonly titles: ReadonlyMap<string, string>;
   private readonly outcomeTitles: ReadonlyMap<string, string>;
   private readonly playable: ReadonlySet<string>;
+  private readonly defs: ReadonlyMap<string, MissionDef>;
   /** The campaign save the entry played now started from (null: the campaign's first entry, fresh). */
   private save: CampaignSave | null = null;
   private waiting: string | null = null;
@@ -153,6 +154,7 @@ export class MissionLaunch<G extends LaunchGame> {
     this.outcomeTitles = new Map(
       opts.missions.flatMap((m) => m.outcomes.map((o) => [`${m.id}/${o.id}`, o.title] as const)),
     );
+    this.defs = new Map(opts.missions.map((m) => [m.id, m]));
     this.playable = new Set(opts.missions.filter((m) => m.play !== undefined).map((m) => m.id));
     this.holding = this.holds();
     this.game = opts.create(null);
@@ -226,6 +228,11 @@ export class MissionLaunch<G extends LaunchGame> {
   /** A mission's title (its id when the game has none). */
   title(mission: string): string {
     return this.titles.get(mission) ?? mission;
+  }
+
+  /** A mission's definition (for the in-picture mission card, Engine 0.16 F5), or null when the game has none of that id. */
+  missionDef(mission: string): MissionDef | null {
+    return this.defs.get(mission) ?? null;
   }
 
   /** An outcome's title from the mission file (its id when there is none). */

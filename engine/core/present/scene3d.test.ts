@@ -114,6 +114,7 @@ describe('scene3d in skins', () => {
       fog: null,
       toneMapping: { kind: 'none', exposure: 1 },
       colorSpace: 'srgb',
+      renderScale: 1,
     });
     const lit = resolveScene3d(
       {

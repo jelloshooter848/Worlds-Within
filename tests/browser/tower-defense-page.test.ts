@@ -20,7 +20,8 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 //   5 lives, as `pnpm cli run` says.
 //
 // The page runs in manual-loop mode (`?debug=step`, one loop step per `window.__ww.step(1)`), so the
-// game is the same every time. No page errors either way. Skipped where Chromium is not installed
+// game is the same every time. It runs on its default backend, PixiJS (Engine 0.16 T13b-8). No page
+// errors either way. Skipped where Chromium is not installed
 // (never in CI).
 
 const GAME = 'games/samples/tower-defense/';
@@ -89,7 +90,9 @@ async function open(browser: Browser, url: string, errors: string[], fromIndex =
   }
   await page.goto(`${url}${GAME}?debug=step`); // manual-loop mode: `window.__ww.step(n)`
   await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
-  expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
+  // PixiJS by default (Engine 0.16 T13b-8; headless Chromium's SwiftShader counts as WebGL), so the
+  // taps go through the PixiJS display's `toScreen` and `toClient`.
+  expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('pixi');
   // The shell's volume control (gap M1).
   expect(await page.locator('#ww-volume').count()).toBe(1);
   /** `n` game ticks (`STEPS_PER_TICK` loop steps each). */

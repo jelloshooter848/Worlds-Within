@@ -41,7 +41,10 @@ Import from `@engine/core/ui` (`index.ts`).
 - Panels: `nineSlice(frame, insets, box, fill?)`, `sliceInsets`, `panelDraws`.
 - Drawing contract: `UiDraw` (`UiFill`, `UiImage`, `UiGlyph`), `UiPainter`, `paintUi`.
 - Widgets: `barRatio`, `barFill`, `CounterRoll`, `minimapDraws`, `minimapScale`, `SkinHud`
-  (`usesUi`, `layout(input)`), `hudValueText`.
+  (`usesUi`, `layout(input)`), `hudValueText`. Engine 0.16 F7: a `panel` item with a `color`
+  and no `frame` is a flat box (`alpha`, `border`), and any HUD item's `when` (`{ status, eq?,
+ne?, lt?, lte?, gt?, gte? }`, the mixer's status test) draws it only while the test holds
+  (`hudItemShown` in `@engine/core/present`, so classic items honour it too).
 
 - Menus (T9): `menusSchema`, `TITLE_ITEMS`, `PAUSE_ITEMS`, `SETTINGS_ITEMS`, `MENU_LABELS`,
   `titleScreen`, `pauseScreen`, `settingsScreen`, `controlsScreen`, `controlRows`, `menuHint`,
@@ -89,6 +92,16 @@ A skin's HUD with widgets (from `games/fx-lab/content/skins/canvas2d.json`):
       "digits": 2, "color": "#f8b800", "shadow": "#000000", "tween": { "ticks": 24, "color": "#fcfcfc" } },
     { "as": "minimap", "x": 170, "y": 18, "w": 80, "h": 30, "scale": 2, "back": "#005858",
       "tiles": { "#": "#00a800" }, "dots": [{ "kind": "runner", "color": "#fcfcfc", "size": 3 }] }
+
+From Engine 0.16 F4 the `clock` widget shows the world clock (`clockStatus` on the frame): its
+text through a `format` with `{day}`, `{time}`, `{phase}` and `{text}` at the top of its box and a
+day bar with coloured bands, tick marks and a marker at the time now along the bottom
+(`clockHudText`, `dayBarDraws`):
+
+    { "as": "clock", "x": 63, "y": 4, "w": 130, "h": 15, "font": "fx-small",
+      "format": "Day {day} {time} {phase}", "outline": "#000000",
+      "dayBar": { "h": 3, "bands": [{ "hour": 5, "color": "#f0a070" }, { "hour": 7, "color": "#88c8f0" },
+        { "hour": 19.5, "color": "#a05848" }, { "hour": 21, "color": "#101830" }], "marks": [6, 12, 18] } }
 
 Backends take the fonts as `fonts` (`SkinnedCanvasPresenter`, `canvasDisplay`,
 `skinSetCanvasPresenter`, `ThreeScene`, `ThreePresenter`, `threeDisplay`, `threeScenePresenter`);

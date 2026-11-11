@@ -48,7 +48,10 @@ ease? })` (`shown(target, clock)`: the first value at once, a new one rolled to 
   shown, `ROLL_DEFAULT_EASE` `cubicOut`; `rolling(clock)`); `minimapDraws(spec, map, entities)`
   (the background, tile colours as merged runs, tile `c` spanning `floor(c * scale)` to
   `floor((c + 1) * scale)`, and a dot per entity a `dots` entry matches by kind or tag, kept in
-  the box), `minimapScale` (the largest that fits, at most 4), `MINIMAP_DOT` (2).
+  the box), `minimapScale` (the largest that fits, at most 4), `MINIMAP_DOT` (2); from Engine 0.16
+  F4 `dayBarDraws(spec, box, fraction)` (the back (`DAY_BAR_BACK`), each band from its hour to the
+  next's, one-px tick marks, and a one-px marker (`DAY_BAR_MARKER`) at the fraction of the day,
+  standing a px above and below the bar) and `dayBarX(hour, width)`.
 - `hud.ts`: `SkinHud(skin, { fonts?, font? })`, one per presenter: `usesUi` (any item is the UI
   kit's: a widget type, a text style field, or a `number` / `text` whose font is a font file) and
   `layout({ status, frameSize, map, entities, clock })` -> `UiDraw[]`, in the skin's order.
@@ -60,9 +63,16 @@ color }`, a nine-slice `panel` frame whose insets are the inset, else a one-px `
   `counter` (its `frame` icon, `gap` px, then the number in its `font` with its caps centred on the
   icon, rolling over `tween { ticks, ease?, color? }` on the presenter's clock); `panel` (a
   nine-slice of `frame` by `slice`, `fill`); `minimap` (`tiles`, `back`, `dots`, `scale`,
-  `border`, from the map the presenter shows). `hudValueText(item, value)`, `borderDraws`.
+  `border`, from the map the presenter shows); `clock` (Engine 0.16 F4: the world clock from the
+  frame's `clockStatus` under the item's `status` prefix, default `clock`: its text
+  (`clockHudText(format, status, prefix)`, the `format` tokens `{day}`, `{time}`, `{phase}`,
+  `{text}`/`{value}`, default `Day {day} {time}`) in its `font` at the top of the box, centred
+  unless `align` says otherwise, and the day bar along the bottom (`dayBar { h? (3), back?,
+bands?, marks?, markColor?, marker? }`); nothing without the clock). `hudValueText(item, value)`,
+  `borderDraws`.
   From Engine 0.16 part C T3 an item with `when` (a status key) is left out while that value is
-  falsy (`hudItemShown`, `@engine/core/present`), and `hearts` with `half` count halves.
+  falsy (`hudItemShown`, `@engine/core/present`; from F7 `when` may also be a status test), and
+  `hearts` with `half` count halves.
 
 Part 2 (Engine 0.16 T7):
 
@@ -219,6 +229,16 @@ check) is in `engine/core/present/skin.ts`: a `format`'s characters must all be 
 (`missing_glyph` at `hud.<i>.format`), a number or counter's font must have every digit
 (`missing_glyph` at `hud.<i>.font`), and a counter's or styled text's font must be a font or a
 sprite file (`missing_ref`). Sprite fonts (the classic 8x8 digits) are not checked for glyphs.
+
+Engine 0.16 F7 (the mini siege's 3D HUD):
+
+- `hud.ts`: a `panel` item with a `color` and no `frame` is a flat box in that colour (its
+  `alpha` below 1 on the fill, then a one-px `border` when given); `SkinHud.layout` skips every
+  item whose `when` does not hold on the status (`hudItemShown`, `@engine/core/present`'s
+  `hud.ts`: the audio mixer's `statusMatches`; a key the status lacks never holds), and
+  `layoutHud` does the same for classic items. The schema (`present/skin.ts`): `when`
+  (`statusCompareSchema`), `alpha` (a flat panel only, `bad_field` otherwise), a flat panel needs
+  no `frame` or `slice`. Tested in `hud.test.ts`.
 
 ## Rules
 

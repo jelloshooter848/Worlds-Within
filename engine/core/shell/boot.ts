@@ -31,7 +31,13 @@ import { levelChoices, paintUi, type FontLookup, type MenusSpec, type UiFrameSiz
 import type { RunStart } from '../headless';
 import { GameMenus, type MenuSettingsHost } from './game-menus';
 import { SceneStack, type Scene } from '../scene';
-import { backendFromQuery, otherBackendLink, type PageBackend } from './backend-choice';
+import {
+  backendFromQuery,
+  otherBackendLink,
+  queryNamesThree,
+  type Page2dBackend,
+  type PageBackend,
+} from './backend-choice';
 import { PageDebugHook, type MenusView, type PageDebug } from './debug';
 import { ShellTransitions, type TransitionRequest } from './transitions';
 import { UiScene } from './ui-scene';
@@ -40,11 +46,13 @@ import type { BrowserDisplay, DisplayResult } from './display';
 
 /**
  * The browser boot every game page needs (Engine 0.7, moved from `games/platformer-lab/main.ts`):
- * the backend the page asks for (`?backend=three`), the toggle link to the other one, keyboard,
+ * the backend the page asks for (`?backend=three`, `?backend=pixi`, `?backend=canvas2d`, else the
+ * game's `default2d`; a PixiJS display that cannot start falls back to Canvas2D, Engine 0.16
+ * T13b-4), the toggle link to 3D and back, keyboard,
  * gamepad and the touch pad (shown on touch devices, laid out clear of the picture with
  * `layoutScreen`), the game's first scene on a `SceneStack`, stepped by a `FixedLoop`. The picture
  * comes from a display factory per backend the game hands in, so the core imports no backend and
- * a game can `import()` Three.js only in 3D. With `audio` (Engine 0.11, gap G27) it also makes the
+ * a game can `import()` Three.js or PixiJS only when the page draws with it. With `audio` (Engine 0.11, gap G27) it also makes the
  * game's `AudioManager`, unlocked on the first key, tap or click, and hands the displays its
  * `onSound`. With `manual` or `?debug=step` (Engine 0.14 T8, gap G31) the loop does not run by
  * itself and `window.__ww` steps it (`debug.ts`); with `?record` (Engine 0.14 T9, gap M19)
@@ -212,8 +220,26 @@ export interface BrowserBootOptions {
    * stores every change. `false` leaves it out (the stored volumes still apply).
    */
   volumeControl?: boolean;
-  /** A display per backend; a game without `three` always shows Canvas2D and hides the toggle. */
-  displays: { canvas2d: DisplayFactory; three?: DisplayFactory };
+  /**
+   * A display per backend; a game without `three` always shows 2D and hides the toggle. `pixi`
+   * (Engine 0.16 T13b-4) is the PixiJS (WebGL) 2D display, loaded with `import()` so Canvas2D
+   * pages never download PixiJS; when it cannot start (it returns a reason or throws: no WebGL)
+   * the page runs on `canvas2d` instead.
+   */
+  displays: { canvas2d: DisplayFactory; pixi?: DisplayFactory; three?: DisplayFactory };
+  /**
+   * The 2D backend when the query names none (default `canvas2d`). `pixi` needs a `pixi` display
+   * (without one the page shows Canvas2D) and falls back to Canvas2D where WebGL is missing.
+   */
+  default2d?: Page2dBackend;
+  /**
+   * Open in 3D when the query names no backend (Engine 0.16 F7, the mini siege; needs a `three`
+   * display). When the 3D display cannot start then (no WebGL 2: its factory returns a reason,
+   * rejects or throws) the page runs on the `default2d` backend instead, with the reason on the
+   * console; a page asked for 3D by `?backend=three` still shows the reason. The toggle's 2D link
+   * is then `./?backend=canvas2d`, its 3D link `./`.
+   */
+  default3d?: boolean;
   /**
    * The game's first scene, given the stack (to push mini games), the display and the page's
    * extra inputs (`page.pointer`, when `pointer` is on).
@@ -329,27 +355,32 @@ export interface BootedGame extends BootPage {
  * returns null).
  */
 export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedGame | null> {
-  const canvas = document.getElementById(opts.canvasId ?? 'screen') as HTMLCanvasElement | null;
-  if (!canvas) throw new Error(`#${opts.canvasId ?? 'screen'} canvas missing`);
+  const pageCanvas = document.getElementById(opts.canvasId ?? 'screen') as HTMLCanvasElement | null;
+  if (!pageCanvas) throw new Error(`#${opts.canvasId ?? 'screen'} canvas missing`);
 
   const search = opts.search ?? window.location.search;
-  const asked = backendFromQuery(search);
   const manual = opts.manual === true || manualFromQuery(search);
   const record = recordFromQuery(search);
-  const backend: PageBackend = asked === 'three' && opts.displays.three ? 'three' : 'canvas2d';
-  showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend');
-  const make = backend === 'three' ? opts.displays.three! : opts.displays.canvas2d;
+  const default2d = opts.default2d ?? 'canvas2d';
+  const default3d = opts.default3d === true && opts.displays.three !== undefined;
+  const wanted = pageBackend(backendFromQuery(search, default3d ? 'three' : default2d), opts.displays);
+  // A 3D page the game opens by default falls back to 2D; one the query asked for says why not.
+  const fallback = default3d && !queryNamesThree(search) ? default2d : null;
   const audio = opts.audio ? new AudioManager() : null;
   const mixer = audio && opts.audio ? shellMixer(audio, opts.audio) : null;
   const hitPause = new HitPause();
-  const display = await make(canvas, {
+  const shell: DisplayShell = {
     onSound: (id, cue) => mixer?.sound(id, cue),
     hitPause: (ticks) => {
       if (!manual) hitPause.request(ticks);
     },
+  };
+  const { backend, display, canvas } = await startDisplay(wanted, opts.displays, pageCanvas, shell, {
+    fallback,
   });
+  showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend', default3d);
   if (typeof display === 'string') {
-    showDisplayMessage(canvas, display);
+    showDisplayMessage(canvas, display, default3d);
     return null;
   }
   const transitions = new ShellTransitions({
@@ -821,22 +852,92 @@ function pointerSource(
   return new PointerSource(canvas, toScreen, { ...options, screen });
 }
 
+/** The displays a page can choose between (`BrowserBootOptions.displays`). */
+export type PageDisplays = BrowserBootOptions['displays'];
+
+/**
+ * The backend a page runs for the one its query asked for (`backendFromQuery` with the game's
+ * `default2d`): `three` or `pixi` only when the game has that display, else Canvas2D. Pure.
+ */
+export function pageBackend(asked: PageBackend, displays: PageDisplays): PageBackend {
+  if (asked === 'three' && displays.three) return 'three';
+  if (asked === 'pixi' && displays.pixi) return 'pixi';
+  return 'canvas2d';
+}
+
+/** The display a page started: the backend that actually runs, its display (or why not) and its canvas. */
+export interface StartedDisplay {
+  backend: PageBackend;
+  display: DisplayResult;
+  canvas: HTMLCanvasElement;
+}
+
+/**
+ * Starts the display for `backend` (`pageBackend`) on the page's canvas (Engine 0.16 T13b-4). A
+ * PixiJS display that cannot start (its factory returns a reason, rejects or throws: no WebGL) is
+ * replaced by the Canvas2D one, with the reason on the console, so `backend` says what actually
+ * runs; it draws on a fresh copy of the canvas, put in its place, since a canvas that handed out
+ * a WebGL context cannot give a 2D one. A 3D or Canvas2D display that cannot start returns its
+ * reason as `display`, for the page to show.
+ */
+export async function startDisplay(
+  backend: PageBackend,
+  displays: PageDisplays,
+  canvas: HTMLCanvasElement,
+  shell: DisplayShell,
+  opts: { fallback?: Page2dBackend | null } = {},
+): Promise<StartedDisplay> {
+  /** Tries a WebGL display; its reason (a returned sentence, a rejection or a throw) when it cannot start. */
+  const attempt = async (make: DisplayFactory): Promise<StartedDisplay | string> => {
+    try {
+      const display = await make(canvas, shell);
+      return typeof display === 'string' ? display : { backend, display, canvas };
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
+  };
+  /** A fresh copy of the canvas in its place: one that gave out a WebGL context cannot give a 2D one. */
+  const fresh = () => {
+    const copy = canvas.cloneNode(false) as HTMLCanvasElement;
+    canvas.replaceWith(copy);
+    return copy;
+  };
+  if (backend === 'pixi' && displays.pixi) {
+    const started = await attempt(displays.pixi);
+    if (typeof started !== 'string') return started;
+    console.warn(`PixiJS could not start, drawing with Canvas2D instead: ${started}`);
+    const copy = fresh();
+    return { backend: 'canvas2d', display: await displays.canvas2d(copy, shell), canvas: copy };
+  }
+  const three = backend === 'three' && displays.three !== undefined;
+  if (three && opts.fallback) {
+    // Engine 0.16 F7: a game that opens in 3D by default runs in 2D where 3D cannot start.
+    const started = await attempt(displays.three!);
+    if (typeof started !== 'string') return started;
+    const to = pageBackend(opts.fallback, displays);
+    console.warn(`The 3D view could not start, drawing in 2D (${to}) instead: ${started}`);
+    return startDisplay(to, displays, fresh(), shell);
+  }
+  const make = three ? displays.three! : displays.canvas2d;
+  return { backend: three ? 'three' : 'canvas2d', display: await make(canvas, shell), canvas };
+}
+
 /** Sets the toggle link (`#backend`) to the other backend, or hides it (`backend` null). */
-export function showBackendToggle(backend: PageBackend | null, id = 'backend'): void {
+export function showBackendToggle(backend: PageBackend | null, id = 'backend', default3d = false): void {
   const link = document.getElementById(id) as HTMLAnchorElement | null;
   if (!link) return;
   if (backend === null) {
     link.hidden = true;
     return;
   }
-  const other = otherBackendLink(backend);
+  const other = otherBackendLink(backend, default3d);
   link.textContent = other.label;
   link.href = other.href;
   link.title = other.title;
 }
 
 /** Shows why the picture cannot start (no WebGL), with a way back to 2D, instead of a blank page. */
-export function showDisplayMessage(canvas: HTMLCanvasElement, text: string): void {
+export function showDisplayMessage(canvas: HTMLCanvasElement, text: string, default3d = false): void {
   canvas.hidden = true;
   const box = document.createElement('div');
   box.id = 'message';
@@ -844,7 +945,7 @@ export function showDisplayMessage(canvas: HTMLCanvasElement, text: string): voi
   const line = document.createElement('p');
   line.textContent = text;
   const back = document.createElement('a');
-  back.href = otherBackendLink('three').href;
+  back.href = otherBackendLink('three', default3d).href;
   back.textContent = 'Play in 2D instead';
   box.append(line, back);
   document.body.append(box);

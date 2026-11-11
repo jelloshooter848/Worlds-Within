@@ -68,8 +68,8 @@ false, request, code, error }` with `not_offered` (the kit's, without asking the
   randomness through the `Rng` it is given; nearest picks by squared distance, ties to the lowest id.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
 camera?, missions?, events?, state? })`, below. `RtsPresentState` (map tracker, animation starts),
-  `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`,
-  `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
+  `RTS_DEPTH`, `RTS_TILE_SIZE` (16), `presentMap`, `presentStatus`, `missionStatus`, `keyStatus`,
+  `threatStatus` (Engine 0.16 F7), `offerTarget`, `unitAnim`, `rtsMissionInfo(def)`. `missions` is the game's `RtsMissionInfo` list
   (`{ id, title, event?, marker? }`; a `MissionDef` fits). `marker` is an entity id or (Engine
   0.15 T7, gap M25) a scenario key, the mission file's `marker`, resolved through the options'
   `keys` (the world's key table: `MissionHost.worldKeys()`); a key the table lacks is ignored.
@@ -91,6 +91,11 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   (the ghost's cell), `train`, `stop`, `selectHeroes`, `launchMission(view, id, launcher)` (the
   bar's mission button, `launchMission` above), `placing(view)` (sized from the world's
   types) and `presentOptions(view)` (`selection`, `box`, `placing`, `camera` for `presentWorld`).
+  Through a ground-view camera (`RtsCamera` with `ground`, Engine 0.16 F2: the 3D backend's
+  `camera3d.view: "ground"`) taps and right taps pick the cell under the pointer's ray on the
+  ground (`camera.screenToWorld`), and a box selects the units whose cell centres are drawn inside
+  the dragged picture rectangle (`Selection.boxWhere(view, inside, tileSize, additive?)` with
+  `camera.inScreenBox`), not a world box; the box shown is the bounds of the ground under it.
 - `game.ts`: the headless adapter. `RtsWorldPort { snapshot(), applyOrder(order), step() }` is
   what the game's glue fills with an `engine/sim` world (the kit never imports the sim): since
   Engine 0.15 T6 (gap M27) with `engine/sim`'s `rtsWorldPort(world)`, the one bridge, typed by
@@ -144,7 +149,8 @@ docs:gen` after changing it). `index.ts` does not re-export it.
 `presentWorld` only reads the view; positions are world pixels (cell x, y is the box `x *
 tileSize, y * tileSize`). Without `state` the full map goes in every frame and `anim.t` is the tick.
 
-- **Map**: `id` `rts`, the terrain as a grid of type indexes, `tags` `type:<i>:<name>` (plus
+- **Map**: `id` `rts` (or the options' `mapId`, Engine 0.16 F6: a game with several scenarios
+  names each, so a 3D skin's `decor` and `places` dress each one; `RTS_MAP_ID`), the terrain as a grid of type indexes, `tags` `type:<i>:<name>` (plus
   `:blocked` when impassable), `version` a 32-bit hash of the cells and type names.
 - **Entities** (`layer` from `RTS_DEPTH`): `resource-<id>` (`resource:<item>`, `idle` or
   `empty`, tag `amount:<n>`, 5); `building-<id>` (`building:<kind>`, `site` while under
@@ -156,7 +162,10 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   before any move; `anim.state` `walk` (stepping with a task, or on a move), `attack` (has a target), `build`,
   `gather`, `idle`; tags side, `faction:<f>`, `hero`/`captain`, `carrying`, `selected`, `damaged`
   (below its full hp, Engine 0.11 T9: a skin's `byTag` look, the mini siege's burnt engines),
-  `frozen` (a member of a frozen event: the battle is held while a mission is open); 10);
+  `frozen` (a member of a frozen event: the battle is held while a mission is open), and
+  `hp:<hp>/<max>` whenever its health bar shows (hurt or selected; Engine 0.16 F6: the bar's
+  numbers for a 3D skin's label, `{ from: { tag: "hp:" }, as: "bar" }`; a finished building gets
+  it too); 10);
   `<id>/hp` (`health-bar`, `hp-0`..`hp-8` eighths, for the hurt and the selected; 20) and
   `building-<id>/progress` (`progress-bar`, `p-0`..`p-8`, for a site, frozen or not: the sim
   keeps building it; 20); `offer-<opportunity>` (`mission-offer`, `idle`, tags `mission:<id>`,
@@ -172,7 +181,16 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   before): `offers` (how many offered) and `offer` (the first one's title, else its mission id),
   `mission` (the first open mission's title), `missionCommit` (its commit tick) and `missionLeft`
   (world ticks to it), and `captive` (Engine 0.13 T8: the first captured person's name, for a
-  captive marker in the HUD; `snapshot.test.ts` checks both).
+  captive marker in the HUD; `snapshot.test.ts` checks both). Engine 0.16 F7 (a 3D page's HUD
+  objectives and selected-unit panel; presentation only, no hash moved): with one thing
+  selected, `selectedName` (a named person's name, else its type or building kind),
+  `selectedType` and `selectedRole` (a named person's role, else ''); for every key of the
+  options' `keys` (`keyStatus`), `key.<key>.alive` (1 while its entity is in the world and, for a
+  named person, not dead), `key.<key>.hp` / `.maxHp` while it is on the map, `.progress`
+  (0-100) for a building with a construction, `.fate` and `.name` for a named person; and
+  `enemyNear` (`threatStatus`: the fewest cells, Chebyshev, from an enemy unit to one of the
+  player's buildings; left out when either side has none), for a danger music layer. Tested in
+  `present.test.ts`.
 - **Camera**: the given hint (`RtsCamera.hint()`, from `RtsControls.presentOptions`), else the
   map's centre.
 - **Events**: passed through (the world snapshot carries none; `RtsEventTracker` reads them off

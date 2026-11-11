@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { timeOfDaySchema } from './time-of-day';
 import type { DeepReadonly, PresentEntity, PresentFrame } from './types';
 
 /**
@@ -49,6 +50,9 @@ export const FOG_KINDS = ['linear', 'exp2'] as const;
 /** Output colour spaces. */
 export const OUTPUT_COLOR_SPACES = ['srgb', 'linear'] as const;
 
+/** The largest render scale a skin or page may ask for (8 x 240 px is 1920 px tall). */
+export const MAX_RENDER_SCALE = 8;
+
 const shadowSchema = z.strictObject({
   mapSize: z
     .number()
@@ -71,80 +75,107 @@ const shadowSchema = z.strictObject({
     .describe(`blur radius of the soft edge, in texels (default ${DEFAULT_SHADOW.radius})`),
 });
 
-export const scene3dSchema = z.strictObject({
-  sun: z
-    .strictObject({
-      color: color.exactOptional().describe('its colour (default white)'),
-      intensity: z
-        .number()
-        .min(0)
-        .exactOptional()
-        .describe('its strength (default `camera3d.lights.directional`)'),
-      direction: vec3
-        .exactOptional()
-        .describe(
-          `where it shines from, toward the view's centre (default ${JSON.stringify(DEFAULT_SUN_DIRECTION)})`,
-        ),
-      shadow: shadowSchema
-        .exactOptional()
-        .describe(
-          'soft shadows from meshes with `castShadow` onto those with `receiveShadow` (none without it)',
-        ),
-    })
-    .exactOptional()
-    .describe('the one directional light'),
-  ambient: z
-    .strictObject({
-      color: color.exactOptional().describe('its colour (default white)'),
-      intensity: z
-        .number()
-        .min(0)
-        .exactOptional()
-        .describe('its strength (default `camera3d.lights.ambient`)'),
-    })
-    .exactOptional()
-    .describe('light from everywhere'),
-  hemisphere: z
-    .strictObject({
-      sky: color.describe('the colour from above'),
-      ground: color.describe('the colour from below'),
-      intensity: z.number().min(0).exactOptional().describe('its strength (default 1)'),
-    })
-    .exactOptional()
-    .describe('a sky and ground light, added to the ambient (none without it)'),
-  fog: z
-    .strictObject({
-      kind: z.enum(FOG_KINDS).describe('`linear` or `exp2`'),
-      color: color.describe('the fog colour (usually the background or the far sky)'),
-      near: z
-        .number()
-        .exactOptional()
-        .describe('linear: px behind the z = 0 plane where it starts (default 0)'),
-      far: z
-        .number()
-        .positive()
-        .exactOptional()
-        .describe('linear: px behind the z = 0 plane where it is full (default 1000)'),
-      density: z
-        .number()
-        .positive()
-        .exactOptional()
-        .describe('exp2: how thick it is, per px from the camera (default 0.001)'),
-    })
-    .exactOptional()
-    .describe('fog on distant things: parallax planes and layers far behind the blocks'),
-  toneMapping: z
-    .strictObject({
-      kind: z.enum(TONE_MAPPINGS).describe('`aces`, `agx` or `none`'),
-      exposure: z.number().positive().exactOptional().describe('exposure (default 1)'),
-    })
-    .exactOptional()
-    .describe('how lit colours map to the screen (default none: colours as written)'),
-  colorSpace: z
-    .enum(OUTPUT_COLOR_SPACES)
-    .exactOptional()
-    .describe('the output colour space (default `srgb`)'),
-});
+export const scene3dSchema = z
+  .strictObject({
+    sun: z
+      .strictObject({
+        color: color.exactOptional().describe('its colour (default white)'),
+        intensity: z
+          .number()
+          .min(0)
+          .exactOptional()
+          .describe('its strength (default `camera3d.lights.directional`)'),
+        direction: vec3
+          .exactOptional()
+          .describe(
+            `where it shines from, toward the view's centre (default ${JSON.stringify(DEFAULT_SUN_DIRECTION)})`,
+          ),
+        shadow: shadowSchema
+          .exactOptional()
+          .describe(
+            'soft shadows from meshes with `castShadow` onto those with `receiveShadow` (none without it)',
+          ),
+      })
+      .exactOptional()
+      .describe('the one directional light'),
+    ambient: z
+      .strictObject({
+        color: color.exactOptional().describe('its colour (default white)'),
+        intensity: z
+          .number()
+          .min(0)
+          .exactOptional()
+          .describe('its strength (default `camera3d.lights.ambient`)'),
+      })
+      .exactOptional()
+      .describe('light from everywhere'),
+    hemisphere: z
+      .strictObject({
+        sky: color.describe('the colour from above'),
+        ground: color.describe('the colour from below'),
+        intensity: z.number().min(0).exactOptional().describe('its strength (default 1)'),
+      })
+      .exactOptional()
+      .describe('a sky and ground light, added to the ambient (none without it)'),
+    fog: z
+      .strictObject({
+        kind: z.enum(FOG_KINDS).describe('`linear` or `exp2`'),
+        color: color.describe('the fog colour (usually the background or the far sky)'),
+        near: z
+          .number()
+          .exactOptional()
+          .describe('linear: px behind the z = 0 plane where it starts (default 0)'),
+        far: z
+          .number()
+          .positive()
+          .exactOptional()
+          .describe('linear: px behind the z = 0 plane where it is full (default 1000)'),
+        density: z
+          .number()
+          .positive()
+          .exactOptional()
+          .describe('exp2: how thick it is, per px from the camera (default 0.001)'),
+      })
+      .exactOptional()
+      .describe('fog on distant things: parallax planes and layers far behind the blocks'),
+    toneMapping: z
+      .strictObject({
+        kind: z.enum(TONE_MAPPINGS).describe('`aces`, `agx` or `none`'),
+        exposure: z.number().positive().exactOptional().describe('exposure (default 1)'),
+      })
+      .exactOptional()
+      .describe('how lit colours map to the screen (default none: colours as written)'),
+    colorSpace: z
+      .enum(OUTPUT_COLOR_SPACES)
+      .exactOptional()
+      .describe('the output colour space (default `srgb`)'),
+    renderScale: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_RENDER_SCALE)
+      .exactOptional()
+      .describe(
+        'draw the 3D picture at this many times the picture size (supersampled; the HUD, labels and menus keep their picture-px layout and draw scaled, nearest neighbour): a 320x180 picture at 6 is 1920x1080 (default 1; a page or `screenshot --render-scale` may override it; Engine 0.16 F3)',
+      ),
+    timeOfDay: timeOfDaySchema
+      .exactOptional()
+      .describe(
+        "keyframes by hour moving the sun, ambient, hemisphere, fog, background and exposure through the day from the frame's world clock (`clock.day`, `clock.fraction`); a jump in world time eases (Engine 0.16 F4; `time-of-day.ts`)",
+      ),
+  })
+  .superRefine((s, ctx) => {
+    if (s.fog !== undefined) return;
+    s.timeOfDay?.keys.forEach((k, i) => {
+      if (k.fog !== undefined)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['timeOfDay', 'keys', i, 'fog'],
+          message: "a time-of-day fog needs the skin's own `scene3d.fog` (its kind and default values)",
+          params: { code: 'missing_field' },
+        });
+    });
+  });
 
 export type SkinScene3d = z.output<typeof scene3dSchema>;
 
@@ -243,6 +274,8 @@ export interface Scene3dLook {
     | null;
   toneMapping: { kind: ToneMappingKind; exposure: number };
   colorSpace: (typeof OUTPUT_COLOR_SPACES)[number];
+  /** Drawing-buffer pixels per picture pixel, a whole number (Engine 0.16 F3; default 1). */
+  renderScale: number;
 }
 
 /**
@@ -283,6 +316,7 @@ export function resolveScene3d(
           : { kind: 'exp2', color: fog.color, density: fog.density ?? 0.001 },
     toneMapping: { kind: s.toneMapping?.kind ?? 'none', exposure: s.toneMapping?.exposure ?? 1 },
     colorSpace: s.colorSpace ?? 'srgb',
+    renderScale: s.renderScale ?? 1,
   };
 }
 

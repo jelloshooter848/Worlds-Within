@@ -1,6 +1,7 @@
 {
   "id": "stores-raid",
   "title": "Raid the raiders' stores on the ridge",
+  "text": "Raid the stores in the ridge camp while the raiders are away.",
   "worldTimeCost": 20,
   "onQuit": "stores-taken",
   "outcomes": [

@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import type { Browser, BrowserContext, Page } from 'playwright';
@@ -12,39 +12,35 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // The mini siege played from a link (docs/ROADMAP.md, 0.11 "done when": played from a link in a
 // few minutes, by playing the mission and by delegating it, and both paths change the battle the
 // way the design says). The repo is built as `pnpm build` builds it and served as `pnpm preview`
-// serves it; headless Chromium finds games/samples/mini-siege/ in the launcher, opens it and, on
-// two fresh pages, clicks the bar's Launch button at world tick 40 and then Delegate (seed 11
-// draws `ram-burnt`) or Play (the recorded round of `played.run.json` typed on the keyboard, which
-// burns both engines). On both paths the battle holds still while the choice waits, the result
-// commits at world tick 160 (40 + the mission's cost of 120) and the hall ends as the run files
-// say. The page runs in manual-loop mode (`?debug=step`; one loop step per `window.__ww.step(1)`), so the
-// game is the same every time. Skipped where Chromium is not installed (never in CI).
+// serves it; headless Chromium finds games/samples/mini-siege/ in the launcher and opens it on
+// fresh pages. The page runs in manual-loop mode (`?debug=step`; one loop step per
+// `window.__ww.step(n)`), so the game is the same every time. Skipped where Chromium is not
+// installed (never in CI).
 //
-// Engine 0.12 T8 (the preparation phase, docs/ROADMAP.md 0.12 "done when": the mini siege offers
-// it): on three more fresh pages the bar's `Launch: Man the walls` button (offered from world tick
-// 5) is clicked at tick 10, then Delegate (seed 11 draws `overrun`), or Play with the recorded
-// round of `fortify-played.run.json` typed on the keyboard (archers on two walls, then the wave:
-// `held-cheap`, the gold down 40), or Play with two taps on a wall placing archers, a right click
-// selling them and Backspace giving up (`overrun`, the mission's onQuit). Each commits at world
-// tick 40 (10 + the mission's cost of 30).
+// Engine 0.16 F7: the page opens **in 3D** (Chromium's software WebGL, SwiftShader, at render
+// scale 1: `?scale=1`) with the mission flow in the picture (Engine 0.16 F5's mission screens):
+// every entry's briefing is begun by a click on Begin, and at world tick 40 the sabotage's card
+// is answered by a click on Delegate (seed 11 draws `ram-burnt`) or Play (the recorded round of
+// `played.run.json` typed on the keyboard, which burns both engines; the page records it with
+// `?record`, Engine 0.14 T9, and `pnpm cli record` writes it into a run file that passes with the
+// golden hashes). On both paths the battle holds still while the round is played, the result
+// commits at world tick 160 (40 + the mission's cost of 120) and its outcome card shows. The
+// preparation phase (Engine 0.12 T8): the fortify card at world tick 10, delegated by the keys
+// (right, then Enter: `overrun`), by a gamepad (the d-pad and A) and by a touch tap, played by
+// the recorded keys of `fortify-played.run.json` (`held-cheap`) and by taps in the walls' round
+// then given up (`overrun`), each committing at 40 (10 + 30). The campaign (Engine 0.13 T8):
+// the siege to its end at 260 along both captain fates (Delegate: `ram-burnt`, the captain on the
+// map; Play then Backspace: `driven-off`, the captain captured), the results screen's save code
+// equal to the run files' pinned codes, Continue to the dawn (the captain on the map to its end
+// at 200, then every later entry; or held, with the three captive choices listed in the picture,
+// the exchange chosen and decided at 5 and committed at 15), and a second page in the same
+// browser carrying on from the stored save (the briefing's Carry on). Every entry is held at tick
+// 0 with its briefing until Begin (gap M34). The 3D picture is shot at the siege's afternoon and
+// at the dawn (`WW_SHOTS_DIR` keeps `mini-siege-page-*.png`).
 //
-// Engine 0.13 T8 (the campaign, docs/ROADMAP.md 0.13): on two more pages the siege is played to
-// its end at world tick 260 along both captain fates (Delegate: `ram-burnt`, the captain on the
-// map; Play then Backspace: `driven-off`, the captain captured). The result panel shows the save
-// code the run files pin; Continue plays the dawn assault, with the captain on the map, or held
-// with the three captive choices in the bar (the exchange decided: no Play, only Decide). A page
-// in the same browser carries on from the stored save; a fresh page refuses a bad code with its
-// reason and resumes the dawn from the quit siege's code.
-//
-// Engine 0.15 T10 (gaps M26, M34, M36, lesson D14): the bar, the briefing and the result panel are
-// the shell's (`mountMissionBar`); every campaign entry (the siege, the dawn, the ridge camp, and
-// the dawn resumed from a code) is held at tick 0 with its briefing until Begin is clicked, nothing
-// stepping or offered before; the walls' round's key hint comes from the kit's controls.
-//
-// Engine 0.14 T9 (gap M19): the played sabotage page also has `?record`: the round typed on the
-// keyboard is recorded by the page (`window.__ww.recordings()`), equals the run file's committed
-// input, and written with `pnpm cli record` into a copy of `played.run.json` whose play step has
-// no input makes that run pass with the golden hashes.
+// In 2D (`?backend=canvas2d`, and wherever WebGL 2 is missing: the page falls back by itself) the
+// shell's DOM bar stays: a save code typed in its box is refused with its reason when bad and
+// resumes the dawn from the quit siege's code.
 
 const GAME = 'games/samples/mini-siege/';
 /** The campaign's entries after the dawn, from its file (none until Engine 0.14 T12's ridge camp). */
@@ -68,7 +64,13 @@ const KEYS: Record<string, string> = {
   start: 'Enter',
   select: 'Backspace',
 };
+/** The 3D page in manual-loop mode at render scale 1 (software GL draws it quickly). */
+const QUERY_3D = '?debug=step&scale=1';
+/** The 2D page with the DOM bar. */
+const QUERY_2D = '?debug=step&backend=canvas2d';
+const shots = process.env.WW_SHOTS_DIR ?? null;
 
+type Box = { x: number; y: number; w: number; h: number };
 interface Hook {
   tick(): number;
   held(): boolean;
@@ -81,18 +83,26 @@ interface Hook {
   outcomes(): string[];
   miniGame(): string;
   round(): Record<string, unknown> | null;
+  ui(): 'picture' | 'bar';
+  screen(): string | null;
+  itemBox(item: string): Box | null;
 }
 
 /**
  * The centre of the walls' round's cell on the page, in client px (gap D13): the kit's
- * `screenAtCell` on the 256x240 picture over the 16x7 `walls` map (centred, as the round's camera
- * frames it), then the page's `window.__ww.toClient` (the display's).
+ * `screenAtCell` on the 320x180 picture (Engine 0.16 F6) over the 16x7 `walls` map (centred, as
+ * the round's camera frames it), then the page's `window.__ww.toClient` (the display's).
  */
 async function wallsCellClient(page: Page, col: number, row: number): Promise<{ x: number; y: number }> {
-  const at = screenAtCell({ col, row }, { size: { width: 256, height: 240 } }, { cols: 16, rows: 7 });
+  const at = screenAtCell({ col, row }, { size: { width: 320, height: 180 } }, { cols: 16, rows: 7 });
+  return toClient(page, at.x, at.y);
+}
+
+/** A picture point (picture px) on the page, in client px. */
+async function toClient(page: Page, x: number, y: number): Promise<{ x: number; y: number }> {
   const client = await page.evaluate(([x, y]) => (window as DebugWindow).__ww!.toClient(x, y), [
-    at.x,
-    at.y,
+    x,
+    y,
   ] as const);
   return client!;
 }
@@ -133,7 +143,7 @@ function hook<K extends keyof Hook>(
   ) as Promise<ReturnType<Hook[K]>>;
 }
 
-/** What to launch, when, and the button's title. */
+/** What to launch, when, and its title. */
 interface Launch {
   mission: string;
   tick: number;
@@ -142,77 +152,163 @@ interface Launch {
 const SABOTAGE: Launch = { mission: 'sabotage', tick: 40, title: 'Burn the siege engines' };
 const FORTIFY: Launch = { mission: 'fortify', tick: 10, title: 'Man the walls' };
 
+/** How a page is driven: the step hook and the input devices aimed at the picture. */
+interface Opened {
+  page: Page;
+  frames(n: number): Promise<void>;
+  context: BrowserContext;
+}
+
+/** A fake standard gamepad on every page of a context: `window.__pad` holds the pressed buttons. */
+const FAKE_PAD = () => {
+  const w = window as unknown as { __pad: number[] };
+  w.__pad = [];
+  Object.defineProperty(navigator, 'getGamepads', {
+    value: () => [
+      {
+        index: 0,
+        connected: true,
+        mapping: 'standard',
+        axes: [0, 0, 0, 0],
+        buttons: Array.from({ length: 17 }, (_, i) => ({
+          pressed: w.__pad.includes(i),
+          value: w.__pad.includes(i) ? 1 : 0,
+        })),
+      },
+    ],
+  });
+};
+
+/** Takes WebGL away from every canvas of the page, as on a browser without it. */
+const NO_WEBGL = () => {
+  const get = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (
+    this: HTMLCanvasElement,
+    kind: string,
+    ...rest: unknown[]
+  ) {
+    if (kind === 'webgl' || kind === 'webgl2' || kind === 'experimental-webgl') return null;
+    return (get as (...a: unknown[]) => unknown).call(this, kind, ...rest);
+  } as typeof get;
+};
+
 /** A fresh page of the game in manual-loop mode (a new browser context unless one is given). */
 async function opened(
   browser: Browser,
   url: string,
   errors: string[],
-  context?: BrowserContext,
-  query = '?debug=step',
-) {
-  context ??= await browser.newContext({ viewport: { width: 640, height: 520 }, deviceScaleFactor: 1 });
+  opts: { context?: BrowserContext; query?: string; backend?: string; touch?: boolean } = {},
+): Promise<Opened> {
+  let context = opts.context;
+  if (context === undefined) {
+    context = await browser.newContext({
+      viewport: { width: 640, height: 520 },
+      deviceScaleFactor: 1,
+      ...(opts.touch === true && { hasTouch: true, isMobile: true }),
+    });
+    await context.addInitScript(FAKE_PAD);
+  }
   const page = await context.newPage();
   page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(`console: ${msg.text()} (${msg.location().url})`);
   });
   await page.route('**/favicon.ico', (route) => route.fulfill({ status: 204, body: '' }));
-  await page.goto(`${url}${GAME}${query}`); // manual-loop mode: `window.__ww.step(n)`
-  await page.waitForSelector('body[data-backend]', { timeout: 60_000 });
-  expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe('canvas2d');
+  await page.goto(`${url}${GAME}${opts.query ?? QUERY_3D}`);
+  await page.waitForSelector('body[data-backend]', { timeout: 120_000 });
+  expect(await page.evaluate(() => document.body.dataset.backend), errors.join('\n')).toBe(
+    opts.backend ?? 'three',
+  );
   const frames = (n: number) => page.evaluate((n) => void (window as DebugWindow).__ww!.step(n), n);
   return { page, frames, context };
 }
 
+/** Clicks (or taps) a mission screen's item in the picture, then takes a loop step. */
+async function press(
+  { page, frames }: Opened,
+  item: string,
+  how: 'mouse' | 'touch' = 'mouse',
+  step = true,
+): Promise<void> {
+  const box = await hook(page, 'itemBox', item);
+  expect(box, `no ${item} on the ${await hook(page, 'screen')} screen`).not.toBeNull();
+  const at = await toClient(page, box!.x + box!.w / 2, box!.y + box!.h / 2);
+  if (how === 'touch') await page.touchscreen.tap(at.x, at.y);
+  else await page.mouse.click(at.x, at.y);
+  if (step) await frames(1);
+}
+
+/** A key pressed and released between loop steps. */
+async function key({ page, frames }: Opened, code: string): Promise<void> {
+  await page.keyboard.down(code);
+  await frames(1);
+  await page.keyboard.up(code);
+  await frames(1);
+}
+
+/** A gamepad button pressed for one loop step and released for one. */
+async function pad({ page, frames }: Opened, button: number): Promise<void> {
+  await page.evaluate((b) => ((window as unknown as { __pad: number[] }).__pad = [b]), button);
+  await frames(1);
+  await page.evaluate(() => ((window as unknown as { __pad: number[] }).__pad = []));
+  await frames(1);
+}
+
+/** Shoots the page to `WW_SHOTS_DIR` when it is set. */
+async function shoot(page: Page, name: string): Promise<void> {
+  if (shots === null) return;
+  mkdirSync(shots, { recursive: true });
+  await page.screenshot({ path: join(shots, `mini-siege-page-${name}.png`) });
+}
+
 /**
  * The entry is held at tick 0 with its briefing (Engine 0.15 T10, gap M34): nothing steps and
- * nothing is offered until Begin is clicked; then the briefing goes and the clock runs.
+ * nothing is offered until Begin is clicked in the picture; then the briefing goes and the clock
+ * runs.
  */
-async function begin(page: Page, frames: (n: number) => Promise<void>, title: string): Promise<void> {
+async function begin(o: Opened): Promise<void> {
+  const { page, frames } = o;
   expect(await hook(page, 'held')).toBe(true);
-  expect(await page.locator('#briefing').isVisible()).toBe(true);
-  expect(await page.locator('#briefing-title').textContent()).toBe(title);
+  expect(await hook(page, 'screen')).toBe('briefing');
   await frames(STEPS_PER_TICK * 5);
   expect(await hook(page, 'tick')).toBe(0);
-  expect(await page.locator('#launches button').count()).toBe(0);
-  expect(await page.locator('#status').textContent()).toContain('press Begin');
-  await page.click('#begin');
+  await press(o, 'begin');
   await frames(STEPS_PER_TICK);
   expect(await hook(page, 'held')).toBe(false);
-  expect(await page.locator('#briefing').isVisible()).toBe(false);
+  expect(await hook(page, 'screen')).not.toBe('briefing');
   expect(await hook(page, 'tick')).toBe(1);
 }
 
-/** A fresh page of the game, stepped to the launch tick and launched. */
-async function launched(
+/** Steps to world tick `tick` (one tick is `STEPS_PER_TICK` loop steps while the battle runs). */
+async function toTick({ page, frames }: Opened, tick: number): Promise<void> {
+  const now = await hook(page, 'tick');
+  if (tick - now > 1) await frames((tick - now - 1) * STEPS_PER_TICK);
+  for (let i = 0; i < 60 && (await hook(page, 'tick')) < tick; i++) await frames(1);
+  expect(await hook(page, 'tick')).toBe(tick);
+}
+
+/** A fresh page of the game, begun and stepped to the launch tick, its mission card showing. */
+async function carded(
   browser: Browser,
   url: string,
   errors: string[],
   at: Launch = SABOTAGE,
   query?: string,
 ) {
-  const { page, frames, context } = await opened(browser, url, errors, undefined, query);
-  await begin(page, frames, 'The siege');
-  for (let i = 0; i < 400 && (await hook(page, 'tick')) < at.tick; i++) await frames(1);
-  expect(await hook(page, 'tick')).toBe(at.tick);
-  // One button per offered mission (the RTS kit's missionButtons): at 10 and at 40 only one.
-  expect(await page.locator('#launches button').count()).toBe(1);
-  expect(await page.locator(`#launch-${at.mission}`).textContent()).toBe(`Launch: ${at.title}`);
-  await page.click(`#launch-${at.mission}`);
-  await frames(1);
-  expect(await hook(page, 'choice')).toBe(at.mission);
-  expect(await page.locator('#launches button').count()).toBe(0);
-  // Nothing moves while the choice waits.
-  await frames(STEPS_PER_TICK * 5);
-  expect(await hook(page, 'tick')).toBe(at.tick);
-  expect(await page.locator('#play').isVisible()).toBe(true);
-  expect(await page.locator('#delegate').isVisible()).toBe(true);
-  return { page, frames, context };
+  const o = await opened(browser, url, errors, query === undefined ? {} : { query });
+  await begin(o);
+  await toTick(o, at.tick);
+  // One mission offered (the RTS kit's missionButtons): at 10 and at 40 its card, Play or Delegate.
+  expect(await hook(o.page, 'screen')).toBe('card');
+  expect(await hook(o.page, 'itemBox', 'play')).not.toBeNull();
+  expect(await hook(o.page, 'itemBox', 'delegate')).not.toBeNull();
+  return o;
 }
 
-/** Steps tick by tick until the mission commits; returns the world tick it committed at. */
-async function toCommit(page: Page, frames: (n: number) => Promise<void>): Promise<number> {
+/** After Delegate or the round: the battle runs on; steps tick by tick until the mission commits. */
+async function toCommit({ page, frames }: Opened): Promise<number> {
   for (let i = 0; i < 300 && (await hook(page, 'outcomes')).length === 0; i++) await frames(STEPS_PER_TICK);
+  expect(await hook(page, 'screen')).toBe('outcome');
   return hook(page, 'tick');
 }
 
@@ -280,25 +376,28 @@ async function recordInto(recordings: RoundRecording[]): Promise<void> {
   expect(result.finalHash).toBe(golden.hashes.at(-1)!.hash);
 }
 
-/** Steps until the campaign entry played now ends; returns the world tick it ended at. */
-async function toEntryEnd(page: Page, frames: (n: number) => Promise<void>): Promise<number> {
-  for (let i = 0; i < 100 && (await hook(page, 'ended')) === null; i++) await frames(STEPS_PER_TICK * 5);
+/** Steps until the campaign entry played now ends (its results screen); returns the world tick. */
+async function toEntryEnd(o: Opened): Promise<number> {
+  const { page, frames } = o;
+  for (let i = 0; i < 100 && (await hook(page, 'ended')) === null; i++) {
+    // A mission's outcome card waits for Continue; the battle runs on under it.
+    await frames(STEPS_PER_TICK * 5);
+  }
   expect(await hook(page, 'ended')).not.toBeNull();
+  expect(await hook(page, 'screen')).toBe('results');
   return hook(page, 'tick');
 }
 
-/** Clicks Continue on the result panel and checks the dawn starts at tick 0. */
-async function toDawn(page: Page, frames: (n: number) => Promise<void>): Promise<void> {
-  expect(await page.locator('#continue').textContent()).toBe('Continue: The dawn assault');
-  await page.click('#continue');
-  await frames(2);
-  expect(await hook(page, 'scenario')).toBe('dawn');
-  expect(await page.locator('#result').isVisible()).toBe(false);
-  await begin(page, frames, 'The dawn assault');
+/** Clicks Continue on the results screen and checks the next entry starts at tick 0, held. */
+async function toNext(o: Opened, scenario: string): Promise<void> {
+  await press(o, 'continue');
+  await o.frames(2);
+  expect(await hook(o.page, 'scenario')).toBe(scenario);
+  await begin(o);
 }
 
 describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () => {
-  it('is in the launcher, and plays both missions both ways from its link', async () => {
+  it('is in the launcher, opens in 3D, and plays both missions both ways from its link', async () => {
     const dist = join(temp, 'dist');
     const server = await serveBuilt('/', dist);
     const browser = await launch();
@@ -309,65 +408,92 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
       expect(await launcher.locator(`#games a[href="${GAME}"]`).count()).toBe(1);
       await launcher.close();
 
-      // Delegated: the world draws seed 11's outcome at the commit tick.
+      // Delegated by a click in the picture: the world draws seed 11's outcome at the commit tick.
       {
-        const { page, frames } = await launched(browser, server.url, errors);
-        await page.click('#delegate');
-        await frames(1);
-        expect(await hook(page, 'choice')).toBeNull();
-        expect(await hook(page, 'playing')).toBe(false);
-        expect(await toCommit(page, frames)).toBe(160);
-        expect(await hook(page, 'outcomes')).toEqual(['ram-burnt']);
-        expect(await page.locator('#status').textContent()).toContain('tick 160');
+        const o = await carded(browser, server.url, errors);
+        expect(await hook(o.page, 'ui')).toBe('picture');
+        expect(await o.page.locator('#bar').count()).toBe(0);
+        await shoot(o.page, 'card');
+        await press(o, 'delegate');
+        expect(await hook(o.page, 'choice')).toBeNull();
+        expect(await hook(o.page, 'playing')).toBe(false);
+        expect(await toCommit(o)).toBe(160);
+        expect(await hook(o.page, 'outcomes')).toEqual(['ram-burnt']);
+        await shoot(o.page, 'outcome');
+        await press(o, 'continue');
+        expect(await hook(o.page, 'screen')).toBeNull();
       }
 
-      // Played: the recorded round typed on the keyboard burns both engines; the world waits. The
-      // page records it (`?record`), and `pnpm cli record` writes that into a run file that passes.
+      // Played by a click on Play: the recorded round typed on the keyboard burns both engines; the
+      // world waits. The page records it (`?record`), and `pnpm cli record` writes that into a run
+      // file that passes.
       {
-        const { page, frames } = await launched(browser, server.url, errors, SABOTAGE, '?debug=step&record');
-        expect(await page.evaluate(() => (window as DebugWindow).__ww!.recording)).toBe(true);
-        await page.click('#play');
-        expect(await typeRound(page, frames, recordedRound(), 'mission-room')).toBe(406);
-        expect(await hook(page, 'tick')).toBe(40);
-        const recordings = await page.evaluate(() => (window as DebugWindow).__ww!.recordings());
+        const o = await carded(browser, server.url, errors, SABOTAGE, `${QUERY_3D}&record`);
+        expect(await o.page.evaluate(() => (window as DebugWindow).__ww!.recording)).toBe(true);
+        // The click is taken on the round's first step, as the keys are.
+        await press(o, 'play', 'mouse', false);
+        expect(await typeRound(o.page, o.frames, recordedRound(), 'mission-room')).toBe(406);
+        expect(await hook(o.page, 'tick')).toBe(40);
+        const recordings = await o.page.evaluate(() => (window as DebugWindow).__ww!.recordings());
         expect(recordings).toEqual([
           { mission: 'sabotage', tick: 40, ticks: 406, done: true, input: recordedRound() },
         ]);
         await recordInto(recordings);
-        expect(await toCommit(page, frames)).toBe(160);
-        expect(await hook(page, 'outcomes')).toEqual(['both-burnt']);
+        expect(await toCommit(o)).toBe(160);
+        expect(await hook(o.page, 'outcomes')).toEqual(['both-burnt']);
       }
 
-      // The preparation phase, delegated: seed 11 draws overrun at world tick 40.
+      // The preparation phase, delegated by the keys (right to Delegate, then Enter): overrun at 40.
       {
-        const { page, frames } = await launched(browser, server.url, errors, FORTIFY);
-        await page.click('#delegate');
-        await frames(1);
-        expect(await hook(page, 'playing')).toBe(false);
-        expect(await toCommit(page, frames)).toBe(40);
-        expect(await hook(page, 'outcomes')).toEqual(['overrun']);
-        expect(await page.locator('#status').textContent()).toContain('tick 40');
+        const o = await carded(browser, server.url, errors, FORTIFY);
+        await key(o, KEYS['right']!);
+        await key(o, KEYS['start']!);
+        expect(await hook(o.page, 'choice')).toBeNull();
+        expect(await hook(o.page, 'playing')).toBe(false);
+        expect(await toCommit(o)).toBe(40);
+        expect(await hook(o.page, 'outcomes')).toEqual(['overrun']);
+      }
+
+      // The same by a gamepad: the d-pad right, then A.
+      {
+        const o = await carded(browser, server.url, errors, FORTIFY);
+        await pad(o, 15);
+        await pad(o, 0);
+        expect(await hook(o.page, 'playing')).toBe(false);
+        expect(await toCommit(o)).toBe(40);
+        expect(await hook(o.page, 'outcomes')).toEqual(['overrun']);
+      }
+
+      // And by a touch tap on a phone-sized page.
+      {
+        const o = await opened(browser, server.url, errors, { touch: true });
+        await begin(o);
+        await toTick(o, FORTIFY.tick);
+        await press(o, 'delegate', 'touch');
+        expect(await hook(o.page, 'playing')).toBe(false);
+        expect(await toCommit(o)).toBe(40);
+        expect(await hook(o.page, 'outcomes')).toEqual(['overrun']);
       }
 
       // The preparation phase, played: the recorded round typed on the keyboard holds the walls.
       {
-        const { page, frames } = await launched(browser, server.url, errors, FORTIFY);
-        await page.click('#play');
-        expect(await typeRound(page, frames, recordedRound('fortify-played'), 'td-defence')).toBe(116);
-        expect(await hook(page, 'tick')).toBe(10);
-        expect(await toCommit(page, frames)).toBe(40);
-        expect(await hook(page, 'outcomes')).toEqual(['held-cheap']);
+        const o = await carded(browser, server.url, errors, FORTIFY);
+        await press(o, 'play', 'mouse', false);
+        expect(await typeRound(o.page, o.frames, recordedRound('fortify-played'), 'td-defence')).toBe(116);
+        expect(await hook(o.page, 'tick')).toBe(10);
+        expect(await toCommit(o)).toBe(40);
+        expect(await hook(o.page, 'outcomes')).toEqual(['held-cheap']);
       }
 
       // The preparation phase by taps: two taps on the north tower's wall place archers, a right
       // click sells them, then Backspace gives up (the mission's onQuit, overrun).
       {
-        const { page, frames } = await launched(browser, server.url, errors, FORTIFY);
-        await page.click('#play');
-        await frames(1);
+        const o = await carded(browser, server.url, errors, FORTIFY);
+        const { page, frames } = o;
+        await press(o, 'play');
         expect(await hook(page, 'miniGame')).toBe('td-defence');
-        expect(await page.locator('#status').textContent()).toContain('a tap');
         expect(await hook(page, 'round')).toMatchObject({ gold: 100, towers: 0 });
+        await shoot(page, 'walls');
         const at = await wallsCellClient(page, 11, 1);
         await page.mouse.click(at.x, at.y);
         await frames(1);
@@ -381,16 +507,27 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         await frames(1);
         await page.keyboard.up('Backspace');
         expect(await hook(page, 'playing')).toBe(false);
-        expect(await toCommit(page, frames)).toBe(40);
+        expect(await toCommit(o)).toBe(40);
         expect(await hook(page, 'outcomes')).toEqual(['overrun']);
+      }
+
+      // Without WebGL the page runs in 2D by itself, with the DOM bar.
+      {
+        const context = await browser.newContext({ viewport: { width: 640, height: 520 } });
+        await context.addInitScript(NO_WEBGL);
+        const o = await opened(browser, server.url, errors, { context, backend: 'canvas2d' });
+        expect(await hook(o.page, 'ui')).toBe('bar');
+        expect(await o.page.locator('#briefing').isVisible()).toBe(true);
+        await context.close();
       }
       expect(errors).toEqual([]);
     } finally {
       await browser.close();
       await server.close();
     }
-  }, 600_000);
-  it('plays the campaign from its link along both captain fates, and resumes from a save code', async () => {
+  }, 900_000);
+
+  it('plays the campaign in 3D along both captain fates, and resumes from a save code in 2D', async () => {
     const dist = join(temp, 'dist-campaign');
     const server = await serveBuilt('/', dist);
     const browser = await launch();
@@ -398,85 +535,84 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
     try {
       // The captain kept: the sabotage delegated, the siege ends at 260 with the delegated run's code.
       {
-        const { page, frames } = await launched(browser, server.url, errors);
-        await page.click('#delegate');
-        expect(await toEntryEnd(page, frames)).toBe(260);
-        expect(await hook(page, 'outcomes')).toEqual(['ram-burnt']);
-        expect(await page.locator('#result').isVisible()).toBe(true);
-        expect(await page.locator('#result-code').textContent()).toBe(pinnedCode('delegated'));
-        expect(await page.locator('#result').textContent()).toContain('Captain Hale: active, 110/120 hp');
-        await toDawn(page, frames);
-        expect((await hook(page, 'named'))['captain']).toMatchObject({ alive: true, hp: 110 });
-        expect(await hook(page, 'captive')).toBe('');
-        expect(await page.locator('#launches button').count()).toBe(0);
-        expect(await toEntryEnd(page, frames)).toBe(200);
+        const o = await carded(browser, server.url, errors);
+        await shoot(o.page, 'afternoon');
+        await press(o, 'delegate');
+        expect(await toEntryEnd(o)).toBe(260);
+        expect(await hook(o.page, 'outcomes')).toEqual(['ram-burnt']);
+        const ended = await hook(o.page, 'ended');
+        expect(ended?.code).toBe(pinnedCode('delegated'));
+        expect(ended?.people).toContain('Captain Hale: active, 110/120 hp');
+        await shoot(o.page, 'results');
+        await toNext(o, 'dawn');
+        expect((await hook(o.page, 'named'))['captain']).toMatchObject({ alive: true, hp: 110 });
+        expect(await hook(o.page, 'captive')).toBe('');
+        await shoot(o.page, 'dawn');
+        expect(await toEntryEnd(o)).toBe(200);
         // Every entry after the dawn (Engine 0.14 T12: a scenario added with data files only,
         // gap M37) is continued to and played to its end, read from the campaign file.
         for (const entry of AFTER_DAWN) {
-          expect(await hook(page, 'ended')).toMatchObject({ done: false, next: entry.title });
-          expect(await page.locator('#continue').textContent()).toBe(`Continue: ${entry.title}`);
-          await page.click('#continue');
-          await frames(2);
-          expect(await hook(page, 'scenario')).toBe(entry.scenario);
-          await begin(page, frames, entry.title);
-          expect(await toEntryEnd(page, frames)).toBe(entry.ticks);
+          expect(await hook(o.page, 'ended')).toMatchObject({ done: false, next: entry.title });
+          await toNext(o, entry.scenario);
+          expect(await toEntryEnd(o)).toBe(entry.ticks);
         }
-        expect(await hook(page, 'ended')).toMatchObject({ done: true, next: null });
-        expect(await page.locator('#continue').textContent()).toBe('Play again');
-        expect(await page.locator('#result').textContent()).toContain('The campaign is over.');
+        expect(await hook(o.page, 'ended')).toMatchObject({ done: true, next: null });
       }
 
       // The captain taken: the sabotage played and given up, the siege ends with the quit run's code.
       {
-        const { page, frames, context } = await launched(browser, server.url, errors);
-        await page.click('#play');
-        await frames(1);
+        const o = await carded(browser, server.url, errors);
+        const { page, frames, context } = o;
+        await press(o, 'play');
         await page.keyboard.down('Backspace');
         await frames(1);
         await page.keyboard.up('Backspace');
         expect(await hook(page, 'playing')).toBe(false);
-        expect(await toEntryEnd(page, frames)).toBe(260);
+        expect(await toEntryEnd(o)).toBe(260);
         expect(await hook(page, 'outcomes')).toEqual(['driven-off']);
-        expect(await page.locator('#result-code').textContent()).toBe(pinnedCode('quit'));
-        expect(await page.locator('#result').textContent()).toContain('Captain Hale: captured, 90/120 hp');
+        const ended = await hook(page, 'ended');
+        expect(ended?.code).toBe(pinnedCode('quit'));
+        expect(ended?.people).toContain('Captain Hale: captured, 90/120 hp');
 
-        // Another page in the same browser offers the stored campaign.
+        // Another page in the same browser offers the stored campaign on the briefing: Carry on.
         {
-          const later = await opened(browser, server.url, errors, context);
-          expect(await later.page.locator('#stored').textContent()).toBe('Carry on: The dawn assault');
-          await later.page.click('#stored');
+          const later = await opened(browser, server.url, errors, { context });
+          expect(await hook(later.page, 'screen')).toBe('briefing');
+          await press(later, 'stored');
           await later.frames(2);
           expect(await hook(later.page, 'scenario')).toBe('dawn');
           expect(await hook(later.page, 'captive')).toBe('Captain Hale');
           await later.page.close();
         }
 
-        await toDawn(page, frames);
+        await toNext(o, 'dawn');
         expect((await hook(page, 'named'))['captain']).toMatchObject({ alive: true, fate: 'captured' });
         expect(await hook(page, 'captive')).toBe('Captain Hale');
-        const offered = await page
-          .locator('#launches button')
-          .evaluateAll((bs) => bs.map((b) => b.id).sort());
-        expect(offered).toEqual(['launch-exchange-captain', 'launch-leave-captain', 'launch-rescue-captain']);
-        for (let i = 0; i < 100 && (await hook(page, 'tick')) < 5; i++) await frames(1);
-        expect(await hook(page, 'tick')).toBe(5);
-        await page.click('#launch-exchange-captain');
-        await frames(1);
+        // The three captive choices, listed in the picture.
+        expect(await hook(page, 'screen')).toBe('card');
+        for (const m of ['exchange-captain', 'leave-captain', 'rescue-captain'])
+          expect(await hook(page, 'itemBox', `launch:${m}`), m).not.toBeNull();
+        await toTick(o, 5);
+        await press(o, 'launch:exchange-captain');
         expect(await hook(page, 'choice')).toBe('exchange-captain');
-        expect(await page.locator('#play').isVisible()).toBe(false);
-        expect(await page.locator('#delegate').textContent()).toBe('Decide');
-        await page.click('#delegate');
-        await frames(1);
-        expect(await toCommit(page, frames)).toBe(15);
+        // A choice is only decided: Play is there but disabled; Delegate decides.
+        await press(o, 'delegate');
+        expect(await toCommit(o)).toBe(15);
         expect(await hook(page, 'outcomes')).toEqual(['paid']);
         expect((await hook(page, 'named'))['captain']).toMatchObject({ fate: 'freed' });
         expect(await hook(page, 'captive')).toBe('');
-        expect(await toEntryEnd(page, frames)).toBe(200);
+        await press(o, 'continue');
+        expect(await toEntryEnd(o)).toBe(200);
       }
 
-      // A save code typed on a fresh page: a bad one refused with its reason, the quit's resumed.
+      // A save code typed on a fresh 2D page (the DOM bar's code box): a bad one refused with its
+      // reason, the quit's resumed.
       {
-        const { page, frames } = await opened(browser, server.url, errors);
+        const { page, frames } = await opened(browser, server.url, errors, {
+          query: QUERY_2D,
+          backend: 'canvas2d',
+        });
+        expect(await hook(page, 'ui')).toBe('bar');
         expect(await page.locator('#stored').isVisible()).toBe(false);
         await page.fill('#code', 'NOT-A-USABLE-CODE');
         await page.click('#resume');
@@ -491,7 +627,9 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         expect(await hook(page, 'tick')).toBe(0);
         expect(await hook(page, 'captive')).toBe('Captain Hale');
         // The resumed entry is held at tick 0 too (gap M34): the choices wait for Begin.
-        await begin(page, frames, 'The dawn assault');
+        expect(await hook(page, 'held')).toBe(true);
+        await page.click('#begin');
+        await frames(STEPS_PER_TICK);
         expect(await page.locator('#launches button').count()).toBe(3);
       }
       expect(errors).toEqual([]);
@@ -499,5 +637,5 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
       await browser.close();
       await server.close();
     }
-  }, 600_000);
+  }, 900_000);
 });

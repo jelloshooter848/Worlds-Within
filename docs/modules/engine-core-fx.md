@@ -28,7 +28,8 @@ repeat?, amount? }`, `prop` one of `TWEEN_PROPS` (`x`, `y`, `scale`, `scaleX`, `
   `ParticleSystem` (`emit`, `attach`, `update(frame, locate?)`, `particles()`, `count`, `clear`),
   `ParticleView`, `keyframeAt`, `anchorPoint`, `PARTICLE_CATCH_UP`, `PARTICLE_SYSTEM_MAX`;
   `SkinParticles` (a skin's event `emit`s, kind `emit`s and old `particles` effects for one
-  presenter; `particles({ reduceFlashing })`), `REDUCED_FLASH_ALPHA`.
+  presenter; `particles({ reduceFlashing })`; from Engine 0.16 F6 `update`'s `fixed` emitters,
+  `FixedEmitters`, for a decor cell's smoke), `REDUCED_FLASH_ALPHA`.
 - Camera effects (Engine 0.16 T4): `shakeSpecSchema`, `zoomSpecSchema`, `flashSpecSchema`,
   `hitPauseSpecSchema`; `CameraFx` (`event`, `shake`, `zoom`, `flash`, `update`,
   `state(frame, { reduceFlashing?, shakeScale? })` -> `{ shakeX, shakeY, zoom, flashes }`; trauma

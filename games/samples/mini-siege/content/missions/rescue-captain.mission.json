@@ -1,6 +1,7 @@
 {
   "id": "rescue-captain",
   "title": "Break the captain out",
+  "text": "Sergeant Mara Venn slips into the stockade to free Captain Hale from his jailers.",
   "event": "dawn",
   "worldTimeCost": 40,
   "play": "mission-room",

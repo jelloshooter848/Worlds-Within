@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { carriedRecordSchema, type CarriedRecord } from './carried';
+import { clockMinutes, clockTimeSchema, DEFAULT_TICKS_PER_HOUR, worldClock, type WorldClock } from './clock';
 import { ANY_KIND, type ContentLookup, type KindIssue } from './content/kinds';
 import type { MissionResolution } from './missions';
 
@@ -92,6 +93,11 @@ export const campaignEntrySchema = z
       .describe(
         'with `scenario` only (Engine 0.15, gap M31): the loss that ends the campaign at this entry\'s end, `{ "gone": "<scenario key>" }` (that keyed entity is not alive then)',
       ),
+    clock: clockTimeSchema
+      .exactOptional()
+      .describe(
+        "with `scenario` only (Engine 0.16 F4): what the world clock reads at the entry's world tick 0, `{ day, hour, minute? }`; presentation only (`engine/core/clock.ts`)",
+      ),
   })
   .superRefine((e, ctx) => {
     const named = CAMPAIGN_ENTRY_KINDS.filter((k) => e[k] !== undefined);
@@ -106,6 +112,13 @@ export const campaignEntrySchema = z
         code: 'custom',
         path: ['endIf'],
         message: '"endIf" goes with a "scenario" entry only',
+        params: { code: 'bad_entry' },
+      });
+    else if (e.clock !== undefined && e.scenario === undefined)
+      ctx.addIssue({
+        code: 'custom',
+        path: ['clock'],
+        message: '"clock" goes with a "scenario" entry only',
         params: { code: 'bad_entry' },
       });
     else if ((e.scenario === undefined) !== (e.ticks === undefined))
@@ -137,6 +150,14 @@ export const campaignSchema = z
       .min(1)
       .exactOptional()
       .describe('the id of the entry played first; the first entry when left out'),
+    ticksPerHour: z
+      .int()
+      .min(1)
+      .max(3600)
+      .exactOptional()
+      .describe(
+        `Engine 0.16 F4: world ticks per hour of the entries' \`clock\` (default ${DEFAULT_TICKS_PER_HOUR}, a tick a minute)`,
+      ),
   })
   .superRefine((c, ctx) => {
     const seen = new Set<string>();
@@ -286,7 +307,18 @@ export function checkCampaigns(
       });
     });
     let before: string | null = null;
+    let clocked: CampaignEntry | null = null;
     for (const e of campaignOrder(value)) {
+      if (e.clock !== undefined) {
+        if (clocked !== null && clockMinutes(e.clock) < clockMinutes(clocked.clock!))
+          issues.push({
+            name,
+            path: ['entries', value.entries.indexOf(e), 'clock'],
+            code: 'clock_backwards',
+            message: `the clock of "${entryId(e)}" reads before that of "${entryId(clocked)}", played before it`,
+          });
+        clocked = e;
+      }
       if (e.scenario === undefined) continue;
       const from = scenarios.get(e.scenario)?.from ?? null;
       if (before !== null && from !== null && from !== before)
@@ -300,6 +332,20 @@ export function checkCampaigns(
     }
   }
   return issues;
+}
+
+/**
+ * The world clock of `entry` at `worldTick` (Engine 0.16 F4): its `clock` moved on by the ticks at
+ * the campaign's `ticksPerHour` ({@link worldClock}), or null for an entry with no clock (or none).
+ * Presentation only: derived from the campaign file and the world tick, never saved.
+ */
+export function entryWorldClock(
+  campaign: CampaignDef,
+  entry: CampaignEntry | null,
+  worldTick: number,
+): WorldClock | null {
+  if (entry?.clock === undefined) return null;
+  return worldClock(entry.clock, worldTick, campaign.ticksPerHour ?? DEFAULT_TICKS_PER_HOUR);
 }
 
 /** The `format` every campaign save carries. */

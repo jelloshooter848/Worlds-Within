@@ -11,9 +11,31 @@ picture size: `new Viewport(canvas, { integerScale }, content.manifest.screen)` 
 `DEFAULT_SCREEN`, `fitGame(size, ...)`) lives in `engine/core/gfx/screen.ts`, because the touch
 layout needs it too. Never hard-code a picture size here: take it from the size given.
 
+Where it runs (Engine 0.16 T13b-8): the RTS skirmish and tower-defense pages default to the
+PixiJS backend (`@engine/backends/pixi`); Canvas2D remains for Node tests, screenshots
+(`pnpm cli screenshot`, the parity sheet), machines without WebGL (the shell falls back to it)
+and `?backend=canvas2d`, and it stays the default of the other 2D pages.
+
+## The shared walk (`@engine/core/draw`, Engine 0.16 T13b)
+
+Everything below about how a frame is drawn lives in the core `SkinnedPresenter`
+(`engine/core/draw/skinned-presenter.ts`), with `RendererUiPainter` (`ui-painter.ts`) and
+`skinSetPresenter` (`skin-set.ts`) beside it, so the PixiJS backend draws every feature through
+exactly the same code. This folder keeps thin wrappers with the same names, constructor
+signatures and options: `SkinnedCanvasPresenter` (`presenter.ts`) is `SkinnedPresenter` on a
+`CanvasRenderer` (or the `Renderer` given) with `canvasSurface` (`surface.ts`: an offscreen canvas,
+else a page canvas, none in Node) as its default `mapSurface`, `glyphSurface` and `lightSurface`
+(the lighting's light map, part C T4);
+`CanvasUiPainter` (`ui-painter.ts`) is `RendererUiPainter` with that default glyph surface;
+`skinSetCanvasPresenter` (`skin-set.ts`) is `skinSetPresenter` making a `SkinnedCanvasPresenter`
+per skin on `r`. `SkinnedPresenterOptions`, `MapSurface` and `GlyphSurface` are re-exported from
+the core, and `CanvasSkinSetOptions` is the core's `SkinSetPresenterOptions`. Change how a feature
+is drawn in `engine/core/draw`, not here; this folder only supplies the canvas.
+
 ## SkinnedCanvasPresenter
 
-`new SkinnedCanvasPresenter(rendererOrCtx, skin, sheets, opts?)` implements `Presenter`.
+`new SkinnedCanvasPresenter(rendererOrCtx, skin, sheets, opts?)` implements `Presenter` (the core
+`SkinnedPresenter` on a canvas; see above).
 `sheets` is a `SheetLookup` (`sheetLookup(assets)` from `@engine/core/assets/sheet-lookup`).
 `opts`: `size?` (the picture to frame in; else `frame.size`; `resize(size)` changes it),
 `onSound?(id)`, `background?` (default the skin's `background`, else `#000`: `skinBackground`,
@@ -150,8 +172,9 @@ map's surface, below). `particleCount` is the particles alive after the last `pr
   `CanvasRenderer.gradient` (the optional `Renderer.gradient`, `RadialFill`) fills a box with a
   `createRadialGradient` at `destination-out`, `lighter` or `source-over`. `reduceFlashing`
   halves event flashes and flicker. Room-wide `lighting.particles` run in `SkinParticles` (the
-  presenter passes it the map shown) and are drawn with the other particles. The PixiJS backend
-  does not draw lighting yet (feedback item 434).
+  presenter passes it the map shown) and are drawn with the other particles. The walk is the
+  core's (merged in Engine 0.16 part D, D1), so the PixiJS backend runs it too, with its own
+  `gradient` (radial sprites) and a light map surface (feedback item 434's follow-up).
 - Per-map looks (Engine 0.16 part B, T7): the clear colour, the parallax layers and the tiles come
   from `themedSkin(skin, mapId)` (`@engine/core/present`) for the map shown (the full map last
   sent, else the frame's map id), made once per map id: a skin's `themes` entry for that map
@@ -231,6 +254,15 @@ features on (glow, `shadowBlur`, on additive drawing is the worst; 2000+ particl
 budget), so a PixiJS v8 backend is the follow-up (T13b, item 323; numbers in `docs/BUILD-LOG.md`,
 Engine 0.16 part A, T13). Rerun it after changing how particles, glow or blending are drawn.
 
+From T13b-6 it measures this presenter and the PixiJS backend side by side (each result names its
+`backend`; the machine block names the WebGL renderer and whether it is software). Rerun with:
+
+    pnpm bench:features                        # both backends
+    pnpm bench:features --backends canvas2d    # this backend only (add --ablate for feature costs)
+
+On the build container (no GPU: Skia on the CPU) this presenter's features-on p95 was 169-363 ms
+and plain 11-17 ms (`docs/BUILD-LOG.md`, T13, 2026-11-10).
+
 ## Imports
 
 - Allowed: `@engine/core/*`, files in this folder, browser APIs (canvas, `window`).
@@ -273,6 +305,10 @@ the light map laid over at the darkness level after the entities and before the 
 the vignette over the picture, a kind lit only in its states, a placed sprite under the entities,
 an event's flash fading (half with reduced flashing), the surface made once and again on a resize,
 the flat box without a surface, nothing for a skin without lighting and the same calls per seed.
+
+These tests drive the shared walk in `@engine/core/draw` through the thin wrappers here (Engine
+0.16 T13b moved the code, not the tests); `engine/core/draw/draw.test.ts` checks the core's own
+defaults (no surfaces) and the skin set's factory.
 `transition.test.ts` (Engine 0.16 T5) checks `drawTransition`'s calls for a fade, a
 wipe (its gradient line and stops) and an iris (the even-odd hole on the focus) on a recording
 context, and `presenter.test.ts` the presenter's `focus()` scrolled and clamped.

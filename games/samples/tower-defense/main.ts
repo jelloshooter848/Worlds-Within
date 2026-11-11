@@ -16,7 +16,8 @@ import gameFiles from 'virtual:game-files';
 
 /**
  * Boots the tower-defense sample in the browser (Engine 0.12 T5) with the engine's
- * `bootBrowserGame`: Canvas2D with the sample's skin, the keyboard and gamepad, the touch pad (on
+ * `bootBrowserGame`: PixiJS (WebGL) with the sample's skin (Engine 0.16 T13b-8; Canvas2D where
+ * WebGL is missing or with `?backend=canvas2d`), the keyboard and gamepad, the touch pad (on
  * a phone), pointer taps (place towers by tapping: frame input, gap D1), the shell's `audio`
  * option (the song `road` once the first key, tap or click unlocks sound, and the skin's event
  * sounds) and its volume control (the player's volumes stored per game, gap M1). The scene is
@@ -52,7 +53,15 @@ const booted = await bootBrowserGame({
   // The title, pause and settings screens (Engine 0.16 T9); Back to title reloads the page, whose
   // bar and hook hold on to the first scene.
   menus: { spec: content.manifest.menus, fonts, sheets: look.sheet, restart: 'reload' },
-  displays: { canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }) },
+  displays: {
+    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
+    // PixiJS (Engine 0.16 T13b-4) in its own chunk; Canvas2D without WebGL.
+    pixi: async (canvas, { onSound }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
+  },
+  // PixiJS by default (Engine 0.16 T13b-8), Canvas2D where WebGL is missing or with
+  // `?backend=canvas2d`.
+  default2d: 'pixi',
   pointer: true,
   scene(_stack, display) {
     const scene = new TdPlay({

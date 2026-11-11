@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { layoutHud, type HudFrameSize, type PresentEntity, type PresentMap, type SkinFile } from '../present';
 import { buildFont, type FontLookup } from './font';
-import { SkinHud, hudValueText, type SkinHudInput } from './hud';
+import { clockStatus, worldClock } from '../clock';
+import { clockHudText, SkinHud, hudValueText, type SkinHudInput } from './hud';
 import type { UiDraw } from './paint';
-import { barFill, barRatio, CounterRoll, minimapDraws, minimapScale } from './widgets';
+import { barFill, barRatio, CounterRoll, dayBarDraws, dayBarX, minimapDraws, minimapScale } from './widgets';
 
 /** Every glyph of the test font is a 2x3 block on a 2x4 cell, baseline 3. */
 const DIGITS = '0123456789x';
 const FONT = buildFont('small', {
   cell: { w: 2, h: 4 },
   baseline: 3,
-  glyphs: Object.fromEntries([...`${DIGITS}HPp`].map((c) => [c, { rows: ['##', '##', '##', '..'] }])),
+  glyphs: Object.fromEntries([...`${DIGITS}HPpDay:`].map((c) => [c, { rows: ['##', '##', '##', '..'] }])),
 });
 const FONTS: FontLookup = (id) => (id === 'small' ? FONT : null);
 
@@ -227,5 +228,106 @@ describe('SkinHud (Engine 0.16 T6)', () => {
     const draws = hud.layout(input({}, { map }));
     expect(draws[0]).toEqual({ kind: 'fill', x: 0, y: 0, w: 2, h: 2, color: '#0a0' });
     expect(draws).toHaveLength(5);
+  });
+});
+
+describe('flat panels and shown-when tests (Engine 0.16 F7)', () => {
+  it('draws a panel with a colour and no frame as a box at its alpha, then its border', () => {
+    const hud = new SkinHud(
+      skin([{ as: 'panel', x: 2, y: 3, w: 10, h: 6, color: '#123', alpha: 0.5, border: '#fff' }]),
+      { fonts: FONTS },
+    );
+    expect(hud.usesUi).toBe(true);
+    const draws = hud.layout(input({}));
+    expect(draws[0]).toEqual({ kind: 'fill', x: 2, y: 3, w: 10, h: 6, color: '#123', alpha: 0.5 });
+    expect(draws.slice(1)).toHaveLength(4);
+    expect(draws.slice(1).every((d) => d.kind === 'fill' && d.color === '#fff')).toBe(true);
+    // Opaque without an alpha, and no border without one.
+    const plain = new SkinHud(skin([{ as: 'panel', x: 0, y: 0, w: 4, h: 4, color: '#123' }]), {
+      fonts: FONTS,
+    });
+    expect(plain.layout(input({}))).toEqual([{ kind: 'fill', x: 0, y: 0, w: 4, h: 4, color: '#123' }]);
+  });
+
+  it('draws an item only while its `when` holds, a classic one too; a missing key never holds', () => {
+    const items: SkinFile['hud'] = [
+      { as: 'panel', x: 0, y: 0, w: 4, h: 4, color: '#0f0', when: { status: 'alive', eq: 1 } },
+      { as: 'panel', x: 0, y: 0, w: 4, h: 4, color: '#f00', when: { status: 'fate', eq: 'captured' } },
+      { as: 'text', x: 0, y: 8, font: 'small', format: 'Hp', when: { status: 'hp', gte: 0 } },
+    ];
+    const hud = new SkinHud(skin(items), { fonts: FONTS });
+    const colours = (status: SkinHudInput['status']) =>
+      hud.layout(input(status)).map((d) => (d.kind === 'fill' ? d.color : d.kind));
+    expect(colours({ alive: 1, hp: 3 })).toEqual(['#0f0', 'glyph', 'glyph']);
+    expect(colours({ alive: 1, fate: 'captured' })).toEqual(['#0f0', '#f00']);
+    expect(colours({ alive: 0 })).toEqual([]);
+    const classic = skin([
+      { status: 'coins', as: 'icon', x: 1, y: 2, frame: 'coin', when: { status: 'coins', gt: 2 } },
+    ]);
+    expect(layoutHud(classic, { coins: 1 }, SIZES)).toEqual([]);
+    expect(layoutHud(classic, { coins: 3 }, SIZES)).toHaveLength(1);
+  });
+});
+
+describe('the clock widget (Engine 0.16 F4)', () => {
+  const clock = (day: number, hour: number, minute = 0) => clockStatus(worldClock({ day, hour, minute }, 0));
+
+  it("writes the clock's text through its format", () => {
+    const status = clock(2, 15, 4);
+    expect(clockHudText(undefined, status)).toBe('Day 2 15:04');
+    expect(clockHudText('{phase}, day {day} ({time})', status)).toBe('late afternoon, day 2 (15:04)');
+    expect(clockHudText('{text} / {value}', status)).toBe('Day 2 15:04 / Day 2 15:04');
+    expect(clockHudText(undefined, {})).toBeNull();
+    expect(clockHudText('{day}', clockStatus(worldClock({ day: 3, hour: 1 }, 0), 'sky'), 'sky')).toBe('3');
+  });
+
+  it('places the marker along the day bar, bands from their hours, tick marks', () => {
+    expect([0, 6, 12, 18, 23.99].map((h) => dayBarX(h, 49))).toEqual([0, 12, 24, 36, 48]);
+    const draws = dayBarDraws(
+      {
+        back: '#000',
+        bands: [
+          { hour: 6, color: '#f80' },
+          { hour: 8, color: '#8cf' },
+          { hour: 19, color: '#448' },
+        ],
+        marks: [12],
+        marker: '#fff',
+      },
+      { x: 10, y: 20, w: 49, h: 3 },
+      0.5,
+    );
+    expect(draws).toEqual([
+      { kind: 'fill', x: 10, y: 20, w: 49, h: 3, color: '#000' },
+      { kind: 'fill', x: 22, y: 20, w: 4, h: 3, color: '#f80' },
+      { kind: 'fill', x: 26, y: 20, w: 22, h: 3, color: '#8cf' },
+      { kind: 'fill', x: 48, y: 20, w: 11, h: 3, color: '#448' },
+      { kind: 'fill', x: 34, y: 20, w: 1, h: 3, color: '#000000' },
+      { kind: 'fill', x: 34, y: 19, w: 1, h: 5, color: '#fff' },
+    ]);
+    expect(dayBarDraws({}, { x: 0, y: 0, w: 10, h: 2 }, null)).toEqual([
+      { kind: 'fill', x: 0, y: 0, w: 10, h: 2, color: '#203050' },
+    ]);
+  });
+
+  it('draws the text centred on top and the day bar along the bottom, moving with the clock', () => {
+    const hud = new SkinHud(
+      skin([
+        { as: 'clock', x: 4, y: 2, w: 49, h: 10, font: 'small', format: '{day} {time}', dayBar: { h: 2 } },
+      ]),
+      { fonts: FONTS },
+    );
+    expect(hud.usesUi).toBe(true);
+    expect(hud.layout(input({ hp: 3 }))).toEqual([]);
+    const draws = hud.layout(input(clock(2, 6)));
+    const glyphs = draws.filter((d) => d.kind === 'glyph') as { ch: string; x: number; y: number }[];
+    expect(glyphs.map((g) => g.ch).join('')).toBe('206:00');
+    // `2 06:00` is 18 px (six 2-px glyphs a px apart, a 1-px space), centred in 49 px.
+    expect(glyphs[0]).toMatchObject({ x: 4 + Math.floor((49 - 18) / 2), y: 2 });
+    const fills = draws.filter((d) => d.kind === 'fill');
+    expect(fills[0]).toEqual({ kind: 'fill', x: 4, y: 10, w: 49, h: 2, color: '#203050' });
+    expect(fills.at(-1)).toEqual({ kind: 'fill', x: 4 + 12, y: 9, w: 1, h: 4, color: '#fcfcfc' });
+    const evening = hud.layout(input(clock(2, 18))).filter((d) => d.kind === 'fill');
+    expect(evening.at(-1)).toMatchObject({ x: 4 + 36 });
   });
 });

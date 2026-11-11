@@ -25,7 +25,10 @@ import type { RtsView } from './snapshot';
  * - `pan` and `zoom` move the camera.
  * - A primary `tap` selects (`Selection.click`); while placing a building it places it there
  *   (`buildCommand` with the selected builders) and placing ends.
- * - A primary `box` drag shows the box (`move`) and selects on `end` (`Selection.box`).
+ * - A primary `box` drag shows the box (`move`) and selects on `end` (`Selection.box`). With a
+ *   ground-view camera (`camera.ground`, Engine 0.16 F2) it selects the units whose cell centres
+ *   project inside the dragged picture rectangle (`Selection.boxWhere`, `camera.inScreenBox`),
+ *   and the box shown is the bounds of the ground under it.
  * - A secondary `tap` (right click, long-press) commands (`commandAt`); while placing it cancels.
  */
 export class RtsControls {
@@ -64,6 +67,15 @@ export class RtsControls {
       return null;
     }
     if (g.type === 'box') {
+      const rect = { x: g.x0, y: g.y0, w: g.x1 - g.x0, h: g.y1 - g.y0 };
+      if (this.camera.ground) {
+        this.dragging = g.phase === 'move' ? this.camera.screenBoxToWorld(rect) : null;
+        if (g.phase === 'end') {
+          const inside = (x: number, y: number) => this.camera.inScreenBox(rect, x, y);
+          this.selection.boxWhere(view, inside, this.tileSize, additive);
+        }
+        return null;
+      }
       const a = this.camera.screenToWorld(g.x0, g.y0);
       const b = this.camera.screenToWorld(g.x1, g.y1);
       const box = { x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y };

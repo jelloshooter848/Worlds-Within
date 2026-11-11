@@ -6,6 +6,7 @@ import { rasterizeToBuffer } from '@engine/core/gfx/pixelart';
 import { readGameFiles } from '@engine/core/node/game-files';
 import { presentFrameSchema, resolveSkinFrame, skinSchema } from '@engine/core/present';
 import { FEATURE_GAMES, featureGame } from './games';
+import { ABLATIONS, FEATURE_BACKENDS, parseBackends, planCases } from './plan';
 import {
   BENCH_MAX_PARTICLES,
   FX_PALETTE,
@@ -20,7 +21,7 @@ import {
 // and is run by hand; this checks in Node that what it draws is valid and carries every feature:
 // the skin parses, every frame it adds is on the bench sheet, the units are the game's own kinds
 // with a walk look, the frames are the same each run, and the particles alive reach 2000+ with
-// both blends and glow.
+// both blends and glow. The plan (`plan.ts`) has a Canvas2D and a PixiJS case per map and zoom.
 
 const MAPS: FeatureMap[] = ['rts', 'td'];
 
@@ -102,4 +103,47 @@ describe('the feature benchmark scene', () => {
       });
     });
   }
+});
+
+describe('the feature benchmark plan (T13b-6)', () => {
+  const units = { rts: FEATURE_GAMES.rts.units, td: FEATURE_GAMES.td.units };
+  const opts = {
+    backends: FEATURE_BACKENDS,
+    maps: MAPS,
+    zooms: [0.5, 1, 2],
+    units,
+    plain: true,
+    ablate: false,
+  };
+
+  it('plans a Canvas2D and a PixiJS case, features on and plain, for each map and zoom', () => {
+    const cases = planCases(opts);
+    expect(FEATURE_BACKENDS).toEqual(['canvas2d', 'pixi']);
+    for (const map of MAPS)
+      for (const backend of FEATURE_BACKENDS)
+        for (const zoom of opts.zooms)
+          for (const features of [true, false]) {
+            const found = cases.filter(
+              (c) => c.map === map && c.backend === backend && c.zoom === zoom && c.features === features,
+            );
+            expect(found, `${map} ${backend} x${zoom} ${features}`).toHaveLength(1);
+            expect(found[0]!.units).toBe(units[map]);
+          }
+    expect(cases).toHaveLength(MAPS.length * 2 * 3 * 2);
+  });
+
+  it('ablates per backend at zoom 1, and --backends picks and checks the backends', () => {
+    const cases = planCases({ ...opts, plain: false, ablate: true });
+    for (const backend of FEATURE_BACKENDS) {
+      const ablated = cases.filter((c) => c.backend === backend && c.without.length > 0);
+      expect(ablated).toHaveLength(MAPS.length * ABLATIONS.length);
+      expect(ablated.every((c) => c.zoom === 1 && c.features)).toBe(true);
+    }
+    expect(parseBackends('pixi')).toEqual(['pixi']);
+    expect(planCases({ ...opts, backends: parseBackends('pixi') }).every((c) => c.backend === 'pixi')).toBe(
+      true,
+    );
+    expect(() => parseBackends('webgpu')).toThrow(/unknown backend/);
+    expect(() => parseBackends('')).toThrow();
+  });
 });

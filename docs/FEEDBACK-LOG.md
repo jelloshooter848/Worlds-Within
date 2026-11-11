@@ -4,7 +4,7 @@ Whenever Claude needs the owner's feedback or a decision, each item gets a uniqu
 continue across conversations and are never reused, so the owner can answer by number. Every item and
 its outcome is recorded here (see `CLAUDE.md`).
 
-**Next unused number: 468.** (Last used: 467.)
+**Next unused number: 489.** (Last used: 488.)
 
 | #   | Item                                                  | Answer                                                                                                                                            |
 | --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1863,3 +1863,75 @@ door; details in `games/samples/dungeon/CLAUDE.md`, "The dungeon" and "Run files
   defeat starts, and it is not pushed by default (`knockResist` 1; a push stops a charge). OK?
 - **467.** The hero's death is a dark-red fade, not an iris (he is already gone from the frame), and
   the skin's fallback colour for a missing frame is now `#ff00ff` (was `#f878f8`). OK?
+
+**Engine 0.16 part A2: the PixiJS backend** (T13b-1 to T13b-9, built on the track branch
+`engine/0.16-track2` and merged into `engine/build-0.15` in Engine 0.16 part D, D1; details in
+`docs/BUILD-LOG.md`, Engine 0.16 part A2 and part A's T13b section). The track's build decisions
+had their own labels there and its owner questions were numbered 419-422, which part C had used
+meanwhile; the merge renumbered them 468-484 and 485-488.
+
+- **468.** `pixi.js` is pinned at 8.22.0, the newest stable release, published 2026-10-01.
+- **469.** Glow is a pre-made soft halo texture, tinted and stretched behind each glowing box,
+  sprite or line, instead of a PixiJS filter (one sprite in the same batch, no extra pass). It
+  is an oval over the shape's box, not its outline, so it is softer than Canvas2D's glow on
+  large sprites.
+- **470.** The shared drawing code went into a new folder, `engine/core/draw`, not into
+  `engine/core/present`, because kits import `present` and the drawing code must be blocked
+  for kits and the sim. It is on `PURE_CORE` and has its own agent docs.
+- **471.** In the core the map and glyph surfaces default to none (redrawn every frame);
+  Canvas2D's wrappers default them to an offscreen canvas, so Canvas2D behaves exactly as
+  before. Canvas2D's exported names are unchanged.
+- **472.** A new optional core option, `tintGlyphs`, lets PixiJS draw HUD glyphs once in white
+  and tint them. Off, Canvas2D is unchanged.
+- **473.** `pixiDisplay` asks for WebGL only (`preference: ['webgl']`, not `'webgl'`, which
+  would fall back to WebGPU or canvas) and allows software WebGL (SwiftShader), as the 3D view
+  does.
+- **474.** When PixiJS cannot start, Canvas2D runs on a fresh copy of the canvas. A page that
+  asks for a backend the game does not have runs Canvas2D. `backendFromQuery` gained an
+  optional `fallback`.
+- **475.** The dungeon page now draws through the display's presenter (so it works on any 2D
+  backend) and plays the skin's sounds through the display; its view and tests keep their own
+  Canvas2D presenter, so screenshots and hashes are unchanged.
+- **476.** PixiJS screenshots always use software WebGL (SwiftShader), even on a machine with a
+  GPU, so PNGs and the parity test repeat exactly.
+- **477.** Parity tolerance: threshold 8 and at most 0.1% of pixels where nothing glows (RTS,
+  TD, the fx lab's top half); threshold 32 and at most 1% for the whole fx lab. The iris is not
+  compared, because the screenshot page's Canvas2D tile closes it on the picture's centre.
+- **478.** `pixiDisplay` lets the page do the whole-number upscale by default
+  (`upscale: 'page'`, `image-rendering: pixelated`), the largest saving on software GL. The
+  picture can sit up to s-1 device pixels from where Canvas2D puts it; `upscale: 'gl'` keeps
+  the old path.
+- **479.** Tuning changed how the display list is built: a top-level opaque `clear` becomes the
+  GL clear colour, `alpha` and `blend` scopes are set on each object instead of making
+  containers, and the renderer culls off-picture objects (with the glow radius as margin).
+- **480.** `engine/core/fx` was made allocation-free (`lerpColor` keeps a cache of up to 1024
+  parsed colours; `keyframeAt` reads in place). Output is the same on every backend.
+- **481.** To let the bench reach the game's presenter, `PixiDisplayOptions` gained `seed` and
+  `maxParticles`, and `pixiDisplay` returns `PixiDisplay` (a `BrowserDisplay` plus `main`).
+- **482.** The RTS, tower-defense and menus browser tests now run on the PixiJS default
+  instead of being pinned to Canvas2D, so they check pointer input through the PixiJS display.
+- **483.** Old map `RenderTexture`s are not destroyed when a new map version arrives (the core
+  gives no signal); noted in the backend's `CLAUDE.md`.
+- **484.** The BUILD-LOG summary line "the last number used is 363" was already out of date
+  and was left for the feedback-numbering owner. The track's owner questions (419-422 on the
+  track, which part C had used meanwhile) are 485-488; the orchestrator copied them and these
+  decisions (468-484) into FEEDBACK-LOG.md at the merge (Engine 0.16 part D, D1).
+
+Owner questions of the PixiJS close-out (T13b-9; 419-422 on the track):
+
+- **485.** PixiJS is the default 2D backend for the RTS skirmish and the tower defense (Canvas2D
+  the fallback without WebGL), although on this container's software GL it does not hold 16.7 ms
+  p95 with every feature on; its draw call does, and T13b-7 estimates a GPU makes the rest
+  small. Keep it the default until someone measures frame times on a machine with a GPU
+  (`pnpm bench:features`), or go back to Canvas2D by default until then?
+- **486.** Hopper's Way (`games/samples/platformer`) is not wired to PixiJS (another track owns it
+  in part B); every other 2D page is, opt-in by `?backend=pixi`. Wire Hopper's Way after part B,
+  and should any other page default to PixiJS?
+- **487.** The parity tolerance: threshold 8 and 0.1% of the pixels for pictures without glow or
+  additive blending (RTS, tower defense: equal to the bit here), threshold 32 and 1% where glow
+  shows (the fx lab), glow drawn as a halo sprite in PixiJS against `shadowBlur` on the canvas
+  (the coins' and the door's halo differ a little, as the parity sheet shows), the iris not
+  compared. OK?
+- **488.** `pnpm cli sheet` tiles may name a run file of another folder by a path relative to the
+  positional run file's folder (`../../samples/rts-skirmish/runs/battle/141`), added so the
+  parity sheet tiles three games. OK?

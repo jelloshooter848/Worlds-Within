@@ -18,6 +18,7 @@ import { SHEET_SIZE, TORCH_SHEET, torchSheetPng } from './tools/torch-sheet';
 import { readPngSize } from '@engine/core/content/png';
 import { gltfClipNames, readGlb } from '@engine/core/content/gltf';
 import { BRAZIER_CLIP, BRAZIER_MODEL, brazierGlb } from './tools/brazier-model';
+import { decorModels } from './tools/decor-models';
 import { imageSheetFrames } from '@engine/core/gfx/image-sheet';
 
 // The fx lab (Engine 0.16 T2): its content, the full animation set of Pip in both skins, and
@@ -250,6 +251,18 @@ describe('fx lab PNG sheet (Engine 0.16 T10)', () => {
     const frames = imageSheetFrames(skin.images!['lab-torch']!);
     expect([...frames.keys()]).toEqual(['torch-0', 'torch-1', 'torch-2', 'torch-3', 'torch-unlit']);
     expect(frames.get('torch-3')).toEqual({ x: 55, y: 1, w: 16, h: 24, anchor: 'bottom' });
+  });
+});
+
+describe('fx lab decor models (Engine 0.16 F3)', () => {
+  it('commits exactly the .gltf text its script makes, credited as CC0', () => {
+    const made = decorModels();
+    expect(Object.keys(made).length).toBe(4);
+    for (const [path, text] of Object.entries(made)) {
+      expect(readFileSync(new URL(`./${path}`, import.meta.url), 'utf8')).toBe(text);
+      expect(content.assets?.[path]).toMatch(/^data:model\/gltf\+json;base64,/);
+    }
+    expect(content.assets?.['assets/CREDITS.md']).toMatch(/## fx-lab-decor[\s\S]*Licence: CC0/);
   });
 });
 

@@ -7,10 +7,13 @@ part of `engine/core`: it imports core only, never a backend, kit or game. A bac
 display (`canvasDisplay` in `engine/backends/canvas2d`, `threeDisplay` in
 `engine/backends/three`) and the game hands the boot one factory per backend.
 
-- `backend-choice.ts` (pure): `PageBackend` (`canvas2d` | `three`), `THREE_QUERY`
-  (`?backend=three`), `backendFromQuery(search)` (only `backend=three` picks 3D; anything else is
-  Canvas2D) and `otherBackendLink(backend)` (`{ label, href, title }`, relative links: `./` for 2D
-  so it works under any base path).
+- `backend-choice.ts` (pure): `PageBackend` (`canvas2d` | `pixi` | `three`), `Page2dBackend`
+  (`canvas2d` | `pixi`), `THREE_QUERY` (`?backend=three`), `PIXI_QUERY` (`?backend=pixi`) and
+  `CANVAS2D_QUERY` (`?backend=canvas2d`), `backendFromQuery(search, fallback = 'canvas2d')`
+  (`backend=three`, `pixi` or `canvas2d` exactly picks that one; anything else is `fallback`, the
+  game's default 2D backend) and `otherBackendLink(backend)` (`{ label, href, title }`, relative
+  links: both 2D backends link to `./?backend=three`, 3D links to `./`, the game's default 2D, so
+  it works under any base path).
 - `display.ts` (types): `BrowserDisplay` `{ renderer, presenter, fit(layout), present() }`, what
   a backend gives the page: the renderer the scene stack draws through (one that draws nothing in
   3D), a `Presenter` with the game's skin on the page's picture, the fit to the screen layout, and
@@ -65,6 +68,37 @@ canvasId?, toggleId?, search?, pointer?, touchPad?, audio?, manual? })`: reads t
   background resumes, or redoes the unlock on the next gesture. The manager is `booted.audio` (null without the option) for volume changes or
   another song. A game writes no audio code. `showBackendToggle(backend | null, id?)` and `showDisplayMessage(canvas, text)` are the
   two page helpers it uses.
+- **The 2D backend choice** (Engine 0.16 T13b-4, item 323): `displays` takes `pixi?`, the PixiJS
+  (WebGL) display (`async (c, { onSound }) => (await import('@engine/backends/pixi')).pixiDisplay(c,
+{ ...look, fonts, onSound })`: a literal dynamic import, so Vite puts PixiJS in its own chunk and
+  a Canvas2D page never downloads it; `tests/architecture/pixi-lazy.test.ts` checks no game imports
+  it statically), and `default2d?: 'canvas2d' | 'pixi'` (default `canvas2d`) is the 2D backend
+  when the query names none. `pageBackend(asked, displays)` (pure) runs `three` or `pixi` only when
+  the game has that display, else Canvas2D. `startDisplay(backend, displays, canvas, shell)`
+  starts it; a PixiJS display that cannot start (its factory returns a reason, rejects or throws:
+  no WebGL, a failed import) is replaced by the Canvas2D one on a fresh copy of the canvas put in
+  its place (a canvas that gave out a WebGL context cannot give a 2D one), with the reason as a
+  `console.warn`, so `booted.backend` and `body[data-backend]` say what actually runs (`pixi` or
+  `canvas2d`); a Canvas2D or 3D display that cannot start still shows its message. Opt-in on the
+  2D pages of the rts-skirmish, tower-defense, dungeon and mini-siege samples, the fx lab, the
+  platformer lab and Hopper's Way (`?backend=pixi`; their default stays Canvas2D). The
+  rts-skirmish and tower-defense pages default to PixiJS (`default2d: 'pixi'`, Engine 0.16
+  T13b-8; `?backend=canvas2d` forces Canvas2D). The platformer
+  sample (`games/samples/platformer`) gets the option when its own track merges. Tested in
+  `shell.test.ts` (the query, `pageBackend`, the default, the fallback on a reason and on a throw
+  with fake factories) and `tests/browser/pixi-pages.test.ts` (each wired page on both backends
+  with the same state hash, and the fallback with WebGL taken away).
+- **Opening in 3D** (Engine 0.16 F7): `default3d: true` (with a `three` display) makes 3D the
+  backend when the query names none. `startDisplay(backend, displays, canvas, shell, { fallback
+})`: when the boot gives a `fallback` (the `default2d`, only when 3D is the default, not when
+  `?backend=three` asked for it: `queryNamesThree`), a 3D display that cannot start (a reason, a
+  rejection or a throw) is replaced by that 2D backend's on a fresh copy of the canvas, with the
+  reason as a `console.warn`. The toggle is set after the display starts, from what runs:
+  `showBackendToggle(backend, id, default3d)` and `otherBackendLink(backend, default3d)` link 3D
+  as `./` and 2D as `./?backend=canvas2d` for such a game; `showDisplayMessage(canvas, text,
+default3d)` the same. Tested in `shell.test.ts` (3D by default, `?backend=canvas2d` over it, the
+  fallback on a reason and on a throw, the reason shown when the query asked for 3D, the links).
+  The mini siege's page uses it.
 - **The audio mixer** (Engine 0.16 T8, `../audio/mixer.ts`): with `audio` the boot makes one
   `Mixer` over the page's `AudioManager` (`booted.mixer`). `BootAudio` takes `mix` (the skin's
   `music` section: layered songs; `music` naming one plays its layers) and `seed` (sound
@@ -245,6 +279,49 @@ campaign? })` over a `LaunchGame` (a `MissionHost`'s `step`, `events`, `miniGame
     "Play again"). Its buttons never keep the focus. `update()` (cheap when nothing changed) after
     every draw. The mini siege's page uses both; its `main.ts` has no bar, panel, code or hint
     logic of its own.
+- **The mission flow in the picture** (Engine 0.16 F5; `mission-screens.ts`, pure, on
+  `PURE_CORE`): the `MissionLaunch` shown with the UI kit instead of (or beside) the DOM bar,
+  styled by `game.json`'s `menus` (`style`, `font`, `titleFont`). Builders, each a `ui` file
+  (`UiScreenFile`) from a `MissionScreenContext { menus, screen, fonts, keys?, words? }`:
+  `briefingScreen(ctx, { title, text }, { stored? })` (dimmed picture, centred panel, the entry's
+  title in the title font when it fits, its text, **Begin** and, with a kept save, **Carry on**),
+  `missionCardScreen(ctx, { def, open, canPlay, facts, ticksPerHour })` (bottom right, never
+  pausing: `MISSION AVAILABLE` / `MISSION OPEN`, the title, the mission's `text`, chips from
+  `missionChips`: the cost on the clock (`durationText`), the hero, the foes; **Play** (disabled
+  without a round) and **Delegate**), `missionChoiceScreen(ctx, defs)` (several offers at once,
+  the dawn's captive choices: one item `launch:<id>` each), `windowBadgeScreen(ctx, text, card)`
+  (`Window closes in N ticks` over the card's corner), `outcomeScreen(ctx, record, title,
+changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes since it
+  opened, **Continue**) and `resultsScreen(ctx, { title, verdict, changes, outcomeTitle, code })`
+  (the entry's results: each section of `changeSections` (missions, losses by faction, people,
+  buildings) as far as the picture has room, `and N more` for the rest, the save code,
+  **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 304 px wide with
+  the changes down two columns). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
+  `CARD_MARGIN`, `CARD_WIDTH`. Engine 0.16 F7: the context's (and `MissionScreens`') `card`
+  (`MissionCardLook { width?, font? }`) sets the corner cards' widest and their font (text,
+  chips, buttons and the window badge; `cardContext` swaps it into the menus for them), so the
+  mini siege's 3D page draws its card in its HUD's small font. And `missionScreensScene` hands
+  the scene under the screens its frame without the taps a screen covers (`covers`, taken
+  before the screens update), so a round started by a tap on Play never takes, or records, that
+  tap as its own input.
+  `MissionScreens<G>({ launch, menus, screen, fonts, frameSize?, keys?(), facts?(game, def),
+changes?(game, sinceTick), ticksPerHour?, uiKeys?, pointer?, onSound?, words? })`: `kind()` is
+  `results` (the entry ended), `briefing` (held), `outcome` (a record committed since the last
+  one shown), `card` (a mission offered or open) or null (a round is played, or nothing); `sync()`
+  builds the screen when what it shows changed (keeping the focused item; the badge is a screen of
+  its own so the ticks counting down never rebuild the card); `update(input)` takes player 1's
+  commands (`UiNav`: keyboard and gamepad through the bindings), the frame's taps (mouse and
+  touch) and the hover, and maps `activate` to `launch.press`: `begin`, `stored`, `continue`
+  (results: the launch's; outcome: closes it), `launch:<id>`, and `play` / `delegate` (with no
+  choice waiting, `launch` first, both carried out on the same loop step). `covers(p)` (a point on
+  a screen's panel or the badge; any point under a modal screen), `uncovered(gestures)` (a page's
+  pointer gestures without those on a screen, so a kit's controls under the card never take its
+  taps), `changes(since)`, `facts(def)`, `cardMissions()`, `windowLine()`, `press(item)`,
+  `draws()`. The facts and changes are `engine/sim`'s `missionCardFacts` and `worldChanges`,
+  handed in by the page, never computed in its glue; it reads state only. `missionScreensScene(
+scene, screens, painter(r))` is the page's scene with the screens over it (the screens take the
+  frame first, then the scene steps; drawn with the backend's `UiPainter` after the scene). The
+  mini siege's `SiegePlay.missionScreens` and its page's `?ui=picture` use it.
 - `ui-scene.ts` (pure, on `PURE_CORE`; Engine 0.16 T7): `UiScene({ ui, painter(r), pointer?,
 keys?, onEvent?, translucent?, transitionSlot? })`, a `UiScreen` (`../ui`) as a scene. Each
   step: commands from player 1's frame (`UiNav`, so keyboard and gamepad through the bindings,
@@ -396,7 +473,7 @@ onto `display.presenter` (see `games/platformer-lab/main.ts`; no `scene.ts` sinc
 - Imports: `engine/core` only. Never a backend (the displays come in as factories), the sim,
   tools, kits or games. Kits may not import this folder (`engine/core/shell/**` is on
   `FORBIDDEN_CORE` in `config/layers.js`): scenes and pages are the game's.
-- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE` (and so is
+- `backend-choice.ts`, `host-scene.ts`, `debug.ts`, `mission-launch.ts`, `mission-screens.ts`, `transitions.ts`, `ui-scene.ts` and `game-menus.ts` are on `PURE_CORE` (and so is
   `../minigame-scene.ts`, which `host-scene.ts` imports); keep the DOM and the clock in `boot.ts`
   (it alone touches `window.__ww`), `volume-control.ts` (the volume control's DOM and storage) and
   `mission-bar.ts` (the mission-launch scene's DOM). `campaign-session.ts`
@@ -461,6 +538,16 @@ by the game's rule with its result and code, Continue held again, the campaign's
 starting over; a refused code's reason, a code and the stored save resumed (held). The DOM is
 browser-only: `tests/browser/mini-siege-page.test.ts` plays every entry held at tick 0 until Begin
 (nothing stepping or offered before) and the dawn resumed from a code, held too.
+`mission-screens.test.ts` (Engine 0.16 F5): the briefing, card (Play disabled for a choice, its
+corner, the badge) and results (cut to the picture with `and N more`, the save code) built from a
+`menus` spec; `MissionScreens` over a `MissionLaunch` of a fake game: the card and its window
+counting down, Delegate by keys (right, then confirm) and the result's Continue, Play by a tap
+(the screens step aside for the round), the hover's focus and taps off the card left to the page,
+several offers listed and one chosen. The mini siege's missions and runs:
+`games/samples/mini-siege/mission-screens.test.ts` (the briefing by a key, the sabotage's and the
+fortify's cards with the sim's facts, both offers listed, Delegate by a tap, by keys and by a
+gamepad, Play by the mouse, the dawn's captive choices with Play disabled, and the results of the
+delegated, played and quit sieges with the run files' hashes unmoved).
 `game-menus.test.ts` (Engine 0.16 T9): the title holding the game at its start, Start under the
 `default` transition with the music back, Continue only with a save, the pause key pausing and
 resuming with the ticks held, settings and controls in the pause menu's place with a change

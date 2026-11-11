@@ -15,13 +15,28 @@ export function parseHexColor(text: string): [number, number, number] | null {
  * colour. Throws on text that is not a colour (skins are checked before they get here).
  */
 export function lerpColor(a: string, b: string, t: number): string {
-  const from = parseHexColor(a);
-  const to = parseHexColor(b);
+  const from = rgbOf(a);
+  const to = rgbOf(b);
   if (!from || !to) throw new Error(`lerpColor: not a colour: ${from ? b : a}`);
-  return `#${from
-    .map((c, i) => {
-      const v = Math.min(255, Math.max(0, Math.round(c + (to[i]! - c) * t)));
-      return v.toString(16).padStart(2, '0');
-    })
-    .join('')}`;
+  return `#${channel(from[0], to[0], t)}${channel(from[1], to[1], t)}${channel(from[2], to[2], t)}`;
+}
+
+/** Two lower-case hex digits per byte. */
+const HEX: readonly string[] = Array.from({ length: 256 }, (_, i) => i.toString(16).padStart(2, '0'));
+
+function channel(a: number, b: number, t: number): string {
+  return HEX[Math.min(255, Math.max(0, Math.round(a + (b - a) * t)))]!;
+}
+
+/** Parsed colours by their text: `lerpColor` runs per particle per frame on a skin's few colours. */
+const parsed = new Map<string, readonly [number, number, number] | null>();
+const PARSED_MAX = 1024;
+
+function rgbOf(text: string): readonly [number, number, number] | null {
+  let rgb = parsed.get(text);
+  if (rgb === undefined) {
+    rgb = parseHexColor(text);
+    if (parsed.size < PARSED_MAX) parsed.set(text, rgb);
+  }
+  return rgb;
 }

@@ -1,11 +1,14 @@
 import {
   AnimationMixer,
-  Color,
   Box3,
+  Color,
   Euler,
   Group,
+  Matrix4,
   Mesh,
+  Quaternion,
   Vector3,
+  type BufferGeometry,
   type AnimationAction,
   type AnimationClip,
   type Material,
@@ -160,11 +163,8 @@ export class ModelInstance {
       o.material = Array.isArray(o.material) ? o.material.map(copy) : copy(o.material);
       o.castShadow = spec.castShadow;
     });
-    // A tint (Engine 0.16 part B) multiplies into each own material's colour.
-    if (spec.tint !== null) {
-      const tint = new Color(spec.tint);
-      for (const m of this.materials) if ('color' in m && m.color instanceof Color) m.color.multiply(tint);
-    }
+    // `materials` (Engine 0.16 F6) set colours by name, then a `tint` (part B, F6) multiplies them all.
+    recolorMaterials(this.materials, spec);
     const deg = Math.PI / 180;
     const turn = new Euler(spec.rotate.x * deg, spec.rotate.y * deg, spec.rotate.z * deg, 'XYZ');
     inner.rotation.copy(turn);
@@ -230,4 +230,97 @@ export class ModelInstance {
     this.mixer.uncacheRoot(this.mixer.getRoot());
     for (const m of this.materials) m.dispose();
   }
+}
+
+/**
+ * Sets an instance's own materials' colours from its spec (Engine 0.16 F6): each material named in
+ * `materials` takes that colour, then every colour is multiplied by `tint`. A material without a
+ * `color` is left alone.
+ */
+export function recolorMaterials(
+  materials: readonly Material[],
+  spec: DeepReadonly<Pick<SkinModel, 'materials' | 'tint'>>,
+): void {
+  const tint = spec.tint === null ? null : new Color(spec.tint);
+  for (const m of materials) {
+    const c = (m as Material & { color?: Color }).color;
+    if (!(c instanceof Color)) continue;
+    const set = Object.hasOwn(spec.materials, m.name) ? spec.materials[m.name] : undefined;
+    if (set !== undefined) c.set(set);
+    if (tint) c.multiply(tint);
+  }
+}
+
+/** One mesh of a model, placed for instancing (Engine 0.16 F3): its geometry and material (the library's) and its matrix. */
+export interface ModelMeshPart {
+  /** The mesh's name in the model. */
+  name: string;
+  geometry: BufferGeometry;
+  material: Material | Material[];
+  /** From the mesh to the box's bottom centre: the entry's `rotate`, `scale`, `anchor` and `offset`, as a `ModelInstance` places it. */
+  matrix: Matrix4;
+}
+
+/**
+ * A loaded model's meshes, each with the matrix that places it exactly where a
+ * {@link ModelInstance} with the same spec and box shows it (its rest pose), for drawing many
+ * copies as one `InstancedMesh` per mesh (Engine 0.16 F3). Geometries and materials are the
+ * library's (shared: never dispose them with the instances). Null when the model has a skinned
+ * mesh (bones cannot be instanced: show it with `ModelInstance`s).
+ */
+export function modelMeshParts(
+  model: LoadedModel,
+  spec: DeepReadonly<SkinModel>,
+  box: { w: number; h: number },
+): ModelMeshPart[] | null {
+  const scene = model.scene;
+  scene.updateMatrixWorld(true);
+  const rootInverse = scene.matrixWorld.clone().invert();
+  const meshes: { mesh: Mesh; local: Matrix4 }[] = [];
+  let skinned = false;
+  scene.traverse((o) => {
+    if ((o as { isSkinnedMesh?: boolean }).isSkinnedMesh === true) skinned = true;
+    if (o instanceof Mesh) meshes.push({ mesh: o, local: rootInverse.clone().multiply(o.matrixWorld) });
+  });
+  if (skinned) return null;
+  const deg = Math.PI / 180;
+  const turn = new Euler(spec.rotate.x * deg, spec.rotate.y * deg, spec.rotate.z * deg, 'XYZ');
+  // `stretch` (Engine 0.16 part B) scales the model's own axes, before the turn, as on a ModelInstance.
+  const scale = new Vector3(
+    spec.scale * spec.stretch.x,
+    spec.scale * spec.stretch.y,
+    spec.scale * spec.stretch.z,
+  );
+  const turnScale = new Matrix4().compose(new Vector3(), new Quaternion().setFromEuler(turn), scale);
+  // The model point that goes on the box, as ModelInstance finds it (its turned, scaled bounds).
+  const point = new Vector3();
+  const target = new Vector3();
+  const anchor = spec.anchor;
+  if (typeof anchor === 'string') {
+    if (anchor !== 'origin') {
+      const bounds = new Box3();
+      const v = new Vector3();
+      const m = new Matrix4();
+      for (const { mesh, local } of meshes) {
+        const position = mesh.geometry.getAttribute('position');
+        if (!position) continue;
+        m.multiplyMatrices(turnScale, local);
+        for (let i = 0; i < position.count; i++)
+          bounds.expandByPoint(v.fromBufferAttribute(position, i).applyMatrix4(m));
+      }
+      if (!bounds.isEmpty()) {
+        bounds.getCenter(point);
+        if (anchor === 'bottom') point.y = bounds.min.y;
+        else target.y = box.h / 2;
+      }
+    }
+  } else point.set(anchor.x, anchor.y, anchor.z).multiply(scale).applyEuler(turn);
+  const shift = target.sub(point).add(new Vector3(spec.offset.x, -spec.offset.y, spec.offset.z));
+  const inner = new Matrix4().makeTranslation(shift.x, shift.y, shift.z).multiply(turnScale);
+  return meshes.map(({ mesh, local }) => ({
+    name: mesh.name,
+    geometry: mesh.geometry,
+    material: mesh.material,
+    matrix: inner.clone().multiply(local),
+  }));
 }

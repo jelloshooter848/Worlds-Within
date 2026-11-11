@@ -83,5 +83,11 @@ describe('layoutLabels', () => {
     expect(layoutLabels([timer], e, { left: 125 }, at).views).toEqual([]);
     const fixed: SkinLabel = { as: 'text', format: 'Pip', font: 'f' };
     expect(layoutLabels([fixed], e, {}, at, fonts).views[0]!.text).toBe('Pip');
+    // A format reading a tag the entity lacks shows nothing (Engine 0.16 F7).
+    const tagged: SkinLabel = { from: { tag: 'progress:' }, as: 'text', format: 'Pip {value}', font: 'f' };
+    expect(layoutLabels([tagged], e, {}, at, fonts).views).toEqual([]);
+    expect(layoutLabels([tagged], { ...e, tags: ['progress:12'] }, {}, at, fonts).views[0]!.text).toBe(
+      'Pip 12',
+    );
   });
 });

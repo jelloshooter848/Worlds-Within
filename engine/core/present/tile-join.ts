@@ -124,30 +124,38 @@ export type TileJoin = z.output<typeof tileJoinSchema>;
  * `{ cols, rows }` takes the cell's place modulo it first, so a pattern repeats every room (the
  * top-down kit's room slide puts two rooms side by side in one map, and each keeps its look).
  */
-export const tileVarySchema = z
-  .strictObject({
-    frames: z.array(z.string().min(1)).min(1).describe('the frames to pick from'),
-    weights: z
-      .array(z.number().int().min(1))
-      .exactOptional()
-      .describe('one whole number per frame: how often it is picked (default 1 each)'),
-    period: z
-      .strictObject({
-        cols: z.number().int().min(1).describe('columns before the pattern repeats'),
-        rows: z.number().int().min(1).describe('rows before the pattern repeats'),
-      })
-      .exactOptional()
-      .describe("the cell's place is taken modulo this first, so the pattern repeats (default: never)"),
-  })
-  .superRefine((vary, ctx) => {
-    if (vary.weights !== undefined && vary.weights.length !== vary.frames.length)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['weights'],
-        message: `${vary.weights.length} weights for ${vary.frames.length} frames: give one per frame`,
-        params: { code: 'bad_weights' },
-      });
-  })
+/** A 2D tile's `vary` without its weights check (the skin's `vary` unions it with the 3D one). */
+export const tileVaryShape = z.strictObject({
+  frames: z.array(z.string().min(1)).min(1).describe('the frames to pick from'),
+  weights: z
+    .array(z.number().int().min(1))
+    .exactOptional()
+    .describe('one whole number per frame: how often it is picked (default 1 each)'),
+  period: z
+    .strictObject({
+      cols: z.number().int().min(1).describe('columns before the pattern repeats'),
+      rows: z.number().int().min(1).describe('rows before the pattern repeats'),
+    })
+    .exactOptional()
+    .describe("the cell's place is taken modulo this first, so the pattern repeats (default: never)"),
+});
+
+/** `bad_weights` at `weights` when a 2D `vary` does not give one weight per frame. */
+export function checkVaryWeights(
+  vary: { readonly frames: readonly string[]; readonly weights?: readonly number[] | undefined },
+  ctx: z.RefinementCtx,
+): void {
+  if (vary.weights !== undefined && vary.weights.length !== vary.frames.length)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['weights'],
+      message: `${vary.weights.length} weights for ${vary.frames.length} frames: give one per frame`,
+      params: { code: 'bad_weights' },
+    });
+}
+
+export const tileVarySchema = tileVaryShape
+  .superRefine(checkVaryWeights)
   .describe(
     "2D: vary the tile's own frame by the cell's place: `{ frames, weights?, period?: { cols, rows } }`",
   );
@@ -227,7 +235,8 @@ export function resolveTileFrame(
   entry: {
     readonly frame?: string | undefined;
     readonly join?: DeepReadonly<TileJoin> | undefined;
-    readonly vary?: DeepReadonly<TileVary> | undefined;
+    /** A 3D model tile's `vary` (`{ turn?, height?, tint? }`, no `frames`) picks no frame. */
+    readonly vary?: DeepReadonly<TileVary> | object | undefined;
   },
   own: string,
   grid: TileGrid,
@@ -240,5 +249,8 @@ export function resolveTileFrame(
       if (Object.hasOwn(join.frames, key)) return join.frames[key];
     }
   }
-  return entry.vary === undefined ? entry.frame : variedTileFrame(entry.vary, col, row);
+  const vary = entry.vary;
+  return vary === undefined || !('frames' in vary)
+    ? entry.frame
+    : variedTileFrame(vary as DeepReadonly<TileVary>, col, row);
 }
