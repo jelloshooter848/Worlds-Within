@@ -68,6 +68,36 @@ false, request, code, error }` with `not_offered` (the kit's, without asking the
   never picks a unit whose event is frozen, and `train` skips a frozen building (the view's
   `frozen` flag; Engine 0.15 T9, gap M20), so no order goes to a unit an open mission holds. All
   randomness through the `Rng` it is given; nearest picks by squared distance, ties to the lowest id.
+  **A skirmish opponent** (Engine 0.16 part D, D6; all optional, so older plans give the same
+  orders and kit snapshot and every rts-classic and rts-skirmish hash stays): the plan's
+  `knowledge` (`all`, the default, or `fog`: its targets and its `enemy`-side conditions read
+  `RtsKnowledge.known(view)`, only the other units on cells its side sees now and the other
+  buildings it sees or remembers; rule `enemy-knows-only-what-it-saw`, off: the whole view; a
+  building only remembered is not attacked by id but walked to, its nearest footprint cell, since
+  it may be gone); `scout` (`areas?`: the chosen units walk to the nearest unexplored passable cell,
+  in the first listed area with one, else anywhere; none: it waits); attack targets `enemy-base`
+  (the nearest known enemy drop-off, else building) and `last-seen-building` (seen most recently,
+  then nearest); a selector's `min` (no order until that many match: a wave once N are idle);
+  `build` with `cells` (the first where the footprint is on the map, passable and clear of known
+  buildings and nodes; exactly one of `cell` and `cells`); `train` with `upTo` (only while own
+  units of the type plus queued are fewer, at no more buildings than are missing). Workers are kept
+  on gold with a repeating `gather` for `idle` workers. None of these draws from the RNG.
+  `ScriptedEnemy.knowledge()` is its `RtsKnowledge` (null for a plan with `knowledge: "all"` and no
+  `scout`, which keeps none); `memorySnapshot()` the memory as JSON or null. `conditionHolds(view,
+faction, condition)` is the plan's condition check, shared with the end rule.
+- `knowledge.ts` (Engine 0.16 part D, D6): `RtsKnowledge(faction)`, what one side knows, as kit
+  state (hashed, unlike `RtsFogMemory`): `update(view)` takes in what it sees now (`visibility`) and
+  returns it; explored cells (`isExplored`); other sides' buildings as last seen with the tick
+  (`lastSeen(id)`, `outOfSight(id, vis)`), updated when seen again, forgotten when seen gone;
+  `known(view, vis?)` the view as it knows it (own things, other units seen now, other buildings
+  seen now or remembered and not seen gone; resource nodes and stock are the view's: the map's gold
+  is common knowledge); `snapshot()` `{ explored: rows of "0"/"1", buildings: [{ id, kind,
+faction, x, y, w, h, seen }] }`.
+- `end.ts` (Engine 0.16 part D, D6): the end rule as data, `rtsEndSchema` (the `rts-end` kind):
+  `{ faction, won: [condition], lost: [condition] }` in the plan's condition shape.
+  `matchResult(view, end, knowledge?)`: `lost` when any `lost` condition holds (checked first),
+  else `won` when any `won` holds, else null; with `knowledge` (kept up to date by its owner) the
+  conditions read `knowledge.known(view)`.
 - `present.ts`: `presentWorld(view, { faction, size, tileSize?, selection?, box?, placing?,
 camera?, missions?, events?, state?, fog? })`, below. `RtsPresentState` (map tracker, animation starts,
   fog memory, markers),
@@ -135,7 +165,8 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
   `rtsGame({ world, enemy?, seed, disabledRules? })` gives an `RtsGame`, a `HeadlessGame`:
   `order(json)` (a recorded order, applied at once), `issue(draft)` (the player's command, stamped
   with the next id), `step()` (the enemy thinks and its orders are applied, then the world
-  steps), `snapshot()` `{ world, kit: { nextOrder, rng, enemy } }`, `view()`, `tick`,
+  steps), `snapshot()` `{ world, kit: { nextOrder, rng, enemy, seen? } }` (`seen`, Engine 0.16
+  part D, D6: the enemy's memory, only for a plan that keeps one), `scriptedEnemy()`, `view()`, `tick`,
   `nextOrderId`, `recorded()` (the player's orders as `{ tick, ...order }`, refused ones too,
   ready for a run file's `orders`) and `log()` (every order of both sides with tick, source and
   refusal). Ids count up across both sides in the order applied; a recorded order keeps its id
@@ -150,7 +181,7 @@ after, faction, tileSize?)` is the same for two views. Events, each with `side` 
 
 ## Kit hook (`kit.ts`)
 
-`kit` (`defineKit`): name `rts`, kinds `rts-map`, `rts-types`, `rts-enemy`, rules `RTS_RULES`, no
+`kit` (`defineKit`): name `rts`, kinds `rts-map`, `rts-types`, `rts-enemy`, `rts-end`, rules `RTS_RULES`, no
 strict mutants. `engine/tools` finds it through the generated `engine/tools/kit-list.ts` (`pnpm
 docs:gen` after changing it). `index.ts` does not re-export it.
 
@@ -169,7 +200,9 @@ docs:gen` after changing it). `index.ts` does not re-export it.
 - `rts-enemy`: `enemyPlanSchema`. `checkAll` reports a unit or building type a plan names that no
   `rts-types` file or map `RtsTypes` has, as `unknown_type` at the field (only when the game has
   types to check against).
-- Examples in `docs/reference/examples/` (`rts-map.json`, `rts-types.json`, `rts-enemy.json`);
+- `rts-end` (Engine 0.16 part D, D6): `rtsEndSchema` (`end.ts`). `checkAll` reports a unit or
+  building type its conditions name that the game's types lack (`unknown_type` at `won.<i>.type`).
+- Examples in `docs/reference/examples/` (`rts-map.json`, `rts-types.json`, `rts-enemy.json`, `rts-end.json`);
   every field has a `.describe(...)`. After a schema change: `pnpm docs:gen`.
 
 ## Presentation frames (`present.ts`)
@@ -251,8 +284,9 @@ next frame (`takeEvents()`; `presentWorld` appends them to the frame's events on
 
 ## Named rules (`rules.ts`)
 
-`RTS_RULES`: `enemy-follows-plan`, `enemy-waits-for-trigger`, `box-selects-own-units`,
-`command-attacks-enemies`, `command-gathers-resources`. Each is one `isOn` check where it is
+`RTS_RULES`: `enemy-follows-plan`, `enemy-waits-for-trigger`, `enemy-knows-only-what-it-saw`
+(Engine 0.16 part D, D6), `box-selects-own-units`, `command-attacks-enemies`,
+`command-gathers-resources`. Each is one `isOn` check where it is
 decided; tests switch each off. The launch command has no rule (Engine 0.11 T6, a change from
 item 175's `launch-needs-offer`): the sim already refuses a mission whose opportunity is not
 offered, so switching the kit's check off would change only the refusal's code, never the world,
@@ -274,7 +308,10 @@ and no run file could guard it. A game's headless `createGame` passes `opts.disa
 
 `pnpm test kits/rts`: `snapshot.test.ts`, `sides.test.ts`, `selection.test.ts` (click, box, hero alone, the rule
 off), `commands.test.ts` (each command to its order, checked by `parseOrder`), `enemy.test.ts`
-(same seed and snapshots give the same orders, ticks, repeats, triggers, the rules off),
+(same seed and snapshots give the same orders, ticks, repeats, triggers, the rules off; Engine 0.16
+part D, D6: fog knowledge never targeting an unseen enemy, remembered buildings walked to, scouting,
+waves with `min`, `upTo`, `cells`, gathering idle workers, determinism, and
+`enemy-knows-only-what-it-saw` off),
 `present.test.ts` (frames pass `presentFrameSchema`; Engine 0.16 part D: the train bar and queue
 count, path dots, markers fading and following, barks sent once), `fog.test.ts` (sight radius and
 fallbacks, explored memory, last-seen buildings and nodes, enemies hidden, the fog frame),
@@ -297,6 +334,12 @@ actions), with no run weak; the kit is not strict, so `tests/runs/rts-skirmish-m
 holds the sample to that. From Engine 0.16 part D (D2) the same battle is kept unchanged as the
 test game `games/rts-classic`, whose run files never move, held the same way by
 `tests/runs/rts-classic-mutants.test.ts`, so the sample can become the full match.
+`tests/kits/rts-ai.test.ts` (Engine 0.16 part D, D6) plays a fog opponent over a small sim field
+(`tests/kits/__fixtures__/skirmish-ai.world.json`): it gathers, builds a barracks, trains, scouts,
+sends a wave at red's base, attacks only what its side sees, and the data end rule decides the
+match (red `lost`, blue reading its own knowledge `won`), the same hashes every run. Both mutants
+tests list `enemy-knows-only-what-it-saw` as the one rule their run files cannot guard (their
+raiders know all), until the full match (D8, D9) gives the sample a fog run file.
 `tests/runs/rts-fog.test.ts` (Engine 0.16 part D, D5) plays every rts-classic and rts-skirmish run
 through the game's view with the kit's frames made with fog off and on: the same golden hashes and
 final state each way, the fogged frames passing the schema and hiding enemies out of sight.

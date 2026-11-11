@@ -2427,39 +2427,97 @@ A scripted enemy's plan: its faction and the orders it gives, at ticks or on tri
 - Where: `content/`, claimed in `game.json` under `content.rts-enemy`
 - Read from: `.json`
 
-| Field                  | Type                                                       | Required | Default | Limits                             | Description                                          |
-| ---------------------- | ---------------------------------------------------------- | -------- | ------- | ---------------------------------- | ---------------------------------------------------- |
-| `faction`              | `string`                                                   | yes      |         | matches `^[A-Za-z][A-Za-z0-9_-]*$` | the side the plan plays                              |
-| `steps`                | `object[]`                                                 | yes      |         |                                    | tried in this order every tick                       |
-| `steps[].id`           | `string`                                                   | yes      |         | matches `^[A-Za-z][A-Za-z0-9_-]*$` | names the step in the enemy state                    |
-| `steps[].at`           | `integer`                                                  | no       | `0`     | >= 0                               | the first tick it may fire                           |
-| `steps[].when`         | `object \| object`                                         | no       |         |                                    | it fires only once this holds                        |
-| `steps[].repeat`       | `object`                                                   | no       |         |                                    | fire again every `every` ticks, `times` times in all |
-| `steps[].repeat.every` | `integer`                                                  | yes      |         | >= 1                               | ticks between firings                                |
-| `steps[].repeat.times` | `integer \| null`                                          | no       | `null`  |                                    | firings in all (null: for ever)                      |
-| `steps[].order`        | `object \| object \| object \| object \| object \| object` | yes      |         |                                    | the order to give, told apart by `type`              |
+| Field                  | Type                                                                 | Required | Default | Limits                             | Description                                                                                                                 |
+| ---------------------- | -------------------------------------------------------------------- | -------- | ------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `faction`              | `string`                                                             | yes      |         | matches `^[A-Za-z][A-Za-z0-9_-]*$` | the side the plan plays                                                                                                     |
+| `knowledge`            | `"all" \| "fog"`                                                     | no       | `"all"` |                                    | what the plan knows of the other sides: `all` the whole world, `fog` only what its side sees and the buildings it remembers |
+| `steps`                | `object[]`                                                           | yes      |         |                                    | tried in this order every tick                                                                                              |
+| `steps[].id`           | `string`                                                             | yes      |         | matches `^[A-Za-z][A-Za-z0-9_-]*$` | names the step in the enemy state                                                                                           |
+| `steps[].at`           | `integer`                                                            | no       | `0`     | >= 0                               | the first tick it may fire                                                                                                  |
+| `steps[].when`         | `object \| object`                                                   | no       |         |                                    | it fires only once this holds                                                                                               |
+| `steps[].repeat`       | `object`                                                             | no       |         |                                    | fire again every `every` ticks, `times` times in all                                                                        |
+| `steps[].repeat.every` | `integer`                                                            | yes      |         | >= 1                               | ticks between firings                                                                                                       |
+| `steps[].repeat.times` | `integer \| null`                                                    | no       | `null`  |                                    | firings in all (null: for ever)                                                                                             |
+| `steps[].order`        | `object \| object \| object \| object \| object \| object \| object` | yes      |         |                                    | the order to give, told apart by `type`                                                                                     |
 
 Example (`docs/reference/examples/rts-enemy.json`):
 
 ```json
 {
   "faction": "blue",
+  "knowledge": "fog",
   "steps": [
     {
       "id": "rally",
       "order": { "type": "move", "units": { "idle": true }, "area": { "x": 4, "y": 0, "w": 3, "h": 3 } }
     },
     {
+      "id": "gold",
+      "repeat": { "every": 10, "times": null },
+      "order": { "type": "gather", "units": { "type": "worker", "idle": true }, "resource": "gold" }
+    },
+    {
       "id": "train",
       "at": 20,
       "repeat": { "every": 60, "times": 4 },
-      "order": { "type": "train", "building": "hall", "unit": "worker" }
+      "order": { "type": "train", "building": "hall", "unit": "worker", "upTo": 6 }
     },
     {
-      "id": "attack",
-      "when": { "count": "units", "side": "self", "type": "worker", "op": "gte", "value": 3 },
-      "order": { "type": "attack", "units": { "type": "worker" }, "target": "nearest-enemy" }
+      "id": "barracks",
+      "when": { "count": "buildings", "side": "self", "type": "barracks", "op": "lte", "value": 0 },
+      "repeat": { "every": 30, "times": null },
+      "order": {
+        "type": "build",
+        "units": { "type": "worker", "max": 1 },
+        "building": "barracks",
+        "cells": [
+          { "x": 8, "y": 2 },
+          { "x": 8, "y": 5 }
+        ]
+      }
+    },
+    {
+      "id": "scout",
+      "at": 100,
+      "repeat": { "every": 40, "times": null },
+      "order": { "type": "scout", "units": { "type": "worker", "idle": true, "max": 1 } }
+    },
+    {
+      "id": "wave",
+      "repeat": { "every": 200, "times": null },
+      "order": {
+        "type": "attack",
+        "units": { "type": "soldier", "idle": true, "min": 4 },
+        "target": "enemy-base"
+      }
     }
+  ]
+}
+```
+
+### `rts-end`
+
+A match's end rule: the conditions that win it and the conditions that lose it.
+
+- Defined by: kit rts
+- Where: `content/`, claimed in `game.json` under `content.rts-end`
+- Read from: `.json`
+
+| Field     | Type                   | Required | Default | Limits                             | Description                                                                            |
+| --------- | ---------------------- | -------- | ------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `faction` | `string`               | yes      |         | matches `^[A-Za-z][A-Za-z0-9_-]*$` | the side the rule is about: `self` in a condition is this faction, `enemy` every other |
+| `won`     | `(object \| object)[]` | yes      |         | at least 1 item                    | the match is won once any of these holds (the plan condition shape)                    |
+| `lost`    | `(object \| object)[]` | yes      |         | at least 1 item                    | the match is lost once any of these holds; checked before `won`                        |
+
+Example (`docs/reference/examples/rts-end.json`):
+
+```json
+{
+  "faction": "red",
+  "won": [{ "count": "buildings", "side": "enemy", "type": "hall", "op": "lte", "value": 0 }],
+  "lost": [
+    { "count": "buildings", "side": "self", "type": "hall", "op": "lte", "value": 0 },
+    { "count": "units", "side": "self", "op": "lte", "value": 0 }
   ]
 }
 ```

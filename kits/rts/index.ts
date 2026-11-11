@@ -3,6 +3,8 @@ export * from './sides';
 export * from './selection';
 export * from './commands';
 export * from './enemy';
+export * from './knowledge';
+export * from './end';
 export * from './present';
 export * from './fog';
 export * from './feedback';

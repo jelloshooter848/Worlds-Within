@@ -11,13 +11,18 @@ import { main } from '../../engine/tools/main';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
+// The one exception is `enemy-knows-only-what-it-saw` (Engine 0.16 part D, D6): it only changes
+// a plan with `knowledge: "fog"`, and the classic raiders know all, so no run file here can guard
+// it (their hashes never move); the kit's enemy tests switch it off instead.
+const UNGUARDED = ['enemy-knows-only-what-it-saw'];
+
 interface GameMutants {
   runs: { run: string; baseline: { passed: boolean }; weak: string[] }[];
   unguarded: string[];
 }
 
 describe('rts-classic mutants', () => {
-  it('guards every kit rule, and no run is weak', async () => {
+  it('guards every kit rule but the listed one, and no run is weak', async () => {
     let stdout = '';
     const code = await main(['mutants', 'games/rts-classic', '--json'], {
       stdout: (t) => void (stdout += t),
@@ -26,7 +31,7 @@ describe('rts-classic mutants', () => {
     });
     const result = JSON.parse(stdout) as GameMutants;
     expect(code).toBe(0);
-    expect(result.unguarded).toEqual([]);
+    expect(result.unguarded).toEqual(UNGUARDED);
     for (const r of result.runs) {
       expect(r.baseline.passed, r.run).toBe(true);
       expect(r.weak, r.run).toEqual([]);
