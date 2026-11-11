@@ -161,3 +161,144 @@ describe('skinSetPresenter (Engine 0.16 T13b)', () => {
     expect(settings).toEqual(['main', 'duel']);
   });
 });
+
+describe('top-down looks (Engine 0.16 F8): turnToFacing, ring and 2D labels', () => {
+  const UNIT: SpriteSheet = {
+    id: 'unit',
+    image: null,
+    frames: new Map([['tank', { x: 0, y: 0, w: 8, h: 8 }]]),
+  };
+  const sheets = (id: string) => (id === 'unit' ? UNIT : null);
+  const entity = (
+    over: Partial<PresentFrame['entities'][number]> = {},
+  ): PresentFrame['entities'][number] => ({
+    id: 'e1',
+    kind: 'tank',
+    x: 8,
+    y: 0,
+    w: 8,
+    h: 8,
+    facing: 'down',
+    anim: { state: 'idle', t: 0 },
+    tags: [],
+    ...over,
+  });
+  const at = (over: Partial<PresentFrame> = {}) =>
+    freezeFrame(frame({ size: { width: 32, height: 16 }, map: undefined, ...over } as Partial<PresentFrame>));
+
+  it('turns top-down art to the facing about the box centre, never mirroring it', () => {
+    const turns: string[] = [];
+    const { r } = recorder();
+    r.transform = (x, y, angle, _sx, _sy, draw) => {
+      turns.push(`${x},${y} ${Math.round((angle * 180) / Math.PI)}`);
+      draw(r);
+    };
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      kinds: { tank: { sheet: 'unit', frames: { idle: 'tank' }, turnToFacing: true, fallbackColor: '#000' } },
+    };
+    const p = new SkinnedPresenter(r, skin, sheets, { clamp: false });
+    for (const facing of ['right', 'down', 'up-left'] as const)
+      p.present(at({ entities: [entity({ facing })], camera: { x: 16, y: 8 } }));
+    expect(turns).toEqual(['12,4 0', '12,4 90', '12,4 225']);
+  });
+
+  it('draws a ring as rows of a disc under the sprite, its rim opaque', () => {
+    const { r, calls } = recorder();
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      kinds: {
+        tank: {
+          sheet: 'unit',
+          frames: { idle: 'tank' },
+          ring: { radius: 2, color: '#0f0', edge: '#fff' },
+          fallbackColor: '#000',
+        },
+      },
+    };
+    new SkinnedPresenter(r, skin, sheets, { clamp: false }).present(
+      at({ entities: [entity()], camera: { x: 16, y: 8 } }),
+    );
+    const fill = calls.filter((c) => c.endsWith('#0f0'));
+    // Five rows, centred on the box's centre (12, 4): widths 2, 4, 4, 4, 2.
+    expect(fill).toEqual([
+      'rect 11,2 2x1 #0f0',
+      'rect 10,3 4x1 #0f0',
+      'rect 10,4 4x1 #0f0',
+      'rect 10,5 4x1 #0f0',
+      'rect 11,6 2x1 #0f0',
+    ]);
+    expect(calls.filter((c) => c.endsWith('#fff')).length).toBeGreaterThan(0);
+    // The ring is under the sprite.
+    expect(calls.findIndex((c) => c.startsWith('sprite unit:tank'))).toBeGreaterThan(
+      calls.lastIndexOf('rect 11,6 2x1 #0f0'),
+    );
+  });
+
+  it("draws a 2D skin's labels over the entities: a health bar from the hp tag", () => {
+    const { r, calls } = recorder();
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      kinds: { tank: { sheet: 'unit', frames: { idle: 'tank' }, fallbackColor: '#000' } },
+      labels: { tank: { from: { tag: 'hp:' }, as: 'bar', max: 4, w: 8, h: 2, color: '#f00', back: '#111' } },
+    };
+    new SkinnedPresenter(r, skin, sheets, { clamp: false }).present(
+      at({ entities: [entity({ tags: ['hp:2'], y: 6 })], camera: { x: 16, y: 8 } }),
+    );
+    const sprite = calls.findIndex((c) => c.startsWith('sprite unit:tank'));
+    const back = calls.findIndex((c) => c.endsWith('#111'));
+    const bar = calls.findIndex((c) => c.endsWith('#f00'));
+    expect(sprite).toBeGreaterThanOrEqual(0);
+    expect(back).toBeGreaterThan(sprite);
+    // Half full: 4 px of 8, just above the box (top at y 6, 2 px up, 2 px high).
+    expect(calls[bar]).toBe('rect 8,2 4x2 #f00');
+  });
+});
+
+describe('hitFlash (Engine 0.16 F8)', () => {
+  it('asks the sheet lookup for the colour as the palette while the tag lasts, blinking', () => {
+    const asked: (string | undefined)[] = [];
+    const UNIT: SpriteSheet = {
+      id: 'unit',
+      image: null,
+      frames: new Map([['tank', { x: 0, y: 0, w: 8, h: 8 }]]),
+    };
+    const { r } = recorder();
+    const skin: SkinFile = {
+      backend: 'canvas2d',
+      kinds: {
+        tank: {
+          sheet: 'unit',
+          frames: { idle: 'tank' },
+          hitFlash: { tag: 'hit', color: '#ffffff', blink: 2 },
+          fallbackColor: '#000',
+        },
+      },
+    };
+    const p = new SkinnedPresenter(
+      r,
+      skin,
+      (id, palette) => (asked.push(palette), id === 'unit' ? UNIT : null),
+    );
+    const e = (tags: string[]) => ({
+      id: 'e',
+      kind: 'tank',
+      x: 0,
+      y: 0,
+      w: 8,
+      h: 8,
+      facing: 'down' as const,
+      anim: { state: 'idle', t: 0 },
+      tags,
+    });
+    for (let n = 0; n < 5; n++)
+      p.present(
+        freezeFrame({
+          ...frame({ frame: n, entities: [e(n < 4 ? ['hit'] : [])] }),
+          map: { id: 'room', version: 0 },
+        }),
+      );
+    // Frames 0-1 on, 2-3 off (blink 2), then the tag is gone.
+    expect(asked).toEqual(['#ffffff', '#ffffff', undefined, undefined, undefined]);
+  });
+});

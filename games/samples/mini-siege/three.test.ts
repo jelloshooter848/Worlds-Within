@@ -148,16 +148,22 @@ describe('the 3D page’s HUD and music (Engine 0.16 F7)', () => {
     expect(dawn).not.toContain('Raisethetower');
   });
 
-  it('plays the danger layer while a mission is open, the calm one before', () => {
+  it('plays the danger layer while a mission is open, the calm one before, the round layer in a round', () => {
     const music = skin.music?.['siege'];
-    expect(music?.layers).toEqual({ calm: 'siege', danger: 'siege-danger' });
+    expect(music?.layers).toEqual({ calm: 'siege', danger: 'siege-danger', round: 'siege-round' });
     const mix = (s: Record<string, unknown>) =>
       music!.mix!.find((r) => r.when === undefined || statusMatches(r.when, s as MixStatus))!.layers;
-    expect(mix(status('village'))).toEqual({ calm: 1, danger: 0 });
+    expect(mix(status('village'))).toEqual({ calm: 1, danger: 0, round: 0 });
     const game = createGame(content, 11);
     while (game.sim.tick < 40) game.step(NO_INPUT);
     game.mission({ mission: 'sabotage', action: 'open' });
     game.step(NO_INPUT);
-    expect(mix(siegeFrames(content).next(game, []).status)).toMatchObject({ danger: 1 });
+    expect(mix(siegeFrames(content).next(game, []).status)).toMatchObject({ danger: 1, round: 0 });
+    // Played (Engine 0.16 F8): the round's frames bring the round layer up over the others.
+    game.mission({ mission: 'sabotage', action: 'play' });
+    game.step(NO_INPUT);
+    const round = siegeFrames(content).next(game, []).status;
+    expect(round['miniGame']).toBe('mission-room');
+    expect(mix(round)).toEqual({ calm: 0.35, danger: 0.7, round: 1 });
   });
 });

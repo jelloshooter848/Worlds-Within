@@ -303,11 +303,20 @@ describe('backend parity: every other game with a view, through null, canvas2d a
     const hudShown = new Set<string>();
     const sources = new Set<string>();
     let synced = 0;
+    // Rounds the 3D skin draws in 2D (`rounds2d`, Engine 0.16 F8) are the 2D layer's: their frames
+    // need a `canvas2d-<id>` skin, and are checked by the Canvas2D pass above.
+    const layer = skins3d.main.rounds2d ?? [];
+    const flatRounds = skinSet(content, 'canvas2d').rounds;
+    for (const id of layer) expect(Object.hasOwn(flatRounds, id), `no canvas2d-${id} skin`).toBe(true);
     const viaThree = playView(make(), run, (view) => {
       const frame = view.frame!();
-      presenter3d.present(frame);
       synced++;
       const id = String(frame.status[MINI_GAME_STATUS] ?? '');
+      if (layer.includes(id)) {
+        sources.add(`2d:${id}`);
+        return;
+      }
+      presenter3d.present(frame);
       const round = Object.hasOwn(skins3d.rounds, id);
       const skin = round ? skins3d.rounds[id]! : skins3d.main!;
       sources.add(round ? id : 'main');

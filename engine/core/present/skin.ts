@@ -234,6 +234,9 @@ const SPRITE_FIELDS = [
   'blend',
   'glow',
   'join',
+  'turnToFacing',
+  'ring',
+  'hitFlash',
 ] as const;
 const MESH_FIELDS = [
   'mesh',
@@ -255,7 +258,7 @@ const MESH_FIELDS = [
 /** The model fields that mean nothing without a `model` (Engine 0.16 T11; `materials` and `tint` F6). */
 const MODEL_FIELDS = ['anchor', 'rotate', 'clip', 'materials', 'tint'] as const;
 /** Skin-level fields only a 3D skin has. */
-const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'labels'] as const;
+const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'rounds2d'] as const;
 
 const meshRef = id.describe(
   `3D: a primitive (${MESH_PRIMITIVES.map((p) => `\`${p}\``).join(', ')}) or a key of \`meshes\``,
@@ -547,6 +550,38 @@ const kindEntry = z.strictObject({
     })
     .exactOptional()
     .describe('2D: a soft glow round the sprite'),
+  turnToFacing: z
+    .union([z.boolean(), z.enum(['up', 'right', 'down', 'left'])])
+    .exactOptional()
+    .describe(
+      "2D: top-down art turned about the box's centre to the entity's facing (a diagonal by 45 degrees) instead of picked or mirrored by facing; `true` for art drawn facing right, or the way it is drawn facing (`up` for a sword drawn point up) (Engine 0.16 F8)",
+    ),
+  hitFlash: z
+    .strictObject({
+      tag: id.describe('the entity tag that shows it (`flashing`, `hit`)'),
+      color: color.describe("the silhouette's colour"),
+      blink: z
+        .number()
+        .int()
+        .min(1)
+        .exactOptional()
+        .describe('frames on, then as many off, while the tag lasts (default: on the whole time)'),
+    })
+    .exactOptional()
+    .describe(
+      '2D: while the entity has the tag, its frame is drawn as a flat silhouette in the colour (a hit flash; any look, PNG or text sprite) (Engine 0.16 F8)',
+    ),
+  ring: z
+    .strictObject({
+      radius: z.number().positive().describe('the radius in world px from the box centre'),
+      color: color.describe('the fill colour'),
+      alpha: z.number().min(0).max(1).exactOptional().describe('the fill opacity (default 0.25)'),
+      edge: color.exactOptional().describe('an opaque one-pixel rim in this colour'),
+    })
+    .exactOptional()
+    .describe(
+      "2D: a flat disc under the sprite, centred on the box (a tower's range while it is placed, Engine 0.16 F8)",
+    ),
   byTag: z
     .array(tagEntry)
     .exactOptional()
@@ -1015,6 +1050,7 @@ function checkMeshes(
     camera3d?: unknown;
     scene3d?: unknown;
     labels?: unknown;
+    rounds2d?: unknown;
   },
   ctx: z.RefinementCtx,
 ): void {
@@ -1175,6 +1211,13 @@ export const skinSchema = z
         '3D: the scene look (Engine 0.16): `{ sun?: { color?, intensity?, direction?, shadow?: { mapSize?, bias?, radius? } }, ambient?, hemisphere?, fog?: { kind: linear | exp2, color, near?, far?, density? }, toneMapping?: { kind: aces | agx | none, exposure? }, colorSpace? }`',
       ),
     labels: labelsSchema.exactOptional(),
+    rounds2d: z
+      .array(id)
+      .min(1)
+      .exactOptional()
+      .describe(
+        "3D: the mini games whose rounds a 3D page draws in 2D (Engine 0.16 F8): their frames go to the game's `canvas2d-<id>` skins on a 2D layer over the 3D picture (the shell picks Canvas2D or PixiJS), while the world stays in 3D",
+      ),
     decor: decorSchema.exactOptional(),
     places: placesSchema.exactOptional(),
     emitters: z
@@ -1227,6 +1270,15 @@ export const skinSchema = z
 
 export type SkinFile = z.output<typeof skinSchema>;
 
+/**
+ * Whether a palette name is a colour (`#rgb` or `#rrggbb`, Engine 0.16 F8): a 2D look naming one
+ * draws its frames as a flat silhouette in that colour (a hit flash on a PNG sheet, which no
+ * palette file recolours), through the 2D backends' sheet lookup (`contentSheets`).
+ */
+export function isSilhouettePalette(name: string): boolean {
+  return /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(name);
+}
+
 /** One entry of a skin's `hud` list. */
 export type SkinHudItem = NonNullable<SkinFile['hud']>[number];
 export type SkinKindEntry = z.output<typeof kindEntry>;
@@ -1266,7 +1318,9 @@ export function checkSkinRefs(name: string, skin: SkinFile, others: ContentLooku
     images.add(image);
     sprites.set(image, { frames: Object.fromEntries(imageSheetFrames(spec)) });
   }
-  const palettes = new Set(others('palette').map((e) => e.name));
+  const paletteFiles = new Set(others('palette').map((e) => e.name));
+  // A colour (`#fff`) is a silhouette palette (Engine 0.16 F8: a hit flash), never a file.
+  const palettes = { has: (name: string) => paletteFiles.has(name) || isSilhouettePalette(name) };
   const sounds = new Set([...others('song'), ...others('sfx')].map((e) => e.name));
   const missing = (path: FieldPath, what: string, ref: string) =>
     issues.push({ name, path, code: 'missing_ref', message: `no ${what} "${ref}" in the game` });

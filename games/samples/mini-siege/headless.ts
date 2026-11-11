@@ -85,9 +85,19 @@ export interface SiegeCampaignPlace {
  * rules from `opts.disabledRulesByKit` (a run file's `topdown:<id>` or `towerdefense:<id>`,
  * Engine 0.14 gap G12).
  */
+/** Picture px above the mission room (the topdown kit's `top`; its HUD band is drawn over the top wall). */
+export const ROOM_TOP = 2;
+
 export function miniGames(content: ContentBundle, opts: HeadlessOptions = {}): readonly MiniGameDef[] {
   return [
-    missionRoom({ rooms: siegeRooms(content), disabledRules: rulesOffFor(opts, 'topdown') }),
+    missionRoom({
+      rooms: siegeRooms(content),
+      // Framed on the game's picture with the room 2 px from its top (Engine 0.16 F8): the round's
+      // HUD lies over the room's top wall, and the whole room shows (presentation only).
+      size: content.manifest.screen,
+      top: ROOM_TOP,
+      disabledRules: rulesOffFor(opts, 'topdown'),
+    }),
     tdDefence({
       maps: siegeDefenceMaps(content),
       towers: siegeTowers(content),

@@ -1,0 +1,8 @@
+{
+  "id": "siege-round",
+  "bpm": 120,
+  "loop": true,
+  "pulse2": "v6 @1 l8 o4 L [a r > d r < a r f r]2 [b- r > d r < b- r f r]2 [g r b- r > d r < b- r]1 [a r > c+ r e r c+ r]1",
+  "triangle": "l16 o2 L [d d d r]8 [b- b- b- r]8 [g g g r]4 [a a a r]4",
+  "noise": "v8 l16 L [k r h k s r h h]12"
+}

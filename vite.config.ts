@@ -48,6 +48,9 @@ export default defineConfig({
   server: { port: 5173, open: process.env.CI ? false : '/' },
   test: {
     environment: 'node',
+    // Tests that load the mini siege (its 3D and 2D asset packs, Engine 0.16 F8) through the CLI
+    // several times sit near the 5 s default when the whole suite runs at once.
+    testTimeout: 20_000,
     include: [
       'engine/**/*.test.ts',
       'kits/**/*.test.ts',

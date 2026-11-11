@@ -350,6 +350,37 @@ describe('the page glue, headless', () => {
     for (const o of fortify.outcomes)
       expect(main!.events?.[`mission-commit:outcome=${o.id}`], o.id).toBeDefined();
   });
+
+  it('draws both rounds in 2D on the 3D page with the round packs and their feel (Engine 0.16 F8)', () => {
+    const three = skinSet(content, 'three');
+    const flat = skinSet(content, 'canvas2d');
+    // The 3D page's layer draws the rounds through the 2D skins; no 3D round skin is left.
+    expect(three.main!.rounds2d).toEqual(['mission-room', 'td-defence']);
+    expect(Object.keys(three.rounds)).toEqual([]);
+    expect(content.manifest.transitions?.mission).toMatchObject({ kind: 'iris' });
+    const room = flat.rounds['mission-room']!;
+    const walls = flat.rounds['td-defence']!;
+    expect(room.images?.['dungeon']?.image).toBe('assets/dungeon-tileset-ii/tileset.png');
+    expect(Object.values(walls.images ?? {}).map((i) => i.image)).toEqual([
+      'assets/kenney-tower-defense/tilesheet-16.png',
+      'assets/kenney-tower-defense/tilesheet-24.png',
+      'assets/kenney-tower-defense/tilesheet-32.png',
+    ]);
+    // The rooms: hit flashes, hit-pause, shake and particles on the kit's hits, kills and hurts.
+    expect(room.kinds['knight']!.hitFlash).toMatchObject({ tag: 'flashing' });
+    expect(room.kinds['hero']!.hitFlash).toMatchObject({ tag: 'flashing' });
+    for (const e of ['hit', 'kill', 'hurt']) {
+      expect(room.events?.[e]?.hitPause, e).toBeDefined();
+      expect(room.events?.[e]?.shake, e).toBeDefined();
+    }
+    expect(room.events?.['sword']?.emit).toBeDefined();
+    // The walls: range while placing, towers turned to their target, health bars, impacts.
+    expect(walls.kinds['ghost:archers']!.ring?.radius).toBe(40);
+    expect(walls.kinds['ghost:ballista']!.ring?.radius).toBe(56);
+    expect(walls.kinds['tower:archers']!.turnToFacing).toBe('up');
+    expect(walls.labels?.['enemy:raider']).toMatchObject({ as: 'bar', from: { tag: 'hp:' } });
+    for (const e of ['td-shot', 'td-kill']) expect(walls.events?.[e]?.emit, e).toBeDefined();
+  });
 });
 
 function memoryStorage(): Storage {

@@ -3,6 +3,7 @@ import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import type { ContentBundle } from '@engine/core/content/bundle';
 import type { Renderer } from '@engine/core/gfx/renderer';
 import type { ScreenSize } from '@engine/core/gfx/screen';
+import { contentFonts, type FontLookup } from '@engine/core/ui';
 import { campaignRun } from '@engine/core/campaign';
 import { clockStatus } from '@engine/core/clock';
 import { missionHostEvents } from '@engine/core/mission-host';
@@ -58,9 +59,11 @@ export interface SiegeLook {
   rounds: Record<string, SkinFile>;
   sheet: SheetLookup;
   screen: ScreenSize;
+  /** The font files (the rounds' HUD text, Engine 0.16 F8). */
+  fonts: FontLookup;
 }
 
-/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files), size. */
+/** The `canvas2d` skins, the sprite sheets (from the sprite and palette files), size and fonts. */
 export function siegeLook(content: ContentBundle): SiegeLook {
   const { main, rounds } = mustSkinSet(content, 'canvas2d', 'the mini siege');
   return {
@@ -68,6 +71,7 @@ export function siegeLook(content: ContentBundle): SiegeLook {
     rounds,
     sheet: contentSheets(content),
     screen: content.manifest.screen,
+    fonts: contentFonts(content),
   };
 }
 

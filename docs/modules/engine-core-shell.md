@@ -43,7 +43,7 @@ Import from `@engine/core/shell` (`index.ts`), or the files below.
   names no backend, falling back to `default2d` on a fresh canvas when the 3D display cannot start
   there (no WebGL 2; the reason on the console), while `?backend=three` still shows the reason; the
   toggle then links 2D as `./?backend=canvas2d` and 3D as `./` (`otherBackendLink(backend,
-default3d)`, `queryNamesThree`). The mini siege's page opens this way. Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
+default3d)`, `queryNamesThree`). The mini siege's page opens this way. Engine 0.16 F8: `rounds2d` (mini game ids) draws those hosted rounds in 2D on a 3D page: the shell starts the game's `default2d` display on a canvas layered over the 3D one and `roundLayerDisplay` (`round-layer.ts`) sends a round's frames there, showing the layer, and every other frame to the 3D display (taps, menus and transitions follow the display shown; the mini siege's rooms and walls). Engine 0.9: `pointer: true` adds a `PointerSource` on the canvas whose
   gestures (tap, box, pan, zoom) are made per game step beside the `InputFrame`; the scene factory
   gets it as `scene(stack, display, page)` with `page.pointer`. `touchPad: false` hides the touch
   pad (an RTS page). Both are off/on as before by default, so existing games are unchanged.

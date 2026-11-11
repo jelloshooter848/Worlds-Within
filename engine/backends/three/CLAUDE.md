@@ -169,6 +169,14 @@ Engine 0.16 T12). The schema,
   `threeDisplay` and `threeScenePresenter` pass `models` on; the screenshot page and the fx lab's
   page make one from `content.assets` and await `preload` before the first frame.
 
+## Hosted rounds in 2D (Engine 0.16 F8)
+
+`threeDisplay`'s `rounds` still draws a mini game's frames through its own `three-<id>` skin. A
+game whose `three` skin lists a round in `rounds2d` has it drawn in 2D instead: the page's shell
+(`bootBrowserGame`'s `rounds2d`) layers the game's 2D display over this one and sends those
+frames there (`roundLayerDisplay` in `engine/core/shell`); this backend never sees them. Labels
+are no longer 3D only: the 2D presenter draws a skin's `labels` too (`engine/core/draw`).
+
 ## Lights, shadows, fog, tone mapping and labels (Engine 0.16 T12)
 
 The skin's `scene3d` (`@engine/core/present`'s `scene3d.ts`: `resolveScene3d(skin.scene3d,

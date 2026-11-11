@@ -8,7 +8,8 @@ Folder: `engine/core/draw` (part of `engine/core`). Detailed rules:
 The skinned presenter walk the 2D backends share (Engine 0.16 T13b, item 323): one `Presenter`
 that draws any `PresentFrame` through a skin onto any core `Renderer` (events, frame events,
 tweens, particles, camera follow and zoom, camera effects, parallax, per-map looks, the map,
-tiles, entities and the HUD through the UI kit). Canvas2D's `SkinnedCanvasPresenter` and the
+tiles, entities and the HUD through the UI kit; from Engine 0.16 F8 top-down looks: frames turned
+to the facing, range rings, silhouette hit flashes and world-anchored labels such as health bars). Canvas2D's `SkinnedCanvasPresenter` and the
 PixiJS presenter are thin wrappers that supply a renderer and surfaces, so both draw every
 feature through exactly the same code. It lives in its own core folder, not in `present/`
 (which kits import), so the dependency table can keep kits and the sim off it whole.

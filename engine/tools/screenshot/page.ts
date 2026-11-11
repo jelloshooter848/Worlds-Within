@@ -1,4 +1,9 @@
-import { CanvasRenderer, CanvasUiPainter, drawTransition } from '@engine/backends/canvas2d';
+import {
+  CanvasRenderer,
+  CanvasUiPainter,
+  drawTransition,
+  skinSetCanvasPresenter,
+} from '@engine/backends/canvas2d';
 import { contentPixelSheets, contentSheets } from '@engine/core/assets/content-sheets';
 import type { SheetLookup } from '@engine/core/assets/sheet-lookup';
 import { transitionShape } from '@engine/core/fx';
@@ -7,7 +12,15 @@ import { contentFonts, paintUi, type FontLookup, type StatValues, type UiFrameSi
 import type { ContentBundle } from '@engine/core/content/bundle';
 import { canonicalJson, type JsonObject } from '@engine/core/headless';
 import { ScriptedInput } from '@engine/core/input/scripted-input';
-import { contentDecor, presenterBySkinSet, skinSet, type Presenter } from '@engine/core/present';
+import {
+  contentDecor,
+  MINI_GAME_STATUS,
+  presenterBySkinSet,
+  skinSet,
+  type DeepReadonly,
+  type PresentFrame,
+  type Presenter,
+} from '@engine/core/present';
 import type { ViewEntry, ViewGame } from '@engine/core/view';
 import type { PixiRenderer } from '@engine/backends/pixi';
 import { checkGameTexts } from '../game-check';
@@ -273,7 +286,12 @@ async function shootThree(
   // syncs the scene its frame belongs to, and the last tick also draws it.
   const draws: Record<string, Presenter> = {};
   const syncs: Record<string, Presenter> = {};
+  // The rounds the 3D skin draws in 2D (`rounds2d`, Engine 0.16 F8), as the page's round layer
+  // does: every one of their frames through the game's Canvas2D skins on a picture-sized canvas;
+  // a shot whose last frame is one is that canvas scaled up to the 3D picture's size.
+  const layer = roundLayer(job, content, skins.main.rounds2d ?? [], game.background);
   for (const [id, skin] of Object.entries(skins.rounds)) {
+    if (layer?.ids.includes(id)) continue;
     const round = presenter.withSkin(skin, { sheets, fonts, models, decor });
     draws[id] = round;
     syncs[id] = { present: (f) => round.scene.sync(f) };
@@ -283,9 +301,22 @@ async function shootThree(
   const sync = presenterBySkinSet({ present: (f) => main.scene.sync(f) }, syncs);
   const overlays = job.tiles === undefined ? null : overlayContext(content);
   const tiles: string[] = [];
+  let lastInLayer = false;
   const played = await play(job, game, (tick) => {
     const here = tilesAt(job, tick);
-    if (here.length === 0) {
+    if (layer !== null) {
+      const shown = frame();
+      lastInLayer = layer.ids.includes(String(shown.status[MINI_GAME_STATUS] ?? ''));
+      if (lastInLayer) {
+        layer.present(shown);
+        for (const i of here) tiles[i] = layer.png(canvas.width, canvas.height);
+        return;
+      }
+      if (here.length === 0) {
+        (tick === job.ticks ? draw : sync).present(shown);
+        return;
+      }
+    } else if (here.length === 0) {
       (tick === job.ticks ? draw : sync).present(frame());
       return;
     }
@@ -308,10 +339,54 @@ async function shootThree(
     }
     presenter.transition(null);
   });
-  const png = pngOf(job, canvas);
+  const png = lastInLayer && layer !== null ? layer.png(canvas.width, canvas.height) : pngOf(job, canvas);
   presenter.dispose();
   models.dispose();
   return { png, width: canvas.width, height: canvas.height, ...played, renderer, tiles };
+}
+
+/** The 3D shot's 2D round layer: its rounds, a frame presenter and its picture scaled to a size. */
+interface ShotRoundLayer {
+  ids: readonly string[];
+  present(frame: DeepReadonly<PresentFrame>): void;
+  png(width: number, height: number): string;
+}
+
+/** The round layer for a 3D skin's `rounds2d` (Engine 0.16 F8), or null when it lists none. */
+function roundLayer(
+  job: ShotJob,
+  content: ContentBundle,
+  ids: readonly string[],
+  background: string | undefined,
+): ShotRoundLayer | null {
+  if (ids.length === 0) return null;
+  const flat = skinSet(content, 'canvas2d');
+  if (!flat.main) throw new Error('the 3D skin lists rounds2d, but the game has no canvas2d skin');
+  const canvas = newCanvas(job);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('2D canvas not supported');
+  const presenter = skinSetCanvasPresenter(new CanvasRenderer(ctx), {
+    skin: flat.main,
+    rounds: flat.rounds,
+    sheet: contentSheets(content),
+    fonts: contentFonts(content),
+    screen: job.screen,
+    ...(background !== undefined && { background }),
+  });
+  return {
+    ids,
+    present: (frame) => presenter.present(frame),
+    png(width, height) {
+      const big = document.createElement('canvas');
+      big.width = width * (job.scale ?? 1);
+      big.height = height * (job.scale ?? 1);
+      const out = big.getContext('2d');
+      if (!out) throw new Error('2D canvas not supported');
+      out.imageSmoothingEnabled = false;
+      out.drawImage(canvas, 0, 0, big.width, big.height);
+      return big.toDataURL('image/png');
+    },
+  };
 }
 
 /** The WebGL renderer string of `canvas`'s context (unmasked where the browser allows), or null. */

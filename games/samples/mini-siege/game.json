@@ -23,6 +23,9 @@
   },
   "start": { "seed": 11 },
   "screen": { "width": 320, "height": 180 },
+  "transitions": {
+    "mission": { "kind": "iris", "ticks": 28, "hold": 6, "ease": "quadInOut", "at": "center" }
+  },
   "menus": {
     "font": "siege-small",
     "titleFont": "siege-title",

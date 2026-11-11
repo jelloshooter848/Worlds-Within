@@ -161,9 +161,8 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   windmill and sheep pen, woods, and the raiders' camp with tents, red banners and campfires that
   flicker and smoke), places THE HALL and RAIDERS' CAMP; warm sun with soft shadows, a hemisphere
   light, distance fog, ACES tone mapping and the time of day by the world clock (late afternoon to
-  sunset in the siege, dawn, morning on the ridge). `three-mission-room.json` and
-  `three-td-defence.json` are plain first 3D looks for the hosted rounds (part F's F8 finishes
-  them). The RTS frames name the map by scenario (`mapId`), so each map is dressed its own way.
+  sunset in the siege, dawn, morning on the ridge). The hosted rounds had plain first 3D skins
+  (removed in F8, below). The RTS frames name the map by scenario (`mapId`), so each map is dressed its own way.
   Presentation only: no hash moved. `pnpm cli screenshot runs/delegated.run.json --backend three
 --allow-software-gl --tick 80` is the full-HD picture; `tests/browser/mini-siege-shots.test.ts`
   shoots the village, dawn and ridge in 3D twice each (byte-identical).
@@ -183,6 +182,20 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   danger (`siege-danger`) while a mission is open or raiders are within 3 cells of the village's
   buildings (`enemyNear`). Presentation only: no hash moved. `tests/browser/mini-siege-page.test.ts`
   drives the 3D page with software GL (mouse, keys, gamepad, touch); the code box on the 2D page.
+- Engine 0.16 F8, **the hosted rounds in 2D on the 3D page**: `three.json`'s `rounds2d` lists the
+  rooms (`mission-room`: the sabotage and the rescue) and the walls (`td-defence`); the shell
+  draws their frames with the `canvas2d-*` round skins on a 2D layer over the 3D picture
+  (`roundLayerDisplay`, an owner item), with an iris (`game.json`'s `transitions.mission`) in and
+  out and the music's round layer (`siege-round`). The rooms use the CC0 0x72 DungeonTileset II
+  (`assets/dungeon-tileset-ii/`), the walls the CC0 Kenney Tower Defense pack
+  (`assets/kenney-tower-defense/`, scaled to 16, 24 and 32 px tiles): brick walls, a knight hero
+  and orc guards, the kit's knockback with hit flashes (`hitFlash`), hit-pause, shake, zoom punches
+  and particles; towers turned to their target (`turnToFacing`), the ghost tower's range
+  (`ring`), shots with impacts and smoke, and health bars over the raiders (2D `labels`). Parts C
+  and E are not on the branch yet: the skins are brought to their bar with the same packs (owner
+  item: re-point them at C and E's skins when those merge). The 3D round skins were removed;
+  `pnpm cli screenshot --backend three` draws a round in 2D scaled to 1920x1080. Presentation
+  only: no hash moved (the room is framed 2 px from the top, `ROOM_TOP`).
 
 ## Imports allowed
 

@@ -256,7 +256,9 @@ export type SkinLabel = z.output<typeof labelSchema>;
 
 export const labelsSchema = z
   .record(z.string().min(1), z.union([labelSchema, z.array(labelSchema).min(1)]))
-  .describe('3D: entity kind -> a label or a list, drawn over each entity on the HUD layer');
+  .describe(
+    'entity kind -> a label or a list, drawn over each entity (3D: on the HUD layer; 2D from Engine 0.16 F8: over the entities, before the HUD)',
+  );
 
 /** The scene look with every default filled in. */
 export interface Scene3dLook {

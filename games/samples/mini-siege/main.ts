@@ -1,3 +1,4 @@
+import { withContentImages } from '@engine/core/assets/content-images';
 import { contentPixelSheets } from '@engine/core/assets/content-sheets';
 import { contentSfx, contentSongs, mustLoad } from '@engine/core/content/game-content';
 import type { JsonObject } from '@engine/core/headless';
@@ -27,7 +28,11 @@ import gameFiles from 'virtual:game-files';
  * `three` skins (the battle's low-poly map with its HUD, and the rounds'), every glTF model they
  * name loaded before the first frame, the decor grids, and the skin's render scale capped to what
  * the window shows (`?scale=<n>` sets it: the browser tests use 1). Without WebGL 2 the page runs
- * in 2D (Canvas2D, or PixiJS with `?backend=pixi`); `?backend=canvas2d` asks for 2D.
+ * in 2D (Canvas2D, or PixiJS with `?backend=pixi`); `?backend=canvas2d` asks for 2D. The hosted
+ * rounds (the rooms and the walls, Engine 0.16 F8) are drawn in 2D even on the 3D page: the shell's
+ * `rounds2d` layers the 2D display (with the rounds' PNG packs, decoded before boot) over the 3D
+ * picture for their frames, with the iris of `game.json`'s `transitions.mission` into each round
+ * and back.
  *
  * Pointer gestures are on (select, command, pan, zoom the battle; in 3D through the ground view's
  * projection: the `RtsCamera` picks with the camera the picture is drawn with; taps in the walls'
@@ -84,9 +89,17 @@ export interface SiegeHook {
   worldToScreen(x: number, y: number): { x: number; y: number };
   /** The battle camera: its centre (world px) and zoom. */
   camera(): { x: number; y: number; zoom: number };
+  /**
+   * What the picture shows (Engine 0.16 F8): `round` while a hosted round is drawn on the 2D
+   * layer over the 3D picture, else `world` (also on a 2D page).
+   */
+  layer(): 'world' | 'round';
+  /** True while a screen transition (the iris into a round and back) plays. */
+  transitioning(): boolean;
 }
 
-const content = mustLoad(loadMiniSiege(gameFiles), 'the mini siege');
+// The rounds' PNG sheets (Engine 0.16 F8: the dungeon and tower-defense packs) decoded before boot.
+const content = await withContentImages(mustLoad(loadMiniSiege(gameFiles), 'the mini siege'));
 const look = siegeLook(content);
 const fonts = contentFonts(content);
 const skins3d = skinSet(content, 'three');
@@ -115,6 +128,11 @@ booted = await bootBrowserGame({
   screen: look.screen,
   game: content.manifest.id,
   default3d: true,
+  // The hosted rounds in 2D on the 3D page (Engine 0.16 F8): the three skin's `rounds2d`, drawn
+  // through the game's 2D skins on a layer over the 3D picture, with the `mission` transition
+  // (`game.json`'s `transitions`) into each round and back.
+  rounds2d: skin3d.rounds2d ?? [],
+  transitions: content.manifest.transitions,
   audio: {
     sfx: contentSfx(content),
     songs: contentSongs(content),
@@ -133,10 +151,16 @@ booted = await bootBrowserGame({
     onContinue: () => play?.launch.press({ kind: 'stored' }),
   },
   displays: {
-    canvas2d: (canvas, { onSound }) => canvasDisplay(canvas, { ...look, fonts, onSound }),
+    canvas2d: (canvas, { onSound, hitPause }) =>
+      canvasDisplay(canvas, { ...look, fonts, onSound, onHitPause: hitPause }),
     // `?backend=pixi` (Engine 0.16 T13b-4): PixiJS in its own chunk, Canvas2D without WebGL.
-    pixi: async (canvas, { onSound }) =>
-      (await import('@engine/backends/pixi')).pixiDisplay(canvas, { ...look, fonts, onSound }),
+    pixi: async (canvas, { onSound, hitPause }) =>
+      (await import('@engine/backends/pixi')).pixiDisplay(canvas, {
+        ...look,
+        fonts,
+        onSound,
+        onHitPause: hitPause,
+      }),
     // The default (Engine 0.16 F7): Three.js in its own chunk, its models loaded first.
     three: async (canvas, { onSound, hitPause }) => {
       const three = await import('@engine/backends/three');
@@ -183,6 +207,18 @@ booted = await bootBrowserGame({
       if (booted?.menus?.state === 'title') scene.drift(++drift);
       else if (drift > 0) scene.drift((drift = 0));
     };
+    // The iris into a hosted round and back (Engine 0.16 F8): under the mission screens the launch
+    // steps its round inside the page's scene (no round scene is pushed, as on the 2D page with its
+    // bar, where the pushed scene plays it), so the page starts the
+    // shell's `mission` transition when a round starts or ends. It holds the ticks while it
+    // closes, as a pushed round's would; no state moves.
+    let inRound = false;
+    const roundTransition = () => {
+      const now = scene.launch.playing();
+      if (now === inRound) return;
+      inRound = now;
+      booted?.transition('mission');
+    };
     // The mission screens step aside while the title or the pause menu shows.
     const menuShown = () => (booted?.menus?.state ?? 'play') !== 'play';
     if ((in3d || query.get('ui') === 'picture') && painter !== undefined) {
@@ -199,6 +235,7 @@ booted = await bootBrowserGame({
         update: (frame, frames) => {
           pan(frame);
           over.update(frame, frames);
+          roundTransition();
         },
         headless: () => host.headless(),
         render: (r) => {
@@ -247,6 +284,8 @@ if (booted && play) {
     itemBox: (item) => screens?.sync()?.itemBox('main', item) ?? null,
     worldToScreen: (x, y) => scene.camera.worldToScreen(x, y),
     camera: () => ({ ...scene.camera.centre(), zoom: scene.camera.zoom }),
+    layer: () => (document.body.dataset['round'] === 'layer' ? 'round' : 'world'),
+    transitioning: () => booted?.transitions.view() != null,
   };
   (window as unknown as { wwSiege: SiegeHook }).wwSiege = hook;
 }

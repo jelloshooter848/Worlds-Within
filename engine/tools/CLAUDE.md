@@ -255,7 +255,10 @@ renderer, path, width, height, scale, overlay, bytes, sha256, hash, headlessHash
   hardware-backed without `--allow-software-gl`, 3 for a bad run file or content, a game without
   `view`, or (`three`, `pixi`) a view without `frame()` or a game without a `three` (`canvas2d`)
   skin, 2 for a bad
-  `--tick`, `--out` or flag, 5 when Chromium is not installed.
+  `--tick`, `--out` or flag, 5 when Chromium is not installed. With `--backend three`, a round the
+  `three` skin lists in `rounds2d` (Engine 0.16 F8) is drawn as the 3D page draws it: every one of
+  its frames through the game's Canvas2D skins, and a shot whose tick is in such a round is that
+  2D picture scaled up to the 3D picture's size (1920x1080 for the mini siege).
 - `sheet <runFile> --ticks <tiles> [--backend 2d|3d|pixi] [--allow-software-gl] [--out path]
 [--columns N] [--scale N] [--labels a|b|...] [--title text]` (Engine 0.16 T14): labelled
   screenshots tiled into one PNG (Sheets, below). Result `{ run, path, width, height, bytes,
@@ -486,7 +489,9 @@ opts)` for the `mission-room` and `td-defence` rounds). So each `RuleSwitch` onl
   (`games/<g>/` and `games/samples/<g>/`; recorded `orders` go to the view's `order` at their
   ticks, as `run` hands them over) through `frame()` into null, `render` into Canvas2D and, when the game has a `three` skin,
   `frame()` into `threeScenePresenter` with its `skinSet` (Engine 0.7 T8: no fallback boxes, a
-  block for every tile shown), and requires every hash list to equal the golden file.
+  block for every tile shown; a round the skin's `rounds2d` lists, Engine 0.16 F8, is the 2D
+  layer's: it needs a `canvas2d-<id>` skin and is left to the Canvas2D pass), and requires every
+  hash list to equal the golden file.
 - Run every game's run files: `pnpm test tests/runs`, or one by one with
   `pnpm -s cli run <file> --json`.
 - A game's headless module (`headless` in `game.json`) exports `createGame(content, seed, opts?)`

@@ -38,6 +38,11 @@ import { browserMissing, launch, ROOT, serveBuilt } from './serve';
 // 0 with its briefing until Begin (gap M34). The 3D picture is shot at the siege's afternoon and
 // at the dawn (`WW_SHOTS_DIR` keeps `mini-siege-page-*.png`).
 //
+// Engine 0.16 F8: the hosted rounds are drawn in 2D on a layer over the 3D picture (the `three`
+// skin's `rounds2d`): each round played here (the sabotage by keys, the walls by keys and by taps,
+// the rescue in the campaign) opens with the iris transition, shows the layer while it is played
+// (`wwSiege.layer()`), and closes back on the 3D world with the commit applied.
+//
 // In 2D (`?backend=canvas2d`, and wherever WebGL 2 is missing: the page falls back by itself) the
 // shell's DOM bar stays: a save code typed in its box is refused with its reason when bad and
 // resumes the dawn from the quit siege's code.
@@ -86,6 +91,8 @@ interface Hook {
   ui(): 'picture' | 'bar';
   screen(): string | null;
   itemBox(item: string): Box | null;
+  layer(): 'world' | 'round';
+  transitioning(): boolean;
 }
 
 /**
@@ -338,10 +345,31 @@ async function typeRound(
     if (ticks === 0) {
       expect(await hook(page, 'playing')).toBe(true);
       expect(await hook(page, 'miniGame')).toBe(game);
+      // The iris closes over the 3D world on the round's first step (Engine 0.16 F8).
+      expect(await hook(page, 'transitioning')).toBe(true);
+    } else if (ticks === ROUND_SHOWN) {
+      // Once the cover opened, the round shows on its 2D layer over the 3D picture.
+      expect(await hook(page, 'layer')).toBe('round');
+      expect(
+        await page.locator('canvas.ww-round-layer').evaluate((c) => getComputedStyle(c).visibility),
+      ).toBe('visible');
     } else if (!(await hook(page, 'playing'))) break;
   }
   for (const k of held) await page.keyboard.up(k);
   return ticks + 1;
+}
+
+/** Loop steps after a round starts by which the iris has opened on it (`game.json`'s 28 + 6 + 28). */
+const ROUND_SHOWN = 70;
+
+/** After a round: the iris back, then the 3D world again, its layer hidden (Engine 0.16 F8). */
+async function backToWorld({ page, frames }: Opened): Promise<void> {
+  await frames(ROUND_SHOWN);
+  expect(await hook(page, 'transitioning')).toBe(false);
+  expect(await hook(page, 'layer')).toBe('world');
+  expect(await page.locator('canvas.ww-round-layer').evaluate((c) => getComputedStyle(c).visibility)).toBe(
+    'hidden',
+  );
 }
 
 /**
@@ -434,6 +462,8 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         await press(o, 'play', 'mouse', false);
         expect(await typeRound(o.page, o.frames, recordedRound(), 'mission-room')).toBe(406);
         expect(await hook(o.page, 'tick')).toBe(40);
+        await shoot(o.page, 'room');
+        await backToWorld(o);
         const recordings = await o.page.evaluate(() => (window as DebugWindow).__ww!.recordings());
         expect(recordings).toEqual([
           { mission: 'sabotage', tick: 40, ticks: 406, done: true, input: recordedRound() },
@@ -481,6 +511,7 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         await press(o, 'play', 'mouse', false);
         expect(await typeRound(o.page, o.frames, recordedRound('fortify-played'), 'td-defence')).toBe(116);
         expect(await hook(o.page, 'tick')).toBe(10);
+        await backToWorld(o);
         expect(await toCommit(o)).toBe(40);
         expect(await hook(o.page, 'outcomes')).toEqual(['held-cheap']);
       }
@@ -492,6 +523,10 @@ describe.skipIf(missing !== null)('the mini siege page (headless Chromium)', () 
         const { page, frames } = o;
         await press(o, 'play');
         expect(await hook(page, 'miniGame')).toBe('td-defence');
+        expect(await hook(page, 'round')).toMatchObject({ gold: 100, towers: 0 });
+        // The taps go to the round once the iris has opened on its 2D layer.
+        await frames(ROUND_SHOWN);
+        expect(await hook(page, 'layer')).toBe('round');
         expect(await hook(page, 'round')).toMatchObject({ gold: 100, towers: 0 });
         await shoot(page, 'walls');
         const at = await wallsCellClient(page, 11, 1);

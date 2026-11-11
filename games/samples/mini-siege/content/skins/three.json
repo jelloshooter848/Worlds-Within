@@ -1598,6 +1598,7 @@
       }
     ]
   },
+  "rounds2d": ["mission-room", "td-defence"],
   "camera": {
     "zoom": 0.42
   },
@@ -4055,10 +4056,23 @@
     "siege": {
       "layers": {
         "calm": "siege",
-        "danger": "siege-danger"
+        "danger": "siege-danger",
+        "round": "siege-round"
       },
       "fade": 45,
       "mix": [
+        {
+          "when": {
+            "status": "miniGame",
+            "ne": ""
+          },
+          "layers": {
+            "calm": 0.35,
+            "danger": 0.7,
+            "round": 1
+          },
+          "fade": 20
+        },
         {
           "when": {
             "status": "missionLeft",
@@ -4066,7 +4080,8 @@
           },
           "layers": {
             "calm": 0.6,
-            "danger": 1
+            "danger": 1,
+            "round": 0
           },
           "fade": 30
         },
@@ -4077,14 +4092,16 @@
           },
           "layers": {
             "calm": 0.6,
-            "danger": 1
+            "danger": 1,
+            "round": 0
           },
           "fade": 30
         },
         {
           "layers": {
             "calm": 1,
-            "danger": 0
+            "danger": 0,
+            "round": 0
           }
         }
       ]

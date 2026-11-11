@@ -32,6 +32,16 @@ so two backends drawing the same frame get the same calls.
   `effectSettings`, `focus()` and `particleCount`. The defaults here are no surfaces; a backend's
   wrapper passes its own (Canvas2D: offscreen canvases). The full behaviour is described in
   `engine/backends/canvas2d/CLAUDE.md` ("SkinnedCanvasPresenter"), which is this class on a canvas.
+  Top-down looks (Engine 0.16 F8, for the mini siege's hosted rounds after parts C and E): a
+  kind's `turnToFacing` turns its frame about the box's centre to the facing (`FACING_TURN`,
+  degrees clockwise from right; `true` for art drawn facing right, or the way it is drawn facing),
+  `ring` draws a flat disc of rows under the sprite (`discRows`, `DEFAULT_RING_ALPHA` 0.25, an
+  opaque one-pixel rim with `edge`: a tower's range while it is placed), `hitFlash` draws the frame
+  through the sheet lookup with the colour as its palette while the entity has the tag (a
+  silhouette: `contentSheets` makes it; blinking every `blink` frames by the frame number), and
+  the skin's `labels` (the 3D backend's world-anchored labels, `layoutLabels`) are drawn on a 2D
+  skin too, after the entities and particles and before the HUD, anchored on the box's top
+  centre, centre or bottom centre on the picture (an anchor off the picture hides the label).
 - `ui-painter.ts`: `RendererUiPainter(renderer, sheets, fonts, { glyphSurface?, tintGlyphs? })`,
   the `UiPainter` on a `Renderer` (fills, whole and part frames scaled with `transformed`, glyphs
   from a strip of the font drawn once per colour on a glyph surface, else their ink runs as
@@ -57,7 +67,8 @@ invariance tests green unchanged.
 ## Testing
 
 `draw.test.ts` checks what the core adds: no map or glyph surface by default (tiles and ink runs
-every frame), a cached map and glyph strip with one, and `skinSetPresenter`'s factory calls,
-routing and `effectSettings`. Everything else is tested through Canvas2D's thin wrapper
+every frame), a cached map and glyph strip with one, `skinSetPresenter`'s factory calls,
+routing and `effectSettings`, and the top-down looks (Engine 0.16 F8: the facing turn, the ring's
+rows and rim, a hit flash's palette, a 2D health bar label). Everything else is tested through Canvas2D's thin wrapper
 (`engine/backends/canvas2d/presenter.test.ts`, `ui-painter.test.ts`, `rts-camera.test.ts`,
 `display.test.ts`) and the presentation invariance tests in `tests/runs/`.

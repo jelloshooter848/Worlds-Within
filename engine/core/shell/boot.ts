@@ -43,6 +43,7 @@ import { ShellTransitions, type TransitionRequest } from './transitions';
 import { UiScene } from './ui-scene';
 import { mountVolumeControl, type VolumeControl } from './volume-control';
 import type { BrowserDisplay, DisplayResult } from './display';
+import { roundLayerDisplay } from './round-layer';
 
 /**
  * The browser boot every game page needs (Engine 0.7, moved from `games/platformer-lab/main.ts`):
@@ -225,6 +226,14 @@ export interface BrowserBootOptions {
    */
   default3d?: boolean;
   /**
+   * Hosted rounds drawn in 2D on the 3D page (Engine 0.16 F8; the 3D skin's `rounds2d`): when the
+   * page runs in 3D, the shell starts the game's 2D display (its `default2d` backend: Canvas2D,
+   * or PixiJS falling back to Canvas2D) on a canvas layered over the 3D one, and frames whose
+   * `status.miniGame` is listed here are drawn there while the world stays in 3D
+   * (`roundLayerDisplay`). Left out, or on a 2D page, nothing changes.
+   */
+  rounds2d?: readonly string[];
+  /**
    * The game's first scene, given the stack (to push mini games), the display and the page's
    * extra inputs (`page.pointer`, when `pointer` is on).
    */
@@ -353,9 +362,12 @@ export async function bootBrowserGame(opts: BrowserBootOptions): Promise<BootedG
       if (!manual) hitPause.request(ticks);
     },
   };
-  const { backend, display, canvas } = await startDisplay(wanted, opts.displays, pageCanvas, shell, {
-    fallback,
-  });
+  const started = await startDisplay(wanted, opts.displays, pageCanvas, shell, { fallback });
+  const { backend, canvas } = started;
+  const display =
+    backend === 'three' && typeof started.display !== 'string' && (opts.rounds2d?.length ?? 0) > 0
+      ? await withRoundLayer(started.display, canvas, opts, default2d, shell)
+      : started.display;
   showBackendToggle(opts.displays.three ? backend : null, opts.toggleId ?? 'backend', default3d);
   if (typeof display === 'string') {
     showDisplayMessage(canvas, display, default3d);
@@ -872,6 +884,69 @@ export async function startDisplay(
   }
   const make = three ? displays.three! : displays.canvas2d;
   return { backend: three ? 'three' : 'canvas2d', display: await make(canvas, shell), canvas };
+}
+
+/**
+ * The 3D display with the game's 2D display on a canvas layered over it for the `rounds2d` rounds
+ * (Engine 0.16 F8, `roundLayerDisplay`): the layer canvas (`#<canvas id>-rounds`, class
+ * `ww-round-layer`) covers the window, takes no pointer events (they reach the 3D canvas and are
+ * mapped through the display shown) and is hidden while the world shows. Its display is the
+ * game's `default2d` one (PixiJS where it starts, else Canvas2D). When neither starts the page
+ * draws the rounds in 3D as before.
+ */
+async function withRoundLayer(
+  world: BrowserDisplay,
+  canvas: HTMLCanvasElement,
+  opts: BrowserBootOptions,
+  default2d: Page2dBackend,
+  shell: DisplayShell,
+): Promise<BrowserDisplay> {
+  const layer = document.createElement('canvas');
+  layer.id = `${canvas.id || 'screen'}-rounds`;
+  layer.className = 'ww-round-layer';
+  Object.assign(layer.style, {
+    position: 'fixed',
+    left: '0',
+    top: '0',
+    width: '100vw',
+    height: '100vh',
+    pointerEvents: 'none',
+    imageRendering: 'pixelated',
+  });
+  canvas.after(layer);
+  const started = await startDisplay(pageBackend(default2d, opts.displays), opts.displays, layer, shell);
+  if (typeof started.display === 'string') {
+    console.warn(`The rounds' 2D layer could not start, drawing them in 3D: ${started.display}`);
+    started.canvas.remove();
+    return world;
+  }
+  const shown = started.canvas;
+  const { screen } = opts;
+  return roundLayerDisplay({
+    world,
+    round: started.display,
+    ids: opts.rounds2d ?? [],
+    show: (round) => {
+      shown.style.visibility = round ? 'visible' : 'hidden';
+      document.body.dataset['round'] = round ? 'layer' : '';
+    },
+    worldBox: {
+      toScreen: (clientX, clientY) => {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: ((clientX - rect.left) / (rect.width || 1)) * screen.width,
+          y: ((clientY - rect.top) / (rect.height || 1)) * screen.height,
+        };
+      },
+      toClient: (x, y) => {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: rect.left + (x / screen.width) * rect.width,
+          y: rect.top + (y / screen.height) * rect.height,
+        };
+      },
+    },
+  });
 }
 
 /** Sets the toggle link (`#backend`) to the other backend, or hides it (`backend` null). */
