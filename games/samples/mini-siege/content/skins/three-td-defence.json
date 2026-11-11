@@ -1,0 +1,526 @@
+{
+  "backend": "three",
+  "background": "#ccc8a8",
+  "sheets": {
+    "sheet": "defence",
+    "fallbackColor": "#ff00ff"
+  },
+  "meshes": {
+    "stand": [
+      {
+        "shape": "cylinder",
+        "size": {
+          "w": 8,
+          "h": 8,
+          "d": 14
+        },
+        "at": {
+          "x": 4,
+          "y": 4,
+          "z": 0
+        },
+        "color": "#7c7c7c"
+      }
+    ],
+    "block": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 14,
+          "h": 14,
+          "d": 14
+        },
+        "at": {
+          "x": 1,
+          "y": 1,
+          "z": 0
+        },
+        "color": "#a8a8a8"
+      }
+    ],
+    "flat": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 16,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        },
+        "color": "#58a830"
+      }
+    ],
+    "arrow": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 4,
+          "h": 1,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 10
+        },
+        "color": "#fce0a8"
+      }
+    ],
+    "bolt": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 6,
+          "h": 2,
+          "d": 2
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 10
+        },
+        "color": "#5c3a20"
+      }
+    ],
+    "cursor": [
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 2,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "color": "#f8b800"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 16,
+          "h": 2,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 14,
+          "z": 1
+        },
+        "color": "#f8b800"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2,
+          "h": 16,
+          "d": 1
+        },
+        "at": {
+          "x": 0,
+          "y": 0,
+          "z": 1
+        },
+        "color": "#f8b800"
+      },
+      {
+        "shape": "box",
+        "size": {
+          "w": 2,
+          "h": 16,
+          "d": 1
+        },
+        "at": {
+          "x": 14,
+          "y": 0,
+          "z": 1
+        },
+        "color": "#f8b800"
+      }
+    ]
+  },
+  "kinds": {
+    "tower:archers": {
+      "mesh": "block",
+      "color": "#a8a8a8",
+      "model": "assets/kenney-castle-kit/tower-square-top-roof-high.glb",
+      "scale": 14,
+      "castShadow": true
+    },
+    "tower:ballista": {
+      "mesh": "block",
+      "color": "#a8a8a8",
+      "model": "assets/kenney-castle-kit/siege-ballista.glb",
+      "scale": 10,
+      "castShadow": true
+    },
+    "ghost:archers": {
+      "mesh": "block",
+      "color": "#8ca8ff",
+      "model": "assets/kenney-castle-kit/tower-square-top-roof-high.glb",
+      "scale": 14,
+      "tint": "#8ca8ff"
+    },
+    "ghost:ballista": {
+      "mesh": "block",
+      "color": "#8ca8ff",
+      "model": "assets/kenney-castle-kit/siege-ballista.glb",
+      "scale": 10,
+      "tint": "#8ca8ff"
+    },
+    "enemy:raider": {
+      "mesh": "stand",
+      "color": "#7c7c7c",
+      "model": "assets/quaternius-characters/viking-male.glb",
+      "scale": 0.06,
+      "clip": {
+        "idle": "Idle",
+        "walk": "Walk",
+        "attack": "Punch",
+        "hurt": "RecieveHit",
+        "dying": "Defeat",
+        "poof": "Defeat"
+      },
+      "materials": {
+        "Main": "#c0281c",
+        "Pants": "#6c1410",
+        "Skin": "#e0a880",
+        "Hair": "#8a4a20",
+        "Light": "#c8a878"
+      },
+      "castShadow": true
+    },
+    "shot:archers": {
+      "mesh": "arrow",
+      "color": "#fce0a8"
+    },
+    "shot:ballista": {
+      "mesh": "bolt",
+      "color": "#5c3a20"
+    },
+    "cursor": {
+      "mesh": "cursor",
+      "color": "#f8b800"
+    }
+  },
+  "tiles": {
+    ".": {
+      "mesh": "flat",
+      "color": "#58a830",
+      "model": "assets/kenney-nature-kit/ground_grass.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "vary": {
+        "tint": 0.05
+      },
+      "materials": {
+        "grass": "#8cc24a",
+        "leafsGreen": "#4e9a34",
+        "leafsDark": "#2f7434",
+        "leafsFall": "#e09a30",
+        "woodBark": "#7a5034",
+        "woodBarkDark": "#5e3e2a",
+        "woodBirch": "#e8dcc8",
+        "dirt": "#c8925a",
+        "dirtDark": "#9a6a44",
+        "water": "#58a8d8",
+        "stone": "#a8acb0",
+        "stoneDark": "#80868c",
+        "wood": "#a8744a",
+        "woodDark": "#7a5034",
+        "colorRed": "#c8302a",
+        "colorRedDark": "#8a1e1a",
+        "_defaultMat": "#b0b0a8"
+      }
+    },
+    "#": {
+      "mesh": "flat",
+      "color": "#c8925a",
+      "model": "assets/kenney-nature-kit/ground_pathOpen.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "vary": {
+        "tint": 0.06
+      },
+      "materials": {
+        "grass": "#8cc24a",
+        "leafsGreen": "#4e9a34",
+        "leafsDark": "#2f7434",
+        "leafsFall": "#e09a30",
+        "woodBark": "#7a5034",
+        "woodBarkDark": "#5e3e2a",
+        "woodBirch": "#e8dcc8",
+        "dirt": "#c8925a",
+        "dirtDark": "#9a6a44",
+        "water": "#58a8d8",
+        "stone": "#a8acb0",
+        "stoneDark": "#80868c",
+        "wood": "#a8744a",
+        "woodDark": "#7a5034",
+        "colorRed": "#c8302a",
+        "colorRedDark": "#8a1e1a",
+        "_defaultMat": "#b0b0a8"
+      }
+    },
+    "W": {
+      "mesh": "flat",
+      "color": "#a8a8a8",
+      "model": "assets/kenney-castle-kit/tower-square-base-border.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    "B": {
+      "mesh": "flat",
+      "color": "#a8a8a8",
+      "model": "assets/kenney-castle-kit/tower-square-base-border.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "castShadow": true
+    },
+    "S": {
+      "mesh": "flat",
+      "color": "#c8925a",
+      "model": "assets/kenney-nature-kit/ground_pathOpen.glb",
+      "scale": 16,
+      "receiveShadow": true,
+      "materials": {
+        "grass": "#8cc24a",
+        "leafsGreen": "#4e9a34",
+        "leafsDark": "#2f7434",
+        "leafsFall": "#e09a30",
+        "woodBark": "#7a5034",
+        "woodBarkDark": "#5e3e2a",
+        "woodBirch": "#e8dcc8",
+        "dirt": "#c8925a",
+        "dirtDark": "#9a6a44",
+        "water": "#58a8d8",
+        "stone": "#a8acb0",
+        "stoneDark": "#80868c",
+        "wood": "#a8744a",
+        "woodDark": "#7a5034",
+        "colorRed": "#c8302a",
+        "colorRedDark": "#8a1e1a",
+        "_defaultMat": "#b0b0a8"
+      }
+    },
+    "X": {
+      "mesh": "flat",
+      "color": "#503000",
+      "model": "assets/kenney-castle-kit/gate.glb",
+      "scale": 16,
+      "castShadow": true,
+      "receiveShadow": true,
+      "rotate": {
+        "y": 90
+      }
+    }
+  },
+  "events": {
+    "td-place": {
+      "sound": "place",
+      "effect": {
+        "kind": "particles",
+        "color": "#bcbcbc",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "td-sell": {
+      "sound": "place",
+      "effect": {
+        "kind": "particles",
+        "color": "#f8b800",
+        "count": 6,
+        "size": 1,
+        "ticks": 8
+      }
+    },
+    "td-refused": {
+      "sound": "refused"
+    },
+    "td-wave-start": {
+      "sound": "launch",
+      "effect": {
+        "kind": "flash",
+        "color": "#fcfcfc",
+        "ticks": 2
+      }
+    },
+    "td-shot:tower=ballista": {
+      "sound": "bolt",
+      "effect": {
+        "kind": "shake",
+        "size": 1,
+        "ticks": 4
+      }
+    },
+    "td-shot": {
+      "sound": "arrow"
+    },
+    "td-kill": {
+      "sound": "hurt",
+      "effect": {
+        "kind": "particles",
+        "color": "#f83800",
+        "count": 8,
+        "size": 2,
+        "ticks": 12
+      }
+    },
+    "td-leak": {
+      "sound": "leak",
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 8
+      }
+    },
+    "td-end:won": {
+      "effect": {
+        "kind": "tint",
+        "color": "#f8b800",
+        "ticks": 20
+      }
+    },
+    "td-end:lost": {
+      "effect": {
+        "kind": "tint",
+        "color": "#a80020",
+        "ticks": 20
+      }
+    }
+  },
+  "hud": [
+    {
+      "status": "host:mission",
+      "as": "text",
+      "x": 16,
+      "y": 12,
+      "font": "siege-font"
+    },
+    {
+      "status": "gold",
+      "as": "icon",
+      "x": 16,
+      "y": 32,
+      "sheet": "siege",
+      "frame": "icon-gold"
+    },
+    {
+      "status": "gold",
+      "as": "number",
+      "x": 26,
+      "y": 32,
+      "font": "siege-font"
+    },
+    {
+      "status": "lives",
+      "as": "icon",
+      "x": 72,
+      "y": 32,
+      "sheet": "siege",
+      "frame": "heart"
+    },
+    {
+      "status": "lives",
+      "as": "number",
+      "x": 82,
+      "y": 32,
+      "font": "siege-font"
+    },
+    {
+      "status": "enemies",
+      "as": "icon",
+      "x": 112,
+      "y": 32,
+      "sheet": "siege",
+      "frame": "icon-enemy"
+    },
+    {
+      "status": "enemies",
+      "as": "number",
+      "x": 122,
+      "y": 32,
+      "font": "siege-font"
+    },
+    {
+      "status": "tower",
+      "as": "icon",
+      "x": 16,
+      "y": 160,
+      "frame": "icon-wall"
+    },
+    {
+      "status": "tower",
+      "as": "text",
+      "x": 26,
+      "y": 160,
+      "font": "siege-font"
+    },
+    {
+      "status": "towerCost",
+      "as": "icon",
+      "x": 112,
+      "y": 160,
+      "sheet": "siege",
+      "frame": "icon-gold"
+    },
+    {
+      "status": "towerCost",
+      "as": "number",
+      "x": 122,
+      "y": 160,
+      "font": "siege-font"
+    }
+  ],
+  "camera3d": {
+    "fov": 35,
+    "view": "ground",
+    "pitch": 60,
+    "yaw": 0
+  },
+  "scene3d": {
+    "sun": {
+      "color": "#ffdca8",
+      "intensity": 2.3,
+      "direction": {
+        "x": -1.2,
+        "y": 2.4,
+        "z": 1.4
+      },
+      "shadow": {
+        "mapSize": 1024,
+        "radius": 3
+      }
+    },
+    "ambient": {
+      "color": "#d0c8e0",
+      "intensity": 0.7
+    },
+    "hemisphere": {
+      "sky": "#f4e4cc",
+      "ground": "#706040",
+      "intensity": 1.3
+    },
+    "fog": {
+      "kind": "linear",
+      "color": "#ccc8a8",
+      "near": 80,
+      "far": 600
+    },
+    "toneMapping": {
+      "kind": "aces",
+      "exposure": 1.1
+    },
+    "colorSpace": "srgb",
+    "renderScale": 6
+  }
+}

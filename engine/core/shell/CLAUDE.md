@@ -283,7 +283,8 @@ changes)` (`MISSION RESULT`: the outcome title, how it was resolved, the changes
   opened, **Continue**) and `resultsScreen(ctx, { title, verdict, changes, outcomeTitle, code })`
   (the entry's results: each section of `changeSections` (missions, losses by faction, people,
   buildings) as far as the picture has room, `and N more` for the rest, the save code,
-  **Continue**). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
+  **Continue**; on a picture at least 300 px wide, Engine 0.16 F6, a panel up to 304 px wide with
+  the changes down two columns). `MISSION_SCREEN_WORDS`, `CARD_PANEL` (`card`, the box `covers` tests),
   `CARD_MARGIN`, `CARD_WIDTH`.
   `MissionScreens<G>({ launch, menus, screen, fonts, frameSize?, keys?(), facts?(game, def),
 changes?(game, sinceTick), ticksPerHour?, uiKeys?, pointer?, onSound?, words? })`: `kind()` is

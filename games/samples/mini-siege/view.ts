@@ -11,7 +11,9 @@ import { siegeCanvasPicture, siegeFrames, siegeLook, type SiegePicture } from '.
  * a run file's orders and mission steps like the headless game (`order`, `mission`), so a
  * screenshot at a tick inside the played round shows the room, and one after the commit the
  * battle as the result left it. The camera is the map's centre (the road between the village and
- * the raiders' camp); no selection. No loop: the screenshot page steps it.
+ * the raiders' camp); no selection. No loop: the screenshot page steps it. `pnpm cli screenshot
+ * --backend three` shows `frame()` through the game's `three` skins (Engine 0.16 F6: the siege map
+ * in 3D low-poly), the screenshot page preloading every model they name before the first frame.
  */
 export function createView(content: ContentBundle, seed: number, opts: HeadlessOptions = {}): ViewGame {
   const game = createGame(content, seed, opts);

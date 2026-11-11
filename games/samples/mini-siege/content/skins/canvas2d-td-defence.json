@@ -259,21 +259,21 @@
       "status": "tower",
       "as": "icon",
       "x": 16,
-      "y": 200,
+      "y": 160,
       "frame": "icon-wall"
     },
     {
       "status": "tower",
       "as": "text",
       "x": 26,
-      "y": 200,
+      "y": 160,
       "font": "siege-font"
     },
     {
       "status": "towerCost",
       "as": "icon",
       "x": 112,
-      "y": 200,
+      "y": 160,
       "sheet": "siege",
       "frame": "icon-gold"
     },
@@ -281,7 +281,7 @@
       "status": "towerCost",
       "as": "number",
       "x": 122,
-      "y": 200,
+      "y": 160,
       "font": "siege-font"
     }
   ]

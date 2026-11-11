@@ -28,7 +28,7 @@ export {
   type ParticleSystemOptions,
   type ParticleView,
 } from './particles';
-export { REDUCED_FLASH_ALPHA, SkinParticles } from './skin-particles';
+export { REDUCED_FLASH_ALPHA, SkinParticles, type FixedEmitters } from './skin-particles';
 export {
   flashSpecSchema,
   hitPauseSpecSchema,

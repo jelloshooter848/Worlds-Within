@@ -340,16 +340,24 @@ export function outcomeScreen(
   );
 }
 
+/** A centred screen's panel width at most. */
+const CENTRED_WIDTH = 232;
+/** The results panel's width at most on a wide picture (Engine 0.16 F6: a 16:9 picture has room for two columns). */
+const WIDE_RESULTS_WIDTH = 304;
+/** A picture at least this wide shows the results' changes in two columns. */
+const TWO_COLUMNS_FROM = 300;
+
 /** A modal screen: the picture dimmed, a centred panel with a heading, a body and a menu, and a key hint. */
 function centredScreen(
   ctx: MissionScreenContext,
   heading: string,
   body: (col: Column, room: number) => void,
   items: UiMenuItemSpec[],
+  maxWidth = CENTRED_WIDTH,
 ): UiScreenFile {
   const p = paletteOf(ctx.menus);
   const { width, height } = ctx.screen;
-  const w = Math.min(width - 8, 232);
+  const w = Math.min(width - 8, maxWidth);
   const pad = p.padding + 2;
   const hint = ctx.keys === undefined ? '' : menuHint(ctx.keys, false, false);
   const hintH = hint === '' ? 0 : (ctx.fonts(ctx.menus.font)?.cell.h ?? 8) + 10;
@@ -420,7 +428,8 @@ export interface ResultsView {
 /**
  * The entry's results: its title and verdict, then each section of the changes (missions, losses,
  * people, buildings) as far as the picture has room (the rest counted, `and 3 more`), the save
- * code and Continue.
+ * code and Continue. On a picture at least {@link TWO_COLUMNS_FROM} px wide (Engine 0.16 F6, the
+ * 16:9 pictures) the panel is wider and the changes flow down a left column, then a right one.
  */
 export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiScreenFile {
   const words = wordsOf(ctx);
@@ -445,15 +454,33 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
       ]);
       const font = ctx.menus.font;
       const lineH = (ctx.fonts(font)?.line ?? 10) + 0;
+      const two = ctx.screen.width >= TWO_COLUMNS_FROM;
+      const half = Math.floor((col.w - 8) / 2);
+      const columns = two
+        ? [new Column(ctx, col.x, col.y, half), new Column(ctx, col.x + half + 8, col.y, half)]
+        : [col];
+      let at = 0;
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i]!;
-        const h = heightOf(ctx.fonts, font, row.text, col.w);
+        const c = columns[at]!;
+        const h = heightOf(ctx.fonts, font, row.text, c.w);
         const left = rows.length - i;
-        if (col.y + h + (left > 1 ? lineH : 0) > limit && left > 1) {
-          col.text(`and ${rows.slice(i).filter((r) => !r.heading).length} more`, { color: p.dim });
+        const last = at === columns.length - 1;
+        if (c.y + h + (left > 1 && last ? lineH : 0) > limit && left > 1) {
+          if (!last) {
+            // The column is full: this row starts the next one.
+            at++;
+            i--;
+            continue;
+          }
+          c.text(`and ${rows.slice(i).filter((r) => !r.heading).length} more`, { color: p.dim });
           break;
         }
-        col.text(row.text, row.heading ? { color: p.heading } : {});
+        c.text(row.text, row.heading ? { color: p.heading } : {});
+      }
+      if (two) {
+        for (const c of columns) col.widgets.push(...c.widgets);
+        col.y = Math.max(...columns.map((c) => c.y));
       }
       if (view.code !== '') {
         col.gap(4);
@@ -462,6 +489,7 @@ export function resultsScreen(ctx: MissionScreenContext, view: ResultsView): UiS
       }
     },
     [{ id: 'continue', label: words.continue }],
+    ctx.screen.width >= TWO_COLUMNS_FROM ? WIDE_RESULTS_WIDTH : CENTRED_WIDTH,
   );
 }
 

@@ -161,3 +161,14 @@ screenshot --backend three --render-scale N` (default the skin's) is byte-identi
   the tile's `vary` (`tileVariation`, the presentation RNG). The skin's `decor` (with
   `contentDecor(content)` as the `decor` option) places scenery per map id, and its `places`
   names regions on the label layer. See `engine/backends/three/CLAUDE.md`.
+
+## Engine 0.16 F6: model colours, tag-look models, decor stacks, lights and smoke
+
+- A kind's, tile's or decor legend entry's `materials` (material name -> colour) and `tint`
+  recolour its model's copies (`recolorMaterials` in `models.ts`; instanced batches get their own
+  material copies). A kind's `byTag` look may swap `model` and `scale` and set `materials` and
+  `tint` (a burnt engine, a scaffold, the frozen look); `skinModelUses` lists the looks' models.
+- A decor legend entry's `stack` puts more models on its cells (a tower's roof); its `light` is a
+  flickering `PointLight` per cell and its `emit` runs emitters there (`SkinParticles.update`'s
+  `fixed` emitters; `ThreeScene.decorLights()`). Used by the mini siege's `three.json`. See
+  `engine/backends/three/CLAUDE.md`.

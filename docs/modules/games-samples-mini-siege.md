@@ -48,7 +48,8 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
 
 ## Public API entry points
 
-- `game.json`: kit `rts`, uses `topdown` and `towerdefense`, seed 11, `headless.ts`, `view.ts`.
+- `game.json`: kit `rts`, uses `topdown` and `towerdefense`, seed 11, a 320x180 picture (Engine
+  0.16 F6), `headless.ts`, `view.ts`.
 - Art and sound: `content/sprites/` (`siege.txt`, `camp.txt`, `siege-font.txt`, `defence.txt`
   for the walls' round), `content/palettes/` (`siege`, `siege-held` for the frozen siege, `camp`
   at night, `defence-ok` / `defence-blocked` for the ghost tower, `defence-hit` for a struck
@@ -66,13 +67,17 @@ reason), and Carry on picks up the save this browser kept (`CampaignSession` in
   smithy, well, market props; from OBJ), `quaternius-characters` (Quaternius, Ultimate Animated
   Character Pack: knights, a viking raider, a worker; clips `Idle`, `Walk`, `Punch`, `Defeat` and
   more; from FBX) and `quaternius-farm-animals` (Quaternius: the sheep; from FBX). The last two
-  stand in for the people and sheep the named packs lack (owner items). For the 3D siege map
-  (part F, F6); `assets.test.ts` parses every GLB with `ModelLibrary` in Node and lists its clips.
+  stand in for the people and sheep the named packs lack (owner items). Since F6 also
+  `mini-siege-marks` (own work, made by `tools/mark-models.ts`: the offer gem and the raiders'
+  banner, embedded `.gltf` text). Used by the 3D skins (F6); `assets.test.ts` parses every model
+  with `ModelLibrary` in Node, lists its clips and checks the marks against the script.
 - `picture.ts`: `siegeLook`, `siegeFrames` / `siegePicture` / `siegeCanvasPicture` (the battle's
   frames or the hosted round's through the core's `hostedSource` and the host's `roundFrame()`,
   with the host's `mission-open`, `mini-game-end` and `mission-commit` events; Engine 0.15 T6,
   gaps M6, M21 and D9).
-- `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`.
+- `view.ts`: `createView` (`render`, `frame()`, `order`, `mission`) for `pnpm cli screenshot`
+  (`--backend three` shows `frame()` through the `three` skins, their models preloaded by the
+  screenshot page, Engine 0.16 F6).
 - `play.ts`: `SiegePlay`, since Engine 0.15 T10 (gaps M26, M34, M36, lesson D14) the engine's
   `MissionLaunch` (`launch`: launch buttons, play or delegate, the round, every campaign entry held
   at tick 0 until Begin, its end, the result, Continue, a save code, the stored save) handed only
@@ -142,6 +147,27 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   `status`: `clock.day`, `clock.time`, `clock.text`, `clock.phase`, `clock.fraction`). No hash
   or save code moved; the 3D skin and HUD that show it are part F's later tasks.
 
+- Engine 0.16 F6, **the siege map in 3D low-poly** (the mockup
+  `docs/reports/mockups/mini-siege-3d.png`): the picture is **320x180** (16:9, six times is
+  1920x1080; an owner item), the Canvas2D skins re-laid for it (the bottom HUD row at y 168, the
+  walls' round's at 160). `content/skins/three.json` is the battle in 3D: the ground view (pitch
+  60, yaw -8, zoom 0.42) at render scale 6; every kind the RTS kit presents a model from the packs
+  (team colours by `materials`: blue village, red raiders; the frozen look a blue `tint`; the burnt
+  ram and catapult and the watchtower's scaffold by tag look `model`; the offer marker the glowing
+  gem of `assets/mini-siege-marks/`; health and progress bars as labels reading the kit's
+  `hp:<hp>/<max>` and `progress:<n>` tags), clips `Idle`, `Walk`, `Punch`, `PickUp`; tiles from the
+  Nature Kit; decor grids `content/decor/village.txt`, `dawn.txt`, `ridge.txt` (the castle ring
+  with round towers and blue roofs, the houses, the river with the bridge on the road, the fields,
+  windmill and sheep pen, woods, and the raiders' camp with tents, red banners and campfires that
+  flicker and smoke), places THE HALL and RAIDERS' CAMP; warm sun with soft shadows, a hemisphere
+  light, distance fog, ACES tone mapping and the time of day by the world clock (late afternoon to
+  sunset in the siege, dawn, morning on the ridge). `three-mission-room.json` and
+  `three-td-defence.json` are plain first 3D looks for the hosted rounds (part F's F8 finishes
+  them). The RTS frames name the map by scenario (`mapId`), so each map is dressed its own way.
+  Presentation only: no hash moved. `pnpm cli screenshot runs/delegated.run.json --backend three
+--allow-software-gl --tick 80` is the full-HD picture; `tests/browser/mini-siege-shots.test.ts`
+  shoots the village, dawn and ridge in 3D twice each (byte-identical).
+
 ## Imports allowed
 
 - Relative paths inside the folder, `@engine/core/*`, `@engine/sim/*`, `@engine/backends/*`,
@@ -157,7 +183,8 @@ games/samples/mini-siege/runs/quit.run.json` (the save code at the siege's end),
 `pnpm -s cli screenshot games/samples/mini-siege/runs/played.run.json --tick 200 --json` (the
 room; `delegated.run.json --tick 80` the frozen battle; `fortify-played.run.json --tick 90` the
 walls' round; `dawn-captured.run.json --tick 10` the dawn with the captain held),
-`tests/browser/mini-siege-shots.test.ts`; the page played from its link, both missions on both
+`tests/browser/mini-siege-shots.test.ts` (with `--backend three --allow-software-gl`, the 3D
+siege map at 1920x1080); the page played from its link, both missions on both
 paths (and the walls' round by taps), and the campaign along both captain fates and from a save
 code: `tests/browser/mini-siege-page.test.ts`; the ridge camp in the debugger, and a failing
 copy's replay opened at its failing tick: `tests/browser/debugger-done-when.test.ts`.

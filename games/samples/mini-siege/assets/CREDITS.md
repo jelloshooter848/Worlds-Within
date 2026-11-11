@@ -109,3 +109,15 @@ choices are owner items (`docs/FEEDBACK-LOG.md`).
   `license.txt`.
 - Changed: converted from FBX as the characters were (above); clip names lost their `Armature|`
   prefix.
+
+## mini-siege-marks
+
+- Source: games/samples/mini-siege/tools/mark-models.ts (made in this repo by that script; nothing
+  downloaded)
+- Author: the Worlds Within project (own work)
+- Licence: CC0 1.0 Universal
+- Use: what the packs lack (Engine 0.16 F6): the glowing gem over an offered mission's target,
+  and the raiders' red banners in their camp (the castle kit's banners are blue).
+- Files: `offer-gem.gltf` (a golden octahedron lit from within, one unit tall) and
+  `raider-banner.gltf` (a pole, a red cloth and a gold tip, 1.75 units tall), embedded `.gltf` text.
+- Changed: nothing (made by the script; `assets.test.ts` checks the files against it).

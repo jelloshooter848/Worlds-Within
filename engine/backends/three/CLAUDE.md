@@ -320,6 +320,36 @@ state only, no clock or randomness: the same frames give the same picture. Teste
   instance matrices against a `ModelInstance`, variation per seed, decor batches and copies,
   places in both views, render scale).
 
+## Model colours, tag-look models, decor stacks, lights and smoke (Engine 0.16 F6)
+
+For the mini siege's low-poly map (its `three.json`); a skin without these fields builds exactly
+what it did.
+
+- **Colours.** A kind's or tile's (or a decor legend entry's) `materials` (material name ->
+  colour) sets those materials' colours on its copies, then `tint` multiplies every colour
+  (`recolorMaterials` in `models.ts`, on a `ModelInstance`'s own materials). Instanced tiles and
+  decor batches with colours draw with the batch's own recoloured copies of the library's
+  materials (`userData.ownMaterials`, freed with the map); without them they share the
+  library's, as before. Team colours on one shared model; the held look of a frozen unit.
+- **Tag looks with a model.** A kind's `byTag` look may give `model`, `scale`, `materials` and
+  `tint` (merged over the kind by `resolveSkinKind`, so `resolveSkinModel` reads them): a burnt
+  siege engine, a scaffold by `progress:` range. The look index already rebuilds the entity when
+  it changes; `skinModelUses` lists the looks' models (preloaded, checked by `validate`).
+- **Decor stacks.** A legend entry's `stack` (`[{ model, height }]`) puts more models on each of
+  its cells with the same picks (`placeDecor` adds a placement per stack model, `height` px
+  higher, grown with the cell's scale): a tower's roof on its base.
+- **Decor lights and emitters.** A legend entry's `light` (a kind light's fields) is a
+  `PointLight` per cell (`light:decor:<map>:<col>,<row>`, in the map's group, at the cell's model
+  point plus the light's offset, y down), flickering per frame from `fxRng(seed, frame,
+"light:decor:...")` like a kind's; its `emit` runs those emitters on the cell's box (the core
+  `SkinParticles.update`'s `fixed` emitters, `FixedEmitters`). A hidden map lights and smokes
+  nothing. `decorLights()` lists them for tests.
+
+Tested in `models.test.ts` (materials and tint on a copy, the library's left alone, a tag look's
+model and scale swapped and its tint over the kind's colours, the fields refused without a model
+and on a 2D skin) and `decor.test.ts` (a lit, smoking cell: its light placed, flickering the same
+each build, smoke at the cell, nothing on a hidden map; an unknown emitter refused).
+
 ## ThreePresenter (browser only)
 
 `new ThreePresenter(canvas, skin, opts?)` implements the core `Presenter`: `present(frame)` syncs

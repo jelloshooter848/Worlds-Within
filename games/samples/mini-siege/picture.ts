@@ -93,6 +93,8 @@ export function siegeSource(
         size: screen,
         missions,
         keys: game.worldKeys(),
+        // Each scenario's map by its own id (Engine 0.16 F6), so the 3D skin dresses each one.
+        mapId: game.campaign.scenario,
         state,
       }),
   };

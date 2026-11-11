@@ -1,6 +1,7 @@
 import {
   AnimationMixer,
   Box3,
+  Color,
   Euler,
   Group,
   Matrix4,
@@ -162,6 +163,7 @@ export class ModelInstance {
       o.material = Array.isArray(o.material) ? o.material.map(copy) : copy(o.material);
       o.castShadow = spec.castShadow;
     });
+    recolorMaterials(this.materials, spec);
     const deg = Math.PI / 180;
     const turn = new Euler(spec.rotate.x * deg, spec.rotate.y * deg, spec.rotate.z * deg, 'XYZ');
     inner.rotation.copy(turn);
@@ -219,6 +221,25 @@ export class ModelInstance {
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.mixer.getRoot());
     for (const m of this.materials) m.dispose();
+  }
+}
+
+/**
+ * Sets an instance's own materials' colours from its spec (Engine 0.16 F6): each material named in
+ * `materials` takes that colour, then every colour is multiplied by `tint`. A material without a
+ * `color` is left alone.
+ */
+export function recolorMaterials(
+  materials: readonly Material[],
+  spec: DeepReadonly<Pick<SkinModel, 'materials' | 'tint'>>,
+): void {
+  const tint = spec.tint === null ? null : new Color(spec.tint);
+  for (const m of materials) {
+    const c = (m as Material & { color?: Color }).color;
+    if (!(c instanceof Color)) continue;
+    const set = Object.hasOwn(spec.materials, m.name) ? spec.materials[m.name] : undefined;
+    if (set !== undefined) c.set(set);
+    if (tint) c.multiply(tint);
   }
 }
 

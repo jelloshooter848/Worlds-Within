@@ -248,6 +248,18 @@ map, layer, col, row)` and `contentDecor(content)` (grid name -> rows, the 3D ba
     `decor` option). The model fields shared by kinds, tiles and the decor legend live in
     `model-fields.ts`. `scene3d.renderScale` (whole, 1 to `MAX_RENDER_SCALE` 8, default 1) is
     the 3D picture's supersampling (`Scene3dLook.renderScale`). Tested in `decor.test.ts`.
+    Engine 0.16 F6: a legend entry's `stack` (`[{ model, height }]`, more models on its cells,
+    placed after the cell's own with the same picks, `height` px higher grown with the cell's
+    scale; its models in `skinModelUses` at `stack.<i>.model`), `materials` and `tint` (colours,
+    as a kind's), `light` (a kind light's fields: a point light per cell) and `emit` (emitters
+    run on each cell; `validate`'s `missing_ref` for one the skin lacks), each carried on the
+    `DecorPlacement` (`materials`, `tint`, `light`, `emit`).
+  - Model colours and tag-look models (Engine 0.16 F6, `skin.ts`): a kind's or tile's
+    `materials` (material name -> colour) and `tint` (multiplies every colour) are model fields
+    (`missing_field` without `model`, `wrong_backend_field` on a 2D skin) carried on `SkinModel`
+    (`materials`, `tint`); a `byTag` look may give `model`, `scale`, `materials` and `tint`
+    (merged by `resolveSkinKind`, so `resolveSkinModel` reads them), and `skinModelUses` lists a
+    look's model at `kinds.<kind>.byTag.<i>` with the kind's clips.
   - `resolveMeshParts(skin, entry, box)` (pure, the one reading of mesh text shared by backends
     and tests): the `MeshPart[]` `{ shape, size, at, color, rotate }` for a kind or tile entry,
     with `box` the entity box or `{ w: tileSize, h: tileSize }`: a primitive is one part filling

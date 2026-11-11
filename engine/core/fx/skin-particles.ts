@@ -1,11 +1,18 @@
 import { particlesEffectEmitter, skinEmitNames, type SkinFile } from '../present/skin';
 import type { DeepReadonly, PresentEntity, PresentEvent } from '../present/types';
-import { anchorPoint, ParticleSystem, type ParticleView } from './particles';
+import { anchorPoint, ParticleSystem, type ParticleAnchorBox, type ParticleView } from './particles';
 import type { EmitterDef } from './schema';
 
 type Skin = DeepReadonly<SkinFile>;
 type Entity = DeepReadonly<PresentEntity>;
 type EventEntry = NonNullable<SkinFile['events']>[string];
+
+/** Emitters that stand still (a decor campfire's smoke): an id no entity has, a world box and emitter names. */
+export interface FixedEmitters {
+  id: string;
+  box: ParticleAnchorBox;
+  emit: readonly string[];
+}
 
 /** How strongly bright (additive) particles show with the reduced-flashing setting on. */
 export const REDUCED_FLASH_ALPHA = 0.5;
@@ -55,10 +62,21 @@ export class SkinParticles {
     }
   }
 
-  /** Attaches the kinds' emitters to this frame's entities and steps the system to `frame`. */
-  update(frame: number, entities: readonly Entity[]): void {
+  /**
+   * Attaches the kinds' emitters to this frame's entities, and `fixed` emitters (a 3D skin's decor
+   * `emit`, Engine 0.16 F6: an id, a box and emitter names) where they stand, and steps the
+   * system to `frame`.
+   */
+  update(frame: number, entities: readonly Entity[], fixed: readonly FixedEmitters[] = []): void {
     const kinds = this.skin.kinds;
-    const boxes = new Map<string, Entity>();
+    const boxes = new Map<string, ParticleAnchorBox>();
+    for (const f of fixed) {
+      boxes.set(f.id, f.box);
+      for (const name of f.emit) {
+        const def = this.skin.emitters?.[name] as EmitterDef | undefined;
+        if (def !== undefined) this.system.attach(f.id, name, def, f.box, frame);
+      }
+    }
     for (const e of entities) {
       boxes.set(e.id, e);
       const entry = Object.hasOwn(kinds, e.kind) ? kinds[e.kind] : undefined;

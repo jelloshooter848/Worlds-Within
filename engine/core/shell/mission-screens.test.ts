@@ -1,3 +1,4 @@
+import type { UiWidgetSpec } from '../ui';
 import { describe, expect, it } from 'vitest';
 import type { JsonObject, MissionStepRefusal } from '../headless';
 import { ActionState, type InputFrame } from '../input/input-manager';
@@ -227,6 +228,26 @@ describe('the mission screens built from menus (Engine 0.16 F5)', () => {
       'Save code',
       'ABCDE-12345',
     ]);
+    // A 16:9 picture (Engine 0.16 F6): a wider panel, the changes down two columns, more of them shown.
+    const many = {
+      ...view,
+      changes: {
+        ...changes,
+        people: [...changes.people, ...changes.people.map((x) => ({ ...x, entity: x.entity + 40 }))],
+      },
+    };
+    const wide = resultsScreen({ ...CTX, screen: { width: 320, height: 180 } }, many);
+    const rows = (wide?.widgets ?? []).filter(
+      (w): w is UiWidgetSpec & { text: string } =>
+        w.type === 'text' && typeof w.text === 'string' && w.text.startsWith('  Person'),
+    );
+    const xs = [...new Set(rows.map((w) => w.x))];
+    expect(xs).toHaveLength(2);
+    const left = rows.filter((w) => w.x === xs[0]).length;
+    expect(rows.length).toBeGreaterThan(left);
+    expect(texts(wide).slice(-2)).toEqual(['Save code', 'ABCDE-12345']);
+    expect(rows.length).toBeGreaterThan(30);
+    expect(texts(wide).find((t) => t.startsWith('and '))).toBe(`and ${80 - rows.length} more`);
   });
 });
 

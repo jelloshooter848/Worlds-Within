@@ -159,6 +159,11 @@ Example: a kit keeps `const maps = new MapTracker()` and each frame builds
 `{ frame, size, entities, map: maps.next(roomMap), events, status }`; a test runs
 `validate('frame', frame, presentFrameSchema)` and hands `freezeFrame(frame)` to a presenter.
 
+- Engine 0.16 F6: the skin schema's model colours (`materials`, `tint` on kinds, tiles and decor
+  legends; `SkinModel.materials` and `.tint`), tag looks with `model`, `scale`, `materials` and
+  `tint`, and the decor legend's `stack`, `light` and `emit` (`DecorPlacement.light`, `.emit`,
+  `.materials`, `.tint`; `validate` checks a legend's emitters name the skin's).
+
 ## Imports allowed
 
 - `zod` and pure files in `engine/core`. Never backends, the sim, tools, kits or games.

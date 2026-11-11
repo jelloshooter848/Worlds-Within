@@ -68,8 +68,9 @@ color, alpha, blend, glow, frame?, sheet?, age, life }`. Draws come from
   event's `x`/`y`, else its entity's centre, or the emitter's `anchor` on the entity when it
   gives one; following the entity when the emitter says `follow`) and an old `effect.kind:
 particles` as an implicit emitter (`particlesEffectEmitter`, a ring flying out 1 px a frame, as
-  before); `update(frame, entities)` attaches each kind's `emit` to its entities and steps the
-  system; `particles({ reduceFlashing? })` gives what to draw, with `reduceFlashing` drawing
+  before); `update(frame, entities, fixed?)` attaches each kind's `emit` to its entities (and,
+  Engine 0.16 F6, each `FixedEmitters` `{ id, box, emit }`'s emitters where it stands: a 3D
+  skin's decor campfire) and steps the system; `particles({ reduceFlashing? })` gives what to draw, with `reduceFlashing` drawing
   additive particles with normal blending at `REDUCED_FLASH_ALPHA` (0.5) and no glow.
 - `schema.ts` (Engine 0.16 T4) also holds the camera effects a skin's event entry writes:
   `shakeSpecSchema` `{ amount, ticks }` (the largest offset in picture px, decaying over

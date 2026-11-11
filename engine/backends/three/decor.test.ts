@@ -158,6 +158,8 @@ describe('model tiles as InstancedMeshes (Engine 0.16 F3)', () => {
       clip: null,
       time: 0,
       offset: { x: 0, y: 0, z: 0 },
+      materials: {},
+      tint: null,
     };
     const copy = new ModelInstance(models.get(TREE_GLB)!, spec, { w: 16, h: 16 });
     // The first tree is cell 0 (col 0, row 0): its centre on the floor.
@@ -291,6 +293,78 @@ describe('decor and places (Engine 0.16 F3)', () => {
     const scene = new ThreeScene(side, { fonts });
     scene.sync(frame(0));
     expect(scene.labelViews().map((v) => v.text)).toEqual(['THE HALL']);
+  });
+});
+
+describe('decor lights and emitters (Engine 0.16 F6)', () => {
+  const lit = () =>
+    skin({
+      emitters: {
+        smoke: { rate: 1, life: [20, 20], speed: [0.2, 0.2], angle: [270, 270], size: 2, color: '#7c7c7c' },
+      },
+      decor: {
+        field: {
+          grid: 'field',
+          legend: {
+            b: { model: TREE_GLB, scale: 6 },
+            r: {
+              model: ROCK_GLB,
+              scale: 8,
+              light: {
+                kind: 'point',
+                color: '#ffa040',
+                intensity: 30,
+                distance: 80,
+                offset: { x: 0, y: -6, z: 0 },
+                flicker: 0.4,
+              },
+              emit: 'smoke',
+            },
+          },
+        },
+      },
+    });
+
+  it('puts a flickering point light on each lit cell and runs its emitters there, the same every build', async () => {
+    const models = await library();
+    const build = () => {
+      const scene = new ThreeScene(lit(), { models, decor: { field: DECOR_ROWS }, seed: 5 });
+      const seen: number[] = [];
+      for (let f = 0; f < 12; f++) {
+        scene.sync(frame(f));
+        seen.push(scene.decorLights()[0]!.light.intensity);
+      }
+      return { scene, seen };
+    };
+    const { scene, seen } = build();
+    // One `r` cell (col 3, row 6): its light 6 px over the cell's centre on the floor.
+    const lights = scene.decorLights();
+    expect(lights.map((l) => l.id)).toEqual(['decor:field:3,6']);
+    const light = lights[0]!.light;
+    expect(light.name).toBe('light:decor:field:3,6');
+    light.updateMatrixWorld(true);
+    expect([light.position.x, light.position.y, light.position.z]).toEqual([3 * 16 + 8, 6, 6 * 16 + 8]);
+    expect(Math.max(...seen)).toBeLessThanOrEqual(30);
+    expect(Math.min(...seen)).toBeGreaterThanOrEqual(30 * 0.6);
+    expect(new Set(seen).size).toBeGreaterThan(1);
+    expect(build().seen).toEqual(seen);
+    // Its smoke rises from the cell (no entity carries it).
+    const smoke = scene.particleViews().filter((p) => p.emitter === 'smoke');
+    expect(smoke.length).toBeGreaterThan(5);
+    for (const p of smoke) expect(Math.abs(p.x - (3 * 16 + 8))).toBeLessThan(2);
+    // A hidden map lights and smokes nothing.
+    scene.sync({ ...frame(12), map: undefined } as unknown as PresentFrame);
+    expect(scene.decorLights()).toEqual([]);
+  });
+
+  it("checks a decor entry's emitters name the skin's", () => {
+    const bad = skinSchema.safeParse({
+      backend: 'three',
+      kinds: {},
+      decor: { field: { grid: 'field', legend: { r: { model: ROCK_GLB, emit: 'none' } } } },
+    });
+    expect(bad.success).toBe(false);
+    expect(JSON.stringify(bad.error?.issues)).toContain('no emitter');
   });
 });
 

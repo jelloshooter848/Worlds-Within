@@ -5,6 +5,7 @@ import type { FieldPath, IssueParams } from '../content/validate';
 import { fxRng } from '../fx/rng';
 import { missingGlyphs, type FontFile } from '../ui/font';
 import { modelAnchor, modelPath, modelRotate } from './model-fields';
+import { kindLightSchema, type SkinKindLight } from './scene3d';
 import type { DeepReadonly } from './types';
 
 /**
@@ -90,6 +91,40 @@ export const decorLegendSchema = z.strictObject({
     .describe(
       'draw every cell of a model as one `InstancedMesh` per mesh (default true); false: one copy per cell',
     ),
+  stack: z
+    .array(
+      z.strictObject({
+        model: modelPath.describe('the model put on the cell too'),
+        height: z
+          .number()
+          .describe(
+            "px over the cell's model point (ground view: up; side view: toward the camera), before the cell's scale",
+          ),
+      }),
+    )
+    .min(1)
+    .exactOptional()
+    .describe(
+      "more models on the same cell, turned and scaled with it, each `height` px higher (a tower's roof on its base); per-cell picks are the first model's (Engine 0.16 F6)",
+    ),
+  materials: z
+    .record(z.string().min(1), color)
+    .exactOptional()
+    .describe("material name -> colour, replacing that material's colour on these copies (Engine 0.16 F6)"),
+  tint: color
+    .exactOptional()
+    .describe("a colour every material's colour is multiplied by, after `materials` (Engine 0.16 F6)"),
+  light: kindLightSchema
+    .exactOptional()
+    .describe(
+      "a point light on each cell of the entry (a campfire), its `offset` from the cell's model point (px right, y down: a negative y lifts it, z toward the camera / south in ground view), flickering per frame as a kind's (Engine 0.16 F6)",
+    ),
+  emit: z
+    .union([z.string().min(1), z.array(z.string().min(1)).min(1)])
+    .exactOptional()
+    .describe(
+      "emitters of the skin's `emitters` that run on each cell of the entry (smoke over a campfire), anchored on the cell's box (Engine 0.16 F6)",
+    ),
 });
 
 export type SkinDecorLegend = z.output<typeof decorLegendSchema>;
@@ -136,7 +171,7 @@ export type SkinDecor = z.output<typeof decorEntrySchema>;
 export const decorSchema = z
   .record(z.string().min(1), decorEntrySchema)
   .describe(
-    '3D: presentation-only scenery per map id (Engine 0.16 F3): `{ grid, map?, size?, legend: { <char>: { model, scale?, yaw?, jitter?, offset?, anchor?, rotate?, castShadow?, receiveShadow?, instanced? } } }`',
+    '3D: presentation-only scenery per map id (Engine 0.16 F3): `{ grid, map?, size?, legend: { <char>: { model, scale?, yaw?, jitter?, offset?, anchor?, rotate?, castShadow?, receiveShadow?, instanced?, materials?, tint?, light?, emit? } } }`',
   );
 
 export const placeSchema = z.strictObject({
@@ -372,6 +407,14 @@ export interface DecorPlacement {
   castShadow: boolean;
   receiveShadow: boolean;
   instanced: boolean;
+  /** Material name -> colour (Engine 0.16 F6; empty: none). */
+  materials: Record<string, string>;
+  /** A colour every material's colour is multiplied by, or null (Engine 0.16 F6). */
+  tint: string | null;
+  /** The entry's point light, or null (Engine 0.16 F6). */
+  light: SkinKindLight | null;
+  /** The entry's emitter names (Engine 0.16 F6; empty: none). */
+  emit: string[];
 }
 
 /** The presentation RNG stream of a decor cell. */
@@ -384,7 +427,9 @@ export function decorStream(map: string, col: number, row: number): string {
  * legend entry, its picks drawn from `fxRng(seed, 0, decorStream(map, col, row))` in a fixed
  * order (model, scale, yaw, jitter x, jitter y), so the same seed, map and grid always place the
  * same scene. Cells past `limit` (the map's size) and characters without an entry are left out.
- * Pure.
+ * An entry's `stack` (Engine 0.16 F6) follows its cell's placement, each with the same picks, its
+ * own model and its `height` (times the cell's scale over the entry's base scale) added to the
+ * offset's up part, with no light or emitters of its own. Pure.
  */
 export function placeDecor(
   entry: DeepReadonly<SkinDecor>,
@@ -410,7 +455,7 @@ export function placeDecor(
       const j = spec.jitter ?? 0;
       const jx = j > 0 ? (rng.float() * 2 - 1) * j : 0;
       const jy = j > 0 ? (rng.float() * 2 - 1) * j : 0;
-      out.push({
+      const placed: DecorPlacement = {
         char,
         col,
         row,
@@ -423,7 +468,22 @@ export function placeDecor(
         castShadow: spec.castShadow ?? false,
         receiveShadow: spec.receiveShadow ?? false,
         instanced: spec.instanced ?? true,
-      });
+        materials: { ...(spec.materials ?? {}) },
+        tint: spec.tint ?? null,
+        light: spec.light === undefined ? null : { ...spec.light },
+        emit: spec.emit === undefined ? [] : typeof spec.emit === 'string' ? [spec.emit] : [...spec.emit],
+      };
+      out.push(placed);
+      // The stack's heights grow with the cell's drawn size (a tower's roof stays on its base).
+      const grow = typeof s === 'number' ? 1 : scale / s[0]!;
+      for (const top of spec.stack ?? [])
+        out.push({
+          ...placed,
+          model: top.model,
+          offset: { ...placed.offset, z: placed.offset.z + top.height * grow },
+          light: null,
+          emit: [],
+        });
     });
   });
   return out;

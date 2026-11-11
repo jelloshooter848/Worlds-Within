@@ -85,11 +85,11 @@ interface Hook {
 
 /**
  * The centre of the walls' round's cell on the page, in client px (gap D13): the kit's
- * `screenAtCell` on the 256x240 picture over the 16x7 `walls` map (centred, as the round's camera
- * frames it), then the page's `window.__ww.toClient` (the display's).
+ * `screenAtCell` on the 320x180 picture (Engine 0.16 F6) over the 16x7 `walls` map (centred, as
+ * the round's camera frames it), then the page's `window.__ww.toClient` (the display's).
  */
 async function wallsCellClient(page: Page, col: number, row: number): Promise<{ x: number; y: number }> {
-  const at = screenAtCell({ col, row }, { size: { width: 256, height: 240 } }, { cols: 16, rows: 7 });
+  const at = screenAtCell({ col, row }, { size: { width: 320, height: 180 } }, { cols: 16, rows: 7 });
   const client = await page.evaluate(([x, y]) => (window as DebugWindow).__ww!.toClient(x, y), [
     at.x,
     at.y,

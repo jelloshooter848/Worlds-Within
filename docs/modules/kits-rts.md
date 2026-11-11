@@ -46,6 +46,10 @@ faction)`): what changed between two views as presentation events, each with its
   world snapshot carries no events, so this is how a game on the kit gets battle sounds (the RTS
   skirmish passes them to `presentWorld`'s `events`). It reads views only: no world rule.
 
+- Engine 0.16 F6: `presentWorld`'s `mapId` option names the map (default `RTS_MAP_ID`, `rts`),
+  so a 3D skin's per-map `decor` and `places` dress each scenario; a unit or building whose
+  health bar shows also carries `hp:<hp>/<max>`, the numbers a 3D skin's bar label reads.
+
 ## Imports allowed
 
 - `@engine/core/*` except its drawing and output side (`FORBIDDEN_CORE` in `config/layers.js`),

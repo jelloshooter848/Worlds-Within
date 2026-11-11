@@ -29,7 +29,9 @@ import { facingOfDir, isFinished, type RtsUnitView, type RtsView } from './snaps
  * open mission (`offer`, `offers`, `mission`, `missionCommit`, `missionLeft`), each key only while
  * there is one, so a world without missions gives the same frames as before. A unit or finished
  * building below its full hp gets the tag `damaged` (Engine 0.11 T9), for a skin's `byTag` look
- * (the mini siege's burnt siege engines).
+ * (the mini siege's burnt siege engines). From Engine 0.16 F6 one whose health bar shows (selected,
+ * or below its full hp) also gets `hp:<hp>/<max>`, the bar's numbers for a 3D skin's label, and
+ * `mapId` names the map (default `rts`), so a 3D skin dresses each scenario's map its own way.
  */
 
 /** The depth (`layer`) of each thing the kit presents, drawn low to high. */
@@ -123,7 +125,15 @@ export interface RtsPresentOptions {
   events?: PresentEvent[];
   /** The stream's state (map tracker, animation starts); without it the map is always sent and `t` is the tick. */
   state?: RtsPresentState;
+  /**
+   * The map's id (default `RTS_MAP_ID`, `rts`; Engine 0.16 F6): a game with several scenarios
+   * names each, so a 3D skin's `decor` and `places` (keyed by map id) dress each one its own way.
+   */
+  mapId?: string;
 }
+
+/** The id of the map `presentWorld` sends when its options name none. */
+export const RTS_MAP_ID = 'rts';
 
 /** A 32-bit FNV-1a hash of the terrain cells and size: the map's version. */
 function terrainVersion(view: RtsView): number {
@@ -143,14 +153,14 @@ function terrainVersion(view: RtsView): number {
   return h;
 }
 
-/** The terrain as a present map: tile ids are the terrain type indexes; tags `type:<i>:<name>`. */
-export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE): PresentMap | null {
+/** The terrain as a present map (id `id`): tile ids are the terrain type indexes; tags `type:<i>:<name>`. */
+export function presentMap(view: RtsView, tileSize = RTS_TILE_SIZE, id = RTS_MAP_ID): PresentMap | null {
   const t = view.terrain;
   if (t === null) return null;
   const tiles: number[][] = [];
   for (let y = 0; y < t.height; y++) tiles.push(t.cells.slice(y * t.width, (y + 1) * t.width));
   return {
-    id: 'rts',
+    id,
     version: terrainVersion(view),
     tileSize,
     cols: t.width,
@@ -259,6 +269,8 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (selected.has(b.id)) tags.push('selected');
     if (built && b.hp < b.maxHp) tags.push('damaged');
     if (b.frozen) tags.push('frozen');
+    // The health a bar shows, as `hp:<hp>/<max>` (Engine 0.16 F6: a 3D skin's label reads it).
+    if (built && (selected.has(b.id) || b.hp < b.maxHp)) tags.push(`hp:${b.hp}/${b.maxHp}`);
     const where = box(b.x, b.y, b.w, b.h);
     if (selected.has(b.id)) ring(`${id}/ring`, [s, 'building'], where);
     entities.push({
@@ -287,6 +299,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     if (selected.has(u.id)) tags.push('selected');
     if (u.hp < u.maxHp) tags.push('damaged');
     if (u.frozen) tags.push('frozen');
+    if (selected.has(u.id) || u.hp < u.maxHp) tags.push(`hp:${u.hp}/${u.maxHp}`);
     const where = box(u.x, u.y, 1, 1);
     if (selected.has(u.id)) ring(`${id}/ring`, [s, ...(u.role === 'hero' ? ['hero'] : [])], where);
     entities.push({
@@ -345,7 +358,7 @@ export function presentWorld(view: RtsView, opts: RtsPresentOptions): PresentFra
     });
   }
 
-  const map = presentMap(view, ts);
+  const map = presentMap(view, ts, opts.mapId);
   const frame: PresentFrame = {
     frame: tick,
     size: { width: opts.size.width, height: opts.size.height },

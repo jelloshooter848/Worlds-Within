@@ -149,7 +149,8 @@ docs:gen` after changing it). `index.ts` does not re-export it.
 `presentWorld` only reads the view; positions are world pixels (cell x, y is the box `x *
 tileSize, y * tileSize`). Without `state` the full map goes in every frame and `anim.t` is the tick.
 
-- **Map**: `id` `rts`, the terrain as a grid of type indexes, `tags` `type:<i>:<name>` (plus
+- **Map**: `id` `rts` (or the options' `mapId`, Engine 0.16 F6: a game with several scenarios
+  names each, so a 3D skin's `decor` and `places` dress each one; `RTS_MAP_ID`), the terrain as a grid of type indexes, `tags` `type:<i>:<name>` (plus
   `:blocked` when impassable), `version` a 32-bit hash of the cells and type names.
 - **Entities** (`layer` from `RTS_DEPTH`): `resource-<id>` (`resource:<item>`, `idle` or
   `empty`, tag `amount:<n>`, 5); `building-<id>` (`building:<kind>`, `site` while under
@@ -161,7 +162,10 @@ tileSize, y * tileSize`). Without `state` the full map goes in every frame and `
   before any move; `anim.state` `walk` (stepping with a task, or on a move), `attack` (has a target), `build`,
   `gather`, `idle`; tags side, `faction:<f>`, `hero`/`captain`, `carrying`, `selected`, `damaged`
   (below its full hp, Engine 0.11 T9: a skin's `byTag` look, the mini siege's burnt engines),
-  `frozen` (a member of a frozen event: the battle is held while a mission is open); 10);
+  `frozen` (a member of a frozen event: the battle is held while a mission is open), and
+  `hp:<hp>/<max>` whenever its health bar shows (hurt or selected; Engine 0.16 F6: the bar's
+  numbers for a 3D skin's label, `{ from: { tag: "hp:" }, as: "bar" }`; a finished building gets
+  it too); 10);
   `<id>/hp` (`health-bar`, `hp-0`..`hp-8` eighths, for the hurt and the selected; 20) and
   `building-<id>/progress` (`progress-bar`, `p-0`..`p-8`, for a site, frozen or not: the sim
   keeps building it; 20); `offer-<opportunity>` (`mission-offer`, `idle`, tags `mission:<id>`,

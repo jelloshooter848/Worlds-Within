@@ -99,6 +99,24 @@ describe('presentWorld', () => {
     expect(e('resource-4')).toMatchObject({ kind: 'resource:gold', tags: ['amount:30'] });
   });
 
+  it('tags what shows a health bar with its numbers, and names the map by mapId (Engine 0.16 F6)', () => {
+    const frame = presentWorld(view, { faction: 'red', size: SIZE, selection: [6] });
+    const e = (id: string) => frame.entities.find((x) => x.id === id)!;
+    // a hurt unit, and a selected one at full health: `hp:<hp>/<max>`, as their bars show
+    const hurt = e('unit-7').tags.find((t) => t.startsWith('hp:'));
+    expect(hurt).toMatch(/^hp:\d+\/\d+$/);
+    expect(e('unit-7/hp')).toBeDefined();
+    expect(e('unit-6').tags.filter((t) => t.startsWith('hp:'))).toEqual([
+      expect.stringMatching(/^hp:(\d+)\/\1$/),
+    ]);
+    // no bar, no tag
+    expect(e('unit-9').tags.some((t) => t.startsWith('hp:'))).toBe(false);
+    expect(frame.map).toMatchObject({ id: 'rts' });
+    expect(presentWorld(view, { faction: 'red', size: SIZE, mapId: 'village' }).map).toMatchObject({
+      id: 'village',
+    });
+  });
+
   it('presents selection rings, the box and the placing ghost as entities', () => {
     const frame = presentWorld(view, {
       faction: 'red',

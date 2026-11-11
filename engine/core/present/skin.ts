@@ -248,9 +248,11 @@ const MESH_FIELDS = [
   'castShadow',
   'receiveShadow',
   'light',
+  'materials',
+  'tint',
 ] as const;
-/** The model fields that mean nothing without a `model` (Engine 0.16 T11). */
-const MODEL_FIELDS = ['anchor', 'rotate', 'clip'] as const;
+/** The model fields that mean nothing without a `model` (Engine 0.16 T11; `materials` and `tint` F6). */
+const MODEL_FIELDS = ['anchor', 'rotate', 'clip', 'materials', 'tint'] as const;
 /** Skin-level fields only a 3D skin has. */
 const MESH_SKIN_FIELDS = ['meshes', 'camera3d', 'scene3d', 'labels'] as const;
 
@@ -286,6 +288,16 @@ const receiveShadow = z
   .describe(
     "3D: shadows fall on the mesh (or model) when the skin's `scene3d.sun` has a `shadow` (default false)",
   );
+
+/** A model's material colours by material name (Engine 0.16 F6): team colours on a shared model. */
+const modelMaterials = z
+  .record(z.string().min(1), color)
+  .describe(
+    "3D model: material name -> colour, replacing that material's colour on this entry's copies (team colours); a name the model lacks changes nothing",
+  );
+const modelTint = color.describe(
+  "3D model: a colour every material's colour is multiplied by (`#ffffff` changes nothing), after `materials`: a frozen or held look",
+);
 
 const meshPart = z.strictObject({
   shape: z.enum(MESH_PRIMITIVES).describe('the primitive'),
@@ -406,6 +418,16 @@ const tagEntry = z
       .describe("2D: the box colour when a frame is missing (default the kind's)"),
     mesh: meshRef.exactOptional(),
     color: color.exactOptional().describe("3D: the mesh's colour (default the kind's)"),
+    model: modelPath
+      .exactOptional()
+      .describe("3D: a glTF model shown instead of the kind's (a burnt engine, a scaffold); Engine 0.16 F6"),
+    scale: z
+      .number()
+      .positive()
+      .exactOptional()
+      .describe("3D model: px per model unit for this look (default the kind's); Engine 0.16 F6"),
+    materials: modelMaterials.exactOptional(),
+    tint: modelTint.exactOptional(),
   })
   .superRefine((v, ctx) => {
     if ((v.tag === undefined) === (v.prefix === undefined)) {
@@ -441,7 +463,7 @@ const TAG_MATCH_FIELDS = ['tag', 'prefix', 'min', 'max'] as const;
 
 /** The fields a tag entry may give, of each shape. */
 const TAG_SPRITE_FIELDS = ['sheet', 'palette', 'frames', 'fallbackColor'] as const;
-const TAG_MESH_FIELDS = ['mesh', 'color'] as const;
+const TAG_MESH_FIELDS = ['mesh', 'color', 'model', 'scale', 'materials', 'tint'] as const;
 
 /** One emitter name or a list of them: what an event's or a kind's `emit` takes (Engine 0.16 T3). */
 const emitRefs = z
@@ -499,6 +521,8 @@ const kindEntry = z.strictObject({
     ),
   castShadow,
   receiveShadow,
+  materials: modelMaterials.exactOptional(),
+  tint: modelTint.exactOptional(),
   light: kindLightSchema.exactOptional(),
   offset: offset.exactOptional(),
   spawnTween: tweensSchema
@@ -558,6 +582,8 @@ const tileEntry = z.strictObject({
     ),
   castShadow,
   receiveShadow,
+  materials: modelMaterials.exactOptional(),
+  tint: modelTint.exactOptional(),
   vary: tileVarySchema.exactOptional(),
 });
 
@@ -1039,6 +1065,7 @@ function checkEmitRefs(
     emitters?: Record<string, unknown>;
     events?: Record<string, { emit?: string | string[] }>;
     kinds: Record<string, { emit?: string | string[] }>;
+    decor?: Record<string, { legend: Record<string, { emit?: string | string[] }> }>;
   },
   ctx: z.RefinementCtx,
 ): void {
@@ -1059,6 +1086,8 @@ function checkEmitRefs(
   };
   for (const [type, entry] of Object.entries(skin.events ?? {})) check(['events', type], entry.emit);
   for (const [kind, entry] of Object.entries(skin.kinds)) check(['kinds', kind], entry.emit);
+  for (const [map, decor] of Object.entries(skin.decor ?? {}))
+    for (const [ch, entry] of Object.entries(decor.legend)) check(['decor', map, 'legend', ch], entry.emit);
 }
 
 function isPrimitive(name: string): name is MeshPrimitive {
@@ -2169,6 +2198,10 @@ export interface SkinModel {
   time: number;
   /** Px right and down from the box (the entry's `offset`), and toward the camera (`z`). */
   offset: { x: number; y: number; z: number };
+  /** Material name -> colour, replacing those materials' colours (Engine 0.16 F6; empty: none). */
+  materials: Record<string, string>;
+  /** A colour every material's colour is multiplied by, or null (Engine 0.16 F6). */
+  tint: string | null;
 }
 
 /**
@@ -2203,6 +2236,8 @@ function modelOf(
     clip,
     time,
     offset: { x: offset?.x ?? 0, y: offset?.y ?? 0, z: entry.z ?? 0 },
+    materials: 'materials' in entry && entry.materials !== undefined ? { ...entry.materials } : {},
+    tint: 'tint' in entry && entry.tint !== undefined ? entry.tint : null,
   };
 }
 
@@ -2249,6 +2284,24 @@ export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
           : Object.entries(clip).map(([state, name]) => ({ path: [...at, 'clip', state], clip: name }));
     out.push({ path: at, model: entry.model, clips });
   }
+  // A tag look's own model (Engine 0.16 F6), played with the kind's clips.
+  for (const [kind, entry] of Object.entries(skin.kinds)) {
+    (entry.byTag ?? []).forEach((look, i) => {
+      if (look.model === undefined) return;
+      const clip = entry.clip;
+      const at: FieldPath = ['kinds', kind, 'byTag', i];
+      const clips =
+        clip === undefined
+          ? []
+          : typeof clip === 'string'
+            ? [{ path: ['kinds', kind, 'clip'], clip }]
+            : Object.entries(clip).map(([state, name]) => ({
+                path: ['kinds', kind, 'clip', state],
+                clip: name,
+              }));
+      out.push({ path: at, model: look.model, clips });
+    });
+  }
   for (const [tile, entry] of Object.entries(skin.tiles ?? {})) {
     if (entry.model === undefined) continue;
     const at: FieldPath = ['tiles', tile];
@@ -2258,7 +2311,7 @@ export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
       clips: entry.clip === undefined ? [] : [{ path: [...at, 'clip'], clip: entry.clip }],
     });
   }
-  // Decor legends (Engine 0.16 F3): each model of each entry, at its own field.
+  // Decor legends (Engine 0.16 F3): each model of each entry, at its own field; then its stack (F6).
   for (const [map, decor] of Object.entries(skin.decor ?? {})) {
     for (const [ch, entry] of Object.entries(decor.legend)) {
       const at: FieldPath = ['decor', map, 'legend', ch];
@@ -2267,6 +2320,9 @@ export function skinModelUses(skin: DeepReadonly<SkinFile>): SkinModelUse[] {
         entry.model.forEach((model, i) =>
           out.push({ path: at, field: [...at, 'model', i], model, clips: [] }),
         );
+      (entry.stack ?? []).forEach((top, i) =>
+        out.push({ path: at, field: [...at, 'stack', i, 'model'], model: top.model, clips: [] }),
+      );
     }
   }
   return out;

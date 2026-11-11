@@ -18,10 +18,11 @@
     "skin": ["content/skins/*.json"],
     "sfx": ["content/sfx/*.json"],
     "song": ["content/songs/*.json"],
-    "font": ["content/fonts/*.txt"]
+    "font": ["content/fonts/*.txt"],
+    "decor": ["content/decor/*.txt"]
   },
   "start": { "seed": 11 },
-  "screen": { "width": 256, "height": 240 },
+  "screen": { "width": 320, "height": 180 },
   "menus": {
     "font": "siege-small",
     "titleFont": "siege-title",

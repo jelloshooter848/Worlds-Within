@@ -27,7 +27,14 @@ import {
   type Material,
 } from 'three';
 import type { PixelSheetLookup } from '@engine/core/assets/content-sheets';
-import { CameraFx, fxRng, SkinParticles, type CameraFxSettings, type ParticleView } from '@engine/core/fx';
+import {
+  CameraFx,
+  fxRng,
+  SkinParticles,
+  type CameraFxSettings,
+  type FixedEmitters,
+  type ParticleView,
+} from '@engine/core/fx';
 import type { ScreenSize } from '@engine/core/gfx/screen';
 import {
   cameraArea,
@@ -89,6 +96,7 @@ import { HudLayer } from './hud';
 import {
   ModelInstance,
   modelMeshParts,
+  recolorMaterials,
   type LoadedModel,
   type ModelLibrary,
   type ModelMeshPart,
@@ -236,6 +244,13 @@ interface ShownMap {
   models: { instance: ModelInstance; tile: string | null }[];
   /** Model paths that were still loading when it was built: it is rebuilt once they are there. */
   waiting: string[];
+  /** Decor cells with a light or emitters (Engine 0.16 F6): lit and smoking where they stand. */
+  fixtures: DecorFixture[];
+}
+
+/** A decor cell's light and emitters (a campfire): its id, its cell's world box, the light and its spec. */
+interface DecorFixture extends FixedEmitters {
+  light: { light: PointLight; spec: DeepReadonly<SkinKindLight> } | null;
 }
 
 /**
@@ -470,7 +485,7 @@ export class ThreeScene {
     this.cameraFx.update(this.fxClock);
     this.updateCamera(frame, size);
     this.updateOverlay(frame.frame);
-    this.skinParticles.update(frame.frame, frame.entities);
+    this.skinParticles.update(frame.frame, frame.entities, this.shownFixtures());
     this.updateParticles(size);
     this.updateLights(frame.frame);
     this.updateLabels(frame, size);
@@ -608,13 +623,26 @@ export class ThreeScene {
   }
 
   private updateLights(frame: number): void {
-    for (const [id, node] of this.nodes) {
-      if (!node.light) continue;
-      const { light, spec } = node.light;
-      const flicker = spec.flicker ?? 0;
-      const amount = flicker > 0 ? fxRng(this.opts.seed ?? 0, frame, `light:${id}`).float() : 0;
-      light.intensity = spec.intensity * (1 - flicker * amount);
-    }
+    const flicker = (
+      id: string,
+      { light, spec }: { light: PointLight; spec: DeepReadonly<SkinKindLight> },
+    ) => {
+      const share = spec.flicker ?? 0;
+      const amount = share > 0 ? fxRng(this.opts.seed ?? 0, frame, `light:${id}`).float() : 0;
+      light.intensity = spec.intensity * (1 - share * amount);
+    };
+    for (const [id, node] of this.nodes) if (node.light) flicker(id, node.light);
+    for (const f of this.shownFixtures()) if (f.light) flicker(f.id, f.light);
+  }
+
+  /** The shown map's decor fixtures (none while the map is hidden). */
+  private shownFixtures(): readonly DecorFixture[] {
+    return this.shown && this.mapVisible ? this.shown.fixtures : [];
+  }
+
+  /** The point lights of the shown map's decor (Engine 0.16 F6), by fixture id, for tests. */
+  decorLights(): { id: string; light: PointLight }[] {
+    return this.shownFixtures().flatMap((f) => (f.light ? [{ id: f.id, light: f.light.light }] : []));
   }
 
   /**
@@ -879,6 +907,7 @@ export class ThreeScene {
     const group = new Group();
     const models: ShownMap['models'] = [];
     const waiting = new Set<string>();
+    const fixtures: DecorFixture[] = [];
     group.name = `map:${map.id}@${map.version}`;
     const ts = map.tileSize;
     const tiles = this.skin.tiles ?? {};
@@ -945,6 +974,7 @@ export class ThreeScene {
               userData: { tile: key, layer: grid.layer, model: spec.model },
               castShadow: spec.castShadow,
               receiveShadow: entry.receiveShadow === true,
+              colors: spec,
             });
             continue;
           }
@@ -994,8 +1024,8 @@ export class ThreeScene {
         });
       }
     }
-    this.buildDecor(map, group, models, waiting, cellPoint);
-    return { map, group, models, waiting: [...waiting] };
+    this.buildDecor(map, group, models, waiting, cellPoint, fixtures);
+    return { map, group, models, waiting: [...waiting], fixtures };
   }
 
   /**
@@ -1004,7 +1034,9 @@ export class ThreeScene {
    * from above) and scaled; one `InstancedMesh` per legend character, model and mesh
    * (`decor:<char>:<model>:<i>`), or a model copy per cell for `instanced: false` or a skinned
    * model (`decor:<char>`). A model still loading shows nothing until it is there (then the map is
-   * rebuilt); a grid the `decor` option lacks shows nothing.
+   * rebuilt); a grid the `decor` option lacks shows nothing. A legend entry's `light` and `emit`
+   * (Engine 0.16 F6) make a fixture per cell: a `PointLight` (`light:decor:<map>:<col>,<row>`) at
+   * the cell's model point plus the light's offset, and its emitters on the cell's box.
    */
   private buildDecor(
     map: DeepReadonly<PresentMap>,
@@ -1012,6 +1044,7 @@ export class ThreeScene {
     models: ShownMap['models'],
     waiting: Set<string>,
     cellPoint: (col: number, row: number, z: number) => Vector3,
+    fixtures: DecorFixture[],
   ): void {
     const entry = this.skin.decor?.[map.id];
     const rows = entry === undefined ? undefined : this.opts.decor?.[entry.grid];
@@ -1032,7 +1065,33 @@ export class ThreeScene {
         receive: boolean;
       }
     >();
+    const ts = map.tileSize;
     for (const p of placed) {
+      if (p.light !== null || p.emit.length > 0) {
+        const id = `decor:${map.id}:${p.col},${p.row}`;
+        const box = { x: p.col * ts + p.offset.x, y: p.row * ts + p.offset.y, w: ts, h: ts };
+        let light: DecorFixture['light'] = null;
+        if (p.light !== null) {
+          const spec = p.light;
+          const shown = new PointLight(
+            spec.color,
+            spec.intensity,
+            spec.distance,
+            spec.decay ?? POINT_LIGHT_DECAY,
+          );
+          shown.name = `light:${id}`;
+          const off = spec.offset ?? { x: 0, y: 0, z: 0 };
+          const base = cellPoint(p.col, p.row, 0);
+          shown.position.copy(
+            ground
+              ? base.add(new Vector3(p.offset.x + off.x, p.offset.z - off.y, p.offset.y + off.z))
+              : base.add(new Vector3(p.offset.x + off.x, -p.offset.y - off.y, p.offset.z + off.z)),
+          );
+          group.add(shown);
+          light = { light: shown, spec };
+        }
+        fixtures.push({ id, box, emit: p.emit, light });
+      }
       const loaded = library.get(p.model);
       if (loaded === null) {
         if (library.status(p.model) === 'loading') waiting.add(p.model);
@@ -1053,6 +1112,8 @@ export class ThreeScene {
         clip: null,
         time: 0,
         offset: { x: 0, y: 0, z: 0 },
+        materials: { ...p.materials },
+        tint: p.tint,
       };
       if (!p.instanced) {
         const instance = new ModelInstance(loaded, { ...spec, scale: p.scale }, { w: 0, h: 0 });
@@ -1082,6 +1143,7 @@ export class ThreeScene {
           userData,
           castShadow: b.cast,
           receiveShadow: b.receive,
+          colors: b.spec,
         });
         continue;
       }
@@ -1538,14 +1600,38 @@ function addInstanced(
   parts: readonly ModelMeshPart[],
   cells: readonly Matrix4[],
   tints: readonly number[] | null,
-  opts: { name: string; userData: Record<string, unknown>; castShadow: boolean; receiveShadow: boolean },
+  opts: {
+    name: string;
+    userData: Record<string, unknown>;
+    castShadow: boolean;
+    receiveShadow: boolean;
+    /** Material colours and a tint (Engine 0.16 F6): the batch then draws with its own recoloured copies. */
+    colors?: DeepReadonly<Pick<SkinModel, 'materials' | 'tint'>>;
+  },
 ): void {
   const m = new Matrix4();
   const tint = new Color();
+  const colors = opts.colors;
+  const recolor = colors !== undefined && (colors.tint !== null || Object.keys(colors.materials).length > 0);
+  const copies = new Map<Material, Material>();
+  const own = (mat: Material) => {
+    let c = copies.get(mat);
+    if (!c) {
+      copies.set(mat, (c = mat.clone()));
+      recolorMaterials([c], colors!);
+    }
+    return c;
+  };
   parts.forEach((part, p) => {
-    const mesh = new InstancedMesh(part.geometry, part.material, cells.length);
+    const material = !recolor
+      ? part.material
+      : Array.isArray(part.material)
+        ? part.material.map(own)
+        : own(part.material);
+    const mesh = new InstancedMesh(part.geometry, material, cells.length);
     mesh.name = `${opts.name}:${p}`;
-    mesh.userData = { ...opts.userData, part: p, shared: true };
+    // The geometry is the library's; the materials too, unless recoloured (then the batch's own).
+    mesh.userData = { ...opts.userData, part: p, shared: true, ...(recolor && { ownMaterials: true }) };
     mesh.castShadow = opts.castShadow;
     mesh.receiveShadow = opts.receiveShadow;
     cells.forEach((cell, i) => {
@@ -1573,7 +1659,8 @@ function disposeMap(shown: ShownMap): void {
   for (const child of shown.group.children) {
     if (child instanceof InstancedMesh) {
       // A model's instanced meshes share the library's geometry and materials (Engine 0.16 F3).
-      if (child.userData['shared'] !== true) materials.add(child.material as Material);
+      if (child.userData['shared'] !== true || child.userData['ownMaterials'] === true)
+        for (const m of Array.isArray(child.material) ? child.material : [child.material]) materials.add(m);
       child.dispose();
     }
   }

@@ -40,9 +40,10 @@ the gap report with a named release.
 
 - `game.json`: kit `rts`, `uses` `topdown` (the mission rooms) and `towerdefense` (the walls'
   map), `kitOptions: { "topdown": { "rooms": "separate" } }` (Engine 0.15 T11, gap G17: each room
-  file is a mission room of its own, checked alone, not one dungeon), seed 11, 256x240, `headless.ts`, `view.ts`; content kinds `rts-map`, `rts-types`,
+  file is a mission room of its own, checked alone, not one dungeon), seed 11, 320x180 (16:9 since
+  Engine 0.16 F6; 256x240 before), `headless.ts`, `view.ts`; content kinds `rts-map`, `rts-types`,
   `rts-enemy`, `mission`, `campaign` (Engine 0.13), `room`, `td-map`, `td-towers`, `td-waves`, `palette`, `sprite`, `skin`,
-  `sfx`, `song`. `index.html` is its page: the launcher lists it and
+  `sfx`, `song`, `decor` (Engine 0.16 F6). `index.html` is its page: the launcher lists it and
   `pnpm build` emits `games/samples/mini-siege/index.html`.
 - `content/maps/village.world.json` (`rts-map`): 48x32 cells of 16 px: grass (`.`), a road (`,`)
   down rows 15-16 from the village to the raiders' camp, a few rocks (`#`). Terrain types in
@@ -284,7 +285,10 @@ kit, missions? }`) plus `sides` (the kit's `sidesOf`); `named()` (every scenario
     each frame to its skin).
   - `view.ts`: `createView` for `pnpm cli screenshot` and the backend parity test: `render`,
     `frame()`, `order` and `mission` (a run file's mission steps), the camera at the map's centre;
-    the host's events of the steps since the last draw go to the frame (Engine 0.15 T6).
+    the host's events of the steps since the last draw go to the frame (Engine 0.15 T6). With
+    `--backend three` the screenshot page shows `frame()` through the `three` skins (the battle's
+    and the rounds' `three-<id>.json`), every model they name preloaded first (`ModelLibrary.preload`)
+    and the decor grids passed in (Engine 0.16 F6).
   - no `files.ts`: `main.ts` imports its data files from `virtual:game-files` (the build's plugin, `build/game-files.ts`; no `files.ts` since Engine 0.14 T2).
   - `play.ts`: `SiegePlay`, the page's glue without DOM or clock. Since Engine 0.15 T10 (gaps
     M26, M34, M36, lesson D14; docs/BUILD-LOG.md, Engine 0.15, decision 11) the page's flow is
@@ -642,7 +646,7 @@ the target): pressing it freezes the siege (the held units turn blue, the countd
 ## Screenshots
 
 `pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run.json --tick 80 --json` (the
-battle held, the siege in blue), `played.run.json --tick 200` (the mission room mid-round),
+battle held, the siege in blue; add `--backend three --allow-software-gl` for the 3D map, above), `played.run.json --tick 200` (the mission room mid-round),
 `delegated.run.json --tick 200` and `played.run.json --tick 600` (the battle after each commit:
 the burnt catapult, or both engines gone). The page plays the run's mission steps through the
 view's `mission` (Engine 0.11 T9), so `matchesHeadless` is true and the PNG is the same every run.
@@ -653,6 +657,78 @@ missing). Since Engine 0.13 T8 `screenshot` starts a run at its `from` as `run` 
 `dawn-captured.run.json --tick 10` (the dawn with the captain held: the captive marker under the
 gold, the choices' offer title) and `dawn-held.run.json --tick 30` (the raiders' band marching; the
 view's camera is the map's centre, so the defenders by the hall are off the picture).
+
+## The siege map in 3D low-poly (Engine 0.16 F6)
+
+The battle drawn by the 3D backend in a low-poly look after the mockup
+(`docs/reports/mockups/mini-siege-3d.png`): `content/skins/three.json`, presentation only (no
+hash, save code or path moved; the backend parity test plays every run through it).
+
+- **The picture** is 320x180 (16:9; whole-number scales to 1920x1080 at six times, an owner
+  item, decision in the F6 commit). The Canvas2D skins were re-laid for it (the battle's bottom HUD
+  row at y 168, the walls' round's at 160) so the 2D page and screenshots still work; the tests'
+  256x240 numbers moved with it (the walls' round's taps, the shots' sizes). The rooms and the
+  walls' map fit the shorter picture as they were. The results screen shows the changes in two
+  columns on a picture this wide (`engine/core/shell`'s `resultsScreen`), the rest counted.
+- **Camera**: `camera3d.view` `ground` (Engine 0.16 F2), pitch 60, yaw -8, fov 35, the skin's
+  `camera.zoom` 0.42 (the whole village, river and camp, as the mockup frames them); `scene3d`
+  `renderScale` 6 (F3), so a screenshot is 1920x1080. The view's camera is still the map's centre.
+- **Models** (`assets/`, credited in `assets/CREDITS.md`): workers, soldiers, Captain Hale and
+  raiders are the Quaternius characters (`scale` 0.07), coloured with the kind's `materials`
+  (the engine's model recolouring, F6: blue cloth for the village, red for the raiders, skin
+  tones; the Quaternius `Skin` material is near black as converted) and playing `Idle`, `Walk`,
+  `Punch` (attack) and `PickUp` (build, gather); the sergeant is a soldier with the `hero` tag's
+  colours. The ram and catapult are the castle kit's, swapped for their `-demolished` models by
+  the `damaged` tag look (`model`, F6). The hall is the village pack's inn with a blue roof; the
+  watchtower the castle kit's, its site a low base, an open frame, then a frame with stairs as
+  `progress:` passes 33 and 66; walls and wall towers the castle kit's; gold nodes a Nature Kit
+  rock in gold, grey when empty. Every unit and building's `frozen` tag look is a blue `tint`
+  (the event held by a mission). The offer marker is the glowing gem of `assets/mini-siege-marks/`
+  (made by `tools/mark-models.ts`) over its target, with a point light and sparkles; the selection
+  ring a ring of small green blocks; the health and progress bars draw nothing (a 0.01 px box):
+  they are labels instead.
+- **Labels**: a health bar over each unit and building whose bar the RTS kit shows (the kit's
+  `hp:<hp>/<max>` tag, F6), red for raiders; `Battering ram` and `Catapult` under the engines;
+  `Watchtower <n>%` and a progress bar over the site (`progress:`); places THE HALL and
+  RAIDERS' CAMP on every map, in `siege-small`.
+- **Terrain and decor**: grass, road and rock cells are Nature Kit ground tiles (recoloured by the
+  tile's `materials`, a little `vary` tint), rocks stand on rock cells as decor. The decor grids
+  `content/decor/village.txt`, `dawn.txt` and `ridge.txt` (one per scenario: the RTS kit's
+  `mapId` names the map, F6) dress the map: the castle ring round the hall area (walls, round
+  towers with blue hexagon roofs stacked by the legend's `stack`, F6), open to the east over the
+  road and the battle rows 12-19 and at the south gold node, so no unit is ever drawn inside a
+  wall; houses, smithy, market, well and carts inside; the river (columns 27-29, the bridge on
+  the road; the raiders wade it elsewhere, as their paths always did); fields, the sheep pen and
+  the windmill in the south; woods to the north and south; the raiders' camp east of the river
+  (tents, red banners, log piles and campfires, each with a flickering point light, smoke and
+  flame: the legend's `light` and `emit`, F6). The dawn's camp is half struck; the ridge's sits
+  among the ridge's rocks. Every legend entry is presentation only and drawn from the
+  presentation RNG; `validate` checks the grids' sizes, characters and models.
+- **Light**: a warm sun with soft shadows (2048 map, radius 4), an ambient and a hemisphere light,
+  linear distance fog, ACES tone mapping, and a `timeOfDay` (F4) moving them with the world clock:
+  the siege from mid-afternoon to sunset, the dawn's pink morning, the ridge's late morning.
+- **The hosted rounds** have first 3D skins, `three-mission-room.json` (the raiders' camp at
+  night: the captain and the raiders as models, wooden walls) and `three-td-defence.json` (the
+  walls' round: towers, the ballista, raiders, the gate), so every frame of every run has a mesh;
+  F8 gives them parts C and E's presentation.
+- **Iterated against the mockup**: screenshots at this angle were taken and looked at beside the
+  mockup about a dozen times (`pnpm cli screenshot ... --backend three --allow-software-gl`):
+  the Nature Kit's teal colours recoloured, the river's banks turned, the ford tiles dropped,
+  rocks moved off bare cells, the characters' black skin and armour recoloured, the tower roofs
+  stacked, the engines' names moved under them so the gem shows, the camera pulled back to frame
+  the castle and the camp, the dawn's light warmed and filled. Known gaps for later part F
+  tasks: the HUD is still the 2D one in pixel fonts (F7), the ram's cover is the castle kit's
+  blue, the river is straight, and the map's edge shows in the far corners.
+
+`three.test.ts` checks the picture (320x180 at render scale 6, ground view, shadows, fog, ACES,
+a time of day), each scenario's own map id, decor grid (the map's size) and places, the scenery
+kept off the roads, every entity's starting cell and the battle rows (columns 13-44, rows 12-19),
+and a model for every kind the kit presents (the burnt ram, the site's three looks, the labels).
+
+Screenshots: `pnpm -s cli screenshot games/samples/mini-siege/runs/delegated.run.json --backend
+three --allow-software-gl --tick 80` (the village held, late afternoon), `dawn-held.run.json
+--tick 30`, `ridge-raid.run.json --tick 40`; `tests/browser/mini-siege-shots.test.ts` shoots all
+three twice (byte-identical, 1920x1080).
 
 ## Asset packs (Engine 0.16 part F, F1)
 
@@ -677,15 +753,17 @@ kept and what was changed; checked by `validate`), 221 GLB models, about 8.7 MB 
 - `quaternius-farm-animals` (Quaternius, Farm Animals, 1 GLB, 0.2 MB): `sheep` (`Idle`, `Jump`),
   converted from FBX.
 
-The named packs have no people or sheep, hence the last two (owner items). No skin uses the
-models yet (F6 does): `assets.test.ts` checks the credits, that every GLB is self-contained with no
-texture, and that `ModelLibrary` (`engine/backends/three`) parses each one in Node, with the
-characters' and the sheep's clips listed. Keep only files the game uses; a new pack gets a folder,
+The named packs have no people or sheep, hence the last two (owner items). Since F6 a sixth
+folder, `mini-siege-marks`, holds the game's own models (the offer gem, the raiders' banner), made
+by `tools/mark-models.ts` as embedded `.gltf` text. The `three` skins use them (above):
+`assets.test.ts` checks the credits, that every model is self-contained with no texture, that
+`ModelLibrary` (`engine/backends/three`) parses each one in Node, with the characters' and the
+sheep's clips listed, and that the marks are what the script writes. Keep only files the game uses; a new pack gets a folder,
 a `CREDITS.md` section and a line here.
 
 ## How to test
 
-`pnpm test games/samples/mini-siege` (`assets.test.ts` the packs), `pnpm -s cli validate games/samples/mini-siege --json`,
+`pnpm test games/samples/mini-siege` (`assets.test.ts` the packs, `three.test.ts` the 3D map), `pnpm -s cli validate games/samples/mini-siege --json`,
 `pnpm -s cli run games/samples/mini-siege/runs/played.run.json --json` (any run file; the
 `dawn-*` runs for the follow-up; `pnpm -s cli code games/samples/mini-siege/runs/quit.run.json`
 for the siege's save code;
