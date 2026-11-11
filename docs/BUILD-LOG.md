@@ -136,8 +136,8 @@ enough; silence so far has meant the build kept its default):
 - Engine 0.16 part A: **323** (PixiJS follow-up T13b), **324-338** (choices made), **339** (the
   owner's screenshot review), **340-363** (smaller build choices added by the finalize pass),
   **419-422** (the PixiJS backend's close-out, T13b-9).
-- Engine 0.16 part F: **F-1 to F-22** in its section (F-21 the owner's playtest and screenshot
-  review), to be numbered into FEEDBACK-LOG.md at merge.
+- Engine 0.16 part F: **F-1 to F-22** and **T2-18 to T2-42** in its section (F-21 the owner's
+  playtest and screenshot review), to be numbered into FEEDBACK-LOG.md at merge.
 
 ### Items not met, and where they went
 
@@ -172,7 +172,8 @@ outcome and the results) is drawn in the picture, the world clock moves the ligh
 day, and the hosted rounds are drawn in 2D over the 3D picture. **Presentation only: no golden
 hash, save code or run file moved** in part F (`git diff 0311d86^ 04f496a -- '*.hashes.json'
 '*.run.json'` is empty). **Open for the owner:** the playtest and the screenshot review below
-(the "owner review" item of the decisions list), and the build decisions F-1 to F-20.
+(the "owner review" item of the decisions list), the build decisions F-1 to F-22 and T2-18 to
+T2-42.
 
 ### What was built
 
@@ -230,9 +231,9 @@ hash, save code or run file moved** in part F (`git diff 0311d86^ 04f496a -- '*.
 
 ### Choices made
 
-Each is a build decision for the owner (F-1 to F-20 below). The main ones: the picture is
-320x180 so it scales whole to 1920x1080 (F-1); the hosted rounds stay 2D on a layer over the 3D
-world rather than getting 3D skins (F-8); since parts C and E are not on this branch, the rounds
+Each is a build decision for the owner (F-1 to F-22 below, and the smaller ones T2-18 to
+T2-42). The main ones: the picture is 320x180 so it scales whole to 1920x1080 (F-1); the
+hosted rounds stay 2D on a layer over the 3D world rather than getting 3D skins (F-8); since parts C and E are not on this branch, the rounds
 were brought to their bar with the same CC0 packs (F-9); the people and sheep come from two
 Quaternius packs the roadmap does not name (F-2); the 3D page has no text box, so a save code
 goes in the link (F-14).
@@ -412,6 +413,87 @@ numbers at merge (this track does not edit it, as for T2-17).
   mockup); the mockup comparison (`10-siege-mockup-angle.png`) was shot at pitch 42 through a
   scratch override. Keep pitch 60 for play, or lower the page's camera to the mockup's angle
   (`three.json`'s `camera3d.pitch`, with the zoom brought closer)?
+
+### Build decisions to review (track 2)
+
+Smaller choices the F1-F10 builders reported, for the owner to check; labelled `T2-n` after
+T2-17 and, like F-1 to F-22, numbered into FEEDBACK-LOG.md by the orchestrator at merge. Those
+already covered by an `F-n` item above are not repeated.
+
+- **T2-18.** Google Drive refused the pack downloads (quota) and poly.pizza is behind Cloudflare,
+  so every pack came from OpenGameArt mirrors; no pack was left out.
+- **T2-19.** The OBJ, FBX and colour-map conversions to GLB were done by scratch scripts that are
+  not in the repo (a prebuilt FBX2glTF was blocked); `assets/CREDITS.md` describes each change.
+  Re-converting a pack needs those scripts rewritten.
+- **T2-20.** Characters: `knight-male` soldiers, `knight-golden-male` Captain Hale, `viking-male`
+  raiders and guards, `worker-male` workers; `Soldier_Male` dropped (looks modern). Quaternius
+  files renamed lower-case with hyphens; Kenney names kept. The windmill's sails are part of its
+  one mesh and do not turn.
+- **T2-21.** Ground view conventions (engine): zoom is camera distance (straight down shows
+  height/zoom world px, as in 2D); yaw 0 looks north; pitch is degrees below the horizon (10 to
+  90); a mesh part's `at.z` is the height of its bottom and `d` its height.
+- **T2-22.** In ground view the map clamp is done by `RtsCamera` (the picture's four ground
+  corners kept inside the map), not by the scene's follower; a game that follows an entity in
+  ground view without `RtsCamera` is not clamped.
+- **T2-23.** Clicks and box select pick the ground cell under the pointer, not the upright unit
+  body drawn above it.
+- **T2-24.** 2D particles have no height, so in ground view they sit on the ground 8 px up (a
+  burst spreads over the ground, a rising flame drifts north).
+- **T2-25.** Decor is a new engine content kind `decor` (text rows) with its legend in the skin.
+  The RTS kit gives every map the id `rts`, so a decor entry names its map with `map`.
+- **T2-26.** Per-cell tile variation is opt-in (a tile's `vary`), so no existing picture moved;
+  its stream is `fxRng(seed, 0, ...)` (frame fixed at 0).
+- **T2-27.** Render scale is a whole number 1-8 so pixel fonts stay sharp; the CLI's new
+  `--render-scale` is separate from `--scale` (a nearest-neighbour upscale on top). The page's
+  render scale is the skin's 6, capped to the window; `?scale=<n>` overrides it.
+- **T2-28.** A clock is allowed on scenario entries only; the game puts it on frames through a
+  new `hostedSource` `status(world)` option, so no RTS kit rule changed. The day's parts start at
+  5, 7, 12, 15, 18 and 21 o'clock.
+- **T2-29.** Time of day: the sky is one colour per key, not a gradient; a clock jump of more
+  than half an hour eases over 45 display frames (through the night for an overnight gap). The
+  optional Canvas2D/PixiJS evening tint was not done: the 2D page does not darken.
+- **T2-30.** On the mission card, choosing Play or Delegate on an offer (or picking one of several
+  offers) launches it at once; there is no cancel. A small "mission result" card follows each
+  mission while the world keeps running.
+- **T2-31.** The results' change lists (`worldChanges`) count a named death both as a loss and a
+  fate change and leave out scenario, carry and load changes; the card's hero and foes read only
+  the rooms' selector params (fortify's card shows none).
+- **T2-32.** The scenery (decor) cannot change paths, so it is kept off the roads, every starting
+  cell and the battle rows; the castle ring is open to the east. `three.test.ts` checks this.
+- **T2-33.** Engine features added that the tasks did not list: model recolour and tint, tag
+  looks that swap the model, decor stack, light and emit, `hitFlash`, HUD items shown by a
+  `when` test, and a presentation-only RTS status `key.<key>.hp|maxHp|progress|fate|name|alive`.
+  All optional.
+- **T2-34.** The gem and the red banner are this build's own CC0 models
+  (`assets/mini-siege-marks`, text glTF from a script): the packs have no gem and their banners
+  are blue. `*.gltf` in games' assets is in `.prettierignore`, so the text stays as written.
+- **T2-35.** The results screen's layout changed for every 16:9 picture in the engine (first
+  section full width, the code beside its label, two columns); at 320x180 the overflow still
+  reads "and N more".
+- **T2-36.** No gold income is shown (the RTS kit has none; gold changes only through missions);
+  no new world-event sounds (no offer event to hang one on); no line from the offer marker to the
+  card (it needs 3D-to-UI projection).
+- **T2-37.** Music: a `siege-danger` layer while a mission is open or raiders are within 3 cells
+  of a building, and a `siege-round` layer under the rounds (calm 0.35, danger 0.7, round 1). The
+  title plays the calm layer.
+- **T2-38.** The title drifts by zooming in 1.9 times and circling, because at the start zoom the
+  whole map shows and the clamp leaves no room to move. The menus were restyled to the HUD's
+  colours and the title's 2D pixel art removed, which also changes the 2D page.
+- **T2-39.** Kenney Tower Defense ships only 64/128 px tiles; they were scaled down to 16, 24 and
+  32 px with a box filter. The rooms' siege engines and the walls' gate and camp keep the game's
+  own text sprites; the old NES-style round art is kept but unused until C and E merge. Both
+  rooms use the `knight_m` hero, so Sergeant Mara Venn looks like the sabotage hero.
+- **T2-40.** The iris into a round is started by the game's `main.ts` when `launch.playing()`
+  changes (the shell's push/pop transition does not fire under the 3D page's screens); an
+  engine-level fix could come later.
+- **T2-41.** Changes outside part F's modules: `vite.config.ts` sets a global `testTimeout` of
+  20 s (CLI-heavy mini-siege tests sat just over 5 s under the full suite);
+  `engine/tools/main.test.ts` deletes the fx lab's `ground.json` from its copy;
+  `tests/build/game-files.test.ts` leaves `assets/` out of its glob comparison; `clock.ts` and
+  `round-layer.ts` joined `PURE_CORE` in `config/layers.js`.
+- **T2-42.** F-1 to F-18 were written from F1-F9's commit messages and module docs, not from
+  those tasks' own decision lists; the orchestrator should check them against what F1-F9
+  reported.
 
 ## Engine 0.16 part A2: the PixiJS v8 2D backend (T13b, item 323)
 
