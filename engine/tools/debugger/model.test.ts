@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -16,6 +16,9 @@ import { playWorldData } from '../world-data';
 // record with its clock and a replay's failed check.
 
 const ROOT = fileURLToPath(new URL('../../../', import.meta.url));
+// The mini siege's tests load and run its whole game (3D skins and models included): a few seconds
+// each, so they get more than vitest's 5 s default on a busy machine, as its own tests do.
+vi.setConfig({ testTimeout: 60_000 });
 const WALK = 'games/samples/dungeon/runs/walk-east.run.json';
 const SIEGE = 'games/samples/mini-siege/runs/delegated.run.json';
 const PLAYED = 'games/samples/mini-siege/runs/played.run.json';

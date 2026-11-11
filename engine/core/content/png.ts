@@ -44,6 +44,9 @@ export function assetDataUrl(path: string, base64: string): string {
 }
 
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+/** Each base64 character's 6-bit value, by char code (a table, so a large model decodes quickly). */
+const B64_VALUES = new Uint8Array(128);
+for (let i = 0; i < B64.length; i++) B64_VALUES[B64.charCodeAt(i)] = i;
 
 /** The bytes of a base64 `data:` URL, or null when it is not one. */
 export function dataUrlBytes(url: string): Uint8Array | null {
@@ -54,8 +57,8 @@ export function dataUrlBytes(url: string): Uint8Array | null {
   let bits = 0;
   let value = 0;
   let n = 0;
-  for (const ch of text) {
-    value = (value << 6) | B64.indexOf(ch);
+  for (let i = 0; i < text.length; i++) {
+    value = ((value << 6) | B64_VALUES[text.charCodeAt(i)]!) & 0xffffff;
     bits += 6;
     if (bits >= 8) {
       bits -= 8;

@@ -158,6 +158,8 @@ export function checkSkinModels(
   assets: Readonly<Record<string, string>>,
 ): ContentError[] {
   const errors: ContentError[] = [];
+  // Many kinds and tiles share a model: decode and read each file once.
+  const reads = new Map<string, ReturnType<typeof readModelAsset>>();
   for (const use of skinModelUses(skin)) {
     const data = assets[use.model];
     const at = use.field ?? [...use.path, 'model'];
@@ -165,7 +167,8 @@ export function checkSkinModels(
       errors.push(contentError(file, at, 'missing_file', `no file "${use.model}" in the game folder`));
       continue;
     }
-    const read = readModelAsset(use.model, data);
+    let read = reads.get(use.model);
+    if (read === undefined) reads.set(use.model, (read = readModelAsset(use.model, data)));
     if (!read.ok) {
       errors.push(contentError(file, at, 'bad_model', `"${use.model}": ${read.message}`));
       continue;

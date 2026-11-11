@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
@@ -11,6 +11,9 @@ import { main } from './main';
 // siege's fresh dawn, the errors, and replays that keep `start`.
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+// The mini siege's tests load and run its whole game (3D skins and models included): a few seconds
+// each, so they get more than vitest's 5 s default on a busy machine, as its own tests do.
+vi.setConfig({ testTimeout: 60_000 });
 const LEVEL_3 = 'games/platformer-classic/runs/level-3.run.json';
 const LEVEL_3_START = 'games/platformer-classic/runs/level-3-start.run.json';
 const DAWN_FRESH = 'games/samples/mini-siege/runs/dawn-fresh.run.json';
