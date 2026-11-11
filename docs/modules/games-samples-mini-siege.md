@@ -209,6 +209,12 @@ sides }` (`named()` for the page, not hashed, since Engine 0.15 T9); Engine 0.13
   `scene3d.skirt` lays grass past the map's edges (the view showed the background at its
   corners); the night keys are lighter. The run tests present the mini siege as its 3D page does
   (`tests/runs/three-page.ts`). Presentation only: no hash moved.
+- Engine 0.16 F10, **part F written up**: nine full-HD screenshots of the 3D page in
+  `docs/reports/screenshots/0.16-F/` (the siege at the mockup's angle beside the mockup, the title,
+  the briefing, the walls' card, both rounds, the evening, the results, the dawn), listed in
+  `docs/BUILD-LOG.md`, "Engine 0.16 part F", with the Done when, the outstanding issues and the
+  build decisions F-1 to F-21 (F-21: the owner's playtest and screenshot review, open). No hash
+  moved in part F.
 
 ## Imports allowed
 

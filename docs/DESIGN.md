@@ -32,8 +32,9 @@ The engine is designed to be used mainly through an LLM (like Claude Code). That
   glTF/GLB, OGG/WAV) in a game's own `assets/` folder, with a `CREDITS.md` giving each pack's source
   URL, author and licence. CC0 is required (CC-BY only with an owner decision; never non-commercial,
   no-redistribution or ripped assets). Code, levels, missions, skins and data stay text, and our own
-  MML music stays the main music. Review pictures for the owner (`docs/reports/mockups/` and the
-  screenshot review sheets `docs/reports/*-sheet.png`) are the only other binary files.
+  MML music stays the main music. Review pictures for the owner (`docs/reports/mockups/`, the
+  screenshot review sheets `docs/reports/*-sheet.png` and a part's review screenshots
+  `docs/reports/screenshots/<part>/*.png`) are the only other binary files.
 - **Every run is repeatable.** The same seed and the same inputs always give the same result, down to
   the tick. Nothing reads the clock or unseeded randomness.
 - **The LLM can check its own work.** A command-line tool can validate content, run a game headless,

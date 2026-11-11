@@ -871,6 +871,17 @@ shoots the rooms and the walls in 2D and in 3D (`--backend three`), each byte-re
   the map (`three.json`'s `scene3d.skirt`, grass matched to the tiles as drawn) and the night too
   dark to read (the 3.5 and 21 hour keys' lights raised). Presentation only: no hash moved.
 
+## Part F's review screenshots (Engine 0.16 F10)
+
+`docs/reports/screenshots/0.16-F/` holds nine 1920x1080 shots of the 3D page for the owner's
+review (the siege at the mockup's angle, the title, the briefing, the walls' card, the fortify
+round, the sabotage room, the siege at 17:50, the results, the dawn), each listed in
+`docs/BUILD-LOG.md`, "Engine 0.16 part F", where the first sits beside the mockup. They were taken
+on the page's step hook and `wwSiege` hooks (seed 11) over `tests/browser/serve.ts`'s build, so a
+change to the skins or the page makes them stale: retake them when the look changes, and only
+PNGs go in that folder (`tests/architecture/no-content.test.ts`). The page test's
+`WW_SHOTS_DIR=<dir>` shoots the same screens at 640x520. No hash moved in part F.
+
 ## Asset packs (Engine 0.16 part F, F1)
 
 `assets/` is the one place binary files may live (docs/DESIGN.md, item 322): five CC0 low-poly

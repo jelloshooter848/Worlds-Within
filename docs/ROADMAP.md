@@ -1011,11 +1011,14 @@ is [the chosen mockup](reports/mockups/mini-siege-3d.png) (the 2D pixel mockup,
 
 **Done when:**
 
-- [ ] The campaign plays from the title through the siege and the dawn follow-up in 3D, and every
-      mini-siege run file passes, or its hashes were re-recorded for a listed rule change.
-- [ ] A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
-      log.
-- [ ] Owner playtest and screenshot review are accepted.
+- [x] The campaign plays from the title through the siege and the dawn follow-up in 3D, and every
+      mini-siege run file passes, or its hashes were re-recorded for a listed rule change. (F9's
+      page test; no hash was re-recorded in part F.)
+- [x] A screenshot of the siege map at the mockup's angle is placed beside the mockup in the build
+      log. ([BUILD-LOG.md, Engine 0.16 part F](BUILD-LOG.md#engine-016-part-f-the-mini-siege-in-3d-low-poly),
+      nine screenshots in `docs/reports/screenshots/0.16-F/`.)
+- [ ] Owner playtest and screenshot review are accepted. (Open: decision F-21 in the build log,
+      numbered into FEEDBACK-LOG.md at merge.)
 
 **Done when (the release):** parts A to F are done, `pnpm lint && pnpm typecheck && pnpm test &&
 pnpm build` pass, and the owner has playtested every sample and accepts it as at the bar of item 316.
